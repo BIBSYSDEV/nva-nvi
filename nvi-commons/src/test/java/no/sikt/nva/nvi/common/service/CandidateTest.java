@@ -317,8 +317,8 @@ class CandidateTest extends LocalDynamoTest {
                                                              .getValue(), CURRENT_YEAR,
                                                          institutionToApprove, randomUri(), institutionToReject);
         var candidateBO = upsert(createRequest);
-        candidateBO.createNote(createNoteRequest(randomString(), randomString()))
-            .createNote(createNoteRequest(randomString(), randomString()))
+        candidateBO.createNote(createNoteRequest(randomString(), randomString()), candidateRepository)
+            .createNote(createNoteRequest(randomString(), randomString()), candidateRepository)
             .updateApproval(createUpdateStatusRequest(ApprovalStatus.APPROVED, institutionToApprove, randomString()))
             .updateApproval(createUpdateStatusRequest(ApprovalStatus.REJECTED, institutionToReject, randomString()));
         var dto = candidateBO.toDto();

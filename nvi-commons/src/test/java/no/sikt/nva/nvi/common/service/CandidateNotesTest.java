@@ -42,7 +42,7 @@ public class CandidateNotesTest extends LocalDynamoTest {
     void shouldCreateNoteWhenValidCreateNoteRequest() {
         var candidate = createCandidate();
         var noteRequest = createNoteRequest(randomString(), randomString());
-        candidate.createNote(noteRequest);
+        candidate.createNote(noteRequest, candidateRepository);
 
         var actualNote = Candidate.fetch(candidate::getIdentifier, candidateRepository, periodRepository)
                              .toDto()
@@ -60,7 +60,7 @@ public class CandidateNotesTest extends LocalDynamoTest {
         var candidate = createCandidate();
         var noteRequest = createNoteRequest(randomString(), null);
 
-        assertThrows(IllegalArgumentException.class, () -> candidate.createNote(noteRequest));
+        assertThrows(IllegalArgumentException.class, () -> candidate.createNote(noteRequest, candidateRepository));
     }
 
     @Test
@@ -68,14 +68,15 @@ public class CandidateNotesTest extends LocalDynamoTest {
         var candidate = createCandidate();
         var noteRequest = createNoteRequest(null, randomString());
 
-        assertThrows(IllegalArgumentException.class, () -> candidate.createNote(noteRequest));
+        assertThrows(IllegalArgumentException.class, () -> candidate.createNote(noteRequest, candidateRepository));
     }
 
     @Test
     void shouldDeleteNoteWhenValidDeleteNoteRequest() {
         var candidate = createCandidate();
         var username = randomString();
-        var candidateWithNote = candidate.createNote(new CreateNoteRequest(randomString(), username, randomUri()));
+        var candidateWithNote = candidate.createNote(new CreateNoteRequest(randomString(), username, randomUri()),
+                                                     candidateRepository);
         var noteToDelete = candidateWithNote.toDto().notes().get(0);
         var updatedCandidate = candidate.deleteNote(new DeleteNoteRequest(noteToDelete.identifier(), username));
 
@@ -86,7 +87,7 @@ public class CandidateNotesTest extends LocalDynamoTest {
     void shouldThrowUnauthorizedOperationExceptionWhenRequesterIsNotAnOwner() {
         var candidate = createCandidate();
         var candidateWithNote = candidate.createNote(
-            new CreateNoteRequest(randomString(), randomString(), randomUri()));
+            new CreateNoteRequest(randomString(), randomString(), randomUri()), candidateRepository);
         var noteToDelete = candidateWithNote.toDto().notes().get(0);
 
         assertThrows(UnauthorizedOperationException.class,
@@ -99,7 +100,7 @@ public class CandidateNotesTest extends LocalDynamoTest {
         var candidate = createCandidate(institutionId);
         var username = randomString();
         var noteRequest = new CreateNoteRequest(randomString(), username, institutionId);
-        var candidateWithNote = candidate.createNote(noteRequest);
+        var candidateWithNote = candidate.createNote(noteRequest, candidateRepository);
         var actualAssignee = candidateWithNote.getApprovals().get(institutionId).getAssignee();
         assertEquals(username, actualAssignee.value());
     }
@@ -111,7 +112,7 @@ public class CandidateNotesTest extends LocalDynamoTest {
         var existingAssignee = randomString();
         candidate.updateApproval(new UpdateAssigneeRequest(institutionId, existingAssignee));
         var noteRequest = new CreateNoteRequest(randomString(), randomString(), institutionId);
-        var candidateWithNote = candidate.createNote(noteRequest);
+        var candidateWithNote = candidate.createNote(noteRequest, candidateRepository);
         var actualAssignee = candidateWithNote.getApprovals().get(institutionId).getAssignee();
         assertEquals(existingAssignee, actualAssignee.value());
     }

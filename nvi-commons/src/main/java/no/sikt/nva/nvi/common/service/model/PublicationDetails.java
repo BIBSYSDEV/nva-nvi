@@ -3,6 +3,9 @@ package no.sikt.nva.nvi.common.service.model;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
 import java.util.List;
+import no.sikt.nva.nvi.common.db.CandidateDao;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
 
 @JsonSerialize
@@ -15,6 +18,22 @@ public record PublicationDetails(URI publicationId,
                                  URI publicationChannelId,
                                  String level) {
 
+    public static PublicationDetails from(CandidateDao candidateDao) {
+        var dbCandidate = candidateDao.candidate();
+        return new PublicationDetails(dbCandidate.publicationId(),
+                                      dbCandidate.publicationBucketUri(),
+                                      dbCandidate.instanceType(),
+                                      PublicationDate.from(dbCandidate.publicationDate()),
+                                      dbCandidate.creators()
+                                          .stream()
+                                          .map(Creator::from)
+                                          .toList(),
+                                      dbCandidate.channelType(),
+                                      dbCandidate.channelId(),
+                                      dbCandidate.level().getValue());
+
+    }
+
     public List<URI> getNviCreatorAffiliations() {
         return creators.stream()
                    .map(Creator::affiliations)
@@ -24,9 +43,18 @@ public record PublicationDetails(URI publicationId,
 
     public record PublicationDate(String year, String month, String day) {
 
+        public static PublicationDate from(DbPublicationDate dbPublicationDate) {
+            return new PublicationDate(dbPublicationDate.year(),
+                                       dbPublicationDate.month(),
+                                       dbPublicationDate.day());
+        }
     }
 
     public record Creator(URI id, List<URI> affiliations) {
 
+        public static Creator from(DbCreator dbCreator) {
+            return new Creator(dbCreator.creatorId(),
+                               dbCreator.affiliations());
+        }
     }
 }

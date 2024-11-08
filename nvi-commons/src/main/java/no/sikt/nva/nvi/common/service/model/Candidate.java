@@ -78,7 +78,6 @@ public final class Candidate {
     private static final PeriodStatus PERIOD_STATUS_NO_PERIOD = PeriodStatus.builder()
                                                                     .withStatus(Status.NO_PERIOD)
                                                                     .build();
-    private final CandidateRepository repository;
     private final UUID identifier;
     private final boolean applicable;
     private final Map<URI, Approval> approvals;
@@ -95,12 +94,21 @@ public final class Candidate {
     private final Instant modifiedDate;
     private final ReportStatus reportStatus;
 
-    private Candidate(CandidateRepository repository, UUID identifier, boolean applicable, Map<URI, Approval> approvals,
-                      Map<UUID, Note> notes, List<InstitutionPoints> institutionPoints, BigDecimal totalPoints,
-                      PeriodStatus period, PublicationDetails publicationDetails, BigDecimal basePoints,
-                      boolean internationalCollaboration, BigDecimal collaborationFactor, int creatorShareCount,
-                      Instant createdDate, Instant modifiedDate, ReportStatus reportStatus) {
-        this.repository = repository;
+    private Candidate(UUID identifier,
+                      boolean applicable,
+                      Map<URI, Approval> approvals,
+                      Map<UUID, Note> notes,
+                      List<InstitutionPoints> institutionPoints,
+                      BigDecimal totalPoints,
+                      PeriodStatus period,
+                      PublicationDetails publicationDetails,
+                      BigDecimal basePoints,
+                      boolean internationalCollaboration,
+                      BigDecimal collaborationFactor,
+                      int creatorShareCount,
+                      Instant createdDate,
+                      Instant modifiedDate,
+                      ReportStatus reportStatus) {
         this.identifier = identifier;
         this.applicable = applicable;
         this.approvals = approvals;
@@ -120,7 +128,6 @@ public final class Candidate {
 
     private Candidate(CandidateRepository repository, CandidateDao candidateDao, List<ApprovalStatusDao> approvals,
                       List<NoteDao> notes, PeriodStatus period) {
-        this.repository = repository;
         this.identifier = candidateDao.identifier();
         this.applicable = candidateDao.candidate().applicable();
         this.approvals = mapToApprovalsMap(repository, approvals);
@@ -128,7 +135,7 @@ public final class Candidate {
         this.institutionPoints = mapToInstitutionPoints(candidateDao);
         this.totalPoints = candidateDao.candidate().totalPoints();
         this.period = period;
-        this.publicationDetails = mapToPublicationDetails(candidateDao);
+        this.publicationDetails = PublicationDetails.from(candidateDao);
         this.basePoints = candidateDao.candidate().basePoints();
         this.internationalCollaboration = candidateDao.candidate().internationalCollaboration();
         this.collaborationFactor = candidateDao.candidate().collaborationFactor();
@@ -291,7 +298,7 @@ public final class Candidate {
         return this;
     }
 
-    public Candidate createNote(CreateNoteRequest input) {
+    public Candidate createNote(CreateNoteRequest input, CandidateRepository repository) {
         validateCandidateState();
         var note = Note.fromRequest(input, identifier, repository);
         notes.put(note.getNoteId(), note);
@@ -538,16 +545,8 @@ public final class Candidate {
                    .build();
     }
 
-    private static PublicationDate mapToPublicationDate(DbPublicationDate date) {
-        return new PublicationDate(date.year(), date.month(), date.day());
-    }
-
     private static List<Creator> mapToCreators(Map<URI, List<URI>> creators) {
         return creators.entrySet().stream().map(e -> new Creator(e.getKey(), e.getValue())).toList();
-    }
-
-    private static List<Creator> mapToCreators(List<DbCreator> creators) {
-        return nonNull(creators) ? creators.stream().map(Candidate::mapToCreator).toList() : List.of();
     }
 
     private static List<DbCreator> mapToDbCreators(Map<URI, List<URI>> creators) {
@@ -564,10 +563,6 @@ public final class Candidate {
                                        .affiliations(creator.affiliations())
                                        .build())
                    .toList();
-    }
-
-    private static Creator mapToCreator(DbCreator dbCreator) {
-        return new Creator(dbCreator.creatorId(), dbCreator.affiliations());
     }
 
     private static boolean isExistingCandidate(URI publicationId, CandidateRepository repository) {
@@ -679,17 +674,6 @@ public final class Candidate {
 
     private Stream<Approval> streamApprovals() {
         return approvals.values().stream();
-    }
-
-    private PublicationDetails mapToPublicationDetails(CandidateDao candidateDao) {
-        return new PublicationDetails(candidateDao.candidate().publicationId(),
-                                      candidateDao.candidate().publicationBucketUri(),
-                                      candidateDao.candidate().instanceType(),
-                                      mapToPublicationDate(candidateDao.candidate().publicationDate()),
-                                      mapToCreators(candidateDao.candidate().creators()),
-                                      candidateDao.candidate().channelType(),
-                                      candidateDao.candidate().channelId(),
-                                      candidateDao.candidate().level().getValue());
     }
 
     private void validateCandidateState() {
@@ -815,7 +799,7 @@ public final class Candidate {
         }
 
         public Candidate build() {
-            return new Candidate(null, identifier, applicable, approvals, notes, institutionPoints, totalPoints, period,
+            return new Candidate(identifier, applicable, approvals, notes, institutionPoints, totalPoints, period,
                                  publicationDetails, basePoints, internationalCollaboration, collaborationFactor,
                                  creatorShareCount, createdDate, modifiedDate, reportStatus);
         }
