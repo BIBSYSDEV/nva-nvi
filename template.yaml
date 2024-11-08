@@ -1435,7 +1435,7 @@ Resources:
   EvaluationDLQAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
-      AlarmName: NVI evaluating candidate failed
+      AlarmName: NVI evaluating candidacy for resource failed
       AlarmDescription: If this alarm is triggered, then check sqs messages on EvaluationDLQ. Evaluating NVI candidate has failed.
       MetricName: ApproximateNumberOfMessagesVisible
       Namespace: AWS/SQS
