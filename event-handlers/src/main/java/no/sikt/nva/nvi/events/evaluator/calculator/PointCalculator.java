@@ -101,7 +101,7 @@ public class PointCalculator {
         var numberOfAffiliations = nviCreator.getValue().size();
         var pointsForAffiliation = divide(numberOfAffiliations, pointsForCreator);
         return nviCreator.getValue().stream()
-                   .map(affiliationId -> new CreatorAffiliationPoints(affiliationId, nviCreator.getKey(),
+                   .map(affiliationId -> new CreatorAffiliationPoints(nviCreator.getKey(), affiliationId,
                                                                       pointsForAffiliation));
     }
 
