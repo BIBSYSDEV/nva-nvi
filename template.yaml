@@ -840,7 +840,6 @@ Resources:
     Properties:
       CodeUri: index-handlers
       Handler: no.sikt.nva.nvi.index.UpdateIndexHandler::handleRequest
-      Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
       AutoPublishAlias: live
       SnapStart:
