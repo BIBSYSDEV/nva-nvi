@@ -25,7 +25,6 @@ import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil;
-import no.sikt.nva.nvi.events.evaluator.model.InstitutionPoints;
 import no.sikt.nva.nvi.events.evaluator.model.PointCalculation;
 import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
@@ -116,7 +115,7 @@ public class EvaluatorService {
                    .withIsInternationalCollaboration(pointCalculation.isInternationalCollaboration())
                    .withCollaborationFactor(pointCalculation.collaborationFactor())
                    .withCreatorShareCount(pointCalculation.creatorShareCount())
-                   .withInstitutionPoints(mapToInstitutionPoints(pointCalculation.institutionPoints()))
+                   .withInstitutionPoints(pointCalculation.institutionPoints())
                    .withVerifiedCreators(mapToNviCreators(verifiedCreatorsWithNviInstitutions))
                    .withTotalPoints(pointCalculation.totalPoints())
                    .build();
@@ -125,13 +124,6 @@ public class EvaluatorService {
     private static List<NviCreator> mapToNviCreators(List<VerifiedNviCreator> nviCreators) {
         return nviCreators.stream()
                    .map(NviCreator::from)
-                   .collect(Collectors.toList());
-    }
-
-    private static List<no.sikt.nva.nvi.common.service.model.InstitutionPoints> mapToInstitutionPoints(
-        List<InstitutionPoints> institutionPoints) {
-        return institutionPoints.stream()
-                   .map(InstitutionPoints::toInstitutionPoints)
                    .collect(Collectors.toList());
     }
 

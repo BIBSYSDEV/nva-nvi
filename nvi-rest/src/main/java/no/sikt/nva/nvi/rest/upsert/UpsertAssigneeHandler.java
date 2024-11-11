@@ -70,7 +70,7 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<UpsertAssigneeReque
     @Override
     protected void validateRequest(UpsertAssigneeRequest input, RequestInfo requestInfo,
                                    Context context) throws ApiGatewayException {
-        validateRequest(input, requestInfo);
+        validateCustomerAndAccessRight(input, requestInfo);
     }
 
     @Override
@@ -103,7 +103,8 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<UpsertAssigneeReque
         return attempt(() -> JsonUtils.dtoObjectMapper.readValue(body, User.class)).orElseThrow();
     }
 
-    private void validateRequest(UpsertAssigneeRequest input, RequestInfo requestInfo) throws UnauthorizedException {
+    private void validateCustomerAndAccessRight(UpsertAssigneeRequest input, RequestInfo requestInfo)
+        throws UnauthorizedException {
         RequestUtil.hasAccessRight(requestInfo, AccessRight.MANAGE_NVI_CANDIDATES);
         hasSameCustomer(input, requestInfo);
         if (nonNull(input.assignee())) {

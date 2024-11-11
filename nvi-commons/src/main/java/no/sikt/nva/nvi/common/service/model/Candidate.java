@@ -190,14 +190,14 @@ public final class Candidate {
                                                                    InstitutionPoints::institutionPoints));
     }
 
-    public List<InstitutionPoints> getInstitutionPoints() {
-        return nonNull(institutionPoints) ? institutionPoints : List.of();
-    }
-
     public BigDecimal getPointValueForInstitution(URI institutionId) {
         return getInstitutionPoints(institutionId)
                    .map(InstitutionPoints::institutionPoints)
                    .orElse(null);
+    }
+
+    public List<InstitutionPoints> getInstitutionPoints() {
+        return nonNull(institutionPoints) ? institutionPoints : List.of();
     }
 
     //TODO: Make method return InstitutionPoints once we have migrated candidates from Cristin
@@ -334,6 +334,12 @@ public final class Candidate {
             .orElseThrow(CandidateNotFoundException::new);
     }
 
+    private static CandidateDao updateVersion(CandidateRepository candidateRepository, CandidateDao candidateDao) {
+        var candidateWithNewVersion = candidateDao.copy().version(randomUUID().toString()).build();
+        candidateRepository.updateCandidate(candidateWithNewVersion);
+        return candidateWithNewVersion;
+    }
+
     private static void updateExistingCandidate(UpsertCandidateRequest request,
                                                 CandidateRepository repository,
                                                 CandidateDao existingCandidate) {
@@ -342,12 +348,6 @@ public final class Candidate {
         } else {
             updateCandidate(request, repository, existingCandidate);
         }
-    }
-
-    private static CandidateDao updateVersion(CandidateRepository candidateRepository, CandidateDao candidateDao) {
-        var candidateWithNewVersion = candidateDao.copy().version(randomUUID().toString()).build();
-        candidateRepository.updateCandidate(candidateWithNewVersion);
-        return candidateWithNewVersion;
     }
 
     private static Candidate updateToNotApplicable(UpdateNonCandidateRequest request, CandidateRepository repository) {

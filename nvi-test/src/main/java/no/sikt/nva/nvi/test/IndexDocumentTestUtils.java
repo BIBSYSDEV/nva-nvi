@@ -71,8 +71,8 @@ public final class IndexDocumentTestUtils {
         return UnixPath.of(NVI_CANDIDATES_FOLDER).addChild(candidate.getIdentifier().toString() + GZIP_ENDING);
     }
 
-    public static List<no.sikt.nva.nvi.index.model.document.Approval> expandApprovals(Candidate candidate,
-                                                                                      List<ContributorType> contributors) {
+    public static List<no.sikt.nva.nvi.index.model.document.Approval> expandApprovals(
+        Candidate candidate, List<ContributorType> contributors) {
         return candidate.getApprovals()
                    .values()
                    .stream()
@@ -218,8 +218,8 @@ public final class IndexDocumentTestUtils {
                    .build();
     }
 
-    private static PublicationChannel getPublicationChannel(JsonNode expandedResource,
-                                                            no.sikt.nva.nvi.common.service.model.PublicationDetails publicationDetails) {
+    private static PublicationChannel getPublicationChannel(
+        JsonNode expandedResource, no.sikt.nva.nvi.common.service.model.PublicationDetails publicationDetails) {
         var channelType = publicationDetails.channelType();
         var publicationChannelBuilder = PublicationChannel.builder()
                                             .withScientificValue(ScientificValue.parse(publicationDetails.level()))
@@ -474,24 +474,22 @@ public final class IndexDocumentTestUtils {
         return new PublicationDate(randomString(), randomString(), randomString());
     }
 
-    private static List<no.sikt.nva.nvi.index.model.document.Approval> createApprovals(URI uri,
-                                                                                       List<NviContributor> contributors) {
+    private static List<no.sikt.nva.nvi.index.model.document.Approval> createApprovals(
+        URI uri, List<NviContributor> contributors) {
         return List.of(createApproval(uri, contributors, randomElement(GlobalApprovalStatus.values())));
     }
 
-    private static no.sikt.nva.nvi.index.model.document.Approval createApproval(URI institutionId,
-                                                                                List<NviContributor> contributors,
-                                                                                GlobalApprovalStatus globalApprovalStatus) {
+    private static no.sikt.nva.nvi.index.model.document.Approval createApproval(
+        URI institutionId, List<NviContributor> contributors, GlobalApprovalStatus globalApprovalStatus) {
         var involvedOrganizations = new HashSet<>(filterContributorsPartOf(institutionId, contributors));
         var institutionPoints = generateInstitutionPoints(contributors, institutionId);
         return getApprovalBuilder(institutionId, globalApprovalStatus, institutionPoints, involvedOrganizations)
                    .build();
     }
 
-    private static no.sikt.nva.nvi.index.model.document.Approval.Builder getApprovalBuilder(URI institutionId,
-                                                                                            GlobalApprovalStatus globalApprovalStatus,
-                                                                                            InstitutionPoints institutionPoints,
-                                                                                            HashSet<URI> involvedOrganizations) {
+    private static no.sikt.nva.nvi.index.model.document.Approval.Builder getApprovalBuilder(
+        URI institutionId, GlobalApprovalStatus globalApprovalStatus, InstitutionPoints institutionPoints,
+        HashSet<URI> involvedOrganizations) {
         return no.sikt.nva.nvi.index.model.document.Approval.builder()
                    .withInstitutionId(institutionId)
                    .withApprovalStatus(ApprovalStatus.NEW)
@@ -516,8 +514,8 @@ public final class IndexDocumentTestUtils {
         return getInstitutionPointsBuilder(institutionId, creatorAffiliationPoints).build();
     }
 
-    private static InstitutionPoints.Builder getInstitutionPointsBuilder(URI institutionId,
-                                                                         List<CreatorAffiliationPoints> creatorAffiliationPoints) {
+    private static InstitutionPoints.Builder getInstitutionPointsBuilder(
+        URI institutionId, List<CreatorAffiliationPoints> creatorAffiliationPoints) {
         return InstitutionPoints.builder()
                    .withInstitutionId(institutionId)
                    .withInstitutionPoints(randomBigDecimal())

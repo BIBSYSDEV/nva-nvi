@@ -144,6 +144,9 @@ public final class ExpandedResourceGenerator {
                 pages.put("pages", "numberOfPages");
                 publicationInstance.set("pages", pages);
             }
+            default -> {
+                // do nothing
+            }
         }
         return publicationInstance;
     }

@@ -144,7 +144,8 @@ public final class Aggregations {
         return aggregations;
     }
 
-    private static Map<String, Aggregation> generateAllDefaultAggregationTypes(String username, String topLevelCristinOrg) {
+    private static Map<String, Aggregation> generateAllDefaultAggregationTypes(String username,
+                                                                               String topLevelCristinOrg) {
         var aggregations = new HashMap<String, Aggregation>();
         for (var aggregation : SearchAggregation.defaultAggregations()) {
             addAggregation(username, topLevelCristinOrg, aggregations, aggregation);
