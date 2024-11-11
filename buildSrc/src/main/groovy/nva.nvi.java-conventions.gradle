@@ -3,7 +3,6 @@ plugins {
     id 'checkstyle'
     id 'pmd'
     id 'jacoco-report-aggregation'
-//    id 'test-report-aggregation'
 }
 
 group = 'com.github.bibsysdev'
@@ -17,8 +16,10 @@ dependencies {
     }
 }
 
-sourceCompatibility = JavaVersion.VERSION_17  // source-code version and must be <= targetCompatibility
-targetCompatibility = JavaVersion.VERSION_17 // bytecode target version
+java {
+    sourceCompatibility = JavaVersion.VERSION_21 // source-code version and must be <= targetCompatibility
+    targetCompatibility = JavaVersion.VERSION_21 // bytecode target version
+}
 
 tasks.named('test') {
     useJUnitPlatform()
@@ -29,7 +30,7 @@ tasks.named('test') {
 }
 
 pmd {
-    toolVersion = '6.20.0'
+    toolVersion = '6.55.0'
     ruleSetConfig = rootProject.resources.text.fromFile('config/pmd/ruleset.xml')
     ruleSets = []
     ignoreFailures = false
@@ -39,6 +40,7 @@ checkstyle {
     configFile = rootProject.resources.text.fromFile('config/checkstyle/checkstyle.xml').asFile()
     showViolations = true
 }
+
 tasks.withType(Checkstyle).configureEach {
     reports {
         xml.required
