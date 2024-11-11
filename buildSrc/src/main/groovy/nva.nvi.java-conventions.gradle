@@ -26,6 +26,8 @@ tasks.named('test') {
     failFast = false
     testLogging {
         events 'skipped', 'passed', 'failed'
+        showCauses true
+        exceptionFormat "full"
     }
 }
 
