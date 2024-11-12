@@ -9,7 +9,7 @@ phases:
   install:
     runtime-versions:
       java: corretto21
-      docker: latest
+
     commands:
       - pip3 install aws-sam-cli
       - echo "Check that Docker is running"
