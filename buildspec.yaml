@@ -1,25 +1,33 @@
 version: 0.2
 
+env:
+  secrets-manager:
+    DOCKER_HUB_USERNAME: DockerHubCredentials:DockerHubUsername
+    DOCKER_HUB_SECRET: DockerHubCredentials:DockerHubSecret
+
 phases:
   install:
     runtime-versions:
       java: corretto21
+      docker: latest
     commands:
-      - pip3 install aws-sam-cli -U
+      - pip3 install aws-sam-cli
+      - echo "Check that Docker is running"
+      - nohup /usr/local/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://127.0.0.1:2375 --storage-driver=overlay2&
+      - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
+      - echo "Docker login"
+      - echo -n "$DOCKER_HUB_SECRET" | docker login --username $DOCKER_HUB_USERNAME --password-stdin
+      - docker pull opensearchproject/opensearch:2.11.1
   build:
     commands:
-      - |
-        if ! sam build; then
-          ./gradlew test
-          exit 1
-        else
-          sam package --s3-bucket $S3_BUCKET --output-template-file packaged_raw.yaml
-        fi
+      - sam build
   post_build:
     commands:
+      - sam package --s3-bucket $S3_BUCKET --output-template-file packaged_raw.yaml
       # Use timestamp to force update of ApiGatewayCreateDeploymentCustomResource
       - BUILD_TIMESTAMP=$(date '+%s')
       - envsubst '${BUILD_TIMESTAMP}' < packaged_raw.yaml > packaged.yaml
+
 artifacts:
   files:
     - packaged.yaml
