@@ -10,7 +10,8 @@ phases:
     commands:
       - |
         if ! sam build; then
-          ./gradlew test || exit 1
+          ./gradlew test
+          exit 1
         else
           sam package --s3-bucket $S3_BUCKET --output-template-file packaged_raw.yaml
         fi
