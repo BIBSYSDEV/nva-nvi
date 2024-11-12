@@ -15,6 +15,12 @@ phases:
       # Use timestamp to force update of ApiGatewayCreateDeploymentCustomResource
       - BUILD_TIMESTAMP=$(date '+%s')
       - envsubst '${BUILD_TIMESTAMP}' < packaged_raw.yaml > packaged.yaml
+reports:
+  test-results:
+    files: # Specify the location of test report files
+      - '**/*'
+    file-format: 'JUNITXML' # Format of the test report
+    base-directory: 'build/reports' # Base directory where the reports are located
 artifacts:
   files:
     - packaged.yaml
