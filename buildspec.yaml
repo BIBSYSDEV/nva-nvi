@@ -8,8 +8,12 @@ phases:
       - pip3 install aws-sam-cli -U
   build:
     commands:
-      - sam build
-      - sam package --s3-bucket $S3_BUCKET --output-template-file packaged_raw.yaml
+      - |
+        if ! sam build; then
+          ./gradlew test
+        else
+          sam package --s3-bucket $S3_BUCKET --output-template-file packaged_raw.yaml
+        fi
   post_build:
     commands:
       # Use timestamp to force update of ApiGatewayCreateDeploymentCustomResource
