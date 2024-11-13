@@ -38,7 +38,7 @@ public class FetchInstitutionStatusAggregationHandler extends ApiGatewayHandler<
 
     @Override
     protected void validateRequest(Void unused, RequestInfo requestInfo, Context context) throws ApiGatewayException {
-        validateRequest(requestInfo);
+        validateAccessRight(requestInfo);
     }
 
     @Override
@@ -62,7 +62,7 @@ public class FetchInstitutionStatusAggregationHandler extends ApiGatewayHandler<
                    .toPrettyString();
     }
 
-    private static void validateRequest(RequestInfo requestInfo) throws UnauthorizedException {
+    private static void validateAccessRight(RequestInfo requestInfo) throws UnauthorizedException {
         hasAccessRight(requestInfo, MANAGE_NVI_CANDIDATES);
     }
 

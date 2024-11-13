@@ -68,7 +68,7 @@ public class UpdateNviPeriodHandlerTest extends LocalDynamoTest {
         var persistedPeriod = setupPersistedPeriod(year, periodRepository);
         var updateRequest = updateRequest(year, persistedPeriod);
         handler.handleRequest(toInputStream(updateRequest), output, context);
-        var updatedPeriod = NviPeriod.fetch(year, periodRepository);
+        var updatedPeriod = NviPeriod.fetchByPublishingYear(year, periodRepository);
 
         assertThat(persistedPeriod.getReportingDate(), is(not(equalTo(updatedPeriod.getReportingDate()))));
     }

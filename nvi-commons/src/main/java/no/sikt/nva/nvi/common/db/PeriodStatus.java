@@ -12,7 +12,8 @@ import nva.commons.core.JacocoGenerated;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
-public record PeriodStatus(URI id, Instant startDate, Instant reportingDate, Status status, String year) implements JsonSerializable {
+public record PeriodStatus(URI id, Instant startDate, Instant reportingDate, Status status, String year)
+    implements JsonSerializable {
 
     public static Builder builder() {
         return new Builder();
@@ -130,6 +131,5 @@ public record PeriodStatus(URI id, Instant startDate, Instant reportingDate, Sta
         public PeriodStatus build() {
             return new PeriodStatus(id, startDate, reportingDate, status, year);
         }
-
     }
 }

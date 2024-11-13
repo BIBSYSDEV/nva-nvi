@@ -46,7 +46,8 @@ public class CreatorVerificationUtil {
     private final AuthorizedBackendUriRetriever authorizedBackendUriRetriever;
     private final OrganizationRetriever organizationRetriever;
 
-    public CreatorVerificationUtil(AuthorizedBackendUriRetriever authorizedBackendUriRetriever, UriRetriever uriRetriever) {
+    public CreatorVerificationUtil(AuthorizedBackendUriRetriever authorizedBackendUriRetriever,
+                                   UriRetriever uriRetriever) {
         this.authorizedBackendUriRetriever = authorizedBackendUriRetriever;
         this.organizationRetriever = new OrganizationRetriever(uriRetriever);
     }
