@@ -12,7 +12,8 @@ phases:
 
     commands:
       - echo "Checking if AWS SAM CLI is installed"
-      - if command -v sam >/dev/null 2>&1; then
+      - | 
+        if command -v sam >/dev/null 2>&1; then
           echo "AWS SAM CLI is already installed";
           sam --version;
         else
