@@ -27,7 +27,7 @@ public record PublicationChannel(URI id,
         }
 
         public static ScientificValue parse(String value) {
-            return Arrays.stream(ScientificValue.values())
+            return Arrays.stream(values())
                        .filter(type -> type.getValue().equalsIgnoreCase(value))
                        .findFirst()
                        .orElseThrow(ScientificValue::getIllegalArgumentException);
@@ -39,7 +39,7 @@ public record PublicationChannel(URI id,
 
         private static IllegalArgumentException getIllegalArgumentException() {
             return new IllegalArgumentException(String.format("Unknown value. Valid values are: %s",
-                                                              Arrays.toString(ScientificValue.values())));
+                                                              Arrays.toString(values())));
         }
     }
 

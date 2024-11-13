@@ -386,12 +386,10 @@ public final class NviCandidateIndexDocumentGenerator {
 
     private boolean isNviAffiliation(Creator creator, JsonNode affiliationNode) {
         var affiliationId = extractJsonNodeTextValue(affiliationNode, JSON_PTR_ID);
-        if (isNull(affiliationId)) {
-            return false;
-        }
-        return creator.affiliations()
-                   .stream()
-                   .anyMatch(affiliation -> affiliation.toString().equals(affiliationId));
+
+        return !isNull(affiliationId) && creator.affiliations()
+                                             .stream()
+                                             .anyMatch(affiliation -> affiliation.toString().equals(affiliationId));
     }
 
     private NviOrganization generateAffiliationWithPartOf(URI id) {

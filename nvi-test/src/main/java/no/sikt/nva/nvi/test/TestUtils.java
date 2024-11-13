@@ -343,6 +343,7 @@ public final class TestUtils {
                                             randomBigDecimal(), randomBigDecimal(), totalPoints);
     }
 
+    @SuppressWarnings("PMD.ExcessiveParameterList")
     public static UpsertCandidateRequest createUpsertCandidateRequest(URI publicationId,
                                                                       final URI publicationBucketUri,
                                                                       boolean isApplicable,

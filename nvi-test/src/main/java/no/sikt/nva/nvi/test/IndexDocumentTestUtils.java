@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.test;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PUBLICATION_CONTEXT;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.extractJsonNodeTextValue;
 import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.EN_FIELD;
 import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.HARDCODED_ENGLISH_LABEL;
@@ -32,6 +33,7 @@ import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.Creator;
+import no.sikt.nva.nvi.common.utils.JsonPointers;
 import no.sikt.nva.nvi.common.utils.JsonUtils;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.Contributor;
@@ -96,7 +98,7 @@ public final class IndexDocumentTestUtils {
     }
 
     public static URI randomCristinOrgUri() {
-        return cristinOrgUriWithTopLevel(String.valueOf(randomIntBetween(100000, 200000)));
+        return cristinOrgUriWithTopLevel(String.valueOf(randomIntBetween(100_000, 200_000)));
     }
 
     public static URI cristinOrgUriWithTopLevel(String topLevelIdentifier) {
@@ -243,13 +245,11 @@ public final class IndexDocumentTestUtils {
     }
 
     private static String extractSeriesIssn(JsonNode expandedResource) {
-        return extractJsonNodeTextValue(expandedResource, "/entityDescription/reference/publicationContext"
-                                                          + "/series/printIssn");
+        return extractJsonNodeTextValue(expandedResource, JSON_PTR_PUBLICATION_CONTEXT + "/series/printIssn");
     }
 
     private static String extractJournalIssn(JsonNode expandedResource) {
-        return extractJsonNodeTextValue(expandedResource, "/entityDescription/reference/publicationContext"
-                                                          + "/printIssn");
+        return extractJsonNodeTextValue(expandedResource, JSON_PTR_PUBLICATION_CONTEXT + "/printIssn");
     }
 
     private static String extractChannelName(JsonNode expandedResource, ChannelType channelType) {
@@ -264,18 +264,15 @@ public final class IndexDocumentTestUtils {
     }
 
     private static String extractSeriesName(JsonNode expandedResource) {
-        return extractJsonNodeTextValue(expandedResource, "/entityDescription/reference/publicationContext"
-                                                          + "/series/name");
+        return extractJsonNodeTextValue(expandedResource, JSON_PTR_PUBLICATION_CONTEXT + "/series/name");
     }
 
     private static String extractPublisherName(JsonNode expandedResource) {
-        return extractJsonNodeTextValue(expandedResource, "/entityDescription/reference/publicationContext"
-                                                          + "/publisher/name");
+        return extractJsonNodeTextValue(expandedResource, JSON_PTR_PUBLICATION_CONTEXT + "/publisher/name");
     }
 
     private static String extractJournalName(JsonNode expandedResource) {
-        return extractJsonNodeTextValue(expandedResource, "/entityDescription/reference/publicationContext"
-                                                          + "/name");
+        return extractJsonNodeTextValue(expandedResource, JSON_PTR_PUBLICATION_CONTEXT + "/name");
     }
 
     private static Builder getBuilder(int year, List<no.sikt.nva.nvi.index.model.document.Approval> approvals,
@@ -489,7 +486,7 @@ public final class IndexDocumentTestUtils {
 
     private static no.sikt.nva.nvi.index.model.document.Approval.Builder getApprovalBuilder(
         URI institutionId, GlobalApprovalStatus globalApprovalStatus, InstitutionPoints institutionPoints,
-        HashSet<URI> involvedOrganizations) {
+        Set<URI> involvedOrganizations) {
         return no.sikt.nva.nvi.index.model.document.Approval.builder()
                    .withInstitutionId(institutionId)
                    .withApprovalStatus(ApprovalStatus.NEW)

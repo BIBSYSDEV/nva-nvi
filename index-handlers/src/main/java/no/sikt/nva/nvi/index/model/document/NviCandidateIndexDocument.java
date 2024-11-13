@@ -38,7 +38,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.time.Instant;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -136,10 +136,11 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
                    .map(affiliation -> generateRow(nviContributor, affiliation, topLevelOrganization));
     }
 
-    private Map<InstitutionReportHeader, String> generateRow(NviContributor nviContributor, NviOrganization affiliation,
-                                                             URI topLevelOrganization) {
+    private Map<InstitutionReportHeader, String> generateRow(NviContributor nviContributor,
+                                                                 NviOrganization affiliation,
+                                                                 URI topLevelOrganization) {
         try {
-            var keyValueMap = new HashMap<InstitutionReportHeader, String>();
+            var keyValueMap = new EnumMap<InstitutionReportHeader, String>(InstitutionReportHeader.class);
             keyValueMap.put(REPORTING_YEAR, reportingPeriod.year());
             keyValueMap.put(PUBLICATION_IDENTIFIER, publicationIdentifier());
             keyValueMap.put(PUBLISHED_YEAR, publicationDetails.publicationDate().year());
@@ -219,6 +220,7 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
         };
     }
 
+    @SuppressWarnings("PMD.TooManyFields")
     public static final class Builder {
 
         private URI context;
