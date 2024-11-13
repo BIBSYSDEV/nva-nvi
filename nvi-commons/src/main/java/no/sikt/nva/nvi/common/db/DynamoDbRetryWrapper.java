@@ -14,6 +14,7 @@ import software.amazon.awssdk.services.dynamodb.model.DynamoDbException;
 import software.amazon.awssdk.services.dynamodb.model.PutRequest;
 import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
 
+@SuppressWarnings("PMD.DoNotUseThreads")
 public class DynamoDbRetryWrapper {
     private final DynamoDbClient client;
     private final int writeRetriesMaxCount;

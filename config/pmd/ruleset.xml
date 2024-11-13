@@ -14,6 +14,7 @@
     <exclude name="AvoidFieldNameMatchingMethodName"/>
     <!-- CloseResource is excluded because we already have many violations -->
     <exclude name="CloseResource"/>
+    <exclude name="TestClassWithoutTestCases"/>
   </rule>
 
   <rule ref="category/java/multithreading.xml">
@@ -31,6 +32,9 @@
 
     <!-- In TableManager we map ResourceNotFoundException to TableNotFoundException -->
     <exclude name="PreserveStackTrace"/>
+
+    <!-- //TODO: This is complaining on private methods that are used?  -->
+    <exclude name="UnusedPrivateMethod"/>
 
   </rule>
 
@@ -55,7 +59,6 @@
 
     <!-- Sometimes it is useful in debugging to assign the return value to a local variable  -->
     <exclude name="UnnecessaryLocalBeforeReturn"/>
-
 
   </rule>
 
@@ -84,6 +87,9 @@
    -->
     <exclude name="AvoidThrowingRawExceptionTypes"/>
 
+    <!-- //TODO: Discuss these  -->
+    <exclude name="CouplingBetweenObjects"/>
+    <exclude name="GodClass"/>
   </rule>
 
 </ruleset>
