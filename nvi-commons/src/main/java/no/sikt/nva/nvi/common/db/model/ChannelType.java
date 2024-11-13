@@ -15,7 +15,7 @@ public enum ChannelType {
     }
 
     public static ChannelType parse(String value) {
-        return Arrays.stream(ChannelType.values())
+        return Arrays.stream(values())
                    .filter(type -> type.getValue().equalsIgnoreCase(value))
                    .findFirst()
                    .orElse(null);

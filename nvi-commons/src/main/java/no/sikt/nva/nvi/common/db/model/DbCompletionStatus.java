@@ -17,7 +17,7 @@ public enum DbCompletionStatus {
     @JsonCreator
     public static DbCompletionStatus parse(String value) {
         return Arrays
-                   .stream(DbCompletionStatus.values())
+                   .stream(values())
                    .filter(level -> level.getValue().equalsIgnoreCase(value))
                    .findFirst()
                    .orElseThrow();

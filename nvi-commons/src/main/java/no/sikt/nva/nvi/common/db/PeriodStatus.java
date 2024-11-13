@@ -38,7 +38,7 @@ public record PeriodStatus(URI id, Instant startDate, Instant reportingDate, Sta
     }
 
     private static PeriodStatus toUnopenedPeriod(DbNviPeriod period) {
-        return PeriodStatus.builder()
+        return builder()
                    .withId(period.id())
                    .withStartDate(period.startDate())
                    .withReportingDate(period.reportingDate())
@@ -56,7 +56,7 @@ public record PeriodStatus(URI id, Instant startDate, Instant reportingDate, Sta
     }
 
     private static PeriodStatus toOpenPeriodStatus(DbNviPeriod period) {
-        return PeriodStatus.builder()
+        return builder()
                    .withId(period.id())
                    .withStartDate(period.startDate())
                    .withReportingDate(period.reportingDate())
@@ -66,7 +66,7 @@ public record PeriodStatus(URI id, Instant startDate, Instant reportingDate, Sta
     }
 
     private static PeriodStatus toClosedPeriodStatus(DbNviPeriod period) {
-        return PeriodStatus.builder()
+        return builder()
                    .withId(period.id())
                    .withStartDate(period.startDate())
                    .withReportingDate(period.reportingDate())

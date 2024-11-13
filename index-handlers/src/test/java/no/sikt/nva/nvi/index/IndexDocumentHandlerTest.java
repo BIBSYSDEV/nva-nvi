@@ -558,7 +558,7 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         var organizationNode = generateOrganizationNode(organizationId);
         var hasPartNode = dtoObjectMapper.createArrayNode();
         hasPartNode.add(generateOrganizationNodeWithPartOf(randomUri().toString(), organizationId));
-        organizationNode.set("hasPart", hasPartNode);
+        organizationNode.set("subUnits", hasPartNode);
         return organizationNode;
     }
 

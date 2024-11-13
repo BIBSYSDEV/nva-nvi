@@ -17,7 +17,7 @@ public enum InstanceType {
     }
 
     public static InstanceType parse(String value) {
-        return Arrays.stream(InstanceType.values())
+        return Arrays.stream(values())
                    .filter(instanceType -> instanceType.getValue().equalsIgnoreCase(value))
                    .findFirst()
                    .orElseThrow();

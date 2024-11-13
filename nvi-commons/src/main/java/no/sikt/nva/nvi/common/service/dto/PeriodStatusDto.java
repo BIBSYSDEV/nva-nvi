@@ -54,7 +54,7 @@ public record PeriodStatusDto(URI id, Status status, String startDate, String re
         }
 
         public static Status parse(String value) {
-            return Arrays.stream(Status.values())
+            return Arrays.stream(values())
                        .filter(status -> status.getValue().equalsIgnoreCase(value))
                        .findFirst()
                        .orElseThrow();

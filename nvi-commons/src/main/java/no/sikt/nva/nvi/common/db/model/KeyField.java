@@ -26,7 +26,7 @@ public enum KeyField {
 
     @JsonCreator
     public static KeyField parse(String candidate) {
-        return Arrays.stream(KeyField.values())
+        return Arrays.stream(values())
                    .filter(value -> value.filterByNameOrValue(candidate))
                    .collect(SingletonCollector.tryCollect())
                    .orElseThrow(fail -> handleParsingError());
@@ -47,7 +47,7 @@ public enum KeyField {
     }
 
     private static String validValues() {
-        return Arrays.stream(KeyField.values())
+        return Arrays.stream(values())
                    .map(KeyField::toString)
                    .collect(Collectors.joining(SEPARATOR));
     }

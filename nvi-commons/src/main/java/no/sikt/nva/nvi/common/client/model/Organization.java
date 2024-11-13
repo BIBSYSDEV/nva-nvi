@@ -11,20 +11,13 @@ import java.util.Map;
 import no.unit.nva.commons.json.JsonSerializable;
 import nva.commons.core.SingletonCollector;
 
-public record Organization(@JsonProperty(ID) URI id,
-                           @JsonProperty(PART_OF) List<Organization> partOf,
-                           @JsonProperty(HAS_PART) List<Organization> hasPart,
-                           @JsonProperty(LABELS) Map<String, String> labels,
-                           @JsonProperty(TYPE) String type,
-                           @JsonProperty(CONTEXT) Object context)
+public record Organization(@JsonProperty("id") URI id,
+                           @JsonProperty("partOf") List<Organization> partOf,
+                           @JsonProperty("hasPart") List<Organization> subUnits,
+                           @JsonProperty("labels") Map<String, String> labels,
+                           @JsonProperty("type") String type,
+                           @JsonProperty("@context") Object context)
     implements JsonSerializable {
-
-    public static final String HAS_PART = "hasPart";
-    private static final String ID = "id";
-    private static final String PART_OF = "partOf";
-    private static final String LABELS = "labels";
-    private static final String TYPE = "type";
-    private static final String CONTEXT = "@context";
 
     public static Organization from(String json) throws JsonProcessingException {
         return dtoObjectMapper.readValue(json, Organization.class);
@@ -58,7 +51,7 @@ public record Organization(@JsonProperty(ID) URI id,
 
         private URI id;
         private List<Organization> partOf;
-        private List<Organization> hasPart;
+        private List<Organization> subUnits;
         private Map<String, String> labels;
         private String type;
         private Object context;
@@ -76,8 +69,8 @@ public record Organization(@JsonProperty(ID) URI id,
             return this;
         }
 
-        public Builder withHasPart(List<Organization> hasPart) {
-            this.hasPart = hasPart;
+        public Builder withHasPart(List<Organization> subUnits) {
+            this.subUnits = subUnits;
             return this;
         }
 
@@ -97,7 +90,7 @@ public record Organization(@JsonProperty(ID) URI id,
         }
 
         public Organization build() {
-            return new Organization(id, partOf, hasPart, labels, type, context);
+            return new Organization(id, partOf, subUnits, labels, type, context);
         }
     }
 }
