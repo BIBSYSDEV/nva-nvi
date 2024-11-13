@@ -20,18 +20,17 @@ phases:
           echo "AWS SAM CLI is not installed, installing now";
           pip3 install aws-sam-cli
         fi
+
   pre_build:
     commands:
-#      - echo "Check that Docker is running"
-#      - nohup /usr/local/bin/dockerd --host=unix:///var/run/docker.sock --host=tcp://127.0.0.1:2375 --storage-driver=overlay2&
-#      - timeout 15 sh -c "until docker info; do echo .; sleep 1; done"
       # We need to be logged in to Docker Hub to pull images for testcontainers
       - echo "Logging in to Docker Hub..."
       - echo -n "$DOCKER_HUB_SECRET" | docker login --username $DOCKER_HUB_USERNAME --password-stdin
-#      - docker pull opensearchproject/opensearch:2.11.1
+
   build:
     commands:
       - sam build
+
   post_build:
     commands:
       - sam package --s3-bucket $S3_BUCKET --output-template-file packaged_raw.yaml
