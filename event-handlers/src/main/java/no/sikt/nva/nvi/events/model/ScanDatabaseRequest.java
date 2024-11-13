@@ -20,21 +20,17 @@ import software.amazon.awssdk.services.eventbridge.EventBridgeClient;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequest;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
 
-public record ScanDatabaseRequest(@JsonProperty(PAGE_SIZE_FIELD) int pageSize,
-                                  @JsonProperty(START_MARKER_FIELD) Map<String, String> startMarker,
-                                  @JsonProperty(TYPES) List<KeyField> types,
-                                  @JsonProperty(TOPIC_FIELD) String topic) implements JsonSerializable {
+public record ScanDatabaseRequest(@JsonProperty("pageSize") int pageSize,
+                                  @JsonProperty("startMarker") Map<String, String> startMarker,
+                                  @JsonProperty("types") List<KeyField> types,
+                                  @JsonProperty("topic") String topic) implements JsonSerializable {
 
     private static final Logger logger = LoggerFactory.getLogger(ScanDatabaseRequest.class);
     private static final String LOG_INITIALIZATION_MESSAGE_TEMPLATE =
         "Starting scanning with pageSize equal to: {}. Set 'pageSize' between [1,1000] "
         + "if you want a different pageSize value.";
-    private static final String START_MARKER_FIELD = "startMarker";
-    private static final String PAGE_SIZE_FIELD = "pageSize";
     private static final int DEFAULT_PAGE_SIZE = 700; // Choosing for safety 3/4 of max page size.
     private static final int MAX_PAGE_SIZE = 1000;
-    private static final String TOPIC_FIELD = "topic";
-    private static final String TYPES = "types";
 
     public static ScanDatabaseRequest fromJson(String detail) throws JsonProcessingException {
         return JsonUtils.dtoObjectMapper.readValue(detail, ScanDatabaseRequest.class);

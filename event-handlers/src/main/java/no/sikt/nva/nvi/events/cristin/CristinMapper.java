@@ -1,6 +1,12 @@
 package no.sikt.nva.nvi.events.cristin;
 
 import static java.util.Objects.nonNull;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CHAPTER_PUBLISHER;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CHAPTER_SERIES;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CHAPTER_SERIES_SCIENTIFIC_VALUE;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_ID;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PUBLICATION_CONTEXT;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_TYPE;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.extractJsonNodeTextValue;
 import static nva.commons.core.attempt.Try.attempt;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -10,7 +16,6 @@ import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -48,30 +53,11 @@ public final class CristinMapper {
     public static final String PUBLICATION = "publication";
     public static final String RESOURCES = "resources";
     public static final String PERSON = "person";
+    public static final String KREFTREG = "KREFTREG";
+
     public static final String PARENT_PUBLICATION_SERIES_LEVEL_JSON_POINTER = "/publicationContext/entityDescription"
                                                                               + "/reference/publicationContext/series"
                                                                               + "/level";
-    public static final String PARENT_PUBLICATION_SERIES_SCIENTIFIC_VALUE_JSON_POINTER =
-        "/publicationContext/entityDescription/reference"
-        + "/publicationContext/series/scientificValue";
-    public static final String PARENT_PUBLICATION_SERIES_ID_JSON_POINTER = "/publicationContext/entityDescription"
-                                                                           + "/reference/publicationContext/series/id";
-    public static final String PARENT_PUBLICATION_PUBLISHER_ID_JSON_POINTER = "/publicationContext/entityDescription"
-                                                                              + "/reference/publicationContext"
-                                                                              + "/publisher/id";
-    public static final String PARENT_PUBLICATION_SERIES_TYPE_JSON_POINTER = "/publicationContext/entityDescription"
-                                                                             + "/reference/publicationContext/series"
-                                                                             + "/type";
-    public static final String PARENT_PUBLICATION_PUBLISHER_TYPE_JSON_POINTER = "/publicationContext"
-                                                                                + "/entityDescription/reference"
-                                                                                + "/publicationContext/publisher/type";
-    public static final String SERIES_ID_JSON_POINTER = "/publicationContext/series/id";
-    public static final String PUBLISHER_ID_JSON_POINTER = "/publicationContext/publisher/id";
-    public static final String SERIES_TYPE_JSON_POINTER = "/publicationContext/series/type";
-    public static final String PUBLISHER_TYPE_JSON_POINTER = "/publicationContext/publisher/type";
-    public static final String PUBLICATION_CONTEXT_ID_JSON_POINTER = "/publicationContext/id";
-    public static final String PUBLICATION_CONTEXT_TYPE_JSON_POINTER = "/publicationContext/type";
-    public static final String KREFTREG = "KREFTREG";
     public static final String FHI_CRISTIN_ORG_NUMBER = "7502";
     public static final String FHI_CRISTIN_IDENTIFIER = "7502.0.0.0";
     private static final String INTERNATIONAL_COLLABORATION_FACTOR = "1.3";
@@ -146,7 +132,7 @@ public final class CristinMapper {
         if (nonNull(instance)) {
             var channelType = switch (instance) {
                 case ACADEMIC_ARTICLE, ACADEMIC_LITERATURE_REVIEW ->
-                    extractJsonNodeTextValue(referenceNode, PUBLICATION_CONTEXT_TYPE_JSON_POINTER);
+                    extractJsonNodeTextValue(referenceNode, JSON_PTR_PUBLICATION_CONTEXT + JSON_PTR_TYPE);
                 case ACADEMIC_MONOGRAPH, ACADEMIC_COMMENTARY -> extractChannelTypeForAcademicMonograph(referenceNode);
                 case ACADEMIC_CHAPTER -> extractChannelTypeForAcademicChapter(referenceNode);
             };
@@ -161,7 +147,7 @@ public final class CristinMapper {
         if (nonNull(instance)) {
             var channelId = switch (instance) {
                 case ACADEMIC_ARTICLE, ACADEMIC_LITERATURE_REVIEW ->
-                    extractJsonNodeTextValue(referenceNode, PUBLICATION_CONTEXT_ID_JSON_POINTER);
+                    extractJsonNodeTextValue(referenceNode, JSON_PTR_PUBLICATION_CONTEXT + JSON_PTR_ID);
                 case ACADEMIC_MONOGRAPH, ACADEMIC_COMMENTARY -> extractChannelIdForAcademicMonograph(referenceNode);
                 case ACADEMIC_CHAPTER -> extractChannelIdForAcademicChapter(referenceNode);
             };
@@ -175,33 +161,32 @@ public final class CristinMapper {
     }
 
     private static String extractChannelIdForAcademicChapter(JsonNode referenceNode) {
-        if (nonNull(extractJsonNodeTextValue(referenceNode, PARENT_PUBLICATION_SERIES_LEVEL_JSON_POINTER)) || nonNull(
-            extractJsonNodeTextValue(referenceNode, PARENT_PUBLICATION_SERIES_SCIENTIFIC_VALUE_JSON_POINTER))) {
-            return extractJsonNodeTextValue(referenceNode, PARENT_PUBLICATION_SERIES_ID_JSON_POINTER);
+        if (nonNull(extractJsonNodeTextValue(referenceNode, JSON_PTR_CHAPTER_SERIES_SCIENTIFIC_VALUE))
+            || nonNull(extractJsonNodeTextValue(referenceNode, PARENT_PUBLICATION_SERIES_LEVEL_JSON_POINTER))) {
+            return extractJsonNodeTextValue(referenceNode, JSON_PTR_CHAPTER_SERIES + JSON_PTR_ID);
         } else {
-            return extractJsonNodeTextValue(referenceNode, PARENT_PUBLICATION_PUBLISHER_ID_JSON_POINTER);
+            return extractJsonNodeTextValue(referenceNode, JSON_PTR_CHAPTER_PUBLISHER + JSON_PTR_ID);
         }
     }
 
     private static String extractChannelTypeForAcademicChapter(JsonNode referenceNode) {
-        if (nonNull(extractJsonNodeTextValue(referenceNode, PARENT_PUBLICATION_SERIES_TYPE_JSON_POINTER)) || nonNull(
-            extractJsonNodeTextValue(referenceNode, PARENT_PUBLICATION_SERIES_SCIENTIFIC_VALUE_JSON_POINTER))) {
-            return extractJsonNodeTextValue(referenceNode, PARENT_PUBLICATION_SERIES_TYPE_JSON_POINTER);
+        if (nonNull(extractJsonNodeTextValue(referenceNode, JSON_PTR_CHAPTER_SERIES))) {
+            return extractJsonNodeTextValue(referenceNode, JSON_PTR_CHAPTER_SERIES + JSON_PTR_TYPE);
         } else {
-            return extractJsonNodeTextValue(referenceNode, PARENT_PUBLICATION_PUBLISHER_TYPE_JSON_POINTER);
+            return extractJsonNodeTextValue(referenceNode, JSON_PTR_CHAPTER_PUBLISHER + JSON_PTR_TYPE);
         }
     }
 
     private static String extractChannelIdForAcademicMonograph(JsonNode referenceNode) {
-        return nonNull(extractJsonNodeTextValue(referenceNode, SERIES_ID_JSON_POINTER))
-                   ? extractJsonNodeTextValue(referenceNode, SERIES_ID_JSON_POINTER)
-                   : extractJsonNodeTextValue(referenceNode, PUBLISHER_ID_JSON_POINTER);
+        return nonNull(extractJsonNodeTextValue(referenceNode, JSON_PTR_CHAPTER_SERIES))
+                   ? extractJsonNodeTextValue(referenceNode, JSON_PTR_CHAPTER_SERIES + JSON_PTR_ID)
+                   : extractJsonNodeTextValue(referenceNode, JSON_PTR_CHAPTER_PUBLISHER + JSON_PTR_ID);
     }
 
     private static String extractChannelTypeForAcademicMonograph(JsonNode referenceNode) {
-        return nonNull(extractJsonNodeTextValue(referenceNode, SERIES_TYPE_JSON_POINTER))
-                   ? extractJsonNodeTextValue(referenceNode, SERIES_TYPE_JSON_POINTER)
-                   : extractJsonNodeTextValue(referenceNode, PUBLISHER_TYPE_JSON_POINTER);
+        return nonNull(extractJsonNodeTextValue(referenceNode, JSON_PTR_CHAPTER_SERIES))
+                   ? extractJsonNodeTextValue(referenceNode, JSON_PTR_CHAPTER_SERIES + JSON_PTR_TYPE)
+                   : extractJsonNodeTextValue(referenceNode, JSON_PTR_CHAPTER_PUBLISHER + JSON_PTR_TYPE);
     }
 
     private static boolean isInternationalCollaboration(CristinNviReport cristinNviReport) {
@@ -254,7 +239,7 @@ public final class CristinMapper {
 
     private static CreatorPoints toCreatorPoints(ScientificPerson person) {
         return new CreatorPoints(constructPersonCristinId(person), constructCristinOrganizationId(person),
-                                 CristinMapper.extractAuthorPointsForAffiliation(person));
+                                 extractAuthorPointsForAffiliation(person));
     }
 
     private static DbCreatorAffiliationPoints getDbCreatorAffiliationPoints(CreatorPoints creatorPoints) {
@@ -268,11 +253,8 @@ public final class CristinMapper {
 
     private static boolean hasSameInstitutionIdentifier(ScientificPerson scientificPerson,
                                                         CristinLocale cristinLocale) {
-        if (nonNull(cristinLocale.getInstitutionIdentifier())) {
-            return cristinLocale.getInstitutionIdentifier().equals(scientificPerson.getInstitutionIdentifier());
-        } else {
-            return false;
-        }
+        return nonNull(cristinLocale.getInstitutionIdentifier())
+               && cristinLocale.getInstitutionIdentifier().equals(scientificPerson.getInstitutionIdentifier());
     }
 
     private static boolean hasMatchingInstitution(List<CristinLocale> approvedInstitutions,
@@ -430,12 +412,12 @@ public final class CristinMapper {
         List<CristinLocale> institutions) {
         return Collectors.collectingAndThen(
             Collectors.groupingBy(scientificPerson -> getTopLevelOrganization(scientificPerson, institutions),
-                                  Collectors.toCollection(ArrayList::new)),
+                                  Collectors.toList()),
             map -> getInstitutionPointsStream(institutions, map).collect(Collectors.toList()));
     }
 
     private Stream<InstitutionPoints> getInstitutionPointsStream(List<CristinLocale> institutions,
-                                                                 Map<URI, ArrayList<ScientificPerson>> map) {
+                                                                 Map<URI, List<ScientificPerson>> map) {
         return map.values().stream().map(scientificPeople -> toPoints(institutions, scientificPeople));
     }
 
