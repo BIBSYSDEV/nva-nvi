@@ -224,7 +224,7 @@ class CandidateTest extends LocalDynamoTest {
     void shouldNotUpdateReportedCandidate() {
         var year = randomYear();
         var candidate = setupReportedCandidate(candidateRepository, year).candidate();
-        var updateRequest = TestUtils.createUpsertCandidateRequest(candidate.publicationId(),
+        var updateRequest = createUpsertCandidateRequest(candidate.publicationId(),
                                                                    randomUri(),
                                                                    true,
                                                                    InstanceType.parse(candidate.instanceType()),
@@ -250,7 +250,7 @@ class CandidateTest extends LocalDynamoTest {
 
     @Test
     void shouldFetchCandidateByPublicationId() {
-        var candidate = TestUtils.randomApplicableCandidate(candidateRepository, periodRepository);
+        var candidate = randomApplicableCandidate(candidateRepository, periodRepository);
         var fetchedCandidate = Candidate.fetchByPublicationId(candidate::getPublicationId,
                                                               candidateRepository,
                                                               periodRepository);
@@ -391,7 +391,7 @@ class CandidateTest extends LocalDynamoTest {
 
     @Test
     void shouldReturnCandidateWithNoPeriodWhenNotApplicable() {
-        var tempCandidate = TestUtils.randomApplicableCandidate(candidateRepository, periodRepository);
+        var tempCandidate = randomApplicableCandidate(candidateRepository, periodRepository);
         var updateRequest = createUpsertNonCandidateRequest(tempCandidate.getPublicationId());
         var candidateBO = Candidate.updateNonCandidate(updateRequest, candidateRepository).orElseThrow();
         var fetchedCandidate = Candidate.fetch(candidateBO::getIdentifier, candidateRepository,
@@ -559,7 +559,7 @@ class CandidateTest extends LocalDynamoTest {
 
     @Test
     void shouldUpdateVersion() {
-        var candidate = TestUtils.randomApplicableCandidate(candidateRepository, periodRepository);
+        var candidate = randomApplicableCandidate(candidateRepository, periodRepository);
         var dao = candidateRepository.findCandidateById(candidate.getIdentifier()).orElseThrow();
 
         candidate.updateVersion(candidateRepository);
@@ -662,7 +662,7 @@ class CandidateTest extends LocalDynamoTest {
                                             arguments.level().getValue(),
                                             arguments.institutionPoints(),
                                             randomInteger(), false,
-                                            TestUtils.randomBigDecimal(), null, randomBigDecimal());
+                                            randomBigDecimal(), null, randomBigDecimal());
     }
 
     private UpsertCandidateRequest getUpsertCandidateRequest(URI creatorId, URI institutionId,

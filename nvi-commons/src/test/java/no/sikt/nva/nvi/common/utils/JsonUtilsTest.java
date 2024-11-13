@@ -14,42 +14,38 @@ import org.junit.jupiter.api.Test;
 class JsonUtilsTest {
 
     public static final String ID_FIELD = "id";
+    private static final String FIELD_NAME = "fieldName";
 
     @Test
     void shouldExtractJsonNodeTextValueIfPresent() {
-        var fieldName = "fieldName";
         var fieldValue = randomString();
-        var randomJsonNode = objectMapper.createObjectNode().put(fieldName, fieldValue);
-        assertThat(JsonUtils.extractJsonNodeTextValue(randomJsonNode, "/" + fieldName), is(equalTo(fieldValue)));
+        var randomJsonNode = objectMapper.createObjectNode().put(FIELD_NAME, fieldValue);
+        assertThat(JsonUtils.extractJsonNodeTextValue(randomJsonNode, "/" + FIELD_NAME), is(equalTo(fieldValue)));
     }
 
     @Test
     void shouldExtractOptionalJsonNodeTextValueIfPresent() {
-        var fieldName = "fieldName";
         var fieldValue = randomString();
-        var randomJsonNode = objectMapper.createObjectNode().put(fieldName, fieldValue);
-        assertThat(extractOptJsonNodeTextValue(randomJsonNode, "/" + fieldName).get(), is(equalTo(fieldValue)));
+        var randomJsonNode = objectMapper.createObjectNode().put(FIELD_NAME, fieldValue);
+        assertThat(extractOptJsonNodeTextValue(randomJsonNode, "/" + FIELD_NAME).get(), is(equalTo(fieldValue)));
     }
 
     @Test
     void shouldReturnNullIfJsonPointerPointsToMissingNode() {
-        var fieldName = "fieldName";
         var randomJsonNode = objectMapper.createObjectNode();
-        assertThat(JsonUtils.extractJsonNodeTextValue(randomJsonNode, "/" + fieldName), nullValue());
+        assertThat(JsonUtils.extractJsonNodeTextValue(randomJsonNode, "/" + FIELD_NAME), nullValue());
     }
 
     @Test
     void shouldReturnNullIfJsonPointerPointsToNull() {
-        var fieldName = "fieldName";
-        var randomJsonNode = objectMapper.createObjectNode().set(fieldName, null);
-        assertThat(JsonUtils.extractJsonNodeTextValue(randomJsonNode, "/" + fieldName), nullValue());
+        var randomJsonNode = objectMapper.createObjectNode().set(FIELD_NAME, null);
+        assertThat(JsonUtils.extractJsonNodeTextValue(randomJsonNode, "/" + FIELD_NAME), nullValue());
     }
 
     @Test
     void shouldReturnNullIfJsonPointerPointsToJsonNode() {
-        var fieldName = "fieldName";
-        var randomJsonNode = objectMapper.createObjectNode().set(fieldName, objectMapper.createObjectNode());
-        assertThat(JsonUtils.extractJsonNodeTextValue(randomJsonNode, "/" + fieldName), nullValue());
+        var randomJsonNode = objectMapper.createObjectNode().set(FIELD_NAME, objectMapper.createObjectNode());
+        assertThat(JsonUtils.extractJsonNodeTextValue(randomJsonNode, "/" + FIELD_NAME), nullValue());
     }
 
     @Test

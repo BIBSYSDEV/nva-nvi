@@ -22,6 +22,7 @@ import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 public class MigrationTests extends LocalDynamoTest {
 
@@ -32,9 +33,9 @@ public class MigrationTests extends LocalDynamoTest {
 
     @BeforeEach
     public void setUp() {
-        var localDynamo = initializeTestDatabase();
-        candidateRepository = new CandidateRepository(localDynamo);
-        periodRepository = new PeriodRepository(localDynamo);
+        DynamoDbClient dynamodb = initializeTestDatabase();
+        candidateRepository = new CandidateRepository(dynamodb);
+        periodRepository = new PeriodRepository(dynamodb);
         batchScanUtil = new BatchScanUtil(candidateRepository);
     }
 

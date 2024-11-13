@@ -151,7 +151,7 @@ public class BatchScanUtilTest extends LocalDynamoTest {
         return localDynamo.scan(ScanRequest.builder().tableName(ApplicationConstants.NVI_TABLE_NAME).build())
                    .items()
                    .stream()
-                   .filter(a -> a.get("type").s().equals("CANDIDATE"))
+                   .filter(a -> "CANDIDATE".equals(a.get("type").s()))
                    .toList();
     }
 

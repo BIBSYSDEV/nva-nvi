@@ -24,7 +24,6 @@ class NviPeriodTest extends LocalDynamoTest {
 
     private static final int YEAR = LocalDateTime.now().getYear() + 1;
     private PeriodRepository periodRepository;
-    private NviPeriodService nviPeriodService;
 
     @BeforeEach
     void setup() {
