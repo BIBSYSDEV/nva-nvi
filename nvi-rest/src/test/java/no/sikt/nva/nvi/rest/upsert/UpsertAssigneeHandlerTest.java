@@ -49,7 +49,10 @@ import org.zalando.problem.Problem;
 
 public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
 
-    public static final int YEAR = Calendar.getInstance().getWeekYear();
+    private static final int YEAR = Calendar.getInstance().getWeekYear();
+    private static final String USER_RESPONSE_BODY_WITHOUT_ACCESS_RIGHT_JSON = "userResponseBodyWithoutAccessRight"
+                                                                               + ".json";
+    private static final String USER_RESPONSE_BODY_WITH_ACCESS_RIGHT_JSON = "userResponseBodyWithAccessRight.json";
     private Context context;
     private ByteArrayOutputStream output;
     private UpsertAssigneeHandler handler;
@@ -87,7 +90,7 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldReturnUnauthorizedWhenAssigningToUserWithoutAccessRight() throws IOException {
-        mockUserApiResponse("userResponseBodyWithoutAccessRight.json");
+        mockUserApiResponse(USER_RESPONSE_BODY_WITHOUT_ACCESS_RIGHT_JSON);
         var candidate = createCandidate();
         var assignee = randomString();
         handler.handleRequest(createRequest(candidate, assignee), output, context);
@@ -98,7 +101,7 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldReturnUnauthorizedWhenCandidateIsNotInUsersViewingScope() throws IOException {
-        mockUserApiResponse("userResponseBodyWithAccessRight.json");
+        mockUserApiResponse(USER_RESPONSE_BODY_WITHOUT_ACCESS_RIGHT_JSON);
         var candidate = createCandidate();
         var assignee = randomString();
         viewingScopeValidator = new FakeViewingScopeValidator(false);
@@ -110,7 +113,7 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldReturnNotFoundWhenCandidateDoesNotExist() throws IOException {
-        mockUserApiResponse("userResponseBodyWithAccessRight.json");
+        mockUserApiResponse(USER_RESPONSE_BODY_WITH_ACCESS_RIGHT_JSON);
         handler.handleRequest(createRequestWithNonExistingCandidate(), output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
@@ -119,7 +122,7 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldReturnConflictWhenUpdatingAssigneeAndReportingPeriodIsClosed() throws IOException {
-        mockUserApiResponse("userResponseBodyWithAccessRight.json");
+        mockUserApiResponse(USER_RESPONSE_BODY_WITH_ACCESS_RIGHT_JSON);
         var candidate = createCandidate();
         var assignee = randomString();
         var periodRepository = periodRepositoryReturningClosedPeriod(YEAR);
@@ -133,7 +136,7 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldReturnConflictWhenUpdatingAssigneeAndReportingPeriodIsNotOpenedYet() throws IOException {
-        mockUserApiResponse("userResponseBodyWithAccessRight.json");
+        mockUserApiResponse(USER_RESPONSE_BODY_WITH_ACCESS_RIGHT_JSON);
         var candidate = createCandidate();
         var assignee = randomString();
         var periodRepository = periodRepositoryReturningNotOpenedPeriod(YEAR);
@@ -147,7 +150,7 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldUpdateAssigneeWhenAssigneeIsNotPresent() throws IOException {
-        mockUserApiResponse("userResponseBodyWithAccessRight.json");
+        mockUserApiResponse(USER_RESPONSE_BODY_WITH_ACCESS_RIGHT_JSON);
         var candidate = createCandidate();
         var assignee = randomString();
         handler.handleRequest(createRequest(candidate, assignee), output, context);
@@ -160,7 +163,7 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldRemoveAssigneeWhenAssigneeIsPresent() throws IOException {
-        mockUserApiResponse("userResponseBodyWithAccessRight.json");
+        mockUserApiResponse(USER_RESPONSE_BODY_WITH_ACCESS_RIGHT_JSON);
         var candidate = createCandidate();
         handler.handleRequest(createRequest(candidate, null), output, context);
         var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
@@ -172,7 +175,7 @@ public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldUpdateAssigneeWhenExistingApprovalIsFinalized() throws IOException {
-        mockUserApiResponse("userResponseBodyWithAccessRight.json");
+        mockUserApiResponse(USER_RESPONSE_BODY_WITH_ACCESS_RIGHT_JSON);
         var newAssignee = randomString();
         var candidate = candidateWithFinalizedApproval(newAssignee);
         handler.handleRequest(createRequest(candidate, newAssignee), output, context);
