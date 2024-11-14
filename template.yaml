@@ -225,6 +225,7 @@ Resources:
   #=============================== For event handling ==============================================
   ResourceEvaluationQueue:
     Type: AWS::SQS::Queue
+    VisibilityTimeout: 300
     Properties:
       RedrivePolicy:
         deadLetterTargetArn: !GetAtt EvaluationDLQ.Arn
