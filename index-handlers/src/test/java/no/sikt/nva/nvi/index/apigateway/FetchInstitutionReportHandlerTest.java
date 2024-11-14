@@ -113,6 +113,8 @@ import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.zalando.problem.Problem;
 
+@SuppressWarnings("PMD.GodClass")
+// Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
 public class FetchInstitutionReportHandlerTest {
 
     private static final String YEAR = "year";

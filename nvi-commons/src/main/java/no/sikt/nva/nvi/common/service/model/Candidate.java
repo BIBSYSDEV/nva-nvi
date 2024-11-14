@@ -61,6 +61,8 @@ import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.paths.UriWrapper;
 
+@SuppressWarnings("PMD.GodClass")
+// Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
 public final class Candidate {
 
     private static final Environment ENVIRONMENT = new Environment();

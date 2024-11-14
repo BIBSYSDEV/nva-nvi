@@ -89,7 +89,6 @@
 
     <!-- //TODO: Discuss these  -->
     <exclude name="CouplingBetweenObjects"/>
-    <exclude name="GodClass"/>
   </rule>
 
 </ruleset>

@@ -83,6 +83,8 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.sqs.model.SqsException;
 
+@SuppressWarnings("PMD.GodClass")
+// Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
 public class IndexDocumentHandlerTest extends LocalDynamoTest {
 
     public static final int SOME_REPORTING_YEAR = 2023;

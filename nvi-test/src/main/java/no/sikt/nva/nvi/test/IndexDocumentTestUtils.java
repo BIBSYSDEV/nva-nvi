@@ -54,6 +54,8 @@ import no.sikt.nva.nvi.index.model.document.ReportingPeriod;
 import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
 
+@SuppressWarnings("PMD.GodClass")
+// Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
 public final class IndexDocumentTestUtils {
 
     public static final URI HARD_CODED_INTERMEDIATE_ORGANIZATION = URI.create(

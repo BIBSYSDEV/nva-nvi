@@ -37,7 +37,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 
-@SuppressWarnings("PMD.AvoidDuplicateLiterals")
+// Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
+@SuppressWarnings({"PMD.AvoidDuplicateLiterals", "PMD.GodClass"})
 class PointServiceTest {
 
     private static final String COUNTRY_CODE_NO = "NO";

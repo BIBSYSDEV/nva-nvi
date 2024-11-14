@@ -75,6 +75,8 @@ import org.apache.jena.rdf.model.NodeIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@SuppressWarnings("PMD.GodClass")
+// Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
 public final class NviCandidateIndexDocumentGenerator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NviCandidateIndexDocumentGenerator.class);

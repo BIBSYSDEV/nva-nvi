@@ -101,7 +101,9 @@ import org.opensearch.client.opensearch._types.aggregations.SumAggregate;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.testcontainers.OpensearchContainer;
 
-@SuppressWarnings("PMD.AvoidUsingHardCodedIP") // These are not IP addresses, but cristin org identifier examples
+@SuppressWarnings({"PMD.AvoidUsingHardCodedIP", "PMD.GodClass"})
+// These are not IP addresses, but cristin org identifier examples
+// Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
 public class OpenSearchClientTest {
 
     public static final int DELAY_ON_INDEX = 2000;
