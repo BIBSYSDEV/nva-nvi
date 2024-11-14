@@ -628,7 +628,7 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
 
     private URI setupCandidate(int year) throws IOException {
         var upsertCandidateRequest = createUpsertCandidateRequest(year);
-        Candidate.upsert(upsertCandidateRequest, candidateRepository);
+        Candidate.upsert(upsertCandidateRequest, candidateRepository, periodRepository);
         var candidateInClosedPeriod = Candidate.fetchByPublicationId(upsertCandidateRequest::publicationId,
                                                                      candidateRepository, periodRepository);
         var content = IoUtils.stringFromResources(Path.of(ACADEMIC_ARTICLE_PATH))

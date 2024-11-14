@@ -378,7 +378,8 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
         return IntStream.range(0, i)
                    .boxed()
                    .map(item -> TestUtils.randomApplicableCandidate(candidateRepository, periodRepository))
-                   .map(a -> a.createNote(new CreateNoteRequest(randomString(), randomString(), randomUri())));
+                   .map(a -> a.createNote(new CreateNoteRequest(randomString(), randomString(), randomUri()),
+                                          candidateRepository));
     }
 
     private InputStream eventToInputStream(ScanDatabaseRequest scanDatabaseRequest) {

@@ -89,7 +89,7 @@ public final class TestUtils {
     public static Candidate randomApplicableCandidate(CandidateRepository candidateRepository,
                                                       PeriodRepository periodRepository) {
         var request = createUpsertCandidateRequest(randomUri());
-        Candidate.upsert(request, candidateRepository);
+        Candidate.upsert(request, candidateRepository, periodRepository);
         return Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository);
     }
 

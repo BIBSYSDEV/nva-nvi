@@ -119,7 +119,7 @@ class RemoveNoteHandlerTest extends LocalDynamoTest {
     void shouldReturnConflictWhenRemovingNoteAndReportingPeriodIsClosed() throws IOException {
         var candidate = createCandidate();
         var user = randomString();
-        candidate.createNote(new CreateNoteRequest(randomString(), user, randomUri()));
+        candidate.createNote(new CreateNoteRequest(randomString(), user, randomUri()), candidateRepository);
         var noteId = candidate.toDto().notes().get(0).identifier();
         var request = createRequest(candidate.getIdentifier(), noteId, user).build();
         handler = new RemoveNoteHandler(candidateRepository, periodRepositoryReturningClosedPeriod(YEAR),
@@ -141,7 +141,8 @@ class RemoveNoteHandlerTest extends LocalDynamoTest {
     }
 
     private Candidate createNote(Candidate candidate, Username user) {
-        return candidate.createNote(new CreateNoteRequest(randomString(), user.value(), randomUri()));
+        return candidate.createNote(new CreateNoteRequest(randomString(), user.value(), randomUri()),
+                                    candidateRepository);
     }
 
     private Candidate createCandidate() {
