@@ -374,9 +374,10 @@ public class SearchNviCandidatesHandlerTest {
     }
 
     @Test
+    @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
     void shouldReturnForbiddenWhenTryingToSearchForAffiliationOutsideOfCustomersCristinIdScope()
         throws IOException {
-        var forbiddenAffiliation = "0.0.0.0";
+        var forbiddenAffiliation = "0.0.0.0"; // This is not an IP address, but a cristin org id example
         var validatorReturningFalse = new FakeViewingScopeValidator(false);
         handler = new SearchNviCandidatesHandler(openSearchClient, validatorReturningFalse, identityServiceClient,
                                                  ENVIRONMENT);

@@ -96,7 +96,6 @@ import no.sikt.nva.nvi.index.xlsx.ExcelWorkbookGenerator;
 import no.unit.nva.language.LanguageMapper;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
-import nva.commons.apigateway.GatewayResponse;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
 import nva.commons.logutils.LogUtils;
@@ -108,7 +107,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.Mockito;
 import org.opensearch.client.Response;
 import org.opensearch.client.ResponseException;
 import org.opensearch.client.opensearch._types.SortOrder;
@@ -143,7 +141,7 @@ public class FetchInstitutionReportHandlerTest {
         var request = createRequest(institutionId, AccessRight.MANAGE_DOI, customerId,
                                     Map.of(YEAR, String.valueOf(CURRENT_YEAR))).build();
         handler.handleRequest(request, output, CONTEXT);
-        var response = GatewayResponse.fromOutputStream(output, Problem.class);
+        var response = fromOutputStream(output, Problem.class);
 
         assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
     }
@@ -152,7 +150,7 @@ public class FetchInstitutionReportHandlerTest {
     void shouldReturnBadRequestIfPathParamYearIsInvalid() throws IOException {
         var request = requestWithInvalidYearParam();
         handler.handleRequest(request, output, CONTEXT);
-        var response = GatewayResponse.fromOutputStream(output, Problem.class);
+        var response = fromOutputStream(output, Problem.class);
 
         assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_BAD_REQUEST)));
     }
@@ -324,7 +322,7 @@ public class FetchInstitutionReportHandlerTest {
         mockCandidatesInOpenSearch(topLevelCristinOrg);
 
         handler.handleRequest(requestWithMediaType(mediaType, topLevelCristinOrg), output, CONTEXT);
-        var response = GatewayResponse.fromOutputStream(output, String.class);
+        var response = fromOutputStream(output, String.class);
         assertThat(response.getHeaders().get(CONTENT_TYPE), is(mediaType));
     }
 
@@ -335,7 +333,7 @@ public class FetchInstitutionReportHandlerTest {
         mockCandidatesInOpenSearch(topLevelCristinOrg);
 
         handler.handleRequest(requestWithMediaType(mediaType, topLevelCristinOrg), output, CONTEXT);
-        var response = GatewayResponse.fromOutputStream(output, String.class);
+        var response = fromOutputStream(output, String.class);
         assertEquals(200, response.getStatusCode());
         assertTrue(response.getIsBase64Encoded());
     }
@@ -347,7 +345,7 @@ public class FetchInstitutionReportHandlerTest {
 
         handler.handleRequest(requestWithMediaType(ANY_APPLICATION_TYPE.toString(), topLevelCristinOrg), output,
                               CONTEXT);
-        var response = GatewayResponse.fromOutputStream(output, String.class);
+        var response = fromOutputStream(output, String.class);
         assertThat(response.getHeaders().get(CONTENT_TYPE), is(OOXML_SHEET.toString()));
     }
 
@@ -404,9 +402,9 @@ public class FetchInstitutionReportHandlerTest {
 
     private static ResponseException mockResponseException() {
         var statusLine = new BasicStatusLine(HttpVersion.HTTP_1_1, HTTP_REQUEST_ENTITY_TOO_LARGE, "null");
-        var response = Mockito.mock(Response.class);
+        var response = mock(Response.class);
         when(response.getStatusLine()).thenReturn(statusLine);
-        var responseException = Mockito.mock(ResponseException.class);
+        var responseException = mock(ResponseException.class);
         when(responseException.getResponse()).thenReturn(response);
         return responseException;
     }

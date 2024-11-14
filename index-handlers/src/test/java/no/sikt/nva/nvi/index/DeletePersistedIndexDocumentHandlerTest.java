@@ -39,7 +39,6 @@ public class DeletePersistedIndexDocumentHandlerTest {
     private static final Environment ENVIRONMENT = new Environment();
     private static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
     private static final String BUCKET_NAME = ENVIRONMENT.readEnv(EXPANDED_RESOURCES_BUCKET);
-    private S3Client s3Client;
     private DeletePersistedIndexDocumentHandler handler;
     private S3Driver s3Driver;
     private FakeSqsClient sqsClient;
@@ -47,10 +46,9 @@ public class DeletePersistedIndexDocumentHandlerTest {
     @BeforeEach
     void setUp() {
         sqsClient = new FakeSqsClient();
-        s3Client = new FakeS3Client();
-        s3Driver = new S3Driver(s3Client, BUCKET_NAME);
-        handler = new DeletePersistedIndexDocumentHandler(new S3StorageWriter(s3Client, BUCKET_NAME), sqsClient,
-                                                          new Environment());
+        s3Driver = new S3Driver(new FakeS3Client(), BUCKET_NAME);
+        handler = new DeletePersistedIndexDocumentHandler(new S3StorageWriter(new FakeS3Client(), BUCKET_NAME),
+                                                          sqsClient, new Environment());
     }
 
     @Test
@@ -132,7 +130,7 @@ public class DeletePersistedIndexDocumentHandlerTest {
     }
 
     private S3Client setupFailingS3Client(UUID identifier) {
-        s3Client = mock(FakeS3Client.class);
+        var s3Client = mock(FakeS3Client.class);
         when(s3Client.deleteObject(eq(getDeleteObjectRequest(identifier)))).thenThrow(S3Exception.class);
         return s3Client;
     }
