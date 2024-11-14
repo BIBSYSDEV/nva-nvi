@@ -44,13 +44,14 @@ import nva.commons.core.paths.UriWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 public class EvaluateNviCandidateWithCristinDataTest {
 
     private static final Environment ENVIRONMENT = new Environment();
     private static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
     private static final int SCALE = 4;
     private static final URI NTNU_TOP_LEVEL_ORG_ID = URI.create(
-        ("https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0"));
+        "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0");
     private static final URI ST_OLAVS_TOP_LEVEL_ORG_ID = URI.create(
         "https://api.sandbox.nva.aws.unit.no/cristin/organization/1920.0.0.0");
     private static final URI UIO_TOP_LEVEL_ORG_ID = URI.create(
@@ -70,22 +71,24 @@ public class EvaluateNviCandidateWithCristinDataTest {
     private FakeSqsClient queueClient;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         var env = mock(Environment.class);
         when(env.readEnv("CANDIDATE_QUEUE_URL")).thenReturn("My test candidate queue url");
         when(env.readEnv("CANDIDATE_DLQ_URL")).thenReturn("My test candidate dlq url");
         var s3Client = new FakeS3Client();
         s3Driver = new S3Driver(s3Client, BUCKET_NAME);
-        var secretsManagerClient = new FakeSecretsManagerClient();
-        var credentials = new BackendClientCredentials("id", "secret");
-        secretsManagerClient.putPlainTextSecret("secret", credentials.toString());
+        try (var secretsManagerClient = new FakeSecretsManagerClient()) {
+            var credentials = new BackendClientCredentials("id", "secret");
+            secretsManagerClient.putPlainTextSecret("secret", credentials.toString());
+        }
         authorizedBackendUriRetriever = mock(AuthorizedBackendUriRetriever.class);
         uriRetriever = mock(UriRetriever.class);
         var calculator = new CreatorVerificationUtil(authorizedBackendUriRetriever, uriRetriever);
         var storageReader = new S3StorageReader(s3Client, BUCKET_NAME);
         var organizationRetriever = new OrganizationRetriever(uriRetriever);
         var pointCalculator = new PointService(organizationRetriever);
-        var evaluatorService = new EvaluatorService(storageReader, calculator, pointCalculator, mock(CandidateRepository.class),
+        var evaluatorService = new EvaluatorService(storageReader, calculator, pointCalculator,
+                                                    mock(CandidateRepository.class),
                                                     mock(PeriodRepository.class));
         queueClient = new FakeSqsClient();
         handler = new EvaluateNviCandidateHandler(evaluatorService, queueClient, env);
@@ -95,7 +98,7 @@ public class EvaluateNviCandidateWithCristinDataTest {
     void shouldReturnSamePointsAsPointsCalculatedByCristinForAcademicArticleFrom2022() throws IOException {
         mockCristinApiResponsesForAllSubUnitsInAcademicArticle();
         mockCustomerApi();
-        var event = setUpSqsEvent("evaluator/cristin_candidate_2022_academicArticle.json");
+        var event = setupSqsEvent("evaluator/cristin_candidate_2022_academicArticle.json");
         handler.handleRequest(event, context);
         var candidate = getMessageBody();
         assertThat(candidate.getPointsForInstitution(NTNU_TOP_LEVEL_ORG_ID),
@@ -112,7 +115,7 @@ public class EvaluateNviCandidateWithCristinDataTest {
         mockCristinResponseForNonNviOrganizationsForAcademicMonograph();
         mockCustomerApi(UIO_TOP_LEVEL_ORG_ID);
 
-        var event = setUpSqsEvent("evaluator/cristin_candidate_2022_academicMonograph.json");
+        var event = setupSqsEvent("evaluator/cristin_candidate_2022_academicMonograph.json");
         handler.handleRequest(event, context);
         var candidate = getMessageBody();
         assertThat(candidate.getPointsForInstitution(UIO_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(3.7528))));
@@ -126,7 +129,7 @@ public class EvaluateNviCandidateWithCristinDataTest {
         mockCristinResponseForNonNviOrganizationsForLiteratureReview();
         mockCustomerApi(NTNU_TOP_LEVEL_ORG_ID);
 
-        var event = setUpSqsEvent("evaluator/cristin_candidate_2022_academicLiteratureReview.json");
+        var event = setupSqsEvent("evaluator/cristin_candidate_2022_academicLiteratureReview.json");
         handler.handleRequest(event, context);
         var candidate = getMessageBody();
         assertThat(candidate.getPointsForInstitution(NTNU_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(1.5922))));
@@ -138,7 +141,7 @@ public class EvaluateNviCandidateWithCristinDataTest {
         mockCustomerApi(NTNU_TOP_LEVEL_ORG_ID);
         mockCustomerApi(SINTEF_TOP_LEVEL_ORG_ID);
 
-        var event = setUpSqsEvent("evaluator/cristin_candidate_2022_academicChapter.json");
+        var event = setupSqsEvent("evaluator/cristin_candidate_2022_academicChapter.json");
         handler.handleRequest(event, context);
         var candidate = getMessageBody();
         assertThat(candidate.getPointsForInstitution(NTNU_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(0.8660))));
@@ -184,7 +187,7 @@ public class EvaluateNviCandidateWithCristinDataTest {
                                                                                    + ".40.0"), uriRetriever);
     }
 
-    private SQSEvent setUpSqsEvent(String path) throws IOException {
+    private SQSEvent setupSqsEvent(String path) throws IOException {
         var content = IoUtils.inputStreamFromResources(path);
         var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
         return createEvent(new PersistedResourceMessage(fileUri));
@@ -223,7 +226,7 @@ public class EvaluateNviCandidateWithCristinDataTest {
     private NviCandidate getMessageBody() {
         var sentMessages = queueClient.getSentMessages();
         assertThat(sentMessages, hasSize(1));
-        var message = sentMessages.get(0);
+        var message = sentMessages.getFirst();
         var candidateEvaluatedMessage = attempt(
             () -> objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class)).orElseThrow();
         return (NviCandidate) candidateEvaluatedMessage.candidate();

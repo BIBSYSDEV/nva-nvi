@@ -17,7 +17,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -38,6 +37,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class PointServiceTest {
 
     private static final String COUNTRY_CODE_NO = "NO";
@@ -76,7 +76,7 @@ class PointServiceTest {
         var creatorId = randomUri();
         var institutionId = URI.create("www.example.org/123");
         mockOrganizationResponseForAffiliation(institutionId, null, uriRetriever);
-        var expandedResource = setUpSingleContributorWithSingleInstitution(parameters, creatorId, institutionId);
+        var expandedResource = setupSingleContributorWithSingleInstitution(parameters, creatorId, institutionId);
 
         var pointCalculation = pointService.calculatePoints(expandedResource,
                                                             List.of(
@@ -124,7 +124,7 @@ class PointServiceTest {
         var creator2Institutions = List.of(nviInstitution2);
         mockOrganizationResponseForAffiliation(nviInstitution1, null, uriRetriever);
         mockOrganizationResponseForAffiliation(nviInstitution2, null, uriRetriever);
-        var expandedResource = setUpCoPublishingTwoCreatorsTwoInstitutions(parameters, creator1, creator2,
+        var expandedResource = setupCoPublishingTwoCreatorsTwoInstitutions(parameters, creator1, creator2,
                                                                            creator1Institutions);
 
         var pointCalculation = pointService.calculatePoints(expandedResource,
@@ -164,7 +164,7 @@ class PointServiceTest {
         var creatorId = randomUri();
         var institutionId = randomUri();
         mockOrganizationResponseForAffiliation(institutionId, null, uriRetriever);
-        var expandedResource = setUpNonCreatorAffiliatedWithInternationalInstitution(creatorId, institutionId);
+        var expandedResource = setupNonCreatorAffiliatedWithInternationalInstitution(creatorId, institutionId);
 
         var pointCalculation = pointService.calculatePoints(
             expandedResource, List.of(createCreator(creatorId, List.of(institutionId))));
@@ -177,7 +177,7 @@ class PointServiceTest {
         var creatorId = randomUri();
         var institutionId = randomUri();
         mockOrganizationResponseForAffiliation(institutionId, null, uriRetriever);
-        var expandedResource = setUpResourceWithNonCreator(creatorId, institutionId);
+        var expandedResource = setupResourceWithNonCreator(creatorId, institutionId);
 
         var pointCalculation = pointService.calculatePoints(
             expandedResource, List.of(createCreator(creatorId, List.of(institutionId))));
@@ -190,7 +190,7 @@ class PointServiceTest {
         var nviCreatorId = randomUri();
         var nviInstitutionId = randomUri();
         mockOrganizationResponseForAffiliation(nviInstitutionId, null, uriRetriever);
-        var expandedResource = setUpResourceWithCreatorsWithoutAffiliations(nviCreatorId, nviInstitutionId);
+        var expandedResource = setupResourceWithCreatorsWithoutAffiliations(nviCreatorId, nviInstitutionId);
         var pointCalculation = pointService.calculatePoints(
             expandedResource, List.of(createCreator(nviCreatorId, List.of(nviInstitutionId))));
 
@@ -203,7 +203,7 @@ class PointServiceTest {
         var nviInstitutionId = randomUri();
         int numberOfAffiliationsWithoutId = randomIntBetween(2, 10);
         mockOrganizationResponseForAffiliation(nviInstitutionId, null, uriRetriever);
-        var expandedResource = setUpResourceWithCreatorWithUnverifiedAffiliations(nviCreatorId, nviInstitutionId,
+        var expandedResource = setupResourceWithCreatorWithUnverifiedAffiliations(nviCreatorId, nviInstitutionId,
                                                                                   numberOfAffiliationsWithoutId);
 
         var institutionPoints = pointService.calculatePoints(
@@ -218,7 +218,7 @@ class PointServiceTest {
         var nviInstitutionId = randomUri();
         int numberOfAffiliationsWithoutId = randomIntBetween(2, 10);
         mockOrganizationResponseForAffiliation(nviInstitutionId, null, uriRetriever);
-        var expandedResource = setUpResourceWithOneCreatorWithUnverifiedAffiliations(nviCreatorId, nviInstitutionId,
+        var expandedResource = setupResourceWithOneCreatorWithUnverifiedAffiliations(nviCreatorId, nviInstitutionId,
                                                                                      numberOfAffiliationsWithoutId);
 
         var institutionPoints = pointService.calculatePoints(
@@ -349,7 +349,7 @@ class PointServiceTest {
                    .build();
     }
 
-    private static JsonNode setUpResourceWithOneCreatorWithUnverifiedAffiliations(URI nviCreatorId,
+    private static JsonNode setupResourceWithOneCreatorWithUnverifiedAffiliations(URI nviCreatorId,
                                                                                   URI nviInstitutionId,
                                                                                   int numberOfAffiliationsWithoutId) {
         return createExpandedResourceWithTwoVerifiedContributors(nviCreatorId,
@@ -363,7 +363,7 @@ class PointServiceTest {
                                                                  numberOfAffiliationsWithoutId);
     }
 
-    private static JsonNode setUpResourceWithCreatorWithUnverifiedAffiliations(URI nviCreatorId, URI nviInstitutionId,
+    private static JsonNode setupResourceWithCreatorWithUnverifiedAffiliations(URI nviCreatorId, URI nviInstitutionId,
                                                                                int numberOfAffiliationsWithoutId) {
         return createExpandedResource(randomUri(),
                                       createContributorNodes(
@@ -375,18 +375,18 @@ class PointServiceTest {
                                       HARDCODED_JOURNAL_REFERENCE);
     }
 
-    private static JsonNode setUpResourceWithCreatorsWithoutAffiliations(URI nviCreatorId, URI nviInstitutionId) {
+    private static JsonNode setupResourceWithCreatorsWithoutAffiliations(URI nviCreatorId, URI nviInstitutionId) {
         return createExpandedResourceWithTwoVerifiedContributors(nviCreatorId,
                                                                  ROLE_CREATOR,
                                                                  Map.of(nviInstitutionId, COUNTRY_CODE_NO),
                                                                  randomUri(),
                                                                  ROLE_CREATOR,
-                                                                 Collections.emptyMap(),
+                                                                 emptyMap(),
                                                                  HARDCODED_JOURNAL_REFERENCE,
                                                                  0);
     }
 
-    private static JsonNode setUpResourceWithNonCreator(URI creatorId, URI institutionId) {
+    private static JsonNode setupResourceWithNonCreator(URI creatorId, URI institutionId) {
         return createExpandedResourceWithTwoVerifiedContributors(creatorId,
                                                                  ROLE_CREATOR,
                                                                  Map.of(institutionId, COUNTRY_CODE_NO),
@@ -397,7 +397,7 @@ class PointServiceTest {
                                                                  HARDCODED_JOURNAL_REFERENCE, 0);
     }
 
-    private static JsonNode setUpNonCreatorAffiliatedWithInternationalInstitution(URI creatorId, URI institutionId) {
+    private static JsonNode setupNonCreatorAffiliatedWithInternationalInstitution(URI creatorId, URI institutionId) {
         return createExpandedResourceWithTwoVerifiedContributors(creatorId,
                                                                  ROLE_CREATOR,
                                                                  Map.of(institutionId, COUNTRY_CODE_NO),
@@ -409,7 +409,7 @@ class PointServiceTest {
         );
     }
 
-    private static JsonNode setUpCoPublishingTwoCreatorsTwoInstitutions(PointParameters parameters, URI creator1,
+    private static JsonNode setupCoPublishingTwoCreatorsTwoInstitutions(PointParameters parameters, URI creator1,
                                                                         URI creator2,
                                                                         List<URI> creator1Institutions) {
         return createExpandedResourceWithTwoVerifiedContributors(creator1, ROLE_CREATOR,
@@ -424,7 +424,7 @@ class PointServiceTest {
                                                                  0);
     }
 
-    private static JsonNode setUpSingleContributorWithSingleInstitution(PointParameters parameters, URI creator,
+    private static JsonNode setupSingleContributorWithSingleInstitution(PointParameters parameters, URI creator,
                                                                         URI institutionId) {
         return createExpandedResource(
             randomUri(), createContributorNodes(
@@ -560,10 +560,10 @@ class PointServiceTest {
         var publicationContext = objectMapper.createObjectNode();
         var publicationInstance = objectMapper.createObjectNode();
         publicationInstance.put(TYPE, instanceType);
-        publicationContext.set(channelType.toLowerCase(), objectMapper.createObjectNode()
-                                                              .put(ID, randomUri().toString())
-                                                              .put(TYPE, channelType)
-                                                              .put(LEVEL, level));
+        publicationContext.set(channelType.toLowerCase(Locale.ROOT), objectMapper.createObjectNode()
+                                                                         .put(ID, randomUri().toString())
+                                                                         .put(TYPE, channelType)
+                                                                         .put(LEVEL, level));
         var reference = objectMapper.createObjectNode();
         reference.set(PUBLICATION_CONTEXT, publicationContext);
         reference.set(PUBLICATION_INSTANCE, publicationInstance);
@@ -631,7 +631,6 @@ class PointServiceTest {
 
         for (int i = 1; i <= numberOfAffiliationsWithoutId; i++) {
             affiliationsNode.add(createAffiliationNodeWithoutId());
-            i++;
         }
 
         return affiliationsNode;
