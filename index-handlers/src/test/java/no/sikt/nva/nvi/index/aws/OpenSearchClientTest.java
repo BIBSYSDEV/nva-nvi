@@ -125,7 +125,8 @@ public class OpenSearchClientTest {
     private static final String DOCUMENT_NEW_JSON = "document_new.json";
     private static final String DOCUMENT_ORGANIZATION_AGGREGATION_DISPUTE_JSON =
         "document_organization_aggregation_dispute.json";
-    private static final String DOCUMENT_WITH_CONTRIBUTOR_FROM_NTNU_SUBUNIT_JSON = "document_with_contributor_from_ntnu_subunit.json";
+    private static final String DOCUMENT_WITH_CONTRIBUTOR_FROM_NTNU_SUBUNIT_JSON =
+        "document_with_contributor_from_ntnu_subunit.json";
     private static RestClient restClient;
     private static OpenSearchClient openSearchClient;
 
@@ -768,13 +769,13 @@ public class OpenSearchClientTest {
     private static void assertExpectedStatusAggregations(StringTermsBucket bucket) {
         var key = bucket.key();
         var statusAggregation = bucket.aggregations().get("status");
-        if (key.equals(SIKT_INSTITUTION_ID.toString())) {
+        if (SIKT_INSTITUTION_ID.toString().equals(key)) {
             var expectedKeys = List.of(NEW.getValue(), PENDING.getValue(), REJECTED.getValue());
             assertExpectedSubAggregations(statusAggregation, expectedKeys);
-        } else if (key.equals(SIKT_LEVEL_2_ID)) {
+        } else if (SIKT_LEVEL_2_ID.equals(key)) {
             var expectedKeys = List.of(NEW.getValue(), PENDING.getValue(), REJECTED.getValue());
             assertExpectedSubAggregations(statusAggregation, expectedKeys);
-        } else if (key.equals(SIKT_LEVEL_3_ID)) {
+        } else if (SIKT_LEVEL_3_ID.equals(key)) {
             var expectedKeys = List.of(PENDING.getValue());
             assertExpectedSubAggregations(statusAggregation, expectedKeys);
         } else {
@@ -931,8 +932,9 @@ public class OpenSearchClientTest {
                    .withContributors(List.of(randomNviContributor(randomUri())));
     }
 
+    @SuppressWarnings("PMD.DoNotUseThreads")
     private static void addDocumentsToIndex(NviCandidateIndexDocument... documents) throws InterruptedException {
-        Arrays.stream(documents).forEach(document -> openSearchClient.addDocumentToIndex(document));
+        Arrays.stream(documents).forEach(openSearchClient::addDocumentToIndex);
         Thread.sleep(DELAY_ON_INDEX);
     }
 
@@ -996,12 +998,12 @@ public class OpenSearchClientTest {
 
     public static final class FakeCachedJwtProvider {
 
-        public static String TEST_TOKEN = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJPbmxpbmUgSldUIEJ1"
-                                          + "aWxkZXIiLCJpYXQiOjE2Njg1MTE4NTcsImV4cCI6MTcwMDA0Nzg1NywiYXVkIjoi"
-                                          + "d3d3LmV4YW1wbGUuY29tIiwic3ViIjoianJvY2tldEBleGFtcGxlLmNvbSIsIkdpd"
-                                          + "mVuTmFtZSI6IkpvaG5ueSIsIlN1cm5hbWUiOiJSb2NrZXQiLCJFbWFpbCI6Impyb2"
-                                          + "NrZXRAZXhhbXBsZS5jb20iLCJSb2xlIjoiTWFuYWdlciIsInNjb3BlIjoiZXhhbX"
-                                          + "BsZS1zY29wZSJ9.ne8Jb4f2xao1zSJFZxIBRrh4WFNjkaBRV3-Ybp6fHZU";
+        private final static String TEST_TOKEN = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJPbmxpbmUgSldUIEJ1"
+                                                 + "aWxkZXIiLCJpYXQiOjE2Njg1MTE4NTcsImV4cCI6MTcwMDA0Nzg1NywiYXVkIjoi"
+                                                 + "d3d3LmV4YW1wbGUuY29tIiwic3ViIjoianJvY2tldEBleGFtcGxlLmNvbSIsIkdpd"
+                                                 + "mVuTmFtZSI6IkpvaG5ueSIsIlN1cm5hbWUiOiJSb2NrZXQiLCJFbWFpbCI6Impyb2"
+                                                 + "NrZXRAZXhhbXBsZS5jb20iLCJSb2xlIjoiTWFuYWdlciIsInNjb3BlIjoiZXhhbX"
+                                                 + "BsZS1zY29wZSJ9.ne8Jb4f2xao1zSJFZxIBRrh4WFNjkaBRV3-Ybp6fHZU";
 
         public static CachedJwtProvider setup() {
             var jwt = mock(DecodedJWT.class);
