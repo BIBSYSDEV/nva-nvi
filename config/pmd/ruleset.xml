@@ -87,8 +87,6 @@
    -->
     <exclude name="AvoidThrowingRawExceptionTypes"/>
 
-    <!-- //TODO: Discuss these  -->
-    <exclude name="CouplingBetweenObjects"/>
   </rule>
 
 </ruleset>

@@ -74,6 +74,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+// Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
+@SuppressWarnings("PMD.CouplingBetweenObjects")
 public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
 
     public static final Context CONTEXT = mock(Context.class);
@@ -182,7 +184,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         var newUpsertRequest = createNewUpsertRequestNotAffectingApprovals(upsertCandidateRequest, institutionId);
         Candidate.upsert(newUpsertRequest, candidateRepository, periodRepository);
         var updatedCandidate = Candidate.fetchByPublicationId(newUpsertRequest::publicationId, candidateRepository,
-                                                             periodRepository);
+                                                              periodRepository);
         var updatedApproval = updatedCandidate.toDto().approvals().get(0);
 
         assertThat(updatedApproval, is(equalTo(approval)));

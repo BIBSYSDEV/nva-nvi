@@ -36,8 +36,8 @@ import nva.commons.core.JacocoGenerated;
 import nva.commons.core.StringUtils;
 import nva.commons.core.paths.UriWrapper;
 
-@SuppressWarnings("PMD.GodClass")
 // Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
+@SuppressWarnings({"PMD.GodClass", "PMD.CouplingBetweenObjects"})
 public final class CristinMapper {
 
     public static final String API_HOST = new Environment().readEnv("API_HOST");

@@ -90,7 +90,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 // Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
-@SuppressWarnings("PMD.GodClass")
+@SuppressWarnings({"PMD.GodClass", "PMD.CouplingBetweenObjects"})
 class CandidateTest extends LocalDynamoTest {
 
     public static final int EXPECTED_SCALE = 4;

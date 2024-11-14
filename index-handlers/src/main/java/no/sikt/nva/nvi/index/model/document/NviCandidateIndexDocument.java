@@ -55,6 +55,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @JsonSerialize
+// Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
+@SuppressWarnings("PMD.CouplingBetweenObjects")
 public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
                                         URI id,
                                         boolean isApplicable,
@@ -137,8 +139,8 @@ public record NviCandidateIndexDocument(@JsonProperty(CONTEXT) URI context,
     }
 
     private Map<InstitutionReportHeader, String> generateRow(NviContributor nviContributor,
-                                                                 NviOrganization affiliation,
-                                                                 URI topLevelOrganization) {
+                                                             NviOrganization affiliation,
+                                                             URI topLevelOrganization) {
         try {
             var keyValueMap = new EnumMap<InstitutionReportHeader, String>(InstitutionReportHeader.class);
             keyValueMap.put(REPORTING_YEAR, reportingPeriod.year());

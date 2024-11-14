@@ -75,6 +75,8 @@ import nva.commons.logutils.LogUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+// Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
+@SuppressWarnings("PMD.CouplingBetweenObjects")
 class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
 
     public static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
@@ -659,7 +661,7 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
             URI.create(customerApiEndpoint + "/" + URLEncoder.encode(cristinOrgNonNviTopLevel.toString(),
                                                                      StandardCharsets.UTF_8));
         when(authorizedBackendUriRetriever.fetchResponse(eq(cristinOrgNonNviTopLevelCustomerApiUri),
-                                                        any())).thenReturn(Optional.of(notFoundResponse));
+                                                         any())).thenReturn(Optional.of(notFoundResponse));
         mockOrganizationResponseForAffiliation(cristinOrgNonNviTopLevel, cristinOrgNonNviSubUnit, uriRetriever);
     }
 
@@ -667,6 +669,6 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
         mockOrganizationResponseForAffiliation(CRISTIN_NVI_ORG_TOP_LEVEL_ID, CRISTIN_NVI_ORG_SUB_UNIT_ID,
                                                uriRetriever);
         when(authorizedBackendUriRetriever.fetchResponse(eq(CUSTOMER_API_CRISTIN_NVI_ORG_TOP_LEVEL),
-                                                        any())).thenReturn(Optional.of(httpResponse));
+                                                         any())).thenReturn(Optional.of(httpResponse));
     }
 }

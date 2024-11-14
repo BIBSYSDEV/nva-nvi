@@ -66,6 +66,8 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
 
+// Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
+@SuppressWarnings("PMD.CouplingBetweenObjects")
 class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
 
     private static final int ONE_ENTRY_PER_EVENT = 1;
@@ -342,21 +344,19 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
     }
 
     private Dao getPersistedDao(Dao dao) {
-        if (dao instanceof CandidateDao candidateDao) {
-            return candidateRepository.findDaoById(candidateDao.identifier());
-        } else if (dao instanceof ApprovalStatusDao approvalStatusDao) {
-            return candidateRepository.findApprovalDaoByIdAndInstitutionId(approvalStatusDao.identifier(),
-                                                                           approvalStatusDao.approvalStatus()
-                                                                               .institutionId());
-        } else if (dao instanceof NoteDao noteDao) {
-            return candidateRepository.getNoteDaoById(noteDao.identifier(), noteDao.note().noteId());
-        } else if (dao instanceof NviPeriodDao nviPeriodDao) {
-            return periodRepository.findDaoByPublishingYear(nviPeriodDao.nviPeriod().publishingYear());
-        } else if (dao instanceof CandidateUniquenessEntryDao candidateUniquenessEntryDao) {
-            return candidateRepository.getUniquenessEntry(candidateUniquenessEntryDao);
-        } else {
-            throw new IllegalArgumentException("Unknown type: " + dao);
-        }
+        return switch (dao) {
+            case CandidateDao candidateDao -> candidateRepository.findDaoById(candidateDao.identifier());
+            case ApprovalStatusDao approvalStatusDao ->
+                candidateRepository.findApprovalDaoByIdAndInstitutionId(approvalStatusDao.identifier(),
+                                                                        approvalStatusDao.approvalStatus()
+                                                                            .institutionId());
+            case NoteDao noteDao -> candidateRepository.getNoteDaoById(noteDao.identifier(), noteDao.note().noteId());
+            case NviPeriodDao nviPeriodDao ->
+                periodRepository.findDaoByPublishingYear(nviPeriodDao.nviPeriod().publishingYear());
+            case CandidateUniquenessEntryDao candidateUniquenessEntryDao ->
+                candidateRepository.getUniquenessEntry(candidateUniquenessEntryDao);
+            case null, default -> throw new IllegalArgumentException("Unknown type: " + dao);
+        };
     }
 
     private ScanDatabaseRequest consumeLatestEmittedEvent() {
