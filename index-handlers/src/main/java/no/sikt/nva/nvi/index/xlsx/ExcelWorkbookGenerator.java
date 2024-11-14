@@ -29,7 +29,7 @@ public final class ExcelWorkbookGenerator {
     }
 
     public String toBase64EncodedString() {
-        return ENCODER.encodeToString(this.toXSSFWorkbookByteArray());
+        return ENCODER.encodeToString(this.toXssfWorkbookByteArray());
     }
 
     @Override
@@ -76,7 +76,7 @@ public final class ExcelWorkbookGenerator {
         return workbook;
     }
 
-    private byte[] toXSSFWorkbookByteArray() {
+    private byte[] toXssfWorkbookByteArray() {
         logger.info("Creating Excel workbook");
         var byteArrayOutputStream = new ByteArrayOutputStream();
         try (var workbook = createWorkbookWithOneSheet()) {

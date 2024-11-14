@@ -17,9 +17,9 @@ import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.service.model.InstanceType;
+import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
+import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.events.evaluator.model.Channel;
-import no.sikt.nva.nvi.events.evaluator.model.InstitutionPoints;
-import no.sikt.nva.nvi.events.evaluator.model.InstitutionPoints.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.events.evaluator.model.PointCalculation;
 import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
 import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator.NviOrganization;
@@ -101,7 +101,7 @@ public class PointCalculator {
         var numberOfAffiliations = nviCreator.getValue().size();
         var pointsForAffiliation = divide(numberOfAffiliations, pointsForCreator);
         return nviCreator.getValue().stream()
-                   .map(affiliationId -> new CreatorAffiliationPoints(affiliationId, nviCreator.getKey(),
+                   .map(affiliationId -> new CreatorAffiliationPoints(nviCreator.getKey(), affiliationId,
                                                                       pointsForAffiliation));
     }
 
