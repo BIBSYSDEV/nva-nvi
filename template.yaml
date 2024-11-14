@@ -469,6 +469,7 @@ Resources:
                   - !GetAtt IndexDocumentDLQ.Arn
                   - !GetAtt DeletePersistedIndexDocumentDLQ.Arn
                   - !GetAtt DeletePersistedIndexDocumentQueue.Arn
+                  - !GetAtt QueuePersistedResourceDLQ.Arn
                   - !Ref CristinImportNviQueueArn
         - PolicyName: publishToSnsTopic
           PolicyDocument:
