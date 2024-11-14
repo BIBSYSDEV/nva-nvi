@@ -322,7 +322,7 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
     @ParameterizedTest
     @MethodSource("channelTypeIssnProvider")
     void shouldExtractOptionalPrintIssnFromExpandedResource(ChannelType channelType, boolean printIssnExists) {
-        var candidate = randomApplicableCandidate(HARD_CODED_TOP_LEVEL_ORG, randomUri(), channelType);
+        var candidate = randomApplicableCandidate(randomUri(), channelType);
         var expandedResource =
             ExpandedResourceGenerator.builder().withCandidate(candidate).withPopulateIssn(printIssnExists).build()
                 .createExpandedResource();
@@ -379,7 +379,7 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         mockUriRetrieverOrgResponse(candidate);
         handler.handleRequest(createEvent(candidate.getIdentifier()), CONTEXT);
         var expectedEvent = createExpectedEventMessageBody(candidate);
-        var actualEvent = sqsClient.getSentMessages().get(0).messageBody();
+        var actualEvent = sqsClient.getSentMessages().getFirst().messageBody();
         assertEquals(expectedEvent, actualEvent);
     }
 
@@ -756,8 +756,8 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         return Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository);
     }
 
-    private Candidate randomApplicableCandidate(URI topLevelOrg, URI affiliation, ChannelType channelType) {
-        var request = createUpsertCandidateRequest(topLevelOrg, affiliation, channelType);
+    private Candidate randomApplicableCandidate(URI affiliation, ChannelType channelType) {
+        var request = createUpsertCandidateRequest(HARD_CODED_TOP_LEVEL_ORG, affiliation, channelType);
         Candidate.upsert(request, candidateRepository, periodRepository);
         return Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository);
     }

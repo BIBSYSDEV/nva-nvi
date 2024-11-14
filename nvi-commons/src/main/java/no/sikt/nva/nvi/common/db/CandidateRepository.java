@@ -14,6 +14,7 @@ import static software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional.ke
 import static software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional.sortBeginsWith;
 import java.net.URI;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -126,8 +127,8 @@ public class CandidateRepository extends DynamoRepository {
                               .map(approval -> mapToApprovalStatusDao(candidateDao.identifier(), approval))
                               .collect(toMap(approvalStatusDao -> approvalStatusDao.approvalStatus().institutionId(),
                                              Function.identity()));
-        removeOldApprovals(candidateDao.identifier());
         var transaction = TransactWriteItemsEnhancedRequest.builder();
+        addDeleteItemsForOldApprovalsToTransaction(candidateDao.identifier(), approvalMap, transaction);
         transaction.addPutItem(candidateTable, candidateDao);
         approvalMap.values().forEach(approvalStatus -> transaction.addPutItem(approvalStatusTable, approvalStatus));
         client.transactWriteItems(transaction.build());
@@ -180,7 +181,13 @@ public class CandidateRepository extends DynamoRepository {
 
     public void updateCandidateAndRemovingApprovals(UUID identifier, CandidateDao nonApplicableCandidate) {
         candidateTable.putItem(nonApplicableCandidate);
-        removeOldApprovals(identifier);
+        var approvalStatusDaoList = getApprovalStatuses(identifier);
+        if (!approvalStatusDaoList.isEmpty()) {
+            var transactionBuilder = TransactWriteItemsEnhancedRequest.builder();
+            approvalStatusDaoList.forEach(
+                approvalStatusDao -> transactionBuilder.addDeleteItem(approvalStatusTable, approvalStatusDao));
+            client.transactWriteItems(transactionBuilder.build());
+        }
     }
 
     protected static Key noteKey(UUID candidateIdentifier, UUID noteIdentifier) {
@@ -263,14 +270,27 @@ public class CandidateRepository extends DynamoRepository {
                    .build();
     }
 
-    private void removeOldApprovals(UUID candidateIdentifier) {
-        var approvalStatusDaoList = getApprovalStatuses(candidateIdentifier);
-        if (!approvalStatusDaoList.isEmpty()) {
-            var transactionBuilder = TransactWriteItemsEnhancedRequest.builder();
-            approvalStatusDaoList.forEach(
-                approvalStatusDao -> transactionBuilder.addDeleteItem(approvalStatusTable, approvalStatusDao));
-            client.transactWriteItems(transactionBuilder.build());
-        }
+    private static boolean isNotPresentInNewApprovals(Map<URI, ApprovalStatusDao> newApprovals,
+                                                      DbApprovalStatus oldApproval) {
+        return !newApprovals.containsKey(oldApproval.institutionId());
+    }
+
+    private void addDeleteItemsForOldApprovalsToTransaction(UUID identifier, Map<URI, ApprovalStatusDao> newApprovals,
+                                                            Builder transaction) {
+        var currentApprovals = new ArrayList<>(getApprovalStatuses(approvalStatusTable, identifier));
+        currentApprovals.stream()
+            .filter(approval -> isNotPresentInNewApprovals(newApprovals, approval))
+            .forEach(oldApproval -> transaction.addDeleteItem(approvalStatusTable,
+                                                           mapToApprovalStatusDao(identifier, oldApproval)));
+    }
+
+    private List<DbApprovalStatus> getApprovalStatuses(DynamoDbTable<ApprovalStatusDao> approvalStatusTable,
+                                                       UUID identifier) {
+        return approvalStatusTable.query(queryCandidateParts(identifier, ApprovalStatusDao.TYPE))
+                   .items()
+                   .stream()
+                   .map(ApprovalStatusDao::approvalStatus)
+                   .toList();
     }
 
     private List<Dao> extractDatabaseEntries(ScanResponse response) {

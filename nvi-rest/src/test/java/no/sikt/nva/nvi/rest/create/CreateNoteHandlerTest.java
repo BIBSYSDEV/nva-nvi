@@ -103,7 +103,7 @@ public class CreateNoteHandlerTest extends LocalDynamoTest {
         var request = createRequest(candidate.getIdentifier(), new NviNoteRequest(theNote), userName);
         handler.handleRequest(request, output, context);
         var gatewayResponse = GatewayResponse.fromOutputStream(output, CandidateDto.class);
-        var actualNote = gatewayResponse.getBodyObject(CandidateDto.class).notes().get(0);
+        var actualNote = gatewayResponse.getBodyObject(CandidateDto.class).notes().getFirst();
 
         assertThat(actualNote.text(), is(equalTo(theNote)));
         assertThat(actualNote.user(), is(equalTo(userName)));

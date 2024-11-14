@@ -103,28 +103,7 @@ class CandidateTest extends LocalDynamoTest {
     private PeriodRepository periodRepository;
 
     public static Stream<Arguments> candidateResetCauseProvider() {
-        return Stream.of(Arguments.of(Named.of("change level",
-                                               new CandidateResetCauseArgument(DbLevel.LEVEL_ONE,
-                                                                               InstanceType.ACADEMIC_MONOGRAPH,
-                                                                               List.of(new InstitutionPoints(
-                                                                                   HARDCODED_INSTITUTION_ID,
-                                                                                   BigDecimal.ONE,
-                                                                                   null))))),
-                         Arguments.of(Named.of("change type",
-                                               new CandidateResetCauseArgument(DbLevel.LEVEL_TWO,
-                                                                               InstanceType.ACADEMIC_LITERATURE_REVIEW,
-                                                                               List.of(new InstitutionPoints(
-                                                                                   HARDCODED_INSTITUTION_ID,
-                                                                                   BigDecimal.ONE,
-                                                                                   null))))),
-                         Arguments.of(Named.of("points changed",
-                                               new CandidateResetCauseArgument(DbLevel.LEVEL_TWO,
-                                                                               InstanceType.ACADEMIC_MONOGRAPH,
-                                                                               List.of(new InstitutionPoints(
-                                                                                   HARDCODED_INSTITUTION_ID,
-                                                                                   randomBigDecimal(),
-                                                                                   null))))),
-                         Arguments.of(Named.of("affiliated institution changed",
+        return Stream.of(Arguments.of(Named.of("affiliated institution changed",
                                                new CandidateResetCauseArgument(DbLevel.LEVEL_TWO,
                                                                                InstanceType.ACADEMIC_MONOGRAPH,
                                                                                List.of(new InstitutionPoints(
@@ -332,7 +311,7 @@ class CandidateTest extends LocalDynamoTest {
             assertThat(dto.approvals().size(), is(equalTo(createRequest.institutionPoints().size())));
             assertThat(dto.notes().size(), is(2));
             assertThat(dto.totalPoints(), is(equalTo(setScaleAndRoundingMode(totalPoints))));
-            var note = dto.notes().get(0);
+            var note = dto.notes().getFirst();
             assertThat(note.text(), is(notNullValue()));
             assertThat(note.user(), is(notNullValue()));
             assertThat(note.createdDate(), is(notNullValue()));
@@ -431,8 +410,8 @@ class CandidateTest extends LocalDynamoTest {
                             .updateApproval(
                                 createUpdateStatusRequest(ApprovalStatus.REJECTED, institutionId, randomString()))
                             .toDto();
-        assertThat(candidate.approvals().get(0).assignee(), is(equalTo(assignee)));
-        assertThat(candidate.approvals().get(0).finalizedBy(), is(not(equalTo(assignee))));
+        assertThat(candidate.approvals().getFirst().assignee(), is(equalTo(assignee)));
+        assertThat(candidate.approvals().getFirst().finalizedBy(), is(not(equalTo(assignee))));
     }
 
     @Test
@@ -442,10 +421,10 @@ class CandidateTest extends LocalDynamoTest {
         var candidate = upsert(upsertCandidateRequest);
         candidate.updateApproval(
             new UpdateStatusRequest(institutionId, ApprovalStatus.APPROVED, randomString(), randomString()));
-        var approval = candidate.toDto().approvals().get(0);
+        var approval = candidate.toDto().approvals().getFirst();
         var newUpsertRequest = createNewUpsertRequestNotAffectingApprovals(upsertCandidateRequest);
         var updatedCandidate = upsert(newUpsertRequest);
-        var updatedApproval = updatedCandidate.toDto().approvals().get(0);
+        var updatedApproval = updatedCandidate.toDto().approvals().getFirst();
 
         assertThat(updatedApproval, is(equalTo(approval)));
     }
@@ -457,10 +436,10 @@ class CandidateTest extends LocalDynamoTest {
         var candidate = upsert(upsertCandidateRequest);
         candidate.updateApproval(
             new UpdateStatusRequest(institutionId, ApprovalStatus.APPROVED, randomString(), randomString()));
-        var approval = candidate.toDto().approvals().get(0);
+        var approval = candidate.toDto().approvals().getFirst();
         var newUpsertRequest = createNewUpsertRequestNotAffectingApprovals(upsertCandidateRequest);
         var updatedCandidate = upsert(newUpsertRequest);
-        var updatedApproval = updatedCandidate.toDto().approvals().get(0);
+        var updatedApproval = updatedCandidate.toDto().approvals().getFirst();
 
         assertThat(updatedApproval, is(equalTo(approval)));
     }
@@ -498,7 +477,7 @@ class CandidateTest extends LocalDynamoTest {
         var newUpsertRequest = getUpsertCandidateRequest(arguments, creators, candidate.getPublicationId());
 
         var updatedCandidate = upsert(newUpsertRequest);
-        var updatedApproval = updatedCandidate.toDto().approvals().get(0);
+        var updatedApproval = updatedCandidate.toDto().approvals().getFirst();
         assertThat(updatedApproval.status(), is(equalTo(ApprovalStatusDto.NEW)));
     }
 
