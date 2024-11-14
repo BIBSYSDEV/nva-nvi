@@ -14,7 +14,6 @@ import static software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional.ke
 import static software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional.sortBeginsWith;
 import java.net.URI;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -123,14 +122,18 @@ public class CandidateRepository extends DynamoRepository {
     }
 
     public void updateCandidate(CandidateDao candidateDao, List<DbApprovalStatus> approvals) {
-        var approvalMap = approvals.stream()
-                              .map(approval -> mapToApprovalStatusDao(candidateDao.identifier(), approval))
-                              .collect(toMap(approvalStatusDao -> approvalStatusDao.approvalStatus().institutionId(),
+        var updatedApprovals = approvals.stream()
+                                   .map(approval -> mapToApprovalStatusDao(candidateDao.identifier(), approval))
+                                   .collect(
+                                       toMap(approvalStatusDao -> approvalStatusDao.approvalStatus().institutionId(),
                                              Function.identity()));
         var transaction = TransactWriteItemsEnhancedRequest.builder();
-        addDeleteItemsForOldApprovalsToTransaction(candidateDao.identifier(), approvalMap, transaction);
         transaction.addPutItem(candidateTable, candidateDao);
-        approvalMap.values().forEach(approvalStatus -> transaction.addPutItem(approvalStatusTable, approvalStatus));
+        var approvalsForDeletion = identifyApprovalsForDeletion(candidateDao.identifier(), updatedApprovals);
+        approvalsForDeletion.forEach(
+            approvalStatusDao -> transaction.addDeleteItem(approvalStatusTable, approvalStatusDao));
+        updatedApprovals.values()
+            .forEach(approvalStatus -> transaction.addPutItem(approvalStatusTable, approvalStatus));
         client.transactWriteItems(transaction.build());
     }
 
@@ -271,26 +274,21 @@ public class CandidateRepository extends DynamoRepository {
     }
 
     private static boolean isNotPresentInNewApprovals(Map<URI, ApprovalStatusDao> newApprovals,
-                                                      DbApprovalStatus oldApproval) {
-        return !newApprovals.containsKey(oldApproval.institutionId());
+                                                      ApprovalStatusDao oldApproval) {
+        return !newApprovals.containsKey(oldApproval.approvalStatus().institutionId());
     }
 
-    private void addDeleteItemsForOldApprovalsToTransaction(UUID identifier, Map<URI, ApprovalStatusDao> newApprovals,
-                                                            Builder transaction) {
-        var currentApprovals = new ArrayList<>(getApprovalStatuses(approvalStatusTable, identifier));
-        currentApprovals.stream()
-            .filter(approval -> isNotPresentInNewApprovals(newApprovals, approval))
-            .forEach(oldApproval -> transaction.addDeleteItem(approvalStatusTable,
-                                                           mapToApprovalStatusDao(identifier, oldApproval)));
+    private Stream<ApprovalStatusDao> identifyApprovalsForDeletion(UUID identifier,
+                                                                   Map<URI, ApprovalStatusDao> newApprovals) {
+        return getApprovalStatuses(approvalStatusTable, identifier)
+                   .filter(approval -> isNotPresentInNewApprovals(newApprovals, approval));
     }
 
-    private List<DbApprovalStatus> getApprovalStatuses(DynamoDbTable<ApprovalStatusDao> approvalStatusTable,
-                                                       UUID identifier) {
+    private Stream<ApprovalStatusDao> getApprovalStatuses(DynamoDbTable<ApprovalStatusDao> approvalStatusTable,
+                                                          UUID identifier) {
         return approvalStatusTable.query(queryCandidateParts(identifier, ApprovalStatusDao.TYPE))
                    .items()
-                   .stream()
-                   .map(ApprovalStatusDao::approvalStatus)
-                   .toList();
+                   .stream();
     }
 
     private List<Dao> extractDatabaseEntries(ScanResponse response) {
