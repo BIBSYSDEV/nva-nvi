@@ -103,7 +103,28 @@ class CandidateTest extends LocalDynamoTest {
     private PeriodRepository periodRepository;
 
     public static Stream<Arguments> candidateResetCauseProvider() {
-        return Stream.of(Arguments.of(Named.of("affiliated institution changed",
+        return Stream.of(Arguments.of(Named.of("change level",
+                                               new CandidateResetCauseArgument(DbLevel.LEVEL_ONE,
+                                                                               InstanceType.ACADEMIC_MONOGRAPH,
+                                                                               List.of(new InstitutionPoints(
+                                                                                   HARDCODED_INSTITUTION_ID,
+                                                                                   BigDecimal.ONE,
+                                                                                   null))))),
+                         Arguments.of(Named.of("change type",
+                                               new CandidateResetCauseArgument(DbLevel.LEVEL_TWO,
+                                                                               InstanceType.ACADEMIC_LITERATURE_REVIEW,
+                                                                               List.of(new InstitutionPoints(
+                                                                                   HARDCODED_INSTITUTION_ID,
+                                                                                   BigDecimal.ONE,
+                                                                                   null))))),
+                         Arguments.of(Named.of("points changed",
+                                               new CandidateResetCauseArgument(DbLevel.LEVEL_TWO,
+                                                                               InstanceType.ACADEMIC_MONOGRAPH,
+                                                                               List.of(new InstitutionPoints(
+                                                                                   HARDCODED_INSTITUTION_ID,
+                                                                                   randomBigDecimal(),
+                                                                                   null))))),
+                         Arguments.of(Named.of("affiliated institution changed",
                                                new CandidateResetCauseArgument(DbLevel.LEVEL_TWO,
                                                                                InstanceType.ACADEMIC_MONOGRAPH,
                                                                                List.of(new InstitutionPoints(
