@@ -6,6 +6,7 @@ import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateHandler.CANDIDATE_IDEN
 import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.util.Objects;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
@@ -14,6 +15,7 @@ import no.sikt.nva.nvi.common.exceptions.NotApplicableException;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.service.model.Username;
 import no.sikt.nva.nvi.common.utils.ExceptionMapper;
 import no.sikt.nva.nvi.common.utils.RequestUtil;
 import no.sikt.nva.nvi.common.validator.ViewingScopeValidator;
@@ -62,8 +64,7 @@ public class CreateNoteHandler extends ApiGatewayHandler<NviNoteRequest, Candida
         return attempt(() -> Candidate.fetch(() -> candidateIdentifier, candidateRepository, periodRepository))
                    .map(this::checkIfApplicable)
                    .map(candidate -> validateViewingScope(viewingScopeValidator, username, candidate))
-                   .map(candidate -> candidate.createNote(new CreateNoteRequest(input.text(), username.value(),
-                                                                                institutionId)))
+                   .map(candidate -> createNote(input, candidate, username, institutionId))
                    .map(Candidate::toDto)
                    .orElseThrow(ExceptionMapper::map);
     }
@@ -71,6 +72,11 @@ public class CreateNoteHandler extends ApiGatewayHandler<NviNoteRequest, Candida
     @Override
     protected Integer getSuccessStatusCode(NviNoteRequest input, CandidateDto output) {
         return HttpURLConnection.HTTP_OK;
+    }
+
+    private Candidate createNote(NviNoteRequest input, Candidate candidate, Username username, URI institutionId) {
+        var noteRequest = new CreateNoteRequest(input.text(), username.value(), institutionId);
+        return candidate.createNote(noteRequest, candidateRepository);
     }
 
     private Candidate checkIfApplicable(Candidate candidate) {

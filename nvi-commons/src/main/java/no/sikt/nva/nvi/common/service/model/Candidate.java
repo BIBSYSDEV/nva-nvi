@@ -78,7 +78,6 @@ public final class Candidate {
     private static final PeriodStatus PERIOD_STATUS_NO_PERIOD = PeriodStatus.builder()
                                                                     .withStatus(Status.NO_PERIOD)
                                                                     .build();
-    private final CandidateRepository repository;
     private final UUID identifier;
     private final boolean applicable;
     private final Map<URI, Approval> approvals;
@@ -95,9 +94,40 @@ public final class Candidate {
     private final Instant modifiedDate;
     private final ReportStatus reportStatus;
 
+    private Candidate(UUID identifier,
+                      boolean applicable,
+                      Map<URI, Approval> approvals,
+                      Map<UUID, Note> notes,
+                      List<InstitutionPoints> institutionPoints,
+                      BigDecimal totalPoints,
+                      PeriodStatus period,
+                      PublicationDetails publicationDetails,
+                      BigDecimal basePoints,
+                      boolean internationalCollaboration,
+                      BigDecimal collaborationFactor,
+                      int creatorShareCount,
+                      Instant createdDate,
+                      Instant modifiedDate,
+                      ReportStatus reportStatus) {
+        this.identifier = identifier;
+        this.applicable = applicable;
+        this.approvals = approvals;
+        this.notes = notes;
+        this.institutionPoints = institutionPoints;
+        this.totalPoints = totalPoints;
+        this.period = period;
+        this.publicationDetails = publicationDetails;
+        this.basePoints = basePoints;
+        this.internationalCollaboration = internationalCollaboration;
+        this.collaborationFactor = collaborationFactor;
+        this.creatorShareCount = creatorShareCount;
+        this.createdDate = createdDate;
+        this.modifiedDate = modifiedDate;
+        this.reportStatus = reportStatus;
+    }
+
     private Candidate(CandidateRepository repository, CandidateDao candidateDao, List<ApprovalStatusDao> approvals,
                       List<NoteDao> notes, PeriodStatus period) {
-        this.repository = repository;
         this.identifier = candidateDao.identifier();
         this.applicable = candidateDao.candidate().applicable();
         this.approvals = mapToApprovalsMap(repository, approvals);
@@ -105,7 +135,7 @@ public final class Candidate {
         this.institutionPoints = mapToInstitutionPoints(candidateDao);
         this.totalPoints = candidateDao.candidate().totalPoints();
         this.period = period;
-        this.publicationDetails = mapToPublicationDetails(candidateDao);
+        this.publicationDetails = PublicationDetails.from(candidateDao);
         this.basePoints = candidateDao.candidate().basePoints();
         this.internationalCollaboration = candidateDao.candidate().internationalCollaboration();
         this.collaborationFactor = candidateDao.candidate().collaborationFactor();
@@ -135,10 +165,11 @@ public final class Candidate {
         return new Candidate(repository, candidateDao, approvalDaoList, noteDaoList, periodStatus);
     }
 
-    public static void upsert(UpsertCandidateRequest request, CandidateRepository repository) {
-        var optionalCandidate = repository.findByPublicationId(request.publicationId());
-        optionalCandidate.ifPresentOrElse(candidateDao -> updateExistingCandidate(request, repository, candidateDao),
-                                          () -> createCandidate(request, repository));
+    public static void upsert(UpsertCandidateRequest request, CandidateRepository candidateRepository,
+                              PeriodRepository periodRepository) {
+        var optionalCandidate = fetchOptionalCandidate(request, candidateRepository, periodRepository);
+        optionalCandidate.ifPresentOrElse(candidate -> updateExistingCandidate(request, candidateRepository, candidate),
+                                          () -> createCandidate(request, candidateRepository));
     }
 
     public static Optional<Candidate> updateNonCandidate(UpdateNonCandidateRequest request,
@@ -267,7 +298,7 @@ public final class Candidate {
         return this;
     }
 
-    public Candidate createNote(CreateNoteRequest input) {
+    public Candidate createNote(CreateNoteRequest input, CandidateRepository repository) {
         validateCandidateState();
         var note = Note.fromRequest(input, identifier, repository);
         notes.put(note.getNoteId(), note);
@@ -340,9 +371,17 @@ public final class Candidate {
         return candidateWithNewVersion;
     }
 
+    private static Optional<Candidate> fetchOptionalCandidate(UpsertCandidateRequest request,
+                                                              CandidateRepository candidateRepository,
+                                                              PeriodRepository periodRepository) {
+        return attempt(() -> Candidate.fetchByPublicationId(request::publicationId,
+                                                            candidateRepository,
+                                                            periodRepository)).toOptional();
+    }
+
     private static void updateExistingCandidate(UpsertCandidateRequest request,
                                                 CandidateRepository repository,
-                                                CandidateDao existingCandidate) {
+                                                Candidate existingCandidate) {
         if (existingCandidate.isReported()) {
             throw new IllegalCandidateUpdateException("Can not update reported candidate");
         } else {
@@ -361,66 +400,59 @@ public final class Candidate {
     }
 
     private static void updateCandidate(UpsertCandidateRequest request, CandidateRepository repository,
-                                        CandidateDao existingCandidateDao) {
+                                        Candidate existingCandidate) {
         validateCandidate(request);
-        if (shouldResetCandidate(request, existingCandidateDao) || isNotApplicable(existingCandidateDao)) {
-            resetCandidate(request, repository, existingCandidateDao);
+        if (shouldResetCandidate(request, existingCandidate) || isNotApplicable(existingCandidate)) {
+            resetCandidate(request, repository, existingCandidate);
         } else {
-            updateCandidateKeepingApprovalsAndNotes(request, repository, existingCandidateDao);
+            updateCandidateKeepingApprovalsAndNotes(request, repository, existingCandidate);
         }
     }
 
-    private static boolean isNotApplicable(CandidateDao candidateDao) {
-        return !candidateDao.candidate().applicable();
+    private static boolean isNotApplicable(Candidate candidate) {
+        return !candidate.isApplicable();
     }
 
     private static void resetCandidate(UpsertCandidateRequest request, CandidateRepository repository,
-                                       CandidateDao existingCandidateDao) {
-        var newApprovals = mapToApprovals(request.institutionPoints());
-        var newCandidateDao = updateCandidateDaoFromRequest(existingCandidateDao, request);
-        repository.updateCandidate(existingCandidateDao.identifier(), newCandidateDao, newApprovals);
+                                       Candidate existingCandidate) {
+        var updatedCandidate = existingCandidate.apply(request);
+        var newApprovals = mapToApprovals(updatedCandidate.getInstitutionPoints());
+        repository.updateCandidate(updatedCandidate.toDao(), newApprovals);
     }
 
     private static void updateCandidateKeepingApprovalsAndNotes(UpsertCandidateRequest request,
                                                                 CandidateRepository repository,
-                                                                CandidateDao existingCandidateDao) {
-        var updatedCandidate = updateCandidateDaoFromRequest(existingCandidateDao, request);
-        repository.updateCandidate(updatedCandidate);
+                                                                Candidate existingCandidate) {
+        var updatedCandidateDao = existingCandidate.apply(request).toDao();
+        repository.updateCandidate(updatedCandidateDao);
     }
 
-    private static boolean shouldResetCandidate(UpsertCandidateRequest request, CandidateDao candidate) {
-        return levelIsUpdated(request, candidate) || instanceTypeIsUpdated(request, candidate) || creatorsAreUpdated(
-            request, candidate) || pointsAreUpdated(request, candidate) || publicationYearIsUpdated(request, candidate);
+    private static boolean shouldResetCandidate(UpsertCandidateRequest request, Candidate candidate) {
+        return levelIsUpdated(request, candidate)
+               || instanceTypeIsUpdated(request, candidate)
+               || creatorsAreUpdated(request, candidate)
+               || pointsAreUpdated(request, candidate)
+               || publicationYearIsUpdated(request, candidate);
     }
 
-    private static boolean publicationYearIsUpdated(UpsertCandidateRequest request, CandidateDao candidate) {
-        return !request.publicationDate().year().equals(candidate.candidate().publicationDate().year());
+    private static boolean publicationYearIsUpdated(UpsertCandidateRequest request, Candidate candidate) {
+        return !request.publicationDate().year().equals(candidate.getPublicationDetails().publicationDate().year());
     }
 
-    private static boolean pointsAreUpdated(UpsertCandidateRequest request, CandidateDao existingCandidateDao) {
-        return existingCandidateDao.candidate()
-                   .points()
-                   .stream()
-                   .anyMatch(institutionPoints -> isNotequalIgnoringScaleAndRoundingMode(
-                       institutionPoints.points(),
-                       request.getPointsForInstitution(institutionPoints.institutionId())
-                   ));
+    private static boolean pointsAreUpdated(UpsertCandidateRequest request, Candidate candidate) {
+        return !candidate.getInstitutionPoints().equals(request.institutionPoints());
     }
 
-    private static boolean isNotequalIgnoringScaleAndRoundingMode(BigDecimal existingPoints, BigDecimal requestPoints) {
-        return !Objects.equals(adjustScaleAndRoundingMode(requestPoints), adjustScaleAndRoundingMode(existingPoints));
+    private static boolean creatorsAreUpdated(UpsertCandidateRequest request, Candidate candidate) {
+        return !Objects.equals(mapToCreators(request.creators()), candidate.getPublicationDetails().creators());
     }
 
-    private static boolean creatorsAreUpdated(UpsertCandidateRequest request, CandidateDao existingCandidateDao) {
-        return !Objects.equals(mapToCreators(request.creators()), existingCandidateDao.candidate().creators());
+    private static boolean instanceTypeIsUpdated(UpsertCandidateRequest request, Candidate candidate) {
+        return !Objects.equals(request.instanceType().getValue(), candidate.getPublicationDetails().type());
     }
 
-    private static boolean instanceTypeIsUpdated(UpsertCandidateRequest request, CandidateDao existingCandidateDao) {
-        return !Objects.equals(request.instanceType().getValue(), existingCandidateDao.candidate().instanceType());
-    }
-
-    private static boolean levelIsUpdated(UpsertCandidateRequest request, CandidateDao existingCandidateDao) {
-        return !Objects.equals(DbLevel.parse(request.level()), existingCandidateDao.candidate().level());
+    private static boolean levelIsUpdated(UpsertCandidateRequest request, Candidate candidate) {
+        return !Objects.equals(request.level(), candidate.getPublicationDetails().level());
     }
 
     private static void createCandidate(UpsertCandidateRequest request, CandidateRepository repository) {
@@ -482,7 +514,7 @@ public final class Candidate {
                    .publicationId(request.publicationId())
                    .publicationBucketUri(request.publicationBucketUri())
                    .applicable(request.isApplicable())
-                   .creators(mapToCreators(request.creators()))
+                   .creators(mapToDbCreators(request.creators()))
                    .creatorShareCount(request.creatorShareCount())
                    .channelType(ChannelType.parse(request.channelType()))
                    .channelId(request.publicationChannelId())
@@ -496,31 +528,6 @@ public final class Candidate {
                    .totalPoints(adjustScaleAndRoundingMode(request.totalPoints()))
                    .createdDate(Instant.now())
                    .modifiedDate(Instant.now())
-                   .build();
-    }
-
-    private static CandidateDao updateCandidateDaoFromRequest(CandidateDao candidateDao,
-                                                              UpsertCandidateRequest request) {
-        return candidateDao.copy()
-                   .candidate(candidateDao.candidate()
-                                  .copy()
-                                  .applicable(request.isApplicable())
-                                  .creators(mapToCreators(request.creators()))
-                                  .creatorShareCount(request.creatorShareCount())
-                                  .channelType(ChannelType.parse(request.channelType()))
-                                  .channelId(request.publicationChannelId())
-                                  .level(DbLevel.parse(request.level()))
-                                  .instanceType(request.instanceType().getValue())
-                                  .publicationDate(mapToPublicationDate(request.publicationDate()))
-                                  .internationalCollaboration(request.isInternationalCollaboration())
-                                  .collaborationFactor(adjustScaleAndRoundingMode(request.collaborationFactor()))
-                                  .basePoints(adjustScaleAndRoundingMode(request.basePoints()))
-                                  .points(mapToPoints(request.institutionPoints()))
-                                  .totalPoints(adjustScaleAndRoundingMode(request.totalPoints()))
-                                  .modifiedDate(Instant.now())
-                                  .build())
-                   .version(randomUUID().toString())
-                   .periodYear(request.publicationDate().year())
                    .build();
     }
 
@@ -538,20 +545,24 @@ public final class Candidate {
                    .build();
     }
 
-    private static PublicationDate mapToPublicationDate(DbPublicationDate date) {
-        return new PublicationDate(date.year(), date.month(), date.day());
+    private static List<Creator> mapToCreators(Map<URI, List<URI>> creators) {
+        return creators.entrySet().stream().map(e -> new Creator(e.getKey(), e.getValue())).toList();
     }
 
-    private static List<DbCreator> mapToCreators(Map<URI, List<URI>> creators) {
-        return creators.entrySet().stream().map(e -> new DbCreator(e.getKey(), e.getValue())).toList();
+    private static List<DbCreator> mapToDbCreators(Map<URI, List<URI>> creators) {
+        return creators.entrySet()
+                   .stream()
+                   .map(creator -> new DbCreator(creator.getKey(), creator.getValue()))
+                   .toList();
     }
 
-    private static List<Creator> mapToCreators(List<DbCreator> creators) {
-        return nonNull(creators) ? creators.stream().map(Candidate::mapToCreator).toList() : List.of();
-    }
-
-    private static Creator mapToCreator(DbCreator dbCreator) {
-        return new Creator(dbCreator.creatorId(), dbCreator.affiliations());
+    private static List<DbCreator> mapToDbCreators(List<Creator> creators) {
+        return creators.stream()
+                   .map(creator -> DbCreator.builder()
+                                       .creatorId(creator.id())
+                                       .affiliations(creator.affiliations())
+                                       .build())
+                   .toList();
     }
 
     private static boolean isExistingCandidate(URI publicationId, CandidateRepository repository) {
@@ -563,6 +574,78 @@ public final class Candidate {
                    .candidate(candidateDao.candidate().copy().applicable(false).build())
                    .periodYear(null)
                    .build();
+    }
+
+    private Builder copy() {
+        return new Builder()
+                   .withIdentifier(identifier)
+                   .withApplicable(applicable)
+                   .withApprovals(approvals)
+                   .withNotes(notes)
+                   .withInstitutionPoints(institutionPoints)
+                   .withTotalPoints(totalPoints)
+                   .withPeriod(period)
+                   .withBasePoints(basePoints)
+                   .withInternationalCollaboration(internationalCollaboration)
+                   .withCollaborationFactor(collaborationFactor)
+                   .withCreatorShareCount(creatorShareCount)
+                   .withReportStatus(reportStatus)
+                   .withModifiedDate(modifiedDate)
+                   .withCreatedDate(createdDate)
+                   .withPublicationDetails(publicationDetails);
+    }
+
+    private CandidateDao toDao() {
+        return CandidateDao.builder()
+                   .identifier(identifier)
+                   .candidate(DbCandidate.builder()
+                                  .applicable(applicable)
+                                  .creators(mapToDbCreators(publicationDetails.creators()))
+                                  .creatorShareCount(creatorShareCount)
+                                  .channelType(publicationDetails.channelType())
+                                  .channelId(publicationDetails.publicationChannelId())
+                                  .level(DbLevel.parse(publicationDetails.level()))
+                                  .instanceType(publicationDetails.type())
+                                  .publicationDate(mapToPublicationDate(publicationDetails.publicationDate()))
+                                  .internationalCollaboration(internationalCollaboration)
+                                  .collaborationFactor(adjustScaleAndRoundingMode(collaborationFactor))
+                                  .basePoints(adjustScaleAndRoundingMode(basePoints))
+                                  .points(mapToPoints(institutionPoints))
+                                  .totalPoints(adjustScaleAndRoundingMode(totalPoints))
+                                  .createdDate(createdDate)
+                                  .modifiedDate(Instant.now())
+                                  .reportStatus(reportStatus)
+                                  .publicationBucketUri(publicationDetails.publicationBucketUri())
+                                  .publicationId(publicationDetails.publicationId())
+                                  .build())
+                   .version(randomUUID().toString())
+                   .periodYear(publicationDetails.publicationDate().year())
+                   .build();
+    }
+
+    private Candidate apply(UpsertCandidateRequest request) {
+        return this.copy()
+                   .withApplicable(request.isApplicable())
+                   .withBasePoints(adjustScaleAndRoundingMode(request.basePoints()))
+                   .withCollaborationFactor(adjustScaleAndRoundingMode(request.collaborationFactor()))
+                   .withCreatorShareCount(request.creatorShareCount())
+                   .withInternationalCollaboration(request.isInternationalCollaboration())
+                   .withTotalPoints(adjustScaleAndRoundingMode(request.totalPoints()))
+                   .withPublicationDetails(mapToPublicationDetails(request))
+                   .withInstitutionPoints(request.institutionPoints())
+                   .withModifiedDate(Instant.now())
+                   .build();
+    }
+
+    private PublicationDetails mapToPublicationDetails(UpsertCandidateRequest request) {
+        return new PublicationDetails(request.publicationId(),
+                                      request.publicationBucketUri(),
+                                      request.instanceType().getValue(),
+                                      request.publicationDate(),
+                                      mapToCreators(request.creators()),
+                                      ChannelType.parse(request.channelType()),
+                                      request.publicationChannelId(),
+                                      request.level());
     }
 
     private void setUserAsAssigneeIfApprovalIsUnassigned(String username, URI institutionId) {
@@ -593,17 +676,6 @@ public final class Candidate {
         return approvals.values().stream();
     }
 
-    private PublicationDetails mapToPublicationDetails(CandidateDao candidateDao) {
-        return new PublicationDetails(candidateDao.candidate().publicationId(),
-                                      candidateDao.candidate().publicationBucketUri(),
-                                      candidateDao.candidate().instanceType(),
-                                      mapToPublicationDate(candidateDao.candidate().publicationDate()),
-                                      mapToCreators(candidateDao.candidate().creators()),
-                                      candidateDao.candidate().channelType(),
-                                      candidateDao.candidate().channelId(),
-                                      candidateDao.candidate().level().getValue());
-    }
-
     private void validateCandidateState() {
         if (Status.CLOSED_PERIOD.equals(period.status())) {
             throw new IllegalStateException(PERIOD_CLOSED_MESSAGE);
@@ -628,5 +700,108 @@ public final class Candidate {
     private ApprovalDto toApprovalDto(Approval approval) {
         var points = getPointValueForInstitution(approval.getInstitutionId());
         return ApprovalDto.fromApprovalAndInstitutionPoints(approval, points);
+    }
+
+    public static final class Builder {
+
+        private UUID identifier;
+        private boolean applicable;
+        private Map<URI, Approval> approvals;
+        private Map<UUID, Note> notes;
+        private List<InstitutionPoints> institutionPoints;
+        private BigDecimal totalPoints;
+        private PeriodStatus period;
+        private PublicationDetails publicationDetails;
+        private BigDecimal basePoints;
+        private boolean internationalCollaboration;
+        private BigDecimal collaborationFactor;
+        private int creatorShareCount;
+        private Instant createdDate;
+        private Instant modifiedDate;
+        private ReportStatus reportStatus;
+
+        private Builder() {
+        }
+
+        public Builder withIdentifier(UUID identifier) {
+            this.identifier = identifier;
+            return this;
+        }
+
+        public Builder withApplicable(boolean applicable) {
+            this.applicable = applicable;
+            return this;
+        }
+
+        public Builder withApprovals(Map<URI, Approval> approvals) {
+            this.approvals = approvals;
+            return this;
+        }
+
+        public Builder withNotes(Map<UUID, Note> notes) {
+            this.notes = notes;
+            return this;
+        }
+
+        public Builder withInstitutionPoints(List<InstitutionPoints> institutionPoints) {
+            this.institutionPoints = institutionPoints;
+            return this;
+        }
+
+        public Builder withTotalPoints(BigDecimal totalPoints) {
+            this.totalPoints = totalPoints;
+            return this;
+        }
+
+        public Builder withPeriod(PeriodStatus period) {
+            this.period = period;
+            return this;
+        }
+
+        public Builder withPublicationDetails(PublicationDetails publicationDetails) {
+            this.publicationDetails = publicationDetails;
+            return this;
+        }
+
+        public Builder withBasePoints(BigDecimal basePoints) {
+            this.basePoints = basePoints;
+            return this;
+        }
+
+        public Builder withInternationalCollaboration(boolean internationalCollaboration) {
+            this.internationalCollaboration = internationalCollaboration;
+            return this;
+        }
+
+        public Builder withCollaborationFactor(BigDecimal collaborationFactor) {
+            this.collaborationFactor = collaborationFactor;
+            return this;
+        }
+
+        public Builder withCreatorShareCount(int creatorShareCount) {
+            this.creatorShareCount = creatorShareCount;
+            return this;
+        }
+
+        public Builder withCreatedDate(Instant createdDate) {
+            this.createdDate = createdDate;
+            return this;
+        }
+
+        public Builder withModifiedDate(Instant modifiedDate) {
+            this.modifiedDate = modifiedDate;
+            return this;
+        }
+
+        public Builder withReportStatus(ReportStatus reportStatus) {
+            this.reportStatus = reportStatus;
+            return this;
+        }
+
+        public Candidate build() {
+            return new Candidate(identifier, applicable, approvals, notes, institutionPoints, totalPoints, period,
+                                 publicationDetails, basePoints, internationalCollaboration, collaborationFactor,
+                                 creatorShareCount, createdDate, modifiedDate, reportStatus);
+        }
     }
 }

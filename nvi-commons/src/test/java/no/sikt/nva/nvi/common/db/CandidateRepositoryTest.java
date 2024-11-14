@@ -24,11 +24,13 @@ import org.junit.jupiter.api.Test;
 class CandidateRepositoryTest extends LocalDynamoTest {
 
     private CandidateRepository candidateRepository;
+    private PeriodRepository periodRepository;
 
     @BeforeEach
     public void setUp() {
         localDynamo = initializeTestDatabase();
         candidateRepository = new CandidateRepository(localDynamo);
+        periodRepository = new PeriodRepository(localDynamo);
     }
 
     @Test
@@ -44,12 +46,12 @@ class CandidateRepositoryTest extends LocalDynamoTest {
     @Test
     public void shouldOverwriteExistingCandidateWhenUpdating() {
         var originalRequest = createUpsertCandidateRequest(randomUri());
-        Candidate.upsert(originalRequest, candidateRepository);
+        Candidate.upsert(originalRequest, candidateRepository, periodRepository);
         var candidateDao = candidateRepository.findByPublicationId(originalRequest.publicationId()).get();
         var originalDbCandidate = candidateDao.candidate();
 
         var newUpsertRequest = copyRequestWithNewInstanceType(originalRequest, randomUri());
-        Candidate.upsert(newUpsertRequest, candidateRepository);
+        Candidate.upsert(newUpsertRequest, candidateRepository, periodRepository);
         var updatedDbCandidate = candidateRepository.findCandidateById(candidateDao.identifier()).get().candidate();
 
         assertThat(scanDB().count(), is(equalTo(3)));

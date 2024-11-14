@@ -14,7 +14,6 @@ import static software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional.ke
 import static software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional.sortBeginsWith;
 import java.net.URI;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -122,15 +121,19 @@ public class CandidateRepository extends DynamoRepository {
         return candidateTable.getItem(candidate);
     }
 
-    public void updateCandidate(UUID identifier, CandidateDao candidateDao, List<DbApprovalStatus> approvals) {
-        var approvalMap = approvals.stream()
-                              .map(approval -> mapToApprovalStatusDao(identifier, approval))
-                              .collect(toMap(approvalStatusDao -> approvalStatusDao.approvalStatus().institutionId(),
+    public void updateCandidate(CandidateDao candidateDao, List<DbApprovalStatus> approvals) {
+        var updatedApprovals = approvals.stream()
+                                   .map(approval -> mapToApprovalStatusDao(candidateDao.identifier(), approval))
+                                   .collect(
+                                       toMap(approvalStatusDao -> approvalStatusDao.approvalStatus().institutionId(),
                                              Function.identity()));
         var transaction = TransactWriteItemsEnhancedRequest.builder();
-        addNoLongerValidApprovalsToTransaction(identifier, approvalMap, transaction);
         transaction.addPutItem(candidateTable, candidateDao);
-        approvalMap.values().forEach(approvalStatus -> transaction.addPutItem(approvalStatusTable, approvalStatus));
+        var approvalsForDeletion = identifyApprovalsForDeletion(candidateDao.identifier(), updatedApprovals);
+        approvalsForDeletion.forEach(
+            approvalStatusDao -> transaction.addDeleteItem(approvalStatusTable, approvalStatusDao));
+        updatedApprovals.values()
+            .forEach(approvalStatus -> transaction.addPutItem(approvalStatusTable, approvalStatus));
         client.transactWriteItems(transaction.build());
     }
 
@@ -181,10 +184,10 @@ public class CandidateRepository extends DynamoRepository {
 
     public void updateCandidateAndRemovingApprovals(UUID identifier, CandidateDao nonApplicableCandidate) {
         candidateTable.putItem(nonApplicableCandidate);
-        var approvalStatuseDaos = getApprovalStatuses(identifier);
-        if (!approvalStatuseDaos.isEmpty()) {
+        var approvalStatusDaoList = getApprovalStatuses(identifier);
+        if (!approvalStatusDaoList.isEmpty()) {
             var transactionBuilder = TransactWriteItemsEnhancedRequest.builder();
-            approvalStatuseDaos.forEach(
+            approvalStatusDaoList.forEach(
                 approvalStatusDao -> transactionBuilder.addDeleteItem(approvalStatusTable, approvalStatusDao));
             client.transactWriteItems(transactionBuilder.build());
         }
@@ -270,6 +273,24 @@ public class CandidateRepository extends DynamoRepository {
                    .build();
     }
 
+    private static boolean isNotPresentInNewApprovals(Map<URI, ApprovalStatusDao> newApprovals,
+                                                      ApprovalStatusDao oldApproval) {
+        return !newApprovals.containsKey(oldApproval.approvalStatus().institutionId());
+    }
+
+    private Stream<ApprovalStatusDao> identifyApprovalsForDeletion(UUID identifier,
+                                                                   Map<URI, ApprovalStatusDao> newApprovals) {
+        return getApprovalStatuses(approvalStatusTable, identifier)
+                   .filter(approval -> isNotPresentInNewApprovals(newApprovals, approval));
+    }
+
+    private Stream<ApprovalStatusDao> getApprovalStatuses(DynamoDbTable<ApprovalStatusDao> approvalStatusTable,
+                                                          UUID identifier) {
+        return approvalStatusTable.query(queryCandidateParts(identifier, ApprovalStatusDao.TYPE))
+                   .items()
+                   .stream();
+    }
+
     private List<Dao> extractDatabaseEntries(ScanResponse response) {
         return response.items()
                    .stream()
@@ -289,7 +310,7 @@ public class CandidateRepository extends DynamoRepository {
         return this.yearIndex.query(createQuery(year, pageSize, startMarker))
                    .stream()
                    .findFirst()
-                   .orElse(Page.create(emptyList()));
+                   .orElse(Page.builder(CandidateDao.class).items(emptyList()).build());
     }
 
     private QueryEnhancedRequest createQuery(String year, Integer pageSize, Map<String, String> startMarker) {
@@ -342,28 +363,10 @@ public class CandidateRepository extends DynamoRepository {
                    .build();
     }
 
-    private void addNoLongerValidApprovalsToTransaction(UUID identifier, Map<URI, ApprovalStatusDao> approvalMap,
-                                                        Builder transaction) {
-        var oldApprovals = new ArrayList<>(getApprovalStatuses(approvalStatusTable, identifier));
-        if (oldApprovals.removeIf(old -> approvalMap.containsKey(old.institutionId()))) {
-            oldApprovals.forEach(leftOver -> transaction.addDeleteItem(approvalStatusTable,
-                                                                       mapToApprovalStatusDao(identifier, leftOver)));
-        }
-    }
-
     private List<ApprovalStatusDao> getApprovalStatuses(UUID identifier) {
         return approvalStatusTable.query(queryCandidateParts(identifier, ApprovalStatusDao.TYPE))
                    .items()
                    .stream()
-                   .toList();
-    }
-
-    private List<DbApprovalStatus> getApprovalStatuses(DynamoDbTable<ApprovalStatusDao> approvalStatusTable,
-                                                       UUID identifier) {
-        return approvalStatusTable.query(queryCandidateParts(identifier, ApprovalStatusDao.TYPE))
-                   .items()
-                   .stream()
-                   .map(ApprovalStatusDao::approvalStatus)
                    .toList();
     }
 

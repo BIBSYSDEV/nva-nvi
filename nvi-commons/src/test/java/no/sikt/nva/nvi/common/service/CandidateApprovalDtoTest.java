@@ -83,7 +83,7 @@ public class CandidateApprovalDtoTest extends LocalDynamoTest {
     void shouldUpdateStatusWhenUpdateStatusRequestValid(ApprovalStatus oldStatus, ApprovalStatus newStatus) {
         var institutionId = randomUri();
         var upsertCandidateRequest = createUpsertCandidateRequest(institutionId);
-        Candidate.upsert(upsertCandidateRequest, candidateRepository);
+        Candidate.upsert(upsertCandidateRequest, candidateRepository, periodRepository);
         var existingCandidate = Candidate.fetchByPublicationId(upsertCandidateRequest::publicationId,
                                                                candidateRepository,
                                                                periodRepository)
@@ -124,7 +124,7 @@ public class CandidateApprovalDtoTest extends LocalDynamoTest {
     void shouldRemoveReasonWhenUpdatingFromRejectionStatusToNewStatus(ApprovalStatus newStatus) {
         var institutionId = randomUri();
         var createRequest = createUpsertCandidateRequest(institutionId);
-        Candidate.upsert(createRequest, candidateRepository);
+        Candidate.upsert(createRequest, candidateRepository, periodRepository);
         var rejectedCandidate = Candidate.fetchByPublicationId(createRequest::publicationId, candidateRepository,
                                                                periodRepository)
                                     .updateApproval(
@@ -143,7 +143,7 @@ public class CandidateApprovalDtoTest extends LocalDynamoTest {
         var keepInstitutionId = randomUri();
         var deleteInstitutionId = randomUri();
         var createCandidateRequest = createUpsertCandidateRequest(keepInstitutionId, deleteInstitutionId, randomUri());
-        Candidate.upsert(createCandidateRequest, candidateRepository);
+        Candidate.upsert(createCandidateRequest, candidateRepository, periodRepository);
         var updateRequest = createUpsertCandidateRequest(
             createCandidateRequest.publicationId(), randomUri(), true, InstanceType.ACADEMIC_MONOGRAPH, 2,
             randomBigDecimal(), randomLevelExcluding(DbLevel.NON_CANDIDATE).getValue(),
@@ -184,7 +184,7 @@ public class CandidateApprovalDtoTest extends LocalDynamoTest {
                                                              .getValue(), TestUtils.CURRENT_YEAR,
                                                          randomUri());
         assertThrows(InvalidNviCandidateException.class,
-                     () -> Candidate.upsert(updateRequest, candidateRepository));
+                     () -> Candidate.upsert(updateRequest, candidateRepository, periodRepository));
     }
 
     @ParameterizedTest
@@ -192,7 +192,7 @@ public class CandidateApprovalDtoTest extends LocalDynamoTest {
     void shouldThrowUnsupportedOperationWhenRejectingWithoutReason(ApprovalStatus oldStatus) {
         var institutionId = randomUri();
         var createRequest = createUpsertCandidateRequest(institutionId);
-        Candidate.upsert(createRequest, candidateRepository);
+        Candidate.upsert(createRequest, candidateRepository, periodRepository);
         var candidate = Candidate.fetchByPublicationId(createRequest::publicationId, candidateRepository,
                                                        periodRepository)
                             .updateApproval(createUpdateStatusRequest(oldStatus, institutionId, randomString()));
@@ -265,7 +265,7 @@ public class CandidateApprovalDtoTest extends LocalDynamoTest {
     }
 
     private Candidate upsert(UpsertCandidateRequest request) {
-        Candidate.upsert(request, candidateRepository);
+        Candidate.upsert(request, candidateRepository, periodRepository);
         return Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository);
     }
 }
