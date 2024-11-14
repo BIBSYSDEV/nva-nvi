@@ -21,8 +21,9 @@ import org.slf4j.LoggerFactory;
 public class FetchNviPeriodHandler extends ApiGatewayHandler<Void, NviPeriodDto> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FetchNviPeriodHandler.class);
-    public static final String PERIOD_IDENTIFIER = "periodIdentifier";
-    public static final String BAD_GATEWAY_EXCEPTION_MESSAGE = "Something went wrong! Contact application administrator.";
+    private static final String PERIOD_IDENTIFIER = "periodIdentifier";
+    private static final String BAD_GATEWAY_EXCEPTION_MESSAGE = "Something went wrong! Contact application "
+                                                                + "administrator.";
     private final PeriodRepository periodRepository;
 
     @JacocoGenerated
@@ -44,9 +45,14 @@ public class FetchNviPeriodHandler extends ApiGatewayHandler<Void, NviPeriodDto>
     protected NviPeriodDto processInput(Void input, RequestInfo requestInfo, Context context)
         throws ApiGatewayException {
         return attempt(() -> requestInfo.getPathParameter(PERIOD_IDENTIFIER))
-                   .map(period -> NviPeriod.fetch(period, periodRepository))
+                   .map(period -> NviPeriod.fetchByPublishingYear(period, periodRepository))
                    .map(NviPeriod::toDto)
                    .orElseThrow(this::mapException);
+    }
+
+    @Override
+    protected Integer getSuccessStatusCode(Void input, NviPeriodDto output) {
+        return HttpURLConnection.HTTP_OK;
     }
 
     private <T> ApiGatewayException mapException(Failure<NviPeriodDto> failure) {
@@ -57,10 +63,5 @@ public class FetchNviPeriodHandler extends ApiGatewayHandler<Void, NviPeriodDto>
             LOGGER.error(exception.getMessage());
             return new BadGatewayException(BAD_GATEWAY_EXCEPTION_MESSAGE);
         }
-    }
-
-    @Override
-    protected Integer getSuccessStatusCode(Void input, NviPeriodDto output) {
-        return HttpURLConnection.HTTP_OK;
     }
 }

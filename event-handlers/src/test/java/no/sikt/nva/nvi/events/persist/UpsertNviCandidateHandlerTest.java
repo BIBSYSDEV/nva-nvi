@@ -95,7 +95,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         queueClient = mock(QueueClient.class);
         environment = mock(Environment.class);
         when(environment.readEnv("UPSERT_CANDIDATE_DLQ_QUEUE_URL")).thenReturn(DLQ_QUEUE_URL);
-        handler = new UpsertNviCandidateHandler(candidateRepository, queueClient, environment);
+        handler = new UpsertNviCandidateHandler(candidateRepository, periodRepository, queueClient, environment);
     }
 
     @Test
@@ -117,7 +117,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
     @Test
     void shouldSendMessageToDlqWhenUnexpectedErrorOccurs() {
         candidateRepository = mock(CandidateRepository.class);
-        handler = new UpsertNviCandidateHandler(candidateRepository, queueClient, environment);
+        handler = new UpsertNviCandidateHandler(candidateRepository, periodRepository, queueClient, environment);
         when(candidateRepository.create(any(), any())).thenThrow(RuntimeException.class);
 
         handler.handleRequest(createEvent(randomCandidateEvaluatedMessage()), CONTEXT);
@@ -159,7 +159,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                                                    randomLevelExcluding(DbLevel.NON_CANDIDATE).getValue(),
                                                    TestUtils.CURRENT_YEAR,
                                                    delete, keep);
-        Candidate.upsert(request, candidateRepository);
+        Candidate.upsert(request, candidateRepository, periodRepository);
         var candidate = Candidate.fetchByPublicationId(() -> publicationId, candidateRepository, periodRepository);
         var sqsEvent = createEvent(keep, publicationId, generateS3BucketUri(identifier));
         handler.handleRequest(sqsEvent, CONTEXT);
@@ -173,14 +173,14 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
     void shouldNotResetApprovalsWhenUpdatingFieldsNotEffectingApprovals() {
         var institutionId = randomUri();
         var upsertCandidateRequest = createUpsertCandidateRequest(institutionId);
-        Candidate.upsert(upsertCandidateRequest, candidateRepository);
+        Candidate.upsert(upsertCandidateRequest, candidateRepository, periodRepository);
         var candidate = Candidate.fetchByPublicationId(upsertCandidateRequest::publicationId, candidateRepository,
                                                        periodRepository);
         candidate.updateApproval(
             new UpdateStatusRequest(institutionId, ApprovalStatus.APPROVED, randomString(), randomString()));
         var approval = candidate.toDto().approvals().get(0);
         var newUpsertRequest = createNewUpsertRequestNotAffectingApprovals(upsertCandidateRequest, institutionId);
-        Candidate.upsert(newUpsertRequest, candidateRepository);
+        Candidate.upsert(newUpsertRequest, candidateRepository, periodRepository);
         var updatedCandidate = Candidate.fetchByPublicationId(newUpsertRequest::publicationId, candidateRepository,
                                                              periodRepository);
         var updatedApproval = updatedCandidate.toDto().approvals().get(0);

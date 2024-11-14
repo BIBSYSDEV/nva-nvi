@@ -322,7 +322,7 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
     @ParameterizedTest
     @MethodSource("channelTypeIssnProvider")
     void shouldExtractOptionalPrintIssnFromExpandedResource(ChannelType channelType, boolean printIssnExists) {
-        var candidate = randomApplicableCandidate(HARD_CODED_TOP_LEVEL_ORG, randomUri(), channelType);
+        var candidate = randomApplicableCandidate(randomUri(), channelType);
         var expandedResource =
             ExpandedResourceGenerator.builder().withCandidate(candidate).withPopulateIssn(printIssnExists).build()
                 .createExpandedResource();
@@ -379,7 +379,7 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
         mockUriRetrieverOrgResponse(candidate);
         handler.handleRequest(createEvent(candidate.getIdentifier()), CONTEXT);
         var expectedEvent = createExpectedEventMessageBody(candidate);
-        var actualEvent = sqsClient.getSentMessages().get(0).messageBody();
+        var actualEvent = sqsClient.getSentMessages().getFirst().messageBody();
         assertEquals(expectedEvent, actualEvent);
     }
 
@@ -494,9 +494,9 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
                    .orElseThrow();
     }
 
-    private static OrganizationType getTopLevelAffiliation(NviContributor contributor, URI affilaitionId) {
+    private static OrganizationType getTopLevelAffiliation(NviContributor contributor, URI affiliationId) {
         return contributor.affiliations().stream()
-                   .filter(affiliation -> affiliation.id().equals(affilaitionId)).findFirst().get();
+                   .filter(affiliation -> affiliation.id().equals(affiliationId)).findFirst().get();
     }
 
     @SuppressWarnings("unchecked")
@@ -598,7 +598,7 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
 
     private Candidate setUpNonApplicableCandidate(URI institutionId) {
         var request = createUpsertCandidateRequest(institutionId);
-        Candidate.upsert(request, candidateRepository);
+        Candidate.upsert(request, candidateRepository, periodRepository);
         var candidate = Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository);
         return Candidate.updateNonCandidate(
             createUpsertNonCandidateRequest(candidate.getPublicationId()),
@@ -752,13 +752,13 @@ public class IndexDocumentHandlerTest extends LocalDynamoTest {
 
     private Candidate randomApplicableCandidate(URI topLevelOrg, URI affiliation) {
         var request = createUpsertCandidateRequest(topLevelOrg, affiliation);
-        Candidate.upsert(request, candidateRepository);
+        Candidate.upsert(request, candidateRepository, periodRepository);
         return Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository);
     }
 
-    private Candidate randomApplicableCandidate(URI topLevelOrg, URI affiliation, ChannelType channelType) {
-        var request = createUpsertCandidateRequest(topLevelOrg, affiliation, channelType);
-        Candidate.upsert(request, candidateRepository);
+    private Candidate randomApplicableCandidate(URI affiliation, ChannelType channelType) {
+        var request = createUpsertCandidateRequest(HARD_CODED_TOP_LEVEL_ORG, affiliation, channelType);
+        Candidate.upsert(request, candidateRepository, periodRepository);
         return Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository);
     }
 }

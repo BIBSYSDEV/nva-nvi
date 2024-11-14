@@ -46,7 +46,7 @@ public class UpdateNviCandidateStatusHandler extends ApiGatewayHandler<NviStatus
     @Override
     protected void validateRequest(NviStatusRequest input, RequestInfo requestInfo, Context context)
         throws ApiGatewayException {
-        validateRequest(input, requestInfo);
+        validateCustomerAndAccessRight(input, requestInfo);
     }
 
     @Override
@@ -67,7 +67,7 @@ public class UpdateNviCandidateStatusHandler extends ApiGatewayHandler<NviStatus
         return HTTP_OK;
     }
 
-    private static void validateRequest(NviStatusRequest input, RequestInfo requestInfo)
+    private static void validateCustomerAndAccessRight(NviStatusRequest input, RequestInfo requestInfo)
         throws UnauthorizedException, ForbiddenException {
         RequestUtil.hasAccessRight(requestInfo, AccessRight.MANAGE_NVI_CANDIDATES);
         hasSameCustomer(requestInfo, input);

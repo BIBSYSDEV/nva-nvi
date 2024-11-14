@@ -7,5 +7,6 @@ public interface CreateNoteRequest {
     String text();
 
     String username();
+
     URI institutionId();
 }

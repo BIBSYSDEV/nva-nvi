@@ -7,7 +7,9 @@ Description: >
 Globals:
   Function:
     Timeout: 20
-    Runtime: java17
+    Runtime: java21
+    Architectures:
+      - arm64
     MemorySize: 1536
     Environment:
       Variables:
@@ -668,7 +670,6 @@ Resources:
     Properties:
       CodeUri: event-handlers
       Handler: no.sikt.nva.nvi.events.QueuePersistedResourceHandler::handleRequest
-      Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
       Timeout: 30
       MemorySize: 1536
@@ -700,7 +701,6 @@ Resources:
     Properties:
       CodeUri: event-handlers
       Handler: no.sikt.nva.nvi.events.evaluator.EvaluateNviCandidateHandler::handleRequest
-      Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
       #For publications with many contributors, evaluation can take more than 30 sec due to
       #many external requests. Timeout is set to 5 minutes.
@@ -754,7 +754,6 @@ Resources:
     Properties:
       CodeUri: event-handlers
       Handler: no.sikt.nva.nvi.events.db.DynamoDbEventToQueueHandler::handleRequest
-      Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
       AutoPublishAlias: live
       SnapStart:
@@ -783,7 +782,6 @@ Resources:
     Properties:
       CodeUri: event-handlers
       Handler: no.sikt.nva.nvi.events.db.DataEntryUpdateHandler::handleRequest
-      Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
       AutoPublishAlias: live
       SnapStart:
@@ -815,7 +813,6 @@ Resources:
     Properties:
       CodeUri: index-handlers
       Handler: no.sikt.nva.nvi.index.IndexDocumentHandler::handleRequest
-      Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
       AutoPublishAlias: live
       SnapStart:
@@ -842,7 +839,6 @@ Resources:
     Properties:
       CodeUri: index-handlers
       Handler: no.sikt.nva.nvi.index.UpdateIndexHandler::handleRequest
-      Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
       AutoPublishAlias: live
       SnapStart:
@@ -868,7 +864,6 @@ Resources:
     Properties:
       CodeUri: index-handlers
       Handler: no.sikt.nva.nvi.index.RemoveIndexDocumentHandler::handleRequest
-      Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
       AutoPublishAlias: live
       SnapStart:
@@ -890,7 +885,6 @@ Resources:
     Properties:
       CodeUri: index-handlers
       Handler: no.sikt.nva.nvi.index.DeletePersistedIndexDocumentHandler::handleRequest
-      Runtime: java17
       Role: !GetAtt DeletePersistedDocumentRole.Arn
       AutoPublishAlias: live
       SnapStart:
@@ -916,7 +910,6 @@ Resources:
     Properties:
       CodeUri: event-handlers
       Handler: no.sikt.nva.nvi.events.batch.EventBasedBatchScanHandler::handleRequest
-      Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
       Timeout: 900
       Environment:
@@ -941,7 +934,6 @@ Resources:
     Properties:
       CodeUri: event-handlers
       Handler: no.sikt.nva.nvi.events.cristin.CristinNviReportEventConsumer::handleRequest
-      Runtime: java17
       Role: !GetAtt NvaNviRole.Arn
       Timeout: 30
       MemorySize: 1536
@@ -978,7 +970,6 @@ Resources:
     Properties:
       CodeUri: event-handlers
       Handler: no.sikt.nva.nvi.events.batch.BatchScanStartHandler::handleRequest
-      Runtime: java17
       Timeout: 60
       Role: !GetAtt NvaNviRole.Arn
       AutoPublishAlias: live
@@ -1007,7 +998,6 @@ Resources:
     Properties:
       CodeUri: event-handlers
       Handler: no.sikt.nva.nvi.events.batch.ReEvaluateNviCandidatesHandler::handleRequest
-      Runtime: java17
       Timeout: 60
       Role: !GetAtt NvaNviRole.Arn
       AutoPublishAlias: live

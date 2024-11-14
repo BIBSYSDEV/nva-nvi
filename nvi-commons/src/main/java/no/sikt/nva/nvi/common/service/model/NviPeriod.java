@@ -53,7 +53,7 @@ public class NviPeriod {
         return period.fetch(periodRepository);
     }
 
-    public static NviPeriod fetch(String publishingYear, PeriodRepository periodRepository) {
+    public static NviPeriod fetchByPublishingYear(String publishingYear, PeriodRepository periodRepository) {
         return periodRepository.findByPublishingYear(publishingYear)
                    .map(NviPeriod::fromDbPeriod)
                    .orElseThrow(() -> PeriodNotFoundException.withMessage(
@@ -131,6 +131,12 @@ public class NviPeriod {
                              request.startDate(), request.reportingDate(), request.createdBy(), null);
     }
 
+    private static NviPeriod fromRequest(UpdatePeriodRequest request) {
+        request.validate();
+        return new NviPeriod(constructId(String.valueOf(request.publishingYear())), request.publishingYear(),
+                             request.startDate(), request.reportingDate(), null, request.modifiedBy());
+    }
+
     private static URI constructId(String publishingYear) {
         return UriWrapper.fromHost(API_HOST)
                    .addChild(SCIENTIFIC_INDEX_API_PATH)
@@ -139,14 +145,8 @@ public class NviPeriod {
                    .getUri();
     }
 
-    private static NviPeriod fromRequest(UpdatePeriodRequest request) {
-        request.validate();
-        return new NviPeriod(constructId(String.valueOf(request.publishingYear())), request.publishingYear(),
-                             request.startDate(), request.reportingDate(), null, request.modifiedBy());
-    }
-
     private NviPeriod fetch(PeriodRepository periodRepository) {
-        return fetch(String.valueOf(publishingYear), periodRepository);
+        return fetchByPublishingYear(String.valueOf(publishingYear), periodRepository);
     }
 
     private NviPeriod updateWithRequest(UpdatePeriodRequest request) {

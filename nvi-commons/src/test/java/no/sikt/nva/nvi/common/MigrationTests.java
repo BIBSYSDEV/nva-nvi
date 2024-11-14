@@ -74,7 +74,7 @@ public class MigrationTests extends LocalDynamoTest {
 
     private Candidate setupCandidateWithApprovalAndNotes() {
         var candidate = TestUtils.randomApplicableCandidate(candidateRepository, periodRepository)
-                            .createNote(createNoteRequest(randomString(), randomString()));
+                            .createNote(createNoteRequest(randomString(), randomString()), candidateRepository);
 
         return candidate.updateApproval(createUpdateStatusRequest(ApprovalStatus.REJECTED,
                                                                   getInstitutionId(candidate),

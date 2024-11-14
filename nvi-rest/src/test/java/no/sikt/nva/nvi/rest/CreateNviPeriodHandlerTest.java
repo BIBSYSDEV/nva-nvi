@@ -74,7 +74,7 @@ public class CreateNviPeriodHandlerTest extends LocalDynamoTest {
         var year = String.valueOf(ZonedDateTime.now().getYear());
         var period = upsertRequest(year);
         handler.handleRequest(createRequest(period), output, context);
-        var persistedPeriod = NviPeriod.fetch(year, periodRepository);
+        var persistedPeriod = NviPeriod.fetchByPublishingYear(year, periodRepository);
         assertThat(period.publishingYear(), is(equalTo(persistedPeriod.getPublishingYear().toString())));
     }
 

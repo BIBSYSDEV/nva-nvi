@@ -133,6 +133,14 @@ public final class NviCandidateIndexDocumentGenerator {
                    .equals(institutionId.toString());
     }
 
+    private static Optional<Map<String, String>> readAsStringMap(JsonNode node) {
+        return attempt(() -> dtoObjectMapper.readValue(node.toString(), TYPE_REF)).toOptional();
+    }
+
+    private static NodeIterator listNextPartOf(Model model, String resourceId) {
+        return model.listObjectsOfProperty(model.createResource(resourceId), model.createProperty(PART_OF_PROPERTY));
+    }
+
     private static Optional<Map<String, String>> extractLabels(Approval approval, JsonNode topLevelOrganizations) {
         return streamNode(topLevelOrganizations)
                    .filter(organization -> isOrgWithInstitutionId(organization, approval.getInstitutionId()))
@@ -141,12 +149,9 @@ public final class NviCandidateIndexDocumentGenerator {
                    .flatMap(NviCandidateIndexDocumentGenerator::readAsStringMap);
     }
 
-    private static Optional<Map<String, String>> readAsStringMap(JsonNode node) {
-        return attempt(() -> dtoObjectMapper.readValue(node.toString(), TYPE_REF)).toOptional();
-    }
-
-    private static NodeIterator listNextPartOf(Model model, String resourceId) {
-        return model.listObjectsOfProperty(model.createResource(resourceId), model.createProperty(PART_OF_PROPERTY));
+    private Map<String, String> extractLabels(Approval approval) {
+        return extractLabelsFromExpandedResource(expandedResource, approval)
+                   .orElse(fetchOrganization(approval.getInstitutionId()).labels());
     }
 
     private NviCandidateIndexDocument buildDocument(List<no.sikt.nva.nvi.index.model.document.Approval> approvals,
@@ -282,11 +287,6 @@ public final class NviCandidateIndexDocumentGenerator {
         List<ContributorType> expandedContributors) {
         return streamValues(candidate.getApprovals()).map(
             approval -> toApproval(approval, expandedContributors)).toList();
-    }
-
-    private Map<String, String> extractLabels(Approval approval) {
-        return extractLabelsFromExpandedResource(expandedResource, approval)
-                   .orElse(fetchOrganization(approval.getInstitutionId()).labels());
     }
 
     private Optional<Map<String, String>> extractLabelsFromExpandedResource(

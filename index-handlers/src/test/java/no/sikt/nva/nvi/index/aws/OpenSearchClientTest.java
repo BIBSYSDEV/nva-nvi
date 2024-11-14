@@ -116,7 +116,7 @@ public class OpenSearchClientTest {
     public static final int SCALE = 4;
     public static final String SIKT_LEVEL_2_ID = "https://api.dev.nva.aws.unit.no/cristin/organization/20754.1.0.0";
     public static final String SIKT_LEVEL_3_ID = "https://api.dev.nva.aws.unit.no/cristin/organization/20754.1.1.0";
-    private static final String OPEN_SEARCH_IMAGE = "opensearchproject/opensearch:2.0.0";
+    private static final String OPEN_SEARCH_IMAGE = "opensearchproject/opensearch:2.11.1";
     private static final URI ORGANIZATION = URI.create(
         "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0");
     private static final String USERNAME = "user1";
