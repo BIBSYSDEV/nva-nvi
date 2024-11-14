@@ -4,10 +4,8 @@ import static no.sikt.nva.nvi.common.utils.JsonUtils.extractOptJsonNodeTextValue
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import java.util.stream.StreamSupport;
 import org.junit.jupiter.api.Test;
 
@@ -20,45 +18,45 @@ class JsonUtilsTest {
     void shouldExtractJsonNodeTextValueIfPresent() {
         var fieldValue = randomString();
         var randomJsonNode = objectMapper.createObjectNode().put(FIELD_NAME, fieldValue);
-        assertThat(JsonUtils.extractJsonNodeTextValue(randomJsonNode, "/" + FIELD_NAME), is(equalTo(fieldValue)));
+        assertEquals(JsonUtils.extractJsonNodeTextValue(randomJsonNode, "/" + FIELD_NAME), fieldValue);
     }
 
     @Test
     void shouldExtractOptionalJsonNodeTextValueIfPresent() {
         var fieldValue = randomString();
         var randomJsonNode = objectMapper.createObjectNode().put(FIELD_NAME, fieldValue);
-        assertThat(extractOptJsonNodeTextValue(randomJsonNode, "/" + FIELD_NAME).get(), is(equalTo(fieldValue)));
+        assertEquals(extractOptJsonNodeTextValue(randomJsonNode, "/" + FIELD_NAME).get(), fieldValue);
     }
 
     @Test
     void shouldReturnNullIfJsonPointerPointsToMissingNode() {
         var randomJsonNode = objectMapper.createObjectNode();
-        assertThat(JsonUtils.extractJsonNodeTextValue(randomJsonNode, "/" + FIELD_NAME), nullValue());
+        assertNull(JsonUtils.extractJsonNodeTextValue(randomJsonNode, "/" + FIELD_NAME));
     }
 
     @Test
     void shouldReturnNullIfJsonPointerPointsToNull() {
         var randomJsonNode = objectMapper.createObjectNode().set(FIELD_NAME, null);
-        assertThat(JsonUtils.extractJsonNodeTextValue(randomJsonNode, "/" + FIELD_NAME), nullValue());
+        assertNull(JsonUtils.extractJsonNodeTextValue(randomJsonNode, "/" + FIELD_NAME));
     }
 
     @Test
     void shouldReturnNullIfJsonPointerPointsToJsonNode() {
         var randomJsonNode = objectMapper.createObjectNode().set(FIELD_NAME, objectMapper.createObjectNode());
-        assertThat(JsonUtils.extractJsonNodeTextValue(randomJsonNode, "/" + FIELD_NAME), nullValue());
+        assertNull(JsonUtils.extractJsonNodeTextValue(randomJsonNode, "/" + FIELD_NAME));
     }
 
     @Test
     void shouldReturnStreamNode() {
         var randomJsonNode = objectMapper.createObjectNode();
-        assertThat(JsonUtils.streamNode(randomJsonNode).toList(),
-                   is(equalTo(StreamSupport.stream(randomJsonNode.spliterator(), false).toList())));
+        assertEquals(JsonUtils.streamNode(randomJsonNode).toList(),
+                     StreamSupport.stream(randomJsonNode.spliterator(), false).toList());
     }
 
     @Test
     void shouldExtractId() {
         var id = randomUri();
         var jsonNode = objectMapper.createObjectNode().put(ID_FIELD, id.toString());
-        assertThat(JsonUtils.extractId(jsonNode), is(equalTo(id)));
+        assertEquals(JsonUtils.extractId(jsonNode), id);
     }
 }
