@@ -374,9 +374,8 @@ public final class Candidate {
     private static Optional<Candidate> fetchOptionalCandidate(UpsertCandidateRequest request,
                                                               CandidateRepository candidateRepository,
                                                               PeriodRepository periodRepository) {
-        return attempt(() -> Candidate.fetchByPublicationId(request::publicationId,
-                                                            candidateRepository,
-                                                            periodRepository)).toOptional();
+        return attempt(
+            () -> fetchByPublicationId(request::publicationId, candidateRepository, periodRepository)).toOptional();
     }
 
     private static void updateExistingCandidate(UpsertCandidateRequest request,

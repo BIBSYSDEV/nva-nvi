@@ -152,11 +152,12 @@ public class OpenSearchClientTest {
     }
 
     @AfterEach
+    @SuppressWarnings("PMD.EmptyCatchBlock")
     void afterEach() throws IOException {
         try {
             openSearchClient.deleteIndex();
         } catch (OpenSearchException e) {
-            throw new RuntimeException(e);
+            // ignore
         }
     }
 
@@ -380,7 +381,7 @@ public class OpenSearchClientTest {
         assertThat(searchResponse.hits().hits(), hasSize(1));
         assertTrue(requireNonNull(searchResponse.hits()
                                       .hits()
-                                      .get(0)
+                                      .getFirst()
                                       .source())
                        .approvals()
                        .stream()
@@ -441,7 +442,7 @@ public class OpenSearchClientTest {
         var indexDocuments = generateNumberOfCandidates(5);
         addDocumentsToIndex(indexDocuments.toArray(new NviCandidateIndexDocument[0]));
         var expectedHit = indexDocuments.get(2);
-        var searchTerm = expectedHit.publicationDetails().contributors().get(0).name();
+        var searchTerm = expectedHit.publicationDetails().contributors().getFirst().name();
         var searchParameters = defaultSearchParameters().withSearchTerm(searchTerm).build();
         var searchResponse = openSearchClient.search(searchParameters);
         assertThat(searchResponse.hits().hits(), hasSize(1));
@@ -711,7 +712,7 @@ public class OpenSearchClientTest {
     }
 
     private static NviCandidateIndexDocument getFirstHit(SearchResponse<NviCandidateIndexDocument> searchResponse) {
-        return searchResponse.hits().hits().get(0).source();
+        return searchResponse.hits().hits().getFirst().source();
     }
 
     private static List<NviCandidateIndexDocument> generateNumberOfCandidates(int number) {

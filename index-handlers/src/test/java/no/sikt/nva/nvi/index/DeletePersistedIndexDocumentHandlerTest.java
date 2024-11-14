@@ -46,8 +46,9 @@ public class DeletePersistedIndexDocumentHandlerTest {
     @BeforeEach
     void setUp() {
         sqsClient = new FakeSqsClient();
-        s3Driver = new S3Driver(new FakeS3Client(), BUCKET_NAME);
-        handler = new DeletePersistedIndexDocumentHandler(new S3StorageWriter(new FakeS3Client(), BUCKET_NAME),
+        var s3Client = new FakeS3Client();
+        s3Driver = new S3Driver(s3Client, BUCKET_NAME);
+        handler = new DeletePersistedIndexDocumentHandler(new S3StorageWriter(s3Client, BUCKET_NAME),
                                                           sqsClient, new Environment());
     }
 
@@ -101,7 +102,7 @@ public class DeletePersistedIndexDocumentHandlerTest {
 
     @Test
     void shouldSendMessageToDqlWhenFailingToExtractIdentifierFromRecord() {
-        var event = createEvent(randomDynamoDbEvent().getRecords().get(0));
+        var event = createEvent(randomDynamoDbEvent().getRecords().getFirst());
         handler.handleRequest(event, null);
         assertEquals(1, sqsClient.getSentMessages().size());
     }
@@ -111,8 +112,8 @@ public class DeletePersistedIndexDocumentHandlerTest {
         var daoToSucceed = randomCandidateDao();
         setUpExistingDocumentInS3(daoToSucceed);
         var streamRecord = DynamoDbTestUtils.eventWithCandidate(daoToSucceed, daoToSucceed, OperationType.REMOVE)
-                               .getRecords().get(0);
-        var event = createEventWithDynamodbRecords(List.of(randomDynamoDbEvent().getRecords().get(0), streamRecord));
+                               .getRecords().getFirst();
+        var event = createEventWithDynamodbRecords(List.of(randomDynamoDbEvent().getRecords().getFirst(), streamRecord));
         handler.handleRequest(event, null);
         assertEquals(0, s3Driver.listAllFiles(UnixPath.fromString(PERSISTED_NVI_CANDIDATES_FOLDER)).size());
     }
