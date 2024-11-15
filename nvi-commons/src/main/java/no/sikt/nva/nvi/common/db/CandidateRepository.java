@@ -121,6 +121,12 @@ public class CandidateRepository extends DynamoRepository {
         return candidateTable.getItem(candidate);
     }
 
+    public void updateCandidate(CandidateDao candidate) {
+        var transaction = TransactWriteItemsEnhancedRequest.builder();
+        transaction.addPutItem(candidateTable, candidate);
+        client.transactWriteItems(transaction.build());
+    }
+
     public void updateCandidate(CandidateDao candidateDao, List<DbApprovalStatus> approvals) {
         var updatedApprovals = approvals.stream()
                                    .map(approval -> mapToApprovalStatusDao(candidateDao.identifier(), approval))
@@ -137,10 +143,12 @@ public class CandidateRepository extends DynamoRepository {
         client.transactWriteItems(transaction.build());
     }
 
-    public void updateCandidate(CandidateDao candidate) {
-        var transaction = TransactWriteItemsEnhancedRequest.builder();
-        transaction.addPutItem(candidateTable, candidate);
-        client.transactWriteItems(transaction.build());
+    public void updateCandidateAndRemovingApprovals(UUID identifier, CandidateDao nonApplicableCandidate) {
+        var transactionBuilder = TransactWriteItemsEnhancedRequest.builder();
+        transactionBuilder.addPutItem(candidateTable, nonApplicableCandidate);
+        getApprovalStatuses(identifier).forEach(
+            approvalDao -> transactionBuilder.addDeleteItem(approvalStatusTable, approvalDao));
+        client.transactWriteItems(transactionBuilder.build());
     }
 
     public Optional<CandidateDao> findCandidateById(UUID candidateIdentifier) {
@@ -180,17 +188,6 @@ public class CandidateRepository extends DynamoRepository {
 
     public List<NoteDao> getNotes(UUID candidateIdentifier) {
         return noteTable.query(queryCandidateParts(candidateIdentifier, NoteDao.TYPE)).items().stream().toList();
-    }
-
-    public void updateCandidateAndRemovingApprovals(UUID identifier, CandidateDao nonApplicableCandidate) {
-        candidateTable.putItem(nonApplicableCandidate);
-        var approvalStatusDaoList = getApprovalStatuses(identifier);
-        if (!approvalStatusDaoList.isEmpty()) {
-            var transactionBuilder = TransactWriteItemsEnhancedRequest.builder();
-            approvalStatusDaoList.forEach(
-                approvalStatusDao -> transactionBuilder.addDeleteItem(approvalStatusTable, approvalStatusDao));
-            client.transactWriteItems(transactionBuilder.build());
-        }
     }
 
     protected static Key noteKey(UUID candidateIdentifier, UUID noteIdentifier) {
@@ -280,12 +277,11 @@ public class CandidateRepository extends DynamoRepository {
 
     private Stream<ApprovalStatusDao> identifyApprovalsForDeletion(UUID identifier,
                                                                    Map<URI, ApprovalStatusDao> newApprovals) {
-        return getApprovalStatuses(approvalStatusTable, identifier)
+        return getApprovalStatuses(identifier)
                    .filter(approval -> isNotPresentInNewApprovals(newApprovals, approval));
     }
 
-    private Stream<ApprovalStatusDao> getApprovalStatuses(DynamoDbTable<ApprovalStatusDao> approvalStatusTable,
-                                                          UUID identifier) {
+    private Stream<ApprovalStatusDao> getApprovalStatuses(UUID identifier) {
         return approvalStatusTable.query(queryCandidateParts(identifier, ApprovalStatusDao.TYPE))
                    .items()
                    .stream();
@@ -361,13 +357,6 @@ public class CandidateRepository extends DynamoRepository {
                    .exclusiveStartKey(start)
                    .limit(pageSize)
                    .build();
-    }
-
-    private List<ApprovalStatusDao> getApprovalStatuses(UUID identifier) {
-        return approvalStatusTable.query(queryCandidateParts(identifier, ApprovalStatusDao.TYPE))
-                   .items()
-                   .stream()
-                   .toList();
     }
 
     private Builder buildTransaction(List<DbApprovalStatus> approvalStatuses, CandidateDao candidate, UUID identifier,
