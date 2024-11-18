@@ -26,6 +26,7 @@ import static no.sikt.nva.nvi.index.utils.SearchConstants.IDENTIFIER;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.INSTITUTION_ID;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.KEYWORD;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.NAME;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.NVI_CONTRIBUTORS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.PART_OF_IDENTIFIERS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.PUBLICATION_DATE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.PUBLICATION_DETAILS;
@@ -59,7 +60,6 @@ public class CandidateQuery {
     private final String year;
     private final String category;
     private final String title;
-    private final String contributor;
     private final String assignee;
 
     public CandidateQuery(CandidateQueryParameters params) {
@@ -72,7 +72,6 @@ public class CandidateQuery {
         this.year = params.year;
         this.category = params.category;
         this.title = params.title;
-        this.contributor = params.contributor;
         this.assignee = params.assignee;
     }
 
@@ -85,26 +84,27 @@ public class CandidateQuery {
     }
 
     private static Query contributorQueryIncludingSubUnits(List<String> organizations) {
-        return nestedQuery(jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS),
+        return nestedQuery(jsonPathOf(PUBLICATION_DETAILS, NVI_CONTRIBUTORS),
                            QueryBuilders.bool().must(
                                matchAtLeastOne(
                                    termsQuery(organizations,
-                                              jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS, AFFILIATIONS, IDENTIFIER)),
+                                              jsonPathOf(PUBLICATION_DETAILS, NVI_CONTRIBUTORS, AFFILIATIONS,
+                                                         IDENTIFIER)),
                                    termsQuery(organizations,
-                                              jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS, AFFILIATIONS,
+                                              jsonPathOf(PUBLICATION_DETAILS, NVI_CONTRIBUTORS, AFFILIATIONS,
                                                          PART_OF_IDENTIFIERS))
                                ),
-                               matchQuery(CREATOR_ROLE, jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS, ROLE))
+                               matchQuery(CREATOR_ROLE, jsonPathOf(PUBLICATION_DETAILS, NVI_CONTRIBUTORS, ROLE))
                            ).build()._toQuery()
         );
     }
 
     private static Query contributorQueryExcludingSubUnits(List<String> organizations) {
-        return nestedQuery(jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS),
+        return nestedQuery(jsonPathOf(PUBLICATION_DETAILS, NVI_CONTRIBUTORS),
                            QueryBuilders.bool().must(
                                termsQuery(organizations,
-                                          jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS, AFFILIATIONS, IDENTIFIER)),
-                               matchQuery(CREATOR_ROLE, jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS, ROLE))
+                                          jsonPathOf(PUBLICATION_DETAILS, NVI_CONTRIBUTORS, AFFILIATIONS, IDENTIFIER)),
+                               matchQuery(CREATOR_ROLE, jsonPathOf(PUBLICATION_DETAILS, NVI_CONTRIBUTORS, ROLE))
                            ).build()._toQuery()
         );
     }
@@ -141,11 +141,9 @@ public class CandidateQuery {
         var yearQuery = createYearQuery(year);
         var categoryQuery = createCategoryQuery(category);
         var titleQuery = createTitleQuery(title);
-        var contributorQuery = createContributorQuery(contributor);
         var assigneeQuery = createAssigneeQuery(assignee);
 
         return Stream.of(searchTermQuery, institutionQuery, filterQuery, yearQuery, categoryQuery, titleQuery,
-                         contributorQuery,
                          assigneeQuery)
                    .filter(Optional::isPresent)
                    .map(Optional::get)
@@ -216,15 +214,6 @@ public class CandidateQuery {
                                  ._toQuery());
     }
 
-    private Optional<Query> createContributorQuery(String contributor) {
-        return Optional.ofNullable(contributor)
-                   .map(c -> new MatchPhraseQuery.Builder()
-                                 .field(jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS, NAME))
-                                 .query(c)
-                                 .build()
-                                 ._toQuery());
-    }
-
     private Optional<Query> createAssigneeQuery(String assignee) {
         return Optional.ofNullable(assignee)
                    .map(a -> new MatchPhraseQuery.Builder()
@@ -277,7 +266,6 @@ public class CandidateQuery {
         private String year;
         private String category;
         private String title;
-        private String contributor;
         private String assignee;
 
         public Builder() {
@@ -329,11 +317,6 @@ public class CandidateQuery {
             return this;
         }
 
-        public Builder withContributor(String contributor) {
-            this.contributor = contributor;
-            return this;
-        }
-
         public Builder withAssignee(String assignee) {
             this.assignee = assignee;
             return this;
@@ -351,7 +334,6 @@ public class CandidateQuery {
             params.year = this.year;
             params.category = this.category;
             params.title = this.title;
-            params.contributor = this.contributor;
             params.assignee = this.assignee;
 
             return new CandidateQuery(params);

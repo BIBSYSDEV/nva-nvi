@@ -4,7 +4,6 @@ import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_AGG
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_OFFSET_PARAM;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_ASSIGNEE;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_CATEGORY;
-import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_CONTRIBUTOR;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_EXCLUDE_SUB_UNITS;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_FILTER;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_ORDER_BY;
@@ -33,7 +32,6 @@ public record CandidateSearchParameters(String searchTerm,
                                         String year,
                                         String category,
                                         String title,
-                                        String contributor,
                                         String assignee,
                                         URI topLevelCristinOrg,
                                         String aggregationType,
@@ -63,7 +61,6 @@ public record CandidateSearchParameters(String searchTerm,
                    .withYear(extractQueryParamPublicationDateOrDefault(requestInfo))
                    .withCategory(extractQueryParamCategoryOrDefault(requestInfo))
                    .withTitle(extractQueryParamTitle(requestInfo))
-                   .withContributor(extractQueryParamContributor(requestInfo))
                    .withAssignee(extractQueryParamAssignee(requestInfo))
                    .withAggregationType(aggregationType)
                    .withSearchResultParameters(getResultParameters(requestInfo))
@@ -135,10 +132,6 @@ public record CandidateSearchParameters(String searchTerm,
         return requestInfo.getQueryParameters().get(QUERY_PARAM_TITLE);
     }
 
-    private static String extractQueryParamContributor(RequestInfo requestInfo) {
-        return requestInfo.getQueryParameters().get(QUERY_PARAM_CONTRIBUTOR);
-    }
-
     private static String extractQueryParamAssignee(RequestInfo requestInfo) {
         return requestInfo.getQueryParameters().get(QUERY_PARAM_ASSIGNEE);
     }
@@ -158,7 +151,6 @@ public record CandidateSearchParameters(String searchTerm,
         private String year;
         private String category;
         private String title;
-        private String contributor;
         private String assignee;
         private URI topLevelCristinOrg;
         private String aggregationType;
@@ -208,11 +200,6 @@ public record CandidateSearchParameters(String searchTerm,
             return this;
         }
 
-        public Builder withContributor(String contributor) {
-            this.contributor = contributor;
-            return this;
-        }
-
         public Builder withAssignee(String assignee) {
             this.assignee = assignee;
             return this;
@@ -240,7 +227,7 @@ public record CandidateSearchParameters(String searchTerm,
 
         public CandidateSearchParameters build() {
             return new CandidateSearchParameters(searchTerm, affiliationIdentifiers, excludeSubUnits, filter, username,
-                                                 year, category, title, contributor, assignee, topLevelCristinOrg,
+                                                 year, category, title, assignee, topLevelCristinOrg,
                                                  aggregationType, excludeFields, searchResultParameters);
         }
     }
