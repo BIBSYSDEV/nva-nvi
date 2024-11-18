@@ -276,11 +276,6 @@ paths:
             type: string
           description: Filters values based on title
         - in: query
-          name: contributor
-          schema:
-            type: string
-          description: Filters values based on contributor
-        - in: query
           name: assignee
           schema:
             type: string
