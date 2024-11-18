@@ -75,6 +75,8 @@ import nva.commons.logutils.LogUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+// Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
+@SuppressWarnings("PMD.CouplingBetweenObjects")
 class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
 
     public static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
@@ -123,7 +125,7 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
     private S3StorageReader storageReader;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         env = mock(Environment.class);
         when(env.readEnv("CANDIDATE_QUEUE_URL")).thenReturn("My test candidate queue url");
         when(env.readEnv("CANDIDATE_DLQ_URL")).thenReturn("My test candidate dlq url");
@@ -162,7 +164,7 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
     @Test
     void shouldNotEvaluateExistingCandidateInClosedPeriod() throws IOException {
         var year = LocalDateTime.now().getYear();
-        var resourceFileUri = setUpCandidate(year);
+        var resourceFileUri = setupCandidate(year);
         periodRepository = no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningClosedPeriod(year);
         setupEvaluatorService(periodRepository);
         handler = new EvaluateNviCandidateHandler(evaluatorService, queueClient, env);
@@ -174,7 +176,7 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
     @Test
     void shouldSkipEvaluationAndLogWarningOnPublicationWithInvalidYear() throws IOException {
         var invalidYear = "1948-1997";
-        var fileUri = setUpPublicationWithInvalidYear(invalidYear);
+        var fileUri = setupPublicationWithInvalidYear(invalidYear);
         var event = createEvent(new PersistedResourceMessage(fileUri));
         final var logAppender = LogUtils.getTestingAppender(EvaluatorService.class);
         handler.handleRequest(event, context);
@@ -188,7 +190,7 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
     void shouldEvaluateExistingCandidateInOpenPeriod() throws IOException {
         mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
         var year = LocalDateTime.now().getYear();
-        var resourceFileUri = setUpCandidate(year);
+        var resourceFileUri = setupCandidate(year);
         periodRepository = no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeriod(year);
         setupEvaluatorService(periodRepository);
         handler = new EvaluateNviCandidateHandler(evaluatorService, queueClient, env);
@@ -581,7 +583,7 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
                    .withLevel(level)
                    .withPublicationChannelId(HARDCODED_PUBLICATION_CHANNEL_ID)
                    .withIsInternationalCollaboration(false)
-                   .withCollaborationFactor(BigDecimal.ONE.setScale(1, ROUNDING_MODE))
+                   .withCollaborationFactor(ONE.setScale(1, ROUNDING_MODE))
                    .withCreatorShareCount(countCreatorShares(verifiedCreators))
                    .withBasePoints(basePoints)
                    .withVerifiedCreators(verifiedCreators)
@@ -603,7 +605,7 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
                          .sum();
     }
 
-    private URI setUpPublicationWithInvalidYear(String year) throws IOException {
+    private URI setupPublicationWithInvalidYear(String year) throws IOException {
         var path = "evaluator/candidate_publicationDate_replace_year.json";
         var content = IoUtils.stringFromResources(Path.of(path)).replace("__REPLACE_YEAR__", year);
         return s3Driver.insertFile(UnixPath.of(path), content);
@@ -626,7 +628,7 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
                                                 periodRepository);
     }
 
-    private URI setUpCandidate(int year) throws IOException {
+    private URI setupCandidate(int year) throws IOException {
         var upsertCandidateRequest = createUpsertCandidateRequest(year);
         Candidate.upsert(upsertCandidateRequest, candidateRepository, periodRepository);
         var candidateInClosedPeriod = Candidate.fetchByPublicationId(upsertCandidateRequest::publicationId,
@@ -646,7 +648,7 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
     private CandidateEvaluatedMessage getMessageBody() {
         var sentMessages = queueClient.getSentMessages();
         assertThat(sentMessages, hasSize(1));
-        var message = sentMessages.get(0);
+        var message = sentMessages.getFirst();
         return attempt(
             () -> objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class)).orElseThrow();
     }
@@ -658,19 +660,15 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
         var cristinOrgNonNviTopLevelCustomerApiUri =
             URI.create(customerApiEndpoint + "/" + URLEncoder.encode(cristinOrgNonNviTopLevel.toString(),
                                                                      StandardCharsets.UTF_8));
-        when(
-            authorizedBackendUriRetriever.fetchResponse(eq(cristinOrgNonNviTopLevelCustomerApiUri),
-                                                        any())).thenReturn(
-            (Optional.of(notFoundResponse)));
+        when(authorizedBackendUriRetriever.fetchResponse(eq(cristinOrgNonNviTopLevelCustomerApiUri),
+                                                         any())).thenReturn(Optional.of(notFoundResponse));
         mockOrganizationResponseForAffiliation(cristinOrgNonNviTopLevel, cristinOrgNonNviSubUnit, uriRetriever);
     }
 
     private void mockCristinResponseAndCustomerApiResponseForNviInstitution(HttpResponse<String> httpResponse) {
         mockOrganizationResponseForAffiliation(CRISTIN_NVI_ORG_TOP_LEVEL_ID, CRISTIN_NVI_ORG_SUB_UNIT_ID,
                                                uriRetriever);
-        when(
-            authorizedBackendUriRetriever.fetchResponse(eq(CUSTOMER_API_CRISTIN_NVI_ORG_TOP_LEVEL),
-                                                        any())).thenReturn(
-            (Optional.of(httpResponse)));
+        when(authorizedBackendUriRetriever.fetchResponse(eq(CUSTOMER_API_CRISTIN_NVI_ORG_TOP_LEVEL),
+                                                         any())).thenReturn(Optional.of(httpResponse));
     }
 }

@@ -52,7 +52,7 @@ public record CandidateSearchParameters(String searchTerm,
                                                             List<String> affiliationIdentifiers)
         throws UnauthorizedException, BadRequestException {
         var aggregationType = extractQueryParamAggregationType(requestInfo);
-        return CandidateSearchParameters.builder()
+        return builder()
                    .withSearchTerm(extractQueryParamSearchTermOrDefault(requestInfo))
                    .withAffiliations(affiliationIdentifiers)
                    .withExcludeSubUnits(extractQueryParamExcludeSubUnitsOrDefault(requestInfo))

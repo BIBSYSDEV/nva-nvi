@@ -52,7 +52,7 @@ public enum SearchAggregation {
     }
 
     public static SearchAggregation parse(String candidate) {
-        return Arrays.stream(SearchAggregation.values())
+        return Arrays.stream(values())
                    .filter(type -> type.getAggregationName().equalsIgnoreCase(candidate))
                    .findFirst()
                    .orElse(null);

@@ -29,6 +29,7 @@ import software.amazon.awssdk.services.dynamodb.model.DynamoDbException;
 import software.amazon.awssdk.services.dynamodb.model.PutRequest;
 import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
 
+@SuppressWarnings("PMD.DoNotUseThreads")
 class DynamoDbRetryWrapperTest {
 
     private static final int WRITE_RETRIES_MAX_COUNT = 5;
@@ -86,7 +87,7 @@ class DynamoDbRetryWrapperTest {
     @Test
     void sleepShouldRespectInterruption() throws InterruptedException {
         final var appender = LogUtils.getTestingAppender(DynamoDbRetryWrapper.class);
-        var veryLongInitialRetryWaitTimeMs = 10000;
+        var veryLongInitialRetryWaitTimeMs = 10_000;
 
         dynamoDbRetryClient = DynamoDbRetryWrapper.builder()
                                   .dynamoDbClient(dynamodb)

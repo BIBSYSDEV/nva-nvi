@@ -74,7 +74,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
+// Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
+@SuppressWarnings("PMD.CouplingBetweenObjects")
+class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
 
     public static final Context CONTEXT = mock(Context.class);
     public static final String ERROR_MESSAGE_BODY_INVALID = "Message body invalid";
@@ -182,7 +184,7 @@ public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         var newUpsertRequest = createNewUpsertRequestNotAffectingApprovals(upsertCandidateRequest, institutionId);
         Candidate.upsert(newUpsertRequest, candidateRepository, periodRepository);
         var updatedCandidate = Candidate.fetchByPublicationId(newUpsertRequest::publicationId, candidateRepository,
-                                                             periodRepository);
+                                                              periodRepository);
         var updatedApproval = updatedCandidate.toDto().approvals().get(0);
 
         assertThat(updatedApproval, is(equalTo(approval)));

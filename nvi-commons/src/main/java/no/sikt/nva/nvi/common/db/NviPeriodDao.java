@@ -57,7 +57,7 @@ public final class NviPeriodDao extends Dao {
     @DynamoDbAttribute(SORT_KEY)
     @JsonProperty(SORT_KEY)
     public String primaryKeyRangeKey() {
-        return String.join(DynamoEntryWithRangeKey.FIELD_DELIMITER, TYPE, identifier);
+        return String.join(FIELD_DELIMITER, TYPE, identifier);
     }
 
     @Override
@@ -160,6 +160,7 @@ public final class NviPeriodDao extends Dao {
             private Builder() {
             }
 
+            @SuppressWarnings("PMD.ShortMethodName")
             public Builder id(URI id) {
                 this.builderId = id;
                 return this;

@@ -10,7 +10,6 @@ import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -37,6 +36,8 @@ import nva.commons.core.JacocoGenerated;
 import nva.commons.core.StringUtils;
 import nva.commons.core.paths.UriWrapper;
 
+// Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
+@SuppressWarnings({"PMD.GodClass", "PMD.CouplingBetweenObjects"})
 public final class CristinMapper {
 
     public static final String API_HOST = new Environment().readEnv("API_HOST");
@@ -48,32 +49,32 @@ public final class CristinMapper {
     public static final String PUBLICATION = "publication";
     public static final String RESOURCES = "resources";
     public static final String PERSON = "person";
-    public static final String PARENT_PUBLICATION_SERIES_LEVEL_JSON_POINTER = "/publicationContext/entityDescription"
-                                                                              + "/reference/publicationContext/series"
-                                                                              + "/level";
-    public static final String PARENT_PUBLICATION_SERIES_SCIENTIFIC_VALUE_JSON_POINTER =
+    public static final String FHI_CRISTIN_IDENTIFIER = "7502.0.0.0";
+    private static final String SERIES_ID_JSON_POINTER = "/publicationContext/series/id";
+    private static final String ENTITY_DESCRIPTION = "/publicationContext/entityDescription";
+    private static final String PARENT_PUBLICATION_SERIES_LEVEL_JSON_POINTER = ENTITY_DESCRIPTION
+                                                                               + "/reference/publicationContext/series"
+                                                                               + "/level";
+    private static final String PARENT_PUBLICATION_SERIES_SCIENTIFIC_VALUE_JSON_POINTER =
         "/publicationContext/entityDescription/reference"
         + "/publicationContext/series/scientificValue";
-    public static final String PARENT_PUBLICATION_SERIES_ID_JSON_POINTER = "/publicationContext/entityDescription"
-                                                                           + "/reference/publicationContext/series/id";
-    public static final String PARENT_PUBLICATION_PUBLISHER_ID_JSON_POINTER = "/publicationContext/entityDescription"
-                                                                              + "/reference/publicationContext"
-                                                                              + "/publisher/id";
-    public static final String PARENT_PUBLICATION_SERIES_TYPE_JSON_POINTER = "/publicationContext/entityDescription"
-                                                                             + "/reference/publicationContext/series"
-                                                                             + "/type";
-    public static final String PARENT_PUBLICATION_PUBLISHER_TYPE_JSON_POINTER = "/publicationContext"
-                                                                                + "/entityDescription/reference"
-                                                                                + "/publicationContext/publisher/type";
-    public static final String SERIES_ID_JSON_POINTER = "/publicationContext/series/id";
-    public static final String PUBLISHER_ID_JSON_POINTER = "/publicationContext/publisher/id";
-    public static final String SERIES_TYPE_JSON_POINTER = "/publicationContext/series/type";
-    public static final String PUBLISHER_TYPE_JSON_POINTER = "/publicationContext/publisher/type";
-    public static final String PUBLICATION_CONTEXT_ID_JSON_POINTER = "/publicationContext/id";
-    public static final String PUBLICATION_CONTEXT_TYPE_JSON_POINTER = "/publicationContext/type";
-    public static final String KREFTREG = "KREFTREG";
-    public static final String FHI_CRISTIN_ORG_NUMBER = "7502";
-    public static final String FHI_CRISTIN_IDENTIFIER = "7502.0.0.0";
+    private static final String PARENT_PUBLICATION_SERIES_ID_JSON_POINTER = ENTITY_DESCRIPTION
+                                                                            + "/reference/publicationContext/series/id";
+    private static final String PARENT_PUBLICATION_PUBLISHER_ID_JSON_POINTER = ENTITY_DESCRIPTION
+                                                                               + "/reference/publicationContext"
+                                                                               + "/publisher/id";
+    private static final String PARENT_PUBLICATION_SERIES_TYPE_JSON_POINTER = ENTITY_DESCRIPTION
+                                                                              + "/reference/publicationContext/series"
+                                                                              + "/type";
+    private static final String PARENT_PUBLICATION_PUBLISHER_TYPE_JSON_POINTER = ENTITY_DESCRIPTION + "/reference"
+                                                                                 + "/publicationContext/publisher/type";
+    private static final String PUBLISHER_ID_JSON_POINTER = "/publicationContext/publisher/id";
+    private static final String SERIES_TYPE_JSON_POINTER = "/publicationContext/series/type";
+    private static final String PUBLISHER_TYPE_JSON_POINTER = "/publicationContext/publisher/type";
+    private static final String PUBLICATION_CONTEXT_ID_JSON_POINTER = "/publicationContext/id";
+    private static final String PUBLICATION_CONTEXT_TYPE_JSON_POINTER = "/publicationContext/type";
+    private static final String KREFTREG = "KREFTREG";
+    private static final String FHI_CRISTIN_ORG_NUMBER = "7502";
     private static final String INTERNATIONAL_COLLABORATION_FACTOR = "1.3";
     private final List<CristinDepartmentTransfer> departmentTransfers;
 
@@ -254,7 +255,7 @@ public final class CristinMapper {
 
     private static CreatorPoints toCreatorPoints(ScientificPerson person) {
         return new CreatorPoints(constructPersonCristinId(person), constructCristinOrganizationId(person),
-                                 CristinMapper.extractAuthorPointsForAffiliation(person));
+                                 extractAuthorPointsForAffiliation(person));
     }
 
     private static DbCreatorAffiliationPoints getDbCreatorAffiliationPoints(CreatorPoints creatorPoints) {
@@ -268,11 +269,8 @@ public final class CristinMapper {
 
     private static boolean hasSameInstitutionIdentifier(ScientificPerson scientificPerson,
                                                         CristinLocale cristinLocale) {
-        if (nonNull(cristinLocale.getInstitutionIdentifier())) {
-            return cristinLocale.getInstitutionIdentifier().equals(scientificPerson.getInstitutionIdentifier());
-        } else {
-            return false;
-        }
+        return nonNull(cristinLocale.getInstitutionIdentifier())
+               && cristinLocale.getInstitutionIdentifier().equals(scientificPerson.getInstitutionIdentifier());
     }
 
     private static boolean hasMatchingInstitution(List<CristinLocale> approvedInstitutions,
@@ -430,12 +428,12 @@ public final class CristinMapper {
         List<CristinLocale> institutions) {
         return Collectors.collectingAndThen(
             Collectors.groupingBy(scientificPerson -> getTopLevelOrganization(scientificPerson, institutions),
-                                  Collectors.toCollection(ArrayList::new)),
+                                  Collectors.toList()),
             map -> getInstitutionPointsStream(institutions, map).collect(Collectors.toList()));
     }
 
     private Stream<InstitutionPoints> getInstitutionPointsStream(List<CristinLocale> institutions,
-                                                                 Map<URI, ArrayList<ScientificPerson>> map) {
+                                                                 Map<URI, List<ScientificPerson>> map) {
         return map.values().stream().map(scientificPeople -> toPoints(institutions, scientificPeople));
     }
 

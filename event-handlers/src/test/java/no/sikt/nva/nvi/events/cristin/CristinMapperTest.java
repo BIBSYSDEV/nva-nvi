@@ -36,6 +36,7 @@ import nva.commons.core.ioutils.IoUtils;
 import nva.commons.core.paths.UriWrapper;
 import org.junit.jupiter.api.Test;
 
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class CristinMapperTest {
 
     public static final String BASE_POINTS_CRISTIN_ENTRY = "1.0";
@@ -77,14 +78,14 @@ class CristinMapperTest {
         var report = cristinReportFromCristinLocalesAndScientificResource(cristinLocale, scientificResource);
         var dbCandidate = cristinMapper.toDbCandidate(report.build());
 
-        var institutionId = dbCandidate.points().get(0).institutionId();
+        var institutionId = dbCandidate.points().getFirst().institutionId();
         var expectedInstitutionId = constructExpectedInstitutionId(cristinLocale);
         var expectedPointsForInstitution = POINTS_PER_CONTRIBUTOR.add(POINTS_PER_CONTRIBUTOR,
                                                                       new MathContext(CALCULATION_PRECISION,
                                                                                       RoundingMode.HALF_UP))
                                                .setScale(SCALE, RoundingMode.HALF_UP);
 
-        assertEquals(dbCandidate.points().get(0).points(), expectedPointsForInstitution);
+        assertEquals(dbCandidate.points().getFirst().points(), expectedPointsForInstitution);
         assertEquals(institutionId, expectedInstitutionId);
     }
 
@@ -421,14 +422,15 @@ class CristinMapperTest {
         var report = cristinReportFromCristinLocalesAndScientificResource(cristinLocale, scientificResource);
         var dbCandidate = cristinMapper.toDbCandidate(report.build());
 
-        var pointsPerAffiliation = dbCandidate.points().get(0)
-                                       .creatorAffiliationPoints().get(0);
+        var pointsPerAffiliation = dbCandidate.points().getFirst()
+                                       .creatorAffiliationPoints().getFirst();
 
         var expectedCreatorPoints = POINTS_PER_CONTRIBUTOR.setScale(SCALE, RoundingMode.HALF_UP);
         assertEquals(expectedCreatorPoints, pointsPerAffiliation.points());
     }
 
     @Test
+    @SuppressWarnings("PMD.UnitTestShouldIncludeAssert")
     void shouldMapCreatorAffiliationPointsWhenMultipleCreatorsAtInstitution() {
         var firstCreator = scientificPersonAtInstitutionWithPoints(INSTITUTION_IDENTIFIER, POINTS_PER_CONTRIBUTOR);
         var secondCreator = scientificPersonAtInstitutionWithPoints(INSTITUTION_IDENTIFIER, POINTS_PER_CONTRIBUTOR);
@@ -437,7 +439,7 @@ class CristinMapperTest {
         var report = cristinReportFromCristinLocalesAndScientificResource(cristinLocale, scientificResource);
         var dbCandidate = cristinMapper.toDbCandidate(report.build());
 
-        var institutionPoints = dbCandidate.points().get(0);
+        var institutionPoints = dbCandidate.points().getFirst();
         var expectedSingleCreatorPoints = POINTS_PER_CONTRIBUTOR.setScale(SCALE, RoundingMode.HALF_UP);
 
         institutionPoints.creatorAffiliationPoints().forEach(creatorPoints -> {
@@ -457,9 +459,9 @@ class CristinMapperTest {
         var report = cristinReportFromCristinLocalesAndScientificResource(cristinLocale, scientificResource);
         var dbCandidate = cristinMapper.toDbCandidate(report.build());
 
-        var institutionPointsId = dbCandidate.points().get(0).institutionId().toString();
+        var institutionPointsId = dbCandidate.points().getFirst().institutionId().toString();
         var affiliationForInstitutionPoints =
-            dbCandidate.points().get(0).creatorAffiliationPoints().get(0).affiliationId().toString();
+            dbCandidate.points().getFirst().creatorAffiliationPoints().getFirst().affiliationId().toString();
 
         assertThat(institutionPointsId, containsString("2057"));
         assertThat(affiliationForInstitutionPoints, containsString("305"));
@@ -496,7 +498,7 @@ class CristinMapperTest {
         var approvals = cristinMapper.toApprovals(report.build());
         assertDoesNotThrow(() -> cristinMapper.toDbCandidate(report.build()));
 
-        assertThat(approvals.get(0).institutionId().toString(), containsString(FHI_CRISTIN_IDENTIFIER));
+        assertThat(approvals.getFirst().institutionId().toString(), containsString(FHI_CRISTIN_IDENTIFIER));
     }
 
     @Test

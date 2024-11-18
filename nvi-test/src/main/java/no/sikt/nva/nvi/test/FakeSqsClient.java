@@ -136,18 +136,15 @@ public class FakeSqsClient implements QueueClient {
                    .build();
     }
 
-    private NviSendMessageResponse createResponse(
-        software.amazon.awssdk.services.sqs.model.SendMessageResponse response) {
+    private NviSendMessageResponse createResponse(SendMessageResponse response) {
         return new NviSendMessageResponse(response.messageId());
     }
 
-    private NviSendMessageBatchResponse createResponse(
-        software.amazon.awssdk.services.sqs.model.SendMessageBatchResponse response) {
+    private NviSendMessageBatchResponse createResponse(SendMessageBatchResponse response) {
         return new NviSendMessageBatchResponse(extractSuccessfulEntryIds(response), extractFailedEntryIds(response));
     }
 
-    private NviReceiveMessageResponse createResponse(
-        software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse receiveMessageResponse) {
+    private NviReceiveMessageResponse createResponse(ReceiveMessageResponse receiveMessageResponse) {
         return new NviReceiveMessageResponse(receiveMessageResponse.messages()
                                                  .stream()
                                                  .map(m -> new NviReceiveMessage(m.body(), m.messageId(),

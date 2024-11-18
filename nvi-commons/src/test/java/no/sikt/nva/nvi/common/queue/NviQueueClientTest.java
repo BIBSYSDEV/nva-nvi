@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.http.SdkHttpResponse;
 import software.amazon.awssdk.services.sqs.SqsClient;
@@ -30,7 +31,7 @@ import software.amazon.awssdk.services.sqs.model.SendMessageBatchResultEntry;
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
-public class NviQueueClientTest {
+class NviQueueClientTest {
 
     public static final String TEST_PAYLOAD = "{}";
     public static final String TEST_QUEUE_URL = "url";
@@ -40,10 +41,15 @@ public class NviQueueClientTest {
     public static final String MESSAGE_ATTRIBUTE_CANDIDATE_IDENTIFIER = "candidateIdentifier";
     public static final int MAX_NUMBER_OF_MESSAGES = 10;
     public static final String DATA_TYPE_STRING = "String";
+    private SqsClient sqsClient;
+
+    @BeforeEach
+    public void setUp() {
+        sqsClient = mock(SqsClient.class);
+    }
 
     @Test
     void shouldSendSqsMessageAndReturnId() {
-        var sqsClient = mock(SqsClient.class);
         when(sqsClient.sendMessage(any(SendMessageRequest.class))).thenReturn(
             SendMessageResponse.builder().messageId(TEST_MESSAGE_ID).build());
         var client = new NviQueueClient(sqsClient);
@@ -55,7 +61,6 @@ public class NviQueueClientTest {
 
     @Test
     void shouldSendSqsMessageWithCandidateIdentifierAsMessageAttribute() {
-        var sqsClient = mock(SqsClient.class);
         var candidateIdentifier = UUID.randomUUID();
         when(sqsClient.sendMessage(eq(expectedSendMessageRequest(candidateIdentifier)))).thenReturn(
             SendMessageResponse.builder().messageId(TEST_MESSAGE_ID).build());
@@ -68,7 +73,6 @@ public class NviQueueClientTest {
 
     @Test
     void shouldSendSqsMessageBatchAndReturnId() {
-        var sqsClient = mock(SqsClient.class);
         when(sqsClient.sendMessageBatch(any(SendMessageBatchRequest.class))).thenReturn(
             SendMessageBatchResponse.builder()
                 .successful(SendMessageBatchResultEntry.builder().id(TEST_MESSAGE_ID).build())
@@ -83,7 +87,6 @@ public class NviQueueClientTest {
 
     @Test
     void shouldReceiveSqsMessageBatch() {
-        var sqsClient = mock(SqsClient.class);
         when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class))).thenReturn(
             ReceiveMessageResponse.builder()
                 .messages(Message.builder()
@@ -104,7 +107,6 @@ public class NviQueueClientTest {
 
     @Test
     void receiveSqsMessageBatchShouldIncludeAttributes() {
-        var sqsClient = mock(SqsClient.class);
         when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class))).thenReturn(
             ReceiveMessageResponse.builder()
                 .messages(Message.builder()
@@ -123,8 +125,6 @@ public class NviQueueClientTest {
 
     @Test
     void shouldHandleSuccessfulDeleteCall() {
-        var sqsClient = mock(SqsClient.class);
-
         var status = SdkHttpResponse.builder().statusCode(202).build();
         var response = DeleteMessageResponse.builder();
         response.sdkHttpResponse(status);
@@ -137,8 +137,6 @@ public class NviQueueClientTest {
 
     @Test
     void shouldHandleFailedDeleteCall() {
-        var sqsClient = mock(SqsClient.class);
-
         var status = SdkHttpResponse.builder().statusCode(500).build();
         var response = DeleteMessageResponse.builder();
         response.sdkHttpResponse(status);

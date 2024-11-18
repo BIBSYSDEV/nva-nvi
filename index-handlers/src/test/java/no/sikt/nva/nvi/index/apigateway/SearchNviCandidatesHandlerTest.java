@@ -76,7 +76,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.zalando.problem.Problem;
 
 @Testcontainers
-public class SearchNviCandidatesHandlerTest {
+class SearchNviCandidatesHandlerTest {
 
     public static final URI TOP_LEVEL_CRISTIN_ORG = URI.create(
         "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0");
@@ -374,9 +374,10 @@ public class SearchNviCandidatesHandlerTest {
     }
 
     @Test
+    @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
     void shouldReturnForbiddenWhenTryingToSearchForAffiliationOutsideOfCustomersCristinIdScope()
         throws IOException {
-        var forbiddenAffiliation = "0.0.0.0";
+        var forbiddenAffiliation = "0.0.0.0"; // This is not an IP address, but a cristin org id example
         var validatorReturningFalse = new FakeViewingScopeValidator(false);
         handler = new SearchNviCandidatesHandler(openSearchClient, validatorReturningFalse, identityServiceClient,
                                                  ENVIRONMENT);

@@ -11,7 +11,7 @@ import static no.sikt.nva.nvi.index.utils.AggregationFunctions.termsAggregation;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.assignmentsQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.containsNonFinalizedStatusQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.fieldValueQuery;
-import static no.sikt.nva.nvi.index.utils.QueryFunctions.isNotDisputeQuery;
+import static no.sikt.nva.nvi.index.utils.QueryFunctions.notDisputeQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.multipleApprovalsQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.mustMatch;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.mustNotMatch;
@@ -85,7 +85,7 @@ public final class Aggregations {
 
     public static Aggregation statusAggregation(String topLevelCristinOrg, ApprovalStatus status) {
         return filterAggregation(mustMatch(statusQuery(topLevelCristinOrg, status),
-                                           isNotDisputeQuery()));
+                                           notDisputeQuery()));
     }
 
     public static Aggregation completedAggregation(String topLevelCristinOrg) {
@@ -108,7 +108,7 @@ public final class Aggregations {
 
     public static Aggregation collaborationAggregation(String topLevelCristinOrg, ApprovalStatus status) {
         return filterAggregation(
-            mustMatch(statusQuery(topLevelCristinOrg, status), multipleApprovalsQuery(), isNotDisputeQuery()));
+            mustMatch(statusQuery(topLevelCristinOrg, status), multipleApprovalsQuery(), notDisputeQuery()));
     }
 
     public static Aggregation disputeAggregation(String topLevelCristinOrg) {

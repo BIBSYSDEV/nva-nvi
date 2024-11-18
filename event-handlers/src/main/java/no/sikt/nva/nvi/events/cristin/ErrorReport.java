@@ -21,7 +21,7 @@ public final class ErrorReport {
     }
 
     public static ErrorReport withMessage(String message) {
-        return ErrorReport.builder().withMessage(message).build();
+        return builder().withMessage(message).build();
     }
 
     public static Builder builder() {

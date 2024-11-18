@@ -41,6 +41,8 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecon
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
 
 @DynamoDbImmutable(builder = Builder.class)
+// Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
+@SuppressWarnings("PMD.CouplingBetweenObjects")
 public final class CandidateDao extends Dao {
 
     public static final String TYPE = "CANDIDATE";
@@ -217,7 +219,7 @@ public final class CandidateDao extends Dao {
         }
 
         public static DbLevel parse(String string) {
-            return Arrays.stream(DbLevel.values())
+            return Arrays.stream(values())
                        .filter(level -> equalsIgnoreCase(level.getValue(), string))
                        .findFirst()
                        .orElse(NON_CANDIDATE);
@@ -402,6 +404,7 @@ public final class CandidateDao extends Dao {
                                 reportStatus);
         }
 
+        @SuppressWarnings("PMD.TooManyFields")
         public static final class Builder {
 
             private URI builderPublicationId;

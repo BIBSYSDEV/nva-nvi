@@ -101,7 +101,10 @@ import org.opensearch.client.opensearch._types.aggregations.SumAggregate;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.testcontainers.OpensearchContainer;
 
-public class OpenSearchClientTest {
+// These are not IP addresses, but cristin org identifier examples
+// Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
+@SuppressWarnings({"PMD.AvoidUsingHardCodedIP", "PMD.GodClass", "PMD.CouplingBetweenObjects"})
+class OpenSearchClientTest {
 
     public static final int DELAY_ON_INDEX = 2000;
     public static final String YEAR = "2023";
@@ -121,6 +124,11 @@ public class OpenSearchClientTest {
         "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0");
     private static final String USERNAME = "user1";
     private static final OpensearchContainer container = new OpensearchContainer(OPEN_SEARCH_IMAGE);
+    private static final String DOCUMENT_NEW_JSON = "document_new.json";
+    private static final String DOCUMENT_ORGANIZATION_AGGREGATION_DISPUTE_JSON =
+        "document_organization_aggregation_dispute.json";
+    private static final String DOCUMENT_WITH_CONTRIBUTOR_FROM_NTNU_SUBUNIT_JSON =
+        "document_with_contributor_from_ntnu_subunit.json";
     private static RestClient restClient;
     private static OpenSearchClient openSearchClient;
 
@@ -146,6 +154,7 @@ public class OpenSearchClientTest {
     }
 
     @AfterEach
+    @SuppressWarnings("PMD.EmptyCatchBlock")
     void afterEach() throws IOException {
         try {
             openSearchClient.deleteIndex();
@@ -189,8 +198,8 @@ public class OpenSearchClientTest {
                                                                      .build()).build();
         var searchResponse = openSearchClient.search(searchParameters);
         var hits = searchResponse.hits().hits();
-        var expectedFirst = sortOrder.equals("asc") ? createdFirst.createdDate() : createdSecond.createdDate();
-        var expectedSecond = sortOrder.equals("asc") ? createdSecond.createdDate() : createdFirst.createdDate();
+        var expectedFirst = "asc".equals(sortOrder) ? createdFirst.createdDate() : createdSecond.createdDate();
+        var expectedSecond = "asc".equals(sortOrder) ? createdSecond.createdDate() : createdFirst.createdDate();
         assertThat(requireNonNull(hits.get(0).source()).createdDate(), is(equalTo(expectedFirst)));
         assertThat(requireNonNull(hits.get(1).source()).createdDate(), is(equalTo(expectedSecond)));
     }
@@ -213,6 +222,7 @@ public class OpenSearchClientTest {
     }
 
     @Test
+    @SuppressWarnings("PMD.DoNotUseThreads")
     void shouldRemoveDocumentFromIndex() throws InterruptedException, IOException {
         var document = singleNviCandidateIndexDocument().build();
         addDocumentsToIndex(document);
@@ -230,7 +240,7 @@ public class OpenSearchClientTest {
     @MethodSource("aggregationNameAndExpectedCountProvider")
     void shouldReturnAggregationsWithExpectedCount(Entry<String, Integer> entry)
         throws IOException, InterruptedException {
-        addDocumentsToIndex(documentFromString("document_new.json"),
+        addDocumentsToIndex(documentFromString(DOCUMENT_NEW_JSON),
                             documentFromString("document_new_collaboration.json"),
                             documentFromString("document_pending.json"),
                             documentFromString("document_pending_collaboration.json"),
@@ -240,7 +250,7 @@ public class OpenSearchClientTest {
                             documentFromString("document_rejected.json"),
                             documentFromString("document_rejected_collaboration_pending.json"),
                             documentFromString("document_rejected_collaboration_new.json"),
-                            documentFromString("document_organization_aggregation_dispute.json"));
+                            documentFromString(DOCUMENT_ORGANIZATION_AGGREGATION_DISPUTE_JSON));
 
         var searchParameters = defaultSearchParameters().build();
         var searchResponse = openSearchClient.search(searchParameters);
@@ -277,7 +287,7 @@ public class OpenSearchClientTest {
     @Test
     void shouldReturnSearchResultsWithContributorAffiliatedWithSubUnitOfSearchedInstitution()
         throws IOException, InterruptedException {
-        addDocumentsToIndex(documentFromString("document_with_contributor_from_ntnu_subunit.json"),
+        addDocumentsToIndex(documentFromString(DOCUMENT_WITH_CONTRIBUTOR_FROM_NTNU_SUBUNIT_JSON),
                             documentFromString("document_with_contributor_from_sikt.json")
         );
 
@@ -291,7 +301,7 @@ public class OpenSearchClientTest {
     @Test
     void shouldReturnSearchResultsWithContributorOfSearchedInstitutionWhenSearchingSubUnit()
         throws IOException, InterruptedException {
-        addDocumentsToIndex(documentFromString("document_with_contributor_from_ntnu_subunit.json")
+        addDocumentsToIndex(documentFromString(DOCUMENT_WITH_CONTRIBUTOR_FROM_NTNU_SUBUNIT_JSON)
         );
 
         var searchParameters = defaultSearchParameters().withAffiliations(List.of(NTNU_INSTITUTION_IDENTIFIER)).build();
@@ -302,9 +312,9 @@ public class OpenSearchClientTest {
     }
 
     @Test
-    void shouldReturnSearchResultsWithContributorOfSearchedInstitutionWhenSearchingTopLevelInstititution()
+    void shouldReturnSearchResultsWithContributorOfSearchedInstitutionWhenSearchingTopLevelInstitution()
         throws IOException, InterruptedException {
-        addDocumentsToIndex(documentFromString("document_with_contributor_from_ntnu_subunit.json"),
+        addDocumentsToIndex(documentFromString(DOCUMENT_WITH_CONTRIBUTOR_FROM_NTNU_SUBUNIT_JSON),
                             documentFromString("document_with_contributor_from_ntnu_toplevel.json"),
                             documentFromString("document_with_contributor_from_sikt.json")
         );
@@ -319,7 +329,7 @@ public class OpenSearchClientTest {
     @Test
     void shouldReturnSearchResultsWithContributorOfSearchedInstitutionWhenSearchingTopLevelInstitutionExcludingSubUnit()
         throws IOException, InterruptedException {
-        var subUnitDoc = documentFromString("document_with_contributor_from_ntnu_subunit.json");
+        var subUnitDoc = documentFromString(DOCUMENT_WITH_CONTRIBUTOR_FROM_NTNU_SUBUNIT_JSON);
         var topLevelDoc = documentFromString("document_with_contributor_from_ntnu_toplevel.json");
 
         addDocumentsToIndex(subUnitDoc, topLevelDoc);
@@ -338,7 +348,7 @@ public class OpenSearchClientTest {
     @MethodSource("filterNameProvider")
     void shouldReturnSearchResultsUsingFilter(Entry<String, Integer> entry)
         throws IOException, InterruptedException {
-        addDocumentsToIndex(documentFromString("document_new.json"),
+        addDocumentsToIndex(documentFromString(DOCUMENT_NEW_JSON),
                             documentFromString("document_new_collaboration.json"),
                             documentFromString("document_pending.json"),
                             documentFromString("document_pending_collaboration.json"),
@@ -348,7 +358,7 @@ public class OpenSearchClientTest {
                             documentFromString("document_rejected.json"),
                             documentFromString("document_rejected_collaboration_pending.json"),
                             documentFromString("document_rejected_collaboration_new.json"),
-                            documentFromString("document_organization_aggregation_dispute.json"));
+                            documentFromString(DOCUMENT_ORGANIZATION_AGGREGATION_DISPUTE_JSON));
 
         var searchParameters =
             defaultSearchParameters().withAffiliations(List.of(NTNU_INSTITUTION_IDENTIFIER))
@@ -362,7 +372,7 @@ public class OpenSearchClientTest {
     @Test
     void shouldNotIncludeDisputesForOtherOrganizationsInDisputeFilter()
         throws IOException, InterruptedException {
-        addDocumentsToIndex(documentFromString("document_organization_aggregation_dispute.json"),
+        addDocumentsToIndex(documentFromString(DOCUMENT_ORGANIZATION_AGGREGATION_DISPUTE_JSON),
                             documentFromString("document_dispute_not_sikt.json"));
 
         var searchParameters = defaultSearchParameters().withFilter(QueryFilterType.DISPUTED_AGG.getFilter()).build();
@@ -541,7 +551,7 @@ public class OpenSearchClientTest {
     @MethodSource("filterNameProvider")
     void shouldReturnSearchResultsUsingFilterAndSearchTermCombined(Entry<String, Integer> entry)
         throws IOException, InterruptedException {
-        addDocumentsToIndex(documentFromString("document_new.json"),
+        addDocumentsToIndex(documentFromString(DOCUMENT_NEW_JSON),
                             documentFromString("document_new_collaboration.json"),
                             documentFromString("document_pending.json"),
                             documentFromString("document_pending_collaboration.json"),
@@ -551,7 +561,7 @@ public class OpenSearchClientTest {
                             documentFromString("document_rejected.json"),
                             documentFromString("document_rejected_collaboration_pending.json"),
                             documentFromString("document_rejected_collaboration_new.json"),
-                            documentFromString("document_organization_aggregation_dispute.json"));
+                            documentFromString(DOCUMENT_ORGANIZATION_AGGREGATION_DISPUTE_JSON));
 
         var searchParameters =
             defaultSearchParameters().withFilter(entry.getKey())
@@ -563,7 +573,7 @@ public class OpenSearchClientTest {
 
     @Test
     void shouldReturnSingleDocumentWhenFilteringByCategory() throws InterruptedException, IOException {
-        addDocumentsToIndex(documentFromString("document_new.json"),
+        addDocumentsToIndex(documentFromString(DOCUMENT_NEW_JSON),
                             documentFromString("document_pending_category_degree_bachelor.json"));
 
         var searchParameters =
@@ -589,7 +599,7 @@ public class OpenSearchClientTest {
     @Test
     void shouldReturnAllSearchResultsWhenSearchingWithoutCustomerAndAffiliations()
         throws IOException, InterruptedException {
-        addDocumentsToIndex(documentFromString("document_with_contributor_from_ntnu_subunit.json"),
+        addDocumentsToIndex(documentFromString(DOCUMENT_WITH_CONTRIBUTOR_FROM_NTNU_SUBUNIT_JSON),
                             documentFromString("document_with_contributor_from_sikt.json")
         );
 
@@ -603,8 +613,8 @@ public class OpenSearchClientTest {
     void shouldReturnOrganizationAggregationWithSubAggregations() throws IOException, InterruptedException {
         addDocumentsToIndex(documentFromString("document_organization_aggregation_pending.json"));
         addDocumentsToIndex(documentFromString("document_organization_aggregation_new.json"));
-        addDocumentsToIndex(documentFromString("document_organization_aggregation_dispute.json"));
-        var aggregation = SearchAggregation.ORGANIZATION_APPROVAL_STATUS_AGGREGATION.getAggregationName();
+        addDocumentsToIndex(documentFromString(DOCUMENT_ORGANIZATION_AGGREGATION_DISPUTE_JSON));
+        var aggregation = ORGANIZATION_APPROVAL_STATUS_AGGREGATION.getAggregationName();
         var searchParameters = defaultSearchParameters().withAggregationType(aggregation).build();
         var searchResponse = openSearchClient.search(searchParameters);
         var actualAggregate = searchResponse.aggregations().get(aggregation);
@@ -620,7 +630,7 @@ public class OpenSearchClientTest {
     void shouldReturnOrganizationAggregationWithSubAggregationsForUpToOneThousandInvolvedOrgs()
         throws IOException, InterruptedException {
         addDocumentsToIndex(nviCandidateWithOneThousandInvolvedOrgs());
-        var aggregation = SearchAggregation.ORGANIZATION_APPROVAL_STATUS_AGGREGATION.getAggregationName();
+        var aggregation = ORGANIZATION_APPROVAL_STATUS_AGGREGATION.getAggregationName();
         var searchParameters = defaultSearchParameters().withAggregationType(aggregation).build();
         var searchResponse = openSearchClient.search(searchParameters);
         var actualAggregate = searchResponse.aggregations().get(aggregation);
@@ -636,7 +646,7 @@ public class OpenSearchClientTest {
     void organizationAggregationShouldNotContainAggregationsForOtherTopLevelOrgs()
         throws IOException, InterruptedException {
         addDocumentsToIndex(documentFromString("document_organization_aggregation_collaboration.json"));
-        var aggregation = SearchAggregation.ORGANIZATION_APPROVAL_STATUS_AGGREGATION.getAggregationName();
+        var aggregation = ORGANIZATION_APPROVAL_STATUS_AGGREGATION.getAggregationName();
         var searchParameters =
             defaultSearchParameters().withTopLevelCristinOrg(SIKT_INSTITUTION_ID)
                 .withAggregationType(aggregation)
@@ -669,7 +679,7 @@ public class OpenSearchClientTest {
         return singleNviCandidateIndexDocument().withApprovals(List.of(
             Approval.builder()
                 .withInstitutionId(URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0"))
-                .withApprovalStatus(ApprovalStatus.NEW)
+                .withApprovalStatus(NEW)
                 .withInvolvedOrganizations(IntStream.range(0, 1000)
                                                .mapToObj(i -> URI.create(
                                                    "https://api.dev.nva.aws.unit.no/cristin/organization/"
@@ -711,11 +721,11 @@ public class OpenSearchClientTest {
     private static void assertExpectedPointAggregations(StringTermsBucket bucket) {
         var key = bucket.key();
         var pointAggregation = (SumAggregate) bucket.aggregations().get("points")._get();
-        if (key.equals(SIKT_INSTITUTION_ID.toString())) {
+        if (SIKT_INSTITUTION_ID.toString().equals(key)) {
             assertEquals(4.0, pointAggregation.value());
-        } else if (key.equals(SIKT_LEVEL_2_ID)) {
+        } else if (SIKT_LEVEL_2_ID.equals(key)) {
             assertEquals(4.0, pointAggregation.value());
-        } else if (key.equals(SIKT_LEVEL_3_ID)) {
+        } else if (SIKT_LEVEL_3_ID.equals(key)) {
             assertEquals(3.0, pointAggregation.value());
         } else {
             throw new RuntimeException("Unexpected key: " + key);
@@ -725,9 +735,9 @@ public class OpenSearchClientTest {
     private static void assertExpectedDisputeAggregations(StringTermsBucket bucket) {
         var disputeAggregation = (FilterAggregate) bucket.aggregations().get("dispute")._get();
         var key = bucket.key();
-        if (key.equals(SIKT_INSTITUTION_ID.toString()) || key.equals(SIKT_LEVEL_2_ID)) {
+        if (SIKT_INSTITUTION_ID.toString().equals(key) || SIKT_LEVEL_2_ID.equals(key)) {
             assertEquals(1, disputeAggregation.docCount());
-        } else if (key.equals(SIKT_LEVEL_3_ID)) {
+        } else if (SIKT_LEVEL_3_ID.equals(key)) {
             assertEquals(0, disputeAggregation.docCount());
         } else {
             throw new RuntimeException("Unexpected key: " + key);
@@ -737,13 +747,13 @@ public class OpenSearchClientTest {
     private static void assertExpectedStatusAggregations(StringTermsBucket bucket) {
         var key = bucket.key();
         var statusAggregation = bucket.aggregations().get("status");
-        if (key.equals(SIKT_INSTITUTION_ID.toString())) {
+        if (SIKT_INSTITUTION_ID.toString().equals(key)) {
             var expectedKeys = List.of(NEW.getValue(), PENDING.getValue(), REJECTED.getValue());
             assertExpectedSubAggregations(statusAggregation, expectedKeys);
-        } else if (key.equals(SIKT_LEVEL_2_ID)) {
+        } else if (SIKT_LEVEL_2_ID.equals(key)) {
             var expectedKeys = List.of(NEW.getValue(), PENDING.getValue(), REJECTED.getValue());
             assertExpectedSubAggregations(statusAggregation, expectedKeys);
-        } else if (key.equals(SIKT_LEVEL_3_ID)) {
+        } else if (SIKT_LEVEL_3_ID.equals(key)) {
             var expectedKeys = List.of(PENDING.getValue());
             assertExpectedSubAggregations(statusAggregation, expectedKeys);
         } else {
@@ -900,8 +910,9 @@ public class OpenSearchClientTest {
                    .withContributors(List.of(randomNviContributor(randomUri())));
     }
 
+    @SuppressWarnings("PMD.DoNotUseThreads")
     private static void addDocumentsToIndex(NviCandidateIndexDocument... documents) throws InterruptedException {
-        Arrays.stream(documents).forEach(document -> openSearchClient.addDocumentToIndex(document));
+        Arrays.stream(documents).forEach(openSearchClient::addDocumentToIndex);
         Thread.sleep(DELAY_ON_INDEX);
     }
 
@@ -965,12 +976,12 @@ public class OpenSearchClientTest {
 
     public static final class FakeCachedJwtProvider {
 
-        public static String TEST_TOKEN = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJPbmxpbmUgSldUIEJ1"
-                                          + "aWxkZXIiLCJpYXQiOjE2Njg1MTE4NTcsImV4cCI6MTcwMDA0Nzg1NywiYXVkIjoi"
-                                          + "d3d3LmV4YW1wbGUuY29tIiwic3ViIjoianJvY2tldEBleGFtcGxlLmNvbSIsIkdpd"
-                                          + "mVuTmFtZSI6IkpvaG5ueSIsIlN1cm5hbWUiOiJSb2NrZXQiLCJFbWFpbCI6Impyb2"
-                                          + "NrZXRAZXhhbXBsZS5jb20iLCJSb2xlIjoiTWFuYWdlciIsInNjb3BlIjoiZXhhbX"
-                                          + "BsZS1zY29wZSJ9.ne8Jb4f2xao1zSJFZxIBRrh4WFNjkaBRV3-Ybp6fHZU";
+        private final static String TEST_TOKEN = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJPbmxpbmUgSldUIEJ1"
+                                                 + "aWxkZXIiLCJpYXQiOjE2Njg1MTE4NTcsImV4cCI6MTcwMDA0Nzg1NywiYXVkIjoi"
+                                                 + "d3d3LmV4YW1wbGUuY29tIiwic3ViIjoianJvY2tldEBleGFtcGxlLmNvbSIsIkdpd"
+                                                 + "mVuTmFtZSI6IkpvaG5ueSIsIlN1cm5hbWUiOiJSb2NrZXQiLCJFbWFpbCI6Impyb2"
+                                                 + "NrZXRAZXhhbXBsZS5jb20iLCJSb2xlIjoiTWFuYWdlciIsInNjb3BlIjoiZXhhbX"
+                                                 + "BsZS1zY29wZSJ9.ne8Jb4f2xao1zSJFZxIBRrh4WFNjkaBRV3-Ybp6fHZU";
 
         public static CachedJwtProvider setup() {
             var jwt = mock(DecodedJWT.class);
@@ -984,3 +995,4 @@ public class OpenSearchClientTest {
         }
     }
 }
+

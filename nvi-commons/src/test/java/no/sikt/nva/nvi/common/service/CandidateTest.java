@@ -77,7 +77,6 @@ import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliation
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
-import no.sikt.nva.nvi.test.TestUtils;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -90,6 +89,8 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
+// Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
+@SuppressWarnings({"PMD.GodClass", "PMD.CouplingBetweenObjects"})
 class CandidateTest extends LocalDynamoTest {
 
     public static final int EXPECTED_SCALE = 4;
@@ -230,15 +231,15 @@ class CandidateTest extends LocalDynamoTest {
     void shouldNotUpdateReportedCandidate() {
         var year = randomYear();
         var candidate = setupReportedCandidate(candidateRepository, year).candidate();
-        var updateRequest = TestUtils.createUpsertCandidateRequest(candidate.publicationId(),
-                                                                   randomUri(),
-                                                                   true,
-                                                                   InstanceType.parse(candidate.instanceType()),
-                                                                   candidate.creatorCount(),
-                                                                   candidate.totalPoints(),
-                                                                   candidate.level().getValue(),
-                                                                   Integer.parseInt(year),
-                                                                   randomUri());
+        var updateRequest = createUpsertCandidateRequest(candidate.publicationId(),
+                                                         randomUri(),
+                                                         true,
+                                                         InstanceType.parse(candidate.instanceType()),
+                                                         candidate.creatorCount(),
+                                                         candidate.totalPoints(),
+                                                         candidate.level().getValue(),
+                                                         Integer.parseInt(year),
+                                                         randomUri());
         assertThrows(IllegalCandidateUpdateException.class,
                      () -> Candidate.upsert(updateRequest, candidateRepository, periodRepository));
     }
@@ -256,7 +257,7 @@ class CandidateTest extends LocalDynamoTest {
 
     @Test
     void shouldFetchCandidateByPublicationId() {
-        var candidate = TestUtils.randomApplicableCandidate(candidateRepository, periodRepository);
+        var candidate = randomApplicableCandidate(candidateRepository, periodRepository);
         var fetchedCandidate = Candidate.fetchByPublicationId(candidate::getPublicationId,
                                                               candidateRepository,
                                                               periodRepository);
@@ -331,7 +332,7 @@ class CandidateTest extends LocalDynamoTest {
             assertThat(dto.publicationId(), is(equalTo(createRequest.publicationId())));
             assertThat(dto.approvals().size(), is(equalTo(createRequest.institutionPoints().size())));
             assertThat(dto.notes().size(), is(2));
-            assertThat(dto.totalPoints(), is(equalTo(setScaleAndRoundingMode(totalPoints))));
+            assertThat(dto.totalPoints(), is(equalTo(adjustScaleAndRoundingMode(totalPoints))));
             var note = dto.notes().getFirst();
             assertThat(note.text(), is(notNullValue()));
             assertThat(note.user(), is(notNullValue()));
@@ -347,7 +348,8 @@ class CandidateTest extends LocalDynamoTest {
             assertThat(rejectedAP.status(), is(equalTo(ApprovalStatusDto.REJECTED)));
             assertThat(rejectedAP.reason(), is(notNullValue()));
             assertThat(rejectedAP.points(),
-                       is(setScaleAndRoundingMode(createRequest.getPointsForInstitution(rejectedAP.institutionId()))));
+                       is(adjustScaleAndRoundingMode(
+                           createRequest.getPointsForInstitution(rejectedAP.institutionId()))));
         });
     }
 
@@ -359,7 +361,7 @@ class CandidateTest extends LocalDynamoTest {
         var institutionId = randomUri();
         var creatorId = randomUri();
         var creators = Map.of(creatorId, List.of(institutionId));
-        var institutionPoints = setScaleAndRoundingMode(randomBigDecimal());
+        var institutionPoints = adjustScaleAndRoundingMode(randomBigDecimal());
         var points = List.of(createInstitutionPoints(institutionId, institutionPoints, creatorId));
         var totalPoints = randomBigDecimal();
         var publicationDate = new PublicationDate(String.valueOf(CURRENT_YEAR), null, null);
@@ -378,8 +380,9 @@ class CandidateTest extends LocalDynamoTest {
         assertEquals(candidate.getPublicationDetails().publicationBucketUri(), publicationBucketUri);
         assertEquals(candidate.isApplicable(), isApplicable);
         assertEquals(candidate.getPublicationId(), publicationId);
-        assertEquals(candidate.getTotalPoints(), setScaleAndRoundingMode(totalPoints));
-        assertEquals(setScaleAndRoundingMode(candidate.getPointValueForInstitution(institutionId)), institutionPoints);
+        assertEquals(candidate.getTotalPoints(), adjustScaleAndRoundingMode(totalPoints));
+        assertEquals(adjustScaleAndRoundingMode(candidate.getPointValueForInstitution(institutionId)),
+                     institutionPoints);
         assertEquals(candidate.getInstitutionPointsMap().get(institutionId), institutionPoints);
         assertEquals(candidate.getInstitutionPoints(), points);
         assertEquals(candidate.getPublicationDetails().publicationDate(), publicationDate);
@@ -388,16 +391,17 @@ class CandidateTest extends LocalDynamoTest {
         assertEquals(candidate.getPublicationDetails().channelType().getValue(), createRequest.channelType());
         assertEquals(candidate.getPublicationDetails().publicationChannelId(), createRequest.publicationChannelId());
         assertEquals(candidate.getPublicationDetails().level(), createRequest.level());
-        assertEquals(candidate.getBasePoints(), setScaleAndRoundingMode(createRequest.basePoints()));
+        assertEquals(candidate.getBasePoints(), adjustScaleAndRoundingMode(createRequest.basePoints()));
         assertEquals(candidate.isInternationalCollaboration(),
                      createRequest.isInternationalCollaboration());
-        assertEquals(candidate.getCollaborationFactor(), setScaleAndRoundingMode(createRequest.collaborationFactor()));
+        assertEquals(candidate.getCollaborationFactor(),
+                     adjustScaleAndRoundingMode(createRequest.collaborationFactor()));
         assertEquals(candidate.getCreatorShareCount(), createRequest.creatorShareCount());
     }
 
     @Test
     void shouldReturnCandidateWithNoPeriodWhenNotApplicable() {
-        var tempCandidate = TestUtils.randomApplicableCandidate(candidateRepository, periodRepository);
+        var tempCandidate = randomApplicableCandidate(candidateRepository, periodRepository);
         var updateRequest = createUpsertNonCandidateRequest(tempCandidate.getPublicationId());
         var candidateBO = Candidate.updateNonCandidate(updateRequest, candidateRepository).orElseThrow();
         var fetchedCandidate = Candidate.fetch(candidateBO::getIdentifier, candidateRepository,
@@ -565,7 +569,7 @@ class CandidateTest extends LocalDynamoTest {
 
     @Test
     void shouldUpdateVersion() {
-        var candidate = TestUtils.randomApplicableCandidate(candidateRepository, periodRepository);
+        var candidate = randomApplicableCandidate(candidateRepository, periodRepository);
         var dao = candidateRepository.findCandidateById(candidate.getIdentifier()).orElseThrow();
 
         candidate.updateVersion(candidateRepository);
@@ -627,7 +631,7 @@ class CandidateTest extends LocalDynamoTest {
         return new UriWrapper(HTTPS, API_DOMAIN).addChild(BASE_PATH, "candidate", identifier.toString()).getUri();
     }
 
-    private static BigDecimal setScaleAndRoundingMode(BigDecimal bigDecimal) {
+    private static BigDecimal adjustScaleAndRoundingMode(BigDecimal bigDecimal) {
         return bigDecimal.setScale(EXPECTED_SCALE, EXPECTED_ROUNDING_MODE);
     }
 
@@ -668,7 +672,7 @@ class CandidateTest extends LocalDynamoTest {
                                             arguments.level().getValue(),
                                             arguments.institutionPoints(),
                                             randomInteger(), false,
-                                            TestUtils.randomBigDecimal(), null, randomBigDecimal());
+                                            randomBigDecimal(), null, randomBigDecimal());
     }
 
     private UpsertCandidateRequest getUpsertCandidateRequest(URI creatorId, URI institutionId,
@@ -697,7 +701,7 @@ class CandidateTest extends LocalDynamoTest {
         Candidate.upsert(insertRequest, candidateRepository, periodRepository);
         var creators = IntStream.of(insertRequest.creators().size())
                            .mapToObj(i -> randomUri())
-                           .collect(Collectors.toMap(Function.identity(), e -> List.of(new URI[]{institutionId})));
+                           .collect(Collectors.toMap(Function.identity(), e -> List.of(institutionId)));
 
         var points = createPoints(creators);
 
@@ -721,13 +725,13 @@ class CandidateTest extends LocalDynamoTest {
                                     .channelType(ChannelType.parse(request.channelType()))
                                     .channelId(request.publicationChannelId())
                                     .level(DbLevel.parse(request.level()))
-                                    .basePoints(setScaleAndRoundingMode(request.basePoints()))
+                                    .basePoints(adjustScaleAndRoundingMode(request.basePoints()))
                                     .internationalCollaboration(request.isInternationalCollaboration())
-                                    .collaborationFactor(setScaleAndRoundingMode(request.collaborationFactor()))
+                                    .collaborationFactor(adjustScaleAndRoundingMode(request.collaborationFactor()))
                                     .creators(mapToDbCreators(request.creators()))
                                     .creatorShareCount(request.creatorShareCount())
                                     .points(mapToDbInstitutionPoints(request.institutionPoints()))
-                                    .totalPoints(setScaleAndRoundingMode(request.totalPoints()))
+                                    .totalPoints(adjustScaleAndRoundingMode(request.totalPoints()))
                                     .createdDate(candidate.getCreatedDate())
                                     .build(), randomString(), randomString()).candidate();
     }

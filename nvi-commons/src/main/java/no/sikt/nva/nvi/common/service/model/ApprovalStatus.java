@@ -17,7 +17,7 @@ public enum ApprovalStatus {
 
     @JsonCreator
     public static ApprovalStatus parse(String value) {
-        return Arrays.stream(ApprovalStatus.values())
+        return Arrays.stream(values())
                    .filter(status -> status.getValue().equalsIgnoreCase(value))
                    .findFirst()
                    .orElseThrow();

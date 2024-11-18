@@ -29,7 +29,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.zalando.problem.Problem;
 
-public class UpdateNviPeriodHandlerTest extends LocalDynamoTest {
+class UpdateNviPeriodHandlerTest extends LocalDynamoTest {
 
     private Context context;
     private ByteArrayOutputStream output;
@@ -40,7 +40,7 @@ public class UpdateNviPeriodHandlerTest extends LocalDynamoTest {
     void init() {
         output = new ByteArrayOutputStream();
         context = mock(Context.class);
-        periodRepository = new PeriodRepository((initializeTestDatabase()));
+        periodRepository = new PeriodRepository(initializeTestDatabase());
         handler = new UpdateNviPeriodHandler(periodRepository);
     }
 

@@ -8,6 +8,7 @@ import java.util.Objects;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints.DbCreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.utils.DecimalUtils;
+import nva.commons.core.JacocoGenerated;
 
 public record InstitutionPoints(URI institutionId, BigDecimal institutionPoints,
                                 List<CreatorAffiliationPoints> creatorAffiliationPoints) {
@@ -40,6 +41,12 @@ public record InstitutionPoints(URI institutionId, BigDecimal institutionPoints,
                && Objects.equals(creatorAffiliationPoints, that.creatorAffiliationPoints);
     }
 
+    @Override
+    @JacocoGenerated
+    public int hashCode() {
+        return Objects.hash(institutionId, institutionPoints, creatorAffiliationPoints);
+    }
+
     public record CreatorAffiliationPoints(URI nviCreator, URI affiliationId, BigDecimal points) {
 
         public static CreatorAffiliationPoints from(DbCreatorAffiliationPoints dbCreatorAffiliationPoints) {
@@ -61,6 +68,12 @@ public record InstitutionPoints(URI institutionId, BigDecimal institutionPoints,
                    && Objects.equals(affiliationId, that.affiliationId)
                    && Objects.equals(DecimalUtils.adjustScaleAndRoundingMode(points),
                                      DecimalUtils.adjustScaleAndRoundingMode(that.points));
+        }
+
+        @Override
+        @JacocoGenerated
+        public int hashCode() {
+            return Objects.hash(nviCreator, affiliationId, points);
         }
     }
 }

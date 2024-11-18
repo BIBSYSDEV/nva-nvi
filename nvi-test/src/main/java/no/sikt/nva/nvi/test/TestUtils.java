@@ -58,6 +58,8 @@ import no.sikt.nva.nvi.common.utils.BatchScanUtil;
 import nva.commons.core.paths.UriWrapper;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
+// Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
+@SuppressWarnings("PMD.CouplingBetweenObjects")
 public final class TestUtils {
 
     public static final int SCALE = 4;
@@ -343,6 +345,7 @@ public final class TestUtils {
                                             randomBigDecimal(), randomBigDecimal(), totalPoints);
     }
 
+    @SuppressWarnings("PMD.ExcessiveParameterList")
     public static UpsertCandidateRequest createUpsertCandidateRequest(URI publicationId,
                                                                       final URI publicationBucketUri,
                                                                       boolean isApplicable,

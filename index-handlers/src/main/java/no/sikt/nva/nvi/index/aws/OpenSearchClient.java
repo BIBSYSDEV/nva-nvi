@@ -54,6 +54,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @JacocoGenerated
+// Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
+@SuppressWarnings("PMD.CouplingBetweenObjects")
 public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument> {
 
     private static final String INDEX_NOT_FOUND_EXCEPTION = "index_not_found_exception";

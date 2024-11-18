@@ -61,6 +61,8 @@ import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.paths.UriWrapper;
 
+// Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
+@SuppressWarnings({"PMD.GodClass", "PMD.CouplingBetweenObjects"})
 public final class Candidate {
 
     private static final Environment ENVIRONMENT = new Environment();
@@ -374,9 +376,8 @@ public final class Candidate {
     private static Optional<Candidate> fetchOptionalCandidate(UpsertCandidateRequest request,
                                                               CandidateRepository candidateRepository,
                                                               PeriodRepository periodRepository) {
-        return attempt(() -> Candidate.fetchByPublicationId(request::publicationId,
-                                                            candidateRepository,
-                                                            periodRepository)).toOptional();
+        return attempt(
+            () -> fetchByPublicationId(request::publicationId, candidateRepository, periodRepository)).toOptional();
     }
 
     private static void updateExistingCandidate(UpsertCandidateRequest request,

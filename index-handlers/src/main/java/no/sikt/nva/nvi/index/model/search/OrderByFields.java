@@ -13,7 +13,7 @@ public enum OrderByFields {
     }
 
     public static OrderByFields parse(String value) {
-        return Arrays.stream(OrderByFields.values())
+        return Arrays.stream(values())
                    .filter(field -> field.getValue().equalsIgnoreCase(value))
                    .findFirst()
                    .orElseThrow(
@@ -21,7 +21,7 @@ public enum OrderByFields {
     }
 
     public static List<String> validValues() {
-        return Arrays.stream(OrderByFields.values())
+        return Arrays.stream(values())
                    .map(OrderByFields::getValue)
                    .toList();
     }

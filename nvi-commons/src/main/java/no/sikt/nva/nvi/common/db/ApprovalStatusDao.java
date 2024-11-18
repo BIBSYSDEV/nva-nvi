@@ -69,6 +69,7 @@ public final class ApprovalStatusDao extends Dao {
         return createSortKey(approvalStatus.institutionId().toString());
     }
 
+    @Override
     public String version() {
         return version;
     }
@@ -101,7 +102,7 @@ public final class ApprovalStatusDao extends Dao {
         @JsonCreator
         public static DbStatus parse(String value) {
             return Arrays
-                       .stream(DbStatus.values())
+                       .stream(values())
                        .filter(status -> status.getValue().equalsIgnoreCase(value))
                        .findFirst()
                        .orElseThrow();

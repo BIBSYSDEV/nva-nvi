@@ -102,8 +102,8 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTest {
     private static DbNviPeriod periodForYear(String cristinNviReport) {
         return DbNviPeriod.builder()
                    .publishingYear(cristinNviReport)
-                   .startDate(Instant.now().plusSeconds(10000))
-                   .reportingDate(Instant.now().plusSeconds(10000000))
+                   .startDate(Instant.now().plusSeconds(10_000))
+                   .reportingDate(Instant.now().plusSeconds(10_000_000))
                    .build();
     }
 
@@ -137,7 +137,7 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTest {
     }
 
     private Creator constructExpectedCreator(CristinNviReport cristinNviReport) {
-        var creatorIdentifier = cristinNviReport.getCreators().get(0).getCristinPersonIdentifier();
+        var creatorIdentifier = cristinNviReport.getCreators().getFirst().getCristinPersonIdentifier();
         var creatorId = UriWrapper.fromHost(API_HOST)
                 .addChild("cristin")
                 .addChild("person")
@@ -250,14 +250,6 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTest {
         var sqsEvent = new SQSEvent();
         var message = new SQSMessage();
         message.setBody(eventReference.toJsonString());
-        sqsEvent.setRecords(List.of(message));
-        return sqsEvent;
-    }
-
-    private SQSEvent createEventWithBody(String body) {
-        var sqsEvent = new SQSEvent();
-        var message = new SQSMessage();
-        message.setBody(body);
         sqsEvent.setRecords(List.of(message));
         return sqsEvent;
     }

@@ -17,7 +17,7 @@ class DynamoDbUtilsTest {
 
     @Test
     void shouldParseNullValuesWhenGettingImage() {
-        var streamRecordWithNullValue = setUpStreamRecordWithFieldWithNullValue();
+        var streamRecordWithNullValue = setupStreamRecordWithFieldWithNullValue();
         var attributeValueMap = DynamoDbUtils.getImage(streamRecordWithNullValue);
         var expectedAttributeValue = AttributeValue.builder().nul(true).build();
         assertEquals(expectedAttributeValue, attributeValueMap.get(SOME_FIELD_NAME));
@@ -88,7 +88,7 @@ class DynamoDbUtilsTest {
                        identifier.toString())));
     }
 
-    private static DynamodbStreamRecord setUpStreamRecordWithFieldWithNullValue() {
+    private static DynamodbStreamRecord setupStreamRecordWithFieldWithNullValue() {
         return dynamodbRecordWithStreamRecord(new StreamRecord().withNewImage(
             Map.of(SOME_FIELD_NAME,
                    new com.amazonaws.services.lambda.runtime.events.models.dynamodb.AttributeValue().withNULL(true))));

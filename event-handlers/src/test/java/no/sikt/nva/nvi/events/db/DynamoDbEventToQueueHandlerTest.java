@@ -26,7 +26,7 @@ import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequestEntry;
 import software.amazon.awssdk.services.sqs.model.SqsException;
 
-public class DynamoDbEventToQueueHandlerTest {
+class DynamoDbEventToQueueHandlerTest {
 
     public static final Context CONTEXT = mock(Context.class);
     public static final String DLQ_URL = "IndexDlq";

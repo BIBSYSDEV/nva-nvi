@@ -75,6 +75,8 @@ import org.apache.jena.rdf.model.NodeIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+// Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
+@SuppressWarnings({"PMD.GodClass", "PMD.CouplingBetweenObjects"})
 public final class NviCandidateIndexDocumentGenerator {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(NviCandidateIndexDocumentGenerator.class);
@@ -386,12 +388,10 @@ public final class NviCandidateIndexDocumentGenerator {
 
     private boolean isNviAffiliation(Creator creator, JsonNode affiliationNode) {
         var affiliationId = extractJsonNodeTextValue(affiliationNode, JSON_PTR_ID);
-        if (isNull(affiliationId)) {
-            return false;
-        }
-        return creator.affiliations()
-                   .stream()
-                   .anyMatch(affiliation -> affiliation.toString().equals(affiliationId));
+
+        return nonNull(affiliationId) && creator.affiliations()
+                                             .stream()
+                                             .anyMatch(affiliation -> affiliation.toString().equals(affiliationId));
     }
 
     private NviOrganization generateAffiliationWithPartOf(URI id) {
