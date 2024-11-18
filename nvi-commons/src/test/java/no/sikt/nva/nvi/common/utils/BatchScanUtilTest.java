@@ -35,7 +35,6 @@ class BatchScanUtilTest extends LocalDynamoTest {
 
     private static final int YEAR = ZonedDateTime.now().getYear();
     private static final int DEFAULT_PAGE_SIZE = 700;
-    private static final int FIRST_ROW = 0;
     private static final int SECOND_ROW = 1;
     private BatchScanUtil batchScanUtil;
     private CandidateRepositoryHelper candidateRepository;
@@ -60,10 +59,10 @@ class BatchScanUtilTest extends LocalDynamoTest {
         IntStream.range(0, 2).forEach(i -> candidateRepository.create(randomCandidate(), List.of()));
         var candidates = getCandidatesInOrder();
         var originalRows = getCandidates(candidates);
-        batchScanUtil.migrateAndUpdateVersion(1000, getStartMarker(originalRows.get(FIRST_ROW)), emptyList());
+        batchScanUtil.migrateAndUpdateVersion(1000, getStartMarker(originalRows.getFirst()), emptyList());
         var modifiedRows = getCandidates(candidates);
 
-        assertThat(modifiedRows.get(FIRST_ROW).version(), is(equalTo(originalRows.get(FIRST_ROW).version())));
+        assertThat(modifiedRows.getFirst().version(), is(equalTo(originalRows.getFirst().version())));
         assertThat(modifiedRows.get(SECOND_ROW).version(), is(not(equalTo(originalRows.get(SECOND_ROW).version()))));
     }
 
@@ -151,7 +150,7 @@ class BatchScanUtilTest extends LocalDynamoTest {
         return localDynamo.scan(ScanRequest.builder().tableName(ApplicationConstants.NVI_TABLE_NAME).build())
                    .items()
                    .stream()
-                   .filter(a -> "CANDIDATE".equals(a.get("type").s()))
+                   .filter(attributeValueMap -> CandidateDao.TYPE.equals(attributeValueMap.get("type").s()))
                    .toList();
     }
 
