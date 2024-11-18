@@ -13,37 +13,38 @@ class JsonUtilsTest {
 
     public static final String ID_FIELD = "id";
     private static final String FIELD_NAME = "fieldName";
+    private static final String JSON_PATH_DELIMITER = "/";
 
     @Test
     void shouldExtractJsonNodeTextValueIfPresent() {
         var fieldValue = randomString();
         var randomJsonNode = objectMapper.createObjectNode().put(FIELD_NAME, fieldValue);
-        assertEquals(JsonUtils.extractJsonNodeTextValue(randomJsonNode, "/" + FIELD_NAME), fieldValue);
+        assertEquals(JsonUtils.extractJsonNodeTextValue(randomJsonNode, JSON_PATH_DELIMITER + FIELD_NAME), fieldValue);
     }
 
     @Test
     void shouldExtractOptionalJsonNodeTextValueIfPresent() {
         var fieldValue = randomString();
         var randomJsonNode = objectMapper.createObjectNode().put(FIELD_NAME, fieldValue);
-        assertEquals(extractOptJsonNodeTextValue(randomJsonNode, "/" + FIELD_NAME).get(), fieldValue);
+        assertEquals(extractOptJsonNodeTextValue(randomJsonNode, JSON_PATH_DELIMITER + FIELD_NAME).get(), fieldValue);
     }
 
     @Test
     void shouldReturnNullIfJsonPointerPointsToMissingNode() {
         var randomJsonNode = objectMapper.createObjectNode();
-        assertNull(JsonUtils.extractJsonNodeTextValue(randomJsonNode, "/" + FIELD_NAME));
+        assertNull(JsonUtils.extractJsonNodeTextValue(randomJsonNode, JSON_PATH_DELIMITER + FIELD_NAME));
     }
 
     @Test
     void shouldReturnNullIfJsonPointerPointsToNull() {
         var randomJsonNode = objectMapper.createObjectNode().set(FIELD_NAME, null);
-        assertNull(JsonUtils.extractJsonNodeTextValue(randomJsonNode, "/" + FIELD_NAME));
+        assertNull(JsonUtils.extractJsonNodeTextValue(randomJsonNode, JSON_PATH_DELIMITER + FIELD_NAME));
     }
 
     @Test
     void shouldReturnNullIfJsonPointerPointsToJsonNode() {
         var randomJsonNode = objectMapper.createObjectNode().set(FIELD_NAME, objectMapper.createObjectNode());
-        assertNull(JsonUtils.extractJsonNodeTextValue(randomJsonNode, "/" + FIELD_NAME));
+        assertNull(JsonUtils.extractJsonNodeTextValue(randomJsonNode, JSON_PATH_DELIMITER + FIELD_NAME));
     }
 
     @Test

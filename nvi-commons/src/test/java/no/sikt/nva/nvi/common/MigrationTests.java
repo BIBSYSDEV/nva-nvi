@@ -33,7 +33,7 @@ class MigrationTests extends LocalDynamoTest {
 
     @BeforeEach
     public void setUp() {
-        DynamoDbClient dynamodb = initializeTestDatabase();
+        var dynamodb = initializeTestDatabase();
         candidateRepository = new CandidateRepository(dynamodb);
         periodRepository = new PeriodRepository(dynamodb);
         batchScanUtil = new BatchScanUtil(candidateRepository);
