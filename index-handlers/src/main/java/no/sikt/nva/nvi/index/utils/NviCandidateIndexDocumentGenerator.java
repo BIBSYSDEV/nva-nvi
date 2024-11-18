@@ -389,7 +389,7 @@ public final class NviCandidateIndexDocumentGenerator {
     private boolean isNviAffiliation(Creator creator, JsonNode affiliationNode) {
         var affiliationId = extractJsonNodeTextValue(affiliationNode, JSON_PTR_ID);
 
-        return !isNull(affiliationId) && creator.affiliations()
+        return nonNull(affiliationId) && creator.affiliations()
                                              .stream()
                                              .anyMatch(affiliation -> affiliation.toString().equals(affiliationId));
     }

@@ -11,9 +11,10 @@ import java.util.Map;
 import no.unit.nva.commons.json.JsonSerializable;
 import nva.commons.core.SingletonCollector;
 
+@SuppressWarnings("PMD.LinguisticNaming")
 public record Organization(@JsonProperty("id") URI id,
                            @JsonProperty("partOf") List<Organization> partOf,
-                           @JsonProperty("hasPart") List<Organization> subUnits,
+                           @JsonProperty("hasPart") List<Organization> hasPart,
                            @JsonProperty("labels") Map<String, String> labels,
                            @JsonProperty("type") String type,
                            @JsonProperty("@context") Object context)
@@ -51,7 +52,7 @@ public record Organization(@JsonProperty("id") URI id,
 
         private URI id;
         private List<Organization> partOf;
-        private List<Organization> subUnits;
+        private List<Organization> hasPart;
         private Map<String, String> labels;
         private String type;
         private Object context;
@@ -69,8 +70,8 @@ public record Organization(@JsonProperty("id") URI id,
             return this;
         }
 
-        public Builder withHasPart(List<Organization> subUnits) {
-            this.subUnits = subUnits;
+        public Builder withHasPart(List<Organization> hasPart) {
+            this.hasPart = hasPart;
             return this;
         }
 
@@ -90,7 +91,7 @@ public record Organization(@JsonProperty("id") URI id,
         }
 
         public Organization build() {
-            return new Organization(id, partOf, subUnits, labels, type, context);
+            return new Organization(id, partOf, hasPart, labels, type, context);
         }
     }
 }
