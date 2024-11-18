@@ -23,7 +23,7 @@ import no.sikt.nva.nvi.test.TestUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class MigrationTests extends LocalDynamoTest {
+class MigrationTests extends LocalDynamoTest {
 
     public static final int DEFAULT_PAGE_SIZE = 700;
     private CandidateRepository candidateRepository;
@@ -32,9 +32,9 @@ public class MigrationTests extends LocalDynamoTest {
 
     @BeforeEach
     public void setUp() {
-        var localDynamo = initializeTestDatabase();
-        candidateRepository = new CandidateRepository(localDynamo);
-        periodRepository = new PeriodRepository(localDynamo);
+        var dynamodb = initializeTestDatabase();
+        candidateRepository = new CandidateRepository(dynamodb);
+        periodRepository = new PeriodRepository(dynamodb);
         batchScanUtil = new BatchScanUtil(candidateRepository);
     }
 

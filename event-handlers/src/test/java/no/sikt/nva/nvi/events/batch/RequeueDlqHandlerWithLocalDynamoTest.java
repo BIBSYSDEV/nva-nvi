@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.events.batch;
 
 import static no.sikt.nva.nvi.events.batch.RequeueDlqTestUtils.generateMessages;
-import static no.sikt.nva.nvi.events.batch.RequeueDlqTestUtils.setUpSqsClient;
+import static no.sikt.nva.nvi.events.batch.RequeueDlqTestUtils.setupSqsClient;
 import static no.sikt.nva.nvi.test.TestUtils.createCandidateDao;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidateWithYear;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -20,12 +20,11 @@ import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 
-public class RequeueDlqHandlerWithLocalDynamoTest extends LocalDynamoTest {
+class RequeueDlqHandlerWithLocalDynamoTest extends LocalDynamoTest {
 
     public static final Context CONTEXT = mock(Context.class);
     public static final int YEAR = 2021;
     private static final String DLQ_URL = "https://some-sqs-url";
-    private RequeueDlqHandler handler;
     private SqsClient sqsClient;
     private CandidateRepository candidateRepository;
     private PeriodRepository periodRepository;
@@ -33,12 +32,11 @@ public class RequeueDlqHandlerWithLocalDynamoTest extends LocalDynamoTest {
 
     @BeforeEach
     void setUp() {
-        sqsClient = setUpSqsClient();
+        sqsClient = setupSqsClient();
         client = new NviQueueClient(sqsClient);
         var localDynamoDbClient = initializeTestDatabase();
         candidateRepository = new CandidateRepository(localDynamoDbClient);
         periodRepository = TestUtils.periodRepositoryReturningOpenedPeriod(YEAR);
-        handler = new RequeueDlqHandler(client, DLQ_URL, candidateRepository, periodRepository);
     }
 
     @Test
@@ -50,7 +48,7 @@ public class RequeueDlqHandlerWithLocalDynamoTest extends LocalDynamoTest {
                                                        expectedCandidate.identifier()))
                             .build());
 
-        handler = new RequeueDlqHandler(client, DLQ_URL, candidateRepository, periodRepository);
+        var handler = new RequeueDlqHandler(client, DLQ_URL, candidateRepository, periodRepository);
         handler.handleRequest(new RequeueDlqInput(1), CONTEXT);
         var actualCandidate = candidateRepository.findCandidateById(expectedCandidate.identifier()).orElseThrow();
         assertEquals(expectedCandidate.identifier(), actualCandidate.identifier());

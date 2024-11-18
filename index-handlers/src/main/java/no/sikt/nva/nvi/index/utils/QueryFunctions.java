@@ -104,10 +104,10 @@ public final class QueryFunctions {
         return mustMatch(nestedQuery(APPROVALS,
                                      fieldValueQuery(jsonPathOf(APPROVALS, INSTITUTION_ID), customer),
                                      fieldValueQuery(jsonPathOf(APPROVALS, APPROVAL_STATUS), status.getValue())),
-                         isNotDisputeQuery());
+                         notDisputeQuery());
     }
 
-    public static Query isNotDisputeQuery() {
+    public static Query notDisputeQuery() {
         return mustNotMatch(disputeQuery());
     }
 

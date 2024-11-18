@@ -42,8 +42,9 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
-public class CandidateApprovalDtoTest extends LocalDynamoTest {
+class CandidateApprovalDtoTest extends LocalDynamoTest {
 
+    private static final String APPROVED = "APPROVED";
     private CandidateRepository candidateRepository;
     private PeriodRepository periodRepository;
 
@@ -97,7 +98,7 @@ public class CandidateApprovalDtoTest extends LocalDynamoTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = ApprovalStatus.class, names = {"REJECTED", "APPROVED"})
+    @EnumSource(value = ApprovalStatus.class, names = {"REJECTED", APPROVED})
     void shouldResetApprovalWhenChangingToPending(ApprovalStatus oldStatus) {
         var institutionId = randomUri();
         var upsertCandidateRequest = createUpsertCandidateRequest(randomUri(), randomUri(), true,
@@ -120,7 +121,7 @@ public class CandidateApprovalDtoTest extends LocalDynamoTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = ApprovalStatus.class, names = {"PENDING", "APPROVED"})
+    @EnumSource(value = ApprovalStatus.class, names = {"PENDING", APPROVED})
     void shouldRemoveReasonWhenUpdatingFromRejectionStatusToNewStatus(ApprovalStatus newStatus) {
         var institutionId = randomUri();
         var createRequest = createUpsertCandidateRequest(institutionId);
@@ -188,7 +189,7 @@ public class CandidateApprovalDtoTest extends LocalDynamoTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = ApprovalStatus.class, names = {"PENDING", "APPROVED"})
+    @EnumSource(value = ApprovalStatus.class, names = {"PENDING", APPROVED})
     void shouldThrowUnsupportedOperationWhenRejectingWithoutReason(ApprovalStatus oldStatus) {
         var institutionId = randomUri();
         var createRequest = createUpsertCandidateRequest(institutionId);
@@ -201,7 +202,7 @@ public class CandidateApprovalDtoTest extends LocalDynamoTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = ApprovalStatus.class)
+    @EnumSource(value = ApprovalStatus.class, names = {"PENDING", APPROVED, "REJECTED"})
     void shouldThrowIllegalArgumentExceptionWhenUpdateStatusWithoutUsername(ApprovalStatus newStatus) {
         var institutionId = randomUri();
         var createRequest = createUpsertCandidateRequest(institutionId);

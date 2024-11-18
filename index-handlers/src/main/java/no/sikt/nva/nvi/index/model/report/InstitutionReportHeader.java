@@ -42,7 +42,7 @@ public enum InstitutionReportHeader {
     }
 
     public static List<String> getOrderedValues() {
-        return Arrays.stream(InstitutionReportHeader.values())
+        return Arrays.stream(values())
                    .sorted(Comparator.comparing(InstitutionReportHeader::getOrder))
                    .map(InstitutionReportHeader::getValue)
                    .toList();

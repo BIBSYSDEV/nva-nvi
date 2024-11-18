@@ -22,6 +22,8 @@ public final class ExpandedResourceGenerator {
     public static final String HARDCODED_ENGLISH_LABEL = "Hardcoded English label";
     public static final String NB_FIELD = "nb";
     public static final String EN_FIELD = "en";
+    private static final String TYPE = "type";
+    private static final String NAME = "name";
     private final boolean populateLanguage;
     private final boolean populateIssn;
     private final boolean populateAbstract;
@@ -131,7 +133,7 @@ public final class ExpandedResourceGenerator {
 
     private static ObjectNode createAndPopulatePublicationInstance(Candidate candidate) {
         var publicationInstance = objectMapper.createObjectNode();
-        publicationInstance.put("type", candidate.getPublicationDetails().type());
+        publicationInstance.put(TYPE, candidate.getPublicationDetails().type());
         switch (candidate.getPublicationDetails().type()) {
             case "AcademicArticle", "AcademicLiteratureReview", "AcademicChapter" -> {
                 var pages = objectMapper.createObjectNode();
@@ -164,10 +166,10 @@ public final class ExpandedResourceGenerator {
 
     private static ObjectNode createPublisherPublicationContext(Candidate candidate) {
         var publisher = objectMapper.createObjectNode();
-        publisher.put("type", "Publisher");
+        publisher.put(TYPE, "Publisher");
         publisher.put("id", candidate.getPublicationDetails().publicationChannelId().toString());
         publisher.put("level", candidate.getPublicationDetails().level());
-        publisher.put("name", randomString());
+        publisher.put(NAME, randomString());
         var publicationContext = objectMapper.createObjectNode();
         publicationContext.set("publisher", publisher);
         return publicationContext;
@@ -175,10 +177,10 @@ public final class ExpandedResourceGenerator {
 
     private static ObjectNode createSeriesPublicationContext(Candidate candidate, boolean populateIssn) {
         var series = objectMapper.createObjectNode();
-        series.put("type", "Series");
+        series.put(TYPE, "Series");
         series.put("id", candidate.getPublicationDetails().publicationChannelId().toString());
         series.put("level", candidate.getPublicationDetails().level());
-        series.put("name", randomString());
+        series.put(NAME, randomString());
         if (populateIssn) {
             series.put("printIssn", randomString());
         }
@@ -189,10 +191,10 @@ public final class ExpandedResourceGenerator {
 
     private static ObjectNode createJournalPublicationContext(Candidate candidate, boolean populateIssn) {
         var journal = objectMapper.createObjectNode();
-        journal.put("type", "Journal");
+        journal.put(TYPE, "Journal");
         journal.put("id", candidate.getPublicationDetails().publicationChannelId().toString());
         journal.put("level", candidate.getPublicationDetails().level());
-        journal.put("name", randomString());
+        journal.put(NAME, randomString());
         if (populateIssn) {
             journal.put("printIssn", randomString());
         }
@@ -214,7 +216,7 @@ public final class ExpandedResourceGenerator {
     private static JsonNode createOrganizationNode(String affiliationId) {
         var organization = objectMapper.createObjectNode();
         organization.put("id", affiliationId);
-        organization.put("type", "Organization");
+        organization.put(TYPE, "Organization");
         var labels = objectMapper.createObjectNode();
         labels.put(NB_FIELD, HARDCODED_NORWEGIAN_LABEL);
         labels.put(EN_FIELD, HARDCODED_ENGLISH_LABEL);
@@ -224,7 +226,7 @@ public final class ExpandedResourceGenerator {
 
     private static ObjectNode createAndPopulatePublicationDate(PublicationDate date) {
         var publicationDate = objectMapper.createObjectNode();
-        publicationDate.put("type", "PublicationDate");
+        publicationDate.put(TYPE, "PublicationDate");
         if (nonNull(date.day())) {
             publicationDate.put("day", date.day());
         }
@@ -255,19 +257,19 @@ public final class ExpandedResourceGenerator {
     private static ObjectNode createContributorNode(List<URI> affiliationsUris, URI contributorId) {
         var contributorNode = objectMapper.createObjectNode();
 
-        contributorNode.put("type", "Contributor");
+        contributorNode.put(TYPE, "Contributor");
 
         var affiliations = createAndPopulateAffiliationsNode(affiliationsUris);
 
         contributorNode.set("affiliations", affiliations);
 
         var role = objectMapper.createObjectNode();
-        role.put("type", randomString());
+        role.put(TYPE, randomString());
         contributorNode.set("role", role);
 
         var identity = objectMapper.createObjectNode();
         identity.put("id", contributorId.toString());
-        identity.put("name", randomString());
+        identity.put(NAME, randomString());
         identity.put("orcid", randomString());
 
         contributorNode.set("identity", identity);
@@ -280,7 +282,7 @@ public final class ExpandedResourceGenerator {
         creatorAffiliations.forEach(affiliation -> {
             var affiliationNode = objectMapper.createObjectNode();
             affiliationNode.put("id", affiliation.toString());
-            affiliationNode.put("type", "Organization");
+            affiliationNode.put(TYPE, "Organization");
             var labels = objectMapper.createObjectNode();
 
             labels.put(NB_FIELD, HARDCODED_NORWEGIAN_LABEL);
@@ -295,9 +297,9 @@ public final class ExpandedResourceGenerator {
 
     public static final class Builder {
 
-        private boolean populateLanguage = false;
-        private boolean populateIssn = false;
-        private boolean populateAbstract = false;
+        private boolean populateLanguage;
+        private boolean populateIssn;
+        private boolean populateAbstract;
 
         private Candidate candidate;
 

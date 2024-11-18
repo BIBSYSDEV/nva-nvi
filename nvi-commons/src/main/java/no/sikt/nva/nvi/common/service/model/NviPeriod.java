@@ -39,7 +39,7 @@ public class NviPeriod {
     }
 
     public static NviPeriod create(CreatePeriodRequest request, PeriodRepository periodRepository) {
-        var period = NviPeriod.fromRequest(request);
+        var period = fromRequest(request);
         if (period.exists(periodRepository)) {
             throw new PeriodAlreadyExistsException(String.format(PUBLISHING_YEAR_EXISTS, period.getPublishingYear()));
         }
@@ -48,7 +48,7 @@ public class NviPeriod {
     }
 
     public static NviPeriod update(UpdatePeriodRequest request, PeriodRepository periodRepository) {
-        var period = NviPeriod.fromRequest(request);
+        var period = fromRequest(request);
         period.fetch(periodRepository).updateWithRequest(request).persist(periodRepository);
         return period.fetch(periodRepository);
     }

@@ -16,28 +16,27 @@ import no.unit.nva.commons.json.JsonSerializable;
 @JsonTypeInfo(use = Id.NAME, property = "type")
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
-public record CandidateDto(
-    URI id,
-    URI context,
-    UUID identifier,
-    URI publicationId,
-    List<ApprovalDto> approvals,
-    BigDecimal totalPoints,
-    List<NoteDto> notes,
-    PeriodStatusDto period,
-    String status) implements JsonSerializable {
+public record CandidateDto(URI id,
+                           URI context,
+                           UUID identifier,
+                           URI publicationId,
+                           List<ApprovalDto> approvals,
+                           BigDecimal totalPoints,
+                           List<NoteDto> notes,
+                           PeriodStatusDto period,
+                           String status) implements JsonSerializable {
+
+    public static final String NVI_CANDIDATE = "NviCandidate";
+
+    public static Builder builder() {
+        return new Builder();
+    }
 
     //TODO: To remove when frontend has been updated to use "period" property
     @Deprecated
     @JsonGetter("periodStatus")
     public PeriodStatusDto getPeriodStatus() {
         return this.period;
-    }
-
-    public static final String NVI_CANDIDATE = "NviCandidate";
-
-    public static Builder builder() {
-        return new Builder();
     }
 
     public static final class Builder {

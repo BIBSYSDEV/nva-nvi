@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.events.batch;
 
 import static no.sikt.nva.nvi.events.batch.RequeueDlqTestUtils.generateMessages;
-import static no.sikt.nva.nvi.events.batch.RequeueDlqTestUtils.setUpSqsClient;
+import static no.sikt.nva.nvi.events.batch.RequeueDlqTestUtils.setupSqsClient;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -42,10 +42,11 @@ import software.amazon.awssdk.services.sqs.model.MessageAttributeValue;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 
-public class RequeueDlqHandlerTest {
+class RequeueDlqHandlerTest {
 
     public static final Context CONTEXT = mock(Context.class);
     private static final String DLQ_URL = "https://some-sqs-url";
+    private static final String FIRST_BATCH = "firstBatch";
     private RequeueDlqHandler handler;
     private SqsClient sqsClient;
     private NviQueueClient client;
@@ -54,7 +55,7 @@ public class RequeueDlqHandlerTest {
 
     @BeforeEach
     void setUp() {
-        sqsClient = setUpSqsClient();
+        sqsClient = setupSqsClient();
 
         client = new NviQueueClient(sqsClient);
 
@@ -68,7 +69,7 @@ public class RequeueDlqHandlerTest {
     @Test
     void shouldRequeueSingleBatch() {
         when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class)))
-            .thenReturn(ReceiveMessageResponse.builder().messages(generateMessages(1, "firstBatch")).build())
+            .thenReturn(ReceiveMessageResponse.builder().messages(generateMessages(1, FIRST_BATCH)).build())
             .thenReturn(ReceiveMessageResponse.builder().messages(List.of()).build());
 
         var response = handler.handleRequest(new RequeueDlqInput(1), CONTEXT);
@@ -80,7 +81,7 @@ public class RequeueDlqHandlerTest {
     @Test
     void shouldWriteToDynamodbWhenProcessing() {
         when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class)))
-            .thenReturn(ReceiveMessageResponse.builder().messages(generateMessages(1, "firstBatch")).build())
+            .thenReturn(ReceiveMessageResponse.builder().messages(generateMessages(1, FIRST_BATCH)).build())
             .thenReturn(ReceiveMessageResponse.builder().messages(List.of()).build());
 
         handler.handleRequest(new RequeueDlqInput(1), CONTEXT);
@@ -92,8 +93,9 @@ public class RequeueDlqHandlerTest {
     void shouldRequeueMultipleBatches() {
         when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class)))
             .thenAnswer(new Answer<ReceiveMessageResponse>() {
-                private int count = 0;
+                private int count;
 
+                @Override
                 public ReceiveMessageResponse answer(InvocationOnMock invocation) {
                     var arg = invocation.getArgument(0, ReceiveMessageRequest.class);
                     return ReceiveMessageResponse.builder()
@@ -122,7 +124,7 @@ public class RequeueDlqHandlerTest {
     @Test
     void emptyInputShouldDefaultTo10() {
         when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class)))
-            .thenReturn(ReceiveMessageResponse.builder().messages(generateMessages(10, "firstBatch")).build())
+            .thenReturn(ReceiveMessageResponse.builder().messages(generateMessages(10, FIRST_BATCH)).build())
             .thenReturn(ReceiveMessageResponse.builder().messages(List.of()).build());
 
         var response = handler.handleRequest(new RequeueDlqInput(), CONTEXT);
@@ -132,6 +134,7 @@ public class RequeueDlqHandlerTest {
     }
 
     @Test
+    @SuppressWarnings("PMD.AvoidDuplicateLiterals")
     void shouldIgnoreDuplicates() {
         var message = Message.builder()
                           .messageId("sameOldThing")
@@ -170,6 +173,7 @@ public class RequeueDlqHandlerTest {
     }
 
     @Test
+    @SuppressWarnings("PMD.AvoidDuplicateLiterals")
     void shouldStopRepeatedErrors() {
         var message = Message.builder()
                           .messageId("sameOldThing")
@@ -313,7 +317,7 @@ public class RequeueDlqHandlerTest {
         when(repo.findByPublicationId(any())).thenReturn(Optional.of(candidate));
         when(repo.findCandidateById(any())).thenReturn(Optional.of(candidate));
         when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class)))
-            .thenReturn(ReceiveMessageResponse.builder().messages(generateMessages(1, "firstBatch")).build())
+            .thenReturn(ReceiveMessageResponse.builder().messages(generateMessages(1, FIRST_BATCH)).build())
             .thenReturn(ReceiveMessageResponse.builder().messages(List.of()).build());
         return new RequeueDlqHandler(client, DLQ_URL, repo, periodRepository);
     }

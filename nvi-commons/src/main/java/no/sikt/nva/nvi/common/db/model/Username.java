@@ -37,7 +37,7 @@ public record Username(
         }
 
         public Username build() {
-            return Username.fromString(builderValue);
+            return fromString(builderValue);
         }
     }
 }

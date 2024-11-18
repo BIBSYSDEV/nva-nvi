@@ -27,14 +27,14 @@ class CandidateRepositoryTest extends LocalDynamoTest {
     private PeriodRepository periodRepository;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         localDynamo = initializeTestDatabase();
         candidateRepository = new CandidateRepository(localDynamo);
         periodRepository = new PeriodRepository(localDynamo);
     }
 
     @Test
-    public void shouldThrowExceptionWhenAttemptingToSaveCandidateWithExistingPublicationId() {
+    void shouldThrowExceptionWhenAttemptingToSaveCandidateWithExistingPublicationId() {
         var publicationId = randomUri();
         var candidate1 = randomCandidateBuilder(true).publicationId(publicationId).build();
         var candidate2 = randomCandidateBuilder(true).publicationId(publicationId).build();
@@ -44,7 +44,7 @@ class CandidateRepositoryTest extends LocalDynamoTest {
     }
 
     @Test
-    public void shouldOverwriteExistingCandidateWhenUpdating() {
+    void shouldOverwriteExistingCandidateWhenUpdating() {
         var originalRequest = createUpsertCandidateRequest(randomUri());
         Candidate.upsert(originalRequest, candidateRepository, periodRepository);
         var candidateDao = candidateRepository.findByPublicationId(originalRequest.publicationId()).get();

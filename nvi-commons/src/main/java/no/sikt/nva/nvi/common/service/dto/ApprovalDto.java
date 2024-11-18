@@ -31,7 +31,7 @@ public record ApprovalDto(URI institutionId,
     }
 
     public static ApprovalDto fromApprovalAndInstitutionPoints(Approval approval, BigDecimal points) {
-        return ApprovalDto.builder()
+        return builder()
                    .withInstitutionId(approval.getInstitutionId())
                    .withStatus(ApprovalStatusDto.from(approval))
                    .withPoints(points)

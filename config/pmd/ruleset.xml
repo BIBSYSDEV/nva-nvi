@@ -7,12 +7,14 @@
   <description>
     PMD rules
   </description>
-  <exclude-pattern>.*/test/.*</exclude-pattern>
 
   <rule ref="category/java/errorprone.xml">
-    <exclude name="DataflowAnomalyAnalysis"/>
     <exclude name="MissingSerialVersionUID"/>
-    <exclude name="BeanMembersShouldSerialize"/>
+    <!-- AvoidFieldNameMatchingMethodName is excluded because we already have many violations -->
+    <exclude name="AvoidFieldNameMatchingMethodName"/>
+    <!-- CloseResource is excluded because we already have many violations -->
+    <exclude name="CloseResource"/>
+    <exclude name="TestClassWithoutTestCases"/>
   </rule>
 
   <rule ref="category/java/multithreading.xml">
@@ -24,9 +26,14 @@
     <exclude name="SystemPrintln"/>
     <exclude name="GuardLogStatement"/>
     <exclude name="AvoidPrintStackTrace"/>
+    <exclude name="UnitTestAssertionsShouldIncludeMessage"/>
+    <exclude name="UnitTestContainsTooManyAsserts"/>
 
     <!-- In TableManager we map ResourceNotFoundException to TableNotFoundException -->
     <exclude name="PreserveStackTrace"/>
+
+    <!-- //TODO: This is complaining on private methods that are used?  -->
+    <exclude name="UnusedPrivateMethod"/>
 
   </rule>
 
@@ -39,33 +46,19 @@
     <exclude name="LocalVariableCouldBeFinal"/>
     <exclude name="MethodArgumentCouldBeFinal"/>
     <exclude name="TooManyStaticImports"/>
+    <exclude name="UseExplicitTypes"/>
     <exclude name="ClassNamingConventions"/>
     <exclude name="UnnecessaryConstructor"/>
     <!-- Conflicts with the rule category/java/codestyle.xml/AvoidProtectedMethodInFinalClassNotExtending -->
     <exclude name="CommentDefaultAccessModifier"/>
     <!-- Conflicts with the rule category/java/codestyle.xml/AvoidProtectedMethodInFinalClassNotExtending -->
-    <exclude name="DefaultPackage"/>
-
-
-    <!--<exclude name="BeanMembersShouldSerialize"/>-->
 
     <exclude name="ConfusingTernary"/>
-
-    <!-- printStackTrace is used in the Default Amazon handler in a static clause
-        We can re-enable this rule if we find a way to set a logger there
-    -->
-    <!--<exclude name="AvoidPrintStackTrace"/>-->
-
-
-    <!-- This rule does not allow us the following:
-            private static final Logger logger=...
-         It requires:
-            private static final Logger LOGGER=... -->
     <exclude name="FieldNamingConventions"/>
 
     <!-- Sometimes it is useful in debugging to assign the return value to a local variable  -->
     <exclude name="UnnecessaryLocalBeforeReturn"/>
-
+    <exclude name="JUnitAssertionsShouldIncludeMessage"/>
 
   </rule>
 

@@ -22,7 +22,7 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.unit.nva.commons.json.JsonUtils;
 import org.junit.jupiter.api.Test;
 
-public class CandidateTest {
+class CandidateTest {
 
     @Test
     void shouldMakeRoundTripWithoutLossOfInformation() throws JsonProcessingException {

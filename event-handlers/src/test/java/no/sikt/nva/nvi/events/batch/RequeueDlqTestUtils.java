@@ -15,13 +15,13 @@ import software.amazon.awssdk.services.sqs.model.DeleteMessageResponse;
 import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.MessageAttributeValue;
 
-public class RequeueDlqTestUtils {
+public final class RequeueDlqTestUtils {
 
     private RequeueDlqTestUtils() {
         // NO-OP
     }
 
-    public static SqsClient setUpSqsClient() {
+    public static SqsClient setupSqsClient() {
         var client = mock(SqsClient.class);
 
         var status = SdkHttpResponse.builder().statusCode(202).build();

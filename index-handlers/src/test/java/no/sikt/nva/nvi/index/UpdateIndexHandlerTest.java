@@ -102,7 +102,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     void shouldNotFailForWholeBatchWhenFailingToReadOneS3Blob() throws JsonProcessingException {
         var candidateToSucceed = randomApplicableCandidate();
         var candidateToFail = randomApplicableCandidate();
-        var storageReader = setUpStorageReaderFailingForOneCandidate(candidateToSucceed, candidateToFail);
+        var storageReader = setupStorageReaderFailingForOneCandidate(candidateToSucceed, candidateToFail);
         handler = new UpdateIndexHandler(openSearchClient, storageReader, sqsClient);
         var event = createUpdateIndexEvent(List.of(candidateToSucceed, candidateToFail));
         handler.handleRequest(event, CONTEXT);
@@ -127,7 +127,7 @@ class UpdateIndexHandlerTest extends LocalDynamoTest {
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
-    private StorageReader setUpStorageReaderFailingForOneCandidate(Candidate candidateToSucceed,
+    private StorageReader setupStorageReaderFailingForOneCandidate(Candidate candidateToSucceed,
                                                                    Candidate candidateToFail)
         throws JsonProcessingException {
         var storageReader = mock(StorageReader.class);

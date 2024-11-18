@@ -26,7 +26,7 @@ import nva.commons.apigateway.GatewayResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class FetchNviPeriodsHandlerTest extends LocalDynamoTest {
+class FetchNviPeriodsHandlerTest extends LocalDynamoTest {
 
     private Context context;
     private ByteArrayOutputStream output;

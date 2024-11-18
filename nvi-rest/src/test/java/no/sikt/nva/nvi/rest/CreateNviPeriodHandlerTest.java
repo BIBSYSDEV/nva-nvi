@@ -27,7 +27,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.zalando.problem.Problem;
 
-public class CreateNviPeriodHandlerTest extends LocalDynamoTest {
+class CreateNviPeriodHandlerTest extends LocalDynamoTest {
 
     private Context context;
     private ByteArrayOutputStream output;

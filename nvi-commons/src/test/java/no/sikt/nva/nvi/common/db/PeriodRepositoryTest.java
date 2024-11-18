@@ -14,13 +14,13 @@ class PeriodRepositoryTest extends LocalDynamoTest {
     private PeriodRepository periodRepository;
 
     @BeforeEach
-    public void setUp() {
+    void setUp() {
         localDynamo = initializeTestDatabase();
         periodRepository = new PeriodRepository(localDynamo);
     }
 
     @Test
-    public void shouldUpdateExistingRecordWhenSavedSecondTime() {
+    void shouldUpdateExistingRecordWhenSavedSecondTime() {
 
         var year = TestUtils.randomYear();
         var user1 = TestUtils.randomUsername();

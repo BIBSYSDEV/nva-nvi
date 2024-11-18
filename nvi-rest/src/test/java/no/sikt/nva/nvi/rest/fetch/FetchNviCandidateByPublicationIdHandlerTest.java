@@ -65,7 +65,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends LocalDynamoTest {
     @Test
     void shouldReturnNotFoundWhenCandidateExistsButNotApplicable() throws IOException {
         var institutionId = randomUri();
-        var nonApplicableCandidate = setUpNonApplicableCandidate(institutionId);
+        var nonApplicableCandidate = createNonApplicableCandidate(institutionId);
         var request = requestWithAccessRight(nonApplicableCandidate.getPublicationId());
         handler.handleRequest(request, output, CONTEXT);
         var gatewayResponse = getGatewayResponse();
@@ -121,7 +121,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends LocalDynamoTest {
                    .build();
     }
 
-    private Candidate setUpNonApplicableCandidate(URI institutionId) {
+    private Candidate createNonApplicableCandidate(URI institutionId) {
         var candidate = upsert(createUpsertCandidateRequest(institutionId));
         return Candidate.updateNonCandidate(
             createUpsertNonCandidateRequest(candidate.getPublicationId()),
