@@ -49,7 +49,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.zalando.problem.Problem;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
-public class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
+class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
 
     private static final String ERROR_MISSING_REJECTION_REASON = "Cannot reject approval status without reason";
     private static final String CANDIDATE_IDENTIFIER_PATH = "candidateIdentifier";

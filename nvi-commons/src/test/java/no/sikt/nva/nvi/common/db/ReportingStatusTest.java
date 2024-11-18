@@ -16,7 +16,7 @@ import no.sikt.nva.nvi.common.db.model.Username;
 import no.unit.nva.commons.json.JsonUtils;
 import org.junit.jupiter.api.Test;
 
-public record ReportingStatusTest() {
+record ReportingStatusTest() {
 
     @Test
     void shouldMakeRoundTripWithoutLossOfInformation() throws JsonProcessingException {

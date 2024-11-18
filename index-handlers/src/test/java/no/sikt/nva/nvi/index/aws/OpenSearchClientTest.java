@@ -104,7 +104,7 @@ import org.opensearch.testcontainers.OpensearchContainer;
 // These are not IP addresses, but cristin org identifier examples
 // Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
 @SuppressWarnings({"PMD.AvoidUsingHardCodedIP", "PMD.GodClass", "PMD.CouplingBetweenObjects"})
-public class OpenSearchClientTest {
+class OpenSearchClientTest {
 
     public static final int DELAY_ON_INDEX = 2000;
     public static final String YEAR = "2023";

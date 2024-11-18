@@ -47,7 +47,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.zalando.problem.Problem;
 
-public class UpsertAssigneeHandlerTest extends LocalDynamoTest {
+class UpsertAssigneeHandlerTest extends LocalDynamoTest {
 
     private static final int YEAR = Calendar.getInstance().getWeekYear();
     private static final String USER_RESPONSE_BODY_WITHOUT_ACCESS_RIGHT_JSON = "userResponseBodyWithoutAccessRight"

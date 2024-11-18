@@ -13,13 +13,13 @@ import org.junit.jupiter.api.Test;
 class GraphUtilsTest {
 
     @Test
-    public void shouldNotThrowDuringCreateModel() {
+    void shouldNotThrowDuringCreateModel() {
         var modelStr = IoUtils.stringFromResources(Path.of("candidate.json"));
         assertDoesNotThrow(() -> createModel(dtoObjectMapper.readTree(modelStr)));
     }
 
     @Test
-    public void shouldReturnFalseWhenIsCandidateIsCalledOnNonCandidate() throws JsonProcessingException {
+    void shouldReturnFalseWhenIsCandidateIsCalledOnNonCandidate() throws JsonProcessingException {
         var modelStr = IoUtils.stringFromResources(Path.of("candidate.json"));
         var model = createModel(dtoObjectMapper.readTree(modelStr));
         assertFalse(isNviCandidate(model));

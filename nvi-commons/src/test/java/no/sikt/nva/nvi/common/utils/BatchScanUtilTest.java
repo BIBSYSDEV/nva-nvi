@@ -31,7 +31,7 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
 
-public class BatchScanUtilTest extends LocalDynamoTest {
+class BatchScanUtilTest extends LocalDynamoTest {
 
     private static final int YEAR = ZonedDateTime.now().getYear();
     private static final int DEFAULT_PAGE_SIZE = 700;

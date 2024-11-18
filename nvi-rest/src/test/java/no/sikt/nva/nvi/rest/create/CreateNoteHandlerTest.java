@@ -42,7 +42,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.zalando.problem.Problem;
 
-public class CreateNoteHandlerTest extends LocalDynamoTest {
+class CreateNoteHandlerTest extends LocalDynamoTest {
 
     public static final int YEAR = Year.now().getValue();
     private Context context;

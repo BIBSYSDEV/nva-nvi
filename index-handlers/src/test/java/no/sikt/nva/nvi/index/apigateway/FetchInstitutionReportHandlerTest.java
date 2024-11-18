@@ -115,7 +115,7 @@ import org.zalando.problem.Problem;
 
 // Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
 @SuppressWarnings({"PMD.GodClass", "PMD.CouplingBetweenObjects"})
-public class FetchInstitutionReportHandlerTest {
+class FetchInstitutionReportHandlerTest {
 
     private static final String YEAR = "year";
     private static final int CURRENT_YEAR = Year.now().getValue();

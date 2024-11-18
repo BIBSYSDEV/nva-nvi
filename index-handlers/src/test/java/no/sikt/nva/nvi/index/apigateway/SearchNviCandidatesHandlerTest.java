@@ -76,7 +76,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.zalando.problem.Problem;
 
 @Testcontainers
-public class SearchNviCandidatesHandlerTest {
+class SearchNviCandidatesHandlerTest {
 
     public static final URI TOP_LEVEL_CRISTIN_ORG = URI.create(
         "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0");

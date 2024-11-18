@@ -42,7 +42,7 @@ import software.amazon.awssdk.services.sqs.model.MessageAttributeValue;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 
-public class RequeueDlqHandlerTest {
+class RequeueDlqHandlerTest {
 
     public static final Context CONTEXT = mock(Context.class);
     private static final String DLQ_URL = "https://some-sqs-url";

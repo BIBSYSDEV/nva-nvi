@@ -33,7 +33,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
-public class DeletePersistedIndexDocumentHandlerTest {
+class DeletePersistedIndexDocumentHandlerTest {
 
     public static final String PERSISTED_NVI_CANDIDATES_FOLDER = "nvi-candidates";
     private static final Environment ENVIRONMENT = new Environment();

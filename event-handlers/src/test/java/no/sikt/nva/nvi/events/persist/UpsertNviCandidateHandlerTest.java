@@ -76,7 +76,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 // Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
 @SuppressWarnings("PMD.CouplingBetweenObjects")
-public class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
+class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
 
     public static final Context CONTEXT = mock(Context.class);
     public static final String ERROR_MESSAGE_BODY_INVALID = "Message body invalid";

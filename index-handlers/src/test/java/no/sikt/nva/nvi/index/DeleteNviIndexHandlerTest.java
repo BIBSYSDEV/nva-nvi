@@ -12,7 +12,7 @@ import nva.commons.logutils.LogUtils;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-public class DeleteNviIndexHandlerTest {
+class DeleteNviIndexHandlerTest {
 
     @Test
     void shouldDeleteIndex() {

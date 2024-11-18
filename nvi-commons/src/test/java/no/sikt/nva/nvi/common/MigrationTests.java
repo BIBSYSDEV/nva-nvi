@@ -24,7 +24,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
-public class MigrationTests extends LocalDynamoTest {
+class MigrationTests extends LocalDynamoTest {
 
     public static final int DEFAULT_PAGE_SIZE = 700;
     private CandidateRepository candidateRepository;

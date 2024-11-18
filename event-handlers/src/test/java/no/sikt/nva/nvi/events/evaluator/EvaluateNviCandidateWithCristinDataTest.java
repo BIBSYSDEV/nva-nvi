@@ -45,7 +45,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
-public class EvaluateNviCandidateWithCristinDataTest {
+class EvaluateNviCandidateWithCristinDataTest {
 
     private static final Environment ENVIRONMENT = new Environment();
     private static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;

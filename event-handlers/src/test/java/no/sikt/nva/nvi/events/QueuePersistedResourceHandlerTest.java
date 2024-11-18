@@ -20,7 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-public class QueuePersistedResourceHandlerTest {
+class QueuePersistedResourceHandlerTest {
 
     private static final Environment environment = new Environment();
     private static final String queueUrl = environment.readEnv("PERSISTED_RESOURCE_QUEUE_URL");

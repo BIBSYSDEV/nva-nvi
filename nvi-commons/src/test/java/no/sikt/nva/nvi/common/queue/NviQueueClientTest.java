@@ -31,7 +31,7 @@ import software.amazon.awssdk.services.sqs.model.SendMessageBatchResultEntry;
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
-public class NviQueueClientTest {
+class NviQueueClientTest {
 
     public static final String TEST_PAYLOAD = "{}";
     public static final String TEST_QUEUE_URL = "url";

@@ -44,7 +44,7 @@ import software.amazon.awssdk.services.dynamodb.model.OperationType;
 import software.amazon.awssdk.services.sns.model.PublishRequest;
 import software.amazon.awssdk.services.sns.model.SnsException;
 
-public class DataEntryUpdateHandlerTest {
+class DataEntryUpdateHandlerTest {
 
     public static final String CANDIDATE_IDENTIFIER_MESSAGE_ATTRIBUTE = "candidateIdentifier";
     private static final Environment ENVIRONMENT = new Environment();

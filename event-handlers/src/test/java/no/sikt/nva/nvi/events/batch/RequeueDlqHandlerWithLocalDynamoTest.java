@@ -20,7 +20,7 @@ import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 
-public class RequeueDlqHandlerWithLocalDynamoTest extends LocalDynamoTest {
+class RequeueDlqHandlerWithLocalDynamoTest extends LocalDynamoTest {
 
     public static final Context CONTEXT = mock(Context.class);
     public static final int YEAR = 2021;

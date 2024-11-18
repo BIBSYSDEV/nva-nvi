@@ -85,7 +85,7 @@ import software.amazon.awssdk.services.sqs.model.SqsException;
 
 // Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
 @SuppressWarnings({"PMD.GodClass", "PMD.CouplingBetweenObjects"})
-public class IndexDocumentHandlerTest extends LocalDynamoTest {
+class IndexDocumentHandlerTest extends LocalDynamoTest {
 
     public static final int SOME_REPORTING_YEAR = 2023;
     private static final String JSON_PTR_CONTRIBUTOR = "/publicationDetails/contributors";

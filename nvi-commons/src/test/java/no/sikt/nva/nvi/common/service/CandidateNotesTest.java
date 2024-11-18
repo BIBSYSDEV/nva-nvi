@@ -25,7 +25,7 @@ import no.sikt.nva.nvi.test.LocalDynamoTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class CandidateNotesTest extends LocalDynamoTest {
+class CandidateNotesTest extends LocalDynamoTest {
 
     public static final int YEAR = ZonedDateTime.now().getYear();
     private CandidateRepository candidateRepository;

@@ -42,7 +42,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
-public class CandidateApprovalDtoTest extends LocalDynamoTest {
+class CandidateApprovalDtoTest extends LocalDynamoTest {
 
     private static final String APPROVED = "APPROVED";
     private CandidateRepository candidateRepository;

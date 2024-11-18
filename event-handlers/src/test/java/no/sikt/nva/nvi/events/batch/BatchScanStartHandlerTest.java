@@ -13,7 +13,7 @@ import no.unit.nva.stubs.FakeEventBridgeClient;
 import nva.commons.core.ioutils.IoUtils;
 import org.junit.jupiter.api.Test;
 
-public class BatchScanStartHandlerTest {
+class BatchScanStartHandlerTest {
 
     private static final String TOPIC = "OUTPUT_EVENT_TOPIC";
     private static final int DEFAULT_PAGE_SIZE = 700;
