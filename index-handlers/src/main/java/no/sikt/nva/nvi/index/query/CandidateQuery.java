@@ -11,7 +11,6 @@ import static no.sikt.nva.nvi.index.utils.QueryFunctions.containsNonFinalizedSta
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.disputeQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.fieldValueQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.matchAtLeastOne;
-import static no.sikt.nva.nvi.index.utils.QueryFunctions.matchQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.multipleApprovalsQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.mustMatch;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.nestedQuery;
@@ -30,7 +29,6 @@ import static no.sikt.nva.nvi.index.utils.SearchConstants.NVI_CONTRIBUTORS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.PART_OF_IDENTIFIERS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.PUBLICATION_DATE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.PUBLICATION_DETAILS;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.ROLE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.TITLE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.TYPE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.YEAR;
@@ -50,7 +48,6 @@ import org.opensearch.client.opensearch._types.query_dsl.TextQueryType;
 public class CandidateQuery {
 
     private static final CharSequence JSON_PATH_DELIMITER = ".";
-    private static final String CREATOR_ROLE = "Creator";
     private final List<String> affiliations;
     private final boolean excludeSubUnits;
     private final QueryFilterType filter;
@@ -93,8 +90,7 @@ public class CandidateQuery {
                                    termsQuery(organizations,
                                               jsonPathOf(PUBLICATION_DETAILS, NVI_CONTRIBUTORS, AFFILIATIONS,
                                                          PART_OF_IDENTIFIERS))
-                               ),
-                               matchQuery(CREATOR_ROLE, jsonPathOf(PUBLICATION_DETAILS, NVI_CONTRIBUTORS, ROLE))
+                               )
                            ).build()._toQuery()
         );
     }
@@ -103,8 +99,7 @@ public class CandidateQuery {
         return nestedQuery(jsonPathOf(PUBLICATION_DETAILS, NVI_CONTRIBUTORS),
                            QueryBuilders.bool().must(
                                termsQuery(organizations,
-                                          jsonPathOf(PUBLICATION_DETAILS, NVI_CONTRIBUTORS, AFFILIATIONS, IDENTIFIER)),
-                               matchQuery(CREATOR_ROLE, jsonPathOf(PUBLICATION_DETAILS, NVI_CONTRIBUTORS, ROLE))
+                                          jsonPathOf(PUBLICATION_DETAILS, NVI_CONTRIBUTORS, AFFILIATIONS, IDENTIFIER))
                            ).build()._toQuery()
         );
     }

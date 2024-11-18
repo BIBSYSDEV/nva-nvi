@@ -35,7 +35,6 @@ public final class SearchConstants {
     public static final String NAME = "name";
     public static final String AFFILIATIONS = "affiliations";
     public static final String PART_OF = "partOf";
-    public static final String ROLE = "role";
     public static final String NVI_CANDIDATES_INDEX = "nvi-candidates";
     public static final String SEARCH_INFRASTRUCTURE_CREDENTIALS = "SearchInfrastructureCredentials";
     public static final Environment ENVIRONMENT = new Environment();
@@ -115,13 +114,14 @@ public final class SearchConstants {
     private static Map<String, Property> nviContributorsProperties() {
         return Map.of(ID, keywordProperty(),
                       NAME, textPropertyWithNestedKeyword(),
-                      AFFILIATIONS, nestedProperty(affiliationsProperties()),
-                      ROLE, keywordProperty()
+                      AFFILIATIONS, nestedProperty(affiliationsProperties())
         );
     }
 
     private static Map<String, Property> affiliationsProperties() {
-        return Map.of(ID, keywordProperty(), IDENTIFIER, keywordProperty(), PART_OF, keywordProperty(),
+        return Map.of(ID, keywordProperty(),
+                      IDENTIFIER, keywordProperty(),
+                      PART_OF, keywordProperty(),
                       PART_OF_IDENTIFIERS, keywordProperty());
     }
 
