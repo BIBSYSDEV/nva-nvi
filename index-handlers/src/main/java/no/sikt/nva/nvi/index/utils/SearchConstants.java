@@ -3,13 +3,13 @@ package no.sikt.nva.nvi.index.utils;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
 import no.sikt.nva.nvi.index.query.CandidateQuery;
 import no.sikt.nva.nvi.index.query.CandidateQuery.QueryFilterType;
-import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
 import nva.commons.core.Environment;
 import org.opensearch.client.opensearch._types.mapping.DoubleNumberProperty;
 import org.opensearch.client.opensearch._types.mapping.KeywordProperty;
-import org.opensearch.client.opensearch._types.mapping.NestedProperty.Builder;
+import org.opensearch.client.opensearch._types.mapping.NestedProperty;
 import org.opensearch.client.opensearch._types.mapping.Property;
 import org.opensearch.client.opensearch._types.mapping.TextProperty;
 import org.opensearch.client.opensearch._types.mapping.TypeMapping;
@@ -31,18 +31,21 @@ public final class SearchConstants {
     public static final String APPROVAL_STATUS = "approvalStatus";
     public static final String PUBLICATION_DETAILS = "publicationDetails";
     public static final String CONTRIBUTORS = "contributors";
+    public static final String NVI_CONTRIBUTORS = "nviContributors";
     public static final String NAME = "name";
     public static final String AFFILIATIONS = "affiliations";
     public static final String PART_OF = "partOf";
-    public static final String ROLE = "role";
     public static final String NVI_CANDIDATES_INDEX = "nvi-candidates";
     public static final String SEARCH_INFRASTRUCTURE_CREDENTIALS = "SearchInfrastructureCredentials";
     public static final Environment ENVIRONMENT = new Environment();
     public static final String SEARCH_INFRASTRUCTURE_API_HOST = readSearchInfrastructureApiHost();
     public static final String SEARCH_INFRASTRUCTURE_AUTH_URI = readSearchInfrastructureAuthUri();
     public static final String JSON_PATH_DELIMITER = ".";
-    public static final String JSON_PATH_CONTRIBUTORS = String.join(JSON_PATH_DELIMITER, PUBLICATION_DETAILS,
-                                                                    CONTRIBUTORS);
+    public static final String JSON_PATH_CONTRIBUTORS_NAME = String.join(JSON_PATH_DELIMITER, PUBLICATION_DETAILS,
+                                                                         CONTRIBUTORS, NAME);
+    public static final String JSON_PATH_NVI_CONTRIBUTORS = String.join(JSON_PATH_DELIMITER, PUBLICATION_DETAILS,
+                                                                        NVI_CONTRIBUTORS);
+    public static final TypeMapping MAPPINGS = new TypeMapping.Builder().properties(mappingProperties()).build();
     public static final String INVOLVED_ORGS = "involvedOrganizations";
     public static final String GLOBAL_APPROVAL_STATUS = "globalApprovalStatus";
     public static final String POINTS = "points";
@@ -50,7 +53,6 @@ public final class SearchConstants {
     public static final String CREATED_DATE = "createdDate";
     public static final String IDENTIFIER = "identifier";
     public static final String PART_OF_IDENTIFIERS = "partOfIdentifiers";
-    public static final TypeMapping MAPPINGS = new TypeMapping.Builder().properties(mappingProperties()).build();
 
     private SearchConstants() {
 
@@ -69,7 +71,6 @@ public final class SearchConstants {
                    .withYear(params.year())
                    .withCategory(params.category())
                    .withTitle(params.title())
-                   .withContributor(params.contributor())
                    .withAssignee(params.assignee())
                    .build()
                    .toQuery();
@@ -78,13 +79,14 @@ public final class SearchConstants {
     private static Map<String, Property> mappingProperties() {
         return Map.of(GLOBAL_APPROVAL_STATUS, keywordProperty(),
                       CREATED_DATE, keywordProperty(),
-                      JSON_PATH_CONTRIBUTORS, nestedProperty(contributorsProperties()),
+                      JSON_PATH_CONTRIBUTORS_NAME, keywordProperty(),
+                      JSON_PATH_NVI_CONTRIBUTORS, nestedProperty(nviContributorsProperties()),
                       APPROVALS, nestedProperty(approvalProperties())
         );
     }
 
     private static Property nestedProperty(Map<String, Property> properties) {
-        return new Builder().includeInParent(true).properties(properties).build()._toProperty();
+        return new NestedProperty.Builder().includeInParent(true).properties(properties).build()._toProperty();
     }
 
     private static String readSearchInfrastructureApiHost() {
@@ -109,16 +111,17 @@ public final class SearchConstants {
         return Map.of(INSTITUTION_POINTS, new DoubleNumberProperty.Builder().build()._toProperty());
     }
 
-    private static Map<String, Property> contributorsProperties() {
+    private static Map<String, Property> nviContributorsProperties() {
         return Map.of(ID, keywordProperty(),
                       NAME, textPropertyWithNestedKeyword(),
-                      AFFILIATIONS, nestedProperty(affiliationsProperties()),
-                      ROLE, keywordProperty()
+                      AFFILIATIONS, nestedProperty(affiliationsProperties())
         );
     }
 
     private static Map<String, Property> affiliationsProperties() {
-        return Map.of(ID, keywordProperty(), IDENTIFIER, keywordProperty(), PART_OF, keywordProperty(),
+        return Map.of(ID, keywordProperty(),
+                      IDENTIFIER, keywordProperty(),
+                      PART_OF, keywordProperty(),
                       PART_OF_IDENTIFIERS, keywordProperty());
     }
 

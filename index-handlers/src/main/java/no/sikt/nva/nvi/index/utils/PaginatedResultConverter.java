@@ -5,7 +5,6 @@ import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_AGG
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_AFFILIATIONS;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_ASSIGNEE;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_CATEGORY;
-import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_CONTRIBUTOR;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_EXCLUDE_SUB_UNITS;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_FILTER;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_ORDER_BY;
@@ -65,7 +64,6 @@ public final class PaginatedResultConverter {
         putIfValueNotEmpty(queryParams, QUERY_PARAM_FILTER, parameters.filter());
         putIfValueNotNull(queryParams, QUERY_PARAM_CATEGORY, parameters.category());
         putIfValueNotNull(queryParams, QUERY_PARAM_TITLE, parameters.title());
-        putIfValueNotNull(queryParams, QUERY_PARAM_CONTRIBUTOR, parameters.contributor());
         putIfValueNotNull(queryParams, QUERY_PARAM_ASSIGNEE, parameters.assignee());
         putIfValueNotNull(queryParams, QUERY_AGGREGATION_TYPE, parameters.aggregationType());
         putIfValueNotNull(queryParams, QUERY_PARAM_ORDER_BY, parameters.searchResultParameters().orderBy());

@@ -288,8 +288,7 @@ class OpenSearchClientTest {
     void shouldReturnSearchResultsWithContributorAffiliatedWithSubUnitOfSearchedInstitution()
         throws IOException, InterruptedException {
         addDocumentsToIndex(documentFromString(DOCUMENT_WITH_CONTRIBUTOR_FROM_NTNU_SUBUNIT_JSON),
-                            documentFromString("document_with_contributor_from_sikt.json"),
-                            documentFromString("document_with_contributor_from_sikt_but_not_creator.json")
+                            documentFromString("document_with_contributor_from_sikt.json")
         );
 
         var searchParameters = defaultSearchParameters().withAffiliations(List.of(SIKT_INSTITUTION_IDENTIFIER)).build();
@@ -317,8 +316,7 @@ class OpenSearchClientTest {
         throws IOException, InterruptedException {
         addDocumentsToIndex(documentFromString(DOCUMENT_WITH_CONTRIBUTOR_FROM_NTNU_SUBUNIT_JSON),
                             documentFromString("document_with_contributor_from_ntnu_toplevel.json"),
-                            documentFromString("document_with_contributor_from_sikt.json"),
-                            documentFromString("document_with_contributor_from_sikt_but_not_creator.json")
+                            documentFromString("document_with_contributor_from_sikt.json")
         );
 
         var searchParameters = defaultSearchParameters().withAffiliations(List.of(NTNU_INSTITUTION_IDENTIFIER)).build();
@@ -529,28 +527,6 @@ class OpenSearchClientTest {
     }
 
     @Test
-    void shouldReturnSingleDocumentWhenFilteringByContributor() throws InterruptedException, IOException {
-        var customer = randomUri();
-        var contributor = randomString().concat(" ").concat(randomString()).concat(" ").concat(randomString());
-        var document = singleNviCandidateIndexDocumentWithCustomer(customer,
-                                                                   contributor, randomString(),
-                                                                   YEAR, randomString());
-        addDocumentsToIndex(document, singleNviCandidateIndexDocumentWithCustomer(
-            customer, randomString(), randomString(), randomString(), randomString()));
-
-        var searchParameters =
-            defaultSearchParameters().withAffiliations(List.of(getLastPathElement(customer)))
-                .withContributor(getRandomWord(contributor))
-                .withYear(YEAR)
-                .build();
-
-        var searchResponse =
-            openSearchClient.search(searchParameters);
-
-        assertThat(searchResponse.hits().hits(), hasSize(1));
-    }
-
-    @Test
     void shouldReturnSingleDocumentWhenFilteringByAssignee() throws InterruptedException, IOException {
         var customer = randomUri();
         var assignee = randomString().concat(" ").concat(randomString()).concat(" ").concat(randomString());
@@ -624,14 +600,13 @@ class OpenSearchClientTest {
     void shouldReturnAllSearchResultsWhenSearchingWithoutCustomerAndAffiliations()
         throws IOException, InterruptedException {
         addDocumentsToIndex(documentFromString(DOCUMENT_WITH_CONTRIBUTOR_FROM_NTNU_SUBUNIT_JSON),
-                            documentFromString("document_with_contributor_from_sikt.json"),
-                            documentFromString("document_with_contributor_from_sikt_but_not_creator.json")
+                            documentFromString("document_with_contributor_from_sikt.json")
         );
 
         var searchParameters = CandidateSearchParameters.builder().build();
         var searchResponse = openSearchClient.search(searchParameters);
 
-        assertThat(searchResponse.hits().hits(), hasSize(3));
+        assertThat(searchResponse.hits().hits(), hasSize(2));
     }
 
     @Test
