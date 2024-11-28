@@ -263,7 +263,8 @@
                 },
                 "series": {
                   "id": "https://api.dev.nva.aws.unit.no/publication-channels/583d74c4-ba08-485f-9e79-c640f5d223ba",
-                  "type": "Series"
+                  "type": "Series",
+                  "scientificValue": "Unassigned"
                 }
               }
             }
