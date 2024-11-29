@@ -154,7 +154,8 @@ public final class PointService {
     }
 
     private static String extractBookChannel(JsonNode jsonNode) {
-        if (nonNull(extractJsonNodeTextValue(jsonNode, JSON_PTR_SERIES_SCIENTIFIC_VALUE))) {
+        if (nonNull(extractJsonNodeTextValue(jsonNode, JSON_PTR_SERIES_SCIENTIFIC_VALUE))
+            && isAssigned(extractJsonNodeTextValue(jsonNode, JSON_PTR_SERIES_SCIENTIFIC_VALUE))) {
             return jsonNode.at(JSON_PTR_SERIES).toString();
         } else {
             return jsonNode.at(JSON_PTR_PUBLISHER).toString();
