@@ -36,11 +36,11 @@ import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
 
 public final class PointService {
 
-    public static final String TYPE_JOURNAL = "Journal";
     private static final String COUNTRY_CODE_NORWAY = "NO";
     private static final String ROLE_CREATOR = "Creator";
     private static final String TYPE = "type";
     private static final String TYPE_SERIES = "Series";
+    private static final String TYPE_JOURNAL = "Journal";
     private static final String UNASSIGNED = "Unassigned";
     private final OrganizationRetriever organizationRetriever;
 
@@ -149,10 +149,6 @@ public final class PointService {
         }
     }
 
-    private static boolean isAssigned(String scientificValue) {
-        return !UNASSIGNED.equals(scientificValue);
-    }
-
     private static String extractBookChannel(JsonNode jsonNode) {
         if (nonNull(extractJsonNodeTextValue(jsonNode, JSON_PTR_SERIES_SCIENTIFIC_VALUE))
             && isAssigned(extractJsonNodeTextValue(jsonNode, JSON_PTR_SERIES_SCIENTIFIC_VALUE))) {
@@ -160,6 +156,10 @@ public final class PointService {
         } else {
             return jsonNode.at(JSON_PTR_PUBLISHER).toString();
         }
+    }
+
+    private static boolean isAssigned(String scientificValue) {
+        return !UNASSIGNED.equals(scientificValue);
     }
 
     private static Stream<JsonNode> getJsonNodeStream(JsonNode jsonNode, String jsonPtr) {
