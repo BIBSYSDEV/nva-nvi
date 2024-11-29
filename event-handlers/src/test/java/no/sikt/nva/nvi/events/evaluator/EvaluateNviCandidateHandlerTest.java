@@ -337,9 +337,21 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldCreateNewCandidateEventOnValidAcademicChapterWithoutSeriesLevelWithPublisherLevel() throws IOException {
+    void shouldCreateNewCandidateEventOnValidAcademicChapterWithSeriesLevelUnassignedWithPublisherLevel() throws IOException {
         mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-        var path = "evaluator/candidate_academicChapter_seriesLevelEmptyPublisherLevelOne.json";
+        var path = "evaluator/candidate_academicChapter_seriesLevelUnassignedPublisherLevelOne.json";
+        var content = IoUtils.inputStreamFromResources(path);
+        var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
+        var event = createEvent(new PersistedResourceMessage(fileUri));
+        handler.handleRequest(event, context);
+        var candidate = (NviCandidate) getMessageBody().candidate();
+        assertThat(candidate.publicationBucketUri(), is(equalTo(fileUri)));
+    }
+
+    @Test
+    void shouldCreateNewCandidateEventOnValidAcademicMonographWithSeriesLevelUnassignedWithPublisherLevel() throws IOException {
+        mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
+        var path = "evaluator/candidate_academicMonograph_seriesLevelUnassignedPublisherLevelOne.json";
         var content = IoUtils.inputStreamFromResources(path);
         var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
         var event = createEvent(new PersistedResourceMessage(fileUri));

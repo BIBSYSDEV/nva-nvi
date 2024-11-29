@@ -40,7 +40,8 @@ public final class PointService {
     private static final String ROLE_CREATOR = "Creator";
     private static final String TYPE = "type";
     private static final String TYPE_SERIES = "Series";
-    public static final String TYPE_JOURNAL = "Journal";
+    private static final String TYPE_JOURNAL = "Journal";
+    private static final String UNASSIGNED = "Unassigned";
     private final OrganizationRetriever organizationRetriever;
 
     public PointService(OrganizationRetriever organizationRetriever) {
@@ -140,7 +141,8 @@ public final class PointService {
     }
 
     private static String extractAcademicChapterChannel(JsonNode jsonNode) {
-        if (nonNull(extractJsonNodeTextValue(jsonNode, JSON_PTR_CHAPTER_SERIES_SCIENTIFIC_VALUE))) {
+        if (nonNull(extractJsonNodeTextValue(jsonNode, JSON_PTR_CHAPTER_SERIES_SCIENTIFIC_VALUE))
+            && isAssigned(extractJsonNodeTextValue(jsonNode, JSON_PTR_CHAPTER_SERIES_SCIENTIFIC_VALUE))) {
             return jsonNode.at(JSON_PTR_CHAPTER_SERIES).toString();
         } else {
             return jsonNode.at(JSON_PTR_CHAPTER_PUBLISHER).toString();
@@ -148,11 +150,16 @@ public final class PointService {
     }
 
     private static String extractBookChannel(JsonNode jsonNode) {
-        if (nonNull(extractJsonNodeTextValue(jsonNode, JSON_PTR_SERIES_SCIENTIFIC_VALUE))) {
+        if (nonNull(extractJsonNodeTextValue(jsonNode, JSON_PTR_SERIES_SCIENTIFIC_VALUE))
+            && isAssigned(extractJsonNodeTextValue(jsonNode, JSON_PTR_SERIES_SCIENTIFIC_VALUE))) {
             return jsonNode.at(JSON_PTR_SERIES).toString();
         } else {
             return jsonNode.at(JSON_PTR_PUBLISHER).toString();
         }
+    }
+
+    private static boolean isAssigned(String scientificValue) {
+        return !UNASSIGNED.equals(scientificValue);
     }
 
     private static Stream<JsonNode> getJsonNodeStream(JsonNode jsonNode, String jsonPtr) {
