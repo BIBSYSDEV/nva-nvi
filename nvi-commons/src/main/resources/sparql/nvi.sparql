@@ -15,8 +15,11 @@ ASK WHERE {
         VALUES ?rawScientificValue {"Unassigned" "LevelZero" "LevelOne" "LevelTwo"}
         ?a a ?channelType ;
            nva:scientificValue ?rawScientificValue .
-        OPTIONAL { ?b a nva:Series ;
-                        nva:scientificValue ?seriesScientificValue . }
+        OPTIONAL {
+            ?b a nva:Series ;
+               nva:scientificValue ?seriesScientificValue .
+            FILTER (?seriesScientificValue != "Unassigned")
+        }
         BIND(IF(BOUND(?seriesScientificValue), ?seriesScientificValue, ?rawScientificValue) AS ?scientificValue)
       }
   }
