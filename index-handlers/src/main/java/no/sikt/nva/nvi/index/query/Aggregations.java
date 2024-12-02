@@ -40,6 +40,7 @@ public final class Aggregations {
     public static final String POINTS_AGGREGATION = "points";
     public static final String DISPUTE = "Dispute";
     public static final String APPROVAL_ORGANIZATIONS_AGGREGATION = "organizations";
+    private static final String TOTAL_POINTS_SUM_AGGREGATION = "totalPoints";
     private static final String ALL_AGGREGATIONS = "all";
     private static final String STATUS_AGGREGATION = "status";
     private static final int ORGANIZATION_SUB_UNITS_TERMS_AGGREGATION_SIZE = 1000;
@@ -56,10 +57,7 @@ public final class Aggregations {
 
     public static Aggregation organizationApprovalStatusAggregations(String topLevelCristinOrg) {
         var statusAggregation = termsAggregation(APPROVALS, APPROVAL_STATUS)._toAggregation();
-        var pointAggregation = filterAggregation(
-            mustNotMatch(ApprovalStatus.REJECTED.getValue(), joinWithDelimiter(APPROVALS, APPROVAL_STATUS)),
-            Map.of("totalPoints", sumAggregation(APPROVALS, POINTS, INSTITUTION_POINTS))
-        );
+        var pointAggregation = filterNotRegectedPointsAggregation();
         var disputeAggregation = filterStatusDisputeAggregation();
         var organizationAggregation = new Aggregation.Builder()
                                           .terms(new TermsAggregation.Builder()
@@ -116,6 +114,13 @@ public final class Aggregations {
 
     public static Aggregation disputeAggregation(String topLevelCristinOrg) {
         return filterAggregation(mustMatch(globalStatusDisputeForInstitution(topLevelCristinOrg)));
+    }
+
+    private static Aggregation filterNotRegectedPointsAggregation() {
+        return filterAggregation(
+            mustNotMatch(ApprovalStatus.REJECTED.getValue(), joinWithDelimiter(APPROVALS, APPROVAL_STATUS)),
+            Map.of(TOTAL_POINTS_SUM_AGGREGATION, sumAggregation(APPROVALS, POINTS, INSTITUTION_POINTS))
+        );
     }
 
     private static Aggregation filterStatusDisputeAggregation() {
