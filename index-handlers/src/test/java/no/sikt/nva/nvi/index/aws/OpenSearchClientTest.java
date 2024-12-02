@@ -643,13 +643,14 @@ class OpenSearchClientTest {
         var actualOrgBuckets = ((StringTermsAggregate) filterAggregate._get()).buckets();
         actualOrgBuckets.array().forEach(bucket -> {
             var key = bucket.key();
-            var pointAggregation = (SumAggregate) bucket.aggregations().get("points")._get();
+            var pointFilterAggregate = (FilterAggregate) bucket.aggregations().get("points")._get();
+            var pointSum = (SumAggregate) pointFilterAggregate.aggregations().get("totalPoints")._get();
             if (SIKT_INSTITUTION_ID.toString().equals(key)) {
-                assertEquals(4.0, pointAggregation.value());
+                assertEquals(4.0, pointSum.value());
             } else if (SIKT_LEVEL_2_ID.equals(key)) {
-                assertEquals(4.0, pointAggregation.value());
+                assertEquals(4.0, pointSum.value());
             } else if (SIKT_LEVEL_3_ID.equals(key)) {
-                assertEquals(3.0, pointAggregation.value());
+                assertEquals(3.0, pointSum.value());
             } else {
                 throw new RuntimeException("Unexpected key: " + key);
             }

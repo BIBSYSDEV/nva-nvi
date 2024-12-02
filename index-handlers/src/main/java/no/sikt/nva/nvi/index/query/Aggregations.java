@@ -11,11 +11,11 @@ import static no.sikt.nva.nvi.index.utils.AggregationFunctions.termsAggregation;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.assignmentsQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.containsNonFinalizedStatusQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.fieldValueQuery;
-import static no.sikt.nva.nvi.index.utils.QueryFunctions.notDisputeQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.multipleApprovalsQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.mustMatch;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.mustNotMatch;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.nestedQuery;
+import static no.sikt.nva.nvi.index.utils.QueryFunctions.notDisputeQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.statusQuery;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVALS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVAL_STATUS;
@@ -56,7 +56,10 @@ public final class Aggregations {
 
     public static Aggregation organizationApprovalStatusAggregations(String topLevelCristinOrg) {
         var statusAggregation = termsAggregation(APPROVALS, APPROVAL_STATUS)._toAggregation();
-        var pointAggregation = sumAggregation(APPROVALS, POINTS, INSTITUTION_POINTS);
+        var pointAggregation = filterAggregation(
+            mustNotMatch(ApprovalStatus.REJECTED.getValue(), joinWithDelimiter(APPROVALS, APPROVAL_STATUS)),
+            Map.of("totalPoints", sumAggregation(APPROVALS, POINTS, INSTITUTION_POINTS))
+        );
         var disputeAggregation = filterStatusDisputeAggregation();
         var organizationAggregation = new Aggregation.Builder()
                                           .terms(new TermsAggregation.Builder()
