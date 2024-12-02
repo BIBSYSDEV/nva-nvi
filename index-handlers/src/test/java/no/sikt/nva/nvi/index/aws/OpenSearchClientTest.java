@@ -627,6 +627,36 @@ class OpenSearchClientTest {
     }
 
     @Test
+    void shouldNotIncludeRejectedPointsInOrganizationAggregationWithSubAggregations() throws IOException,
+                                                                                      InterruptedException {
+        addDocumentsToIndex(documentFromString("document_organization_aggregation_pending.json"));
+        addDocumentsToIndex(documentFromString("document_organization_aggregation_new.json"));
+        addDocumentsToIndex(documentFromString("document_organization_aggregation_rejected.json"));
+        var aggregation = ORGANIZATION_APPROVAL_STATUS_AGGREGATION.getAggregationName();
+        var searchParameters = defaultSearchParameters().withAggregationType(aggregation).build();
+        var searchResponse = openSearchClient.search(searchParameters);
+        var actualAggregate = searchResponse.aggregations().get(aggregation);
+        var actualOrganizationAggregation = ((NestedAggregate) actualAggregate._get()).aggregations()
+                                                .get(SIKT_INSTITUTION_ID.toString());
+        var filterAggregate = ((FilterAggregate) actualOrganizationAggregation._get()).aggregations()
+                                  .get("organizations");
+        var actualOrgBuckets = ((StringTermsAggregate) filterAggregate._get()).buckets();
+        actualOrgBuckets.array().forEach(bucket -> {
+            var key = bucket.key();
+            var pointAggregation = (SumAggregate) bucket.aggregations().get("points")._get();
+            if (SIKT_INSTITUTION_ID.toString().equals(key)) {
+                assertEquals(4.0, pointAggregation.value());
+            } else if (SIKT_LEVEL_2_ID.equals(key)) {
+                assertEquals(4.0, pointAggregation.value());
+            } else if (SIKT_LEVEL_3_ID.equals(key)) {
+                assertEquals(3.0, pointAggregation.value());
+            } else {
+                throw new RuntimeException("Unexpected key: " + key);
+            }
+        });
+    }
+
+    @Test
     void shouldReturnOrganizationAggregationWithSubAggregationsForUpToOneThousandInvolvedOrgs()
         throws IOException, InterruptedException {
         addDocumentsToIndex(nviCandidateWithOneThousandInvolvedOrgs());
