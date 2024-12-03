@@ -1,6 +1,8 @@
 package no.sikt.nva.nvi.events.evaluator.calculator;
 
+import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_POINTER_IDENTITY_ID;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_POINTER_IDENTITY_NAME;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_POINTER_IDENTITY_VERIFICATION_STATUS;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_AFFILIATIONS;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CONTRIBUTOR;
@@ -15,7 +17,6 @@ import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -26,6 +27,7 @@ import no.sikt.nva.nvi.common.utils.JsonUtils;
 import no.sikt.nva.nvi.events.evaluator.model.CustomerResponse;
 import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
 import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator.NviOrganization;
+import no.sikt.nva.nvi.events.model.UnverifiedNviCreator;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import nva.commons.core.Environment;
@@ -52,15 +54,33 @@ public class CreatorVerificationUtil {
         this.organizationRetriever = new OrganizationRetriever(uriRetriever);
     }
 
-    public List<VerifiedNviCreator> getVerifiedCreatorsWithNviInstitutionsIfExists(JsonNode publication) {
-        var verifiedCreatorsWithNviInstitutions = getVerifiedCreatorsWithNviInstitutions(publication);
+    public List<VerifiedNviCreator> getVerifiedCreatorsWithNviInstitutions(JsonNode body) {
+        return getJsonNodeStream(body, JSON_PTR_CONTRIBUTOR)
+                   .filter(CreatorVerificationUtil::isVerified)
+                   .filter(CreatorVerificationUtil::isCreator)
+                   .map(this::toVerifiedNviCreator)
+                   .filter(CreatorVerificationUtil::isAffiliatedWithNviOrganization)
+                   .toList();
+    }
 
-        return verifiedCreatorsWithNviInstitutions.isEmpty()
-                   ? Collections.emptyList()
-                   : verifiedCreatorsWithNviInstitutions;
+    public List<UnverifiedNviCreator> getUnverifiedCreatorsWithNviInstitutions(JsonNode body) {
+        return getJsonNodeStream(body, JSON_PTR_CONTRIBUTOR)
+                   .filter(CreatorVerificationUtil::isCreator)
+                   .filter(CreatorVerificationUtil::hasName)
+                   .map(this::toUnverifiedNviCreator)
+                   .filter(CreatorVerificationUtil::isAffiliatedWithNviOrganization)
+                   .toList();
+    }
+
+    private static boolean hasName(JsonNode jsonNode) {
+        return nonNull(extractContributorName(jsonNode));
     }
 
     private static boolean isAffiliatedWithNviOrganization(VerifiedNviCreator creator) {
+        return !creator.nviAffiliations().isEmpty();
+    }
+
+    private static boolean isAffiliatedWithNviOrganization(UnverifiedNviCreator creator) {
         return !creator.nviAffiliations().isEmpty();
     }
 
@@ -71,6 +91,10 @@ public class CreatorVerificationUtil {
 
     private static URI extractContributorId(JsonNode creatorNode) {
         return URI.create(extractJsonNodeTextValue(creatorNode, JSON_POINTER_IDENTITY_ID));
+    }
+
+    private static String extractContributorName(JsonNode creatorNode) {
+        return extractJsonNodeTextValue(creatorNode, JSON_POINTER_IDENTITY_NAME);
     }
 
     private static boolean isVerified(JsonNode contributorNode) {
@@ -115,14 +139,7 @@ public class CreatorVerificationUtil {
                    .build();
     }
 
-    private List<VerifiedNviCreator> getVerifiedCreatorsWithNviInstitutions(JsonNode body) {
-        return getJsonNodeStream(body, JSON_PTR_CONTRIBUTOR)
-                   .filter(CreatorVerificationUtil::isVerified)
-                   .filter(CreatorVerificationUtil::isCreator)
-                   .map(this::toVerifiedNviCreator)
-                   .filter(CreatorVerificationUtil::isAffiliatedWithNviOrganization)
-                   .toList();
-    }
+
 
     private VerifiedNviCreator toVerifiedNviCreator(JsonNode contributorNode) {
         return VerifiedNviCreator.builder()
@@ -131,13 +148,36 @@ public class CreatorVerificationUtil {
                    .build();
     }
 
+    private UnverifiedNviCreator toUnverifiedNviCreator(JsonNode contributorNode) {
+        return UnverifiedNviCreator.builder()
+                                   .withName(extractContributorName(contributorNode))
+                                   .withNviAffiliations(getNviAffiliationUrisIfExist(contributorNode))
+                                   .build();
+    }
+
     private List<NviOrganization> getNviAffiliationsIfExist(JsonNode contributorNode) {
         return streamNode(contributorNode.at(JSON_PTR_AFFILIATIONS))
+                   .filter(this::hasNviCountryCode)
                    .map(JsonUtils::extractId)
                    .distinct()
                    .map(organizationRetriever::fetchOrganization)
                    .filter(this::topLevelOrgIsNviInstitution)
                    .map(CreatorVerificationUtil::toNviOrganization)
+                   .toList();
+    }
+
+    private boolean hasNviCountryCode(JsonNode jsonNode) {
+        return jsonNode.has("countryCode") && jsonNode.get("countryCode").asText().equals("NO");
+    }
+
+    private List<URI> getNviAffiliationUrisIfExist(JsonNode contributorNode) {
+        return streamNode(contributorNode.at(JSON_PTR_AFFILIATIONS))
+                   .filter(this::hasNviCountryCode)
+                   .map(JsonUtils::extractId)
+                   .distinct()
+                   .map(organizationRetriever::fetchOrganization)
+                   .filter(this::topLevelOrgIsNviInstitution)
+                   .map(Organization::id)
                    .toList();
     }
 

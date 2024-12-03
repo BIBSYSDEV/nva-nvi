@@ -194,7 +194,8 @@
         "type" : "Contributor",
         "affiliations" : [ {
           "id" : "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0",
-          "type" : "Organization"
+          "type" : "Organization",
+          "countryCode": "NO"
         } ],
         "identity" : {
           "id" : "https://api.dev.nva.aws.unit.no/cristin/person/997998",

@@ -33,6 +33,7 @@ import no.sikt.nva.nvi.events.model.NonNviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate.NviCreator;
 import no.sikt.nva.nvi.events.model.PublicationDate;
+import no.sikt.nva.nvi.events.model.UnverifiedNviCreator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,12 +83,15 @@ public class EvaluatorService {
             logger.info(NON_NVI_CANDIDATE_MESSAGE, publicationId);
             return createNonNviMessage(publicationId);
         }
-        var verifiedCreatorsWithNviInstitutions =
-            creatorVerificationUtil.getVerifiedCreatorsWithNviInstitutionsIfExists(
+        var verifiedCreatorsWithNviInstitutions = creatorVerificationUtil.getVerifiedCreatorsWithNviInstitutions(
                 publication);
-        if (!verifiedCreatorsWithNviInstitutions.isEmpty()) {
+
+        var unverifiedCreatorsWithNviInstitutions = creatorVerificationUtil.getUnverifiedCreatorsWithNviInstitutions(
+            publication);
+        if (!verifiedCreatorsWithNviInstitutions.isEmpty() || !unverifiedCreatorsWithNviInstitutions.isEmpty()) {
             var pointCalculation = pointService.calculatePoints(publication, verifiedCreatorsWithNviInstitutions);
             var nviCandidate = constructNviCandidate(verifiedCreatorsWithNviInstitutions,
+                                                     unverifiedCreatorsWithNviInstitutions,
                                                      pointCalculation,
                                                      publicationId,
                                                      publicationBucketUri,
@@ -101,6 +105,7 @@ public class EvaluatorService {
     }
 
     private static NviCandidate constructNviCandidate(List<VerifiedNviCreator> verifiedCreatorsWithNviInstitutions,
+                                                      List<UnverifiedNviCreator> unverifiedCreatorsWithNviInstitutions,
                                                       PointCalculation pointCalculation, URI publicationId,
                                                       URI publicationBucketUri, PublicationDate date) {
         return NviCandidate.builder()
@@ -117,6 +122,7 @@ public class EvaluatorService {
                    .withCreatorShareCount(pointCalculation.creatorShareCount())
                    .withInstitutionPoints(pointCalculation.institutionPoints())
                    .withNviCreators(mapToNviCreators(verifiedCreatorsWithNviInstitutions))
+                   .withUnverifiedNviCreators(unverifiedCreatorsWithNviInstitutions)
                    .withTotalPoints(pointCalculation.totalPoints())
                    .build();
     }

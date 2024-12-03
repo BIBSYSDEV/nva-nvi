@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.math.BigDecimal;
 import java.net.URI;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -73,8 +74,8 @@ public record NviCandidate(URI publicationId,
         private URI publicationBucketUri;
         private InstanceType instanceType;
         private PublicationDate date;
-        private List<NviCreator> nviCreators;
-        private List<UnverifiedNviCreator> unverifiedNviCreators;
+        private List<NviCreator> nviCreators = Collections.emptyList();
+        private List<UnverifiedNviCreator> unverifiedNviCreators = Collections.emptyList();
         private String channelType;
         private URI publicationChannelId;
         private String level;
@@ -87,8 +88,6 @@ public record NviCandidate(URI publicationId,
 
         private Builder() {
         }
-
-
 
         public Builder withPublicationId(URI publicationId) {
             this.publicationId = publicationId;

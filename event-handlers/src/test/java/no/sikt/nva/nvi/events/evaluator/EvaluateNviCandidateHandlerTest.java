@@ -13,7 +13,6 @@ import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
@@ -525,6 +524,9 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
         assertThat(candidate.publicationBucketUri(), is(equalTo(fileUri)));
     }
 
+    // TODO: Add test case where one institution has both verified and unverified authors
+    // TODO: Add test case where author name is blank or null?
+    // TODO: Add test case where country code is missing (we skip for != NO, but should lookup if missing)
     @Test
     void shouldIdentifyCandidateWithUnverifiedNviCreators() throws IOException {
         mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
@@ -536,11 +538,6 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
         var candidate = (NviCandidate) messageBody.candidate();
         assertThat(candidate.unverifiedNviCreators().getFirst().name(), is(equalTo("Ola Nordmann")));
         assertThat(candidate.unverifiedNviCreators().getFirst().nviAffiliations().getFirst(), is(equalTo(CRISTIN_NVI_ORG_SUB_UNIT_ID)));
-        // TODO: Add one verified candidate to test data and create separate test that checks we get points for that
-        //  only
-//        assertThat(candidate.institutionPoints(), notNullValue());
-//        assertThat(candidate.getPointsForInstitution(CRISTIN_NVI_ORG_TOP_LEVEL_ID),
-//                   is(equalTo(BigDecimal.valueOf(1).setScale(4, RoundingMode.HALF_UP))));
     }
 
     @Test
