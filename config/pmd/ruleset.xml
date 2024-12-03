@@ -28,7 +28,6 @@
     <exclude name="AvoidPrintStackTrace"/>
     <exclude name="UnitTestAssertionsShouldIncludeMessage"/>
     <exclude name="UnitTestContainsTooManyAsserts"/>
-    <exclude name="JUnitAssertionsShouldIncludeMessage"/>
 
     <!-- In TableManager we map ResourceNotFoundException to TableNotFoundException -->
     <exclude name="PreserveStackTrace"/>
