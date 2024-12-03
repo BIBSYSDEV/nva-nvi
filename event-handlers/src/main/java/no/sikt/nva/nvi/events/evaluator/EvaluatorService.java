@@ -116,7 +116,7 @@ public class EvaluatorService {
                    .withCollaborationFactor(pointCalculation.collaborationFactor())
                    .withCreatorShareCount(pointCalculation.creatorShareCount())
                    .withInstitutionPoints(pointCalculation.institutionPoints())
-                   .withVerifiedCreators(mapToNviCreators(verifiedCreatorsWithNviInstitutions))
+                   .withNviCreators(mapToNviCreators(verifiedCreatorsWithNviInstitutions))
                    .withTotalPoints(pointCalculation.totalPoints())
                    .build();
     }

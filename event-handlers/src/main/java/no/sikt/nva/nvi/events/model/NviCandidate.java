@@ -21,6 +21,7 @@ public record NviCandidate(URI publicationId,
                            InstanceType instanceType,
                            @JsonProperty("publicationDate") PublicationDate date,
                            List<NviCreator> nviCreators,
+                           List<UnverifiedNviCreator> unverifiedNviCreators,
                            String channelType,
                            URI publicationChannelId,
                            String level,
@@ -31,9 +32,6 @@ public record NviCandidate(URI publicationId,
                            List<InstitutionPoints> institutionPoints,
                            BigDecimal totalPoints) implements CandidateType, UpsertCandidateRequest {
 
-    public static Builder builder() {
-        return new Builder();
-    }
 
     @Override
     public boolean isApplicable() {
@@ -65,13 +63,18 @@ public record NviCandidate(URI publicationId,
         }
     }
 
+    public static Builder builder() {
+        return new Builder();
+    }
+
     public static final class Builder {
 
         private URI publicationId;
         private URI publicationBucketUri;
         private InstanceType instanceType;
         private PublicationDate date;
-        private List<NviCreator> nviCreatorWithAffiliationPoints;
+        private List<NviCreator> nviCreators;
+        private List<UnverifiedNviCreator> unverifiedNviCreators;
         private String channelType;
         private URI publicationChannelId;
         private String level;
@@ -84,6 +87,8 @@ public record NviCandidate(URI publicationId,
 
         private Builder() {
         }
+
+
 
         public Builder withPublicationId(URI publicationId) {
             this.publicationId = publicationId;
@@ -105,8 +110,13 @@ public record NviCandidate(URI publicationId,
             return this;
         }
 
-        public Builder withVerifiedCreators(List<NviCreator> nviCreatorWithAffiliationPoints) {
-            this.nviCreatorWithAffiliationPoints = nviCreatorWithAffiliationPoints;
+        public Builder withNviCreators(List<NviCreator> nviCreators) {
+            this.nviCreators = nviCreators;
+            return this;
+        }
+
+        public Builder withUnverifiedNviCreators(List<UnverifiedNviCreator> unverifiedNviCreators) {
+            this.unverifiedNviCreators = unverifiedNviCreators;
             return this;
         }
 
@@ -156,10 +166,21 @@ public record NviCandidate(URI publicationId,
         }
 
         public NviCandidate build() {
-            return new NviCandidate(publicationId, publicationBucketUri, instanceType, date,
-                                    nviCreatorWithAffiliationPoints,
-                                    channelType, publicationChannelId, level, basePoints, isInternationalCollaboration,
-                                    collaborationFactor, creatorShareCount, institutionPoints, totalPoints);
+            return new NviCandidate(publicationId,
+                                    publicationBucketUri,
+                                    instanceType,
+                                    date,
+                                    nviCreators,
+                                    unverifiedNviCreators,
+                                    channelType,
+                                    publicationChannelId,
+                                    level,
+                                    basePoints,
+                                    isInternationalCollaboration,
+                                    collaborationFactor,
+                                    creatorShareCount,
+                                    institutionPoints,
+                                    totalPoints);
         }
     }
 }

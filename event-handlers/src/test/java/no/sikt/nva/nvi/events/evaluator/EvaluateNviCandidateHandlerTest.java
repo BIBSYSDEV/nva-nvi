@@ -13,6 +13,7 @@ import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
@@ -95,6 +96,7 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
     private static final String BUCKET_NAME = "ignoredBucket";
     private static final String CUSTOMER_API_NVI_RESPONSE = "{" + "\"nviInstitution\" : \"true\"" + "}";
     private static final String ACADEMIC_ARTICLE_PATH = "evaluator/candidate_academicArticle.json";
+    private static final String UNVERIFIED_CREATOR_PATH = "evaluator/candidate_unverifiedCreator_with_nviInstitution.json";
     private static final URI HARDCODED_PUBLICATION_ID = URI.create(
         "https://api.dev.nva.aws.unit.no/publication/01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d");
     private static final String ACADEMIC_ARTICLE = IoUtils.stringFromResources(Path.of(ACADEMIC_ARTICLE_PATH))
@@ -524,6 +526,24 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
     }
 
     @Test
+    void shouldIdentifyCandidateWithUnverifiedNviCreators() throws IOException {
+        mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
+        var fileUri = s3Driver.insertFile(UnixPath.of(UNVERIFIED_CREATOR_PATH), IoUtils.stringFromResources(Path.of(
+            UNVERIFIED_CREATOR_PATH)));
+        var event = createEvent(new PersistedResourceMessage(fileUri));
+        handler.handleRequest(event, context);
+        var messageBody = getMessageBody();
+        var candidate = (NviCandidate) messageBody.candidate();
+        assertThat(candidate.unverifiedNviCreators().getFirst().name(), is(equalTo("Ola Nordmann")));
+        assertThat(candidate.unverifiedNviCreators().getFirst().nviAffiliations().getFirst(), is(equalTo(CRISTIN_NVI_ORG_SUB_UNIT_ID)));
+        // TODO: Add one verified candidate to test data and create separate test that checks we get points for that
+        //  only
+//        assertThat(candidate.institutionPoints(), notNullValue());
+//        assertThat(candidate.getPointsForInstitution(CRISTIN_NVI_ORG_TOP_LEVEL_ID),
+//                   is(equalTo(BigDecimal.valueOf(1).setScale(4, RoundingMode.HALF_UP))));
+    }
+
+    @Test
     @Deprecated
     void shouldHandleSeriesWithMultipleTypes() throws IOException {
         mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
@@ -598,7 +618,7 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
                    .withCollaborationFactor(ONE.setScale(1, ROUNDING_MODE))
                    .withCreatorShareCount(countCreatorShares(verifiedCreators))
                    .withBasePoints(basePoints)
-                   .withVerifiedCreators(verifiedCreators)
+                   .withNviCreators(verifiedCreators)
                    .withInstitutionPoints(institutionPoints.entrySet().stream()
                                               .map(entry -> new InstitutionPoints(entry.getKey(), entry.getValue(),
                                                                                   List.of(
