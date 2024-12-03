@@ -32,9 +32,6 @@
     <!-- In TableManager we map ResourceNotFoundException to TableNotFoundException -->
     <exclude name="PreserveStackTrace"/>
 
-    <!-- //TODO: This is complaining on private methods that are used?  -->
-    <exclude name="UnusedPrivateMethod"/>
-
   </rule>
 
   <rule ref="category/java/codestyle.xml">
