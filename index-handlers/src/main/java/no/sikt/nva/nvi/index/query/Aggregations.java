@@ -34,12 +34,12 @@ import org.opensearch.client.opensearch._types.query_dsl.Query;
 
 public final class Aggregations {
 
-    public static final String APPROVAL_STATUS_PATH = joinWithDelimiter(APPROVALS, APPROVAL_STATUS);
-    public static final String INSTITUTION_ID_PATH = joinWithDelimiter(APPROVALS, INSTITUTION_ID);
-    public static final String DISPUTE_AGGREGATION = "dispute";
-    public static final String POINTS_AGGREGATION = "points";
-    public static final String DISPUTE = "Dispute";
     public static final String APPROVAL_ORGANIZATIONS_AGGREGATION = "organizations";
+    private static final String APPROVAL_STATUS_PATH = joinWithDelimiter(APPROVALS, APPROVAL_STATUS);
+    private static final String INSTITUTION_ID_PATH = joinWithDelimiter(APPROVALS, INSTITUTION_ID);
+    private static final String DISPUTE_AGGREGATION = "dispute";
+    private static final String POINTS_AGGREGATION = "points";
+    private static final String DISPUTE = "Dispute";
     private static final String TOTAL_POINTS_SUM_AGGREGATION = "totalPoints";
     private static final String ALL_AGGREGATIONS = "all";
     private static final String STATUS_AGGREGATION = "status";
