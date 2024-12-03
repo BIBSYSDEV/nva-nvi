@@ -129,6 +129,7 @@ class OpenSearchClientTest {
         "document_organization_aggregation_dispute.json";
     private static final String DOCUMENT_WITH_CONTRIBUTOR_FROM_NTNU_SUBUNIT_JSON =
         "document_with_contributor_from_ntnu_subunit.json";
+    private static final String UNEXPECTED_KEY = "Unexpected key: ";
     private static RestClient restClient;
     private static OpenSearchClient openSearchClient;
 
@@ -652,7 +653,7 @@ class OpenSearchClientTest {
             } else if (SIKT_LEVEL_3_ID.equals(key)) {
                 assertEquals(3.0, pointSum.value());
             } else {
-                throw new RuntimeException("Unexpected key: " + key);
+                throw new RuntimeException(UNEXPECTED_KEY + key);
             }
         });
     }
@@ -760,7 +761,7 @@ class OpenSearchClientTest {
         } else if (SIKT_LEVEL_3_ID.equals(key)) {
             assertEquals(3.0, pointSum.value());
         } else {
-            throw new RuntimeException("Unexpected key: " + key);
+            throw new RuntimeException(UNEXPECTED_KEY + key);
         }
     }
 
@@ -772,7 +773,7 @@ class OpenSearchClientTest {
         } else if (SIKT_LEVEL_3_ID.equals(key)) {
             assertEquals(0, disputeAggregation.docCount());
         } else {
-            throw new RuntimeException("Unexpected key: " + key);
+            throw new RuntimeException(UNEXPECTED_KEY + key);
         }
     }
 
@@ -789,7 +790,7 @@ class OpenSearchClientTest {
             var expectedKeys = List.of(PENDING.getValue());
             assertExpectedSubAggregations(statusAggregation, expectedKeys);
         } else {
-            throw new RuntimeException("Unexpected key: " + key);
+            throw new RuntimeException(UNEXPECTED_KEY + key);
         }
     }
 

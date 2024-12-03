@@ -26,8 +26,7 @@
     <exclude name="SystemPrintln"/>
     <exclude name="GuardLogStatement"/>
     <exclude name="AvoidPrintStackTrace"/>
-    <exclude name="UnitTestAssertionsShouldIncludeMessage"/>
-    <exclude name="UnitTestContainsTooManyAsserts"/>
+
 
     <!-- In TableManager we map ResourceNotFoundException to TableNotFoundException -->
     <exclude name="PreserveStackTrace"/>
@@ -59,7 +58,8 @@
     <!-- Sometimes it is useful in debugging to assign the return value to a local variable  -->
     <exclude name="UnnecessaryLocalBeforeReturn"/>
     <exclude name="JUnitAssertionsShouldIncludeMessage"/>
-
+    <exclude name="UnitTestAssertionsShouldIncludeMessage"/>
+    <exclude name="UnitTestContainsTooManyAsserts"/>
   </rule>
 
 
