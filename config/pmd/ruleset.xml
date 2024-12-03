@@ -58,7 +58,6 @@
 
     <!-- Sometimes it is useful in debugging to assign the return value to a local variable  -->
     <exclude name="UnnecessaryLocalBeforeReturn"/>
-    <exclude name="JUnitAssertionsShouldIncludeMessage"/>
   </rule>
 
 
