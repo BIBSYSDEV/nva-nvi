@@ -11,11 +11,11 @@ import static no.sikt.nva.nvi.index.utils.AggregationFunctions.termsAggregation;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.assignmentsQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.containsNonFinalizedStatusQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.fieldValueQuery;
-import static no.sikt.nva.nvi.index.utils.QueryFunctions.notDisputeQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.multipleApprovalsQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.mustMatch;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.mustNotMatch;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.nestedQuery;
+import static no.sikt.nva.nvi.index.utils.QueryFunctions.notDisputeQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.statusQuery;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVALS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVAL_STATUS;
@@ -34,12 +34,13 @@ import org.opensearch.client.opensearch._types.query_dsl.Query;
 
 public final class Aggregations {
 
-    public static final String APPROVAL_STATUS_PATH = joinWithDelimiter(APPROVALS, APPROVAL_STATUS);
-    public static final String INSTITUTION_ID_PATH = joinWithDelimiter(APPROVALS, INSTITUTION_ID);
-    public static final String DISPUTE_AGGREGATION = "dispute";
-    public static final String POINTS_AGGREGATION = "points";
-    public static final String DISPUTE = "Dispute";
     public static final String APPROVAL_ORGANIZATIONS_AGGREGATION = "organizations";
+    private static final String APPROVAL_STATUS_PATH = joinWithDelimiter(APPROVALS, APPROVAL_STATUS);
+    private static final String INSTITUTION_ID_PATH = joinWithDelimiter(APPROVALS, INSTITUTION_ID);
+    private static final String DISPUTE_AGGREGATION = "dispute";
+    private static final String POINTS_AGGREGATION = "points";
+    private static final String DISPUTE = "Dispute";
+    private static final String TOTAL_POINTS_SUM_AGGREGATION = "total";
     private static final String ALL_AGGREGATIONS = "all";
     private static final String STATUS_AGGREGATION = "status";
     private static final int ORGANIZATION_SUB_UNITS_TERMS_AGGREGATION_SIZE = 1000;
@@ -56,7 +57,7 @@ public final class Aggregations {
 
     public static Aggregation organizationApprovalStatusAggregations(String topLevelCristinOrg) {
         var statusAggregation = termsAggregation(APPROVALS, APPROVAL_STATUS)._toAggregation();
-        var pointAggregation = sumAggregation(APPROVALS, POINTS, INSTITUTION_POINTS);
+        var pointAggregation = filterNotRegectedPointsAggregation();
         var disputeAggregation = filterStatusDisputeAggregation();
         var organizationAggregation = new Aggregation.Builder()
                                           .terms(new TermsAggregation.Builder()
@@ -113,6 +114,13 @@ public final class Aggregations {
 
     public static Aggregation disputeAggregation(String topLevelCristinOrg) {
         return filterAggregation(mustMatch(globalStatusDisputeForInstitution(topLevelCristinOrg)));
+    }
+
+    private static Aggregation filterNotRegectedPointsAggregation() {
+        return filterAggregation(
+            mustNotMatch(ApprovalStatus.REJECTED.getValue(), joinWithDelimiter(APPROVALS, APPROVAL_STATUS)),
+            Map.of(TOTAL_POINTS_SUM_AGGREGATION, sumAggregation(APPROVALS, POINTS, INSTITUTION_POINTS))
+        );
     }
 
     private static Aggregation filterStatusDisputeAggregation() {
