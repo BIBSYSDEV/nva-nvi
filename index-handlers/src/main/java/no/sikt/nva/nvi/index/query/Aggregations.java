@@ -40,7 +40,7 @@ public final class Aggregations {
     private static final String DISPUTE_AGGREGATION = "dispute";
     private static final String POINTS_AGGREGATION = "points";
     private static final String DISPUTE = "Dispute";
-    private static final String TOTAL_POINTS_SUM_AGGREGATION = "totalPoints";
+    private static final String TOTAL_POINTS_SUM_AGGREGATION = "total";
     private static final String ALL_AGGREGATIONS = "all";
     private static final String STATUS_AGGREGATION = "status";
     private static final int ORGANIZATION_SUB_UNITS_TERMS_AGGREGATION_SIZE = 1000;

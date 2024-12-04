@@ -745,7 +745,7 @@ class OpenSearchClientTest {
     private static void assertExpectedPointAggregations(StringTermsBucket bucket) {
         var key = bucket.key();
         var pointFilterAggregate = (FilterAggregate) bucket.aggregations().get("points")._get();
-        var pointSum = (SumAggregate) pointFilterAggregate.aggregations().get("totalPoints")._get();
+        var pointSum = (SumAggregate) pointFilterAggregate.aggregations().get("total")._get();
         if (SIKT_INSTITUTION_ID.toString().equals(key)) {
             assertEquals(4.0, pointSum.value());
         } else if (SIKT_LEVEL_2_ID.equals(key)) {
