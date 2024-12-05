@@ -6,7 +6,6 @@ import java.util.List;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
-import no.sikt.nva.nvi.common.db.model.ChannelType;
 
 @JsonSerialize
 public record PublicationDetails(URI publicationId,
@@ -14,9 +13,7 @@ public record PublicationDetails(URI publicationId,
                                  String type,
                                  PublicationDate publicationDate,
                                  List<Creator> creators,
-                                 ChannelType channelType,
-                                 URI publicationChannelId,
-                                 String level) {
+                                 PublicationChannel publicationChannel) {
 
     public static PublicationDetails from(CandidateDao candidateDao) {
         var dbCandidate = candidateDao.candidate();
@@ -28,10 +25,9 @@ public record PublicationDetails(URI publicationId,
                                           .stream()
                                           .map(Creator::from)
                                           .toList(),
-                                      dbCandidate.channelType(),
-                                      dbCandidate.channelId(),
-                                      dbCandidate.level().getValue());
-
+                                      new PublicationChannel(dbCandidate.channelType(),
+                                                             dbCandidate.channelId(),
+                                                             dbCandidate.level().toString()));
     }
 
     public List<URI> getNviCreatorAffiliations() {

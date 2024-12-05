@@ -223,12 +223,12 @@ public final class IndexDocumentTestUtils {
 
     private static PublicationChannel getPublicationChannel(
         JsonNode expandedResource, no.sikt.nva.nvi.common.service.model.PublicationDetails publicationDetails) {
-        var channelType = publicationDetails.channelType();
+        var channelType = publicationDetails.publicationChannel().channelType();
         var publicationChannelBuilder = PublicationChannel.builder()
-                                            .withScientificValue(ScientificValue.parse(publicationDetails.level()))
+                                            .withScientificValue(ScientificValue.parse(publicationDetails.publicationChannel().level()))
                                             .withName(extractChannelName(expandedResource, channelType));
-        if (nonNull(publicationDetails.publicationChannelId())) {
-            publicationChannelBuilder.withId(publicationDetails.publicationChannelId());
+        if (nonNull(publicationDetails.publicationChannel().id())) {
+            publicationChannelBuilder.withId(publicationDetails.publicationChannel().id());
         }
         if (nonNull(channelType)) {
             publicationChannelBuilder.withType(channelType.getValue());

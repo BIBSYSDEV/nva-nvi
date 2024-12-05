@@ -230,17 +230,17 @@ public final class NviCandidateIndexDocumentGenerator {
     }
 
     private PublicationChannel buildPublicationChannel() {
-        var publication = candidate.getPublicationDetails();
+        var publicationChannel = candidate.getPublicationDetails().publicationChannel();
         var publicationChannelBuilder = PublicationChannel.builder()
-                                            .withScientificValue(ScientificValue.parse(publication.level()));
+                                            .withScientificValue(ScientificValue.parse(publicationChannel.level()));
 
-        if (nonNull(publication.publicationChannelId())) { // Might be null for candidates imported via Cristin
-            publicationChannelBuilder.withId(publication.publicationChannelId());
+        if (nonNull(publicationChannel.id())) { // Might be null for candidates imported via Cristin
+            publicationChannelBuilder.withId(publicationChannel.id());
         }
-        if (nonNull(publication.channelType())) { // Might be null for candidates imported via Cristin
-            publicationChannelBuilder.withType(publication.channelType().getValue());
-            publicationChannelBuilder.withName(extractName(publication.channelType()));
-            publicationChannelBuilder.withPrintIssn(extractPrintIssn(publication.channelType()));
+        if (nonNull(publicationChannel.channelType())) { // Might be null for candidates imported via Cristin
+            publicationChannelBuilder.withType(publicationChannel.channelType().getValue());
+            publicationChannelBuilder.withName(extractName(publicationChannel.channelType()));
+            publicationChannelBuilder.withPrintIssn(extractPrintIssn(publicationChannel.channelType()));
         }
         return publicationChannelBuilder.build();
     }

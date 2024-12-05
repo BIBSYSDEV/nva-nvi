@@ -453,7 +453,7 @@ public final class Candidate {
     }
 
     private static boolean levelIsUpdated(UpsertCandidateRequest request, Candidate candidate) {
-        return !Objects.equals(request.level(), candidate.getPublicationDetails().level());
+        return !Objects.equals(request.level(), candidate.getPublicationDetails().publicationChannel().level());
     }
 
     private static void createCandidate(UpsertCandidateRequest request, CandidateRepository repository) {
@@ -603,9 +603,9 @@ public final class Candidate {
                                   .applicable(applicable)
                                   .creators(mapToDbCreators(publicationDetails.creators()))
                                   .creatorShareCount(creatorShareCount)
-                                  .channelType(publicationDetails.channelType())
-                                  .channelId(publicationDetails.publicationChannelId())
-                                  .level(DbLevel.parse(publicationDetails.level()))
+                                  .channelType(publicationDetails.publicationChannel().channelType())
+                                  .channelId(publicationDetails.publicationChannel().id())
+                                  .level(DbLevel.parse(publicationDetails.publicationChannel().level()))
                                   .instanceType(publicationDetails.type())
                                   .publicationDate(mapToPublicationDate(publicationDetails.publicationDate()))
                                   .internationalCollaboration(internationalCollaboration)
@@ -644,9 +644,9 @@ public final class Candidate {
                                       request.instanceType().getValue(),
                                       request.publicationDate(),
                                       mapToCreators(request.creators()),
-                                      ChannelType.parse(request.channelType()),
-                                      request.publicationChannelId(),
-                                      request.level());
+                                      new PublicationChannel(ChannelType.parse(request.channelType()),
+                                                             request.publicationChannelId(),
+                                                             request.level()));
     }
 
     private void setUserAsAssigneeIfApprovalIsUnassigned(String username, URI institutionId) {
