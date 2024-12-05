@@ -27,7 +27,7 @@ public record PublicationDetails(URI publicationId,
                                           .toList(),
                                       new PublicationChannel(dbCandidate.channelType(),
                                                              dbCandidate.channelId(),
-                                                             dbCandidate.level().toString()));
+                                                             dbCandidate.level().getValue()));
     }
 
     public List<URI> getNviCreatorAffiliations() {
