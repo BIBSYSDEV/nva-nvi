@@ -446,10 +446,10 @@ class CandidateTest extends LocalDynamoTest {
         assertEquals(candidate.getPublicationDetails().publicationDate(), publicationDate);
         assertCorrectCreatorData(creators, candidate);
         assertEquals(candidate.getPublicationDetails().type(), instanceType.getValue());
-        assertEquals(candidate.getPublicationDetails().publicationChannel().channelType().getValue(),
+        assertEquals(candidate.getPublicationChannelType().getValue(),
                      createRequest.channelType());
-        assertEquals(candidate.getPublicationDetails().publicationChannel().id(), createRequest.publicationChannelId());
-        assertEquals(candidate.getPublicationDetails().publicationChannel().level(), createRequest.level());
+        assertEquals(candidate.getPublicationChannelId(), createRequest.publicationChannelId());
+        assertEquals(candidate.getScientificLevel(), createRequest.level());
         assertEquals(candidate.getBasePoints(), adjustScaleAndRoundingMode(createRequest.basePoints()));
         assertEquals(candidate.isInternationalCollaboration(),
                      createRequest.isInternationalCollaboration());

@@ -465,7 +465,7 @@ public final class Candidate {
     }
 
     private static boolean levelIsUpdated(UpsertCandidateRequest request, Candidate candidate) {
-        return !Objects.equals(request.level(), candidate.getPublicationDetails().publicationChannel().level());
+        return !Objects.equals(request.level(), candidate.getScientificLevel());
     }
 
     private static void createCandidate(UpsertCandidateRequest request, CandidateRepository repository) {
