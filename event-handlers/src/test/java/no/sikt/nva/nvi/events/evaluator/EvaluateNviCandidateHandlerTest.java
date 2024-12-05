@@ -696,9 +696,14 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldIdentifyCandidateWithoutAuthorName() throws IOException {
+    void shouldRejectAuthorsWithoutNameOrId() throws IOException {
         // Define input data and mock external services
-        var contributor = ExpandedContributor.from(DEFAULT_VERIFIED_CONTRIBUTOR).withName(null).build();
+        var contributor =
+                ExpandedContributor.from(DEFAULT_VERIFIED_CONTRIBUTOR)
+                        .withName(null)
+                        .withId(null)
+                        .withVerificationStatus(null)
+                        .build();
         var publication =
                 ExpandedInputResourceGenerator.from(DEFAULT_INPUT_PUBLICATION)
                         .withContributors(List.of(contributor))
@@ -709,22 +714,13 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
                         publication.toJsonString());
         mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
 
-        // Define expected response
-        var expectedCandidate =
-                getDefaultExpectedCandidateBuilder()
-                        .withPublicationId(publication.id())
-                        .withPublicationBucketUri(fileUri)
-                        .build();
-        var expectedEvaluatedMessage =
-                CandidateEvaluatedMessage.builder().withCandidateType(expectedCandidate).build();
-
         // Call handler and parse response
         var event = createEvent(new PersistedResourceMessage(fileUri));
         handler.handleRequest(event, context);
-        var messageBody = getMessageBody();
+        var nonCandidate = (NonNviCandidate) getMessageBody().candidate();
 
-        // Assert that response matches exactly what we expect
-        assertEquals(expectedEvaluatedMessage, messageBody);
+        // Assert that publication is rejected
+        assertThat(nonCandidate.publicationId(), is(equalTo(publication.id())));
     }
 
     @Test
