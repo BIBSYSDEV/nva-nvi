@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.events.evaluator;
 
+import static java.util.Collections.emptyList;
 import static no.sikt.nva.nvi.common.service.model.InstanceType.ACADEMIC_COMMENTARY;
 import static no.sikt.nva.nvi.common.service.model.InstanceType.ACADEMIC_LITERATURE_REVIEW;
 import static no.sikt.nva.nvi.common.service.model.InstanceType.ACADEMIC_MONOGRAPH;
@@ -28,6 +29,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import static java.math.BigDecimal.ZERO;
 import static java.math.BigDecimal.ONE;
 
 import com.amazonaws.services.lambda.runtime.Context;
@@ -112,7 +114,6 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
     private static final String BUCKET_NAME = "ignoredBucket";
     private static final String CUSTOMER_API_NVI_RESPONSE = "{" + "\"nviInstitution\" : \"true\"" + "}";
     private static final String ACADEMIC_ARTICLE_PATH = "evaluator/candidate_academicArticle.json";
-    private static final String UNVERIFIED_CREATOR_PATH = "evaluator/candidate_unverifiedCreator_with_nviInstitution.json";
     private static final URI HARDCODED_PUBLICATION_ID = URI.create(
         "https://api.dev.nva.aws.unit.no/publication/01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d");
     private static final String ACADEMIC_ARTICLE = IoUtils.stringFromResources(Path.of(ACADEMIC_ARTICLE_PATH))
@@ -561,6 +562,52 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
     }
 
     @Test
+    void shouldIdentifyCandidateWithUnverifiedNviCreators() throws IOException {
+        // Define input data and mock external services
+        var unverifiedContributor =
+            ExpandedContributor.from(DEFAULT_VERIFIED_CONTRIBUTOR)
+                               .withId(null)
+                               .withVerificationStatus(null)
+                               .build();
+        var publication =
+            ExpandedInputResourceGenerator.from(DEFAULT_INPUT_PUBLICATION)
+                                          .withContributors(List.of(unverifiedContributor))
+                                          .build();
+        var fileUri =
+            s3Driver.insertFile(
+                UnixPath.of(publication.identifier().toString()),
+                publication.toJsonString());
+        mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
+
+        // Define expected response
+        var unverifiedNviCreators =
+            List.of(
+                new UnverifiedNviCreator(
+                    unverifiedContributor.contributorName(),
+                    unverifiedContributor.affiliationIds()));
+
+        var expectedCandidate =
+            getDefaultExpectedCandidateBuilder()
+                .withPublicationId(publication.id())
+                .withPublicationBucketUri(fileUri)
+                .withInstitutionPoints(emptyList())
+                .withTotalPoints(ZERO)
+                .withNviCreators(emptyList())
+                .withUnverifiedNviCreators(unverifiedNviCreators)
+                .build();
+        var expectedEvaluatedMessage =
+            CandidateEvaluatedMessage.builder().withCandidateType(expectedCandidate).build();
+
+        // Call handler and parse response
+        var event = createEvent(new PersistedResourceMessage(fileUri));
+        handler.handleRequest(event, context);
+        var messageBody = getMessageBody();
+
+        // Assert that response matches exactly what we expect
+        assertEquals(expectedEvaluatedMessage, messageBody);
+    }
+
+    @Test
     void shouldExcludeUnverifiedCreatorsFromInstitutionPoints() throws IOException {
         // Define input data and mock external services
         var unverifiedContributor =
@@ -678,19 +725,6 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
 
         // Assert that response matches exactly what we expect
         assertEquals(expectedEvaluatedMessage, messageBody);
-    }
-
-    @Test
-    void shouldIdentifyCandidateWithUnverifiedNviCreators() throws IOException {
-        mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-        var fileUri = s3Driver.insertFile(UnixPath.of(UNVERIFIED_CREATOR_PATH), IoUtils.stringFromResources(Path.of(
-            UNVERIFIED_CREATOR_PATH)));
-        var event = createEvent(new PersistedResourceMessage(fileUri));
-        handler.handleRequest(event, context);
-        var messageBody = getMessageBody();
-        var candidate = (NviCandidate) messageBody.candidate();
-        assertThat(candidate.unverifiedNviCreators().getFirst().name(), is(equalTo("Ola Nordmann")));
-        assertThat(candidate.unverifiedNviCreators().getFirst().nviAffiliations().getFirst(), is(equalTo(CRISTIN_NVI_ORG_SUB_UNIT_ID)));
     }
 
     @Test
