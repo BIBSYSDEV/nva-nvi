@@ -111,88 +111,9 @@ class CandidateTest extends LocalDynamoTest {
                                                                                                  HARDCODED_LEVEL);
     private static final URI HARDCODED_CREATOR_ID = URI.create("https://example.org/someCreator");
     private static final InstanceType DEFAULT_INSTANCE_TYPE = InstanceType.ACADEMIC_ARTICLE;
-    private static final BigDecimal DEFAULT_POINTS = BigDecimal.ONE;
+    private static final BigDecimal DEFAULT_POINTS = BigDecimal.ONE.setScale(EXPECTED_SCALE, EXPECTED_ROUNDING_MODE);
     private CandidateRepository candidateRepository;
     private PeriodRepository periodRepository;
-
-    public static Stream<Arguments> candidateResetCauseProvider() {
-        var defaultInstitutionPoints = List.of(new InstitutionPoints(HARDCODED_INSTITUTION_ID, DEFAULT_POINTS, null));
-        var defaultCreator = new Creator(HARDCODED_CREATOR_ID, List.of(HARDCODED_INSTITUTION_ID));
-        var defaultCreators = List.of(defaultCreator);
-        return Stream.of(Arguments.of(Named.of("channel changed",
-                                               new CandidateResetCauseArgument(
-                                                   new PublicationChannel(ChannelType.JOURNAL,
-                                                                          URI.create("https://example.org"
-                                                                                     + "/someOtherChannel"),
-                                                                          HARDCODED_LEVEL),
-                                                   DEFAULT_INSTANCE_TYPE,
-                                                   defaultInstitutionPoints, defaultCreators))),
-                         Arguments.of(Named.of("level changed",
-                                               new CandidateResetCauseArgument(
-                                                   new PublicationChannel(ChannelType.JOURNAL, HARDCODED_CHANNEL_ID,
-                                                                          "LevelTwo"),
-                                                   DEFAULT_INSTANCE_TYPE,
-                                                   defaultInstitutionPoints, defaultCreators))),
-                         Arguments.of(Named.of("instance type changed",
-                                               new CandidateResetCauseArgument(DEFAULT_PUBLICATION_CHANNEL,
-                                                                               InstanceType.ACADEMIC_MONOGRAPH,
-                                                                               defaultInstitutionPoints,
-                                                                               defaultCreators))),
-                         Arguments.of(Named.of("points changed",
-                                               new CandidateResetCauseArgument(DEFAULT_PUBLICATION_CHANNEL,
-                                                                               DEFAULT_INSTANCE_TYPE,
-                                                                               List.of(new InstitutionPoints(
-                                                                                   HARDCODED_INSTITUTION_ID,
-                                                                                   BigDecimal.TWO,
-                                                                                   null)), defaultCreators))),
-                         Arguments.of(Named.of("creator changed",
-                                               new CandidateResetCauseArgument(DEFAULT_PUBLICATION_CHANNEL,
-                                                                               DEFAULT_INSTANCE_TYPE,
-                                                                               defaultInstitutionPoints,
-                                                                               List.of(new Creator(
-                                                                                   URI.create("https://example"
-                                                                                              + ".org"
-                                                                                              +
-                                                                                              "/someOtherCreator"),
-                                                                                   List.of(
-                                                                                       HARDCODED_INSTITUTION_ID)))))),
-                         Arguments.of(Named.of("creator removed",
-                                               new CandidateResetCauseArgument(DEFAULT_PUBLICATION_CHANNEL,
-                                                                               DEFAULT_INSTANCE_TYPE,
-                                                                               defaultInstitutionPoints,
-                                                                               Collections.emptyList()))),
-                         Arguments.of(Named.of("creator added",
-                                               new CandidateResetCauseArgument(DEFAULT_PUBLICATION_CHANNEL,
-                                                                               DEFAULT_INSTANCE_TYPE,
-                                                                               defaultInstitutionPoints,
-                                                                               List.of(defaultCreator, new Creator(
-                                                                                   URI.create("https://example"
-                                                                                              + ".org"
-                                                                                              +
-                                                                                              "/someOtherCreator"),
-                                                                                   List.of(
-                                                                                       HARDCODED_INSTITUTION_ID)))))),
-                         Arguments.of(Named.of("top level affiliation changed",
-                                               new CandidateResetCauseArgument(DEFAULT_PUBLICATION_CHANNEL,
-                                                                               DEFAULT_INSTANCE_TYPE,
-                                                                               defaultInstitutionPoints,
-                                                                               List.of(new Creator(HARDCODED_CREATOR_ID,
-                                                                                                   List.of(
-                                                                                                       URI.create(
-                                                                                                           "https"
-                                                                                                           +
-                                                                                                           "://example"
-                                                                                                           + ".org"
-                                                                                                           +
-                                                                                                           "/someOtherInstitution"))))))));
-    }
-
-    public static Stream<Arguments> candidateNotResetCauseProvider() {
-        return Stream.of(Arguments.of(Named.of("creator name changed",
-                                               null),
-                                      Arguments.of(Named.of("creator sub unit affiliation changed",
-                                                            null))));
-    }
 
     @BeforeEach
     void setup() {
@@ -547,10 +468,7 @@ class CandidateTest extends LocalDynamoTest {
     @MethodSource("candidateResetCauseProvider")
     @DisplayName("Should reset approvals when updating fields effecting approvals")
     void shouldResetApprovalsWhenUpdatingFieldsEffectingApprovals(CandidateResetCauseArgument arguments) {
-        var upsertCandidateRequest = getUpsertCandidateRequest(HARDCODED_CREATOR_ID,
-                                                               HARDCODED_INSTITUTION_ID,
-                                                               DEFAULT_INSTANCE_TYPE,
-                                                               DEFAULT_PUBLICATION_CHANNEL.level());
+        var upsertCandidateRequest = getUpsertCandidateRequestWithHardcodedValues();
 
         var candidate = upsert(upsertCandidateRequest);
         candidate.updateApproval(
@@ -636,6 +554,86 @@ class CandidateTest extends LocalDynamoTest {
 
         assertEquals(candidate, updatedCandidate);
         assertNotEquals(dao.version(), updatedDao.version());
+    }
+
+    private static Stream<Arguments> candidateNotResetCauseProvider() {
+        return Stream.of(Arguments.of(Named.of("creator name changed",
+                                               null),
+                                      Arguments.of(Named.of("creator sub unit affiliation changed",
+                                                            null))));
+    }
+
+    private static Stream<Arguments> candidateResetCauseProvider() {
+        var defaultInstitutionPoints = List.of(new InstitutionPoints(HARDCODED_INSTITUTION_ID, DEFAULT_POINTS,
+                                                                     Collections.emptyList()));
+        var defaultCreator = new Creator(HARDCODED_CREATOR_ID, List.of(HARDCODED_INSTITUTION_ID));
+        var defaultCreators = List.of(defaultCreator);
+        return Stream.of(Arguments.of(Named.of("channel changed",
+                                               new CandidateResetCauseArgument(
+                                                   new PublicationChannel(ChannelType.JOURNAL,
+                                                                          URI.create("https://example.org"
+                                                                                     + "/someOtherChannel"),
+                                                                          HARDCODED_LEVEL),
+                                                   DEFAULT_INSTANCE_TYPE,
+                                                   defaultInstitutionPoints, defaultCreators))),
+                         Arguments.of(Named.of("level changed",
+                                               new CandidateResetCauseArgument(
+                                                   new PublicationChannel(ChannelType.JOURNAL, HARDCODED_CHANNEL_ID,
+                                                                          "LevelTwo"),
+                                                   DEFAULT_INSTANCE_TYPE,
+                                                   defaultInstitutionPoints, defaultCreators))),
+                         Arguments.of(Named.of("instance type changed",
+                                               new CandidateResetCauseArgument(DEFAULT_PUBLICATION_CHANNEL,
+                                                                               InstanceType.ACADEMIC_MONOGRAPH,
+                                                                               defaultInstitutionPoints,
+                                                                               defaultCreators))),
+                         Arguments.of(Named.of("points changed",
+                                               new CandidateResetCauseArgument(DEFAULT_PUBLICATION_CHANNEL,
+                                                                               DEFAULT_INSTANCE_TYPE,
+                                                                               List.of(new InstitutionPoints(
+                                                                                   HARDCODED_INSTITUTION_ID,
+                                                                                   BigDecimal.TWO,
+                                                                                   null)), defaultCreators))),
+                         Arguments.of(Named.of("creator changed",
+                                               new CandidateResetCauseArgument(DEFAULT_PUBLICATION_CHANNEL,
+                                                                               DEFAULT_INSTANCE_TYPE,
+                                                                               defaultInstitutionPoints,
+                                                                               List.of(new Creator(
+                                                                                   URI.create("https://example"
+                                                                                              + ".org"
+                                                                                              +
+                                                                                              "/someOtherCreator"),
+                                                                                   List.of(
+                                                                                       HARDCODED_INSTITUTION_ID)))))),
+                         Arguments.of(Named.of("creator removed",
+                                               new CandidateResetCauseArgument(DEFAULT_PUBLICATION_CHANNEL,
+                                                                               DEFAULT_INSTANCE_TYPE,
+                                                                               defaultInstitutionPoints,
+                                                                               Collections.emptyList()))),
+                         Arguments.of(Named.of("creator added",
+                                               new CandidateResetCauseArgument(DEFAULT_PUBLICATION_CHANNEL,
+                                                                               DEFAULT_INSTANCE_TYPE,
+                                                                               defaultInstitutionPoints,
+                                                                               List.of(defaultCreator, new Creator(
+                                                                                   URI.create("https://example"
+                                                                                              + ".org"
+                                                                                              +
+                                                                                              "/someOtherCreator"),
+                                                                                   List.of(
+                                                                                       HARDCODED_INSTITUTION_ID)))))),
+                         Arguments.of(Named.of("top level affiliation changed",
+                                               new CandidateResetCauseArgument(DEFAULT_PUBLICATION_CHANNEL,
+                                                                               DEFAULT_INSTANCE_TYPE,
+                                                                               defaultInstitutionPoints,
+                                                                               List.of(new Creator(HARDCODED_CREATOR_ID,
+                                                                                                   List.of(
+                                                                                                       URI.create(
+                                                                                                           "https"
+                                                                                                           +
+                                                                                                           "://example"
+                                                                                                           + ".org"
+                                                                                                           +
+                                                                                                           "/someOtherInstitution"))))))));
     }
 
     @Deprecated
@@ -734,18 +732,16 @@ class CandidateTest extends LocalDynamoTest {
                                             randomBigDecimal(), null, randomBigDecimal());
     }
 
-    private UpsertCandidateRequest getUpsertCandidateRequest(URI creatorId, URI institutionId,
-                                                             InstanceType type,
-                                                             String level) {
+    private UpsertCandidateRequest getUpsertCandidateRequestWithHardcodedValues() {
         return createUpsertCandidateRequest(URI.create("publicationId"), randomUri(), true,
                                             new PublicationDate(String.valueOf(CURRENT_YEAR), null, null),
-                                            Map.of(creatorId, List.of(institutionId)),
-                                            type,
+                                            Map.of(CandidateTest.HARDCODED_CREATOR_ID, List.of(
+                                                CandidateTest.HARDCODED_INSTITUTION_ID)),
+                                            CandidateTest.DEFAULT_INSTANCE_TYPE,
                                             randomString(), randomUri(),
-                                            level,
-                                            List.of(createInstitutionPoints(institutionId,
-                                                                            BigDecimal.ONE,
-                                                                            creatorId)),
+                                            DEFAULT_PUBLICATION_CHANNEL.level(),
+                                            List.of(
+                                                new InstitutionPoints(HARDCODED_INSTITUTION_ID, DEFAULT_POINTS, null)),
                                             randomInteger(), false,
                                             randomBigDecimal(), null, randomBigDecimal());
     }
