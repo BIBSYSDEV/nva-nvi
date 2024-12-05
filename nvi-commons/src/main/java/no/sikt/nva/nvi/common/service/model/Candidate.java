@@ -280,6 +280,18 @@ public final class Candidate {
         }
     }
 
+    public String getScientificLevel() {
+        return publicationDetails.publicationChannel().level();
+    }
+
+    public ChannelType getPublicationChannelType() {
+        return publicationDetails.publicationChannel().channelType();
+    }
+
+    public URI getPublicationChannelId() {
+        return publicationDetails.publicationChannel().id();
+    }
+
     public CandidateDto toDto() {
         return CandidateDto.builder()
                    .withId(getId())
@@ -603,9 +615,9 @@ public final class Candidate {
                                   .applicable(applicable)
                                   .creators(mapToDbCreators(publicationDetails.creators()))
                                   .creatorShareCount(creatorShareCount)
-                                  .channelType(publicationDetails.publicationChannel().channelType())
-                                  .channelId(publicationDetails.publicationChannel().id())
-                                  .level(DbLevel.parse(publicationDetails.publicationChannel().level()))
+                                  .channelType(getPublicationChannelType())
+                                  .channelId(getPublicationChannelId())
+                                  .level(DbLevel.parse(getScientificLevel()))
                                   .instanceType(publicationDetails.type())
                                   .publicationDate(mapToPublicationDate(publicationDetails.publicationDate()))
                                   .internationalCollaboration(internationalCollaboration)
