@@ -1,5 +1,7 @@
 package no.sikt.nva.nvi.events.evaluator;
 
+import static java.math.BigDecimal.ONE;
+import static java.math.BigDecimal.ZERO;
 import static java.util.Collections.emptyList;
 import static no.sikt.nva.nvi.common.service.model.InstanceType.ACADEMIC_COMMENTARY;
 import static no.sikt.nva.nvi.common.service.model.InstanceType.ACADEMIC_LITERATURE_REVIEW;
@@ -11,9 +13,7 @@ import static no.sikt.nva.nvi.events.evaluator.model.PublicationChannel.JOURNAL;
 import static no.sikt.nva.nvi.events.evaluator.model.PublicationChannel.SERIES;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
-
 import static nva.commons.core.attempt.Try.attempt;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
@@ -28,12 +28,20 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
-import static java.math.BigDecimal.ZERO;
-import static java.math.BigDecimal.ONE;
-
 import com.amazonaws.services.lambda.runtime.Context;
-
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
@@ -55,11 +63,11 @@ import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.sikt.nva.nvi.events.model.PublicationDate;
 import no.sikt.nva.nvi.events.model.UnverifiedNviCreator;
 import no.sikt.nva.nvi.test.ExpandedAffiliation;
+import no.sikt.nva.nvi.test.ExpandedContributor;
 import no.sikt.nva.nvi.test.ExpandedInputResourceGenerator;
 import no.sikt.nva.nvi.test.ExpandedPublicationChannel;
 import no.sikt.nva.nvi.test.ExpandedPublicationDate;
 import no.sikt.nva.nvi.test.FakeSqsClient;
-import no.sikt.nva.nvi.test.ExpandedContributor;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.auth.uriretriever.BackendClientCredentials;
@@ -67,42 +75,26 @@ import no.unit.nva.auth.uriretriever.UriRetriever;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
 import no.unit.nva.stubs.FakeSecretsManagerClient;
-
 import nva.commons.core.Environment;
 import nva.commons.core.StringUtils;
 import nva.commons.core.ioutils.IoUtils;
 import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
 import nva.commons.logutils.LogUtils;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.net.URI;
-import java.net.URLEncoder;
-import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 // Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
 @SuppressWarnings("PMD.CouplingBetweenObjects")
 class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
 
-    public static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
-    public static final PublicationDate HARDCODED_PUBLICATION_DATE = new PublicationDate(null, null, "2023");
-    public static final ExpandedPublicationDate HARDCODED_JSON_PUBLICATION_DATE =
+    private static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
+    private static final PublicationDate HARDCODED_PUBLICATION_DATE = new PublicationDate(null, null, "2023");
+    private static final ExpandedPublicationDate HARDCODED_JSON_PUBLICATION_DATE =
             new ExpandedPublicationDate("2023", null, null);
-    public static final URI HARDCODED_PUBLICATION_CHANNEL_ID = URI.create(
+    private static final URI HARDCODED_PUBLICATION_CHANNEL_ID = URI.create(
         "https://api.dev.nva.aws.unit.no/publication-channels/series/490845/2023");
-    public static final URI SIKT_CRISTIN_ORG_ID = URI.create(
+    private static final URI SIKT_CRISTIN_ORG_ID = URI.create(
         "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0");
     private static final URI HARDCODED_CREATOR_ID = URI.create("https://api.dev.nva.aws.unit.no/cristin/person/997998");
     private static final String ACADEMIC_CHAPTER_PATH = "evaluator/candidate_academicChapter.json";
@@ -148,7 +140,7 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
         "https://api.dev.nva.aws.unit.no/customer/cristinId/https%3A%2F%2Fapi"
         + ".dev.nva.aws.unit.no%2Fcristin%2Forganization%2F194.0.0.0");
     private final Context context = mock(Context.class);
-    public HttpResponse<String> notFoundResponse;
+    private HttpResponse<String> notFoundResponse;
     private HttpResponse<String> badResponse;
     private HttpResponse<String> okResponse;
     private S3Driver s3Driver;
@@ -696,7 +688,7 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldRejectAuthorsWithoutNameOrId() throws IOException {
+    void shouldRejectUnverifiedAuthorsWithoutName() throws IOException {
         // Define input data and mock external services
         var contributor =
                 ExpandedContributor.from(DEFAULT_VERIFIED_CONTRIBUTOR)
@@ -721,6 +713,41 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
 
         // Assert that publication is rejected
         assertThat(nonCandidate.publicationId(), is(equalTo(publication.id())));
+    }
+
+    @Test
+    void shouldAcceptVerifiedAuthorWithoutName() throws IOException {
+        // Define input data and mock external services
+        var contributor =
+            ExpandedContributor.from(DEFAULT_VERIFIED_CONTRIBUTOR)
+                               .withName(null)
+                               .build();
+        var publication =
+            ExpandedInputResourceGenerator.from(DEFAULT_INPUT_PUBLICATION)
+                                          .withContributors(List.of(contributor))
+                                          .build();
+        var fileUri =
+            s3Driver.insertFile(
+                UnixPath.of(publication.identifier().toString()),
+                publication.toJsonString());
+        mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
+
+        // Define expected response
+        var expectedCandidate =
+            getDefaultExpectedCandidateBuilder()
+                .withPublicationId(publication.id())
+                .withPublicationBucketUri(fileUri)
+                .build();
+        var expectedEvaluatedMessage =
+            CandidateEvaluatedMessage.builder().withCandidateType(expectedCandidate).build();
+
+        // Call handler and parse response
+        var event = createEvent(new PersistedResourceMessage(fileUri));
+        handler.handleRequest(event, context);
+        var messageBody = getMessageBody();
+
+        // Assert that publication is accepted and author is included
+        assertEquals(expectedEvaluatedMessage, messageBody);
     }
 
     @Test
