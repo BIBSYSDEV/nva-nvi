@@ -4,6 +4,7 @@ import static java.util.Objects.isNull;
 import static nva.commons.core.attempt.Try.attempt;
 import static nva.commons.core.ioutils.IoUtils.stringToStream;
 import com.fasterxml.jackson.databind.JsonNode;
+import java.io.StringWriter;
 import org.apache.jena.query.QueryExecution;
 import java.io.InputStream;
 import java.nio.file.Path;
@@ -33,6 +34,24 @@ public class GraphUtils {
         var model = ModelFactory.createDefaultModel();
         loadDataIntoModel(model, stringToStream(body.toString()));
         return model;
+    }
+
+    public static String toTurtle(Model model) {
+        StringWriter stringWriter = new StringWriter();
+        RDFDataMgr.write(stringWriter, model, Lang.TURTLE);
+        return stringWriter.toString();
+    }
+
+    public static String toNTriples(Model model) {
+        StringWriter stringWriter = new StringWriter();
+        RDFDataMgr.write(stringWriter, model, Lang.NTRIPLES);
+        return stringWriter.toString();
+    }
+
+    public static String toJsonLd(Model model) {
+        StringWriter stringWriter = new StringWriter();
+        RDFDataMgr.write(stringWriter, model, Lang.JSONLD);
+        return stringWriter.toString();
     }
 
     @JacocoGenerated

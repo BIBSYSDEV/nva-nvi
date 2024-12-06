@@ -180,12 +180,12 @@ class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                                                        periodRepository);
         candidate.updateApproval(
             new UpdateStatusRequest(institutionId, ApprovalStatus.APPROVED, randomString(), randomString()));
-        var approval = candidate.toDto().approvals().get(0);
+        var approval = candidate.toDto().approvals().getFirst();
         var newUpsertRequest = createNewUpsertRequestNotAffectingApprovals(upsertCandidateRequest, institutionId);
         Candidate.upsert(newUpsertRequest, candidateRepository, periodRepository);
         var updatedCandidate = Candidate.fetchByPublicationId(newUpsertRequest::publicationId, candidateRepository,
                                                               periodRepository);
-        var updatedApproval = updatedCandidate.toDto().approvals().get(0);
+        var updatedApproval = updatedCandidate.toDto().approvals().getFirst();
 
         assertThat(updatedApproval, is(equalTo(approval)));
     }
@@ -220,7 +220,7 @@ class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                                                                             creator.id(), randomUri(),
                                                                             randomBigDecimal())))))
                    .withDate(randomPublicationDate())
-                   .withVerifiedCreators(List.of(creator));
+                   .withNviCreators(List.of(creator));
     }
 
     private static Stream<CandidateEvaluatedMessage> invalidCandidateEvaluatedMessages() {
@@ -279,13 +279,13 @@ class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
 
     private UpsertCandidateRequest createNewUpsertRequestNotAffectingApprovals(UpsertCandidateRequest request,
                                                                                URI institutionId) {
-        var creatorId = request.creators().keySet().stream().toList().get(0);
+        var creatorId = request.creators().keySet().stream().toList().getFirst();
         var creator = new NviCreator(creatorId, List.of(institutionId));
         return getBuilder(request.publicationId(), request.publicationBucketUri(), creator)
                    .withInstanceType(request.instanceType())
                    .withLevel(request.level())
                    .withDate(new PublicationDate(null, "3", Year.now().toString()))
-                   .withVerifiedCreators(List.of(new NviCreator(creatorId, List.of(institutionId))))
+                   .withNviCreators(List.of(new NviCreator(creatorId, List.of(institutionId))))
                    .withInstitutionPoints(request.institutionPoints())
                    .build();
     }
