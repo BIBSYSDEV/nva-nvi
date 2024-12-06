@@ -45,6 +45,8 @@ public class CreatorVerificationUtil {
     private static final String CRISTIN_ID = "cristinId";
     private static final String VERIFIED = "Verified";
     private static final String API_HOST = new Environment().readEnv("API_HOST");
+    private static final String COUNTRY_CODE = "countryCode";
+    private static final String COUNTRY_CODE_NORWAY = "NO";
     private final AuthorizedBackendUriRetriever authorizedBackendUriRetriever;
     private final OrganizationRetriever organizationRetriever;
 
@@ -65,7 +67,7 @@ public class CreatorVerificationUtil {
 
     public List<UnverifiedNviCreator> getUnverifiedCreatorsWithNviInstitutions(JsonNode body) {
         return getJsonNodeStream(body, JSON_PTR_CONTRIBUTOR)
-                   .filter(x -> !isVerified(x))
+                   .filter(contributor -> !isVerified(contributor))
                    .filter(CreatorVerificationUtil::isCreator)
                    .filter(CreatorVerificationUtil::hasName)
                    .map(this::toUnverifiedNviCreator)
@@ -170,10 +172,10 @@ public class CreatorVerificationUtil {
     private boolean hasRelevantCountryCode(JsonNode jsonNode) {
         // We only need to check the affiliation if the country code is set to `NO` or missing.
         // Otherwise, we can skip it and not check if it is an NVI institution, saving us a network call.
-        if (!jsonNode.has("countryCode")) {
+        if (!jsonNode.has(COUNTRY_CODE)) {
             return true;
         }
-        return jsonNode.get("countryCode").asText().equalsIgnoreCase("NO");
+        return jsonNode.get(COUNTRY_CODE).asText().equalsIgnoreCase(COUNTRY_CODE_NORWAY);
     }
 
     private List<URI> getNviAffiliationUrisIfExist(JsonNode contributorNode) {
