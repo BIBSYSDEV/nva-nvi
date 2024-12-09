@@ -36,18 +36,21 @@ public class GraphUtils {
         return model;
     }
 
+    @JacocoGenerated
     public static String toTurtle(Model model) {
         StringWriter stringWriter = new StringWriter();
         RDFDataMgr.write(stringWriter, model, Lang.TURTLE);
         return stringWriter.toString();
     }
 
+    @JacocoGenerated
     public static String toNTriples(Model model) {
         StringWriter stringWriter = new StringWriter();
         RDFDataMgr.write(stringWriter, model, Lang.NTRIPLES);
         return stringWriter.toString();
     }
 
+    @JacocoGenerated
     public static String toJsonLd(Model model) {
         StringWriter stringWriter = new StringWriter();
         RDFDataMgr.write(stringWriter, model, Lang.JSONLD);

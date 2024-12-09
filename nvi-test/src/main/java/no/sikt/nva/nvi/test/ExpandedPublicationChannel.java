@@ -1,26 +1,19 @@
 package no.sikt.nva.nvi.test;
 
-import static no.sikt.nva.nvi.test.TestUtils.generatePublicationChannelId;
-import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
-import static no.unit.nva.testutils.RandomDataGenerator.randomString;
-
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.UUID.randomUUID;
-
+import static no.sikt.nva.nvi.test.TestUtils.generatePublicationChannelId;
+import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
+import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-
 import java.net.URI;
 import java.util.UUID;
+import nva.commons.core.JacocoGenerated;
 
-public record ExpandedPublicationChannel(
-    String type,
-    URI id,
-    String name,
-    String level,
-    Boolean valid,
-    String printIssn
-) {
+@JacocoGenerated
+public record ExpandedPublicationChannel(String type, URI id, String name, String level, Boolean valid,
+                                         String printIssn) {
 
     public static Builder builder() {
         return new Builder();
@@ -50,6 +43,7 @@ public record ExpandedPublicationChannel(
     }
 
     public static final class Builder {
+
         private final UUID identifier = randomUUID();
         private String type;
         private URI id;
@@ -58,7 +52,8 @@ public record ExpandedPublicationChannel(
         private Boolean valid;
         private String printIssn;
 
-        private Builder() {}
+        private Builder() {
+        }
 
         private Builder(ExpandedPublicationChannel other) {
             this.type = other.type();

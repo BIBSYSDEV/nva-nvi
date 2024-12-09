@@ -1,41 +1,29 @@
 package no.sikt.nva.nvi.test;
 
+import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
-
-import static java.util.Objects.isNull;
-import static java.util.Objects.nonNull;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-
-import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
-
-import nva.commons.core.ioutils.IoUtils;
-
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;
+import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
+import nva.commons.core.JacocoGenerated;
+import nva.commons.core.ioutils.IoUtils;
 
 /**
- * This generator is intended to create a JSON representation of an expanded resource, mirroring the
- * expected input documents from `nva-publication-api`.
+ * This is intended to create a JSON representation of an expanded resource, mirroring the expected input documents from
+ * `nva-publication-api`.
  */
-public record ExpandedInputResourceGenerator(
-        URI id,
-        UUID identifier,
-        String mainTitle,
-        String issn,
-        String publicationContextType,
-        List<ExpandedPublicationChannel> publicationChannels,
-        ExpandedPublicationDate publicationDate,
-        String instanceType,
-        String abstractText,
-        String language,
-        String status,
-        List<ExpandedContributor> contributors) {
+@JacocoGenerated
+public record ExpandedPublication(URI id, UUID identifier, String mainTitle, String issn, String publicationContextType,
+                                  List<ExpandedPublicationChannel> publicationChannels,
+                                  ExpandedPublicationDate publicationDate, String instanceType, String abstractText,
+                                  String language, String status, List<ExpandedContributor> contributors) {
 
     public static final String HARDCODED_NORWEGIAN_LABEL = "Hardcoded Norwegian label";
     public static final String HARDCODED_ENGLISH_LABEL = "Hardcoded English label";
@@ -44,12 +32,13 @@ public record ExpandedInputResourceGenerator(
     public static final String EN_FIELD = "en";
     private static final String TYPE = "type";
     private static final String TEMPLATE_JSON_PATH = "template_publication.json";
+    private static final String PUBLICATION_CHANNELS_MUST_NOT_BE_EMPTY = "Publication channels must not be empty";
 
     public static Builder builder() {
         return new Builder();
     }
 
-    public static Builder from(ExpandedInputResourceGenerator other) {
+    public static Builder from(ExpandedPublication other) {
         return new Builder(other);
     }
 
@@ -98,51 +87,49 @@ public record ExpandedInputResourceGenerator(
     }
 
     private JsonNode createExpandedResource() {
-        var root = objectMapper.createObjectNode();
         try (var content = IoUtils.inputStreamFromResources(TEMPLATE_JSON_PATH)) {
-            root = (ObjectNode) objectMapper.readTree(content);
+            var root = (ObjectNode) objectMapper.readTree(content);
+            root.put(TYPE, "Publication");
+            root.put("id", id.toString());
+            root.put("identifier", identifier.toString());
+            root.put("status", status);
+
+            root.set("entityDescription", createEntityDescriptionNode());
+            root.set("topLevelOrganizations", createTopLevelOrganizationsNode());
+
+            return root;
         } catch (Exception e) {
             throw new IllegalStateException("Template could not be read", e);
         }
-        root.put(TYPE, "Publication");
-        root.put("id", id.toString());
-        root.put("identifier", identifier.toString());
-        root.put("status", status);
-
-        root.set("entityDescription", createEntityDescriptionNode());
-        root.set("topLevelOrganizations", createTopLevelOrganizationsNode());
-
-        return root;
     }
 
     private JsonNode createTopLevelOrganizationsNode() {
         var topLevelOrganizations = objectMapper.createArrayNode();
         contributors.stream()
-                .map(ExpandedContributor::affiliationIds)
-                .flatMap(List::stream)
-                .distinct()
-                .map(URI::toString)
-                .map(ExpandedInputResourceGenerator::createOrganizationNode)
-                .forEach(topLevelOrganizations::add);
+                    .map(ExpandedContributor::affiliationIds)
+                    .flatMap(List::stream)
+                    .distinct()
+                    .map(URI::toString)
+                    .map(ExpandedPublication::createOrganizationNode)
+                    .forEach(topLevelOrganizations::add);
         return topLevelOrganizations;
     }
 
     private ObjectNode createReferenceNode() {
         var referenceNode = objectMapper.createObjectNode();
         referenceNode.put(TYPE, "Reference");
-        referenceNode.set(
-                "publicationInstance", createAndPopulatePublicationInstance(instanceType));
+        referenceNode.set("publicationInstance", createAndPopulatePublicationInstance(instanceType));
 
         var publicationContextNode = objectMapper.createObjectNode();
         if (publicationChannels.isEmpty()) {
-            throw new IllegalArgumentException("Publication channels must not be empty");
+            throw new IllegalArgumentException(PUBLICATION_CHANNELS_MUST_NOT_BE_EMPTY);
         } else if (publicationChannels.size() == 1) {
-            publicationContextNode = publicationChannels.getFirst().asObjectNode();
+            publicationContextNode = publicationChannels.getFirst()
+                                                        .asObjectNode();
         } else {
             publicationContextNode.put(TYPE, publicationContextType);
             for (ExpandedPublicationChannel publicationChannel : publicationChannels) {
-                publicationContextNode.set(
-                        publicationChannel.type(), publicationChannel.asObjectNode());
+                publicationContextNode.set(publicationChannel.type(), publicationChannel.asObjectNode());
             }
         }
         referenceNode.set("publicationContext", publicationContextNode);
@@ -168,8 +155,8 @@ public record ExpandedInputResourceGenerator(
     private ArrayNode createContributorsNode() {
         var contributorsNode = objectMapper.createArrayNode();
         contributors.stream()
-                .map(ExpandedContributor::asObjectNode)
-                .forEach(contributorsNode::add);
+                    .map(ExpandedContributor::asObjectNode)
+                    .forEach(contributorsNode::add);
         return contributorsNode;
     }
 
@@ -188,9 +175,10 @@ public record ExpandedInputResourceGenerator(
         private ExpandedPublicationDate publicationDate;
         private String issn;
 
-        private Builder() {}
+        private Builder() {
+        }
 
-        private Builder(ExpandedInputResourceGenerator other) {
+        private Builder(ExpandedPublication other) {
             this.id = other.id;
             this.identifier = other.identifier;
             this.mainTitle = other.mainTitle;
@@ -261,9 +249,9 @@ public record ExpandedInputResourceGenerator(
         }
 
         public Builder withPublicationDate(PublicationDate publicationDate) {
-            this.publicationDate =
-                    new ExpandedPublicationDate(
-                            publicationDate.year(), publicationDate.month(), publicationDate.day());
+            this.publicationDate = new ExpandedPublicationDate(publicationDate.year(),
+                                                               publicationDate.month(),
+                                                               publicationDate.day());
             return this;
         }
 
@@ -272,23 +260,22 @@ public record ExpandedInputResourceGenerator(
             return this;
         }
 
-        public ExpandedInputResourceGenerator build() {
+        public ExpandedPublication build() {
             if (isNull(id)) {
                 id = generatePublicationId(identifier);
             }
-            return new ExpandedInputResourceGenerator(
-                    id,
-                    identifier,
-                    mainTitle,
-                    issn,
-                    publicationContextType,
-                    publicationChannels,
-                    publicationDate,
-                    instanceType,
-                    abstractText,
-                    language,
-                    status,
-                    contributors);
+            return new ExpandedPublication(id,
+                                           identifier,
+                                           mainTitle,
+                                           issn,
+                                           publicationContextType,
+                                           publicationChannels,
+                                           publicationDate,
+                                           instanceType,
+                                           abstractText,
+                                           language,
+                                           status,
+                                           contributors);
         }
     }
 }

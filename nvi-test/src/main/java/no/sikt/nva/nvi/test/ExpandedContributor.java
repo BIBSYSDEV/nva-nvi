@@ -8,14 +8,11 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.net.URI;
 import java.util.List;
+import nva.commons.core.JacocoGenerated;
 
-public record ExpandedContributor(
-        URI id,
-        String verificationStatus,
-        String contributorName,
-        String role,
-        List<ExpandedAffiliation> affiliations,
-        String orcId) {
+@JacocoGenerated
+public record ExpandedContributor(URI id, String verificationStatus, String contributorName, String role,
+                                  List<ExpandedAffiliation> affiliations, String orcId) {
 
     private static final String TYPE = "type";
     private static final String NAME = "name";
@@ -58,20 +55,22 @@ public record ExpandedContributor(
     }
 
     public List<URI> affiliationIds() {
-        return affiliations.stream().map(ExpandedAffiliation::id).toList();
+        return affiliations.stream()
+                           .map(ExpandedAffiliation::id)
+                           .toList();
     }
 
     private ArrayNode createAndPopulateAffiliationsNode() {
         var affiliationsRootNode = objectMapper.createArrayNode();
 
         if (nonNull(affiliations)) {
-            affiliations.forEach(
-                    affiliation -> affiliationsRootNode.add(affiliation.asObjectNode()));
+            affiliations.forEach(affiliation -> affiliationsRootNode.add(affiliation.asObjectNode()));
         }
         return affiliationsRootNode;
     }
 
     public static final class Builder {
+
         private URI id = randomUri();
         private String contributorName = randomString();
         private String role = "Creator";
@@ -79,7 +78,8 @@ public record ExpandedContributor(
         private String orcId;
         private List<ExpandedAffiliation> affiliations;
 
-        private Builder() {}
+        private Builder() {
+        }
 
         private Builder(ExpandedContributor other) {
             this.id = other.id;
@@ -121,8 +121,7 @@ public record ExpandedContributor(
         }
 
         public ExpandedContributor build() {
-            return new ExpandedContributor(
-                    id, verificationStatus, contributorName, role, affiliations, orcId);
+            return new ExpandedContributor(id, verificationStatus, contributorName, role, affiliations, orcId);
         }
     }
 }

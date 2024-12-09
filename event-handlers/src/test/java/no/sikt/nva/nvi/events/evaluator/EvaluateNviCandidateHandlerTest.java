@@ -29,6 +29,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
+import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -39,9 +40,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
@@ -57,14 +60,13 @@ import no.sikt.nva.nvi.events.evaluator.model.PublicationChannel;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.NonNviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate;
-import no.sikt.nva.nvi.events.model.NviCandidate.Builder;
 import no.sikt.nva.nvi.events.model.NviCandidate.NviCreator;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.sikt.nva.nvi.events.model.PublicationDate;
 import no.sikt.nva.nvi.events.model.UnverifiedNviCreator;
 import no.sikt.nva.nvi.test.ExpandedAffiliation;
 import no.sikt.nva.nvi.test.ExpandedContributor;
-import no.sikt.nva.nvi.test.ExpandedInputResourceGenerator;
+import no.sikt.nva.nvi.test.ExpandedPublication;
 import no.sikt.nva.nvi.test.ExpandedPublicationChannel;
 import no.sikt.nva.nvi.test.ExpandedPublicationDate;
 import no.sikt.nva.nvi.test.FakeSqsClient;
@@ -81,7 +83,10 @@ import nva.commons.core.ioutils.IoUtils;
 import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
 import nva.commons.logutils.LogUtils;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 // Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
@@ -117,25 +122,8 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
         "https://api.dev.nva.aws.unit.no/cristin/organization/194.0.0.0");
     private static final URI CRISTIN_NVI_ORG_SUB_UNIT_ID = URI.create(
         "https://api.dev.nva.aws.unit.no/cristin/organization/194.64.20.0");
-    private static final ExpandedPublicationChannel DEFAULT_PUBLICATION_CHANNEL =
-            ExpandedPublicationChannel.builder()
-                    .withId(HARDCODED_PUBLICATION_CHANNEL_ID)
-                    .withType(JOURNAL.getValue())
-                    .withLevel(Level.LEVEL_ONE.getValue())
-                    .build();
     private static final ExpandedAffiliation DEFAULT_SUBUNIT_AFFILIATION =
             ExpandedAffiliation.builder().withId(CRISTIN_NVI_ORG_SUB_UNIT_ID).build();
-    private static final ExpandedContributor DEFAULT_VERIFIED_CONTRIBUTOR =
-            ExpandedContributor.builder()
-                               .withVerificationStatus("Verified")
-                               .withAffiliations(List.of(DEFAULT_SUBUNIT_AFFILIATION))
-                               .build();
-    private static final ExpandedInputResourceGenerator DEFAULT_INPUT_PUBLICATION =
-            ExpandedInputResourceGenerator.builder()
-                    .withPublicationDate(HARDCODED_JSON_PUBLICATION_DATE)
-                    .withPublicationChannels(List.of(DEFAULT_PUBLICATION_CHANNEL))
-                    .withContributors(List.of(DEFAULT_VERIFIED_CONTRIBUTOR))
-                    .build();
     private static final URI CUSTOMER_API_CRISTIN_NVI_ORG_TOP_LEVEL = URI.create(
         "https://api.dev.nva.aws.unit.no/customer/cristinId/https%3A%2F%2Fapi"
         + ".dev.nva.aws.unit.no%2Fcristin%2Forganization%2F194.0.0.0");
@@ -351,7 +339,8 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
         var candidate = (NviCandidate) messageBody.candidate();
         assertThat(candidate.institutionPoints(), notNullValue());
         assertThat(candidate.getPointsForInstitution(CRISTIN_NVI_ORG_TOP_LEVEL_ID),
-                   is(equalTo(BigDecimal.valueOf(1).setScale(4, RoundingMode.HALF_UP))));
+                   is(equalTo(BigDecimal.valueOf(1)
+                                        .setScale(4, ROUNDING_MODE))));
     }
 
     @Test
@@ -553,201 +542,24 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
         assertThat(candidate.publicationBucketUri(), is(equalTo(fileUri)));
     }
 
-    @Test
-    void shouldIdentifyCandidateWithUnverifiedNviCreators() throws IOException {
-        // Define input data and mock external services
-        var unverifiedContributor =
-            ExpandedContributor.from(DEFAULT_VERIFIED_CONTRIBUTOR)
-                               .withId(null)
-                               .withVerificationStatus(null)
-                               .build();
-        var publication =
-            ExpandedInputResourceGenerator.from(DEFAULT_INPUT_PUBLICATION)
-                                          .withContributors(List.of(unverifiedContributor))
-                                          .build();
-        var fileUri =
-            s3Driver.insertFile(
-                UnixPath.of(publication.identifier().toString()),
-                publication.toJsonString());
-        mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-
-        // Define expected response
-        var unverifiedNviCreators =
-            List.of(
-                new UnverifiedNviCreator(
-                    unverifiedContributor.contributorName(),
-                    unverifiedContributor.affiliationIds()));
-
+    private static CandidateEvaluatedMessage getExpectedEvaluatedMessage(
+            InstanceType instanceType,
+            BigDecimal points,
+            URI bucketUri,
+            PublicationChannel publicationChannel,
+            BigDecimal basePoints,
+            BigDecimal totalPoints) {
+        var institutionPoints = Map.of(CRISTIN_NVI_ORG_TOP_LEVEL_ID, points.setScale(SCALE, ROUNDING_MODE));
         var expectedCandidate =
-            getDefaultExpectedCandidateBuilder()
-                .withPublicationId(publication.id())
-                .withPublicationBucketUri(fileUri)
-                .withInstitutionPoints(emptyList())
-                .withTotalPoints(ZERO)
-                .withNviCreators(emptyList())
-                .withUnverifiedNviCreators(unverifiedNviCreators)
-                .build();
-        var expectedEvaluatedMessage =
-            CandidateEvaluatedMessage.builder().withCandidateType(expectedCandidate).build();
-
-        // Call handler and parse response
-        var event = createEvent(new PersistedResourceMessage(fileUri));
-        handler.handleRequest(event, context);
-        var messageBody = getMessageBody();
-
-        // Assert that response matches exactly what we expect
-        assertEquals(expectedEvaluatedMessage, messageBody);
-    }
-
-    @Test
-    void shouldExcludeUnverifiedCreatorsFromInstitutionPoints() throws IOException {
-        // Define input data and mock external services
-        var unverifiedContributor =
-                ExpandedContributor.from(DEFAULT_VERIFIED_CONTRIBUTOR)
-                                   .withId(null)
-                                   .withVerificationStatus(null)
-                                   .build();
-        var contributors = List.of(DEFAULT_VERIFIED_CONTRIBUTOR, unverifiedContributor);
-        var publication =
-                ExpandedInputResourceGenerator.from(DEFAULT_INPUT_PUBLICATION)
-                        .withContributors(contributors)
-                        .build();
-        var fileUri =
-                s3Driver.insertFile(
-                        UnixPath.of(publication.identifier().toString()),
-                        publication.toJsonString());
-        mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-
-        // Define expected response
-        var expectedTotalPoints = BigDecimal.valueOf(0.7071).setScale(SCALE, ROUNDING_MODE);
-        var expectedPointsPerInstitution =
-                institutionPointsMapToList(
-                        Map.of(CRISTIN_NVI_ORG_TOP_LEVEL_ID, expectedTotalPoints));
-        var unverifiedNviCreators =
-                List.of(
-                        new UnverifiedNviCreator(
-                                unverifiedContributor.contributorName(),
-                                unverifiedContributor.affiliationIds()));
-
-        var expectedCandidate =
-                getDefaultExpectedCandidateBuilder()
-                        .withPublicationId(publication.id())
-                        .withPublicationBucketUri(fileUri)
-                        .withCreatorShareCount(2)
-                        .withInstitutionPoints(expectedPointsPerInstitution)
-                        .withTotalPoints(expectedTotalPoints)
-                        .withUnverifiedNviCreators(unverifiedNviCreators)
-                        .build();
-        var expectedEvaluatedMessage =
-                CandidateEvaluatedMessage.builder().withCandidateType(expectedCandidate).build();
-
-        // Call handler and parse response
-        var event = createEvent(new PersistedResourceMessage(fileUri));
-        handler.handleRequest(event, context);
-        var messageBody = getMessageBody();
-
-        // Assert that response matches exactly what we expect
-        assertEquals(expectedEvaluatedMessage, messageBody);
-    }
-
-    @Test
-    void shouldIdentifyCandidateWithMissingCountryCode() throws IOException {
-        // Define input data and mock external services
-        var affiliation =
-                ExpandedAffiliation.from(DEFAULT_SUBUNIT_AFFILIATION).withCountryCode(null).build();
-        var contributor =
-                ExpandedContributor.from(DEFAULT_VERIFIED_CONTRIBUTOR)
-                                   .withAffiliations(List.of(affiliation))
-                                   .build();
-        var publication =
-                ExpandedInputResourceGenerator.from(DEFAULT_INPUT_PUBLICATION)
-                        .withContributors(List.of(contributor))
-                        .build();
-        var fileUri =
-                s3Driver.insertFile(
-                        UnixPath.of(publication.identifier().toString()),
-                        publication.toJsonString());
-        mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-
-        // Define expected response
-        var expectedCandidate =
-                getDefaultExpectedCandidateBuilder()
-                        .withPublicationId(publication.id())
-                        .withPublicationBucketUri(fileUri)
-                        .build();
-        var expectedEvaluatedMessage =
-                CandidateEvaluatedMessage.builder().withCandidateType(expectedCandidate).build();
-
-        // Call handler and parse response
-        var event = createEvent(new PersistedResourceMessage(fileUri));
-        handler.handleRequest(event, context);
-        var messageBody = getMessageBody();
-
-        // Assert that response matches exactly what we expect
-        assertEquals(expectedEvaluatedMessage, messageBody);
-    }
-
-    @Test
-    void shouldRejectUnverifiedAuthorsWithoutName() throws IOException {
-        // Define input data and mock external services
-        var contributor =
-                ExpandedContributor.from(DEFAULT_VERIFIED_CONTRIBUTOR)
-                        .withName(null)
-                        .withId(null)
-                        .withVerificationStatus(null)
-                        .build();
-        var publication =
-                ExpandedInputResourceGenerator.from(DEFAULT_INPUT_PUBLICATION)
-                        .withContributors(List.of(contributor))
-                        .build();
-        var fileUri =
-                s3Driver.insertFile(
-                        UnixPath.of(publication.identifier().toString()),
-                        publication.toJsonString());
-        mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-
-        // Call handler and parse response
-        var event = createEvent(new PersistedResourceMessage(fileUri));
-        handler.handleRequest(event, context);
-        var nonCandidate = (NonNviCandidate) getMessageBody().candidate();
-
-        // Assert that publication is rejected
-        assertThat(nonCandidate.publicationId(), is(equalTo(publication.id())));
-    }
-
-    @Test
-    void shouldAcceptVerifiedAuthorWithoutName() throws IOException {
-        // Define input data and mock external services
-        var contributor =
-            ExpandedContributor.from(DEFAULT_VERIFIED_CONTRIBUTOR)
-                               .withName(null)
-                               .build();
-        var publication =
-            ExpandedInputResourceGenerator.from(DEFAULT_INPUT_PUBLICATION)
-                                          .withContributors(List.of(contributor))
-                                          .build();
-        var fileUri =
-            s3Driver.insertFile(
-                UnixPath.of(publication.identifier().toString()),
-                publication.toJsonString());
-        mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-
-        // Define expected response
-        var expectedCandidate =
-            getDefaultExpectedCandidateBuilder()
-                .withPublicationId(publication.id())
-                .withPublicationBucketUri(fileUri)
-                .build();
-        var expectedEvaluatedMessage =
-            CandidateEvaluatedMessage.builder().withCandidateType(expectedCandidate).build();
-
-        // Call handler and parse response
-        var event = createEvent(new PersistedResourceMessage(fileUri));
-        handler.handleRequest(event, context);
-        var messageBody = getMessageBody();
-
-        // Assert that publication is accepted and author is included
-        assertEquals(expectedEvaluatedMessage, messageBody);
+                createExpectedCandidate(
+                        instanceType,
+                        institutionPoints,
+                        publicationChannel,
+                        Level.LEVEL_ONE.getValue(),
+                        basePoints,
+                        totalPoints,
+                        bucketUri);
+        return CandidateEvaluatedMessage.builder().withCandidateType(expectedCandidate).build();
     }
 
     @Test
@@ -793,25 +605,262 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
         }
     }
 
-    private static CandidateEvaluatedMessage getExpectedEvaluatedMessage(
-            InstanceType instanceType,
-            BigDecimal points,
-            URI bucketUri,
-            PublicationChannel publicationChannel,
-            BigDecimal basePoints,
-            BigDecimal totalPoints) {
-        var institutionPoints =
-                Map.of(CRISTIN_NVI_ORG_TOP_LEVEL_ID, points.setScale(SCALE, RoundingMode.HALF_UP));
-        var expectedCandidate =
-                createExpectedCandidate(
-                        instanceType,
-                        institutionPoints,
-                        publicationChannel,
-                        Level.LEVEL_ONE.getValue(),
-                        basePoints,
-                        totalPoints,
-                        bucketUri);
-        return CandidateEvaluatedMessage.builder().withCandidateType(expectedCandidate).build();
+    @Nested
+    @DisplayName("Test cases with dynamic test data")
+    class evaluateNviCandidatesWithDynamicTestData {
+
+        // Builders and variables that may be modified for each test case
+        ExpandedContributor.Builder defaultVerifiedContributor;
+        ExpandedContributor.Builder defaultUnverifiedContributor;
+        List<ExpandedContributor.Builder> verifiedContributors;
+        List<ExpandedContributor.Builder> unverifiedContributors;
+        int creatorShareCount;
+
+        URI publicationChannelId;
+        PublicationChannel publicationChannelType;
+        Level publicationChannelLevel;
+        List<ExpandedPublicationChannel.Builder> publicationChannels;
+
+        InstanceType publicationInstanceType;
+        ExpandedPublication.Builder publicationBuilder;
+
+        BigDecimal expectedTotalPoints;
+        List<InstitutionPoints> expectedPointsPerInstitution;
+        NviCandidate.Builder expectedCandidateBuilder;
+
+        // Derived data and references, initialized automatically for each test case
+        SQSEvent event;
+        URI fileUri;
+        List<ExpandedContributor> allContributors;
+        ExpandedPublication publication;
+
+        @BeforeEach
+        void setup() {
+            // Initialize default values for all test data
+            defaultVerifiedContributor = ExpandedContributor.builder()
+                                                            .withVerificationStatus("Verified")
+                                                            .withAffiliations(List.of(DEFAULT_SUBUNIT_AFFILIATION));
+            defaultUnverifiedContributor = ExpandedContributor.builder()
+                                                              .withId(null)
+                                                              .withVerificationStatus(null)
+                                                              .withAffiliations(List.of(DEFAULT_SUBUNIT_AFFILIATION));
+            verifiedContributors = List.of(defaultVerifiedContributor);
+            unverifiedContributors = Collections.emptyList();
+            creatorShareCount = 1;
+
+            publicationChannelId = HARDCODED_PUBLICATION_CHANNEL_ID;
+            publicationChannelType = JOURNAL;
+            publicationChannelLevel = Level.LEVEL_ONE;
+            publicationInstanceType = InstanceType.ACADEMIC_ARTICLE;
+            publicationChannels = List.of(getDefaultPublicationChannelBuilder());
+
+            publicationBuilder = ExpandedPublication.builder()
+                                                    .withPublicationDate(HARDCODED_JSON_PUBLICATION_DATE);
+
+            expectedTotalPoints = ONE.setScale(SCALE, ROUNDING_MODE);
+            expectedPointsPerInstitution = List.of(new InstitutionPoints(CRISTIN_NVI_ORG_TOP_LEVEL_ID,
+                                                                         expectedTotalPoints,
+                                                                         List.of(new CreatorAffiliationPoints(
+                                                                             defaultVerifiedContributor.build()
+                                                                                                       .id(),
+                                                                             CRISTIN_NVI_ORG_SUB_UNIT_ID,
+                                                                             expectedTotalPoints))));
+
+            expectedCandidateBuilder = NviCandidate.builder()
+                                                   .withIsInternationalCollaboration(false)
+                                                   .withCollaborationFactor(ONE.setScale(1, ROUNDING_MODE))
+                                                   .withBasePoints(ONE);
+        }
+
+        @AfterEach
+        void cleanUp() {
+            event = null;
+            fileUri = null;
+            allContributors = null;
+            publication = null;
+        }
+
+        @Test
+        void shouldIdentifyCandidateWithOnlyVerifiedNviCreators() throws IOException {
+            var expectedEvaluatedMessage = getAcceptedCandidateResponse();
+
+            handler.handleRequest(event, context);
+            var messageBody = getMessageBody();
+
+            assertEquals(expectedEvaluatedMessage, messageBody);
+        }
+
+        @Test
+        void shouldIdentifyCandidateWithOnlyUnverifiedNviCreators() throws IOException {
+            verifiedContributors = Collections.emptyList();
+            unverifiedContributors = List.of(defaultUnverifiedContributor);
+            expectedTotalPoints = ZERO;
+            expectedPointsPerInstitution = emptyList();
+            var expectedEvaluatedMessage = getAcceptedCandidateResponse();
+
+            handler.handleRequest(event, context);
+            var messageBody = getMessageBody();
+
+            assertEquals(expectedEvaluatedMessage, messageBody);
+        }
+
+        @Test
+        void shouldIdentifyCandidateWithBothVerifiedAndUnverifiedNviCreators() throws IOException {
+            unverifiedContributors = List.of(defaultUnverifiedContributor);
+            expectedTotalPoints = BigDecimal.valueOf(0.7071)
+                                            .setScale(SCALE, ROUNDING_MODE);
+            expectedPointsPerInstitution = List.of(new InstitutionPoints(CRISTIN_NVI_ORG_TOP_LEVEL_ID,
+                                                                         expectedTotalPoints,
+                                                                         List.of(new CreatorAffiliationPoints(
+                                                                             defaultVerifiedContributor.build()
+                                                                                                       .id(),
+                                                                             CRISTIN_NVI_ORG_SUB_UNIT_ID,
+                                                                             expectedTotalPoints))));
+            creatorShareCount = 2;
+            var expectedEvaluatedMessage = getAcceptedCandidateResponse();
+
+            handler.handleRequest(event, context);
+            var messageBody = getMessageBody();
+
+            assertEquals(expectedEvaluatedMessage, messageBody);
+        }
+
+        @Test
+        void shouldIdentifyCandidateWithUnnamedVerifiedAuthor() throws IOException {
+            var verifiedContributor = defaultVerifiedContributor.withName(null);
+            verifiedContributors = List.of(verifiedContributor);
+            var expectedEvaluatedMessage = getAcceptedCandidateResponse();
+
+            handler.handleRequest(event, context);
+            var messageBody = getMessageBody();
+
+            assertEquals(expectedEvaluatedMessage, messageBody);
+        }
+
+        @Test
+        void shouldIdentifyCandidateWithMissingCountryCode() throws IOException {
+            var affiliations = List.of(ExpandedAffiliation.builder()
+                                                          .withId(CRISTIN_NVI_ORG_SUB_UNIT_ID)
+                                                          .withCountryCode(null)
+                                                          .build());
+            var contributor = defaultVerifiedContributor.withAffiliations(affiliations);
+            verifiedContributors = List.of(contributor);
+            var expectedEvaluatedMessage = getAcceptedCandidateResponse();
+
+            handler.handleRequest(event, context);
+            var messageBody = getMessageBody();
+
+            assertEquals(expectedEvaluatedMessage, messageBody);
+        }
+
+        @Test
+        void shouldRejectCandidateWithSwedishCountryCode() throws IOException {
+            var affiliations = List.of(ExpandedAffiliation.builder()
+                                                          .withCountryCode("SE")
+                                                          .build());
+            var swedishContributor = defaultVerifiedContributor.withAffiliations(affiliations);
+            verifiedContributors = List.of(swedishContributor);
+            var expectedEvaluatedMessage = getRejectedCandidateResponse();
+
+            handler.handleRequest(event, context);
+            var messageBody = getMessageBody();
+
+            assertEquals(expectedEvaluatedMessage, messageBody);
+        }
+
+        @Test
+        void shouldRejectUnverifiedAuthorsWithoutName() throws IOException {
+            var unnamedContributor = defaultUnverifiedContributor.withName(null);
+            verifiedContributors = Collections.emptyList();
+            unverifiedContributors = List.of(unnamedContributor);
+            var expectedEvaluatedMessage = getRejectedCandidateResponse();
+
+            handler.handleRequest(event, context);
+            var messageBody = getMessageBody();
+
+            assertEquals(expectedEvaluatedMessage, messageBody);
+        }
+
+        private static PublicationDate getPublicationDate(ExpandedPublicationDate publicationDate) {
+            return new PublicationDate(publicationDate.day(), publicationDate.month(), publicationDate.year());
+        }
+
+        private ExpandedPublicationChannel.Builder getDefaultPublicationChannelBuilder() {
+            return ExpandedPublicationChannel.builder()
+                                             .withId(publicationChannelId)
+                                             .withType(publicationChannelType.getValue())
+                                             .withLevel(publicationChannelLevel.getValue());
+        }
+
+        private void buildExpectedPublication() throws IOException {
+            // Generate test data based on the current state of the builders,
+            // after the test case has made any necessary changes to the default values.
+            allContributors = Stream.concat(verifiedContributors.stream(), unverifiedContributors.stream())
+                                    .map(ExpandedContributor.Builder::build)
+                                    .toList();
+            publication = publicationBuilder.withInstanceType(publicationInstanceType.getValue())
+                                            .withPublicationChannels(publicationChannels.stream()
+                                                                                        .map(ExpandedPublicationChannel.Builder::build)
+                                                                                        .toList())
+                                            .withContributors(allContributors)
+                                            .build();
+
+            fileUri = addPublicationToS3(publication);
+            event = createEvent(new PersistedResourceMessage(fileUri));
+            mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
+        }
+
+        private List<NviCreator> getVerifiedNviCreators() {
+            return verifiedContributors.stream()
+                                       .map(ExpandedContributor.Builder::build)
+                                       .map(contributor -> new NviCreator(contributor.id(),
+                                                                          contributor.affiliationIds()))
+                                       .toList();
+        }
+
+        private List<UnverifiedNviCreator> getUnverifiedNviCreators() {
+            return unverifiedContributors.stream()
+                                         .map(ExpandedContributor.Builder::build)
+                                         .map(contributor -> new UnverifiedNviCreator(contributor.contributorName(),
+                                                                                      contributor.affiliationIds()))
+                                         .toList();
+        }
+
+        private CandidateEvaluatedMessage getAcceptedCandidateResponse() throws IOException {
+            buildExpectedPublication();
+            var publicationDate = getPublicationDate(publication.publicationDate());
+            var verifiedCreators = getVerifiedNviCreators();
+            var unverifiedNviCreators = getUnverifiedNviCreators();
+            var expectedCandidate = expectedCandidateBuilder.withPublicationId(publication.id())
+                                                            .withPublicationBucketUri(fileUri)
+                                                            .withDate(publicationDate)
+                                                            .withInstanceType(InstanceType.parse(publication.instanceType()))
+                                                            .withChannelType(publicationChannelType.getValue())
+                                                            .withPublicationChannelId(publicationChannelId)
+                                                            .withLevel(publicationChannelLevel.getValue())
+                                                            .withInstitutionPoints(expectedPointsPerInstitution)
+                                                            .withTotalPoints(expectedTotalPoints)
+                                                            .withNviCreators(verifiedCreators)
+                                                            .withUnverifiedNviCreators(unverifiedNviCreators)
+                                                            .withCreatorShareCount(creatorShareCount)
+                                                            .build();
+            return CandidateEvaluatedMessage.builder()
+                                            .withCandidateType(expectedCandidate)
+                                            .build();
+        }
+
+        private CandidateEvaluatedMessage getRejectedCandidateResponse() throws IOException {
+            buildExpectedPublication();
+            var rejectedCandidate = new NonNviCandidate(publication.id());
+            return CandidateEvaluatedMessage.builder()
+                                            .withCandidateType(rejectedCandidate)
+                                            .build();
+        }
+
+        private URI addPublicationToS3(ExpandedPublication publication) throws IOException {
+            return s3Driver.insertFile(UnixPath.of(publication.identifier()
+                                                              .toString()), publication.toJsonString());
+        }
     }
 
     private static NviCandidate createExpectedCandidate(InstanceType instanceType,
@@ -843,49 +892,6 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
                                               .toList())
                    .withTotalPoints(totalPoints)
                    .build();
-    }
-
-    private static Builder getDefaultExpectedCandidateBuilder() {
-        var verifiedCreators =
-                List.of(
-                        new NviCreator(
-                                DEFAULT_VERIFIED_CONTRIBUTOR.id(),
-                                DEFAULT_VERIFIED_CONTRIBUTOR.affiliationIds()));
-        var expectedTotalPoints = ONE.setScale(SCALE, ROUNDING_MODE);
-        var expectedPointsPerInstitution =
-                institutionPointsMapToList(
-                        Map.of(CRISTIN_NVI_ORG_TOP_LEVEL_ID, expectedTotalPoints));
-        return NviCandidate.builder()
-                .withPublicationId(HARDCODED_PUBLICATION_ID)
-                .withDate(HARDCODED_PUBLICATION_DATE)
-                .withInstanceType(InstanceType.ACADEMIC_ARTICLE)
-                .withChannelType(JOURNAL.getValue())
-                .withLevel(Level.LEVEL_ONE.getValue())
-                .withCreatorShareCount(1)
-                .withBasePoints(ONE)
-                .withTotalPoints(expectedTotalPoints)
-                .withInstitutionPoints(expectedPointsPerInstitution)
-                .withPublicationChannelId(HARDCODED_PUBLICATION_CHANNEL_ID)
-                .withIsInternationalCollaboration(false)
-                .withCollaborationFactor(ONE.setScale(1, ROUNDING_MODE))
-                .withCreatorShareCount(countCreatorShares(verifiedCreators))
-                .withNviCreators(verifiedCreators);
-    }
-
-    private static List<InstitutionPoints> institutionPointsMapToList(
-            Map<URI, BigDecimal> institutionPoints) {
-        return institutionPoints.entrySet().stream()
-                .map(
-                        entry ->
-                                new InstitutionPoints(
-                                        entry.getKey(),
-                                        entry.getValue(),
-                                        List.of(
-                                                new CreatorAffiliationPoints(
-                                                        DEFAULT_VERIFIED_CONTRIBUTOR.id(),
-                                                        CRISTIN_NVI_ORG_SUB_UNIT_ID,
-                                                        entry.getValue()))))
-                .toList();
     }
 
     private static int countCreatorShares(List<NviCreator> nviCreators) {
