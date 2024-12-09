@@ -442,10 +442,15 @@ public final class Candidate {
 
     private static boolean shouldResetCandidate(UpsertCandidateRequest request, Candidate candidate) {
         return levelIsUpdated(request, candidate)
+               || publicationChannelIsUpdated(request, candidate)
                || instanceTypeIsUpdated(request, candidate)
                || creatorsAreUpdated(request, candidate)
                || pointsAreUpdated(request, candidate)
                || publicationYearIsUpdated(request, candidate);
+    }
+
+    private static boolean publicationChannelIsUpdated(UpsertCandidateRequest request, Candidate candidate) {
+        return !request.publicationChannelId().equals(candidate.getPublicationChannelId());
     }
 
     private static boolean publicationYearIsUpdated(UpsertCandidateRequest request, Candidate candidate) {
