@@ -556,12 +556,7 @@ class CandidateTest extends LocalDynamoTest {
         assertNotEquals(dao.version(), updatedDao.version());
     }
 
-    private static Stream<Arguments> candidateNotResetCauseProvider() {
-        return Stream.of(Arguments.of(Named.of("creator name changed",
-                                               null),
-                                      Arguments.of(Named.of("creator sub unit affiliation changed",
-                                                            null))));
-    }
+
 
     private static Stream<Arguments> candidateResetCauseProvider() {
         var defaultInstitutionPoints = List.of(new InstitutionPoints(HARDCODED_INSTITUTION_ID, DEFAULT_POINTS,
@@ -839,7 +834,7 @@ class CandidateTest extends LocalDynamoTest {
 
             @Override
             public URI publicationChannelId() {
-                return null;
+                return request.publicationChannelId();
             }
 
             @Override
