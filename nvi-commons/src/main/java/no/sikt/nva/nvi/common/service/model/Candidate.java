@@ -379,6 +379,10 @@ public final class Candidate {
             .orElseThrow(CandidateNotFoundException::new);
     }
 
+    public String getInstanceType() {
+        return publicationDetails.type();
+    }
+
     private static CandidateDao updateVersion(CandidateRepository candidateRepository, CandidateDao candidateDao) {
         var candidateWithNewVersion = candidateDao.copy().version(randomUUID().toString()).build();
         candidateRepository.updateCandidate(candidateWithNewVersion);

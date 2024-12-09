@@ -435,6 +435,32 @@ class CandidateTest extends LocalDynamoTest {
     }
 
     @Test
+    void shouldNotResetApprovalsWhenCreatorAffiliationChangesWithinSameInstitution() {
+        var upsertCandidateRequest = getUpsertCandidateRequestWithHardcodedValues();
+        var candidate = upsert(upsertCandidateRequest);
+        candidate.updateApproval(
+            new UpdateStatusRequest(HARDCODED_INSTITUTION_ID, ApprovalStatus.APPROVED, randomString(), randomString()));
+        var approval = candidate.toDto().approvals().getFirst();
+        var newUpsertRequest = createUpsertCandidateRequest(candidate.getPublicationId(),
+                                                            candidate.getPublicationDetails().publicationBucketUri(),
+                                                            true,
+                                                            candidate.getPublicationDetails().publicationDate(),
+                                                            Map.of(CandidateTest.HARDCODED_CREATOR_ID, List.of(
+                                                                CandidateTest.HARDCODED_INSTITUTION_ID)),
+                                                            InstanceType.parse(candidate.getInstanceType()),
+                                                            candidate.getPublicationChannelType().getValue(),
+                                                            candidate.getPublicationChannelId(),
+                                                            candidate.getScientificLevel(),
+                                                            candidate.getInstitutionPoints(),
+                                                            randomInteger(), false,
+                                                            randomBigDecimal(), null, randomBigDecimal());
+        var updatedCandidate = upsert(newUpsertRequest);
+        var updatedApproval = updatedCandidate.getApprovals().get(HARDCODED_INSTITUTION_ID);
+
+        assertThat(updatedApproval, is(equalTo(approval)));
+    }
+
+    @Test
     void shouldNotResetApprovalsWhenUpsertRequestContainsSameDecimalsWithAnotherScale() {
         var institutionId = randomUri();
         var upsertCandidateRequest = createUpsertRequestWithDecimalScale(0, institutionId);
@@ -555,8 +581,6 @@ class CandidateTest extends LocalDynamoTest {
         assertEquals(candidate, updatedCandidate);
         assertNotEquals(dao.version(), updatedDao.version());
     }
-
-
 
     private static Stream<Arguments> candidateResetCauseProvider() {
         var defaultInstitutionPoints = List.of(new InstitutionPoints(HARDCODED_INSTITUTION_ID, DEFAULT_POINTS,
