@@ -33,6 +33,7 @@ public record ExpandedPublication(URI id, UUID identifier, String mainTitle, Str
     private static final String TYPE = "type";
     private static final String TEMPLATE_JSON_PATH = "template_publication.json";
     private static final String PUBLICATION_CHANNELS_MUST_NOT_BE_EMPTY = "Publication channels must not be empty";
+    private static final int ONE = 1;
 
     public static Builder builder() {
         return new Builder();
@@ -123,7 +124,7 @@ public record ExpandedPublication(URI id, UUID identifier, String mainTitle, Str
         var publicationContextNode = objectMapper.createObjectNode();
         if (publicationChannels.isEmpty()) {
             throw new IllegalArgumentException(PUBLICATION_CHANNELS_MUST_NOT_BE_EMPTY);
-        } else if (publicationChannels.size() == 1) {
+        } else if (publicationChannels.size() == ONE) {
             publicationContextNode = publicationChannels.getFirst()
                                                         .asObjectNode();
         } else {

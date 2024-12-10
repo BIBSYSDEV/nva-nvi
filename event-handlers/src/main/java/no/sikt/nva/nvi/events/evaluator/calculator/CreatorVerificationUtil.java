@@ -169,13 +169,15 @@ public class CreatorVerificationUtil {
                    .toList();
     }
 
+    private static boolean hasCountryCodeNorway(JsonNode jsonNode) {
+        return COUNTRY_CODE_NORWAY.equalsIgnoreCase(jsonNode.get(COUNTRY_CODE)
+                                                            .asText());
+    }
+
     private boolean hasRelevantCountryCode(JsonNode jsonNode) {
         // We only need to check the affiliation if the country code is set to `NO` or missing.
         // Otherwise, we can skip it and not check if it is an NVI institution, saving us a network call.
-        if (!jsonNode.has(COUNTRY_CODE)) {
-            return true;
-        }
-        return jsonNode.get(COUNTRY_CODE).asText().equalsIgnoreCase(COUNTRY_CODE_NORWAY);
+        return !jsonNode.has(COUNTRY_CODE) || hasCountryCodeNorway(jsonNode);
     }
 
     private List<URI> getNviAffiliationUrisIfExist(JsonNode contributorNode) {

@@ -40,7 +40,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -83,7 +82,6 @@ import nva.commons.core.ioutils.IoUtils;
 import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
 import nva.commons.logutils.LogUtils;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -628,12 +626,6 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
         List<InstitutionPoints> expectedPointsPerInstitution;
         NviCandidate.Builder expectedCandidateBuilder;
 
-        // Derived data and references, initialized automatically for each test case
-        SQSEvent event;
-        URI fileUri;
-        List<ExpandedContributor> allContributors;
-        ExpandedPublication publication;
-
         @BeforeEach
         void setup() {
             // Initialize default values for all test data
@@ -645,7 +637,7 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
                                                               .withVerificationStatus(null)
                                                               .withAffiliations(List.of(DEFAULT_SUBUNIT_AFFILIATION));
             verifiedContributors = List.of(defaultVerifiedContributor);
-            unverifiedContributors = Collections.emptyList();
+            unverifiedContributors = emptyList();
             creatorShareCount = 1;
 
             publicationChannelId = HARDCODED_PUBLICATION_CHANNEL_ID;
@@ -658,13 +650,16 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
                                                     .withPublicationDate(HARDCODED_JSON_PUBLICATION_DATE);
 
             expectedTotalPoints = ONE.setScale(SCALE, ROUNDING_MODE);
-            expectedPointsPerInstitution = List.of(new InstitutionPoints(CRISTIN_NVI_ORG_TOP_LEVEL_ID,
-                                                                         expectedTotalPoints,
-                                                                         List.of(new CreatorAffiliationPoints(
-                                                                             defaultVerifiedContributor.build()
-                                                                                                       .id(),
-                                                                             CRISTIN_NVI_ORG_SUB_UNIT_ID,
-                                                                             expectedTotalPoints))));
+            expectedPointsPerInstitution =
+                    List.of(
+                            new InstitutionPoints(
+                                    CRISTIN_NVI_ORG_TOP_LEVEL_ID,
+                                    expectedTotalPoints,
+                                    List.of(
+                                            new CreatorAffiliationPoints(
+                                                    defaultVerifiedContributor.build().id(),
+                                                    CRISTIN_NVI_ORG_SUB_UNIT_ID,
+                                                    expectedTotalPoints))));
 
             expectedCandidateBuilder = NviCandidate.builder()
                                                    .withIsInternationalCollaboration(false)
@@ -672,36 +667,53 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
                                                    .withBasePoints(ONE);
         }
 
-        @AfterEach
-        void cleanUp() {
-            event = null;
-            fileUri = null;
-            allContributors = null;
-            publication = null;
-        }
-
         @Test
         void shouldIdentifyCandidateWithOnlyVerifiedNviCreators() throws IOException {
-            var expectedEvaluatedMessage = getAcceptedCandidateResponse();
+            var testScenario = getCandidateScenario();
 
-            handler.handleRequest(event, context);
+            handler.handleRequest(testScenario.event(), context);
             var messageBody = getMessageBody();
 
-            assertEquals(expectedEvaluatedMessage, messageBody);
+            assertEquals(testScenario.expectedEvaluatedMessage(), messageBody);
         }
 
         @Test
         void shouldIdentifyCandidateWithOnlyUnverifiedNviCreators() throws IOException {
-            verifiedContributors = Collections.emptyList();
+            verifiedContributors = emptyList();
             unverifiedContributors = List.of(defaultUnverifiedContributor);
             expectedTotalPoints = ZERO;
             expectedPointsPerInstitution = emptyList();
-            var expectedEvaluatedMessage = getAcceptedCandidateResponse();
+            var testScenario = getCandidateScenario();
 
-            handler.handleRequest(event, context);
+            handler.handleRequest(testScenario.event(), context);
             var messageBody = getMessageBody();
 
-            assertEquals(expectedEvaluatedMessage, messageBody);
+            assertEquals(testScenario.expectedEvaluatedMessage(), messageBody);
+        }
+
+        @Test
+        void shouldIdentifyCandidateWithUnnamedVerifiedAuthor() throws IOException {
+            var verifiedContributor = defaultVerifiedContributor.withName(null);
+            verifiedContributors = List.of(verifiedContributor);
+            var testScenario = getCandidateScenario();
+
+            handler.handleRequest(testScenario.event(), context);
+            var messageBody = getMessageBody();
+
+            assertEquals(testScenario.expectedEvaluatedMessage(), messageBody);
+        }
+
+        @Test
+        void shouldRejectUnverifiedAuthorsWithoutName() throws IOException {
+            var unnamedContributor = defaultUnverifiedContributor.withName(null);
+            verifiedContributors = emptyList();
+            unverifiedContributors = List.of(unnamedContributor);
+            var testScenario = getNonCandidateScenario();
+
+            handler.handleRequest(testScenario.event(), context);
+            var messageBody = getMessageBody();
+
+            assertEquals(testScenario.expectedEvaluatedMessage(), messageBody);
         }
 
         @Test
@@ -717,24 +729,12 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
                                                                              CRISTIN_NVI_ORG_SUB_UNIT_ID,
                                                                              expectedTotalPoints))));
             creatorShareCount = 2;
-            var expectedEvaluatedMessage = getAcceptedCandidateResponse();
+            var testScenario = getCandidateScenario();
 
-            handler.handleRequest(event, context);
+            handler.handleRequest(testScenario.event(), context);
             var messageBody = getMessageBody();
 
-            assertEquals(expectedEvaluatedMessage, messageBody);
-        }
-
-        @Test
-        void shouldIdentifyCandidateWithUnnamedVerifiedAuthor() throws IOException {
-            var verifiedContributor = defaultVerifiedContributor.withName(null);
-            verifiedContributors = List.of(verifiedContributor);
-            var expectedEvaluatedMessage = getAcceptedCandidateResponse();
-
-            handler.handleRequest(event, context);
-            var messageBody = getMessageBody();
-
-            assertEquals(expectedEvaluatedMessage, messageBody);
+            assertEquals(testScenario.expectedEvaluatedMessage(), messageBody);
         }
 
         @Test
@@ -745,12 +745,12 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
                                                           .build());
             var contributor = defaultVerifiedContributor.withAffiliations(affiliations);
             verifiedContributors = List.of(contributor);
-            var expectedEvaluatedMessage = getAcceptedCandidateResponse();
+            var testScenario = getCandidateScenario();
 
-            handler.handleRequest(event, context);
+            handler.handleRequest(testScenario.event(), context);
             var messageBody = getMessageBody();
 
-            assertEquals(expectedEvaluatedMessage, messageBody);
+            assertEquals(testScenario.expectedEvaluatedMessage(), messageBody);
         }
 
         @Test
@@ -760,29 +760,48 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
                                                           .build());
             var swedishContributor = defaultVerifiedContributor.withAffiliations(affiliations);
             verifiedContributors = List.of(swedishContributor);
-            var expectedEvaluatedMessage = getRejectedCandidateResponse();
+            var testScenario = getNonCandidateScenario();
 
-            handler.handleRequest(event, context);
+            handler.handleRequest(testScenario.event(), context);
             var messageBody = getMessageBody();
 
-            assertEquals(expectedEvaluatedMessage, messageBody);
-        }
-
-        @Test
-        void shouldRejectUnverifiedAuthorsWithoutName() throws IOException {
-            var unnamedContributor = defaultUnverifiedContributor.withName(null);
-            verifiedContributors = Collections.emptyList();
-            unverifiedContributors = List.of(unnamedContributor);
-            var expectedEvaluatedMessage = getRejectedCandidateResponse();
-
-            handler.handleRequest(event, context);
-            var messageBody = getMessageBody();
-
-            assertEquals(expectedEvaluatedMessage, messageBody);
+            assertEquals(testScenario.expectedEvaluatedMessage(), messageBody);
         }
 
         private static PublicationDate getPublicationDate(ExpandedPublicationDate publicationDate) {
             return new PublicationDate(publicationDate.day(), publicationDate.month(), publicationDate.year());
+        }
+
+        private TestScenario getCandidateScenario() throws IOException {
+            var publication = buildExpectedPublication();
+            var fileUri = addPublicationToS3(publication);
+            var expectedEvaluatedMessage = getCandidateResponse(fileUri, publication);
+            var event = createEvent(new PersistedResourceMessage(fileUri));
+            mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
+            return new TestScenario(publication, expectedEvaluatedMessage, event);
+        }
+
+        private TestScenario getNonCandidateScenario() throws IOException {
+            var publication = buildExpectedPublication();
+            var fileUri = addPublicationToS3(publication);
+            var expectedEvaluatedMessage = getNonCandidateResponse(publication);
+            var event = createEvent(new PersistedResourceMessage(fileUri));
+            mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
+            return new TestScenario(publication, expectedEvaluatedMessage, event);
+        }
+
+        private ExpandedPublication buildExpectedPublication() {
+            // Generate test data based on the current state of the builders,
+            // after the test case has made any necessary changes to the default values.
+            var allContributors = Stream.concat(verifiedContributors.stream(), unverifiedContributors.stream())
+                                        .map(ExpandedContributor.Builder::build)
+                                        .toList();
+            return publicationBuilder.withInstanceType(publicationInstanceType.getValue())
+                                     .withPublicationChannels(publicationChannels.stream()
+                                                                                 .map(ExpandedPublicationChannel.Builder::build)
+                                                                                 .toList())
+                                     .withContributors(allContributors)
+                                     .build();
         }
 
         private ExpandedPublicationChannel.Builder getDefaultPublicationChannelBuilder() {
@@ -792,42 +811,7 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
                                              .withLevel(publicationChannelLevel.getValue());
         }
 
-        private void buildExpectedPublication() throws IOException {
-            // Generate test data based on the current state of the builders,
-            // after the test case has made any necessary changes to the default values.
-            allContributors = Stream.concat(verifiedContributors.stream(), unverifiedContributors.stream())
-                                    .map(ExpandedContributor.Builder::build)
-                                    .toList();
-            publication = publicationBuilder.withInstanceType(publicationInstanceType.getValue())
-                                            .withPublicationChannels(publicationChannels.stream()
-                                                                                        .map(ExpandedPublicationChannel.Builder::build)
-                                                                                        .toList())
-                                            .withContributors(allContributors)
-                                            .build();
-
-            fileUri = addPublicationToS3(publication);
-            event = createEvent(new PersistedResourceMessage(fileUri));
-            mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-        }
-
-        private List<NviCreator> getVerifiedNviCreators() {
-            return verifiedContributors.stream()
-                                       .map(ExpandedContributor.Builder::build)
-                                       .map(contributor -> new NviCreator(contributor.id(),
-                                                                          contributor.affiliationIds()))
-                                       .toList();
-        }
-
-        private List<UnverifiedNviCreator> getUnverifiedNviCreators() {
-            return unverifiedContributors.stream()
-                                         .map(ExpandedContributor.Builder::build)
-                                         .map(contributor -> new UnverifiedNviCreator(contributor.contributorName(),
-                                                                                      contributor.affiliationIds()))
-                                         .toList();
-        }
-
-        private CandidateEvaluatedMessage getAcceptedCandidateResponse() throws IOException {
-            buildExpectedPublication();
+        private CandidateEvaluatedMessage getCandidateResponse(URI fileUri, ExpandedPublication publication) {
             var publicationDate = getPublicationDate(publication.publicationDate());
             var verifiedCreators = getVerifiedNviCreators();
             var unverifiedNviCreators = getUnverifiedNviCreators();
@@ -849,17 +833,38 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
                                             .build();
         }
 
-        private CandidateEvaluatedMessage getRejectedCandidateResponse() throws IOException {
-            buildExpectedPublication();
+        private CandidateEvaluatedMessage getNonCandidateResponse(ExpandedPublication publication) {
             var rejectedCandidate = new NonNviCandidate(publication.id());
             return CandidateEvaluatedMessage.builder()
                                             .withCandidateType(rejectedCandidate)
                                             .build();
         }
 
+        private List<NviCreator> getVerifiedNviCreators() {
+            return verifiedContributors.stream()
+                                       .map(ExpandedContributor.Builder::build)
+                                       .map(contributor -> new NviCreator(contributor.id(),
+                                                                          contributor.affiliationIds()))
+                                       .toList();
+        }
+
+        private List<UnverifiedNviCreator> getUnverifiedNviCreators() {
+            return unverifiedContributors.stream()
+                                         .map(ExpandedContributor.Builder::build)
+                                         .map(contributor -> new UnverifiedNviCreator(contributor.contributorName(),
+                                                                                      contributor.affiliationIds()))
+                                         .toList();
+        }
+
         private URI addPublicationToS3(ExpandedPublication publication) throws IOException {
+
             return s3Driver.insertFile(UnixPath.of(publication.identifier()
                                                               .toString()), publication.toJsonString());
+        }
+
+        private record TestScenario(ExpandedPublication publication, CandidateEvaluatedMessage expectedEvaluatedMessage,
+                                    SQSEvent event) {
+
         }
     }
 
