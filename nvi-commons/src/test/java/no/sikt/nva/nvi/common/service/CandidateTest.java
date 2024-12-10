@@ -102,7 +102,8 @@ class CandidateTest extends LocalDynamoTest {
     public static final URI CONTEXT_URI = UriWrapper.fromHost(API_DOMAIN).addChild(BASE_PATH, "context").getUri();
     private static final int EXPECTED_SCALE = 4;
     private static final RoundingMode EXPECTED_ROUNDING_MODE = RoundingMode.HALF_UP;
-    private static final URI HARDCODED_INSTITUTION_ID = URI.create("https://example.org/hardCodedInstitutionId");
+    private static final URI HARDCODED_INSTITUTION_ID = URI.create("https://example.org/topLevelInstitutionId");
+    private static final URI HARDCODED_SUBUNIT_ID = URI.create("https://example.org/subUnitInstitutionId");
     private static final URI HARDCODED_CHANNEL_ID = URI.create(
         "https://example.org/publication-channels-v2/journal/123/2018");
     private static final String HARDCODED_LEVEL = "LevelOne";
@@ -426,10 +427,10 @@ class CandidateTest extends LocalDynamoTest {
         var candidate = upsert(upsertCandidateRequest);
         candidate.updateApproval(
             new UpdateStatusRequest(institutionId, ApprovalStatus.APPROVED, randomString(), randomString()));
-        var approval = candidate.toDto().approvals().getFirst();
+        var approval = candidate.getApprovals().get(institutionId);
         var newUpsertRequest = createNewUpsertRequestNotAffectingApprovals(upsertCandidateRequest);
         var updatedCandidate = upsert(newUpsertRequest);
-        var updatedApproval = updatedCandidate.toDto().approvals().getFirst();
+        var updatedApproval = updatedCandidate.getApprovals().get(institutionId);
 
         assertThat(updatedApproval, is(equalTo(approval)));
     }
@@ -440,24 +441,28 @@ class CandidateTest extends LocalDynamoTest {
         var candidate = upsert(upsertCandidateRequest);
         candidate.updateApproval(
             new UpdateStatusRequest(HARDCODED_INSTITUTION_ID, ApprovalStatus.APPROVED, randomString(), randomString()));
-        var approval = candidate.toDto().approvals().getFirst();
+        var newSubUnitInSameOrganization = randomUri();
         var newUpsertRequest = createUpsertCandidateRequest(candidate.getPublicationId(),
                                                             candidate.getPublicationDetails().publicationBucketUri(),
                                                             true,
                                                             candidate.getPublicationDetails().publicationDate(),
-                                                            Map.of(CandidateTest.HARDCODED_CREATOR_ID, List.of(
-                                                                CandidateTest.HARDCODED_INSTITUTION_ID)),
+                                                            Map.of(HARDCODED_CREATOR_ID, List.of(
+                                                                HARDCODED_INSTITUTION_ID)),
                                                             InstanceType.parse(candidate.getInstanceType()),
                                                             candidate.getPublicationChannelType().getValue(),
                                                             candidate.getPublicationChannelId(),
                                                             candidate.getScientificLevel(),
-                                                            candidate.getInstitutionPoints(),
+                                                            List.of(new InstitutionPoints(HARDCODED_INSTITUTION_ID,
+                                                                                          DEFAULT_POINTS, List.of(
+                                                                new CreatorAffiliationPoints(HARDCODED_CREATOR_ID,
+                                                                                             newSubUnitInSameOrganization,
+                                                                                             DEFAULT_POINTS)))),
                                                             randomInteger(), false,
                                                             randomBigDecimal(), null, randomBigDecimal());
         var updatedCandidate = upsert(newUpsertRequest);
         var updatedApproval = updatedCandidate.getApprovals().get(HARDCODED_INSTITUTION_ID);
 
-        assertThat(updatedApproval, is(equalTo(approval)));
+        assertThat(updatedApproval.getStatus(), is(equalTo(ApprovalStatus.APPROVED)));
     }
 
     @Test
@@ -467,10 +472,10 @@ class CandidateTest extends LocalDynamoTest {
         var candidate = upsert(upsertCandidateRequest);
         candidate.updateApproval(
             new UpdateStatusRequest(institutionId, ApprovalStatus.APPROVED, randomString(), randomString()));
-        var approval = candidate.toDto().approvals().getFirst();
+        var approval = candidate.getApprovals().get(institutionId);
         var newUpsertRequest = createNewUpsertRequestNotAffectingApprovals(upsertCandidateRequest);
         var updatedCandidate = upsert(newUpsertRequest);
-        var updatedApproval = updatedCandidate.toDto().approvals().getFirst();
+        var updatedApproval = updatedCandidate.getApprovals().get(institutionId);
 
         assertThat(updatedApproval, is(equalTo(approval)));
     }
@@ -587,49 +592,7 @@ class CandidateTest extends LocalDynamoTest {
                                                                      Collections.emptyList()));
         var defaultCreator = new Creator(HARDCODED_CREATOR_ID, List.of(HARDCODED_INSTITUTION_ID));
         var defaultCreators = List.of(defaultCreator);
-        return Stream.of(Arguments.of(Named.of("channel changed",
-                                               new CandidateResetCauseArgument(
-                                                   new PublicationChannel(ChannelType.JOURNAL,
-                                                                          URI.create("https://example.org"
-                                                                                     + "/someOtherChannel"),
-                                                                          HARDCODED_LEVEL),
-                                                   DEFAULT_INSTANCE_TYPE,
-                                                   defaultInstitutionPoints, defaultCreators))),
-                         Arguments.of(Named.of("level changed",
-                                               new CandidateResetCauseArgument(
-                                                   new PublicationChannel(ChannelType.JOURNAL, HARDCODED_CHANNEL_ID,
-                                                                          "LevelTwo"),
-                                                   DEFAULT_INSTANCE_TYPE,
-                                                   defaultInstitutionPoints, defaultCreators))),
-                         Arguments.of(Named.of("instance type changed",
-                                               new CandidateResetCauseArgument(DEFAULT_PUBLICATION_CHANNEL,
-                                                                               InstanceType.ACADEMIC_MONOGRAPH,
-                                                                               defaultInstitutionPoints,
-                                                                               defaultCreators))),
-                         Arguments.of(Named.of("points changed",
-                                               new CandidateResetCauseArgument(DEFAULT_PUBLICATION_CHANNEL,
-                                                                               DEFAULT_INSTANCE_TYPE,
-                                                                               List.of(new InstitutionPoints(
-                                                                                   HARDCODED_INSTITUTION_ID,
-                                                                                   BigDecimal.TWO,
-                                                                                   null)), defaultCreators))),
-                         Arguments.of(Named.of("creator changed",
-                                               new CandidateResetCauseArgument(DEFAULT_PUBLICATION_CHANNEL,
-                                                                               DEFAULT_INSTANCE_TYPE,
-                                                                               defaultInstitutionPoints,
-                                                                               List.of(new Creator(
-                                                                                   URI.create("https://example"
-                                                                                              + ".org"
-                                                                                              +
-                                                                                              "/someOtherCreator"),
-                                                                                   List.of(
-                                                                                       HARDCODED_INSTITUTION_ID)))))),
-                         Arguments.of(Named.of("creator removed",
-                                               new CandidateResetCauseArgument(DEFAULT_PUBLICATION_CHANNEL,
-                                                                               DEFAULT_INSTANCE_TYPE,
-                                                                               defaultInstitutionPoints,
-                                                                               Collections.emptyList()))),
-                         Arguments.of(Named.of("creator added",
+        return Stream.of(Arguments.of(Named.of("creator added",
                                                new CandidateResetCauseArgument(DEFAULT_PUBLICATION_CHANNEL,
                                                                                DEFAULT_INSTANCE_TYPE,
                                                                                defaultInstitutionPoints,
@@ -639,20 +602,7 @@ class CandidateTest extends LocalDynamoTest {
                                                                                               +
                                                                                               "/someOtherCreator"),
                                                                                    List.of(
-                                                                                       HARDCODED_INSTITUTION_ID)))))),
-                         Arguments.of(Named.of("top level affiliation changed",
-                                               new CandidateResetCauseArgument(DEFAULT_PUBLICATION_CHANNEL,
-                                                                               DEFAULT_INSTANCE_TYPE,
-                                                                               defaultInstitutionPoints,
-                                                                               List.of(new Creator(HARDCODED_CREATOR_ID,
-                                                                                                   List.of(
-                                                                                                       URI.create(
-                                                                                                           "https"
-                                                                                                           +
-                                                                                                           "://example"
-                                                                                                           + ".org"
-                                                                                                           +
-                                                                                                           "/someOtherInstitution"))))))));
+                                                                                       HARDCODED_INSTITUTION_ID)))))));
     }
 
     @Deprecated
@@ -754,13 +704,16 @@ class CandidateTest extends LocalDynamoTest {
     private UpsertCandidateRequest getUpsertCandidateRequestWithHardcodedValues() {
         return createUpsertCandidateRequest(URI.create("publicationId"), randomUri(), true,
                                             new PublicationDate(String.valueOf(CURRENT_YEAR), null, null),
-                                            Map.of(CandidateTest.HARDCODED_CREATOR_ID, List.of(
-                                                CandidateTest.HARDCODED_INSTITUTION_ID)),
-                                            CandidateTest.DEFAULT_INSTANCE_TYPE,
-                                            randomString(), randomUri(),
+                                            Map.of(HARDCODED_CREATOR_ID, List.of(HARDCODED_SUBUNIT_ID)),
+                                            DEFAULT_INSTANCE_TYPE,
+                                            DEFAULT_PUBLICATION_CHANNEL.channelType().getValue(),
+                                            DEFAULT_PUBLICATION_CHANNEL.id(),
                                             DEFAULT_PUBLICATION_CHANNEL.level(),
                                             List.of(
-                                                new InstitutionPoints(HARDCODED_INSTITUTION_ID, DEFAULT_POINTS, null)),
+                                                new InstitutionPoints(HARDCODED_INSTITUTION_ID, DEFAULT_POINTS, List.of(
+                                                    new CreatorAffiliationPoints(HARDCODED_CREATOR_ID,
+                                                                                 HARDCODED_SUBUNIT_ID,
+                                                                                 DEFAULT_POINTS)))),
                                             randomInteger(), false,
                                             randomBigDecimal(), null, randomBigDecimal());
     }

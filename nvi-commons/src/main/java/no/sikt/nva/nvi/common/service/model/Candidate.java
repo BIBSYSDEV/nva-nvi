@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -449,7 +450,7 @@ public final class Candidate {
                || publicationChannelIsUpdated(request, candidate)
                || instanceTypeIsUpdated(request, candidate)
                || creatorsAreUpdated(request, candidate)
-               || pointsAreUpdated(request, candidate)
+               || institutionPointsAreUpdated(request, candidate)
                || publicationYearIsUpdated(request, candidate);
     }
 
@@ -461,12 +462,25 @@ public final class Candidate {
         return !request.publicationDate().year().equals(candidate.getPublicationDetails().publicationDate().year());
     }
 
-    private static boolean pointsAreUpdated(UpsertCandidateRequest request, Candidate candidate) {
-        return !candidate.getInstitutionPoints().equals(request.institutionPoints());
+    private static boolean institutionPointsAreUpdated(UpsertCandidateRequest request, Candidate candidate) {
+        return !request.institutionPoints()
+                    .stream()
+                    .allMatch(institutionPoints -> hasSameInstitutionPoints(candidate, institutionPoints));
+    }
+
+    private static Boolean hasSameInstitutionPoints(Candidate candidate, InstitutionPoints institutionPoints) {
+        return Optional.ofNullable(
+                candidate.getPointValueForInstitution(institutionPoints.institutionId()))
+                   .map(currentPoints -> isEqualWithSameScale(currentPoints, institutionPoints.institutionPoints()))
+                   .orElse(false);
+    }
+
+    private static boolean isEqualWithSameScale(BigDecimal currentPoints, BigDecimal newPoints) {
+        return Objects.equals(adjustScaleAndRoundingMode(currentPoints), adjustScaleAndRoundingMode(newPoints));
     }
 
     private static boolean creatorsAreUpdated(UpsertCandidateRequest request, Candidate candidate) {
-        return !Objects.equals(mapToCreators(request.creators()), candidate.getPublicationDetails().creators());
+        return !request.creators().keySet().equals(candidate.getNviCreatorIds());
     }
 
     private static boolean instanceTypeIsUpdated(UpsertCandidateRequest request, Candidate candidate) {
@@ -596,6 +610,14 @@ public final class Candidate {
                    .candidate(candidateDao.candidate().copy().applicable(false).build())
                    .periodYear(null)
                    .build();
+    }
+
+    private Set<URI> getApprovingOrganizations() {
+        return approvals.keySet();
+    }
+
+    private Set<URI> getNviCreatorIds() {
+        return publicationDetails.getNviCreatorIds();
     }
 
     private Builder copy() {

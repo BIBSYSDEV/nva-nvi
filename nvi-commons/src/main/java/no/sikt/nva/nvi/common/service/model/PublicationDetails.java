@@ -3,6 +3,8 @@ package no.sikt.nva.nvi.common.service.model;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
@@ -35,6 +37,12 @@ public record PublicationDetails(URI publicationId,
                    .map(Creator::affiliations)
                    .flatMap(List::stream)
                    .toList();
+    }
+
+    public Set<URI> getNviCreatorIds() {
+        return creators.stream()
+                   .map(Creator::id)
+                   .collect(Collectors.toSet());
     }
 
     public record PublicationDate(String year, String month, String day) {
