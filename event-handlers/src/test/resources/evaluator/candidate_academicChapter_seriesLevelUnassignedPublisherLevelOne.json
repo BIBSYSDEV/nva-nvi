@@ -212,7 +212,8 @@
           "affiliations": [
             {
               "id": "https://api.dev.nva.aws.unit.no/cristin/organization/194.64.20.0",
-              "type": "Organization"
+              "type": "Organization",
+              "countryCode": "NO"
             }
           ],
           "identity": {

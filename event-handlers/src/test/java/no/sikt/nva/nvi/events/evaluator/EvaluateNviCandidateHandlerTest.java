@@ -1,6 +1,8 @@
 package no.sikt.nva.nvi.events.evaluator;
 
 import static java.math.BigDecimal.ONE;
+import static java.math.BigDecimal.ZERO;
+import static java.util.Collections.emptyList;
 import static no.sikt.nva.nvi.common.service.model.InstanceType.ACADEMIC_COMMENTARY;
 import static no.sikt.nva.nvi.common.service.model.InstanceType.ACADEMIC_LITERATURE_REVIEW;
 import static no.sikt.nva.nvi.common.service.model.InstanceType.ACADEMIC_MONOGRAPH;
@@ -27,6 +29,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
+import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -40,6 +43,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
@@ -58,6 +62,12 @@ import no.sikt.nva.nvi.events.model.NviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate.NviCreator;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.sikt.nva.nvi.events.model.PublicationDate;
+import no.sikt.nva.nvi.events.model.UnverifiedNviCreator;
+import no.sikt.nva.nvi.test.ExpandedAffiliation;
+import no.sikt.nva.nvi.test.ExpandedContributor;
+import no.sikt.nva.nvi.test.ExpandedPublication;
+import no.sikt.nva.nvi.test.ExpandedPublicationChannel;
+import no.sikt.nva.nvi.test.ExpandedPublicationDate;
 import no.sikt.nva.nvi.test.FakeSqsClient;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
@@ -73,17 +83,21 @@ import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
 import nva.commons.logutils.LogUtils;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 // Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
 @SuppressWarnings("PMD.CouplingBetweenObjects")
 class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
 
-    public static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
-    public static final PublicationDate HARDCODED_PUBLICATION_DATE = new PublicationDate(null, null, "2023");
-    public static final URI HARDCODED_PUBLICATION_CHANNEL_ID = URI.create(
+    private static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
+    private static final PublicationDate HARDCODED_PUBLICATION_DATE = new PublicationDate(null, null, "2023");
+    private static final ExpandedPublicationDate HARDCODED_JSON_PUBLICATION_DATE =
+            new ExpandedPublicationDate("2023", null, null);
+    private static final URI HARDCODED_PUBLICATION_CHANNEL_ID = URI.create(
         "https://api.dev.nva.aws.unit.no/publication-channels/series/490845/2023");
-    public static final URI SIKT_CRISTIN_ORG_ID = URI.create(
+    private static final URI SIKT_CRISTIN_ORG_ID = URI.create(
         "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0");
     private static final URI HARDCODED_CREATOR_ID = URI.create("https://api.dev.nva.aws.unit.no/cristin/person/997998");
     private static final String ACADEMIC_CHAPTER_PATH = "evaluator/candidate_academicChapter.json";
@@ -106,11 +120,13 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
         "https://api.dev.nva.aws.unit.no/cristin/organization/194.0.0.0");
     private static final URI CRISTIN_NVI_ORG_SUB_UNIT_ID = URI.create(
         "https://api.dev.nva.aws.unit.no/cristin/organization/194.64.20.0");
+    private static final ExpandedAffiliation DEFAULT_SUBUNIT_AFFILIATION =
+            ExpandedAffiliation.builder().withId(CRISTIN_NVI_ORG_SUB_UNIT_ID).build();
     private static final URI CUSTOMER_API_CRISTIN_NVI_ORG_TOP_LEVEL = URI.create(
         "https://api.dev.nva.aws.unit.no/customer/cristinId/https%3A%2F%2Fapi"
         + ".dev.nva.aws.unit.no%2Fcristin%2Forganization%2F194.0.0.0");
     private final Context context = mock(Context.class);
-    public HttpResponse<String> notFoundResponse;
+    private HttpResponse<String> notFoundResponse;
     private HttpResponse<String> badResponse;
     private HttpResponse<String> okResponse;
     private S3Driver s3Driver;
@@ -321,7 +337,8 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
         var candidate = (NviCandidate) messageBody.candidate();
         assertThat(candidate.institutionPoints(), notNullValue());
         assertThat(candidate.getPointsForInstitution(CRISTIN_NVI_ORG_TOP_LEVEL_ID),
-                   is(equalTo(BigDecimal.valueOf(1).setScale(4, RoundingMode.HALF_UP))));
+                   is(equalTo(BigDecimal.valueOf(1)
+                                        .setScale(4, ROUNDING_MODE))));
     }
 
     @Test
@@ -523,6 +540,26 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
         assertThat(candidate.publicationBucketUri(), is(equalTo(fileUri)));
     }
 
+    private static CandidateEvaluatedMessage getExpectedEvaluatedMessage(
+            InstanceType instanceType,
+            BigDecimal points,
+            URI bucketUri,
+            PublicationChannel publicationChannel,
+            BigDecimal basePoints,
+            BigDecimal totalPoints) {
+        var institutionPoints = Map.of(CRISTIN_NVI_ORG_TOP_LEVEL_ID, points.setScale(SCALE, ROUNDING_MODE));
+        var expectedCandidate =
+                createExpectedCandidate(
+                        instanceType,
+                        institutionPoints,
+                        publicationChannel,
+                        Level.LEVEL_ONE.getValue(),
+                        basePoints,
+                        totalPoints,
+                        bucketUri);
+        return CandidateEvaluatedMessage.builder().withCandidateType(expectedCandidate).build();
+    }
+
     @Test
     @Deprecated
     void shouldHandleSeriesWithMultipleTypes() throws IOException {
@@ -566,18 +603,269 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
         }
     }
 
-    private static CandidateEvaluatedMessage getExpectedEvaluatedMessage(InstanceType instanceType,
-                                                                         BigDecimal points, URI bucketUri,
-                                                                         PublicationChannel publicationChannel,
-                                                                         BigDecimal basePoints,
-                                                                         BigDecimal totalPoints) {
-        return CandidateEvaluatedMessage.builder()
-                   .withCandidateType(createExpectedCandidate(instanceType,
-                                                              Map.of(CRISTIN_NVI_ORG_TOP_LEVEL_ID,
-                                                                     points.setScale(SCALE, RoundingMode.HALF_UP)),
-                                                              publicationChannel, Level.LEVEL_ONE.getValue(),
-                                                              basePoints, totalPoints, bucketUri))
-                   .build();
+    @Nested
+    @DisplayName("Test cases with dynamic test data")
+    class evaluateNviCandidatesWithDynamicTestData {
+
+        // Builders and variables that may be modified for each test case
+        ExpandedContributor.Builder defaultVerifiedContributor;
+        ExpandedContributor.Builder defaultUnverifiedContributor;
+        List<ExpandedContributor.Builder> verifiedContributors;
+        List<ExpandedContributor.Builder> unverifiedContributors;
+        int creatorShareCount;
+
+        URI publicationChannelId;
+        PublicationChannel publicationChannelType;
+        Level publicationChannelLevel;
+        List<ExpandedPublicationChannel.Builder> publicationChannels;
+
+        InstanceType publicationInstanceType;
+        ExpandedPublication.Builder publicationBuilder;
+
+        BigDecimal expectedTotalPoints;
+        List<InstitutionPoints> expectedPointsPerInstitution;
+        NviCandidate.Builder expectedCandidateBuilder;
+
+        @BeforeEach
+        void setup() {
+            // Initialize default values for all test data
+            defaultVerifiedContributor = ExpandedContributor.builder()
+                                                            .withVerificationStatus("Verified")
+                                                            .withAffiliations(List.of(DEFAULT_SUBUNIT_AFFILIATION));
+            defaultUnverifiedContributor = ExpandedContributor.builder()
+                                                              .withId(null)
+                                                              .withVerificationStatus(null)
+                                                              .withAffiliations(List.of(DEFAULT_SUBUNIT_AFFILIATION));
+            verifiedContributors = List.of(defaultVerifiedContributor);
+            unverifiedContributors = emptyList();
+            creatorShareCount = 1;
+
+            publicationChannelId = HARDCODED_PUBLICATION_CHANNEL_ID;
+            publicationChannelType = JOURNAL;
+            publicationChannelLevel = Level.LEVEL_ONE;
+            publicationInstanceType = InstanceType.ACADEMIC_ARTICLE;
+            publicationChannels = List.of(getDefaultPublicationChannelBuilder());
+
+            publicationBuilder = ExpandedPublication.builder()
+                                                    .withPublicationDate(HARDCODED_JSON_PUBLICATION_DATE);
+
+            expectedTotalPoints = ONE.setScale(SCALE, ROUNDING_MODE);
+            expectedPointsPerInstitution =
+                    List.of(
+                            new InstitutionPoints(
+                                    CRISTIN_NVI_ORG_TOP_LEVEL_ID,
+                                    expectedTotalPoints,
+                                    List.of(
+                                            new CreatorAffiliationPoints(
+                                                    defaultVerifiedContributor.build().id(),
+                                                    CRISTIN_NVI_ORG_SUB_UNIT_ID,
+                                                    expectedTotalPoints))));
+
+            expectedCandidateBuilder = NviCandidate.builder()
+                                                   .withIsInternationalCollaboration(false)
+                                                   .withCollaborationFactor(ONE.setScale(1, ROUNDING_MODE))
+                                                   .withBasePoints(ONE);
+        }
+
+        @Test
+        void shouldIdentifyCandidateWithOnlyVerifiedNviCreators() throws IOException {
+            var testScenario = getCandidateScenario();
+
+            handler.handleRequest(testScenario.event(), context);
+            var messageBody = getMessageBody();
+
+            assertEquals(testScenario.expectedEvaluatedMessage(), messageBody);
+        }
+
+        @Test
+        void shouldIdentifyCandidateWithOnlyUnverifiedNviCreators() throws IOException {
+            verifiedContributors = emptyList();
+            unverifiedContributors = List.of(defaultUnverifiedContributor);
+            expectedTotalPoints = ZERO;
+            expectedPointsPerInstitution = emptyList();
+            var testScenario = getCandidateScenario();
+
+            handler.handleRequest(testScenario.event(), context);
+            var messageBody = getMessageBody();
+
+            assertEquals(testScenario.expectedEvaluatedMessage(), messageBody);
+        }
+
+        @Test
+        void shouldIdentifyCandidateWithUnnamedVerifiedAuthor() throws IOException {
+            var verifiedContributor = defaultVerifiedContributor.withName(null);
+            verifiedContributors = List.of(verifiedContributor);
+            var testScenario = getCandidateScenario();
+
+            handler.handleRequest(testScenario.event(), context);
+            var messageBody = getMessageBody();
+
+            assertEquals(testScenario.expectedEvaluatedMessage(), messageBody);
+        }
+
+        @Test
+        void shouldRejectUnverifiedAuthorsWithoutName() throws IOException {
+            var unnamedContributor = defaultUnverifiedContributor.withName(null);
+            verifiedContributors = emptyList();
+            unverifiedContributors = List.of(unnamedContributor);
+            var testScenario = getNonCandidateScenario();
+
+            handler.handleRequest(testScenario.event(), context);
+            var messageBody = getMessageBody();
+
+            assertEquals(testScenario.expectedEvaluatedMessage(), messageBody);
+        }
+
+        @Test
+        void shouldIdentifyCandidateWithBothVerifiedAndUnverifiedNviCreators() throws IOException {
+            unverifiedContributors = List.of(defaultUnverifiedContributor);
+            expectedTotalPoints = BigDecimal.valueOf(0.7071)
+                                            .setScale(SCALE, ROUNDING_MODE);
+            expectedPointsPerInstitution = List.of(new InstitutionPoints(CRISTIN_NVI_ORG_TOP_LEVEL_ID,
+                                                                         expectedTotalPoints,
+                                                                         List.of(new CreatorAffiliationPoints(
+                                                                             defaultVerifiedContributor.build()
+                                                                                                       .id(),
+                                                                             CRISTIN_NVI_ORG_SUB_UNIT_ID,
+                                                                             expectedTotalPoints))));
+            creatorShareCount = 2;
+            var testScenario = getCandidateScenario();
+
+            handler.handleRequest(testScenario.event(), context);
+            var messageBody = getMessageBody();
+
+            assertEquals(testScenario.expectedEvaluatedMessage(), messageBody);
+        }
+
+        @Test
+        void shouldIdentifyCandidateWithMissingCountryCode() throws IOException {
+            var affiliations = List.of(ExpandedAffiliation.builder()
+                                                          .withId(CRISTIN_NVI_ORG_SUB_UNIT_ID)
+                                                          .withCountryCode(null)
+                                                          .build());
+            var contributor = defaultVerifiedContributor.withAffiliations(affiliations);
+            verifiedContributors = List.of(contributor);
+            var testScenario = getCandidateScenario();
+
+            handler.handleRequest(testScenario.event(), context);
+            var messageBody = getMessageBody();
+
+            assertEquals(testScenario.expectedEvaluatedMessage(), messageBody);
+        }
+
+        @Test
+        void shouldRejectCandidateWithSwedishCountryCode() throws IOException {
+            var affiliations = List.of(ExpandedAffiliation.builder()
+                                                          .withCountryCode("SE")
+                                                          .build());
+            var swedishContributor = defaultVerifiedContributor.withAffiliations(affiliations);
+            verifiedContributors = List.of(swedishContributor);
+            var testScenario = getNonCandidateScenario();
+
+            handler.handleRequest(testScenario.event(), context);
+            var messageBody = getMessageBody();
+
+            assertEquals(testScenario.expectedEvaluatedMessage(), messageBody);
+        }
+
+        private static PublicationDate getPublicationDate(ExpandedPublicationDate publicationDate) {
+            return new PublicationDate(publicationDate.day(), publicationDate.month(), publicationDate.year());
+        }
+
+        private TestScenario getCandidateScenario() throws IOException {
+            var publication = buildExpectedPublication();
+            var fileUri = addPublicationToS3(publication);
+            var expectedEvaluatedMessage = getCandidateResponse(fileUri, publication);
+            var event = createEvent(new PersistedResourceMessage(fileUri));
+            mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
+            return new TestScenario(publication, expectedEvaluatedMessage, event);
+        }
+
+        private TestScenario getNonCandidateScenario() throws IOException {
+            var publication = buildExpectedPublication();
+            var fileUri = addPublicationToS3(publication);
+            var expectedEvaluatedMessage = getNonCandidateResponse(publication);
+            var event = createEvent(new PersistedResourceMessage(fileUri));
+            mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
+            return new TestScenario(publication, expectedEvaluatedMessage, event);
+        }
+
+        private ExpandedPublication buildExpectedPublication() {
+            // Generate test data based on the current state of the builders,
+            // after the test case has made any necessary changes to the default values.
+            var allContributors = Stream.concat(verifiedContributors.stream(), unverifiedContributors.stream())
+                                        .map(ExpandedContributor.Builder::build)
+                                        .toList();
+            return publicationBuilder.withInstanceType(publicationInstanceType.getValue())
+                                     .withPublicationChannels(publicationChannels.stream()
+                                                                                 .map(ExpandedPublicationChannel.Builder::build)
+                                                                                 .toList())
+                                     .withContributors(allContributors)
+                                     .build();
+        }
+
+        private ExpandedPublicationChannel.Builder getDefaultPublicationChannelBuilder() {
+            return ExpandedPublicationChannel.builder()
+                                             .withId(publicationChannelId)
+                                             .withType(publicationChannelType.getValue())
+                                             .withLevel(publicationChannelLevel.getValue());
+        }
+
+        private CandidateEvaluatedMessage getCandidateResponse(URI fileUri, ExpandedPublication publication) {
+            var publicationDate = getPublicationDate(publication.publicationDate());
+            var verifiedCreators = getVerifiedNviCreators();
+            var unverifiedNviCreators = getUnverifiedNviCreators();
+            var expectedCandidate = expectedCandidateBuilder.withPublicationId(publication.id())
+                                                            .withPublicationBucketUri(fileUri)
+                                                            .withDate(publicationDate)
+                                                            .withInstanceType(InstanceType.parse(publication.instanceType()))
+                                                            .withChannelType(publicationChannelType.getValue())
+                                                            .withPublicationChannelId(publicationChannelId)
+                                                            .withLevel(publicationChannelLevel.getValue())
+                                                            .withInstitutionPoints(expectedPointsPerInstitution)
+                                                            .withTotalPoints(expectedTotalPoints)
+                                                            .withNviCreators(verifiedCreators)
+                                                            .withUnverifiedNviCreators(unverifiedNviCreators)
+                                                            .withCreatorShareCount(creatorShareCount)
+                                                            .build();
+            return CandidateEvaluatedMessage.builder()
+                                            .withCandidateType(expectedCandidate)
+                                            .build();
+        }
+
+        private CandidateEvaluatedMessage getNonCandidateResponse(ExpandedPublication publication) {
+            var rejectedCandidate = new NonNviCandidate(publication.id());
+            return CandidateEvaluatedMessage.builder()
+                                            .withCandidateType(rejectedCandidate)
+                                            .build();
+        }
+
+        private List<NviCreator> getVerifiedNviCreators() {
+            return verifiedContributors.stream()
+                                       .map(ExpandedContributor.Builder::build)
+                                       .map(contributor -> new NviCreator(contributor.id(),
+                                                                          contributor.affiliationIds()))
+                                       .toList();
+        }
+
+        private List<UnverifiedNviCreator> getUnverifiedNviCreators() {
+            return unverifiedContributors.stream()
+                                         .map(ExpandedContributor.Builder::build)
+                                         .map(contributor -> new UnverifiedNviCreator(contributor.contributorName(),
+                                                                                      contributor.affiliationIds()))
+                                         .toList();
+        }
+
+        private URI addPublicationToS3(ExpandedPublication publication) throws IOException {
+
+            return s3Driver.insertFile(UnixPath.of(publication.identifier()
+                                                              .toString()), publication.toJsonString());
+        }
+
+        private record TestScenario(ExpandedPublication publication, CandidateEvaluatedMessage expectedEvaluatedMessage,
+                                    SQSEvent event) {
+
+        }
     }
 
     private static NviCandidate createExpectedCandidate(InstanceType instanceType,
@@ -598,7 +886,7 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
                    .withCollaborationFactor(ONE.setScale(1, ROUNDING_MODE))
                    .withCreatorShareCount(countCreatorShares(verifiedCreators))
                    .withBasePoints(basePoints)
-                   .withVerifiedCreators(verifiedCreators)
+                   .withNviCreators(verifiedCreators)
                    .withInstitutionPoints(institutionPoints.entrySet().stream()
                                               .map(entry -> new InstitutionPoints(entry.getKey(), entry.getValue(),
                                                                                   List.of(
