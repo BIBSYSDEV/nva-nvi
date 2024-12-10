@@ -1,6 +1,14 @@
 package no.sikt.nva.nvi.test;
 
 import static java.util.Objects.nonNull;
+import static no.sikt.nva.nvi.test.TestConstants.CONTRIBUTOR;
+import static no.sikt.nva.nvi.test.TestConstants.CREATOR;
+import static no.sikt.nva.nvi.test.TestConstants.IDENTITY;
+import static no.sikt.nva.nvi.test.TestConstants.IDENTITY_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.ID_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.NAME_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.ROLE_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.TYPE_FIELD;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -14,8 +22,7 @@ import nva.commons.core.JacocoGenerated;
 public record ExpandedContributor(URI id, String verificationStatus, String contributorName, String role,
                                   List<ExpandedAffiliation> affiliations, String orcId) {
 
-    private static final String TYPE = "type";
-    private static final String NAME = "name";
+
 
     public static Builder builder() {
         return new Builder();
@@ -27,21 +34,21 @@ public record ExpandedContributor(URI id, String verificationStatus, String cont
 
     public ObjectNode asObjectNode() {
         var contributorNode = objectMapper.createObjectNode();
-        contributorNode.put(TYPE, "Contributor");
+        contributorNode.put(TYPE_FIELD, CONTRIBUTOR);
 
         contributorNode.set("affiliations", createAndPopulateAffiliationsNode());
 
         var roleNode = objectMapper.createObjectNode();
-        roleNode.put(TYPE, role);
-        contributorNode.set("role", roleNode);
+        roleNode.put(TYPE_FIELD, role);
+        contributorNode.set(ROLE_FIELD, roleNode);
 
         var identityNode = objectMapper.createObjectNode();
-        identityNode.put(TYPE, "Identity");
+        identityNode.put(TYPE_FIELD, IDENTITY);
         if (nonNull(id)) {
-            identityNode.put("id", id.toString());
+            identityNode.put(ID_FIELD, id.toString());
         }
         if (nonNull(contributorName)) {
-            identityNode.put(NAME, contributorName);
+            identityNode.put(NAME_FIELD, contributorName);
         }
         if (nonNull(orcId)) {
             identityNode.put("orcid", orcId);
@@ -50,7 +57,7 @@ public record ExpandedContributor(URI id, String verificationStatus, String cont
             identityNode.put("verificationStatus", verificationStatus);
         }
 
-        contributorNode.set("identity", identityNode);
+        contributorNode.set(IDENTITY_FIELD, identityNode);
         return contributorNode;
     }
 
@@ -73,7 +80,7 @@ public record ExpandedContributor(URI id, String verificationStatus, String cont
 
         private URI id = randomUri();
         private String contributorName = randomString();
-        private String role = "Creator";
+        private String role = CREATOR;
         private String verificationStatus;
         private String orcId;
         private List<ExpandedAffiliation> affiliations;

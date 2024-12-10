@@ -2,6 +2,17 @@ package no.sikt.nva.nvi.test;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static no.sikt.nva.nvi.test.TestConstants.EN_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_ENGLISH_LABEL;
+import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_NORWEGIAN_LABEL;
+import static no.sikt.nva.nvi.test.TestConstants.IDENTIFIER_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.ID_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.LABELS_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.NB_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.ONE;
+import static no.sikt.nva.nvi.test.TestConstants.PAGES_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.STATUS_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.TYPE_FIELD;
 import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -25,15 +36,8 @@ public record ExpandedPublication(URI id, UUID identifier, String mainTitle, Str
                                   ExpandedPublicationDate publicationDate, String instanceType, String abstractText,
                                   String language, String status, List<ExpandedContributor> contributors) {
 
-    public static final String HARDCODED_NORWEGIAN_LABEL = "Hardcoded Norwegian label";
-    public static final String HARDCODED_ENGLISH_LABEL = "Hardcoded English label";
-    public static final String PAGES = "pages";
-    public static final String NB_FIELD = "nb";
-    public static final String EN_FIELD = "en";
-    private static final String TYPE = "type";
     private static final String TEMPLATE_JSON_PATH = "template_publication.json";
     private static final String PUBLICATION_CHANNELS_MUST_NOT_BE_EMPTY = "Publication channels must not be empty";
-    private static final int ONE = 1;
 
     public static Builder builder() {
         return new Builder();
@@ -55,19 +59,19 @@ public record ExpandedPublication(URI id, UUID identifier, String mainTitle, Str
 
     private static ObjectNode createAndPopulatePublicationInstance(String type) {
         var publicationInstance = objectMapper.createObjectNode();
-        publicationInstance.put(TYPE, type);
+        publicationInstance.put(TYPE_FIELD, type);
 
         switch (type) {
             case "AcademicArticle", "AcademicLiteratureReview", "AcademicChapter" -> {
                 var pages = objectMapper.createObjectNode();
                 pages.put("begin", "pageBegin");
                 pages.put("end", "pageEnd");
-                publicationInstance.set(PAGES, pages);
+                publicationInstance.set(PAGES_FIELD, pages);
             }
             case "AcademicMonograph" -> {
                 var pages = objectMapper.createObjectNode();
-                pages.put(PAGES, "numberOfPages");
-                publicationInstance.set(PAGES, pages);
+                pages.put(PAGES_FIELD, "numberOfPages");
+                publicationInstance.set(PAGES_FIELD, pages);
             }
             default -> {
                 // do nothing
@@ -78,22 +82,22 @@ public record ExpandedPublication(URI id, UUID identifier, String mainTitle, Str
 
     private static JsonNode createOrganizationNode(String affiliationId) {
         var organization = objectMapper.createObjectNode();
-        organization.put("id", affiliationId);
-        organization.put(TYPE, "Organization");
+        organization.put(ID_FIELD, affiliationId);
+        organization.put(TYPE_FIELD, "Organization");
         var labels = objectMapper.createObjectNode();
         labels.put(NB_FIELD, HARDCODED_NORWEGIAN_LABEL);
         labels.put(EN_FIELD, HARDCODED_ENGLISH_LABEL);
-        organization.set("labels", labels);
+        organization.set(LABELS_FIELD, labels);
         return organization;
     }
 
     private JsonNode createExpandedResource() {
         try (var content = IoUtils.inputStreamFromResources(TEMPLATE_JSON_PATH)) {
             var root = (ObjectNode) objectMapper.readTree(content);
-            root.put(TYPE, "Publication");
-            root.put("id", id.toString());
-            root.put("identifier", identifier.toString());
-            root.put("status", status);
+            root.put(TYPE_FIELD, "Publication");
+            root.put(ID_FIELD, id.toString());
+            root.put(IDENTIFIER_FIELD, identifier.toString());
+            root.put(STATUS_FIELD, status);
 
             root.set("entityDescription", createEntityDescriptionNode());
             root.set("topLevelOrganizations", createTopLevelOrganizationsNode());
@@ -118,7 +122,7 @@ public record ExpandedPublication(URI id, UUID identifier, String mainTitle, Str
 
     private ObjectNode createReferenceNode() {
         var referenceNode = objectMapper.createObjectNode();
-        referenceNode.put(TYPE, "Reference");
+        referenceNode.put(TYPE_FIELD, "Reference");
         referenceNode.set("publicationInstance", createAndPopulatePublicationInstance(instanceType));
 
         var publicationContextNode = objectMapper.createObjectNode();
@@ -128,7 +132,7 @@ public record ExpandedPublication(URI id, UUID identifier, String mainTitle, Str
             publicationContextNode = publicationChannels.getFirst()
                                                         .asObjectNode();
         } else {
-            publicationContextNode.put(TYPE, publicationContextType);
+            publicationContextNode.put(TYPE_FIELD, publicationContextType);
             for (ExpandedPublicationChannel publicationChannel : publicationChannels) {
                 publicationContextNode.set(publicationChannel.type(), publicationChannel.asObjectNode());
             }
@@ -139,7 +143,7 @@ public record ExpandedPublication(URI id, UUID identifier, String mainTitle, Str
 
     private ObjectNode createEntityDescriptionNode() {
         var entityDescriptionNode = objectMapper.createObjectNode();
-        entityDescriptionNode.put(TYPE, "EntityDescription");
+        entityDescriptionNode.put(TYPE_FIELD, "EntityDescription");
         entityDescriptionNode.put("mainTitle", mainTitle);
         if (nonNull(language)) {
             entityDescriptionNode.put("language", language);

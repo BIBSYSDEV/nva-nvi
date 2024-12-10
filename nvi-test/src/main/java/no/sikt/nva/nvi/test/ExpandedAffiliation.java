@@ -1,6 +1,10 @@
 package no.sikt.nva.nvi.test;
 
 import static java.util.Objects.nonNull;
+import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_NORWAY;
+import static no.sikt.nva.nvi.test.TestConstants.ID_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.LABELS_FIELD;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -23,15 +27,15 @@ public record ExpandedAffiliation(URI id, String countryCode, Map<String, String
         var affiliationNode = objectMapper.createObjectNode();
 
         if (nonNull(id)) {
-            affiliationNode.put("id", id.toString());
+            affiliationNode.put(ID_FIELD, id.toString());
         }
         if (nonNull(countryCode)) {
-            affiliationNode.put("countryCode", countryCode);
+            affiliationNode.put(COUNTRY_CODE_FIELD, countryCode);
         }
         if (nonNull(labels)) {
             var labelsNode = objectMapper.createObjectNode();
             labels.forEach(labelsNode::put);
-            affiliationNode.set("labels", labelsNode);
+            affiliationNode.set(LABELS_FIELD, labelsNode);
         }
 
         return affiliationNode;
@@ -40,7 +44,7 @@ public record ExpandedAffiliation(URI id, String countryCode, Map<String, String
     public static final class Builder {
 
         private URI id = randomUri();
-        private String countryCode = "NO";
+        private String countryCode = COUNTRY_CODE_NORWAY;
         private Map<String, String> labels = Map.of();
 
         private Builder() {

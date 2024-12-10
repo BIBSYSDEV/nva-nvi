@@ -3,6 +3,9 @@ package no.sikt.nva.nvi.test;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.UUID.randomUUID;
+import static no.sikt.nva.nvi.test.TestConstants.ID_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.NAME_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.TYPE_FIELD;
 import static no.sikt.nva.nvi.test.TestUtils.generatePublicationChannelId;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -25,10 +28,10 @@ public record ExpandedPublicationChannel(String type, URI id, String name, Strin
 
     public ObjectNode asObjectNode() {
         var publicationContextNode = objectMapper.createObjectNode();
-        publicationContextNode.put("type", type);
-        publicationContextNode.put("id", id.toString());
+        publicationContextNode.put(TYPE_FIELD, type);
+        publicationContextNode.put(ID_FIELD, id.toString());
         if (nonNull(name)) {
-            publicationContextNode.put("name", name);
+            publicationContextNode.put(NAME_FIELD, name);
         }
         if (nonNull(level)) {
             publicationContextNode.put("scientificValue", level);
