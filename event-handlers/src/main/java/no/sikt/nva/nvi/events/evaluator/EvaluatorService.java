@@ -88,8 +88,8 @@ public class EvaluatorService {
 
         var unverifiedCreatorsWithNviInstitutions = creatorVerificationUtil.getUnverifiedCreatorsWithNviInstitutions(
             publication);
-        if (hasCreatorsWithNviAffiliations(verifiedCreatorsWithNviInstitutions,
-                                           unverifiedCreatorsWithNviInstitutions)) {
+        if (hasCreators(verifiedCreatorsWithNviInstitutions,
+                        unverifiedCreatorsWithNviInstitutions)) {
             var pointCalculation = pointService.calculatePoints(publication, verifiedCreatorsWithNviInstitutions);
             var nviCandidate = constructNviCandidate(verifiedCreatorsWithNviInstitutions,
                                                      unverifiedCreatorsWithNviInstitutions,
@@ -105,8 +105,8 @@ public class EvaluatorService {
         }
     }
 
-    private static boolean hasCreatorsWithNviAffiliations(List<VerifiedNviCreator> verifiedCreatorsWithNviInstitutions,
-                                                          List<UnverifiedNviCreator> unverifiedCreatorsWithNviInstitutions) {
+    private static boolean hasCreators(List<VerifiedNviCreator> verifiedCreatorsWithNviInstitutions,
+                                       List<UnverifiedNviCreator> unverifiedCreatorsWithNviInstitutions) {
         return !verifiedCreatorsWithNviInstitutions.isEmpty() || !unverifiedCreatorsWithNviInstitutions.isEmpty();
     }
 
