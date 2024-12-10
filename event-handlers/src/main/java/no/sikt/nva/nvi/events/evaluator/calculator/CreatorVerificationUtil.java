@@ -92,12 +92,12 @@ public class CreatorVerificationUtil {
         return URI.create(getCustomerEndpoint + "/" + URLEncoder.encode(institutionId, StandardCharsets.UTF_8));
     }
 
-    private static URI extractContributorId(JsonNode creatorNode) {
-        return URI.create(extractJsonNodeTextValue(creatorNode, JSON_POINTER_IDENTITY_ID));
+    private static URI extractContributorId(JsonNode contributorNode) {
+        return URI.create(extractJsonNodeTextValue(contributorNode, JSON_POINTER_IDENTITY_ID));
     }
 
-    private static String extractContributorName(JsonNode creatorNode) {
-        return extractJsonNodeTextValue(creatorNode, JSON_POINTER_IDENTITY_NAME);
+    private static String extractContributorName(JsonNode contributorNode) {
+        return extractJsonNodeTextValue(contributorNode, JSON_POINTER_IDENTITY_NAME);
     }
 
     private static boolean isVerified(JsonNode contributorNode) {
