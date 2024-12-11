@@ -45,6 +45,7 @@ public record ExpandedPublicationChannel(String type, URI id, String name, Strin
         return publicationContextNode;
     }
 
+    @JacocoGenerated
     public static final class Builder {
 
         private final UUID identifier = randomUUID();
@@ -77,23 +78,8 @@ public record ExpandedPublicationChannel(String type, URI id, String name, Strin
             return this;
         }
 
-        public Builder withName(String name) {
-            this.name = name;
-            return this;
-        }
-
         public Builder withLevel(String level) {
             this.level = level;
-            return this;
-        }
-
-        public Builder withValid(Boolean valid) {
-            this.valid = valid;
-            return this;
-        }
-
-        public Builder withPrintIssn(String printIssn) {
-            this.printIssn = printIssn;
             return this;
         }
 

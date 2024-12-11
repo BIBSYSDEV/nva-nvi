@@ -41,6 +41,7 @@ public record ExpandedAffiliation(URI id, String countryCode, Map<String, String
         return affiliationNode;
     }
 
+    @JacocoGenerated
     public static final class Builder {
 
         private URI id = randomUri();
@@ -63,11 +64,6 @@ public record ExpandedAffiliation(URI id, String countryCode, Map<String, String
 
         public Builder withCountryCode(String countryCode) {
             this.countryCode = countryCode;
-            return this;
-        }
-
-        public Builder withLabels(Map<String, String> labels) {
-            this.labels = labels;
             return this;
         }
 

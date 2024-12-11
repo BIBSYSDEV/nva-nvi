@@ -76,6 +76,7 @@ public record ExpandedContributor(URI id, String verificationStatus, String cont
         return affiliationsRootNode;
     }
 
+    @JacocoGenerated
     public static final class Builder {
 
         private URI id = randomUri();
@@ -112,18 +113,8 @@ public record ExpandedContributor(URI id, String verificationStatus, String cont
             return this;
         }
 
-        public Builder withRole(String role) {
-            this.role = role;
-            return this;
-        }
-
         public Builder withAffiliations(List<ExpandedAffiliation> affiliations) {
             this.affiliations = affiliations;
-            return this;
-        }
-
-        public Builder withOrcId(String orcId) {
-            this.orcId = orcId;
             return this;
         }
 

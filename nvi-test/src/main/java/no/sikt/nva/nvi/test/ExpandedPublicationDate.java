@@ -9,14 +9,6 @@ import nva.commons.core.JacocoGenerated;
 @JacocoGenerated
 public record ExpandedPublicationDate(String year, String month, String day) {
 
-    public static Builder builder() {
-        return new Builder();
-    }
-
-    public static Builder from(ExpandedPublicationDate other) {
-        return new Builder(other);
-    }
-
     public ObjectNode asObjectNode() {
         var publicationDateNode = objectMapper.createObjectNode();
         publicationDateNode.put(TYPE_FIELD, "PublicationDate");
@@ -28,38 +20,5 @@ public record ExpandedPublicationDate(String year, String month, String day) {
             publicationDateNode.put("day", day);
         }
         return publicationDateNode;
-    }
-
-    public static final class Builder {
-        private String year;
-        private String month;
-        private String day;
-
-        private Builder() {}
-
-        private Builder(ExpandedPublicationDate other) {
-            this.year = other.year();
-            this.month = other.month();
-            this.day = other.day();
-        }
-
-        public Builder withYear(String year) {
-            this.year = year;
-            return this;
-        }
-
-        public Builder withMonth(String month) {
-            this.month = month;
-            return this;
-        }
-
-        public Builder withDay(String day) {
-            this.day = day;
-            return this;
-        }
-
-        public ExpandedPublicationDate build() {
-            return new ExpandedPublicationDate(year, month, day);
-        }
     }
 }

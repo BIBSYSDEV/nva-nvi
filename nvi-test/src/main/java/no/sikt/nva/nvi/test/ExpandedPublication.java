@@ -22,7 +22,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.ioutils.IoUtils;
 
@@ -165,6 +164,7 @@ public record ExpandedPublication(URI id, UUID identifier, String mainTitle, Str
         return contributorsNode;
     }
 
+    @JacocoGenerated
     public static final class Builder {
 
         private URI id;
@@ -198,48 +198,14 @@ public record ExpandedPublication(URI id, UUID identifier, String mainTitle, Str
             this.issn = other.issn;
         }
 
-        public Builder withPublicationId(URI id) {
-            this.id = id;
-            return this;
-        }
-
-        public Builder withIdentifier(UUID identifier) {
-            this.identifier = identifier;
-            return this;
-        }
-
-        public Builder withMainTitle(String mainTitle) {
-            this.mainTitle = mainTitle;
-            return this;
-        }
-
         public Builder withContributors(List<ExpandedContributor> contributors) {
             this.contributors = contributors;
             return this;
         }
 
-        public Builder withStatus(String status) {
-            this.status = status;
-            return this;
-        }
-
-        public Builder withLanguage(String language) {
-            this.language = language;
-            return this;
-        }
-
-        public Builder withAbstractText(String abstractText) {
-            this.abstractText = abstractText;
-            return this;
-        }
 
         public Builder withPublicationChannels(List<ExpandedPublicationChannel> publicationChannels) {
             this.publicationChannels = publicationChannels;
-            return this;
-        }
-
-        public Builder withPublicationContextType(String type) {
-            this.publicationContextType = type;
             return this;
         }
 
@@ -250,18 +216,6 @@ public record ExpandedPublication(URI id, UUID identifier, String mainTitle, Str
 
         public Builder withPublicationDate(ExpandedPublicationDate publicationDate) {
             this.publicationDate = publicationDate;
-            return this;
-        }
-
-        public Builder withPublicationDate(PublicationDate publicationDate) {
-            this.publicationDate = new ExpandedPublicationDate(publicationDate.year(),
-                                                               publicationDate.month(),
-                                                               publicationDate.day());
-            return this;
-        }
-
-        public Builder withIssn(String issn) {
-            this.issn = issn;
             return this;
         }
 
