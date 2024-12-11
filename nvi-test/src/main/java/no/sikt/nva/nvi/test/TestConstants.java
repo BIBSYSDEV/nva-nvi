@@ -1,5 +1,7 @@
 package no.sikt.nva.nvi.test;
 
+import java.net.URI;
+
 public final class TestConstants {
 
     public static final String ID_FIELD = "id";
@@ -21,6 +23,18 @@ public final class TestConstants {
     public static final String EN_FIELD = "en";
     public static final String COUNTRY_CODE_FIELD = "countryCode";
     public static final String COUNTRY_CODE_NORWAY = "NO";
+
+    public static final URI HARDCODED_CREATOR_ID = URI.create("https://api.dev.nva.aws.unit.no/cristin/person/997998");
+    public static final ExpandedPublicationDate HARDCODED_JSON_PUBLICATION_DATE =
+        new ExpandedPublicationDate("2023", null, null);
+    public static final URI HARDCODED_PUBLICATION_CHANNEL_ID = URI.create(
+        "https://api.dev.nva.aws.unit.no/publication-channels/series/490845/2023");
+    public static final URI HARDCODED_PUBLICATION_ID = URI.create(
+        "https://api.dev.nva.aws.unit.no/publication/01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d");
+    public static final URI CRISTIN_NVI_ORG_TOP_LEVEL_ID = URI.create(
+        "https://api.dev.nva.aws.unit.no/cristin/organization/194.0.0.0");
+    public static final URI CRISTIN_NVI_ORG_SUB_UNIT_ID = URI.create(
+        "https://api.dev.nva.aws.unit.no/cristin/organization/194.64.20.0");
 
     public static final int ONE = 1;
 

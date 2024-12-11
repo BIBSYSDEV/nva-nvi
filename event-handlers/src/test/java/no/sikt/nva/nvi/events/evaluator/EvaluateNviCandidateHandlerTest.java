@@ -11,6 +11,12 @@ import static no.sikt.nva.nvi.events.evaluator.TestUtils.createResponse;
 import static no.sikt.nva.nvi.events.evaluator.TestUtils.mockOrganizationResponseForAffiliation;
 import static no.sikt.nva.nvi.events.evaluator.model.PublicationChannel.JOURNAL;
 import static no.sikt.nva.nvi.events.evaluator.model.PublicationChannel.SERIES;
+import static no.sikt.nva.nvi.test.TestConstants.CRISTIN_NVI_ORG_SUB_UNIT_ID;
+import static no.sikt.nva.nvi.test.TestConstants.CRISTIN_NVI_ORG_TOP_LEVEL_ID;
+import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_CREATOR_ID;
+import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_JSON_PUBLICATION_DATE;
+import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_PUBLICATION_CHANNEL_ID;
+import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_PUBLICATION_ID;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static nva.commons.core.attempt.Try.attempt;
@@ -93,13 +99,8 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
 
     private static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
     private static final PublicationDate HARDCODED_PUBLICATION_DATE = new PublicationDate(null, null, "2023");
-    private static final ExpandedPublicationDate HARDCODED_JSON_PUBLICATION_DATE =
-            new ExpandedPublicationDate("2023", null, null);
-    private static final URI HARDCODED_PUBLICATION_CHANNEL_ID = URI.create(
-        "https://api.dev.nva.aws.unit.no/publication-channels/series/490845/2023");
     private static final URI SIKT_CRISTIN_ORG_ID = URI.create(
         "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0");
-    private static final URI HARDCODED_CREATOR_ID = URI.create("https://api.dev.nva.aws.unit.no/cristin/person/997998");
     private static final String ACADEMIC_CHAPTER_PATH = "evaluator/candidate_academicChapter.json";
     private static final int SCALE = 4;
     private static final String ACADEMIC_LITERATURE_REVIEW_JSON_PATH = "evaluator/candidate_academicLiteratureReview"
@@ -109,17 +110,11 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
     private static final String BUCKET_NAME = "ignoredBucket";
     private static final String CUSTOMER_API_NVI_RESPONSE = "{" + "\"nviInstitution\" : \"true\"" + "}";
     private static final String ACADEMIC_ARTICLE_PATH = "evaluator/candidate_academicArticle.json";
-    private static final URI HARDCODED_PUBLICATION_ID = URI.create(
-        "https://api.dev.nva.aws.unit.no/publication/01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d");
     private static final String ACADEMIC_ARTICLE = IoUtils.stringFromResources(Path.of(ACADEMIC_ARTICLE_PATH))
                                                        .replace("__REPLACE_WITH_PUBLICATION_ID__",
                                                                 HARDCODED_PUBLICATION_ID.toString());
     private static final String ERROR_COULD_NOT_FETCH_CRISTIN_ORG = "Could not fetch Cristin organization for: ";
     private static final String COULD_NOT_FETCH_CUSTOMER_MESSAGE = "Could not fetch customer for: ";
-    private static final URI CRISTIN_NVI_ORG_TOP_LEVEL_ID = URI.create(
-        "https://api.dev.nva.aws.unit.no/cristin/organization/194.0.0.0");
-    private static final URI CRISTIN_NVI_ORG_SUB_UNIT_ID = URI.create(
-        "https://api.dev.nva.aws.unit.no/cristin/organization/194.64.20.0");
     private static final ExpandedAffiliation DEFAULT_SUBUNIT_AFFILIATION =
             ExpandedAffiliation.builder().withId(CRISTIN_NVI_ORG_SUB_UNIT_ID).build();
     private static final URI CUSTOMER_API_CRISTIN_NVI_ORG_TOP_LEVEL = URI.create(
