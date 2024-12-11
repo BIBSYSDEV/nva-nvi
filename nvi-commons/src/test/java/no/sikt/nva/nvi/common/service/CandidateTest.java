@@ -447,7 +447,7 @@ class CandidateTest extends LocalDynamoTest {
                                                             true,
                                                             candidate.getPublicationDetails().publicationDate(),
                                                             Map.of(HARDCODED_CREATOR_ID, List.of(
-                                                                HARDCODED_INSTITUTION_ID)),
+                                                                newSubUnitInSameOrganization)),
                                                             InstanceType.parse(candidate.getInstanceType()),
                                                             candidate.getPublicationChannelType().getValue(),
                                                             candidate.getPublicationChannelId(),
