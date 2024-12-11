@@ -1,10 +1,30 @@
 # nva-nvi
 
+## Introduction
+
+`nva-nvi` is designed to manage and process publication data for nvi (Norsk vitenskapsindeks) reporting. 
+The project includes handlers for evaluation, point calculation and curator management of publications that qualify as nvi candidates.
+The project relies on triggers 
+
+[SWAGGER UI](https://petstore.swagger.io/?url=https://raw.githubusercontent.com/BIBSYSDEV/nva-nvi/refs/heads/main/docs/openapi.yaml)
+
 ## Overview
 
 ![Alt text](resources/NVI-overview.png)
 
-## OpenSearch Indexes
+## Add a resource to your application
+
+The application template uses AWS Serverless Application Model (AWS SAM) to define application resources. AWS SAM is an
+extension of AWS CloudFormation with a simpler syntax for configuring common serverless application resources such as
+functions, triggers, and APIs. For resources not included
+in [the SAM specification](https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md),
+you can use
+standard [AWS CloudFormation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-template-resource-type-ref.html)
+resource types.
+
+## When building a new environment
+
+### Create OpenSearch Indexes
 
 When building a new environment or the search indexes are deleted and needs to
 be rebuilt, make sure to run the `InitHandler`.
@@ -26,7 +46,9 @@ to step 3.
 }
 ```
 
-## How to requeue candidates in IndexDLQ
+## Error handling
+
+### How to requeue candidates in IndexDLQ
 
 The `IndexDLQ` is a shared DLQ for all handlers related to indexing.
 `NviRequeueDlqHandler` consumes messages from the `IndexDLQ`, and updates the
@@ -42,7 +64,7 @@ another `count`, provide it as input:
 }
 ```
 
-## DLQ Redrives
+### DLQ Redrives
 
 See template for which DLQs are available for redrive (configured with
 `RedrivePolicy`). To start a DLQ redrive, locate the DLQ in the AWS console
