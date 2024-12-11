@@ -11,6 +11,7 @@ import static no.sikt.nva.nvi.events.evaluator.TestUtils.createResponse;
 import static no.sikt.nva.nvi.events.evaluator.TestUtils.mockOrganizationResponseForAffiliation;
 import static no.sikt.nva.nvi.events.evaluator.model.PublicationChannel.JOURNAL;
 import static no.sikt.nva.nvi.events.evaluator.model.PublicationChannel.SERIES;
+import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_SWEDEN;
 import static no.sikt.nva.nvi.test.TestConstants.CRISTIN_NVI_ORG_SUB_UNIT_ID;
 import static no.sikt.nva.nvi.test.TestConstants.CRISTIN_NVI_ORG_TOP_LEVEL_ID;
 import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_CREATOR_ID;
@@ -749,9 +750,9 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
         }
 
         @Test
-        void shouldRejectCandidateWithSwedishCountryCode() throws IOException {
+        void shouldRejectCandidateWithOnlySwedishCountryCode() throws IOException {
             var affiliations = List.of(ExpandedAffiliation.builder()
-                                                          .withCountryCode("SE")
+                                                          .withCountryCode(COUNTRY_CODE_SWEDEN)
                                                           .build());
             var swedishContributor = defaultVerifiedContributor.withAffiliations(affiliations);
             verifiedContributors = List.of(swedishContributor);

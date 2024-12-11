@@ -23,6 +23,7 @@ public final class TestConstants {
     public static final String EN_FIELD = "en";
     public static final String COUNTRY_CODE_FIELD = "countryCode";
     public static final String COUNTRY_CODE_NORWAY = "NO";
+    public static final String COUNTRY_CODE_SWEDEN = "SE";
 
     public static final URI HARDCODED_CREATOR_ID = URI.create("https://api.dev.nva.aws.unit.no/cristin/person/997998");
     public static final ExpandedPublicationDate HARDCODED_JSON_PUBLICATION_DATE =
