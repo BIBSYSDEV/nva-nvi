@@ -877,7 +877,7 @@ class CandidateTest extends LocalDynamoTest {
             return new Builder();
         }
 
-        private static class Builder {
+        private static final class Builder {
 
             private static final Creator DEFAULT_CREATOR = new Creator(HARDCODED_CREATOR_ID,
                                                                        List.of(HARDCODED_SUBUNIT_ID));
