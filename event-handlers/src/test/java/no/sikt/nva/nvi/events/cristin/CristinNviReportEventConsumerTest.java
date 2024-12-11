@@ -125,7 +125,7 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTest {
                    is(equalTo(expectedPublicationBucketUri(cristinNviReport.publicationIdentifier()))));
         assertThat(candidate.isApplicable(), is(true));
         assertThat(candidate.getPeriod().year(), is(equalTo(String.valueOf(cristinNviReport.yearReported()))));
-        assertThat(candidate.getPublicationDetails().level(), is(equalTo("LevelOne")));
+        assertThat(candidate.getScientificLevel(), is(equalTo("LevelOne")));
         assertThat(candidate.getPublicationDetails().creators(),
                    Matchers.contains(constructExpectedCreator(cristinNviReport)));
         assertThat(candidate.getPublicationDetails().type(), is(equalTo(cristinNviReport.instanceType())));
