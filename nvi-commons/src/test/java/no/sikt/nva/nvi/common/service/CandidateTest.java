@@ -107,9 +107,6 @@ class CandidateTest extends LocalDynamoTest {
     private static final URI HARDCODED_CHANNEL_ID = URI.create(
         "https://example.org/publication-channels-v2/journal/123/2018");
     private static final String HARDCODED_LEVEL = "LevelOne";
-    private static final PublicationChannel HARDCODED_PUBLICATION_CHANNEL = new PublicationChannel(ChannelType.JOURNAL,
-                                                                                                   HARDCODED_CHANNEL_ID,
-                                                                                                   HARDCODED_LEVEL);
     private static final URI HARDCODED_CREATOR_ID = URI.create("https://example.org/someCreator");
     private static final InstanceType HARDCODED_INSTANCE_TYPE = InstanceType.ACADEMIC_ARTICLE;
     private static final BigDecimal HARDCODED_POINTS = BigDecimal.ONE.setScale(EXPECTED_SCALE, EXPECTED_ROUNDING_MODE);
@@ -721,9 +718,9 @@ class CandidateTest extends LocalDynamoTest {
                                             new PublicationDate(String.valueOf(CURRENT_YEAR), null, null),
                                             Map.of(HARDCODED_CREATOR_ID, List.of(HARDCODED_SUBUNIT_ID)),
                                             HARDCODED_INSTANCE_TYPE,
-                                            HARDCODED_PUBLICATION_CHANNEL.channelType().getValue(),
-                                            HARDCODED_PUBLICATION_CHANNEL.id(),
-                                            HARDCODED_PUBLICATION_CHANNEL.level(),
+                                            ChannelType.JOURNAL.getValue(),
+                                            HARDCODED_CHANNEL_ID,
+                                            HARDCODED_LEVEL,
                                             List.of(
                                                 new InstitutionPoints(HARDCODED_INSTITUTION_ID, HARDCODED_POINTS,
                                                                       List.of(
@@ -884,7 +881,9 @@ class CandidateTest extends LocalDynamoTest {
 
             private static final Creator DEFAULT_CREATOR = new Creator(HARDCODED_CREATOR_ID,
                                                                        List.of(HARDCODED_SUBUNIT_ID));
-            private PublicationChannel channel = HARDCODED_PUBLICATION_CHANNEL;
+            private PublicationChannel channel = new PublicationChannel(ChannelType.JOURNAL,
+                                                                        HARDCODED_CHANNEL_ID,
+                                                                        HARDCODED_LEVEL);
             private InstanceType type = HARDCODED_INSTANCE_TYPE;
             private List<InstitutionPoints> institutionPoints = List.of(
                 new InstitutionPoints(HARDCODED_INSTITUTION_ID, HARDCODED_POINTS,
