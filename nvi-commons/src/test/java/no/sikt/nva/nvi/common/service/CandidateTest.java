@@ -873,11 +873,11 @@ class CandidateTest extends LocalDynamoTest {
     private record CandidateResetCauseArgument(PublicationChannel channel, InstanceType type,
                                                List<InstitutionPoints> institutionPoints, List<Creator> creators) {
 
-        public static CandidateResetCauseArgument.Builder defaultBuilder() {
+        private static CandidateResetCauseArgument.Builder defaultBuilder() {
             return new Builder();
         }
 
-        public static class Builder {
+        private static class Builder {
 
             private static final Creator DEFAULT_CREATOR = new Creator(HARDCODED_CREATOR_ID,
                                                                        List.of(HARDCODED_SUBUNIT_ID));
@@ -895,27 +895,27 @@ class CandidateTest extends LocalDynamoTest {
             private Builder() {
             }
 
-            public Builder withType(InstanceType type) {
+            private Builder withType(InstanceType type) {
                 this.type = type;
                 return this;
             }
 
-            public Builder withCreators(List<Creator> creators) {
+            private Builder withCreators(List<Creator> creators) {
                 this.creators = creators;
                 return this;
             }
 
-            public Builder withChannelId(URI publicationChannelId) {
+            private Builder withChannelId(URI publicationChannelId) {
                 this.channel = new PublicationChannel(ChannelType.JOURNAL, publicationChannelId, HARDCODED_LEVEL);
                 return this;
             }
 
-            public Builder withLevel(String level) {
+            private Builder withLevel(String level) {
                 this.channel = new PublicationChannel(ChannelType.JOURNAL, HARDCODED_CHANNEL_ID, level);
                 return this;
             }
 
-            public Builder withPointsForInstitution(BigDecimal institutionPoints) {
+            private Builder withPointsForInstitution(BigDecimal institutionPoints) {
                 this.institutionPoints = List.of(new InstitutionPoints(HARDCODED_INSTITUTION_ID, institutionPoints,
                                                                        List.of(new CreatorAffiliationPoints(
                                                                            HARDCODED_CREATOR_ID,
@@ -924,7 +924,7 @@ class CandidateTest extends LocalDynamoTest {
                 return this;
             }
 
-            public CandidateResetCauseArgument build() {
+            private CandidateResetCauseArgument build() {
                 return new CandidateResetCauseArgument(channel, type, institutionPoints, creators);
             }
         }
