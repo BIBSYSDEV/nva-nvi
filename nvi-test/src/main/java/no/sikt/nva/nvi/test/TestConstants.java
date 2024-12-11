@@ -2,9 +2,6 @@ package no.sikt.nva.nvi.test;
 
 public final class TestConstants {
 
-    private TestConstants() {
-    }
-
     public static final String ID_FIELD = "id";
     public static final String IDENTIFIER_FIELD = "identifier";
     public static final String IDENTITY_FIELD = "identity";
@@ -26,4 +23,7 @@ public final class TestConstants {
     public static final String COUNTRY_CODE_NORWAY = "NO";
 
     public static final int ONE = 1;
+
+    private TestConstants() {
+    }
 }
