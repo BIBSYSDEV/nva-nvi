@@ -612,10 +612,6 @@ public final class Candidate {
                    .build();
     }
 
-    private Set<URI> getApprovingOrganizations() {
-        return approvals.keySet();
-    }
-
     private Set<URI> getNviCreatorIds() {
         return publicationDetails.getNviCreatorIds();
     }
