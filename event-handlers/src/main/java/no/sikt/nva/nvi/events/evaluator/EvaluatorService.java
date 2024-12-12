@@ -16,7 +16,6 @@ import java.net.URI;
 import java.time.Year;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
@@ -136,7 +135,7 @@ public class EvaluatorService {
     private static List<NviCreator> mapToNviCreators(List<VerifiedNviCreator> nviCreators) {
         return nviCreators.stream()
                    .map(NviCreator::from)
-                   .collect(Collectors.toList());
+                   .toList();
     }
 
     private static URI extractPublicationId(JsonNode publication) {
