@@ -1,0 +1,600 @@
+package no.sikt.nva.nvi.common.service;
+
+import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
+import static no.sikt.nva.nvi.test.TestUtils.createUpdateStatusRequest;
+import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
+import static no.sikt.nva.nvi.test.TestUtils.createUpsertNonCandidateRequest;
+import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningClosedPeriod;
+import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningNotOpenedPeriod;
+import static no.sikt.nva.nvi.test.TestUtils.randomApplicableCandidate;
+import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
+import static no.sikt.nva.nvi.test.TestUtils.randomLevelExcluding;
+import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
+import static no.unit.nva.testutils.RandomDataGenerator.randomString;
+import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import java.math.BigDecimal;
+import java.net.URI;
+import java.time.ZonedDateTime;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
+import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.db.model.ChannelType;
+import no.sikt.nva.nvi.common.model.InvalidNviCandidateException;
+import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
+import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
+import no.sikt.nva.nvi.common.service.dto.ApprovalDto;
+import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
+import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.service.model.InstanceType;
+import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
+import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
+import no.sikt.nva.nvi.common.service.model.PublicationChannel;
+import no.sikt.nva.nvi.common.service.model.PublicationDetails.Creator;
+import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
+import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Named;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
+
+class CandidateApprovalTest extends CandidateTest {
+
+    private static final String APPROVED = "APPROVED";
+    private static final URI HARDCODED_INSTITUTION_ID = URI.create("https://example.org/topLevelInstitutionId");
+    private static final URI HARDCODED_SUBUNIT_ID = URI.create("https://example.org/subUnitInstitutionId");
+    private static final URI HARDCODED_CHANNEL_ID = URI.create(
+        "https://example.org/publication-channels-v2/journal/123/2018");
+    private static final String HARDCODED_LEVEL = "LevelOne";
+    private static final URI HARDCODED_CREATOR_ID = URI.create("https://example.org/someCreator");
+    private static final InstanceType HARDCODED_INSTANCE_TYPE = InstanceType.ACADEMIC_ARTICLE;
+    private static final BigDecimal HARDCODED_POINTS = BigDecimal.ONE.setScale(EXPECTED_SCALE, EXPECTED_ROUNDING_MODE);
+
+    public static Stream<Arguments> statusProvider() {
+        return Stream.of(Arguments.of(ApprovalStatus.PENDING, ApprovalStatus.REJECTED),
+                         Arguments.of(ApprovalStatus.PENDING, ApprovalStatus.APPROVED),
+                         Arguments.of(ApprovalStatus.APPROVED, ApprovalStatus.PENDING),
+                         Arguments.of(ApprovalStatus.APPROVED, ApprovalStatus.REJECTED),
+                         Arguments.of(ApprovalStatus.REJECTED, ApprovalStatus.PENDING),
+                         Arguments.of(ApprovalStatus.REJECTED, ApprovalStatus.APPROVED));
+    }
+
+    public static Stream<PeriodRepository> periodRepositoryProvider() {
+        var year = ZonedDateTime.now().getYear();
+        return Stream.of(periodRepositoryReturningClosedPeriod(year), periodRepositoryReturningNotOpenedPeriod(year),
+                         mock(PeriodRepository.class));
+    }
+
+    @Test
+    void shouldCreatePendingApprovalsForNewCandidate() {
+        var institutionId = randomUri();
+        var upsertCandidateRequest = createUpsertCandidateRequest(institutionId);
+        var candidate = upsert(upsertCandidateRequest);
+        assertThat(candidate.getApprovals().size(), is(equalTo(1)));
+        assertThat(candidate.getApprovals().get(institutionId).getStatus(), is(equalTo(ApprovalStatus.PENDING)));
+    }
+
+    @ParameterizedTest(name = "Should update from old status {0} to new status {1}")
+    @MethodSource("statusProvider")
+    void shouldUpdateStatusWhenUpdateStatusRequestValid(ApprovalStatus oldStatus, ApprovalStatus newStatus) {
+        var institutionId = randomUri();
+        var upsertCandidateRequest = createUpsertCandidateRequest(institutionId);
+        Candidate.upsert(upsertCandidateRequest, candidateRepository, periodRepository);
+        var existingCandidate = Candidate.fetchByPublicationId(upsertCandidateRequest::publicationId,
+                                                               candidateRepository,
+                                                               periodRepository)
+                                    .updateApproval(
+                                        createUpdateStatusRequest(oldStatus, institutionId, randomString()));
+        var updatedCandidate = existingCandidate.updateApproval(
+            createUpdateStatusRequest(newStatus, institutionId, randomString()));
+
+        var actualNewStatus = updatedCandidate.getApprovals().get(institutionId).getStatus();
+        assertThat(actualNewStatus, is(equalTo(newStatus)));
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = ApprovalStatus.class, names = {"REJECTED", APPROVED})
+    void shouldResetApprovalWhenChangingToPending(ApprovalStatus oldStatus) {
+        var institutionId = randomUri();
+        var upsertCandidateRequest = createUpsertCandidateRequest(randomUri(), randomUri(), true,
+                                                                  InstanceType.ACADEMIC_MONOGRAPH, 1,
+                                                                  randomBigDecimal(),
+                                                                  randomLevelExcluding(
+                                                                      DbLevel.NON_CANDIDATE).getValue(),
+                                                                  CURRENT_YEAR,
+                                                                  institutionId);
+        var candidateBO = upsert(upsertCandidateRequest);
+        var assignee = randomString();
+        candidateBO.updateApproval(new UpdateAssigneeRequest(institutionId, assignee))
+            .updateApproval(createUpdateStatusRequest(oldStatus, institutionId, randomString()))
+            .updateApproval(createUpdateStatusRequest(ApprovalStatus.PENDING, institutionId, randomString()));
+        var approvalStatus = candidateBO.getApprovals().get(institutionId);
+        assertThat(approvalStatus.getStatus(), is(equalTo(ApprovalStatus.PENDING)));
+        assertThat(approvalStatus.getAssignee().value(), is(assignee));
+        assertThat(approvalStatus.getFinalizedBy(), is(nullValue()));
+        assertThat(approvalStatus.getFinalizedDate(), is(nullValue()));
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = ApprovalStatus.class, names = {"PENDING", APPROVED})
+    void shouldRemoveReasonWhenUpdatingFromRejectionStatusToNewStatus(ApprovalStatus newStatus) {
+        var institutionId = randomUri();
+        var createRequest = createUpsertCandidateRequest(institutionId);
+        Candidate.upsert(createRequest, candidateRepository, periodRepository);
+        var rejectedCandidate = Candidate.fetchByPublicationId(createRequest::publicationId, candidateRepository,
+                                                               periodRepository)
+                                    .updateApproval(
+                                        createUpdateStatusRequest(ApprovalStatus.REJECTED, institutionId,
+                                                                  randomString()));
+
+        var updatedCandidate = rejectedCandidate.updateApproval(
+            createUpdateStatusRequest(newStatus, institutionId, randomString()));
+        assertThat(updatedCandidate.getApprovals().size(), is(equalTo(1)));
+        assertThat(updatedCandidate.getApprovals().get(institutionId).getStatus(), is(equalTo(newStatus)));
+        assertThat(updatedCandidate.getApprovals().get(institutionId).getReason(), is(nullValue()));
+    }
+
+    @Test
+    void shouldRemoveOldInstitutionsWhenUpdatingCandidate() {
+        var keepInstitutionId = randomUri();
+        var deleteInstitutionId = randomUri();
+        var createCandidateRequest = createUpsertCandidateRequest(keepInstitutionId, deleteInstitutionId, randomUri());
+        Candidate.upsert(createCandidateRequest, candidateRepository, periodRepository);
+        var updateRequest = createUpsertCandidateRequest(
+            createCandidateRequest.publicationId(), randomUri(), true, InstanceType.ACADEMIC_MONOGRAPH, 2,
+            randomBigDecimal(), randomLevelExcluding(DbLevel.NON_CANDIDATE).getValue(),
+            CURRENT_YEAR,
+            keepInstitutionId,
+            randomUri());
+        var updatedCandidate = upsert(updateRequest);
+        var dto = updatedCandidate.toDto();
+        var approvalMap = dto.approvals()
+                              .stream()
+                              .collect(Collectors.toMap(ApprovalDto::institutionId, Function.identity()));
+
+        assertThat(approvalMap.containsKey(deleteInstitutionId), is(false));
+        assertThat(approvalMap.containsKey(keepInstitutionId), is(true));
+        assertThat(approvalMap.size(), is(2));
+    }
+
+    @Test
+    void shouldRemoveApprovalsWhenBecomingNonCandidate() {
+        var candidate = randomApplicableCandidate(candidateRepository, periodRepository);
+        var updateRequest = createUpsertNonCandidateRequest(candidate.toDto().publicationId());
+        var updatedCandidate = Candidate.updateNonCandidate(updateRequest, candidateRepository)
+                                   .orElseThrow();
+        assertThat(updatedCandidate.getIdentifier(), is(equalTo(candidate.getIdentifier())));
+        assertThat(updatedCandidate.getApprovals().size(), is(equalTo(0)));
+    }
+
+    @Test
+    void shouldThrowExceptionWhenApplicableAndNonCandidate() {
+        var candidateBO = randomApplicableCandidate(candidateRepository, periodRepository);
+        var updateRequest = createUpsertCandidateRequest(candidateBO.toDto().publicationId(),
+                                                         randomUri(),
+                                                         true,
+                                                         null,
+                                                         2,
+                                                         randomBigDecimal(),
+                                                         randomLevelExcluding(DbLevel.NON_CANDIDATE)
+                                                             .getValue(), CURRENT_YEAR,
+                                                         randomUri());
+        assertThrows(InvalidNviCandidateException.class,
+                     () -> Candidate.upsert(updateRequest, candidateRepository, periodRepository));
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = ApprovalStatus.class, names = {"PENDING", APPROVED})
+    void shouldThrowUnsupportedOperationWhenRejectingWithoutReason(ApprovalStatus oldStatus) {
+        var institutionId = randomUri();
+        var createRequest = createUpsertCandidateRequest(institutionId);
+        Candidate.upsert(createRequest, candidateRepository, periodRepository);
+        var candidate = Candidate.fetchByPublicationId(createRequest::publicationId, candidateRepository,
+                                                       periodRepository)
+                            .updateApproval(createUpdateStatusRequest(oldStatus, institutionId, randomString()));
+        assertThrows(UnsupportedOperationException.class, () -> candidate.updateApproval(
+            createRejectionRequestWithoutReason(institutionId, randomString())));
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = ApprovalStatus.class, names = {"PENDING", APPROVED, "REJECTED"})
+    void shouldThrowIllegalArgumentExceptionWhenUpdateStatusWithoutUsername(ApprovalStatus newStatus) {
+        var institutionId = randomUri();
+        var createRequest = createUpsertCandidateRequest(institutionId);
+        var candidate = upsert(createRequest);
+
+        assertThrows(IllegalArgumentException.class,
+                     () -> candidate.updateApproval(createUpdateStatusRequest(newStatus, institutionId, null)));
+    }
+
+    @Test
+    void shouldPersistStatusChangeWhenRequestingAndUpdate() {
+        var institutionId = randomUri();
+        var upsertCandidateRequest = createUpsertCandidateRequest(institutionId);
+        var candidateBO = upsert(upsertCandidateRequest);
+        candidateBO.updateApproval(createUpdateStatusRequest(ApprovalStatus.APPROVED, institutionId, randomString()));
+
+        var status = Candidate.fetch(candidateBO::getIdentifier, candidateRepository, periodRepository)
+                         .getApprovals().get(institutionId).getStatus();
+        assertThat(status, is(equalTo(ApprovalStatus.APPROVED)));
+    }
+
+    @Test
+    void shouldChangeAssigneeWhenValidUpdateAssigneeRequest() {
+        var institutionId = randomUri();
+        var upsertCandidateRequest = createUpsertCandidateRequest(institutionId);
+        var candidateBO = upsert(upsertCandidateRequest);
+        var newUsername = randomString();
+        candidateBO.updateApproval(new UpdateAssigneeRequest(institutionId, newUsername));
+
+        var assignee = Candidate.fetch(candidateBO::getIdentifier, candidateRepository, periodRepository)
+                           .toDto()
+                           .approvals()
+                           .get(0)
+                           .assignee();
+
+        assertThat(assignee, is(equalTo(newUsername)));
+    }
+
+    @Test
+    void shouldNotAllowUpdateApprovalStatusWhenTryingToPassAnonymousImplementations() {
+        var institutionId = randomUri();
+        var upsertCandidateRequest = createUpsertCandidateRequest(institutionId);
+        var candidateBO = upsert(upsertCandidateRequest);
+        assertThrows(IllegalArgumentException.class, () -> candidateBO.updateApproval(() -> institutionId));
+    }
+
+    @ParameterizedTest()
+    @MethodSource("periodRepositoryProvider")
+    void shouldNotAllowToUpdateApprovalWhenCandidateIsNotWithinPeriod(PeriodRepository periodRepository) {
+        var candidate = randomApplicableCandidate(candidateRepository, periodRepository);
+        assertThrows(IllegalStateException.class,
+                     () -> candidate.updateApproval(new UpdateAssigneeRequest(randomUri(), randomString())));
+    }
+
+    @Test
+    void shouldNotOverrideAssigneeWhenAssigneeAlreadyIsSet() {
+        var institutionId = randomUri();
+        var assignee = randomString();
+        var request = createUpsertCandidateRequest(institutionId);
+        Candidate.upsert(request, candidateRepository, periodRepository);
+        var candidate = Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository)
+                            .updateApproval(new UpdateAssigneeRequest(institutionId, assignee))
+                            .updateApproval(
+                                createUpdateStatusRequest(ApprovalStatus.APPROVED, institutionId, randomString()))
+                            .updateApproval(
+                                createUpdateStatusRequest(ApprovalStatus.REJECTED, institutionId, randomString()))
+                            .toDto();
+        assertThat(candidate.approvals().getFirst().assignee(), is(equalTo(assignee)));
+        assertThat(candidate.approvals().getFirst().finalizedBy(), is(not(equalTo(assignee))));
+    }
+
+    @Test
+    void shouldNotResetApprovalsWhenUpdatingCandidateFieldsNotEffectingApprovals() {
+        var institutionId = randomUri();
+        var upsertCandidateRequest = createUpsertCandidateRequest(institutionId);
+        var candidate = upsert(upsertCandidateRequest);
+        candidate.updateApproval(
+            new UpdateStatusRequest(institutionId, ApprovalStatus.APPROVED, randomString(), randomString()));
+        var approval = candidate.getApprovals().get(institutionId);
+        var newUpsertRequest = createNewUpsertRequestNotAffectingApprovals(upsertCandidateRequest);
+        var updatedCandidate = upsert(newUpsertRequest);
+        var updatedApproval = updatedCandidate.getApprovals().get(institutionId);
+
+        assertThat(updatedApproval, is(equalTo(approval)));
+    }
+
+    @Test
+    void shouldNotResetApprovalsWhenCreatorAffiliationChangesWithinSameInstitution() {
+        var upsertCandidateRequest = getUpsertCandidateRequestWithHardcodedValues();
+        var candidate = upsert(upsertCandidateRequest);
+        candidate.updateApproval(
+            new UpdateStatusRequest(HARDCODED_INSTITUTION_ID, ApprovalStatus.APPROVED, randomString(), randomString()));
+        var newSubUnitInSameOrganization = randomUri();
+        var newUpsertRequest = createUpsertCandidateRequest(candidate.getPublicationId(),
+                                                            candidate.getPublicationDetails().publicationBucketUri(),
+                                                            true,
+                                                            candidate.getPublicationDetails().publicationDate(),
+                                                            Map.of(HARDCODED_CREATOR_ID, List.of(
+                                                                newSubUnitInSameOrganization)),
+                                                            InstanceType.parse(candidate.getInstanceType()),
+                                                            candidate.getPublicationChannelType().getValue(),
+                                                            candidate.getPublicationChannelId(),
+                                                            candidate.getScientificLevel(),
+                                                            List.of(new InstitutionPoints(HARDCODED_INSTITUTION_ID,
+                                                                                          HARDCODED_POINTS, List.of(
+                                                                new CreatorAffiliationPoints(HARDCODED_CREATOR_ID,
+                                                                                             newSubUnitInSameOrganization,
+                                                                                             HARDCODED_POINTS)))),
+                                                            randomInteger(), false,
+                                                            randomBigDecimal(), null, randomBigDecimal());
+        var updatedCandidate = upsert(newUpsertRequest);
+        var updatedApproval = updatedCandidate.getApprovals().get(HARDCODED_INSTITUTION_ID);
+
+        assertThat(updatedApproval.getStatus(), is(equalTo(ApprovalStatus.APPROVED)));
+    }
+
+    @Test
+    void shouldNotResetApprovalsWhenUpsertRequestContainsSameDecimalsWithAnotherScale() {
+        var institutionId = randomUri();
+        var upsertCandidateRequest = createUpsertRequestWithDecimalScale(0, institutionId);
+        var candidate = upsert(upsertCandidateRequest);
+        candidate.updateApproval(
+            new UpdateStatusRequest(institutionId, ApprovalStatus.APPROVED, randomString(), randomString()));
+        var approval = candidate.getApprovals().get(institutionId);
+        var newUpsertRequest = createNewUpsertRequestNotAffectingApprovals(upsertCandidateRequest);
+        var updatedCandidate = upsert(newUpsertRequest);
+        var updatedApproval = updatedCandidate.getApprovals().get(institutionId);
+
+        assertThat(updatedApproval, is(equalTo(approval)));
+    }
+
+    @Test
+    void shouldResetApprovalsWhenNonCandidateBecomesCandidate() {
+        var institutionId = randomUri();
+        var upsertCandidateRequest = createUpsertCandidateRequest(institutionId);
+        var candidate = upsert(upsertCandidateRequest);
+        var nonCandidate = Candidate.updateNonCandidate(
+            createUpsertNonCandidateRequest(candidate.getPublicationId()),
+            candidateRepository).orElseThrow();
+        assertFalse(nonCandidate.isApplicable());
+        var updatedCandidate = upsert(createNewUpsertRequestNotAffectingApprovals(upsertCandidateRequest));
+
+        assertTrue(updatedCandidate.isApplicable());
+        assertThat(updatedCandidate.getApprovals().size(), is(greaterThan(0)));
+    }
+
+    @ParameterizedTest
+    @MethodSource("candidateResetCauseProvider")
+    @DisplayName("Should reset approvals when updating fields effecting approvals")
+    void shouldResetApprovalsWhenUpdatingFieldsEffectingApprovals(CandidateResetCauseArgument arguments) {
+        var upsertCandidateRequest = getUpsertCandidateRequestWithHardcodedValues();
+
+        var candidate = upsert(upsertCandidateRequest);
+        candidate.updateApproval(
+            new UpdateStatusRequest(HARDCODED_INSTITUTION_ID, ApprovalStatus.APPROVED, randomString(), randomString()));
+
+        var newUpsertRequest = getUpsertCandidateRequest(arguments, candidate.getPublicationId());
+
+        var updatedCandidate = upsert(newUpsertRequest);
+        var updatedApproval = updatedCandidate.getApprovals().get(HARDCODED_INSTITUTION_ID);
+        assertThat(updatedApproval.getStatus(), is(equalTo(ApprovalStatus.PENDING)));
+    }
+
+    private static UpdateStatusRequest createRejectionRequestWithoutReason(URI institutionId, String username) {
+        return UpdateStatusRequest.builder()
+                   .withApprovalStatus(ApprovalStatus.REJECTED)
+                   .withInstitutionId(institutionId)
+                   .withUsername(username)
+                   .build();
+    }
+
+    private static Stream<Arguments> candidateResetCauseProvider() {
+        return Stream.of(
+            Arguments.of(Named.of("channel changed",
+                                  CandidateResetCauseArgument.defaultBuilder().withChannelId(randomUri()).build())),
+            Arguments.of(Named.of("level changed",
+                                  CandidateResetCauseArgument.defaultBuilder()
+                                      .withLevel("LevelTwo")
+                                      .build())),
+            Arguments.of(Named.of("type changed",
+                                  CandidateResetCauseArgument.defaultBuilder()
+                                      .withType(InstanceType.ACADEMIC_MONOGRAPH)
+                                      .build())),
+            Arguments.of(Named.of("institution points changed",
+                                  CandidateResetCauseArgument.defaultBuilder()
+                                      .withPointsForInstitution(BigDecimal.TEN)
+                                      .build())),
+            Arguments.of(Named.of("creator changed",
+                                  CandidateResetCauseArgument.defaultBuilder()
+                                      .withCreators(
+                                          List.of(new Creator(randomUri(), List.of(HARDCODED_INSTITUTION_ID))))
+                                      .build())),
+            Arguments.of(Named.of("creator removed",
+                                  CandidateResetCauseArgument.defaultBuilder()
+                                      .withCreators(Collections.emptyList())
+                                      .build())),
+            Arguments.of(Named.of("creator added",
+                                  CandidateResetCauseArgument.defaultBuilder()
+                                      .withCreators(List.of(CandidateResetCauseArgument.Builder.DEFAULT_CREATOR,
+                                                            new Creator(randomUri(),
+                                                                        List.of(HARDCODED_INSTITUTION_ID))))
+                                      .build())));
+    }
+
+    private UpsertCandidateRequest getUpsertCandidateRequest(CandidateResetCauseArgument arguments, URI publicationId) {
+        return createUpsertCandidateRequest(publicationId,
+                                            randomUri(), true,
+                                            new PublicationDate(String.valueOf(CURRENT_YEAR), null, null),
+                                            arguments.creators()
+                                                .stream()
+                                                .collect(Collectors.toMap(Creator::id, Creator::affiliations)),
+                                            arguments.type(),
+                                            arguments.channel().channelType().getValue(),
+                                            arguments.channel().id(),
+                                            arguments.channel().level(),
+                                            arguments.institutionPoints(),
+                                            randomInteger(), false,
+                                            randomBigDecimal(), null, randomBigDecimal());
+    }
+
+    private UpsertCandidateRequest getUpsertCandidateRequestWithHardcodedValues() {
+        return createUpsertCandidateRequest(URI.create("publicationId"), randomUri(), true,
+                                            new PublicationDate(String.valueOf(CURRENT_YEAR), null, null),
+                                            Map.of(HARDCODED_CREATOR_ID, List.of(HARDCODED_SUBUNIT_ID)),
+                                            HARDCODED_INSTANCE_TYPE,
+                                            ChannelType.JOURNAL.getValue(),
+                                            HARDCODED_CHANNEL_ID,
+                                            HARDCODED_LEVEL,
+                                            List.of(
+                                                new InstitutionPoints(HARDCODED_INSTITUTION_ID, HARDCODED_POINTS,
+                                                                      List.of(
+                                                                          new CreatorAffiliationPoints(
+                                                                              HARDCODED_CREATOR_ID,
+                                                                              HARDCODED_SUBUNIT_ID,
+                                                                              HARDCODED_POINTS)))),
+                                            randomInteger(), false,
+                                            randomBigDecimal(), null, randomBigDecimal());
+    }
+
+    private Candidate upsert(UpsertCandidateRequest request) {
+        Candidate.upsert(request, candidateRepository, periodRepository);
+        return Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository);
+    }
+
+    private UpsertCandidateRequest createNewUpsertRequestNotAffectingApprovals(UpsertCandidateRequest request) {
+        return new UpsertCandidateRequest() {
+            @Override
+            public URI publicationBucketUri() {
+                return request.publicationBucketUri();
+            }
+
+            @Override
+            public URI publicationId() {
+                return request.publicationId();
+            }
+
+            @Override
+            public boolean isApplicable() {
+                return true;
+            }
+
+            @Override
+            public boolean isInternationalCollaboration() {
+                return false;
+            }
+
+            @Override
+            public Map<URI, List<URI>> creators() {
+                return request.creators();
+            }
+
+            @Override
+            public String channelType() {
+                return null;
+            }
+
+            @Override
+            public URI publicationChannelId() {
+                return request.publicationChannelId();
+            }
+
+            @Override
+            public String level() {
+                return request.level();
+            }
+
+            @Override
+            public InstanceType instanceType() {
+                return request.instanceType();
+            }
+
+            @Override
+            public PublicationDate publicationDate() {
+                return request.publicationDate();
+            }
+
+            @Override
+            public int creatorShareCount() {
+                return 0;
+            }
+
+            @Override
+            public BigDecimal collaborationFactor() {
+                return null;
+            }
+
+            @Override
+            public BigDecimal basePoints() {
+                return null;
+            }
+
+            @Override
+            public List<InstitutionPoints> institutionPoints() {
+                return request.institutionPoints();
+            }
+
+            @Override
+            public BigDecimal totalPoints() {
+                return request.totalPoints();
+            }
+        };
+    }
+
+    private record CandidateResetCauseArgument(PublicationChannel channel, InstanceType type,
+                                               List<InstitutionPoints> institutionPoints, List<Creator> creators) {
+
+        private static CandidateResetCauseArgument.Builder defaultBuilder() {
+            return new Builder();
+        }
+
+        private static final class Builder {
+
+            private static final Creator DEFAULT_CREATOR = new Creator(HARDCODED_CREATOR_ID,
+                                                                       List.of(HARDCODED_SUBUNIT_ID));
+            private PublicationChannel channel = new PublicationChannel(ChannelType.JOURNAL,
+                                                                        HARDCODED_CHANNEL_ID,
+                                                                        HARDCODED_LEVEL);
+            private InstanceType type = HARDCODED_INSTANCE_TYPE;
+            private List<InstitutionPoints> institutionPoints = List.of(
+                new InstitutionPoints(HARDCODED_INSTITUTION_ID, HARDCODED_POINTS,
+                                      List.of(new CreatorAffiliationPoints(HARDCODED_CREATOR_ID,
+                                                                           HARDCODED_SUBUNIT_ID,
+                                                                           HARDCODED_POINTS))));
+            private List<Creator> creators = List.of(DEFAULT_CREATOR);
+
+            private Builder() {
+            }
+
+            private Builder withType(InstanceType type) {
+                this.type = type;
+                return this;
+            }
+
+            private Builder withCreators(List<Creator> creators) {
+                this.creators = creators;
+                return this;
+            }
+
+            private Builder withChannelId(URI publicationChannelId) {
+                this.channel = new PublicationChannel(ChannelType.JOURNAL, publicationChannelId, HARDCODED_LEVEL);
+                return this;
+            }
+
+            private Builder withLevel(String level) {
+                this.channel = new PublicationChannel(ChannelType.JOURNAL, HARDCODED_CHANNEL_ID, level);
+                return this;
+            }
+
+            private Builder withPointsForInstitution(BigDecimal institutionPoints) {
+                this.institutionPoints = List.of(new InstitutionPoints(HARDCODED_INSTITUTION_ID, institutionPoints,
+                                                                       List.of(new CreatorAffiliationPoints(
+                                                                           HARDCODED_CREATOR_ID,
+                                                                           HARDCODED_SUBUNIT_ID,
+                                                                           HARDCODED_POINTS))));
+                return this;
+            }
+
+            private CandidateResetCauseArgument build() {
+                return new CandidateResetCauseArgument(channel, type, institutionPoints, creators);
+            }
+        }
+    }
+}
