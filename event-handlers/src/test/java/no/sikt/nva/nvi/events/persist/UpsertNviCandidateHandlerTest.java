@@ -180,12 +180,12 @@ class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                                                        periodRepository);
         candidate.updateApproval(
             new UpdateStatusRequest(institutionId, ApprovalStatus.APPROVED, randomString(), randomString()));
-        var approval = candidate.toDto().approvals().getFirst();
+        var approval = candidate.getApprovals().get(institutionId);
         var newUpsertRequest = createNewUpsertRequestNotAffectingApprovals(upsertCandidateRequest, institutionId);
         Candidate.upsert(newUpsertRequest, candidateRepository, periodRepository);
         var updatedCandidate = Candidate.fetchByPublicationId(newUpsertRequest::publicationId, candidateRepository,
                                                               periodRepository);
-        var updatedApproval = updatedCandidate.toDto().approvals().getFirst();
+        var updatedApproval = updatedCandidate.getApprovals().get(institutionId);
 
         assertThat(updatedApproval, is(equalTo(approval)));
     }
@@ -284,6 +284,7 @@ class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         return getBuilder(request.publicationId(), request.publicationBucketUri(), creator)
                    .withInstanceType(request.instanceType())
                    .withLevel(request.level())
+                   .withPublicationChannelId(request.publicationChannelId())
                    .withDate(new PublicationDate(null, "3", Year.now().toString()))
                    .withNviCreators(List.of(new NviCreator(creatorId, List.of(institutionId))))
                    .withInstitutionPoints(request.institutionPoints())
