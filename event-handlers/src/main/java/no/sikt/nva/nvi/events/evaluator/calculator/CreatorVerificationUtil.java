@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.events.evaluator.calculator;
 
 import static java.util.Objects.nonNull;
+import static java.util.function.Predicate.not;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_POINTER_IDENTITY_ID;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_POINTER_IDENTITY_NAME;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_POINTER_IDENTITY_VERIFICATION_STATUS;
@@ -67,7 +68,7 @@ public class CreatorVerificationUtil {
 
     public List<UnverifiedNviCreator> getUnverifiedCreatorsWithNviInstitutions(JsonNode body) {
         return getJsonNodeStream(body, JSON_PTR_CONTRIBUTOR)
-                   .filter(contributor -> !isVerified(contributor))
+                   .filter(not(CreatorVerificationUtil::isVerified))
                    .filter(CreatorVerificationUtil::isCreator)
                    .filter(CreatorVerificationUtil::hasName)
                    .map(this::toUnverifiedNviCreator)
