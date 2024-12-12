@@ -2,16 +2,27 @@ package no.sikt.nva.nvi.test;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static no.sikt.nva.nvi.test.TestConstants.ABSTRACT_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.BODY_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.CONTRIBUTORS_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.ENTITY_DESCRIPTION_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.EN_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_ENGLISH_LABEL;
 import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_NORWEGIAN_LABEL;
 import static no.sikt.nva.nvi.test.TestConstants.IDENTIFIER_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.ID_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.LABELS_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.LANGUAGE_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.MAIN_TITLE_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.NB_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.ONE;
 import static no.sikt.nva.nvi.test.TestConstants.PAGES_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.PUBLICATION_CONTEXT_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.PUBLICATION_DATE_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.PUBLICATION_INSTANCE_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.REFERENCE_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.STATUS_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.TOP_LEVEL_ORGANIZATIONS_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.TYPE_FIELD;
 import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
@@ -40,6 +51,7 @@ public record SampleExpandedPublication(URI id, UUID identifier, String mainTitl
     private static final String TEMPLATE_JSON_PATH = "template_publication.json";
     private static final String PUBLICATION_CHANNELS_MUST_NOT_BE_EMPTY = "Publication channels must not be empty";
 
+
     public static Builder builder() {
         return new Builder();
     }
@@ -54,7 +66,7 @@ public record SampleExpandedPublication(URI id, UUID identifier, String mainTitl
 
     public JsonNode toJsonNode() {
         var root = objectMapper.createObjectNode();
-        root.set("body", createExpandedResource());
+        root.set(BODY_FIELD, createExpandedResource());
         return root;
     }
 
@@ -100,8 +112,8 @@ public record SampleExpandedPublication(URI id, UUID identifier, String mainTitl
             root.put(IDENTIFIER_FIELD, identifier.toString());
             root.put(STATUS_FIELD, status);
 
-            root.set("entityDescription", createEntityDescriptionNode());
-            root.set("topLevelOrganizations", createTopLevelOrganizationsNode());
+            root.set(ENTITY_DESCRIPTION_FIELD, createEntityDescriptionNode());
+            root.set(TOP_LEVEL_ORGANIZATIONS_FIELD, createTopLevelOrganizationsNode());
 
             return root;
         } catch (Exception e) {
@@ -124,7 +136,7 @@ public record SampleExpandedPublication(URI id, UUID identifier, String mainTitl
     private ObjectNode createReferenceNode() {
         var referenceNode = objectMapper.createObjectNode();
         referenceNode.put(TYPE_FIELD, "Reference");
-        referenceNode.set("publicationInstance", createAndPopulatePublicationInstance(instanceType));
+        referenceNode.set(PUBLICATION_INSTANCE_FIELD, createAndPopulatePublicationInstance(instanceType));
 
         var publicationContextNode = objectMapper.createObjectNode();
         if (publicationChannels.isEmpty()) {
@@ -138,23 +150,23 @@ public record SampleExpandedPublication(URI id, UUID identifier, String mainTitl
                 publicationContextNode.set(publicationChannel.type(), publicationChannel.asObjectNode());
             }
         }
-        referenceNode.set("publicationContext", publicationContextNode);
+        referenceNode.set(PUBLICATION_CONTEXT_FIELD, publicationContextNode);
         return referenceNode;
     }
 
     private ObjectNode createEntityDescriptionNode() {
         var entityDescriptionNode = objectMapper.createObjectNode();
         entityDescriptionNode.put(TYPE_FIELD, "EntityDescription");
-        entityDescriptionNode.put("mainTitle", mainTitle);
+        entityDescriptionNode.put(MAIN_TITLE_FIELD, mainTitle);
         if (nonNull(language)) {
-            entityDescriptionNode.put("language", language);
+            entityDescriptionNode.put(LANGUAGE_FIELD, language);
         }
         if (nonNull(abstractText)) {
-            entityDescriptionNode.put("abstract", abstractText);
+            entityDescriptionNode.put(ABSTRACT_FIELD, abstractText);
         }
-        entityDescriptionNode.set("contributors", createContributorsNode());
-        entityDescriptionNode.set("publicationDate", publicationDate.asObjectNode());
-        entityDescriptionNode.set("reference", createReferenceNode());
+        entityDescriptionNode.set(CONTRIBUTORS_FIELD, createContributorsNode());
+        entityDescriptionNode.set(PUBLICATION_DATE_FIELD, publicationDate.asObjectNode());
+        entityDescriptionNode.set(REFERENCE_FIELD, createReferenceNode());
         return entityDescriptionNode;
     }
 

@@ -2,6 +2,9 @@ package no.sikt.nva.nvi.test;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static no.sikt.nva.nvi.test.TestConstants.AFFILIATIONS_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.CONTRIBUTORS_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.ENTITY_DESCRIPTION_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.EN_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_ENGLISH_LABEL;
 import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_NORWEGIAN_LABEL;
@@ -10,10 +13,17 @@ import static no.sikt.nva.nvi.test.TestConstants.IDENTITY_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.ID_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.LABELS_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.LEVEL_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.MAIN_TITLE_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.NAME_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.NB_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.ORCID_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.PAGES_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.PUBLICATION_CONTEXT_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.PUBLICATION_DATE_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.PUBLICATION_INSTANCE_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.REFERENCE_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.ROLE_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.TOP_LEVEL_ORGANIZATIONS_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.TYPE_FIELD;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -103,23 +113,23 @@ public final class ExpandedResourceGenerator {
 
         var contributors = populateAndCreateContributors(candidate, nonNviContributorAffiliationIds);
 
-        entityDescription.set("contributors", contributors);
+        entityDescription.set(CONTRIBUTORS_FIELD, contributors);
 
-        entityDescription.put("mainTitle", randomString());
+        entityDescription.put(MAIN_TITLE_FIELD, randomString());
 
         var publicationDate = createAndPopulatePublicationDate(candidate.getPublicationDetails().publicationDate());
 
-        entityDescription.set("publicationDate", publicationDate);
+        entityDescription.set(PUBLICATION_DATE_FIELD, publicationDate);
 
         var reference = objectMapper.createObjectNode();
 
         var publicationInstance = createAndPopulatePublicationInstance(candidate);
-        reference.set("publicationInstance", publicationInstance);
+        reference.set(PUBLICATION_INSTANCE_FIELD, publicationInstance);
 
         var publicationContext = createAndPopulatePublicationContext(candidate, populateIssn);
-        reference.set("publicationContext", publicationContext);
+        reference.set(PUBLICATION_CONTEXT_FIELD, publicationContext);
 
-        entityDescription.set("reference", reference);
+        entityDescription.set(REFERENCE_FIELD, reference);
         if (populateLanguage) {
             entityDescription.put("language", "http://lexvo.org/id/iso639-3/nob");
         }
@@ -128,13 +138,13 @@ public final class ExpandedResourceGenerator {
             entityDescription.put("abstract", randomString());
         }
 
-        root.set("entityDescription", entityDescription);
+        root.set(ENTITY_DESCRIPTION_FIELD, entityDescription);
 
         root.put(IDENTIFIER_FIELD, candidate.getIdentifier().toString());
 
         var topLevelOrganizations = createAndPopulateTopLevelOrganizations(candidate);
 
-        root.set("topLevelOrganizations", topLevelOrganizations);
+        root.set(TOP_LEVEL_ORGANIZATIONS_FIELD, topLevelOrganizations);
 
         return root;
     }
@@ -269,7 +279,7 @@ public final class ExpandedResourceGenerator {
 
         var affiliations = createAndPopulateAffiliationsNode(affiliationsUris);
 
-        contributorNode.set("affiliations", affiliations);
+        contributorNode.set(AFFILIATIONS_FIELD, affiliations);
 
         var role = objectMapper.createObjectNode();
         role.put(TYPE_FIELD, randomString());
@@ -278,7 +288,7 @@ public final class ExpandedResourceGenerator {
         var identity = objectMapper.createObjectNode();
         identity.put(ID_FIELD, contributorId.toString());
         identity.put(NAME_FIELD, randomString());
-        identity.put("orcid", randomString());
+        identity.put(ORCID_FIELD, randomString());
 
         contributorNode.set(IDENTITY_FIELD, identity);
         return contributorNode;
@@ -296,7 +306,7 @@ public final class ExpandedResourceGenerator {
             labels.put(NB_FIELD, HARDCODED_NORWEGIAN_LABEL);
             labels.put(EN_FIELD, HARDCODED_ENGLISH_LABEL);
 
-            affiliationNode.set("labels", labels);
+            affiliationNode.set(LABELS_FIELD, labels);
 
             affiliations.add(affiliationNode);
         });

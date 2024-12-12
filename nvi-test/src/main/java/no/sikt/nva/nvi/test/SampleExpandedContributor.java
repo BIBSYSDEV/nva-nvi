@@ -1,14 +1,17 @@
 package no.sikt.nva.nvi.test;
 
 import static java.util.Objects.nonNull;
+import static no.sikt.nva.nvi.test.TestConstants.AFFILIATIONS_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.CONTRIBUTOR;
 import static no.sikt.nva.nvi.test.TestConstants.CREATOR;
 import static no.sikt.nva.nvi.test.TestConstants.IDENTITY;
 import static no.sikt.nva.nvi.test.TestConstants.IDENTITY_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.ID_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.NAME_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.ORCID_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.ROLE_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.TYPE_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.VERIFICATION_STATUS_FIELD;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -22,8 +25,6 @@ import nva.commons.core.JacocoGenerated;
 public record SampleExpandedContributor(URI id, String verificationStatus, String contributorName, String role,
                                         List<SampleExpandedAffiliation> affiliations, String orcId) {
 
-
-
     public static Builder builder() {
         return new Builder();
     }
@@ -36,7 +37,7 @@ public record SampleExpandedContributor(URI id, String verificationStatus, Strin
         var contributorNode = objectMapper.createObjectNode();
         contributorNode.put(TYPE_FIELD, CONTRIBUTOR);
 
-        contributorNode.set("affiliations", createAndPopulateAffiliationsNode());
+        contributorNode.set(AFFILIATIONS_FIELD, createAndPopulateAffiliationsNode());
 
         var roleNode = objectMapper.createObjectNode();
         roleNode.put(TYPE_FIELD, role);
@@ -51,10 +52,10 @@ public record SampleExpandedContributor(URI id, String verificationStatus, Strin
             identityNode.put(NAME_FIELD, contributorName);
         }
         if (nonNull(orcId)) {
-            identityNode.put("orcid", orcId);
+            identityNode.put(ORCID_FIELD, orcId);
         }
         if (nonNull(verificationStatus)) {
-            identityNode.put("verificationStatus", verificationStatus);
+            identityNode.put(VERIFICATION_STATUS_FIELD, verificationStatus);
         }
 
         contributorNode.set(IDENTITY_FIELD, identityNode);
