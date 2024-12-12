@@ -92,7 +92,7 @@ public final class IndexDocumentTestUtils {
                    .withPublicationDate(mapToPublicationDate(candidate.getPublicationDetails().publicationDate()))
                    .withContributors(
                        mapToContributors(ExpandedResourceGenerator.extractContributors(expandedResource), candidate))
-                   .withPublicationChannel(getPublicationChannel(expandedResource, candidate.getPublicationDetails()))
+                   .withPublicationChannel(getPublicationChannel(expandedResource, candidate))
                    .withPages(getPages(expandedResource))
                    .withLanguage(extractOptionalLanguage(expandedResource))
                    .build();
@@ -221,14 +221,13 @@ public final class IndexDocumentTestUtils {
                    .build();
     }
 
-    private static PublicationChannel getPublicationChannel(
-        JsonNode expandedResource, no.sikt.nva.nvi.common.service.model.PublicationDetails publicationDetails) {
-        var channelType = publicationDetails.channelType();
+    private static PublicationChannel getPublicationChannel(JsonNode expandedResource, Candidate candidate) {
+        var channelType = candidate.getPublicationChannelType();
         var publicationChannelBuilder = PublicationChannel.builder()
-                                            .withScientificValue(ScientificValue.parse(publicationDetails.level()))
+                                            .withScientificValue(ScientificValue.parse(candidate.getScientificLevel()))
                                             .withName(extractChannelName(expandedResource, channelType));
-        if (nonNull(publicationDetails.publicationChannelId())) {
-            publicationChannelBuilder.withId(publicationDetails.publicationChannelId());
+        if (nonNull(candidate.getPublicationChannelId())) {
+            publicationChannelBuilder.withId(candidate.getPublicationChannelId());
         }
         if (nonNull(channelType)) {
             publicationChannelBuilder.withType(channelType.getValue());

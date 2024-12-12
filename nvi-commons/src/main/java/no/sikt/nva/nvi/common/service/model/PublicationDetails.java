@@ -3,10 +3,11 @@ package no.sikt.nva.nvi.common.service.model;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
-import no.sikt.nva.nvi.common.db.model.ChannelType;
 
 @JsonSerialize
 public record PublicationDetails(URI publicationId,
@@ -14,9 +15,7 @@ public record PublicationDetails(URI publicationId,
                                  String type,
                                  PublicationDate publicationDate,
                                  List<Creator> creators,
-                                 ChannelType channelType,
-                                 URI publicationChannelId,
-                                 String level) {
+                                 PublicationChannel publicationChannel) {
 
     public static PublicationDetails from(CandidateDao candidateDao) {
         var dbCandidate = candidateDao.candidate();
@@ -28,10 +27,9 @@ public record PublicationDetails(URI publicationId,
                                           .stream()
                                           .map(Creator::from)
                                           .toList(),
-                                      dbCandidate.channelType(),
-                                      dbCandidate.channelId(),
-                                      dbCandidate.level().getValue());
-
+                                      new PublicationChannel(dbCandidate.channelType(),
+                                                             dbCandidate.channelId(),
+                                                             dbCandidate.level().getValue()));
     }
 
     public List<URI> getNviCreatorAffiliations() {
@@ -39,6 +37,12 @@ public record PublicationDetails(URI publicationId,
                    .map(Creator::affiliations)
                    .flatMap(List::stream)
                    .toList();
+    }
+
+    public Set<URI> getNviCreatorIds() {
+        return creators.stream()
+                   .map(Creator::id)
+                   .collect(Collectors.toSet());
     }
 
     public record PublicationDate(String year, String month, String day) {

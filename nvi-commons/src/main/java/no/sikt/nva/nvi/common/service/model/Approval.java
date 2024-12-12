@@ -103,11 +103,25 @@ public class Approval {
         Approval approval = (Approval) o;
         return Objects.equals(identifier, approval.identifier)
                && Objects.equals(institutionId, approval.institutionId)
-               && status == approval.status
+               && Objects.equals(status, approval.status)
                && Objects.equals(assignee, approval.assignee)
                && Objects.equals(finalizedBy, approval.finalizedBy)
                && Objects.equals(finalizedDate, approval.finalizedDate)
                && Objects.equals(reason, approval.reason);
+    }
+
+    @Override
+    @JacocoGenerated
+    public String toString() {
+        return "Approval{" +
+               "identifier=" + identifier +
+               ", institutionId=" + institutionId +
+               ", status=" + status +
+               ", assignee=" + assignee +
+               ", finalizedBy=" + finalizedBy +
+               ", finalizedDate=" + finalizedDate +
+               ", reason='" + reason + '\'' +
+               '}';
     }
 
     private DbApprovalStatus updateAssignee(UpdateAssigneeRequest request) {

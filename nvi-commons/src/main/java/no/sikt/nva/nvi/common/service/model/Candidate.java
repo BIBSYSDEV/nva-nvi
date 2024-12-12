@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -280,6 +281,18 @@ public final class Candidate {
         }
     }
 
+    public String getScientificLevel() {
+        return publicationDetails.publicationChannel().level();
+    }
+
+    public ChannelType getPublicationChannelType() {
+        return publicationDetails.publicationChannel().channelType();
+    }
+
+    public URI getPublicationChannelId() {
+        return publicationDetails.publicationChannel().id();
+    }
+
     public CandidateDto toDto() {
         return CandidateDto.builder()
                    .withId(getId())
@@ -367,6 +380,10 @@ public final class Candidate {
             .orElseThrow(CandidateNotFoundException::new);
     }
 
+    public String getInstanceType() {
+        return publicationDetails.type();
+    }
+
     private static CandidateDao updateVersion(CandidateRepository candidateRepository, CandidateDao candidateDao) {
         var candidateWithNewVersion = candidateDao.copy().version(randomUUID().toString()).build();
         candidateRepository.updateCandidate(candidateWithNewVersion);
@@ -430,22 +447,40 @@ public final class Candidate {
 
     private static boolean shouldResetCandidate(UpsertCandidateRequest request, Candidate candidate) {
         return levelIsUpdated(request, candidate)
+               || publicationChannelIsUpdated(request, candidate)
                || instanceTypeIsUpdated(request, candidate)
                || creatorsAreUpdated(request, candidate)
-               || pointsAreUpdated(request, candidate)
+               || institutionPointsAreUpdated(request, candidate)
                || publicationYearIsUpdated(request, candidate);
+    }
+
+    private static boolean publicationChannelIsUpdated(UpsertCandidateRequest request, Candidate candidate) {
+        return !request.publicationChannelId().equals(candidate.getPublicationChannelId());
     }
 
     private static boolean publicationYearIsUpdated(UpsertCandidateRequest request, Candidate candidate) {
         return !request.publicationDate().year().equals(candidate.getPublicationDetails().publicationDate().year());
     }
 
-    private static boolean pointsAreUpdated(UpsertCandidateRequest request, Candidate candidate) {
-        return !candidate.getInstitutionPoints().equals(request.institutionPoints());
+    private static boolean institutionPointsAreUpdated(UpsertCandidateRequest request, Candidate candidate) {
+        return !request.institutionPoints()
+                    .stream()
+                    .allMatch(institutionPoints -> hasSameInstitutionPoints(candidate, institutionPoints));
+    }
+
+    private static Boolean hasSameInstitutionPoints(Candidate candidate, InstitutionPoints institutionPoints) {
+        return Optional.ofNullable(
+                candidate.getPointValueForInstitution(institutionPoints.institutionId()))
+                   .map(currentPoints -> isEqualWithSameScale(currentPoints, institutionPoints.institutionPoints()))
+                   .orElse(false);
+    }
+
+    private static boolean isEqualWithSameScale(BigDecimal currentPoints, BigDecimal newPoints) {
+        return Objects.equals(adjustScaleAndRoundingMode(currentPoints), adjustScaleAndRoundingMode(newPoints));
     }
 
     private static boolean creatorsAreUpdated(UpsertCandidateRequest request, Candidate candidate) {
-        return !Objects.equals(mapToCreators(request.creators()), candidate.getPublicationDetails().creators());
+        return !request.creators().keySet().equals(candidate.getNviCreatorIds());
     }
 
     private static boolean instanceTypeIsUpdated(UpsertCandidateRequest request, Candidate candidate) {
@@ -453,7 +488,7 @@ public final class Candidate {
     }
 
     private static boolean levelIsUpdated(UpsertCandidateRequest request, Candidate candidate) {
-        return !Objects.equals(request.level(), candidate.getPublicationDetails().level());
+        return !Objects.equals(request.level(), candidate.getScientificLevel());
     }
 
     private static void createCandidate(UpsertCandidateRequest request, CandidateRepository repository) {
@@ -577,6 +612,10 @@ public final class Candidate {
                    .build();
     }
 
+    private Set<URI> getNviCreatorIds() {
+        return publicationDetails.getNviCreatorIds();
+    }
+
     private Builder copy() {
         return new Builder()
                    .withIdentifier(identifier)
@@ -603,9 +642,9 @@ public final class Candidate {
                                   .applicable(applicable)
                                   .creators(mapToDbCreators(publicationDetails.creators()))
                                   .creatorShareCount(creatorShareCount)
-                                  .channelType(publicationDetails.channelType())
-                                  .channelId(publicationDetails.publicationChannelId())
-                                  .level(DbLevel.parse(publicationDetails.level()))
+                                  .channelType(getPublicationChannelType())
+                                  .channelId(getPublicationChannelId())
+                                  .level(DbLevel.parse(getScientificLevel()))
                                   .instanceType(publicationDetails.type())
                                   .publicationDate(mapToPublicationDate(publicationDetails.publicationDate()))
                                   .internationalCollaboration(internationalCollaboration)
@@ -644,9 +683,9 @@ public final class Candidate {
                                       request.instanceType().getValue(),
                                       request.publicationDate(),
                                       mapToCreators(request.creators()),
-                                      ChannelType.parse(request.channelType()),
-                                      request.publicationChannelId(),
-                                      request.level());
+                                      new PublicationChannel(ChannelType.parse(request.channelType()),
+                                                             request.publicationChannelId(),
+                                                             request.level()));
     }
 
     private void setUserAsAssigneeIfApprovalIsUnassigned(String username, URI institutionId) {
