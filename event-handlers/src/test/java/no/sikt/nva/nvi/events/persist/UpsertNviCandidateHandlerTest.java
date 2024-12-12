@@ -220,7 +220,7 @@ class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                                                                             creator.id(), randomUri(),
                                                                             randomBigDecimal())))))
                    .withDate(randomPublicationDate())
-                   .withVerifiedCreators(List.of(creator));
+                   .withNviCreators(List.of(creator));
     }
 
     private static Stream<CandidateEvaluatedMessage> invalidCandidateEvaluatedMessages() {
@@ -286,7 +286,7 @@ class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                    .withLevel(request.level())
                    .withPublicationChannelId(request.publicationChannelId())
                    .withDate(new PublicationDate(null, "3", Year.now().toString()))
-                   .withVerifiedCreators(List.of(new NviCreator(creatorId, List.of(institutionId))))
+                   .withNviCreators(List.of(new NviCreator(creatorId, List.of(institutionId))))
                    .withInstitutionPoints(request.institutionPoints())
                    .build();
     }

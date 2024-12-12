@@ -196,7 +196,8 @@
           "affiliations": [
             {
               "id": "https://www.example.org/9e3de71b-0ecb-4464-b9f1-2f92b974839c",
-              "type": "Organization"
+              "type": "Organization",
+              "countryCode": "NO"
             }
           ],
           "identity": {
@@ -212,7 +213,8 @@
           "affiliations": [
             {
               "id": "https://www.example.org/39a728f4-88f5-46a9-a476-ff0c2b4c635b",
-              "type": "Organization"
+              "type": "Organization",
+              "countryCode": "NO"
             }
           ],
           "identity": {
