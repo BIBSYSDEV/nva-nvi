@@ -305,13 +305,11 @@ public final class TestUtils {
                                                               List.of(new CreatorAffiliationPoints(
                                                                   creatorId, affiliation, points))));
 
-        return createUpsertCandidateRequest(randomUri(), randomUri(), true,
-                                            new PublicationDate(String.valueOf(CURRENT_YEAR), null, null), creators,
-                                            randomInstanceType(),
-                                            channelType.getValue(), randomUri(),
-                                            randomLevelExcluding(DbLevel.NON_CANDIDATE).getValue(), institutionPoints,
-                                            randomInteger(), randomBoolean(),
-                                            randomBigDecimal(), randomBigDecimal(), randomBigDecimal());
+        return new UpsertRequestBuilder()
+                   .withCreators(creators)
+                   .withPoints(institutionPoints)
+                   .withChannelType(channelType.getValue())
+                   .build();
     }
 
     public static UpsertCandidateRequest createUpsertCandidateRequest(URI publicationId,
@@ -336,108 +334,17 @@ public final class TestUtils {
                                                               .toList());
                          }).toList();
 
-        return createUpsertCandidateRequest(publicationId, publicationBucketUri, isApplicable,
-                                            new PublicationDate(String.valueOf(year), null, null), creators,
-                                            instanceType,
-                                            randomElement(ChannelType.values()).getValue(), randomUri(),
-                                            level, points,
-                                            randomInteger(), randomBoolean(),
-                                            randomBigDecimal(), randomBigDecimal(), totalPoints);
-    }
-
-    @SuppressWarnings("PMD.ExcessiveParameterList")
-    public static UpsertCandidateRequest createUpsertCandidateRequest(URI publicationId,
-                                                                      final URI publicationBucketUri,
-                                                                      boolean isApplicable,
-                                                                      final PublicationDate publicationDate,
-                                                                      Map<URI, List<URI>> creators,
-                                                                      InstanceType instanceType,
-                                                                      String channelType, URI channelId,
-                                                                      String level,
-                                                                      List<InstitutionPoints> points,
-                                                                      final Integer creatorShareCount,
-                                                                      final boolean isInternationalCollaboration,
-                                                                      final BigDecimal collaborationFactor,
-                                                                      final BigDecimal basePoints,
-                                                                      final BigDecimal totalPoints) {
-
-        return new UpsertCandidateRequest() {
-
-            @Override
-            public URI publicationBucketUri() {
-                return publicationBucketUri;
-            }
-
-            @Override
-            public URI publicationId() {
-                return publicationId;
-            }
-
-            @Override
-            public boolean isApplicable() {
-                return isApplicable;
-            }
-
-            @Override
-            public boolean isInternationalCollaboration() {
-                return isInternationalCollaboration;
-            }
-
-            @Override
-            public Map<URI, List<URI>> creators() {
-                return creators;
-            }
-
-            @Override
-            public String channelType() {
-                return channelType;
-            }
-
-            @Override
-            public URI publicationChannelId() {
-                return channelId;
-            }
-
-            @Override
-            public String level() {
-                return level;
-            }
-
-            @Override
-            public InstanceType instanceType() {
-                return instanceType;
-            }
-
-            @Override
-            public PublicationDate publicationDate() {
-                return publicationDate;
-            }
-
-            @Override
-            public int creatorShareCount() {
-                return creatorShareCount;
-            }
-
-            @Override
-            public BigDecimal collaborationFactor() {
-                return collaborationFactor;
-            }
-
-            @Override
-            public BigDecimal basePoints() {
-                return basePoints;
-            }
-
-            @Override
-            public List<InstitutionPoints> institutionPoints() {
-                return points;
-            }
-
-            @Override
-            public BigDecimal totalPoints() {
-                return totalPoints;
-            }
-        };
+        return new UpsertRequestBuilder()
+                   .withPublicationId(publicationId)
+                   .withPublicationBucketUri(publicationBucketUri)
+                   .withPublicationDate(new PublicationDate(String.valueOf(year), null, null))
+                   .withIsApplicable(isApplicable)
+                   .withCreators(creators)
+                   .withInstanceType(instanceType)
+                   .withLevel(level)
+                   .withPoints(points)
+                   .withTotalPoints(totalPoints)
+                   .build();
     }
 
     public static CreateNoteRequest createNoteRequest(String text, String username) {

@@ -15,9 +15,7 @@ import static no.sikt.nva.nvi.test.TestUtils.randomInstanceType;
 import static no.sikt.nva.nvi.test.TestUtils.randomLevelExcluding;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.sikt.nva.nvi.test.TestUtils.setupReportedCandidate;
-import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
-import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.core.ioutils.IoUtils.stringFromResources;
@@ -45,7 +43,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
@@ -73,6 +70,7 @@ import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliation
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
+import no.sikt.nva.nvi.test.UpsertRequestBuilder;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -102,15 +100,13 @@ class CandidateTest extends LocalDynamoTest {
         var creators = Map.of(creatorId, List.of(institutionId));
         var points = List.of(createInstitutionPoints(institutionId, randomBigDecimal(scale), creatorId));
 
-        return createUpsertCandidateRequest(randomUri(), randomUri(), true,
-                                            new PublicationDate(String.valueOf(CURRENT_YEAR), null, null),
-                                            creators,
-                                            randomInstanceType(),
-                                            randomElement(ChannelType.values()).getValue(), randomUri(),
-                                            randomLevelExcluding(DbLevel.NON_CANDIDATE).getValue(), points,
-                                            randomInteger(), randomBoolean(),
-                                            randomBigDecimal(scale), randomBigDecimal(scale),
-                                            randomBigDecimal(scale));
+        return new UpsertRequestBuilder()
+                   .withPoints(points)
+                   .withCreators(creators)
+                   .withCollaborationFactor(randomBigDecimal(scale))
+                   .withBasePoints(randomBigDecimal(scale))
+                   .withTotalPoints(randomBigDecimal(scale))
+                   .build();
     }
 
     @BeforeEach
@@ -172,7 +168,11 @@ class CandidateTest extends LocalDynamoTest {
     @ParameterizedTest
     @ValueSource(ints = {0, 1, 4})
     void shouldUpdateCandidateWithCorrectScaleForAllDecimals(int scale) {
-        var request = getUpdateRequestForExistingCandidate(scale);
+        var request = new UpsertRequestBuilder()
+                          .withCollaborationFactor(randomBigDecimal(scale))
+                          .withBasePoints(randomBigDecimal(scale))
+                          .withTotalPoints(randomBigDecimal(scale))
+                          .build();
         var candidate = upsert(request);
         var expectedCandidate = generateExpectedCandidate(candidate, request);
         var actualPersistedCandidate = candidateRepository.findCandidateById(candidate.getIdentifier())
@@ -343,16 +343,19 @@ class CandidateTest extends LocalDynamoTest {
         var totalPoints = randomBigDecimal();
         var publicationDate = new PublicationDate(String.valueOf(CURRENT_YEAR), null, null);
         var instanceType = randomInstanceType();
-        var createRequest = createUpsertCandidateRequest(publicationId, publicationBucketUri,
-                                                         isApplicable,
-                                                         publicationDate,
-                                                         creators,
-                                                         instanceType,
-                                                         randomElement(ChannelType.values()).getValue(), randomUri(),
-                                                         DbLevel.LEVEL_TWO.getValue(), points,
-                                                         randomInteger(10),
-                                                         randomBoolean(),
-                                                         randomBigDecimal(), randomBigDecimal(), totalPoints);
+
+        var createRequest = new UpsertRequestBuilder()
+                                .withPublicationId(publicationId)
+                                .withPublicationBucketUri(publicationBucketUri)
+                                .withIsApplicable(isApplicable)
+                                .withPublicationDate(publicationDate)
+                                .withCreators(creators)
+                                .withInstanceType(instanceType)
+                                .withChannelType(randomElement(ChannelType.values()).getValue())
+                                .withLevel(DbLevel.LEVEL_TWO.getValue())
+                                .withPoints(points)
+                                .withTotalPoints(totalPoints)
+                                .build();
         var candidate = upsert(createRequest);
         assertEquals(candidate.getPublicationDetails().publicationBucketUri(), publicationBucketUri);
         assertEquals(candidate.isApplicable(), isApplicable);
@@ -540,26 +543,10 @@ class CandidateTest extends LocalDynamoTest {
     }
 
     private UpsertCandidateRequest getUpdateRequestForExistingCandidate() {
-        return getUpdateRequestForExistingCandidate(EXPECTED_SCALE);
-    }
-
-    private UpsertCandidateRequest getUpdateRequestForExistingCandidate(int scale) {
         var institutionId = randomUri();
         var insertRequest = createUpsertCandidateRequest(institutionId);
         Candidate.upsert(insertRequest, candidateRepository, periodRepository);
-        var creators = IntStream.of(insertRequest.creators().size())
-                           .mapToObj(i -> randomUri())
-                           .collect(Collectors.toMap(Function.identity(), e -> List.of(institutionId)));
-
-        var points = createPoints(creators);
-
-        return createUpsertCandidateRequest(insertRequest.publicationId(), insertRequest.publicationBucketUri(), true,
-                                            new PublicationDate(String.valueOf(CURRENT_YEAR), null, null), creators,
-                                            insertRequest.instanceType(),
-                                            randomElement(ChannelType.values()).getValue(), randomUri(),
-                                            randomLevelExcluding(DbLevel.NON_CANDIDATE).getValue(), points,
-                                            randomInteger(), randomBoolean(),
-                                            randomBigDecimal(scale), randomBigDecimal(scale), randomBigDecimal(scale));
+        return UpsertRequestBuilder.fromRequest(insertRequest).build();
     }
 
     private DbCandidate generateExpectedCandidate(Candidate candidate, UpsertCandidateRequest request) {
