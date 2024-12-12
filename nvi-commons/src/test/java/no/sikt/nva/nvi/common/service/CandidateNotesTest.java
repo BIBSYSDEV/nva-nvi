@@ -30,7 +30,7 @@ class CandidateNotesTest extends CandidateTest {
         var actualNote = Candidate.fetch(candidate::getIdentifier, candidateRepository, periodRepository)
                              .toDto()
                              .notes()
-                             .get(0);
+                             .getFirst();
 
         assertThat(noteRequest.username(), is(equalTo(actualNote.user())));
         assertThat(noteRequest.text(), is(equalTo(actualNote.text())));
@@ -60,7 +60,7 @@ class CandidateNotesTest extends CandidateTest {
         var username = randomString();
         var candidateWithNote = candidate.createNote(new CreateNoteRequest(randomString(), username, randomUri()),
                                                      candidateRepository);
-        var noteToDelete = candidateWithNote.toDto().notes().get(0);
+        var noteToDelete = candidateWithNote.toDto().notes().getFirst();
         var updatedCandidate = candidate.deleteNote(new DeleteNoteRequest(noteToDelete.identifier(), username));
 
         assertThat(updatedCandidate.toDto().notes(), is(emptyIterable()));
@@ -71,7 +71,7 @@ class CandidateNotesTest extends CandidateTest {
         var candidate = createCandidate();
         var candidateWithNote = candidate.createNote(
             new CreateNoteRequest(randomString(), randomString(), randomUri()), candidateRepository);
-        var noteToDelete = candidateWithNote.toDto().notes().get(0);
+        var noteToDelete = candidateWithNote.toDto().notes().getFirst();
 
         assertThrows(UnauthorizedOperationException.class,
                      () -> candidate.deleteNote(new DeleteNoteRequest(noteToDelete.identifier(), randomString())));

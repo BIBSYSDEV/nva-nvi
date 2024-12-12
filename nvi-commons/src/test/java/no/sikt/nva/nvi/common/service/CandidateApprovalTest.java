@@ -247,7 +247,7 @@ class CandidateApprovalTest extends CandidateTest {
         var assignee = Candidate.fetch(candidateBO::getIdentifier, candidateRepository, periodRepository)
                            .toDto()
                            .approvals()
-                           .get(0)
+                           .getFirst()
                            .assignee();
 
         assertThat(assignee, is(equalTo(newUsername)));
