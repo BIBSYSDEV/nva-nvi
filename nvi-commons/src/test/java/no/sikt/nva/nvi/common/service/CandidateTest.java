@@ -1,7 +1,5 @@
 package no.sikt.nva.nvi.common.service;
 
-import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
-import static no.sikt.nva.nvi.test.TestUtils.createNoteRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpdateStatusRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequestWithLevel;
@@ -11,11 +9,8 @@ import static no.sikt.nva.nvi.test.TestUtils.randomApplicableCandidate;
 import static no.sikt.nva.nvi.test.TestUtils.randomApproval;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
-import static no.sikt.nva.nvi.test.TestUtils.randomInstanceType;
-import static no.sikt.nva.nvi.test.TestUtils.randomLevelExcluding;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.sikt.nva.nvi.test.TestUtils.setupReportedCandidate;
-import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.core.ioutils.IoUtils.stringFromResources;
@@ -24,9 +19,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -37,12 +30,11 @@ import java.math.RoundingMode;
 import java.net.URI;
 import java.nio.file.Path;
 import java.time.ZonedDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
@@ -58,13 +50,13 @@ import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.service.dto.ApprovalDto;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatusDto;
+import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
-import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
@@ -208,15 +200,10 @@ class CandidateTest extends LocalDynamoTest {
     void shouldNotUpdateReportedCandidate() {
         var year = randomYear();
         var candidate = setupReportedCandidate(candidateRepository, year).candidate();
-        var updateRequest = createUpsertCandidateRequest(candidate.publicationId(),
-                                                         randomUri(),
-                                                         true,
-                                                         InstanceType.parse(candidate.instanceType()),
-                                                         candidate.creatorCount(),
-                                                         candidate.totalPoints(),
-                                                         candidate.level().getValue(),
-                                                         Integer.parseInt(year),
-                                                         randomUri());
+
+        var updateRequest = new UpsertRequestBuilder()
+                                .withPublicationId(candidate.publicationId())
+                                .build();
         assertThrows(IllegalCandidateUpdateException.class,
                      () -> Candidate.upsert(updateRequest, candidateRepository, periodRepository));
     }
@@ -269,6 +256,23 @@ class CandidateTest extends LocalDynamoTest {
         assertEquals(GlobalApprovalStatus.PENDING, candidate.getGlobalApprovalStatus());
     }
 
+    //This is tested more in rest-module
+    @Test
+    void shouldReturnExpectedDto() {
+        var candidate = upsert(new UpsertRequestBuilder().build());
+        var expectedDto = CandidateDto.builder()
+                              .withApprovals(mapToApprovalDtos(candidate))
+                              .withId(candidate.getId())
+                              .withPublicationId(candidate.getPublicationId())
+                              .withIdentifier(candidate.getIdentifier())
+                              .withContext(CONTEXT_URI)
+                              .withPeriod(PeriodStatusDto.fromPeriodStatus(candidate.getPeriod()))
+                              .withTotalPoints(candidate.getTotalPoints())
+                              .withNotes(Collections.emptyList())
+                              .build();
+        assertEquals(expectedDto, candidate.toDto());
+    }
+
     @Test()
     @DisplayName("Should return global approval status dispute when a candidate has at least one Rejected and one "
                  + "Approved approval")
@@ -285,99 +289,15 @@ class CandidateTest extends LocalDynamoTest {
     }
 
     @Test
-    void dontMindMeJustTestingToDto() {
-        var institutionToReject = randomUri();
-        var institutionToApprove = randomUri();
-        var totalPoints = randomBigDecimal();
-        var createRequest = createUpsertCandidateRequest(randomUri(), randomUri(), true,
-                                                         InstanceType.ACADEMIC_MONOGRAPH, 4, totalPoints,
-                                                         randomLevelExcluding(DbLevel.NON_CANDIDATE)
-                                                             .getValue(), CURRENT_YEAR,
-                                                         institutionToApprove, randomUri(), institutionToReject);
-        var candidateBO = upsert(createRequest);
-        candidateBO.createNote(createNoteRequest(randomString(), randomString()), candidateRepository)
-            .createNote(createNoteRequest(randomString(), randomString()), candidateRepository)
-            .updateApproval(createUpdateStatusRequest(ApprovalStatus.APPROVED, institutionToApprove, randomString()))
-            .updateApproval(createUpdateStatusRequest(ApprovalStatus.REJECTED, institutionToReject, randomString()));
-        var dto = candidateBO.toDto();
-        var approvalMap = dto.approvals()
-                              .stream()
-                              .collect(Collectors.toMap(ApprovalDto::institutionId, Function.identity()));
-
-        assertAll(() -> {
-            assertThat(dto.context(), is(equalTo(CONTEXT_URI)));
-            assertThat(dto.publicationId(), is(equalTo(createRequest.publicationId())));
-            assertThat(dto.approvals().size(), is(equalTo(createRequest.institutionPoints().size())));
-            assertThat(dto.notes().size(), is(2));
-            assertThat(dto.totalPoints(), is(equalTo(adjustScaleAndRoundingMode(totalPoints))));
-            var note = dto.notes().getFirst();
-            assertThat(note.text(), is(notNullValue()));
-            assertThat(note.user(), is(notNullValue()));
-            assertThat(note.createdDate(), is(notNullValue()));
-            assertThat(dto.id(), is(equalTo(constructId(candidateBO.getIdentifier()))));
-            assertThat(dto.identifier(), is(equalTo(candidateBO.getIdentifier())));
-            var periodStatus = getDefaultPeriodStatus();
-            assertThat(dto.period().status(), is(equalTo(periodStatus.status())));
-            var approvalDto = approvalMap.get(institutionToApprove);
-            assertThat(approvalDto.status().getValue(), is(equalTo(ApprovalStatusDto.APPROVED.getValue())));
-            assertNotNull(approvalDto.finalizedDate());
-            var rejectedAP = approvalMap.get(institutionToReject);
-            assertThat(rejectedAP.status(), is(equalTo(ApprovalStatusDto.REJECTED)));
-            assertThat(rejectedAP.reason(), is(notNullValue()));
-            assertThat(rejectedAP.points(),
-                       is(adjustScaleAndRoundingMode(
-                           createRequest.getPointsForInstitution(rejectedAP.institutionId()))));
-        });
-    }
-
-    @Test
+        //These getters are tested in different modules, so this is just for jacoco coverage
     void shouldReturnCandidateWithExpectedData() {
-        var publicationId = randomUri();
-        var publicationBucketUri = randomUri();
-        var isApplicable = true;
-        var institutionId = randomUri();
-        var creatorId = randomUri();
-        var creators = Map.of(creatorId, List.of(institutionId));
-        var institutionPoints = adjustScaleAndRoundingMode(randomBigDecimal());
-        var points = List.of(createInstitutionPoints(institutionId, institutionPoints, creatorId));
-        var totalPoints = randomBigDecimal();
-        var publicationDate = new PublicationDate(String.valueOf(CURRENT_YEAR), null, null);
-        var instanceType = randomInstanceType();
-
-        var createRequest = new UpsertRequestBuilder()
-                                .withPublicationId(publicationId)
-                                .withPublicationBucketUri(publicationBucketUri)
-                                .withIsApplicable(isApplicable)
-                                .withPublicationDate(publicationDate)
-                                .withCreators(creators)
-                                .withInstanceType(instanceType)
-                                .withChannelType(randomElement(ChannelType.values()).getValue())
-                                .withLevel(DbLevel.LEVEL_TWO.getValue())
-                                .withPoints(points)
-                                .withTotalPoints(totalPoints)
-                                .build();
+        var createRequest = new UpsertRequestBuilder().build();
         var candidate = upsert(createRequest);
-        assertEquals(candidate.getPublicationDetails().publicationBucketUri(), publicationBucketUri);
-        assertEquals(candidate.isApplicable(), isApplicable);
-        assertEquals(candidate.getPublicationId(), publicationId);
-        assertEquals(candidate.getTotalPoints(), adjustScaleAndRoundingMode(totalPoints));
-        assertEquals(adjustScaleAndRoundingMode(candidate.getPointValueForInstitution(institutionId)),
-                     institutionPoints);
-        assertEquals(candidate.getInstitutionPointsMap().get(institutionId), institutionPoints);
-        assertEquals(candidate.getInstitutionPoints(), points);
-        assertEquals(candidate.getPublicationDetails().publicationDate(), publicationDate);
-        assertCorrectCreatorData(creators, candidate);
-        assertEquals(candidate.getPublicationDetails().type(), instanceType.getValue());
-        assertEquals(candidate.getPublicationChannelType().getValue(),
-                     createRequest.channelType());
-        assertEquals(candidate.getPublicationChannelId(), createRequest.publicationChannelId());
-        assertEquals(candidate.getScientificLevel(), createRequest.level());
-        assertEquals(candidate.getBasePoints(), adjustScaleAndRoundingMode(createRequest.basePoints()));
-        assertEquals(candidate.isInternationalCollaboration(),
-                     createRequest.isInternationalCollaboration());
-        assertEquals(candidate.getCollaborationFactor(),
-                     adjustScaleAndRoundingMode(createRequest.collaborationFactor()));
-        assertEquals(candidate.getCreatorShareCount(), createRequest.creatorShareCount());
+        assertEquals(adjustScaleAndRoundingMode(createRequest.totalPoints()), candidate.getTotalPoints());
+        assertEquals(adjustScaleAndRoundingMode(createRequest.basePoints()), candidate.getBasePoints());
+        assertEquals(adjustScaleAndRoundingMode(createRequest.collaborationFactor()),
+                     candidate.getCollaborationFactor());
+        assertEquals(createRequest.creatorShareCount(), candidate.getCreatorShareCount());
     }
 
     @Test
@@ -514,6 +434,18 @@ class CandidateTest extends LocalDynamoTest {
 
     private static BigDecimal adjustScaleAndRoundingMode(BigDecimal bigDecimal) {
         return bigDecimal.setScale(EXPECTED_SCALE, EXPECTED_ROUNDING_MODE);
+    }
+
+    private List<ApprovalDto> mapToApprovalDtos(Candidate candidate) {
+        return candidate.getApprovals().values().stream()
+                   .map(approval -> ApprovalDto.builder()
+                                        .withInstitutionId(approval.getInstitutionId())
+                                        .withPoints(candidate.getPointValueForInstitution(approval.getInstitutionId()))
+                                        .withStatus(ApprovalStatusDto.from(approval))
+                                        .withFinalizedBy(approval.getFinalizedBy().value())
+                                        .withAssignee(approval.getAssignee().value())
+                                        .build())
+                   .toList();
     }
 
     private Candidate upsert(UpsertCandidateRequest request) {

@@ -227,7 +227,7 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
         var messageBody = getMessageBody();
         var candidate = (NviCandidate) messageBody.candidate();
         assertEquals(1, candidate.institutionPoints().size());
-        assertNotNull(candidate.getPointsForInstitution(CRISTIN_NVI_ORG_TOP_LEVEL_ID));
+        assertNotNull(getPointsForInstitution(candidate, CRISTIN_NVI_ORG_TOP_LEVEL_ID));
     }
 
     @Test
@@ -320,7 +320,7 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
         var messageBody = getMessageBody();
         var candidate = (NviCandidate) messageBody.candidate();
         assertThat(candidate.institutionPoints(), notNullValue());
-        assertThat(candidate.getPointsForInstitution(CRISTIN_NVI_ORG_TOP_LEVEL_ID),
+        assertThat(getPointsForInstitution(candidate, CRISTIN_NVI_ORG_TOP_LEVEL_ID),
                    is(equalTo(BigDecimal.valueOf(1).setScale(4, RoundingMode.HALF_UP))));
     }
 
@@ -333,11 +333,12 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
         var messageBody = getMessageBody();
         var candidate = (NviCandidate) messageBody.candidate();
         assertThat(candidate.institutionPoints(), notNullValue());
-        assertThat(candidate.getPointsForInstitution(CRISTIN_NVI_ORG_TOP_LEVEL_ID), notNullValue());
+        assertThat(getPointsForInstitution(candidate, CRISTIN_NVI_ORG_TOP_LEVEL_ID), notNullValue());
     }
 
     @Test
-    void shouldCreateNewCandidateEventOnValidAcademicChapterWithSeriesLevelUnassignedWithPublisherLevel() throws IOException {
+    void shouldCreateNewCandidateEventOnValidAcademicChapterWithSeriesLevelUnassignedWithPublisherLevel()
+        throws IOException {
         mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
         var path = "evaluator/candidate_academicChapter_seriesLevelUnassignedPublisherLevelOne.json";
         var content = IoUtils.inputStreamFromResources(path);
@@ -349,7 +350,8 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldCreateNewCandidateEventOnValidAcademicMonographWithSeriesLevelUnassignedWithPublisherLevel() throws IOException {
+    void shouldCreateNewCandidateEventOnValidAcademicMonographWithSeriesLevelUnassignedWithPublisherLevel()
+        throws IOException {
         mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
         var path = "evaluator/candidate_academicMonograph_seriesLevelUnassignedPublisherLevelOne.json";
         var content = IoUtils.inputStreamFromResources(path);
@@ -615,6 +617,14 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
         return (int) nviCreators.stream()
                          .mapToLong(creator -> creator.nviAffiliations().size())
                          .sum();
+    }
+
+    private BigDecimal getPointsForInstitution(NviCandidate candidate, URI institutionId) {
+        return candidate.institutionPoints().stream()
+                   .filter(institutionPoints -> institutionPoints.institutionId().equals(institutionId))
+                   .map(InstitutionPoints::institutionPoints)
+                   .findFirst()
+                   .orElseThrow();
     }
 
     private URI setupPublicationWithInvalidYear(String year) throws IOException {

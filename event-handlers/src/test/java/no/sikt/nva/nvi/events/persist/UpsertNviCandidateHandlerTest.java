@@ -30,14 +30,17 @@ import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
+import java.math.BigDecimal;
 import java.net.URI;
 import java.time.Year;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
@@ -58,6 +61,7 @@ import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
+import no.sikt.nva.nvi.common.service.model.PublicationDetails;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.NonNviCandidate;
@@ -67,6 +71,7 @@ import no.sikt.nva.nvi.events.model.NviCandidate.NviCreator;
 import no.sikt.nva.nvi.events.model.PublicationDate;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
+import no.sikt.nva.nvi.test.UpsertRequestBuilder;
 import nva.commons.core.Environment;
 import nva.commons.logutils.LogUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -155,12 +160,36 @@ class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         var delete = randomUri();
         var identifier = UUID.randomUUID();
         var publicationId = generatePublicationId(identifier);
-        var request = createUpsertCandidateRequest(publicationId, randomUri(), true,
-                                                   InstanceType.ACADEMIC_ARTICLE, 1,
-                                                   randomBigDecimal(),
-                                                   randomLevelExcluding(DbLevel.NON_CANDIDATE).getValue(),
-                                                   TestUtils.CURRENT_YEAR,
-                                                   delete, keep);
+        URI publicationBucketUri = randomUri();
+        BigDecimal totalPoints = randomBigDecimal();
+        URI[] institutions = new URI[]{delete, keep};
+        var creators = IntStream.of(1)
+                           .mapToObj(i -> randomUri())
+                           .collect(Collectors.toMap(Function.identity(), e -> List.of(institutions)));
+
+        var points = Arrays.stream(institutions)
+                         .map(institution -> {
+                             var institutionPoints = randomBigDecimal();
+                             return new InstitutionPoints(institution, institutionPoints,
+                                                          creators.keySet().stream()
+                                                              .map(creator -> new CreatorAffiliationPoints(
+                                                                  creator, institution, institutionPoints))
+                                                              .toList());
+                         }).toList();
+
+        var request = new UpsertRequestBuilder()
+                          .withPublicationId(publicationId)
+                          .withPublicationBucketUri(publicationBucketUri)
+                          .withPublicationDate(
+                              new PublicationDetails.PublicationDate(String.valueOf(TestUtils.CURRENT_YEAR), null,
+                                                                     null))
+                          .withIsApplicable(true)
+                          .withCreators(creators)
+                          .withInstanceType(InstanceType.ACADEMIC_ARTICLE)
+                          .withLevel(randomLevelExcluding(DbLevel.NON_CANDIDATE).getValue())
+                          .withPoints(points)
+                          .withTotalPoints(totalPoints)
+                          .build();
         Candidate.upsert(request, candidateRepository, periodRepository);
         var candidate = Candidate.fetchByPublicationId(() -> publicationId, candidateRepository, periodRepository);
         var sqsEvent = createEvent(keep, publicationId, generateS3BucketUri(identifier));

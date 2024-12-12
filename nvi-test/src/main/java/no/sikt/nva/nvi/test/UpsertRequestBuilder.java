@@ -18,7 +18,7 @@ public class UpsertRequestBuilder {
     private Map<URI, List<URI>> creators = Map.of();
     private String channelType = "channelType";
     private URI channelId = URI.create("http://example.org/channelId");
-    private String level = "level";
+    private String level = "LevelOne";
     private InstanceType instanceType = InstanceType.ACADEMIC_ARTICLE;
     private PublicationDate publicationDate = new PublicationDate("2023", "01", "01");
     private int creatorShareCount = 1;

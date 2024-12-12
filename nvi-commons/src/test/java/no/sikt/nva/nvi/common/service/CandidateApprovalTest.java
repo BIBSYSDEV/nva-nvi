@@ -308,7 +308,17 @@ class CandidateApprovalTest extends CandidateTest {
         candidate.updateApproval(
             new UpdateStatusRequest(institutionId, ApprovalStatus.APPROVED, randomString(), randomString()));
         var approval = candidate.getApprovals().get(institutionId);
-        var newUpsertRequest = createNewUpsertRequestNotAffectingApprovals(upsertCandidateRequest);
+        var samePointsWithDifferentScale = upsertCandidateRequest.institutionPoints()
+                                               .stream()
+                                               .map(institutionPoints -> new InstitutionPoints(
+                                                   institutionPoints.institutionId(),
+                                                   institutionPoints.institutionPoints()
+                                                       .setScale(1, EXPECTED_ROUNDING_MODE),
+                                                   institutionPoints.creatorAffiliationPoints()))
+                                               .toList();
+        var newUpsertRequest = UpsertRequestBuilder.fromRequest(upsertCandidateRequest)
+                                   .withPoints(samePointsWithDifferentScale)
+                                   .build();
         var updatedCandidate = upsert(newUpsertRequest);
         var updatedApproval = updatedCandidate.getApprovals().get(institutionId);
 

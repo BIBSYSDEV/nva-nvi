@@ -163,7 +163,7 @@ class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
         var candidateResponse = response.getBodyObject(CandidateDto.class);
         var actualApproval = candidateResponse.approvals().get(0);
         var expectedStatus = getExpectedApprovalStatus(newStatus);
-        assertThat(actualApproval.status().getValue(), is(equalTo(expectedStatus.getValue())));
+        assertThat(actualApproval.status(), is(equalTo(expectedStatus)));
     }
 
     @ParameterizedTest
@@ -177,10 +177,10 @@ class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
         var candidateResponse = response.getBodyObject(CandidateDto.class);
-        var actualApproval = candidateResponse.approvals().get(0);
+        var actualApproval = candidateResponse.approvals().getFirst();
         assertThat(actualApproval.finalizedBy(), is(nullValue()));
         assertThat(actualApproval.finalizedDate(), is(nullValue()));
-        assertThat(actualApproval.status().getValue(), is(equalTo(ApprovalStatusDto.NEW.getValue())));
+        assertThat(actualApproval.status(), is(equalTo(ApprovalStatusDto.NEW)));
     }
 
     @ParameterizedTest
@@ -190,15 +190,14 @@ class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
         var candidate = upsert(createUpsertCandidateRequest(institutionId));
         candidate.updateApproval(createStatusRequest(oldStatus));
         var rejectionReason = randomString();
-        var newStatus = ApprovalStatus.REJECTED;
-        var requestBody = new NviStatusRequest(candidate.getIdentifier(), institutionId, newStatus, rejectionReason);
+        var requestBody = new NviStatusRequest(candidate.getIdentifier(), institutionId, ApprovalStatus.REJECTED, rejectionReason);
         var request = createRequest(candidate.getIdentifier(), institutionId, requestBody, randomString());
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
         var candidateResponse = response.getBodyObject(CandidateDto.class);
+        var actualApprovalStatus = candidateResponse.approvals().getFirst();
 
-        var actualApprovalStatus = candidateResponse.approvals().get(0);
-        assertThat(actualApprovalStatus.status().getValue(), is(equalTo(newStatus.getValue())));
+        assertThat(actualApprovalStatus.status(), is(equalTo(ApprovalStatusDto.REJECTED)));
         assertThat(actualApprovalStatus.reason(), is(equalTo(rejectionReason)));
     }
 
@@ -213,9 +212,9 @@ class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
         var candidateResponse = response.getBodyObject(CandidateDto.class);
-        var actualApproval = candidateResponse.approvals().get(0);
+        var actualApproval = candidateResponse.approvals().getFirst();
         var expectedStatus = getExpectedApprovalStatus(newStatus);
-        assertThat(actualApproval.status().getValue(), is(equalTo(expectedStatus.getValue())));
+        assertThat(actualApproval.status(), is(equalTo(expectedStatus)));
         assertThat(actualApproval.reason(), is(nullValue()));
     }
 
