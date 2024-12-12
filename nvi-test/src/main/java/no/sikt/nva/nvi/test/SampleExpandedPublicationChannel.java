@@ -15,14 +15,14 @@ import java.util.UUID;
 import nva.commons.core.JacocoGenerated;
 
 @JacocoGenerated
-public record ExpandedPublicationChannel(String type, URI id, String name, String level, Boolean valid,
-                                         String printIssn) {
+public record SampleExpandedPublicationChannel(String type, URI id, String name, String level, Boolean valid,
+                                               String printIssn) {
 
     public static Builder builder() {
         return new Builder();
     }
 
-    public static Builder from(ExpandedPublicationChannel other) {
+    public static Builder from(SampleExpandedPublicationChannel other) {
         return new Builder(other);
     }
 
@@ -59,7 +59,7 @@ public record ExpandedPublicationChannel(String type, URI id, String name, Strin
         private Builder() {
         }
 
-        private Builder(ExpandedPublicationChannel other) {
+        private Builder(SampleExpandedPublicationChannel other) {
             this.type = other.type();
             this.id = other.id();
             this.name = other.name();
@@ -83,11 +83,11 @@ public record ExpandedPublicationChannel(String type, URI id, String name, Strin
             return this;
         }
 
-        public ExpandedPublicationChannel build() {
+        public SampleExpandedPublicationChannel build() {
             if (isNull(id)) {
                 id = generatePublicationChannelId(identifier);
             }
-            return new ExpandedPublicationChannel(type, id, name, level, valid, printIssn);
+            return new SampleExpandedPublicationChannel(type, id, name, level, valid, printIssn);
         }
     }
 }

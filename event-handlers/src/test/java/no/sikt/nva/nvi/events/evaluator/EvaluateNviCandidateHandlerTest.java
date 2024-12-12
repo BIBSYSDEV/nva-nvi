@@ -70,11 +70,11 @@ import no.sikt.nva.nvi.events.model.NviCandidate.NviCreator;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.sikt.nva.nvi.events.model.PublicationDate;
 import no.sikt.nva.nvi.events.model.UnverifiedNviCreator;
-import no.sikt.nva.nvi.test.ExpandedAffiliation;
-import no.sikt.nva.nvi.test.ExpandedContributor;
-import no.sikt.nva.nvi.test.ExpandedPublication;
-import no.sikt.nva.nvi.test.ExpandedPublicationChannel;
-import no.sikt.nva.nvi.test.ExpandedPublicationDate;
+import no.sikt.nva.nvi.test.SampleExpandedAffiliation;
+import no.sikt.nva.nvi.test.SampleExpandedContributor;
+import no.sikt.nva.nvi.test.SampleExpandedPublication;
+import no.sikt.nva.nvi.test.SampleExpandedPublicationChannel;
+import no.sikt.nva.nvi.test.SampleExpandedPublicationDate;
 import no.sikt.nva.nvi.test.FakeSqsClient;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
@@ -116,8 +116,8 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
                                                                 HARDCODED_PUBLICATION_ID.toString());
     private static final String ERROR_COULD_NOT_FETCH_CRISTIN_ORG = "Could not fetch Cristin organization for: ";
     private static final String COULD_NOT_FETCH_CUSTOMER_MESSAGE = "Could not fetch customer for: ";
-    private static final ExpandedAffiliation DEFAULT_SUBUNIT_AFFILIATION =
-            ExpandedAffiliation.builder().withId(CRISTIN_NVI_ORG_SUB_UNIT_ID).build();
+    private static final SampleExpandedAffiliation DEFAULT_SUBUNIT_AFFILIATION =
+            SampleExpandedAffiliation.builder().withId(CRISTIN_NVI_ORG_SUB_UNIT_ID).build();
     private static final URI CUSTOMER_API_CRISTIN_NVI_ORG_TOP_LEVEL = URI.create(
         "https://api.dev.nva.aws.unit.no/customer/cristinId/https%3A%2F%2Fapi"
         + ".dev.nva.aws.unit.no%2Fcristin%2Forganization%2F194.0.0.0");
@@ -604,19 +604,19 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
     class evaluateNviCandidatesWithDynamicTestData {
 
         // Builders and variables that may be modified for each test case
-        ExpandedContributor.Builder defaultVerifiedContributor;
-        ExpandedContributor.Builder defaultUnverifiedContributor;
-        List<ExpandedContributor.Builder> verifiedContributors;
-        List<ExpandedContributor.Builder> unverifiedContributors;
+        SampleExpandedContributor.Builder defaultVerifiedContributor;
+        SampleExpandedContributor.Builder defaultUnverifiedContributor;
+        List<SampleExpandedContributor.Builder> verifiedContributors;
+        List<SampleExpandedContributor.Builder> unverifiedContributors;
         int creatorShareCount;
 
         URI publicationChannelId;
         PublicationChannel publicationChannelType;
         Level publicationChannelLevel;
-        List<ExpandedPublicationChannel.Builder> publicationChannels;
+        List<SampleExpandedPublicationChannel.Builder> publicationChannels;
 
         InstanceType publicationInstanceType;
-        ExpandedPublication.Builder publicationBuilder;
+        SampleExpandedPublication.Builder publicationBuilder;
 
         BigDecimal expectedTotalPoints;
         List<InstitutionPoints> expectedPointsPerInstitution;
@@ -625,13 +625,13 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
         @BeforeEach
         void setup() {
             // Initialize default values for all test data
-            defaultVerifiedContributor = ExpandedContributor.builder()
-                                                            .withVerificationStatus("Verified")
-                                                            .withAffiliations(List.of(DEFAULT_SUBUNIT_AFFILIATION));
-            defaultUnverifiedContributor = ExpandedContributor.builder()
-                                                              .withId(null)
-                                                              .withVerificationStatus(null)
-                                                              .withAffiliations(List.of(DEFAULT_SUBUNIT_AFFILIATION));
+            defaultVerifiedContributor = SampleExpandedContributor.builder()
+                                                                  .withVerificationStatus("Verified")
+                                                                  .withAffiliations(List.of(DEFAULT_SUBUNIT_AFFILIATION));
+            defaultUnverifiedContributor = SampleExpandedContributor.builder()
+                                                                    .withId(null)
+                                                                    .withVerificationStatus(null)
+                                                                    .withAffiliations(List.of(DEFAULT_SUBUNIT_AFFILIATION));
             verifiedContributors = List.of(defaultVerifiedContributor);
             unverifiedContributors = emptyList();
             creatorShareCount = 1;
@@ -642,8 +642,8 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
             publicationInstanceType = InstanceType.ACADEMIC_ARTICLE;
             publicationChannels = List.of(getDefaultPublicationChannelBuilder());
 
-            publicationBuilder = ExpandedPublication.builder()
-                                                    .withPublicationDate(HARDCODED_JSON_PUBLICATION_DATE);
+            publicationBuilder = SampleExpandedPublication.builder()
+                                                          .withPublicationDate(HARDCODED_JSON_PUBLICATION_DATE);
 
             expectedTotalPoints = ONE.setScale(SCALE, ROUNDING_MODE);
             expectedPointsPerInstitution =
@@ -735,10 +735,10 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
 
         @Test
         void shouldIdentifyCandidateWithMissingCountryCode() throws IOException {
-            var affiliations = List.of(ExpandedAffiliation.builder()
-                                                          .withId(CRISTIN_NVI_ORG_SUB_UNIT_ID)
-                                                          .withCountryCode(null)
-                                                          .build());
+            var affiliations = List.of(SampleExpandedAffiliation.builder()
+                                                                .withId(CRISTIN_NVI_ORG_SUB_UNIT_ID)
+                                                                .withCountryCode(null)
+                                                                .build());
             var contributor = defaultVerifiedContributor.withAffiliations(affiliations);
             verifiedContributors = List.of(contributor);
             var testScenario = getCandidateScenario();
@@ -751,9 +751,9 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
 
         @Test
         void shouldRejectCandidateWithOnlySwedishCountryCode() throws IOException {
-            var affiliations = List.of(ExpandedAffiliation.builder()
-                                                          .withCountryCode(COUNTRY_CODE_SWEDEN)
-                                                          .build());
+            var affiliations = List.of(SampleExpandedAffiliation.builder()
+                                                                .withCountryCode(COUNTRY_CODE_SWEDEN)
+                                                                .build());
             var swedishContributor = defaultVerifiedContributor.withAffiliations(affiliations);
             verifiedContributors = List.of(swedishContributor);
             var testScenario = getNonCandidateScenario();
@@ -764,7 +764,7 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
             assertEquals(testScenario.expectedEvaluatedMessage(), messageBody);
         }
 
-        private static PublicationDate getPublicationDate(ExpandedPublicationDate publicationDate) {
+        private static PublicationDate getPublicationDate(SampleExpandedPublicationDate publicationDate) {
             return new PublicationDate(publicationDate.day(), publicationDate.month(), publicationDate.year());
         }
 
@@ -786,28 +786,28 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
             return new TestScenario(publication, expectedEvaluatedMessage, event);
         }
 
-        private ExpandedPublication buildExpectedPublication() {
+        private SampleExpandedPublication buildExpectedPublication() {
             // Generate test data based on the current state of the builders,
             // after the test case has made any necessary changes to the default values.
             var allContributors = Stream.concat(verifiedContributors.stream(), unverifiedContributors.stream())
-                                        .map(ExpandedContributor.Builder::build)
+                                        .map(SampleExpandedContributor.Builder::build)
                                         .toList();
             return publicationBuilder.withInstanceType(publicationInstanceType.getValue())
                                      .withPublicationChannels(publicationChannels.stream()
-                                                                                 .map(ExpandedPublicationChannel.Builder::build)
+                                                                                 .map(SampleExpandedPublicationChannel.Builder::build)
                                                                                  .toList())
                                      .withContributors(allContributors)
                                      .build();
         }
 
-        private ExpandedPublicationChannel.Builder getDefaultPublicationChannelBuilder() {
-            return ExpandedPublicationChannel.builder()
-                                             .withId(publicationChannelId)
-                                             .withType(publicationChannelType.getValue())
-                                             .withLevel(publicationChannelLevel.getValue());
+        private SampleExpandedPublicationChannel.Builder getDefaultPublicationChannelBuilder() {
+            return SampleExpandedPublicationChannel.builder()
+                                                   .withId(publicationChannelId)
+                                                   .withType(publicationChannelType.getValue())
+                                                   .withLevel(publicationChannelLevel.getValue());
         }
 
-        private CandidateEvaluatedMessage getCandidateResponse(URI fileUri, ExpandedPublication publication) {
+        private CandidateEvaluatedMessage getCandidateResponse(URI fileUri, SampleExpandedPublication publication) {
             var publicationDate = getPublicationDate(publication.publicationDate());
             var verifiedCreators = getVerifiedNviCreators();
             var unverifiedNviCreators = getUnverifiedNviCreators();
@@ -829,7 +829,7 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
                                             .build();
         }
 
-        private CandidateEvaluatedMessage getNonCandidateResponse(ExpandedPublication publication) {
+        private CandidateEvaluatedMessage getNonCandidateResponse(SampleExpandedPublication publication) {
             var rejectedCandidate = new NonNviCandidate(publication.id());
             return CandidateEvaluatedMessage.builder()
                                             .withCandidateType(rejectedCandidate)
@@ -838,7 +838,7 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
 
         private List<NviCreator> getVerifiedNviCreators() {
             return verifiedContributors.stream()
-                                       .map(ExpandedContributor.Builder::build)
+                                       .map(SampleExpandedContributor.Builder::build)
                                        .map(contributor -> new NviCreator(contributor.id(),
                                                                           contributor.affiliationIds()))
                                        .toList();
@@ -846,19 +846,19 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
 
         private List<UnverifiedNviCreator> getUnverifiedNviCreators() {
             return unverifiedContributors.stream()
-                                         .map(ExpandedContributor.Builder::build)
+                                         .map(SampleExpandedContributor.Builder::build)
                                          .map(contributor -> new UnverifiedNviCreator(contributor.contributorName(),
                                                                                       contributor.affiliationIds()))
                                          .toList();
         }
 
-        private URI addPublicationToS3(ExpandedPublication publication) throws IOException {
+        private URI addPublicationToS3(SampleExpandedPublication publication) throws IOException {
 
             return s3Driver.insertFile(UnixPath.of(publication.identifier()
                                                               .toString()), publication.toJsonString());
         }
 
-        private record TestScenario(ExpandedPublication publication, CandidateEvaluatedMessage expectedEvaluatedMessage,
+        private record TestScenario(SampleExpandedPublication publication, CandidateEvaluatedMessage expectedEvaluatedMessage,
                                     SQSEvent event) {
 
         }

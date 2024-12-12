@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import nva.commons.core.JacocoGenerated;
 
 @JacocoGenerated
-public record ExpandedPublicationDate(String year, String month, String day) {
+public record SampleExpandedPublicationDate(String year, String month, String day) {
 
     public ObjectNode asObjectNode() {
         var publicationDateNode = objectMapper.createObjectNode();

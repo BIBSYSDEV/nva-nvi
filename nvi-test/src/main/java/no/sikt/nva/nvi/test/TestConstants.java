@@ -26,8 +26,8 @@ public final class TestConstants {
     public static final String COUNTRY_CODE_SWEDEN = "SE";
 
     public static final URI HARDCODED_CREATOR_ID = URI.create("https://api.dev.nva.aws.unit.no/cristin/person/997998");
-    public static final ExpandedPublicationDate HARDCODED_JSON_PUBLICATION_DATE =
-        new ExpandedPublicationDate("2023", null, null);
+    public static final SampleExpandedPublicationDate HARDCODED_JSON_PUBLICATION_DATE =
+        new SampleExpandedPublicationDate("2023", null, null);
     public static final URI HARDCODED_PUBLICATION_CHANNEL_ID = URI.create(
         "https://api.dev.nva.aws.unit.no/publication-channels/series/490845/2023");
     public static final URI HARDCODED_PUBLICATION_ID = URI.create(

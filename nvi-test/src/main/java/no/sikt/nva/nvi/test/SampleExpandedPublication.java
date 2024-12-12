@@ -30,10 +30,12 @@ import nva.commons.core.ioutils.IoUtils;
  * `nva-publication-api`.
  */
 @JacocoGenerated
-public record ExpandedPublication(URI id, UUID identifier, String mainTitle, String issn, String publicationContextType,
-                                  List<ExpandedPublicationChannel> publicationChannels,
-                                  ExpandedPublicationDate publicationDate, String instanceType, String abstractText,
-                                  String language, String status, List<ExpandedContributor> contributors) {
+public record SampleExpandedPublication(URI id, UUID identifier, String mainTitle, String issn,
+                                        String publicationContextType,
+                                        List<SampleExpandedPublicationChannel> publicationChannels,
+                                        SampleExpandedPublicationDate publicationDate, String instanceType,
+                                        String abstractText, String language, String status,
+                                        List<SampleExpandedContributor> contributors) {
 
     private static final String TEMPLATE_JSON_PATH = "template_publication.json";
     private static final String PUBLICATION_CHANNELS_MUST_NOT_BE_EMPTY = "Publication channels must not be empty";
@@ -42,7 +44,7 @@ public record ExpandedPublication(URI id, UUID identifier, String mainTitle, Str
         return new Builder();
     }
 
-    public static Builder from(ExpandedPublication other) {
+    public static Builder from(SampleExpandedPublication other) {
         return new Builder(other);
     }
 
@@ -110,11 +112,11 @@ public record ExpandedPublication(URI id, UUID identifier, String mainTitle, Str
     private JsonNode createTopLevelOrganizationsNode() {
         var topLevelOrganizations = objectMapper.createArrayNode();
         contributors.stream()
-                    .map(ExpandedContributor::affiliationIds)
+                    .map(SampleExpandedContributor::affiliationIds)
                     .flatMap(List::stream)
                     .distinct()
                     .map(URI::toString)
-                    .map(ExpandedPublication::createOrganizationNode)
+                    .map(SampleExpandedPublication::createOrganizationNode)
                     .forEach(topLevelOrganizations::add);
         return topLevelOrganizations;
     }
@@ -132,7 +134,7 @@ public record ExpandedPublication(URI id, UUID identifier, String mainTitle, Str
                                                         .asObjectNode();
         } else {
             publicationContextNode.put(TYPE_FIELD, publicationContextType);
-            for (ExpandedPublicationChannel publicationChannel : publicationChannels) {
+            for (SampleExpandedPublicationChannel publicationChannel : publicationChannels) {
                 publicationContextNode.set(publicationChannel.type(), publicationChannel.asObjectNode());
             }
         }
@@ -159,7 +161,7 @@ public record ExpandedPublication(URI id, UUID identifier, String mainTitle, Str
     private ArrayNode createContributorsNode() {
         var contributorsNode = objectMapper.createArrayNode();
         contributors.stream()
-                    .map(ExpandedContributor::asObjectNode)
+                    .map(SampleExpandedContributor::asObjectNode)
                     .forEach(contributorsNode::add);
         return contributorsNode;
     }
@@ -170,20 +172,20 @@ public record ExpandedPublication(URI id, UUID identifier, String mainTitle, Str
         private URI id;
         private UUID identifier = UUID.randomUUID();
         private String mainTitle = randomString();
-        private List<ExpandedContributor> contributors;
+        private List<SampleExpandedContributor> contributors;
         private String status = "PUBLISHED";
         private String language;
         private String abstractText;
         private String publicationContextType = "Book";
         private String instanceType = "AcademicArticle";
-        private List<ExpandedPublicationChannel> publicationChannels;
-        private ExpandedPublicationDate publicationDate;
+        private List<SampleExpandedPublicationChannel> publicationChannels;
+        private SampleExpandedPublicationDate publicationDate;
         private String issn;
 
         private Builder() {
         }
 
-        private Builder(ExpandedPublication other) {
+        private Builder(SampleExpandedPublication other) {
             this.id = other.id;
             this.identifier = other.identifier;
             this.mainTitle = other.mainTitle;
@@ -198,13 +200,12 @@ public record ExpandedPublication(URI id, UUID identifier, String mainTitle, Str
             this.issn = other.issn;
         }
 
-        public Builder withContributors(List<ExpandedContributor> contributors) {
+        public Builder withContributors(List<SampleExpandedContributor> contributors) {
             this.contributors = contributors;
             return this;
         }
 
-
-        public Builder withPublicationChannels(List<ExpandedPublicationChannel> publicationChannels) {
+        public Builder withPublicationChannels(List<SampleExpandedPublicationChannel> publicationChannels) {
             this.publicationChannels = publicationChannels;
             return this;
         }
@@ -214,27 +215,27 @@ public record ExpandedPublication(URI id, UUID identifier, String mainTitle, Str
             return this;
         }
 
-        public Builder withPublicationDate(ExpandedPublicationDate publicationDate) {
+        public Builder withPublicationDate(SampleExpandedPublicationDate publicationDate) {
             this.publicationDate = publicationDate;
             return this;
         }
 
-        public ExpandedPublication build() {
+        public SampleExpandedPublication build() {
             if (isNull(id)) {
                 id = generatePublicationId(identifier);
             }
-            return new ExpandedPublication(id,
-                                           identifier,
-                                           mainTitle,
-                                           issn,
-                                           publicationContextType,
-                                           publicationChannels,
-                                           publicationDate,
-                                           instanceType,
-                                           abstractText,
-                                           language,
-                                           status,
-                                           contributors);
+            return new SampleExpandedPublication(id,
+                                                 identifier,
+                                                 mainTitle,
+                                                 issn,
+                                                 publicationContextType,
+                                                 publicationChannels,
+                                                 publicationDate,
+                                                 instanceType,
+                                                 abstractText,
+                                                 language,
+                                                 status,
+                                                 contributors);
         }
     }
 }

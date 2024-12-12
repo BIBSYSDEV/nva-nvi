@@ -13,13 +13,13 @@ import java.util.Map;
 import nva.commons.core.JacocoGenerated;
 
 @JacocoGenerated
-public record ExpandedAffiliation(URI id, String countryCode, Map<String, String> labels) {
+public record SampleExpandedAffiliation(URI id, String countryCode, Map<String, String> labels) {
 
     public static Builder builder() {
         return new Builder();
     }
 
-    public static Builder from(ExpandedAffiliation other) {
+    public static Builder from(SampleExpandedAffiliation other) {
         return new Builder(other);
     }
 
@@ -51,7 +51,7 @@ public record ExpandedAffiliation(URI id, String countryCode, Map<String, String
         private Builder() {
         }
 
-        private Builder(ExpandedAffiliation other) {
+        private Builder(SampleExpandedAffiliation other) {
             this.id = other.id();
             this.countryCode = other.countryCode();
             this.labels = other.labels();
@@ -67,8 +67,8 @@ public record ExpandedAffiliation(URI id, String countryCode, Map<String, String
             return this;
         }
 
-        public ExpandedAffiliation build() {
-            return new ExpandedAffiliation(id, countryCode, labels);
+        public SampleExpandedAffiliation build() {
+            return new SampleExpandedAffiliation(id, countryCode, labels);
         }
     }
 }

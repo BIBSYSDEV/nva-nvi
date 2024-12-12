@@ -19,8 +19,8 @@ import java.util.List;
 import nva.commons.core.JacocoGenerated;
 
 @JacocoGenerated
-public record ExpandedContributor(URI id, String verificationStatus, String contributorName, String role,
-                                  List<ExpandedAffiliation> affiliations, String orcId) {
+public record SampleExpandedContributor(URI id, String verificationStatus, String contributorName, String role,
+                                        List<SampleExpandedAffiliation> affiliations, String orcId) {
 
 
 
@@ -28,7 +28,7 @@ public record ExpandedContributor(URI id, String verificationStatus, String cont
         return new Builder();
     }
 
-    public static Builder from(ExpandedContributor other) {
+    public static Builder from(SampleExpandedContributor other) {
         return new Builder(other);
     }
 
@@ -63,7 +63,7 @@ public record ExpandedContributor(URI id, String verificationStatus, String cont
 
     public List<URI> affiliationIds() {
         return affiliations.stream()
-                           .map(ExpandedAffiliation::id)
+                           .map(SampleExpandedAffiliation::id)
                            .toList();
     }
 
@@ -84,12 +84,12 @@ public record ExpandedContributor(URI id, String verificationStatus, String cont
         private String role = CREATOR;
         private String verificationStatus;
         private String orcId;
-        private List<ExpandedAffiliation> affiliations;
+        private List<SampleExpandedAffiliation> affiliations;
 
         private Builder() {
         }
 
-        private Builder(ExpandedContributor other) {
+        private Builder(SampleExpandedContributor other) {
             this.id = other.id;
             this.verificationStatus = other.verificationStatus;
             this.contributorName = other.contributorName;
@@ -113,13 +113,13 @@ public record ExpandedContributor(URI id, String verificationStatus, String cont
             return this;
         }
 
-        public Builder withAffiliations(List<ExpandedAffiliation> affiliations) {
+        public Builder withAffiliations(List<SampleExpandedAffiliation> affiliations) {
             this.affiliations = affiliations;
             return this;
         }
 
-        public ExpandedContributor build() {
-            return new ExpandedContributor(id, verificationStatus, contributorName, role, affiliations, orcId);
+        public SampleExpandedContributor build() {
+            return new SampleExpandedContributor(id, verificationStatus, contributorName, role, affiliations, orcId);
         }
     }
 }
