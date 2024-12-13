@@ -14,7 +14,6 @@ import static no.sikt.nva.nvi.test.UpsertRequestBuilder.randomUpsertRequestBuild
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.core.ioutils.IoUtils.stringFromResources;
-import static nva.commons.core.paths.UriWrapper.HTTPS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -44,7 +43,6 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.common.db.PeriodStatus;
 import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
 import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
@@ -116,7 +114,7 @@ class CandidateTest extends LocalDynamoTest {
 
     @Test
     void shouldReturnCandidateWhenExists() {
-        var upsertCandidateRequest = random.build();
+        var upsertCandidateRequest = randomUpsertRequestBuilder().build();
         var fetchedCandidate = upsert(upsertCandidateRequest);
         assertNotNull(fetchedCandidate);
     }
@@ -410,28 +408,6 @@ class CandidateTest extends LocalDynamoTest {
                                                                           institutionPoints)));
     }
 
-    private static void assertCorrectCreatorData(Map<URI, List<URI>> creators, Candidate candidate) {
-        creators.forEach((key, value) -> {
-            var actualCreator =
-                candidate.getPublicationDetails()
-                    .creators()
-                    .stream()
-                    .filter(creator -> creator.id().equals(key))
-                    .findFirst()
-                    .orElse(null);
-            assert actualCreator != null;
-            assertEquals(value, actualCreator.affiliations());
-        });
-    }
-
-    private static PeriodStatusDto getDefaultPeriodStatus() {
-        return PeriodStatusDto.fromPeriodStatus(PeriodStatus.builder().withStatus(Status.OPEN_PERIOD).build());
-    }
-
-    private static URI constructId(UUID identifier) {
-        return new UriWrapper(HTTPS, API_DOMAIN).addChild(BASE_PATH, "candidate", identifier.toString()).getUri();
-    }
-
     private static BigDecimal adjustScaleAndRoundingMode(BigDecimal bigDecimal) {
         return bigDecimal.setScale(EXPECTED_SCALE, EXPECTED_ROUNDING_MODE);
     }
@@ -451,20 +427,6 @@ class CandidateTest extends LocalDynamoTest {
     private Candidate upsert(UpsertCandidateRequest request) {
         Candidate.upsert(request, candidateRepository, periodRepository);
         return Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository);
-    }
-
-    private List<InstitutionPoints> createPoints(Map<URI, List<URI>> creators) {
-        return creators.entrySet()
-                   .stream()
-                   .map(entry -> entry.getValue()
-                                     .stream()
-                                     .map(affiliation -> {
-                                         var institutionPoints = randomBigDecimal();
-                                         return createInstitutionPoints(affiliation, institutionPoints, entry.getKey());
-                                     })
-                                     .toList())
-                   .flatMap(List::stream)
-                   .toList();
     }
 
     private Candidate nonApplicableCandidate() {
