@@ -5,7 +5,6 @@ import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
 import static no.sikt.nva.nvi.test.TestUtils.generateS3BucketUri;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.sikt.nva.nvi.test.TestUtils.randomInstanceType;
-import static no.sikt.nva.nvi.test.UpsertRequestBuilder.randomUpsertRequestBuilder;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
@@ -33,13 +32,8 @@ import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.net.URI;
 import java.time.Year;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
@@ -157,30 +151,16 @@ class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         var identifier = UUID.randomUUID();
         var publicationId = generatePublicationId(identifier);
         var institutions = new URI[]{delete, keep};
-        var creators = IntStream.of(1)
-                           .mapToObj(i -> randomUri())
-                           .collect(Collectors.toMap(Function.identity(), e -> List.of(institutions)));
 
-        var points = Arrays.stream(institutions)
-                         .map(institution -> {
-                             var institutionPoints = randomBigDecimal();
-                             return new InstitutionPoints(institution, institutionPoints,
-                                                          creators.keySet().stream()
-                                                              .map(creator -> new CreatorAffiliationPoints(
-                                                                  creator, institution, institutionPoints))
-                                                              .toList());
-                         }).toList();
-
-        var request = randomUpsertRequestBuilder()
-                          .withCreators(creators)
-                          .withPoints(points)
+        var request = createUpsertCandidateRequest(institutions)
                           .withPublicationId(publicationId)
                           .build();
         Candidate.upsert(request, candidateRepository, periodRepository);
-        var candidate = Candidate.fetchByPublicationId(() -> publicationId, candidateRepository, periodRepository);
+
         var sqsEvent = createEvent(keep, publicationId, generateS3BucketUri(identifier));
         handler.handleRequest(sqsEvent, CONTEXT);
-        var approvals = getApprovalMaps(candidate);
+        var approvals = Candidate.fetchByPublicationId(() -> publicationId, candidateRepository, periodRepository)
+                            .getApprovals();
         assertTrue(approvals.containsKey(keep));
         assertFalse(approvals.containsKey(delete));
         assertThat(approvals.size(), is(2));
@@ -304,13 +284,6 @@ class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                    .withNviCreators(List.of(new NviCreator(creatorId, List.of(institutionId))))
                    .withInstitutionPoints(request.institutionPoints())
                    .build();
-    }
-
-    private Map<URI, DbApprovalStatus> getApprovalMaps(Candidate candidate) {
-        return candidateRepository.fetchApprovals(candidate.getIdentifier())
-                   .stream()
-                   .map(ApprovalStatusDao::approvalStatus)
-                   .collect(Collectors.toMap(DbApprovalStatus::institutionId, Function.identity()));
     }
 
     private DbCandidate getExpectedCandidate(NviCandidate evaluatedNviCandidate) {
