@@ -51,7 +51,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
-class CandidateApprovalTest extends CandidateTest {
+class CandidateApprovalTest extends CandidateTestSetup {
 
     private static final String APPROVED = "APPROVED";
     private static final URI HARDCODED_INSTITUTION_ID = URI.create("https://example.org/topLevelInstitutionId");

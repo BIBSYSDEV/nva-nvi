@@ -3,7 +3,6 @@ package no.sikt.nva.nvi.common.service;
 import static no.sikt.nva.nvi.test.TestUtils.createUpdateStatusRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertNonCandidateRequest;
-import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.randomApplicableCandidate;
 import static no.sikt.nva.nvi.test.TestUtils.randomApproval;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
@@ -25,10 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.net.URI;
 import java.nio.file.Path;
-import java.time.ZonedDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -41,8 +38,6 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
-import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
 import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
@@ -56,14 +51,9 @@ import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
-import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
-import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.UpsertRequestBuilder;
-import nva.commons.core.Environment;
-import nva.commons.core.paths.UriWrapper;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -74,37 +64,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 // Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
 @SuppressWarnings({"PMD.GodClass", "PMD.CouplingBetweenObjects"})
-class CandidateTest extends LocalDynamoTest {
-
-    protected static final int EXPECTED_SCALE = 4;
-    protected static final RoundingMode EXPECTED_ROUNDING_MODE = RoundingMode.HALF_UP;
-    private static final Environment ENVIRONMENT = new Environment();
-    private static final String BASE_PATH = ENVIRONMENT.readEnv("CUSTOM_DOMAIN_BASE_PATH");
-    private static final String API_DOMAIN = ENVIRONMENT.readEnv("API_HOST");
-    public static final URI CONTEXT_URI = UriWrapper.fromHost(API_DOMAIN).addChild(BASE_PATH, "context").getUri();
-    protected CandidateRepository candidateRepository;
-    protected PeriodRepository periodRepository;
-
-    protected static UpsertCandidateRequest createUpsertRequestWithDecimalScale(int scale, URI institutionId) {
-        var creatorId = randomUri();
-        var creators = Map.of(creatorId, List.of(institutionId));
-        var points = List.of(createInstitutionPoints(institutionId, randomBigDecimal(scale), creatorId));
-
-        return randomUpsertRequestBuilder()
-                   .withPoints(points)
-                   .withCreators(creators)
-                   .withCollaborationFactor(randomBigDecimal(scale))
-                   .withBasePoints(randomBigDecimal(scale))
-                   .withTotalPoints(randomBigDecimal(scale))
-                   .build();
-    }
-
-    @BeforeEach
-    void setup() {
-        localDynamo = initializeTestDatabase();
-        candidateRepository = new CandidateRepository(localDynamo);
-        periodRepository = periodRepositoryReturningOpenedPeriod(ZonedDateTime.now().getYear());
-    }
+class CandidateTest extends CandidateTestSetup {
 
     @Test
     void shouldThrowNotFoundExceptionWhenCandidateDoesNotExist() {
@@ -399,13 +359,6 @@ class CandidateTest extends LocalDynamoTest {
     @Deprecated
     private static Stream<Arguments> levelValues() {
         return Stream.of(Arguments.of(DbLevel.LEVEL_ONE, "LevelOne"), Arguments.of(DbLevel.LEVEL_TWO, "LevelTwo"));
-    }
-
-    private static InstitutionPoints createInstitutionPoints(URI institutionId, BigDecimal institutionPoints,
-                                                             URI creatorId) {
-        return new InstitutionPoints(institutionId, institutionPoints,
-                                     List.of(new CreatorAffiliationPoints(creatorId, institutionId,
-                                                                          institutionPoints)));
     }
 
     private static BigDecimal adjustScaleAndRoundingMode(BigDecimal bigDecimal) {

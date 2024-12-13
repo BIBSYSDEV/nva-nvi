@@ -19,7 +19,7 @@ import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.requests.DeleteNoteRequest;
 import org.junit.jupiter.api.Test;
 
-class CandidateNotesTest extends CandidateTest {
+class CandidateNotesTest extends CandidateTestSetup {
 
     @Test
     void shouldCreateNoteWhenValidCreateNoteRequest() {
