@@ -70,6 +70,7 @@ import no.sikt.nva.nvi.test.ExpandedResourceGenerator;
 import no.sikt.nva.nvi.test.FakeSqsClient;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
+import no.sikt.nva.nvi.test.UpsertRequestBuilder;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
@@ -328,7 +329,7 @@ class IndexDocumentHandlerTest extends LocalDynamoTest {
     @ParameterizedTest
     @MethodSource("channelTypeIssnProvider")
     void shouldExtractOptionalPrintIssnFromExpandedResource(ChannelType channelType, boolean printIssnExists) {
-        var candidate = randomApplicableCandidate(randomUri(), channelType);
+        var candidate = randomApplicableCandidate(channelType);
         var expandedResource =
             ExpandedResourceGenerator.builder().withCandidate(candidate).withPopulateIssn(printIssnExists).build()
                 .createExpandedResource();
@@ -344,7 +345,7 @@ class IndexDocumentHandlerTest extends LocalDynamoTest {
     @ParameterizedTest
     @EnumSource(ChannelType.class)
     void shouldGenerateIndexDocumentForAllPublicationChannelTypes(ChannelType channelType) {
-        var candidate = randomApplicableCandidate(randomUri(), channelType);
+        var candidate = randomApplicableCandidate(channelType);
         var expandedResource = ExpandedResourceGenerator.builder()
                                    .withCandidate(candidate)
                                    .build()
@@ -779,8 +780,8 @@ class IndexDocumentHandlerTest extends LocalDynamoTest {
         return Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository);
     }
 
-    private Candidate randomApplicableCandidate(URI affiliation, ChannelType channelType) {
-        var request = createUpsertCandidateRequest(affiliation)
+    private Candidate randomApplicableCandidate(ChannelType channelType) {
+        var request = UpsertRequestBuilder.randomUpsertRequestBuilder()
                           .withChannelType(channelType.getValue())
                           .build();
         Candidate.upsert(request, candidateRepository, periodRepository);
