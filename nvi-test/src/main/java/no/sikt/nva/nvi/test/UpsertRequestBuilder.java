@@ -1,11 +1,13 @@
 package no.sikt.nva.nvi.test;
 
+import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
@@ -14,26 +16,46 @@ import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 
 public class UpsertRequestBuilder {
 
-    public static final URI creatorId = randomUri();
-    public static final URI affiliationId = randomUri();
-    private URI publicationBucketUri = URI.create("http://example.org/publicationBucketUri");
-    private URI publicationId = URI.create("http://example.org/publicationId");
-    private boolean isApplicable = true;
-    private boolean isInternationalCollaboration = true;
-    private Map<URI, List<URI>> creators = Map.of(creatorId, List.of(affiliationId));
-    private String channelType = "channelType";
-    private URI channelId = URI.create("http://example.org/channelId");
-    private String level = "LevelOne";
-    private InstanceType instanceType = InstanceType.ACADEMIC_ARTICLE;
-    private PublicationDate publicationDate = new PublicationDate("2023", "01", "01");
-    private int creatorShareCount = 1;
-    private BigDecimal collaborationFactor = BigDecimal.ONE;
-    private BigDecimal basePoints = BigDecimal.ONE;
-    private List<InstitutionPoints> points = List.of(new InstitutionPoints(randomUri(), randomBigDecimal(),
-                                                                           List.of(new CreatorAffiliationPoints(
-                                                                               creatorId, affiliationId,
-                                                                               randomBigDecimal()))));
-    private BigDecimal totalPoints = BigDecimal.ONE;
+    private URI publicationBucketUri;
+    private URI publicationId;
+    private boolean isApplicable;
+    private boolean isInternationalCollaboration;
+    private Map<URI, List<URI>> creators;
+    private String channelType;
+    private URI channelId;
+    private String level;
+    private InstanceType instanceType;
+    private PublicationDate publicationDate;
+    private int creatorShareCount;
+    private BigDecimal collaborationFactor;
+    private BigDecimal basePoints;
+    private List<InstitutionPoints> points;
+    private BigDecimal totalPoints;
+
+    public static UpsertRequestBuilder randomUpsertRequestBuilder() {
+        final URI creatorId = randomUri();
+        final URI affiliationId = randomUri();
+        return new UpsertRequestBuilder()
+                   .withPublicationBucketUri(randomUri())
+                   .withPublicationId(randomUri())
+                   .withIsApplicable(true)
+                   .withIsInternationalCollaboration(true)
+                   .withCreators(Map.of(creatorId, List.of(affiliationId)))
+                   .withChannelType(ChannelType.JOURNAL.getValue())
+                   .withChannelId(randomUri())
+                   .withLevel("LevelOne")
+                   .withInstanceType(InstanceType.ACADEMIC_ARTICLE)
+                   .withPublicationDate(new PublicationDate(String.valueOf(CURRENT_YEAR), "01", "01"))
+                   .withCreatorShareCount(1)
+                   .withCollaborationFactor(BigDecimal.ONE)
+                   .withBasePoints(BigDecimal.ONE)
+                   .withPoints(List.of(new InstitutionPoints(randomUri(), randomBigDecimal(),
+                                                             List.of(new CreatorAffiliationPoints(
+                                                                 creatorId, affiliationId,
+                                                                 randomBigDecimal()))))
+                   )
+                   .withTotalPoints(BigDecimal.ONE);
+    }
 
     public static UpsertRequestBuilder fromRequest(UpsertCandidateRequest request) {
         return new UpsertRequestBuilder()

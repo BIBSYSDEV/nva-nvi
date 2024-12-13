@@ -11,45 +11,26 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
-import no.sikt.nva.nvi.common.S3StorageReader;
-import no.sikt.nva.nvi.common.client.OrganizationRetriever;
-import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.NviCandidate;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
-import no.sikt.nva.nvi.test.FakeSqsClient;
-import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
-import no.unit.nva.auth.uriretriever.BackendClientCredentials;
-import no.unit.nva.auth.uriretriever.UriRetriever;
-import no.unit.nva.s3.S3Driver;
-import no.unit.nva.stubs.FakeS3Client;
-import no.unit.nva.stubs.FakeSecretsManagerClient;
 import nva.commons.core.Environment;
 import nva.commons.core.ioutils.IoUtils;
 import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 @SuppressWarnings("PMD.AvoidDuplicateLiterals")
-class EvaluateNviCandidateWithCristinDataTest {
+class EvaluateNviCandidateWithCristinDataTest extends EvaluationTest {
 
-    private static final Environment ENVIRONMENT = new Environment();
-    private static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
-    private static final int SCALE = 4;
     private static final URI NTNU_TOP_LEVEL_ORG_ID = URI.create(
         "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0");
     private static final URI ST_OLAVS_TOP_LEVEL_ORG_ID = URI.create(
@@ -58,41 +39,9 @@ class EvaluateNviCandidateWithCristinDataTest {
         "https://api.sandbox.nva.aws.unit.no/cristin/organization/185.90.0.0");
     private static final URI SINTEF_TOP_LEVEL_ORG_ID = URI.create(
         "https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.0.0.0");
-    private static final String BUCKET_NAME = ENVIRONMENT.readEnv("EXPANDED_RESOURCES_BUCKET");
-    private static final String API_HOST = ENVIRONMENT.readEnv("API_HOST");
-    private static final String CUSTOMER_API_NVI_RESPONSE = "{" + "\"nviInstitution\" : \"true\"" + "}";
     private static final String CUSTOMER = "customer";
+    private static final String API_HOST = new Environment().readEnv("API_HOST");
     private static final String CRISTIN_ID = "cristinId";
-    private final Context context = mock(Context.class);
-    private S3Driver s3Driver;
-    private EvaluateNviCandidateHandler handler;
-    private AuthorizedBackendUriRetriever authorizedBackendUriRetriever;
-    private UriRetriever uriRetriever;
-    private FakeSqsClient queueClient;
-
-    @BeforeEach
-    void setup() {
-        var env = mock(Environment.class);
-        when(env.readEnv("CANDIDATE_QUEUE_URL")).thenReturn("My test candidate queue url");
-        when(env.readEnv("CANDIDATE_DLQ_URL")).thenReturn("My test candidate dlq url");
-        var s3Client = new FakeS3Client();
-        s3Driver = new S3Driver(s3Client, BUCKET_NAME);
-        try (var secretsManagerClient = new FakeSecretsManagerClient()) {
-            var credentials = new BackendClientCredentials("id", "secret");
-            secretsManagerClient.putPlainTextSecret("secret", credentials.toString());
-        }
-        authorizedBackendUriRetriever = mock(AuthorizedBackendUriRetriever.class);
-        uriRetriever = mock(UriRetriever.class);
-        var calculator = new CreatorVerificationUtil(authorizedBackendUriRetriever, uriRetriever);
-        var storageReader = new S3StorageReader(s3Client, BUCKET_NAME);
-        var organizationRetriever = new OrganizationRetriever(uriRetriever);
-        var pointCalculator = new PointService(organizationRetriever);
-        var evaluatorService = new EvaluatorService(storageReader, calculator, pointCalculator,
-                                                    mock(CandidateRepository.class),
-                                                    mock(PeriodRepository.class));
-        queueClient = new FakeSqsClient();
-        handler = new EvaluateNviCandidateHandler(evaluatorService, queueClient, env);
-    }
 
     @Test
     void shouldReturnSamePointsAsPointsCalculatedByCristinForAcademicArticleFrom2022() throws IOException {
@@ -101,9 +50,9 @@ class EvaluateNviCandidateWithCristinDataTest {
         var event = setupSqsEvent("evaluator/cristin_candidate_2022_academicArticle.json");
         handler.handleRequest(event, context);
         var candidate = getMessageBody();
-        assertThat(candidate.getPointsForInstitution(NTNU_TOP_LEVEL_ORG_ID),
+        assertThat(getPointsForInstitution(candidate, NTNU_TOP_LEVEL_ORG_ID),
                    is(equalTo(scaledBigDecimal(0.8165))));
-        assertThat(candidate.getPointsForInstitution(ST_OLAVS_TOP_LEVEL_ORG_ID),
+        assertThat(getPointsForInstitution(candidate, ST_OLAVS_TOP_LEVEL_ORG_ID),
                    is(equalTo(scaledBigDecimal(0.5774))));
     }
 
@@ -118,7 +67,7 @@ class EvaluateNviCandidateWithCristinDataTest {
         var event = setupSqsEvent("evaluator/cristin_candidate_2022_academicMonograph.json");
         handler.handleRequest(event, context);
         var candidate = getMessageBody();
-        assertThat(candidate.getPointsForInstitution(UIO_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(3.7528))));
+        assertThat(getPointsForInstitution(candidate, UIO_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(3.7528))));
     }
 
     @Test
@@ -132,7 +81,7 @@ class EvaluateNviCandidateWithCristinDataTest {
         var event = setupSqsEvent("evaluator/cristin_candidate_2022_academicLiteratureReview.json");
         handler.handleRequest(event, context);
         var candidate = getMessageBody();
-        assertThat(candidate.getPointsForInstitution(NTNU_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(1.5922))));
+        assertThat(getPointsForInstitution(candidate, NTNU_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(1.5922))));
     }
 
     @Test
@@ -144,8 +93,8 @@ class EvaluateNviCandidateWithCristinDataTest {
         var event = setupSqsEvent("evaluator/cristin_candidate_2022_academicChapter.json");
         handler.handleRequest(event, context);
         var candidate = getMessageBody();
-        assertThat(candidate.getPointsForInstitution(NTNU_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(0.8660))));
-        assertThat(candidate.getPointsForInstitution(SINTEF_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(0.5000))));
+        assertThat(getPointsForInstitution(candidate, NTNU_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(0.8660))));
+        assertThat(getPointsForInstitution(candidate, SINTEF_TOP_LEVEL_ORG_ID), is(equalTo(scaledBigDecimal(0.5000))));
     }
 
     private static BigDecimal scaledBigDecimal(double val) {

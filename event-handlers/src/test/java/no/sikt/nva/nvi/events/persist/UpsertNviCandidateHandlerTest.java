@@ -5,7 +5,7 @@ import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
 import static no.sikt.nva.nvi.test.TestUtils.generateS3BucketUri;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.sikt.nva.nvi.test.TestUtils.randomInstanceType;
-import static no.sikt.nva.nvi.test.TestUtils.randomLevelExcluding;
+import static no.sikt.nva.nvi.test.UpsertRequestBuilder.randomUpsertRequestBuilder;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
@@ -30,7 +30,6 @@ import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
-import java.math.BigDecimal;
 import java.net.URI;
 import java.time.Year;
 import java.util.ArrayList;
@@ -58,10 +57,8 @@ import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
-import no.sikt.nva.nvi.common.service.model.PublicationDetails;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.NonNviCandidate;
@@ -71,7 +68,6 @@ import no.sikt.nva.nvi.events.model.NviCandidate.NviCreator;
 import no.sikt.nva.nvi.events.model.PublicationDate;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
-import no.sikt.nva.nvi.test.UpsertRequestBuilder;
 import nva.commons.core.Environment;
 import nva.commons.logutils.LogUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -160,9 +156,7 @@ class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         var delete = randomUri();
         var identifier = UUID.randomUUID();
         var publicationId = generatePublicationId(identifier);
-        URI publicationBucketUri = randomUri();
-        BigDecimal totalPoints = randomBigDecimal();
-        URI[] institutions = new URI[]{delete, keep};
+        var institutions = new URI[]{delete, keep};
         var creators = IntStream.of(1)
                            .mapToObj(i -> randomUri())
                            .collect(Collectors.toMap(Function.identity(), e -> List.of(institutions)));
@@ -177,18 +171,10 @@ class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                                                               .toList());
                          }).toList();
 
-        var request = new UpsertRequestBuilder()
-                          .withPublicationId(publicationId)
-                          .withPublicationBucketUri(publicationBucketUri)
-                          .withPublicationDate(
-                              new PublicationDetails.PublicationDate(String.valueOf(TestUtils.CURRENT_YEAR), null,
-                                                                     null))
-                          .withIsApplicable(true)
+        var request = randomUpsertRequestBuilder()
                           .withCreators(creators)
-                          .withInstanceType(InstanceType.ACADEMIC_ARTICLE)
-                          .withLevel(randomLevelExcluding(DbLevel.NON_CANDIDATE).getValue())
                           .withPoints(points)
-                          .withTotalPoints(totalPoints)
+                          .withPublicationId(publicationId)
                           .build();
         Candidate.upsert(request, candidateRepository, periodRepository);
         var candidate = Candidate.fetchByPublicationId(() -> publicationId, candidateRepository, periodRepository);

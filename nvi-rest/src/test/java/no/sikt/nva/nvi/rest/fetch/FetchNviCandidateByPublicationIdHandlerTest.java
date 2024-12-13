@@ -76,7 +76,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends LocalDynamoTest {
     @Test
     void shouldReturnValidCandidateWhenCandidateExists() throws IOException {
         var institutionId = randomUri();
-        var candidate = upsert(createUpsertCandidateRequest(institutionId));
+        var candidate = upsert(createUpsertCandidateRequest(institutionId).build());
         var request = requestWithAccessRight(candidate.getPublicationId());
 
         handler.handleRequest(request, output, CONTEXT);
@@ -101,7 +101,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldReturnCandidateDtoWithApprovalStatusNewWhenApprovalStatusIsPendingAndUnassigned() throws IOException {
-        var candidate = upsert(createUpsertCandidateRequest(randomUri()));
+        var candidate = upsert(createUpsertCandidateRequest(randomUri()).build());
         var request = requestWithAccessRight(candidate.getPublicationId());
         handler.handleRequest(request, output, CONTEXT);
         var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
@@ -122,7 +122,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends LocalDynamoTest {
     }
 
     private Candidate createNonApplicableCandidate(URI institutionId) {
-        var candidate = upsert(createUpsertCandidateRequest(institutionId));
+        var candidate = upsert(createUpsertCandidateRequest(institutionId).build());
         return Candidate.updateNonCandidate(
             createUpsertNonCandidateRequest(candidate.getPublicationId()),
             candidateRepository).orElseThrow();

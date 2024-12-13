@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.test;
 
 import static java.util.Objects.nonNull;
+import static no.sikt.nva.nvi.test.UpsertRequestBuilder.randomUpsertRequestBuilder;
 import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInstant;
@@ -89,7 +90,7 @@ public final class TestUtils {
 
     public static Candidate randomApplicableCandidate(CandidateRepository candidateRepository,
                                                       PeriodRepository periodRepository) {
-        var request = createUpsertCandidateRequest(randomUri()).build();
+        var request = randomUpsertRequestBuilder().build();
         Candidate.upsert(request, candidateRepository, periodRepository);
         return Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository);
     }
@@ -285,7 +286,7 @@ public final class TestUtils {
                                                               .toList());
                          }).toList();
 
-        return new UpsertRequestBuilder()
+        return randomUpsertRequestBuilder()
                    .withCreators(creators)
                    .withPoints(points);
     }
@@ -298,7 +299,7 @@ public final class TestUtils {
                                                               List.of(new CreatorAffiliationPoints(
                                                                   creatorId, affiliation, points))));
 
-        return new UpsertRequestBuilder()
+        return randomUpsertRequestBuilder()
                    .withCreators(creators)
                    .withPoints(institutionPoints)
                    .build();

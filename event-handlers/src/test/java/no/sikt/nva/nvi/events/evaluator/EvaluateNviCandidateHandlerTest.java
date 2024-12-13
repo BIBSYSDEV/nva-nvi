@@ -5,10 +5,10 @@ import static no.sikt.nva.nvi.common.service.model.InstanceType.ACADEMIC_COMMENT
 import static no.sikt.nva.nvi.common.service.model.InstanceType.ACADEMIC_LITERATURE_REVIEW;
 import static no.sikt.nva.nvi.common.service.model.InstanceType.ACADEMIC_MONOGRAPH;
 import static no.sikt.nva.nvi.events.evaluator.TestUtils.createEvent;
-import static no.sikt.nva.nvi.events.evaluator.TestUtils.createResponse;
 import static no.sikt.nva.nvi.events.evaluator.TestUtils.mockOrganizationResponseForAffiliation;
 import static no.sikt.nva.nvi.events.evaluator.model.PublicationChannel.JOURNAL;
 import static no.sikt.nva.nvi.events.evaluator.model.PublicationChannel.SERIES;
+import static no.sikt.nva.nvi.test.UpsertRequestBuilder.randomUpsertRequestBuilder;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -23,9 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import com.amazonaws.services.lambda.runtime.Context;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -39,9 +37,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
-import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.model.Candidate;
@@ -58,29 +54,16 @@ import no.sikt.nva.nvi.events.model.NviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate.NviCreator;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.sikt.nva.nvi.events.model.PublicationDate;
-import no.sikt.nva.nvi.test.FakeSqsClient;
-import no.sikt.nva.nvi.test.LocalDynamoTest;
-import no.sikt.nva.nvi.test.UpsertRequestBuilder;
-import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
-import no.unit.nva.auth.uriretriever.BackendClientCredentials;
-import no.unit.nva.auth.uriretriever.UriRetriever;
-import no.unit.nva.s3.S3Driver;
-import no.unit.nva.stubs.FakeS3Client;
-import no.unit.nva.stubs.FakeSecretsManagerClient;
-import nva.commons.core.Environment;
-import nva.commons.core.StringUtils;
 import nva.commons.core.ioutils.IoUtils;
 import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
 import nva.commons.logutils.LogUtils;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 // Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
 @SuppressWarnings("PMD.CouplingBetweenObjects")
-class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
+class EvaluateNviCandidateHandlerTest extends EvaluationTest {
 
-    public static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
     public static final PublicationDate HARDCODED_PUBLICATION_DATE = new PublicationDate(null, null, "2023");
     public static final URI HARDCODED_PUBLICATION_CHANNEL_ID = URI.create(
         "https://api.dev.nva.aws.unit.no/publication-channels/series/490845/2023");
@@ -88,13 +71,11 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
         "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0");
     private static final URI HARDCODED_CREATOR_ID = URI.create("https://api.dev.nva.aws.unit.no/cristin/person/997998");
     private static final String ACADEMIC_CHAPTER_PATH = "evaluator/candidate_academicChapter.json";
-    private static final int SCALE = 4;
+
     private static final String ACADEMIC_LITERATURE_REVIEW_JSON_PATH = "evaluator/candidate_academicLiteratureReview"
                                                                        + ".json";
     private static final String ACADEMIC_MONOGRAPH_JSON_PATH = "evaluator/candidate_academicMonograph.json";
     private static final String ACADEMIC_COMMENTARY_JSON_PATH = "evaluator/candidate_academicCommentary.json";
-    private static final String BUCKET_NAME = "ignoredBucket";
-    private static final String CUSTOMER_API_NVI_RESPONSE = "{" + "\"nviInstitution\" : \"true\"" + "}";
     private static final String ACADEMIC_ARTICLE_PATH = "evaluator/candidate_academicArticle.json";
     private static final URI HARDCODED_PUBLICATION_ID = URI.create(
         "https://api.dev.nva.aws.unit.no/publication/01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d");
@@ -110,44 +91,6 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
     private static final URI CUSTOMER_API_CRISTIN_NVI_ORG_TOP_LEVEL = URI.create(
         "https://api.dev.nva.aws.unit.no/customer/cristinId/https%3A%2F%2Fapi"
         + ".dev.nva.aws.unit.no%2Fcristin%2Forganization%2F194.0.0.0");
-    private final Context context = mock(Context.class);
-    public HttpResponse<String> notFoundResponse;
-    private HttpResponse<String> badResponse;
-    private HttpResponse<String> okResponse;
-    private S3Driver s3Driver;
-    private EvaluateNviCandidateHandler handler;
-    private AuthorizedBackendUriRetriever authorizedBackendUriRetriever;
-    private UriRetriever uriRetriever;
-    private FakeSqsClient queueClient;
-    private CandidateRepository candidateRepository;
-    private PeriodRepository periodRepository;
-    private Environment env;
-    private EvaluatorService evaluatorService;
-    private S3StorageReader storageReader;
-
-    @BeforeEach
-    void setup() {
-        env = mock(Environment.class);
-        when(env.readEnv("CANDIDATE_QUEUE_URL")).thenReturn("My test candidate queue url");
-        when(env.readEnv("CANDIDATE_DLQ_URL")).thenReturn("My test candidate dlq url");
-        setupHttpResponses();
-        mockSecretManager();
-        var s3Client = new FakeS3Client();
-        authorizedBackendUriRetriever = mock(AuthorizedBackendUriRetriever.class);
-        queueClient = new FakeSqsClient();
-        s3Driver = new S3Driver(s3Client, BUCKET_NAME);
-        var dynamoDbClient = initializeTestDatabase();
-        uriRetriever = mock(UriRetriever.class);
-        storageReader = new S3StorageReader(s3Client, BUCKET_NAME);
-        periodRepository = new PeriodRepository(dynamoDbClient);
-        var calculator = new CreatorVerificationUtil(authorizedBackendUriRetriever, uriRetriever);
-        var organizationRetriever = new OrganizationRetriever(uriRetriever);
-        var pointCalculator = new PointService(organizationRetriever);
-        candidateRepository = new CandidateRepository(dynamoDbClient);
-        evaluatorService = new EvaluatorService(storageReader, calculator, pointCalculator, candidateRepository,
-                                                periodRepository);
-        handler = new EvaluateNviCandidateHandler(evaluatorService, queueClient, env);
-    }
 
     @Test
     void shouldCreateNewCandidateEventOnValidCandidate() throws IOException {
@@ -562,13 +505,6 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
         assertEquals(expectedEvaluatedMessage, messageBody);
     }
 
-    private static void mockSecretManager() {
-        try (var secretsManagerClient = new FakeSecretsManagerClient()) {
-            var credentials = new BackendClientCredentials("id", "secret");
-            secretsManagerClient.putPlainTextSecret("secret", credentials.toString());
-        }
-    }
-
     private static CandidateEvaluatedMessage getExpectedEvaluatedMessage(InstanceType instanceType,
                                                                          BigDecimal points, URI bucketUri,
                                                                          PublicationChannel publicationChannel,
@@ -620,14 +556,6 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
                          .sum();
     }
 
-    private BigDecimal getPointsForInstitution(NviCandidate candidate, URI institutionId) {
-        return candidate.institutionPoints().stream()
-                   .filter(institutionPoints -> institutionPoints.institutionId().equals(institutionId))
-                   .map(InstitutionPoints::institutionPoints)
-                   .findFirst()
-                   .orElseThrow();
-    }
-
     private URI setupPublicationWithInvalidYear(String year) throws IOException {
         var path = "evaluator/candidate_publicationDate_replace_year.json";
         var content = IoUtils.stringFromResources(Path.of(path)).replace("__REPLACE_YEAR__", year);
@@ -652,7 +580,7 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
     }
 
     private URI setupCandidate(int year) throws IOException {
-        var upsertCandidateRequest = new UpsertRequestBuilder()
+        var upsertCandidateRequest = randomUpsertRequestBuilder()
                                          .withPublicationDate(
                                              new PublicationDetails.PublicationDate(String.valueOf(year), null, null))
                                          .build();
@@ -663,12 +591,6 @@ class EvaluateNviCandidateHandlerTest extends LocalDynamoTest {
                           .replace("__REPLACE_WITH_PUBLICATION_ID__",
                                    candidateInClosedPeriod.getPublicationId().toString());
         return s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH), content);
-    }
-
-    private void setupHttpResponses() {
-        notFoundResponse = createResponse(404, StringUtils.EMPTY_STRING);
-        badResponse = createResponse(500, StringUtils.EMPTY_STRING);
-        okResponse = createResponse(200, CUSTOMER_API_NVI_RESPONSE);
     }
 
     private CandidateEvaluatedMessage getMessageBody() {

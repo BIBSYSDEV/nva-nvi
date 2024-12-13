@@ -7,6 +7,7 @@ import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningClosedPeri
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningNotOpenedPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.randomApplicableCandidate;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
+import static no.sikt.nva.nvi.test.UpsertRequestBuilder.randomUpsertRequestBuilder;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -171,7 +172,7 @@ class CandidateApprovalTest extends CandidateTest {
     @Test
     void shouldThrowExceptionWhenApplicableAndNonCandidate() {
         var candidate = randomApplicableCandidate(candidateRepository, periodRepository);
-        var updateRequest = new UpsertRequestBuilder()
+        var updateRequest = randomUpsertRequestBuilder()
                                 .withPublicationId(candidate.getPublicationId())
                                 .withInstanceType(null)
                                 .build();
@@ -410,7 +411,7 @@ class CandidateApprovalTest extends CandidateTest {
     }
 
     private UpsertCandidateRequest getUpsertCandidateRequestWithHardcodedValues() {
-        return new UpsertRequestBuilder()
+        return randomUpsertRequestBuilder()
                    .withCreators(Map.of(HARDCODED_CREATOR_ID, List.of(HARDCODED_SUBUNIT_ID)))
                    .withInstanceType(HARDCODED_INSTANCE_TYPE)
                    .withChannelId(HARDCODED_CHANNEL_ID)
