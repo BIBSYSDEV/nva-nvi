@@ -22,7 +22,6 @@ import static no.sikt.nva.nvi.test.TestUtils.randomApproval;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidateBuilder;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.sikt.nva.nvi.test.TestUtils.setupReportedCandidate;
-import static no.sikt.nva.nvi.test.UpsertRequestBuilder.randomUpsertRequestBuilder;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.s3.S3Driver.S3_SCHEME;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
@@ -50,7 +49,6 @@ import java.net.URI;
 import java.net.http.HttpResponse;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -59,8 +57,6 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
-import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.index.aws.S3StorageWriter;
 import no.sikt.nva.nvi.index.model.PersistedIndexDocumentMessage;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
@@ -784,16 +780,7 @@ class IndexDocumentHandlerTest extends LocalDynamoTest {
     }
 
     private Candidate randomApplicableCandidate(URI affiliation, ChannelType channelType) {
-        var creatorId = randomUri();
-        var creators = Map.of(creatorId, List.of(affiliation));
-        var points = TestUtils.randomBigDecimal();
-        var institutionPoints = List.of(new InstitutionPoints(HARD_CODED_TOP_LEVEL_ORG, points,
-                                                              List.of(new CreatorAffiliationPoints(
-                                                                  creatorId, affiliation, points))));
-
-        var request = randomUpsertRequestBuilder()
-                          .withCreators(creators)
-                          .withPoints(institutionPoints)
+        var request = createUpsertCandidateRequest(affiliation)
                           .withChannelType(channelType.getValue())
                           .build();
         Candidate.upsert(request, candidateRepository, periodRepository);
