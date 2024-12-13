@@ -34,7 +34,6 @@ import no.sikt.nva.nvi.common.validator.ViewingScopeValidator;
 import no.sikt.nva.nvi.test.FakeViewingScopeValidator;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
-import no.sikt.nva.nvi.test.UpsertRequestBuilder;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
