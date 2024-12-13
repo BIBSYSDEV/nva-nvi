@@ -1,21 +1,26 @@
 package no.sikt.nva.nvi.test;
 
+import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
+import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
+import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 
 public class UpsertRequestBuilder {
 
+    public static final URI creatorId = randomUri();
+    public static final URI affiliationId = randomUri();
     private URI publicationBucketUri = URI.create("http://example.org/publicationBucketUri");
     private URI publicationId = URI.create("http://example.org/publicationId");
     private boolean isApplicable = true;
     private boolean isInternationalCollaboration = true;
-    private Map<URI, List<URI>> creators = Map.of();
+    private Map<URI, List<URI>> creators = Map.of(creatorId, List.of(affiliationId));
     private String channelType = "channelType";
     private URI channelId = URI.create("http://example.org/channelId");
     private String level = "LevelOne";
@@ -24,7 +29,10 @@ public class UpsertRequestBuilder {
     private int creatorShareCount = 1;
     private BigDecimal collaborationFactor = BigDecimal.ONE;
     private BigDecimal basePoints = BigDecimal.ONE;
-    private List<InstitutionPoints> points = List.of();
+    private List<InstitutionPoints> points = List.of(new InstitutionPoints(randomUri(), randomBigDecimal(),
+                                                                           List.of(new CreatorAffiliationPoints(
+                                                                               creatorId, affiliationId,
+                                                                               randomBigDecimal()))));
     private BigDecimal totalPoints = BigDecimal.ONE;
 
     public static UpsertRequestBuilder fromRequest(UpsertCandidateRequest request) {

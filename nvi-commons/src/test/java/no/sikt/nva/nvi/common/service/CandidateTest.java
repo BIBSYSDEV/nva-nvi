@@ -2,7 +2,6 @@ package no.sikt.nva.nvi.common.service;
 
 import static no.sikt.nva.nvi.test.TestUtils.createUpdateStatusRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
-import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequestWithLevel;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertNonCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.randomApplicableCandidate;
@@ -116,7 +115,7 @@ class CandidateTest extends LocalDynamoTest {
 
     @Test
     void shouldReturnCandidateWhenExists() {
-        var upsertCandidateRequest = createUpsertCandidateRequest(randomUri());
+        var upsertCandidateRequest = new UpsertRequestBuilder().build();
         var fetchedCandidate = upsert(upsertCandidateRequest);
         assertNotNull(fetchedCandidate);
     }
@@ -126,7 +125,7 @@ class CandidateTest extends LocalDynamoTest {
     @MethodSource("levelValues")
     void shouldPersistNewCandidateWithCorrectLevelBasedOnVersionTwoLevelValues(DbLevel expectedLevel,
                                                                                String versionTwoValue) {
-        var request = createUpsertCandidateRequestWithLevel(versionTwoValue, randomUri());
+        var request = new UpsertRequestBuilder().withLevel(versionTwoValue).build();
         Candidate.upsert(request, candidateRepository, periodRepository);
         var persistedCandidate = candidateRepository.findByPublicationId(request.publicationId())
                                      .orElseThrow()
@@ -136,7 +135,7 @@ class CandidateTest extends LocalDynamoTest {
 
     @Test
     void shouldPersistNewCandidateWithCorrectDataFromUpsertRequest() {
-        var request = createUpsertCandidateRequest(randomUri());
+        var request = new UpsertRequestBuilder().build();
         var candidate = upsert(request);
         var expectedCandidate = generateExpectedCandidate(candidate, request);
         var actualPersistedCandidate = candidateRepository.findCandidateById(candidate.getIdentifier())
@@ -251,7 +250,7 @@ class CandidateTest extends LocalDynamoTest {
     @Test()
     @DisplayName("Should return global approval status pending when any approval is pending")
     void shouldReturnGlobalApprovalStatusPendingWhenAnyApprovalIsPending() {
-        var createRequest = createUpsertCandidateRequest(randomUri());
+        var createRequest = new UpsertRequestBuilder().build();
         var candidate = upsert(createRequest);
         assertEquals(GlobalApprovalStatus.PENDING, candidate.getGlobalApprovalStatus());
     }
@@ -280,7 +279,7 @@ class CandidateTest extends LocalDynamoTest {
         var institution1 = randomUri();
         var institution2 = randomUri();
         var institution3 = randomUri();
-        var createRequest = createUpsertCandidateRequest(institution1, institution2, institution3);
+        var createRequest = createUpsertCandidateRequest(institution1, institution2, institution3).build();
         var candidate = upsert(createRequest);
         candidate.updateApproval(createUpdateStatusRequest(ApprovalStatus.APPROVED, institution1, randomString()));
         candidate.updateApproval(createUpdateStatusRequest(ApprovalStatus.REJECTED, institution2, randomString()));
@@ -314,7 +313,7 @@ class CandidateTest extends LocalDynamoTest {
     void shouldSetPeriodYearWhenResettingCandidate() {
         var nonApplicableCandidate = nonApplicableCandidate();
         Candidate.upsert(
-            createUpsertCandidateRequest(nonApplicableCandidate.getPublicationId()),
+            new UpsertRequestBuilder().withPublicationId(nonApplicableCandidate.getPublicationId()).build(),
             candidateRepository, periodRepository
         );
         var updatedApplicableCandidate = Candidate.fetch(nonApplicableCandidate::getIdentifier, candidateRepository,
@@ -442,8 +441,8 @@ class CandidateTest extends LocalDynamoTest {
                                         .withInstitutionId(approval.getInstitutionId())
                                         .withPoints(candidate.getPointValueForInstitution(approval.getInstitutionId()))
                                         .withStatus(ApprovalStatusDto.from(approval))
-                                        .withFinalizedBy(approval.getFinalizedBy().value())
-                                        .withAssignee(approval.getAssignee().value())
+                                        .withFinalizedBy(approval.getFinalizedByUserName())
+                                        .withAssignee(approval.getAssigneeUsername())
                                         .build())
                    .toList();
     }
@@ -475,8 +474,7 @@ class CandidateTest extends LocalDynamoTest {
     }
 
     private UpsertCandidateRequest getUpdateRequestForExistingCandidate() {
-        var institutionId = randomUri();
-        var insertRequest = createUpsertCandidateRequest(institutionId);
+        var insertRequest = new UpsertRequestBuilder().build();
         Candidate.upsert(insertRequest, candidateRepository, periodRepository);
         return UpsertRequestBuilder.fromRequest(insertRequest).build();
     }

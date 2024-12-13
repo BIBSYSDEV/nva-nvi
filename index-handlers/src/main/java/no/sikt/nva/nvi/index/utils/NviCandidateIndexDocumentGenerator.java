@@ -319,7 +319,7 @@ public final class NviCandidateIndexDocumentGenerator {
     }
 
     private String extractAssignee(Approval approval) {
-        return Optional.of(approval).map(Approval::getAssignee).map(Username::value).orElse(null);
+        return Optional.of(approval).map(Approval::getAssigneeUsername).orElse(null);
     }
 
     private List<ContributorType> expandContributors() {

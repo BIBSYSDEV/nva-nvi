@@ -138,7 +138,7 @@ class CreateNoteHandlerTest extends LocalDynamoTest {
     void shouldSetUserAsAssigneeWhenUsersInstitutionApprovalIsUnassigned() throws IOException {
         var institutionId = randomUri();
         var candidate = upsert(createUpsertCandidateRequest(institutionId));
-        assertNull(candidate.getApprovals().get(institutionId).getAssignee());
+        assertNull(candidate.getApprovals().get(institutionId).getAssigneeUsername());
         var userName = randomString();
         var request = createRequest(candidate.getIdentifier(), randomNote(), userName, institutionId);
         handler.handleRequest(request, output, context);
@@ -153,7 +153,7 @@ class CreateNoteHandlerTest extends LocalDynamoTest {
         var candidate = upsert(createUpsertCandidateRequest(institutionId));
         var existingApprovalAssignee = randomString();
         candidate.updateApproval(new UpdateAssigneeRequest(institutionId, existingApprovalAssignee));
-        assertNotNull(candidate.getApprovals().get(institutionId).getAssignee());
+        assertNotNull(candidate.getApprovals().get(institutionId).getAssigneeUsername());
         var request = createRequest(candidate.getIdentifier(), randomNote(), randomString(), institutionId);
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, CandidateDto.class).getBodyObject(CandidateDto.class);

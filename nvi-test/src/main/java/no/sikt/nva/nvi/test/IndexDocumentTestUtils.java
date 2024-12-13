@@ -298,11 +298,10 @@ public final class IndexDocumentTestUtils {
 
     private static no.sikt.nva.nvi.index.model.document.Approval toApproval(Approval approval, Candidate candidate,
                                                                             List<ContributorType> contributors) {
-        var assignee = approval.getAssignee();
         return no.sikt.nva.nvi.index.model.document.Approval.builder()
                    .withInstitutionId(approval.getInstitutionId())
                    .withApprovalStatus(getApprovalStatus(approval))
-                   .withAssignee(nonNull(assignee) ? assignee.value() : null)
+                   .withAssignee(approval.getAssigneeUsername())
                    .withPoints(getInstitutionPoints(approval, candidate))
                    .withInvolvedOrganizations(extractInvolvedOrganizations(approval, contributors))
                    .withLabels(Map.of(EN_FIELD, HARDCODED_ENGLISH_LABEL, NB_FIELD,
@@ -334,7 +333,7 @@ public final class IndexDocumentTestUtils {
 
     private static boolean isApprovalPendingAndUnassigned(Approval approval) {
         return no.sikt.nva.nvi.common.service.model.ApprovalStatus.PENDING.equals(approval.getStatus())
-               && isNull(approval.getAssignee());
+               && isNull(approval.getAssigneeUsername());
     }
 
     private static PublicationDate mapToPublicationDate(

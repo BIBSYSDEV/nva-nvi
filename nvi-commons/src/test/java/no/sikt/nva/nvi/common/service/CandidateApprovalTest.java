@@ -80,7 +80,7 @@ class CandidateApprovalTest extends CandidateTest {
     @Test
     void shouldCreatePendingApprovalsForNewCandidate() {
         var institutionId = randomUri();
-        var upsertCandidateRequest = createUpsertCandidateRequest(institutionId);
+        var upsertCandidateRequest = createUpsertCandidateRequest(institutionId).build();
         var candidate = upsert(upsertCandidateRequest);
         assertThat(candidate.getApprovals().size(), is(equalTo(1)));
         assertThat(candidate.getApprovals().get(institutionId).getStatus(), is(equalTo(ApprovalStatus.PENDING)));
@@ -90,7 +90,7 @@ class CandidateApprovalTest extends CandidateTest {
     @MethodSource("statusProvider")
     void shouldUpdateStatusWhenUpdateStatusRequestValid(ApprovalStatus oldStatus, ApprovalStatus newStatus) {
         var institutionId = randomUri();
-        var upsertCandidateRequest = createUpsertCandidateRequest(institutionId);
+        var upsertCandidateRequest = createUpsertCandidateRequest(institutionId).build();
         Candidate.upsert(upsertCandidateRequest, candidateRepository, periodRepository);
         var existingCandidate = Candidate.fetchByPublicationId(upsertCandidateRequest::publicationId,
                                                                candidateRepository,
@@ -108,7 +108,7 @@ class CandidateApprovalTest extends CandidateTest {
     @EnumSource(value = ApprovalStatus.class, names = {"REJECTED", APPROVED})
     void shouldResetApprovalWhenChangingToPending(ApprovalStatus oldStatus) {
         var institutionId = randomUri();
-        var upsertCandidateRequest = createUpsertCandidateRequest(institutionId);
+        var upsertCandidateRequest = createUpsertCandidateRequest(institutionId).build();
         var candidateBO = upsert(upsertCandidateRequest);
         var assignee = randomString();
         candidateBO.updateApproval(new UpdateAssigneeRequest(institutionId, assignee))
@@ -116,8 +116,8 @@ class CandidateApprovalTest extends CandidateTest {
             .updateApproval(createUpdateStatusRequest(ApprovalStatus.PENDING, institutionId, randomString()));
         var approvalStatus = candidateBO.getApprovals().get(institutionId);
         assertThat(approvalStatus.getStatus(), is(equalTo(ApprovalStatus.PENDING)));
-        assertThat(approvalStatus.getAssignee().value(), is(assignee));
-        assertThat(approvalStatus.getFinalizedBy(), is(nullValue()));
+        assertThat(approvalStatus.getAssigneeUsername(), is(assignee));
+        assertThat(approvalStatus.getFinalizedByUserName(), is(nullValue()));
         assertThat(approvalStatus.getFinalizedDate(), is(nullValue()));
     }
 
@@ -125,7 +125,7 @@ class CandidateApprovalTest extends CandidateTest {
     @EnumSource(value = ApprovalStatus.class, names = {"PENDING", APPROVED})
     void shouldRemoveReasonWhenUpdatingFromRejectionStatusToNewStatus(ApprovalStatus newStatus) {
         var institutionId = randomUri();
-        var createRequest = createUpsertCandidateRequest(institutionId);
+        var createRequest = createUpsertCandidateRequest(institutionId).build();
         Candidate.upsert(createRequest, candidateRepository, periodRepository);
         var rejectedCandidate = Candidate.fetchByPublicationId(createRequest::publicationId, candidateRepository,
                                                                periodRepository)
@@ -144,7 +144,8 @@ class CandidateApprovalTest extends CandidateTest {
     void shouldRemoveOldInstitutionsWhenUpdatingCandidate() {
         var keepInstitutionId = randomUri();
         var deleteInstitutionId = randomUri();
-        var createCandidateRequest = createUpsertCandidateRequest(keepInstitutionId, deleteInstitutionId, randomUri());
+        var createCandidateRequest = createUpsertCandidateRequest(keepInstitutionId, deleteInstitutionId,
+                                                                  randomUri()).build();
         Candidate.upsert(createCandidateRequest, candidateRepository, periodRepository);
         var updateRequest = UpsertRequestBuilder.fromRequest(createCandidateRequest)
                                 .withPoints(List.of(new InstitutionPoints(keepInstitutionId, randomBigDecimal(), null)))
@@ -182,7 +183,7 @@ class CandidateApprovalTest extends CandidateTest {
     @EnumSource(value = ApprovalStatus.class, names = {"PENDING", APPROVED})
     void shouldThrowUnsupportedOperationWhenRejectingWithoutReason(ApprovalStatus oldStatus) {
         var institutionId = randomUri();
-        var createRequest = createUpsertCandidateRequest(institutionId);
+        var createRequest = createUpsertCandidateRequest(institutionId).build();
         Candidate.upsert(createRequest, candidateRepository, periodRepository);
         var candidate = Candidate.fetchByPublicationId(createRequest::publicationId, candidateRepository,
                                                        periodRepository)
@@ -195,7 +196,7 @@ class CandidateApprovalTest extends CandidateTest {
     @EnumSource(value = ApprovalStatus.class, names = {"PENDING", APPROVED, "REJECTED"})
     void shouldThrowIllegalArgumentExceptionWhenUpdateStatusWithoutUsername(ApprovalStatus newStatus) {
         var institutionId = randomUri();
-        var createRequest = createUpsertCandidateRequest(institutionId);
+        var createRequest = createUpsertCandidateRequest(institutionId).build();
         var candidate = upsert(createRequest);
 
         assertThrows(IllegalArgumentException.class,
@@ -205,7 +206,7 @@ class CandidateApprovalTest extends CandidateTest {
     @Test
     void shouldPersistStatusChangeWhenRequestingAndUpdate() {
         var institutionId = randomUri();
-        var upsertCandidateRequest = createUpsertCandidateRequest(institutionId);
+        var upsertCandidateRequest = createUpsertCandidateRequest(institutionId).build();
         var candidateBO = upsert(upsertCandidateRequest);
         candidateBO.updateApproval(createUpdateStatusRequest(ApprovalStatus.APPROVED, institutionId, randomString()));
 
@@ -217,7 +218,7 @@ class CandidateApprovalTest extends CandidateTest {
     @Test
     void shouldChangeAssigneeWhenValidUpdateAssigneeRequest() {
         var institutionId = randomUri();
-        var upsertCandidateRequest = createUpsertCandidateRequest(institutionId);
+        var upsertCandidateRequest = createUpsertCandidateRequest(institutionId).build();
         var candidateBO = upsert(upsertCandidateRequest);
         var newUsername = randomString();
         candidateBO.updateApproval(new UpdateAssigneeRequest(institutionId, newUsername));
@@ -234,7 +235,7 @@ class CandidateApprovalTest extends CandidateTest {
     @Test
     void shouldNotAllowUpdateApprovalStatusWhenTryingToPassAnonymousImplementations() {
         var institutionId = randomUri();
-        var upsertCandidateRequest = createUpsertCandidateRequest(institutionId);
+        var upsertCandidateRequest = createUpsertCandidateRequest(institutionId).build();
         var candidateBO = upsert(upsertCandidateRequest);
         assertThrows(IllegalArgumentException.class, () -> candidateBO.updateApproval(() -> institutionId));
     }
@@ -251,7 +252,7 @@ class CandidateApprovalTest extends CandidateTest {
     void shouldNotOverrideAssigneeWhenAssigneeAlreadyIsSet() {
         var institutionId = randomUri();
         var assignee = randomString();
-        var request = createUpsertCandidateRequest(institutionId);
+        var request = createUpsertCandidateRequest(institutionId).build();
         Candidate.upsert(request, candidateRepository, periodRepository);
         var candidate = Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository)
                             .updateApproval(new UpdateAssigneeRequest(institutionId, assignee))
@@ -267,7 +268,7 @@ class CandidateApprovalTest extends CandidateTest {
     @Test
     void shouldNotResetApprovalsWhenUpdatingCandidateFieldsNotEffectingApprovals() {
         var institutionId = randomUri();
-        var upsertCandidateRequest = createUpsertCandidateRequest(institutionId);
+        var upsertCandidateRequest = createUpsertCandidateRequest(institutionId).build();
         var candidate = upsert(upsertCandidateRequest);
         candidate.updateApproval(
             new UpdateStatusRequest(institutionId, ApprovalStatus.APPROVED, randomString(), randomString()));
@@ -328,7 +329,7 @@ class CandidateApprovalTest extends CandidateTest {
     @Test
     void shouldResetApprovalsWhenNonCandidateBecomesCandidate() {
         var institutionId = randomUri();
-        var upsertCandidateRequest = createUpsertCandidateRequest(institutionId);
+        var upsertCandidateRequest = createUpsertCandidateRequest(institutionId).build();
         var candidate = upsert(upsertCandidateRequest);
         var nonCandidate = Candidate.updateNonCandidate(
             createUpsertNonCandidateRequest(candidate.getPublicationId()),

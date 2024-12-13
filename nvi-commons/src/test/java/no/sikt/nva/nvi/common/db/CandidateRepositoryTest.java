@@ -45,7 +45,7 @@ class CandidateRepositoryTest extends LocalDynamoTest {
 
     @Test
     void shouldOverwriteExistingCandidateWhenUpdating() {
-        var originalRequest = createUpsertCandidateRequest(randomUri());
+        var originalRequest = createUpsertCandidateRequest(randomUri()).build();
         Candidate.upsert(originalRequest, candidateRepository, periodRepository);
         var candidateDao = candidateRepository.findByPublicationId(originalRequest.publicationId()).get();
         var originalDbCandidate = candidateDao.candidate();

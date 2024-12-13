@@ -203,7 +203,7 @@ class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
     @Test
     void shouldNotResetApprovalsWhenUpdatingFieldsNotEffectingApprovals() {
         var institutionId = randomUri();
-        var upsertCandidateRequest = createUpsertCandidateRequest(institutionId);
+        var upsertCandidateRequest = createUpsertCandidateRequest(institutionId).build();
         Candidate.upsert(upsertCandidateRequest, candidateRepository, periodRepository);
         var candidate = Candidate.fetchByPublicationId(upsertCandidateRequest::publicationId, candidateRepository,
                                                        periodRepository);

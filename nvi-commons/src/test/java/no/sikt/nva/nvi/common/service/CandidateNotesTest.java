@@ -84,8 +84,8 @@ class CandidateNotesTest extends CandidateTest {
         var username = randomString();
         var noteRequest = new CreateNoteRequest(randomString(), username, institutionId);
         var candidateWithNote = candidate.createNote(noteRequest, candidateRepository);
-        var actualAssignee = candidateWithNote.getApprovals().get(institutionId).getAssignee();
-        assertEquals(username, actualAssignee.value());
+        var actualAssignee = candidateWithNote.getApprovals().get(institutionId).getAssigneeUsername();
+        assertEquals(username, actualAssignee);
     }
 
     @Test
@@ -96,12 +96,12 @@ class CandidateNotesTest extends CandidateTest {
         candidate.updateApproval(new UpdateAssigneeRequest(institutionId, existingAssignee));
         var noteRequest = new CreateNoteRequest(randomString(), randomString(), institutionId);
         var candidateWithNote = candidate.createNote(noteRequest, candidateRepository);
-        var actualAssignee = candidateWithNote.getApprovals().get(institutionId).getAssignee();
-        assertEquals(existingAssignee, actualAssignee.value());
+        var actualAssignee = candidateWithNote.getApprovals().get(institutionId).getAssigneeUsername();
+        assertEquals(existingAssignee, actualAssignee);
     }
 
     private Candidate createCandidate(URI institutionId) {
-        var request = createUpsertCandidateRequest(institutionId);
+        var request = createUpsertCandidateRequest(institutionId).build();
         Candidate.upsert(request, candidateRepository, periodRepository);
         return Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository);
     }
