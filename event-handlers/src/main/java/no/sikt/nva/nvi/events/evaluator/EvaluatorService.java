@@ -16,7 +16,6 @@ import java.net.URI;
 import java.time.Year;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
@@ -33,6 +32,7 @@ import no.sikt.nva.nvi.events.model.NonNviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate.NviCreator;
 import no.sikt.nva.nvi.events.model.PublicationDate;
+import no.sikt.nva.nvi.events.model.UnverifiedNviCreator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,12 +82,16 @@ public class EvaluatorService {
             logger.info(NON_NVI_CANDIDATE_MESSAGE, publicationId);
             return createNonNviMessage(publicationId);
         }
-        var verifiedCreatorsWithNviInstitutions =
-            creatorVerificationUtil.getVerifiedCreatorsWithNviInstitutionsIfExists(
+        var verifiedCreatorsWithNviInstitutions = creatorVerificationUtil.getVerifiedCreatorsWithNviInstitutions(
                 publication);
-        if (!verifiedCreatorsWithNviInstitutions.isEmpty()) {
+
+        var unverifiedCreatorsWithNviInstitutions = creatorVerificationUtil.getUnverifiedCreatorsWithNviInstitutions(
+            publication);
+        if (hasCreators(verifiedCreatorsWithNviInstitutions,
+                        unverifiedCreatorsWithNviInstitutions)) {
             var pointCalculation = pointService.calculatePoints(publication, verifiedCreatorsWithNviInstitutions);
             var nviCandidate = constructNviCandidate(verifiedCreatorsWithNviInstitutions,
+                                                     unverifiedCreatorsWithNviInstitutions,
                                                      pointCalculation,
                                                      publicationId,
                                                      publicationBucketUri,
@@ -100,7 +104,13 @@ public class EvaluatorService {
         }
     }
 
+    private static boolean hasCreators(List<VerifiedNviCreator> verifiedCreatorsWithNviInstitutions,
+                                       List<UnverifiedNviCreator> unverifiedCreatorsWithNviInstitutions) {
+        return !verifiedCreatorsWithNviInstitutions.isEmpty() || !unverifiedCreatorsWithNviInstitutions.isEmpty();
+    }
+
     private static NviCandidate constructNviCandidate(List<VerifiedNviCreator> verifiedCreatorsWithNviInstitutions,
+                                                      List<UnverifiedNviCreator> unverifiedCreatorsWithNviInstitutions,
                                                       PointCalculation pointCalculation, URI publicationId,
                                                       URI publicationBucketUri, PublicationDate date) {
         return NviCandidate.builder()
@@ -116,7 +126,8 @@ public class EvaluatorService {
                    .withCollaborationFactor(pointCalculation.collaborationFactor())
                    .withCreatorShareCount(pointCalculation.creatorShareCount())
                    .withInstitutionPoints(pointCalculation.institutionPoints())
-                   .withVerifiedCreators(mapToNviCreators(verifiedCreatorsWithNviInstitutions))
+                   .withNviCreators(mapToNviCreators(verifiedCreatorsWithNviInstitutions))
+                   .withUnverifiedNviCreators(unverifiedCreatorsWithNviInstitutions)
                    .withTotalPoints(pointCalculation.totalPoints())
                    .build();
     }
@@ -124,7 +135,7 @@ public class EvaluatorService {
     private static List<NviCreator> mapToNviCreators(List<VerifiedNviCreator> nviCreators) {
         return nviCreators.stream()
                    .map(NviCreator::from)
-                   .collect(Collectors.toList());
+                   .toList();
     }
 
     private static URI extractPublicationId(JsonNode publication) {

@@ -3,8 +3,6 @@ package no.sikt.nva.nvi.index;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_AFFILIATIONS;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_BODY;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_TYPE;
-import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.HARDCODED_ENGLISH_LABEL;
-import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.HARDCODED_NORWEGIAN_LABEL;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.GZIP_ENDING;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.HARD_CODED_INTERMEDIATE_ORGANIZATION;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.HARD_CODED_TOP_LEVEL_ORG;
@@ -13,6 +11,11 @@ import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.expandApprovals;
 import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.expandPublicationDetails;
 import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEvent;
 import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEventWithOneInvalidRecord;
+import static no.sikt.nva.nvi.test.TestConstants.EN_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_ENGLISH_LABEL;
+import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_NORWEGIAN_LABEL;
+import static no.sikt.nva.nvi.test.TestConstants.LABELS_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.NB_FIELD;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertNonCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.randomApproval;
@@ -579,9 +582,9 @@ class IndexDocumentHandlerTest extends LocalDynamoTest {
 
     private static void addLabels(ObjectNode organizationNode) {
         var labels = dtoObjectMapper.createObjectNode();
-        labels.put("nb", HARDCODED_NORWEGIAN_LABEL);
-        labels.put("en", HARDCODED_ENGLISH_LABEL);
-        organizationNode.set("labels", labels);
+        labels.put(NB_FIELD, HARDCODED_NORWEGIAN_LABEL);
+        labels.put(EN_FIELD, HARDCODED_ENGLISH_LABEL);
+        organizationNode.set(LABELS_FIELD, labels);
     }
 
     private static String extractResourceIdentifier(Candidate persistedCandidate) {

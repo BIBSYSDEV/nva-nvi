@@ -273,7 +273,8 @@
                 "nn": "Divisjon for forskings- og kunnskapsressursar",
                 "nb": "Divisjon forsknings- og kunnskapsressurser",
                 "en": "The Research and Education Resources Division"
-              }
+              },
+              "countryCode": "NO"
             }
           ],
           "type": "Contributor"
@@ -318,7 +319,8 @@
             "nn": "Avdeling for organisasjonsutvikling",
             "nb": "Avdeling for organisasjonsutvikling",
             "en": "The Organisational Development Department"
-          }
+          },
+          "countryCode": "NO"
         },
         {
           "partOf": {
@@ -344,7 +346,8 @@
             "nn": "Divisjon for forskings- og kunnskapsressursar",
             "nb": "Divisjon forsknings- og kunnskapsressurser",
             "en": "The Research and Education Resources Division"
-          }
+          },
+          "countryCode": "NO"
         },
         {
           "name": [
@@ -367,7 +370,8 @@
             "nn": "Avdeling for kunde og kommunikasjon",
             "nb": "Avdeling for kunde og kommunikasjon",
             "en": "The Customer and Communication Department"
-          }
+          },
+          "countryCode": "NO"
         },
         {
           "name": [

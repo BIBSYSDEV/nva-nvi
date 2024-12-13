@@ -71,6 +71,7 @@ public final class TestUtils {
     private static final String BUCKET_HOST = "example.org";
     private static final LocalDate START_DATE = LocalDate.of(1970, 1, 1);
     private static final String PUBLICATION_API_PATH = "publication";
+    private static final String PUBLICATION_CHANNELS_API_PATH = "publication-channels";
     private static final String API_HOST = "example.com";
 
     private TestUtils() {
@@ -86,6 +87,10 @@ public final class TestUtils {
 
     public static URI generatePublicationId(UUID identifier) {
         return UriWrapper.fromHost(API_HOST).addChild(PUBLICATION_API_PATH).addChild(identifier.toString()).getUri();
+    }
+
+    public static URI generatePublicationChannelId(UUID identifier) {
+        return UriWrapper.fromHost(API_HOST).addChild(PUBLICATION_CHANNELS_API_PATH).addChild(identifier.toString()).getUri();
     }
 
     public static Candidate randomApplicableCandidate(CandidateRepository candidateRepository,
