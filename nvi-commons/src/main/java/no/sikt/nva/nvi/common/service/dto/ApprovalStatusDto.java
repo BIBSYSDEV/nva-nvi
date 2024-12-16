@@ -21,8 +21,4 @@ public enum ApprovalStatusDto {
             case REJECTED -> REJECTED;
         };
     }
-
-    public String getValue() {
-        return value;
-    }
 }

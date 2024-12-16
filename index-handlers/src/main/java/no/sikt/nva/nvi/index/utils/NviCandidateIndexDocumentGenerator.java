@@ -52,7 +52,6 @@ import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.Creator;
-import no.sikt.nva.nvi.common.service.model.Username;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.Contributor;
 import no.sikt.nva.nvi.index.model.document.ContributorType;
@@ -319,7 +318,7 @@ public final class NviCandidateIndexDocumentGenerator {
     }
 
     private String extractAssignee(Approval approval) {
-        return Optional.of(approval).map(Approval::getAssignee).map(Username::value).orElse(null);
+        return Optional.of(approval).map(Approval::getAssigneeUsername).orElse(null);
     }
 
     private List<ContributorType> expandContributors() {

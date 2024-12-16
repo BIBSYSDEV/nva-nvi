@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.rest.create;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertNonCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningClosedPeriod;
+import static no.sikt.nva.nvi.test.UpsertRequestBuilder.randomUpsertRequestBuilder;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -73,7 +74,7 @@ class CreateNoteHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldReturnUnauthorizedWhenCandidateIsNotInUsersViewingScope() throws IOException {
-        var candidate = upsert(createUpsertCandidateRequest(randomUri()));
+        var candidate = upsert(randomUpsertRequestBuilder().build());
         var request = createRequest(candidate.getIdentifier(), new NviNoteRequest("The note"), randomString());
         viewingScopeValidatorReturningFalse = new FakeViewingScopeValidator(false);
         handler = new CreateNoteHandler(candidateRepository, periodRepository, viewingScopeValidatorReturningFalse);
@@ -96,7 +97,7 @@ class CreateNoteHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldAddNoteToCandidateWhenNoteIsValid() throws IOException {
-        var candidate = upsert(createUpsertCandidateRequest(randomUri()));
+        var candidate = upsert(randomUpsertRequestBuilder().build());
         var theNote = "The note";
         var userName = randomString();
 
@@ -111,7 +112,7 @@ class CreateNoteHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldReturnConflictWhenCreatingNoteAndReportingPeriodIsClosed() throws IOException {
-        var candidate = upsert(createUpsertCandidateRequest(randomUri()));
+        var candidate = upsert(randomUpsertRequestBuilder().build());
         var request = createRequest(candidate.getIdentifier(), new NviNoteRequest(randomString()), randomString());
         var handler = new CreateNoteHandler(candidateRepository, periodRepositoryReturningClosedPeriod(YEAR),
                                             viewingScopeValidatorReturningFalse);
@@ -123,7 +124,7 @@ class CreateNoteHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldReturn405NotAllowedWhenAddingNoteToNonCandidate() throws IOException {
-        var candidateBO = upsert(createUpsertCandidateRequest(randomUri()));
+        var candidateBO = upsert(randomUpsertRequestBuilder().build());
         var nonCandidate = Candidate.updateNonCandidate(
             createUpsertNonCandidateRequest(candidateBO.getPublicationId()),
             candidateRepository).orElseThrow();
@@ -137,8 +138,8 @@ class CreateNoteHandlerTest extends LocalDynamoTest {
     @Test
     void shouldSetUserAsAssigneeWhenUsersInstitutionApprovalIsUnassigned() throws IOException {
         var institutionId = randomUri();
-        var candidate = upsert(createUpsertCandidateRequest(institutionId));
-        assertNull(candidate.getApprovals().get(institutionId).getAssignee());
+        var candidate = upsert(createUpsertCandidateRequest(institutionId).build());
+        assertNull(candidate.getApprovals().get(institutionId).getAssigneeUsername());
         var userName = randomString();
         var request = createRequest(candidate.getIdentifier(), randomNote(), userName, institutionId);
         handler.handleRequest(request, output, context);
@@ -150,10 +151,10 @@ class CreateNoteHandlerTest extends LocalDynamoTest {
     @Test
     void shouldNotSetUserAsAssigneeWhenUsersInstitutionApprovalHasAssignee() throws IOException {
         var institutionId = randomUri();
-        var candidate = upsert(createUpsertCandidateRequest(institutionId));
+        var candidate = upsert(createUpsertCandidateRequest(institutionId).build());
         var existingApprovalAssignee = randomString();
         candidate.updateApproval(new UpdateAssigneeRequest(institutionId, existingApprovalAssignee));
-        assertNotNull(candidate.getApprovals().get(institutionId).getAssignee());
+        assertNotNull(candidate.getApprovals().get(institutionId).getAssigneeUsername());
         var request = createRequest(candidate.getIdentifier(), randomNote(), randomString(), institutionId);
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, CandidateDto.class).getBodyObject(CandidateDto.class);

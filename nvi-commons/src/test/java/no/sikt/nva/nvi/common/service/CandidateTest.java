@@ -1,54 +1,36 @@
 package no.sikt.nva.nvi.common.service;
 
-import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
-import static no.sikt.nva.nvi.test.TestUtils.createNoteRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpdateStatusRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
-import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequestWithLevel;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertNonCandidateRequest;
-import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.randomApplicableCandidate;
 import static no.sikt.nva.nvi.test.TestUtils.randomApproval;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
-import static no.sikt.nva.nvi.test.TestUtils.randomInstanceType;
-import static no.sikt.nva.nvi.test.TestUtils.randomLevelExcluding;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.sikt.nva.nvi.test.TestUtils.setupReportedCandidate;
-import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
-import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
-import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
+import static no.sikt.nva.nvi.test.UpsertRequestBuilder.randomUpsertRequestBuilder;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.core.ioutils.IoUtils.stringFromResources;
-import static nva.commons.core.paths.UriWrapper.HTTPS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
-import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.net.URI;
 import java.nio.file.Path;
-import java.time.ZonedDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
@@ -56,35 +38,23 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
-import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.common.db.PeriodStatus;
 import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
 import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
-import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
-import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.dto.ApprovalDto;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatusDto;
+import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
-import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
-import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
-import no.sikt.nva.nvi.common.service.model.PublicationChannel;
-import no.sikt.nva.nvi.common.service.model.PublicationDetails.Creator;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
-import no.sikt.nva.nvi.test.LocalDynamoTest;
-import nva.commons.core.Environment;
-import nva.commons.core.paths.UriWrapper;
-import org.junit.jupiter.api.BeforeEach;
+import no.sikt.nva.nvi.test.UpsertRequestBuilder;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -94,31 +64,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 // Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
 @SuppressWarnings({"PMD.GodClass", "PMD.CouplingBetweenObjects"})
-class CandidateTest extends LocalDynamoTest {
-
-    private static final Environment ENVIRONMENT = new Environment();
-    private static final String BASE_PATH = ENVIRONMENT.readEnv("CUSTOM_DOMAIN_BASE_PATH");
-    private static final String API_DOMAIN = ENVIRONMENT.readEnv("API_HOST");
-    public static final URI CONTEXT_URI = UriWrapper.fromHost(API_DOMAIN).addChild(BASE_PATH, "context").getUri();
-    private static final int EXPECTED_SCALE = 4;
-    private static final RoundingMode EXPECTED_ROUNDING_MODE = RoundingMode.HALF_UP;
-    private static final URI HARDCODED_INSTITUTION_ID = URI.create("https://example.org/topLevelInstitutionId");
-    private static final URI HARDCODED_SUBUNIT_ID = URI.create("https://example.org/subUnitInstitutionId");
-    private static final URI HARDCODED_CHANNEL_ID = URI.create(
-        "https://example.org/publication-channels-v2/journal/123/2018");
-    private static final String HARDCODED_LEVEL = "LevelOne";
-    private static final URI HARDCODED_CREATOR_ID = URI.create("https://example.org/someCreator");
-    private static final InstanceType HARDCODED_INSTANCE_TYPE = InstanceType.ACADEMIC_ARTICLE;
-    private static final BigDecimal HARDCODED_POINTS = BigDecimal.ONE.setScale(EXPECTED_SCALE, EXPECTED_ROUNDING_MODE);
-    private CandidateRepository candidateRepository;
-    private PeriodRepository periodRepository;
-
-    @BeforeEach
-    void setup() {
-        localDynamo = initializeTestDatabase();
-        candidateRepository = new CandidateRepository(localDynamo);
-        periodRepository = periodRepositoryReturningOpenedPeriod(ZonedDateTime.now().getYear());
-    }
+class CandidateTest extends CandidateTestSetup {
 
     @Test
     void shouldThrowNotFoundExceptionWhenCandidateDoesNotExist() {
@@ -128,7 +74,7 @@ class CandidateTest extends LocalDynamoTest {
 
     @Test
     void shouldReturnCandidateWhenExists() {
-        var upsertCandidateRequest = createUpsertCandidateRequest(randomUri());
+        var upsertCandidateRequest = randomUpsertRequestBuilder().build();
         var fetchedCandidate = upsert(upsertCandidateRequest);
         assertNotNull(fetchedCandidate);
     }
@@ -138,7 +84,7 @@ class CandidateTest extends LocalDynamoTest {
     @MethodSource("levelValues")
     void shouldPersistNewCandidateWithCorrectLevelBasedOnVersionTwoLevelValues(DbLevel expectedLevel,
                                                                                String versionTwoValue) {
-        var request = createUpsertCandidateRequestWithLevel(versionTwoValue, randomUri());
+        var request = randomUpsertRequestBuilder().withLevel(versionTwoValue).build();
         Candidate.upsert(request, candidateRepository, periodRepository);
         var persistedCandidate = candidateRepository.findByPublicationId(request.publicationId())
                                      .orElseThrow()
@@ -148,7 +94,7 @@ class CandidateTest extends LocalDynamoTest {
 
     @Test
     void shouldPersistNewCandidateWithCorrectDataFromUpsertRequest() {
-        var request = createUpsertCandidateRequest(randomUri());
+        var request = randomUpsertRequestBuilder().build();
         var candidate = upsert(request);
         var expectedCandidate = generateExpectedCandidate(candidate, request);
         var actualPersistedCandidate = candidateRepository.findCandidateById(candidate.getIdentifier())
@@ -172,7 +118,11 @@ class CandidateTest extends LocalDynamoTest {
     @ParameterizedTest
     @ValueSource(ints = {0, 1, 4})
     void shouldUpdateCandidateWithCorrectScaleForAllDecimals(int scale) {
-        var request = getUpdateRequestForExistingCandidate(scale);
+        var request = randomUpsertRequestBuilder()
+                          .withCollaborationFactor(randomBigDecimal(scale))
+                          .withBasePoints(randomBigDecimal(scale))
+                          .withTotalPoints(randomBigDecimal(scale))
+                          .build();
         var candidate = upsert(request);
         var expectedCandidate = generateExpectedCandidate(candidate, request);
         var actualPersistedCandidate = candidateRepository.findCandidateById(candidate.getIdentifier())
@@ -208,15 +158,10 @@ class CandidateTest extends LocalDynamoTest {
     void shouldNotUpdateReportedCandidate() {
         var year = randomYear();
         var candidate = setupReportedCandidate(candidateRepository, year).candidate();
-        var updateRequest = createUpsertCandidateRequest(candidate.publicationId(),
-                                                         randomUri(),
-                                                         true,
-                                                         InstanceType.parse(candidate.instanceType()),
-                                                         candidate.creatorCount(),
-                                                         candidate.totalPoints(),
-                                                         candidate.level().getValue(),
-                                                         Integer.parseInt(year),
-                                                         randomUri());
+
+        var updateRequest = randomUpsertRequestBuilder()
+                                .withPublicationId(candidate.publicationId())
+                                .build();
         assertThrows(IllegalCandidateUpdateException.class,
                      () -> Candidate.upsert(updateRequest, candidateRepository, periodRepository));
     }
@@ -264,9 +209,26 @@ class CandidateTest extends LocalDynamoTest {
     @Test()
     @DisplayName("Should return global approval status pending when any approval is pending")
     void shouldReturnGlobalApprovalStatusPendingWhenAnyApprovalIsPending() {
-        var createRequest = createUpsertCandidateRequest(randomUri());
+        var createRequest = randomUpsertRequestBuilder().build();
         var candidate = upsert(createRequest);
         assertEquals(GlobalApprovalStatus.PENDING, candidate.getGlobalApprovalStatus());
+    }
+
+    //This is tested more in rest-module
+    @Test
+    void shouldReturnExpectedDto() {
+        var candidate = upsert(randomUpsertRequestBuilder().build());
+        var expectedDto = CandidateDto.builder()
+                              .withApprovals(mapToApprovalDtos(candidate))
+                              .withId(candidate.getId())
+                              .withPublicationId(candidate.getPublicationId())
+                              .withIdentifier(candidate.getIdentifier())
+                              .withContext(CONTEXT_URI)
+                              .withPeriod(PeriodStatusDto.fromPeriodStatus(candidate.getPeriod()))
+                              .withTotalPoints(candidate.getTotalPoints())
+                              .withNotes(Collections.emptyList())
+                              .build();
+        assertEquals(expectedDto, candidate.toDto());
     }
 
     @Test()
@@ -276,7 +238,7 @@ class CandidateTest extends LocalDynamoTest {
         var institution1 = randomUri();
         var institution2 = randomUri();
         var institution3 = randomUri();
-        var createRequest = createUpsertCandidateRequest(institution1, institution2, institution3);
+        var createRequest = createUpsertCandidateRequest(institution1, institution2, institution3).build();
         var candidate = upsert(createRequest);
         candidate.updateApproval(createUpdateStatusRequest(ApprovalStatus.APPROVED, institution1, randomString()));
         candidate.updateApproval(createUpdateStatusRequest(ApprovalStatus.REJECTED, institution2, randomString()));
@@ -285,96 +247,14 @@ class CandidateTest extends LocalDynamoTest {
     }
 
     @Test
-    void dontMindMeJustTestingToDto() {
-        var institutionToReject = randomUri();
-        var institutionToApprove = randomUri();
-        var totalPoints = randomBigDecimal();
-        var createRequest = createUpsertCandidateRequest(randomUri(), randomUri(), true,
-                                                         InstanceType.ACADEMIC_MONOGRAPH, 4, totalPoints,
-                                                         randomLevelExcluding(DbLevel.NON_CANDIDATE)
-                                                             .getValue(), CURRENT_YEAR,
-                                                         institutionToApprove, randomUri(), institutionToReject);
-        var candidateBO = upsert(createRequest);
-        candidateBO.createNote(createNoteRequest(randomString(), randomString()), candidateRepository)
-            .createNote(createNoteRequest(randomString(), randomString()), candidateRepository)
-            .updateApproval(createUpdateStatusRequest(ApprovalStatus.APPROVED, institutionToApprove, randomString()))
-            .updateApproval(createUpdateStatusRequest(ApprovalStatus.REJECTED, institutionToReject, randomString()));
-        var dto = candidateBO.toDto();
-        var approvalMap = dto.approvals()
-                              .stream()
-                              .collect(Collectors.toMap(ApprovalDto::institutionId, Function.identity()));
-
-        assertAll(() -> {
-            assertThat(dto.context(), is(equalTo(CONTEXT_URI)));
-            assertThat(dto.publicationId(), is(equalTo(createRequest.publicationId())));
-            assertThat(dto.approvals().size(), is(equalTo(createRequest.institutionPoints().size())));
-            assertThat(dto.notes().size(), is(2));
-            assertThat(dto.totalPoints(), is(equalTo(adjustScaleAndRoundingMode(totalPoints))));
-            var note = dto.notes().getFirst();
-            assertThat(note.text(), is(notNullValue()));
-            assertThat(note.user(), is(notNullValue()));
-            assertThat(note.createdDate(), is(notNullValue()));
-            assertThat(dto.id(), is(equalTo(constructId(candidateBO.getIdentifier()))));
-            assertThat(dto.identifier(), is(equalTo(candidateBO.getIdentifier())));
-            var periodStatus = getDefaultPeriodStatus();
-            assertThat(dto.period().status(), is(equalTo(periodStatus.status())));
-            var approvalDto = approvalMap.get(institutionToApprove);
-            assertThat(approvalDto.status().getValue(), is(equalTo(ApprovalStatusDto.APPROVED.getValue())));
-            assertNotNull(approvalDto.finalizedDate());
-            var rejectedAP = approvalMap.get(institutionToReject);
-            assertThat(rejectedAP.status(), is(equalTo(ApprovalStatusDto.REJECTED)));
-            assertThat(rejectedAP.reason(), is(notNullValue()));
-            assertThat(rejectedAP.points(),
-                       is(adjustScaleAndRoundingMode(
-                           createRequest.getPointsForInstitution(rejectedAP.institutionId()))));
-        });
-    }
-
-    @Test
     void shouldReturnCandidateWithExpectedData() {
-        var publicationId = randomUri();
-        var publicationBucketUri = randomUri();
-        var isApplicable = true;
-        var institutionId = randomUri();
-        var creatorId = randomUri();
-        var creators = Map.of(creatorId, List.of(institutionId));
-        var institutionPoints = adjustScaleAndRoundingMode(randomBigDecimal());
-        var points = List.of(createInstitutionPoints(institutionId, institutionPoints, creatorId));
-        var totalPoints = randomBigDecimal();
-        var publicationDate = new PublicationDate(String.valueOf(CURRENT_YEAR), null, null);
-        var instanceType = randomInstanceType();
-        var createRequest = createUpsertCandidateRequest(publicationId, publicationBucketUri,
-                                                         isApplicable,
-                                                         publicationDate,
-                                                         creators,
-                                                         instanceType,
-                                                         randomElement(ChannelType.values()).getValue(), randomUri(),
-                                                         DbLevel.LEVEL_TWO.getValue(), points,
-                                                         randomInteger(10),
-                                                         randomBoolean(),
-                                                         randomBigDecimal(), randomBigDecimal(), totalPoints);
+        var createRequest = randomUpsertRequestBuilder().build();
         var candidate = upsert(createRequest);
-        assertEquals(candidate.getPublicationDetails().publicationBucketUri(), publicationBucketUri);
-        assertEquals(candidate.isApplicable(), isApplicable);
-        assertEquals(candidate.getPublicationId(), publicationId);
-        assertEquals(candidate.getTotalPoints(), adjustScaleAndRoundingMode(totalPoints));
-        assertEquals(adjustScaleAndRoundingMode(candidate.getPointValueForInstitution(institutionId)),
-                     institutionPoints);
-        assertEquals(candidate.getInstitutionPointsMap().get(institutionId), institutionPoints);
-        assertEquals(candidate.getInstitutionPoints(), points);
-        assertEquals(candidate.getPublicationDetails().publicationDate(), publicationDate);
-        assertCorrectCreatorData(creators, candidate);
-        assertEquals(candidate.getPublicationDetails().type(), instanceType.getValue());
-        assertEquals(candidate.getPublicationChannelType().getValue(),
-                     createRequest.channelType());
-        assertEquals(candidate.getPublicationChannelId(), createRequest.publicationChannelId());
-        assertEquals(candidate.getScientificLevel(), createRequest.level());
-        assertEquals(candidate.getBasePoints(), adjustScaleAndRoundingMode(createRequest.basePoints()));
-        assertEquals(candidate.isInternationalCollaboration(),
-                     createRequest.isInternationalCollaboration());
-        assertEquals(candidate.getCollaborationFactor(),
-                     adjustScaleAndRoundingMode(createRequest.collaborationFactor()));
-        assertEquals(candidate.getCreatorShareCount(), createRequest.creatorShareCount());
+        assertEquals(adjustScaleAndRoundingMode(createRequest.totalPoints()), candidate.getTotalPoints());
+        assertEquals(adjustScaleAndRoundingMode(createRequest.basePoints()), candidate.getBasePoints());
+        assertEquals(adjustScaleAndRoundingMode(createRequest.collaborationFactor()),
+                     candidate.getCollaborationFactor());
+        assertEquals(createRequest.creatorShareCount(), candidate.getCreatorShareCount());
     }
 
     @Test
@@ -391,122 +271,13 @@ class CandidateTest extends LocalDynamoTest {
     void shouldSetPeriodYearWhenResettingCandidate() {
         var nonApplicableCandidate = nonApplicableCandidate();
         Candidate.upsert(
-            createUpsertCandidateRequest(nonApplicableCandidate.getPublicationId()),
+            randomUpsertRequestBuilder().withPublicationId(nonApplicableCandidate.getPublicationId()).build(),
             candidateRepository, periodRepository
         );
         var updatedApplicableCandidate = Candidate.fetch(nonApplicableCandidate::getIdentifier, candidateRepository,
                                                          periodRepository);
         assertThat(updatedApplicableCandidate.getPeriod().year(),
                    is(equalTo(updatedApplicableCandidate.getPeriod().year())));
-    }
-
-    @Test
-    void shouldNotOverrideAssigneeWhenAssigneeAlreadyIsSet() {
-        var institutionId = randomUri();
-        var assignee = randomString();
-        var request = createUpsertCandidateRequest(institutionId);
-        Candidate.upsert(request, candidateRepository, periodRepository);
-        var candidate = Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository)
-                            .updateApproval(new UpdateAssigneeRequest(institutionId, assignee))
-                            .updateApproval(
-                                createUpdateStatusRequest(ApprovalStatus.APPROVED, institutionId, randomString()))
-                            .updateApproval(
-                                createUpdateStatusRequest(ApprovalStatus.REJECTED, institutionId, randomString()))
-                            .toDto();
-        assertThat(candidate.approvals().getFirst().assignee(), is(equalTo(assignee)));
-        assertThat(candidate.approvals().getFirst().finalizedBy(), is(not(equalTo(assignee))));
-    }
-
-    @Test
-    void shouldNotResetApprovalsWhenUpdatingCandidateFieldsNotEffectingApprovals() {
-        var institutionId = randomUri();
-        var upsertCandidateRequest = createUpsertCandidateRequest(institutionId);
-        var candidate = upsert(upsertCandidateRequest);
-        candidate.updateApproval(
-            new UpdateStatusRequest(institutionId, ApprovalStatus.APPROVED, randomString(), randomString()));
-        var approval = candidate.getApprovals().get(institutionId);
-        var newUpsertRequest = createNewUpsertRequestNotAffectingApprovals(upsertCandidateRequest);
-        var updatedCandidate = upsert(newUpsertRequest);
-        var updatedApproval = updatedCandidate.getApprovals().get(institutionId);
-
-        assertThat(updatedApproval, is(equalTo(approval)));
-    }
-
-    @Test
-    void shouldNotResetApprovalsWhenCreatorAffiliationChangesWithinSameInstitution() {
-        var upsertCandidateRequest = getUpsertCandidateRequestWithHardcodedValues();
-        var candidate = upsert(upsertCandidateRequest);
-        candidate.updateApproval(
-            new UpdateStatusRequest(HARDCODED_INSTITUTION_ID, ApprovalStatus.APPROVED, randomString(), randomString()));
-        var newSubUnitInSameOrganization = randomUri();
-        var newUpsertRequest = createUpsertCandidateRequest(candidate.getPublicationId(),
-                                                            candidate.getPublicationDetails().publicationBucketUri(),
-                                                            true,
-                                                            candidate.getPublicationDetails().publicationDate(),
-                                                            Map.of(HARDCODED_CREATOR_ID, List.of(
-                                                                newSubUnitInSameOrganization)),
-                                                            InstanceType.parse(candidate.getInstanceType()),
-                                                            candidate.getPublicationChannelType().getValue(),
-                                                            candidate.getPublicationChannelId(),
-                                                            candidate.getScientificLevel(),
-                                                            List.of(new InstitutionPoints(HARDCODED_INSTITUTION_ID,
-                                                                                          HARDCODED_POINTS, List.of(
-                                                                new CreatorAffiliationPoints(HARDCODED_CREATOR_ID,
-                                                                                             newSubUnitInSameOrganization,
-                                                                                             HARDCODED_POINTS)))),
-                                                            randomInteger(), false,
-                                                            randomBigDecimal(), null, randomBigDecimal());
-        var updatedCandidate = upsert(newUpsertRequest);
-        var updatedApproval = updatedCandidate.getApprovals().get(HARDCODED_INSTITUTION_ID);
-
-        assertThat(updatedApproval.getStatus(), is(equalTo(ApprovalStatus.APPROVED)));
-    }
-
-    @Test
-    void shouldNotResetApprovalsWhenUpsertRequestContainsSameDecimalsWithAnotherScale() {
-        var institutionId = randomUri();
-        var upsertCandidateRequest = createUpsertRequestWithDecimalScale(0, institutionId);
-        var candidate = upsert(upsertCandidateRequest);
-        candidate.updateApproval(
-            new UpdateStatusRequest(institutionId, ApprovalStatus.APPROVED, randomString(), randomString()));
-        var approval = candidate.getApprovals().get(institutionId);
-        var newUpsertRequest = createNewUpsertRequestNotAffectingApprovals(upsertCandidateRequest);
-        var updatedCandidate = upsert(newUpsertRequest);
-        var updatedApproval = updatedCandidate.getApprovals().get(institutionId);
-
-        assertThat(updatedApproval, is(equalTo(approval)));
-    }
-
-    @Test
-    void shouldResetApprovalsWhenNonCandidateBecomesCandidate() {
-        var institutionId = randomUri();
-        var upsertCandidateRequest = createUpsertCandidateRequest(institutionId);
-        var candidate = upsert(upsertCandidateRequest);
-        var nonCandidate = Candidate.updateNonCandidate(
-            createUpsertNonCandidateRequest(candidate.getPublicationId()),
-            candidateRepository).orElseThrow();
-        assertFalse(nonCandidate.isApplicable());
-        var updatedCandidate = upsert(createNewUpsertRequestNotAffectingApprovals(upsertCandidateRequest));
-
-        assertTrue(updatedCandidate.isApplicable());
-        assertThat(updatedCandidate.getApprovals().size(), is(greaterThan(0)));
-    }
-
-    @ParameterizedTest
-    @MethodSource("candidateResetCauseProvider")
-    @DisplayName("Should reset approvals when updating fields effecting approvals")
-    void shouldResetApprovalsWhenUpdatingFieldsEffectingApprovals(CandidateResetCauseArgument arguments) {
-        var upsertCandidateRequest = getUpsertCandidateRequestWithHardcodedValues();
-
-        var candidate = upsert(upsertCandidateRequest);
-        candidate.updateApproval(
-            new UpdateStatusRequest(HARDCODED_INSTITUTION_ID, ApprovalStatus.APPROVED, randomString(), randomString()));
-
-        var newUpsertRequest = getUpsertCandidateRequest(arguments, candidate.getPublicationId());
-
-        var updatedCandidate = upsert(newUpsertRequest);
-        var updatedApproval = updatedCandidate.getApprovals().get(HARDCODED_INSTITUTION_ID);
-        assertThat(updatedApproval.getStatus(), is(equalTo(ApprovalStatus.PENDING)));
     }
 
     @Test
@@ -584,110 +355,30 @@ class CandidateTest extends LocalDynamoTest {
         assertNotEquals(dao.version(), updatedDao.version());
     }
 
-    private static Stream<Arguments> candidateResetCauseProvider() {
-        return Stream.of(
-            Arguments.of(Named.of("channel changed",
-                                  CandidateResetCauseArgument.defaultBuilder().withChannelId(randomUri()).build())),
-            Arguments.of(Named.of("level changed",
-                                  CandidateResetCauseArgument.defaultBuilder()
-                                      .withLevel("LevelTwo")
-                                      .build())),
-            Arguments.of(Named.of("type changed",
-                                  CandidateResetCauseArgument.defaultBuilder()
-                                      .withType(InstanceType.ACADEMIC_MONOGRAPH)
-                                      .build())),
-            Arguments.of(Named.of("institution points changed",
-                                  CandidateResetCauseArgument.defaultBuilder()
-                                      .withPointsForInstitution(BigDecimal.TEN)
-                                      .build())),
-            Arguments.of(Named.of("creator changed",
-                                  CandidateResetCauseArgument.defaultBuilder()
-                                      .withCreators(
-                                          List.of(new Creator(randomUri(), List.of(HARDCODED_INSTITUTION_ID))))
-                                      .build())),
-            Arguments.of(Named.of("creator removed",
-                                  CandidateResetCauseArgument.defaultBuilder()
-                                      .withCreators(Collections.emptyList())
-                                      .build())),
-            Arguments.of(Named.of("creator added",
-                                  CandidateResetCauseArgument.defaultBuilder()
-                                      .withCreators(List.of(CandidateResetCauseArgument.Builder.DEFAULT_CREATOR,
-                                                            new Creator(randomUri(),
-                                                                        List.of(HARDCODED_INSTITUTION_ID))))
-                                      .build())));
-    }
-
     @Deprecated
     private static Stream<Arguments> levelValues() {
         return Stream.of(Arguments.of(DbLevel.LEVEL_ONE, "LevelOne"), Arguments.of(DbLevel.LEVEL_TWO, "LevelTwo"));
-    }
-
-    private static InstitutionPoints createInstitutionPoints(URI institutionId, BigDecimal institutionPoints,
-                                                             URI creatorId) {
-        return new InstitutionPoints(institutionId, institutionPoints,
-                                     List.of(new CreatorAffiliationPoints(creatorId, institutionId,
-                                                                          institutionPoints)));
-    }
-
-    private static UpsertCandidateRequest createUpsertRequestWithDecimalScale(int scale, URI institutionId) {
-        var creatorId = randomUri();
-        var creators = Map.of(creatorId, List.of(institutionId));
-        var points = List.of(createInstitutionPoints(institutionId, randomBigDecimal(scale), creatorId));
-
-        return createUpsertCandidateRequest(randomUri(), randomUri(), true,
-                                            new PublicationDate(String.valueOf(CURRENT_YEAR), null, null),
-                                            creators,
-                                            randomInstanceType(),
-                                            randomElement(ChannelType.values()).getValue(), randomUri(),
-                                            randomLevelExcluding(DbLevel.NON_CANDIDATE).getValue(), points,
-                                            randomInteger(), randomBoolean(),
-                                            randomBigDecimal(scale), randomBigDecimal(scale),
-                                            randomBigDecimal(scale));
-    }
-
-    private static void assertCorrectCreatorData(Map<URI, List<URI>> creators, Candidate candidate) {
-        creators.forEach((key, value) -> {
-            var actualCreator =
-                candidate.getPublicationDetails()
-                    .creators()
-                    .stream()
-                    .filter(creator -> creator.id().equals(key))
-                    .findFirst()
-                    .orElse(null);
-            assert actualCreator != null;
-            assertEquals(value, actualCreator.affiliations());
-        });
-    }
-
-    private static PeriodStatusDto getDefaultPeriodStatus() {
-        return PeriodStatusDto.fromPeriodStatus(PeriodStatus.builder().withStatus(Status.OPEN_PERIOD).build());
-    }
-
-    private static URI constructId(UUID identifier) {
-        return new UriWrapper(HTTPS, API_DOMAIN).addChild(BASE_PATH, "candidate", identifier.toString()).getUri();
     }
 
     private static BigDecimal adjustScaleAndRoundingMode(BigDecimal bigDecimal) {
         return bigDecimal.setScale(EXPECTED_SCALE, EXPECTED_ROUNDING_MODE);
     }
 
+    private List<ApprovalDto> mapToApprovalDtos(Candidate candidate) {
+        return candidate.getApprovals().values().stream()
+                   .map(approval -> ApprovalDto.builder()
+                                        .withInstitutionId(approval.getInstitutionId())
+                                        .withPoints(candidate.getPointValueForInstitution(approval.getInstitutionId()))
+                                        .withStatus(ApprovalStatusDto.from(approval))
+                                        .withFinalizedBy(approval.getFinalizedByUserName())
+                                        .withAssignee(approval.getAssigneeUsername())
+                                        .build())
+                   .toList();
+    }
+
     private Candidate upsert(UpsertCandidateRequest request) {
         Candidate.upsert(request, candidateRepository, periodRepository);
         return Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository);
-    }
-
-    private List<InstitutionPoints> createPoints(Map<URI, List<URI>> creators) {
-        return creators.entrySet()
-                   .stream()
-                   .map(entry -> entry.getValue()
-                                     .stream()
-                                     .map(affiliation -> {
-                                         var institutionPoints = randomBigDecimal();
-                                         return createInstitutionPoints(affiliation, institutionPoints, entry.getKey());
-                                     })
-                                     .toList())
-                   .flatMap(List::stream)
-                   .toList();
     }
 
     private Candidate nonApplicableCandidate() {
@@ -697,62 +388,10 @@ class CandidateTest extends LocalDynamoTest {
         return Candidate.fetch(candidateBO::getIdentifier, candidateRepository, periodRepository);
     }
 
-    private UpsertCandidateRequest getUpsertCandidateRequest(CandidateResetCauseArgument arguments, URI publicationId) {
-        return createUpsertCandidateRequest(publicationId,
-                                            randomUri(), true,
-                                            new PublicationDate(String.valueOf(CURRENT_YEAR), null, null),
-                                            arguments.creators()
-                                                .stream()
-                                                .collect(Collectors.toMap(Creator::id, Creator::affiliations)),
-                                            arguments.type(),
-                                            arguments.channel().channelType().getValue(),
-                                            arguments.channel().id(),
-                                            arguments.channel().level(),
-                                            arguments.institutionPoints(),
-                                            randomInteger(), false,
-                                            randomBigDecimal(), null, randomBigDecimal());
-    }
-
-    private UpsertCandidateRequest getUpsertCandidateRequestWithHardcodedValues() {
-        return createUpsertCandidateRequest(URI.create("publicationId"), randomUri(), true,
-                                            new PublicationDate(String.valueOf(CURRENT_YEAR), null, null),
-                                            Map.of(HARDCODED_CREATOR_ID, List.of(HARDCODED_SUBUNIT_ID)),
-                                            HARDCODED_INSTANCE_TYPE,
-                                            ChannelType.JOURNAL.getValue(),
-                                            HARDCODED_CHANNEL_ID,
-                                            HARDCODED_LEVEL,
-                                            List.of(
-                                                new InstitutionPoints(HARDCODED_INSTITUTION_ID, HARDCODED_POINTS,
-                                                                      List.of(
-                                                                          new CreatorAffiliationPoints(
-                                                                              HARDCODED_CREATOR_ID,
-                                                                              HARDCODED_SUBUNIT_ID,
-                                                                              HARDCODED_POINTS)))),
-                                            randomInteger(), false,
-                                            randomBigDecimal(), null, randomBigDecimal());
-    }
-
     private UpsertCandidateRequest getUpdateRequestForExistingCandidate() {
-        return getUpdateRequestForExistingCandidate(EXPECTED_SCALE);
-    }
-
-    private UpsertCandidateRequest getUpdateRequestForExistingCandidate(int scale) {
-        var institutionId = randomUri();
-        var insertRequest = createUpsertCandidateRequest(institutionId);
+        var insertRequest = randomUpsertRequestBuilder().build();
         Candidate.upsert(insertRequest, candidateRepository, periodRepository);
-        var creators = IntStream.of(insertRequest.creators().size())
-                           .mapToObj(i -> randomUri())
-                           .collect(Collectors.toMap(Function.identity(), e -> List.of(institutionId)));
-
-        var points = createPoints(creators);
-
-        return createUpsertCandidateRequest(insertRequest.publicationId(), insertRequest.publicationBucketUri(), true,
-                                            new PublicationDate(String.valueOf(CURRENT_YEAR), null, null), creators,
-                                            insertRequest.instanceType(),
-                                            randomElement(ChannelType.values()).getValue(), randomUri(),
-                                            randomLevelExcluding(DbLevel.NON_CANDIDATE).getValue(), points,
-                                            randomInteger(), randomBoolean(),
-                                            randomBigDecimal(scale), randomBigDecimal(scale), randomBigDecimal(scale));
+        return UpsertRequestBuilder.fromRequest(insertRequest).build();
     }
 
     private DbCandidate generateExpectedCandidate(Candidate candidate, UpsertCandidateRequest request) {
@@ -789,144 +428,5 @@ class CandidateTest extends LocalDynamoTest {
 
     private List<DbCreator> mapToDbCreators(Map<URI, List<URI>> creators) {
         return creators.entrySet().stream().map(entry -> new DbCreator(entry.getKey(), entry.getValue())).toList();
-    }
-
-    private UpsertCandidateRequest createNewUpsertRequestNotAffectingApprovals(UpsertCandidateRequest request) {
-        return new UpsertCandidateRequest() {
-            @Override
-            public URI publicationBucketUri() {
-                return request.publicationBucketUri();
-            }
-
-            @Override
-            public URI publicationId() {
-                return request.publicationId();
-            }
-
-            @Override
-            public boolean isApplicable() {
-                return true;
-            }
-
-            @Override
-            public boolean isInternationalCollaboration() {
-                return false;
-            }
-
-            @Override
-            public Map<URI, List<URI>> creators() {
-                return request.creators();
-            }
-
-            @Override
-            public String channelType() {
-                return null;
-            }
-
-            @Override
-            public URI publicationChannelId() {
-                return request.publicationChannelId();
-            }
-
-            @Override
-            public String level() {
-                return request.level();
-            }
-
-            @Override
-            public InstanceType instanceType() {
-                return request.instanceType();
-            }
-
-            @Override
-            public PublicationDate publicationDate() {
-                return request.publicationDate();
-            }
-
-            @Override
-            public int creatorShareCount() {
-                return 0;
-            }
-
-            @Override
-            public BigDecimal collaborationFactor() {
-                return null;
-            }
-
-            @Override
-            public BigDecimal basePoints() {
-                return null;
-            }
-
-            @Override
-            public List<InstitutionPoints> institutionPoints() {
-                return request.institutionPoints();
-            }
-
-            @Override
-            public BigDecimal totalPoints() {
-                return request.totalPoints();
-            }
-        };
-    }
-
-    private record CandidateResetCauseArgument(PublicationChannel channel, InstanceType type,
-                                               List<InstitutionPoints> institutionPoints, List<Creator> creators) {
-
-        private static CandidateResetCauseArgument.Builder defaultBuilder() {
-            return new Builder();
-        }
-
-        private static final class Builder {
-
-            private static final Creator DEFAULT_CREATOR = new Creator(HARDCODED_CREATOR_ID,
-                                                                       List.of(HARDCODED_SUBUNIT_ID));
-            private PublicationChannel channel = new PublicationChannel(ChannelType.JOURNAL,
-                                                                        HARDCODED_CHANNEL_ID,
-                                                                        HARDCODED_LEVEL);
-            private InstanceType type = HARDCODED_INSTANCE_TYPE;
-            private List<InstitutionPoints> institutionPoints = List.of(
-                new InstitutionPoints(HARDCODED_INSTITUTION_ID, HARDCODED_POINTS,
-                                      List.of(new CreatorAffiliationPoints(HARDCODED_CREATOR_ID,
-                                                                           HARDCODED_SUBUNIT_ID,
-                                                                           HARDCODED_POINTS))));
-            private List<Creator> creators = List.of(DEFAULT_CREATOR);
-
-            private Builder() {
-            }
-
-            private Builder withType(InstanceType type) {
-                this.type = type;
-                return this;
-            }
-
-            private Builder withCreators(List<Creator> creators) {
-                this.creators = creators;
-                return this;
-            }
-
-            private Builder withChannelId(URI publicationChannelId) {
-                this.channel = new PublicationChannel(ChannelType.JOURNAL, publicationChannelId, HARDCODED_LEVEL);
-                return this;
-            }
-
-            private Builder withLevel(String level) {
-                this.channel = new PublicationChannel(ChannelType.JOURNAL, HARDCODED_CHANNEL_ID, level);
-                return this;
-            }
-
-            private Builder withPointsForInstitution(BigDecimal institutionPoints) {
-                this.institutionPoints = List.of(new InstitutionPoints(HARDCODED_INSTITUTION_ID, institutionPoints,
-                                                                       List.of(new CreatorAffiliationPoints(
-                                                                           HARDCODED_CREATOR_ID,
-                                                                           HARDCODED_SUBUNIT_ID,
-                                                                           HARDCODED_POINTS))));
-                return this;
-            }
-
-            private CandidateResetCauseArgument build() {
-                return new CandidateResetCauseArgument(channel, type, institutionPoints, creators);
-            }
-        }
     }
 }

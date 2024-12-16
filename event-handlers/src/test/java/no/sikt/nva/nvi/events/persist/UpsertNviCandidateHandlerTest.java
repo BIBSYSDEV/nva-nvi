@@ -5,7 +5,6 @@ import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
 import static no.sikt.nva.nvi.test.TestUtils.generateS3BucketUri;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.sikt.nva.nvi.test.TestUtils.randomInstanceType;
-import static no.sikt.nva.nvi.test.TestUtils.randomLevelExcluding;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
@@ -34,10 +33,7 @@ import java.net.URI;
 import java.time.Year;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
@@ -55,7 +51,6 @@ import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
@@ -155,17 +150,17 @@ class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         var delete = randomUri();
         var identifier = UUID.randomUUID();
         var publicationId = generatePublicationId(identifier);
-        var request = createUpsertCandidateRequest(publicationId, randomUri(), true,
-                                                   InstanceType.ACADEMIC_ARTICLE, 1,
-                                                   randomBigDecimal(),
-                                                   randomLevelExcluding(DbLevel.NON_CANDIDATE).getValue(),
-                                                   TestUtils.CURRENT_YEAR,
-                                                   delete, keep);
+        var institutions = new URI[]{delete, keep};
+
+        var request = createUpsertCandidateRequest(institutions)
+                          .withPublicationId(publicationId)
+                          .build();
         Candidate.upsert(request, candidateRepository, periodRepository);
-        var candidate = Candidate.fetchByPublicationId(() -> publicationId, candidateRepository, periodRepository);
+
         var sqsEvent = createEvent(keep, publicationId, generateS3BucketUri(identifier));
         handler.handleRequest(sqsEvent, CONTEXT);
-        var approvals = getApprovalMaps(candidate);
+        var approvals = Candidate.fetchByPublicationId(() -> publicationId, candidateRepository, periodRepository)
+                            .getApprovals();
         assertTrue(approvals.containsKey(keep));
         assertFalse(approvals.containsKey(delete));
         assertThat(approvals.size(), is(2));
@@ -174,7 +169,7 @@ class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
     @Test
     void shouldNotResetApprovalsWhenUpdatingFieldsNotEffectingApprovals() {
         var institutionId = randomUri();
-        var upsertCandidateRequest = createUpsertCandidateRequest(institutionId);
+        var upsertCandidateRequest = createUpsertCandidateRequest(institutionId).build();
         Candidate.upsert(upsertCandidateRequest, candidateRepository, periodRepository);
         var candidate = Candidate.fetchByPublicationId(upsertCandidateRequest::publicationId, candidateRepository,
                                                        periodRepository);
@@ -289,13 +284,6 @@ class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                    .withNviCreators(List.of(new NviCreator(creatorId, List.of(institutionId))))
                    .withInstitutionPoints(request.institutionPoints())
                    .build();
-    }
-
-    private Map<URI, DbApprovalStatus> getApprovalMaps(Candidate candidate) {
-        return candidateRepository.fetchApprovals(candidate.getIdentifier())
-                   .stream()
-                   .map(ApprovalStatusDao::approvalStatus)
-                   .collect(Collectors.toMap(DbApprovalStatus::institutionId, Function.identity()));
     }
 
     private DbCandidate getExpectedCandidate(NviCandidate evaluatedNviCandidate) {

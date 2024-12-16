@@ -219,11 +219,6 @@ public final class Candidate {
         return applicable;
     }
 
-    public Map<URI, BigDecimal> getInstitutionPointsMap() {
-        return institutionPoints.stream().collect(Collectors.toMap(InstitutionPoints::institutionId,
-                                                                   InstitutionPoints::institutionPoints));
-    }
-
     public BigDecimal getPointValueForInstitution(URI institutionId) {
         return getInstitutionPoints(institutionId)
                    .map(InstitutionPoints::institutionPoints)
@@ -247,10 +242,6 @@ public final class Candidate {
 
     public BigDecimal getBasePoints() {
         return basePoints;
-    }
-
-    public boolean isInternationalCollaboration() {
-        return internationalCollaboration;
     }
 
     public BigDecimal getCollaborationFactor() {
@@ -378,10 +369,6 @@ public final class Candidate {
         candidateRepository.findCandidateById(identifier)
             .map(candidateDao -> updateVersion(candidateRepository, candidateDao))
             .orElseThrow(CandidateNotFoundException::new);
-    }
-
-    public String getInstanceType() {
-        return publicationDetails.type();
     }
 
     private static CandidateDao updateVersion(CandidateRepository candidateRepository, CandidateDao candidateDao) {

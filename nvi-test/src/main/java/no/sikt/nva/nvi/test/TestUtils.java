@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.test;
 
 import static java.util.Objects.nonNull;
+import static no.sikt.nva.nvi.test.UpsertRequestBuilder.randomUpsertRequestBuilder;
 import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInstant;
@@ -51,7 +52,6 @@ import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
-import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.UpdateNonCandidateRequest;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.common.utils.BatchScanUtil;
@@ -95,7 +95,7 @@ public final class TestUtils {
 
     public static Candidate randomApplicableCandidate(CandidateRepository candidateRepository,
                                                       PeriodRepository periodRepository) {
-        var request = createUpsertCandidateRequest(randomUri());
+        var request = randomUpsertRequestBuilder().build();
         Candidate.upsert(request, candidateRepository, periodRepository);
         return Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository);
     }
@@ -276,58 +276,8 @@ public final class TestUtils {
                    .build();
     }
 
-    public static UpsertCandidateRequest createUpsertCandidateRequestWithLevel(String level, URI... institutions) {
-        return createUpsertCandidateRequest(randomUri(), randomUri(), true, randomInstanceType(),
-                                            1, randomBigDecimal(), level, CURRENT_YEAR, institutions);
-    }
-
-    public static UpsertCandidateRequest createUpsertCandidateRequest(int year) {
-        return createUpsertCandidateRequest(randomUri(), randomUri(), true, randomInstanceType(),
-                                            1, randomBigDecimal(),
-                                            randomLevelExcluding(DbLevel.NON_CANDIDATE).getValue(),
-                                            year,
-                                            randomUri());
-    }
-
-    public static UpsertCandidateRequest createUpsertCandidateRequest(URI... institutions) {
-        return createUpsertCandidateRequest(randomUri(), randomUri(), true, randomInstanceType(),
-                                            1, randomBigDecimal(),
-                                            randomLevelExcluding(DbLevel.NON_CANDIDATE).getValue(),
-                                            CURRENT_YEAR,
-                                            institutions);
-    }
-
-    public static UpsertCandidateRequest createUpsertCandidateRequest(URI topLevelOrg, URI affiliation) {
-        return createUpsertCandidateRequest(topLevelOrg, affiliation, randomElement(ChannelType.values()));
-    }
-
-    public static UpsertCandidateRequest createUpsertCandidateRequest(URI topLevelOrg, URI affiliation,
-                                                                      ChannelType channelType) {
-        var creatorId = randomUri();
-        var creators = Map.of(creatorId, List.of(affiliation));
-        var points = randomBigDecimal();
-        var institutionPoints = List.of(new InstitutionPoints(topLevelOrg, points,
-                                                              List.of(new CreatorAffiliationPoints(
-                                                                  creatorId, affiliation, points))));
-
-        return createUpsertCandidateRequest(randomUri(), randomUri(), true,
-                                            new PublicationDate(String.valueOf(CURRENT_YEAR), null, null), creators,
-                                            randomInstanceType(),
-                                            channelType.getValue(), randomUri(),
-                                            randomLevelExcluding(DbLevel.NON_CANDIDATE).getValue(), institutionPoints,
-                                            randomInteger(), randomBoolean(),
-                                            randomBigDecimal(), randomBigDecimal(), randomBigDecimal());
-    }
-
-    public static UpsertCandidateRequest createUpsertCandidateRequest(URI publicationId,
-                                                                      URI publicationBucketUri,
-                                                                      boolean isApplicable,
-                                                                      InstanceType instanceType,
-                                                                      int creatorCount,
-                                                                      BigDecimal totalPoints,
-                                                                      String level, int year,
-                                                                      URI... institutions) {
-        var creators = IntStream.of(creatorCount)
+    public static UpsertRequestBuilder createUpsertCandidateRequest(URI... institutions) {
+        var creators = IntStream.of(1)
                            .mapToObj(i -> randomUri())
                            .collect(Collectors.toMap(Function.identity(), e -> List.of(institutions)));
 
@@ -341,108 +291,23 @@ public final class TestUtils {
                                                               .toList());
                          }).toList();
 
-        return createUpsertCandidateRequest(publicationId, publicationBucketUri, isApplicable,
-                                            new PublicationDate(String.valueOf(year), null, null), creators,
-                                            instanceType,
-                                            randomElement(ChannelType.values()).getValue(), randomUri(),
-                                            level, points,
-                                            randomInteger(), randomBoolean(),
-                                            randomBigDecimal(), randomBigDecimal(), totalPoints);
+        return randomUpsertRequestBuilder()
+                   .withCreators(creators)
+                   .withPoints(points);
     }
 
-    @SuppressWarnings("PMD.ExcessiveParameterList")
-    public static UpsertCandidateRequest createUpsertCandidateRequest(URI publicationId,
-                                                                      final URI publicationBucketUri,
-                                                                      boolean isApplicable,
-                                                                      final PublicationDate publicationDate,
-                                                                      Map<URI, List<URI>> creators,
-                                                                      InstanceType instanceType,
-                                                                      String channelType, URI channelId,
-                                                                      String level,
-                                                                      List<InstitutionPoints> points,
-                                                                      final Integer creatorShareCount,
-                                                                      final boolean isInternationalCollaboration,
-                                                                      final BigDecimal collaborationFactor,
-                                                                      final BigDecimal basePoints,
-                                                                      final BigDecimal totalPoints) {
+    public static UpsertCandidateRequest createUpsertCandidateRequest(URI topLevelOrg, URI affiliation) {
+        var creatorId = randomUri();
+        var creators = Map.of(creatorId, List.of(affiliation));
+        var points = randomBigDecimal();
+        var institutionPoints = List.of(new InstitutionPoints(topLevelOrg, points,
+                                                              List.of(new CreatorAffiliationPoints(
+                                                                  creatorId, affiliation, points))));
 
-        return new UpsertCandidateRequest() {
-
-            @Override
-            public URI publicationBucketUri() {
-                return publicationBucketUri;
-            }
-
-            @Override
-            public URI publicationId() {
-                return publicationId;
-            }
-
-            @Override
-            public boolean isApplicable() {
-                return isApplicable;
-            }
-
-            @Override
-            public boolean isInternationalCollaboration() {
-                return isInternationalCollaboration;
-            }
-
-            @Override
-            public Map<URI, List<URI>> creators() {
-                return creators;
-            }
-
-            @Override
-            public String channelType() {
-                return channelType;
-            }
-
-            @Override
-            public URI publicationChannelId() {
-                return channelId;
-            }
-
-            @Override
-            public String level() {
-                return level;
-            }
-
-            @Override
-            public InstanceType instanceType() {
-                return instanceType;
-            }
-
-            @Override
-            public PublicationDate publicationDate() {
-                return publicationDate;
-            }
-
-            @Override
-            public int creatorShareCount() {
-                return creatorShareCount;
-            }
-
-            @Override
-            public BigDecimal collaborationFactor() {
-                return collaborationFactor;
-            }
-
-            @Override
-            public BigDecimal basePoints() {
-                return basePoints;
-            }
-
-            @Override
-            public List<InstitutionPoints> institutionPoints() {
-                return points;
-            }
-
-            @Override
-            public BigDecimal totalPoints() {
-                return totalPoints;
-            }
-        };
+        return randomUpsertRequestBuilder()
+                   .withCreators(creators)
+                   .withPoints(institutionPoints)
+                   .build();
     }
 
     public static CreateNoteRequest createNoteRequest(String text, String username) {

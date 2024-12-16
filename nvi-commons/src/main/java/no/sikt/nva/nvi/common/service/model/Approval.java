@@ -48,12 +48,12 @@ public class Approval {
         return status;
     }
 
-    public Username getAssignee() {
-        return assignee;
+    public String getAssigneeUsername() {
+        return isNull(assignee) ? null : assignee.value();
     }
 
-    public Username getFinalizedBy() {
-        return finalizedBy;
+    public String getFinalizedByUserName() {
+        return isNull(finalizedBy) ? null : finalizedBy.value();
     }
 
     public Instant getFinalizedDate() {

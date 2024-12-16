@@ -70,6 +70,7 @@ import no.sikt.nva.nvi.test.ExpandedResourceGenerator;
 import no.sikt.nva.nvi.test.FakeSqsClient;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
+import no.sikt.nva.nvi.test.UpsertRequestBuilder;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
@@ -80,6 +81,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -327,10 +329,27 @@ class IndexDocumentHandlerTest extends LocalDynamoTest {
     @ParameterizedTest
     @MethodSource("channelTypeIssnProvider")
     void shouldExtractOptionalPrintIssnFromExpandedResource(ChannelType channelType, boolean printIssnExists) {
-        var candidate = randomApplicableCandidate(randomUri(), channelType);
+        var candidate = randomApplicableCandidate(channelType);
         var expandedResource =
             ExpandedResourceGenerator.builder().withCandidate(candidate).withPopulateIssn(printIssnExists).build()
                 .createExpandedResource();
+        insertInS3(expandedResource, extractResourceIdentifier(candidate));
+        var expectedIndexDocument = createExpectedNviIndexDocument(expandedResource, candidate);
+        var event = createEvent(candidate.getIdentifier());
+        mockUriRetrieverOrgResponse(candidate);
+        handler.handleRequest(event, CONTEXT);
+        var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
+        assertEquals(expectedIndexDocument, actualIndexDocument);
+    }
+
+    @ParameterizedTest
+    @EnumSource(ChannelType.class)
+    void shouldGenerateIndexDocumentForAllPublicationChannelTypes(ChannelType channelType) {
+        var candidate = randomApplicableCandidate(channelType);
+        var expandedResource = ExpandedResourceGenerator.builder()
+                                   .withCandidate(candidate)
+                                   .build()
+                                   .createExpandedResource();
         insertInS3(expandedResource, extractResourceIdentifier(candidate));
         var expectedIndexDocument = createExpectedNviIndexDocument(expandedResource, candidate);
         var event = createEvent(candidate.getIdentifier());
@@ -602,7 +621,7 @@ class IndexDocumentHandlerTest extends LocalDynamoTest {
     }
 
     private Candidate setupNonApplicableCandidate(URI institutionId) {
-        var request = createUpsertCandidateRequest(institutionId);
+        var request = createUpsertCandidateRequest(institutionId).build();
         Candidate.upsert(request, candidateRepository, periodRepository);
         var candidate = Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository);
         return Candidate.updateNonCandidate(
@@ -761,8 +780,10 @@ class IndexDocumentHandlerTest extends LocalDynamoTest {
         return Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository);
     }
 
-    private Candidate randomApplicableCandidate(URI affiliation, ChannelType channelType) {
-        var request = createUpsertCandidateRequest(HARD_CODED_TOP_LEVEL_ORG, affiliation, channelType);
+    private Candidate randomApplicableCandidate(ChannelType channelType) {
+        var request = UpsertRequestBuilder.randomUpsertRequestBuilder()
+                          .withChannelType(channelType.getValue())
+                          .build();
         Candidate.upsert(request, candidateRepository, periodRepository);
         return Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository);
     }

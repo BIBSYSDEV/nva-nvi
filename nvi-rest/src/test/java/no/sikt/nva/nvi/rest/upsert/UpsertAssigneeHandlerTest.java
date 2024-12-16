@@ -192,7 +192,7 @@ class UpsertAssigneeHandlerTest extends LocalDynamoTest {
 
     private Candidate candidateWithFinalizedApproval(String newAssignee) {
         var institutionId = randomUri();
-        var request = createUpsertCandidateRequest(institutionId);
+        var request = createUpsertCandidateRequest(institutionId).build();
         Candidate.upsert(request, candidateRepository, periodRepository);
         var candidate = Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository);
         candidate.updateApproval(new UpdateAssigneeRequest(institutionId, newAssignee));
@@ -207,7 +207,7 @@ class UpsertAssigneeHandlerTest extends LocalDynamoTest {
     }
 
     private InputStream createRequest(Candidate candidate, String newAssignee) throws JsonProcessingException {
-        var approvalToUpdate = candidate.toDto().approvals().get(0);
+        var approvalToUpdate = candidate.toDto().approvals().getFirst();
         var requestBody = new UpsertAssigneeRequest(newAssignee, approvalToUpdate.institutionId());
         var customerId = randomUri();
         return new HandlerRequestBuilder<UpsertAssigneeRequest>(JsonUtils.dtoObjectMapper).withBody(

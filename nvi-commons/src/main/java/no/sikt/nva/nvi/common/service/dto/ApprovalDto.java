@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.common.service.dto;
 
-import static java.util.Objects.nonNull;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
@@ -10,7 +9,6 @@ import java.math.BigDecimal;
 import java.net.URI;
 import java.time.Instant;
 import no.sikt.nva.nvi.common.service.model.Approval;
-import no.sikt.nva.nvi.common.service.model.Username;
 
 @JsonTypeName(ApprovalDto.APPROVAL)
 @JsonTypeInfo(use = Id.NAME, property = "type")
@@ -35,15 +33,11 @@ public record ApprovalDto(URI institutionId,
                    .withInstitutionId(approval.getInstitutionId())
                    .withStatus(ApprovalStatusDto.from(approval))
                    .withPoints(points)
-                   .withAssignee(mapToUsernameString(approval.getAssignee()))
-                   .withFinalizedBy(mapToUsernameString(approval.getFinalizedBy()))
+                   .withAssignee(approval.getAssigneeUsername())
+                   .withFinalizedBy(approval.getFinalizedByUserName())
                    .withFinalizedDate(approval.getFinalizedDate())
                    .withReason(approval.getReason())
                    .build();
-    }
-
-    private static String mapToUsernameString(Username assignee) {
-        return nonNull(assignee) ? assignee.value() : null;
     }
 
     public static final class Builder {
