@@ -138,11 +138,6 @@ public final class TestUtils {
         return no.sikt.nva.nvi.common.service.model.Username.fromString(randomString());
     }
 
-    public static DbLevel randomLevelExcluding(DbLevel level) {
-        var levels = Arrays.stream(DbLevel.values()).filter(type -> !type.equals(level)).toList();
-        return levels.get(RANDOM.nextInt(levels.size()));
-    }
-
     public static String randomYear() {
         return String.valueOf(randomIntBetween(START_DATE.getYear(), LocalDate.now().getYear()));
     }
