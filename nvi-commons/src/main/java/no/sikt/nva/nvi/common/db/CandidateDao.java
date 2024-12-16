@@ -589,10 +589,9 @@ public final class CandidateDao extends Dao {
 
         @DynamoDbIgnore
         public DbCreator copy() {
-            return builder()
-                       .creatorId(creatorId)
-                       .affiliations(new ArrayList<>(affiliations))
-                       .build();
+            return builder().creatorId(creatorId)
+                            .affiliations(new ArrayList<>(affiliations))
+                            .build();
         }
 
         public static final class Builder {

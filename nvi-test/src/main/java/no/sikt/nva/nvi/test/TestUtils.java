@@ -119,7 +119,10 @@ public final class TestUtils {
                    .createdDate(Instant.now())
                    .modifiedDate(Instant.now())
                    .totalPoints(randomBigDecimal())
-                   .creators(List.of(new DbCreator(creatorId, List.of(institutionId))));
+                          .creators(List.of(DbCreator.builder()
+                                                     .creatorId(creatorId)
+                                                     .affiliations(List.of(institutionId))
+                                                     .build()));
     }
 
     public static DbCandidate.Builder randomCandidateBuilder(boolean applicable) {

@@ -76,7 +76,10 @@ class CandidateTest {
     }
 
     private DbCreator randomVerifiedCreator() {
-        return new DbCreator(randomUri(), randomAffiliations());
+        return DbCreator.builder()
+                   .creatorId(randomUri())
+                   .affiliations(randomAffiliations())
+                   .build();
     }
 
     private List<URI> randomAffiliations() {

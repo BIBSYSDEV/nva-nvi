@@ -574,9 +574,12 @@ public final class Candidate {
 
     private static List<DbCreator> mapToDbCreators(Map<URI, List<URI>> creators) {
         return creators.entrySet()
-                   .stream()
-                   .map(creator -> new DbCreator(creator.getKey(), creator.getValue()))
-                   .toList();
+                       .stream()
+                       .map(creator -> DbCreator.builder()
+                                                .creatorId(creator.getKey())
+                                                .affiliations(creator.getValue())
+                                                .build())
+                       .toList();
     }
 
     private static List<DbCreator> mapToDbCreators(List<Creator> creators) {

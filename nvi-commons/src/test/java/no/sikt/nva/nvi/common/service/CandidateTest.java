@@ -427,6 +427,12 @@ class CandidateTest extends CandidateTestSetup {
     }
 
     private List<DbCreator> mapToDbCreators(Map<URI, List<URI>> creators) {
-        return creators.entrySet().stream().map(entry -> new DbCreator(entry.getKey(), entry.getValue())).toList();
+        return creators.entrySet()
+                       .stream()
+                       .map(entry -> DbCreator.builder()
+                                              .creatorId(entry.getKey())
+                                              .affiliations(entry.getValue())
+                                              .build())
+                       .toList();
     }
 }
