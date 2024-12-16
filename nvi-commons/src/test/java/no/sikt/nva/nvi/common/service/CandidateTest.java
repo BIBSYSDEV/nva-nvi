@@ -247,7 +247,6 @@ class CandidateTest extends CandidateTestSetup {
     }
 
     @Test
-        //These getters are tested in different modules, so this is just for jacoco coverage
     void shouldReturnCandidateWithExpectedData() {
         var createRequest = randomUpsertRequestBuilder().build();
         var candidate = upsert(createRequest);
