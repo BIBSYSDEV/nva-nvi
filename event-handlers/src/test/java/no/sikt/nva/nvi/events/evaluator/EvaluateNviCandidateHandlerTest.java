@@ -41,7 +41,9 @@ import java.net.URLEncoder;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
@@ -577,11 +579,11 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     }
 
     private void persistPeriod(int publishingYear) {
+        var startDate = LocalDate.of(publishingYear, 4, 1).atTime(LocalTime.MAX);
         periodRepository.save(DbNviPeriod.builder()
                                   .publishingYear(String.valueOf(publishingYear))
-                                  .startDate(LocalDateTime.of(publishingYear, 4, 1, 0, 0, 0).toInstant(ZoneOffset.UTC))
-                                  .reportingDate(
-                                      LocalDateTime.of(publishingYear + 1, 3, 1, 0, 0, 0).toInstant(ZoneOffset.UTC))
+                                  .startDate(startDate.toInstant(ZoneOffset.UTC))
+                                  .reportingDate(startDate.plusYears(1).toInstant(ZoneOffset.UTC))
                                   .build());
     }
 
