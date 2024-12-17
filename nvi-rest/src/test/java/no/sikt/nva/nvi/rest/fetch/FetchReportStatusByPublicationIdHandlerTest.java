@@ -91,7 +91,7 @@ public class FetchReportStatusByPublicationIdHandlerTest extends LocalDynamoTest
     void shouldReturnUnderReviewWhenPublicationIsCandidateWithAtLeastOneNonPendingApprovalInOpenPeriod(
         ApprovalStatus approvalStatus) throws IOException {
         var institutionId = randomUri();
-        var upsertCandidateRequest = createUpsertCandidateRequest(institutionId).build();
+        var upsertCandidateRequest = createUpsertCandidateRequest(institutionId, randomUri());
         var candidate = upsert(upsertCandidateRequest);
         candidate.updateApproval(
             new UpdateStatusRequest(institutionId, approvalStatus, randomString(), randomString()));

@@ -7,10 +7,16 @@ import no.sikt.nva.nvi.common.service.model.Candidate;
 public record ReportStatusDto(URI publicationId, StatusDto status, String year) {
 
     public static ReportStatusDto fromCandidate(Candidate candidate) {
+        return new ReportStatusDto(candidate.getPublicationId(), getStatus(candidate), candidate.getPeriod().year());
+    }
+
+    private static StatusDto getStatus(Candidate candidate) {
         if (candidate.isReported()) {
-            return new ReportStatusDto(candidate.getPublicationId(), StatusDto.REPORTED, candidate.getPeriod().year());
+            return StatusDto.REPORTED;
         } else if (candidate.isPendingReview()) {
-            return new ReportStatusDto(candidate.getPublicationId(), StatusDto.PENDING_REVIEW, candidate.getPeriod().year());
+            return StatusDto.PENDING_REVIEW;
+        } else if (candidate.isUnderReview()) {
+            return StatusDto.UNDER_REVIEW;
         }
         return null;
     }
