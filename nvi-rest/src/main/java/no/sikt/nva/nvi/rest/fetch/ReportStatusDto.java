@@ -23,11 +23,11 @@ public record ReportStatusDto(URI publicationId, StatusDto status, String year) 
 
     public enum StatusDto {
 
-        PENDING_REVIEW("Pending review"),
-        UNDER_REVIEW("Under review"),
+        PENDING_REVIEW("Pending review. Awaiting approval from all institutions"),
+        UNDER_REVIEW("Under review. At least one institution has approved/rejected"),
         REPORTED("Reported"),
         NOT_REPORTED("Not reported in closed period"),
-        NOT_CANDIDATE("Not candidate");
+        NOT_CANDIDATE("Not a candidate");
         private final String value;
 
         StatusDto(String value) {

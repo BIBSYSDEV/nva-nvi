@@ -17,8 +17,8 @@ import nva.commons.apigateway.exceptions.ApiGatewayException;
 public class FetchReportStatusByPublicationIdHandler extends ApiGatewayHandler<Void, ReportStatusDto> {
 
     private static final String CANDIDATE_PUBLICATION_ID = "publicationId";
-    private CandidateRepository candidateRepository;
-    private PeriodRepository periodRepository;
+    private final CandidateRepository candidateRepository;
+    private final PeriodRepository periodRepository;
 
     public FetchReportStatusByPublicationIdHandler(CandidateRepository candidateRepository,
                                                    PeriodRepository periodRepository) {

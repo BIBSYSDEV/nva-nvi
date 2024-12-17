@@ -38,7 +38,6 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 public class FetchReportStatusByPublicationIdHandlerTest extends LocalDynamoTest {
 
-    private static final String CLOSED_YEAR = String.valueOf(CURRENT_YEAR - 1);
     private static final String PATH_PARAM_PUBLICATION_ID = "publicationId";
     private Context context;
     private ByteArrayOutputStream output;
@@ -57,17 +56,17 @@ public class FetchReportStatusByPublicationIdHandlerTest extends LocalDynamoTest
 
     @Test
     void shouldReturnReportedYearWhenPublicationIsReportedInClosedPeriod() throws IOException {
-        var dao = setupReportedCandidate(candidateRepository, CLOSED_YEAR);
+        var dao = setupReportedCandidate(candidateRepository, String.valueOf(CURRENT_YEAR));
         var reportedCandidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
 
-        periodRepository = periodRepositoryReturningClosedPeriod(Integer.parseInt(CLOSED_YEAR));
+        periodRepository = periodRepositoryReturningClosedPeriod(CURRENT_YEAR);
         handler = new FetchReportStatusByPublicationIdHandler(candidateRepository, periodRepository);
 
         handler.handleRequest(createRequest(reportedCandidate.getPublicationId()), output, context);
         var actualResponseBody = GatewayResponse.fromOutputStream(output, ReportStatusDto.class)
                                      .getBodyObject(ReportStatusDto.class);
         var expected = new ReportStatusDto(reportedCandidate.getPublicationId(), StatusDto.REPORTED,
-                                           CLOSED_YEAR);
+                                           String.valueOf(CURRENT_YEAR));
         assertEquals(expected, actualResponseBody);
     }
 
@@ -103,6 +102,21 @@ public class FetchReportStatusByPublicationIdHandlerTest extends LocalDynamoTest
         var actualResponseBody = GatewayResponse.fromOutputStream(output, ReportStatusDto.class)
                                      .getBodyObject(ReportStatusDto.class);
         var expected = new ReportStatusDto(candidate.getPublicationId(), StatusDto.UNDER_REVIEW,
+                                           String.valueOf(CURRENT_YEAR));
+        assertEquals(expected, actualResponseBody);
+    }
+
+    @Test
+    void shouldReturnNotReportedWhenPublicationIsCandidateIsNotReportedInClosedPeriod() throws IOException {
+        var pendingCandidate = setupCandidateWithPublicationYear(CURRENT_YEAR);
+
+        periodRepository = periodRepositoryReturningClosedPeriod(CURRENT_YEAR);
+        handler = new FetchReportStatusByPublicationIdHandler(candidateRepository, periodRepository);
+
+        handler.handleRequest(createRequest(pendingCandidate.getPublicationId()), output, context);
+        var actualResponseBody = GatewayResponse.fromOutputStream(output, ReportStatusDto.class)
+                                     .getBodyObject(ReportStatusDto.class);
+        var expected = new ReportStatusDto(pendingCandidate.getPublicationId(), StatusDto.NOT_REPORTED,
                                            String.valueOf(CURRENT_YEAR));
         assertEquals(expected, actualResponseBody);
     }
