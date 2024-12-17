@@ -222,6 +222,31 @@ class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         assertEquals(getExpectedCandidate(evaluatedNviCandidate), actualPersistedCandidateDao.candidate());
     }
 
+    @Test
+    void shouldUpdateExistingNviCandidateWhenUnverifiedCreatorIsAdded() {
+        var evaluatedNviCandidate = randomEvaluatedNviCandidate();
+        var sqsEvent = createEvent(createEvalMessage(evaluatedNviCandidate.build()));
+        handler.handleRequest(sqsEvent, CONTEXT);
+
+        var unverifiedCreators = List.of(new UnverifiedNviCreator(randomString(), List.of(randomUri())));
+        var updatedEvaluatedNviCandidate = evaluatedNviCandidate.withUnverifiedNviCreators(unverifiedCreators)
+                                                                .build();
+        var expectedCreatorCount = updatedEvaluatedNviCandidate.creators()
+                                                               .size() + unverifiedCreators.size();
+
+        sqsEvent = createEvent(createEvalMessage(updatedEvaluatedNviCandidate));
+        handler.handleRequest(sqsEvent, CONTEXT);
+        var actualPersistedCandidateDao =
+            candidateRepository.findByPublicationId(updatedEvaluatedNviCandidate.publicationId())
+                                                             .orElseThrow();
+
+        assertEquals(expectedCreatorCount,
+                     actualPersistedCandidateDao.candidate()
+                                                .creators()
+                                                .size());
+        assertEquals(getExpectedCandidate(updatedEvaluatedNviCandidate), actualPersistedCandidateDao.candidate());
+    }
+
     private static CandidateEvaluatedMessage randomCandidateEvaluatedMessage() {
         return createEvalMessage(randomEvaluatedNviCandidate().build());
     }
@@ -344,7 +369,6 @@ class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                    .build();
     }
 
-    // FIXME: This is duplicated code, should be refactored
     private static List<DbCreatorType> getExpectedCreators(NviCandidate evaluatedNviCandidate) {
         var verifiedCreators = evaluatedNviCandidate.creators()
                                   .entrySet()

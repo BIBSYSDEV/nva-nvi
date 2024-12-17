@@ -21,7 +21,7 @@ public class UpsertRequestBuilder {
     private URI publicationId;
     private boolean isApplicable;
     private boolean isInternationalCollaboration;
-    private Map<URI, List<URI>> creators;
+    private Map<URI, List<URI>> creators; // FIXME: Add unverified?
     private String channelType;
     private URI channelId;
     private String level;
