@@ -50,7 +50,7 @@ public class FetchReportStatusByPublicationIdHandler extends ApiGatewayHandler<V
                    .map(identifier -> Candidate.fetchByPublicationId(() -> identifier, candidateRepository,
                                                                      periodRepository))
                    .map(ReportStatusDto::fromCandidate)
-                   .orElse(failure -> handleFailure(failure, publicationId));
+                   .orElse(failure -> handleNotFoundOrFailure(failure, publicationId));
     }
 
     @Override
@@ -58,7 +58,7 @@ public class FetchReportStatusByPublicationIdHandler extends ApiGatewayHandler<V
         return HTTP_OK;
     }
 
-    private static ReportStatusDto handleFailure(Failure<ReportStatusDto> failure, URI publicationId)
+    private static ReportStatusDto handleNotFoundOrFailure(Failure<ReportStatusDto> failure, URI publicationId)
         throws ApiGatewayException {
         if (failure.getException() instanceof CandidateNotFoundException) {
             return ReportStatusDto.builder()

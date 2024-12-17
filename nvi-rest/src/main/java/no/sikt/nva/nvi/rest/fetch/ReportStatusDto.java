@@ -25,8 +25,9 @@ public record ReportStatusDto(URI publicationId, StatusDto status, String period
             return StatusDto.UNDER_REVIEW;
         } else if (candidate.isNotReportedInClosedPeriod()) {
             return StatusDto.NOT_REPORTED;
+        } else {
+            throw new IllegalStateException("Unable to determine status for candidate");
         }
-        return null;
     }
 
     public enum StatusDto {
