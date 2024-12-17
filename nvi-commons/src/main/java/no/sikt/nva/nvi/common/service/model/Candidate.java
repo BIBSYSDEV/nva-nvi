@@ -5,6 +5,7 @@ import static java.util.Objects.nonNull;
 import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.db.ReportStatus.REPORTED;
 import static no.sikt.nva.nvi.common.service.model.ApprovalStatus.APPROVED;
+import static no.sikt.nva.nvi.common.service.model.ApprovalStatus.PENDING;
 import static no.sikt.nva.nvi.common.service.model.ApprovalStatus.REJECTED;
 import static no.sikt.nva.nvi.common.utils.DecimalUtils.adjustScaleAndRoundingMode;
 import static nva.commons.core.attempt.Try.attempt;
@@ -258,6 +259,10 @@ public final class Candidate {
 
     public boolean isReported() {
         return REPORTED.equals(reportStatus);
+    }
+
+    public boolean isPendingReview() {
+        return approvals.values().stream().allMatch(approval -> PENDING.equals(approval.getStatus()));
     }
 
     public GlobalApprovalStatus getGlobalApprovalStatus() {
