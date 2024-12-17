@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.events.persist;
 
+import static java.util.Collections.emptyList;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
 import static no.sikt.nva.nvi.test.TestUtils.generateS3BucketUri;
@@ -186,6 +187,40 @@ class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         var updatedApproval = updatedCandidate.getApprovals().get(institutionId);
 
         assertThat(updatedApproval, is(equalTo(approval)));
+    }
+
+    @Test
+    void shouldSaveNewNviCandidateWithOnlyUnverifiedCreatorWhenCandidateDoesNotExist() {
+        var unverifiedCreators = List.of(new UnverifiedNviCreator(randomString(), List.of(randomUri())));
+        var evaluatedNviCandidate = randomEvaluatedNviCandidate().withNviCreators(emptyList())
+                                                                 .withUnverifiedNviCreators(unverifiedCreators)
+                                                                 .build();
+        var expectedCreatorCount = evaluatedNviCandidate.creators().size() + unverifiedCreators.size();
+
+        var sqsEvent = createEvent(createEvalMessage(evaluatedNviCandidate));
+        handler.handleRequest(sqsEvent, CONTEXT);
+        var actualPersistedCandidateDao = candidateRepository.findByPublicationId(evaluatedNviCandidate.publicationId())
+                                                             .orElseThrow();
+
+        assertEquals(unverifiedCreators.size(), actualPersistedCandidateDao.candidate().creators().size());
+        assertEquals(getExpectedCandidate(evaluatedNviCandidate), actualPersistedCandidateDao.candidate());
+    }
+
+    @Test
+    void shouldSaveNewNviCandidateWithVerifiedAndUnverifiedCreatorsWhenCandidateDoesNotExist() {
+        var unverifiedCreators = List.of(new UnverifiedNviCreator(randomString(), List.of(randomUri())));
+        var evaluatedNviCandidate = randomEvaluatedNviCandidate()
+                                                                 .withUnverifiedNviCreators(unverifiedCreators)
+                                                                 .build();
+        var expectedCreatorCount = evaluatedNviCandidate.creators().size() + unverifiedCreators.size();
+
+        var sqsEvent = createEvent(createEvalMessage(evaluatedNviCandidate));
+        handler.handleRequest(sqsEvent, CONTEXT);
+        var actualPersistedCandidateDao = candidateRepository.findByPublicationId(evaluatedNviCandidate.publicationId())
+                                                             .orElseThrow();
+
+        assertEquals(expectedCreatorCount, actualPersistedCandidateDao.candidate().creators().size());
+        assertEquals(getExpectedCandidate(evaluatedNviCandidate), actualPersistedCandidateDao.candidate());
     }
 
     private static CandidateEvaluatedMessage randomCandidateEvaluatedMessage() {
