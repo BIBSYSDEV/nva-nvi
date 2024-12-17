@@ -34,7 +34,6 @@ import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.db.model.DbCreatorTypeListConverter;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
-import no.sikt.nva.nvi.common.service.model.PublicationDetails.NviCreatorType;
 import no.unit.nva.commons.json.JsonUtils;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
@@ -506,14 +505,6 @@ public final class CandidateDao extends Dao {
 
             public Builder creators(List<DbCreatorType> creators) {
                 this.builderCreators = creators;
-                return this;
-            }
-
-            @DynamoDbIgnore
-            public Builder withVerifiedCreators(List<DbCreator> creators) {
-                // FIXME: This is a workaround
-                List<DbCreatorType> genericCreators =  new ArrayList<>(creators);
-                this.builderCreators = genericCreators;
                 return this;
             }
 

@@ -87,13 +87,14 @@ public final class CristinMapper {
         return new CristinMapper(transfers);
     }
 
-    public static List<DbCreator> extractCreators(CristinNviReport cristinNviReport) {
+    public static List<DbCreatorType> extractCreators(CristinNviReport cristinNviReport) {
         return cristinNviReport.getCreators().stream()
                    .filter(CristinMapper::hasInstitutionPoints)
                    .collect(groupByCristinIdentifierAndMapToAffiliationId())
                    .entrySet()
                    .stream()
                    .map(CristinMapper::toDbCreator)
+                   .map(creator -> (DbCreatorType) creator)
                    .toList();
     }
 
@@ -120,8 +121,6 @@ public final class CristinMapper {
                    .collaborationFactor(extractCollaborationFactor(cristinNviReport))
                    .internationalCollaboration(isInternationalCollaboration(cristinNviReport))
                    .creators(creators)
-                   //                   .creatorCount()
-                   //                   .creatorShareCount()
                    .channelId(extractChannelId(cristinNviReport))
                    .channelType(extractChannelType(cristinNviReport))
                    .build();

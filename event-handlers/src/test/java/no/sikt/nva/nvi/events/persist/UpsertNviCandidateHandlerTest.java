@@ -33,7 +33,6 @@ import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.net.URI;
 import java.time.Year;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -202,7 +201,7 @@ class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         var actualPersistedCandidateDao = candidateRepository.findByPublicationId(evaluatedNviCandidate.publicationId())
                                                              .orElseThrow();
 
-        assertEquals(unverifiedCreators.size(), actualPersistedCandidateDao.candidate().creators().size());
+        assertEquals(expectedCreatorCount, actualPersistedCandidateDao.candidate().creators().size());
         assertEquals(getExpectedCandidate(evaluatedNviCandidate), actualPersistedCandidateDao.candidate());
     }
 
@@ -344,14 +343,6 @@ class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                    .totalPoints(evaluatedNviCandidate.totalPoints())
                    .build();
     }
-
-//    private List<DbCreator> getExpectedCreators(NviCandidate evaluatedNviCandidate) {
-//        return evaluatedNviCandidate.creators().entrySet().stream()
-//                   .map(entry -> DbCreator.builder().creatorId(entry.getKey())
-//                                     .affiliations(new ArrayList<>(entry.getValue()))
-//                                     .build())
-//                   .toList();
-//    }
 
     // FIXME: This is duplicated code, should be refactored
     private static List<DbCreatorType> getExpectedCreators(NviCandidate evaluatedNviCandidate) {

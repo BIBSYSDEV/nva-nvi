@@ -35,6 +35,7 @@ import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCreatorType;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
@@ -408,7 +409,7 @@ class CandidateTest extends CandidateTestSetup {
                                     .basePoints(adjustScaleAndRoundingMode(request.basePoints()))
                                     .internationalCollaboration(request.isInternationalCollaboration())
                                     .collaborationFactor(adjustScaleAndRoundingMode(request.collaborationFactor()))
-                                    .withVerifiedCreators(mapToDbCreators(request.creators()))
+                                    .creators(mapToDbCreatorType(request.creators()))
                                     .creatorShareCount(request.creatorShareCount())
                                     .points(mapToDbInstitutionPoints(request.institutionPoints()))
                                     .totalPoints(adjustScaleAndRoundingMode(request.totalPoints()))
@@ -426,13 +427,14 @@ class CandidateTest extends CandidateTestSetup {
                    .toList();
     }
 
-    private List<DbCreator> mapToDbCreators(Map<URI, List<URI>> creators) {
+    private List<DbCreatorType> mapToDbCreatorType(Map<URI, List<URI>> creators) {
         return creators.entrySet()
                        .stream()
                        .map(entry -> DbCreator.builder()
                                               .creatorId(entry.getKey())
                                               .affiliations(entry.getValue())
                                               .build())
+                       .map(creator -> (DbCreatorType) creator)
                        .toList();
     }
 }

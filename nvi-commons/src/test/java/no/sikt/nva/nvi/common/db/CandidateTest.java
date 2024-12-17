@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.stream.IntStream;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCreatorType;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints.DbCreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
@@ -32,11 +33,11 @@ class CandidateTest {
         assertThat(reconstructedCandidate, is(equalTo(candidate)));
     }
 
-    private static List<DbInstitutionPoints> getExpectedInstitutionPoints(List<DbCreator> creators) {
+    private static List<DbInstitutionPoints> getExpectedInstitutionPoints(List<DbCreatorType> creators) {
         return creators.stream()
                    .flatMap(creator -> creator.affiliations()
                                            .stream()
-                                           .map(affiliation -> mapToInstitutionPoints(creator, affiliation)))
+                                           .map(affiliation -> mapToInstitutionPoints((DbCreator) creator, affiliation)))
                    .toList();
     }
 
@@ -57,7 +58,7 @@ class CandidateTest {
                    .level(DbLevel.LEVEL_ONE)
                    .applicable(true)
                    .internationalCollaboration(true)
-                   .withVerifiedCreators(creators)
+                   .creators(randomVerifiedCreators())
                    .publicationDate(localDateNowAsPublicationDate())
                    .points(institutionPoints)
                    .createdDate(Instant.now())
@@ -71,8 +72,12 @@ class CandidateTest {
                                      String.valueOf(now.getDayOfMonth()));
     }
 
-    private List<DbCreator> randomVerifiedCreators() {
-        return IntStream.range(1, 20).boxed().map(i -> randomVerifiedCreator()).toList();
+    private List<DbCreatorType> randomVerifiedCreators() {
+        return IntStream.range(1, 20)
+                        .boxed()
+                        .map(i -> randomVerifiedCreator())
+                        .map(creator -> (DbCreatorType) creator)
+                        .toList();
     }
 
     private DbCreator randomVerifiedCreator() {
