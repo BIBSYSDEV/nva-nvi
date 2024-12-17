@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import java.net.URI;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 
-public record ReportStatusDto(URI publicationId, StatusDto status, String year) {
+public record ReportStatusDto(URI publicationId, StatusDto status, String period) {
 
     public static ReportStatusDto fromCandidate(Candidate candidate) {
         return new ReportStatusDto(candidate.getPublicationId(), getStatus(candidate), candidate.getPeriod().year());

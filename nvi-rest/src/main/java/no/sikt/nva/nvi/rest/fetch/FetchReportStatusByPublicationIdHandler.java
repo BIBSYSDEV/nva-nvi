@@ -8,15 +8,18 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.utils.ExceptionMapper;
+import no.sikt.nva.nvi.rest.fetch.ReportStatusDto.StatusDto;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
+import nva.commons.core.attempt.Failure;
 
 public class FetchReportStatusByPublicationIdHandler extends ApiGatewayHandler<Void, ReportStatusDto> {
 
-    private static final String CANDIDATE_PUBLICATION_ID = "publicationId";
+    private static final String PATH_PARAM_PUBLICATION_ID = "publicationId";
     private final CandidateRepository candidateRepository;
     private final PeriodRepository periodRepository;
 
@@ -35,11 +38,12 @@ public class FetchReportStatusByPublicationIdHandler extends ApiGatewayHandler<V
     @Override
     protected ReportStatusDto processInput(Void unused, RequestInfo requestInfo, Context context)
         throws ApiGatewayException {
-        return attempt(() -> getPublicationId(requestInfo))
+        var publicationId = getPublicationId(requestInfo);
+        return attempt(() -> publicationId)
                    .map(identifier -> Candidate.fetchByPublicationId(() -> identifier, candidateRepository,
                                                                      periodRepository))
                    .map(ReportStatusDto::fromCandidate)
-                   .orElseThrow(ExceptionMapper::map);
+                   .orElse(failure -> handleFailure(failure, publicationId));
     }
 
     @Override
@@ -47,8 +51,20 @@ public class FetchReportStatusByPublicationIdHandler extends ApiGatewayHandler<V
         return HTTP_OK;
     }
 
+    private static ReportStatusDto handleFailure(Failure<ReportStatusDto> failure, URI publicationId)
+        throws ApiGatewayException {
+        if (failure.getException() instanceof CandidateNotFoundException) {
+            return ReportStatusDto.builder()
+                       .withPublicationId(publicationId)
+                       .withStatus(StatusDto.NOT_CANDIDATE)
+                       .build();
+        } else {
+            throw ExceptionMapper.map(failure);
+        }
+    }
+
     private URI getPublicationId(RequestInfo requestInfo) {
         return URI.create(
-            URLDecoder.decode(requestInfo.getPathParameters().get(CANDIDATE_PUBLICATION_ID), StandardCharsets.UTF_8));
+            URLDecoder.decode(requestInfo.getPathParameters().get(PATH_PARAM_PUBLICATION_ID), StandardCharsets.UTF_8));
     }
 }
