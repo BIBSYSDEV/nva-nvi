@@ -15,7 +15,7 @@ import java.util.Map;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.sikt.nva.nvi.rest.fetch.ReportHistoryDto.ReportStatusDto;
+import no.sikt.nva.nvi.rest.fetch.ReportStatusDto.StatusDto;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
 import no.unit.nva.stubs.FakeContext;
@@ -46,15 +46,15 @@ public class FetchReportHistoryByPublicationIdHandlerTest extends LocalDynamoTes
     }
 
     @Test
-    void shouldReturnReportHistoryWhenPublicationIsReported() throws IOException {
+    void shouldReturnReportedYearWhenPublicationIsReportedInClosedPeriod() throws IOException {
         var dao = TestUtils.setupReportedCandidate(candidateRepository, CLOSED_YEAR);
         var reportedCandidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
 
         handler.handleRequest(createRequest(reportedCandidate.getPublicationId()), output, context);
-        var actualResponseBody = GatewayResponse.fromOutputStream(output, ReportHistoryDto.class)
-                                     .getBodyObject(ReportHistoryDto.class);
-        var expected = new ReportHistoryDto(reportedCandidate.getPublicationId(), ReportStatusDto.REPORTED,
-                                            CLOSED_YEAR);
+        var actualResponseBody = GatewayResponse.fromOutputStream(output, ReportStatusDto.class)
+                                     .getBodyObject(ReportStatusDto.class);
+        var expected = new ReportStatusDto(reportedCandidate.getPublicationId(), StatusDto.REPORTED,
+                                           CLOSED_YEAR);
         assertEquals(expected, actualResponseBody);
     }
 
