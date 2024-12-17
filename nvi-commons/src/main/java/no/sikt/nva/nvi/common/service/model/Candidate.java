@@ -577,10 +577,6 @@ public final class Candidate {
                    .build();
     }
 
-//    private static List<Creator> mapToCreators(Map<URI, List<URI>> creators) {
-//        return creators.entrySet().stream().map(e -> new Creator(e.getKey(), e.getValue())).toList();
-//    }
-
     // FIXME
     private static List<NviCreatorType> mapFromDbCreators(List<DbCreatorType> dbCreators) {
         return dbCreators.stream().map(PublicationDetails::creatorFromDao).toList();

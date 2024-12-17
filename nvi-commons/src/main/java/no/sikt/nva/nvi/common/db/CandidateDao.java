@@ -369,13 +369,6 @@ public final class CandidateDao extends Dao {
                        .reportStatus(reportStatus);
         }
 
-//        public List<DbCreator> getVerifiedCreators() {
-//            return creators.stream()
-//                                     .filter(DbCreator.class::isInstance)
-//                                     .map(DbCreator.class::cast)
-//                                     .toList();
-//        }
-
         @Override
         @DynamoDbIgnore
         @JacocoGenerated
@@ -601,7 +594,6 @@ public final class CandidateDao extends Dao {
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
     public sealed interface DbCreatorType permits DbCreator, DbUnverifiedCreator {
         List<URI> affiliations();
-
         DbCreatorType copy();
     }
 
