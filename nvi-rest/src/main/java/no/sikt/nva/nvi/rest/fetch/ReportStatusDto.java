@@ -10,14 +10,20 @@ public record ReportStatusDto(URI publicationId, StatusDto status, String year) 
         return new ReportStatusDto(candidate.getPublicationId(), getStatus(candidate), candidate.getPeriod().year());
     }
 
+    public static Builder builder() {
+        return new Builder();
+    }
+
     private static StatusDto getStatus(Candidate candidate) {
-        if (candidate.isReported()) {
+        if (!candidate.isApplicable()) {
+            return StatusDto.NOT_CANDIDATE;
+        } else if (candidate.isReported()) {
             return StatusDto.REPORTED;
         } else if (candidate.isPendingReview()) {
             return StatusDto.PENDING_REVIEW;
         } else if (candidate.isUnderReview()) {
             return StatusDto.UNDER_REVIEW;
-        } else if(candidate.isNotReportedInClosedPeriod()) {
+        } else if (candidate.isNotReportedInClosedPeriod()) {
             return StatusDto.NOT_REPORTED;
         }
         return null;
@@ -42,11 +48,8 @@ public record ReportStatusDto(URI publicationId, StatusDto status, String year) 
         }
     }
 
-    public static Builder builder() {
-        return new Builder();
-    }
-
     public static final class Builder {
+
         private URI publicationId;
         private StatusDto status;
 
