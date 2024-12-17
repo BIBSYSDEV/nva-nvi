@@ -17,6 +17,8 @@ public record ReportStatusDto(URI publicationId, StatusDto status, String year) 
             return StatusDto.PENDING_REVIEW;
         } else if (candidate.isUnderReview()) {
             return StatusDto.UNDER_REVIEW;
+        } else if(candidate.isNotReportedInClosedPeriod()) {
+            return StatusDto.NOT_REPORTED;
         }
         return null;
     }

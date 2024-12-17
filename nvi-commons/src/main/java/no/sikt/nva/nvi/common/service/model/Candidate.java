@@ -261,6 +261,10 @@ public final class Candidate {
         return REPORTED.equals(reportStatus);
     }
 
+    public boolean isNotReportedInClosedPeriod() {
+        return !isReported() && period.isClosed();
+    }
+
     public boolean isPendingReview() {
         return approvals.values().stream().allMatch(approval -> PENDING.equals(approval.getStatus())) && period.isOpen();
     }

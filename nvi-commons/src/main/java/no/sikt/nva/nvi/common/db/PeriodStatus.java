@@ -41,6 +41,10 @@ public record PeriodStatus(URI id, Instant startDate, Instant reportingDate, Sta
         return Status.OPEN_PERIOD.equals(status);
     }
 
+    public boolean isClosed() {
+        return Status.CLOSED_PERIOD.equals(status);
+    }
+
     private static PeriodStatus toUnopenedPeriod(DbNviPeriod period) {
         return builder()
                    .withId(period.id())
