@@ -408,7 +408,7 @@ class CandidateTest extends CandidateTestSetup {
                                     .basePoints(adjustScaleAndRoundingMode(request.basePoints()))
                                     .internationalCollaboration(request.isInternationalCollaboration())
                                     .collaborationFactor(adjustScaleAndRoundingMode(request.collaborationFactor()))
-                                    .creators(mapToDbCreators(request.creators()))
+                                    .withVerifiedCreators(mapToDbCreators(request.creators()))
                                     .creatorShareCount(request.creatorShareCount())
                                     .points(mapToDbInstitutionPoints(request.institutionPoints()))
                                     .totalPoints(adjustScaleAndRoundingMode(request.totalPoints()))

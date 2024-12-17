@@ -328,7 +328,7 @@ public final class NviCandidateIndexDocumentGenerator {
 
     private Optional<Creator> getNviCreatorIfPresent(JsonNode contributor) {
         return candidate.getPublicationDetails()
-                   .creators()
+                   .getVerifiedCreators() // FIXME: Does this break something? Not including unverified here
                    .stream()
                    .filter(creator -> creator.id().toString().equals(extractId(contributor.at(JSON_PTR_IDENTITY))))
                    .findFirst();

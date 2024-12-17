@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails;
+import no.sikt.nva.nvi.common.service.model.UnverifiedNviCreator;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
 
@@ -22,7 +23,7 @@ public record NviCandidate(URI publicationId,
                            InstanceType instanceType,
                            @JsonProperty("publicationDate") PublicationDate date,
                            List<NviCreator> nviCreators,
-                           List<UnverifiedNviCreator> unverifiedNviCreators,
+                           List<UnverifiedNviCreator> unverifiedCreators,
                            String channelType,
                            URI publicationChannelId,
                            String level,

@@ -22,6 +22,7 @@ import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCreatorType;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints.DbCreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
@@ -100,6 +101,9 @@ public final class CristinMapper {
     public DbCandidate toDbCandidate(CristinNviReport cristinNviReport) {
         var now = Instant.now();
         var points = calculatePoints(cristinNviReport);
+        var creators = extractCreators(cristinNviReport).stream()
+                                   .map(creator -> (DbCreatorType) creator)
+                                   .toList();
         return DbCandidate.builder()
                    .publicationId(constructPublicationId(cristinNviReport.publicationIdentifier()))
                    .publicationBucketUri(constructPublicationBucketUri(cristinNviReport.publicationIdentifier()))
@@ -115,7 +119,7 @@ public final class CristinMapper {
                    .basePoints(extractBasePoints(cristinNviReport))
                    .collaborationFactor(extractCollaborationFactor(cristinNviReport))
                    .internationalCollaboration(isInternationalCollaboration(cristinNviReport))
-                   .creators(extractCreators(cristinNviReport))
+                   .creators(creators)
                    //                   .creatorCount()
                    //                   .creatorShareCount()
                    .channelId(extractChannelId(cristinNviReport))

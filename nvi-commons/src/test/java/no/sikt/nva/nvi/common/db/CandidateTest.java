@@ -57,7 +57,7 @@ class CandidateTest {
                    .level(DbLevel.LEVEL_ONE)
                    .applicable(true)
                    .internationalCollaboration(true)
-                   .creators(creators)
+                   .withVerifiedCreators(creators)
                    .publicationDate(localDateNowAsPublicationDate())
                    .points(institutionPoints)
                    .createdDate(Instant.now())

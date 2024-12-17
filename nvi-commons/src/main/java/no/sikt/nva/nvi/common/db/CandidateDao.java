@@ -18,6 +18,9 @@ import static nva.commons.core.attempt.Try.attempt;
 import static org.apache.commons.lang3.StringUtils.equalsIgnoreCase;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.time.Instant;
@@ -28,11 +31,14 @@ import java.util.Objects;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateDao.Builder;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
+import no.sikt.nva.nvi.common.db.model.DbCreatorTypeListConverter;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
+import no.sikt.nva.nvi.common.service.model.PublicationDetails.NviCreatorType;
 import no.unit.nva.commons.json.JsonUtils;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbConvertedBy;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbIgnore;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmutable;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
@@ -326,7 +332,8 @@ public final class CandidateDao extends Dao {
                               BigDecimal collaborationFactor,
                               int creatorCount,
                               int creatorShareCount,
-                              List<DbCreator> creators,
+                              @DynamoDbConvertedBy(DbCreatorTypeListConverter.class)
+                              List<DbCreatorType> creators,
                               BigDecimal basePoints,
                               List<DbInstitutionPoints> points,
                               BigDecimal totalPoints,
@@ -354,7 +361,7 @@ public final class CandidateDao extends Dao {
                        .collaborationFactor(collaborationFactor)
                        .creatorCount(creatorCount)
                        .creatorShareCount(creatorShareCount)
-                       .creators(creators.stream().map(DbCreator::copy).toList())
+                       .creators(creators.stream().map(DbCreatorType::copy).toList())
                        .basePoints(basePoints)
                        .points(points.stream().map(DbInstitutionPoints::copy).toList())
                        .totalPoints(totalPoints)
@@ -362,6 +369,13 @@ public final class CandidateDao extends Dao {
                        .modifiedDate(modifiedDate)
                        .reportStatus(reportStatus);
         }
+
+//        public List<DbCreator> getVerifiedCreators() {
+//            return creators.stream()
+//                                     .filter(DbCreator.class::isInstance)
+//                                     .map(DbCreator.class::cast)
+//                                     .toList();
+//        }
 
         @Override
         @DynamoDbIgnore
@@ -419,7 +433,7 @@ public final class CandidateDao extends Dao {
             private BigDecimal builderCollaborationFactor;
             private int builderCreatorCount;
             private int builderCreatorShareCount;
-            private List<DbCreator> builderCreators;
+            private List<DbCreatorType> builderCreators;
             private BigDecimal builderBasePoints;
             private List<DbInstitutionPoints> builderPoints;
             private BigDecimal builderTotalPoints;
@@ -490,8 +504,16 @@ public final class CandidateDao extends Dao {
                 return this;
             }
 
-            public Builder creators(List<DbCreator> creators) {
+            public Builder creators(List<DbCreatorType> creators) {
                 this.builderCreators = creators;
+                return this;
+            }
+
+            @DynamoDbIgnore
+            public Builder withVerifiedCreators(List<DbCreator> creators) {
+                // FIXME: This is a workaround
+                List<DbCreatorType> genericCreators =  new ArrayList<>(creators);
+                this.builderCreators = genericCreators;
                 return this;
             }
 
@@ -580,8 +602,20 @@ public final class CandidateDao extends Dao {
         }
     }
 
+    @JsonSerialize
+    @JsonSubTypes({
+        @JsonSubTypes.Type(value = DbUnverifiedCreator.class, name = "DbUnverifiedCreator"),
+        @JsonSubTypes.Type(value = DbCreator.class, name = "DbCreator")
+    })
+    @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
+    public sealed interface DbCreatorType permits DbCreator, DbUnverifiedCreator {
+        List<URI> affiliations();
+
+        DbCreatorType copy();
+    }
+
     @DynamoDbImmutable(builder = DbCreator.Builder.class)
-    public record DbCreator(URI creatorId, List<URI> affiliations) {
+    public record DbCreator(URI creatorId, List<URI> affiliations) implements DbCreatorType {
 
         public static Builder builder() {
             return new Builder();
@@ -614,6 +648,44 @@ public final class CandidateDao extends Dao {
 
             public DbCreator build() {
                 return new DbCreator(builderCreatorId, builderAffiliations);
+            }
+        }
+    }
+
+    @DynamoDbImmutable(builder = DbCreator.Builder.class)
+    public record DbUnverifiedCreator(String creatorName, List<URI> affiliations) implements DbCreatorType {
+
+        public static Builder builder() {
+            return new Builder();
+        }
+
+        @DynamoDbIgnore
+        public DbUnverifiedCreator copy() {
+            return builder().creatorName(creatorName)
+                            .affiliations(new ArrayList<>(affiliations))
+                            .build();
+        }
+
+        public static final class Builder {
+
+            private String creatorName;
+            private List<URI> builderAffiliations;
+
+            private Builder() {
+            }
+
+            public Builder creatorName(String creatorName) {
+                this.creatorName = creatorName;
+                return this;
+            }
+
+            public Builder affiliations(List<URI> affiliations) {
+                this.builderAffiliations = affiliations;
+                return this;
+            }
+
+            public DbUnverifiedCreator build() {
+                return new DbUnverifiedCreator(creatorName, builderAffiliations);
             }
         }
     }

@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.stream.IntStream;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.Creator;
+import no.sikt.nva.nvi.common.service.model.PublicationDetails.NviCreatorType;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.common.utils.JsonUtils;
 
@@ -221,7 +222,7 @@ public final class ExpandedResourceGenerator {
     private static JsonNode createAndPopulateTopLevelOrganizations(Candidate candidate) {
         var topLevelOrganizations = objectMapper.createArrayNode();
         candidate.getPublicationDetails().creators().stream()
-            .map(Creator::affiliations)
+            .map(NviCreatorType::affiliations)
             .flatMap(List::stream)
             .distinct()
             .map(URI::toString)
@@ -258,7 +259,9 @@ public final class ExpandedResourceGenerator {
                                                            List<URI> nonNviContributorAffiliationIds) {
 
         var contributors = objectMapper.createArrayNode();
-        var creators = candidate.getPublicationDetails().creators();
+
+        // FIXME: This probably leaves incomplete data in the tests
+        var creators = candidate.getPublicationDetails().getVerifiedCreators();
         creators.stream()
             .map(creator -> createContributorNode(creator.affiliations(), creator.id()))
             .forEach(contributors::add);

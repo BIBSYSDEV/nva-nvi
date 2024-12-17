@@ -379,6 +379,8 @@ public final class IndexDocumentTestUtils {
         return candidate.getPublicationDetails()
                    .creators()
                    .stream()
+                   .filter(Creator.class::isInstance)
+                    .map(Creator.class::cast) // FIXME
                    .filter(
                        creator -> creator.id().toString().equals(ExpandedResourceGenerator.extractId(contributorNode)))
                    .findFirst();

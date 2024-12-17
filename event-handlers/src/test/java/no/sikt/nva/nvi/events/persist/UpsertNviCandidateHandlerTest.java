@@ -13,6 +13,7 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomLocalDate;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.core.attempt.Try.attempt;
+import static org.apache.commons.collections4.ListUtils.union;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -41,6 +42,7 @@ import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCreatorType;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
@@ -53,6 +55,7 @@ import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
+import no.sikt.nva.nvi.common.service.model.UnverifiedNviCreator;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.NonNviCandidate;
@@ -307,12 +310,26 @@ class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                    .build();
     }
 
-    private List<DbCreator> getExpectedCreators(NviCandidate evaluatedNviCandidate) {
-        return evaluatedNviCandidate.creators().entrySet().stream()
-                   .map(entry -> DbCreator.builder().creatorId(entry.getKey())
-                                     .affiliations(new ArrayList<>(entry.getValue()))
-                                     .build())
-                   .toList();
+//    private List<DbCreator> getExpectedCreators(NviCandidate evaluatedNviCandidate) {
+//        return evaluatedNviCandidate.creators().entrySet().stream()
+//                   .map(entry -> DbCreator.builder().creatorId(entry.getKey())
+//                                     .affiliations(new ArrayList<>(entry.getValue()))
+//                                     .build())
+//                   .toList();
+//    }
+
+    // FIXME: This is duplicated code, should be refactored
+    private static List<DbCreatorType> getExpectedCreators(NviCandidate evaluatedNviCandidate) {
+        var verifiedCreators = evaluatedNviCandidate.creators()
+                                  .entrySet()
+                                  .stream()
+                                  .map(entry -> new DbCreator(entry.getKey(), entry.getValue()))
+                                  .toList();
+        var unverifiedCreators = evaluatedNviCandidate.unverifiedCreators()
+                                        .stream()
+                                        .map(UnverifiedNviCreator::toDbUnverifiedCreator)
+                                        .toList();
+        return union(verifiedCreators, unverifiedCreators);
     }
 
     private CandidateEvaluatedMessage nonCandidateMessageForExistingCandidate(Candidate candidate) {
