@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.rest.fetch;
 
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
+import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningClosedPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.setupReportedCandidate;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
@@ -16,8 +17,10 @@ import java.util.Map;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.rest.fetch.ReportStatusDto.StatusDto;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
+import no.sikt.nva.nvi.test.UpsertRequestBuilder;
 import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.GatewayResponse;
@@ -49,7 +52,7 @@ public class FetchReportStatusByPublicationIdHandlerTest extends LocalDynamoTest
         var dao = setupReportedCandidate(candidateRepository, CLOSED_YEAR);
         var reportedCandidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
 
-        periodRepository = periodRepositoryReturningOpenedPeriod(Integer.parseInt(CLOSED_YEAR));
+        periodRepository = periodRepositoryReturningClosedPeriod(Integer.parseInt(CLOSED_YEAR));
         handler = new FetchReportStatusByPublicationIdHandler(candidateRepository, periodRepository);
 
         handler.handleRequest(createRequest(reportedCandidate.getPublicationId()), output, context);
@@ -60,11 +63,35 @@ public class FetchReportStatusByPublicationIdHandlerTest extends LocalDynamoTest
         assertEquals(expected, actualResponseBody);
     }
 
+    @Test
+    void shouldReturnPendingReviewWhenPublicationIsCandidateWithOnlyPendingApprovalsInOpenPeriod() throws IOException {
+        var pendingCandidate = setupCandidateWithPublicationYear(CURRENT_YEAR);
+
+        periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
+        handler = new FetchReportStatusByPublicationIdHandler(candidateRepository, periodRepository);
+
+        handler.handleRequest(createRequest(pendingCandidate.getPublicationId()), output, context);
+        var actualResponseBody = GatewayResponse.fromOutputStream(output, ReportStatusDto.class)
+                                     .getBodyObject(ReportStatusDto.class);
+        var expected = new ReportStatusDto(pendingCandidate.getPublicationId(), StatusDto.PENDING_REVIEW,
+                                           String.valueOf(CURRENT_YEAR));
+        assertEquals(expected, actualResponseBody);
+    }
+
     private static InputStream createRequest(URI publicationId)
         throws JsonProcessingException {
         return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
                    .withHeaders(Map.of(HttpHeaders.ACCEPT, ContentType.APPLICATION_JSON.getMimeType()))
                    .withPathParameters(Map.of(PATH_PARAM_PUBLICATION_ID, publicationId.toString()))
                    .build();
+    }
+
+    private Candidate setupCandidateWithPublicationYear(int year) {
+        var request =
+            UpsertRequestBuilder.randomUpsertRequestBuilder()
+                .withPublicationDate(new PublicationDate(String.valueOf(year), null, null)).build();
+        Candidate.upsert(request, candidateRepository, periodRepository);
+        return Candidate.fetchByPublicationId(request::publicationId, candidateRepository,
+                                              periodRepository);
     }
 }
