@@ -58,11 +58,11 @@ public class FetchReportStatusByPublicationIdHandlerTest extends LocalDynamoTest
     void shouldReturnReportedYearWhenPublicationIsReportedInClosedPeriod() throws IOException {
         var dao = setupReportedCandidate(candidateRepository, String.valueOf(CURRENT_YEAR));
         var reportedCandidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
-
         periodRepository = periodRepositoryReturningClosedPeriod(CURRENT_YEAR);
         handler = new FetchReportStatusByPublicationIdHandler(candidateRepository, periodRepository);
 
         handler.handleRequest(createRequest(reportedCandidate.getPublicationId()), output, context);
+
         var actualResponseBody = GatewayResponse.fromOutputStream(output, ReportStatusDto.class)
                                      .getBodyObject(ReportStatusDto.class);
         var expected = ReportStatusDto.builder()
@@ -76,11 +76,11 @@ public class FetchReportStatusByPublicationIdHandlerTest extends LocalDynamoTest
     @Test
     void shouldReturnPendingReviewWhenPublicationIsCandidateWithOnlyPendingApprovalsInOpenPeriod() throws IOException {
         var pendingCandidate = setupCandidateWithPublicationYear(CURRENT_YEAR);
-
         periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
         handler = new FetchReportStatusByPublicationIdHandler(candidateRepository, periodRepository);
 
         handler.handleRequest(createRequest(pendingCandidate.getPublicationId()), output, context);
+
         var actualResponseBody = GatewayResponse.fromOutputStream(output, ReportStatusDto.class)
                                      .getBodyObject(ReportStatusDto.class);
         var expected = ReportStatusDto.builder()
@@ -100,11 +100,11 @@ public class FetchReportStatusByPublicationIdHandlerTest extends LocalDynamoTest
         var candidate = upsert(upsertCandidateRequest);
         candidate.updateApproval(
             new UpdateStatusRequest(institutionId, approvalStatus, randomString(), randomString()));
-
         periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
         handler = new FetchReportStatusByPublicationIdHandler(candidateRepository, periodRepository);
 
         handler.handleRequest(createRequest(candidate.getPublicationId()), output, context);
+
         var actualResponseBody = GatewayResponse.fromOutputStream(output, ReportStatusDto.class)
                                      .getBodyObject(ReportStatusDto.class);
         var expected = ReportStatusDto.builder()
@@ -118,11 +118,11 @@ public class FetchReportStatusByPublicationIdHandlerTest extends LocalDynamoTest
     @Test
     void shouldReturnNotReportedWhenPublicationIsCandidateIsNotReportedInClosedPeriod() throws IOException {
         var pendingCandidate = setupCandidateWithPublicationYear(CURRENT_YEAR);
-
         periodRepository = periodRepositoryReturningClosedPeriod(CURRENT_YEAR);
         handler = new FetchReportStatusByPublicationIdHandler(candidateRepository, periodRepository);
 
         handler.handleRequest(createRequest(pendingCandidate.getPublicationId()), output, context);
+
         var actualResponseBody = GatewayResponse.fromOutputStream(output, ReportStatusDto.class)
                                      .getBodyObject(ReportStatusDto.class);
         var expected = ReportStatusDto.builder()
@@ -137,15 +137,31 @@ public class FetchReportStatusByPublicationIdHandlerTest extends LocalDynamoTest
     void shouldReturnNotCandidateWhenPublicationIsNotApplicableCandidate() throws IOException {
         var pendingCandidate = setupCandidateWithPublicationYear(CURRENT_YEAR);
         Candidate.updateNonCandidate(pendingCandidate::getPublicationId, candidateRepository);
-
         periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
         handler = new FetchReportStatusByPublicationIdHandler(candidateRepository, periodRepository);
 
         handler.handleRequest(createRequest(pendingCandidate.getPublicationId()), output, context);
+
         var actualResponseBody = GatewayResponse.fromOutputStream(output, ReportStatusDto.class)
                                      .getBodyObject(ReportStatusDto.class);
         var expected = ReportStatusDto.builder()
                            .withPublicationId(pendingCandidate.getPublicationId())
+                           .withStatus(StatusDto.NOT_CANDIDATE)
+                           .build();
+        assertEquals(expected, actualResponseBody);
+    }
+
+    @Test
+    void shouldReturnNotCandidateWhenPublicationIsNotFound() throws IOException {
+        var notFoundPublicationId = randomUri();
+        handler = new FetchReportStatusByPublicationIdHandler(candidateRepository, periodRepository);
+
+        handler.handleRequest(createRequest(notFoundPublicationId), output, context);
+
+        var actualResponseBody = GatewayResponse.fromOutputStream(output, ReportStatusDto.class)
+                                     .getBodyObject(ReportStatusDto.class);
+        var expected = ReportStatusDto.builder()
+                           .withPublicationId(notFoundPublicationId)
                            .withStatus(StatusDto.NOT_CANDIDATE)
                            .build();
         assertEquals(expected, actualResponseBody);
