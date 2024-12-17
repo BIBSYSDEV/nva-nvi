@@ -326,9 +326,11 @@ public final class NviCandidateIndexDocumentGenerator {
                    .map(this::createContributor).toList();
     }
 
+
+    // FIXME: This does not include UnverifiedNviCreators (and probably must)
     private Optional<VerifiedNviCreator> getNviCreatorIfPresent(JsonNode contributor) {
         return candidate.getPublicationDetails()
-                   .getVerifiedCreators() // FIXME: Does this break something? Not including unverified here
+                   .getVerifiedCreators()
                    .stream()
                    .filter(creator -> creator.id().toString().equals(extractId(contributor.at(JSON_PTR_IDENTITY))))
                    .findFirst();

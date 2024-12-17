@@ -375,12 +375,11 @@ public final class IndexDocumentTestUtils {
                    .build();
     }
 
+    // FIXME: Not including unverified creators in this test setup
     private static Optional<VerifiedNviCreator> getNviCreatorIfPresent(Candidate candidate, JsonNode contributorNode) {
         return candidate.getPublicationDetails()
-                        .creators()
+                        .getVerifiedCreators()
                         .stream()
-                        .filter(VerifiedNviCreator.class::isInstance)
-                        .map(VerifiedNviCreator.class::cast) // FIXME
                         .filter(
                        creator -> creator.id().toString().equals(ExpandedResourceGenerator.extractId(contributorNode)))
                         .findFirst();

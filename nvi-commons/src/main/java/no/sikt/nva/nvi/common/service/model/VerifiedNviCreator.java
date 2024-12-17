@@ -12,7 +12,7 @@ public record VerifiedNviCreator(URI id, List<URI> affiliations) implements NviC
         return new Builder();
     }
 
-    public DbCreator toDbCreator() {
+    public DbCreator toDao() {
         return new DbCreator(id, affiliations);
     }
 

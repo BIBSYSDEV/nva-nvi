@@ -377,7 +377,7 @@ class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                                   .toList();
         var unverifiedCreators = evaluatedNviCandidate.unverifiedCreators()
                                         .stream()
-                                        .map(UnverifiedNviCreator::toDbUnverifiedCreator)
+                                        .map(UnverifiedNviCreator::toDao)
                                         .toList();
         return union(verifiedCreators, unverifiedCreators);
     }

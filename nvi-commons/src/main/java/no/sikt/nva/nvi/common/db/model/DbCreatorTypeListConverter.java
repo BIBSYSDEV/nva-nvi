@@ -11,7 +11,6 @@ import software.amazon.awssdk.enhanced.dynamodb.EnhancedType;
 import software.amazon.awssdk.enhanced.dynamodb.document.EnhancedDocument;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
-// FIXME: Rewrite this
 public class DbCreatorTypeListConverter implements AttributeConverter<List<DbCreatorType>> {
 
     @Override

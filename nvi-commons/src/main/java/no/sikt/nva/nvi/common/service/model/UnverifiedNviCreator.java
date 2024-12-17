@@ -12,7 +12,7 @@ public record UnverifiedNviCreator(String name, List<URI> affiliations) implemen
         return new Builder();
     }
 
-    public DbUnverifiedCreator toDbUnverifiedCreator() {
+    public DbUnverifiedCreator toDao() {
         return new DbUnverifiedCreator(name, affiliations);
     }
 

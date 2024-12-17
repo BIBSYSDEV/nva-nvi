@@ -89,7 +89,7 @@ class CandidateRepositoryTest extends LocalDynamoTest {
 
             @Override
             public List<UnverifiedNviCreator> unverifiedCreators() {
-                return List.of(); // FIXME
+                return List.of(); // FIXME: Not including unverified creators in this test setup
             }
 
             @Override

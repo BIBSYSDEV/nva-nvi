@@ -31,7 +31,6 @@ import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreatorType;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
@@ -534,17 +533,14 @@ public final class Candidate {
     }
 
     private static DbCandidate mapToCandidate(UpsertCandidateRequest request) {
-        var verifiedCreators = mapToDbCreators(request.creators());
-        var unverifiedCreators = request.unverifiedCreators()
-                                        .stream()
-                                        .map(UnverifiedNviCreator::toDbUnverifiedCreator)
-                                        .toList();
-        List<DbCreatorType> dbCreators = union(verifiedCreators, unverifiedCreators);
+        var creators = getAllCreators(request).stream()
+                                              .map(NviCreatorType::toDao)
+                                              .toList();
         return DbCandidate.builder()
                    .publicationId(request.publicationId())
                    .publicationBucketUri(request.publicationBucketUri())
                    .applicable(request.isApplicable())
-                   .creators(dbCreators)
+                          .creators(creators)
                    .creatorShareCount(request.creatorShareCount())
                    .channelType(ChannelType.parse(request.channelType()))
                    .channelId(request.publicationChannelId())
@@ -575,55 +571,23 @@ public final class Candidate {
                    .build();
     }
 
-    // FIXME
-    private static List<NviCreatorType> mapFromDbCreators(List<DbCreatorType> dbCreators) {
-        return dbCreators.stream().map(PublicationDetails::creatorFromDao).toList();
-    }
-
     private static List<DbCreatorType> mapToDbCreators(List<NviCreatorType> creators) {
-        return creators.stream().map(PublicationDetails::creatorToDao).toList();
-    }
-
-    private static List<DbCreator> mapToDbCreators(Map<URI, List<URI>> creators) {
-        return creators.entrySet()
-                       .stream()
-                       .map(creator -> DbCreator.builder()
-                                                .creatorId(creator.getKey())
-                                                .affiliations(creator.getValue())
-                                                .build())
+        return creators.stream()
+                       .map(NviCreatorType::toDao)
                        .toList();
     }
 
-    private static List<NviCreatorType> creatorsFromRequest(UpsertCandidateRequest request) {
-        var verifiedCreators = request.creators().entrySet().stream()
+    private static List<NviCreatorType> getAllCreators(UpsertCandidateRequest request) {
+        var verifiedCreators = request.creators()
+                                      .entrySet()
+                                      .stream()
                                       .map(creator -> VerifiedNviCreator.builder()
                                                                         .withId(creator.getKey())
                                                                         .withAffiliations(creator.getValue())
                                                                         .build())
                                       .toList();
-        var unverifiedCreators = request.unverifiedCreators()
-                                        .stream()
-                                        .toList();
-        return union(verifiedCreators, unverifiedCreators);
+        return union(verifiedCreators, request.unverifiedCreators());
     }
-
-    private static List<DbCreatorType> mapToDbCreators(UpsertCandidateRequest request) {
-        var verifiedCreators = mapToDbCreators(request.creators());
-        var unverifiedCreators = request.unverifiedCreators()
-                                        .stream()
-                                        .map(UnverifiedNviCreator::toDbUnverifiedCreator)
-                                        .toList();
-        return union(verifiedCreators, unverifiedCreators);
-    }
-
-//    private static List<DbCreator> mapToDbCreators(List<Creator> creators) {
-//        return creators.stream()
-//                   .map(creator -> DbCreator.builder()
-//                                       .creatorId(creator.id())
-//                                       .affiliations(creator.affiliations())
-//                                       .build())
-//                   .toList();
-//    }
 
     private static boolean isExistingCandidate(URI publicationId, CandidateRepository repository) {
         return repository.findByPublicationId(publicationId).isPresent();
@@ -704,9 +668,10 @@ public final class Candidate {
     private PublicationDetails mapToPublicationDetails(UpsertCandidateRequest request) {
         return new PublicationDetails(request.publicationId(),
                                       request.publicationBucketUri(),
-                                      request.instanceType().getValue(),
+                                      request.instanceType()
+                                             .getValue(),
                                       request.publicationDate(),
-                                      mapFromDbCreators(mapToDbCreators(request)),
+                                      getAllCreators(request),
                                       new PublicationChannel(ChannelType.parse(request.channelType()),
                                                              request.publicationChannelId(),
                                                              request.level()));
