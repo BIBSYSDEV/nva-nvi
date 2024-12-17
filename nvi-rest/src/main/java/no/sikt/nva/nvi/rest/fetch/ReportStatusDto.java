@@ -41,4 +41,37 @@ public record ReportStatusDto(URI publicationId, StatusDto status, String year) 
             return value;
         }
     }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static final class Builder {
+        private URI publicationId;
+        private StatusDto status;
+
+        private String year;
+
+        private Builder() {
+        }
+
+        public Builder withPublicationId(URI publicationId) {
+            this.publicationId = publicationId;
+            return this;
+        }
+
+        public Builder withStatus(StatusDto status) {
+            this.status = status;
+            return this;
+        }
+
+        public Builder withYear(String year) {
+            this.year = year;
+            return this;
+        }
+
+        public ReportStatusDto build() {
+            return new ReportStatusDto(publicationId, status, year);
+        }
+    }
 }

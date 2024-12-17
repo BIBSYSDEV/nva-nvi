@@ -65,8 +65,11 @@ public class FetchReportStatusByPublicationIdHandlerTest extends LocalDynamoTest
         handler.handleRequest(createRequest(reportedCandidate.getPublicationId()), output, context);
         var actualResponseBody = GatewayResponse.fromOutputStream(output, ReportStatusDto.class)
                                      .getBodyObject(ReportStatusDto.class);
-        var expected = new ReportStatusDto(reportedCandidate.getPublicationId(), StatusDto.REPORTED,
-                                           String.valueOf(CURRENT_YEAR));
+        var expected = ReportStatusDto.builder()
+                           .withPublicationId(reportedCandidate.getPublicationId())
+                           .withStatus(StatusDto.REPORTED)
+                           .withYear(String.valueOf(CURRENT_YEAR))
+                           .build();
         assertEquals(expected, actualResponseBody);
     }
 
@@ -80,8 +83,11 @@ public class FetchReportStatusByPublicationIdHandlerTest extends LocalDynamoTest
         handler.handleRequest(createRequest(pendingCandidate.getPublicationId()), output, context);
         var actualResponseBody = GatewayResponse.fromOutputStream(output, ReportStatusDto.class)
                                      .getBodyObject(ReportStatusDto.class);
-        var expected = new ReportStatusDto(pendingCandidate.getPublicationId(), StatusDto.PENDING_REVIEW,
-                                           String.valueOf(CURRENT_YEAR));
+        var expected = ReportStatusDto.builder()
+                           .withPublicationId(pendingCandidate.getPublicationId())
+                           .withStatus(StatusDto.PENDING_REVIEW)
+                           .withYear(String.valueOf(CURRENT_YEAR))
+                           .build();
         assertEquals(expected, actualResponseBody);
     }
 
@@ -101,8 +107,11 @@ public class FetchReportStatusByPublicationIdHandlerTest extends LocalDynamoTest
         handler.handleRequest(createRequest(candidate.getPublicationId()), output, context);
         var actualResponseBody = GatewayResponse.fromOutputStream(output, ReportStatusDto.class)
                                      .getBodyObject(ReportStatusDto.class);
-        var expected = new ReportStatusDto(candidate.getPublicationId(), StatusDto.UNDER_REVIEW,
-                                           String.valueOf(CURRENT_YEAR));
+        var expected = ReportStatusDto.builder()
+                           .withPublicationId(candidate.getPublicationId())
+                           .withStatus(StatusDto.UNDER_REVIEW)
+                           .withYear(String.valueOf(CURRENT_YEAR))
+                           .build();
         assertEquals(expected, actualResponseBody);
     }
 
@@ -116,8 +125,11 @@ public class FetchReportStatusByPublicationIdHandlerTest extends LocalDynamoTest
         handler.handleRequest(createRequest(pendingCandidate.getPublicationId()), output, context);
         var actualResponseBody = GatewayResponse.fromOutputStream(output, ReportStatusDto.class)
                                      .getBodyObject(ReportStatusDto.class);
-        var expected = new ReportStatusDto(pendingCandidate.getPublicationId(), StatusDto.NOT_REPORTED,
-                                           String.valueOf(CURRENT_YEAR));
+        var expected = ReportStatusDto.builder()
+                           .withPublicationId(pendingCandidate.getPublicationId())
+                           .withStatus(StatusDto.NOT_REPORTED)
+                           .withYear(String.valueOf(CURRENT_YEAR))
+                           .build();
         assertEquals(expected, actualResponseBody);
     }
 
@@ -132,7 +144,10 @@ public class FetchReportStatusByPublicationIdHandlerTest extends LocalDynamoTest
         handler.handleRequest(createRequest(pendingCandidate.getPublicationId()), output, context);
         var actualResponseBody = GatewayResponse.fromOutputStream(output, ReportStatusDto.class)
                                      .getBodyObject(ReportStatusDto.class);
-        var expected = new ReportStatusDto(pendingCandidate.getPublicationId(), StatusDto.NOT_CANDIDATE, null);
+        var expected = ReportStatusDto.builder()
+                           .withPublicationId(pendingCandidate.getPublicationId())
+                           .withStatus(StatusDto.NOT_CANDIDATE)
+                           .build();
         assertEquals(expected, actualResponseBody);
     }
 
