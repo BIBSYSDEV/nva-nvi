@@ -36,14 +36,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-public class FetchReportStatusByPublicationIdHandlerTest extends LocalDynamoTest {
+class FetchReportStatusByPublicationIdHandlerTest extends LocalDynamoTest {
 
     private static final String PATH_PARAM_PUBLICATION_ID = "publicationId";
     private Context context;
     private ByteArrayOutputStream output;
     private CandidateRepository candidateRepository;
     private PeriodRepository periodRepository;
-    private FetchReportStatusByPublicationIdHandler handler;
 
     @BeforeEach
     public void setUp() {
@@ -59,7 +58,7 @@ public class FetchReportStatusByPublicationIdHandlerTest extends LocalDynamoTest
         var dao = setupReportedCandidate(candidateRepository, String.valueOf(CURRENT_YEAR));
         var reportedCandidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
         periodRepository = periodRepositoryReturningClosedPeriod(CURRENT_YEAR);
-        handler = new FetchReportStatusByPublicationIdHandler(candidateRepository, periodRepository);
+        var handler = new FetchReportStatusByPublicationIdHandler(candidateRepository, periodRepository);
 
         handler.handleRequest(createRequest(reportedCandidate.getPublicationId()), output, context);
 
@@ -77,7 +76,7 @@ public class FetchReportStatusByPublicationIdHandlerTest extends LocalDynamoTest
     void shouldReturnPendingReviewWhenPublicationIsCandidateWithOnlyPendingApprovalsInOpenPeriod() throws IOException {
         var pendingCandidate = setupCandidateWithPublicationYear(CURRENT_YEAR);
         periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
-        handler = new FetchReportStatusByPublicationIdHandler(candidateRepository, periodRepository);
+        var handler = new FetchReportStatusByPublicationIdHandler(candidateRepository, periodRepository);
 
         handler.handleRequest(createRequest(pendingCandidate.getPublicationId()), output, context);
 
@@ -101,7 +100,7 @@ public class FetchReportStatusByPublicationIdHandlerTest extends LocalDynamoTest
         candidate.updateApproval(
             new UpdateStatusRequest(institutionId, approvalStatus, randomString(), randomString()));
         periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
-        handler = new FetchReportStatusByPublicationIdHandler(candidateRepository, periodRepository);
+        var handler = new FetchReportStatusByPublicationIdHandler(candidateRepository, periodRepository);
 
         handler.handleRequest(createRequest(candidate.getPublicationId()), output, context);
 
@@ -119,7 +118,7 @@ public class FetchReportStatusByPublicationIdHandlerTest extends LocalDynamoTest
     void shouldReturnNotReportedWhenPublicationIsCandidateIsNotReportedInClosedPeriod() throws IOException {
         var pendingCandidate = setupCandidateWithPublicationYear(CURRENT_YEAR);
         periodRepository = periodRepositoryReturningClosedPeriod(CURRENT_YEAR);
-        handler = new FetchReportStatusByPublicationIdHandler(candidateRepository, periodRepository);
+        var handler = new FetchReportStatusByPublicationIdHandler(candidateRepository, periodRepository);
 
         handler.handleRequest(createRequest(pendingCandidate.getPublicationId()), output, context);
 
@@ -138,7 +137,7 @@ public class FetchReportStatusByPublicationIdHandlerTest extends LocalDynamoTest
         var pendingCandidate = setupCandidateWithPublicationYear(CURRENT_YEAR);
         Candidate.updateNonCandidate(pendingCandidate::getPublicationId, candidateRepository);
         periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
-        handler = new FetchReportStatusByPublicationIdHandler(candidateRepository, periodRepository);
+        var handler = new FetchReportStatusByPublicationIdHandler(candidateRepository, periodRepository);
 
         handler.handleRequest(createRequest(pendingCandidate.getPublicationId()), output, context);
 
@@ -154,7 +153,7 @@ public class FetchReportStatusByPublicationIdHandlerTest extends LocalDynamoTest
     @Test
     void shouldReturnNotCandidateWhenPublicationIsNotFound() throws IOException {
         var notFoundPublicationId = randomUri();
-        handler = new FetchReportStatusByPublicationIdHandler(candidateRepository, periodRepository);
+        var handler = new FetchReportStatusByPublicationIdHandler(candidateRepository, periodRepository);
 
         handler.handleRequest(createRequest(notFoundPublicationId), output, context);
 
