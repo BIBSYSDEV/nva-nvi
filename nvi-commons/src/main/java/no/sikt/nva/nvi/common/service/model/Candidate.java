@@ -577,6 +577,8 @@ public final class Candidate {
                        .toList();
     }
 
+    // FIXME: Move this somewhere else and make it public? We also need it in
+    //  no.sikt.nva.nvi.common.service.CandidateTest.generateExpectedCandidate
     private static List<NviCreatorType> getAllCreators(UpsertCandidateRequest request) {
         var verifiedCreators = request.creators()
                                       .entrySet()

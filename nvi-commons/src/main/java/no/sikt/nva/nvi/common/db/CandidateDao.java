@@ -610,6 +610,7 @@ public final class CandidateDao extends Dao {
             return new Builder();
         }
 
+        @Override
         @DynamoDbIgnore
         public DbCreator copy() {
             return builder().creatorId(creatorId)
@@ -617,6 +618,7 @@ public final class CandidateDao extends Dao {
                             .build();
         }
 
+        @Override
         @DynamoDbIgnore
         public NviCreatorType toNviCreatorType() {
             return new VerifiedNviCreator(creatorId, affiliations);
@@ -655,6 +657,7 @@ public final class CandidateDao extends Dao {
             return new Builder();
         }
 
+        @Override
         @DynamoDbIgnore
         public DbUnverifiedCreator copy() {
             return builder().creatorName(creatorName)
@@ -662,6 +665,7 @@ public final class CandidateDao extends Dao {
                             .build();
         }
 
+        @Override
         @DynamoDbIgnore
         public NviCreatorType toNviCreatorType() {
             return new UnverifiedNviCreator(creatorName, affiliations);

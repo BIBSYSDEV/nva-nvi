@@ -76,11 +76,10 @@ class CandidateTest {
         return IntStream.range(1, 20)
                         .boxed()
                         .map(i -> randomVerifiedCreator())
-                        .map(creator -> (DbCreatorType) creator)
                         .toList();
     }
 
-    private DbCreator randomVerifiedCreator() {
+    private DbCreatorType randomVerifiedCreator() {
         return DbCreator.builder()
                    .creatorId(randomUri())
                    .affiliations(randomAffiliations())

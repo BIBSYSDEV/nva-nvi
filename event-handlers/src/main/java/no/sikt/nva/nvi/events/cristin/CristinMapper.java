@@ -94,7 +94,6 @@ public final class CristinMapper {
                    .entrySet()
                    .stream()
                    .map(CristinMapper::toDbCreator)
-                   .map(creator -> (DbCreatorType) creator)
                    .toList();
     }
 
@@ -102,9 +101,6 @@ public final class CristinMapper {
     public DbCandidate toDbCandidate(CristinNviReport cristinNviReport) {
         var now = Instant.now();
         var points = calculatePoints(cristinNviReport);
-        var creators = extractCreators(cristinNviReport).stream()
-                                   .map(creator -> (DbCreatorType) creator)
-                                   .toList();
         return DbCandidate.builder()
                    .publicationId(constructPublicationId(cristinNviReport.publicationIdentifier()))
                    .publicationBucketUri(constructPublicationBucketUri(cristinNviReport.publicationIdentifier()))
@@ -120,7 +116,7 @@ public final class CristinMapper {
                    .basePoints(extractBasePoints(cristinNviReport))
                    .collaborationFactor(extractCollaborationFactor(cristinNviReport))
                    .internationalCollaboration(isInternationalCollaboration(cristinNviReport))
-                   .creators(creators)
+                          .creators(extractCreators(cristinNviReport))
                    .channelId(extractChannelId(cristinNviReport))
                    .channelType(extractChannelType(cristinNviReport))
                    .build();
@@ -297,7 +293,7 @@ public final class CristinMapper {
     }
 
     @JacocoGenerated
-    private static DbCreator toDbCreator(Entry<URI, List<URI>> entry) {
+    private static DbCreatorType toDbCreator(Entry<URI, List<URI>> entry) {
         return DbCreator.builder().creatorId(entry.getKey()).affiliations(entry.getValue()).build();
     }
 
