@@ -35,8 +35,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.IntStream;
 import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.sikt.nva.nvi.common.service.model.PublicationDetails.Creator;
-import no.sikt.nva.nvi.common.service.model.PublicationDetails.NviCreatorType;
+import no.sikt.nva.nvi.common.service.model.NviCreatorType;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.common.utils.JsonUtils;
 

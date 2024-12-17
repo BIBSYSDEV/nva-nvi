@@ -52,8 +52,6 @@ import no.sikt.nva.nvi.common.service.dto.NoteDto;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException;
-import no.sikt.nva.nvi.common.service.model.PublicationDetails.Creator;
-import no.sikt.nva.nvi.common.service.model.PublicationDetails.NviCreatorType;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.CreateNoteRequest;
 import no.sikt.nva.nvi.common.service.requests.DeleteNoteRequest;
@@ -598,10 +596,10 @@ public final class Candidate {
 
     private static List<NviCreatorType> creatorsFromRequest(UpsertCandidateRequest request) {
         var verifiedCreators = request.creators().entrySet().stream()
-                                      .map(creator -> Creator.builder()
-                                                               .withId(creator.getKey())
-                                                               .withAffiliations(creator.getValue())
-                                                               .build())
+                                      .map(creator -> VerifiedNviCreator.builder()
+                                                                        .withId(creator.getKey())
+                                                                        .withAffiliations(creator.getValue())
+                                                                        .build())
                                       .toList();
         var unverifiedCreators = request.unverifiedCreators()
                                         .stream()

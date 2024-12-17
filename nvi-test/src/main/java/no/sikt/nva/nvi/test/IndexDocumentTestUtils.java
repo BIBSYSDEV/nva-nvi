@@ -32,7 +32,7 @@ import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
-import no.sikt.nva.nvi.common.service.model.PublicationDetails.Creator;
+import no.sikt.nva.nvi.common.service.model.VerifiedNviCreator;
 import no.sikt.nva.nvi.common.utils.JsonUtils;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.Contributor;
@@ -364,7 +364,7 @@ public final class IndexDocumentTestUtils {
                    .build();
     }
 
-    private static ContributorType generateNviContributor(JsonNode contributorNode, Creator value,
+    private static ContributorType generateNviContributor(JsonNode contributorNode, VerifiedNviCreator value,
                                                           List<URI> affiliations) {
         return NviContributor.builder()
                    .withId(ExpandedResourceGenerator.extractId(contributorNode))
@@ -375,15 +375,15 @@ public final class IndexDocumentTestUtils {
                    .build();
     }
 
-    private static Optional<Creator> getNviCreatorIfPresent(Candidate candidate, JsonNode contributorNode) {
+    private static Optional<VerifiedNviCreator> getNviCreatorIfPresent(Candidate candidate, JsonNode contributorNode) {
         return candidate.getPublicationDetails()
-                   .creators()
-                   .stream()
-                   .filter(Creator.class::isInstance)
-                    .map(Creator.class::cast) // FIXME
-                   .filter(
+                        .creators()
+                        .stream()
+                        .filter(VerifiedNviCreator.class::isInstance)
+                        .map(VerifiedNviCreator.class::cast) // FIXME
+                        .filter(
                        creator -> creator.id().toString().equals(ExpandedResourceGenerator.extractId(contributorNode)))
-                   .findFirst();
+                        .findFirst();
     }
 
     private static List<OrganizationType> expandAffiliations(List<URI> uris) {
@@ -392,13 +392,13 @@ public final class IndexDocumentTestUtils {
                    .toList();
     }
 
-    private static List<OrganizationType> expandAffiliationsWithPartOf(Creator creator, List<URI> uris) {
+    private static List<OrganizationType> expandAffiliationsWithPartOf(VerifiedNviCreator creator, List<URI> uris) {
         return uris.stream()
                    .map(uri -> toAffiliationWithPartOf(uri, isNviAffiliation(creator, uri)))
                    .toList();
     }
 
-    private static boolean isNviAffiliation(Creator creator, URI uri) {
+    private static boolean isNviAffiliation(VerifiedNviCreator creator, URI uri) {
         return creator.affiliations()
                    .stream()
                    .anyMatch(affiliation -> affiliation.equals(uri));

@@ -51,7 +51,7 @@ import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.sikt.nva.nvi.common.service.model.PublicationDetails.Creator;
+import no.sikt.nva.nvi.common.service.model.VerifiedNviCreator;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.Contributor;
 import no.sikt.nva.nvi.index.model.document.ContributorType;
@@ -326,7 +326,7 @@ public final class NviCandidateIndexDocumentGenerator {
                    .map(this::createContributor).toList();
     }
 
-    private Optional<Creator> getNviCreatorIfPresent(JsonNode contributor) {
+    private Optional<VerifiedNviCreator> getNviCreatorIfPresent(JsonNode contributor) {
         return candidate.getPublicationDetails()
                    .getVerifiedCreators() // FIXME: Does this break something? Not including unverified here
                    .stream()
@@ -385,7 +385,7 @@ public final class NviCandidateIndexDocumentGenerator {
         return nviCreator.isPresent() && isNviAffiliation(nviCreator.get(), affiliation);
     }
 
-    private boolean isNviAffiliation(Creator creator, JsonNode affiliationNode) {
+    private boolean isNviAffiliation(VerifiedNviCreator creator, JsonNode affiliationNode) {
         var affiliationId = extractJsonNodeTextValue(affiliationNode, JSON_PTR_ID);
 
         return nonNull(affiliationId) && creator.affiliations()

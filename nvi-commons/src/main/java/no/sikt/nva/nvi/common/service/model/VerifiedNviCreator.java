@@ -4,28 +4,28 @@ import static nva.commons.core.StringUtils.isBlank;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbUnverifiedCreator;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 
-public record UnverifiedNviCreator(String name, List<URI> affiliations) implements NviCreatorType {
+public record VerifiedNviCreator(URI id, List<URI> affiliations) implements NviCreatorType {
 
     public static Builder builder() {
         return new Builder();
     }
 
-    public DbUnverifiedCreator toDbUnverifiedCreator() {
-        return new DbUnverifiedCreator(name, affiliations);
+    public DbCreator toDbCreator() {
+        return new DbCreator(id, affiliations);
     }
 
     public static final class Builder {
 
-        private String name;
+        private URI id;
         private List<URI> affiliations = Collections.emptyList();
 
         private Builder() {
         }
 
-        public Builder withName(String name) {
-            this.name = name;
+        public Builder withId(URI id) {
+            this.id = id;
             return this;
         }
 
@@ -34,11 +34,11 @@ public record UnverifiedNviCreator(String name, List<URI> affiliations) implemen
             return this;
         }
 
-        public UnverifiedNviCreator build() {
-            if (isBlank(name)) {
-                throw new IllegalStateException("Name cannot be null or blank");
+        public VerifiedNviCreator build() {
+            if (isBlank(id.toString())) {
+                throw new IllegalStateException("ID cannot be null or blank");
             }
-            return new UnverifiedNviCreator(name, affiliations);
+            return new VerifiedNviCreator(id, affiliations);
         }
     }
 }
