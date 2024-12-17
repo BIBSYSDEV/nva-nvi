@@ -1,53 +1,28 @@
 package no.sikt.nva.nvi.common.db.model;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import java.io.IOException;
+import static no.unit.nva.commons.json.JsonUtils.dynamoObjectMapper;
+import static nva.commons.core.attempt.Try.attempt;
 import java.util.List;
+import java.util.Map;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreatorType;
 import software.amazon.awssdk.enhanced.dynamodb.AttributeConverter;
 import software.amazon.awssdk.enhanced.dynamodb.AttributeValueType;
 import software.amazon.awssdk.enhanced.dynamodb.EnhancedType;
+import software.amazon.awssdk.enhanced.dynamodb.document.EnhancedDocument;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 // FIXME: Rewrite this
 public class DbCreatorTypeListConverter implements AttributeConverter<List<DbCreatorType>> {
 
-    private static final ObjectMapper MAPPER = new ObjectMapper();
-
     @Override
     public AttributeValue transformFrom(List<DbCreatorType> creators) {
-        try {
-            return AttributeValue.builder()
-                                 .s(MAPPER.writeValueAsString(creators))
-                                 .build();
-        } catch (JsonProcessingException e) {
-            throw new IllegalStateException("Failed to serialize creators", e);
-        }
+        return AttributeValue.builder()
+                   .l(creators.stream().map(this::toAttributeValue).toList()).build();
     }
 
     @Override
-    public List<DbCreatorType> transformTo(AttributeValue attributeValue) {
-        try {
-            String json = attributeValue.s();
-            JsonNode root = MAPPER.readTree(json);
-
-            // FIXME: Hardcoding an assumption to handle existing data with no type field
-            if (root.isArray()) {
-                for (JsonNode node : root) {
-                    if (!node.has("type")) {
-                        ((ObjectNode) node).put("type", "DbCreator");
-                    }
-                }
-            }
-            return MAPPER.readValue(json, new TypeReference<List<DbCreatorType>>() {
-            });
-        } catch (IOException e) {
-            throw new IllegalStateException("Failed to deserialize creators", e);
-        }
+    public List<DbCreatorType> transformTo(AttributeValue attributeValueList) {
+        return attributeValueList.l().stream().map(attributeValue -> toCreator(attributeValue.m())).toList();
     }
 
     @Override
@@ -57,6 +32,21 @@ public class DbCreatorTypeListConverter implements AttributeConverter<List<DbCre
 
     @Override
     public AttributeValueType attributeValueType() {
-        return AttributeValueType.S;
+        return AttributeValueType.L;
+    }
+
+    private DbCreatorType toCreator(Map<String, AttributeValue> attributeValueMap) {
+        return attempt(
+            () -> dynamoObjectMapper.readValue(EnhancedDocument.fromAttributeValueMap(attributeValueMap).toJson(),
+                                               DbCreatorType.class))
+                   .orElseThrow();
+    }
+
+    private AttributeValue toAttributeValue(DbCreatorType creator) {
+        return AttributeValue.builder()
+                   .m(EnhancedDocument.fromJson(
+                           attempt(() -> dynamoObjectMapper.writeValueAsString(creator)).orElseThrow())
+                          .toMap())
+                   .build();
     }
 }
