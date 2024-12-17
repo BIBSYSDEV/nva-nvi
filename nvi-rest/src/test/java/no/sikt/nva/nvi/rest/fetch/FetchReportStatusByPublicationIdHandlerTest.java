@@ -121,6 +121,21 @@ public class FetchReportStatusByPublicationIdHandlerTest extends LocalDynamoTest
         assertEquals(expected, actualResponseBody);
     }
 
+    @Test
+    void shouldReturnNotCandidateWhenPublicationIsNotApplicableCandidate() throws IOException {
+        var pendingCandidate = setupCandidateWithPublicationYear(CURRENT_YEAR);
+        Candidate.updateNonCandidate(pendingCandidate::getPublicationId, candidateRepository);
+
+        periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
+        handler = new FetchReportStatusByPublicationIdHandler(candidateRepository, periodRepository);
+
+        handler.handleRequest(createRequest(pendingCandidate.getPublicationId()), output, context);
+        var actualResponseBody = GatewayResponse.fromOutputStream(output, ReportStatusDto.class)
+                                     .getBodyObject(ReportStatusDto.class);
+        var expected = new ReportStatusDto(pendingCandidate.getPublicationId(), StatusDto.NOT_CANDIDATE, null);
+        assertEquals(expected, actualResponseBody);
+    }
+
     private static InputStream createRequest(URI publicationId)
         throws JsonProcessingException {
         return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
