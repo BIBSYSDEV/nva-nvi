@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.rest.fetch;
 
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeriod;
+import static no.sikt.nva.nvi.test.TestUtils.setupReportedCandidate;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import com.amazonaws.services.lambda.runtime.Context;
@@ -17,7 +18,6 @@ import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.rest.fetch.ReportStatusDto.StatusDto;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
-import no.sikt.nva.nvi.test.TestUtils;
 import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.GatewayResponse;
@@ -25,7 +25,7 @@ import org.apache.hc.core5.http.ContentType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class FetchReportHistoryByPublicationIdHandlerTest extends LocalDynamoTest {
+public class FetchReportStatusByPublicationIdHandlerTest extends LocalDynamoTest {
 
     private static final String CLOSED_YEAR = String.valueOf(CURRENT_YEAR - 1);
     private static final String PATH_PARAM_PUBLICATION_ID = "publicationId";
@@ -33,7 +33,7 @@ public class FetchReportHistoryByPublicationIdHandlerTest extends LocalDynamoTes
     private ByteArrayOutputStream output;
     private CandidateRepository candidateRepository;
     private PeriodRepository periodRepository;
-    private FetchReportHistoryByPublicationIdHandler handler;
+    private FetchReportStatusByPublicationIdHandler handler;
 
     @BeforeEach
     public void setUp() {
@@ -42,13 +42,15 @@ public class FetchReportHistoryByPublicationIdHandlerTest extends LocalDynamoTes
         localDynamo = initializeTestDatabase();
         candidateRepository = new CandidateRepository(localDynamo);
         periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
-        handler = new FetchReportHistoryByPublicationIdHandler(candidateRepository);
     }
 
     @Test
     void shouldReturnReportedYearWhenPublicationIsReportedInClosedPeriod() throws IOException {
-        var dao = TestUtils.setupReportedCandidate(candidateRepository, CLOSED_YEAR);
+        var dao = setupReportedCandidate(candidateRepository, CLOSED_YEAR);
         var reportedCandidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
+
+        periodRepository = periodRepositoryReturningOpenedPeriod(Integer.parseInt(CLOSED_YEAR));
+        handler = new FetchReportStatusByPublicationIdHandler(candidateRepository, periodRepository);
 
         handler.handleRequest(createRequest(reportedCandidate.getPublicationId()), output, context);
         var actualResponseBody = GatewayResponse.fromOutputStream(output, ReportStatusDto.class)
