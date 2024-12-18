@@ -11,17 +11,27 @@ import software.amazon.awssdk.enhanced.dynamodb.EnhancedType;
 import software.amazon.awssdk.enhanced.dynamodb.document.EnhancedDocument;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
+/**
+ * Custom AttributeConverter for converting a list of {@link DbCreatorType} to and from a format we can store in
+ * DynamoDB.
+ */
 public class DbCreatorTypeListConverter implements AttributeConverter<List<DbCreatorType>> {
 
     @Override
     public AttributeValue transformFrom(List<DbCreatorType> creators) {
         return AttributeValue.builder()
-                   .l(creators.stream().map(this::toAttributeValue).toList()).build();
+                             .l(creators.stream()
+                                        .map(this::toAttributeValue)
+                                        .toList())
+                             .build();
     }
 
     @Override
     public List<DbCreatorType> transformTo(AttributeValue attributeValueList) {
-        return attributeValueList.l().stream().map(attributeValue -> toCreator(attributeValue.m())).toList();
+        return attributeValueList.l()
+                                 .stream()
+                                 .map(attributeValue -> toCreator(attributeValue.m()))
+                                 .toList();
     }
 
     @Override
@@ -35,17 +45,15 @@ public class DbCreatorTypeListConverter implements AttributeConverter<List<DbCre
     }
 
     private DbCreatorType toCreator(Map<String, AttributeValue> attributeValueMap) {
-        return attempt(
-            () -> dynamoObjectMapper.readValue(EnhancedDocument.fromAttributeValueMap(attributeValueMap).toJson(),
-                                               DbCreatorType.class))
-                   .orElseThrow();
+        return attempt(() -> dynamoObjectMapper.readValue(EnhancedDocument.fromAttributeValueMap(attributeValueMap)
+                                                                          .toJson(),
+                                                          DbCreatorType.class)).orElseThrow();
     }
 
     private AttributeValue toAttributeValue(DbCreatorType creator) {
         return AttributeValue.builder()
-                   .m(EnhancedDocument.fromJson(
-                           attempt(() -> dynamoObjectMapper.writeValueAsString(creator)).orElseThrow())
-                          .toMap())
-                   .build();
+                             .m(EnhancedDocument.fromJson(attempt(() -> dynamoObjectMapper.writeValueAsString(creator)).orElseThrow())
+                                                .toMap())
+                             .build();
     }
 }
