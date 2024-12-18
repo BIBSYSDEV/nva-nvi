@@ -713,6 +713,46 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Problem"
+  /publication/{publicationId+}/report-status:
+    get:
+      description: Get report status by publication id
+      summary: Get report status by publication id
+      operationId: getReportStatusByPublicationId
+      parameters:
+        - in: path
+          name: publicationId+
+          description: A UTF-8 encoded URI (publicationId)
+          required: true
+          schema:
+            type: string
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchReportStatusByPublicationIdHandler.Arn}:live/invocations
+        responses: { }
+        httpMethod: POST
+        type: AWS_PROXY
+      responses:
+        '200':
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportStatus"
+              example: {
+                "publicationId": "https://api.nva.no/publication/123",
+                "reportStatus": {
+                  "status": "PENDING_REVIEW",
+                  "description": "Pending review. Awaiting approval from all institutions"
+                },
+                "period": "2023"
+              }
+        '500':
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+
 components:
   schemas:
     Filter:
@@ -744,6 +784,28 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/NviPeriod'
+    ReportStatus:
+      type: object
+      properties:
+        publicationId:
+          $ref: '#/components/schemas/Id'
+        reportStatus:
+          type: object
+          properties:
+            status:
+              type: string
+              enum:
+                - NOT_CANDIDATE
+                - REPORTED
+                - PENDING_REVIEW
+                - UNDER_REVIEW
+                - NOT_REPORTED
+            description:
+              type: string
+              description: The description of the report status
+        period:
+          type: string
+          description: The nvi period in which the publication was published
     CandidateSearchResponse:
       type: object
       properties:
