@@ -52,8 +52,6 @@ public record PublicationDetails(URI publicationId, URI publicationBucketUri, St
                        .collect(Collectors.toSet());
     }
 
-
-    // FIXME: This is a duplicate, extract and remove others
     public record PublicationDate(String year, String month, String day) {
 
         public static PublicationDate from(DbPublicationDate dbPublicationDate) {

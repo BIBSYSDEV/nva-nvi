@@ -21,7 +21,8 @@ public class UpsertRequestBuilder {
     private URI publicationId;
     private boolean isApplicable;
     private boolean isInternationalCollaboration;
-    private Map<URI, List<URI>> creators; // FIXME: Add unverified?
+    private Map<URI, List<URI>> creators;
+    private List<UnverifiedNviCreator> unverifiedCreators;
     private String channelType;
     private URI channelId;
     private String level;
@@ -65,6 +66,7 @@ public class UpsertRequestBuilder {
                    .withIsApplicable(request.isApplicable())
                    .withIsInternationalCollaboration(request.isInternationalCollaboration())
                    .withCreators(request.creators())
+                   .withUnverifiedCreators(request.unverifiedCreators())
                    .withChannelType(request.channelType())
                    .withChannelId(request.publicationChannelId())
                    .withLevel(request.level())
@@ -99,6 +101,11 @@ public class UpsertRequestBuilder {
 
     public UpsertRequestBuilder withCreators(Map<URI, List<URI>> creators) {
         this.creators = creators;
+        return this;
+    }
+
+    public UpsertRequestBuilder withUnverifiedCreators(List<UnverifiedNviCreator> unverifiedCreators) {
+        this.unverifiedCreators = unverifiedCreators;
         return this;
     }
 
@@ -181,10 +188,9 @@ public class UpsertRequestBuilder {
                 return creators;
             }
 
-            // FIXME: Does this break something?
             @Override
             public List<UnverifiedNviCreator> unverifiedCreators() {
-                return List.of();
+                return unverifiedCreators;
             }
 
             @Override
