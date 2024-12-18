@@ -51,6 +51,8 @@ import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.service.model.NviCreatorType;
+import no.sikt.nva.nvi.common.service.model.UnverifiedNviCreator;
 import no.sikt.nva.nvi.common.service.model.VerifiedNviCreator;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.Contributor;
@@ -326,9 +328,7 @@ public final class NviCandidateIndexDocumentGenerator {
                    .map(this::createContributor).toList();
     }
 
-
-    // FIXME: This does not include UnverifiedNviCreators (and probably must)
-    private Optional<VerifiedNviCreator> getNviCreatorIfPresent(JsonNode contributor) {
+    private Optional<VerifiedNviCreator> getVerifiedNviCreatorIfPresent(JsonNode contributor) {
         return candidate.getPublicationDetails()
                    .getVerifiedCreators()
                    .stream()
@@ -336,9 +336,24 @@ public final class NviCandidateIndexDocumentGenerator {
                    .findFirst();
     }
 
+    private Optional<UnverifiedNviCreator> getUnverifiedNviCreatorIfPresent(JsonNode contributor) {
+        return candidate.getPublicationDetails()
+                        .getUnverifiedCreators()
+                        .stream()
+                        .filter(creator -> creator.name()
+                                                  .equals(extractName(contributor.at(JSON_PTR_IDENTITY))))
+                        .findFirst();
+    }
+
+    private Optional<NviCreatorType> getAnyNviCreatorIfPresent(JsonNode contributor) {
+        return getVerifiedNviCreatorIfPresent(contributor).map(NviCreatorType.class::cast)
+                                                          .or(() -> getUnverifiedNviCreatorIfPresent(contributor).map(
+                                                              NviCreatorType.class::cast));
+    }
+
     private ContributorType createContributor(JsonNode contributor) {
         var identity = contributor.at(JSON_PTR_IDENTITY);
-        return getNviCreatorIfPresent(contributor)
+        return getAnyNviCreatorIfPresent(contributor)
                    .map(value -> generateNviContributor(contributor, identity))
                    .orElseGet(() -> generateContributor(contributor, identity));
     }
@@ -383,11 +398,11 @@ public final class NviCandidateIndexDocumentGenerator {
     }
 
     private boolean isNviAffiliation(JsonNode affiliation, JsonNode contributor) {
-        var nviCreator = getNviCreatorIfPresent(contributor);
+        var nviCreator = getAnyNviCreatorIfPresent(contributor);
         return nviCreator.isPresent() && isNviAffiliation(nviCreator.get(), affiliation);
     }
 
-    private boolean isNviAffiliation(VerifiedNviCreator creator, JsonNode affiliationNode) {
+    private boolean isNviAffiliation(NviCreatorType creator, JsonNode affiliationNode) {
         var affiliationId = extractJsonNodeTextValue(affiliationNode, JSON_PTR_ID);
 
         return nonNull(affiliationId) && creator.affiliations()
@@ -432,6 +447,10 @@ public final class NviCandidateIndexDocumentGenerator {
 
     private String extractId(JsonNode jsonNode) {
         return extractJsonNodeTextValue(jsonNode, JSON_PTR_ID);
+    }
+
+    private String extractName(JsonNode jsonNode) {
+        return extractJsonNodeTextValue(jsonNode, JSON_PTR_NAME);
     }
 
     private String extractRoleType(JsonNode contributorNode) {
