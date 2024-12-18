@@ -265,12 +265,13 @@ public final class Candidate {
         return !isReported() && period.isClosed();
     }
 
-    public boolean isPendingReview() {
-        return approvals.values().stream().allMatch(approval -> PENDING.equals(approval.getStatus())) && period.isOpen();
+    public boolean isUnderReview() {
+        return !isPendingReview();
     }
 
-    public boolean isUnderReview() {
-        return approvals.values().stream().anyMatch(approval -> !PENDING.equals(approval.getStatus())) && period.isOpen();
+    public boolean isPendingReview() {
+        return approvals.values().stream().allMatch(approval -> PENDING.equals(approval.getStatus()))
+               && period.isOpen();
     }
 
     public GlobalApprovalStatus getGlobalApprovalStatus() {
@@ -709,7 +710,7 @@ public final class Candidate {
     }
 
     private boolean areAnyApprovalsPending() {
-        return streamApprovals().anyMatch(approval -> ApprovalStatus.PENDING.equals(approval.getStatus()));
+        return streamApprovals().anyMatch(approval -> PENDING.equals(approval.getStatus()));
     }
 
     private Stream<Approval> streamApprovals() {
