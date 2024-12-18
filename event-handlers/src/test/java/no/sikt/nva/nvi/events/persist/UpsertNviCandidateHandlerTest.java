@@ -14,7 +14,6 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomLocalDate;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.core.attempt.Try.attempt;
-import static org.apache.commons.collections4.ListUtils.union;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -370,16 +369,16 @@ class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
     }
 
     private static List<DbCreatorType> getExpectedCreators(NviCandidate evaluatedNviCandidate) {
-        var verifiedCreators = evaluatedNviCandidate.creators()
-                                  .entrySet()
-                                  .stream()
-                                  .map(entry -> new DbCreator(entry.getKey(), entry.getValue()))
-                                  .toList();
+        Stream<DbCreatorType> verifiedCreators = evaluatedNviCandidate.creators()
+                                                                      .entrySet()
+                                                                      .stream()
+                                                                      .map(entry -> new DbCreator(entry.getKey(),
+                                                                                                  entry.getValue()));
         var unverifiedCreators = evaluatedNviCandidate.unverifiedCreators()
-                                        .stream()
-                                        .map(UnverifiedNviCreator::toDao)
-                                        .toList();
-        return union(verifiedCreators, unverifiedCreators);
+                                                      .stream()
+                                                      .map(UnverifiedNviCreator::toDao);
+        return Stream.concat(verifiedCreators, unverifiedCreators)
+                     .toList();
     }
 
     private CandidateEvaluatedMessage nonCandidateMessageForExistingCandidate(Candidate candidate) {

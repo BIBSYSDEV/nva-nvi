@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.common.utils;
 
-import static org.apache.commons.collections4.ListUtils.union;
 import java.util.List;
+import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.service.model.NviCreatorType;
 import no.sikt.nva.nvi.common.service.model.Username;
 import no.sikt.nva.nvi.common.service.model.VerifiedNviCreator;
@@ -26,14 +26,16 @@ public final class RequestUtil {
     }
 
     public static List<NviCreatorType> getAllCreators(UpsertCandidateRequest request) {
-        var verifiedCreators = request.creators()
+        Stream<NviCreatorType> verifiedCreators = request.creators()
                                       .entrySet()
                                       .stream()
                                       .map(creator -> VerifiedNviCreator.builder()
                                                                         .withId(creator.getKey())
                                                                         .withAffiliations(creator.getValue())
-                                                                        .build())
-                                      .toList();
-        return union(verifiedCreators, request.unverifiedCreators());
+                                                                        .build());
+        var unverifiedCreators = request.unverifiedCreators()
+                                        .stream();
+        return Stream.concat(verifiedCreators, unverifiedCreators)
+                     .toList();
     }
 }
