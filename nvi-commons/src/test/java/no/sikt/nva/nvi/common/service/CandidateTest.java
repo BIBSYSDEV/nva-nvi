@@ -53,6 +53,7 @@ import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.NviCreatorType;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
+import no.sikt.nva.nvi.common.service.model.UnverifiedNviCreator;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.test.UpsertRequestBuilder;
 import org.junit.jupiter.api.DisplayName;
@@ -91,6 +92,23 @@ class CandidateTest extends CandidateTestSetup {
                                      .orElseThrow()
                                      .candidate();
         assertEquals(expectedLevel, persistedCandidate.level());
+    }
+
+    @Test
+    void shouldGetUnverifiedCreatorsFromDetails() {
+        var unverifiedCreator = new UnverifiedNviCreator(randomString(),
+                                                         List.of(randomUri()));
+        var upsertCandidateRequest =
+            randomUpsertRequestBuilder().withUnverifiedCreators(List.of(unverifiedCreator)).build();
+        var expectedUnverifiedCreatorCount = upsertCandidateRequest.unverifiedCreators().size();
+        var expectedVerifiedCreatorCount = upsertCandidateRequest.creators().keySet().size();
+
+        var fetchedCandidate = upsert(upsertCandidateRequest);
+
+        var actualUnverifiedCreatorCount = fetchedCandidate.getPublicationDetails().getUnverifiedCreators().size();
+        var actualVerifiedCreatorCount = fetchedCandidate.getPublicationDetails().getVerifiedCreators().size();
+        assertEquals(expectedUnverifiedCreatorCount, actualUnverifiedCreatorCount);
+        assertEquals(expectedVerifiedCreatorCount, actualVerifiedCreatorCount);
     }
 
     @Test
