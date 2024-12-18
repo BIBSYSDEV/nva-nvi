@@ -187,7 +187,7 @@ class OpenSearchClientTest {
         assertThat(searchResponse.hits().hits().size(), is(equalTo(expectedNumberOfHitsReturned)));
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "shouldOrderResult {0}")
     @ValueSource(strings = {"asc", "desc"})
     void shouldOrderResult(String sortOrder) throws InterruptedException, IOException {
         var createdFirst = documentWithCreatedDate(Instant.now());
@@ -238,7 +238,7 @@ class OpenSearchClientTest {
         assertThat(nviCandidateIndexDocument, hasSize(0));
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "shouldReturnAggregationsWithExpectedCount {0}")
     @MethodSource("aggregationNameAndExpectedCountProvider")
     void shouldReturnAggregationsWithExpectedCount(Entry<String, Integer> entry)
         throws IOException, InterruptedException {
@@ -346,7 +346,7 @@ class OpenSearchClientTest {
         assertThat(searchResponse.hits().hits(), hasSize(1));
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name="shouldReturnSearchResultsUsingFilter {0}")
     @MethodSource("filterNameProvider")
     void shouldReturnSearchResultsUsingFilter(Entry<String, Integer> entry)
         throws IOException, InterruptedException {
@@ -549,7 +549,7 @@ class OpenSearchClientTest {
         assertThat(searchResponse.hits().hits(), hasSize(1));
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name="shouldReturnSearchResultsUsingFilterAndSearchTermCombined {0}")
     @MethodSource("filterNameProvider")
     void shouldReturnSearchResultsUsingFilterAndSearchTermCombined(Entry<String, Integer> entry)
         throws IOException, InterruptedException {

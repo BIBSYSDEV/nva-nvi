@@ -80,7 +80,7 @@ class CandidateTest extends CandidateTestSetup {
     }
 
     @Deprecated
-    @ParameterizedTest
+    @ParameterizedTest(name="Should persist new candidate with correct level {0}")
     @MethodSource("levelValues")
     void shouldPersistNewCandidateWithCorrectLevelBasedOnVersionTwoLevelValues(DbLevel expectedLevel,
                                                                                String versionTwoValue) {
@@ -103,7 +103,7 @@ class CandidateTest extends CandidateTestSetup {
         assertEquals(expectedCandidate, actualPersistedCandidate);
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name="Should persist new candidate with correct level {0}")
     @ValueSource(ints = {0, 1, 4})
     void shouldPersistNewCandidateWithCorrectScaleForAllDecimals(int scale) {
         var request = createUpsertRequestWithDecimalScale(scale, randomUri());
@@ -115,7 +115,7 @@ class CandidateTest extends CandidateTestSetup {
         assertEquals(expectedCandidate, actualPersistedCandidate);
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name="Should update candidate with correct level {0}")
     @ValueSource(ints = {0, 1, 4})
     void shouldUpdateCandidateWithCorrectScaleForAllDecimals(int scale) {
         var request = randomUpsertRequestBuilder()

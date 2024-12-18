@@ -166,7 +166,7 @@ class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
         assertThat(actualApproval.status(), is(equalTo(expectedStatus)));
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name="shouldResetFinalizedValuesWhenUpdatingStatusToPending from old status {0}")
     @EnumSource(value = ApprovalStatus.class, names = {"REJECTED", "APPROVED"})
     void shouldResetFinalizedValuesWhenUpdatingStatusToPending(ApprovalStatus oldStatus) throws IOException {
         var institutionId = randomUri();
@@ -183,7 +183,7 @@ class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
         assertThat(actualApproval.status(), is(equalTo(ApprovalStatusDto.NEW)));
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name="shouldUpdateApprovalStatusToRejectedWithReason from old status {0}")
     @EnumSource(value = ApprovalStatus.class, names = {"PENDING", "APPROVED"})
     void shouldUpdateApprovalStatusToRejectedWithReason(ApprovalStatus oldStatus) throws IOException {
         var institutionId = randomUri();
@@ -201,7 +201,7 @@ class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
         assertThat(actualApprovalStatus.reason(), is(equalTo(rejectionReason)));
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name="shouldRemoveReasonWhenUpdatingStatusFromRejected to {0}")
     @EnumSource(value = ApprovalStatus.class, names = {"PENDING", "APPROVED"})
     void shouldRemoveReasonWhenUpdatingStatusFromRejected(ApprovalStatus newStatus) throws IOException {
         var institutionId = randomUri();

@@ -157,7 +157,7 @@ class FetchInstitutionReportHandlerTest {
         assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_BAD_REQUEST)));
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name="shouldReturnCandidatesWithApprovalsBelongingToUsersTopLevelOrganization {0}")
     @MethodSource("listSupportedMediaTypes")
     void shouldReturnCandidatesWithApprovalsBelongingToUsersTopLevelOrganization(String mediaType)
         throws IOException {
@@ -172,7 +172,7 @@ class FetchInstitutionReportHandlerTest {
         assertEquals(expected, actual);
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name="shouldReturnReportWithLanguageLabel {0}")
     @MethodSource("listSupportedLanguages")
     void shouldReturnReportWithLanguageLabel(String languageUri) throws IOException {
         var topLevelCristinOrg = randomCristinOrgUri();
@@ -317,7 +317,7 @@ class FetchInstitutionReportHandlerTest {
         assertEquals(expected, actual);
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name="shouldReturnRequestedContentType {0}")
     @MethodSource("listSupportedMediaTypes")
     void shouldReturnRequestedContentType(String mediaType) throws IOException {
         var topLevelCristinOrg = randomCristinOrgUri();
@@ -328,7 +328,7 @@ class FetchInstitutionReportHandlerTest {
         assertThat(response.getHeaders().get(CONTENT_TYPE), is(mediaType));
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name="shouldReturnBase64EncodedOutputStream {0}")
     @MethodSource("listSupportedMediaTypes")
     void shouldReturnBase64EncodedOutputStream(String mediaType) throws IOException {
         var topLevelCristinOrg = randomCristinOrgUri();
