@@ -1,10 +1,11 @@
 package no.sikt.nva.nvi.rest.fetch;
 
+import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.net.URI;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 
-public record ReportStatusDto(URI publicationId, StatusDto status, String period) {
+public record ReportStatusDto(URI publicationId, StatusDto reportStatus, String period) {
 
     public static ReportStatusDto fromCandidate(Candidate candidate) {
         return new ReportStatusDto(candidate.getPublicationId(), getStatus(candidate), candidate.getPeriod().year());
@@ -26,7 +27,7 @@ public record ReportStatusDto(URI publicationId, StatusDto status, String period
         } else if (candidate.isNotReportedInClosedPeriod()) {
             return StatusDto.NOT_REPORTED;
         } else {
-            throw new IllegalStateException("Unable to determine status for candidate");
+            throw new IllegalStateException("Unable to determine report status for candidate");
         }
     }
 
@@ -34,7 +35,7 @@ public record ReportStatusDto(URI publicationId, StatusDto status, String period
 
         PENDING_REVIEW("Pending review. Awaiting approval from all institutions"),
         UNDER_REVIEW("Under review. At least one institution has approved/rejected"),
-        REPORTED("Reported"),
+        REPORTED("Reported in closed period"),
         NOT_REPORTED("Not reported in closed period"),
         NOT_CANDIDATE("Not a candidate");
         private final String value;
@@ -45,7 +46,10 @@ public record ReportStatusDto(URI publicationId, StatusDto status, String period
 
         @JsonValue
         public String getValue() {
-            return value;
+            var jsonNode = dtoObjectMapper.createObjectNode();
+            jsonNode.put("status", this.toString());
+            jsonNode.put("description", value);
+            return jsonNode.toString();
         }
     }
 
