@@ -349,7 +349,6 @@ public final class NviCandidateIndexDocumentGenerator {
                         .findFirst();
     }
 
-    // FIXME
     public static Optional<NviCreatorType> getAnyNviCreatorIfPresent(JsonNode contributor, Candidate candidate) {
         return getVerifiedNviCreatorIfPresent(contributor, candidate).map(NviCreatorType.class::cast)
                                                                      .or(() -> getUnverifiedNviCreatorIfPresent(

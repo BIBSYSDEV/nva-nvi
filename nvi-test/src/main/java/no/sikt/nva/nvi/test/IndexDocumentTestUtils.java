@@ -342,8 +342,6 @@ public final class IndexDocumentTestUtils {
     }
 
     private static List<ContributorType> mapToContributors(ArrayNode contributorNodes, Candidate candidate) {
-
-        // FIXME: This needs to add UnverifiedNviCreator to the list of contributors too
         return JsonUtils.streamNode(contributorNodes)
                    .map(contributorNode -> toContributorWithExpandedAffiliation(contributorNode, candidate))
                    .toList();

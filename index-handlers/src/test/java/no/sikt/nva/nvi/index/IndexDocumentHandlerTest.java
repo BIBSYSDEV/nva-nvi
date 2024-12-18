@@ -188,7 +188,11 @@ class IndexDocumentHandlerTest extends LocalDynamoTest {
     @Test
     void shouldNotFailWhenCreatorIsUnverified() {
         var institutionId = randomUri();
-        var unverifiedCreator = new UnverifiedNviCreator(randomString(), List.of(institutionId)).toDao();
+        var unverifiedCreator = UnverifiedNviCreator.builder()
+                                                    .withName(randomString())
+                                                    .withAffiliations(List.of(institutionId))
+                                                    .build()
+                                                    .toDao();
         var dbCandidate = randomCandidateBuilder(true, institutionId).creators(List.of(unverifiedCreator)).build();
 
         var dao = candidateRepository.create(dbCandidate,
