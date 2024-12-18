@@ -44,6 +44,13 @@ public record PublicationDetails(URI publicationId, URI publicationBucketUri, St
                        .toList();
     }
 
+    public List<UnverifiedNviCreator> getUnverifiedCreators() {
+        return creators.stream()
+                       .filter(UnverifiedNviCreator.class::isInstance)
+                        .map(UnverifiedNviCreator.class::cast)
+                        .toList();
+    }
+
     public Set<URI> getNviCreatorIds() {
         return creators.stream()
                        .filter(VerifiedNviCreator.class::isInstance)

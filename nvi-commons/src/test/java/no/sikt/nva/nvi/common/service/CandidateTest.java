@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.common.service;
 
+import static no.sikt.nva.nvi.common.utils.RequestUtil.getAllCreators;
 import static no.sikt.nva.nvi.test.TestUtils.createUpdateStatusRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertNonCandidateRequest;
@@ -24,11 +25,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.math.BigDecimal;
-import java.net.URI;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -52,6 +51,7 @@ import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
+import no.sikt.nva.nvi.common.service.model.NviCreatorType;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.test.UpsertRequestBuilder;
@@ -395,6 +395,22 @@ class CandidateTest extends CandidateTestSetup {
         return UpsertRequestBuilder.fromRequest(insertRequest).build();
     }
 
+    private static List<DbCreatorType> mapToDbCreators(List<NviCreatorType> creators) {
+        return creators.stream()
+                       .map(NviCreatorType::toDao)
+                       .toList();
+    }
+
+    private DbPublicationDate mapToDbPublicationDate(PublicationDate publicationDate) {
+        return new DbPublicationDate(publicationDate.year(), publicationDate.month(), publicationDate.day());
+    }
+
+    private List<DbInstitutionPoints> mapToDbInstitutionPoints(List<InstitutionPoints> points) {
+        return points.stream()
+                   .map(DbInstitutionPoints::from)
+                   .toList();
+    }
+
     private DbCandidate generateExpectedCandidate(Candidate candidate, UpsertCandidateRequest request) {
         return new CandidateDao(candidate.getIdentifier(),
                                 DbCandidate.builder()
@@ -409,32 +425,11 @@ class CandidateTest extends CandidateTestSetup {
                                     .basePoints(adjustScaleAndRoundingMode(request.basePoints()))
                                     .internationalCollaboration(request.isInternationalCollaboration())
                                     .collaborationFactor(adjustScaleAndRoundingMode(request.collaborationFactor()))
-                                    .creators(mapToDbCreatorType(request.creators()))
+                                           .creators(mapToDbCreators(getAllCreators(request)))
                                     .creatorShareCount(request.creatorShareCount())
                                     .points(mapToDbInstitutionPoints(request.institutionPoints()))
                                     .totalPoints(adjustScaleAndRoundingMode(request.totalPoints()))
                                     .createdDate(candidate.getCreatedDate())
                                     .build(), randomString(), randomString()).candidate();
-    }
-
-    private DbPublicationDate mapToDbPublicationDate(PublicationDate publicationDate) {
-        return new DbPublicationDate(publicationDate.year(), publicationDate.month(), publicationDate.day());
-    }
-
-    private List<DbInstitutionPoints> mapToDbInstitutionPoints(List<InstitutionPoints> points) {
-        return points.stream()
-                   .map(DbInstitutionPoints::from)
-                   .toList();
-    }
-
-    private List<DbCreatorType> mapToDbCreatorType(Map<URI, List<URI>> creators) {
-        return creators.entrySet()
-                       .stream()
-                       .map(entry -> DbCreator.builder()
-                                              .creatorId(entry.getKey())
-                                              .affiliations(entry.getValue())
-                                              .build())
-                       .map(creator -> (DbCreatorType) creator)
-                       .toList();
     }
 }

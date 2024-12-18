@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.test;
 
+import static java.util.Collections.emptyList;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -43,6 +44,7 @@ public class UpsertRequestBuilder {
                    .withIsApplicable(true)
                    .withIsInternationalCollaboration(true)
                    .withCreators(Map.of(creatorId, List.of(affiliationId)))
+                   .withUnverifiedCreators(emptyList())
                    .withChannelType(ChannelType.JOURNAL.getValue())
                    .withChannelId(randomUri())
                    .withLevel("LevelOne")

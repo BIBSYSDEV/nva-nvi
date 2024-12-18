@@ -7,10 +7,10 @@ import static no.sikt.nva.nvi.common.db.ReportStatus.REPORTED;
 import static no.sikt.nva.nvi.common.service.model.ApprovalStatus.APPROVED;
 import static no.sikt.nva.nvi.common.service.model.ApprovalStatus.REJECTED;
 import static no.sikt.nva.nvi.common.utils.DecimalUtils.adjustScaleAndRoundingMode;
+import static no.sikt.nva.nvi.common.utils.RequestUtil.getAllCreators;
 import static nva.commons.core.attempt.Try.attempt;
 import static nva.commons.core.ioutils.IoUtils.stringFromResources;
 import static nva.commons.core.paths.UriWrapper.HTTPS;
-import static org.apache.commons.collections4.ListUtils.union;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.nio.file.Path;
@@ -577,19 +577,6 @@ public final class Candidate {
                        .toList();
     }
 
-    // FIXME: Move this somewhere else and make it public? We also need it in
-    //  no.sikt.nva.nvi.common.service.CandidateTest.generateExpectedCandidate
-    private static List<NviCreatorType> getAllCreators(UpsertCandidateRequest request) {
-        var verifiedCreators = request.creators()
-                                      .entrySet()
-                                      .stream()
-                                      .map(creator -> VerifiedNviCreator.builder()
-                                                                        .withId(creator.getKey())
-                                                                        .withAffiliations(creator.getValue())
-                                                                        .build())
-                                      .toList();
-        return union(verifiedCreators, request.unverifiedCreators());
-    }
 
     private static boolean isExistingCandidate(URI publicationId, CandidateRepository repository) {
         return repository.findByPublicationId(publicationId).isPresent();
