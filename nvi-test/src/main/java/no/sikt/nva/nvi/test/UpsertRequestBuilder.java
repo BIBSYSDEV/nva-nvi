@@ -16,6 +16,7 @@ import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.common.service.model.UnverifiedNviCreator;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 
+@SuppressWarnings("PMD.TooManyFields")
 public class UpsertRequestBuilder {
 
     private URI publicationBucketUri;
