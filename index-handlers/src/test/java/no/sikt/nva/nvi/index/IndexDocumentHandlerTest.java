@@ -25,6 +25,7 @@ import static no.sikt.nva.nvi.test.TestUtils.setupReportedCandidate;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.s3.S3Driver.S3_SCHEME;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
+import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.core.attempt.Try.attempt;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -57,6 +58,7 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.service.model.UnverifiedNviCreator;
 import no.sikt.nva.nvi.index.aws.S3StorageWriter;
 import no.sikt.nva.nvi.index.model.PersistedIndexDocumentMessage;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
@@ -177,6 +179,24 @@ class IndexDocumentHandlerTest extends LocalDynamoTest {
         var candidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
         var expectedIndexDocument = setupExistingResourceInS3AndGenerateExpectedDocument(
             candidate).indexDocument();
+        mockUriRetrieverOrgResponse(candidate);
+        handler.handleRequest(createEvent(candidate.getIdentifier()), CONTEXT);
+        var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
+        assertEquals(expectedIndexDocument, actualIndexDocument);
+    }
+
+    @Test
+    void shouldNotFailWhenCreatorIsUnverified() {
+        var institutionId = randomUri();
+        var unverifiedCreator = new UnverifiedNviCreator(randomString(), List.of(institutionId)).toDao();
+        var dbCandidate = randomCandidateBuilder(true, institutionId).creators(List.of(unverifiedCreator)).build();
+
+        var dao = candidateRepository.create(dbCandidate,
+                                             List.of(randomApproval(institutionId)));
+        var candidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
+        var expectedIndexDocument = setupExistingResourceInS3AndGenerateExpectedDocument(
+            candidate).indexDocument();
+
         mockUriRetrieverOrgResponse(candidate);
         handler.handleRequest(createEvent(candidate.getIdentifier()), CONTEXT);
         var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();

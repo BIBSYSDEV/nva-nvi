@@ -324,11 +324,14 @@ public final class NviCandidateIndexDocumentGenerator {
     }
 
     private List<ContributorType> expandContributors() {
-        return getJsonNodeStream(expandedResource, JSON_PTR_CONTRIBUTOR)
-                   .map(this::createContributor).toList();
+        return StreamSupport.stream(expandedResource.at(JSON_PTR_CONTRIBUTOR)
+                                                    .spliterator(), false)
+                            .map(this::createContributor)
+                            .toList();
     }
 
-    private Optional<VerifiedNviCreator> getVerifiedNviCreatorIfPresent(JsonNode contributor) {
+    public static Optional<VerifiedNviCreator> getVerifiedNviCreatorIfPresent(JsonNode contributor,
+                                                                              Candidate candidate) {
         return candidate.getPublicationDetails()
                    .getVerifiedCreators()
                    .stream()
@@ -336,7 +339,8 @@ public final class NviCandidateIndexDocumentGenerator {
                    .findFirst();
     }
 
-    private Optional<UnverifiedNviCreator> getUnverifiedNviCreatorIfPresent(JsonNode contributor) {
+    public static Optional<UnverifiedNviCreator> getUnverifiedNviCreatorIfPresent(JsonNode contributor,
+                                                                                  Candidate candidate) {
         return candidate.getPublicationDetails()
                         .getUnverifiedCreators()
                         .stream()
@@ -345,15 +349,18 @@ public final class NviCandidateIndexDocumentGenerator {
                         .findFirst();
     }
 
-    private Optional<NviCreatorType> getAnyNviCreatorIfPresent(JsonNode contributor) {
-        return getVerifiedNviCreatorIfPresent(contributor).map(NviCreatorType.class::cast)
-                                                          .or(() -> getUnverifiedNviCreatorIfPresent(contributor).map(
+    // FIXME
+    public static Optional<NviCreatorType> getAnyNviCreatorIfPresent(JsonNode contributor, Candidate candidate) {
+        return getVerifiedNviCreatorIfPresent(contributor, candidate).map(NviCreatorType.class::cast)
+                                                                     .or(() -> getUnverifiedNviCreatorIfPresent(
+                                                                         contributor,
+                                                                         candidate).map(
                                                               NviCreatorType.class::cast));
     }
 
     private ContributorType createContributor(JsonNode contributor) {
         var identity = contributor.at(JSON_PTR_IDENTITY);
-        return getAnyNviCreatorIfPresent(contributor)
+        return getAnyNviCreatorIfPresent(contributor, candidate)
                    .map(value -> generateNviContributor(contributor, identity))
                    .orElseGet(() -> generateContributor(contributor, identity));
     }
@@ -398,7 +405,7 @@ public final class NviCandidateIndexDocumentGenerator {
     }
 
     private boolean isNviAffiliation(JsonNode affiliation, JsonNode contributor) {
-        var nviCreator = getAnyNviCreatorIfPresent(contributor);
+        var nviCreator = getAnyNviCreatorIfPresent(contributor, candidate);
         return nviCreator.isPresent() && isNviAffiliation(nviCreator.get(), affiliation);
     }
 
@@ -445,11 +452,11 @@ public final class NviCandidateIndexDocumentGenerator {
         return attempt(() -> organizationRetriever.fetchOrganization(uri).toJsonString()).toOptional();
     }
 
-    private String extractId(JsonNode jsonNode) {
+    private static String extractId(JsonNode jsonNode) {
         return extractJsonNodeTextValue(jsonNode, JSON_PTR_ID);
     }
 
-    private String extractName(JsonNode jsonNode) {
+    private static String extractName(JsonNode jsonNode) {
         return extractJsonNodeTextValue(jsonNode, JSON_PTR_NAME);
     }
 
@@ -467,10 +474,6 @@ public final class NviCandidateIndexDocumentGenerator {
 
     private String extractInstanceType() {
         return extractJsonNodeTextValue(expandedResource, JSON_PTR_INSTANCE_TYPE);
-    }
-
-    private Stream<JsonNode> getJsonNodeStream(JsonNode jsonNode, String jsonPtr) {
-        return StreamSupport.stream(jsonNode.at(jsonPtr).spliterator(), false);
     }
 
     private PublicationDate formatPublicationDate(JsonNode publicationDateNode) {
