@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.rest.fetch;
 
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import java.net.URI;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 
@@ -45,11 +46,11 @@ public record ReportStatusDto(URI publicationId, StatusDto reportStatus, String 
         }
 
         @JsonValue
-        public String getDescription() {
+        public String getStatus() throws JsonProcessingException {
             var jsonNode = dtoObjectMapper.createObjectNode();
             jsonNode.put("status", this.toString());
             jsonNode.put("description", description);
-            return jsonNode.toString();
+            return dtoObjectMapper.writeValueAsString(jsonNode);
         }
     }
 

@@ -90,7 +90,7 @@ class FetchReportStatusByPublicationIdHandlerTest extends LocalDynamoTest {
         assertEquals(expected, actualResponseBody);
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "Should return under review when at least one approval with status: {0}")
     @EnumSource(value = ApprovalStatus.class, names = {"APPROVED", "REJECTED"})
     void shouldReturnUnderReviewWhenPublicationIsCandidateWithAtLeastOneNonPendingApprovalInOpenPeriod(
         ApprovalStatus approvalStatus) throws IOException {

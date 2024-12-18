@@ -364,7 +364,7 @@ class CandidateTest extends CandidateTestSetup {
         assertTrue(candidate.isPendingReview());
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "Should return false when at least one approval is: {0}")
     @EnumSource(value = ApprovalStatus.class, names = {"APPROVED", "REJECTED"})
     void shouldReturnFalseWhenAtLeastOneApprovalIsApprovedOrRejected(ApprovalStatus approvalStatus) {
         var reviewingInstitution = randomUri();
@@ -374,7 +374,7 @@ class CandidateTest extends CandidateTestSetup {
         assertFalse(candidate.isPendingReview());
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "Should return true when at least one approval is: {0}")
     @EnumSource(value = ApprovalStatus.class, names = {"APPROVED", "REJECTED"})
     void shouldReturnTrueWhenAtLeastOneApprovalIsApprovedOrRejected(ApprovalStatus approvalStatus) {
         var reviewingInstitution = randomUri();
