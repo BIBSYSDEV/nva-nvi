@@ -38,17 +38,17 @@ public record ReportStatusDto(URI publicationId, StatusDto reportStatus, String 
         REPORTED("Reported in closed period"),
         NOT_REPORTED("Not reported in closed period"),
         NOT_CANDIDATE("Not a candidate");
-        private final String value;
+        private final String description;
 
-        StatusDto(String value) {
-            this.value = value;
+        StatusDto(String description) {
+            this.description = description;
         }
 
         @JsonValue
-        public String getValue() {
+        public String getDescription() {
             var jsonNode = dtoObjectMapper.createObjectNode();
             jsonNode.put("status", this.toString());
-            jsonNode.put("description", value);
+            jsonNode.put("description", description);
             return jsonNode.toString();
         }
     }
