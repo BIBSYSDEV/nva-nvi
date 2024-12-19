@@ -311,6 +311,8 @@ public final class TestUtils {
         return randomCandidateBuilder(true).publicationDate(publicationDate(year)).build();
     }
 
+    @Deprecated
+    // This method is used to set up a reported candidate, but should be removed once Candidate.report is implemented
     public static CandidateDao setupReportedCandidate(CandidateRepository repository, String year) {
         var institutionId = randomUri();
         return repository.create(randomCandidateBuilder(true, institutionId)
