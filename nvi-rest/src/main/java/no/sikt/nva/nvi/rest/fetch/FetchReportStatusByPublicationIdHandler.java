@@ -46,9 +46,7 @@ public class FetchReportStatusByPublicationIdHandler extends ApiGatewayHandler<V
     protected ReportStatusDto processInput(Void unused, RequestInfo requestInfo, Context context)
         throws ApiGatewayException {
         var publicationId = getPublicationId(requestInfo);
-        return attempt(() -> publicationId)
-                   .map(identifier -> Candidate.fetchByPublicationId(() -> identifier, candidateRepository,
-                                                                     periodRepository))
+        return attempt(() -> Candidate.fetchByPublicationId(() -> publicationId, candidateRepository, periodRepository))
                    .map(ReportStatusDto::fromCandidate)
                    .orElse(failure -> handleNotFoundOrFailure(failure, publicationId));
     }
