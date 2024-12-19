@@ -57,7 +57,7 @@ class PeriodStatusTest {
         assertThat(actualDto.year(), is(equalTo(expectedDto.year())));
     }
 
-    @ParameterizedTest()
+    @ParameterizedTest(name="shouldConvertPeriodToPeriodStatusCorrectly {index}")
     @MethodSource("periodToPeriodStatusProvider")
     void shouldConvertPeriodToPeriodStatusCorrectly(DbNviPeriod period, Status expectedStatus) {
         var actualStatus = PeriodStatus.fromPeriod(period);

@@ -106,7 +106,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
         assertThat(actualNewStatus, is(equalTo(newStatus)));
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name="Should reset approval when changing to pending from {0}")
     @EnumSource(value = ApprovalStatus.class, names = {"REJECTED", APPROVED})
     void shouldResetApprovalWhenChangingToPending(ApprovalStatus oldStatus) {
         var institutionId = randomUri();
@@ -123,7 +123,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
         assertThat(approvalStatus.getFinalizedDate(), is(nullValue()));
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name="Should remove reason when updating from rejection status to {0}")
     @EnumSource(value = ApprovalStatus.class, names = {"PENDING", APPROVED})
     void shouldRemoveReasonWhenUpdatingFromRejectionStatusToNewStatus(ApprovalStatus newStatus) {
         var institutionId = randomUri();
@@ -181,7 +181,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
                      () -> Candidate.upsert(updateRequest, candidateRepository, periodRepository));
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name="shouldThrowUnsupportedOperationWhenRejectingWithoutReason {0}")
     @EnumSource(value = ApprovalStatus.class, names = {"PENDING", APPROVED})
     void shouldThrowUnsupportedOperationWhenRejectingWithoutReason(ApprovalStatus oldStatus) {
         var institutionId = randomUri();
@@ -194,7 +194,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
             createRejectionRequestWithoutReason(institutionId, randomString())));
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name="shouldThrowIllegalArgumentExceptionWhenUpdateStatusWithoutUsername {0}")
     @EnumSource(value = ApprovalStatus.class, names = {"PENDING", APPROVED, "REJECTED"})
     void shouldThrowIllegalArgumentExceptionWhenUpdateStatusWithoutUsername(ApprovalStatus newStatus) {
         var institutionId = randomUri();
@@ -242,7 +242,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
         assertThrows(IllegalArgumentException.class, () -> candidateBO.updateApproval(() -> institutionId));
     }
 
-    @ParameterizedTest()
+    @ParameterizedTest(name="Should not allow to update approval when candidate is not within period {0}")
     @MethodSource("periodRepositoryProvider")
     void shouldNotAllowToUpdateApprovalWhenCandidateIsNotWithinPeriod(PeriodRepository periodRepository) {
         var candidate = randomApplicableCandidate(candidateRepository, periodRepository);
@@ -343,9 +343,9 @@ class CandidateApprovalTest extends CandidateTestSetup {
         assertThat(updatedCandidate.getApprovals().size(), is(greaterThan(0)));
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name="Should reset approvals when {0}")
     @MethodSource("candidateResetCauseProvider")
-    @DisplayName("Should reset approvals when updating fields effecting approvals")
+    @DisplayName("Should reset approvals when updating fields affecting approvals")
     void shouldResetApprovalsWhenUpdatingFieldsEffectingApprovals(CandidateResetCauseArgument arguments) {
         var upsertCandidateRequest = getUpsertCandidateRequestWithHardcodedValues();
 

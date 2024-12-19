@@ -119,7 +119,7 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
         assertTrue(hasUpdatedVersions(daos), "All candidates should have been updated with new version");
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "shouldUpdateDataEntriesWithGivenTypeWhenRequestContainsType: {0}")
     @ValueSource(strings = {CandidateDao.TYPE, ApprovalStatusDao.TYPE, NoteDao.TYPE, NviPeriodDao.TYPE})
     void shouldUpdateDataEntriesWithGivenTypeWhenRequestContainsType(String type) {
         createPeriod();

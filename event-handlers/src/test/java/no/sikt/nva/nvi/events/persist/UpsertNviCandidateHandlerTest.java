@@ -106,7 +106,7 @@ class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         assertThat(appender.getMessages(), containsString(ERROR_MESSAGE_BODY_INVALID));
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name= "should send message to DLQ when message invalid: {0}")
     @MethodSource("invalidCandidateEvaluatedMessages")
     void shouldSendMessageToDlqWhenMessageInvalid(CandidateEvaluatedMessage message) {
         handler.handleRequest(createEvent(message), CONTEXT);
