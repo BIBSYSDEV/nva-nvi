@@ -589,12 +589,13 @@ public final class CandidateDao extends Dao {
         }
     }
 
+    // Note that this has defaultImpl = DbCreator.class to handle old data without type information
     @JsonSerialize
     @JsonSubTypes({
         @JsonSubTypes.Type(value = DbUnverifiedCreator.class, name = "DbUnverifiedCreator"),
         @JsonSubTypes.Type(value = DbCreator.class, name = "DbCreator")
     })
-    @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
+    @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type", defaultImpl = DbCreator.class)
     public sealed interface DbCreatorType permits DbCreator, DbUnverifiedCreator {
         List<URI> affiliations();
         DbCreatorType copy();
