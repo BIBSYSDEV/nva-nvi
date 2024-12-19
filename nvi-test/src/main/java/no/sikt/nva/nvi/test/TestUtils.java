@@ -135,11 +135,6 @@ public final class TestUtils {
         return no.sikt.nva.nvi.common.service.model.Username.fromString(randomString());
     }
 
-    public static DbLevel randomLevelExcluding(DbLevel level) {
-        var levels = Arrays.stream(DbLevel.values()).filter(type -> !type.equals(level)).toList();
-        return levels.get(RANDOM.nextInt(levels.size()));
-    }
-
     public static String randomYear() {
         return String.valueOf(randomIntBetween(START_DATE.getYear(), LocalDate.now().getYear()));
     }
@@ -318,6 +313,8 @@ public final class TestUtils {
         return randomCandidateBuilder(true).publicationDate(publicationDate(year)).build();
     }
 
+    @Deprecated
+    // This method is used to set up a reported candidate, but should be removed once Candidate.report is implemented
     public static CandidateDao setupReportedCandidate(CandidateRepository repository, String year) {
         var institutionId = randomUri();
         return repository.create(randomCandidateBuilder(true, institutionId)

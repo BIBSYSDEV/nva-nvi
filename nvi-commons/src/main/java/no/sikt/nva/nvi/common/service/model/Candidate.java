@@ -5,6 +5,7 @@ import static java.util.Objects.nonNull;
 import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.db.ReportStatus.REPORTED;
 import static no.sikt.nva.nvi.common.service.model.ApprovalStatus.APPROVED;
+import static no.sikt.nva.nvi.common.service.model.ApprovalStatus.PENDING;
 import static no.sikt.nva.nvi.common.service.model.ApprovalStatus.REJECTED;
 import static no.sikt.nva.nvi.common.utils.DecimalUtils.adjustScaleAndRoundingMode;
 import static nva.commons.core.attempt.Try.attempt;
@@ -258,6 +259,18 @@ public final class Candidate {
 
     public boolean isReported() {
         return REPORTED.equals(reportStatus);
+    }
+
+    public boolean isNotReportedInClosedPeriod() {
+        return !isReported() && period.isClosed();
+    }
+
+    public boolean isUnderReview() {
+        return !areAllApprovalsPending() && period.isOpen();
+    }
+
+    public boolean isPendingReview() {
+        return areAllApprovalsPending() && period.isOpen();
     }
 
     public GlobalApprovalStatus getGlobalApprovalStatus() {
@@ -695,8 +708,12 @@ public final class Candidate {
         return streamApprovals().map(Approval::getStatus).allMatch(APPROVED::equals);
     }
 
+    private boolean areAllApprovalsPending() {
+        return streamApprovals().map(Approval::getStatus).allMatch(PENDING::equals);
+    }
+
     private boolean areAnyApprovalsPending() {
-        return streamApprovals().anyMatch(approval -> ApprovalStatus.PENDING.equals(approval.getStatus()));
+        return streamApprovals().anyMatch(approval -> PENDING.equals(approval.getStatus()));
     }
 
     private Stream<Approval> streamApprovals() {

@@ -1,8 +1,10 @@
 package no.sikt.nva.nvi.common.service;
 
+import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.createUpdateStatusRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertNonCandidateRequest;
+import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningClosedPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.randomApplicableCandidate;
 import static no.sikt.nva.nvi.test.TestUtils.randomApproval;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
@@ -19,6 +21,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -353,6 +356,54 @@ class CandidateTest extends CandidateTestSetup {
 
         assertEquals(candidate, updatedCandidate);
         assertNotEquals(dao.version(), updatedDao.version());
+    }
+
+    @Test
+    void shouldReturnTrueWhenAllApprovalsArePending() {
+        var candidate = upsert(createUpsertCandidateRequest(randomUri(), randomUri()));
+        assertTrue(candidate.isPendingReview());
+    }
+
+    @ParameterizedTest(name = "Should return false when at least one approval is: {0}")
+    @EnumSource(value = ApprovalStatus.class, names = {"APPROVED", "REJECTED"})
+    void shouldReturnFalseWhenAtLeastOneApprovalIsApprovedOrRejected(ApprovalStatus approvalStatus) {
+        var reviewingInstitution = randomUri();
+        var candidate = upsert(createUpsertCandidateRequest(reviewingInstitution, randomUri()));
+        candidate.updateApproval(
+            createUpdateStatusRequest(approvalStatus, reviewingInstitution, randomString()));
+        assertFalse(candidate.isPendingReview());
+    }
+
+    @ParameterizedTest(name = "Should return true when at least one approval is: {0}")
+    @EnumSource(value = ApprovalStatus.class, names = {"APPROVED", "REJECTED"})
+    void shouldReturnTrueWhenAtLeastOneApprovalIsApprovedOrRejected(ApprovalStatus approvalStatus) {
+        var reviewingInstitution = randomUri();
+        var candidate = upsert(createUpsertCandidateRequest(reviewingInstitution, randomUri()));
+        candidate.updateApproval(
+            createUpdateStatusRequest(approvalStatus, reviewingInstitution, randomString()));
+        assertTrue(candidate.isUnderReview());
+    }
+
+    @Test
+    void shouldReturnTrueWhenCandidateIsNotReportedInClosedPeriod() {
+        var periodRepository = periodRepositoryReturningClosedPeriod(CURRENT_YEAR);
+        var requestForClosedPeriod = randomUpsertRequestBuilder()
+                                         .withPublicationDate(
+                                             new PublicationDate(String.valueOf(CURRENT_YEAR), null, null))
+                                         .build();
+        Candidate.upsert(requestForClosedPeriod, candidateRepository, this.periodRepository);
+        var candidate = Candidate.fetchByPublicationId(requestForClosedPeriod::publicationId, candidateRepository,
+                                                       periodRepository);
+
+        assertTrue(candidate.isNotReportedInClosedPeriod());
+    }
+
+    @Test
+    void shouldReturnFalseWhenCandidateIsReportedInClosedPeriod() {
+        var dao = setupReportedCandidate(candidateRepository, String.valueOf(CURRENT_YEAR));
+        var periodRepository = periodRepositoryReturningClosedPeriod(CURRENT_YEAR);
+        var candidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
+        assertFalse(candidate.isNotReportedInClosedPeriod());
     }
 
     @Deprecated
