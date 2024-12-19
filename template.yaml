@@ -1088,7 +1088,7 @@ Resources:
         GetEvent:
           Type: Api
           Properties:
-            Path: /publication/{publicationId+}/report-status
+            Path: /publication/{publicationId}/report-status
             Method: get
             RestApiId: !Ref ScientificIndexApi
 
