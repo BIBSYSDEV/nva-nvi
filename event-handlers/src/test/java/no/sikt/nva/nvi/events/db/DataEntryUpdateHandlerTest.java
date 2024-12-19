@@ -93,7 +93,7 @@ class DataEntryUpdateHandlerTest {
         handler = new DataEntryUpdateHandler(snsClient, ENVIRONMENT, queueClient);
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name="shouldConvertDynamoDbEventToDataEntryUpdateEvent {index}")
     @MethodSource("dynamoDbEventProvider")
     void shouldConvertDynamoDbEventToDataEntryUpdateEvent(Dao oldImage, Dao newImage, String expectedTopic,
                                                           OperationType operationType) {
@@ -105,7 +105,7 @@ class DataEntryUpdateHandlerTest {
         assertEquals(expectedPublishedMessage, snsClient.getPublishedMessages().get(0));
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name="shouldDoNothingWhenReceivingEventWithOtherDaoTypes {index}")
     @MethodSource("otherDaoTypesProvider")
     void shouldDoNothingWhenReceivingEventWithOtherDaoTypes(Dao dao) {
         var event = createEvent(dao, dao, randomElement(OperationType.values()));

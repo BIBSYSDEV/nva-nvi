@@ -12,7 +12,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 class InstanceTypeTest {
 
-    @ParameterizedTest
+    @ParameterizedTest(name="shouldParseValidStrings {0}")
     @ValueSource(strings = {"AcademicCommentary", "AcademicMonograph", "AcademicChapter", "AcademicArticle",
         "AcademicLiteratureReview"})
     void shouldParseValidStrings(String value) {

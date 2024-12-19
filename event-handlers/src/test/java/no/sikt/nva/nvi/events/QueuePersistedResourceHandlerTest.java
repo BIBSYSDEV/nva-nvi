@@ -44,7 +44,7 @@ class QueuePersistedResourceHandlerTest {
         assertThat(appender.getMessages(), containsString("Invalid EventReference, missing uri"));
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name="shouldNotQueueResourcesThatAreNotPublications {0}")
     @ValueSource(strings = {"s3://persisted-resources-884807050265/tickets/123.gz",
         "https://example.com/someOtherThing/123"})
     void shouldNotQueueResourcesThatAreNotPublications(String uri) throws IOException {

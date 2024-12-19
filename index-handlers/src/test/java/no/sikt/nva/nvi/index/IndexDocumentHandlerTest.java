@@ -310,7 +310,7 @@ class IndexDocumentHandlerTest extends LocalDynamoTest {
         assertEquals(expectedConsumptionAttributes, actualIndexDocument.consumptionAttributes());
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name = "shouldExtractLanguageFromExpandedResource: {0}")
     @ValueSource(booleans = {true, false})
     void shouldExtractOptionalLanguageFromExpandedResource(boolean languageExists) {
         var candidate = randomApplicableCandidate(HARD_CODED_TOP_LEVEL_ORG, randomUri());
@@ -326,7 +326,7 @@ class IndexDocumentHandlerTest extends LocalDynamoTest {
         assertEquals(expectedIndexDocument, actualIndexDocument);
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name= "shouldExtractOptionalPrintIssnFromExpandedResource: {0}")
     @MethodSource("channelTypeIssnProvider")
     void shouldExtractOptionalPrintIssnFromExpandedResource(ChannelType channelType, boolean printIssnExists) {
         var candidate = randomApplicableCandidate(channelType);
@@ -342,7 +342,7 @@ class IndexDocumentHandlerTest extends LocalDynamoTest {
         assertEquals(expectedIndexDocument, actualIndexDocument);
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name= "shouldGenerateIndexDocumentForAllPublicationChannelTypes: {0}")
     @EnumSource(ChannelType.class)
     void shouldGenerateIndexDocumentForAllPublicationChannelTypes(ChannelType channelType) {
         var candidate = randomApplicableCandidate(channelType);
@@ -359,7 +359,7 @@ class IndexDocumentHandlerTest extends LocalDynamoTest {
         assertEquals(expectedIndexDocument, actualIndexDocument);
     }
 
-    @ParameterizedTest
+    @ParameterizedTest(name= "shouldExtractOptionalAbstractFromExpandedResource: {0}")
     @ValueSource(booleans = {true, false})
     void shouldExtractOptionalAbstractFromExpandedResource(boolean abstractExists) {
         var candidate = randomApplicableCandidate(HARD_CODED_TOP_LEVEL_ORG, randomUri());
