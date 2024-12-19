@@ -1,15 +1,14 @@
 package no.sikt.nva.nvi.rest.fetch;
 
-import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
-import com.fasterxml.jackson.annotation.JsonValue;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import java.net.URI;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 
-public record ReportStatusDto(URI publicationId, StatusDto reportStatus, String period) {
+public record ReportStatusDto(URI publicationId, StatusWithDescriptionDto reportStatus, String period) {
 
     public static ReportStatusDto fromCandidate(Candidate candidate) {
-        return new ReportStatusDto(candidate.getPublicationId(), getStatus(candidate), candidate.getPeriod().year());
+        return new ReportStatusDto(candidate.getPublicationId(),
+                                   StatusWithDescriptionDto.fromStatus(getStatus(candidate)),
+                                   candidate.getPeriod().year());
     }
 
     public static Builder builder() {
@@ -45,20 +44,15 @@ public record ReportStatusDto(URI publicationId, StatusDto reportStatus, String 
             this.description = description;
         }
 
-        @JsonValue
-        public String getStatus() throws JsonProcessingException {
-            var jsonNode = dtoObjectMapper.createObjectNode();
-            jsonNode.put("status", this.toString());
-            jsonNode.put("description", description);
-            return dtoObjectMapper.writeValueAsString(jsonNode);
+        public String getDescription() {
+            return description;
         }
     }
 
     public static final class Builder {
 
         private URI publicationId;
-        private StatusDto status;
-
+        private StatusWithDescriptionDto status;
         private String year;
 
         private Builder() {
@@ -70,7 +64,7 @@ public record ReportStatusDto(URI publicationId, StatusDto reportStatus, String 
         }
 
         public Builder withStatus(StatusDto status) {
-            this.status = status;
+            this.status = StatusWithDescriptionDto.fromStatus(status);
             return this;
         }
 
@@ -81,6 +75,13 @@ public record ReportStatusDto(URI publicationId, StatusDto reportStatus, String 
 
         public ReportStatusDto build() {
             return new ReportStatusDto(publicationId, status, year);
+        }
+    }
+
+    private record StatusWithDescriptionDto(String status, String description) {
+
+        public static StatusWithDescriptionDto fromStatus(StatusDto status) {
+            return new StatusWithDescriptionDto(status.toString(), status.getDescription());
         }
     }
 }
