@@ -24,11 +24,11 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.client.model.Organization;
+import no.sikt.nva.nvi.common.service.model.UnverifiedNviCreator;
 import no.sikt.nva.nvi.common.utils.JsonUtils;
 import no.sikt.nva.nvi.events.evaluator.model.CustomerResponse;
 import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
 import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator.NviOrganization;
-import no.sikt.nva.nvi.events.model.UnverifiedNviCreator;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import nva.commons.core.Environment;
@@ -85,7 +85,7 @@ public class CreatorVerificationUtil {
     }
 
     private static boolean isAffiliatedWithNviOrganization(UnverifiedNviCreator creator) {
-        return !creator.nviAffiliations().isEmpty();
+        return !creator.affiliations().isEmpty();
     }
 
     private static URI createCustomerApiUri(String institutionId) {
@@ -155,7 +155,7 @@ public class CreatorVerificationUtil {
     private UnverifiedNviCreator toUnverifiedNviCreator(JsonNode contributorNode) {
         return UnverifiedNviCreator.builder()
                                    .withName(extractContributorName(contributorNode))
-                                   .withNviAffiliations(getNviAffiliationUrisIfExist(contributorNode))
+                                   .withAffiliations(getNviAffiliationUrisIfExist(contributorNode))
                                    .build();
     }
 

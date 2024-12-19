@@ -6,15 +6,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.db.CandidateDao;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCreatorType;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 
 @JsonSerialize
-public record PublicationDetails(URI publicationId,
-                                 URI publicationBucketUri,
-                                 String type,
-                                 PublicationDate publicationDate,
-                                 List<Creator> creators,
+public record PublicationDetails(URI publicationId, URI publicationBucketUri, String type,
+                                 PublicationDate publicationDate, List<NviCreatorType> creators,
                                  PublicationChannel publicationChannel) {
 
     public static PublicationDetails from(CandidateDao candidateDao) {
@@ -24,41 +21,48 @@ public record PublicationDetails(URI publicationId,
                                       dbCandidate.instanceType(),
                                       PublicationDate.from(dbCandidate.publicationDate()),
                                       dbCandidate.creators()
-                                          .stream()
-                                          .map(Creator::from)
-                                          .toList(),
+                                                 .stream()
+                                                 .map(DbCreatorType::toNviCreatorType)
+                                                 .toList(),
                                       new PublicationChannel(dbCandidate.channelType(),
                                                              dbCandidate.channelId(),
-                                                             dbCandidate.level().getValue()));
+                                                             dbCandidate.level()
+                                                                        .getValue()));
     }
 
     public List<URI> getNviCreatorAffiliations() {
         return creators.stream()
-                   .map(Creator::affiliations)
-                   .flatMap(List::stream)
-                   .toList();
+                       .map(NviCreatorType::affiliations)
+                       .flatMap(List::stream)
+                       .toList();
+    }
+
+    public List<VerifiedNviCreator> getVerifiedCreators() {
+        return creators.stream()
+                       .filter(VerifiedNviCreator.class::isInstance)
+                       .map(VerifiedNviCreator.class::cast)
+                       .toList();
+    }
+
+    public List<UnverifiedNviCreator> getUnverifiedCreators() {
+        return creators.stream()
+                       .filter(UnverifiedNviCreator.class::isInstance)
+                        .map(UnverifiedNviCreator.class::cast)
+                        .toList();
     }
 
     public Set<URI> getNviCreatorIds() {
         return creators.stream()
-                   .map(Creator::id)
-                   .collect(Collectors.toSet());
+                       .filter(VerifiedNviCreator.class::isInstance)
+                       .map(VerifiedNviCreator.class::cast)
+                       .map(VerifiedNviCreator::id)
+                       .collect(Collectors.toSet());
     }
 
     public record PublicationDate(String year, String month, String day) {
 
         public static PublicationDate from(DbPublicationDate dbPublicationDate) {
-            return new PublicationDate(dbPublicationDate.year(),
-                                       dbPublicationDate.month(),
-                                       dbPublicationDate.day());
-        }
-    }
-
-    public record Creator(URI id, List<URI> affiliations) {
-
-        public static Creator from(DbCreator dbCreator) {
-            return new Creator(dbCreator.creatorId(),
-                               dbCreator.affiliations());
+            return new PublicationDate(dbPublicationDate.year(), dbPublicationDate.month(), dbPublicationDate.day());
         }
     }
 }
