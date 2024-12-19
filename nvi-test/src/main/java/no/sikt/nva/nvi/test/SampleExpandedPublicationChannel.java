@@ -1,12 +1,10 @@
 package no.sikt.nva.nvi.test;
 
-import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.test.TestConstants.ID_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.NAME_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.TYPE_FIELD;
-import static no.sikt.nva.nvi.test.TestUtils.generatePublicationChannelId;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -84,9 +82,6 @@ public record SampleExpandedPublicationChannel(String type, URI id, String name,
         }
 
         public SampleExpandedPublicationChannel build() {
-            if (isNull(id)) {
-                id = generatePublicationChannelId(identifier);
-            }
             return new SampleExpandedPublicationChannel(type, id, name, level, valid, printIssn);
         }
     }
