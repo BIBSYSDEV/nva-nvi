@@ -5,6 +5,7 @@ import static nva.commons.core.attempt.Try.attempt;
 import java.util.List;
 import java.util.Map;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreatorType;
+import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.enhanced.dynamodb.AttributeConverter;
 import software.amazon.awssdk.enhanced.dynamodb.AttributeValueType;
 import software.amazon.awssdk.enhanced.dynamodb.EnhancedType;
@@ -34,7 +35,9 @@ public class DbCreatorTypeListConverter implements AttributeConverter<List<DbCre
                                  .toList();
     }
 
+    // This isn't used, but it's required by the interface
     @Override
+    @JacocoGenerated
     public EnhancedType<List<DbCreatorType>> type() {
         return EnhancedType.listOf(DbCreatorType.class);
     }
