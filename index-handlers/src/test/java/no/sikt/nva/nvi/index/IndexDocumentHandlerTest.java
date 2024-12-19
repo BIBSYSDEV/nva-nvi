@@ -22,6 +22,7 @@ import static no.sikt.nva.nvi.test.TestUtils.randomApproval;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidateBuilder;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.sikt.nva.nvi.test.TestUtils.setupReportedCandidate;
+import static no.sikt.nva.nvi.test.UpsertRequestBuilder.randomUpsertRequestBuilder;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.s3.S3Driver.S3_SCHEME;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
@@ -72,7 +73,6 @@ import no.sikt.nva.nvi.test.ExpandedResourceGenerator;
 import no.sikt.nva.nvi.test.FakeSqsClient;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
-import no.sikt.nva.nvi.test.UpsertRequestBuilder;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
@@ -191,13 +191,11 @@ class IndexDocumentHandlerTest extends LocalDynamoTest {
         var unverifiedCreator = UnverifiedNviCreator.builder()
                                                     .withName(randomString())
                                                     .withAffiliations(List.of(institutionId))
-                                                    .build()
-                                                    .toDao();
-        var dbCandidate = randomCandidateBuilder(true, institutionId).creators(List.of(unverifiedCreator)).build();
-
-        var dao = candidateRepository.create(dbCandidate,
-                                             List.of(randomApproval(institutionId)));
-        var candidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
+                                                    .build();
+        var request = randomUpsertRequestBuilder().withUnverifiedCreators(List.of(unverifiedCreator))
+                                                  .build();
+        Candidate.upsert(request, candidateRepository, periodRepository);
+        var candidate = Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository);
         var expectedIndexDocument = setupExistingResourceInS3AndGenerateExpectedDocument(
             candidate).indexDocument();
 
@@ -805,7 +803,7 @@ class IndexDocumentHandlerTest extends LocalDynamoTest {
     }
 
     private Candidate randomApplicableCandidate(ChannelType channelType) {
-        var request = UpsertRequestBuilder.randomUpsertRequestBuilder()
+        var request = randomUpsertRequestBuilder()
                           .withChannelType(channelType.getValue())
                           .build();
         Candidate.upsert(request, candidateRepository, periodRepository);
