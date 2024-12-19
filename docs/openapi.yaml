@@ -713,14 +713,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Problem"
-  /publication/{publicationId+}/report-status:
+  /publication/{publicationId}/report-status:
     get:
       description: Get report status by publication id
       summary: Get report status by publication id
       operationId: getReportStatusByPublicationId
       parameters:
         - in: path
-          name: publicationId+
+          name: publicationId
           description: A UTF-8 encoded URI (publicationId)
           required: true
           schema:
