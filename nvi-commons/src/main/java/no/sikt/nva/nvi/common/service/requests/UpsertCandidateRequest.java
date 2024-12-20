@@ -7,6 +7,7 @@ import java.util.Map;
 import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
+import no.sikt.nva.nvi.common.service.model.UnverifiedNviCreator;
 
 public interface UpsertCandidateRequest {
 
@@ -19,6 +20,8 @@ public interface UpsertCandidateRequest {
     boolean isInternationalCollaboration();
 
     Map<URI, List<URI>> creators();
+
+    List<UnverifiedNviCreator> unverifiedCreators();
 
     String channelType();
 

@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.events.db;
 
+import static java.util.Collections.emptyList;
 import static no.sikt.nva.nvi.test.DynamoDbTestUtils.randomDynamoDbEvent;
 import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEvent;
 import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEventWithMessages;
@@ -159,6 +160,24 @@ class DataEntryUpdateHandlerTest {
             List.of(createMessage(dao, dao, OperationType.INSERT), createMessage(UUID.randomUUID())));
         handler.handleRequest(eventWithOneInvalidRecord, CONTEXT);
         assertEquals(1, snsClient.getPublishedMessages().size());
+    }
+
+    @Test
+    void shouldNotFailWhenParsingEventWithEmptyList() {
+        var validDao = randomCandidateDao();
+        var invalidDbCandidate = validDao.candidate()
+                                         .copy()
+                                         .points(emptyList())
+                                         .build();
+        var dao = validDao.copy()
+                          .candidate(invalidDbCandidate)
+                          .build();
+        var eventWithOneInvalidRecord = createEventWithMessages(
+            List.of(createMessage(dao, dao, OperationType.INSERT), createMessage(UUID.randomUUID())));
+        handler.handleRequest(eventWithOneInvalidRecord, CONTEXT);
+        assertEquals(1,
+                     snsClient.getPublishedMessages()
+                              .size());
     }
 
     private static CandidateUniquenessEntryDao candidateUniquenessEntryDao() {

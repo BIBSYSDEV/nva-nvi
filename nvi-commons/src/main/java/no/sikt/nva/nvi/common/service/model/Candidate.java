@@ -8,6 +8,7 @@ import static no.sikt.nva.nvi.common.service.model.ApprovalStatus.APPROVED;
 import static no.sikt.nva.nvi.common.service.model.ApprovalStatus.PENDING;
 import static no.sikt.nva.nvi.common.service.model.ApprovalStatus.REJECTED;
 import static no.sikt.nva.nvi.common.utils.DecimalUtils.adjustScaleAndRoundingMode;
+import static no.sikt.nva.nvi.common.utils.RequestUtil.getAllCreators;
 import static nva.commons.core.attempt.Try.attempt;
 import static nva.commons.core.ioutils.IoUtils.stringFromResources;
 import static nva.commons.core.paths.UriWrapper.HTTPS;
@@ -31,7 +32,7 @@ import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCreatorType;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
@@ -51,7 +52,6 @@ import no.sikt.nva.nvi.common.service.dto.NoteDto;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException;
-import no.sikt.nva.nvi.common.service.model.PublicationDetails.Creator;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.CreateNoteRequest;
 import no.sikt.nva.nvi.common.service.requests.DeleteNoteRequest;
@@ -546,11 +546,14 @@ public final class Candidate {
     }
 
     private static DbCandidate mapToCandidate(UpsertCandidateRequest request) {
+        var creators = getAllCreators(request).stream()
+                                              .map(NviCreatorType::toDao)
+                                              .toList();
         return DbCandidate.builder()
                    .publicationId(request.publicationId())
                    .publicationBucketUri(request.publicationBucketUri())
                    .applicable(request.isApplicable())
-                   .creators(mapToDbCreators(request.creators()))
+                          .creators(creators)
                    .creatorShareCount(request.creatorShareCount())
                    .channelType(ChannelType.parse(request.channelType()))
                    .channelId(request.publicationChannelId())
@@ -581,25 +584,12 @@ public final class Candidate {
                    .build();
     }
 
-    private static List<Creator> mapToCreators(Map<URI, List<URI>> creators) {
-        return creators.entrySet().stream().map(e -> new Creator(e.getKey(), e.getValue())).toList();
-    }
-
-    private static List<DbCreator> mapToDbCreators(Map<URI, List<URI>> creators) {
-        return creators.entrySet()
-                   .stream()
-                   .map(creator -> new DbCreator(creator.getKey(), creator.getValue()))
-                   .toList();
-    }
-
-    private static List<DbCreator> mapToDbCreators(List<Creator> creators) {
+    private static List<DbCreatorType> mapToDbCreators(List<NviCreatorType> creators) {
         return creators.stream()
-                   .map(creator -> DbCreator.builder()
-                                       .creatorId(creator.id())
-                                       .affiliations(creator.affiliations())
-                                       .build())
-                   .toList();
+                       .map(NviCreatorType::toDao)
+                       .toList();
     }
+
 
     private static boolean isExistingCandidate(URI publicationId, CandidateRepository repository) {
         return repository.findByPublicationId(publicationId).isPresent();
@@ -680,9 +670,10 @@ public final class Candidate {
     private PublicationDetails mapToPublicationDetails(UpsertCandidateRequest request) {
         return new PublicationDetails(request.publicationId(),
                                       request.publicationBucketUri(),
-                                      request.instanceType().getValue(),
+                                      request.instanceType()
+                                             .getValue(),
                                       request.publicationDate(),
-                                      mapToCreators(request.creators()),
+                                      getAllCreators(request),
                                       new PublicationChannel(ChannelType.parse(request.channelType()),
                                                              request.publicationChannelId(),
                                                              request.level()));

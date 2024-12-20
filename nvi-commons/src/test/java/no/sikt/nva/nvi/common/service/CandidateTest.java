@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.common.service;
 
+import static no.sikt.nva.nvi.common.utils.RequestUtil.getAllCreators;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.createUpdateStatusRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
@@ -27,17 +28,16 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.math.BigDecimal;
-import java.net.URI;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCreatorType;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
@@ -54,7 +54,9 @@ import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
+import no.sikt.nva.nvi.common.service.model.NviCreatorType;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
+import no.sikt.nva.nvi.common.service.model.UnverifiedNviCreator;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.test.UpsertRequestBuilder;
 import org.junit.jupiter.api.DisplayName;
@@ -93,6 +95,23 @@ class CandidateTest extends CandidateTestSetup {
                                      .orElseThrow()
                                      .candidate();
         assertEquals(expectedLevel, persistedCandidate.level());
+    }
+
+    @Test
+    void shouldGetUnverifiedCreatorsFromDetails() {
+        var unverifiedCreator = new UnverifiedNviCreator(randomString(),
+                                                         List.of(randomUri()));
+        var upsertCandidateRequest =
+            randomUpsertRequestBuilder().withUnverifiedCreators(List.of(unverifiedCreator)).build();
+        var expectedUnverifiedCreatorCount = upsertCandidateRequest.unverifiedCreators().size();
+        var expectedVerifiedCreatorCount = upsertCandidateRequest.creators().keySet().size();
+
+        var fetchedCandidate = upsert(upsertCandidateRequest);
+
+        var actualUnverifiedCreatorCount = fetchedCandidate.getPublicationDetails().getUnverifiedCreators().size();
+        var actualVerifiedCreatorCount = fetchedCandidate.getPublicationDetails().getVerifiedCreators().size();
+        assertEquals(expectedUnverifiedCreatorCount, actualUnverifiedCreatorCount);
+        assertEquals(expectedVerifiedCreatorCount, actualVerifiedCreatorCount);
     }
 
     @Test
@@ -369,8 +388,7 @@ class CandidateTest extends CandidateTestSetup {
     void shouldReturnFalseWhenAtLeastOneApprovalIsApprovedOrRejected(ApprovalStatus approvalStatus) {
         var reviewingInstitution = randomUri();
         var candidate = upsert(createUpsertCandidateRequest(reviewingInstitution, randomUri()));
-        candidate.updateApproval(
-            createUpdateStatusRequest(approvalStatus, reviewingInstitution, randomString()));
+        candidate.updateApproval(createUpdateStatusRequest(approvalStatus, reviewingInstitution, randomString()));
         assertFalse(candidate.isPendingReview());
     }
 
@@ -379,20 +397,20 @@ class CandidateTest extends CandidateTestSetup {
     void shouldReturnTrueWhenAtLeastOneApprovalIsApprovedOrRejected(ApprovalStatus approvalStatus) {
         var reviewingInstitution = randomUri();
         var candidate = upsert(createUpsertCandidateRequest(reviewingInstitution, randomUri()));
-        candidate.updateApproval(
-            createUpdateStatusRequest(approvalStatus, reviewingInstitution, randomString()));
+        candidate.updateApproval(createUpdateStatusRequest(approvalStatus, reviewingInstitution, randomString()));
         assertTrue(candidate.isUnderReview());
     }
 
     @Test
     void shouldReturnTrueWhenCandidateIsNotReportedInClosedPeriod() {
         var periodRepository = periodRepositoryReturningClosedPeriod(CURRENT_YEAR);
-        var requestForClosedPeriod = randomUpsertRequestBuilder()
-                                         .withPublicationDate(
-                                             new PublicationDate(String.valueOf(CURRENT_YEAR), null, null))
-                                         .build();
+        var requestForClosedPeriod =
+            randomUpsertRequestBuilder().withPublicationDate(new PublicationDate(String.valueOf(
+                                                                     CURRENT_YEAR), null, null))
+                                                                 .build();
         Candidate.upsert(requestForClosedPeriod, candidateRepository, this.periodRepository);
-        var candidate = Candidate.fetchByPublicationId(requestForClosedPeriod::publicationId, candidateRepository,
+        var candidate = Candidate.fetchByPublicationId(requestForClosedPeriod::publicationId,
+                                                       candidateRepository,
                                                        periodRepository);
 
         assertTrue(candidate.isNotReportedInClosedPeriod());
@@ -445,6 +463,22 @@ class CandidateTest extends CandidateTestSetup {
         return UpsertRequestBuilder.fromRequest(insertRequest).build();
     }
 
+    private static List<DbCreatorType> mapToDbCreators(List<NviCreatorType> creators) {
+        return creators.stream()
+                       .map(NviCreatorType::toDao)
+                       .toList();
+    }
+
+    private DbPublicationDate mapToDbPublicationDate(PublicationDate publicationDate) {
+        return new DbPublicationDate(publicationDate.year(), publicationDate.month(), publicationDate.day());
+    }
+
+    private List<DbInstitutionPoints> mapToDbInstitutionPoints(List<InstitutionPoints> points) {
+        return points.stream()
+                   .map(DbInstitutionPoints::from)
+                   .toList();
+    }
+
     private DbCandidate generateExpectedCandidate(Candidate candidate, UpsertCandidateRequest request) {
         return new CandidateDao(candidate.getIdentifier(),
                                 DbCandidate.builder()
@@ -459,25 +493,11 @@ class CandidateTest extends CandidateTestSetup {
                                     .basePoints(adjustScaleAndRoundingMode(request.basePoints()))
                                     .internationalCollaboration(request.isInternationalCollaboration())
                                     .collaborationFactor(adjustScaleAndRoundingMode(request.collaborationFactor()))
-                                    .creators(mapToDbCreators(request.creators()))
+                                           .creators(mapToDbCreators(getAllCreators(request)))
                                     .creatorShareCount(request.creatorShareCount())
                                     .points(mapToDbInstitutionPoints(request.institutionPoints()))
                                     .totalPoints(adjustScaleAndRoundingMode(request.totalPoints()))
                                     .createdDate(candidate.getCreatedDate())
                                     .build(), randomString(), randomString()).candidate();
-    }
-
-    private DbPublicationDate mapToDbPublicationDate(PublicationDate publicationDate) {
-        return new DbPublicationDate(publicationDate.year(), publicationDate.month(), publicationDate.day());
-    }
-
-    private List<DbInstitutionPoints> mapToDbInstitutionPoints(List<InstitutionPoints> points) {
-        return points.stream()
-                   .map(DbInstitutionPoints::from)
-                   .toList();
-    }
-
-    private List<DbCreator> mapToDbCreators(Map<URI, List<URI>> creators) {
-        return creators.entrySet().stream().map(entry -> new DbCreator(entry.getKey(), entry.getValue())).toList();
     }
 }
