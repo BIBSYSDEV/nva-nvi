@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.common.utils;
 
+import static java.util.Collections.emptyList;
 import static java.util.Objects.nonNull;
 import static no.unit.nva.commons.json.JsonUtils.dynamoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
@@ -64,6 +65,12 @@ public final class DynamoDbUtils {
         }
         if (containsAttributeValueMap(value)) {
             return mapEachAttributeValueToDynamoDbValue(value);
+        }
+        if (nonNull(value.getL()) && value.getL()
+                                          .isEmpty()) {
+            return AttributeValue.builder()
+                                 .l(emptyList())
+                                 .build();
         }
         var json = writeAsString(value);
         return dynamoObjectMapper.readValue(json, AttributeValue.serializableBuilderClass()).build();
