@@ -95,7 +95,7 @@ class FetchReportStatusByPublicationIdHandlerTest extends LocalDynamoTest {
     void shouldReturnUnderReviewWhenPublicationIsCandidateWithAtLeastOneNonPendingApprovalInOpenPeriod(
         ApprovalStatus approvalStatus) throws IOException {
         var institutionId = randomUri();
-        var upsertCandidateRequest = createUpsertCandidateRequest(institutionId, randomUri());
+        var upsertCandidateRequest = createUpsertCandidateRequest(new URI[]{institutionId, randomUri()}).build();
         var candidate = upsert(upsertCandidateRequest);
         candidate.updateApproval(
             new UpdateStatusRequest(institutionId, approvalStatus, randomString(), randomString()));
@@ -116,11 +116,14 @@ class FetchReportStatusByPublicationIdHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldReturnApprovedWhenPublicationIsCandidateWithAllApprovalsApproved() throws IOException {
-        var institutionId = randomUri();
-        var upsertCandidateRequest = createUpsertCandidateRequest(institutionId).build();
+        var institution1 = randomUri();
+        var institution2 = randomUri();
+        var upsertCandidateRequest = createUpsertCandidateRequest(institution1, institution2);
         var candidate = upsert(upsertCandidateRequest);
         candidate.updateApproval(
-            new UpdateStatusRequest(institutionId, ApprovalStatus.APPROVED, randomString(), randomString()));
+            new UpdateStatusRequest(institution1, ApprovalStatus.APPROVED, randomString(), randomString()));
+        candidate.updateApproval(
+            new UpdateStatusRequest(institution2, ApprovalStatus.APPROVED, randomString(), randomString()));
         periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
         var handler = new FetchReportStatusByPublicationIdHandler(candidateRepository, periodRepository);
 
@@ -138,11 +141,14 @@ class FetchReportStatusByPublicationIdHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldReturnRejectedWhenPublicationIsCandidateWithAllApprovalsRejected() throws IOException {
-        var institutionId = randomUri();
-        var upsertCandidateRequest = createUpsertCandidateRequest(institutionId).build();
+        var institution1 = randomUri();
+        var institution2 = randomUri();
+        var upsertCandidateRequest = createUpsertCandidateRequest(institution1, institution2);
         var candidate = upsert(upsertCandidateRequest);
         candidate.updateApproval(
-            new UpdateStatusRequest(institutionId, ApprovalStatus.REJECTED, randomString(), randomString()));
+            new UpdateStatusRequest(institution1, ApprovalStatus.REJECTED, randomString(), randomString()));
+        candidate.updateApproval(
+            new UpdateStatusRequest(institution2, ApprovalStatus.REJECTED, randomString(), randomString()));
         periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
         var handler = new FetchReportStatusByPublicationIdHandler(candidateRepository, periodRepository);
 
