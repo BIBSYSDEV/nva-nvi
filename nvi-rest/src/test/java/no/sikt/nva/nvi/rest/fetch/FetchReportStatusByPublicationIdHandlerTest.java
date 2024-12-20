@@ -94,11 +94,12 @@ class FetchReportStatusByPublicationIdHandlerTest extends LocalDynamoTest {
     @EnumSource(value = ApprovalStatus.class, names = {"APPROVED", "REJECTED"})
     void shouldReturnUnderReviewWhenPublicationIsCandidateWithAtLeastOneNonPendingApprovalInOpenPeriod(
         ApprovalStatus approvalStatus) throws IOException {
-        var institutionId = randomUri();
-        var upsertCandidateRequest = createUpsertCandidateRequest(institutionId, randomUri());
+        var institution1 = randomUri();
+        var involvedInstitutions = new URI[]{institution1, randomUri()};
+        var upsertCandidateRequest = createUpsertCandidateRequest(involvedInstitutions).build();
         var candidate = upsert(upsertCandidateRequest);
         candidate.updateApproval(
-            new UpdateStatusRequest(institutionId, approvalStatus, randomString(), randomString()));
+            new UpdateStatusRequest(institution1, approvalStatus, randomString(), randomString()));
         periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
         var handler = new FetchReportStatusByPublicationIdHandler(candidateRepository, periodRepository);
 
@@ -109,6 +110,56 @@ class FetchReportStatusByPublicationIdHandlerTest extends LocalDynamoTest {
         var expected = ReportStatusDto.builder()
                            .withPublicationId(candidate.getPublicationId())
                            .withStatus(StatusDto.UNDER_REVIEW)
+                           .withYear(String.valueOf(CURRENT_YEAR))
+                           .build();
+        assertEquals(expected, actualResponseBody);
+    }
+
+    @Test
+    void shouldReturnApprovedWhenPublicationIsCandidateWithAllApprovalsApproved() throws IOException {
+        var institution1 = randomUri();
+        var institution2 = randomUri();
+        var upsertCandidateRequest = createUpsertCandidateRequest(institution1, institution2);
+        var candidate = upsert(upsertCandidateRequest);
+        candidate.updateApproval(
+            new UpdateStatusRequest(institution1, ApprovalStatus.APPROVED, randomString(), randomString()));
+        candidate.updateApproval(
+            new UpdateStatusRequest(institution2, ApprovalStatus.APPROVED, randomString(), randomString()));
+        periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
+        var handler = new FetchReportStatusByPublicationIdHandler(candidateRepository, periodRepository);
+
+        handler.handleRequest(createRequest(candidate.getPublicationId()), output, context);
+
+        var actualResponseBody = GatewayResponse.fromOutputStream(output, ReportStatusDto.class)
+                                     .getBodyObject(ReportStatusDto.class);
+        var expected = ReportStatusDto.builder()
+                           .withPublicationId(candidate.getPublicationId())
+                           .withStatus(StatusDto.APPROVED)
+                           .withYear(String.valueOf(CURRENT_YEAR))
+                           .build();
+        assertEquals(expected, actualResponseBody);
+    }
+
+    @Test
+    void shouldReturnRejectedWhenPublicationIsCandidateWithAllApprovalsRejected() throws IOException {
+        var institution1 = randomUri();
+        var institution2 = randomUri();
+        var upsertCandidateRequest = createUpsertCandidateRequest(institution1, institution2);
+        var candidate = upsert(upsertCandidateRequest);
+        candidate.updateApproval(
+            new UpdateStatusRequest(institution1, ApprovalStatus.REJECTED, randomString(), randomString()));
+        candidate.updateApproval(
+            new UpdateStatusRequest(institution2, ApprovalStatus.REJECTED, randomString(), randomString()));
+        periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
+        var handler = new FetchReportStatusByPublicationIdHandler(candidateRepository, periodRepository);
+
+        handler.handleRequest(createRequest(candidate.getPublicationId()), output, context);
+
+        var actualResponseBody = GatewayResponse.fromOutputStream(output, ReportStatusDto.class)
+                                     .getBodyObject(ReportStatusDto.class);
+        var expected = ReportStatusDto.builder()
+                           .withPublicationId(candidate.getPublicationId())
+                           .withStatus(StatusDto.REJECTED)
                            .withYear(String.valueOf(CURRENT_YEAR))
                            .build();
         assertEquals(expected, actualResponseBody);
