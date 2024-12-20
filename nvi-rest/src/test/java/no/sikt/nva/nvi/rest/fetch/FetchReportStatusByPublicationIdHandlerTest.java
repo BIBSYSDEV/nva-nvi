@@ -94,11 +94,12 @@ class FetchReportStatusByPublicationIdHandlerTest extends LocalDynamoTest {
     @EnumSource(value = ApprovalStatus.class, names = {"APPROVED", "REJECTED"})
     void shouldReturnUnderReviewWhenPublicationIsCandidateWithAtLeastOneNonPendingApprovalInOpenPeriod(
         ApprovalStatus approvalStatus) throws IOException {
-        var institutionId = randomUri();
-        var upsertCandidateRequest = createUpsertCandidateRequest(new URI[]{institutionId, randomUri()}).build();
+        var institution1 = randomUri();
+        var involvedInstitutions = new URI[]{institution1, randomUri()};
+        var upsertCandidateRequest = createUpsertCandidateRequest(involvedInstitutions).build();
         var candidate = upsert(upsertCandidateRequest);
         candidate.updateApproval(
-            new UpdateStatusRequest(institutionId, approvalStatus, randomString(), randomString()));
+            new UpdateStatusRequest(institution1, approvalStatus, randomString(), randomString()));
         periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
         var handler = new FetchReportStatusByPublicationIdHandler(candidateRepository, periodRepository);
 
