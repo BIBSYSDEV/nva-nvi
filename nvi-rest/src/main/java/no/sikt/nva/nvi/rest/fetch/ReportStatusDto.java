@@ -23,9 +23,11 @@ public record ReportStatusDto(URI publicationId, StatusWithDescriptionDto report
             return StatusDto.REPORTED;
         } else if (candidate.isPendingReview()) {
             return StatusDto.PENDING_REVIEW;
-        } else if (GlobalApprovalStatus.REJECTED.equals(candidate.getGlobalApprovalStatus())) {
+        } else if (GlobalApprovalStatus.REJECTED.equals(candidate.getGlobalApprovalStatus())
+                   && candidate.getPeriod().isOpen()) {
             return StatusDto.REJECTED;
-        } else if (GlobalApprovalStatus.APPROVED.equals(candidate.getGlobalApprovalStatus())) {
+        } else if (GlobalApprovalStatus.APPROVED.equals(candidate.getGlobalApprovalStatus())
+                   && candidate.getPeriod().isOpen()) {
             return StatusDto.APPROVED;
         } else if (candidate.isUnderReview()) {
             return StatusDto.UNDER_REVIEW;
