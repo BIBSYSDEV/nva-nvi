@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.rest.fetch;
 
 import java.net.URI;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 
 public record ReportStatusDto(URI publicationId, StatusWithDescriptionDto reportStatus, String period) {
 
@@ -22,6 +23,10 @@ public record ReportStatusDto(URI publicationId, StatusWithDescriptionDto report
             return StatusDto.REPORTED;
         } else if (candidate.isPendingReview()) {
             return StatusDto.PENDING_REVIEW;
+        } else if (GlobalApprovalStatus.REJECTED.equals(candidate.getGlobalApprovalStatus())) {
+            return StatusDto.REJECTED;
+        } else if (GlobalApprovalStatus.APPROVED.equals(candidate.getGlobalApprovalStatus())) {
+            return StatusDto.APPROVED;
         } else if (candidate.isUnderReview()) {
             return StatusDto.UNDER_REVIEW;
         } else if (candidate.isNotReportedInClosedPeriod()) {
@@ -35,6 +40,8 @@ public record ReportStatusDto(URI publicationId, StatusWithDescriptionDto report
 
         PENDING_REVIEW("Pending review. Awaiting approval from all institutions"),
         UNDER_REVIEW("Under review. At least one institution has approved/rejected"),
+        APPROVED("Approved by all involved institutions in open period"),
+        REJECTED("Rejected by all involved institutions in open period"),
         REPORTED("Reported in closed period"),
         NOT_REPORTED("Not reported in closed period"),
         NOT_CANDIDATE("Not a candidate");
