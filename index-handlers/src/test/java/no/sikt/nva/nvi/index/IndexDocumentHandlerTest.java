@@ -193,13 +193,12 @@ class IndexDocumentHandlerTest extends LocalDynamoTest {
                                                     .withName(randomString())
                                                     .withAffiliations(List.of(institutionId))
                                                     .build();
-        var request =
-            randomUpsertRequestBuilder().withUnverifiedCreators(List.of(unverifiedCreator)).withCreators(emptyMap())
+        var request = randomUpsertRequestBuilder().withUnverifiedCreators(List.of(unverifiedCreator))
+                                                  .withCreators(emptyMap())
                                                   .build();
         Candidate.upsert(request, candidateRepository, periodRepository);
         var candidate = Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository);
-        var expectedIndexDocument = setupExistingResourceInS3AndGenerateExpectedDocument(
-            candidate).indexDocument();
+        var expectedIndexDocument = setupExistingResourceInS3AndGenerateExpectedDocument(candidate).indexDocument();
 
         mockUriRetrieverOrgResponse(candidate);
         handler.handleRequest(createEvent(candidate.getIdentifier()), CONTEXT);
