@@ -589,7 +589,7 @@ public final class CandidateDao extends Dao {
         }
     }
 
-    // Note that this has defaultImpl = DbCreator.class to handle old data without type information
+    // FIXME: `defaultImpl = DbCreator.class´ can be removed when all existing data has been migrated to use the type field
     @JsonSerialize
     @JsonSubTypes({
         @JsonSubTypes.Type(value = DbUnverifiedCreator.class, name = "DbUnverifiedCreator"),
