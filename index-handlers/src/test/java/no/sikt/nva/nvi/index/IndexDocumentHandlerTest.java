@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.index;
 
+import static java.util.Collections.emptyMap;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_AFFILIATIONS;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_BODY;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_TYPE;
@@ -192,7 +193,8 @@ class IndexDocumentHandlerTest extends LocalDynamoTest {
                                                     .withName(randomString())
                                                     .withAffiliations(List.of(institutionId))
                                                     .build();
-        var request = randomUpsertRequestBuilder().withUnverifiedCreators(List.of(unverifiedCreator))
+        var request =
+            randomUpsertRequestBuilder().withUnverifiedCreators(List.of(unverifiedCreator)).withCreators(emptyMap())
                                                   .build();
         Candidate.upsert(request, candidateRepository, periodRepository);
         var candidate = Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository);
