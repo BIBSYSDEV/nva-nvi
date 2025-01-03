@@ -47,8 +47,8 @@ public record PublicationDetails(URI publicationId, URI publicationBucketUri, St
     public List<UnverifiedNviCreator> getUnverifiedCreators() {
         return creators.stream()
                        .filter(UnverifiedNviCreator.class::isInstance)
-                        .map(UnverifiedNviCreator.class::cast)
-                        .toList();
+                       .map(UnverifiedNviCreator.class::cast)
+                       .toList();
     }
 
     public Set<URI> getNviCreatorIds() {
