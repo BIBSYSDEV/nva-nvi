@@ -188,7 +188,7 @@ class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldSaveNewNviCandidateWithOnlyUnverifiedCreatorWhenCandidateDoesNotExist() {
+    void shouldSaveNewNviCandidateWithOnlyUnverifiedCreators() {
         var unverifiedCreators = List.of(new UnverifiedNviCreator(randomString(), List.of(randomUri())));
         var evaluatedNviCandidate = randomEvaluatedNviCandidate().withNviCreators(emptyList())
                                                                  .withUnverifiedNviCreators(unverifiedCreators)
@@ -205,7 +205,7 @@ class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
     }
 
     @Test
-    void shouldSaveNewNviCandidateWithVerifiedAndUnverifiedCreatorsWhenCandidateDoesNotExist() {
+    void shouldSaveNewNviCandidateWithBothVerifiedAndUnverifiedCreators() {
         var unverifiedCreators = List.of(new UnverifiedNviCreator(randomString(), List.of(randomUri())));
         var evaluatedNviCandidate = randomEvaluatedNviCandidate()
                                                                  .withUnverifiedNviCreators(unverifiedCreators)
