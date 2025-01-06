@@ -97,6 +97,7 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
             .map(this::persistDocument)
             .filter(Objects::nonNull)
             .forEach(this::sendEvent);
+        LOGGER.info("Finished processing all records");
         return null;
     }
 
@@ -166,7 +167,7 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
     }
 
     private IndexDocumentWithConsumptionAttributes generateIndexDocument(DynamodbStreamRecord record) {
-        return attempt(() -> generateIndexDocumentWithConsumptionAttributes(record))
+        var document =  attempt(() -> generateIndexDocumentWithConsumptionAttributes(record))
                    .orElse(failure -> {
                        var identifier = extractIdFromRecord(record);
                        handleFailure(failure, FAILED_TO_GENERATE_INDEX_DOCUMENT_MESSAGE,
@@ -174,6 +175,9 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
                                      identifier.orElse(null));
                        return null;
                    });
+        var id = document.indexDocument().publicationIdentifier();
+        LOGGER.info("Generated index document for publication with identifier: {}", id);
+        return document;
     }
 
     private IndexDocumentWithConsumptionAttributes generateIndexDocumentWithConsumptionAttributes(
