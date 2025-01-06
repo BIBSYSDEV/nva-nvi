@@ -995,7 +995,7 @@ Resources:
         Variables:
           DLQ_QUEUE_URL: !Ref IndexDLQ
 
-  ReEvaluateNviCandidatesHandler:
+  BatchReEvaluateNviCandidatesHandler:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: event-handlers
