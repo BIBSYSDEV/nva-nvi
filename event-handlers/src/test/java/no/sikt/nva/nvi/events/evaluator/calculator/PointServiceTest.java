@@ -29,7 +29,7 @@ import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliation
 import no.sikt.nva.nvi.events.evaluator.PointService;
 import no.sikt.nva.nvi.events.evaluator.model.PointCalculation;
 import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
-import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator.NviOrganization;
+import no.sikt.nva.nvi.events.evaluator.model.NviOrganization;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

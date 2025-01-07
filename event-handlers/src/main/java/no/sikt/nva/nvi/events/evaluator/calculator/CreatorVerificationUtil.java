@@ -28,7 +28,7 @@ import no.sikt.nva.nvi.common.service.model.UnverifiedNviCreator;
 import no.sikt.nva.nvi.common.utils.JsonUtils;
 import no.sikt.nva.nvi.events.evaluator.model.CustomerResponse;
 import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
-import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator.NviOrganization;
+import no.sikt.nva.nvi.events.evaluator.model.NviOrganization;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import nva.commons.core.Environment;

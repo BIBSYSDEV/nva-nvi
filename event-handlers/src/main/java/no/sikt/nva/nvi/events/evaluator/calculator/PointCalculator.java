@@ -22,7 +22,7 @@ import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliation
 import no.sikt.nva.nvi.events.evaluator.model.Channel;
 import no.sikt.nva.nvi.events.evaluator.model.PointCalculation;
 import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
-import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator.NviOrganization;
+import no.sikt.nva.nvi.events.evaluator.model.NviOrganization;
 
 public class PointCalculator {
 
