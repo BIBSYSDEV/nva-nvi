@@ -167,7 +167,7 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
     }
 
     private IndexDocumentWithConsumptionAttributes generateIndexDocument(DynamodbStreamRecord record) {
-        var document =  attempt(() -> generateIndexDocumentWithConsumptionAttributes(record))
+        return attempt(() -> generateIndexDocumentWithConsumptionAttributes(record))
                    .orElse(failure -> {
                        var identifier = extractIdFromRecord(record);
                        handleFailure(failure, FAILED_TO_GENERATE_INDEX_DOCUMENT_MESSAGE,
@@ -175,15 +175,21 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
                                      identifier.orElse(null));
                        return null;
                    });
-        var id = document.indexDocument().publicationIdentifier();
-        LOGGER.info("Generated index document for publication with identifier: {}", id);
-        return document;
     }
 
-    private IndexDocumentWithConsumptionAttributes generateIndexDocumentWithConsumptionAttributes(
-        DynamodbStreamRecord record) {
-        var candidate = fetchCandidate(record);
-        return candidate.isApplicable() ? generateIndexDocumentWithConsumptionAttributes(candidate) : null;
+    private IndexDocumentWithConsumptionAttributes generateIndexDocumentWithConsumptionAttributes(DynamodbStreamRecord streamRecord) {
+        var candidate = fetchCandidate(streamRecord);
+        if (candidate == null) {
+            LOGGER.info("Candidate is null, skipping index document generation");
+            return null;
+        }
+        if (!candidate.isApplicable()) {
+            LOGGER.info("Candidate is not applicable, skipping index document generation");
+            return null;
+        }
+        var id = candidate.getPublicationId();
+        LOGGER.info("Generated index document for applicable candidate with publication ID: {}", id);
+        return generateIndexDocumentWithConsumptionAttributes(candidate);
     }
 
     private IndexDocumentWithConsumptionAttributes generateIndexDocumentWithConsumptionAttributes(
