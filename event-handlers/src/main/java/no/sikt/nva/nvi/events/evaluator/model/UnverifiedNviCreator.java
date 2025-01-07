@@ -2,11 +2,10 @@ package no.sikt.nva.nvi.events.evaluator.model;
 
 import java.net.URI;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Deprecated
-// This overlaps with VerifiedNviCreator defined in nvi-commons and should be removed.
-public record VerifiedNviCreator(URI id, List<NviOrganization> nviAffiliations) implements NviCreatorType {
+// This overlaps with UnverifiedNviCreator defined in nvi-commons and should be removed.
+public record UnverifiedNviCreator(String name, List<NviOrganization> nviAffiliations) implements NviCreatorType {
 
     public static Builder builder() {
         return new Builder();
@@ -32,15 +31,15 @@ public record VerifiedNviCreator(URI id, List<NviOrganization> nviAffiliations) 
 
     public static final class Builder {
 
-        private URI id;
+        private String name;
 
         private List<NviOrganization> nviAffiliations;
 
         private Builder() {
         }
 
-        public Builder withId(URI id) {
-            this.id = id;
+        public Builder withName(String name) {
+            this.name = name;
             return this;
         }
 
@@ -49,8 +48,8 @@ public record VerifiedNviCreator(URI id, List<NviOrganization> nviAffiliations) 
             return this;
         }
 
-        public VerifiedNviCreator build() {
-            return new VerifiedNviCreator(id, nviAffiliations);
+        public UnverifiedNviCreator build() {
+            return new UnverifiedNviCreator(name, nviAffiliations);
         }
     }
 }
