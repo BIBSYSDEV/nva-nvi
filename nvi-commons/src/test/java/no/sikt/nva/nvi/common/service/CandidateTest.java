@@ -54,9 +54,9 @@ import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
-import no.sikt.nva.nvi.common.service.model.NviCreatorType;
+import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
-import no.sikt.nva.nvi.common.service.model.UnverifiedNviCreator;
+import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.test.UpsertRequestBuilder;
 import org.junit.jupiter.api.DisplayName;
@@ -99,8 +99,8 @@ class CandidateTest extends CandidateTestSetup {
 
     @Test
     void shouldGetUnverifiedCreatorsFromDetails() {
-        var unverifiedCreator = new UnverifiedNviCreator(randomString(),
-                                                         List.of(randomUri()));
+        var unverifiedCreator = new UnverifiedNviCreatorDto(randomString(),
+                                                            List.of(randomUri()));
         var upsertCandidateRequest =
             randomUpsertRequestBuilder().withUnverifiedCreators(List.of(unverifiedCreator)).build();
         var expectedUnverifiedCreatorCount = upsertCandidateRequest.unverifiedCreators().size();
@@ -463,9 +463,9 @@ class CandidateTest extends CandidateTestSetup {
         return UpsertRequestBuilder.fromRequest(insertRequest).build();
     }
 
-    private static List<DbCreatorType> mapToDbCreators(List<NviCreatorType> creators) {
+    private static List<DbCreatorType> mapToDbCreators(List<NviCreatorDto> creators) {
         return creators.stream()
-                       .map(NviCreatorType::toDao)
+                       .map(NviCreatorDto::toDao)
                        .toList();
     }
 

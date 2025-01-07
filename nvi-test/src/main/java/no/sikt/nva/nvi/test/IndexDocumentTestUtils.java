@@ -32,7 +32,7 @@ import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
-import no.sikt.nva.nvi.common.service.model.NviCreatorType;
+import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.utils.JsonUtils;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.Contributor;
@@ -364,7 +364,7 @@ public final class IndexDocumentTestUtils {
                    .build();
     }
 
-    private static ContributorType generateNviContributor(JsonNode contributorNode, NviCreatorType value,
+    private static ContributorType generateNviContributor(JsonNode contributorNode, NviCreatorDto value,
                                                           List<URI> affiliations) {
         return NviContributor.builder()
                    .withId(ExpandedResourceGenerator.extractId(contributorNode))
@@ -381,13 +381,13 @@ public final class IndexDocumentTestUtils {
                    .toList();
     }
 
-    private static List<OrganizationType> expandAffiliationsWithPartOf(NviCreatorType creator, List<URI> uris) {
+    private static List<OrganizationType> expandAffiliationsWithPartOf(NviCreatorDto creator, List<URI> uris) {
         return uris.stream()
                    .map(uri -> toAffiliationWithPartOf(uri, isNviAffiliation(creator, uri)))
                    .toList();
     }
 
-    private static boolean isNviAffiliation(NviCreatorType creator, URI uri) {
+    private static boolean isNviAffiliation(NviCreatorDto creator, URI uri) {
         return creator.affiliations()
                    .stream()
                    .anyMatch(affiliation -> affiliation.equals(uri));

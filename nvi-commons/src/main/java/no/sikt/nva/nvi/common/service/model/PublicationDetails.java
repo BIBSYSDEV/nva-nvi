@@ -8,10 +8,13 @@ import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreatorType;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
+import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
+import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
+import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 
 @JsonSerialize
 public record PublicationDetails(URI publicationId, URI publicationBucketUri, String type,
-                                 PublicationDate publicationDate, List<NviCreatorType> creators,
+                                 PublicationDate publicationDate, List<NviCreatorDto> creators,
                                  PublicationChannel publicationChannel) {
 
     public static PublicationDetails from(CandidateDao candidateDao) {
@@ -32,30 +35,30 @@ public record PublicationDetails(URI publicationId, URI publicationBucketUri, St
 
     public List<URI> getNviCreatorAffiliations() {
         return creators.stream()
-                       .map(NviCreatorType::affiliations)
+                       .map(NviCreatorDto::affiliations)
                        .flatMap(List::stream)
                        .toList();
     }
 
-    public List<VerifiedNviCreator> getVerifiedCreators() {
+    public List<VerifiedNviCreatorDto> getVerifiedCreators() {
         return creators.stream()
-                       .filter(VerifiedNviCreator.class::isInstance)
-                       .map(VerifiedNviCreator.class::cast)
+                       .filter(VerifiedNviCreatorDto.class::isInstance)
+                       .map(VerifiedNviCreatorDto.class::cast)
                        .toList();
     }
 
-    public List<UnverifiedNviCreator> getUnverifiedCreators() {
+    public List<UnverifiedNviCreatorDto> getUnverifiedCreators() {
         return creators.stream()
-                       .filter(UnverifiedNviCreator.class::isInstance)
-                       .map(UnverifiedNviCreator.class::cast)
+                       .filter(UnverifiedNviCreatorDto.class::isInstance)
+                       .map(UnverifiedNviCreatorDto.class::cast)
                        .toList();
     }
 
     public Set<URI> getNviCreatorIds() {
         return creators.stream()
-                       .filter(VerifiedNviCreator.class::isInstance)
-                       .map(VerifiedNviCreator.class::cast)
-                       .map(VerifiedNviCreator::id)
+                       .filter(VerifiedNviCreatorDto.class::isInstance)
+                       .map(VerifiedNviCreatorDto.class::cast)
+                       .map(VerifiedNviCreatorDto::id)
                        .collect(Collectors.toSet());
     }
 

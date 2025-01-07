@@ -7,7 +7,7 @@ import java.util.Map;
 import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
-import no.sikt.nva.nvi.common.service.model.UnverifiedNviCreator;
+import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 
 public interface UpsertCandidateRequest {
 
@@ -21,7 +21,7 @@ public interface UpsertCandidateRequest {
 
     Map<URI, List<URI>> creators();
 
-    List<UnverifiedNviCreator> unverifiedCreators();
+    List<UnverifiedNviCreatorDto> unverifiedCreators();
 
     String channelType();
 

@@ -49,6 +49,7 @@ import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.service.dto.ApprovalDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.dto.NoteDto;
+import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException;
@@ -547,7 +548,7 @@ public final class Candidate {
 
     private static DbCandidate mapToCandidate(UpsertCandidateRequest request) {
         var creators = getAllCreators(request).stream()
-                                              .map(NviCreatorType::toDao)
+                                              .map(NviCreatorDto::toDao)
                                               .toList();
         return DbCandidate.builder()
                    .publicationId(request.publicationId())
@@ -584,9 +585,9 @@ public final class Candidate {
                    .build();
     }
 
-    private static List<DbCreatorType> mapToDbCreators(List<NviCreatorType> creators) {
+    private static List<DbCreatorType> mapToDbCreators(List<NviCreatorDto> creators) {
         return creators.stream()
-                       .map(NviCreatorType::toDao)
+                       .map(NviCreatorDto::toDao)
                        .toList();
     }
 

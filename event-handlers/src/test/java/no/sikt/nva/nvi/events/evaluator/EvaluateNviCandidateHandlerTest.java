@@ -57,7 +57,7 @@ import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails;
-import no.sikt.nva.nvi.common.service.model.UnverifiedNviCreator;
+import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil;
 import no.sikt.nva.nvi.events.evaluator.model.Level;
 import no.sikt.nva.nvi.events.evaluator.model.PublicationChannel;
@@ -881,11 +881,11 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
                        .toList();
         }
 
-        private List<UnverifiedNviCreator> getUnverifiedNviCreators() {
+        private List<UnverifiedNviCreatorDto> getUnverifiedNviCreators() {
             return unverifiedContributors.stream()
                        .map(SampleExpandedContributor.Builder::build)
-                       .map(contributor -> new UnverifiedNviCreator(contributor.contributorName(),
-                                                                    contributor.affiliationIds()))
+                       .map(contributor -> new UnverifiedNviCreatorDto(contributor.contributorName(),
+                                                                       contributor.affiliationIds()))
                        .toList();
         }
 

@@ -23,7 +23,7 @@ import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.sikt.nva.nvi.common.service.model.UnverifiedNviCreator;
+import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil;
 import no.sikt.nva.nvi.events.evaluator.model.PointCalculation;
 import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
@@ -105,12 +105,12 @@ public class EvaluatorService {
     }
 
     private static boolean hasCreators(List<VerifiedNviCreator> verifiedCreatorsWithNviInstitutions,
-                                       List<UnverifiedNviCreator> unverifiedCreatorsWithNviInstitutions) {
+                                       List<UnverifiedNviCreatorDto> unverifiedCreatorsWithNviInstitutions) {
         return !verifiedCreatorsWithNviInstitutions.isEmpty() || !unverifiedCreatorsWithNviInstitutions.isEmpty();
     }
 
     private static NviCandidate constructNviCandidate(List<VerifiedNviCreator> verifiedCreatorsWithNviInstitutions,
-                                                      List<UnverifiedNviCreator> unverifiedCreatorsWithNviInstitutions,
+                                                      List<UnverifiedNviCreatorDto> unverifiedCreatorsWithNviInstitutions,
                                                       PointCalculation pointCalculation, URI publicationId,
                                                       URI publicationBucketUri, PublicationDate date) {
         return NviCandidate.builder()

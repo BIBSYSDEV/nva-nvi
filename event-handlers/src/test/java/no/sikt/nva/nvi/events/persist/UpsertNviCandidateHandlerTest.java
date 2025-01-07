@@ -54,7 +54,7 @@ import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
-import no.sikt.nva.nvi.common.service.model.UnverifiedNviCreator;
+import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.NonNviCandidate;
@@ -189,7 +189,7 @@ class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldSaveNewNviCandidateWithOnlyUnverifiedCreators() {
-        var unverifiedCreators = List.of(new UnverifiedNviCreator(randomString(), List.of(randomUri())));
+        var unverifiedCreators = List.of(new UnverifiedNviCreatorDto(randomString(), List.of(randomUri())));
         var evaluatedNviCandidate = randomEvaluatedNviCandidate().withNviCreators(emptyList())
                                                                  .withUnverifiedNviCreators(unverifiedCreators)
                                                                  .build();
@@ -206,7 +206,7 @@ class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldSaveNewNviCandidateWithBothVerifiedAndUnverifiedCreators() {
-        var unverifiedCreators = List.of(new UnverifiedNviCreator(randomString(), List.of(randomUri())));
+        var unverifiedCreators = List.of(new UnverifiedNviCreatorDto(randomString(), List.of(randomUri())));
         var evaluatedNviCandidate = randomEvaluatedNviCandidate()
                                                                  .withUnverifiedNviCreators(unverifiedCreators)
                                                                  .build();
@@ -227,7 +227,7 @@ class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         var sqsEvent = createEvent(createEvalMessage(evaluatedNviCandidate.build()));
         handler.handleRequest(sqsEvent, CONTEXT);
 
-        var unverifiedCreators = List.of(new UnverifiedNviCreator(randomString(), List.of(randomUri())));
+        var unverifiedCreators = List.of(new UnverifiedNviCreatorDto(randomString(), List.of(randomUri())));
         var updatedEvaluatedNviCandidate = evaluatedNviCandidate.withUnverifiedNviCreators(unverifiedCreators)
                                                                 .build();
         var expectedCreatorCount = updatedEvaluatedNviCandidate.creators()
@@ -376,7 +376,7 @@ class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                                                                                                   entry.getValue()));
         var unverifiedCreators = evaluatedNviCandidate.unverifiedCreators()
                                                       .stream()
-                                                      .map(UnverifiedNviCreator::toDao);
+                                                      .map(UnverifiedNviCreatorDto::toDao);
         return Stream.concat(verifiedCreators, unverifiedCreators)
                      .toList();
     }

@@ -35,7 +35,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.IntStream;
 import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.sikt.nva.nvi.common.service.model.NviCreatorType;
+import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.common.utils.JsonUtils;
 
@@ -221,7 +221,7 @@ public final class ExpandedResourceGenerator {
     private static JsonNode createAndPopulateTopLevelOrganizations(Candidate candidate) {
         var topLevelOrganizations = objectMapper.createArrayNode();
         candidate.getPublicationDetails().creators().stream()
-            .map(NviCreatorType::affiliations)
+            .map(NviCreatorDto::affiliations)
             .flatMap(List::stream)
             .distinct()
             .map(URI::toString)

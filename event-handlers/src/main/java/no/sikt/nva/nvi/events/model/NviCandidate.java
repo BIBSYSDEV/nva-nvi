@@ -12,7 +12,7 @@ import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails;
-import no.sikt.nva.nvi.common.service.model.UnverifiedNviCreator;
+import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
 
@@ -23,7 +23,7 @@ public record NviCandidate(URI publicationId,
                            InstanceType instanceType,
                            @JsonProperty("publicationDate") PublicationDate date,
                            List<NviCreator> nviCreators,
-                           List<UnverifiedNviCreator> unverifiedCreators,
+                           List<UnverifiedNviCreatorDto> unverifiedCreators,
                            String channelType,
                            URI publicationChannelId,
                            String level,
@@ -58,6 +58,7 @@ public record NviCandidate(URI publicationId,
                                                       publicationDate.day());
     }
 
+    // FIXME: Duplicate DTO?
     public record NviCreator(URI id, List<URI> nviAffiliations) {
 
         public static NviCreator from(VerifiedNviCreator nviCreator) {
@@ -76,7 +77,7 @@ public record NviCandidate(URI publicationId,
         private InstanceType instanceType;
         private PublicationDate date;
         private List<NviCreator> nviCreators = Collections.emptyList();
-        private List<UnverifiedNviCreator> unverifiedNviCreators = Collections.emptyList();
+        private List<UnverifiedNviCreatorDto> unverifiedNviCreators = Collections.emptyList();
         private String channelType;
         private URI publicationChannelId;
         private String level;
@@ -115,7 +116,7 @@ public record NviCandidate(URI publicationId,
             return this;
         }
 
-        public Builder withUnverifiedNviCreators(List<UnverifiedNviCreator> unverifiedNviCreators) {
+        public Builder withUnverifiedNviCreators(List<UnverifiedNviCreatorDto> unverifiedNviCreators) {
             this.unverifiedNviCreators = unverifiedNviCreators;
             return this;
         }

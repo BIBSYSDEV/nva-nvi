@@ -13,7 +13,7 @@ import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
-import no.sikt.nva.nvi.common.service.model.UnverifiedNviCreator;
+import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 
 @SuppressWarnings("PMD.TooManyFields")
@@ -24,7 +24,7 @@ public class UpsertRequestBuilder {
     private boolean isApplicable;
     private boolean isInternationalCollaboration;
     private Map<URI, List<URI>> creators;
-    private List<UnverifiedNviCreator> unverifiedCreators;
+    private List<UnverifiedNviCreatorDto> unverifiedCreators;
     private String channelType;
     private URI channelId;
     private String level;
@@ -107,7 +107,7 @@ public class UpsertRequestBuilder {
         return this;
     }
 
-    public UpsertRequestBuilder withUnverifiedCreators(List<UnverifiedNviCreator> unverifiedCreators) {
+    public UpsertRequestBuilder withUnverifiedCreators(List<UnverifiedNviCreatorDto> unverifiedCreators) {
         this.unverifiedCreators = unverifiedCreators;
         return this;
     }
@@ -192,7 +192,7 @@ public class UpsertRequestBuilder {
             }
 
             @Override
-            public List<UnverifiedNviCreator> unverifiedCreators() {
+            public List<UnverifiedNviCreatorDto> unverifiedCreators() {
                 return unverifiedCreators;
             }
 

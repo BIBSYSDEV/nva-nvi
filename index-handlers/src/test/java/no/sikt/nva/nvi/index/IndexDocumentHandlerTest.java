@@ -60,7 +60,7 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.sikt.nva.nvi.common.service.model.UnverifiedNviCreator;
+import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.index.aws.S3StorageWriter;
 import no.sikt.nva.nvi.index.model.PersistedIndexDocumentMessage;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
@@ -189,10 +189,10 @@ class IndexDocumentHandlerTest extends LocalDynamoTest {
     @Test
     void shouldNotFailWhenCreatorIsUnverified() {
         var institutionId = randomUri();
-        var unverifiedCreator = UnverifiedNviCreator.builder()
-                                                    .withName(randomString())
-                                                    .withAffiliations(List.of(institutionId))
-                                                    .build();
+        var unverifiedCreator = UnverifiedNviCreatorDto.builder()
+                                                       .withName(randomString())
+                                                       .withAffiliations(List.of(institutionId))
+                                                       .build();
         var request = randomUpsertRequestBuilder().withUnverifiedCreators(List.of(unverifiedCreator))
                                                   .withCreators(emptyMap())
                                                   .build();

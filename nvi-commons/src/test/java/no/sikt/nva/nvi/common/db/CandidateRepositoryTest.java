@@ -16,7 +16,7 @@ import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
-import no.sikt.nva.nvi.common.service.model.UnverifiedNviCreator;
+import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import org.junit.jupiter.api.BeforeEach;
@@ -88,7 +88,7 @@ class CandidateRepositoryTest extends LocalDynamoTest {
             }
 
             @Override
-            public List<UnverifiedNviCreator> unverifiedCreators() {
+            public List<UnverifiedNviCreatorDto> unverifiedCreators() {
                 return request.unverifiedCreators();
             }
 

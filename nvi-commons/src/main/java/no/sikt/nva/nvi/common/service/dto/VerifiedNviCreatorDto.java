@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.common.service.model;
+package no.sikt.nva.nvi.common.service.dto;
 
 import static nva.commons.core.StringUtils.isBlank;
 import java.net.URI;
@@ -6,7 +6,7 @@ import java.util.Collections;
 import java.util.List;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 
-public record VerifiedNviCreator(URI id, List<URI> affiliations) implements NviCreatorType {
+public record VerifiedNviCreatorDto(URI id, List<URI> affiliations) implements NviCreatorDto {
 
     public static Builder builder() {
         return new Builder();
@@ -35,11 +35,11 @@ public record VerifiedNviCreator(URI id, List<URI> affiliations) implements NviC
             return this;
         }
 
-        public VerifiedNviCreator build() {
+        public VerifiedNviCreatorDto build() {
             if (isBlank(id.toString())) {
                 throw new IllegalStateException("ID cannot be null or blank");
             }
-            return new VerifiedNviCreator(id, affiliations);
+            return new VerifiedNviCreatorDto(id, affiliations);
         }
     }
 }

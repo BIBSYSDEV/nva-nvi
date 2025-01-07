@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.common.service.model;
+package no.sikt.nva.nvi.common.service.dto;
 
 import static nva.commons.core.StringUtils.isBlank;
 import java.net.URI;
@@ -6,7 +6,7 @@ import java.util.Collections;
 import java.util.List;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbUnverifiedCreator;
 
-public record UnverifiedNviCreator(String name, List<URI> affiliations) implements NviCreatorType {
+public record UnverifiedNviCreatorDto(String name, List<URI> affiliations) implements NviCreatorDto {
 
     public static Builder builder() {
         return new Builder();
@@ -35,11 +35,11 @@ public record UnverifiedNviCreator(String name, List<URI> affiliations) implemen
             return this;
         }
 
-        public UnverifiedNviCreator build() {
+        public UnverifiedNviCreatorDto build() {
             if (isBlank(name)) {
                 throw new IllegalStateException("Name cannot be null or blank");
             }
-            return new UnverifiedNviCreator(name, affiliations);
+            return new UnverifiedNviCreatorDto(name, affiliations);
         }
     }
 }

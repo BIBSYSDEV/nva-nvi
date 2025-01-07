@@ -34,9 +34,9 @@ import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.db.model.DbCreatorTypeListConverter;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
-import no.sikt.nva.nvi.common.service.model.NviCreatorType;
-import no.sikt.nva.nvi.common.service.model.UnverifiedNviCreator;
-import no.sikt.nva.nvi.common.service.model.VerifiedNviCreator;
+import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
+import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
+import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.unit.nva.commons.json.JsonUtils;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
@@ -599,7 +599,7 @@ public final class CandidateDao extends Dao {
     public sealed interface DbCreatorType permits DbCreator, DbUnverifiedCreator {
         List<URI> affiliations();
         DbCreatorType copy();
-        NviCreatorType toNviCreatorType();
+        NviCreatorDto toNviCreatorType();
     }
 
     @JsonSerialize
@@ -621,8 +621,8 @@ public final class CandidateDao extends Dao {
 
         @Override
         @DynamoDbIgnore
-        public NviCreatorType toNviCreatorType() {
-            return new VerifiedNviCreator(creatorId, affiliations);
+        public NviCreatorDto toNviCreatorType() {
+            return new VerifiedNviCreatorDto(creatorId, affiliations);
         }
 
         public static final class Builder {
@@ -668,8 +668,8 @@ public final class CandidateDao extends Dao {
 
         @Override
         @DynamoDbIgnore
-        public NviCreatorType toNviCreatorType() {
-            return new UnverifiedNviCreator(creatorName, affiliations);
+        public NviCreatorDto toNviCreatorType() {
+            return new UnverifiedNviCreatorDto(creatorName, affiliations);
         }
 
         public static final class Builder {

@@ -39,9 +39,9 @@ import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.service.model.PublicationChannel;
-import no.sikt.nva.nvi.common.service.model.VerifiedNviCreator;
+import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
-import no.sikt.nva.nvi.common.service.model.UnverifiedNviCreator;
+import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.test.UpsertRequestBuilder;
 import org.junit.jupiter.api.DisplayName;
@@ -355,7 +355,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
 
         var creators = arguments.creators()
                            .stream()
-                           .collect(Collectors.toMap(VerifiedNviCreator::id, VerifiedNviCreator::affiliations));
+                           .collect(Collectors.toMap(VerifiedNviCreatorDto::id, VerifiedNviCreatorDto::affiliations));
 
         var newUpsertRequest = UpsertRequestBuilder.fromRequest(upsertCandidateRequest)
                                    .withCreators(creators)
@@ -397,7 +397,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
             Arguments.of(Named.of("creator changed",
                                   CandidateResetCauseArgument.defaultBuilder()
                                       .withCreators(
-                                          List.of(new VerifiedNviCreator(randomUri(), List.of(HARDCODED_INSTITUTION_ID))))
+                                          List.of(new VerifiedNviCreatorDto(randomUri(), List.of(HARDCODED_INSTITUTION_ID))))
                                       .build())),
             Arguments.of(Named.of("creator removed",
                                   CandidateResetCauseArgument.defaultBuilder()
@@ -406,8 +406,8 @@ class CandidateApprovalTest extends CandidateTestSetup {
             Arguments.of(Named.of("creator added",
                                   CandidateResetCauseArgument.defaultBuilder()
                                       .withCreators(List.of(CandidateResetCauseArgument.Builder.DEFAULT_CREATOR,
-                                                            new VerifiedNviCreator(randomUri(),
-                                                                                   List.of(HARDCODED_INSTITUTION_ID))))
+                                                            new VerifiedNviCreatorDto(randomUri(),
+                                                                                      List.of(HARDCODED_INSTITUTION_ID))))
                                       .build())));
     }
 
@@ -458,7 +458,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
             }
 
             @Override
-            public List<UnverifiedNviCreator> unverifiedCreators() {
+            public List<UnverifiedNviCreatorDto> unverifiedCreators() {
                 return List.of();
             }
 
@@ -515,7 +515,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
     }
 
     private record CandidateResetCauseArgument(PublicationChannel channel, InstanceType type,
-                                               List<InstitutionPoints> institutionPoints, List<VerifiedNviCreator> creators) {
+                                               List<InstitutionPoints> institutionPoints, List<VerifiedNviCreatorDto> creators) {
 
         private static CandidateResetCauseArgument.Builder defaultBuilder() {
             return new Builder();
@@ -523,8 +523,8 @@ class CandidateApprovalTest extends CandidateTestSetup {
 
         private static final class Builder {
 
-            private static final VerifiedNviCreator DEFAULT_CREATOR = new VerifiedNviCreator(HARDCODED_CREATOR_ID,
-                                                                                             List.of(HARDCODED_SUBUNIT_ID));
+            private static final VerifiedNviCreatorDto DEFAULT_CREATOR = new VerifiedNviCreatorDto(HARDCODED_CREATOR_ID,
+                                                                                                   List.of(HARDCODED_SUBUNIT_ID));
             private PublicationChannel channel = new PublicationChannel(ChannelType.JOURNAL,
                                                                         HARDCODED_CHANNEL_ID,
                                                                         HARDCODED_LEVEL);
@@ -534,7 +534,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
                                       List.of(new CreatorAffiliationPoints(HARDCODED_CREATOR_ID,
                                                                            HARDCODED_SUBUNIT_ID,
                                                                            HARDCODED_POINTS))));
-            private List<VerifiedNviCreator> creators = List.of(DEFAULT_CREATOR);
+            private List<VerifiedNviCreatorDto> creators = List.of(DEFAULT_CREATOR);
 
             private Builder() {
             }
@@ -544,7 +544,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
                 return this;
             }
 
-            private Builder withCreators(List<VerifiedNviCreator> creators) {
+            private Builder withCreators(List<VerifiedNviCreatorDto> creators) {
                 this.creators = creators;
                 return this;
             }

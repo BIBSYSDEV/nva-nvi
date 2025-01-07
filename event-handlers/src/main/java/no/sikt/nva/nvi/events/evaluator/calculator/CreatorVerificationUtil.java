@@ -24,7 +24,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.client.model.Organization;
-import no.sikt.nva.nvi.common.service.model.UnverifiedNviCreator;
+import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.utils.JsonUtils;
 import no.sikt.nva.nvi.events.evaluator.model.CustomerResponse;
 import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
@@ -66,7 +66,7 @@ public class CreatorVerificationUtil {
                    .toList();
     }
 
-    public List<UnverifiedNviCreator> getUnverifiedCreatorsWithNviInstitutions(JsonNode body) {
+    public List<UnverifiedNviCreatorDto> getUnverifiedCreatorsWithNviInstitutions(JsonNode body) {
         return getJsonNodeStream(body, JSON_PTR_CONTRIBUTOR)
                    .filter(not(CreatorVerificationUtil::isVerified))
                    .filter(CreatorVerificationUtil::isCreator)
@@ -84,7 +84,7 @@ public class CreatorVerificationUtil {
         return !creator.nviAffiliations().isEmpty();
     }
 
-    private static boolean isAffiliatedWithNviOrganization(UnverifiedNviCreator creator) {
+    private static boolean isAffiliatedWithNviOrganization(UnverifiedNviCreatorDto creator) {
         return !creator.affiliations().isEmpty();
     }
 
@@ -152,11 +152,11 @@ public class CreatorVerificationUtil {
                    .build();
     }
 
-    private UnverifiedNviCreator toUnverifiedNviCreator(JsonNode contributorNode) {
-        return UnverifiedNviCreator.builder()
-                                   .withName(extractContributorName(contributorNode))
-                                   .withAffiliations(getNviAffiliationUrisIfExist(contributorNode))
-                                   .build();
+    private UnverifiedNviCreatorDto toUnverifiedNviCreator(JsonNode contributorNode) {
+        return UnverifiedNviCreatorDto.builder()
+                                      .withName(extractContributorName(contributorNode))
+                                      .withAffiliations(getNviAffiliationUrisIfExist(contributorNode))
+                                      .build();
     }
 
     private List<NviOrganization> getNviAffiliationsIfExist(JsonNode contributorNode) {
