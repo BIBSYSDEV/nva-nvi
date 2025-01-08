@@ -52,6 +52,7 @@ import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
@@ -64,7 +65,6 @@ import no.sikt.nva.nvi.events.evaluator.model.PublicationChannel;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.NonNviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate;
-import no.sikt.nva.nvi.events.model.NviCandidate.NviCreator;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.sikt.nva.nvi.events.model.PublicationDate;
 import no.sikt.nva.nvi.test.SampleExpandedAffiliation;
@@ -540,7 +540,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
                                                         PublicationChannel channelType, String level,
                                                         BigDecimal basePoints, BigDecimal totalPoints,
                                                         URI publicationBucketUri) {
-        var verifiedCreators = List.of(new NviCreator(HARDCODED_CREATOR_ID, List.of(CRISTIN_NVI_ORG_SUB_UNIT_ID)));
+        var verifiedCreators = List.of(new VerifiedNviCreatorDto(HARDCODED_CREATOR_ID, List.of(CRISTIN_NVI_ORG_SUB_UNIT_ID)));
         return NviCandidate.builder()
                    .withPublicationId(HARDCODED_PUBLICATION_ID)
                    .withPublicationBucketUri(publicationBucketUri)
@@ -553,7 +553,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
                    .withCollaborationFactor(ONE.setScale(1, ROUNDING_MODE))
                    .withCreatorShareCount(countCreatorShares(verifiedCreators))
                    .withBasePoints(basePoints)
-                   .withNviCreators(verifiedCreators)
+                   .withVerifiedNviCreators(verifiedCreators)
                    .withInstitutionPoints(institutionPoints.entrySet().stream()
                                               .map(entry -> new InstitutionPoints(entry.getKey(), entry.getValue(),
                                                                                   List.of(
@@ -566,9 +566,9 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
                    .build();
     }
 
-    private static int countCreatorShares(List<NviCreator> nviCreators) {
+    private static int countCreatorShares(List<VerifiedNviCreatorDto> nviCreators) {
         return (int) nviCreators.stream()
-                         .mapToLong(creator -> creator.nviAffiliations().size())
+                         .mapToLong(creator -> creator.affiliations().size())
                          .sum();
     }
 
@@ -857,7 +857,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
                                         .withLevel(publicationChannelLevel.getValue())
                                         .withInstitutionPoints(expectedPointsPerInstitution)
                                         .withTotalPoints(expectedTotalPoints)
-                                        .withNviCreators(verifiedCreators)
+                                        .withVerifiedNviCreators(verifiedCreators)
                                         .withUnverifiedNviCreators(unverifiedNviCreators)
                                         .withCreatorShareCount(creatorShareCount)
                                         .build();
@@ -873,10 +873,10 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
                        .build();
         }
 
-        private List<NviCreator> getVerifiedNviCreators() {
+        private List<VerifiedNviCreatorDto> getVerifiedNviCreators() {
             return verifiedContributors.stream()
                        .map(SampleExpandedContributor.Builder::build)
-                       .map(contributor -> new NviCreator(contributor.id(),
+                       .map(contributor -> new VerifiedNviCreatorDto(contributor.id(),
                                                           contributor.affiliationIds()))
                        .toList();
         }

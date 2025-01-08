@@ -1,8 +1,8 @@
-package no.sikt.nva.nvi.events.evaluator.model;
+package no.sikt.nva.nvi.common.service.model;
 
 import java.net.URI;
 import java.util.List;
-import java.util.stream.Collectors;
+import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 
 @Deprecated
 // This overlaps with VerifiedNviCreator defined in nvi-commons and should be removed.
@@ -28,6 +28,13 @@ public record VerifiedNviCreator(URI id, List<NviOrganization> nviAffiliations) 
                               .filter(affiliation -> affiliation.isPartOf(institutionId))
                               .map(NviOrganization::id)
                               .toList();
+    }
+
+    public VerifiedNviCreatorDto toDto() {
+        return VerifiedNviCreatorDto.builder()
+                                    .withId(id)
+                                    .withAffiliations(nviAffiliationsIds())
+                                    .build();
     }
 
     public static final class Builder {

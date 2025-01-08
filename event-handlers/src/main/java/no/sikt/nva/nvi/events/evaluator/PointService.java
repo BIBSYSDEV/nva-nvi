@@ -32,7 +32,7 @@ import no.sikt.nva.nvi.common.utils.JsonUtils;
 import no.sikt.nva.nvi.events.evaluator.calculator.PointCalculator;
 import no.sikt.nva.nvi.events.evaluator.model.Channel;
 import no.sikt.nva.nvi.events.evaluator.model.PointCalculation;
-import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
+import no.sikt.nva.nvi.common.service.model.VerifiedNviCreator;
 
 public final class PointService {
 

@@ -50,6 +50,7 @@ import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.queue.QueueClient;
+import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
@@ -60,7 +61,6 @@ import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.NonNviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate.Builder;
-import no.sikt.nva.nvi.events.model.NviCandidate.NviCreator;
 import no.sikt.nva.nvi.events.model.PublicationDate;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
@@ -190,7 +190,7 @@ class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
     @Test
     void shouldSaveNewNviCandidateWithOnlyUnverifiedCreators() {
         var unverifiedCreators = List.of(new UnverifiedNviCreatorDto(randomString(), List.of(randomUri())));
-        var evaluatedNviCandidate = randomEvaluatedNviCandidate().withNviCreators(emptyList())
+        var evaluatedNviCandidate = randomEvaluatedNviCandidate().withVerifiedNviCreators(emptyList())
                                                                  .withUnverifiedNviCreators(unverifiedCreators)
                                                                  .build();
         var expectedCreatorCount = evaluatedNviCandidate.creators().size() + unverifiedCreators.size();
@@ -258,7 +258,7 @@ class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         return getBuilder(publicationId, publicationBucketUri, creator);
     }
 
-    private static Builder getBuilder(URI publicationId, URI publicationBucketUri, NviCreator creator) {
+    private static Builder getBuilder(URI publicationId, URI publicationBucketUri, VerifiedNviCreatorDto creator) {
         return NviCandidate.builder()
                    .withPublicationId(publicationId)
                    .withPublicationBucketUri(publicationBucketUri)
@@ -276,7 +276,7 @@ class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                                                                             creator.id(), randomUri(),
                                                                             randomBigDecimal())))))
                    .withDate(randomPublicationDate())
-                   .withNviCreators(List.of(creator));
+                   .withVerifiedNviCreators(List.of(creator));
     }
 
     private static Stream<CandidateEvaluatedMessage> invalidCandidateEvaluatedMessages() {
@@ -300,8 +300,8 @@ class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         return sqsEvent;
     }
 
-    private static NviCreator randomCreator() {
-        return new NviCreator(randomUri(), List.of(randomUri()));
+    private static VerifiedNviCreatorDto randomCreator() {
+        return new VerifiedNviCreatorDto(randomUri(), List.of(randomUri()));
     }
 
     private static CandidateEvaluatedMessage createEvalMessage(NviCandidate nviCandidate) {
@@ -336,13 +336,13 @@ class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
     private UpsertCandidateRequest createNewUpsertRequestNotAffectingApprovals(UpsertCandidateRequest request,
                                                                                URI institutionId) {
         var creatorId = request.creators().keySet().stream().toList().getFirst();
-        var creator = new NviCreator(creatorId, List.of(institutionId));
+        var creator = new VerifiedNviCreatorDto(creatorId, List.of(institutionId));
         return getBuilder(request.publicationId(), request.publicationBucketUri(), creator)
                    .withInstanceType(request.instanceType())
                    .withLevel(request.level())
                    .withPublicationChannelId(request.publicationChannelId())
                    .withDate(new PublicationDate(null, "3", Year.now().toString()))
-                   .withNviCreators(List.of(new NviCreator(creatorId, List.of(institutionId))))
+                   .withVerifiedNviCreators(List.of(new VerifiedNviCreatorDto(creatorId, List.of(institutionId))))
                    .withInstitutionPoints(request.institutionPoints())
                    .build();
     }
@@ -398,7 +398,7 @@ class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
 
     private SQSEvent createEvent(URI affiliationId, URI publicationId, URI publicationBucketUri) {
         var someOtherInstitutionId = randomUri();
-        var creator = new NviCreator(randomUri(), List.of(affiliationId, someOtherInstitutionId));
+        var creator = new VerifiedNviCreatorDto(randomUri(), List.of(affiliationId, someOtherInstitutionId));
         var institutionPoints =
             List.of(new InstitutionPoints(affiliationId, randomBigDecimal(), List.of(
                         new CreatorAffiliationPoints(creator.id(), affiliationId, randomBigDecimal()))),

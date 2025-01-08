@@ -1,7 +1,8 @@
-package no.sikt.nva.nvi.events.evaluator.model;
+package no.sikt.nva.nvi.common.service.model;
 
 import java.net.URI;
 import java.util.List;
+import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 
 @Deprecated
 // This overlaps with UnverifiedNviCreator defined in nvi-commons and should be removed.
@@ -27,6 +28,13 @@ public record UnverifiedNviCreator(String name, List<NviOrganization> nviAffilia
                               .filter(affiliation -> affiliation.isPartOf(institutionId))
                               .map(NviOrganization::id)
                               .toList();
+    }
+
+    public UnverifiedNviCreatorDto toDto() {
+        return UnverifiedNviCreatorDto.builder()
+                                      .withName(name)
+                                      .withAffiliations(nviAffiliationsIds())
+                                      .build();
     }
 
     public static final class Builder {

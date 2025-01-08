@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.events.evaluator.model;
+package no.sikt.nva.nvi.common.service.model;
 
 import java.net.URI;
 import java.util.Objects;
@@ -9,7 +9,6 @@ public record NviOrganization(URI id, NviOrganization topLevelOrganization) {
         return new Builder();
     }
 
-    @Override
     public NviOrganization topLevelOrganization() {
         return Objects.isNull(topLevelOrganization) ? this : topLevelOrganization;
     }

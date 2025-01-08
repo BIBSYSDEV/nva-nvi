@@ -21,17 +21,17 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
+import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil;
 import no.sikt.nva.nvi.events.evaluator.model.PointCalculation;
-import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
+import no.sikt.nva.nvi.common.service.model.VerifiedNviCreator;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.CandidateType;
 import no.sikt.nva.nvi.events.model.NonNviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate;
-import no.sikt.nva.nvi.events.model.NviCandidate.NviCreator;
 import no.sikt.nva.nvi.events.model.PublicationDate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -126,15 +126,15 @@ public class EvaluatorService {
                    .withCollaborationFactor(pointCalculation.collaborationFactor())
                    .withCreatorShareCount(pointCalculation.creatorShareCount())
                    .withInstitutionPoints(pointCalculation.institutionPoints())
-                   .withNviCreators(mapToNviCreators(verifiedCreatorsWithNviInstitutions))
+                   .withVerifiedNviCreators(mapToNviCreators(verifiedCreatorsWithNviInstitutions))
                    .withUnverifiedNviCreators(unverifiedCreatorsWithNviInstitutions)
                    .withTotalPoints(pointCalculation.totalPoints())
                    .build();
     }
 
-    private static List<NviCreator> mapToNviCreators(List<VerifiedNviCreator> nviCreators) {
+    private static List<VerifiedNviCreatorDto> mapToNviCreators(List<VerifiedNviCreator> nviCreators) {
         return nviCreators.stream()
-                   .map(NviCreator::from)
+                   .map(VerifiedNviCreator::toDto)
                    .toList();
     }
 
