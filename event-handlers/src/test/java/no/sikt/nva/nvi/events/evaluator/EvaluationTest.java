@@ -37,7 +37,7 @@ public class EvaluationTest extends LocalDynamoTest {
     protected static final String CUSTOMER_API_NVI_RESPONSE = "{" + "\"nviInstitution\" : \"true\"" + "}";
     protected final Context context = mock(Context.class);
     protected HttpResponse<String> notFoundResponse;
-    protected HttpResponse<String> badResponse;
+    protected HttpResponse<String> internalServerErrorResponse;
     protected HttpResponse<String> okResponse;
     protected S3Driver s3Driver;
     protected EvaluateNviCandidateHandler handler;
@@ -91,7 +91,7 @@ public class EvaluationTest extends LocalDynamoTest {
 
     private void setupHttpResponses() {
         notFoundResponse = createResponse(404, StringUtils.EMPTY_STRING);
-        badResponse = createResponse(500, StringUtils.EMPTY_STRING);
+        internalServerErrorResponse = createResponse(500, StringUtils.EMPTY_STRING);
         okResponse = createResponse(200, CUSTOMER_API_NVI_RESPONSE);
     }
 }

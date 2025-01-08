@@ -101,7 +101,6 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
                                                        .replace("__REPLACE_WITH_PUBLICATION_ID__",
                                                                 HARDCODED_PUBLICATION_ID.toString());
     private static final String ERROR_COULD_NOT_FETCH_CRISTIN_ORG = "Could not fetch Cristin organization for: ";
-    private static final String COULD_NOT_FETCH_CUSTOMER_MESSAGE = "Could not fetch customer for: ";
     private static final SampleExpandedAffiliation DEFAULT_SUBUNIT_AFFILIATION =
         SampleExpandedAffiliation.builder().withId(CRISTIN_NVI_ORG_SUB_UNIT_ID).build();
     private static final URI CUSTOMER_API_CRISTIN_NVI_ORG_TOP_LEVEL = URI.create(
@@ -457,7 +456,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
 
     @Test
     void shouldThrowExceptionWhenProblemsFetchingCristinOrganization() throws IOException {
-        when(uriRetriever.fetchResponse(any(), any())).thenReturn(Optional.of(badResponse));
+        when(uriRetriever.fetchResponse(any(), any())).thenReturn(Optional.of(internalServerErrorResponse));
         var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH), ACADEMIC_ARTICLE);
         var event = createEvent(new PersistedResourceMessage(fileUri));
         var appender = LogUtils.getTestingAppenderForRootLogger();
@@ -467,12 +466,12 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
 
     @Test
     void shouldThrowExceptionWhenProblemsFetchingCustomer() throws IOException {
-        mockCristinResponseAndCustomerApiResponseForNviInstitution(badResponse);
+        mockCristinResponseAndCustomerApiResponseForNviInstitution(internalServerErrorResponse);
         var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH), ACADEMIC_ARTICLE);
         var event = createEvent(new PersistedResourceMessage(fileUri));
         var appender = LogUtils.getTestingAppenderForRootLogger();
         assertThrows(RuntimeException.class, () -> handler.handleRequest(event, context));
-        assertThat(appender.getMessages(), containsString(COULD_NOT_FETCH_CUSTOMER_MESSAGE));
+        assertThat(appender.getMessages(), containsString("status code: 500"));
     }
 
     @Test
