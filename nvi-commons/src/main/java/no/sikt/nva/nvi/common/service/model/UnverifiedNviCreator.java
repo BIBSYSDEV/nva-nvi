@@ -4,7 +4,7 @@ import java.net.URI;
 import java.util.List;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 
-public record UnverifiedNviCreator(String name, List<NviOrganization> nviAffiliations) implements NviCreatorType {
+public record UnverifiedNviCreator(String name, List<NviOrganization> nviAffiliations) implements NviCreator {
 
     public static Builder builder() {
         return new Builder();
