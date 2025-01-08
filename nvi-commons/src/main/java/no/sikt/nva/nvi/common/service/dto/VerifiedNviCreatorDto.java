@@ -1,17 +1,23 @@
 package no.sikt.nva.nvi.common.service.dto;
 
 import static nva.commons.core.StringUtils.isBlank;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 
+@JsonSerialize
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 public record VerifiedNviCreatorDto(URI id, List<URI> affiliations) implements NviCreatorDto {
 
     public static Builder builder() {
         return new Builder();
     }
 
+
+    // FIXME: Remove this
     @Override
     public DbCreator toDao() {
         return new DbCreator(id, affiliations);
