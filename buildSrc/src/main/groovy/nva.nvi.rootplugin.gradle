@@ -27,22 +27,25 @@ reporting {
     }
 }
 
-// Log a clickable link to console for generated test coverage reports
-def reportDirPath = "reports/jacoco/testCodeCoverageReport/html"
-def reportDir = layout.buildDirectory.dir(reportDirPath).get().asFile
-subprojects {
-    afterEvaluate {
-        tasks.named('testCodeCoverageReport').configure {
-            doLast {
-                println "Test coverage report for ${project.name}: file://${reportDir}/index.html"
-            }
-        }
-    }
-}
+// Log clickable links to console for generated test coverage reports with
+// a dedicated task that always runs (never up to date).
+gradle.projectsEvaluated {
+    tasks.register("printCoverageReportLinks") {
+        outputs.upToDateWhen { false }
 
-tasks.named('testCodeCoverageReport').configure {
-    doLast {
-        println "Combined test coverage report: file://${reportDir}/index.html"
+        // Depend on all subprojects’ coverage tasks + root coverage task
+        dependsOn(subprojects.collect { it.tasks.named("testCodeCoverageReport") })
+        dependsOn(tasks.named("testCodeCoverageReport"))
+
+        doLast {
+            def reportDirPath = "reports/jacoco/testCodeCoverageReport/html"
+            subprojects.each { subproject ->
+                def subprojectReportDir = subproject.layout.buildDirectory.dir(reportDirPath).get().asFile
+                println "Coverage report for ${subproject.name}: \t\t file://${subprojectReportDir}/index.html"
+            }
+            def reportDir = layout.buildDirectory.dir(reportDirPath).get().asFile
+            println "Combined coverage report (root): \t\t file://${reportDir}/index.html"
+        }
     }
 }
 
