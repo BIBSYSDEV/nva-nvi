@@ -41,10 +41,10 @@ gradle.projectsEvaluated {
             def reportDirPath = "reports/jacoco/testCodeCoverageReport/html"
             subprojects.each { subproject ->
                 def subprojectReportDir = subproject.layout.buildDirectory.dir(reportDirPath).get().asFile
-                println "Coverage report for ${subproject.name}: \t\t file://${subprojectReportDir}/index.html"
+                logger.quiet("\t Coverage report for subproject: file://${subprojectReportDir}/index.html (${subproject.name})")
             }
             def reportDir = layout.buildDirectory.dir(reportDirPath).get().asFile
-            println "Combined coverage report (root): \t\t file://${reportDir}/index.html"
+            logger.quiet("Combined coverage report: file://${reportDir}/index.html")
         }
     }
 }
