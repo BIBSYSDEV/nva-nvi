@@ -15,26 +15,10 @@ public record ContributorDto(@JsonProperty("name") String name, @JsonProperty("i
                              @JsonProperty("roleType") String role,
                              @JsonProperty("affiliations") List<Affiliation> affiliations) {
 
-    public static ContributorDto fromJson(Contributor contributor) {
-        var name = contributor
-                       .identity()
-                       .name();
-        var id = contributor
-                     .identity()
-                     .id();
-        var verificationStatus = contributor
-                                     .identity()
-                                     .verificationStatus();
-        var roleType = contributor
-                           .role()
-                           .type();
-
-        return new ContributorDto(name, id, verificationStatus, roleType, contributor.affiliations());
-    }
-
-    public static Contributor fromJsonNode(JsonNode jsonNode) {
+    public static ContributorDto fromJsonNode(JsonNode jsonNode) {
         try {
-            return dtoObjectMapper.readValue(jsonNode.toString(), Contributor.class);
+            var contributor = dtoObjectMapper.readValue(jsonNode.toString(), Contributor.class);
+            return contributor.toDto();
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
@@ -43,6 +27,14 @@ public record ContributorDto(@JsonProperty("name") String name, @JsonProperty("i
     public record Contributor(@JsonProperty("identity") Identity identity, @JsonProperty("role") Role role,
                               @JsonProperty("affiliations") List<Affiliation> affiliations) {
 
+        public ContributorDto toDto() {
+            var name = identity().name();
+            var id = identity().id();
+            var verificationStatus = identity().verificationStatus();
+            var roleType = role().type();
+
+            return new ContributorDto(name, id, verificationStatus, roleType, affiliations);
+        }
     }
 
     public record Identity(@JsonProperty("name") String name, @JsonProperty("id") URI id,

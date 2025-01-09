@@ -50,7 +50,6 @@ public class CreatorVerificationUtil {
     public static List<ContributorDto> extractContributors(JsonNode body) {
         return getStreamOfContributorNodes(body)
                    .map(ContributorDto::fromJsonNode)
-                   .map(ContributorDto::fromJson)
                    .toList();
     }
 
