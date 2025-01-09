@@ -92,7 +92,7 @@ public class EvaluatorService {
             contributors);
 
         if (hasCreators(verifiedCreatorsWithNviInstitutions, unverifiedCreatorsWithNviInstitutions)) {
-            var pointCalculation = pointService.calculatePoints(publication, verifiedCreatorsWithNviInstitutions);
+            var pointCalculation = pointService.calculatePoints(publication, verifiedCreatorsWithNviInstitutions, unverifiedCreatorsWithNviInstitutions);
             var nviCandidate = constructNviCandidate(verifiedCreatorsWithNviInstitutions,
                                                      unverifiedCreatorsWithNviInstitutions,
                                                      pointCalculation,

@@ -19,6 +19,8 @@ import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
+import no.sikt.nva.nvi.common.service.model.NviCreator;
+import no.sikt.nva.nvi.common.service.model.UnverifiedNviCreator;
 import no.sikt.nva.nvi.events.evaluator.model.Channel;
 import no.sikt.nva.nvi.events.evaluator.model.PointCalculation;
 import no.sikt.nva.nvi.common.service.model.VerifiedNviCreator;
@@ -32,14 +34,17 @@ public class PointCalculator {
     private final BigDecimal collaborationFactor;
     private final BigDecimal basePoints;
     private final int creatorShareCount;
-    private final List<VerifiedNviCreator> nviCreators;
+    private final List<VerifiedNviCreator> verifiedNviCreators;
+    private final List<UnverifiedNviCreator> unverifiedNviCreators;
 
     public PointCalculator(Channel publicationChannel, InstanceType instanceType,
-                           List<VerifiedNviCreator> nviCreators, boolean isInternationalCollaboration,
+                           List<VerifiedNviCreator> verifiedNviCreators,
+                           List<UnverifiedNviCreator> unverifiedNviCreators,  boolean isInternationalCollaboration,
                            int creatorShareCount) {
         this.publicationChannel = publicationChannel;
         this.instanceType = instanceType;
-        this.nviCreators = nviCreators;
+        this.verifiedNviCreators = verifiedNviCreators;
+        this.unverifiedNviCreators = unverifiedNviCreators;
         this.internationalCollaborationFactor = isInternationalCollaboration;
         this.collaborationFactor = getInternationalCollaborationFactor(isInternationalCollaboration);
         this.basePoints = getInstanceTypeAndLevelPoints(instanceType, publicationChannel);
@@ -78,9 +83,9 @@ public class PointCalculator {
         return dividend.divide(BigDecimal.valueOf(divisor), MATH_CONTEXT).setScale(RESULT_SCALE, RoundingMode.HALF_UP);
     }
 
-    private static Map<URI, Long> countNumberOfCreatorsForInstitutions(List<VerifiedNviCreator> nviCreators) {
+    private static Map<URI, Long> countNumberOfCreatorsForInstitutions(List<NviCreator> nviCreators) {
         return nviCreators.stream()
-                   .flatMap(verifiedNviCreator -> verifiedNviCreator.nviAffiliations().stream())
+                   .flatMap(creator -> creator.nviAffiliations().stream())
                    .map(NviOrganization::topLevelOrganization)
                    .map(NviOrganization::id)
                    .distinct()
@@ -88,7 +93,7 @@ public class PointCalculator {
                                              institutionId -> countCreators(institutionId, nviCreators)));
     }
 
-    private static Long countCreators(URI institutionId, List<VerifiedNviCreator> nviCreators) {
+    private static Long countCreators(URI institutionId, List<NviCreator> nviCreators) {
         return nviCreators.stream()
                    .filter(creator -> creator.isAffiliatedWith(institutionId))
                    .count();
@@ -105,6 +110,7 @@ public class PointCalculator {
                                                                       pointsForAffiliation));
     }
 
+    // FIXME: Should use both verified and unverified creators
     private InstitutionPoints calculateInstitutionPoints(Entry<URI, Long> institutionCreatorCount) {
         var institutionContributorFraction = divideInstitutionShareOnTotalShares(institutionCreatorCount.getValue());
         var institutionPoints = executeNviFormula(institutionContributorFraction);
@@ -112,10 +118,11 @@ public class PointCalculator {
                                      calculateAffiliationPoints(institutionCreatorCount, institutionPoints));
     }
 
+    // FIXME: May need to change this too?
     private List<CreatorAffiliationPoints> calculateAffiliationPoints(Entry<URI, Long> institutionCreatorCount,
                                                                       BigDecimal institutionPoints) {
         var institutionId = institutionCreatorCount.getKey();
-        return nviCreators.stream()
+        return verifiedNviCreators.stream()
                    .filter(creator -> creator.isAffiliatedWith(institutionId))
                    .collect(Collectors.toMap(VerifiedNviCreator::id,
                                              creator -> creator.getAffiliationsPartOf(institutionId)))
@@ -139,7 +146,7 @@ public class PointCalculator {
     }
 
     private List<InstitutionPoints> calculatePointsForAllInstitutions() {
-        var institutionCreatorCount = countNumberOfCreatorsForInstitutions(nviCreators);
+        var institutionCreatorCount = countNumberOfCreatorsForInstitutions(verifiedNviCreators);
         return institutionCreatorCount.entrySet()
                    .stream()
                    .map(this::calculateInstitutionPoints)

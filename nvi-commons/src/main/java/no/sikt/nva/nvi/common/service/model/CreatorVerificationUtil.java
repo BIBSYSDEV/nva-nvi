@@ -45,7 +45,7 @@ public class CreatorVerificationUtil {
     }
 
     public static List<ContributorDto> extractContributors(JsonNode body) {
-        return getContributorNodeAsStream(body)
+        return getStreamOfContributorNodes(body)
                    .map(ContributorDto::fromJsonNode)
                    .map(ContributorDto::fromJson)
                    .toList();
@@ -109,7 +109,7 @@ public class CreatorVerificationUtil {
         return response.statusCode() == HttpURLConnection.HTTP_NOT_FOUND;
     }
 
-    private static Stream<JsonNode> getContributorNodeAsStream(JsonNode body) {
+    private static Stream<JsonNode> getStreamOfContributorNodes(JsonNode body) {
         return StreamSupport.stream(body
                                         .at(JSON_PTR_CONTRIBUTOR)
                                         .spliterator(), false);

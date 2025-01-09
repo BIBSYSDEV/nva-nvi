@@ -14,6 +14,7 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbCreatorType;
 public sealed interface NviCreatorDto permits VerifiedNviCreatorDto, UnverifiedNviCreatorDto {
 
     List<URI> affiliations();
+
     // FIXME: Remove this
     DbCreatorType toDao();
 }
