@@ -14,7 +14,6 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
-import no.sikt.nva.nvi.common.service.model.CreatorVerificationUtil;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;

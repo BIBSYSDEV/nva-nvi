@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.common.service.model;
+package no.sikt.nva.nvi.events.evaluator;
 
 import static java.util.function.Predicate.not;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CONTRIBUTOR;
@@ -15,8 +15,11 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.client.model.Organization;
-import no.sikt.nva.nvi.common.service.dto.ContributorDto;
-import no.sikt.nva.nvi.common.service.dto.ContributorDto.Affiliation;
+import no.sikt.nva.nvi.events.evaluator.dto.ContributorDto;
+import no.sikt.nva.nvi.events.evaluator.dto.ContributorDto.Affiliation;
+import no.sikt.nva.nvi.common.service.model.NviOrganization;
+import no.sikt.nva.nvi.events.evaluator.model.UnverifiedNviCreator;
+import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import nva.commons.core.Environment;

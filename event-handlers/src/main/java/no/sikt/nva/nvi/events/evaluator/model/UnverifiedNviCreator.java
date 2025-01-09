@@ -1,8 +1,10 @@
-package no.sikt.nva.nvi.common.service.model;
+package no.sikt.nva.nvi.events.evaluator.model;
 
 import java.net.URI;
 import java.util.List;
+import java.util.function.Predicate;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
+import no.sikt.nva.nvi.common.service.model.NviOrganization;
 import nva.commons.core.JacocoGenerated;
 
 public record UnverifiedNviCreator(String name, List<NviOrganization> nviAffiliations) implements NviCreator {
@@ -25,7 +27,7 @@ public record UnverifiedNviCreator(String name, List<NviOrganization> nviAffilia
     public boolean isAffiliatedWith(URI institutionId) {
         return nviAffiliations
                    .stream()
-                   .anyMatch(affiliation -> affiliation.isPartOf(institutionId));
+                   .anyMatch(isNviOrganization(institutionId));
     }
 
     // FIXME: Ignoring test coverage for now (not used yet)
@@ -34,9 +36,13 @@ public record UnverifiedNviCreator(String name, List<NviOrganization> nviAffilia
     public List<URI> getAffiliationsPartOf(URI institutionId) {
         return nviAffiliations
                    .stream()
-                   .filter(affiliation -> affiliation.isPartOf(institutionId))
+                   .filter(isNviOrganization(institutionId))
                    .map(NviOrganization::id)
                    .toList();
+    }
+
+    private static Predicate<NviOrganization> isNviOrganization(URI institutionId) {
+        return affiliation -> affiliation.isPartOf(institutionId);
     }
 
     public UnverifiedNviCreatorDto toDto() {

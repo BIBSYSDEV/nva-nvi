@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.common.service.dto;
+package no.sikt.nva.nvi.events.evaluator.dto;
 
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import com.fasterxml.jackson.annotation.JsonProperty;

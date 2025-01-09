@@ -28,7 +28,7 @@ import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.service.model.NviOrganization;
-import no.sikt.nva.nvi.common.service.model.VerifiedNviCreator;
+import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
 import no.sikt.nva.nvi.events.evaluator.PointService;
 import no.sikt.nva.nvi.events.evaluator.model.PointCalculation;
 import no.unit.nva.auth.uriretriever.UriRetriever;

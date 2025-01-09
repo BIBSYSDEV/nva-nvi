@@ -59,7 +59,6 @@ import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
-import no.sikt.nva.nvi.common.service.model.CreatorVerificationUtil;
 import no.sikt.nva.nvi.events.evaluator.model.Level;
 import no.sikt.nva.nvi.events.evaluator.model.PublicationChannel;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;

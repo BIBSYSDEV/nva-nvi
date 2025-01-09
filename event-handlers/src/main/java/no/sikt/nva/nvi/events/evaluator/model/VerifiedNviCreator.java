@@ -1,8 +1,10 @@
-package no.sikt.nva.nvi.common.service.model;
+package no.sikt.nva.nvi.events.evaluator.model;
 
 import java.net.URI;
 import java.util.List;
+import java.util.function.Predicate;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
+import no.sikt.nva.nvi.common.service.model.NviOrganization;
 
 public record VerifiedNviCreator(URI id, List<NviOrganization> nviAffiliations) implements NviCreator {
 
@@ -22,16 +24,20 @@ public record VerifiedNviCreator(URI id, List<NviOrganization> nviAffiliations) 
     public boolean isAffiliatedWith(URI institutionId) {
         return nviAffiliations
                    .stream()
-                   .anyMatch(affiliation -> affiliation.isPartOf(institutionId));
+                   .anyMatch(isNviOrganization(institutionId));
     }
 
     @Override
     public List<URI> getAffiliationsPartOf(URI institutionId) {
         return nviAffiliations
                    .stream()
-                   .filter(affiliation -> affiliation.isPartOf(institutionId))
+                   .filter(isNviOrganization(institutionId))
                    .map(NviOrganization::id)
                    .toList();
+    }
+
+    private static Predicate<NviOrganization> isNviOrganization(URI institutionId) {
+        return affiliation -> affiliation.isPartOf(institutionId);
     }
 
     public VerifiedNviCreatorDto toDto() {
