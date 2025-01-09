@@ -4,7 +4,6 @@ import java.net.URI;
 import java.util.List;
 import java.util.function.Predicate;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
-import no.sikt.nva.nvi.common.service.model.NviOrganization;
 
 public record VerifiedNviCreator(URI id, List<NviOrganization> nviAffiliations) implements NviCreator {
 

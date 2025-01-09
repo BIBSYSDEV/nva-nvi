@@ -17,7 +17,7 @@ import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.events.evaluator.dto.ContributorDto;
 import no.sikt.nva.nvi.events.evaluator.dto.ContributorDto.Affiliation;
-import no.sikt.nva.nvi.common.service.model.NviOrganization;
+import no.sikt.nva.nvi.events.evaluator.model.NviOrganization;
 import no.sikt.nva.nvi.events.evaluator.model.UnverifiedNviCreator;
 import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;

@@ -4,7 +4,6 @@ import java.net.URI;
 import java.util.List;
 import java.util.function.Predicate;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
-import no.sikt.nva.nvi.common.service.model.NviOrganization;
 import nva.commons.core.JacocoGenerated;
 
 public record UnverifiedNviCreator(String name, List<NviOrganization> nviAffiliations) implements NviCreator {
