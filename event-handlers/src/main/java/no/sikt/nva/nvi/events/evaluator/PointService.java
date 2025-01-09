@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.events.evaluator;
 
-import static java.util.Collections.emptyList;
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_AFFILIATIONS;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CHAPTER_PUBLISHER;
@@ -30,11 +29,11 @@ import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.common.service.model.UnverifiedNviCreator;
+import no.sikt.nva.nvi.common.service.model.VerifiedNviCreator;
 import no.sikt.nva.nvi.common.utils.JsonUtils;
 import no.sikt.nva.nvi.events.evaluator.calculator.PointCalculator;
 import no.sikt.nva.nvi.events.evaluator.model.Channel;
 import no.sikt.nva.nvi.events.evaluator.model.PointCalculation;
-import no.sikt.nva.nvi.common.service.model.VerifiedNviCreator;
 
 public final class PointService {
 
@@ -48,19 +47,6 @@ public final class PointService {
 
     public PointService(OrganizationRetriever organizationRetriever) {
         this.organizationRetriever = organizationRetriever;
-    }
-
-    // FIXME: Temporary constructor to test change before rewriting all tests
-    public PointCalculation calculatePoints(JsonNode publication,
-                                            List<VerifiedNviCreator> nviCreators) {
-        var instanceType = extractInstanceType(publication);
-        massiveHackToFixObjectsWithMultipleTypes(publication);
-        var channel = extractChannel(instanceType, publication);
-        var isInternationalCollaboration = isInternationalCollaboration(publication);
-        var creatorShareCount = countCreatorShares(publication);
-        return new PointCalculator(channel, instanceType, nviCreators, emptyList(), isInternationalCollaboration,
-                                   creatorShareCount)
-                   .calculatePoints();
     }
 
     public PointCalculation calculatePoints(JsonNode publication,
@@ -219,7 +205,6 @@ public final class PointService {
                            countCreatorsWithOnlyUnverifiedAffiliations(creators));
     }
 
-    // FIXME: These need to be rewritten to use the new DTO and use both verified and unverified creators.
     private Integer countVerifiedTopLevelAffiliationsPerCreator(List<JsonNode> creators) {
         return creators.stream()
                    .map(this::countVerifiedTopLevelAffiliations)
@@ -227,6 +212,7 @@ public final class PointService {
     }
 
     // FIXME: Does this actually need to call the organization retriever?
+    // This method is only called from EvaluatorService, which has already done the same check.
     private Integer countVerifiedTopLevelAffiliations(JsonNode creator) {
         return extractAffiliations(creator)
                    .filter(PointService::hasId)

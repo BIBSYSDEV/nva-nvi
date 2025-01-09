@@ -27,6 +27,25 @@ reporting {
     }
 }
 
+// Log a clickable link to console for generated test coverage reports
+def reportDirPath = "reports/jacoco/testCodeCoverageReport/html"
+def reportDir = layout.buildDirectory.dir(reportDirPath).get().asFile
+subprojects {
+    afterEvaluate {
+        tasks.named('testCodeCoverageReport').configure {
+            doLast {
+                println "Test coverage report for ${project.name}: file://${reportDir}/index.html"
+            }
+        }
+    }
+}
+
+tasks.named('testCodeCoverageReport').configure {
+    doLast {
+        println "Combined test coverage report: file://${reportDir}/index.html"
+    }
+}
+
 tasks.named('check') {
     dependsOn tasks.named('testCodeCoverageReport', JacocoReport)
     dependsOn tasks.named('integrationTestCodeCoverageReport', JacocoReport)

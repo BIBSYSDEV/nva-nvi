@@ -713,8 +713,10 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
         void shouldIdentifyCandidateWithOnlyUnverifiedNviCreators() throws IOException {
             verifiedContributors = emptyList();
             unverifiedContributors = List.of(defaultUnverifiedContributor);
-            expectedTotalPoints = ZERO;
-            expectedPointsPerInstitution = emptyList();
+            expectedTotalPoints = ZERO.setScale(SCALE, ROUNDING_MODE);
+            expectedPointsPerInstitution = List.of(new InstitutionPoints(CRISTIN_NVI_ORG_TOP_LEVEL_ID,
+                                                                         expectedTotalPoints,
+                                                                         emptyList()));
             var testScenario = getCandidateScenario();
 
             handler.handleRequest(testScenario.event(), context);

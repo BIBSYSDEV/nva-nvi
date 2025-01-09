@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.events.evaluator.calculator;
 
+import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static no.sikt.nva.nvi.events.evaluator.TestUtils.mockOrganizationResponseForAffiliation;
 import static no.sikt.nva.nvi.events.evaluator.calculator.PointCalculationConstants.RESULT_SCALE;
@@ -26,10 +27,10 @@ import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
+import no.sikt.nva.nvi.common.service.model.NviOrganization;
+import no.sikt.nva.nvi.common.service.model.VerifiedNviCreator;
 import no.sikt.nva.nvi.events.evaluator.PointService;
 import no.sikt.nva.nvi.events.evaluator.model.PointCalculation;
-import no.sikt.nva.nvi.common.service.model.VerifiedNviCreator;
-import no.sikt.nva.nvi.common.service.model.NviOrganization;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -80,8 +81,8 @@ class PointServiceTest {
         var expandedResource = setupSingleContributorWithSingleInstitution(parameters, creatorId, institutionId);
 
         var pointCalculation = pointService.calculatePoints(expandedResource,
-                                                            List.of(
-                                                                createCreator(creatorId, List.of(institutionId))));
+                                                            List.of(createCreator(creatorId, List.of(institutionId))),
+                                                            emptyList());
 
         assertThat(getActualPoints(pointCalculation, institutionId), is(equalTo(parameters.institution1Points())));
         assertThat(pointCalculation.totalPoints(), is(equalTo(parameters.totalPoints())));
@@ -105,7 +106,8 @@ class PointServiceTest {
 
         var pointCalculation = pointService.calculatePoints(expandedResource,
                                                             List.of(createCreator(creator1, creator1Institutions),
-                                                                    createCreator(creator2, creator2Institutions)));
+                                                                    createCreator(creator2, creator2Institutions)),
+                                                            emptyList());
 
         assertThat(getActualPoints(pointCalculation, nviInstitution1), is(equalTo(parameters.institution1Points())));
         assertThat(getActualPoints(pointCalculation, nviInstitution2), is(equalTo(parameters.institution2Points())));
@@ -130,7 +132,8 @@ class PointServiceTest {
 
         var pointCalculation = pointService.calculatePoints(expandedResource,
                                                             List.of(createCreator(creator1, creator1Institutions),
-                                                                    createCreator(creator2, creator2Institutions)));
+                                                                    createCreator(creator2, creator2Institutions)),
+                                                            emptyList());
 
         assertThat(getActualPoints(pointCalculation, nviInstitution1), is(equalTo(parameters.institution1Points())));
         assertThat(getActualPoints(pointCalculation, nviInstitution2), is(equalTo(parameters.institution2Points())));
@@ -154,8 +157,10 @@ class PointServiceTest {
         mockOrganizationResponseForAffiliation(topLevelInstitutionId, subUnit1Id, uriRetriever);
         mockOrganizationResponseForAffiliation(topLevelInstitutionId, subUnit2Id, uriRetriever);
 
-        var pointCalculation = pointService.calculatePoints(
-            expandedResource, List.of(createCreator(creatorId, List.of(topLevelInstitutionId))));
+        var pointCalculation = pointService.calculatePoints(expandedResource,
+                                                            List.of(createCreator(creatorId,
+                                                                                  List.of(topLevelInstitutionId))),
+                                                            emptyList());
 
         assertThat(getActualPoints(pointCalculation, topLevelInstitutionId), is(equalTo(asBigDecimal("1"))));
     }
@@ -167,8 +172,9 @@ class PointServiceTest {
         mockOrganizationResponseForAffiliation(institutionId, null, uriRetriever);
         var expandedResource = setupNonCreatorAffiliatedWithInternationalInstitution(creatorId, institutionId);
 
-        var pointCalculation = pointService.calculatePoints(
-            expandedResource, List.of(createCreator(creatorId, List.of(institutionId))));
+        var pointCalculation = pointService.calculatePoints(expandedResource,
+                                                            List.of(createCreator(creatorId, List.of(institutionId))),
+                                                            emptyList());
 
         assertThat(getActualPoints(pointCalculation, institutionId), is(equalTo(asBigDecimal("1"))));
     }
@@ -180,8 +186,9 @@ class PointServiceTest {
         mockOrganizationResponseForAffiliation(institutionId, null, uriRetriever);
         var expandedResource = setupResourceWithNonCreator(creatorId, institutionId);
 
-        var pointCalculation = pointService.calculatePoints(
-            expandedResource, List.of(createCreator(creatorId, List.of(institutionId))));
+        var pointCalculation = pointService.calculatePoints(expandedResource,
+                                                            List.of(createCreator(creatorId, List.of(institutionId))),
+                                                            emptyList());
 
         assertThat(getActualPoints(pointCalculation, institutionId), is(equalTo(asBigDecimal("1"))));
     }
@@ -192,8 +199,10 @@ class PointServiceTest {
         var nviInstitutionId = randomUri();
         mockOrganizationResponseForAffiliation(nviInstitutionId, null, uriRetriever);
         var expandedResource = setupResourceWithCreatorsWithoutAffiliations(nviCreatorId, nviInstitutionId);
-        var pointCalculation = pointService.calculatePoints(
-            expandedResource, List.of(createCreator(nviCreatorId, List.of(nviInstitutionId))));
+        var pointCalculation = pointService.calculatePoints(expandedResource,
+                                                            List.of(createCreator(nviCreatorId,
+                                                                                  List.of(nviInstitutionId))),
+                                                            emptyList());
 
         assertThat(getActualPoints(pointCalculation, nviInstitutionId), is(equalTo(asBigDecimal("0.7071"))));
     }
@@ -207,8 +216,10 @@ class PointServiceTest {
         var expandedResource = setupResourceWithCreatorWithUnverifiedAffiliations(nviCreatorId, nviInstitutionId,
                                                                                   numberOfAffiliationsWithoutId);
 
-        var institutionPoints = pointService.calculatePoints(
-            expandedResource, List.of(createCreator(nviCreatorId, List.of(nviInstitutionId))));
+        var institutionPoints = pointService.calculatePoints(expandedResource,
+                                                             List.of(createCreator(nviCreatorId,
+                                                                                   List.of(nviInstitutionId))),
+                                                             emptyList());
 
         assertThat(getActualPoints(institutionPoints, nviInstitutionId), is(equalTo(asBigDecimal("1"))));
     }
@@ -222,8 +233,10 @@ class PointServiceTest {
         var expandedResource = setupResourceWithOneCreatorWithUnverifiedAffiliations(nviCreatorId, nviInstitutionId,
                                                                                      numberOfAffiliationsWithoutId);
 
-        var institutionPoints = pointService.calculatePoints(
-            expandedResource, List.of(createCreator(nviCreatorId, List.of(nviInstitutionId))));
+        var institutionPoints = pointService.calculatePoints(expandedResource,
+                                                             List.of(createCreator(nviCreatorId,
+                                                                                   List.of(nviInstitutionId))),
+                                                             emptyList());
 
         assertThat(getActualPoints(institutionPoints, nviInstitutionId), is(equalTo(asBigDecimal("0.7071"))));
     }
@@ -246,7 +259,7 @@ class PointServiceTest {
                                                           List.of(createNviOrganization(someSubUnitId, institutionId),
                                                                   createNviOrganization(someOtherSubUnitId,
                                                                                         institutionId))));
-        var pointCalculation = pointService.calculatePoints(expandedResource, nviCreators);
+        var pointCalculation = pointService.calculatePoints(expandedResource, nviCreators, emptyList());
         assertThat(getActualPoints(pointCalculation, institutionId), is(equalTo(parameters.institution1Points())));
         var expectedPointsForAffiliation = parameters.institution1Points()
                                                .divide(BigDecimal.valueOf(affiliations.size()), ROUNDING_MODE)
@@ -273,8 +286,7 @@ class PointServiceTest {
                                                                       creator1Affiliations, creator2Affiliations);
         var nviCreators = setupNviCreators(creator1, creator2, creator1Affiliations, creator2Affiliations,
                                            institutionId);
-        var pointCalculation = pointService.calculatePoints(expandedResource,
-                                                            nviCreators);
+        var pointCalculation = pointService.calculatePoints(expandedResource, nviCreators, emptyList());
         assertThat(getActualAffiliationPoints(pointCalculation, institutionId, someSubUnitId, creator1),
                    is(equalTo(BigDecimal.valueOf(0.5000).setScale(RESULT_SCALE, ROUNDING_MODE))));
         assertThat(getActualAffiliationPoints(pointCalculation, institutionId, someSubUnitId, creator2),
