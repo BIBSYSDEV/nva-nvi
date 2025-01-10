@@ -15,8 +15,8 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.client.model.Organization;
+import no.sikt.nva.nvi.events.evaluator.dto.AffiliationDto;
 import no.sikt.nva.nvi.events.evaluator.dto.ContributorDto;
-import no.sikt.nva.nvi.events.evaluator.dto.ContributorDto.Affiliation;
 import no.sikt.nva.nvi.events.evaluator.model.NviOrganization;
 import no.sikt.nva.nvi.events.evaluator.model.UnverifiedNviCreator;
 import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
@@ -130,10 +130,11 @@ public class CreatorVerificationUtil {
                    .build();
     }
 
-    private static boolean hasRelevantCountryCode(Affiliation affiliation) {
+    private static boolean hasRelevantCountryCode(AffiliationDto expandedAffiliationDto) {
         // We only need to check the affiliation if the country code is set to `NO` or missing.
         // Otherwise, we can skip it and not check if it is an NVI institution, saving us a network call.
-        return affiliation.countryCode() == null || COUNTRY_CODE_NORWAY.equalsIgnoreCase(affiliation.countryCode());
+        return expandedAffiliationDto.countryCode() == null || COUNTRY_CODE_NORWAY.equalsIgnoreCase(
+            expandedAffiliationDto.countryCode());
     }
 
     private VerifiedNviCreator toVerifiedNviCreator(ContributorDto contributor) {
@@ -157,7 +158,7 @@ public class CreatorVerificationUtil {
                    .affiliations()
                    .stream()
                    .filter(CreatorVerificationUtil::hasRelevantCountryCode)
-                   .map(Affiliation::id)
+                   .map(AffiliationDto::id)
                    .distinct()
                    .map(organizationRetriever::fetchOrganization)
                    .filter(this::topLevelOrgIsNviInstitution)

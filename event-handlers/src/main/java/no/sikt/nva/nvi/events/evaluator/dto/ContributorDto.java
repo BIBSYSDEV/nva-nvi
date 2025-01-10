@@ -6,6 +6,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.net.URI;
 import java.util.List;
+import no.sikt.nva.nvi.events.evaluator.dto.AffiliationDto.ExpandedAffiliationDto;
 
 /**
  * A (hopefully temporary) DTO for converting JSON data from publication-api.
@@ -13,40 +14,41 @@ import java.util.List;
 public record ContributorDto(@JsonProperty("name") String name, @JsonProperty("id") URI id,
                              @JsonProperty("verificationStatus") String verificationStatus,
                              @JsonProperty("roleType") String role,
-                             @JsonProperty("affiliations") List<Affiliation> affiliations) {
+                             @JsonProperty("affiliations") List<AffiliationDto> affiliations) {
 
     public static ContributorDto fromJsonNode(JsonNode jsonNode) {
         try {
-            var contributor = dtoObjectMapper.readValue(jsonNode.toString(), Contributor.class);
+            var contributor = dtoObjectMapper.readValue(jsonNode.toString(), ExpandedContributorDto.class);
             return contributor.toDto();
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public record Contributor(@JsonProperty("identity") Identity identity, @JsonProperty("role") Role role,
-                              @JsonProperty("affiliations") List<Affiliation> affiliations) {
+    public record ExpandedContributorDto(@JsonProperty("identity") ExpandedIdentityDto expandedIdentity,
+                                         @JsonProperty("role") ExpandedRoleDto role,
+                                         @JsonProperty("affiliations") List<ExpandedAffiliationDto> expandedAffiliations) {
 
         public ContributorDto toDto() {
-            var name = identity().name();
-            var id = identity().id();
-            var verificationStatus = identity().verificationStatus();
+            var name = expandedIdentity().name();
+            var id = expandedIdentity().id();
+            var verificationStatus = expandedIdentity().verificationStatus();
             var roleType = role().type();
+            var affiliations = expandedAffiliations()
+                                   .stream()
+                                   .map(ExpandedAffiliationDto::toDto)
+                                   .toList();
 
             return new ContributorDto(name, id, verificationStatus, roleType, affiliations);
         }
     }
 
-    public record Identity(@JsonProperty("name") String name, @JsonProperty("id") URI id,
-                           @JsonProperty("verificationStatus") String verificationStatus) {
+    public record ExpandedIdentityDto(@JsonProperty("name") String name, @JsonProperty("id") URI id,
+                                      @JsonProperty("verificationStatus") String verificationStatus) {
 
     }
 
-    public record Role(@JsonProperty("type") String type) {
-
-    }
-
-    public record Affiliation(@JsonProperty("id") URI id, @JsonProperty("countryCode") String countryCode) {
+    public record ExpandedRoleDto(@JsonProperty("type") String type) {
 
     }
 }
