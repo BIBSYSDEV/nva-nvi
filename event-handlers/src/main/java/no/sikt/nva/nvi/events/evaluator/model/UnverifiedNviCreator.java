@@ -4,7 +4,6 @@ import java.net.URI;
 import java.util.List;
 import java.util.function.Predicate;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
-import nva.commons.core.JacocoGenerated;
 
 public record UnverifiedNviCreator(String name, List<NviOrganization> nviAffiliations) implements NviCreator {
 
@@ -20,24 +19,11 @@ public record UnverifiedNviCreator(String name, List<NviOrganization> nviAffilia
                    .toList();
     }
 
-    // FIXME: Ignoring test coverage for now (not used yet)
     @Override
-    @JacocoGenerated
     public boolean isAffiliatedWith(URI institutionId) {
         return nviAffiliations
                    .stream()
                    .anyMatch(isNviOrganization(institutionId));
-    }
-
-    // FIXME: Ignoring test coverage for now (not used yet)
-    @Override
-    @JacocoGenerated
-    public List<URI> getAffiliationsPartOf(URI institutionId) {
-        return nviAffiliations
-                   .stream()
-                   .filter(isNviOrganization(institutionId))
-                   .map(NviOrganization::id)
-                   .toList();
     }
 
     private static Predicate<NviOrganization> isNviOrganization(URI institutionId) {

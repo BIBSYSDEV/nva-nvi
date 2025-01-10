@@ -26,7 +26,6 @@ public record VerifiedNviCreator(URI id, List<NviOrganization> nviAffiliations) 
                    .anyMatch(isNviOrganization(institutionId));
     }
 
-    @Override
     public List<URI> getAffiliationsPartOf(URI institutionId) {
         return nviAffiliations
                    .stream()

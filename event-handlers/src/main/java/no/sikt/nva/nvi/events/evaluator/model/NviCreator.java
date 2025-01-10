@@ -10,6 +10,4 @@ public sealed interface NviCreator permits VerifiedNviCreator, UnverifiedNviCrea
     List<URI> nviAffiliationsIds();
 
     boolean isAffiliatedWith(URI institutionId);
-
-    List<URI> getAffiliationsPartOf(URI institutionId);
 }
