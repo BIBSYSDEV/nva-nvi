@@ -573,19 +573,23 @@ public final class Candidate {
     }
 
     private static DbCandidate mapToCandidate(UpsertCandidateRequest request) {
-        var creators = getAllCreators(request).stream()
-                                              .map(NviCreatorDto::toDao)
-                                              .toList();
-        return DbCandidate.builder()
+        var creators = getAllCreators(request)
+                           .stream()
+                           .map(NviCreatorDto::toDao)
+                           .toList();
+        return DbCandidate
+                   .builder()
                    .publicationId(request.publicationId())
                    .publicationBucketUri(request.publicationBucketUri())
                    .applicable(request.isApplicable())
-                          .creators(creators)
+                   .creators(creators)
                    .creatorShareCount(request.creatorShareCount())
                    .channelType(ChannelType.parse(request.channelType()))
                    .channelId(request.publicationChannelId())
                    .level(DbLevel.parse(request.level()))
-                   .instanceType(request.instanceType().getValue())
+                   .instanceType(request
+                                     .instanceType()
+                                     .getValue())
                    .publicationDate(mapToPublicationDate(request.publicationDate()))
                    .internationalCollaboration(request.isInternationalCollaboration())
                    .collaborationFactor(adjustScaleAndRoundingMode(request.collaborationFactor()))
