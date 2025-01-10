@@ -599,7 +599,7 @@ public final class CandidateDao extends Dao {
     public sealed interface DbCreatorType permits DbCreator, DbUnverifiedCreator {
         List<URI> affiliations();
         DbCreatorType copy();
-        NviCreatorDto toNviCreatorType();
+        NviCreatorDto toNviCreator();
     }
 
     @JsonSerialize
@@ -621,7 +621,7 @@ public final class CandidateDao extends Dao {
 
         @Override
         @DynamoDbIgnore
-        public NviCreatorDto toNviCreatorType() {
+        public NviCreatorDto toNviCreator() {
             return new VerifiedNviCreatorDto(creatorId, affiliations);
         }
 
@@ -668,7 +668,7 @@ public final class CandidateDao extends Dao {
 
         @Override
         @DynamoDbIgnore
-        public NviCreatorDto toNviCreatorType() {
+        public NviCreatorDto toNviCreator() {
             return new UnverifiedNviCreatorDto(creatorName, affiliations);
         }
 

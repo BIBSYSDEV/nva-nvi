@@ -49,7 +49,6 @@ import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.service.dto.ApprovalDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.dto.NoteDto;
-import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
@@ -530,6 +529,7 @@ public final class Candidate {
             Objects.requireNonNull(candidate.publicationId());
             Objects.requireNonNull(candidate.creators());
             Objects.requireNonNull(candidate.verifiedCreators());
+            Objects.requireNonNull(candidate.unverifiedCreators());
             Objects.requireNonNull(candidate.level());
             Objects.requireNonNull(candidate.publicationDate());
             Objects.requireNonNull(candidate.totalPoints());
@@ -573,16 +573,23 @@ public final class Candidate {
     }
 
     private static DbCandidate mapToCandidate(UpsertCandidateRequest request) {
-        var creators = getAllCreators(request)
-                           .stream()
-                           .map(NviCreatorDto::toDao)
-                           .toList();
+        Stream<DbCreatorType> verifiedCreators = request
+                                                     .verifiedCreators()
+                                                     .stream()
+                                                     .map(VerifiedNviCreatorDto::toDao);
+        Stream<DbCreatorType> unverifiedCreators = request
+                                                       .unverifiedCreators()
+                                                       .stream()
+                                                       .map(UnverifiedNviCreatorDto::toDao);
+        var allCreators = Stream
+                              .concat(verifiedCreators, unverifiedCreators)
+                              .toList();
         return DbCandidate
                    .builder()
                    .publicationId(request.publicationId())
                    .publicationBucketUri(request.publicationBucketUri())
                    .applicable(request.isApplicable())
-                   .creators(creators)
+                   .creators(allCreators)
                    .creatorShareCount(request.creatorShareCount())
                    .channelType(ChannelType.parse(request.channelType()))
                    .channelId(request.publicationChannelId())
@@ -615,10 +622,17 @@ public final class Candidate {
                    .build();
     }
 
-    private static List<DbCreatorType> mapToDbCreators(List<NviCreatorDto> creators) {
-        return creators.stream()
-                       .map(NviCreatorDto::toDao)
-                       .toList();
+    private static List<DbCreatorType> mapToDbCreators(List<VerifiedNviCreatorDto> verifiedNviCreators,
+                                                       List<UnverifiedNviCreatorDto> unverifiedNviCreators) {
+        Stream<DbCreatorType> verifiedCreators = verifiedNviCreators
+                                                     .stream()
+                                                     .map(VerifiedNviCreatorDto::toDao);
+        Stream<DbCreatorType> unverifiedCreators = unverifiedNviCreators
+                                                       .stream()
+                                                       .map(UnverifiedNviCreatorDto::toDao);
+        return Stream
+                   .concat(verifiedCreators, unverifiedCreators)
+                   .toList();
     }
 
 
@@ -661,30 +675,37 @@ public final class Candidate {
     }
 
     private CandidateDao toDao() {
-        return CandidateDao.builder()
+        var dbCreators = mapToDbCreators(publicationDetails.getVerifiedCreators(),
+                                         publicationDetails.getUnverifiedCreators());
+        var dbCandidate = DbCandidate
+                              .builder()
+                              .applicable(applicable)
+                              .creators(dbCreators)
+                              .creatorShareCount(creatorShareCount)
+                              .channelType(getPublicationChannelType())
+                              .channelId(getPublicationChannelId())
+                              .level(DbLevel.parse(getScientificLevel()))
+                              .instanceType(publicationDetails.type())
+                              .publicationDate(mapToPublicationDate(publicationDetails.publicationDate()))
+                              .internationalCollaboration(internationalCollaboration)
+                              .collaborationFactor(adjustScaleAndRoundingMode(collaborationFactor))
+                              .basePoints(adjustScaleAndRoundingMode(basePoints))
+                              .points(mapToPoints(institutionPoints))
+                              .totalPoints(adjustScaleAndRoundingMode(totalPoints))
+                              .createdDate(createdDate)
+                              .modifiedDate(Instant.now())
+                              .reportStatus(reportStatus)
+                              .publicationBucketUri(publicationDetails.publicationBucketUri())
+                              .publicationId(publicationDetails.publicationId())
+                              .build();
+        return CandidateDao
+                   .builder()
                    .identifier(identifier)
-                   .candidate(DbCandidate.builder()
-                                  .applicable(applicable)
-                                  .creators(mapToDbCreators(publicationDetails.creators()))
-                                  .creatorShareCount(creatorShareCount)
-                                  .channelType(getPublicationChannelType())
-                                  .channelId(getPublicationChannelId())
-                                  .level(DbLevel.parse(getScientificLevel()))
-                                  .instanceType(publicationDetails.type())
-                                  .publicationDate(mapToPublicationDate(publicationDetails.publicationDate()))
-                                  .internationalCollaboration(internationalCollaboration)
-                                  .collaborationFactor(adjustScaleAndRoundingMode(collaborationFactor))
-                                  .basePoints(adjustScaleAndRoundingMode(basePoints))
-                                  .points(mapToPoints(institutionPoints))
-                                  .totalPoints(adjustScaleAndRoundingMode(totalPoints))
-                                  .createdDate(createdDate)
-                                  .modifiedDate(Instant.now())
-                                  .reportStatus(reportStatus)
-                                  .publicationBucketUri(publicationDetails.publicationBucketUri())
-                                  .publicationId(publicationDetails.publicationId())
-                                  .build())
+                   .candidate(dbCandidate)
                    .version(randomUUID().toString())
-                   .periodYear(publicationDetails.publicationDate().year())
+                   .periodYear(publicationDetails
+                                   .publicationDate()
+                                   .year())
                    .build();
     }
 
@@ -705,8 +726,9 @@ public final class Candidate {
     private PublicationDetails mapToPublicationDetails(UpsertCandidateRequest request) {
         return new PublicationDetails(request.publicationId(),
                                       request.publicationBucketUri(),
-                                      request.instanceType()
-                                             .getValue(),
+                                      request
+                                          .instanceType()
+                                          .getValue(),
                                       request.publicationDate(),
                                       getAllCreators(request),
                                       new PublicationChannel(ChannelType.parse(request.channelType()),

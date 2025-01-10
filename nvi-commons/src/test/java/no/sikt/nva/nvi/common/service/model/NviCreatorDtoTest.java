@@ -5,14 +5,10 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import java.net.URI;
 import java.util.List;
-import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbUnverifiedCreator;
-import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
 
 class NviCreatorDtoTest {
 
@@ -23,10 +19,6 @@ class NviCreatorDtoTest {
                                                                                                     CREATOR_AFFILIATIONS);
     private static final UnverifiedNviCreatorDto DEFAULT_UNVERIFIED_CREATOR = new UnverifiedNviCreatorDto(CREATOR_NAME,
                                                                                                           CREATOR_AFFILIATIONS);
-
-    static Stream<NviCreatorDto> creatorTypeProvider() {
-        return Stream.of(DEFAULT_VERIFIED_CREATOR, DEFAULT_UNVERIFIED_CREATOR);
-    }
 
     @Test
     void builderShouldCreateNewVerifiedCreator() {
@@ -46,13 +38,22 @@ class NviCreatorDtoTest {
         assertEquals(DEFAULT_UNVERIFIED_CREATOR, creator);
     }
 
-    @ParameterizedTest(name = "Should convert {0} to and from dao")
-    @MethodSource("creatorTypeProvider")
-    void shouldConvertCreatorToAndFromDao(NviCreatorDto creator) {
-        var roundTrippedCreator = creator.toDao()
+    @Test
+    void shouldConvertVerifiedCreatorToAndFromDao() {
+        var roundTrippedCreator = DEFAULT_VERIFIED_CREATOR
+                                      .toDao()
                                                  .copy()
-                                                 .toNviCreatorType();
-        assertEquals(creator, roundTrippedCreator);
+                                                 .toNviCreator();
+        assertEquals(DEFAULT_VERIFIED_CREATOR, roundTrippedCreator);
+    }
+
+    @Test
+    void shouldConvertUnverifiedCreatorToAndFromDao() {
+        var roundTrippedCreator = DEFAULT_UNVERIFIED_CREATOR
+                                      .toDao()
+                                      .copy()
+                                      .toNviCreator();
+        assertEquals(DEFAULT_UNVERIFIED_CREATOR, roundTrippedCreator);
     }
 
     @Test

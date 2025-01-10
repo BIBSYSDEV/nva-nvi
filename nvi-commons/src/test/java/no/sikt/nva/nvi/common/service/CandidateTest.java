@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.common.service;
 
-import static no.sikt.nva.nvi.common.utils.RequestUtil.getAllCreators;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.createUpdateStatusRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
@@ -48,15 +47,15 @@ import no.sikt.nva.nvi.common.service.dto.ApprovalDto;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatusDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
+import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
+import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
-import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
-import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.test.UpsertRequestBuilder;
 import org.junit.jupiter.api.DisplayName;
@@ -463,10 +462,17 @@ class CandidateTest extends CandidateTestSetup {
         return UpsertRequestBuilder.fromRequest(insertRequest).build();
     }
 
-    private static List<DbCreatorType> mapToDbCreators(List<NviCreatorDto> creators) {
-        return creators.stream()
-                       .map(NviCreatorDto::toDao)
-                       .toList();
+    private static List<DbCreatorType> mapToDbCreators(List<VerifiedNviCreatorDto> verifiedNviCreators,
+                                                       List<UnverifiedNviCreatorDto> unverifiedNviCreators) {
+        Stream<DbCreatorType> verifiedCreators = verifiedNviCreators
+                                                     .stream()
+                                                     .map(VerifiedNviCreatorDto::toDao);
+        Stream<DbCreatorType> unverifiedCreators = unverifiedNviCreators
+                                                       .stream()
+                                                       .map(UnverifiedNviCreatorDto::toDao);
+        return Stream
+                   .concat(verifiedCreators, unverifiedCreators)
+                   .toList();
     }
 
     private DbPublicationDate mapToDbPublicationDate(PublicationDate publicationDate) {
@@ -480,24 +486,28 @@ class CandidateTest extends CandidateTestSetup {
     }
 
     private DbCandidate generateExpectedCandidate(Candidate candidate, UpsertCandidateRequest request) {
-        return new CandidateDao(candidate.getIdentifier(),
-                                DbCandidate.builder()
-                                    .publicationId(request.publicationId())
-                                    .publicationBucketUri(request.publicationBucketUri())
-                                    .publicationDate(mapToDbPublicationDate(request.publicationDate()))
-                                    .applicable(request.isApplicable())
-                                    .instanceType(request.instanceType().getValue())
-                                    .channelType(ChannelType.parse(request.channelType()))
-                                    .channelId(request.publicationChannelId())
-                                    .level(DbLevel.parse(request.level()))
-                                    .basePoints(adjustScaleAndRoundingMode(request.basePoints()))
-                                    .internationalCollaboration(request.isInternationalCollaboration())
-                                    .collaborationFactor(adjustScaleAndRoundingMode(request.collaborationFactor()))
-                                           .creators(mapToDbCreators(getAllCreators(request)))
-                                    .creatorShareCount(request.creatorShareCount())
-                                    .points(mapToDbInstitutionPoints(request.institutionPoints()))
-                                    .totalPoints(adjustScaleAndRoundingMode(request.totalPoints()))
-                                    .createdDate(candidate.getCreatedDate())
-                                    .build(), randomString(), randomString()).candidate();
+        var dbCreators = mapToDbCreators(request.verifiedCreators(), request.unverifiedCreators());
+        var dbCandidate = DbCandidate
+                              .builder()
+                              .publicationId(request.publicationId())
+                              .publicationBucketUri(request.publicationBucketUri())
+                              .publicationDate(mapToDbPublicationDate(request.publicationDate()))
+                              .applicable(request.isApplicable())
+                              .instanceType(request
+                                                .instanceType()
+                                                .getValue())
+                              .channelType(ChannelType.parse(request.channelType()))
+                              .channelId(request.publicationChannelId())
+                              .level(DbLevel.parse(request.level()))
+                              .basePoints(adjustScaleAndRoundingMode(request.basePoints()))
+                              .internationalCollaboration(request.isInternationalCollaboration())
+                              .collaborationFactor(adjustScaleAndRoundingMode(request.collaborationFactor()))
+                              .creators(dbCreators)
+                              .creatorShareCount(request.creatorShareCount())
+                              .points(mapToDbInstitutionPoints(request.institutionPoints()))
+                              .totalPoints(adjustScaleAndRoundingMode(request.totalPoints()))
+                              .createdDate(candidate.getCreatedDate())
+                              .build();
+        return new CandidateDao(candidate.getIdentifier(), dbCandidate, randomString(), randomString()).candidate();
     }
 }

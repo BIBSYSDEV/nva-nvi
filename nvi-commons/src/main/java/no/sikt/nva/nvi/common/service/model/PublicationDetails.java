@@ -25,7 +25,7 @@ public record PublicationDetails(URI publicationId, URI publicationBucketUri, St
                                       PublicationDate.from(dbCandidate.publicationDate()),
                                       dbCandidate.creators()
                                                  .stream()
-                                                 .map(DbCreatorType::toNviCreatorType)
+                                                 .map(DbCreatorType::toNviCreator)
                                                  .toList(),
                                       new PublicationChannel(dbCandidate.channelType(),
                                                              dbCandidate.channelId(),
