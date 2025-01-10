@@ -45,6 +45,7 @@ import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
+import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.CreatePeriodRequest;
@@ -273,6 +274,9 @@ public final class TestUtils {
         var creators = IntStream.of(1)
                            .mapToObj(i -> randomUri())
                            .collect(Collectors.toMap(Function.identity(), e -> List.of(institutions)));
+        var verifiedCreatorsAsDto = creators.entrySet().stream()
+                                      .map(entry -> new VerifiedNviCreatorDto(entry.getKey(), entry.getValue()))
+                                      .toList();
 
         var points = Arrays.stream(institutions)
                          .map(institution -> {
@@ -285,6 +289,7 @@ public final class TestUtils {
                          }).toList();
 
         return randomUpsertRequestBuilder()
+                   .withVerifiedCreators(verifiedCreatorsAsDto)
                    .withCreators(creators)
                    .withPoints(points);
     }

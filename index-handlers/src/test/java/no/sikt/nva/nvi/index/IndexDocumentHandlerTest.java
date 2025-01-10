@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.index;
 
+import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_AFFILIATIONS;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_BODY;
@@ -50,7 +51,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpResponse;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -59,8 +59,8 @@ import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
-import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
+import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.index.aws.S3StorageWriter;
 import no.sikt.nva.nvi.index.model.PersistedIndexDocumentMessage;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
@@ -189,13 +189,16 @@ class IndexDocumentHandlerTest extends LocalDynamoTest {
     @Test
     void shouldNotFailWhenCreatorIsUnverified() {
         var institutionId = randomUri();
-        var unverifiedCreator = UnverifiedNviCreatorDto.builder()
-                                                       .withName(randomString())
-                                                       .withAffiliations(List.of(institutionId))
-                                                       .build();
-        var request = randomUpsertRequestBuilder().withUnverifiedCreators(List.of(unverifiedCreator))
-                                                  .withCreators(emptyMap())
-                                                  .build();
+        var unverifiedCreator = UnverifiedNviCreatorDto
+                                    .builder()
+                                    .withName(randomString())
+                                    .withAffiliations(List.of(institutionId))
+                                    .build();
+        var request = randomUpsertRequestBuilder()
+                          .withVerifiedCreators(emptyList())
+                          .withUnverifiedCreators(List.of(unverifiedCreator))
+                          .withCreators(emptyMap())
+                          .build();
         Candidate.upsert(request, candidateRepository, periodRepository);
         var candidate = Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository);
         var expectedIndexDocument = setupExistingResourceInS3AndGenerateExpectedDocument(candidate).indexDocument();
@@ -225,8 +228,8 @@ class IndexDocumentHandlerTest extends LocalDynamoTest {
         mockUriResponseForTopLevelAffiliation(candidate);
         handler.handleRequest(event, CONTEXT);
         var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
-        assertEquals(Collections.emptyList(), extractPartOfAffiliation(actualIndexDocument,
-                                                                       HARD_CODED_TOP_LEVEL_ORG));
+        assertEquals(emptyList(), extractPartOfAffiliation(actualIndexDocument,
+                                                           HARD_CODED_TOP_LEVEL_ORG));
     }
 
     @Test

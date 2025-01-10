@@ -12,6 +12,7 @@ import java.math.BigDecimal;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
@@ -59,6 +60,7 @@ class CandidateRepositoryTest extends LocalDynamoTest {
         assertThat(updatedDbCandidate, is(not(equalTo(originalDbCandidate))));
     }
 
+    // FIXME: This is duplicated and probably not needed
     private UpsertCandidateRequest copyRequestWithNewInstanceType(UpsertCandidateRequest request,
                                                                   URI publicationChannelId) {
         return new UpsertCandidateRequest() {
@@ -85,6 +87,11 @@ class CandidateRepositoryTest extends LocalDynamoTest {
             @Override
             public Map<URI, List<URI>> creators() {
                 return request.creators();
+            }
+
+            @Override
+            public List<VerifiedNviCreatorDto> verifiedCreators() {
+                return request.verifiedCreators();
             }
 
             @Override

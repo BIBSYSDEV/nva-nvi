@@ -22,7 +22,7 @@ public record NviCandidate(URI publicationId,
                            URI publicationBucketUri,
                            InstanceType instanceType,
                            @JsonProperty("publicationDate") PublicationDate date,
-                           List<VerifiedNviCreatorDto> nviCreators,
+                           List<VerifiedNviCreatorDto> verifiedCreators,
                            List<UnverifiedNviCreatorDto> unverifiedCreators,
                            String channelType,
                            URI publicationChannelId,
@@ -43,8 +43,9 @@ public record NviCandidate(URI publicationId,
     // FIXME: This only includes verified creators (as a map of id and affiliation) and does not include unverified creators.
     // It should include both, but we would need to rewrite all usages to avoid this map first.
     @Override
+    @Deprecated
     public Map<URI, List<URI>> creators() {
-        return nviCreators().stream().collect(Collectors.toMap(VerifiedNviCreatorDto::id,
+        return verifiedCreators().stream().collect(Collectors.toMap(VerifiedNviCreatorDto::id,
                                                                VerifiedNviCreatorDto::affiliations));
     }
 

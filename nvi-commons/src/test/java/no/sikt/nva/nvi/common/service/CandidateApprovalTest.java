@@ -430,6 +430,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
         return Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository);
     }
 
+    // FIXME: This is duplicated and probably not needed
     private UpsertCandidateRequest createNewUpsertRequestNotAffectingApprovals(UpsertCandidateRequest request) {
         return new UpsertCandidateRequest() {
             @Override
@@ -455,6 +456,11 @@ class CandidateApprovalTest extends CandidateTestSetup {
             @Override
             public Map<URI, List<URI>> creators() {
                 return request.creators();
+            }
+
+            @Override
+            public List<VerifiedNviCreatorDto> verifiedCreators() {
+                return request.verifiedCreators();
             }
 
             @Override

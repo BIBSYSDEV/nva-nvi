@@ -178,7 +178,7 @@ class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         candidate.updateApproval(
             new UpdateStatusRequest(institutionId, ApprovalStatus.APPROVED, randomString(), randomString()));
         var approval = candidate.getApprovals().get(institutionId);
-        var newUpsertRequest = createNewUpsertRequestNotAffectingApprovals(upsertCandidateRequest, institutionId);
+        var newUpsertRequest = createNewUpsertRequestNotAffectingApprovals(upsertCandidateRequest);
         Candidate.upsert(newUpsertRequest, candidateRepository, periodRepository);
         var updatedCandidate = Candidate.fetchByPublicationId(newUpsertRequest::publicationId, candidateRepository,
                                                               periodRepository);
@@ -193,7 +193,7 @@ class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         var evaluatedNviCandidate = randomEvaluatedNviCandidate().withVerifiedNviCreators(emptyList())
                                                                  .withUnverifiedNviCreators(unverifiedCreators)
                                                                  .build();
-        var expectedCreatorCount = evaluatedNviCandidate.creators().size() + unverifiedCreators.size();
+        var expectedCreatorCount = unverifiedCreators.size();
 
         var sqsEvent = createEvent(createEvalMessage(evaluatedNviCandidate));
         handler.handleRequest(sqsEvent, CONTEXT);
@@ -210,7 +210,7 @@ class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         var evaluatedNviCandidate = randomEvaluatedNviCandidate()
                                                                  .withUnverifiedNviCreators(unverifiedCreators)
                                                                  .build();
-        var expectedCreatorCount = evaluatedNviCandidate.creators().size() + unverifiedCreators.size();
+        var expectedCreatorCount = evaluatedNviCandidate.verifiedCreators().size() + unverifiedCreators.size();
 
         var sqsEvent = createEvent(createEvalMessage(evaluatedNviCandidate));
         handler.handleRequest(sqsEvent, CONTEXT);
@@ -230,7 +230,7 @@ class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         var unverifiedCreators = List.of(new UnverifiedNviCreatorDto(randomString(), List.of(randomUri())));
         var updatedEvaluatedNviCandidate = evaluatedNviCandidate.withUnverifiedNviCreators(unverifiedCreators)
                                                                 .build();
-        var expectedCreatorCount = updatedEvaluatedNviCandidate.creators()
+        var expectedCreatorCount = updatedEvaluatedNviCandidate.verifiedCreators()
                                                                .size() + unverifiedCreators.size();
 
         sqsEvent = createEvent(createEvalMessage(updatedEvaluatedNviCandidate));
@@ -333,16 +333,14 @@ class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
                    .toList();
     }
 
-    private UpsertCandidateRequest createNewUpsertRequestNotAffectingApprovals(UpsertCandidateRequest request,
-                                                                               URI institutionId) {
-        var creatorId = request.creators().keySet().stream().toList().getFirst();
-        var creator = new VerifiedNviCreatorDto(creatorId, List.of(institutionId));
+    private UpsertCandidateRequest createNewUpsertRequestNotAffectingApprovals(UpsertCandidateRequest request) {
+        var creator = request.verifiedCreators().getFirst();
         return getBuilder(request.publicationId(), request.publicationBucketUri(), creator)
                    .withInstanceType(request.instanceType())
                    .withLevel(request.level())
                    .withPublicationChannelId(request.publicationChannelId())
                    .withDate(new PublicationDate(null, "3", Year.now().toString()))
-                   .withVerifiedNviCreators(List.of(new VerifiedNviCreatorDto(creatorId, List.of(institutionId))))
+                   .withVerifiedNviCreators(List.of(creator))
                    .withInstitutionPoints(request.institutionPoints())
                    .build();
     }
