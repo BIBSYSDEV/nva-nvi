@@ -54,11 +54,19 @@ public record PublicationDetails(URI publicationId, URI publicationBucketUri, St
                        .toList();
     }
 
-    public Set<URI> getNviCreatorIds() {
+    public Set<URI> getVerifiedNviCreatorIds() {
         return creators.stream()
                        .filter(VerifiedNviCreatorDto.class::isInstance)
                        .map(VerifiedNviCreatorDto.class::cast)
                        .map(VerifiedNviCreatorDto::id)
+                       .collect(Collectors.toSet());
+    }
+
+    public Set<String> getUnverifiedNviCreatorNames() {
+        return creators.stream()
+                       .filter(UnverifiedNviCreatorDto.class::isInstance)
+                       .map(UnverifiedNviCreatorDto.class::cast)
+                       .map(UnverifiedNviCreatorDto::name)
                        .collect(Collectors.toSet());
     }
 

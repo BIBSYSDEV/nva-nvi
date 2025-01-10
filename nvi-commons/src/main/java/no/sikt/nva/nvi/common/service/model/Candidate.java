@@ -51,6 +51,8 @@ import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.dto.NoteDto;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
+import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
+import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
@@ -481,7 +483,30 @@ public final class Candidate {
     }
 
     private static boolean creatorsAreUpdated(UpsertCandidateRequest request, Candidate candidate) {
-        return !request.creators().keySet().equals(candidate.getNviCreatorIds());
+        // TODO: This only compares by name/ID now, but should include top-level affiliations too (NP-48112)
+        return hasChangeInVerifiedCreators(request, candidate) || hasChangeInUnverifiedCreators(request, candidate);
+    }
+
+    private static boolean hasChangeInVerifiedCreators(UpsertCandidateRequest request, Candidate candidate) {
+        // Verified creators can be compared by ID
+        var oldCreatorIds = candidate.getVerifiedNviCreatorIds();
+        var newCreatorIds = request
+                                .verifiedCreators()
+                                .stream()
+                                .map(VerifiedNviCreatorDto::id)
+                                .collect(Collectors.toSet());
+        return !oldCreatorIds.equals(newCreatorIds);
+    }
+
+    private static boolean hasChangeInUnverifiedCreators(UpsertCandidateRequest request, Candidate candidate) {
+        // Unverified creators do not have an ID, so we must compare by name
+        var oldCreatorNames = candidate.getUnverifiedNviCreatorNames();
+        var newCreatorNames = request
+                                   .unverifiedCreators()
+                                   .stream()
+                                   .map(UnverifiedNviCreatorDto::name)
+                                   .collect(Collectors.toSet());
+        return !oldCreatorNames.equals(newCreatorNames);
     }
 
     private static boolean instanceTypeIsUpdated(UpsertCandidateRequest request, Candidate candidate) {
@@ -504,6 +529,7 @@ public final class Candidate {
             Objects.requireNonNull(candidate.institutionPoints());
             Objects.requireNonNull(candidate.publicationId());
             Objects.requireNonNull(candidate.creators());
+            Objects.requireNonNull(candidate.verifiedCreators());
             Objects.requireNonNull(candidate.level());
             Objects.requireNonNull(candidate.publicationDate());
             Objects.requireNonNull(candidate.totalPoints());
@@ -603,8 +629,12 @@ public final class Candidate {
                    .build();
     }
 
-    private Set<URI> getNviCreatorIds() {
-        return publicationDetails.getNviCreatorIds();
+    private Set<URI> getVerifiedNviCreatorIds() {
+        return publicationDetails.getVerifiedNviCreatorIds();
+    }
+
+    private Set<String> getUnverifiedNviCreatorNames() {
+        return publicationDetails.getUnverifiedNviCreatorNames();
     }
 
     private Builder copy() {

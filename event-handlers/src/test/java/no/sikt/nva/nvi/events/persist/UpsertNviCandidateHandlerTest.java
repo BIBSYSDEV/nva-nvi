@@ -40,7 +40,6 @@ import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreatorType;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
@@ -50,12 +49,12 @@ import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.queue.QueueClient;
+import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
-import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.NonNviCandidate;
@@ -367,12 +366,12 @@ class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
     }
 
     private static List<DbCreatorType> getExpectedCreators(NviCandidate evaluatedNviCandidate) {
-        Stream<DbCreatorType> verifiedCreators = evaluatedNviCandidate.creators()
-                                                                      .entrySet()
-                                                                      .stream()
-                                                                      .map(entry -> new DbCreator(entry.getKey(),
-                                                                                                  entry.getValue()));
-        var unverifiedCreators = evaluatedNviCandidate.unverifiedCreators()
+        Stream<DbCreatorType> verifiedCreators = evaluatedNviCandidate
+                                                     .verifiedCreators()
+                                                     .stream()
+                                                     .map(VerifiedNviCreatorDto::toDao);
+        Stream<DbCreatorType> unverifiedCreators = evaluatedNviCandidate
+                                                       .unverifiedCreators()
                                                       .stream()
                                                       .map(UnverifiedNviCreatorDto::toDao);
         return Stream.concat(verifiedCreators, unverifiedCreators)

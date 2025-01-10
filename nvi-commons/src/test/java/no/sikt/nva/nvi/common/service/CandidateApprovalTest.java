@@ -282,6 +282,8 @@ class CandidateApprovalTest extends CandidateTestSetup {
         assertThat(updatedApproval, is(equalTo(approval)));
     }
 
+    // FIXME: This test compares random URIs, there is no actual check that they belong to the same organization
+    // We also lack the mirror case, where the top-level affiliation changes and resets the approval (NP-48112)
     @Test
     void shouldNotResetApprovalsWhenCreatorAffiliationChangesWithinSameInstitution() {
         var upsertCandidateRequest = getUpsertCandidateRequestWithHardcodedValues();
@@ -359,6 +361,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
 
         var newUpsertRequest = UpsertRequestBuilder.fromRequest(upsertCandidateRequest)
                                    .withCreators(creators)
+                                   .withVerifiedCreators(arguments.creators())
                                    .withInstanceType(arguments.type())
                                    .withChannelId(arguments.channel().id())
                                    .withLevel(arguments.channel().level())
@@ -412,8 +415,10 @@ class CandidateApprovalTest extends CandidateTestSetup {
     }
 
     private UpsertCandidateRequest getUpsertCandidateRequestWithHardcodedValues() {
+        var verifiedCreator = new VerifiedNviCreatorDto(HARDCODED_CREATOR_ID, List.of(HARDCODED_SUBUNIT_ID));
         return randomUpsertRequestBuilder()
                    .withCreators(Map.of(HARDCODED_CREATOR_ID, List.of(HARDCODED_SUBUNIT_ID)))
+                   .withVerifiedCreators(List.of(verifiedCreator))
                    .withInstanceType(HARDCODED_INSTANCE_TYPE)
                    .withChannelId(HARDCODED_CHANNEL_ID)
                    .withLevel(HARDCODED_LEVEL)
