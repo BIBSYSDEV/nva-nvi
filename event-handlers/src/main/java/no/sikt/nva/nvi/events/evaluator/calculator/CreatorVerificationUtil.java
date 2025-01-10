@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.events.evaluator;
+package no.sikt.nva.nvi.events.evaluator.calculator;
 
 import static java.util.function.Predicate.not;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CONTRIBUTOR;

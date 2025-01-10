@@ -13,6 +13,7 @@ import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
+import no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil;
 import no.sikt.nva.nvi.events.model.NviCandidate;
 import no.sikt.nva.nvi.test.FakeSqsClient;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
