@@ -11,6 +11,7 @@ import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_YEAR;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.extractJsonNodeTextValue;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.net.URI;
 import java.time.Year;
@@ -223,8 +224,12 @@ public class EvaluatorService {
     }
 
     private JsonNode extractBodyFromContent(String content) {
-        return attempt(() -> dtoObjectMapper.readTree(content))
-                   .map(json -> json.at(JSON_PTR_BODY))
-                   .orElseThrow();
+        try {
+            return dtoObjectMapper
+                       .readTree(content)
+                       .at(JSON_PTR_BODY);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

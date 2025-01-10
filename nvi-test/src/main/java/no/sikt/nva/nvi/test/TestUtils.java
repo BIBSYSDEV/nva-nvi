@@ -297,6 +297,7 @@ public final class TestUtils {
     public static UpsertCandidateRequest createUpsertCandidateRequest(URI topLevelOrg, URI affiliation) {
         var creatorId = randomUri();
         var creators = Map.of(creatorId, List.of(affiliation));
+        var verifiedCreators = List.of(new VerifiedNviCreatorDto(creatorId, List.of(affiliation)));
         var points = randomBigDecimal();
         var institutionPoints = List.of(new InstitutionPoints(topLevelOrg, points,
                                                               List.of(new CreatorAffiliationPoints(
@@ -304,6 +305,7 @@ public final class TestUtils {
 
         return randomUpsertRequestBuilder()
                    .withCreators(creators)
+                   .withVerifiedCreators(verifiedCreators)
                    .withPoints(institutionPoints)
                    .build();
     }
