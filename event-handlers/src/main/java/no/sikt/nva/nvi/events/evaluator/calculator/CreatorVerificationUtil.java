@@ -9,6 +9,7 @@ import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
@@ -54,7 +55,7 @@ public class CreatorVerificationUtil {
                    .toList();
     }
 
-    public List<VerifiedNviCreator> getVerifiedCreatorsWithNviInstitutions(List<ContributorDto> contributors) {
+    public List<VerifiedNviCreator> getVerifiedCreatorsWithNviInstitutions(Collection<ContributorDto> contributors) {
         return contributors
                    .stream()
                    .filter(CreatorVerificationUtil::isVerified)
@@ -64,7 +65,7 @@ public class CreatorVerificationUtil {
                    .toList();
     }
 
-    public List<UnverifiedNviCreator> getUnverifiedCreatorsWithNviInstitutions(List<ContributorDto> contributors) {
+    public List<UnverifiedNviCreator> getUnverifiedCreatorsWithNviInstitutions(Collection<ContributorDto> contributors) {
         return contributors
                    .stream()
                    .filter(not(CreatorVerificationUtil::isVerified))
