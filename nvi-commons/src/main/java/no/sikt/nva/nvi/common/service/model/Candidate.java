@@ -16,6 +16,7 @@ import java.math.BigDecimal;
 import java.net.URI;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -49,7 +50,6 @@ import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.service.dto.ApprovalDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.dto.NoteDto;
-import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
@@ -574,19 +574,7 @@ public final class Candidate {
     }
 
     private static DbCandidate mapToCandidate(UpsertCandidateRequest request) {
-        var verifiedCreators = request
-                                   .verifiedCreators()
-                                   .stream()
-                                   .map(VerifiedNviCreatorDto::toDao)
-                                   .map(DbCreatorType.class::cast);
-        var unverifiedCreators = request
-                                     .unverifiedCreators()
-                                     .stream()
-                                     .map(UnverifiedNviCreatorDto::toDao)
-                                     .map(DbCreatorType.class::cast);
-        var allCreators = Stream
-                              .concat(verifiedCreators, unverifiedCreators)
-                              .toList();
+        var allCreators = mapToDbCreators(request.verifiedCreators(), request.unverifiedCreators());
         return DbCandidate
                    .builder()
                    .publicationId(request.publicationId())
@@ -625,19 +613,19 @@ public final class Candidate {
                    .build();
     }
 
-    private static List<DbCreatorType> mapToDbCreators(List<VerifiedNviCreatorDto> verifiedNviCreators,
-                                                       List<UnverifiedNviCreatorDto> unverifiedNviCreators) {
-        Stream<DbCreatorType> verifiedCreators = verifiedNviCreators
-                                                     .stream()
-                                                     .map(VerifiedNviCreatorDto::toDao);
-        Stream<DbCreatorType> unverifiedCreators = unverifiedNviCreators
-                                                       .stream()
-                                                       .map(UnverifiedNviCreatorDto::toDao);
+    private static List<DbCreatorType> mapToDbCreators(Collection<VerifiedNviCreatorDto> verifiedNviCreators,
+                                                       Collection<UnverifiedNviCreatorDto> unverifiedNviCreators) {
+        var verifiedCreators = verifiedNviCreators
+                                   .stream()
+                                   .map(VerifiedNviCreatorDto::toDao);
+        var unverifiedCreators = unverifiedNviCreators
+                                     .stream()
+                                     .map(UnverifiedNviCreatorDto::toDao);
         return Stream
                    .concat(verifiedCreators, unverifiedCreators)
+                   .map(DbCreatorType.class::cast)
                    .toList();
     }
-
 
     private static boolean isExistingCandidate(URI publicationId, CandidateRepository repository) {
         return repository.findByPublicationId(publicationId).isPresent();
