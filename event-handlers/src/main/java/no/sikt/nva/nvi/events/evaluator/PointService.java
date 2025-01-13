@@ -215,6 +215,7 @@ public final class PointService {
 
     // FIXME: Does this actually need to call the organization retriever?
     // This method is only called from EvaluatorService, which has already done the same check.
+    // See NP-48364 for more information.
     private Integer countVerifiedTopLevelAffiliations(JsonNode creator) {
         return extractAffiliations(creator)
                    .filter(PointService::hasId)
