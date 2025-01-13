@@ -49,6 +49,7 @@ import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.service.dto.ApprovalDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.dto.NoteDto;
+import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
@@ -573,14 +574,16 @@ public final class Candidate {
     }
 
     private static DbCandidate mapToCandidate(UpsertCandidateRequest request) {
-        Stream<DbCreatorType> verifiedCreators = request
-                                                     .verifiedCreators()
-                                                     .stream()
-                                                     .map(VerifiedNviCreatorDto::toDao);
-        Stream<DbCreatorType> unverifiedCreators = request
-                                                       .unverifiedCreators()
-                                                       .stream()
-                                                       .map(UnverifiedNviCreatorDto::toDao);
+        var verifiedCreators = request
+                                   .verifiedCreators()
+                                   .stream()
+                                   .map(VerifiedNviCreatorDto::toDao)
+                                   .map(DbCreatorType.class::cast);
+        var unverifiedCreators = request
+                                     .unverifiedCreators()
+                                     .stream()
+                                     .map(UnverifiedNviCreatorDto::toDao)
+                                     .map(DbCreatorType.class::cast);
         var allCreators = Stream
                               .concat(verifiedCreators, unverifiedCreators)
                               .toList();
