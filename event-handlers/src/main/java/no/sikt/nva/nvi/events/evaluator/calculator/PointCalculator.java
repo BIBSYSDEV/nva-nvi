@@ -142,13 +142,15 @@ public class PointCalculator {
     }
 
     private BigDecimal getInstitutionContributorFraction(Long institutionCreatorCount) {
-        if (institutionCreatorCount == 0) {
-            return ZERO.setScale(SCALE, ROUNDING_MODE);
-        }
-        return BigDecimal
-                   .valueOf(institutionCreatorCount)
-                   .divide(new BigDecimal(creatorShareCount), MATH_CONTEXT)
-                   .setScale(SCALE, ROUNDING_MODE);
+        var value = isNullOrZero(institutionCreatorCount) ? ZERO : BigDecimal
+                                                                       .valueOf(institutionCreatorCount)
+                                                                       .divide(new BigDecimal(creatorShareCount),
+                                                                               MATH_CONTEXT);
+        return value.setScale(SCALE, ROUNDING_MODE);
+    }
+
+    private boolean isNullOrZero(Long creatorShareCount) {
+        return creatorShareCount == null || creatorShareCount == 0;
     }
 
     private List<CreatorAffiliationPoints> calculateAffiliationPoints(Entry<URI, Long> institutionCreatorCount,
