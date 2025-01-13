@@ -17,6 +17,7 @@ import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.events.evaluator.dto.AffiliationDto;
 import no.sikt.nva.nvi.events.evaluator.dto.ContributorDto;
+import no.sikt.nva.nvi.events.evaluator.model.NviCreator;
 import no.sikt.nva.nvi.events.evaluator.model.NviOrganization;
 import no.sikt.nva.nvi.events.evaluator.model.UnverifiedNviCreator;
 import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
@@ -74,13 +75,7 @@ public class CreatorVerificationUtil {
                    .toList();
     }
 
-    private static boolean isAffiliatedWithNviOrganization(VerifiedNviCreator creator) {
-        return !creator
-                    .nviAffiliations()
-                    .isEmpty();
-    }
-
-    private static boolean isAffiliatedWithNviOrganization(UnverifiedNviCreator creator) {
+    private static boolean isAffiliatedWithNviOrganization(NviCreator creator) {
         return !creator
                     .nviAffiliations()
                     .isEmpty();
