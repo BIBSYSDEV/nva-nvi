@@ -11,6 +11,7 @@ import static no.sikt.nva.nvi.events.evaluator.calculator.PointCalculationConsta
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -19,12 +20,12 @@ import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
+import no.sikt.nva.nvi.events.evaluator.model.Channel;
 import no.sikt.nva.nvi.events.evaluator.model.NviCreator;
 import no.sikt.nva.nvi.events.evaluator.model.NviOrganization;
+import no.sikt.nva.nvi.events.evaluator.model.PointCalculation;
 import no.sikt.nva.nvi.events.evaluator.model.UnverifiedNviCreator;
 import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
-import no.sikt.nva.nvi.events.evaluator.model.Channel;
-import no.sikt.nva.nvi.events.evaluator.model.PointCalculation;
 
 public class PointCalculator {
 
@@ -34,13 +35,13 @@ public class PointCalculator {
     private final BigDecimal collaborationFactor;
     private final BigDecimal basePoints;
     private final int creatorShareCount;
-    private final List<VerifiedNviCreator> verifiedNviCreators;
-    private final List<UnverifiedNviCreator> unverifiedNviCreators;
+    private final Collection<VerifiedNviCreator> verifiedNviCreators;
+    private final Collection<UnverifiedNviCreator> unverifiedNviCreators;
 
     public PointCalculator(Channel publicationChannel,
                            InstanceType instanceType,
-                           List<VerifiedNviCreator> verifiedNviCreators,
-                           List<UnverifiedNviCreator> unverifiedNviCreators,
+                           Collection<VerifiedNviCreator> verifiedNviCreators,
+                           Collection<UnverifiedNviCreator> unverifiedNviCreators,
                            boolean isInternationalCollaboration,
                            int creatorShareCount) {
         this.publicationChannel = publicationChannel;
@@ -93,7 +94,7 @@ public class PointCalculator {
                    .setScale(RESULT_SCALE, RoundingMode.HALF_UP);
     }
 
-    private static Map<URI, Long> getCreatorCountPerInstitution(List<? extends NviCreator> nviCreators) {
+    private static Map<URI, Long> getCreatorCountPerInstitution(Collection<? extends NviCreator> nviCreators) {
         return nviCreators
                    .stream()
                    .flatMap(creator -> creator
@@ -106,14 +107,14 @@ public class PointCalculator {
                                              institutionId -> countCreators(institutionId, nviCreators)));
     }
 
-    private static Long countCreators(URI institutionId, List<? extends NviCreator> nviCreators) {
+    private static Long countCreators(URI institutionId, Collection<? extends NviCreator> nviCreators) {
         return nviCreators
                    .stream()
                    .filter(creator -> creator.isAffiliatedWith(institutionId))
                    .count();
     }
 
-    private static Stream<CreatorAffiliationPoints> calculatePointsForAffiliation(Entry<URI, List<URI>> nviCreator,
+    private static Stream<CreatorAffiliationPoints> calculatePointsForAffiliation(Entry<URI, Collection<URI>> nviCreator,
                                                                                   BigDecimal institutionPoints,
                                                                                   Long institutionCreatorCount) {
         var pointsForCreator = divide(institutionCreatorCount, institutionPoints);

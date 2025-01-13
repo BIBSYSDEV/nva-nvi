@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.events.evaluator.model;
 
 import java.net.URI;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.Predicate;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
@@ -26,7 +27,7 @@ public record VerifiedNviCreator(URI id, List<NviOrganization> nviAffiliations) 
                    .anyMatch(isNviOrganization(institutionId));
     }
 
-    public List<URI> getAffiliationsPartOf(URI institutionId) {
+    public Collection<URI> getAffiliationsPartOf(URI institutionId) {
         return nviAffiliations
                    .stream()
                    .filter(isNviOrganization(institutionId))

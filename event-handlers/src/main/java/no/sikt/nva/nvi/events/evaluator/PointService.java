@@ -21,6 +21,7 @@ import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
@@ -28,12 +29,12 @@ import java.util.stream.StreamSupport;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.service.model.InstanceType;
-import no.sikt.nva.nvi.events.evaluator.model.UnverifiedNviCreator;
-import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
 import no.sikt.nva.nvi.common.utils.JsonUtils;
 import no.sikt.nva.nvi.events.evaluator.calculator.PointCalculator;
 import no.sikt.nva.nvi.events.evaluator.model.Channel;
 import no.sikt.nva.nvi.events.evaluator.model.PointCalculation;
+import no.sikt.nva.nvi.events.evaluator.model.UnverifiedNviCreator;
+import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
 
 public final class PointService {
 
@@ -50,7 +51,8 @@ public final class PointService {
     }
 
     public PointCalculation calculatePoints(JsonNode publication,
-                                            List<VerifiedNviCreator> verifiedNviCreators, List<UnverifiedNviCreator> unverifiedNviCreators) {
+                                            Collection<VerifiedNviCreator> verifiedNviCreators,
+                                            Collection<UnverifiedNviCreator> unverifiedNviCreators) {
         var instanceType = extractInstanceType(publication);
         massiveHackToFixObjectsWithMultipleTypes(publication);
         var channel = extractChannel(instanceType, publication);
