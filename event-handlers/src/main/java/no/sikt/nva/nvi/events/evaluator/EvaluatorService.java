@@ -9,6 +9,8 @@ import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_MONTH;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PUBLICATION_DATE;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_YEAR;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.extractJsonNodeTextValue;
+import static no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil.getUnverifiedCreators;
+import static no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil.getVerifiedCreators;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -27,9 +29,9 @@ import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil;
+import no.sikt.nva.nvi.events.evaluator.model.PointCalculation;
 import no.sikt.nva.nvi.events.evaluator.model.UnverifiedNviCreator;
 import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
-import no.sikt.nva.nvi.events.evaluator.model.PointCalculation;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.CandidateType;
 import no.sikt.nva.nvi.events.model.NonNviCandidate;
@@ -86,13 +88,11 @@ public class EvaluatorService {
             logger.info(NON_NVI_CANDIDATE_MESSAGE, publicationId);
             return createNonNviMessage(publicationId);
         }
-        var contributors = CreatorVerificationUtil.extractContributors(publication);
-        var verifiedCreatorsWithNviInstitutions = creatorVerificationUtil.getVerifiedCreatorsWithNviInstitutions(
-            contributors);
-        var unverifiedCreatorsWithNviInstitutions = creatorVerificationUtil.getUnverifiedCreatorsWithNviInstitutions(
-            contributors);
+        var creators = creatorVerificationUtil.getNviCreatorsWithNviInstitutions(publication);
+        var verifiedCreatorsWithNviInstitutions = getVerifiedCreators(creators);
+        var unverifiedCreatorsWithNviInstitutions = getUnverifiedCreators(creators);
 
-        if (hasCreators(verifiedCreatorsWithNviInstitutions, unverifiedCreatorsWithNviInstitutions)) {
+        if (!creators.isEmpty()) {
             var pointCalculation = pointService.calculatePoints(publication,
                                                                 verifiedCreatorsWithNviInstitutions,
                                                                 unverifiedCreatorsWithNviInstitutions);
@@ -108,11 +108,6 @@ public class EvaluatorService {
             logger.info(NON_NVI_CANDIDATE_MESSAGE, publicationId);
             return createNonNviMessage(publicationId);
         }
-    }
-
-    private static boolean hasCreators(List<VerifiedNviCreator> verifiedCreatorsWithNviInstitutions,
-                                       List<UnverifiedNviCreator> unverifiedCreatorsWithNviInstitutions) {
-        return !verifiedCreatorsWithNviInstitutions.isEmpty() || !unverifiedCreatorsWithNviInstitutions.isEmpty();
     }
 
     private static NviCandidate constructNviCandidate(List<VerifiedNviCreator> verifiedCreatorsWithNviInstitutions,

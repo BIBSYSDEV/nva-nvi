@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.events.evaluator.calculator;
 
-import static java.util.function.Predicate.not;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CONTRIBUTOR;
 import static nva.commons.core.StringUtils.isBlank;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -49,37 +48,30 @@ public class CreatorVerificationUtil {
         this.organizationRetriever = new OrganizationRetriever(uriRetriever);
     }
 
-    public static List<ContributorDto> extractContributors(JsonNode body) {
+    public static List<VerifiedNviCreator> getVerifiedCreators(Collection<NviCreator> creators) {
+        return creators
+                   .stream()
+                   .filter(VerifiedNviCreator.class::isInstance)
+                   .map(VerifiedNviCreator.class::cast)
+                   .toList();
+    }
+
+    public static List<UnverifiedNviCreator> getUnverifiedCreators(Collection<NviCreator> creators) {
+        return creators
+                   .stream()
+                   .filter(UnverifiedNviCreator.class::isInstance)
+                   .map(UnverifiedNviCreator.class::cast)
+                   .toList();
+    }
+
+    public List<NviCreator> getNviCreatorsWithNviInstitutions(JsonNode body) {
         return getStreamOfContributorNodes(body)
                    .map(ContributorDto::fromJsonNode)
-                   .toList();
-    }
-
-    public List<VerifiedNviCreator> getVerifiedCreatorsWithNviInstitutions(Collection<ContributorDto> contributors) {
-        return contributors
-                   .stream()
-                   .filter(CreatorVerificationUtil::isVerified)
                    .filter(CreatorVerificationUtil::isCreator)
-                   .map(this::toVerifiedNviCreator)
+                   .filter(CreatorVerificationUtil::isValidContributor)
+                   .map(this::toNviCreator)
                    .filter(CreatorVerificationUtil::isAffiliatedWithNviOrganization)
                    .toList();
-    }
-
-    public List<UnverifiedNviCreator> getUnverifiedCreatorsWithNviInstitutions(Collection<ContributorDto> contributors) {
-        return contributors
-                   .stream()
-                   .filter(not(CreatorVerificationUtil::isVerified))
-                   .filter(CreatorVerificationUtil::isCreator)
-                   .filter(not(contributor -> isBlank(contributor.name())))
-                   .map(this::toUnverifiedNviCreator)
-                   .filter(CreatorVerificationUtil::isAffiliatedWithNviOrganization)
-                   .toList();
-    }
-
-    private static boolean isAffiliatedWithNviOrganization(NviCreator creator) {
-        return !creator
-                    .nviAffiliations()
-                    .isEmpty();
     }
 
     private static URI createCustomerApiUri(String institutionId) {
@@ -91,8 +83,24 @@ public class CreatorVerificationUtil {
         return URI.create(getCustomerEndpoint + "/" + URLEncoder.encode(institutionId, StandardCharsets.UTF_8));
     }
 
-    private static boolean isVerified(ContributorDto contributor) {
-        return VERIFIED.equals(contributor.verificationStatus());
+    private static boolean isValidContributor(ContributorDto contributorDto) {
+        return isVerifiedContributor(contributorDto) || isNamedContributor(contributorDto);
+    }
+
+    private static boolean isVerifiedContributor(ContributorDto contributorDto) {
+        var status = contributorDto.verificationStatus();
+        var id = contributorDto.id();
+        return VERIFIED.equals(status) && id != null;
+    }
+
+    private static boolean isNamedContributor(ContributorDto contributorDto) {
+        return !isBlank(contributorDto.name());
+    }
+
+    private static boolean isAffiliatedWithNviOrganization(NviCreator creator) {
+        return !creator
+                    .nviAffiliations()
+                    .isEmpty();
     }
 
     private static boolean isCreator(ContributorDto contributor) {
@@ -131,6 +139,13 @@ public class CreatorVerificationUtil {
         // Otherwise, we can skip it and not check if it is an NVI institution, saving us a network call.
         return expandedAffiliationDto.countryCode() == null || COUNTRY_CODE_NORWAY.equalsIgnoreCase(
             expandedAffiliationDto.countryCode());
+    }
+
+    private NviCreator toNviCreator(ContributorDto contributor) {
+        if (isVerifiedContributor(contributor)) {
+            return toVerifiedNviCreator(contributor);
+        }
+        return toUnverifiedNviCreator(contributor);
     }
 
     private VerifiedNviCreator toVerifiedNviCreator(ContributorDto contributor) {
