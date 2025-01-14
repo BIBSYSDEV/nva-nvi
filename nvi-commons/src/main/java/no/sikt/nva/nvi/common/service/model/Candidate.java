@@ -8,6 +8,7 @@ import static no.sikt.nva.nvi.common.service.model.ApprovalStatus.APPROVED;
 import static no.sikt.nva.nvi.common.service.model.ApprovalStatus.PENDING;
 import static no.sikt.nva.nvi.common.service.model.ApprovalStatus.REJECTED;
 import static no.sikt.nva.nvi.common.utils.DecimalUtils.adjustScaleAndRoundingMode;
+import static no.sikt.nva.nvi.common.utils.RequestUtil.getAllCreators;
 import static nva.commons.core.attempt.Try.attempt;
 import static nva.commons.core.ioutils.IoUtils.stringFromResources;
 import static nva.commons.core.paths.UriWrapper.HTTPS;
@@ -15,6 +16,7 @@ import java.math.BigDecimal;
 import java.net.URI;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -31,7 +33,7 @@ import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCreatorType;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
@@ -49,9 +51,10 @@ import no.sikt.nva.nvi.common.service.dto.ApprovalDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.dto.NoteDto;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
+import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
+import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException;
-import no.sikt.nva.nvi.common.service.model.PublicationDetails.Creator;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.CreateNoteRequest;
 import no.sikt.nva.nvi.common.service.requests.DeleteNoteRequest;
@@ -480,7 +483,30 @@ public final class Candidate {
     }
 
     private static boolean creatorsAreUpdated(UpsertCandidateRequest request, Candidate candidate) {
-        return !request.creators().keySet().equals(candidate.getNviCreatorIds());
+        // TODO: This only compares by name/ID now, but should include top-level affiliations too (NP-48112)
+        return hasChangeInVerifiedCreators(request, candidate) || hasChangeInUnverifiedCreators(request, candidate);
+    }
+
+    private static boolean hasChangeInVerifiedCreators(UpsertCandidateRequest request, Candidate candidate) {
+        // Verified creators can be compared by ID
+        var oldCreatorIds = candidate.getVerifiedNviCreatorIds();
+        var newCreatorIds = request
+                                .verifiedCreators()
+                                .stream()
+                                .map(VerifiedNviCreatorDto::id)
+                                .collect(Collectors.toSet());
+        return !oldCreatorIds.equals(newCreatorIds);
+    }
+
+    private static boolean hasChangeInUnverifiedCreators(UpsertCandidateRequest request, Candidate candidate) {
+        // Unverified creators do not have an ID, so we must compare by name
+        var oldCreatorNames = candidate.getUnverifiedNviCreatorNames();
+        var newCreatorNames = request
+                                   .unverifiedCreators()
+                                   .stream()
+                                   .map(UnverifiedNviCreatorDto::name)
+                                   .collect(Collectors.toSet());
+        return !oldCreatorNames.equals(newCreatorNames);
     }
 
     private static boolean instanceTypeIsUpdated(UpsertCandidateRequest request, Candidate candidate) {
@@ -503,6 +529,8 @@ public final class Candidate {
             Objects.requireNonNull(candidate.institutionPoints());
             Objects.requireNonNull(candidate.publicationId());
             Objects.requireNonNull(candidate.creators());
+            Objects.requireNonNull(candidate.verifiedCreators());
+            Objects.requireNonNull(candidate.unverifiedCreators());
             Objects.requireNonNull(candidate.level());
             Objects.requireNonNull(candidate.publicationDate());
             Objects.requireNonNull(candidate.totalPoints());
@@ -546,16 +574,20 @@ public final class Candidate {
     }
 
     private static DbCandidate mapToCandidate(UpsertCandidateRequest request) {
-        return DbCandidate.builder()
+        var allCreators = mapToDbCreators(request.verifiedCreators(), request.unverifiedCreators());
+        return DbCandidate
+                   .builder()
                    .publicationId(request.publicationId())
                    .publicationBucketUri(request.publicationBucketUri())
                    .applicable(request.isApplicable())
-                   .creators(mapToDbCreators(request.creators()))
+                   .creators(allCreators)
                    .creatorShareCount(request.creatorShareCount())
                    .channelType(ChannelType.parse(request.channelType()))
                    .channelId(request.publicationChannelId())
                    .level(DbLevel.parse(request.level()))
-                   .instanceType(request.instanceType().getValue())
+                   .instanceType(request
+                                     .instanceType()
+                                     .getValue())
                    .publicationDate(mapToPublicationDate(request.publicationDate()))
                    .internationalCollaboration(request.isInternationalCollaboration())
                    .collaborationFactor(adjustScaleAndRoundingMode(request.collaborationFactor()))
@@ -581,23 +613,17 @@ public final class Candidate {
                    .build();
     }
 
-    private static List<Creator> mapToCreators(Map<URI, List<URI>> creators) {
-        return creators.entrySet().stream().map(e -> new Creator(e.getKey(), e.getValue())).toList();
-    }
-
-    private static List<DbCreator> mapToDbCreators(Map<URI, List<URI>> creators) {
-        return creators.entrySet()
-                   .stream()
-                   .map(creator -> new DbCreator(creator.getKey(), creator.getValue()))
-                   .toList();
-    }
-
-    private static List<DbCreator> mapToDbCreators(List<Creator> creators) {
-        return creators.stream()
-                   .map(creator -> DbCreator.builder()
-                                       .creatorId(creator.id())
-                                       .affiliations(creator.affiliations())
-                                       .build())
+    private static List<DbCreatorType> mapToDbCreators(Collection<VerifiedNviCreatorDto> verifiedNviCreators,
+                                                       Collection<UnverifiedNviCreatorDto> unverifiedNviCreators) {
+        var verifiedCreators = verifiedNviCreators
+                                   .stream()
+                                   .map(VerifiedNviCreatorDto::toDao);
+        var unverifiedCreators = unverifiedNviCreators
+                                     .stream()
+                                     .map(UnverifiedNviCreatorDto::toDao);
+        return Stream
+                   .concat(verifiedCreators, unverifiedCreators)
+                   .map(DbCreatorType.class::cast)
                    .toList();
     }
 
@@ -612,8 +638,12 @@ public final class Candidate {
                    .build();
     }
 
-    private Set<URI> getNviCreatorIds() {
-        return publicationDetails.getNviCreatorIds();
+    private Set<URI> getVerifiedNviCreatorIds() {
+        return publicationDetails.getVerifiedNviCreatorIds();
+    }
+
+    private Set<String> getUnverifiedNviCreatorNames() {
+        return publicationDetails.getUnverifiedNviCreatorNames();
     }
 
     private Builder copy() {
@@ -636,30 +666,37 @@ public final class Candidate {
     }
 
     private CandidateDao toDao() {
-        return CandidateDao.builder()
+        var dbCreators = mapToDbCreators(publicationDetails.getVerifiedCreators(),
+                                         publicationDetails.getUnverifiedCreators());
+        var dbCandidate = DbCandidate
+                              .builder()
+                              .applicable(applicable)
+                              .creators(dbCreators)
+                              .creatorShareCount(creatorShareCount)
+                              .channelType(getPublicationChannelType())
+                              .channelId(getPublicationChannelId())
+                              .level(DbLevel.parse(getScientificLevel()))
+                              .instanceType(publicationDetails.type())
+                              .publicationDate(mapToPublicationDate(publicationDetails.publicationDate()))
+                              .internationalCollaboration(internationalCollaboration)
+                              .collaborationFactor(adjustScaleAndRoundingMode(collaborationFactor))
+                              .basePoints(adjustScaleAndRoundingMode(basePoints))
+                              .points(mapToPoints(institutionPoints))
+                              .totalPoints(adjustScaleAndRoundingMode(totalPoints))
+                              .createdDate(createdDate)
+                              .modifiedDate(Instant.now())
+                              .reportStatus(reportStatus)
+                              .publicationBucketUri(publicationDetails.publicationBucketUri())
+                              .publicationId(publicationDetails.publicationId())
+                              .build();
+        return CandidateDao
+                   .builder()
                    .identifier(identifier)
-                   .candidate(DbCandidate.builder()
-                                  .applicable(applicable)
-                                  .creators(mapToDbCreators(publicationDetails.creators()))
-                                  .creatorShareCount(creatorShareCount)
-                                  .channelType(getPublicationChannelType())
-                                  .channelId(getPublicationChannelId())
-                                  .level(DbLevel.parse(getScientificLevel()))
-                                  .instanceType(publicationDetails.type())
-                                  .publicationDate(mapToPublicationDate(publicationDetails.publicationDate()))
-                                  .internationalCollaboration(internationalCollaboration)
-                                  .collaborationFactor(adjustScaleAndRoundingMode(collaborationFactor))
-                                  .basePoints(adjustScaleAndRoundingMode(basePoints))
-                                  .points(mapToPoints(institutionPoints))
-                                  .totalPoints(adjustScaleAndRoundingMode(totalPoints))
-                                  .createdDate(createdDate)
-                                  .modifiedDate(Instant.now())
-                                  .reportStatus(reportStatus)
-                                  .publicationBucketUri(publicationDetails.publicationBucketUri())
-                                  .publicationId(publicationDetails.publicationId())
-                                  .build())
+                   .candidate(dbCandidate)
                    .version(randomUUID().toString())
-                   .periodYear(publicationDetails.publicationDate().year())
+                   .periodYear(publicationDetails
+                                   .publicationDate()
+                                   .year())
                    .build();
     }
 
@@ -680,9 +717,11 @@ public final class Candidate {
     private PublicationDetails mapToPublicationDetails(UpsertCandidateRequest request) {
         return new PublicationDetails(request.publicationId(),
                                       request.publicationBucketUri(),
-                                      request.instanceType().getValue(),
+                                      request
+                                          .instanceType()
+                                          .getValue(),
                                       request.publicationDate(),
-                                      mapToCreators(request.creators()),
+                                      getAllCreators(request),
                                       new PublicationChannel(ChannelType.parse(request.channelType()),
                                                              request.publicationChannelId(),
                                                              request.level()));

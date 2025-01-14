@@ -27,17 +27,16 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.math.BigDecimal;
-import java.net.URI;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCreatorType;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
@@ -48,6 +47,8 @@ import no.sikt.nva.nvi.common.service.dto.ApprovalDto;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatusDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
+import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
+import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
@@ -93,6 +94,23 @@ class CandidateTest extends CandidateTestSetup {
                                      .orElseThrow()
                                      .candidate();
         assertEquals(expectedLevel, persistedCandidate.level());
+    }
+
+    @Test
+    void shouldGetUnverifiedCreatorsFromDetails() {
+        var unverifiedCreator = new UnverifiedNviCreatorDto(randomString(),
+                                                            List.of(randomUri()));
+        var upsertCandidateRequest =
+            randomUpsertRequestBuilder().withUnverifiedCreators(List.of(unverifiedCreator)).build();
+        var expectedUnverifiedCreatorCount = upsertCandidateRequest.unverifiedCreators().size();
+        var expectedVerifiedCreatorCount = upsertCandidateRequest.creators().keySet().size();
+
+        var fetchedCandidate = upsert(upsertCandidateRequest);
+
+        var actualUnverifiedCreatorCount = fetchedCandidate.getPublicationDetails().getUnverifiedCreators().size();
+        var actualVerifiedCreatorCount = fetchedCandidate.getPublicationDetails().getVerifiedCreators().size();
+        assertEquals(expectedUnverifiedCreatorCount, actualUnverifiedCreatorCount);
+        assertEquals(expectedVerifiedCreatorCount, actualVerifiedCreatorCount);
     }
 
     @Test
@@ -369,8 +387,7 @@ class CandidateTest extends CandidateTestSetup {
     void shouldReturnFalseWhenAtLeastOneApprovalIsApprovedOrRejected(ApprovalStatus approvalStatus) {
         var reviewingInstitution = randomUri();
         var candidate = upsert(createUpsertCandidateRequest(reviewingInstitution, randomUri()));
-        candidate.updateApproval(
-            createUpdateStatusRequest(approvalStatus, reviewingInstitution, randomString()));
+        candidate.updateApproval(createUpdateStatusRequest(approvalStatus, reviewingInstitution, randomString()));
         assertFalse(candidate.isPendingReview());
     }
 
@@ -379,20 +396,20 @@ class CandidateTest extends CandidateTestSetup {
     void shouldReturnTrueWhenAtLeastOneApprovalIsApprovedOrRejected(ApprovalStatus approvalStatus) {
         var reviewingInstitution = randomUri();
         var candidate = upsert(createUpsertCandidateRequest(reviewingInstitution, randomUri()));
-        candidate.updateApproval(
-            createUpdateStatusRequest(approvalStatus, reviewingInstitution, randomString()));
+        candidate.updateApproval(createUpdateStatusRequest(approvalStatus, reviewingInstitution, randomString()));
         assertTrue(candidate.isUnderReview());
     }
 
     @Test
     void shouldReturnTrueWhenCandidateIsNotReportedInClosedPeriod() {
         var periodRepository = periodRepositoryReturningClosedPeriod(CURRENT_YEAR);
-        var requestForClosedPeriod = randomUpsertRequestBuilder()
-                                         .withPublicationDate(
-                                             new PublicationDate(String.valueOf(CURRENT_YEAR), null, null))
-                                         .build();
+        var requestForClosedPeriod =
+            randomUpsertRequestBuilder().withPublicationDate(new PublicationDate(String.valueOf(
+                                                                     CURRENT_YEAR), null, null))
+                                                                 .build();
         Candidate.upsert(requestForClosedPeriod, candidateRepository, this.periodRepository);
-        var candidate = Candidate.fetchByPublicationId(requestForClosedPeriod::publicationId, candidateRepository,
+        var candidate = Candidate.fetchByPublicationId(requestForClosedPeriod::publicationId,
+                                                       candidateRepository,
                                                        periodRepository);
 
         assertTrue(candidate.isNotReportedInClosedPeriod());
@@ -445,26 +462,17 @@ class CandidateTest extends CandidateTestSetup {
         return UpsertRequestBuilder.fromRequest(insertRequest).build();
     }
 
-    private DbCandidate generateExpectedCandidate(Candidate candidate, UpsertCandidateRequest request) {
-        return new CandidateDao(candidate.getIdentifier(),
-                                DbCandidate.builder()
-                                    .publicationId(request.publicationId())
-                                    .publicationBucketUri(request.publicationBucketUri())
-                                    .publicationDate(mapToDbPublicationDate(request.publicationDate()))
-                                    .applicable(request.isApplicable())
-                                    .instanceType(request.instanceType().getValue())
-                                    .channelType(ChannelType.parse(request.channelType()))
-                                    .channelId(request.publicationChannelId())
-                                    .level(DbLevel.parse(request.level()))
-                                    .basePoints(adjustScaleAndRoundingMode(request.basePoints()))
-                                    .internationalCollaboration(request.isInternationalCollaboration())
-                                    .collaborationFactor(adjustScaleAndRoundingMode(request.collaborationFactor()))
-                                    .creators(mapToDbCreators(request.creators()))
-                                    .creatorShareCount(request.creatorShareCount())
-                                    .points(mapToDbInstitutionPoints(request.institutionPoints()))
-                                    .totalPoints(adjustScaleAndRoundingMode(request.totalPoints()))
-                                    .createdDate(candidate.getCreatedDate())
-                                    .build(), randomString(), randomString()).candidate();
+    private static List<DbCreatorType> mapToDbCreators(List<VerifiedNviCreatorDto> verifiedNviCreators,
+                                                       List<UnverifiedNviCreatorDto> unverifiedNviCreators) {
+        Stream<DbCreatorType> verifiedCreators = verifiedNviCreators
+                                                     .stream()
+                                                     .map(VerifiedNviCreatorDto::toDao);
+        Stream<DbCreatorType> unverifiedCreators = unverifiedNviCreators
+                                                       .stream()
+                                                       .map(UnverifiedNviCreatorDto::toDao);
+        return Stream
+                   .concat(verifiedCreators, unverifiedCreators)
+                   .toList();
     }
 
     private DbPublicationDate mapToDbPublicationDate(PublicationDate publicationDate) {
@@ -477,7 +485,29 @@ class CandidateTest extends CandidateTestSetup {
                    .toList();
     }
 
-    private List<DbCreator> mapToDbCreators(Map<URI, List<URI>> creators) {
-        return creators.entrySet().stream().map(entry -> new DbCreator(entry.getKey(), entry.getValue())).toList();
+    private DbCandidate generateExpectedCandidate(Candidate candidate, UpsertCandidateRequest request) {
+        var dbCreators = mapToDbCreators(request.verifiedCreators(), request.unverifiedCreators());
+        var dbCandidate = DbCandidate
+                              .builder()
+                              .publicationId(request.publicationId())
+                              .publicationBucketUri(request.publicationBucketUri())
+                              .publicationDate(mapToDbPublicationDate(request.publicationDate()))
+                              .applicable(request.isApplicable())
+                              .instanceType(request
+                                                .instanceType()
+                                                .getValue())
+                              .channelType(ChannelType.parse(request.channelType()))
+                              .channelId(request.publicationChannelId())
+                              .level(DbLevel.parse(request.level()))
+                              .basePoints(adjustScaleAndRoundingMode(request.basePoints()))
+                              .internationalCollaboration(request.isInternationalCollaboration())
+                              .collaborationFactor(adjustScaleAndRoundingMode(request.collaborationFactor()))
+                              .creators(dbCreators)
+                              .creatorShareCount(request.creatorShareCount())
+                              .points(mapToDbInstitutionPoints(request.institutionPoints()))
+                              .totalPoints(adjustScaleAndRoundingMode(request.totalPoints()))
+                              .createdDate(candidate.getCreatedDate())
+                              .build();
+        return new CandidateDao(candidate.getIdentifier(), dbCandidate, randomString(), randomString()).candidate();
     }
 }

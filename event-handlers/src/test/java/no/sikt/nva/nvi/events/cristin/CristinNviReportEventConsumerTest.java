@@ -27,7 +27,7 @@ import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.sikt.nva.nvi.common.service.model.PublicationDetails.Creator;
+import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.events.cristin.CristinNviReport.Builder;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
@@ -136,7 +136,7 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTest {
             .forEach(status -> assertThat(status, is(equalTo(ApprovalStatus.APPROVED))));
     }
 
-    private Creator constructExpectedCreator(CristinNviReport cristinNviReport) {
+    private VerifiedNviCreatorDto constructExpectedCreator(CristinNviReport cristinNviReport) {
         var creatorIdentifier = cristinNviReport.getCreators().getFirst().getCristinPersonIdentifier();
         var creatorId = UriWrapper.fromHost(API_HOST)
                 .addChild("cristin")
@@ -147,7 +147,7 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTest {
                                .map(ScientificPerson::getOrganization)
                                .map(this::toOrganizationId)
                                .distinct().toList();
-        return new Creator(creatorId, affiliations);
+        return new VerifiedNviCreatorDto(creatorId, affiliations);
     }
 
     private URI expectedPublicationBucketUri(String value) {

@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
@@ -34,11 +35,13 @@ public class CandidateTestSetup extends LocalDynamoTest {
     protected static UpsertCandidateRequest createUpsertRequestWithDecimalScale(int scale, URI institutionId) {
         var creatorId = randomUri();
         var creators = Map.of(creatorId, List.of(institutionId));
+        var verifiedCreator = new VerifiedNviCreatorDto(creatorId, List.of(institutionId));
         var points = List.of(createInstitutionPoints(institutionId, randomBigDecimal(scale), creatorId));
 
         return randomUpsertRequestBuilder()
                    .withPoints(points)
                    .withCreators(creators)
+                   .withVerifiedCreators(List.of(verifiedCreator))
                    .withCollaborationFactor(randomBigDecimal(scale))
                    .withBasePoints(randomBigDecimal(scale))
                    .withTotalPoints(randomBigDecimal(scale))

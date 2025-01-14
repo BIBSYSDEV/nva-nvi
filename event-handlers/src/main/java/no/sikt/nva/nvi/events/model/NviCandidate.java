@@ -12,8 +12,9 @@ import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails;
+import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
+import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
-import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSerialize
@@ -21,8 +22,8 @@ public record NviCandidate(URI publicationId,
                            URI publicationBucketUri,
                            InstanceType instanceType,
                            @JsonProperty("publicationDate") PublicationDate date,
-                           List<NviCreator> nviCreators,
-                           List<UnverifiedNviCreator> unverifiedNviCreators,
+                           List<VerifiedNviCreatorDto> verifiedCreators,
+                           List<UnverifiedNviCreatorDto> unverifiedCreators,
                            String channelType,
                            URI publicationChannelId,
                            String level,
@@ -39,10 +40,13 @@ public record NviCandidate(URI publicationId,
         return true;
     }
 
+    // FIXME: This only includes verified creators (as a map of id and affiliation) and does not include unverified creators.
+    // It should include both, but we would need to rewrite all usages to avoid this map first.
     @Override
+    @Deprecated
     public Map<URI, List<URI>> creators() {
-        return nviCreators().stream().collect(Collectors.toMap(NviCreator::id,
-                                                               NviCreator::nviAffiliations));
+        return verifiedCreators().stream().collect(Collectors.toMap(VerifiedNviCreatorDto::id,
+                                                               VerifiedNviCreatorDto::affiliations));
     }
 
     @Override
@@ -57,13 +61,6 @@ public record NviCandidate(URI publicationId,
                                                       publicationDate.day());
     }
 
-    public record NviCreator(URI id, List<URI> nviAffiliations) {
-
-        public static NviCreator from(VerifiedNviCreator nviCreator) {
-            return new NviCreator(nviCreator.id(), nviCreator.nviAffiliationsIds());
-        }
-    }
-
     public static Builder builder() {
         return new Builder();
     }
@@ -74,8 +71,8 @@ public record NviCandidate(URI publicationId,
         private URI publicationBucketUri;
         private InstanceType instanceType;
         private PublicationDate date;
-        private List<NviCreator> nviCreators = Collections.emptyList();
-        private List<UnverifiedNviCreator> unverifiedNviCreators = Collections.emptyList();
+        private List<VerifiedNviCreatorDto> verifiedNviCreators = Collections.emptyList();
+        private List<UnverifiedNviCreatorDto> unverifiedNviCreators = Collections.emptyList();
         private String channelType;
         private URI publicationChannelId;
         private String level;
@@ -109,12 +106,12 @@ public record NviCandidate(URI publicationId,
             return this;
         }
 
-        public Builder withNviCreators(List<NviCreator> nviCreators) {
-            this.nviCreators = nviCreators;
+        public Builder withVerifiedNviCreators(List<VerifiedNviCreatorDto> verifiedNviCreators) {
+            this.verifiedNviCreators = verifiedNviCreators;
             return this;
         }
 
-        public Builder withUnverifiedNviCreators(List<UnverifiedNviCreator> unverifiedNviCreators) {
+        public Builder withUnverifiedNviCreators(List<UnverifiedNviCreatorDto> unverifiedNviCreators) {
             this.unverifiedNviCreators = unverifiedNviCreators;
             return this;
         }
@@ -169,7 +166,7 @@ public record NviCandidate(URI publicationId,
                                     publicationBucketUri,
                                     instanceType,
                                     date,
-                                    nviCreators,
+                                    verifiedNviCreators,
                                     unverifiedNviCreators,
                                     channelType,
                                     publicationChannelId,

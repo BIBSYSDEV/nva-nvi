@@ -51,7 +51,9 @@ import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.sikt.nva.nvi.common.service.model.PublicationDetails.Creator;
+import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
+import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
+import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.Contributor;
 import no.sikt.nva.nvi.index.model.document.ContributorType;
@@ -322,21 +324,42 @@ public final class NviCandidateIndexDocumentGenerator {
     }
 
     private List<ContributorType> expandContributors() {
-        return getJsonNodeStream(expandedResource, JSON_PTR_CONTRIBUTOR)
-                   .map(this::createContributor).toList();
+        return StreamSupport.stream(expandedResource.at(JSON_PTR_CONTRIBUTOR)
+                                                    .spliterator(), false)
+                            .map(this::createContributor)
+                            .toList();
     }
 
-    private Optional<Creator> getNviCreatorIfPresent(JsonNode contributor) {
+    public static Optional<VerifiedNviCreatorDto> getVerifiedNviCreatorIfPresent(JsonNode contributor,
+                                                                                 Candidate candidate) {
         return candidate.getPublicationDetails()
-                   .creators()
+                   .getVerifiedCreators()
                    .stream()
                    .filter(creator -> creator.id().toString().equals(extractId(contributor.at(JSON_PTR_IDENTITY))))
                    .findFirst();
     }
 
+    public static Optional<UnverifiedNviCreatorDto> getUnverifiedNviCreatorIfPresent(JsonNode contributor,
+                                                                                     Candidate candidate) {
+        return candidate.getPublicationDetails()
+                        .getUnverifiedCreators()
+                        .stream()
+                        .filter(creator -> creator.name()
+                                                  .equals(extractName(contributor.at(JSON_PTR_IDENTITY))))
+                        .findFirst();
+    }
+
+    public static Optional<NviCreatorDto> getAnyNviCreatorIfPresent(JsonNode contributor, Candidate candidate) {
+        return getVerifiedNviCreatorIfPresent(contributor, candidate).map(NviCreatorDto.class::cast)
+                                                                     .or(() -> getUnverifiedNviCreatorIfPresent(
+                                                                         contributor,
+                                                                         candidate).map(
+                                                              NviCreatorDto.class::cast));
+    }
+
     private ContributorType createContributor(JsonNode contributor) {
         var identity = contributor.at(JSON_PTR_IDENTITY);
-        return getNviCreatorIfPresent(contributor)
+        return getAnyNviCreatorIfPresent(contributor, candidate)
                    .map(value -> generateNviContributor(contributor, identity))
                    .orElseGet(() -> generateContributor(contributor, identity));
     }
@@ -381,11 +404,11 @@ public final class NviCandidateIndexDocumentGenerator {
     }
 
     private boolean isNviAffiliation(JsonNode affiliation, JsonNode contributor) {
-        var nviCreator = getNviCreatorIfPresent(contributor);
+        var nviCreator = getAnyNviCreatorIfPresent(contributor, candidate);
         return nviCreator.isPresent() && isNviAffiliation(nviCreator.get(), affiliation);
     }
 
-    private boolean isNviAffiliation(Creator creator, JsonNode affiliationNode) {
+    private boolean isNviAffiliation(NviCreatorDto creator, JsonNode affiliationNode) {
         var affiliationId = extractJsonNodeTextValue(affiliationNode, JSON_PTR_ID);
 
         return nonNull(affiliationId) && creator.affiliations()
@@ -428,8 +451,12 @@ public final class NviCandidateIndexDocumentGenerator {
         return attempt(() -> organizationRetriever.fetchOrganization(uri).toJsonString()).toOptional();
     }
 
-    private String extractId(JsonNode jsonNode) {
+    private static String extractId(JsonNode jsonNode) {
         return extractJsonNodeTextValue(jsonNode, JSON_PTR_ID);
+    }
+
+    private static String extractName(JsonNode jsonNode) {
+        return extractJsonNodeTextValue(jsonNode, JSON_PTR_NAME);
     }
 
     private String extractRoleType(JsonNode contributorNode) {
@@ -446,10 +473,6 @@ public final class NviCandidateIndexDocumentGenerator {
 
     private String extractInstanceType() {
         return extractJsonNodeTextValue(expandedResource, JSON_PTR_INSTANCE_TYPE);
-    }
-
-    private Stream<JsonNode> getJsonNodeStream(JsonNode jsonNode, String jsonPtr) {
-        return StreamSupport.stream(jsonNode.at(jsonPtr).spliterator(), false);
     }
 
     private PublicationDate formatPublicationDate(JsonNode publicationDateNode) {

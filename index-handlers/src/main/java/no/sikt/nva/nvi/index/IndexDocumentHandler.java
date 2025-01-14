@@ -97,6 +97,7 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
             .map(this::persistDocument)
             .filter(Objects::nonNull)
             .forEach(this::sendEvent);
+        LOGGER.info("Finished processing all records");
         return null;
     }
 
@@ -176,10 +177,19 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
                    });
     }
 
-    private IndexDocumentWithConsumptionAttributes generateIndexDocumentWithConsumptionAttributes(
-        DynamodbStreamRecord record) {
-        var candidate = fetchCandidate(record);
-        return candidate.isApplicable() ? generateIndexDocumentWithConsumptionAttributes(candidate) : null;
+    private IndexDocumentWithConsumptionAttributes generateIndexDocumentWithConsumptionAttributes(DynamodbStreamRecord streamRecord) {
+        var candidate = fetchCandidate(streamRecord);
+        if (candidate == null) {
+            LOGGER.info("Candidate is null, skipping index document generation");
+            return null;
+        }
+        if (!candidate.isApplicable()) {
+            LOGGER.info("Candidate is not applicable, skipping index document generation");
+            return null;
+        }
+        var id = candidate.getPublicationId();
+        LOGGER.info("Generated index document for applicable candidate with publication ID: {}", id);
+        return generateIndexDocumentWithConsumptionAttributes(candidate);
     }
 
     private IndexDocumentWithConsumptionAttributes generateIndexDocumentWithConsumptionAttributes(

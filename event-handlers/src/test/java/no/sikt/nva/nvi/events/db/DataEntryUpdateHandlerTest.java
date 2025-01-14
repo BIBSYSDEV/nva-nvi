@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.events.db;
 
+import static java.util.Collections.emptyList;
 import static no.sikt.nva.nvi.test.DynamoDbTestUtils.randomDynamoDbEvent;
 import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEvent;
 import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEventWithMessages;
@@ -139,26 +140,60 @@ class DataEntryUpdateHandlerTest {
     }
 
     @Test
-    void shouldSendMessageToDlqWhenFailingToParseDynamoDbEvent() {
+    void shouldSendInvalidRecordsToDlqWhenParsingBatchWithOneInvalidRecord() {
         var eventWithOneInvalidRecord = createEventWithOneInvalidRecord(randomCandidateDao());
         handler.handleRequest(eventWithOneInvalidRecord, CONTEXT);
-        assertEquals(1, queueClient.getSentMessages().size());
+        assertEquals(1,
+                     queueClient.getSentMessages()
+                                .size());
     }
 
     @Test
-    void shouldNotFailForWholeBatchWhenFailingToParseOneDynamoDbEvent() {
+    void shouldPublishValidRecordsWhenParsingBatchWithOneInvalidRecord() {
         var eventWithOneInvalidRecord = createEventWithOneInvalidRecord(randomCandidateDao());
         handler.handleRequest(eventWithOneInvalidRecord, CONTEXT);
-        assertEquals(1, snsClient.getPublishedMessages().size());
+        assertEquals(1,
+                     snsClient.getPublishedMessages()
+                              .size());
     }
 
     @Test
     void shouldNotFailForWholeBatchWhenFailingExtractDaoForOneRecord() {
         var dao = randomCandidateDao();
-        var eventWithOneInvalidRecord = createEventWithMessages(
-            List.of(createMessage(dao, dao, OperationType.INSERT), createMessage(UUID.randomUUID())));
+        var eventWithOneInvalidRecord = createEventWithMessages(List.of(createMessage(dao, dao, OperationType.INSERT),
+                                                                        createMessage(UUID.randomUUID())));
         handler.handleRequest(eventWithOneInvalidRecord, CONTEXT);
-        assertEquals(1, snsClient.getPublishedMessages().size());
+        assertEquals(1,
+                     snsClient.getPublishedMessages()
+                              .size());
+    }
+
+    @Test
+    void shouldProcessEventWithEmptyPointsList() {
+        var event = createValidEventRecordWithEmptyPointsList();
+        handler.handleRequest(event, CONTEXT);
+        assertThatRecordIsOnlyInPublishedMessages();
+    }
+
+    private static SQSEvent createValidEventRecordWithEmptyPointsList() {
+        var validDao = randomCandidateDao();
+        var invalidDbCandidate = validDao.candidate()
+                                         .copy()
+                                         .points(emptyList())
+                                         .build();
+        var dao = validDao.copy()
+                          .candidate(invalidDbCandidate)
+                          .build();
+        return createEventWithMessages(List.of(createMessage(null, dao, OperationType.INSERT)));
+    }
+
+    private void assertThatRecordIsOnlyInPublishedMessages() {
+        assertEquals(0,
+                     queueClient.getSentMessages()
+                                .size());
+        assertEquals(1,
+                     snsClient.getPublishedMessages()
+                              .size());
     }
 
     private static CandidateUniquenessEntryDao candidateUniquenessEntryDao() {

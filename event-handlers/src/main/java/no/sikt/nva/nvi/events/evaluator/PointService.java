@@ -21,6 +21,7 @@ import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
@@ -32,6 +33,7 @@ import no.sikt.nva.nvi.common.utils.JsonUtils;
 import no.sikt.nva.nvi.events.evaluator.calculator.PointCalculator;
 import no.sikt.nva.nvi.events.evaluator.model.Channel;
 import no.sikt.nva.nvi.events.evaluator.model.PointCalculation;
+import no.sikt.nva.nvi.events.evaluator.model.UnverifiedNviCreator;
 import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
 
 public final class PointService {
@@ -49,13 +51,15 @@ public final class PointService {
     }
 
     public PointCalculation calculatePoints(JsonNode publication,
-                                            List<VerifiedNviCreator> nviCreators) {
+                                            Collection<VerifiedNviCreator> verifiedNviCreators,
+                                            Collection<UnverifiedNviCreator> unverifiedNviCreators) {
         var instanceType = extractInstanceType(publication);
         massiveHackToFixObjectsWithMultipleTypes(publication);
         var channel = extractChannel(instanceType, publication);
         var isInternationalCollaboration = isInternationalCollaboration(publication);
         var creatorShareCount = countCreatorShares(publication);
-        return new PointCalculator(channel, instanceType, nviCreators, isInternationalCollaboration, creatorShareCount)
+        return new PointCalculator(channel, instanceType, verifiedNviCreators, unverifiedNviCreators,
+                                   isInternationalCollaboration, creatorShareCount)
                    .calculatePoints();
     }
 
@@ -209,6 +213,9 @@ public final class PointService {
                    .reduce(0, Integer::sum);
     }
 
+    // FIXME: Does this actually need to call the organization retriever?
+    // This method is only called from EvaluatorService, which has already done the same check.
+    // See NP-48364 for more information.
     private Integer countVerifiedTopLevelAffiliations(JsonNode creator) {
         return extractAffiliations(creator)
                    .filter(PointService::hasId)

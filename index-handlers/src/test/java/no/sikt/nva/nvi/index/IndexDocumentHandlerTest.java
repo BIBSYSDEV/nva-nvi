@@ -1,5 +1,7 @@
 package no.sikt.nva.nvi.index;
 
+import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_AFFILIATIONS;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_BODY;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_TYPE;
@@ -22,9 +24,11 @@ import static no.sikt.nva.nvi.test.TestUtils.randomApproval;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidateBuilder;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.sikt.nva.nvi.test.TestUtils.setupReportedCandidate;
+import static no.sikt.nva.nvi.test.UpsertRequestBuilder.randomUpsertRequestBuilder;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.s3.S3Driver.S3_SCHEME;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
+import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.core.attempt.Try.attempt;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -47,7 +51,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpResponse;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -56,6 +59,7 @@ import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
+import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.index.aws.S3StorageWriter;
 import no.sikt.nva.nvi.index.model.PersistedIndexDocumentMessage;
@@ -70,7 +74,6 @@ import no.sikt.nva.nvi.test.ExpandedResourceGenerator;
 import no.sikt.nva.nvi.test.FakeSqsClient;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
-import no.sikt.nva.nvi.test.UpsertRequestBuilder;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
@@ -184,6 +187,29 @@ class IndexDocumentHandlerTest extends LocalDynamoTest {
     }
 
     @Test
+    void shouldNotFailWhenCreatorIsUnverified() {
+        var institutionId = randomUri();
+        var unverifiedCreator = UnverifiedNviCreatorDto
+                                    .builder()
+                                    .withName(randomString())
+                                    .withAffiliations(List.of(institutionId))
+                                    .build();
+        var request = randomUpsertRequestBuilder()
+                          .withVerifiedCreators(emptyList())
+                          .withUnverifiedCreators(List.of(unverifiedCreator))
+                          .withCreators(emptyMap())
+                          .build();
+        Candidate.upsert(request, candidateRepository, periodRepository);
+        var candidate = Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository);
+        var expectedIndexDocument = setupExistingResourceInS3AndGenerateExpectedDocument(candidate).indexDocument();
+
+        mockUriRetrieverOrgResponse(candidate);
+        handler.handleRequest(createEvent(candidate.getIdentifier()), CONTEXT);
+        var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
+        assertEquals(expectedIndexDocument, actualIndexDocument);
+    }
+
+    @Test
     void involvedOrganizationsShouldContainTopLevelAffiliation() {
         var candidate = randomApplicableCandidate(HARD_CODED_TOP_LEVEL_ORG, HARD_CODED_TOP_LEVEL_ORG);
         var expectedIndexDocument = setupExistingResourceInS3AndGenerateExpectedDocument(candidate).indexDocument();
@@ -202,8 +228,8 @@ class IndexDocumentHandlerTest extends LocalDynamoTest {
         mockUriResponseForTopLevelAffiliation(candidate);
         handler.handleRequest(event, CONTEXT);
         var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
-        assertEquals(Collections.emptyList(), extractPartOfAffiliation(actualIndexDocument,
-                                                                       HARD_CODED_TOP_LEVEL_ORG));
+        assertEquals(emptyList(), extractPartOfAffiliation(actualIndexDocument,
+                                                           HARD_CODED_TOP_LEVEL_ORG));
     }
 
     @Test
@@ -781,7 +807,7 @@ class IndexDocumentHandlerTest extends LocalDynamoTest {
     }
 
     private Candidate randomApplicableCandidate(ChannelType channelType) {
-        var request = UpsertRequestBuilder.randomUpsertRequestBuilder()
+        var request = randomUpsertRequestBuilder()
                           .withChannelType(channelType.getValue())
                           .build();
         Candidate.upsert(request, candidateRepository, periodRepository);

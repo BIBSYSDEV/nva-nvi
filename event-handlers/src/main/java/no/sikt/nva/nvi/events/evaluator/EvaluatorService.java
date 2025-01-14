@@ -9,8 +9,11 @@ import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_MONTH;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PUBLICATION_DATE;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_YEAR;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.extractJsonNodeTextValue;
+import static no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil.getUnverifiedCreators;
+import static no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil.getVerifiedCreators;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.net.URI;
 import java.time.Year;
@@ -21,18 +24,19 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
+import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
+import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil;
 import no.sikt.nva.nvi.events.evaluator.model.PointCalculation;
+import no.sikt.nva.nvi.events.evaluator.model.UnverifiedNviCreator;
 import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.CandidateType;
 import no.sikt.nva.nvi.events.model.NonNviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate;
-import no.sikt.nva.nvi.events.model.NviCandidate.NviCreator;
 import no.sikt.nva.nvi.events.model.PublicationDate;
-import no.sikt.nva.nvi.events.model.UnverifiedNviCreator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,8 +51,10 @@ public class EvaluatorService {
     private final PeriodRepository periodRepository;
     private final NviPeriodService nviPeriodService;
 
-    public EvaluatorService(StorageReader<URI> storageReader, CreatorVerificationUtil creatorVerificationUtil,
-                            PointService pointService, CandidateRepository candidateRepository,
+    public EvaluatorService(StorageReader<URI> storageReader,
+                            CreatorVerificationUtil creatorVerificationUtil,
+                            PointService pointService,
+                            CandidateRepository candidateRepository,
                             PeriodRepository periodRepository) {
         this.storageReader = storageReader;
         this.creatorVerificationUtil = creatorVerificationUtil;
@@ -64,13 +70,13 @@ public class EvaluatorService {
         var publicationDate = extractPublicationDate(publication);
         if (hasInvalidPublicationYear(publicationDate)) {
             logger.warn("Skipping evaluation due to invalid year format {}. Publication id {}",
-                        publicationDate.year(), publicationId);
+                        publicationDate.year(),
+                        publicationId);
             return Optional.empty();
         }
         if (isPublishedBeforeOrInLatestClosedPeriod(publicationDate)) {
             logger.info("Skipping evaluation. Publication with id {} is published before or same as latest closed "
-                        + "period {}",
-                        publicationId, publicationDate.year());
+                        + "period {}", publicationId, publicationDate.year());
             return Optional.empty();
         }
         if (existsAsCandidateInClosedPeriod(publicationId)) {
@@ -82,14 +88,14 @@ public class EvaluatorService {
             logger.info(NON_NVI_CANDIDATE_MESSAGE, publicationId);
             return createNonNviMessage(publicationId);
         }
-        var verifiedCreatorsWithNviInstitutions = creatorVerificationUtil.getVerifiedCreatorsWithNviInstitutions(
-                publication);
+        var creators = creatorVerificationUtil.getNviCreatorsWithNviInstitutions(publication);
+        var verifiedCreatorsWithNviInstitutions = getVerifiedCreators(creators);
+        var unverifiedCreatorsWithNviInstitutions = getUnverifiedCreators(creators);
 
-        var unverifiedCreatorsWithNviInstitutions = creatorVerificationUtil.getUnverifiedCreatorsWithNviInstitutions(
-            publication);
-        if (hasCreators(verifiedCreatorsWithNviInstitutions,
-                        unverifiedCreatorsWithNviInstitutions)) {
-            var pointCalculation = pointService.calculatePoints(publication, verifiedCreatorsWithNviInstitutions);
+        if (!creators.isEmpty()) {
+            var pointCalculation = pointService.calculatePoints(publication,
+                                                                verifiedCreatorsWithNviInstitutions,
+                                                                unverifiedCreatorsWithNviInstitutions);
             var nviCandidate = constructNviCandidate(verifiedCreatorsWithNviInstitutions,
                                                      unverifiedCreatorsWithNviInstitutions,
                                                      pointCalculation,
@@ -104,37 +110,47 @@ public class EvaluatorService {
         }
     }
 
-    private static boolean hasCreators(List<VerifiedNviCreator> verifiedCreatorsWithNviInstitutions,
-                                       List<UnverifiedNviCreator> unverifiedCreatorsWithNviInstitutions) {
-        return !verifiedCreatorsWithNviInstitutions.isEmpty() || !unverifiedCreatorsWithNviInstitutions.isEmpty();
-    }
-
     private static NviCandidate constructNviCandidate(List<VerifiedNviCreator> verifiedCreatorsWithNviInstitutions,
                                                       List<UnverifiedNviCreator> unverifiedCreatorsWithNviInstitutions,
-                                                      PointCalculation pointCalculation, URI publicationId,
-                                                      URI publicationBucketUri, PublicationDate date) {
-        return NviCandidate.builder()
+                                                      PointCalculation pointCalculation,
+                                                      URI publicationId,
+                                                      URI publicationBucketUri,
+                                                      PublicationDate date) {
+        return NviCandidate
+                   .builder()
                    .withPublicationId(publicationId)
                    .withPublicationBucketUri(publicationBucketUri)
                    .withDate(date)
                    .withInstanceType(pointCalculation.instanceType())
                    .withBasePoints(pointCalculation.basePoints())
                    .withPublicationChannelId(pointCalculation.publicationChannelId())
-                   .withChannelType(pointCalculation.channelType().getValue())
-                   .withLevel(pointCalculation.level().getValue())
+                   .withChannelType(pointCalculation
+                                        .channelType()
+                                        .getValue())
+                   .withLevel(pointCalculation
+                                  .level()
+                                  .getValue())
                    .withIsInternationalCollaboration(pointCalculation.isInternationalCollaboration())
                    .withCollaborationFactor(pointCalculation.collaborationFactor())
                    .withCreatorShareCount(pointCalculation.creatorShareCount())
                    .withInstitutionPoints(pointCalculation.institutionPoints())
-                   .withNviCreators(mapToNviCreators(verifiedCreatorsWithNviInstitutions))
-                   .withUnverifiedNviCreators(unverifiedCreatorsWithNviInstitutions)
+                   .withVerifiedNviCreators(mapVerifiedCreatorsToDto(verifiedCreatorsWithNviInstitutions))
+                   .withUnverifiedNviCreators(mapUnverifiedCreatorsToDto(unverifiedCreatorsWithNviInstitutions))
                    .withTotalPoints(pointCalculation.totalPoints())
                    .build();
     }
 
-    private static List<NviCreator> mapToNviCreators(List<VerifiedNviCreator> nviCreators) {
-        return nviCreators.stream()
-                   .map(NviCreator::from)
+    private static List<VerifiedNviCreatorDto> mapVerifiedCreatorsToDto(List<VerifiedNviCreator> nviCreators) {
+        return nviCreators
+                   .stream()
+                   .map(VerifiedNviCreator::toDto)
+                   .toList();
+    }
+
+    private static List<UnverifiedNviCreatorDto> mapUnverifiedCreatorsToDto(List<UnverifiedNviCreator> nviCreators) {
+        return nviCreators
+                   .stream()
+                   .map(UnverifiedNviCreator::toDto)
                    .toList();
     }
 
@@ -151,7 +167,8 @@ public class EvaluatorService {
         var month = publicationDateNode.at(JSON_PTR_MONTH);
         var day = publicationDateNode.at(JSON_PTR_DAY);
 
-        return Optional.of(new PublicationDate(day.textValue(), month.textValue(), year.textValue()))
+        return Optional
+                   .of(new PublicationDate(day.textValue(), month.textValue(), year.textValue()))
                    .orElse(new PublicationDate(null, null, year.textValue()));
     }
 
@@ -165,7 +182,8 @@ public class EvaluatorService {
 
     private boolean isPublishedBeforeOrInLatestClosedPeriod(PublicationDate publicationDate) {
         var publishedYear = Year.parse(publicationDate.year());
-        return nviPeriodService.fetchLatestClosedPeriodYear()
+        return nviPeriodService
+                   .fetchLatestClosedPeriodYear()
                    .map(Year::of)
                    .map(latestClosedPeriodYear -> isBeforeOrEqualTo(publishedYear, latestClosedPeriodYear))
                    .orElse(false);
@@ -182,21 +200,31 @@ public class EvaluatorService {
 
     private boolean existsAsCandidateInClosedPeriod(URI publicationId) {
         try {
-            var existingCandidate = Candidate.fetchByPublicationId(() -> publicationId, candidateRepository,
+            var existingCandidate = Candidate.fetchByPublicationId(() -> publicationId,
+                                                                   candidateRepository,
                                                                    periodRepository);
-            return Status.CLOSED_PERIOD.equals(existingCandidate.getPeriod().status());
+            return Status.CLOSED_PERIOD.equals(existingCandidate
+                                                   .getPeriod()
+                                                   .status());
         } catch (CandidateNotFoundException notFoundException) {
             return false;
         }
     }
 
     private CandidateEvaluatedMessage constructMessage(CandidateType candidateType) {
-        return CandidateEvaluatedMessage.builder()
+        return CandidateEvaluatedMessage
+                   .builder()
                    .withCandidateType(candidateType)
                    .build();
     }
 
     private JsonNode extractBodyFromContent(String content) {
-        return attempt(() -> dtoObjectMapper.readTree(content)).map(json -> json.at(JSON_PTR_BODY)).orElseThrow();
+        try {
+            return dtoObjectMapper
+                       .readTree(content)
+                       .at(JSON_PTR_BODY);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 }

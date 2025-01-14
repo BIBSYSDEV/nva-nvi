@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.test;
 
+import static java.util.Collections.emptyList;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -8,12 +9,15 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
+import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
+import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 
+@SuppressWarnings("PMD.TooManyFields")
 public class UpsertRequestBuilder {
 
     private URI publicationBucketUri;
@@ -21,6 +25,8 @@ public class UpsertRequestBuilder {
     private boolean isApplicable;
     private boolean isInternationalCollaboration;
     private Map<URI, List<URI>> creators;
+    private List<UnverifiedNviCreatorDto> unverifiedCreators;
+    private List<VerifiedNviCreatorDto> verifiedCreators;
     private String channelType;
     private URI channelId;
     private String level;
@@ -41,6 +47,8 @@ public class UpsertRequestBuilder {
                    .withIsApplicable(true)
                    .withIsInternationalCollaboration(true)
                    .withCreators(Map.of(creatorId, List.of(affiliationId)))
+                   .withVerifiedCreators(List.of(new VerifiedNviCreatorDto(creatorId, List.of(affiliationId))))
+                   .withUnverifiedCreators(emptyList())
                    .withChannelType(ChannelType.JOURNAL.getValue())
                    .withChannelId(randomUri())
                    .withLevel("LevelOne")
@@ -64,6 +72,8 @@ public class UpsertRequestBuilder {
                    .withIsApplicable(request.isApplicable())
                    .withIsInternationalCollaboration(request.isInternationalCollaboration())
                    .withCreators(request.creators())
+                   .withVerifiedCreators(request.verifiedCreators())
+                   .withUnverifiedCreators(request.unverifiedCreators())
                    .withChannelType(request.channelType())
                    .withChannelId(request.publicationChannelId())
                    .withLevel(request.level())
@@ -98,6 +108,16 @@ public class UpsertRequestBuilder {
 
     public UpsertRequestBuilder withCreators(Map<URI, List<URI>> creators) {
         this.creators = creators;
+        return this;
+    }
+
+    public UpsertRequestBuilder withVerifiedCreators(List<VerifiedNviCreatorDto> verifiedCreators) {
+        this.verifiedCreators = verifiedCreators;
+        return this;
+    }
+
+    public UpsertRequestBuilder withUnverifiedCreators(List<UnverifiedNviCreatorDto> unverifiedCreators) {
+        this.unverifiedCreators = unverifiedCreators;
         return this;
     }
 
@@ -178,6 +198,16 @@ public class UpsertRequestBuilder {
             @Override
             public Map<URI, List<URI>> creators() {
                 return creators;
+            }
+
+            @Override
+            public List<VerifiedNviCreatorDto> verifiedCreators() {
+                return verifiedCreators;
+            }
+
+            @Override
+            public List<UnverifiedNviCreatorDto> unverifiedCreators() {
+                return unverifiedCreators;
             }
 
             @Override

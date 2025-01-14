@@ -35,7 +35,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.IntStream;
 import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.sikt.nva.nvi.common.service.model.PublicationDetails.Creator;
+import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.common.utils.JsonUtils;
 
@@ -221,7 +221,7 @@ public final class ExpandedResourceGenerator {
     private static JsonNode createAndPopulateTopLevelOrganizations(Candidate candidate) {
         var topLevelOrganizations = objectMapper.createArrayNode();
         candidate.getPublicationDetails().creators().stream()
-            .map(Creator::affiliations)
+            .map(NviCreatorDto::affiliations)
             .flatMap(List::stream)
             .distinct()
             .map(URI::toString)
@@ -258,20 +258,31 @@ public final class ExpandedResourceGenerator {
                                                            List<URI> nonNviContributorAffiliationIds) {
 
         var contributors = objectMapper.createArrayNode();
-        var creators = candidate.getPublicationDetails().creators();
-        creators.stream()
-            .map(creator -> createContributorNode(creator.affiliations(), creator.id()))
-            .forEach(contributors::add);
+
+        var verifiedCreators = candidate.getPublicationDetails()
+                                        .getVerifiedCreators();
+        verifiedCreators.stream()
+                        .map(creator -> createContributorNode(creator.affiliations(), creator.id(), randomString()))
+                        .forEach(contributors::add);
+
+        var unverifiedCreators = candidate.getPublicationDetails()
+                                          .getUnverifiedCreators();
+        unverifiedCreators.stream()
+                          .map(unverifiedCreator -> createContributorNode(unverifiedCreator.affiliations(),
+                                                                          null,
+                                                                          unverifiedCreator.name()))
+                          .forEach(contributors::add);
+
         addOtherRandomContributors(contributors, nonNviContributorAffiliationIds);
         return contributors;
     }
 
     private static void addOtherRandomContributors(ArrayNode contributors, List<URI> affiliationsIds) {
-        IntStream.range(0, 10).mapToObj(i -> createContributorNode(affiliationsIds, URI.create(randomString())))
+        IntStream.range(0, 10).mapToObj(i -> createContributorNode(affiliationsIds, URI.create(randomString()), randomString()))
             .forEach(contributors::add);
     }
 
-    private static ObjectNode createContributorNode(List<URI> affiliationsUris, URI contributorId) {
+    private static ObjectNode createContributorNode(List<URI> affiliationsUris, URI contributorId, String contributorName) {
         var contributorNode = objectMapper.createObjectNode();
 
         contributorNode.put(TYPE_FIELD, "Contributor");
@@ -285,8 +296,15 @@ public final class ExpandedResourceGenerator {
         contributorNode.set(ROLE_FIELD, role);
 
         var identity = objectMapper.createObjectNode();
-        identity.put(ID_FIELD, contributorId.toString());
-        identity.put(NAME_FIELD, randomString());
+
+        if (nonNull(contributorId)) {
+            identity.put(ID_FIELD, contributorId.toString());
+        }
+
+        if (nonNull(contributorName)) {
+            identity.put(NAME_FIELD, contributorName);
+        }
+
         identity.put(ORCID_FIELD, randomString());
 
         contributorNode.set(IDENTITY_FIELD, identity);

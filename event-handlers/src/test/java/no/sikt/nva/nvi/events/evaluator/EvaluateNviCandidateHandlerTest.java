@@ -7,6 +7,7 @@ import static no.sikt.nva.nvi.common.service.model.InstanceType.ACADEMIC_COMMENT
 import static no.sikt.nva.nvi.common.service.model.InstanceType.ACADEMIC_LITERATURE_REVIEW;
 import static no.sikt.nva.nvi.common.service.model.InstanceType.ACADEMIC_MONOGRAPH;
 import static no.sikt.nva.nvi.events.evaluator.TestUtils.createEvent;
+import static no.sikt.nva.nvi.events.evaluator.TestUtils.createResponse;
 import static no.sikt.nva.nvi.events.evaluator.TestUtils.mockOrganizationResponseForAffiliation;
 import static no.sikt.nva.nvi.events.evaluator.model.PublicationChannel.JOURNAL;
 import static no.sikt.nva.nvi.events.evaluator.model.PublicationChannel.SERIES;
@@ -52,21 +53,21 @@ import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails;
+import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil;
 import no.sikt.nva.nvi.events.evaluator.model.Level;
 import no.sikt.nva.nvi.events.evaluator.model.PublicationChannel;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.NonNviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate;
-import no.sikt.nva.nvi.events.model.NviCandidate.NviCreator;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.sikt.nva.nvi.events.model.PublicationDate;
-import no.sikt.nva.nvi.events.model.UnverifiedNviCreator;
 import no.sikt.nva.nvi.test.SampleExpandedAffiliation;
 import no.sikt.nva.nvi.test.SampleExpandedContributor;
 import no.sikt.nva.nvi.test.SampleExpandedPublication;
@@ -101,12 +102,12 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
                                                        .replace("__REPLACE_WITH_PUBLICATION_ID__",
                                                                 HARDCODED_PUBLICATION_ID.toString());
     private static final String ERROR_COULD_NOT_FETCH_CRISTIN_ORG = "Could not fetch Cristin organization for: ";
-    private static final String COULD_NOT_FETCH_CUSTOMER_MESSAGE = "Could not fetch customer for: ";
     private static final SampleExpandedAffiliation DEFAULT_SUBUNIT_AFFILIATION =
         SampleExpandedAffiliation.builder().withId(CRISTIN_NVI_ORG_SUB_UNIT_ID).build();
     private static final URI CUSTOMER_API_CRISTIN_NVI_ORG_TOP_LEVEL = URI.create(
         "https://api.dev.nva.aws.unit.no/customer/cristinId/https%3A%2F%2Fapi"
         + ".dev.nva.aws.unit.no%2Fcristin%2Forganization%2F194.0.0.0");
+    private static final String NON_NVI_CUSTOMER_PATH = "nonNviCustomerResponse.json";
 
     @Test
     void shouldCreateNewCandidateEventOnValidCandidate() throws IOException {
@@ -457,7 +458,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
 
     @Test
     void shouldThrowExceptionWhenProblemsFetchingCristinOrganization() throws IOException {
-        when(uriRetriever.fetchResponse(any(), any())).thenReturn(Optional.of(badResponse));
+        when(uriRetriever.fetchResponse(any(), any())).thenReturn(Optional.of(internalServerErrorResponse));
         var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH), ACADEMIC_ARTICLE);
         var event = createEvent(new PersistedResourceMessage(fileUri));
         var appender = LogUtils.getTestingAppenderForRootLogger();
@@ -467,12 +468,12 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
 
     @Test
     void shouldThrowExceptionWhenProblemsFetchingCustomer() throws IOException {
-        mockCristinResponseAndCustomerApiResponseForNviInstitution(badResponse);
+        mockCristinResponseAndCustomerApiResponseForNviInstitution(internalServerErrorResponse);
         var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH), ACADEMIC_ARTICLE);
         var event = createEvent(new PersistedResourceMessage(fileUri));
         var appender = LogUtils.getTestingAppenderForRootLogger();
         assertThrows(RuntimeException.class, () -> handler.handleRequest(event, context));
-        assertThat(appender.getMessages(), containsString(COULD_NOT_FETCH_CUSTOMER_MESSAGE));
+        assertThat(appender.getMessages(), containsString("status code: 500"));
     }
 
     @Test
@@ -540,7 +541,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
                                                         PublicationChannel channelType, String level,
                                                         BigDecimal basePoints, BigDecimal totalPoints,
                                                         URI publicationBucketUri) {
-        var verifiedCreators = List.of(new NviCreator(HARDCODED_CREATOR_ID, List.of(CRISTIN_NVI_ORG_SUB_UNIT_ID)));
+        var verifiedCreators = List.of(new VerifiedNviCreatorDto(HARDCODED_CREATOR_ID, List.of(CRISTIN_NVI_ORG_SUB_UNIT_ID)));
         return NviCandidate.builder()
                    .withPublicationId(HARDCODED_PUBLICATION_ID)
                    .withPublicationBucketUri(publicationBucketUri)
@@ -553,7 +554,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
                    .withCollaborationFactor(ONE.setScale(1, ROUNDING_MODE))
                    .withCreatorShareCount(countCreatorShares(verifiedCreators))
                    .withBasePoints(basePoints)
-                   .withNviCreators(verifiedCreators)
+                   .withVerifiedNviCreators(verifiedCreators)
                    .withInstitutionPoints(institutionPoints.entrySet().stream()
                                               .map(entry -> new InstitutionPoints(entry.getKey(), entry.getValue(),
                                                                                   List.of(
@@ -566,9 +567,9 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
                    .build();
     }
 
-    private static int countCreatorShares(List<NviCreator> nviCreators) {
+    private static int countCreatorShares(List<VerifiedNviCreatorDto> nviCreators) {
         return (int) nviCreators.stream()
-                         .mapToLong(creator -> creator.nviAffiliations().size())
+                         .mapToLong(creator -> creator.affiliations().size())
                          .sum();
     }
 
@@ -617,15 +618,21 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
             () -> objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class)).orElseThrow();
     }
 
+    private HttpResponse<String> getNonNviCustomerResponseBody() {
+        var body = IoUtils.stringFromResources(Path.of(NON_NVI_CUSTOMER_PATH));
+        return createResponse(200, body);
+    }
+
     private void mockCristinResponseAndCustomerApiResponseForNonNviInstitution() {
         var cristinOrgNonNviSubUnit = URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/150.50.50.0");
         var cristinOrgNonNviTopLevel = URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/150.0.0.0");
         var customerApiEndpoint = URI.create("https://api.dev.nva.aws.unit.no/customer/cristinId");
-        var cristinOrgNonNviTopLevelCustomerApiUri =
-            URI.create(customerApiEndpoint + "/" + URLEncoder.encode(cristinOrgNonNviTopLevel.toString(),
-                                                                     StandardCharsets.UTF_8));
-        when(authorizedBackendUriRetriever.fetchResponse(eq(cristinOrgNonNviTopLevelCustomerApiUri),
-                                                         any())).thenReturn(Optional.of(notFoundResponse));
+        var cristinOrgNonNviTopLevelCustomerApiUri = URI.create(customerApiEndpoint + "/" + URLEncoder.encode(
+            cristinOrgNonNviTopLevel.toString(),
+            StandardCharsets.UTF_8));
+        var expectedResponse = getNonNviCustomerResponseBody();
+        when(authorizedBackendUriRetriever.fetchResponse(eq(cristinOrgNonNviTopLevelCustomerApiUri), any())).thenReturn(
+            Optional.of(expectedResponse));
         mockOrganizationResponseForAffiliation(cristinOrgNonNviTopLevel, cristinOrgNonNviSubUnit, uriRetriever);
     }
 
@@ -714,8 +721,10 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
         void shouldIdentifyCandidateWithOnlyUnverifiedNviCreators() throws IOException {
             verifiedContributors = emptyList();
             unverifiedContributors = List.of(defaultUnverifiedContributor);
-            expectedTotalPoints = ZERO;
-            expectedPointsPerInstitution = emptyList();
+            expectedTotalPoints = ZERO.setScale(SCALE, ROUNDING_MODE);
+            expectedPointsPerInstitution = List.of(new InstitutionPoints(CRISTIN_NVI_ORG_TOP_LEVEL_ID,
+                                                                         expectedTotalPoints,
+                                                                         emptyList()));
             var testScenario = getCandidateScenario();
 
             handler.handleRequest(testScenario.event(), context);
@@ -857,7 +866,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
                                         .withLevel(publicationChannelLevel.getValue())
                                         .withInstitutionPoints(expectedPointsPerInstitution)
                                         .withTotalPoints(expectedTotalPoints)
-                                        .withNviCreators(verifiedCreators)
+                                        .withVerifiedNviCreators(verifiedCreators)
                                         .withUnverifiedNviCreators(unverifiedNviCreators)
                                         .withCreatorShareCount(creatorShareCount)
                                         .build();
@@ -873,19 +882,19 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
                        .build();
         }
 
-        private List<NviCreator> getVerifiedNviCreators() {
+        private List<VerifiedNviCreatorDto> getVerifiedNviCreators() {
             return verifiedContributors.stream()
                        .map(SampleExpandedContributor.Builder::build)
-                       .map(contributor -> new NviCreator(contributor.id(),
+                       .map(contributor -> new VerifiedNviCreatorDto(contributor.id(),
                                                           contributor.affiliationIds()))
                        .toList();
         }
 
-        private List<UnverifiedNviCreator> getUnverifiedNviCreators() {
+        private List<UnverifiedNviCreatorDto> getUnverifiedNviCreators() {
             return unverifiedContributors.stream()
                        .map(SampleExpandedContributor.Builder::build)
-                       .map(contributor -> new UnverifiedNviCreator(contributor.contributorName(),
-                                                                    contributor.affiliationIds()))
+                       .map(contributor -> new UnverifiedNviCreatorDto(contributor.contributorName(),
+                                                                       contributor.affiliationIds()))
                        .toList();
         }
 

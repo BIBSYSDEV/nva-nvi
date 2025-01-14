@@ -1,34 +1,31 @@
 package no.sikt.nva.nvi.events.evaluator.calculator;
 
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
-import static java.util.function.Predicate.not;
-import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_POINTER_IDENTITY_ID;
-import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_POINTER_IDENTITY_NAME;
-import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_POINTER_IDENTITY_VERIFICATION_STATUS;
-import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_AFFILIATIONS;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CONTRIBUTOR;
-import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_ROLE_TYPE;
-import static no.sikt.nva.nvi.common.utils.JsonUtils.extractJsonNodeTextValue;
-import static no.sikt.nva.nvi.common.utils.JsonUtils.streamNode;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
-import static nva.commons.core.attempt.Try.attempt;
+import static nva.commons.core.StringUtils.isBlank;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.client.model.Organization;
-import no.sikt.nva.nvi.common.utils.JsonUtils;
+import no.sikt.nva.nvi.events.evaluator.dto.AffiliationDto;
+import no.sikt.nva.nvi.events.evaluator.dto.ContributorDto;
 import no.sikt.nva.nvi.events.evaluator.model.CustomerResponse;
+import no.sikt.nva.nvi.events.evaluator.model.NviCreator;
+import no.sikt.nva.nvi.events.evaluator.model.NviOrganization;
+import no.sikt.nva.nvi.events.evaluator.model.UnverifiedNviCreator;
 import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
-import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator.NviOrganization;
-import no.sikt.nva.nvi.events.model.UnverifiedNviCreator;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import nva.commons.core.Environment;
@@ -41,12 +38,11 @@ public class CreatorVerificationUtil {
     private static final Logger LOGGER = LoggerFactory.getLogger(CreatorVerificationUtil.class);
     private static final String CREATOR = "Creator";
     private static final String CONTENT_TYPE = "application/json";
-    private static final String COULD_NOT_FETCH_CUSTOMER_MESSAGE = "Could not fetch customer for: ";
+    private static final String FAILED_TO_FETCH_CUSTOMER_MESSAGE = "Failed to fetch customer for %s (status code: %d)";
     private static final String CUSTOMER = "customer";
     private static final String CRISTIN_ID = "cristinId";
     private static final String VERIFIED = "Verified";
     private static final String API_HOST = new Environment().readEnv("API_HOST");
-    private static final String COUNTRY_CODE = "countryCode";
     private static final String COUNTRY_CODE_NORWAY = "NO";
     private final AuthorizedBackendUriRetriever authorizedBackendUriRetriever;
     private final OrganizationRetriever organizationRetriever;
@@ -57,56 +53,66 @@ public class CreatorVerificationUtil {
         this.organizationRetriever = new OrganizationRetriever(uriRetriever);
     }
 
-    public List<VerifiedNviCreator> getVerifiedCreatorsWithNviInstitutions(JsonNode body) {
-        return getJsonNodeStream(body, JSON_PTR_CONTRIBUTOR)
-                   .filter(CreatorVerificationUtil::isVerified)
-                   .filter(CreatorVerificationUtil::isCreator)
-                   .map(this::toVerifiedNviCreator)
-                   .filter(CreatorVerificationUtil::isAffiliatedWithNviOrganization)
+    public static List<VerifiedNviCreator> getVerifiedCreators(Collection<NviCreator> creators) {
+        return creators
+                   .stream()
+                   .filter(VerifiedNviCreator.class::isInstance)
+                   .map(VerifiedNviCreator.class::cast)
                    .toList();
     }
 
-    public List<UnverifiedNviCreator> getUnverifiedCreatorsWithNviInstitutions(JsonNode body) {
-        return getJsonNodeStream(body, JSON_PTR_CONTRIBUTOR)
-                   .filter(not(CreatorVerificationUtil::isVerified))
-                   .filter(CreatorVerificationUtil::isCreator)
-                   .filter(CreatorVerificationUtil::hasName)
-                   .map(this::toUnverifiedNviCreator)
-                   .filter(CreatorVerificationUtil::isAffiliatedWithNviOrganization)
+    public static List<UnverifiedNviCreator> getUnverifiedCreators(Collection<NviCreator> creators) {
+        return creators
+                   .stream()
+                   .filter(UnverifiedNviCreator.class::isInstance)
+                   .map(UnverifiedNviCreator.class::cast)
                    .toList();
     }
 
-    private static boolean hasName(JsonNode jsonNode) {
-        return nonNull(extractContributorName(jsonNode));
-    }
-
-    private static boolean isAffiliatedWithNviOrganization(VerifiedNviCreator creator) {
-        return !creator.nviAffiliations().isEmpty();
-    }
-
-    private static boolean isAffiliatedWithNviOrganization(UnverifiedNviCreator creator) {
-        return !creator.nviAffiliations().isEmpty();
+    public List<NviCreator> getNviCreatorsWithNviInstitutions(JsonNode body) {
+        return getStreamOfContributorNodes(body)
+                   .map(ContributorDto::fromJsonNode)
+                   .filter(CreatorVerificationUtil::isCreator)
+                   .filter(CreatorVerificationUtil::isValidContributor)
+                   .map(this::toNviCreator)
+                   .filter(CreatorVerificationUtil::isAffiliatedWithNviOrganization)
+                   .toList();
     }
 
     private static URI createCustomerApiUri(String institutionId) {
-        var getCustomerEndpoint = UriWrapper.fromHost(API_HOST).addChild(CUSTOMER).addChild(CRISTIN_ID).getUri();
+        var getCustomerEndpoint = UriWrapper
+                                      .fromHost(API_HOST)
+                                      .addChild(CUSTOMER)
+                                      .addChild(CRISTIN_ID)
+                                      .getUri();
+        // Note: This is an odd way to encode the URI, but it may be necessary because of how this is parsed
+        // by the GetCustomerByCristinIdHandler in nva-identity-service. Check that it still works in prod if
+        // this is changed.
         return URI.create(getCustomerEndpoint + "/" + URLEncoder.encode(institutionId, StandardCharsets.UTF_8));
     }
 
-    private static URI extractContributorId(JsonNode contributorNode) {
-        return URI.create(extractJsonNodeTextValue(contributorNode, JSON_POINTER_IDENTITY_ID));
+    private static boolean isValidContributor(ContributorDto contributorDto) {
+        return isVerifiedContributor(contributorDto) || isNamedContributor(contributorDto);
     }
 
-    private static String extractContributorName(JsonNode contributorNode) {
-        return extractJsonNodeTextValue(contributorNode, JSON_POINTER_IDENTITY_NAME);
+    private static boolean isVerifiedContributor(ContributorDto contributorDto) {
+        var status = contributorDto.verificationStatus();
+        var id = contributorDto.id();
+        return VERIFIED.equals(status) && nonNull(id);
     }
 
-    private static boolean isVerified(JsonNode contributorNode) {
-        return VERIFIED.equals(extractJsonNodeTextValue(contributorNode, JSON_POINTER_IDENTITY_VERIFICATION_STATUS));
+    private static boolean isNamedContributor(ContributorDto contributorDto) {
+        return !isBlank(contributorDto.name());
     }
 
-    private static CustomerResponse toCustomer(String responseBody) {
-        return attempt(() -> dtoObjectMapper.readValue(responseBody, CustomerResponse.class)).orElseThrow();
+    private static boolean isAffiliatedWithNviOrganization(NviCreator creator) {
+        return !creator
+                    .nviAffiliations()
+                    .isEmpty();
+    }
+
+    private static boolean isCreator(ContributorDto contributor) {
+        return CREATOR.equals(contributor.role());
     }
 
     private static boolean isHttpOk(HttpResponse<String> response) {
@@ -117,52 +123,61 @@ public class CreatorVerificationUtil {
         return response.statusCode() == HttpURLConnection.HTTP_NOT_FOUND;
     }
 
-    private static boolean isSuccessOrNotFound(HttpResponse<String> response) {
-        return isHttpOk(response) || isNotFound(response);
-    }
-
-    private static boolean mapToNviInstitutionValue(HttpResponse<String> response) {
-        return attempt(response::body).map(CreatorVerificationUtil::toCustomer)
-                   .map(CustomerResponse::nviInstitution)
-                   .orElse(failure -> false);
-    }
-
-    private static Stream<JsonNode> getJsonNodeStream(JsonNode jsonNode, String jsonPtr) {
-        return StreamSupport.stream(jsonNode.at(jsonPtr).spliterator(), false);
-    }
-
-    private static boolean isCreator(JsonNode contributorNode) {
-        return CREATOR.equals(extractJsonNodeTextValue(contributorNode, JSON_PTR_ROLE_TYPE));
+    private static Stream<JsonNode> getStreamOfContributorNodes(JsonNode body) {
+        return StreamSupport.stream(body
+                                        .at(JSON_PTR_CONTRIBUTOR)
+                                        .spliterator(), false);
     }
 
     private static NviOrganization toNviOrganization(Organization organization) {
-        return NviOrganization.builder()
+        return NviOrganization
+                   .builder()
                    .withId(organization.id())
-                   .withTopLevelOrganization(
-                       NviOrganization.builder().withId(organization.getTopLevelOrg().id()).build())
+                   .withTopLevelOrganization(NviOrganization
+                                                 .builder()
+                                                 .withId(organization
+                                                             .getTopLevelOrg()
+                                                             .id())
+                                                 .build())
                    .build();
     }
 
+    private static boolean hasRelevantCountryCode(AffiliationDto expandedAffiliationDto) {
+        // We only need to check the affiliation if the country code is set to `NO` or missing.
+        // Otherwise, we can skip it and not check if it is an NVI institution, saving us a network call.
+        return isNull(expandedAffiliationDto.countryCode()) || COUNTRY_CODE_NORWAY.equalsIgnoreCase(
+            expandedAffiliationDto.countryCode());
+    }
 
+    private NviCreator toNviCreator(ContributorDto contributor) {
+        if (isVerifiedContributor(contributor)) {
+            return toVerifiedNviCreator(contributor);
+        }
+        return toUnverifiedNviCreator(contributor);
+    }
 
-    private VerifiedNviCreator toVerifiedNviCreator(JsonNode contributorNode) {
-        return VerifiedNviCreator.builder()
-                   .withId(extractContributorId(contributorNode))
-                   .withNviAffiliations(getNviAffiliationsIfExist(contributorNode))
+    private VerifiedNviCreator toVerifiedNviCreator(ContributorDto contributor) {
+        return VerifiedNviCreator
+                   .builder()
+                   .withId(contributor.id())
+                   .withNviAffiliations(getNviAffiliationsIfExist(contributor))
                    .build();
     }
 
-    private UnverifiedNviCreator toUnverifiedNviCreator(JsonNode contributorNode) {
-        return UnverifiedNviCreator.builder()
-                                   .withName(extractContributorName(contributorNode))
-                                   .withNviAffiliations(getNviAffiliationUrisIfExist(contributorNode))
-                                   .build();
+    private UnverifiedNviCreator toUnverifiedNviCreator(ContributorDto contributor) {
+        return UnverifiedNviCreator
+                   .builder()
+                   .withName(contributor.name())
+                   .withNviAffiliations(getNviAffiliationsIfExist(contributor))
+                   .build();
     }
 
-    private List<NviOrganization> getNviAffiliationsIfExist(JsonNode contributorNode) {
-        return streamNode(contributorNode.at(JSON_PTR_AFFILIATIONS))
-                   .filter(this::hasRelevantCountryCode)
-                   .map(JsonUtils::extractId)
+    private List<NviOrganization> getNviAffiliationsIfExist(ContributorDto contributor) {
+        return contributor
+                   .affiliations()
+                   .stream()
+                   .filter(CreatorVerificationUtil::hasRelevantCountryCode)
+                   .map(AffiliationDto::id)
                    .distinct()
                    .map(organizationRetriever::fetchOrganization)
                    .filter(this::topLevelOrgIsNviInstitution)
@@ -170,44 +185,39 @@ public class CreatorVerificationUtil {
                    .toList();
     }
 
-    private static boolean hasCountryCodeNorway(JsonNode jsonNode) {
-        return COUNTRY_CODE_NORWAY.equalsIgnoreCase(jsonNode.get(COUNTRY_CODE)
-                                                            .asText());
-    }
-
-    private boolean hasRelevantCountryCode(JsonNode jsonNode) {
-        // We only need to check the affiliation if the country code is set to `NO` or missing.
-        // Otherwise, we can skip it and not check if it is an NVI institution, saving us a network call.
-        return !jsonNode.has(COUNTRY_CODE) || hasCountryCodeNorway(jsonNode);
-    }
-
-    private List<URI> getNviAffiliationUrisIfExist(JsonNode contributorNode) {
-        return streamNode(contributorNode.at(JSON_PTR_AFFILIATIONS))
-                   .filter(this::hasRelevantCountryCode)
-                   .map(JsonUtils::extractId)
-                   .distinct()
-                   .map(organizationRetriever::fetchOrganization)
-                   .filter(this::topLevelOrgIsNviInstitution)
-                   .map(Organization::id)
-                   .toList();
-    }
-
     private boolean topLevelOrgIsNviInstitution(Organization organization) {
-        return isNviInstitution(organization.getTopLevelOrg().id());
+        return isNviInstitution(organization
+                                    .getTopLevelOrg()
+                                    .id());
+    }
+
+    private static boolean mapToNviInstitutionValue(HttpResponse<String> response) {
+        var body = response.body();
+        try {
+            var customerResponse = dtoObjectMapper.readValue(body, CustomerResponse.class);
+            return customerResponse.nviInstitution();
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private boolean isNviInstitution(URI institutionId) {
         var customerApiUri = createCustomerApiUri(institutionId.toString());
         var response = getResponse(customerApiUri);
-        if (isSuccessOrNotFound(response)) {
+        if (isHttpOk(response)) {
             return mapToNviInstitutionValue(response);
         }
-        LOGGER.error(COULD_NOT_FETCH_CUSTOMER_MESSAGE + customerApiUri + ". Response code: {}", response.statusCode());
-        throw new RuntimeException(COULD_NOT_FETCH_CUSTOMER_MESSAGE + institutionId);
+        if (isNotFound(response)) {
+            return false;
+        }
+        var message = String.format(FAILED_TO_FETCH_CUSTOMER_MESSAGE, customerApiUri, response.statusCode());
+        LOGGER.error(message);
+        throw new RuntimeException(message);
     }
 
     private HttpResponse<String> getResponse(URI uri) {
-        return Optional.ofNullable(authorizedBackendUriRetriever.fetchResponse(uri, CONTENT_TYPE))
+        return Optional
+                   .ofNullable(authorizedBackendUriRetriever.fetchResponse(uri, CONTENT_TYPE))
                    .stream()
                    .filter(Optional::isPresent)
                    .map(Optional::get)

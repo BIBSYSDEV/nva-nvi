@@ -22,6 +22,7 @@ import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCreatorType;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints.DbCreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
@@ -86,7 +87,7 @@ public final class CristinMapper {
         return new CristinMapper(transfers);
     }
 
-    public static List<DbCreator> extractCreators(CristinNviReport cristinNviReport) {
+    public static List<DbCreatorType> extractCreators(CristinNviReport cristinNviReport) {
         return cristinNviReport.getCreators().stream()
                    .filter(CristinMapper::hasInstitutionPoints)
                    .collect(groupByCristinIdentifierAndMapToAffiliationId())
@@ -115,9 +116,7 @@ public final class CristinMapper {
                    .basePoints(extractBasePoints(cristinNviReport))
                    .collaborationFactor(extractCollaborationFactor(cristinNviReport))
                    .internationalCollaboration(isInternationalCollaboration(cristinNviReport))
-                   .creators(extractCreators(cristinNviReport))
-                   //                   .creatorCount()
-                   //                   .creatorShareCount()
+                          .creators(extractCreators(cristinNviReport))
                    .channelId(extractChannelId(cristinNviReport))
                    .channelType(extractChannelType(cristinNviReport))
                    .build();
@@ -294,7 +293,7 @@ public final class CristinMapper {
     }
 
     @JacocoGenerated
-    private static DbCreator toDbCreator(Entry<URI, List<URI>> entry) {
+    private static DbCreatorType toDbCreator(Entry<URI, List<URI>> entry) {
         return DbCreator.builder().creatorId(entry.getKey()).affiliations(entry.getValue()).build();
     }
 

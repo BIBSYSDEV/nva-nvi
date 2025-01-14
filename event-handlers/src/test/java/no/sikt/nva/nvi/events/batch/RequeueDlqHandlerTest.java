@@ -283,8 +283,10 @@ class RequeueDlqHandlerTest {
                    .points(
                        List.of(generateInstitutionPoints(randomUri(), BigDecimal.ONE, randomUri())))
                    .instanceType(InstanceType.ACADEMIC_ARTICLE.getValue())
-                   .creators(List.of(new DbCreator(randomUri(), List.of(randomUri()))))
-                   .creators(List.of(new DbCreator(randomUri(), List.of(randomUri()))))
+                          .creators(List.of(DbCreator.builder()
+                                                     .creatorId(randomUri())
+                                                     .affiliations(List.of(randomUri()))
+                                                     .build()))
                    .level(DbLevel.LEVEL_ONE)
                    .channelType(ChannelType.JOURNAL)
                    .totalPoints(BigDecimal.valueOf(1))

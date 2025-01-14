@@ -45,6 +45,7 @@ import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
+import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.CreatePeriodRequest;
@@ -71,7 +72,6 @@ public final class TestUtils {
     private static final String BUCKET_HOST = "example.org";
     private static final LocalDate START_DATE = LocalDate.of(1970, 1, 1);
     private static final String PUBLICATION_API_PATH = "publication";
-    private static final String PUBLICATION_CHANNELS_API_PATH = "publication-channels";
     private static final String API_HOST = "example.com";
 
     private TestUtils() {
@@ -87,10 +87,6 @@ public final class TestUtils {
 
     public static URI generatePublicationId(UUID identifier) {
         return UriWrapper.fromHost(API_HOST).addChild(PUBLICATION_API_PATH).addChild(identifier.toString()).getUri();
-    }
-
-    public static URI generatePublicationChannelId(UUID identifier) {
-        return UriWrapper.fromHost(API_HOST).addChild(PUBLICATION_CHANNELS_API_PATH).addChild(identifier.toString()).getUri();
     }
 
     public static Candidate randomApplicableCandidate(CandidateRepository candidateRepository,
@@ -119,7 +115,10 @@ public final class TestUtils {
                    .createdDate(Instant.now())
                    .modifiedDate(Instant.now())
                    .totalPoints(randomBigDecimal())
-                   .creators(List.of(new DbCreator(creatorId, List.of(institutionId))));
+                          .creators(List.of(DbCreator.builder()
+                                                     .creatorId(creatorId)
+                                                     .affiliations(List.of(institutionId))
+                                                     .build()));
     }
 
     public static DbCandidate.Builder randomCandidateBuilder(boolean applicable) {
@@ -275,6 +274,9 @@ public final class TestUtils {
         var creators = IntStream.of(1)
                            .mapToObj(i -> randomUri())
                            .collect(Collectors.toMap(Function.identity(), e -> List.of(institutions)));
+        var verifiedCreatorsAsDto = creators.entrySet().stream()
+                                      .map(entry -> new VerifiedNviCreatorDto(entry.getKey(), entry.getValue()))
+                                      .toList();
 
         var points = Arrays.stream(institutions)
                          .map(institution -> {
@@ -287,6 +289,7 @@ public final class TestUtils {
                          }).toList();
 
         return randomUpsertRequestBuilder()
+                   .withVerifiedCreators(verifiedCreatorsAsDto)
                    .withCreators(creators)
                    .withPoints(points);
     }
@@ -294,6 +297,7 @@ public final class TestUtils {
     public static UpsertCandidateRequest createUpsertCandidateRequest(URI topLevelOrg, URI affiliation) {
         var creatorId = randomUri();
         var creators = Map.of(creatorId, List.of(affiliation));
+        var verifiedCreators = List.of(new VerifiedNviCreatorDto(creatorId, List.of(affiliation)));
         var points = randomBigDecimal();
         var institutionPoints = List.of(new InstitutionPoints(topLevelOrg, points,
                                                               List.of(new CreatorAffiliationPoints(
@@ -301,6 +305,7 @@ public final class TestUtils {
 
         return randomUpsertRequestBuilder()
                    .withCreators(creators)
+                   .withVerifiedCreators(verifiedCreators)
                    .withPoints(institutionPoints)
                    .build();
     }

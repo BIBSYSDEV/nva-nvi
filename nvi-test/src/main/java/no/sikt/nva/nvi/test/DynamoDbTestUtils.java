@@ -3,7 +3,7 @@ package no.sikt.nva.nvi.test;
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.DatabaseConstants.HASH_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
-import static no.unit.nva.commons.json.JsonUtils.dynamoObjectMapper;
+import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static nva.commons.core.attempt.Try.attempt;
@@ -78,7 +78,7 @@ public final class DynamoDbTestUtils {
     }
 
     public static String mapToString(DynamodbStreamRecord record) {
-        return attempt(() -> dynamoObjectMapper.writeValueAsString(record)).orElseThrow();
+        return attempt(() -> dtoObjectMapper.writeValueAsString(record)).orElseThrow();
     }
 
     public static Map<String, AttributeValue> getAttributeValueMap(
