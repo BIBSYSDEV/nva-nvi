@@ -3,6 +3,7 @@ plugins {
     id 'checkstyle'
     id 'pmd'
     id 'jacoco-report-aggregation'
+    id 'com.diffplug.spotless'
 }
 
 group = 'com.github.bibsysdev'
@@ -72,5 +73,19 @@ jacocoTestCoverageVerification {
                 minimum = 1.000
             }
         }
+    }
+}
+
+spotless {
+    java {
+        toggleOffOn() // Ignores sections between `spotless:off` / `spotless:on`
+        googleJavaFormat().reflowLongStrings().formatJavadoc(true).reorderImports(true)
+    }
+
+    format 'misc', {
+        target '.gitignore', '.gitattributes', '.editorconfig', '**/*.gradle'
+        indentWithSpaces(4)
+        trimTrailingWhitespace()
+        endWithNewline()
     }
 }
