@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.events.evaluator.calculator;
 
 import static java.math.BigDecimal.ZERO;
+import static java.util.Objects.isNull;
 import static no.sikt.nva.nvi.events.evaluator.calculator.PointCalculationConstants.INSTANCE_TYPE_AND_LEVEL_POINT_MAP;
 import static no.sikt.nva.nvi.events.evaluator.calculator.PointCalculationConstants.INTERNATIONAL_COLLABORATION_FACTOR;
 import static no.sikt.nva.nvi.events.evaluator.calculator.PointCalculationConstants.MATH_CONTEXT;
@@ -150,7 +151,7 @@ public class PointCalculator {
     }
 
     private boolean isNullOrZero(Long creatorShareCount) {
-        return creatorShareCount == null || creatorShareCount == 0;
+        return isNull(creatorShareCount) || creatorShareCount == 0;
     }
 
     private List<CreatorAffiliationPoints> calculateAffiliationPoints(Entry<URI, Long> institutionCreatorCount,

@@ -1,5 +1,7 @@
 package no.sikt.nva.nvi.events.evaluator.calculator;
 
+import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CONTRIBUTOR;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.StringUtils.isBlank;
@@ -96,7 +98,7 @@ public class CreatorVerificationUtil {
     private static boolean isVerifiedContributor(ContributorDto contributorDto) {
         var status = contributorDto.verificationStatus();
         var id = contributorDto.id();
-        return VERIFIED.equals(status) && id != null;
+        return VERIFIED.equals(status) && nonNull(id);
     }
 
     private static boolean isNamedContributor(ContributorDto contributorDto) {
@@ -143,7 +145,7 @@ public class CreatorVerificationUtil {
     private static boolean hasRelevantCountryCode(AffiliationDto expandedAffiliationDto) {
         // We only need to check the affiliation if the country code is set to `NO` or missing.
         // Otherwise, we can skip it and not check if it is an NVI institution, saving us a network call.
-        return expandedAffiliationDto.countryCode() == null || COUNTRY_CODE_NORWAY.equalsIgnoreCase(
+        return isNull(expandedAffiliationDto.countryCode()) || COUNTRY_CODE_NORWAY.equalsIgnoreCase(
             expandedAffiliationDto.countryCode());
     }
 
