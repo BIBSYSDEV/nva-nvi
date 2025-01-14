@@ -27,6 +27,7 @@ import no.sikt.nva.nvi.common.service.dto.ApprovalStatusDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
+import no.sikt.nva.nvi.test.FakeViewingScopeValidator;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.GatewayResponse;
@@ -51,7 +52,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends LocalDynamoTest {
         output = new ByteArrayOutputStream();
         candidateRepository = new CandidateRepository(localDynamo);
         periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
-        handler = new FetchNviCandidateByPublicationIdHandler(candidateRepository, periodRepository);
+        handler = new FetchNviCandidateByPublicationIdHandler(candidateRepository, periodRepository, new FakeViewingScopeValidator(true));
     }
 
     @Test
