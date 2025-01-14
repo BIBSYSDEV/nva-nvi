@@ -1,7 +1,9 @@
 package no.sikt.nva.nvi.events.evaluator.calculator;
 
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CONTRIBUTOR;
+import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.StringUtils.isBlank;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.net.HttpURLConnection;
 import java.net.URI;
@@ -17,6 +19,7 @@ import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.events.evaluator.dto.AffiliationDto;
 import no.sikt.nva.nvi.events.evaluator.dto.ContributorDto;
+import no.sikt.nva.nvi.events.evaluator.model.CustomerResponse;
 import no.sikt.nva.nvi.events.evaluator.model.NviCreator;
 import no.sikt.nva.nvi.events.evaluator.model.NviOrganization;
 import no.sikt.nva.nvi.events.evaluator.model.UnverifiedNviCreator;
@@ -80,6 +83,9 @@ public class CreatorVerificationUtil {
                                       .addChild(CUSTOMER)
                                       .addChild(CRISTIN_ID)
                                       .getUri();
+        // Note: This is an odd way to encode the URI, but it may be necessary because of how this is parsed
+        // by the GetCustomerByCristinIdHandler in nva-identity-service. Check that it still works in prod if
+        // this is changed.
         return URI.create(getCustomerEndpoint + "/" + URLEncoder.encode(institutionId, StandardCharsets.UTF_8));
     }
 
@@ -183,11 +189,21 @@ public class CreatorVerificationUtil {
                                     .id());
     }
 
+    private static boolean mapToNviInstitutionValue(HttpResponse<String> response) {
+        var body = response.body();
+        try {
+            var customerResponse = dtoObjectMapper.readValue(body, CustomerResponse.class);
+            return customerResponse.nviInstitution();
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private boolean isNviInstitution(URI institutionId) {
         var customerApiUri = createCustomerApiUri(institutionId.toString());
         var response = getResponse(customerApiUri);
         if (isHttpOk(response)) {
-            return true;
+            return mapToNviInstitutionValue(response);
         }
         if (isNotFound(response)) {
             return false;

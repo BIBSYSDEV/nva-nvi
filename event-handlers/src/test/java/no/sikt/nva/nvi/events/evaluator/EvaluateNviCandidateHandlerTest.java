@@ -7,6 +7,7 @@ import static no.sikt.nva.nvi.common.service.model.InstanceType.ACADEMIC_COMMENT
 import static no.sikt.nva.nvi.common.service.model.InstanceType.ACADEMIC_LITERATURE_REVIEW;
 import static no.sikt.nva.nvi.common.service.model.InstanceType.ACADEMIC_MONOGRAPH;
 import static no.sikt.nva.nvi.events.evaluator.TestUtils.createEvent;
+import static no.sikt.nva.nvi.events.evaluator.TestUtils.createResponse;
 import static no.sikt.nva.nvi.events.evaluator.TestUtils.mockOrganizationResponseForAffiliation;
 import static no.sikt.nva.nvi.events.evaluator.model.PublicationChannel.JOURNAL;
 import static no.sikt.nva.nvi.events.evaluator.model.PublicationChannel.SERIES;
@@ -106,6 +107,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     private static final URI CUSTOMER_API_CRISTIN_NVI_ORG_TOP_LEVEL = URI.create(
         "https://api.dev.nva.aws.unit.no/customer/cristinId/https%3A%2F%2Fapi"
         + ".dev.nva.aws.unit.no%2Fcristin%2Forganization%2F194.0.0.0");
+    private static final String NON_NVI_CUSTOMER_PATH = "nonNviCustomerResponse.json";
 
     @Test
     void shouldCreateNewCandidateEventOnValidCandidate() throws IOException {
@@ -616,15 +618,21 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
             () -> objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class)).orElseThrow();
     }
 
+    private HttpResponse<String> getNonNviCustomerResponseBody() {
+        var body = IoUtils.stringFromResources(Path.of(NON_NVI_CUSTOMER_PATH));
+        return createResponse(200, body);
+    }
+
     private void mockCristinResponseAndCustomerApiResponseForNonNviInstitution() {
         var cristinOrgNonNviSubUnit = URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/150.50.50.0");
         var cristinOrgNonNviTopLevel = URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/150.0.0.0");
         var customerApiEndpoint = URI.create("https://api.dev.nva.aws.unit.no/customer/cristinId");
-        var cristinOrgNonNviTopLevelCustomerApiUri =
-            URI.create(customerApiEndpoint + "/" + URLEncoder.encode(cristinOrgNonNviTopLevel.toString(),
-                                                                     StandardCharsets.UTF_8));
-        when(authorizedBackendUriRetriever.fetchResponse(eq(cristinOrgNonNviTopLevelCustomerApiUri),
-                                                         any())).thenReturn(Optional.of(notFoundResponse));
+        var cristinOrgNonNviTopLevelCustomerApiUri = URI.create(customerApiEndpoint + "/" + URLEncoder.encode(
+            cristinOrgNonNviTopLevel.toString(),
+            StandardCharsets.UTF_8));
+        var expectedResponse = getNonNviCustomerResponseBody();
+        when(authorizedBackendUriRetriever.fetchResponse(eq(cristinOrgNonNviTopLevelCustomerApiUri), any())).thenReturn(
+            Optional.of(expectedResponse));
         mockOrganizationResponseForAffiliation(cristinOrgNonNviTopLevel, cristinOrgNonNviSubUnit, uriRetriever);
     }
 
