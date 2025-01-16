@@ -13,27 +13,34 @@ import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.utils.ExceptionMapper;
+import no.sikt.nva.nvi.common.utils.RequestUtil;
+import no.sikt.nva.nvi.common.validator.ViewingScopeValidator;
+import no.sikt.nva.nvi.rest.ViewingScopeHandler;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.core.JacocoGenerated;
 
-public class FetchNviCandidateByPublicationIdHandler extends ApiGatewayHandler<Void, CandidateDto> {
+public class FetchNviCandidateByPublicationIdHandler extends ApiGatewayHandler<Void, CandidateDto> implements ViewingScopeHandler {
 
     public static final String CANDIDATE_PUBLICATION_ID = "candidatePublicationId";
     private final CandidateRepository candidateRepository;
     private final PeriodRepository periodRepository;
+    private final ViewingScopeValidator viewingScopeValidator;
 
     @JacocoGenerated
     public FetchNviCandidateByPublicationIdHandler() {
-        this(new CandidateRepository(defaultDynamoClient()), new PeriodRepository(defaultDynamoClient()));
+        this(new CandidateRepository(defaultDynamoClient()), new PeriodRepository(defaultDynamoClient()),
+             ViewingScopeHandler.defaultViewingScopeValidator());
     }
 
     public FetchNviCandidateByPublicationIdHandler(CandidateRepository candidateRepository,
-                                                   PeriodRepository periodRepository) {
+                                                   PeriodRepository periodRepository,
+                                                   ViewingScopeValidator viewingScopeValidator) {
         super(Void.class);
         this.candidateRepository = candidateRepository;
         this.periodRepository = periodRepository;
+        this.viewingScopeValidator = viewingScopeValidator;
     }
 
     @Override
@@ -48,6 +55,8 @@ public class FetchNviCandidateByPublicationIdHandler extends ApiGatewayHandler<V
                    .map(identifier -> Candidate.fetchByPublicationId(() -> identifier, candidateRepository,
                                                                      periodRepository))
                    .map(this::checkIfApplicable)
+                   .map(candidate -> validateViewingScope(viewingScopeValidator, RequestUtil.getUsername(requestInfo),
+                                                          candidate))
                    .map(Candidate::toDto)
                    .orElseThrow(ExceptionMapper::map);
     }

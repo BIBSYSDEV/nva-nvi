@@ -10,6 +10,9 @@ import static no.sikt.nva.nvi.test.TestUtils.setupReportedCandidate;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import com.amazonaws.services.lambda.runtime.Context;
@@ -18,6 +21,7 @@ import com.google.common.net.HttpHeaders;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
 import java.net.URI;
 import java.util.Map;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
@@ -27,6 +31,7 @@ import no.sikt.nva.nvi.common.service.dto.ApprovalStatusDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
+import no.sikt.nva.nvi.test.FakeViewingScopeValidator;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.GatewayResponse;
@@ -34,6 +39,7 @@ import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.zalando.problem.Problem;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 class FetchNviCandidateByPublicationIdHandlerTest extends LocalDynamoTest {
@@ -51,7 +57,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends LocalDynamoTest {
         output = new ByteArrayOutputStream();
         candidateRepository = new CandidateRepository(localDynamo);
         periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
-        handler = new FetchNviCandidateByPublicationIdHandler(candidateRepository, periodRepository);
+        handler = new FetchNviCandidateByPublicationIdHandler(candidateRepository, periodRepository, new FakeViewingScopeValidator(true));
     }
 
     @Test
@@ -109,6 +115,18 @@ class FetchNviCandidateByPublicationIdHandlerTest extends LocalDynamoTest {
         var actualStatus = actualResponse.approvals().get(0).status();
 
         assertEquals(ApprovalStatusDto.NEW, actualStatus);
+    }
+
+    @Test
+    void shouldReturnUnauthorizedWhenCandidateIsNotInUsersViewingScope() throws IOException {
+        var institutionId = randomUri();
+        var candidate = upsert(createUpsertCandidateRequest(institutionId).build());
+        var request = requestWithAccessRight(candidate.getPublicationId());
+        handler = new FetchNviCandidateByPublicationIdHandler(candidateRepository, periodRepository, new FakeViewingScopeValidator(false));
+        handler.handleRequest(request, output, CONTEXT);
+        var response = GatewayResponse.fromOutputStream(output, Problem.class);
+
+        assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
     }
 
     private static InputStream requestWithAccessRight(URI publicationId)

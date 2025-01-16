@@ -1,7 +1,6 @@
 package no.sikt.nva.nvi.common.service.dto;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 import com.fasterxml.jackson.annotation.JsonTypeName;
@@ -30,13 +29,6 @@ public record CandidateDto(URI id,
 
     public static Builder builder() {
         return new Builder();
-    }
-
-    //TODO: To remove when frontend has been updated to use "period" property
-    @Deprecated
-    @JsonGetter("periodStatus")
-    public PeriodStatusDto getPeriodStatus() {
-        return this.period;
     }
 
     public static final class Builder {
