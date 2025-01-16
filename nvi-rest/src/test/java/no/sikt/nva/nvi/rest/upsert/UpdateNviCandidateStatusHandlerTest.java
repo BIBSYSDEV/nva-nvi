@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -30,6 +31,7 @@ import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatusDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
+import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
@@ -119,6 +121,17 @@ class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
         var institutionId = randomUri();
         var candidate = upsert(createUpsertCandidateRequest(institutionId).build());
         var request = createRequest(candidate.getIdentifier(), institutionId, ApprovalStatus.APPROVED);
+        handler.handleRequest(request, output, context);
+        var response = GatewayResponse.fromOutputStream(output, Problem.class);
+
+        assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_CONFLICT)));
+    }
+
+    @ParameterizedTest(name = "Should not allow status {0} for institution with unverified creators")
+    @EnumSource(value = ApprovalStatus.class, names = {"APPROVED", "REJECTED"})
+    void shouldReturnConflictWhenUpdatingStatusAndInstitutionHasUnverifiedCreators(ApprovalStatus newStatus)
+        throws IOException {
+        var request = createInvalidRequestForInstitutionWithUnverifiedCreator(newStatus);
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
@@ -303,5 +316,24 @@ class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
         throws JsonProcessingException {
         var requestBody = new NviStatusRequest(candidateIdentifier, randomUri(), ApprovalStatus.PENDING, null);
         return createRequest(candidateIdentifier, institutionId, requestBody);
+    }
+
+    private InputStream createInvalidRequestForInstitutionWithUnverifiedCreator(ApprovalStatus newStatus)
+        throws JsonProcessingException {
+        candidateRepository = new CandidateRepository(localDynamo);
+        periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
+        handler = new UpdateNviCandidateStatusHandler(candidateRepository, periodRepository, viewingScopeValidator);
+        var institutionId = randomUri();
+        var unverifiedCreator = UnverifiedNviCreatorDto
+                                    .builder()
+                                    .withAffiliations(List.of(institutionId))
+                                    .withName(randomString())
+                                    .build();
+        var upsertRequest = createUpsertCandidateRequest(institutionId)
+                                .withUnverifiedCreators(List.of(unverifiedCreator))
+                                .build();
+        var candidate = upsert(upsertRequest);
+        var request = createRequest(candidate.getIdentifier(), institutionId, newStatus);
+        return request;
     }
 }
