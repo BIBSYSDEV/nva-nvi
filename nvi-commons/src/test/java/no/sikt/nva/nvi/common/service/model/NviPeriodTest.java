@@ -36,10 +36,16 @@ class NviPeriodTest extends LocalDynamoTest {
         var expectedId = constructExpectedId(request);
         var actual = NviPeriod.create(request, periodRepository);
         assertEquals(expectedId, actual.getId());
-        assertEquals(request.publishingYear(), actual.getPublishingYear());
-        assertEquals(request.startDate(), actual.getStartDate());
-        assertEquals(request.reportingDate(), actual.getReportingDate());
-        assertEquals(request.createdBy(), actual.getCreatedBy());
+        assertThatRequestMatchesYear(request, actual);
+    }
+
+    @Test
+    void shouldCreateNviPeriodForCurrentYear() {
+        var request = createRequest(YEAR - 1);
+        var expectedId = constructExpectedId(request);
+        var actual = NviPeriod.create(request, periodRepository);
+        assertEquals(expectedId, actual.getId());
+        assertThatRequestMatchesYear(request, actual);
     }
 
     @Test
@@ -90,12 +96,6 @@ class NviPeriodTest extends LocalDynamoTest {
     @Test
     void shouldReturnIllegalArgumentExceptionWhenPublishingYearHasInvalidLength() {
         var createRequest = createRequest(22);
-        assertThrows(IllegalArgumentException.class, () -> NviPeriod.create(createRequest, periodRepository));
-    }
-
-    @Test
-    void shouldReturnIllegalArgumentExceptionWhenWhenStartDateHasAlreadyBeenReached() {
-        var createRequest = createRequest(YEAR, Instant.now(), nowPlusDays(1));
         assertThrows(IllegalArgumentException.class, () -> NviPeriod.create(createRequest, periodRepository));
     }
 
@@ -163,5 +163,12 @@ class NviPeriodTest extends LocalDynamoTest {
                    .addChild("period")
                    .addChild(String.valueOf(createPeriodRequest.publishingYear()))
                    .getUri();
+    }
+
+    private static void assertThatRequestMatchesYear(CreatePeriodRequest request, NviPeriod actual) {
+        assertEquals(request.publishingYear(), actual.getPublishingYear());
+        assertEquals(request.startDate(), actual.getStartDate());
+        assertEquals(request.reportingDate(), actual.getReportingDate());
+        assertEquals(request.createdBy(), actual.getCreatedBy());
     }
 }

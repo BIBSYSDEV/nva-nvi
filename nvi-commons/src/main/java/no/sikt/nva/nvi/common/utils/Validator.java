@@ -23,12 +23,6 @@ public final class Validator {
         }
     }
 
-    public static void isNotBeforeCurrentTime(Instant date) {
-        if (date.isBefore(Instant.now())) {
-            throw new IllegalArgumentException("Provided date is back in time!");
-        }
-    }
-
     public static void doesNotHaveNullValues(UpsertPeriodRequest upsertPeriodRequest) {
         if (isNull(upsertPeriodRequest.publishingYear())) {
             throw new IllegalArgumentException("Publishing year can not be null!");

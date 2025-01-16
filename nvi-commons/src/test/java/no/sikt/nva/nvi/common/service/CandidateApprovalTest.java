@@ -73,10 +73,15 @@ class CandidateApprovalTest extends CandidateTestSetup {
                          Arguments.of(ApprovalStatus.REJECTED, ApprovalStatus.APPROVED));
     }
 
-    public static Stream<PeriodRepository> periodRepositoryProvider() {
-        var year = ZonedDateTime.now().getYear();
-        return Stream.of(periodRepositoryReturningClosedPeriod(year), periodRepositoryReturningNotOpenedPeriod(year),
-                         mock(PeriodRepository.class));
+    public static Stream<Arguments> periodRepositoryProvider() {
+        var year = ZonedDateTime
+                       .now()
+                       .getYear();
+        return Stream.of(Arguments.of(Named.of("Repository returning closed period",
+                                               periodRepositoryReturningClosedPeriod(year))),
+                         Arguments.of(Named.of("Repository returning period not opened yet",
+                                               periodRepositoryReturningNotOpenedPeriod(year))),
+                         Arguments.of(Named.of("Mocked repository", mock(PeriodRepository.class))));
     }
 
     @Test
@@ -242,7 +247,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
         assertThrows(IllegalArgumentException.class, () -> candidateBO.updateApproval(() -> institutionId));
     }
 
-    @ParameterizedTest(name="Should not allow to update approval when candidate is not within period {0}")
+    @ParameterizedTest
     @MethodSource("periodRepositoryProvider")
     void shouldNotAllowToUpdateApprovalWhenCandidateIsNotWithinPeriod(PeriodRepository periodRepository) {
         var candidate = randomApplicableCandidate(candidateRepository, periodRepository);

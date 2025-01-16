@@ -2,7 +2,6 @@ package no.sikt.nva.nvi.common.service.model;
 
 import static no.sikt.nva.nvi.common.utils.Validator.doesNotHaveNullValues;
 import static no.sikt.nva.nvi.common.utils.Validator.isBefore;
-import static no.sikt.nva.nvi.common.utils.Validator.isNotBeforeCurrentTime;
 import java.time.Instant;
 
 public record UpdatePeriodRequest(Integer publishingYear, Instant startDate, Instant reportingDate, Username modifiedBy)
@@ -16,8 +15,6 @@ public record UpdatePeriodRequest(Integer publishingYear, Instant startDate, Ins
     public void validate() {
         doesNotHaveNullValues(this);
         isBefore(startDate(), reportingDate());
-        isNotBeforeCurrentTime(startDate());
-        isNotBeforeCurrentTime(reportingDate());
     }
 
     public static final class Builder {
