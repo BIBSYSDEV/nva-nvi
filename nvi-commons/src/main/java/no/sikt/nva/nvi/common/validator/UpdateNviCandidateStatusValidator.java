@@ -14,10 +14,12 @@ public final class UpdateNviCandidateStatusValidator {
     }
 
     /**
-     * This validates the update status request for a given candidate, and throws an exception if this institution
-     * cannot set the status to the requested state. This logic should ideally be moved to the domain model or service
-     * layer, but is currently placed here because we need to check top-level organizations of unverified creators and
-     * this information is not persisted.
+     * This validates the update status request for a given candidate, checking if this institution can set the new
+     * status
+     *
+     * This requires retrieving metadata about each creator's organization, which is not persisted in the database yet.
+     * The business rules here should also probably be moved somewhere else and consolidated with other business rules.
+     * Once we persist the necessary metadata, we can move this logic to the domain model or service layer.
      * TODO: Persist full organization hierarchy for creators and move this validation.
      */
     public static boolean isValidUpdateStatusRequest(Candidate candidate,
