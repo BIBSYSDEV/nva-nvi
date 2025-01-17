@@ -89,24 +89,6 @@ class CandidateApprovalTest extends CandidateTestSetup {
                          Arguments.of(Named.of("Mocked repository", mock(PeriodRepository.class))));
     }
 
-    @BeforeEach
-    void setUp() {
-        var mockUriRetriever = mock(UriRetriever.class);
-        organizationRetriever = new OrganizationRetriever(mockUriRetriever);
-        mockOrganizationResponseForAffiliation(HARDCODED_INSTITUTION_ID, HARDCODED_SUBUNIT_ID, mockUriRetriever);
-    }
-
-    @Test
-    void shouldCreatePendingApprovalsForNewCandidate() {
-        var upsertCandidateRequest = createUpsertCandidateRequest(HARDCODED_INSTITUTION_ID).build();
-        var candidate = upsert(upsertCandidateRequest);
-        assertThat(candidate.getApprovals().size(), is(equalTo(1)));
-        assertThat(candidate
-                       .getApprovals()
-                       .get(HARDCODED_INSTITUTION_ID)
-                       .getStatus(), is(equalTo(ApprovalStatus.PENDING)));
-    }
-
     @ParameterizedTest(name = "Should update from old status {0} to new status {1}")
     @MethodSource("statusProvider")
     void shouldUpdateStatusWhenUpdateStatusRequestValid(ApprovalStatus oldStatus, ApprovalStatus newStatus) {
@@ -115,12 +97,9 @@ class CandidateApprovalTest extends CandidateTestSetup {
         var existingCandidate = Candidate.fetchByPublicationId(upsertCandidateRequest::publicationId,
                                                                candidateRepository,
                                                                periodRepository);
-        existingCandidate.updateApproval(createUpdateStatusRequest(oldStatus, HARDCODED_INSTITUTION_ID, randomString()),
-                                         organizationRetriever);
+        existingCandidate = setApprovalStatus(existingCandidate, oldStatus);
 
-        var updateRequest = createUpdateStatusRequest(newStatus, HARDCODED_INSTITUTION_ID, randomString());
-        var updatedCandidate = existingCandidate.updateApproval(updateRequest, organizationRetriever);
-
+        var updatedCandidate = setApprovalStatus(existingCandidate, newStatus);
         var actualNewStatus = updatedCandidate
                                   .getApprovals()
                                   .get(HARDCODED_INSTITUTION_ID)
@@ -134,12 +113,10 @@ class CandidateApprovalTest extends CandidateTestSetup {
         var upsertCandidateRequest = createUpsertCandidateRequest(HARDCODED_INSTITUTION_ID).build();
         var candidate = upsert(upsertCandidateRequest);
         var assignee = randomString();
-        candidate
-            .updateApproval(new UpdateAssigneeRequest(HARDCODED_INSTITUTION_ID, assignee))
-            .updateApproval(createUpdateStatusRequest(oldStatus, HARDCODED_INSTITUTION_ID, randomString()),
-                            organizationRetriever)
-            .updateApproval(createUpdateStatusRequest(ApprovalStatus.PENDING, HARDCODED_INSTITUTION_ID, randomString()),
-                            organizationRetriever);
+        candidate.updateApproval(new UpdateAssigneeRequest(HARDCODED_INSTITUTION_ID, assignee));
+        setApprovalStatus(candidate, oldStatus);
+
+        setApprovalStatus(candidate, ApprovalStatus.PENDING);
         var approvalStatus = candidate
                                  .getApprovals()
                                  .get(HARDCODED_INSTITUTION_ID);
@@ -147,6 +124,40 @@ class CandidateApprovalTest extends CandidateTestSetup {
         assertThat(approvalStatus.getAssigneeUsername(), is(assignee));
         assertThat(approvalStatus.getFinalizedByUserName(), is(nullValue()));
         assertThat(approvalStatus.getFinalizedDate(), is(nullValue()));
+    }
+
+    @BeforeEach
+    void setUp() {
+        var mockUriRetriever = mock(UriRetriever.class);
+        organizationRetriever = new OrganizationRetriever(mockUriRetriever);
+        mockOrganizationResponseForAffiliation(HARDCODED_INSTITUTION_ID, HARDCODED_SUBUNIT_ID, mockUriRetriever);
+    }
+
+    @Test
+    void shouldCreatePendingApprovalsForNewCandidate() {
+        var upsertCandidateRequest = createUpsertCandidateRequest(HARDCODED_INSTITUTION_ID).build();
+        var candidate = upsert(upsertCandidateRequest);
+        assertThat(candidate
+                       .getApprovals()
+                       .size(), is(equalTo(1)));
+        assertThat(candidate
+                       .getApprovals()
+                       .get(HARDCODED_INSTITUTION_ID)
+                       .getStatus(), is(equalTo(ApprovalStatus.PENDING)));
+    }
+
+    @ParameterizedTest(name = "shouldThrowUnsupportedOperationWhenRejectingWithoutReason {0}")
+    @EnumSource(value = ApprovalStatus.class, names = {"PENDING", APPROVED})
+    void shouldThrowUnsupportedOperationWhenRejectingWithoutReason(ApprovalStatus oldStatus) {
+        var createRequest = createUpsertCandidateRequest(HARDCODED_INSTITUTION_ID).build();
+        Candidate.upsert(createRequest, candidateRepository, periodRepository);
+        var candidate = Candidate.fetchByPublicationId(createRequest::publicationId,
+                                                       candidateRepository,
+                                                       periodRepository);
+        var updatedCandidate = setApprovalStatus(candidate, oldStatus);
+        assertThrows(UnsupportedOperationException.class,
+                     () -> updatedCandidate.updateApproval(createRejectionRequestWithoutReason(randomString()),
+                                                           organizationRetriever));
     }
 
     @ParameterizedTest(name="Should remove reason when updating from rejection status to {0}")
@@ -161,10 +172,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
                                                                                    randomString()),
                                                          organizationRetriever);
 
-        var updatedCandidate = rejectedCandidate.updateApproval(createUpdateStatusRequest(newStatus,
-                                                                                          HARDCODED_INSTITUTION_ID,
-                                                                                          randomString()),
-                                                                organizationRetriever);
+        var updatedCandidate = setApprovalStatus(rejectedCandidate, newStatus);
         assertThat(updatedCandidate.getApprovals().size(), is(equalTo(1)));
         assertThat(updatedCandidate
                        .getApprovals()
@@ -174,6 +182,16 @@ class CandidateApprovalTest extends CandidateTestSetup {
                        .getApprovals()
                        .get(HARDCODED_INSTITUTION_ID)
                        .getReason(), is(nullValue()));
+    }
+
+    @ParameterizedTest(name = "shouldThrowIllegalArgumentExceptionWhenUpdateStatusWithoutUsername {0}")
+    @EnumSource(value = ApprovalStatus.class, names = {"PENDING", APPROVED, "REJECTED"})
+    void shouldThrowIllegalArgumentExceptionWhenUpdateStatusWithoutUsername(ApprovalStatus newStatus) {
+        var createRequest = createUpsertCandidateRequest(HARDCODED_INSTITUTION_ID).build();
+        var candidate = upsert(createRequest);
+        var invalidRequest = createUpdateStatusRequest(newStatus, HARDCODED_INSTITUTION_ID, null);
+        assertThrows(IllegalArgumentException.class,
+                     () -> candidate.updateApproval(invalidRequest, organizationRetriever));
     }
 
     @Test
@@ -215,40 +233,11 @@ class CandidateApprovalTest extends CandidateTestSetup {
                      () -> Candidate.upsert(updateRequest, candidateRepository, periodRepository));
     }
 
-    @ParameterizedTest(name="shouldThrowUnsupportedOperationWhenRejectingWithoutReason {0}")
-    @EnumSource(value = ApprovalStatus.class, names = {"PENDING", APPROVED})
-    void shouldThrowUnsupportedOperationWhenRejectingWithoutReason(ApprovalStatus oldStatus) {
-        var createRequest = createUpsertCandidateRequest(HARDCODED_INSTITUTION_ID).build();
-        Candidate.upsert(createRequest, candidateRepository, periodRepository);
-        var candidate = Candidate.fetchByPublicationId(createRequest::publicationId, candidateRepository,
-                                                       periodRepository)
-                                 .updateApproval(createUpdateStatusRequest(oldStatus,
-                                                                           HARDCODED_INSTITUTION_ID,
-                                                                           randomString()), organizationRetriever);
-        assertThrows(UnsupportedOperationException.class, () -> candidate.updateApproval(
-            createRejectionRequestWithoutReason(HARDCODED_INSTITUTION_ID, randomString()),
-            organizationRetriever));
-    }
-
-    @ParameterizedTest(name="shouldThrowIllegalArgumentExceptionWhenUpdateStatusWithoutUsername {0}")
-    @EnumSource(value = ApprovalStatus.class, names = {"PENDING", APPROVED, "REJECTED"})
-    void shouldThrowIllegalArgumentExceptionWhenUpdateStatusWithoutUsername(ApprovalStatus newStatus) {
-        var createRequest = createUpsertCandidateRequest(HARDCODED_INSTITUTION_ID).build();
-        var candidate = upsert(createRequest);
-
-        assertThrows(IllegalArgumentException.class,
-                     () -> candidate.updateApproval(createUpdateStatusRequest(newStatus,
-                                                                              HARDCODED_INSTITUTION_ID,
-                                                                              null), organizationRetriever));
-    }
-
     @Test
     void shouldPersistStatusChangeWhenRequestingAndUpdate() {
         var upsertCandidateRequest = createUpsertCandidateRequest(HARDCODED_INSTITUTION_ID).build();
         var candidate = upsert(upsertCandidateRequest);
-        candidate.updateApproval(createUpdateStatusRequest(ApprovalStatus.APPROVED,
-                                                           HARDCODED_INSTITUTION_ID,
-                                                           randomString()), organizationRetriever);
+        setApprovalStatus(candidate, ApprovalStatus.APPROVED);
 
         var status = Candidate
                          .fetch(candidate::getIdentifier, candidateRepository, periodRepository)
@@ -256,6 +245,27 @@ class CandidateApprovalTest extends CandidateTestSetup {
                          .get(HARDCODED_INSTITUTION_ID)
                          .getStatus();
         assertThat(status, is(equalTo(ApprovalStatus.APPROVED)));
+    }
+
+    @Test
+    void shouldNotOverrideAssigneeWhenAssigneeAlreadyIsSet() {
+        var assignee = randomString();
+        var request = createUpsertCandidateRequest(HARDCODED_INSTITUTION_ID).build();
+        Candidate.upsert(request, candidateRepository, periodRepository);
+        var candidate = Candidate
+                            .fetchByPublicationId(request::publicationId, candidateRepository, periodRepository)
+                            .updateApproval(new UpdateAssigneeRequest(HARDCODED_INSTITUTION_ID, assignee));
+        candidate = setApprovalStatus(candidate, ApprovalStatus.APPROVED);
+        candidate = setApprovalStatus(candidate, ApprovalStatus.REJECTED);
+        var candidateDto = candidate.toDto();
+        assertThat(candidateDto
+                       .approvals()
+                       .getFirst()
+                       .assignee(), is(equalTo(assignee)));
+        assertThat(candidateDto
+                       .approvals()
+                       .getFirst()
+                       .finalizedBy(), is(not(equalTo(assignee))));
     }
 
     @Test
@@ -291,31 +301,10 @@ class CandidateApprovalTest extends CandidateTestSetup {
     }
 
     @Test
-    void shouldNotOverrideAssigneeWhenAssigneeAlreadyIsSet() {
-        var assignee = randomString();
-        var request = createUpsertCandidateRequest(HARDCODED_INSTITUTION_ID).build();
-        Candidate.upsert(request, candidateRepository, periodRepository);
-        var candidate = Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository)
-                                 .updateApproval(new UpdateAssigneeRequest(HARDCODED_INSTITUTION_ID, assignee))
-                                 .updateApproval(createUpdateStatusRequest(ApprovalStatus.APPROVED,
-                                                                           HARDCODED_INSTITUTION_ID,
-                                                                           randomString()), organizationRetriever)
-                                 .updateApproval(createUpdateStatusRequest(ApprovalStatus.REJECTED,
-                                                                           HARDCODED_INSTITUTION_ID,
-                                                                           randomString()), organizationRetriever)
-                            .toDto();
-        assertThat(candidate.approvals().getFirst().assignee(), is(equalTo(assignee)));
-        assertThat(candidate.approvals().getFirst().finalizedBy(), is(not(equalTo(assignee))));
-    }
-
-    @Test
     void shouldNotResetApprovalsWhenUpdatingCandidateFieldsNotEffectingApprovals() {
         var upsertCandidateRequest = createUpsertCandidateRequest(HARDCODED_INSTITUTION_ID).build();
         var candidate = upsert(upsertCandidateRequest);
-        candidate.updateApproval(new UpdateStatusRequest(HARDCODED_INSTITUTION_ID,
-                                                         ApprovalStatus.APPROVED,
-                                                         randomString(),
-                                                         randomString()), organizationRetriever);
+        candidate = setApprovalStatus(candidate, ApprovalStatus.APPROVED);
         var approval = candidate
                            .getApprovals()
                            .get(HARDCODED_INSTITUTION_ID);
@@ -326,6 +315,15 @@ class CandidateApprovalTest extends CandidateTestSetup {
                                   .get(HARDCODED_INSTITUTION_ID);
 
         assertThat(updatedApproval, is(equalTo(approval)));
+    }
+
+    private static UpdateStatusRequest createRejectionRequestWithoutReason(String username) {
+        return UpdateStatusRequest
+                   .builder()
+                   .withApprovalStatus(ApprovalStatus.REJECTED)
+                   .withInstitutionId(HARDCODED_INSTITUTION_ID)
+                   .withUsername(username)
+                   .build();
     }
 
     // FIXME: This test compares random URIs, there is no actual check that they belong to the same organization
@@ -426,12 +424,9 @@ class CandidateApprovalTest extends CandidateTestSetup {
         assertThat(updatedApproval.getStatus(), is(equalTo(ApprovalStatus.PENDING)));
     }
 
-    private static UpdateStatusRequest createRejectionRequestWithoutReason(URI institutionId, String username) {
-        return UpdateStatusRequest.builder()
-                   .withApprovalStatus(ApprovalStatus.REJECTED)
-                   .withInstitutionId(institutionId)
-                   .withUsername(username)
-                   .build();
+    private Candidate setApprovalStatus(Candidate candidate, ApprovalStatus status) {
+        var updateRequest = createUpdateStatusRequest(status, HARDCODED_INSTITUTION_ID, randomString());
+        return candidate.updateApproval(updateRequest, organizationRetriever);
     }
 
     private static Stream<Arguments> candidateResetCauseProvider() {
