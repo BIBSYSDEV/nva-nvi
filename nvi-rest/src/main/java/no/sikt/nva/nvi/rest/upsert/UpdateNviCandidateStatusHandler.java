@@ -14,7 +14,6 @@ import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.utils.ExceptionMapper;
 import no.sikt.nva.nvi.common.utils.RequestUtil;
 import no.sikt.nva.nvi.common.validator.ViewingScopeValidator;
-import no.sikt.nva.nvi.common.validator.UpdateNviCandidateStatusValidator;
 import no.sikt.nva.nvi.rest.ViewingScopeHandler;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import nva.commons.apigateway.AccessRight;
