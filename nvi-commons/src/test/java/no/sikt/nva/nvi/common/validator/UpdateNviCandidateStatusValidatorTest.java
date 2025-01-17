@@ -26,8 +26,9 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 class UpdateNviCandidateStatusValidatorTest extends LocalDynamoTest {
 
-    private static final URI defaultTopLevelInstitutionId = URI.create("https://www.example.com/toplevelOrganization");
-    private static final URI defaultSubUnitInstitutionId = URI.create("https://www.example.com/subOrganization");
+    private static final URI DEFAULT_TOP_LEVEL_INSTITUTION_ID = URI.create(
+        "https://www.example.com/toplevelOrganization");
+    private static final URI DEFAULT_SUB_UNIT_INSTITUTION_ID = URI.create("https://www.example.com/subOrganization");
     private final DynamoDbClient localDynamo = initializeTestDatabase();
     private OrganizationRetriever organizationRetriever;
     private CandidateRepository candidateRepository;
@@ -39,17 +40,16 @@ class UpdateNviCandidateStatusValidatorTest extends LocalDynamoTest {
         periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
         var mockUriRetriever = mock(UriRetriever.class);
         organizationRetriever = new OrganizationRetriever(mockUriRetriever);
-        mockOrganizationResponseForAffiliation(defaultTopLevelInstitutionId,
-                                               defaultSubUnitInstitutionId,
+        mockOrganizationResponseForAffiliation(DEFAULT_TOP_LEVEL_INSTITUTION_ID, DEFAULT_SUB_UNIT_INSTITUTION_ID,
                                                mockUriRetriever);
     }
 
     @Test
     void shouldReturnTrueForValidUpdateRequest() {
-        var candidate = upsert(createUpsertCandidateRequest(defaultTopLevelInstitutionId).build());
+        var candidate = upsert(createUpsertCandidateRequest(DEFAULT_TOP_LEVEL_INSTITUTION_ID).build());
         var request = UpdateStatusRequest
                           .builder()
-                          .withInstitutionId(defaultTopLevelInstitutionId)
+                          .withInstitutionId(DEFAULT_TOP_LEVEL_INSTITUTION_ID)
                           .withApprovalStatus(ApprovalStatus.APPROVED)
                           .withUsername(randomString())
                           .build();
@@ -64,15 +64,15 @@ class UpdateNviCandidateStatusValidatorTest extends LocalDynamoTest {
     void shouldReturnFalseWhenCreatorsAreUnverified() {
         var unverifiedCreator = UnverifiedNviCreatorDto
                                     .builder()
-                                    .withAffiliations(List.of(defaultSubUnitInstitutionId))
+                                    .withAffiliations(List.of(DEFAULT_SUB_UNIT_INSTITUTION_ID))
                                     .withName(randomString())
                                     .build();
-        var candidate = upsert(createUpsertCandidateRequest(defaultTopLevelInstitutionId)
+        var candidate = upsert(createUpsertCandidateRequest(DEFAULT_TOP_LEVEL_INSTITUTION_ID)
                                    .withUnverifiedCreators(List.of(unverifiedCreator))
                                    .build());
         var request = UpdateStatusRequest
                           .builder()
-                          .withInstitutionId(defaultTopLevelInstitutionId)
+                          .withInstitutionId(DEFAULT_TOP_LEVEL_INSTITUTION_ID)
                           .withApprovalStatus(ApprovalStatus.APPROVED)
                           .withUsername(randomString())
                           .build();
