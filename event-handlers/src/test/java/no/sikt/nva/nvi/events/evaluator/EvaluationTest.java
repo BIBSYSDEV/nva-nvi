@@ -1,6 +1,6 @@
 package no.sikt.nva.nvi.events.evaluator;
 
-import static no.sikt.nva.nvi.events.evaluator.TestUtils.createResponse;
+import static no.sikt.nva.nvi.test.TestUtils.createResponse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;

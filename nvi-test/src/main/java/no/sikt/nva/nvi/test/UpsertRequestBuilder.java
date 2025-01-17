@@ -6,6 +6,7 @@ import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import java.math.BigDecimal;
 import java.net.URI;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
@@ -25,8 +26,8 @@ public class UpsertRequestBuilder {
     private boolean isApplicable;
     private boolean isInternationalCollaboration;
     private Map<URI, List<URI>> creators;
-    private List<UnverifiedNviCreatorDto> unverifiedCreators;
-    private List<VerifiedNviCreatorDto> verifiedCreators;
+    private Collection<UnverifiedNviCreatorDto> unverifiedCreators;
+    private Collection<VerifiedNviCreatorDto> verifiedCreators;
     private String channelType;
     private URI channelId;
     private String level;
@@ -111,12 +112,12 @@ public class UpsertRequestBuilder {
         return this;
     }
 
-    public UpsertRequestBuilder withVerifiedCreators(List<VerifiedNviCreatorDto> verifiedCreators) {
+    public UpsertRequestBuilder withVerifiedCreators(Collection<VerifiedNviCreatorDto> verifiedCreators) {
         this.verifiedCreators = verifiedCreators;
         return this;
     }
 
-    public UpsertRequestBuilder withUnverifiedCreators(List<UnverifiedNviCreatorDto> unverifiedCreators) {
+    public UpsertRequestBuilder withUnverifiedCreators(Collection<UnverifiedNviCreatorDto> unverifiedCreators) {
         this.unverifiedCreators = unverifiedCreators;
         return this;
     }
@@ -202,12 +203,12 @@ public class UpsertRequestBuilder {
 
             @Override
             public List<VerifiedNviCreatorDto> verifiedCreators() {
-                return verifiedCreators;
+                return List.copyOf(verifiedCreators);
             }
 
             @Override
             public List<UnverifiedNviCreatorDto> unverifiedCreators() {
-                return unverifiedCreators;
+                return List.copyOf(unverifiedCreators);
             }
 
             @Override

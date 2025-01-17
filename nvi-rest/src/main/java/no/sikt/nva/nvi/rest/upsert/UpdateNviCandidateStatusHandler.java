@@ -13,7 +13,9 @@ import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.utils.ExceptionMapper;
 import no.sikt.nva.nvi.common.utils.RequestUtil;
 import no.sikt.nva.nvi.common.validator.ViewingScopeValidator;
+import no.sikt.nva.nvi.common.validator.WriteScopeValidator;
 import no.sikt.nva.nvi.rest.ViewingScopeHandler;
+import no.unit.nva.auth.uriretriever.UriRetriever;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
@@ -28,19 +30,24 @@ public class UpdateNviCandidateStatusHandler extends ApiGatewayHandler<NviStatus
     private final CandidateRepository candidateRepository;
     private final PeriodRepository periodRepository;
     private final ViewingScopeValidator viewingScopeValidator;
+    private final WriteScopeValidator writeScopeValidator;
 
     @JacocoGenerated
     public UpdateNviCandidateStatusHandler() {
-        this(new CandidateRepository(defaultDynamoClient()), new PeriodRepository(defaultDynamoClient()),
-             ViewingScopeHandler.defaultViewingScopeValidator());
+        this(new CandidateRepository(defaultDynamoClient()),
+             new PeriodRepository(defaultDynamoClient()),
+             ViewingScopeHandler.defaultViewingScopeValidator(),
+             new WriteScopeValidator(new UriRetriever()));
     }
 
     public UpdateNviCandidateStatusHandler(CandidateRepository candidateRepository, PeriodRepository periodRepository,
-                                           ViewingScopeValidator viewingScopeValidator) {
+                                           ViewingScopeValidator viewingScopeValidator,
+                                           WriteScopeValidator writeScopeValidator) {
         super(NviStatusRequest.class);
         this.candidateRepository = candidateRepository;
         this.periodRepository = periodRepository;
         this.viewingScopeValidator = viewingScopeValidator;
+        this.writeScopeValidator = writeScopeValidator;
     }
 
     @Override
@@ -54,12 +61,14 @@ public class UpdateNviCandidateStatusHandler extends ApiGatewayHandler<NviStatus
         throws ApiGatewayException {
         var candidateIdentifier = UUID.fromString(requestInfo.getPathParameter(CANDIDATE_IDENTIFIER));
         var username = RequestUtil.getUsername(requestInfo);
+        var updateRequest = input.toUpdateRequest(username.value());
 
         return attempt(() -> Candidate.fetch(() -> candidateIdentifier, candidateRepository, periodRepository))
                    .map(candidate -> validateViewingScope(viewingScopeValidator, username, candidate))
-                   .map(candidate -> candidate.updateApproval(input.toUpdateRequest(username.value())))
-                   .orElseThrow(ExceptionMapper::map)
-                   .toDto();
+                   .map(candidate -> writeScopeValidator.validateUpdateStatusRequest(candidate, updateRequest))
+                   .map(candidate -> candidate.updateApproval(updateRequest))
+                   .map(Candidate::toDto)
+                   .orElseThrow(ExceptionMapper::map);
     }
 
     @Override

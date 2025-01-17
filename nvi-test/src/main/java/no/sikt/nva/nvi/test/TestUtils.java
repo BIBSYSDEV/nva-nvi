@@ -2,22 +2,28 @@ package no.sikt.nva.nvi.test;
 
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.test.UpsertRequestBuilder.randomUpsertRequestBuilder;
+import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInstant;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
+import java.net.http.HttpResponse;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.Year;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -28,6 +34,7 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao;
@@ -56,6 +63,7 @@ import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.common.service.requests.UpdateNonCandidateRequest;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.common.utils.BatchScanUtil;
+import no.unit.nva.auth.uriretriever.UriRetriever;
 import nva.commons.core.paths.UriWrapper;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
@@ -316,6 +324,52 @@ public final class TestUtils {
 
     public static DbCandidate randomCandidateWithYear(String year) {
         return randomCandidateBuilder(true).publicationDate(publicationDate(year)).build();
+    }
+
+    public static HttpResponse<String> createResponse(int status, String body) {
+        var response = (HttpResponse<String>) mock(HttpResponse.class);
+        when(response.statusCode()).thenReturn(status);
+        when(response.body()).thenReturn(body);
+        return response;
+    }
+
+    public static void mockOrganizationResponseForAffiliation(URI topLevelInstitutionId,
+                                                              URI subUnitId,
+                                                              UriRetriever uriRetriever) {
+        var subUnits = new ArrayList<Organization>();
+        if (nonNull(subUnitId)) {
+            var topLevelOrganizationAsLeafNode = Organization
+                                                     .builder()
+                                                     .withId(topLevelInstitutionId)
+                                                     .build();
+            var subUnitOrganization = Organization
+                                          .builder()
+                                          .withId(subUnitId)
+                                          .withPartOf(List.of(topLevelOrganizationAsLeafNode))
+                                          .build();
+            mockOrganizationResponse(subUnitOrganization, uriRetriever);
+            subUnits.add(subUnitOrganization);
+        }
+        var topLevelOrganization = Organization
+                                       .builder()
+                                       .withId(topLevelInstitutionId)
+                                       .withHasPart(subUnits)
+                                       .build();
+        mockOrganizationResponse(topLevelOrganization, uriRetriever);
+    }
+
+    public static void mockOrganizationResponse(Organization organization, UriRetriever uriRetriever) {
+        var body = generateResponseBody(organization);
+        var response = Optional.of(createResponse(200, body));
+        when(uriRetriever.fetchResponse(eq(organization.id()), any())).thenReturn(response);
+    }
+
+    private static String generateResponseBody(Organization organization) {
+        try {
+            return dtoObjectMapper.writeValueAsString(organization);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Deprecated
