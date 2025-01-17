@@ -61,6 +61,8 @@ class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
     private static final String STATUS_APPROVED = "APPROVED";
     private static final String STATUS_PENDING = "PENDING";
     private static final String STATUS_REJECTED = "REJECTED";
+    private static final URI defaultTopLevelInstitutionId = URI.create("https://www.example.com/toplevelOrganization");
+    private static final URI defaultSubUnitInstitutionId = URI.create("https://www.example.com/subOrganization");
     private final DynamoDbClient localDynamo = initializeTestDatabase();
     private UpdateNviCandidateStatusHandler handler;
     private Context context;
@@ -68,8 +70,6 @@ class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
     private CandidateRepository candidateRepository;
     private PeriodRepository periodRepository;
     private FakeViewingScopeValidator viewingScopeValidator;
-    private final URI defaultTopLevelInstitutionId = URI.create("https://www.example.com/toplevelOrganization");
-    private final URI defaultSubUnitInstitutionId = URI.create("https://www.example.com/subOrganization");
     private OrganizationRetriever mockOrganizationRetriever;
 
     public static Stream<Arguments> approvalStatusProvider() {

@@ -8,7 +8,7 @@ import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 
-public class UpdateNviCandidateStatusValidator {
+public final class UpdateNviCandidateStatusValidator {
 
     private UpdateNviCandidateStatusValidator() {
     }
