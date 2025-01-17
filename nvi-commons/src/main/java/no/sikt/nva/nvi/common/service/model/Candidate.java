@@ -9,6 +9,7 @@ import static no.sikt.nva.nvi.common.service.model.ApprovalStatus.PENDING;
 import static no.sikt.nva.nvi.common.service.model.ApprovalStatus.REJECTED;
 import static no.sikt.nva.nvi.common.utils.DecimalUtils.adjustScaleAndRoundingMode;
 import static no.sikt.nva.nvi.common.utils.RequestUtil.getAllCreators;
+import static no.sikt.nva.nvi.common.validator.UpdateNviCandidateStatusValidator.isValidUpdateStatusRequest;
 import static nva.commons.core.attempt.Try.attempt;
 import static nva.commons.core.ioutils.IoUtils.stringFromResources;
 import static nva.commons.core.paths.UriWrapper.HTTPS;
@@ -28,6 +29,7 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
@@ -47,6 +49,7 @@ import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.model.InvalidNviCandidateException;
 import no.sikt.nva.nvi.common.model.UpdateApprovalRequest;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
+import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.dto.ApprovalDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.dto.NoteDto;
@@ -318,6 +321,14 @@ public final class Candidate {
         validateCandidateState();
         approvals.computeIfPresent(input.institutionId(), (uri, approval) -> approval.update(input));
         return this;
+    }
+
+    public Candidate updateApproval(UpdateStatusRequest input, OrganizationRetriever organizationRetriever) {
+        if (isValidUpdateStatusRequest(this, input, organizationRetriever)) {
+            return updateApproval(input);
+        } else {
+            throw new IllegalStateException("Cannot finalize status for institution with unverified creator");
+        }
     }
 
     public Candidate createNote(CreateNoteRequest input, CandidateRepository repository) {

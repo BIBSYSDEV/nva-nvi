@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
+import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
@@ -36,7 +37,6 @@ import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
-import no.sikt.nva.nvi.common.validator.WriteScopeValidator;
 import no.sikt.nva.nvi.test.FakeViewingScopeValidator;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.auth.uriretriever.UriRetriever;
@@ -70,7 +70,7 @@ class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
     private FakeViewingScopeValidator viewingScopeValidator;
     private final URI defaultTopLevelInstitutionId = URI.create("https://www.example.com/toplevelOrganization");
     private final URI defaultSubUnitInstitutionId = URI.create("https://www.example.com/subOrganization");
-    private WriteScopeValidator writeScopeValidator;
+    private OrganizationRetriever mockOrganizationRetriever;
 
     public static Stream<Arguments> approvalStatusProvider() {
         return Stream.of(Arguments.of(ApprovalStatus.PENDING, ApprovalStatus.APPROVED),
@@ -89,11 +89,11 @@ class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
         periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
         viewingScopeValidator = new FakeViewingScopeValidator(true);
         var mockUriRetriever = mock(UriRetriever.class);
-        writeScopeValidator = new WriteScopeValidator(mockUriRetriever);
+        mockOrganizationRetriever = new OrganizationRetriever(mockUriRetriever);
         handler = new UpdateNviCandidateStatusHandler(candidateRepository,
                                                       periodRepository,
                                                       viewingScopeValidator,
-                                                      writeScopeValidator);
+                                                      mockOrganizationRetriever);
         mockOrganizationResponseForAffiliation(defaultTopLevelInstitutionId,
                                                defaultSubUnitInstitutionId,
                                                mockUriRetriever);
@@ -115,7 +115,7 @@ class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
         handler = new UpdateNviCandidateStatusHandler(candidateRepository,
                                                       periodRepository,
                                                       viewingScopeValidator,
-                                                      writeScopeValidator);
+                                                      mockOrganizationRetriever);
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
         assertThat(response.getStatusCode(), is(CoreMatchers.equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
@@ -143,7 +143,7 @@ class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
         handler = new UpdateNviCandidateStatusHandler(candidateRepository,
                                                       periodRepository,
                                                       viewingScopeValidator,
-                                                      writeScopeValidator);
+                                                      mockOrganizationRetriever);
         var candidate = upsert(createUpsertCandidateRequest(defaultTopLevelInstitutionId).build());
         var request = createRequest(candidate.getIdentifier(), defaultTopLevelInstitutionId, ApprovalStatus.APPROVED);
         handler.handleRequest(request, output, context);
@@ -185,7 +185,7 @@ class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
         handler = new UpdateNviCandidateStatusHandler(candidateRepository,
                                                       periodRepository,
                                                       viewingScopeValidator,
-                                                      writeScopeValidator);
+                                                      mockOrganizationRetriever);
         var candidate = upsert(createUpsertCandidateRequest(defaultTopLevelInstitutionId).build());
         var request = createRequest(candidate.getIdentifier(), defaultTopLevelInstitutionId, ApprovalStatus.APPROVED);
         handler.handleRequest(request, output, context);
