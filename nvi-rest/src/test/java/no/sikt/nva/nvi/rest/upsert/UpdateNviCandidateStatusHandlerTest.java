@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.rest.upsert;
 import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
+import static no.sikt.nva.nvi.test.TestUtils.mockOrganizationResponseForAffiliation;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningClosedPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningNotOpenedPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeriod;
@@ -22,19 +23,23 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
+import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatusDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
+import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.test.FakeViewingScopeValidator;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
+import no.unit.nva.auth.uriretriever.UriRetriever;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
@@ -53,6 +58,12 @@ class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
 
     private static final String ERROR_MISSING_REJECTION_REASON = "Cannot reject approval status without reason";
     private static final String CANDIDATE_IDENTIFIER_PATH = "candidateIdentifier";
+    private static final String STATUS_APPROVED = "APPROVED";
+    private static final String STATUS_PENDING = "PENDING";
+    private static final String STATUS_REJECTED = "REJECTED";
+    private static final URI DEFAULT_TOP_LEVEL_INSTITUTION_ID = URI.create(
+        "https://www.example.com/toplevelOrganization");
+    private static final URI DEFAULT_SUB_UNIT_INSTITUTION_ID = URI.create("https://www.example.com/subOrganization");
     private final DynamoDbClient localDynamo = initializeTestDatabase();
     private UpdateNviCandidateStatusHandler handler;
     private Context context;
@@ -60,6 +71,7 @@ class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
     private CandidateRepository candidateRepository;
     private PeriodRepository periodRepository;
     private FakeViewingScopeValidator viewingScopeValidator;
+    private OrganizationRetriever mockOrganizationRetriever;
 
     public static Stream<Arguments> approvalStatusProvider() {
         return Stream.of(Arguments.of(ApprovalStatus.PENDING, ApprovalStatus.APPROVED),
@@ -77,7 +89,14 @@ class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
         candidateRepository = new CandidateRepository(localDynamo);
         periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
         viewingScopeValidator = new FakeViewingScopeValidator(true);
-        handler = new UpdateNviCandidateStatusHandler(candidateRepository, periodRepository, viewingScopeValidator);
+        var mockUriRetriever = mock(UriRetriever.class);
+        mockOrganizationRetriever = new OrganizationRetriever(mockUriRetriever);
+        handler = new UpdateNviCandidateStatusHandler(candidateRepository,
+                                                      periodRepository,
+                                                      viewingScopeValidator,
+                                                      mockOrganizationRetriever);
+        mockOrganizationResponseForAffiliation(DEFAULT_TOP_LEVEL_INSTITUTION_ID, DEFAULT_SUB_UNIT_INSTITUTION_ID,
+                                               mockUriRetriever);
     }
 
     @Test
@@ -90,11 +109,15 @@ class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldReturnUnauthorizedWhenCandidateIsNotInUsersViewingScope() throws IOException {
-        var institutionId = randomUri();
-        var candidate = upsert(createUpsertCandidateRequest(institutionId).build());
-        var request = createRequest(candidate.getIdentifier(), institutionId, ApprovalStatus.APPROVED);
+        var candidate = upsert(createUpsertCandidateRequest(DEFAULT_TOP_LEVEL_INSTITUTION_ID).build());
+        var request = createRequest(candidate.getIdentifier(),
+                                    DEFAULT_TOP_LEVEL_INSTITUTION_ID,
+                                    ApprovalStatus.APPROVED);
         viewingScopeValidator = new FakeViewingScopeValidator(false);
-        handler = new UpdateNviCandidateStatusHandler(candidateRepository, periodRepository, viewingScopeValidator);
+        handler = new UpdateNviCandidateStatusHandler(candidateRepository,
+                                                      periodRepository,
+                                                      viewingScopeValidator,
+                                                      mockOrganizationRetriever);
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
         assertThat(response.getStatusCode(), is(CoreMatchers.equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
@@ -102,9 +125,12 @@ class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldBeForbiddenToChangeStatusOfOtherInstitution() throws IOException {
-        var institutionId = randomUri();
-        var candidate = upsert(createUpsertCandidateRequest(institutionId).build());
-        var request = createUnauthorizedRequest(candidate.getIdentifier(), institutionId);
+        var otherInstitutionId = randomUri();
+        var candidate = upsert(createUpsertCandidateRequest(DEFAULT_TOP_LEVEL_INSTITUTION_ID).build());
+        var requestBody = new NviStatusRequest(candidate.getIdentifier(), DEFAULT_TOP_LEVEL_INSTITUTION_ID,
+                                               ApprovalStatus.PENDING,
+                                               null);
+        var request = createRequest(candidate.getIdentifier(), otherInstitutionId, requestBody);
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
@@ -115,10 +141,40 @@ class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
     void shouldReturnConflictWhenUpdatingStatusAndReportingPeriodIsClosed() throws IOException {
         candidateRepository = new CandidateRepository(localDynamo);
         periodRepository = periodRepositoryReturningClosedPeriod(CURRENT_YEAR);
-        handler = new UpdateNviCandidateStatusHandler(candidateRepository, periodRepository, viewingScopeValidator);
-        var institutionId = randomUri();
-        var candidate = upsert(createUpsertCandidateRequest(institutionId).build());
-        var request = createRequest(candidate.getIdentifier(), institutionId, ApprovalStatus.APPROVED);
+        handler = new UpdateNviCandidateStatusHandler(candidateRepository,
+                                                      periodRepository,
+                                                      viewingScopeValidator,
+                                                      mockOrganizationRetriever);
+        var candidate = upsert(createUpsertCandidateRequest(DEFAULT_TOP_LEVEL_INSTITUTION_ID).build());
+        var request = createRequest(candidate.getIdentifier(),
+                                    DEFAULT_TOP_LEVEL_INSTITUTION_ID,
+                                    ApprovalStatus.APPROVED);
+        handler.handleRequest(request, output, context);
+        var response = GatewayResponse.fromOutputStream(output, Problem.class);
+
+        assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_CONFLICT)));
+    }
+
+    @ParameterizedTest(name = "Should not allow status {0} for institution with unverified creators")
+    @EnumSource(value = ApprovalStatus.class, names = {STATUS_APPROVED, STATUS_REJECTED})
+    void shouldReturnConflictWhenUpdatingStatusAndInstitutionHasUnverifiedCreators(ApprovalStatus newStatus)
+        throws IOException {
+        var request = createRequestForInstitutionWithUnverifiedCreator(DEFAULT_TOP_LEVEL_INSTITUTION_ID,
+                                                                       DEFAULT_TOP_LEVEL_INSTITUTION_ID,
+                                                                       newStatus);
+        handler.handleRequest(request, output, context);
+        var response = GatewayResponse.fromOutputStream(output, Problem.class);
+
+        assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_CONFLICT)));
+    }
+
+    @ParameterizedTest(name = "Should not allow status {0} for institution with unverified creators")
+    @EnumSource(value = ApprovalStatus.class, names = {STATUS_APPROVED, STATUS_REJECTED})
+    void shouldReturnConflictWhenUpdatingStatusAndSubInstitutionHasUnverifiedCreators(ApprovalStatus newStatus)
+        throws IOException {
+        var request = createRequestForInstitutionWithUnverifiedCreator(DEFAULT_TOP_LEVEL_INSTITUTION_ID,
+                                                                       DEFAULT_SUB_UNIT_INSTITUTION_ID,
+                                                                       newStatus);
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
@@ -129,10 +185,14 @@ class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
     void shouldReturnConflictWhenUpdatingStatusAndNotOpenedPeriod() throws IOException {
         candidateRepository = new CandidateRepository(localDynamo);
         periodRepository = periodRepositoryReturningNotOpenedPeriod(CURRENT_YEAR);
-        handler = new UpdateNviCandidateStatusHandler(candidateRepository, periodRepository, viewingScopeValidator);
-        var institutionId = randomUri();
-        var candidate = upsert(createUpsertCandidateRequest(institutionId).build());
-        var request = createRequest(candidate.getIdentifier(), institutionId, ApprovalStatus.APPROVED);
+        handler = new UpdateNviCandidateStatusHandler(candidateRepository,
+                                                      periodRepository,
+                                                      viewingScopeValidator,
+                                                      mockOrganizationRetriever);
+        var candidate = upsert(createUpsertCandidateRequest(DEFAULT_TOP_LEVEL_INSTITUTION_ID).build());
+        var request = createRequest(candidate.getIdentifier(),
+                                    DEFAULT_TOP_LEVEL_INSTITUTION_ID,
+                                    ApprovalStatus.APPROVED);
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
@@ -141,9 +201,8 @@ class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldReturnBadRequestIfRejectionDoesNotContainReason() throws IOException {
-        var institutionId = randomUri();
-        var candidate = upsert(createUpsertCandidateRequest(institutionId).build());
-        var request = createRequestWithoutReason(candidate.getIdentifier(), institutionId);
+        var candidate = upsert(createUpsertCandidateRequest(DEFAULT_TOP_LEVEL_INSTITUTION_ID).build());
+        var request = createRequestWithoutReason(candidate.getIdentifier(), DEFAULT_TOP_LEVEL_INSTITUTION_ID);
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
@@ -154,10 +213,9 @@ class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
     @ParameterizedTest(name = "Should update from old status {0} to new status {1}")
     @MethodSource("approvalStatusProvider")
     void shouldUpdateApprovalStatus(ApprovalStatus oldStatus, ApprovalStatus newStatus) throws IOException {
-        var institutionId = randomUri();
-        var candidate = upsert(createUpsertCandidateRequest(institutionId).build());
-        candidate.updateApproval(createStatusRequest(oldStatus));
-        var request = createRequest(candidate.getIdentifier(), institutionId, newStatus);
+        var candidate = upsert(createUpsertCandidateRequest(DEFAULT_TOP_LEVEL_INSTITUTION_ID).build());
+        candidate.updateApprovalStatus(createStatusRequest(oldStatus), mockOrganizationRetriever);
+        var request = createRequest(candidate.getIdentifier(), DEFAULT_TOP_LEVEL_INSTITUTION_ID, newStatus);
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
         var candidateResponse = response.getBodyObject(CandidateDto.class);
@@ -167,31 +225,33 @@ class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
     }
 
     @ParameterizedTest(name="shouldResetFinalizedValuesWhenUpdatingStatusToPending from old status {0}")
-    @EnumSource(value = ApprovalStatus.class, names = {"REJECTED", "APPROVED"})
+    @EnumSource(value = ApprovalStatus.class, names = {STATUS_REJECTED, STATUS_APPROVED})
     void shouldResetFinalizedValuesWhenUpdatingStatusToPending(ApprovalStatus oldStatus) throws IOException {
-        var institutionId = randomUri();
-        var candidate = upsert(createUpsertCandidateRequest(institutionId).build());
-        candidate.updateApproval(createStatusRequest(oldStatus));
+        var candidate = upsert(createUpsertCandidateRequest(DEFAULT_TOP_LEVEL_INSTITUTION_ID).build());
+        candidate.updateApprovalStatus(createStatusRequest(oldStatus), mockOrganizationRetriever);
         var newStatus = ApprovalStatus.PENDING;
-        var request = createRequest(candidate.getIdentifier(), institutionId, newStatus);
+        var request = createRequest(candidate.getIdentifier(), DEFAULT_TOP_LEVEL_INSTITUTION_ID, newStatus);
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
         var candidateResponse = response.getBodyObject(CandidateDto.class);
         var actualApproval = candidateResponse.approvals().getFirst();
         assertThat(actualApproval.finalizedBy(), is(nullValue()));
         assertThat(actualApproval.finalizedDate(), is(nullValue()));
-        assertThat(actualApproval.status(), is(equalTo(ApprovalStatusDto.NEW)));
+        assertThat(actualApproval.status(), is(equalTo(ApprovalStatusDto.PENDING)));
     }
 
     @ParameterizedTest(name="shouldUpdateApprovalStatusToRejectedWithReason from old status {0}")
-    @EnumSource(value = ApprovalStatus.class, names = {"PENDING", "APPROVED"})
+    @EnumSource(value = ApprovalStatus.class, names = {STATUS_PENDING, STATUS_APPROVED})
     void shouldUpdateApprovalStatusToRejectedWithReason(ApprovalStatus oldStatus) throws IOException {
-        var institutionId = randomUri();
-        var candidate = upsert(createUpsertCandidateRequest(institutionId).build());
-        candidate.updateApproval(createStatusRequest(oldStatus));
+        var candidate = upsert(createUpsertCandidateRequest(DEFAULT_TOP_LEVEL_INSTITUTION_ID).build());
+        candidate.updateApprovalStatus(createStatusRequest(oldStatus), mockOrganizationRetriever);
         var rejectionReason = randomString();
-        var requestBody = new NviStatusRequest(candidate.getIdentifier(), institutionId, ApprovalStatus.REJECTED, rejectionReason);
-        var request = createRequest(candidate.getIdentifier(), institutionId, requestBody, randomString());
+        var requestBody = new NviStatusRequest(candidate.getIdentifier(), DEFAULT_TOP_LEVEL_INSTITUTION_ID,
+                                               ApprovalStatus.REJECTED,
+                                               rejectionReason);
+        var request = createRequest(candidate.getIdentifier(), DEFAULT_TOP_LEVEL_INSTITUTION_ID,
+                                    requestBody,
+                                    randomString());
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
         var candidateResponse = response.getBodyObject(CandidateDto.class);
@@ -202,12 +262,11 @@ class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
     }
 
     @ParameterizedTest(name="shouldRemoveReasonWhenUpdatingStatusFromRejected to {0}")
-    @EnumSource(value = ApprovalStatus.class, names = {"PENDING", "APPROVED"})
+    @EnumSource(value = ApprovalStatus.class, names = {STATUS_PENDING, STATUS_APPROVED})
     void shouldRemoveReasonWhenUpdatingStatusFromRejected(ApprovalStatus newStatus) throws IOException {
-        var institutionId = randomUri();
-        var candidate = upsert(createUpsertCandidateRequest(institutionId).build());
-        candidate.updateApproval(createStatusRequest(ApprovalStatus.REJECTED));
-        var request = createRequest(candidate.getIdentifier(), institutionId,
+        var candidate = upsert(createUpsertCandidateRequest(DEFAULT_TOP_LEVEL_INSTITUTION_ID).build());
+        candidate.updateApprovalStatus(createStatusRequest(ApprovalStatus.REJECTED), mockOrganizationRetriever);
+        var request = createRequest(candidate.getIdentifier(), DEFAULT_TOP_LEVEL_INSTITUTION_ID,
                                     ApprovalStatus.parse(newStatus.getValue()));
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
@@ -220,11 +279,12 @@ class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
 
     @Test
     void shouldUpdateAssigneeWhenFinalizingApprovalWithoutAssignee() throws IOException {
-        var institutionId = randomUri();
-        var candidate = upsert(createUpsertCandidateRequest(institutionId).build());
+        var candidate = upsert(createUpsertCandidateRequest(DEFAULT_TOP_LEVEL_INSTITUTION_ID).build());
         var assignee = randomString();
-        var requestBody = new NviStatusRequest(candidate.getIdentifier(), institutionId, ApprovalStatus.APPROVED, null);
-        var request = createRequest(candidate.getIdentifier(), institutionId, requestBody, assignee);
+        var requestBody = new NviStatusRequest(candidate.getIdentifier(), DEFAULT_TOP_LEVEL_INSTITUTION_ID,
+                                               ApprovalStatus.APPROVED,
+                                               null);
+        var request = createRequest(candidate.getIdentifier(), DEFAULT_TOP_LEVEL_INSTITUTION_ID, requestBody, assignee);
         handler.handleRequest(request, output, context);
         var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
         var candidateResponse = response.getBodyObject(CandidateDto.class);
@@ -234,6 +294,7 @@ class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
 
     private static UpdateStatusRequest createStatusRequest(ApprovalStatus status) {
         return UpdateStatusRequest.builder()
+                   .withInstitutionId(DEFAULT_TOP_LEVEL_INSTITUTION_ID)
                    .withApprovalStatus(status)
                    .withUsername(randomString())
                    .withReason(ApprovalStatus.REJECTED.equals(status) ? randomString() : null)
@@ -271,7 +332,7 @@ class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
 
     private ApprovalStatusDto getExpectedApprovalStatus(ApprovalStatus status) {
         return switch (status) {
-            case PENDING -> ApprovalStatusDto.NEW;
+            case PENDING -> ApprovalStatusDto.PENDING;
             case APPROVED -> ApprovalStatusDto.APPROVED;
             case REJECTED -> ApprovalStatusDto.REJECTED;
         };
@@ -299,9 +360,19 @@ class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
         return new NviStatusRequest(randomUUID(), randomUri(), ApprovalStatus.APPROVED, null);
     }
 
-    private InputStream createUnauthorizedRequest(UUID candidateIdentifier, URI institutionId)
+    private InputStream createRequestForInstitutionWithUnverifiedCreator(URI topLevelInstitution,
+                                                                         URI subInstitution,
+                                                                         ApprovalStatus newStatus)
         throws JsonProcessingException {
-        var requestBody = new NviStatusRequest(candidateIdentifier, randomUri(), ApprovalStatus.PENDING, null);
-        return createRequest(candidateIdentifier, institutionId, requestBody);
+        var unverifiedCreator = UnverifiedNviCreatorDto
+                                    .builder()
+                                    .withAffiliations(List.of(subInstitution))
+                                    .withName(randomString())
+                                    .build();
+        var upsertRequest = createUpsertCandidateRequest(topLevelInstitution)
+                                .withUnverifiedCreators(List.of(unverifiedCreator))
+                                .build();
+        var candidate = upsert(upsertRequest);
+        return createRequest(candidate.getIdentifier(), topLevelInstitution, newStatus);
     }
 }

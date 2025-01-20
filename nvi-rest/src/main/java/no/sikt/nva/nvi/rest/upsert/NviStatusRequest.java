@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.rest.upsert;
 
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import java.net.URI;
 import java.util.UUID;
@@ -10,6 +11,12 @@ public record NviStatusRequest(UUID candidateId,
                                URI institutionId,
                                ApprovalStatus status,
                                String reason) {
+
+    public void validate() {
+        if (isNull(candidateId) || isNull(institutionId) || isNull(status)) {
+            throw new IllegalArgumentException("Missing required fields");
+        }
+    }
 
     public UpdateStatusRequest toUpdateRequest(String username) {
         return nonNull(reason)

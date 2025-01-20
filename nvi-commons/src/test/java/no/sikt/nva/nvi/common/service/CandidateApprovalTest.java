@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.common.service;
 import static no.sikt.nva.nvi.test.TestUtils.createUpdateStatusRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertNonCandidateRequest;
+import static no.sikt.nva.nvi.test.TestUtils.mockOrganizationResponseForAffiliation;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningClosedPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningNotOpenedPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.randomApplicableCandidate;
@@ -28,22 +29,25 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.model.InvalidNviCandidateException;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
+import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
+import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.service.model.PublicationChannel;
-import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
-import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.test.UpsertRequestBuilder;
+import no.unit.nva.auth.uriretriever.UriRetriever;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
@@ -63,6 +67,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
     private static final URI HARDCODED_CREATOR_ID = URI.create("https://example.org/someCreator");
     private static final InstanceType HARDCODED_INSTANCE_TYPE = InstanceType.ACADEMIC_ARTICLE;
     private static final BigDecimal HARDCODED_POINTS = BigDecimal.ONE.setScale(EXPECTED_SCALE, EXPECTED_ROUNDING_MODE);
+    private OrganizationRetriever organizationRetriever;
 
     public static Stream<Arguments> statusProvider() {
         return Stream.of(Arguments.of(ApprovalStatus.PENDING, ApprovalStatus.REJECTED),
@@ -84,77 +89,125 @@ class CandidateApprovalTest extends CandidateTestSetup {
                          Arguments.of(Named.of("Mocked repository", mock(PeriodRepository.class))));
     }
 
-    @Test
-    void shouldCreatePendingApprovalsForNewCandidate() {
-        var institutionId = randomUri();
-        var upsertCandidateRequest = createUpsertCandidateRequest(institutionId).build();
-        var candidate = upsert(upsertCandidateRequest);
-        assertThat(candidate.getApprovals().size(), is(equalTo(1)));
-        assertThat(candidate.getApprovals().get(institutionId).getStatus(), is(equalTo(ApprovalStatus.PENDING)));
+    @BeforeEach
+    void setUp() {
+        var mockUriRetriever = mock(UriRetriever.class);
+        organizationRetriever = new OrganizationRetriever(mockUriRetriever);
+        mockOrganizationResponseForAffiliation(HARDCODED_INSTITUTION_ID, HARDCODED_SUBUNIT_ID, mockUriRetriever);
     }
 
     @ParameterizedTest(name = "Should update from old status {0} to new status {1}")
     @MethodSource("statusProvider")
     void shouldUpdateStatusWhenUpdateStatusRequestValid(ApprovalStatus oldStatus, ApprovalStatus newStatus) {
-        var institutionId = randomUri();
-        var upsertCandidateRequest = createUpsertCandidateRequest(institutionId).build();
+        var upsertCandidateRequest = createUpsertCandidateRequest(HARDCODED_INSTITUTION_ID).build();
         Candidate.upsert(upsertCandidateRequest, candidateRepository, periodRepository);
         var existingCandidate = Candidate.fetchByPublicationId(upsertCandidateRequest::publicationId,
                                                                candidateRepository,
-                                                               periodRepository)
-                                    .updateApproval(
-                                        createUpdateStatusRequest(oldStatus, institutionId, randomString()));
-        var updatedCandidate = existingCandidate.updateApproval(
-            createUpdateStatusRequest(newStatus, institutionId, randomString()));
+                                                               periodRepository);
+        existingCandidate = updateApprovalStatus(existingCandidate, oldStatus);
 
-        var actualNewStatus = updatedCandidate.getApprovals().get(institutionId).getStatus();
+        var updatedCandidate = updateApprovalStatus(existingCandidate, newStatus);
+        var actualNewStatus = updatedCandidate
+                                  .getApprovals()
+                                  .get(HARDCODED_INSTITUTION_ID)
+                                  .getStatus();
         assertThat(actualNewStatus, is(equalTo(newStatus)));
     }
 
-    @ParameterizedTest(name="Should reset approval when changing to pending from {0}")
+    @ParameterizedTest(name = "Should reset approval when changing to pending from {0}")
     @EnumSource(value = ApprovalStatus.class, names = {"REJECTED", APPROVED})
     void shouldResetApprovalWhenChangingToPending(ApprovalStatus oldStatus) {
-        var institutionId = randomUri();
-        var upsertCandidateRequest = createUpsertCandidateRequest(institutionId).build();
-        var candidateBO = upsert(upsertCandidateRequest);
+        var upsertCandidateRequest = createUpsertCandidateRequest(HARDCODED_INSTITUTION_ID).build();
+        var candidate = upsert(upsertCandidateRequest);
         var assignee = randomString();
-        candidateBO.updateApproval(new UpdateAssigneeRequest(institutionId, assignee))
-            .updateApproval(createUpdateStatusRequest(oldStatus, institutionId, randomString()))
-            .updateApproval(createUpdateStatusRequest(ApprovalStatus.PENDING, institutionId, randomString()));
-        var approvalStatus = candidateBO.getApprovals().get(institutionId);
+        candidate.updateApproval(new UpdateAssigneeRequest(HARDCODED_INSTITUTION_ID, assignee));
+        updateApprovalStatus(candidate, oldStatus);
+
+        updateApprovalStatus(candidate, ApprovalStatus.PENDING);
+        var approvalStatus = candidate
+                                 .getApprovals()
+                                 .get(HARDCODED_INSTITUTION_ID);
         assertThat(approvalStatus.getStatus(), is(equalTo(ApprovalStatus.PENDING)));
         assertThat(approvalStatus.getAssigneeUsername(), is(assignee));
         assertThat(approvalStatus.getFinalizedByUserName(), is(nullValue()));
         assertThat(approvalStatus.getFinalizedDate(), is(nullValue()));
     }
 
-    @ParameterizedTest(name="Should remove reason when updating from rejection status to {0}")
+    @Test
+    void shouldCreatePendingApprovalsForNewCandidate() {
+        var upsertCandidateRequest = createUpsertCandidateRequest(HARDCODED_INSTITUTION_ID).build();
+        var candidate = upsert(upsertCandidateRequest);
+        assertThat(candidate
+                       .getApprovals()
+                       .size(), is(equalTo(1)));
+        assertThat(candidate
+                       .getApprovals()
+                       .get(HARDCODED_INSTITUTION_ID)
+                       .getStatus(), is(equalTo(ApprovalStatus.PENDING)));
+    }
+
+    @ParameterizedTest(name = "shouldThrowUnsupportedOperationWhenRejectingWithoutReason {0}")
+    @EnumSource(value = ApprovalStatus.class, names = {"PENDING", APPROVED})
+    void shouldThrowUnsupportedOperationWhenRejectingWithoutReason(ApprovalStatus oldStatus) {
+        var createRequest = createUpsertCandidateRequest(HARDCODED_INSTITUTION_ID).build();
+        Candidate.upsert(createRequest, candidateRepository, periodRepository);
+        var candidate = Candidate.fetchByPublicationId(createRequest::publicationId,
+                                                       candidateRepository,
+                                                       periodRepository);
+        var updatedCandidate = updateApprovalStatus(candidate, oldStatus);
+        assertThrows(UnsupportedOperationException.class,
+                     () -> updatedCandidate.updateApprovalStatus(createRejectionRequestWithoutReason(randomString()),
+                                                                 organizationRetriever));
+    }
+
+    @ParameterizedTest(name = "Should remove reason when updating from rejection status to {0}")
     @EnumSource(value = ApprovalStatus.class, names = {"PENDING", APPROVED})
     void shouldRemoveReasonWhenUpdatingFromRejectionStatusToNewStatus(ApprovalStatus newStatus) {
-        var institutionId = randomUri();
-        var createRequest = createUpsertCandidateRequest(institutionId).build();
+        var createRequest = createUpsertCandidateRequest(HARDCODED_INSTITUTION_ID).build();
         Candidate.upsert(createRequest, candidateRepository, periodRepository);
-        var rejectedCandidate = Candidate.fetchByPublicationId(createRequest::publicationId, candidateRepository,
-                                                               periodRepository)
-                                    .updateApproval(
-                                        createUpdateStatusRequest(ApprovalStatus.REJECTED, institutionId,
-                                                                  randomString()));
+        var rejectedCandidate = Candidate
+                                    .fetchByPublicationId(createRequest::publicationId,
+                                                          candidateRepository,
+                                                          periodRepository)
+                                    .updateApprovalStatus(createUpdateStatusRequest(ApprovalStatus.REJECTED,
+                                                                                    HARDCODED_INSTITUTION_ID,
+                                                                                    randomString()),
+                                                          organizationRetriever);
 
-        var updatedCandidate = rejectedCandidate.updateApproval(
-            createUpdateStatusRequest(newStatus, institutionId, randomString()));
-        assertThat(updatedCandidate.getApprovals().size(), is(equalTo(1)));
-        assertThat(updatedCandidate.getApprovals().get(institutionId).getStatus(), is(equalTo(newStatus)));
-        assertThat(updatedCandidate.getApprovals().get(institutionId).getReason(), is(nullValue()));
+        var updatedCandidate = updateApprovalStatus(rejectedCandidate, newStatus);
+        assertThat(updatedCandidate
+                       .getApprovals()
+                       .size(), is(equalTo(1)));
+        assertThat(updatedCandidate
+                       .getApprovals()
+                       .get(HARDCODED_INSTITUTION_ID)
+                       .getStatus(), is(equalTo(newStatus)));
+        assertThat(updatedCandidate
+                       .getApprovals()
+                       .get(HARDCODED_INSTITUTION_ID)
+                       .getReason(), is(nullValue()));
+    }
+
+    @ParameterizedTest(name = "shouldThrowIllegalArgumentExceptionWhenUpdateStatusWithoutUsername {0}")
+    @EnumSource(value = ApprovalStatus.class, names = {"PENDING", APPROVED, "REJECTED"})
+    void shouldThrowIllegalArgumentExceptionWhenUpdateStatusWithoutUsername(ApprovalStatus newStatus) {
+        var createRequest = createUpsertCandidateRequest(HARDCODED_INSTITUTION_ID).build();
+        var candidate = upsert(createRequest);
+        var invalidRequest = createUpdateStatusRequest(newStatus, HARDCODED_INSTITUTION_ID, null);
+        assertThrows(IllegalArgumentException.class,
+                     () -> candidate.updateApprovalStatus(invalidRequest, organizationRetriever));
     }
 
     @Test
     void shouldRemoveOldInstitutionsWhenUpdatingCandidate() {
         var keepInstitutionId = randomUri();
         var deleteInstitutionId = randomUri();
-        var createCandidateRequest = createUpsertCandidateRequest(keepInstitutionId, deleteInstitutionId,
+        var createCandidateRequest = createUpsertCandidateRequest(keepInstitutionId,
+                                                                  deleteInstitutionId,
                                                                   randomUri()).build();
         Candidate.upsert(createCandidateRequest, candidateRepository, periodRepository);
-        var updateRequest = UpsertRequestBuilder.fromRequest(createCandidateRequest)
+        var updateRequest = UpsertRequestBuilder
+                                .fromRequest(createCandidateRequest)
                                 .withPoints(List.of(new InstitutionPoints(keepInstitutionId, randomBigDecimal(), null)))
                                 .build();
         var updatedCandidate = upsert(updateRequest);
@@ -169,10 +222,13 @@ class CandidateApprovalTest extends CandidateTestSetup {
     void shouldRemoveApprovalsWhenBecomingNonCandidate() {
         var candidate = randomApplicableCandidate(candidateRepository, periodRepository);
         var updateRequest = createUpsertNonCandidateRequest(candidate.getPublicationId());
-        var updatedCandidate = Candidate.updateNonCandidate(updateRequest, candidateRepository)
+        var updatedCandidate = Candidate
+                                   .updateNonCandidate(updateRequest, candidateRepository)
                                    .orElseThrow();
         assertThat(updatedCandidate.getIdentifier(), is(equalTo(candidate.getIdentifier())));
-        assertThat(updatedCandidate.getApprovals().size(), is(equalTo(0)));
+        assertThat(updatedCandidate
+                       .getApprovals()
+                       .size(), is(equalTo(0)));
     }
 
     @Test
@@ -186,51 +242,50 @@ class CandidateApprovalTest extends CandidateTestSetup {
                      () -> Candidate.upsert(updateRequest, candidateRepository, periodRepository));
     }
 
-    @ParameterizedTest(name="shouldThrowUnsupportedOperationWhenRejectingWithoutReason {0}")
-    @EnumSource(value = ApprovalStatus.class, names = {"PENDING", APPROVED})
-    void shouldThrowUnsupportedOperationWhenRejectingWithoutReason(ApprovalStatus oldStatus) {
-        var institutionId = randomUri();
-        var createRequest = createUpsertCandidateRequest(institutionId).build();
-        Candidate.upsert(createRequest, candidateRepository, periodRepository);
-        var candidate = Candidate.fetchByPublicationId(createRequest::publicationId, candidateRepository,
-                                                       periodRepository)
-                            .updateApproval(createUpdateStatusRequest(oldStatus, institutionId, randomString()));
-        assertThrows(UnsupportedOperationException.class, () -> candidate.updateApproval(
-            createRejectionRequestWithoutReason(institutionId, randomString())));
-    }
-
-    @ParameterizedTest(name="shouldThrowIllegalArgumentExceptionWhenUpdateStatusWithoutUsername {0}")
-    @EnumSource(value = ApprovalStatus.class, names = {"PENDING", APPROVED, "REJECTED"})
-    void shouldThrowIllegalArgumentExceptionWhenUpdateStatusWithoutUsername(ApprovalStatus newStatus) {
-        var institutionId = randomUri();
-        var createRequest = createUpsertCandidateRequest(institutionId).build();
-        var candidate = upsert(createRequest);
-
-        assertThrows(IllegalArgumentException.class,
-                     () -> candidate.updateApproval(createUpdateStatusRequest(newStatus, institutionId, null)));
-    }
-
     @Test
     void shouldPersistStatusChangeWhenRequestingAndUpdate() {
-        var institutionId = randomUri();
-        var upsertCandidateRequest = createUpsertCandidateRequest(institutionId).build();
-        var candidateBO = upsert(upsertCandidateRequest);
-        candidateBO.updateApproval(createUpdateStatusRequest(ApprovalStatus.APPROVED, institutionId, randomString()));
+        var upsertCandidateRequest = createUpsertCandidateRequest(HARDCODED_INSTITUTION_ID).build();
+        var candidate = upsert(upsertCandidateRequest);
+        updateApprovalStatus(candidate, ApprovalStatus.APPROVED);
 
-        var status = Candidate.fetch(candidateBO::getIdentifier, candidateRepository, periodRepository)
-                         .getApprovals().get(institutionId).getStatus();
+        var status = Candidate
+                         .fetch(candidate::getIdentifier, candidateRepository, periodRepository)
+                         .getApprovals()
+                         .get(HARDCODED_INSTITUTION_ID)
+                         .getStatus();
         assertThat(status, is(equalTo(ApprovalStatus.APPROVED)));
     }
 
     @Test
-    void shouldChangeAssigneeWhenValidUpdateAssigneeRequest() {
-        var institutionId = randomUri();
-        var upsertCandidateRequest = createUpsertCandidateRequest(institutionId).build();
-        var candidateBO = upsert(upsertCandidateRequest);
-        var newUsername = randomString();
-        candidateBO.updateApproval(new UpdateAssigneeRequest(institutionId, newUsername));
+    void shouldNotOverrideAssigneeWhenAssigneeAlreadyIsSet() {
+        var assignee = randomString();
+        var request = createUpsertCandidateRequest(HARDCODED_INSTITUTION_ID).build();
+        Candidate.upsert(request, candidateRepository, periodRepository);
+        var candidate = Candidate
+                            .fetchByPublicationId(request::publicationId, candidateRepository, periodRepository)
+                            .updateApproval(new UpdateAssigneeRequest(HARDCODED_INSTITUTION_ID, assignee));
+        candidate = updateApprovalStatus(candidate, ApprovalStatus.APPROVED);
+        candidate = updateApprovalStatus(candidate, ApprovalStatus.REJECTED);
+        var candidateDto = candidate.toDto();
+        assertThat(candidateDto
+                       .approvals()
+                       .getFirst()
+                       .assignee(), is(equalTo(assignee)));
+        assertThat(candidateDto
+                       .approvals()
+                       .getFirst()
+                       .finalizedBy(), is(not(equalTo(assignee))));
+    }
 
-        var assignee = Candidate.fetch(candidateBO::getIdentifier, candidateRepository, periodRepository)
+    @Test
+    void shouldChangeAssigneeWhenValidUpdateAssigneeRequest() {
+        var upsertCandidateRequest = createUpsertCandidateRequest(HARDCODED_INSTITUTION_ID).build();
+        var candidate = upsert(upsertCandidateRequest);
+        var newUsername = randomString();
+        candidate.updateApproval(new UpdateAssigneeRequest(HARDCODED_INSTITUTION_ID, newUsername));
+
+        var assignee = Candidate
+                           .fetch(candidate::getIdentifier, candidateRepository, periodRepository)
                            .toDto()
                            .approvals()
                            .getFirst()
@@ -241,10 +296,9 @@ class CandidateApprovalTest extends CandidateTestSetup {
 
     @Test
     void shouldNotAllowUpdateApprovalStatusWhenTryingToPassAnonymousImplementations() {
-        var institutionId = randomUri();
-        var upsertCandidateRequest = createUpsertCandidateRequest(institutionId).build();
-        var candidateBO = upsert(upsertCandidateRequest);
-        assertThrows(IllegalArgumentException.class, () -> candidateBO.updateApproval(() -> institutionId));
+        var upsertCandidateRequest = createUpsertCandidateRequest(HARDCODED_INSTITUTION_ID).build();
+        var candidate = upsert(upsertCandidateRequest);
+        assertThrows(IllegalArgumentException.class, () -> candidate.updateApproval(() -> HARDCODED_INSTITUTION_ID));
     }
 
     @ParameterizedTest
@@ -256,33 +310,18 @@ class CandidateApprovalTest extends CandidateTestSetup {
     }
 
     @Test
-    void shouldNotOverrideAssigneeWhenAssigneeAlreadyIsSet() {
-        var institutionId = randomUri();
-        var assignee = randomString();
-        var request = createUpsertCandidateRequest(institutionId).build();
-        Candidate.upsert(request, candidateRepository, periodRepository);
-        var candidate = Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository)
-                            .updateApproval(new UpdateAssigneeRequest(institutionId, assignee))
-                            .updateApproval(
-                                createUpdateStatusRequest(ApprovalStatus.APPROVED, institutionId, randomString()))
-                            .updateApproval(
-                                createUpdateStatusRequest(ApprovalStatus.REJECTED, institutionId, randomString()))
-                            .toDto();
-        assertThat(candidate.approvals().getFirst().assignee(), is(equalTo(assignee)));
-        assertThat(candidate.approvals().getFirst().finalizedBy(), is(not(equalTo(assignee))));
-    }
-
-    @Test
     void shouldNotResetApprovalsWhenUpdatingCandidateFieldsNotEffectingApprovals() {
-        var institutionId = randomUri();
-        var upsertCandidateRequest = createUpsertCandidateRequest(institutionId).build();
+        var upsertCandidateRequest = createUpsertCandidateRequest(HARDCODED_INSTITUTION_ID).build();
         var candidate = upsert(upsertCandidateRequest);
-        candidate.updateApproval(
-            new UpdateStatusRequest(institutionId, ApprovalStatus.APPROVED, randomString(), randomString()));
-        var approval = candidate.getApprovals().get(institutionId);
+        candidate = updateApprovalStatus(candidate, ApprovalStatus.APPROVED);
+        var approval = candidate
+                           .getApprovals()
+                           .get(HARDCODED_INSTITUTION_ID);
         var newUpsertRequest = createNewUpsertRequestNotAffectingApprovals(upsertCandidateRequest);
         var updatedCandidate = upsert(newUpsertRequest);
-        var updatedApproval = updatedCandidate.getApprovals().get(institutionId);
+        var updatedApproval = updatedCandidate
+                                  .getApprovals()
+                                  .get(HARDCODED_INSTITUTION_ID);
 
         assertThat(updatedApproval, is(equalTo(approval)));
     }
@@ -293,130 +332,168 @@ class CandidateApprovalTest extends CandidateTestSetup {
     void shouldNotResetApprovalsWhenCreatorAffiliationChangesWithinSameInstitution() {
         var upsertCandidateRequest = getUpsertCandidateRequestWithHardcodedValues();
         var candidate = upsert(upsertCandidateRequest);
-        candidate.updateApproval(
-            new UpdateStatusRequest(HARDCODED_INSTITUTION_ID, ApprovalStatus.APPROVED, randomString(), randomString()));
-        var newSubUnitInSameOrganization = randomUri();
-        var points = List.of(new InstitutionPoints(HARDCODED_INSTITUTION_ID, HARDCODED_POINTS,
+        candidate.updateApprovalStatus(new UpdateStatusRequest(HARDCODED_INSTITUTION_ID,
+                                                               ApprovalStatus.APPROVED,
+                                                               randomString(),
+                                                               randomString()), organizationRetriever);
+        var points = List.of(new InstitutionPoints(HARDCODED_INSTITUTION_ID,
+                                                   HARDCODED_POINTS,
                                                    List.of(new CreatorAffiliationPoints(HARDCODED_CREATOR_ID,
-                                                                                        newSubUnitInSameOrganization,
+                                                                                        HARDCODED_SUBUNIT_ID,
                                                                                         HARDCODED_POINTS))));
 
-        var newUpsertRequest = UpsertRequestBuilder.fromRequest(upsertCandidateRequest)
+        var newUpsertRequest = UpsertRequestBuilder
+                                   .fromRequest(upsertCandidateRequest)
                                    .withPoints(points)
                                    .build();
         var updatedCandidate = upsert(newUpsertRequest);
-        var updatedApproval = updatedCandidate.getApprovals().get(HARDCODED_INSTITUTION_ID);
+        var updatedApproval = updatedCandidate
+                                  .getApprovals()
+                                  .get(HARDCODED_INSTITUTION_ID);
 
         assertThat(updatedApproval.getStatus(), is(equalTo(ApprovalStatus.APPROVED)));
     }
 
     @Test
     void shouldNotResetApprovalsWhenUpsertRequestContainsSameDecimalsWithAnotherScale() {
-        var institutionId = randomUri();
-        var upsertCandidateRequest = createUpsertRequestWithDecimalScale(0, institutionId);
+        var upsertCandidateRequest = createUpsertRequestWithDecimalScale(0, HARDCODED_INSTITUTION_ID);
         var candidate = upsert(upsertCandidateRequest);
-        candidate.updateApproval(
-            new UpdateStatusRequest(institutionId, ApprovalStatus.APPROVED, randomString(), randomString()));
-        var approval = candidate.getApprovals().get(institutionId);
-        var samePointsWithDifferentScale = upsertCandidateRequest.institutionPoints()
+        candidate.updateApprovalStatus(new UpdateStatusRequest(HARDCODED_INSTITUTION_ID,
+                                                               ApprovalStatus.APPROVED,
+                                                               randomString(),
+                                                               randomString()), organizationRetriever);
+        var approval = candidate
+                           .getApprovals()
+                           .get(HARDCODED_INSTITUTION_ID);
+        var samePointsWithDifferentScale = upsertCandidateRequest
+                                               .institutionPoints()
                                                .stream()
-                                               .map(institutionPoints -> new InstitutionPoints(
-                                                   institutionPoints.institutionId(),
-                                                   institutionPoints.institutionPoints()
-                                                       .setScale(1, EXPECTED_ROUNDING_MODE),
-                                                   institutionPoints.creatorAffiliationPoints()))
+                                               .map(institutionPoints -> new InstitutionPoints(institutionPoints.institutionId(),
+                                                                                               institutionPoints
+                                                                                                   .institutionPoints()
+                                                                                                   .setScale(1,
+                                                                                                             EXPECTED_ROUNDING_MODE),
+                                                                                               institutionPoints.creatorAffiliationPoints()))
                                                .toList();
-        var newUpsertRequest = UpsertRequestBuilder.fromRequest(upsertCandidateRequest)
+        var newUpsertRequest = UpsertRequestBuilder
+                                   .fromRequest(upsertCandidateRequest)
                                    .withPoints(samePointsWithDifferentScale)
                                    .build();
         var updatedCandidate = upsert(newUpsertRequest);
-        var updatedApproval = updatedCandidate.getApprovals().get(institutionId);
+        var updatedApproval = updatedCandidate
+                                  .getApprovals()
+                                  .get(HARDCODED_INSTITUTION_ID);
 
         assertThat(updatedApproval, is(equalTo(approval)));
     }
 
     @Test
     void shouldResetApprovalsWhenNonCandidateBecomesCandidate() {
-        var institutionId = randomUri();
-        var upsertCandidateRequest = createUpsertCandidateRequest(institutionId).build();
+        var upsertCandidateRequest = createUpsertCandidateRequest(HARDCODED_INSTITUTION_ID).build();
         var candidate = upsert(upsertCandidateRequest);
-        var nonCandidate = Candidate.updateNonCandidate(
-            createUpsertNonCandidateRequest(candidate.getPublicationId()),
-            candidateRepository).orElseThrow();
+        var nonCandidate = Candidate
+                               .updateNonCandidate(createUpsertNonCandidateRequest(candidate.getPublicationId()),
+                                                   candidateRepository)
+                               .orElseThrow();
         assertFalse(nonCandidate.isApplicable());
         var updatedCandidate = upsert(createNewUpsertRequestNotAffectingApprovals(upsertCandidateRequest));
 
         assertTrue(updatedCandidate.isApplicable());
-        assertThat(updatedCandidate.getApprovals().size(), is(greaterThan(0)));
+        assertThat(updatedCandidate
+                       .getApprovals()
+                       .size(), is(greaterThan(0)));
     }
 
-    @ParameterizedTest(name="Should reset approvals when {0}")
+    @ParameterizedTest(name = "Should reset approvals when {0}")
     @MethodSource("candidateResetCauseProvider")
     @DisplayName("Should reset approvals when updating fields affecting approvals")
     void shouldResetApprovalsWhenUpdatingFieldsEffectingApprovals(CandidateResetCauseArgument arguments) {
         var upsertCandidateRequest = getUpsertCandidateRequestWithHardcodedValues();
 
         var candidate = upsert(upsertCandidateRequest);
-        candidate.updateApproval(
-            new UpdateStatusRequest(HARDCODED_INSTITUTION_ID, ApprovalStatus.APPROVED, randomString(), randomString()));
+        updateApprovalStatus(candidate, ApprovalStatus.APPROVED);
 
-        var creators = arguments.creators()
+        var creators = arguments
+                           .creators()
                            .stream()
                            .collect(Collectors.toMap(VerifiedNviCreatorDto::id, VerifiedNviCreatorDto::affiliations));
 
-        var newUpsertRequest = UpsertRequestBuilder.fromRequest(upsertCandidateRequest)
+        var newUpsertRequest = UpsertRequestBuilder
+                                   .fromRequest(upsertCandidateRequest)
                                    .withCreators(creators)
                                    .withVerifiedCreators(arguments.creators())
                                    .withInstanceType(arguments.type())
-                                   .withChannelId(arguments.channel().id())
-                                   .withLevel(arguments.channel().level())
+                                   .withChannelId(arguments
+                                                      .channel()
+                                                      .id())
+                                   .withLevel(arguments
+                                                  .channel()
+                                                  .level())
                                    .withPoints(arguments.institutionPoints())
                                    .build();
 
         var updatedCandidate = upsert(newUpsertRequest);
-        var updatedApproval = updatedCandidate.getApprovals().get(HARDCODED_INSTITUTION_ID);
+        var updatedApproval = updatedCandidate
+                                  .getApprovals()
+                                  .get(HARDCODED_INSTITUTION_ID);
         assertThat(updatedApproval.getStatus(), is(equalTo(ApprovalStatus.PENDING)));
     }
 
-    private static UpdateStatusRequest createRejectionRequestWithoutReason(URI institutionId, String username) {
-        return UpdateStatusRequest.builder()
+    private static UpdateStatusRequest createRejectionRequestWithoutReason(String username) {
+        return UpdateStatusRequest
+                   .builder()
                    .withApprovalStatus(ApprovalStatus.REJECTED)
-                   .withInstitutionId(institutionId)
+                   .withInstitutionId(HARDCODED_INSTITUTION_ID)
                    .withUsername(username)
                    .build();
     }
 
     private static Stream<Arguments> candidateResetCauseProvider() {
-        return Stream.of(
-            Arguments.of(Named.of("channel changed",
-                                  CandidateResetCauseArgument.defaultBuilder().withChannelId(randomUri()).build())),
-            Arguments.of(Named.of("level changed",
-                                  CandidateResetCauseArgument.defaultBuilder()
-                                      .withLevel("LevelTwo")
-                                      .build())),
-            Arguments.of(Named.of("type changed",
-                                  CandidateResetCauseArgument.defaultBuilder()
-                                      .withType(InstanceType.ACADEMIC_MONOGRAPH)
-                                      .build())),
-            Arguments.of(Named.of("institution points changed",
-                                  CandidateResetCauseArgument.defaultBuilder()
-                                      .withPointsForInstitution(BigDecimal.TEN)
-                                      .build())),
-            Arguments.of(Named.of("creator changed",
-                                  CandidateResetCauseArgument.defaultBuilder()
-                                      .withCreators(
-                                          List.of(new VerifiedNviCreatorDto(randomUri(), List.of(HARDCODED_INSTITUTION_ID))))
-                                      .build())),
-            Arguments.of(Named.of("creator removed",
-                                  CandidateResetCauseArgument.defaultBuilder()
-                                      .withCreators(Collections.emptyList())
-                                      .build())),
-            Arguments.of(Named.of("creator added",
-                                  CandidateResetCauseArgument.defaultBuilder()
-                                      .withCreators(List.of(CandidateResetCauseArgument.Builder.DEFAULT_CREATOR,
-                                                            new VerifiedNviCreatorDto(randomUri(),
-                                                                                      List.of(HARDCODED_INSTITUTION_ID))))
-                                      .build())));
+        return Stream.of(Arguments.of(Named.of("channel changed",
+                                               CandidateResetCauseArgument
+                                                   .defaultBuilder()
+                                                   .withChannelId(randomUri())
+                                                   .build())),
+                         Arguments.of(Named.of("level changed",
+                                               CandidateResetCauseArgument
+                                                   .defaultBuilder()
+                                                   .withLevel("LevelTwo")
+                                                   .build())),
+                         Arguments.of(Named.of("type changed",
+                                               CandidateResetCauseArgument
+                                                   .defaultBuilder()
+                                                   .withType(InstanceType.ACADEMIC_MONOGRAPH)
+                                                   .build())),
+                         Arguments.of(Named.of("institution points changed",
+                                               CandidateResetCauseArgument
+                                                   .defaultBuilder()
+                                                   .withPointsForInstitution(BigDecimal.TEN)
+                                                   .build())),
+                         Arguments.of(Named.of("creator changed",
+                                               CandidateResetCauseArgument
+                                                   .defaultBuilder()
+                                                   .withCreators(List.of(new VerifiedNviCreatorDto(randomUri(),
+                                                                                                   List.of(
+                                                                                                       HARDCODED_INSTITUTION_ID))))
+                                                   .build())),
+                         Arguments.of(Named.of("creator removed",
+                                               CandidateResetCauseArgument
+                                                   .defaultBuilder()
+                                                   .withCreators(Collections.emptyList())
+                                                   .build())),
+                         Arguments.of(Named.of("creator added",
+                                               CandidateResetCauseArgument
+                                                   .defaultBuilder()
+                                                   .withCreators(List.of(CandidateResetCauseArgument.Builder.DEFAULT_CREATOR,
+                                                                         new VerifiedNviCreatorDto(randomUri(),
+                                                                                                   List.of(
+                                                                                                       HARDCODED_INSTITUTION_ID))))
+                                                   .build())));
+    }
+
+    private Candidate updateApprovalStatus(Candidate candidate, ApprovalStatus status) {
+        var updateRequest = createUpdateStatusRequest(status, HARDCODED_INSTITUTION_ID, randomString());
+        return candidate.updateApprovalStatus(updateRequest, organizationRetriever);
     }
 
     private UpsertCandidateRequest getUpsertCandidateRequestWithHardcodedValues() {
@@ -427,11 +504,11 @@ class CandidateApprovalTest extends CandidateTestSetup {
                    .withInstanceType(HARDCODED_INSTANCE_TYPE)
                    .withChannelId(HARDCODED_CHANNEL_ID)
                    .withLevel(HARDCODED_LEVEL)
-                   .withPoints(List.of(
-                       new InstitutionPoints(HARDCODED_INSTITUTION_ID, HARDCODED_POINTS,
-                                             List.of(new CreatorAffiliationPoints(HARDCODED_CREATOR_ID,
-                                                                                  HARDCODED_SUBUNIT_ID,
-                                                                                  HARDCODED_POINTS)))))
+                   .withPoints(List.of(new InstitutionPoints(HARDCODED_INSTITUTION_ID,
+                                                             HARDCODED_POINTS,
+                                                             List.of(new CreatorAffiliationPoints(HARDCODED_CREATOR_ID,
+                                                                                                  HARDCODED_SUBUNIT_ID,
+                                                                                                  HARDCODED_POINTS)))))
                    .build();
     }
 
@@ -531,7 +608,8 @@ class CandidateApprovalTest extends CandidateTestSetup {
     }
 
     private record CandidateResetCauseArgument(PublicationChannel channel, InstanceType type,
-                                               List<InstitutionPoints> institutionPoints, List<VerifiedNviCreatorDto> creators) {
+                                               List<InstitutionPoints> institutionPoints,
+                                               List<VerifiedNviCreatorDto> creators) {
 
         private static CandidateResetCauseArgument.Builder defaultBuilder() {
             return new Builder();
@@ -540,16 +618,18 @@ class CandidateApprovalTest extends CandidateTestSetup {
         private static final class Builder {
 
             private static final VerifiedNviCreatorDto DEFAULT_CREATOR = new VerifiedNviCreatorDto(HARDCODED_CREATOR_ID,
-                                                                                                   List.of(HARDCODED_SUBUNIT_ID));
+                                                                                                   List.of(
+                                                                                                       HARDCODED_SUBUNIT_ID));
             private PublicationChannel channel = new PublicationChannel(ChannelType.JOURNAL,
                                                                         HARDCODED_CHANNEL_ID,
                                                                         HARDCODED_LEVEL);
             private InstanceType type = HARDCODED_INSTANCE_TYPE;
-            private List<InstitutionPoints> institutionPoints = List.of(
-                new InstitutionPoints(HARDCODED_INSTITUTION_ID, HARDCODED_POINTS,
-                                      List.of(new CreatorAffiliationPoints(HARDCODED_CREATOR_ID,
-                                                                           HARDCODED_SUBUNIT_ID,
-                                                                           HARDCODED_POINTS))));
+            private List<InstitutionPoints> institutionPoints = List.of(new InstitutionPoints(HARDCODED_INSTITUTION_ID,
+                                                                                              HARDCODED_POINTS,
+                                                                                              List.of(new CreatorAffiliationPoints(
+                                                                                                  HARDCODED_CREATOR_ID,
+                                                                                                  HARDCODED_SUBUNIT_ID,
+                                                                                                  HARDCODED_POINTS))));
             private List<VerifiedNviCreatorDto> creators = List.of(DEFAULT_CREATOR);
 
             private Builder() {
@@ -576,7 +656,8 @@ class CandidateApprovalTest extends CandidateTestSetup {
             }
 
             private Builder withPointsForInstitution(BigDecimal institutionPoints) {
-                this.institutionPoints = List.of(new InstitutionPoints(HARDCODED_INSTITUTION_ID, institutionPoints,
+                this.institutionPoints = List.of(new InstitutionPoints(HARDCODED_INSTITUTION_ID,
+                                                                       institutionPoints,
                                                                        List.of(new CreatorAffiliationPoints(
                                                                            HARDCODED_CREATOR_ID,
                                                                            HARDCODED_SUBUNIT_ID,

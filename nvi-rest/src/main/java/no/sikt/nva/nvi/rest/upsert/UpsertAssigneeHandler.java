@@ -82,7 +82,8 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<UpsertAssigneeReque
         return attempt(() -> Candidate.fetch(() -> candidateIdentifier, candidateRepository, periodRepository))
                    .map(candidate -> validateViewingScope(viewingScopeValidator, RequestUtil.getUsername(requestInfo),
                                                           candidate))
-                   .map(candidate -> candidate.updateApproval(new UpdateAssigneeRequest(institutionId, assignee)))
+                   .map(candidate -> candidate.updateApprovalAssignee(new UpdateAssigneeRequest(institutionId,
+                                                                                                assignee)))
                    .map(Candidate::toDto)
                    .orElseThrow(ExceptionMapper::map);
     }
