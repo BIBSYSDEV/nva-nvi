@@ -237,7 +237,7 @@ class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
         var actualApproval = candidateResponse.approvals().getFirst();
         assertThat(actualApproval.finalizedBy(), is(nullValue()));
         assertThat(actualApproval.finalizedDate(), is(nullValue()));
-        assertThat(actualApproval.status(), is(equalTo(ApprovalStatusDto.NEW)));
+        assertThat(actualApproval.status(), is(equalTo(ApprovalStatusDto.PENDING)));
     }
 
     @ParameterizedTest(name="shouldUpdateApprovalStatusToRejectedWithReason from old status {0}")

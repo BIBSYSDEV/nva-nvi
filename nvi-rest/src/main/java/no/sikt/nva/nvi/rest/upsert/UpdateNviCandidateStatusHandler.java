@@ -53,6 +53,7 @@ public class UpdateNviCandidateStatusHandler extends ApiGatewayHandler<NviStatus
     @Override
     protected void validateRequest(NviStatusRequest input, RequestInfo requestInfo, Context context)
         throws ApiGatewayException {
+        input.validate();
         validateCustomerAndAccessRight(input, requestInfo);
     }
 

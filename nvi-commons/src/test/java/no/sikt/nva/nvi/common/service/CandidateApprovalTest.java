@@ -104,9 +104,9 @@ class CandidateApprovalTest extends CandidateTestSetup {
         var existingCandidate = Candidate.fetchByPublicationId(upsertCandidateRequest::publicationId,
                                                                candidateRepository,
                                                                periodRepository);
-        existingCandidate = setApprovalStatus(existingCandidate, oldStatus);
+        existingCandidate = updateApprovalStatus(existingCandidate, oldStatus);
 
-        var updatedCandidate = setApprovalStatus(existingCandidate, newStatus);
+        var updatedCandidate = updateApprovalStatus(existingCandidate, newStatus);
         var actualNewStatus = updatedCandidate
                                   .getApprovals()
                                   .get(HARDCODED_INSTITUTION_ID)
@@ -121,9 +121,9 @@ class CandidateApprovalTest extends CandidateTestSetup {
         var candidate = upsert(upsertCandidateRequest);
         var assignee = randomString();
         candidate.updateApproval(new UpdateAssigneeRequest(HARDCODED_INSTITUTION_ID, assignee));
-        setApprovalStatus(candidate, oldStatus);
+        updateApprovalStatus(candidate, oldStatus);
 
-        setApprovalStatus(candidate, ApprovalStatus.PENDING);
+        updateApprovalStatus(candidate, ApprovalStatus.PENDING);
         var approvalStatus = candidate
                                  .getApprovals()
                                  .get(HARDCODED_INSTITUTION_ID);
@@ -154,7 +154,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
         var candidate = Candidate.fetchByPublicationId(createRequest::publicationId,
                                                        candidateRepository,
                                                        periodRepository);
-        var updatedCandidate = setApprovalStatus(candidate, oldStatus);
+        var updatedCandidate = updateApprovalStatus(candidate, oldStatus);
         assertThrows(UnsupportedOperationException.class,
                      () -> updatedCandidate.updateApprovalStatus(createRejectionRequestWithoutReason(randomString()),
                                                                  organizationRetriever));
@@ -174,7 +174,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
                                                                                     randomString()),
                                                           organizationRetriever);
 
-        var updatedCandidate = setApprovalStatus(rejectedCandidate, newStatus);
+        var updatedCandidate = updateApprovalStatus(rejectedCandidate, newStatus);
         assertThat(updatedCandidate
                        .getApprovals()
                        .size(), is(equalTo(1)));
@@ -246,7 +246,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
     void shouldPersistStatusChangeWhenRequestingAndUpdate() {
         var upsertCandidateRequest = createUpsertCandidateRequest(HARDCODED_INSTITUTION_ID).build();
         var candidate = upsert(upsertCandidateRequest);
-        setApprovalStatus(candidate, ApprovalStatus.APPROVED);
+        updateApprovalStatus(candidate, ApprovalStatus.APPROVED);
 
         var status = Candidate
                          .fetch(candidate::getIdentifier, candidateRepository, periodRepository)
@@ -264,8 +264,8 @@ class CandidateApprovalTest extends CandidateTestSetup {
         var candidate = Candidate
                             .fetchByPublicationId(request::publicationId, candidateRepository, periodRepository)
                             .updateApproval(new UpdateAssigneeRequest(HARDCODED_INSTITUTION_ID, assignee));
-        candidate = setApprovalStatus(candidate, ApprovalStatus.APPROVED);
-        candidate = setApprovalStatus(candidate, ApprovalStatus.REJECTED);
+        candidate = updateApprovalStatus(candidate, ApprovalStatus.APPROVED);
+        candidate = updateApprovalStatus(candidate, ApprovalStatus.REJECTED);
         var candidateDto = candidate.toDto();
         assertThat(candidateDto
                        .approvals()
@@ -313,7 +313,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
     void shouldNotResetApprovalsWhenUpdatingCandidateFieldsNotEffectingApprovals() {
         var upsertCandidateRequest = createUpsertCandidateRequest(HARDCODED_INSTITUTION_ID).build();
         var candidate = upsert(upsertCandidateRequest);
-        candidate = setApprovalStatus(candidate, ApprovalStatus.APPROVED);
+        candidate = updateApprovalStatus(candidate, ApprovalStatus.APPROVED);
         var approval = candidate
                            .getApprovals()
                            .get(HARDCODED_INSTITUTION_ID);
@@ -411,7 +411,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
         var upsertCandidateRequest = getUpsertCandidateRequestWithHardcodedValues();
 
         var candidate = upsert(upsertCandidateRequest);
-        setApprovalStatus(candidate, ApprovalStatus.APPROVED);
+        updateApprovalStatus(candidate, ApprovalStatus.APPROVED);
 
         var creators = arguments
                            .creators()
@@ -491,7 +491,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
                                                    .build())));
     }
 
-    private Candidate setApprovalStatus(Candidate candidate, ApprovalStatus status) {
+    private Candidate updateApprovalStatus(Candidate candidate, ApprovalStatus status) {
         var updateRequest = createUpdateStatusRequest(status, HARDCODED_INSTITUTION_ID, randomString());
         return candidate.updateApprovalStatus(updateRequest, organizationRetriever);
     }
