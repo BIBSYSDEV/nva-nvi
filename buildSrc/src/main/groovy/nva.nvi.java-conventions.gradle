@@ -32,6 +32,15 @@ tasks.named('test') {
     }
 }
 
+// Reformat project before build and test if needed
+tasks.named('build').configure {
+    dependsOn 'spotlessApply'
+}
+
+tasks.named('test').configure {
+    dependsOn 'spotlessApply'
+}
+
 pmd {
     toolVersion = '7.8.0'
     ruleSetConfig = rootProject.resources.text.fromFile('config/pmd/ruleset.xml')
@@ -88,6 +97,4 @@ spotless {
         trimTrailingWhitespace()
         endWithNewline()
     }
-
-    enforceCheck false // Temporarily disable checking until the project is reformatted
 }
