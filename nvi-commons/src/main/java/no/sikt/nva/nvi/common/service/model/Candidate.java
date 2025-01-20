@@ -317,15 +317,24 @@ public final class Candidate {
                    .build();
     }
 
+    @Deprecated
     public Candidate updateApproval(UpdateApprovalRequest input) {
         validateCandidateState();
         approvals.computeIfPresent(input.institutionId(), (uri, approval) -> approval.update(input));
         return this;
     }
 
-    public Candidate updateApproval(UpdateStatusRequest input, OrganizationRetriever organizationRetriever) {
+    public Candidate updateApprovalAssignee(UpdateAssigneeRequest input) {
+        validateCandidateState();
+        approvals.computeIfPresent(input.institutionId(), (uri, approval) -> approval.update(input));
+        return this;
+    }
+
+    public Candidate updateApprovalStatus(UpdateStatusRequest input, OrganizationRetriever organizationRetriever) {
+        validateCandidateState();
         if (isValidUpdateStatusRequest(this, input, organizationRetriever)) {
-            return updateApproval(input);
+            approvals.computeIfPresent(input.institutionId(), (uri, approval) -> approval.update(input));
+            return this;
         } else {
             throw new IllegalStateException("Cannot finalize status for institution with unverified creator");
         }

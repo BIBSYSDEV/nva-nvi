@@ -65,7 +65,7 @@ public class UpdateNviCandidateStatusHandler extends ApiGatewayHandler<NviStatus
 
         return attempt(() -> Candidate.fetch(() -> candidateIdentifier, candidateRepository, periodRepository))
                    .map(candidate -> validateViewingScope(viewingScopeValidator, username, candidate))
-                   .map(candidate -> candidate.updateApproval(updateRequest, organizationRetriever))
+                   .map(candidate -> candidate.updateApprovalStatus(updateRequest, organizationRetriever))
                    .map(Candidate::toDto)
                    .orElseThrow(ExceptionMapper::map);
     }

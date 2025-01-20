@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.rest.upsert;
 import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.rest.upsert.UpsertAssigneeHandler.CANDIDATE_IDENTIFIER;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
+import static no.sikt.nva.nvi.test.TestUtils.mockOrganizationResponseForAffiliation;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningClosedPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningNotOpenedPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeriod;
@@ -25,6 +26,7 @@ import java.nio.file.Path;
 import java.util.Calendar;
 import java.util.Map;
 import java.util.Optional;
+import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
@@ -37,6 +39,7 @@ import no.sikt.nva.nvi.test.FakeViewingScopeValidator;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
+import no.unit.nva.auth.uriretriever.UriRetriever;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
@@ -192,12 +195,17 @@ class UpsertAssigneeHandlerTest extends LocalDynamoTest {
 
     private Candidate candidateWithFinalizedApproval(String newAssignee) {
         var institutionId = randomUri();
+        var mockUriRetriever = mock(UriRetriever.class);
+        var mockOrganizationRetriever = new OrganizationRetriever(mockUriRetriever);
+        mockOrganizationResponseForAffiliation(institutionId, null, mockUriRetriever);
         var request = createUpsertCandidateRequest(institutionId).build();
         Candidate.upsert(request, candidateRepository, periodRepository);
         var candidate = Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository);
-        candidate.updateApproval(new UpdateAssigneeRequest(institutionId, newAssignee));
-        candidate.updateApproval(
-            new UpdateStatusRequest(institutionId, ApprovalStatus.APPROVED, randomString(), randomString()));
+        candidate.updateApprovalAssignee(new UpdateAssigneeRequest(institutionId, newAssignee));
+        candidate.updateApprovalStatus(new UpdateStatusRequest(institutionId,
+                                                               ApprovalStatus.APPROVED,
+                                                               randomString(),
+                                                               randomString()), mockOrganizationRetriever);
         return candidate;
     }
 

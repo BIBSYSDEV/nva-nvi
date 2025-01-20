@@ -153,7 +153,7 @@ class CreateNoteHandlerTest extends LocalDynamoTest {
         var institutionId = randomUri();
         var candidate = upsert(createUpsertCandidateRequest(institutionId).build());
         var existingApprovalAssignee = randomString();
-        candidate.updateApproval(new UpdateAssigneeRequest(institutionId, existingApprovalAssignee));
+        candidate.updateApprovalAssignee(new UpdateAssigneeRequest(institutionId, existingApprovalAssignee));
         assertNotNull(candidate.getApprovals().get(institutionId).getAssigneeUsername());
         var request = createRequest(candidate.getIdentifier(), randomNote(), randomString(), institutionId);
         handler.handleRequest(request, output, context);
