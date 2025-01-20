@@ -18,40 +18,41 @@ import org.slf4j.LoggerFactory;
 
 public final class ExceptionMapper {
 
-    private static final Logger logger = LoggerFactory.getLogger(ExceptionMapper.class);
+  private static final Logger logger = LoggerFactory.getLogger(ExceptionMapper.class);
 
-    private ExceptionMapper() {
-    }
+  private ExceptionMapper() {}
 
-    public static <T> ApiGatewayException map(Failure<T> failure) {
-        var exception = failure.getException();
-        if (isNotFoundException(exception)) {
-            logger.error("NotFoundException", exception);
-            return new NotFoundException("Resource not found!");
-        }
-        if (exception instanceof IllegalArgumentException || exception instanceof UnsupportedOperationException) {
-            logger.error("IllegalArgumentException", exception);
-            return new BadRequestException(exception.getMessage());
-        }
-        if (exception instanceof IllegalStateException) {
-            logger.error("IllegalStateException", exception);
-            return new ConflictException(exception.getMessage());
-        }
-        if (exception instanceof UnauthorizedOperationException || exception instanceof UnauthorizedException) {
-            return new UnauthorizedException(exception.getMessage());
-        }
-        if (exception instanceof NotApplicableException) {
-            logger.warn("Attempted operation which was not allowed", exception);
-            return new MethodNotAllowedException(exception.getMessage());
-        }
-        logger.error("BadGatewayException {}", exception.getMessage());
-        return new BadGatewayException("Something went wrong! Contact application administrator.");
+  public static <T> ApiGatewayException map(Failure<T> failure) {
+    var exception = failure.getException();
+    if (isNotFoundException(exception)) {
+      logger.error("NotFoundException", exception);
+      return new NotFoundException("Resource not found!");
     }
+    if (exception instanceof IllegalArgumentException
+        || exception instanceof UnsupportedOperationException) {
+      logger.error("IllegalArgumentException", exception);
+      return new BadRequestException(exception.getMessage());
+    }
+    if (exception instanceof IllegalStateException) {
+      logger.error("IllegalStateException", exception);
+      return new ConflictException(exception.getMessage());
+    }
+    if (exception instanceof UnauthorizedOperationException
+        || exception instanceof UnauthorizedException) {
+      return new UnauthorizedException(exception.getMessage());
+    }
+    if (exception instanceof NotApplicableException) {
+      logger.warn("Attempted operation which was not allowed", exception);
+      return new MethodNotAllowedException(exception.getMessage());
+    }
+    logger.error("BadGatewayException {}", exception.getMessage());
+    return new BadGatewayException("Something went wrong! Contact application administrator.");
+  }
 
-    private static boolean isNotFoundException(Exception exception) {
-        return exception instanceof NotFoundException
-               || exception instanceof NoSuchElementException
-               || exception instanceof CandidateNotFoundException
-               || exception instanceof PeriodNotFoundException;
-    }
+  private static boolean isNotFoundException(Exception exception) {
+    return exception instanceof NotFoundException
+        || exception instanceof NoSuchElementException
+        || exception instanceof CandidateNotFoundException
+        || exception instanceof PeriodNotFoundException;
+  }
 }

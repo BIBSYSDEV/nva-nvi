@@ -26,6 +26,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.math.BigDecimal;
 import java.nio.file.Path;
 import java.util.Collections;
@@ -70,444 +71,487 @@ import org.junit.jupiter.params.provider.ValueSource;
 @SuppressWarnings({"PMD.GodClass", "PMD.CouplingBetweenObjects"})
 class CandidateTest extends CandidateTestSetup {
 
-    @Test
-    void shouldThrowNotFoundExceptionWhenCandidateDoesNotExist() {
-        assertThrows(CandidateNotFoundException.class,
-                     () -> Candidate.fetch(UUID::randomUUID, candidateRepository, periodRepository));
-    }
+  @Test
+  void shouldThrowNotFoundExceptionWhenCandidateDoesNotExist() {
+    assertThrows(
+        CandidateNotFoundException.class,
+        () -> Candidate.fetch(UUID::randomUUID, candidateRepository, periodRepository));
+  }
 
-    @Test
-    void shouldReturnCandidateWhenExists() {
-        var upsertCandidateRequest = randomUpsertRequestBuilder().build();
-        var fetchedCandidate = upsert(upsertCandidateRequest);
-        assertNotNull(fetchedCandidate);
-    }
+  @Test
+  void shouldReturnCandidateWhenExists() {
+    var upsertCandidateRequest = randomUpsertRequestBuilder().build();
+    var fetchedCandidate = upsert(upsertCandidateRequest);
+    assertNotNull(fetchedCandidate);
+  }
 
-    @Deprecated
-    @ParameterizedTest(name="Should persist new candidate with correct level {0}")
-    @MethodSource("levelValues")
-    void shouldPersistNewCandidateWithCorrectLevelBasedOnVersionTwoLevelValues(DbLevel expectedLevel,
-                                                                               String versionTwoValue) {
-        var request = randomUpsertRequestBuilder().withLevel(versionTwoValue).build();
-        Candidate.upsert(request, candidateRepository, periodRepository);
-        var persistedCandidate = candidateRepository.findByPublicationId(request.publicationId())
-                                     .orElseThrow()
-                                     .candidate();
-        assertEquals(expectedLevel, persistedCandidate.level());
-    }
+  @Deprecated
+  @ParameterizedTest(name = "Should persist new candidate with correct level {0}")
+  @MethodSource("levelValues")
+  void shouldPersistNewCandidateWithCorrectLevelBasedOnVersionTwoLevelValues(
+      DbLevel expectedLevel, String versionTwoValue) {
+    var request = randomUpsertRequestBuilder().withLevel(versionTwoValue).build();
+    Candidate.upsert(request, candidateRepository, periodRepository);
+    var persistedCandidate =
+        candidateRepository.findByPublicationId(request.publicationId()).orElseThrow().candidate();
+    assertEquals(expectedLevel, persistedCandidate.level());
+  }
 
-    @Test
-    void shouldGetUnverifiedCreatorsFromDetails() {
-        var unverifiedCreator = new UnverifiedNviCreatorDto(randomString(),
-                                                            List.of(randomUri()));
-        var upsertCandidateRequest =
-            randomUpsertRequestBuilder().withUnverifiedCreators(List.of(unverifiedCreator)).build();
-        var expectedUnverifiedCreatorCount = upsertCandidateRequest.unverifiedCreators().size();
-        var expectedVerifiedCreatorCount = upsertCandidateRequest.creators().keySet().size();
+  @Test
+  void shouldGetUnverifiedCreatorsFromDetails() {
+    var unverifiedCreator = new UnverifiedNviCreatorDto(randomString(), List.of(randomUri()));
+    var upsertCandidateRequest =
+        randomUpsertRequestBuilder().withUnverifiedCreators(List.of(unverifiedCreator)).build();
+    var expectedUnverifiedCreatorCount = upsertCandidateRequest.unverifiedCreators().size();
+    var expectedVerifiedCreatorCount = upsertCandidateRequest.creators().keySet().size();
 
-        var fetchedCandidate = upsert(upsertCandidateRequest);
+    var fetchedCandidate = upsert(upsertCandidateRequest);
 
-        var actualUnverifiedCreatorCount = fetchedCandidate.getPublicationDetails().getUnverifiedCreators().size();
-        var actualVerifiedCreatorCount = fetchedCandidate.getPublicationDetails().getVerifiedCreators().size();
-        assertEquals(expectedUnverifiedCreatorCount, actualUnverifiedCreatorCount);
-        assertEquals(expectedVerifiedCreatorCount, actualVerifiedCreatorCount);
-    }
+    var actualUnverifiedCreatorCount =
+        fetchedCandidate.getPublicationDetails().getUnverifiedCreators().size();
+    var actualVerifiedCreatorCount =
+        fetchedCandidate.getPublicationDetails().getVerifiedCreators().size();
+    assertEquals(expectedUnverifiedCreatorCount, actualUnverifiedCreatorCount);
+    assertEquals(expectedVerifiedCreatorCount, actualVerifiedCreatorCount);
+  }
 
-    @Test
-    void shouldPersistNewCandidateWithCorrectDataFromUpsertRequest() {
-        var request = randomUpsertRequestBuilder().build();
-        var candidate = upsert(request);
-        var expectedCandidate = generateExpectedCandidate(candidate, request);
-        var actualPersistedCandidate = candidateRepository.findCandidateById(candidate.getIdentifier())
-                                           .orElseThrow()
-                                           .candidate();
-        assertEquals(expectedCandidate, actualPersistedCandidate);
-    }
+  @Test
+  void shouldPersistNewCandidateWithCorrectDataFromUpsertRequest() {
+    var request = randomUpsertRequestBuilder().build();
+    var candidate = upsert(request);
+    var expectedCandidate = generateExpectedCandidate(candidate, request);
+    var actualPersistedCandidate =
+        candidateRepository.findCandidateById(candidate.getIdentifier()).orElseThrow().candidate();
+    assertEquals(expectedCandidate, actualPersistedCandidate);
+  }
 
-    @ParameterizedTest(name="Should persist new candidate with correct level {0}")
-    @ValueSource(ints = {0, 1, 4})
-    void shouldPersistNewCandidateWithCorrectScaleForAllDecimals(int scale) {
-        var request = createUpsertRequestWithDecimalScale(scale, randomUri());
-        var candidate = upsert(request);
-        var expectedCandidate = generateExpectedCandidate(candidate, request);
-        var actualPersistedCandidate = candidateRepository.findCandidateById(candidate.getIdentifier())
-                                           .orElseThrow()
-                                           .candidate();
-        assertEquals(expectedCandidate, actualPersistedCandidate);
-    }
+  @ParameterizedTest(name = "Should persist new candidate with correct level {0}")
+  @ValueSource(ints = {0, 1, 4})
+  void shouldPersistNewCandidateWithCorrectScaleForAllDecimals(int scale) {
+    var request = createUpsertRequestWithDecimalScale(scale, randomUri());
+    var candidate = upsert(request);
+    var expectedCandidate = generateExpectedCandidate(candidate, request);
+    var actualPersistedCandidate =
+        candidateRepository.findCandidateById(candidate.getIdentifier()).orElseThrow().candidate();
+    assertEquals(expectedCandidate, actualPersistedCandidate);
+  }
 
-    @ParameterizedTest(name="Should update candidate with correct level {0}")
-    @ValueSource(ints = {0, 1, 4})
-    void shouldUpdateCandidateWithCorrectScaleForAllDecimals(int scale) {
-        var request = randomUpsertRequestBuilder()
-                          .withCollaborationFactor(randomBigDecimal(scale))
-                          .withBasePoints(randomBigDecimal(scale))
-                          .withTotalPoints(randomBigDecimal(scale))
-                          .build();
-        var candidate = upsert(request);
-        var expectedCandidate = generateExpectedCandidate(candidate, request);
-        var actualPersistedCandidate = candidateRepository.findCandidateById(candidate.getIdentifier())
-                                           .orElseThrow()
-                                           .candidate();
-        assertEquals(expectedCandidate, actualPersistedCandidate);
-    }
+  @ParameterizedTest(name = "Should update candidate with correct level {0}")
+  @ValueSource(ints = {0, 1, 4})
+  void shouldUpdateCandidateWithCorrectScaleForAllDecimals(int scale) {
+    var request =
+        randomUpsertRequestBuilder()
+            .withCollaborationFactor(randomBigDecimal(scale))
+            .withBasePoints(randomBigDecimal(scale))
+            .withTotalPoints(randomBigDecimal(scale))
+            .build();
+    var candidate = upsert(request);
+    var expectedCandidate = generateExpectedCandidate(candidate, request);
+    var actualPersistedCandidate =
+        candidateRepository.findCandidateById(candidate.getIdentifier()).orElseThrow().candidate();
+    assertEquals(expectedCandidate, actualPersistedCandidate);
+  }
 
-    @Test
-    void shouldUpdateCandidateWithSystemGeneratedModifiedDate() {
-        var request = getUpdateRequestForExistingCandidate();
-        var candidate = Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository);
-        Candidate.upsert(request, candidateRepository, periodRepository);
-        var updatedCandidate = candidateRepository.findCandidateById(candidate.getIdentifier())
-                                   .orElseThrow()
-                                   .candidate();
-        assertNotEquals(candidate.getModifiedDate(), updatedCandidate.modifiedDate());
-    }
+  @Test
+  void shouldUpdateCandidateWithSystemGeneratedModifiedDate() {
+    var request = getUpdateRequestForExistingCandidate();
+    var candidate =
+        Candidate.fetchByPublicationId(
+            request::publicationId, candidateRepository, periodRepository);
+    Candidate.upsert(request, candidateRepository, periodRepository);
+    var updatedCandidate =
+        candidateRepository.findCandidateById(candidate.getIdentifier()).orElseThrow().candidate();
+    assertNotEquals(candidate.getModifiedDate(), updatedCandidate.modifiedDate());
+  }
 
-    @Test
-    void shouldNotUpdateCandidateCreatedDateOnUpdates() {
-        var request = getUpdateRequestForExistingCandidate();
-        var candidate = Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository);
-        var expectedCreatedDate = candidate.getCreatedDate();
-        Candidate.upsert(request, candidateRepository, periodRepository);
-        var actualPersistedCandidate = candidateRepository.findCandidateById(candidate.getIdentifier())
-                                           .orElseThrow()
-                                           .candidate();
-        assertEquals(expectedCreatedDate, actualPersistedCandidate.createdDate());
-    }
+  @Test
+  void shouldNotUpdateCandidateCreatedDateOnUpdates() {
+    var request = getUpdateRequestForExistingCandidate();
+    var candidate =
+        Candidate.fetchByPublicationId(
+            request::publicationId, candidateRepository, periodRepository);
+    var expectedCreatedDate = candidate.getCreatedDate();
+    Candidate.upsert(request, candidateRepository, periodRepository);
+    var actualPersistedCandidate =
+        candidateRepository.findCandidateById(candidate.getIdentifier()).orElseThrow().candidate();
+    assertEquals(expectedCreatedDate, actualPersistedCandidate.createdDate());
+  }
 
-    @Test
-    void shouldNotUpdateReportedCandidate() {
-        var year = randomYear();
-        var candidate = setupReportedCandidate(candidateRepository, year).candidate();
+  @Test
+  void shouldNotUpdateReportedCandidate() {
+    var year = randomYear();
+    var candidate = setupReportedCandidate(candidateRepository, year).candidate();
 
-        var updateRequest = randomUpsertRequestBuilder()
-                                .withPublicationId(candidate.publicationId())
-                                .build();
-        assertThrows(IllegalCandidateUpdateException.class,
-                     () -> Candidate.upsert(updateRequest, candidateRepository, periodRepository));
-    }
+    var updateRequest =
+        randomUpsertRequestBuilder().withPublicationId(candidate.publicationId()).build();
+    assertThrows(
+        IllegalCandidateUpdateException.class,
+        () -> Candidate.upsert(updateRequest, candidateRepository, periodRepository));
+  }
 
-    @Test
-    void shouldPersistUpdatedCandidateWithCorrectDataFromUpsertRequest() {
-        var updateRequest = getUpdateRequestForExistingCandidate();
-        var candidate = upsert(updateRequest);
-        var expectedCandidate = generateExpectedCandidate(candidate, updateRequest);
-        var actualPersistedCandidate = candidateRepository.findCandidateById(candidate.getIdentifier())
-                                           .orElseThrow()
-                                           .candidate();
-        assertEquals(expectedCandidate, actualPersistedCandidate);
-    }
+  @Test
+  void shouldPersistUpdatedCandidateWithCorrectDataFromUpsertRequest() {
+    var updateRequest = getUpdateRequestForExistingCandidate();
+    var candidate = upsert(updateRequest);
+    var expectedCandidate = generateExpectedCandidate(candidate, updateRequest);
+    var actualPersistedCandidate =
+        candidateRepository.findCandidateById(candidate.getIdentifier()).orElseThrow().candidate();
+    assertEquals(expectedCandidate, actualPersistedCandidate);
+  }
 
-    @Test
-    void shouldFetchCandidateByPublicationId() {
-        var candidate = randomApplicableCandidate(candidateRepository, periodRepository);
-        var fetchedCandidate = Candidate.fetchByPublicationId(candidate::getPublicationId,
-                                                              candidateRepository,
-                                                              periodRepository);
-        assertThat(fetchedCandidate.getIdentifier(), is(equalTo(candidate.getIdentifier())));
-    }
+  @Test
+  void shouldFetchCandidateByPublicationId() {
+    var candidate = randomApplicableCandidate(candidateRepository, periodRepository);
+    var fetchedCandidate =
+        Candidate.fetchByPublicationId(
+            candidate::getPublicationId, candidateRepository, periodRepository);
+    assertThat(fetchedCandidate.getIdentifier(), is(equalTo(candidate.getIdentifier())));
+  }
 
-    @Test
-    void shouldDoNothingIfCreateRequestIsForNonCandidateThatDoesNotExist() {
-        var updateRequest = createUpsertNonCandidateRequest(randomUri());
+  @Test
+  void shouldDoNothingIfCreateRequestIsForNonCandidateThatDoesNotExist() {
+    var updateRequest = createUpsertNonCandidateRequest(randomUri());
 
-        var optionalCandidate = Candidate.updateNonCandidate(updateRequest, candidateRepository);
-        assertThat(optionalCandidate, is(equalTo(Optional.empty())));
-    }
+    var optionalCandidate = Candidate.updateNonCandidate(updateRequest, candidateRepository);
+    assertThat(optionalCandidate, is(equalTo(Optional.empty())));
+  }
 
-    @ParameterizedTest(name = "Should return global approval status {0} when all approvals have status {0}")
-    @EnumSource(value = ApprovalStatus.class, names = {"APPROVED", "REJECTED"})
-    void shouldReturnGlobalApprovalStatus(ApprovalStatus approvalStatus) {
-        var institution1 = randomUri();
-        var institution2 = randomUri();
-        var createRequest = createUpsertCandidateRequest(institution1, institution2);
-        var candidate = upsert(createRequest);
-        candidate.updateApproval(createUpdateStatusRequest(approvalStatus, institution1, randomString()));
-        candidate.updateApproval(createUpdateStatusRequest(approvalStatus, institution2, randomString()));
-        assertEquals(approvalStatus.getValue(), candidate.getGlobalApprovalStatus().getValue());
-    }
+  @ParameterizedTest(
+      name = "Should return global approval status {0} when all approvals have status {0}")
+  @EnumSource(
+      value = ApprovalStatus.class,
+      names = {"APPROVED", "REJECTED"})
+  void shouldReturnGlobalApprovalStatus(ApprovalStatus approvalStatus) {
+    var institution1 = randomUri();
+    var institution2 = randomUri();
+    var createRequest = createUpsertCandidateRequest(institution1, institution2);
+    var candidate = upsert(createRequest);
+    candidate.updateApproval(
+        createUpdateStatusRequest(approvalStatus, institution1, randomString()));
+    candidate.updateApproval(
+        createUpdateStatusRequest(approvalStatus, institution2, randomString()));
+    assertEquals(approvalStatus.getValue(), candidate.getGlobalApprovalStatus().getValue());
+  }
 
-    @Test()
-    @DisplayName("Should return global approval status pending when any approval is pending")
-    void shouldReturnGlobalApprovalStatusPendingWhenAnyApprovalIsPending() {
-        var createRequest = randomUpsertRequestBuilder().build();
-        var candidate = upsert(createRequest);
-        assertEquals(GlobalApprovalStatus.PENDING, candidate.getGlobalApprovalStatus());
-    }
+  @Test()
+  @DisplayName("Should return global approval status pending when any approval is pending")
+  void shouldReturnGlobalApprovalStatusPendingWhenAnyApprovalIsPending() {
+    var createRequest = randomUpsertRequestBuilder().build();
+    var candidate = upsert(createRequest);
+    assertEquals(GlobalApprovalStatus.PENDING, candidate.getGlobalApprovalStatus());
+  }
 
-    //This is tested more in rest-module
-    @Test
-    void shouldReturnExpectedDto() {
-        var candidate = upsert(randomUpsertRequestBuilder().build());
-        var expectedDto = CandidateDto.builder()
-                              .withApprovals(mapToApprovalDtos(candidate))
-                              .withId(candidate.getId())
-                              .withPublicationId(candidate.getPublicationId())
-                              .withIdentifier(candidate.getIdentifier())
-                              .withContext(CONTEXT_URI)
-                              .withPeriod(PeriodStatusDto.fromPeriodStatus(candidate.getPeriod()))
-                              .withTotalPoints(candidate.getTotalPoints())
-                              .withNotes(Collections.emptyList())
-                              .build();
-        assertEquals(expectedDto, candidate.toDto());
-    }
+  // This is tested more in rest-module
+  @Test
+  void shouldReturnExpectedDto() {
+    var candidate = upsert(randomUpsertRequestBuilder().build());
+    var expectedDto =
+        CandidateDto.builder()
+            .withApprovals(mapToApprovalDtos(candidate))
+            .withId(candidate.getId())
+            .withPublicationId(candidate.getPublicationId())
+            .withIdentifier(candidate.getIdentifier())
+            .withContext(CONTEXT_URI)
+            .withPeriod(PeriodStatusDto.fromPeriodStatus(candidate.getPeriod()))
+            .withTotalPoints(candidate.getTotalPoints())
+            .withNotes(Collections.emptyList())
+            .build();
+    assertEquals(expectedDto, candidate.toDto());
+  }
 
-    @Test()
-    @DisplayName("Should return global approval status dispute when a candidate has at least one Rejected and one "
-                 + "Approved approval")
-    void shouldReturnGlobalApprovalStatusDisputeWhenConflictsExist() {
-        var institution1 = randomUri();
-        var institution2 = randomUri();
-        var institution3 = randomUri();
-        var createRequest = createUpsertCandidateRequest(institution1, institution2, institution3).build();
-        var candidate = upsert(createRequest);
-        candidate.updateApproval(createUpdateStatusRequest(ApprovalStatus.APPROVED, institution1, randomString()));
-        candidate.updateApproval(createUpdateStatusRequest(ApprovalStatus.REJECTED, institution2, randomString()));
-        assertEquals(ApprovalStatus.PENDING, candidate.getApprovals().get(institution3).getStatus());
-        assertEquals(GlobalApprovalStatus.DISPUTE, candidate.getGlobalApprovalStatus());
-    }
+  @Test()
+  @DisplayName(
+      "Should return global approval status dispute when a candidate has at least one Rejected and"
+          + " one Approved approval")
+  void shouldReturnGlobalApprovalStatusDisputeWhenConflictsExist() {
+    var institution1 = randomUri();
+    var institution2 = randomUri();
+    var institution3 = randomUri();
+    var createRequest =
+        createUpsertCandidateRequest(institution1, institution2, institution3).build();
+    var candidate = upsert(createRequest);
+    candidate.updateApproval(
+        createUpdateStatusRequest(ApprovalStatus.APPROVED, institution1, randomString()));
+    candidate.updateApproval(
+        createUpdateStatusRequest(ApprovalStatus.REJECTED, institution2, randomString()));
+    assertEquals(ApprovalStatus.PENDING, candidate.getApprovals().get(institution3).getStatus());
+    assertEquals(GlobalApprovalStatus.DISPUTE, candidate.getGlobalApprovalStatus());
+  }
 
-    @Test
-    void shouldReturnCandidateWithExpectedData() {
-        var createRequest = randomUpsertRequestBuilder().build();
-        var candidate = upsert(createRequest);
-        assertEquals(adjustScaleAndRoundingMode(createRequest.totalPoints()), candidate.getTotalPoints());
-        assertEquals(adjustScaleAndRoundingMode(createRequest.basePoints()), candidate.getBasePoints());
-        assertEquals(adjustScaleAndRoundingMode(createRequest.collaborationFactor()),
-                     candidate.getCollaborationFactor());
-        assertEquals(createRequest.creatorShareCount(), candidate.getCreatorShareCount());
-    }
+  @Test
+  void shouldReturnCandidateWithExpectedData() {
+    var createRequest = randomUpsertRequestBuilder().build();
+    var candidate = upsert(createRequest);
+    assertEquals(
+        adjustScaleAndRoundingMode(createRequest.totalPoints()), candidate.getTotalPoints());
+    assertEquals(adjustScaleAndRoundingMode(createRequest.basePoints()), candidate.getBasePoints());
+    assertEquals(
+        adjustScaleAndRoundingMode(createRequest.collaborationFactor()),
+        candidate.getCollaborationFactor());
+    assertEquals(createRequest.creatorShareCount(), candidate.getCreatorShareCount());
+  }
 
-    @Test
-    void shouldReturnCandidateWithNoPeriodWhenNotApplicable() {
-        var tempCandidate = randomApplicableCandidate(candidateRepository, periodRepository);
-        var updateRequest = createUpsertNonCandidateRequest(tempCandidate.getPublicationId());
-        var candidateBO = Candidate.updateNonCandidate(updateRequest, candidateRepository).orElseThrow();
-        var fetchedCandidate = Candidate.fetch(candidateBO::getIdentifier, candidateRepository,
-                                               periodRepository);
-        assertThat(fetchedCandidate.getPeriod().status(), is(equalTo(Status.NO_PERIOD)));
-    }
+  @Test
+  void shouldReturnCandidateWithNoPeriodWhenNotApplicable() {
+    var tempCandidate = randomApplicableCandidate(candidateRepository, periodRepository);
+    var updateRequest = createUpsertNonCandidateRequest(tempCandidate.getPublicationId());
+    var candidateBO =
+        Candidate.updateNonCandidate(updateRequest, candidateRepository).orElseThrow();
+    var fetchedCandidate =
+        Candidate.fetch(candidateBO::getIdentifier, candidateRepository, periodRepository);
+    assertThat(fetchedCandidate.getPeriod().status(), is(equalTo(Status.NO_PERIOD)));
+  }
 
-    @Test
-    void shouldSetPeriodYearWhenResettingCandidate() {
-        var nonApplicableCandidate = nonApplicableCandidate();
-        Candidate.upsert(
-            randomUpsertRequestBuilder().withPublicationId(nonApplicableCandidate.getPublicationId()).build(),
-            candidateRepository, periodRepository
-        );
-        var updatedApplicableCandidate = Candidate.fetch(nonApplicableCandidate::getIdentifier, candidateRepository,
-                                                         periodRepository);
-        assertThat(updatedApplicableCandidate.getPeriod().year(),
-                   is(equalTo(updatedApplicableCandidate.getPeriod().year())));
-    }
+  @Test
+  void shouldSetPeriodYearWhenResettingCandidate() {
+    var nonApplicableCandidate = nonApplicableCandidate();
+    Candidate.upsert(
+        randomUpsertRequestBuilder()
+            .withPublicationId(nonApplicableCandidate.getPublicationId())
+            .build(),
+        candidateRepository,
+        periodRepository);
+    var updatedApplicableCandidate =
+        Candidate.fetch(
+            nonApplicableCandidate::getIdentifier, candidateRepository, periodRepository);
+    assertThat(
+        updatedApplicableCandidate.getPeriod().year(),
+        is(equalTo(updatedApplicableCandidate.getPeriod().year())));
+  }
 
-    @Test
-    void shouldReturnNviCandidateContextAsString() {
-        var expectedContext = stringFromResources(Path.of("nviCandidateContext.json"));
-        assertThat(Candidate.getJsonLdContext(), is(equalTo(expectedContext)));
-    }
+  @Test
+  void shouldReturnNviCandidateContextAsString() {
+    var expectedContext = stringFromResources(Path.of("nviCandidateContext.json"));
+    assertThat(Candidate.getJsonLdContext(), is(equalTo(expectedContext)));
+  }
 
-    @Test
-    void shouldReturnContextUri() {
-        var contextUri = Candidate.getContextUri();
-        assertThat(contextUri, is(equalTo(CONTEXT_URI)));
-    }
+  @Test
+  void shouldReturnContextUri() {
+    var contextUri = Candidate.getContextUri();
+    assertThat(contextUri, is(equalTo(CONTEXT_URI)));
+  }
 
-    @Test
-    void shouldReturnCandidateWithReportStatus() {
-        var dao = setupReportedCandidate(candidateRepository, randomYear());
-        var candidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
-        assertThat(candidate.toDto().status(), is(equalTo(ReportStatus.REPORTED.getValue())));
-        assertThat(candidate.toDto().status(), is(equalTo(ReportStatus.REPORTED.getValue())));
-    }
+  @Test
+  void shouldReturnCandidateWithReportStatus() {
+    var dao = setupReportedCandidate(candidateRepository, randomYear());
+    var candidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
+    assertThat(candidate.toDto().status(), is(equalTo(ReportStatus.REPORTED.getValue())));
+    assertThat(candidate.toDto().status(), is(equalTo(ReportStatus.REPORTED.getValue())));
+  }
 
-    @Test
-    void shouldReturnTrueIfReportStatusIsReported() {
-        var dao = candidateRepository.create(randomCandidate().copy().reportStatus(ReportStatus.REPORTED).build(),
-                                             List.of(randomApproval()));
-        var candidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
-        assertTrue(candidate.isReported());
-    }
+  @Test
+  void shouldReturnTrueIfReportStatusIsReported() {
+    var dao =
+        candidateRepository.create(
+            randomCandidate().copy().reportStatus(ReportStatus.REPORTED).build(),
+            List.of(randomApproval()));
+    var candidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
+    assertTrue(candidate.isReported());
+  }
 
-    @Test
-    void shouldReturnCandidateWithPeriodStatusContainingPeriodId() {
-        var dao = candidateRepository.create(randomCandidate().copy().reportStatus(ReportStatus.REPORTED).build(),
-                                             List.of(randomApproval()));
-        var candidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
-        var id = PeriodStatusDto.fromPeriodStatus(candidate.getPeriod()).id();
+  @Test
+  void shouldReturnCandidateWithPeriodStatusContainingPeriodId() {
+    var dao =
+        candidateRepository.create(
+            randomCandidate().copy().reportStatus(ReportStatus.REPORTED).build(),
+            List.of(randomApproval()));
+    var candidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
+    var id = PeriodStatusDto.fromPeriodStatus(candidate.getPeriod()).id();
 
-        assertThat(id, is(not(nullValue())));
-    }
+    assertThat(id, is(not(nullValue())));
+  }
 
-    @Test
-    void shouldReturnCandidateWithPeriodStatusContainingPeriodIdWhenFetchingByPublicationId() {
-        var dao = candidateRepository.create(randomCandidate().copy().reportStatus(ReportStatus.REPORTED).build(),
-                                             List.of(randomApproval()));
-        var candidate = Candidate.fetchByPublicationId(() -> dao.candidate().publicationId(), candidateRepository,
-                                                       periodRepository);
-        var id = PeriodStatusDto.fromPeriodStatus(candidate.getPeriod()).id();
+  @Test
+  void shouldReturnCandidateWithPeriodStatusContainingPeriodIdWhenFetchingByPublicationId() {
+    var dao =
+        candidateRepository.create(
+            randomCandidate().copy().reportStatus(ReportStatus.REPORTED).build(),
+            List.of(randomApproval()));
+    var candidate =
+        Candidate.fetchByPublicationId(
+            () -> dao.candidate().publicationId(), candidateRepository, periodRepository);
+    var id = PeriodStatusDto.fromPeriodStatus(candidate.getPeriod()).id();
 
-        assertThat(id, is(not(nullValue())));
-    }
+    assertThat(id, is(not(nullValue())));
+  }
 
-    @Test
-    void shouldReturnCreatorAffiliations() {
-        var creator1affiliation = randomUri();
-        var creator2affiliation = randomUri();
-        var creator1 = DbCreator.builder().creatorId(randomUri()).affiliations(List.of(creator1affiliation)).build();
-        var creator2 = DbCreator.builder().creatorId(randomUri()).affiliations(List.of(creator2affiliation)).build();
-        var dao = candidateRepository.create(randomCandidate().copy().creators(List.of(creator1, creator2)).build(),
-                                             List.of(randomApproval()));
-        var candidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
-        assertEquals(List.of(creator1affiliation, creator2affiliation), candidate.getNviCreatorAffiliations());
-    }
+  @Test
+  void shouldReturnCreatorAffiliations() {
+    var creator1affiliation = randomUri();
+    var creator2affiliation = randomUri();
+    var creator1 =
+        DbCreator.builder()
+            .creatorId(randomUri())
+            .affiliations(List.of(creator1affiliation))
+            .build();
+    var creator2 =
+        DbCreator.builder()
+            .creatorId(randomUri())
+            .affiliations(List.of(creator2affiliation))
+            .build();
+    var dao =
+        candidateRepository.create(
+            randomCandidate().copy().creators(List.of(creator1, creator2)).build(),
+            List.of(randomApproval()));
+    var candidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
+    assertEquals(
+        List.of(creator1affiliation, creator2affiliation), candidate.getNviCreatorAffiliations());
+  }
 
-    @Test
-    void shouldUpdateVersion() {
-        var candidate = randomApplicableCandidate(candidateRepository, periodRepository);
-        var dao = candidateRepository.findCandidateById(candidate.getIdentifier()).orElseThrow();
+  @Test
+  void shouldUpdateVersion() {
+    var candidate = randomApplicableCandidate(candidateRepository, periodRepository);
+    var dao = candidateRepository.findCandidateById(candidate.getIdentifier()).orElseThrow();
 
-        candidate.updateVersion(candidateRepository);
+    candidate.updateVersion(candidateRepository);
 
-        var updatedCandidate = Candidate.fetch(candidate::getIdentifier, candidateRepository, periodRepository);
-        var updatedDao = candidateRepository.findCandidateById(candidate.getIdentifier()).orElseThrow();
+    var updatedCandidate =
+        Candidate.fetch(candidate::getIdentifier, candidateRepository, periodRepository);
+    var updatedDao = candidateRepository.findCandidateById(candidate.getIdentifier()).orElseThrow();
 
-        assertEquals(candidate, updatedCandidate);
-        assertNotEquals(dao.version(), updatedDao.version());
-    }
+    assertEquals(candidate, updatedCandidate);
+    assertNotEquals(dao.version(), updatedDao.version());
+  }
 
-    @Test
-    void shouldReturnTrueWhenAllApprovalsArePending() {
-        var candidate = upsert(createUpsertCandidateRequest(randomUri(), randomUri()));
-        assertTrue(candidate.isPendingReview());
-    }
+  @Test
+  void shouldReturnTrueWhenAllApprovalsArePending() {
+    var candidate = upsert(createUpsertCandidateRequest(randomUri(), randomUri()));
+    assertTrue(candidate.isPendingReview());
+  }
 
-    @ParameterizedTest(name = "Should return false when at least one approval is: {0}")
-    @EnumSource(value = ApprovalStatus.class, names = {"APPROVED", "REJECTED"})
-    void shouldReturnFalseWhenAtLeastOneApprovalIsApprovedOrRejected(ApprovalStatus approvalStatus) {
-        var reviewingInstitution = randomUri();
-        var candidate = upsert(createUpsertCandidateRequest(reviewingInstitution, randomUri()));
-        candidate.updateApproval(createUpdateStatusRequest(approvalStatus, reviewingInstitution, randomString()));
-        assertFalse(candidate.isPendingReview());
-    }
+  @ParameterizedTest(name = "Should return false when at least one approval is: {0}")
+  @EnumSource(
+      value = ApprovalStatus.class,
+      names = {"APPROVED", "REJECTED"})
+  void shouldReturnFalseWhenAtLeastOneApprovalIsApprovedOrRejected(ApprovalStatus approvalStatus) {
+    var reviewingInstitution = randomUri();
+    var candidate = upsert(createUpsertCandidateRequest(reviewingInstitution, randomUri()));
+    candidate.updateApproval(
+        createUpdateStatusRequest(approvalStatus, reviewingInstitution, randomString()));
+    assertFalse(candidate.isPendingReview());
+  }
 
-    @ParameterizedTest(name = "Should return true when at least one approval is: {0}")
-    @EnumSource(value = ApprovalStatus.class, names = {"APPROVED", "REJECTED"})
-    void shouldReturnTrueWhenAtLeastOneApprovalIsApprovedOrRejected(ApprovalStatus approvalStatus) {
-        var reviewingInstitution = randomUri();
-        var candidate = upsert(createUpsertCandidateRequest(reviewingInstitution, randomUri()));
-        candidate.updateApproval(createUpdateStatusRequest(approvalStatus, reviewingInstitution, randomString()));
-        assertTrue(candidate.isUnderReview());
-    }
+  @ParameterizedTest(name = "Should return true when at least one approval is: {0}")
+  @EnumSource(
+      value = ApprovalStatus.class,
+      names = {"APPROVED", "REJECTED"})
+  void shouldReturnTrueWhenAtLeastOneApprovalIsApprovedOrRejected(ApprovalStatus approvalStatus) {
+    var reviewingInstitution = randomUri();
+    var candidate = upsert(createUpsertCandidateRequest(reviewingInstitution, randomUri()));
+    candidate.updateApproval(
+        createUpdateStatusRequest(approvalStatus, reviewingInstitution, randomString()));
+    assertTrue(candidate.isUnderReview());
+  }
 
-    @Test
-    void shouldReturnTrueWhenCandidateIsNotReportedInClosedPeriod() {
-        var periodRepository = periodRepositoryReturningClosedPeriod(CURRENT_YEAR);
-        var requestForClosedPeriod =
-            randomUpsertRequestBuilder().withPublicationDate(new PublicationDate(String.valueOf(
-                                                                     CURRENT_YEAR), null, null))
-                                                                 .build();
-        Candidate.upsert(requestForClosedPeriod, candidateRepository, this.periodRepository);
-        var candidate = Candidate.fetchByPublicationId(requestForClosedPeriod::publicationId,
-                                                       candidateRepository,
-                                                       periodRepository);
+  @Test
+  void shouldReturnTrueWhenCandidateIsNotReportedInClosedPeriod() {
+    var periodRepository = periodRepositoryReturningClosedPeriod(CURRENT_YEAR);
+    var requestForClosedPeriod =
+        randomUpsertRequestBuilder()
+            .withPublicationDate(new PublicationDate(String.valueOf(CURRENT_YEAR), null, null))
+            .build();
+    Candidate.upsert(requestForClosedPeriod, candidateRepository, this.periodRepository);
+    var candidate =
+        Candidate.fetchByPublicationId(
+            requestForClosedPeriod::publicationId, candidateRepository, periodRepository);
 
-        assertTrue(candidate.isNotReportedInClosedPeriod());
-    }
+    assertTrue(candidate.isNotReportedInClosedPeriod());
+  }
 
-    @Test
-    void shouldReturnFalseWhenCandidateIsReportedInClosedPeriod() {
-        var dao = setupReportedCandidate(candidateRepository, String.valueOf(CURRENT_YEAR));
-        var periodRepository = periodRepositoryReturningClosedPeriod(CURRENT_YEAR);
-        var candidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
-        assertFalse(candidate.isNotReportedInClosedPeriod());
-    }
+  @Test
+  void shouldReturnFalseWhenCandidateIsReportedInClosedPeriod() {
+    var dao = setupReportedCandidate(candidateRepository, String.valueOf(CURRENT_YEAR));
+    var periodRepository = periodRepositoryReturningClosedPeriod(CURRENT_YEAR);
+    var candidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
+    assertFalse(candidate.isNotReportedInClosedPeriod());
+  }
 
-    @Deprecated
-    private static Stream<Arguments> levelValues() {
-        return Stream.of(Arguments.of(DbLevel.LEVEL_ONE, "LevelOne"), Arguments.of(DbLevel.LEVEL_TWO, "LevelTwo"));
-    }
+  @Deprecated
+  private static Stream<Arguments> levelValues() {
+    return Stream.of(
+        Arguments.of(DbLevel.LEVEL_ONE, "LevelOne"), Arguments.of(DbLevel.LEVEL_TWO, "LevelTwo"));
+  }
 
-    private static BigDecimal adjustScaleAndRoundingMode(BigDecimal bigDecimal) {
-        return bigDecimal.setScale(EXPECTED_SCALE, EXPECTED_ROUNDING_MODE);
-    }
+  private static BigDecimal adjustScaleAndRoundingMode(BigDecimal bigDecimal) {
+    return bigDecimal.setScale(EXPECTED_SCALE, EXPECTED_ROUNDING_MODE);
+  }
 
-    private List<ApprovalDto> mapToApprovalDtos(Candidate candidate) {
-        return candidate.getApprovals().values().stream()
-                   .map(approval -> ApprovalDto.builder()
-                                        .withInstitutionId(approval.getInstitutionId())
-                                        .withPoints(candidate.getPointValueForInstitution(approval.getInstitutionId()))
-                                        .withStatus(ApprovalStatusDto.from(approval))
-                                        .withFinalizedBy(approval.getFinalizedByUserName())
-                                        .withAssignee(approval.getAssigneeUsername())
-                                        .build())
-                   .toList();
-    }
+  private List<ApprovalDto> mapToApprovalDtos(Candidate candidate) {
+    return candidate.getApprovals().values().stream()
+        .map(
+            approval ->
+                ApprovalDto.builder()
+                    .withInstitutionId(approval.getInstitutionId())
+                    .withPoints(candidate.getPointValueForInstitution(approval.getInstitutionId()))
+                    .withStatus(ApprovalStatusDto.from(approval))
+                    .withFinalizedBy(approval.getFinalizedByUserName())
+                    .withAssignee(approval.getAssigneeUsername())
+                    .build())
+        .toList();
+  }
 
-    private Candidate upsert(UpsertCandidateRequest request) {
-        Candidate.upsert(request, candidateRepository, periodRepository);
-        return Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository);
-    }
+  private Candidate upsert(UpsertCandidateRequest request) {
+    Candidate.upsert(request, candidateRepository, periodRepository);
+    return Candidate.fetchByPublicationId(
+        request::publicationId, candidateRepository, periodRepository);
+  }
 
-    private Candidate nonApplicableCandidate() {
-        var tempCandidate = randomApplicableCandidate(candidateRepository, periodRepository);
-        var updateRequest = createUpsertNonCandidateRequest(tempCandidate.getPublicationId());
-        var candidateBO = Candidate.updateNonCandidate(updateRequest, candidateRepository).orElseThrow();
-        return Candidate.fetch(candidateBO::getIdentifier, candidateRepository, periodRepository);
-    }
+  private Candidate nonApplicableCandidate() {
+    var tempCandidate = randomApplicableCandidate(candidateRepository, periodRepository);
+    var updateRequest = createUpsertNonCandidateRequest(tempCandidate.getPublicationId());
+    var candidateBO =
+        Candidate.updateNonCandidate(updateRequest, candidateRepository).orElseThrow();
+    return Candidate.fetch(candidateBO::getIdentifier, candidateRepository, periodRepository);
+  }
 
-    private UpsertCandidateRequest getUpdateRequestForExistingCandidate() {
-        var insertRequest = randomUpsertRequestBuilder().build();
-        Candidate.upsert(insertRequest, candidateRepository, periodRepository);
-        return UpsertRequestBuilder.fromRequest(insertRequest).build();
-    }
+  private UpsertCandidateRequest getUpdateRequestForExistingCandidate() {
+    var insertRequest = randomUpsertRequestBuilder().build();
+    Candidate.upsert(insertRequest, candidateRepository, periodRepository);
+    return UpsertRequestBuilder.fromRequest(insertRequest).build();
+  }
 
-    private static List<DbCreatorType> mapToDbCreators(List<VerifiedNviCreatorDto> verifiedNviCreators,
-                                                       List<UnverifiedNviCreatorDto> unverifiedNviCreators) {
-        Stream<DbCreatorType> verifiedCreators = verifiedNviCreators
-                                                     .stream()
-                                                     .map(VerifiedNviCreatorDto::toDao);
-        Stream<DbCreatorType> unverifiedCreators = unverifiedNviCreators
-                                                       .stream()
-                                                       .map(UnverifiedNviCreatorDto::toDao);
-        return Stream
-                   .concat(verifiedCreators, unverifiedCreators)
-                   .toList();
-    }
+  private static List<DbCreatorType> mapToDbCreators(
+      List<VerifiedNviCreatorDto> verifiedNviCreators,
+      List<UnverifiedNviCreatorDto> unverifiedNviCreators) {
+    Stream<DbCreatorType> verifiedCreators =
+        verifiedNviCreators.stream().map(VerifiedNviCreatorDto::toDao);
+    Stream<DbCreatorType> unverifiedCreators =
+        unverifiedNviCreators.stream().map(UnverifiedNviCreatorDto::toDao);
+    return Stream.concat(verifiedCreators, unverifiedCreators).toList();
+  }
 
-    private DbPublicationDate mapToDbPublicationDate(PublicationDate publicationDate) {
-        return new DbPublicationDate(publicationDate.year(), publicationDate.month(), publicationDate.day());
-    }
+  private DbPublicationDate mapToDbPublicationDate(PublicationDate publicationDate) {
+    return new DbPublicationDate(
+        publicationDate.year(), publicationDate.month(), publicationDate.day());
+  }
 
-    private List<DbInstitutionPoints> mapToDbInstitutionPoints(List<InstitutionPoints> points) {
-        return points.stream()
-                   .map(DbInstitutionPoints::from)
-                   .toList();
-    }
+  private List<DbInstitutionPoints> mapToDbInstitutionPoints(List<InstitutionPoints> points) {
+    return points.stream().map(DbInstitutionPoints::from).toList();
+  }
 
-    private DbCandidate generateExpectedCandidate(Candidate candidate, UpsertCandidateRequest request) {
-        var dbCreators = mapToDbCreators(request.verifiedCreators(), request.unverifiedCreators());
-        var dbCandidate = DbCandidate
-                              .builder()
-                              .publicationId(request.publicationId())
-                              .publicationBucketUri(request.publicationBucketUri())
-                              .publicationDate(mapToDbPublicationDate(request.publicationDate()))
-                              .applicable(request.isApplicable())
-                              .instanceType(request
-                                                .instanceType()
-                                                .getValue())
-                              .channelType(ChannelType.parse(request.channelType()))
-                              .channelId(request.publicationChannelId())
-                              .level(DbLevel.parse(request.level()))
-                              .basePoints(adjustScaleAndRoundingMode(request.basePoints()))
-                              .internationalCollaboration(request.isInternationalCollaboration())
-                              .collaborationFactor(adjustScaleAndRoundingMode(request.collaborationFactor()))
-                              .creators(dbCreators)
-                              .creatorShareCount(request.creatorShareCount())
-                              .points(mapToDbInstitutionPoints(request.institutionPoints()))
-                              .totalPoints(adjustScaleAndRoundingMode(request.totalPoints()))
-                              .createdDate(candidate.getCreatedDate())
-                              .build();
-        return new CandidateDao(candidate.getIdentifier(), dbCandidate, randomString(), randomString()).candidate();
-    }
+  private DbCandidate generateExpectedCandidate(
+      Candidate candidate, UpsertCandidateRequest request) {
+    var dbCreators = mapToDbCreators(request.verifiedCreators(), request.unverifiedCreators());
+    var dbCandidate =
+        DbCandidate.builder()
+            .publicationId(request.publicationId())
+            .publicationBucketUri(request.publicationBucketUri())
+            .publicationDate(mapToDbPublicationDate(request.publicationDate()))
+            .applicable(request.isApplicable())
+            .instanceType(request.instanceType().getValue())
+            .channelType(ChannelType.parse(request.channelType()))
+            .channelId(request.publicationChannelId())
+            .level(DbLevel.parse(request.level()))
+            .basePoints(adjustScaleAndRoundingMode(request.basePoints()))
+            .internationalCollaboration(request.isInternationalCollaboration())
+            .collaborationFactor(adjustScaleAndRoundingMode(request.collaborationFactor()))
+            .creators(dbCreators)
+            .creatorShareCount(request.creatorShareCount())
+            .points(mapToDbInstitutionPoints(request.institutionPoints()))
+            .totalPoints(adjustScaleAndRoundingMode(request.totalPoints()))
+            .createdDate(candidate.getCreatedDate())
+            .build();
+    return new CandidateDao(candidate.getIdentifier(), dbCandidate, randomString(), randomString())
+        .candidate();
+  }
 }

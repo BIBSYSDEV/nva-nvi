@@ -4,6 +4,5 @@ import java.util.UUID;
 
 @FunctionalInterface
 public interface FetchCandidateRequest {
-    UUID identifier();
-
+  UUID identifier();
 }

@@ -7,20 +7,20 @@ import java.util.List;
 
 @JsonSerialize
 @JsonSubTypes({
-    @JsonSubTypes.Type(value = NviContributor.class, name = "NviContributor"),
-    @JsonSubTypes.Type(value = Contributor.class, name = "Contributor")
+  @JsonSubTypes.Type(value = NviContributor.class, name = "NviContributor"),
+  @JsonSubTypes.Type(value = Contributor.class, name = "Contributor")
 })
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 public sealed interface ContributorType permits NviContributor, Contributor {
 
-    @SuppressWarnings("PMD.ShortMethodName")
-    String id();
+  @SuppressWarnings("PMD.ShortMethodName")
+  String id();
 
-    String name();
+  String name();
 
-    String orcid();
+  String orcid();
 
-    String role();
+  String role();
 
-    List<OrganizationType> affiliations();
+  List<OrganizationType> affiliations();
 }

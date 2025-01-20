@@ -13,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
@@ -32,90 +33,90 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 class MigrationTests extends LocalDynamoTest {
 
-    public static final int DEFAULT_PAGE_SIZE = 700;
-    private CandidateRepository candidateRepository;
-    private PeriodRepository periodRepository;
-    private BatchScanUtil batchScanUtil;
+  public static final int DEFAULT_PAGE_SIZE = 700;
+  private CandidateRepository candidateRepository;
+  private PeriodRepository periodRepository;
+  private BatchScanUtil batchScanUtil;
 
-    @BeforeEach
-    public void setUp() {
-        var dynamodb = initializeTestDatabase();
-        candidateRepository = new CandidateRepository(dynamodb);
-        periodRepository = new PeriodRepository(dynamodb);
-        batchScanUtil = new BatchScanUtil(candidateRepository);
-    }
+  @BeforeEach
+  public void setUp() {
+    var dynamodb = initializeTestDatabase();
+    candidateRepository = new CandidateRepository(dynamodb);
+    periodRepository = new PeriodRepository(dynamodb);
+    batchScanUtil = new BatchScanUtil(candidateRepository);
+  }
 
-    @Test
-    void shouldWriteCandidateWithNotesAndApprovalsAsIsWhenMigrating() {
-        periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
-        batchScanUtil = new BatchScanUtil(candidateRepository);
-        var candidate = setupCandidateWithApprovalAndNotes();
-        batchScanUtil.migrateAndUpdateVersion(DEFAULT_PAGE_SIZE, null, emptyList());
-        var migratedCandidate = Candidate.fetch(candidate::getIdentifier, candidateRepository,
-                                                periodRepository);
-        assertEquals(candidate, migratedCandidate);
-    }
+  @Test
+  void shouldWriteCandidateWithNotesAndApprovalsAsIsWhenMigrating() {
+    periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
+    batchScanUtil = new BatchScanUtil(candidateRepository);
+    var candidate = setupCandidateWithApprovalAndNotes();
+    batchScanUtil.migrateAndUpdateVersion(DEFAULT_PAGE_SIZE, null, emptyList());
+    var migratedCandidate =
+        Candidate.fetch(candidate::getIdentifier, candidateRepository, periodRepository);
+    assertEquals(candidate, migratedCandidate);
+  }
 
-    @Test
-    void shouldSetPeriodYearIfMissingWhenMigrating() {
-        var dbCandidate = randomCandidate();
-        var existingDao = candidateRepository.create(dbCandidate, emptyList(), null);
-        batchScanUtil.migrateAndUpdateVersion(DEFAULT_PAGE_SIZE, null, emptyList());
-        var migratedCandidate = candidateRepository.findCandidateById(existingDao.identifier()).orElseThrow();
-        assertNotNull(migratedCandidate.getPeriodYear());
-        assertEquals(dbCandidate.publicationDate().year(), migratedCandidate.getPeriodYear());
-    }
+  @Test
+  void shouldSetPeriodYearIfMissingWhenMigrating() {
+    var dbCandidate = randomCandidate();
+    var existingDao = candidateRepository.create(dbCandidate, emptyList(), null);
+    batchScanUtil.migrateAndUpdateVersion(DEFAULT_PAGE_SIZE, null, emptyList());
+    var migratedCandidate =
+        candidateRepository.findCandidateById(existingDao.identifier()).orElseThrow();
+    assertNotNull(migratedCandidate.getPeriodYear());
+    assertEquals(dbCandidate.publicationDate().year(), migratedCandidate.getPeriodYear());
+  }
 
-    @Test
-    void shouldNotMigratePeriodYearCandidateIsNotApplicable() {
-        var dbCandidate = randomCandidateBuilder(false).build();
-        var existingDao = candidateRepository.create(dbCandidate, emptyList(), null);
-        batchScanUtil.migrateAndUpdateVersion(DEFAULT_PAGE_SIZE, null, emptyList());
-        var migratedCandidate = candidateRepository.findCandidateById(existingDao.identifier()).orElseThrow();
-        assertNull(migratedCandidate.getPeriodYear());
-    }
+  @Test
+  void shouldNotMigratePeriodYearCandidateIsNotApplicable() {
+    var dbCandidate = randomCandidateBuilder(false).build();
+    var existingDao = candidateRepository.create(dbCandidate, emptyList(), null);
+    batchScanUtil.migrateAndUpdateVersion(DEFAULT_PAGE_SIZE, null, emptyList());
+    var migratedCandidate =
+        candidateRepository.findCandidateById(existingDao.identifier()).orElseThrow();
+    assertNull(migratedCandidate.getPeriodYear());
+  }
 
-    @Test
-    void shouldDeserializeCreatorWithoutTypeAsDbCreator() {
-        var oldCreatorId = randomUri();
-        var oldCreatorAffiliations = List.of(randomUri());
-        var oldCreatorObject = Map.of("creatorId",
-                                      AttributeValue.builder()
-                                                    .s(oldCreatorId.toString())
-                                                    .build(),
-                                      "affiliations",
-                                      AttributeValue.builder()
-                                                    .l(oldCreatorAffiliations.stream()
-                                                                             .map(URI::toString)
-                                                                             .map(AttributeValue::fromS)
-                                                                             .toList())
-                                                    .build());
+  @Test
+  void shouldDeserializeCreatorWithoutTypeAsDbCreator() {
+    var oldCreatorId = randomUri();
+    var oldCreatorAffiliations = List.of(randomUri());
+    var oldCreatorObject =
+        Map.of(
+            "creatorId",
+            AttributeValue.builder().s(oldCreatorId.toString()).build(),
+            "affiliations",
+            AttributeValue.builder()
+                .l(
+                    oldCreatorAffiliations.stream()
+                        .map(URI::toString)
+                        .map(AttributeValue::fromS)
+                        .toList())
+                .build());
 
-        var oldDataAttributeValue = AttributeValue.builder()
-                                                  .l(AttributeValue.builder()
-                                                                   .m(oldCreatorObject)
-                                                                   .build())
-                                                  .build();
-        var converter = new DbCreatorTypeListConverter();
+    var oldDataAttributeValue =
+        AttributeValue.builder().l(AttributeValue.builder().m(oldCreatorObject).build()).build();
+    var converter = new DbCreatorTypeListConverter();
 
-        var creator = converter.transformTo(oldDataAttributeValue)
-                               .getFirst();
-        var expectedCreator = new DbCreator(oldCreatorId, oldCreatorAffiliations);
+    var creator = converter.transformTo(oldDataAttributeValue).getFirst();
+    var expectedCreator = new DbCreator(oldCreatorId, oldCreatorAffiliations);
 
-        assertInstanceOf(DbCreator.class, creator);
-        assertEquals(expectedCreator, creator);
-    }
+    assertInstanceOf(DbCreator.class, creator);
+    assertEquals(expectedCreator, creator);
+  }
 
-    private static URI getInstitutionId(Candidate candidate) {
-        return candidate.getApprovals().entrySet().stream().findFirst().map(Entry::getKey).orElse(null);
-    }
+  private static URI getInstitutionId(Candidate candidate) {
+    return candidate.getApprovals().entrySet().stream().findFirst().map(Entry::getKey).orElse(null);
+  }
 
-    private Candidate setupCandidateWithApprovalAndNotes() {
-        var candidate = TestUtils.randomApplicableCandidate(candidateRepository, periodRepository)
-                            .createNote(createNoteRequest(randomString(), randomString()), candidateRepository);
+  private Candidate setupCandidateWithApprovalAndNotes() {
+    var candidate =
+        TestUtils.randomApplicableCandidate(candidateRepository, periodRepository)
+            .createNote(createNoteRequest(randomString(), randomString()), candidateRepository);
 
-        return candidate.updateApproval(createUpdateStatusRequest(ApprovalStatus.REJECTED,
-                                                                  getInstitutionId(candidate),
-                                                                  randomString()));
-    }
+    return candidate.updateApproval(
+        createUpdateStatusRequest(
+            ApprovalStatus.REJECTED, getInstitutionId(candidate), randomString()));
+  }
 }

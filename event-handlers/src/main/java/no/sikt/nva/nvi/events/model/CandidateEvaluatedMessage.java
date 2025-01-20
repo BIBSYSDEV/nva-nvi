@@ -10,24 +10,23 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 public record CandidateEvaluatedMessage(CandidateType candidate) {
 
-    public static Builder builder() {
-        return new Builder();
+  public static Builder builder() {
+    return new Builder();
+  }
+
+  public static final class Builder {
+
+    private CandidateType candidate;
+
+    private Builder() {}
+
+    public Builder withCandidateType(CandidateType candidate) {
+      this.candidate = candidate;
+      return this;
     }
 
-    public static final class Builder {
-
-        private CandidateType candidate;
-
-        private Builder() {
-        }
-
-        public Builder withCandidateType(CandidateType candidate) {
-            this.candidate = candidate;
-            return this;
-        }
-
-        public CandidateEvaluatedMessage build() {
-            return new CandidateEvaluatedMessage(candidate);
-        }
+    public CandidateEvaluatedMessage build() {
+      return new CandidateEvaluatedMessage(candidate);
     }
+  }
 }

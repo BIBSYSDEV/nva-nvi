@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.rest.fetch;
 
 import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
 import static nva.commons.core.attempt.Try.attempt;
+
 import com.amazonaws.services.lambda.runtime.Context;
 import java.net.HttpURLConnection;
 import java.util.List;
@@ -18,37 +19,36 @@ import nva.commons.core.JacocoGenerated;
 
 public class FetchNviPeriodsHandler extends ApiGatewayHandler<Void, NviPeriodsResponse> {
 
-    private final NviPeriodService nviPeriodService;
+  private final NviPeriodService nviPeriodService;
 
-    @JacocoGenerated
-    public FetchNviPeriodsHandler() {
-        this(new NviPeriodService(new PeriodRepository(defaultDynamoClient())));
-    }
+  @JacocoGenerated
+  public FetchNviPeriodsHandler() {
+    this(new NviPeriodService(new PeriodRepository(defaultDynamoClient())));
+  }
 
-    public FetchNviPeriodsHandler(NviPeriodService nviPeriodService) {
-        super(Void.class);
-        this.nviPeriodService = nviPeriodService;
-    }
+  public FetchNviPeriodsHandler(NviPeriodService nviPeriodService) {
+    super(Void.class);
+    this.nviPeriodService = nviPeriodService;
+  }
 
-    @Override
-    protected void validateRequest(Void input, RequestInfo requestInfo, Context context) throws ApiGatewayException {
-        RequestUtil.hasAccessRight(requestInfo, AccessRight.MANAGE_NVI);
-    }
+  @Override
+  protected void validateRequest(Void input, RequestInfo requestInfo, Context context)
+      throws ApiGatewayException {
+    RequestUtil.hasAccessRight(requestInfo, AccessRight.MANAGE_NVI);
+  }
 
-    @Override
-    protected NviPeriodsResponse processInput(Void input, RequestInfo requestInfo, Context context)
-        throws ApiGatewayException {
-        return attempt(nviPeriodService::fetchAll)
-                   .map(this::toNviPeriodsResponse)
-                   .orElseThrow();
-    }
+  @Override
+  protected NviPeriodsResponse processInput(Void input, RequestInfo requestInfo, Context context)
+      throws ApiGatewayException {
+    return attempt(nviPeriodService::fetchAll).map(this::toNviPeriodsResponse).orElseThrow();
+  }
 
-    @Override
-    protected Integer getSuccessStatusCode(Void input, NviPeriodsResponse output) {
-        return HttpURLConnection.HTTP_OK;
-    }
+  @Override
+  protected Integer getSuccessStatusCode(Void input, NviPeriodsResponse output) {
+    return HttpURLConnection.HTTP_OK;
+  }
 
-    private NviPeriodsResponse toNviPeriodsResponse(List<NviPeriod> nviPeriods) {
-        return new NviPeriodsResponse(nviPeriods.stream().map(NviPeriod::toDto).toList());
-    }
+  private NviPeriodsResponse toNviPeriodsResponse(List<NviPeriod> nviPeriods) {
+    return new NviPeriodsResponse(nviPeriods.stream().map(NviPeriod::toDto).toList());
+  }
 }

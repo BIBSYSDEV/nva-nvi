@@ -12,18 +12,19 @@ import nva.commons.core.JacocoGenerated;
 
 public interface ViewingScopeHandler {
 
-    @JacocoGenerated
-    static ViewingScopeValidatorImpl defaultViewingScopeValidator() {
-        return new ViewingScopeValidatorImpl(IdentityServiceClient.prepare(),
-                                             new OrganizationRetriever(new UriRetriever()));
-    }
+  @JacocoGenerated
+  static ViewingScopeValidatorImpl defaultViewingScopeValidator() {
+    return new ViewingScopeValidatorImpl(
+        IdentityServiceClient.prepare(), new OrganizationRetriever(new UriRetriever()));
+  }
 
-    default Candidate validateViewingScope(ViewingScopeValidator validator, Username username, Candidate candidate)
-        throws UnauthorizedException {
-        var organizations = candidate.getNviCreatorAffiliations();
-        if (!validator.userIsAllowedToAccessOneOf(username.value(), organizations)) {
-            throw new UnauthorizedException();
-        }
-        return candidate;
+  default Candidate validateViewingScope(
+      ViewingScopeValidator validator, Username username, Candidate candidate)
+      throws UnauthorizedException {
+    var organizations = candidate.getNviCreatorAffiliations();
+    if (!validator.userIsAllowedToAccessOneOf(username.value(), organizations)) {
+      throw new UnauthorizedException();
     }
+    return candidate;
+  }
 }

@@ -5,6 +5,7 @@ import static no.sikt.nva.nvi.index.query.Aggregations.APPROVAL_ORGANIZATIONS_AG
 import static no.sikt.nva.nvi.index.query.SearchAggregation.ORGANIZATION_APPROVAL_STATUS_AGGREGATION;
 import static nva.commons.apigateway.AccessRight.MANAGE_NVI_CANDIDATES;
 import static nva.commons.core.attempt.Try.attempt;
+
 import com.amazonaws.services.lambda.runtime.Context;
 import java.net.HttpURLConnection;
 import java.net.URI;
@@ -21,58 +22,62 @@ import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 
 public class FetchInstitutionStatusAggregationHandler extends ApiGatewayHandler<Void, String> {
 
-    public static final String PATH_PARAM_YEAR = "year";
-    public static final String DELIMITER = "/";
-    public static final String AGGREGATION = ORGANIZATION_APPROVAL_STATUS_AGGREGATION.getAggregationName();
-    private final OpenSearchClient openSearchClient;
+  public static final String PATH_PARAM_YEAR = "year";
+  public static final String DELIMITER = "/";
+  public static final String AGGREGATION =
+      ORGANIZATION_APPROVAL_STATUS_AGGREGATION.getAggregationName();
+  private final OpenSearchClient openSearchClient;
 
-    @JacocoGenerated
-    public FetchInstitutionStatusAggregationHandler() {
-        this(OpenSearchClient.defaultOpenSearchClient());
-    }
+  @JacocoGenerated
+  public FetchInstitutionStatusAggregationHandler() {
+    this(OpenSearchClient.defaultOpenSearchClient());
+  }
 
-    public FetchInstitutionStatusAggregationHandler(OpenSearchClient openSearchClient) {
-        super(Void.class);
-        this.openSearchClient = openSearchClient;
-    }
+  public FetchInstitutionStatusAggregationHandler(OpenSearchClient openSearchClient) {
+    super(Void.class);
+    this.openSearchClient = openSearchClient;
+  }
 
-    @Override
-    protected void validateRequest(Void unused, RequestInfo requestInfo, Context context) throws ApiGatewayException {
-        validateAccessRight(requestInfo);
-    }
+  @Override
+  protected void validateRequest(Void unused, RequestInfo requestInfo, Context context)
+      throws ApiGatewayException {
+    validateAccessRight(requestInfo);
+  }
 
-    @Override
-    protected String processInput(Void input, RequestInfo requestInfo, Context context) throws ApiGatewayException {
-        var topLevelOrg = requestInfo.getTopLevelOrgCristinId().orElseThrow();
-        var year = requestInfo.getPathParameter(PATH_PARAM_YEAR);
-        var result = getAggregate(year, topLevelOrg);
-        return format(result, topLevelOrg);
-    }
+  @Override
+  protected String processInput(Void input, RequestInfo requestInfo, Context context)
+      throws ApiGatewayException {
+    var topLevelOrg = requestInfo.getTopLevelOrgCristinId().orElseThrow();
+    var year = requestInfo.getPathParameter(PATH_PARAM_YEAR);
+    var result = getAggregate(year, topLevelOrg);
+    return format(result, topLevelOrg);
+  }
 
-    @Override
-    protected Integer getSuccessStatusCode(Void input, String output) {
-        return HttpURLConnection.HTTP_OK;
-    }
+  @Override
+  protected Integer getSuccessStatusCode(Void input, String output) {
+    return HttpURLConnection.HTTP_OK;
+  }
 
-    private static String format(Aggregate aggregate, URI topLevelOrg) {
-        return AggregationFormatter.format(Map.of(AGGREGATION, aggregate))
-                   .at(DELIMITER + AGGREGATION)
-                   .get(topLevelOrg.toString())
-                   .at(DELIMITER + APPROVAL_ORGANIZATIONS_AGGREGATION)
-                   .toPrettyString();
-    }
+  private static String format(Aggregate aggregate, URI topLevelOrg) {
+    return AggregationFormatter.format(Map.of(AGGREGATION, aggregate))
+        .at(DELIMITER + AGGREGATION)
+        .get(topLevelOrg.toString())
+        .at(DELIMITER + APPROVAL_ORGANIZATIONS_AGGREGATION)
+        .toPrettyString();
+  }
 
-    private static void validateAccessRight(RequestInfo requestInfo) throws UnauthorizedException {
-        hasAccessRight(requestInfo, MANAGE_NVI_CANDIDATES);
-    }
+  private static void validateAccessRight(RequestInfo requestInfo) throws UnauthorizedException {
+    hasAccessRight(requestInfo, MANAGE_NVI_CANDIDATES);
+  }
 
-    private Aggregate getAggregate(String year, URI requestedInstitution) {
-        var searchParameters = CandidateSearchParameters.builder()
-                                   .withAggregationType(AGGREGATION)
-                                   .withYear(year)
-                                   .withTopLevelCristinOrg(requestedInstitution)
-                                   .build();
-        var searchResponse = attempt(() -> openSearchClient.search(searchParameters)).orElseThrow();
-        return searchResponse.aggregations().get(AGGREGATION);
-    }
+  private Aggregate getAggregate(String year, URI requestedInstitution) {
+    var searchParameters =
+        CandidateSearchParameters.builder()
+            .withAggregationType(AGGREGATION)
+            .withYear(year)
+            .withTopLevelCristinOrg(requestedInstitution)
+            .build();
+    var searchResponse = attempt(() -> openSearchClient.search(searchParameters)).orElseThrow();
+    return searchResponse.aggregations().get(AGGREGATION);
+  }
 }

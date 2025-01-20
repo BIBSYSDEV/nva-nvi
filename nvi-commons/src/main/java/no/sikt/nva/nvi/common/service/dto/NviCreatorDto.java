@@ -8,9 +8,11 @@ import java.util.List;
 
 @JsonSerialize
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
-@JsonSubTypes({@JsonSubTypes.Type(name = "UnverifiedNviCreator", value = UnverifiedNviCreatorDto.class),
-    @JsonSubTypes.Type(name = "VerifiedNviCreator", value = VerifiedNviCreatorDto.class)})
+@JsonSubTypes({
+  @JsonSubTypes.Type(name = "UnverifiedNviCreator", value = UnverifiedNviCreatorDto.class),
+  @JsonSubTypes.Type(name = "VerifiedNviCreator", value = VerifiedNviCreatorDto.class)
+})
 public sealed interface NviCreatorDto permits VerifiedNviCreatorDto, UnverifiedNviCreatorDto {
 
-    List<URI> affiliations();
+  List<URI> affiliations();
 }

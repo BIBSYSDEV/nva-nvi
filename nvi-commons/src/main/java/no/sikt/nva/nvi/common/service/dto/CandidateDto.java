@@ -15,85 +15,94 @@ import no.unit.nva.commons.json.JsonSerializable;
 @JsonTypeInfo(use = Id.NAME, property = "type")
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
-public record CandidateDto(URI id,
-                           URI context,
-                           UUID identifier,
-                           URI publicationId,
-                           List<ApprovalDto> approvals,
-                           BigDecimal totalPoints,
-                           List<NoteDto> notes,
-                           PeriodStatusDto period,
-                           String status) implements JsonSerializable {
+public record CandidateDto(
+    URI id,
+    URI context,
+    UUID identifier,
+    URI publicationId,
+    List<ApprovalDto> approvals,
+    BigDecimal totalPoints,
+    List<NoteDto> notes,
+    PeriodStatusDto period,
+    String status)
+    implements JsonSerializable {
 
-    public static final String NVI_CANDIDATE = "NviCandidate";
+  public static final String NVI_CANDIDATE = "NviCandidate";
 
-    public static Builder builder() {
-        return new Builder();
+  public static Builder builder() {
+    return new Builder();
+  }
+
+  public static final class Builder {
+
+    private URI id;
+    private URI context;
+    private UUID identifier;
+    private URI publicationId;
+    private List<ApprovalDto> approvals;
+    private BigDecimal totalPoints;
+    private List<NoteDto> notes;
+    private PeriodStatusDto periodStatus;
+    private String reportStatus;
+
+    private Builder() {}
+
+    public Builder withId(URI id) {
+      this.id = id;
+      return this;
     }
 
-    public static final class Builder {
-
-        private URI id;
-        private URI context;
-        private UUID identifier;
-        private URI publicationId;
-        private List<ApprovalDto> approvals;
-        private BigDecimal totalPoints;
-        private List<NoteDto> notes;
-        private PeriodStatusDto periodStatus;
-        private String reportStatus;
-
-        private Builder() {
-        }
-
-        public Builder withId(URI id) {
-            this.id = id;
-            return this;
-        }
-
-        public Builder withContext(URI context) {
-            this.context = context;
-            return this;
-        }
-
-        public Builder withIdentifier(UUID identifier) {
-            this.identifier = identifier;
-            return this;
-        }
-
-        public Builder withPublicationId(URI publicationId) {
-            this.publicationId = publicationId;
-            return this;
-        }
-
-        public Builder withApprovals(List<ApprovalDto> approvals) {
-            this.approvals = approvals;
-            return this;
-        }
-
-        public Builder withTotalPoints(BigDecimal totalPoints) {
-            this.totalPoints = totalPoints;
-            return this;
-        }
-
-        public Builder withNotes(List<NoteDto> notes) {
-            this.notes = notes;
-            return this;
-        }
-
-        public Builder withPeriod(PeriodStatusDto periodStatus) {
-            this.periodStatus = periodStatus;
-            return this;
-        }
-
-        public Builder withReportStatus(String reportStatus) {
-            this.reportStatus = reportStatus;
-            return this;
-        }
-
-        public CandidateDto build() {
-            return new CandidateDto(id, context, identifier, publicationId, approvals, totalPoints, notes,
-                                    periodStatus, reportStatus);
-        }
+    public Builder withContext(URI context) {
+      this.context = context;
+      return this;
     }
+
+    public Builder withIdentifier(UUID identifier) {
+      this.identifier = identifier;
+      return this;
+    }
+
+    public Builder withPublicationId(URI publicationId) {
+      this.publicationId = publicationId;
+      return this;
+    }
+
+    public Builder withApprovals(List<ApprovalDto> approvals) {
+      this.approvals = approvals;
+      return this;
+    }
+
+    public Builder withTotalPoints(BigDecimal totalPoints) {
+      this.totalPoints = totalPoints;
+      return this;
+    }
+
+    public Builder withNotes(List<NoteDto> notes) {
+      this.notes = notes;
+      return this;
+    }
+
+    public Builder withPeriod(PeriodStatusDto periodStatus) {
+      this.periodStatus = periodStatus;
+      return this;
+    }
+
+    public Builder withReportStatus(String reportStatus) {
+      this.reportStatus = reportStatus;
+      return this;
+    }
+
+    public CandidateDto build() {
+      return new CandidateDto(
+          id,
+          context,
+          identifier,
+          publicationId,
+          approvals,
+          totalPoints,
+          notes,
+          periodStatus,
+          reportStatus);
+    }
+  }
 }

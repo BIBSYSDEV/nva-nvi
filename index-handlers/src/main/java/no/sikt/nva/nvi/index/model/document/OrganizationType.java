@@ -9,13 +9,13 @@ import java.util.List;
 @JsonSerialize
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSubTypes({
-    @JsonSubTypes.Type(value = Organization.class, name = "Organization"),
-    @JsonSubTypes.Type(value = NviOrganization.class, name = "NviOrganization")
+  @JsonSubTypes.Type(value = Organization.class, name = "Organization"),
+  @JsonSubTypes.Type(value = NviOrganization.class, name = "NviOrganization")
 })
 public sealed interface OrganizationType permits Organization, NviOrganization {
 
-    @SuppressWarnings("PMD.ShortMethodName")
-    URI id();
+  @SuppressWarnings("PMD.ShortMethodName")
+  URI id();
 
-    List<URI> partOf();
+  List<URI> partOf();
 }

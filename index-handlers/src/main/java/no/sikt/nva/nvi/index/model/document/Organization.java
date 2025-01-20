@@ -11,33 +11,31 @@ import java.util.List;
 @JsonSerialize
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonTypeName("Organization")
-public record Organization(URI id,
-                           List<URI> partOf) implements OrganizationType {
+public record Organization(URI id, List<URI> partOf) implements OrganizationType {
 
-    public static Builder builder() {
-        return new Builder();
+  public static Builder builder() {
+    return new Builder();
+  }
+
+  public static final class Builder {
+
+    private URI id;
+    private List<URI> partOf;
+
+    private Builder() {}
+
+    public Builder withId(URI id) {
+      this.id = id;
+      return this;
     }
 
-    public static final class Builder {
-
-        private URI id;
-        private List<URI> partOf;
-
-        private Builder() {
-        }
-
-        public Builder withId(URI id) {
-            this.id = id;
-            return this;
-        }
-
-        public Builder withPartOf(List<URI> partOf) {
-            this.partOf = partOf;
-            return this;
-        }
-
-        public Organization build() {
-            return new Organization(id, partOf);
-        }
+    public Builder withPartOf(List<URI> partOf) {
+      this.partOf = partOf;
+      return this;
     }
+
+    public Organization build() {
+      return new Organization(id, partOf);
+    }
+  }
 }

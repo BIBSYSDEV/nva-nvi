@@ -4,9 +4,9 @@ import java.net.URI;
 
 public interface CreateNoteRequest {
 
-    String text();
+  String text();
 
-    String username();
+  String username();
 
-    URI institutionId();
+  URI institutionId();
 }

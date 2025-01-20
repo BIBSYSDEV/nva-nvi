@@ -7,6 +7,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.time.Instant;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
@@ -18,35 +19,36 @@ import org.junit.jupiter.api.Test;
 
 record ReportingStatusTest() {
 
-    @Test
-    void shouldMakeRoundTripWithoutLossOfInformation() throws JsonProcessingException {
-        var status = randomReportingStatus();
-        var json = JsonUtils.dtoObjectMapper.writeValueAsString(status);
-        var reconstructedStatus = JsonUtils.dtoObjectMapper.readValue(json, DbReportingStatus.class);
-        assertThat(reconstructedStatus, is(equalTo(status)));
-    }
+  @Test
+  void shouldMakeRoundTripWithoutLossOfInformation() throws JsonProcessingException {
+    var status = randomReportingStatus();
+    var json = JsonUtils.dtoObjectMapper.writeValueAsString(status);
+    var reconstructedStatus = JsonUtils.dtoObjectMapper.readValue(json, DbReportingStatus.class);
+    assertThat(reconstructedStatus, is(equalTo(status)));
+  }
 
-    @Test
-    void shouldCreateCopyOfApprovalPeriod() {
-        var period = randomPeriod();
-        var copy = period.copy().reportingDate(null).build();
-        assertThat(period, is(not(equalTo(copy))));
-    }
+  @Test
+  void shouldCreateCopyOfApprovalPeriod() {
+    var period = randomPeriod();
+    var copy = period.copy().reportingDate(null).build();
+    assertThat(period, is(not(equalTo(copy))));
+  }
 
-    private static DbNviPeriod randomPeriod() {
-        return DbNviPeriod.builder().publishingYear(randomString())
-                   .reportingDate(randomInstant())
-                   .createdBy(Username.fromString(randomString()))
-                   .modifiedBy(Username.fromString(randomString()))
-                   .build();
-    }
+  private static DbNviPeriod randomPeriod() {
+    return DbNviPeriod.builder()
+        .publishingYear(randomString())
+        .reportingDate(randomInstant())
+        .createdBy(Username.fromString(randomString()))
+        .modifiedBy(Username.fromString(randomString()))
+        .build();
+  }
 
-    private DbReportingStatus randomReportingStatus() {
-        return DbReportingStatus.builder()
-                   .institutionId(randomUri())
-                   .nviPeriod(randomPeriod())
-                   .status(DbCompletionStatus.COMPLETED)
-                   .updatedDate(Instant.now())
-                   .build();
-    }
+  private DbReportingStatus randomReportingStatus() {
+    return DbReportingStatus.builder()
+        .institutionId(randomUri())
+        .nviPeriod(randomPeriod())
+        .status(DbCompletionStatus.COMPLETED)
+        .updatedDate(Instant.now())
+        .build();
+  }
 }

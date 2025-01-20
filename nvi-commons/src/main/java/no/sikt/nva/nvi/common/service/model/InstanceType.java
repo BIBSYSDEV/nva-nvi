@@ -4,31 +4,31 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Arrays;
 
 public enum InstanceType {
-    ACADEMIC_COMMENTARY("AcademicCommentary"),
-    ACADEMIC_MONOGRAPH("AcademicMonograph"),
-    ACADEMIC_CHAPTER("AcademicChapter"),
-    ACADEMIC_ARTICLE("AcademicArticle"),
-    ACADEMIC_LITERATURE_REVIEW("AcademicLiteratureReview");
+  ACADEMIC_COMMENTARY("AcademicCommentary"),
+  ACADEMIC_MONOGRAPH("AcademicMonograph"),
+  ACADEMIC_CHAPTER("AcademicChapter"),
+  ACADEMIC_ARTICLE("AcademicArticle"),
+  ACADEMIC_LITERATURE_REVIEW("AcademicLiteratureReview");
 
-    private final String value;
+  private final String value;
 
-    InstanceType(String value) {
-        this.value = value;
-    }
+  InstanceType(String value) {
+    this.value = value;
+  }
 
-    public static InstanceType parse(String value) {
-        return Arrays.stream(values())
-                   .filter(instanceType -> instanceType.getValue().equalsIgnoreCase(value))
-                   .findFirst()
-                   .orElseThrow();
-    }
+  public static InstanceType parse(String value) {
+    return Arrays.stream(values())
+        .filter(instanceType -> instanceType.getValue().equalsIgnoreCase(value))
+        .findFirst()
+        .orElseThrow();
+  }
 
-    @JsonValue
-    public String getInstanceType() {
-        return value;
-    }
+  @JsonValue
+  public String getInstanceType() {
+    return value;
+  }
 
-    public String getValue() {
-        return value;
-    }
+  public String getValue() {
+    return value;
+  }
 }

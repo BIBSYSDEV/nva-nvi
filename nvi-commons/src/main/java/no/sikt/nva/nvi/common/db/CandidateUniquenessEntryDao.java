@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.common.db;
 
 import static no.sikt.nva.nvi.common.DatabaseConstants.HASH_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Objects;
 import no.sikt.nva.nvi.common.db.CandidateUniquenessEntryDao.Builder;
@@ -15,148 +16,152 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortK
 @DynamoDbImmutable(builder = Builder.class)
 public final class CandidateUniquenessEntryDao extends Dao {
 
-    public static final String TYPE = "CandidateUniquenessEntry";
-    public static final String VERSION = "version";
-    private final String partitionKey;
-    private final String sortKey;
-    private final String version;
+  public static final String TYPE = "CandidateUniquenessEntry";
+  public static final String VERSION = "version";
+  private final String partitionKey;
+  private final String sortKey;
+  private final String version;
 
-    public CandidateUniquenessEntryDao(
-        @JsonProperty(HASH_KEY) String partitionKey,
-        @JsonProperty(SORT_KEY) String sortKey,
-        @JsonProperty(VERSION) String version
-    ) {
-        super();
-        this.partitionKey = partitionKey;
-        this.sortKey = sortKey;
-        this.version = version;
+  public CandidateUniquenessEntryDao(
+      @JsonProperty(HASH_KEY) String partitionKey,
+      @JsonProperty(SORT_KEY) String sortKey,
+      @JsonProperty(VERSION) String version) {
+    super();
+    this.partitionKey = partitionKey;
+    this.sortKey = sortKey;
+    this.version = version;
+  }
+
+  public CandidateUniquenessEntryDao(String identifier) {
+    this(pk0(identifier), pk0(identifier), null);
+  }
+
+  @JacocoGenerated
+  public static Builder builder() {
+    return new Builder();
+  }
+
+  @JacocoGenerated
+  @Override
+  @DynamoDbPartitionKey
+  @DynamoDbAttribute(HASH_KEY)
+  public String primaryKeyHashKey() {
+    return partitionKey;
+  }
+
+  @JacocoGenerated
+  @Override
+  @DynamoDbSortKey
+  @DynamoDbAttribute(SORT_KEY)
+  public String primaryKeyRangeKey() {
+    return sortKey;
+  }
+
+  @Override
+  public String version() {
+    return version;
+  }
+
+  @JacocoGenerated
+  @Override
+  @DynamoDbAttribute(TYPE_FIELD)
+  public String type() {
+    return TYPE;
+  }
+
+  public String partitionKey() {
+    return partitionKey;
+  }
+
+  public String sortKey() {
+    return sortKey;
+  }
+
+  @Override
+  @JacocoGenerated
+  public int hashCode() {
+    return Objects.hash(partitionKey, sortKey, version);
+  }
+
+  @Override
+  @JacocoGenerated
+  public boolean equals(Object obj) {
+    if (obj == this) {
+      return true;
     }
+    if (obj == null || obj.getClass() != this.getClass()) {
+      return false;
+    }
+    var that = (CandidateUniquenessEntryDao) obj;
+    return Objects.equals(this.partitionKey, that.partitionKey)
+        && Objects.equals(this.sortKey, that.sortKey)
+        && Objects.equals(this.version, that.version);
+  }
 
-    public CandidateUniquenessEntryDao(String identifier) {
-        this(pk0(identifier), pk0(identifier), null);
+  @Override
+  @JacocoGenerated
+  public String toString() {
+    return "CandidateUniquenessEntryDao["
+        + "partitionKey="
+        + partitionKey
+        + ", "
+        + "sortKey="
+        + sortKey
+        + ", "
+        + "version="
+        + version
+        + ']';
+  }
+
+  @DynamoDbIgnore
+  private static String pk0(String identifier) {
+    return TYPE + FIELD_DELIMITER + identifier;
+  }
+
+  @JacocoGenerated
+  public static final class Builder {
+
+    private String builderPartitionKey;
+    private String builderSortKey;
+    private String builderVersion;
+
+    private Builder() {}
+
+    @JacocoGenerated
+    public Builder primaryKeyHashKey(String noop) {
+      // Used by @DynamoDbImmutable for building the object
+      return this;
     }
 
     @JacocoGenerated
-    public static Builder builder() {
-        return new Builder();
+    public Builder primaryKeyRangeKey(String noop) {
+      // Used by @DynamoDbImmutable for building the object
+      return this;
     }
 
     @JacocoGenerated
-    @Override
-    @DynamoDbPartitionKey
-    @DynamoDbAttribute(HASH_KEY)
-    public String primaryKeyHashKey() {
-        return partitionKey;
+    public Builder type(String noop) {
+      // Used by @DynamoDbImmutable for building the object
+      return this;
     }
 
-    @JacocoGenerated
-    @Override
-    @DynamoDbSortKey
-    @DynamoDbAttribute(SORT_KEY)
-    public String primaryKeyRangeKey() {
-        return sortKey;
+    public Builder partitionKey(String partitionKey) {
+      this.builderPartitionKey = partitionKey;
+      return this;
     }
 
-    @Override
-    public String version() {
-        return version;
+    public Builder sortKey(String sortKey) {
+      this.builderSortKey = sortKey;
+      return this;
     }
 
-    @JacocoGenerated
-    @Override
-    @DynamoDbAttribute(TYPE_FIELD)
-    public String type() {
-        return TYPE;
+    public Builder version(String version) {
+      this.builderVersion = version;
+      return this;
     }
 
-    public String partitionKey() {
-        return partitionKey;
+    public CandidateUniquenessEntryDao build() {
+      return new CandidateUniquenessEntryDao(builderPartitionKey, builderSortKey, builderVersion);
     }
-
-    public String sortKey() {
-        return sortKey;
-    }
-
-    @Override
-    @JacocoGenerated
-    public int hashCode() {
-        return Objects.hash(partitionKey, sortKey, version);
-    }
-
-    @Override
-    @JacocoGenerated
-    public boolean equals(Object obj) {
-        if (obj == this) {
-            return true;
-        }
-        if (obj == null || obj.getClass() != this.getClass()) {
-            return false;
-        }
-        var that = (CandidateUniquenessEntryDao) obj;
-        return Objects.equals(this.partitionKey, that.partitionKey)
-               && Objects.equals(this.sortKey, that.sortKey)
-               && Objects.equals(this.version, that.version);
-    }
-
-    @Override
-    @JacocoGenerated
-    public String toString() {
-        return "CandidateUniquenessEntryDao["
-               + "partitionKey=" + partitionKey + ", "
-               + "sortKey=" + sortKey + ", "
-               + "version=" + version + ']';
-    }
-
-    @DynamoDbIgnore
-    private static String pk0(String identifier) {
-        return TYPE + FIELD_DELIMITER + identifier;
-    }
-
-    @JacocoGenerated
-    public static final class Builder {
-
-        private String builderPartitionKey;
-        private String builderSortKey;
-        private String builderVersion;
-
-        private Builder() {
-        }
-
-        @JacocoGenerated
-        public Builder primaryKeyHashKey(String noop) {
-            // Used by @DynamoDbImmutable for building the object
-            return this;
-        }
-
-        @JacocoGenerated
-        public Builder primaryKeyRangeKey(String noop) {
-            // Used by @DynamoDbImmutable for building the object
-            return this;
-        }
-
-        @JacocoGenerated
-        public Builder type(String noop) {
-            // Used by @DynamoDbImmutable for building the object
-            return this;
-        }
-
-        public Builder partitionKey(String partitionKey) {
-            this.builderPartitionKey = partitionKey;
-            return this;
-        }
-
-        public Builder sortKey(String sortKey) {
-            this.builderSortKey = sortKey;
-            return this;
-        }
-
-        public Builder version(String version) {
-            this.builderVersion = version;
-            return this;
-        }
-
-        public CandidateUniquenessEntryDao build() {
-            return new CandidateUniquenessEntryDao(builderPartitionKey, builderSortKey, builderVersion);
-        }
-    }
+  }
 }

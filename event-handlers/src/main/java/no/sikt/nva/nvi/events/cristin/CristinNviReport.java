@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.events.cristin;
 
 import static java.util.Objects.nonNull;
+
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -12,99 +13,107 @@ import no.unit.nva.commons.json.JsonSerializable;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
-public record CristinNviReport(String publicationIdentifier,
-                               String cristinIdentifier,
-                               List<ScientificResource> scientificResources,
-                               List<CristinLocale> cristinLocales,
-                               String yearReported,
-                               PublicationDate publicationDate,
-                               String instanceType,
-                               JsonNode reference) implements JsonSerializable {
+public record CristinNviReport(
+    String publicationIdentifier,
+    String cristinIdentifier,
+    List<ScientificResource> scientificResources,
+    List<CristinLocale> cristinLocales,
+    String yearReported,
+    PublicationDate publicationDate,
+    String instanceType,
+    JsonNode reference)
+    implements JsonSerializable {
 
-    public List<CristinLocale> cristinLocales() {
-        return nonNull(cristinLocales) ? cristinLocales : List.of();
+  public List<CristinLocale> cristinLocales() {
+    return nonNull(cristinLocales) ? cristinLocales : List.of();
+  }
+
+  @JsonIgnore
+  public DbLevel getLevel() {
+    return scientificResources().stream()
+        .map(ScientificResource::getQualityCode)
+        .map(DbLevel::fromDeprecatedValue)
+        .findFirst()
+        .orElseThrow();
+  }
+
+  public List<ScientificResource> scientificResources() {
+    return nonNull(scientificResources) ? scientificResources : List.of();
+  }
+
+  public List<ScientificPerson> getCreators() {
+    return scientificResources().stream()
+        .flatMap(resource -> resource.getCreators().stream())
+        .toList();
+  }
+
+  public static Builder builder() {
+    return new Builder();
+  }
+
+  public static final class Builder {
+
+    private String publicationIdentifier;
+    private String cristinIdentifier;
+    private List<CristinLocale> cristinLocales;
+    private String yearReported;
+    private PublicationDate publicationDate;
+    private List<ScientificResource> scientificResources;
+    private String instanceType;
+    private JsonNode reference;
+
+    private Builder() {}
+
+    public Builder withPublicationIdentifier(String publicationIdentifier) {
+      this.publicationIdentifier = publicationIdentifier;
+      return this;
     }
 
-    @JsonIgnore
-    public DbLevel getLevel() {
-        return scientificResources().stream()
-                   .map(ScientificResource::getQualityCode)
-                   .map(DbLevel::fromDeprecatedValue)
-                   .findFirst().orElseThrow();
+    public Builder withCristinIdentifier(String cristinIdentifier) {
+      this.cristinIdentifier = cristinIdentifier;
+      return this;
     }
 
-    public List<ScientificResource> scientificResources() {
-        return nonNull(scientificResources) ? scientificResources : List.of();
+    public Builder withCristinLocales(List<CristinLocale> nviReport) {
+      this.cristinLocales = nviReport;
+      return this;
     }
 
-    public List<ScientificPerson> getCreators() {
-        return scientificResources().stream()
-                          .flatMap(resource -> resource.getCreators().stream())
-                          .toList();
+    public Builder withScientificResources(List<ScientificResource> scientificResources) {
+      this.scientificResources = scientificResources;
+      return this;
     }
 
-    public static Builder builder() {
-        return new Builder();
+    public Builder withYearReported(String yearReported) {
+      this.yearReported = yearReported;
+      return this;
     }
 
-    public static final class Builder {
-
-        private String publicationIdentifier;
-        private String cristinIdentifier;
-        private List<CristinLocale> cristinLocales;
-        private String yearReported;
-        private PublicationDate publicationDate;
-        private List<ScientificResource> scientificResources;
-        private String instanceType;
-        private JsonNode reference;
-
-        private Builder() {
-        }
-
-        public Builder withPublicationIdentifier(String publicationIdentifier) {
-            this.publicationIdentifier = publicationIdentifier;
-            return this;
-        }
-
-        public Builder withCristinIdentifier(String cristinIdentifier) {
-            this.cristinIdentifier = cristinIdentifier;
-            return this;
-        }
-
-        public Builder withCristinLocales(List<CristinLocale> nviReport) {
-            this.cristinLocales = nviReport;
-            return this;
-        }
-
-        public Builder withScientificResources(List<ScientificResource> scientificResources) {
-            this.scientificResources = scientificResources;
-            return this;
-        }
-
-        public Builder withYearReported(String yearReported) {
-            this.yearReported = yearReported;
-            return this;
-        }
-
-        public Builder withPublicationDate(PublicationDate publicationDate) {
-            this.publicationDate = publicationDate;
-            return this;
-        }
-
-        public Builder withInstanceType(String instanceType) {
-            this.instanceType = instanceType;
-            return this;
-        }
-
-        public Builder withReference(JsonNode reference) {
-            this.reference = reference;
-            return this;
-        }
-
-        public CristinNviReport build() {
-            return new CristinNviReport(publicationIdentifier, cristinIdentifier, scientificResources, cristinLocales,
-                                        yearReported, publicationDate, instanceType, reference);
-        }
-
+    public Builder withPublicationDate(PublicationDate publicationDate) {
+      this.publicationDate = publicationDate;
+      return this;
     }
+
+    public Builder withInstanceType(String instanceType) {
+      this.instanceType = instanceType;
+      return this;
+    }
+
+    public Builder withReference(JsonNode reference) {
+      this.reference = reference;
+      return this;
+    }
+
+    public CristinNviReport build() {
+      return new CristinNviReport(
+          publicationIdentifier,
+          cristinIdentifier,
+          scientificResources,
+          cristinLocales,
+          yearReported,
+          publicationDate,
+          instanceType,
+          reference);
+    }
+  }
 }

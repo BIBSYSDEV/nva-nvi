@@ -6,6 +6,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+
 import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.ByteArrayOutputStream;
@@ -28,53 +29,55 @@ import org.junit.jupiter.api.Test;
 
 class FetchNviPeriodsHandlerTest extends LocalDynamoTest {
 
-    private Context context;
-    private ByteArrayOutputStream output;
-    private FetchNviPeriodsHandler handler;
-    private PeriodRepository periodRepository;
+  private Context context;
+  private ByteArrayOutputStream output;
+  private FetchNviPeriodsHandler handler;
+  private PeriodRepository periodRepository;
 
-    @BeforeEach
-    public void setUp() {
-        output = new ByteArrayOutputStream();
-        context = new FakeContext();
-        periodRepository = new PeriodRepository(initializeTestDatabase());
-        handler = new FetchNviPeriodsHandler(new NviPeriodService(periodRepository));
-    }
+  @BeforeEach
+  public void setUp() {
+    output = new ByteArrayOutputStream();
+    context = new FakeContext();
+    periodRepository = new PeriodRepository(initializeTestDatabase());
+    handler = new FetchNviPeriodsHandler(new NviPeriodService(periodRepository));
+  }
 
-    @Test
-    void shouldThrowUnauthorizedWhenMissingAccessRights() throws IOException {
-        handler.handleRequest(createRequestWithAccessRight(AccessRight.MANAGE_PUBLISHING_REQUESTS), output, context);
-        var response = GatewayResponse.fromOutputStream(output, NviPeriodsResponse.class);
+  @Test
+  void shouldThrowUnauthorizedWhenMissingAccessRights() throws IOException {
+    handler.handleRequest(
+        createRequestWithAccessRight(AccessRight.MANAGE_PUBLISHING_REQUESTS), output, context);
+    var response = GatewayResponse.fromOutputStream(output, NviPeriodsResponse.class);
 
-        assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
-    }
+    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
+  }
 
-    @Test
-    void shouldReturnPeriodsWhenUserHasAccessRights() throws IOException {
-        TestUtils.setupPersistedPeriod("2023", periodRepository);
-        TestUtils.setupPersistedPeriod("2024", periodRepository);
-        handler.handleRequest(createRequestWithAccessRight(AccessRight.MANAGE_NVI), output, context);
-        var response = GatewayResponse.fromOutputStream(output, NviPeriodsResponse.class);
+  @Test
+  void shouldReturnPeriodsWhenUserHasAccessRights() throws IOException {
+    TestUtils.setupPersistedPeriod("2023", periodRepository);
+    TestUtils.setupPersistedPeriod("2024", periodRepository);
+    handler.handleRequest(createRequestWithAccessRight(AccessRight.MANAGE_NVI), output, context);
+    var response = GatewayResponse.fromOutputStream(output, NviPeriodsResponse.class);
 
-        assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_OK)));
-        assertThat(response.getBodyObject(NviPeriodsResponse.class).periods(), hasSize(2));
-    }
+    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_OK)));
+    assertThat(response.getBodyObject(NviPeriodsResponse.class).periods(), hasSize(2));
+  }
 
-    @Test
-    void shouldReturnSuccessWhenThereIsNoPeriods() throws IOException {
-        handler.handleRequest(createRequestWithAccessRight(AccessRight.MANAGE_NVI), output, context);
-        var response = GatewayResponse.fromOutputStream(output, NviPeriodsResponse.class);
+  @Test
+  void shouldReturnSuccessWhenThereIsNoPeriods() throws IOException {
+    handler.handleRequest(createRequestWithAccessRight(AccessRight.MANAGE_NVI), output, context);
+    var response = GatewayResponse.fromOutputStream(output, NviPeriodsResponse.class);
 
-        assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_OK)));
-        assertThat(response.getBodyObject(NviPeriodsResponse.class).periods(), hasSize(0));
-    }
+    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_OK)));
+    assertThat(response.getBodyObject(NviPeriodsResponse.class).periods(), hasSize(0));
+  }
 
-    private InputStream createRequestWithAccessRight(AccessRight accessRight) throws JsonProcessingException {
-        var customerId = randomUri();
-        return new HandlerRequestBuilder<UpsertNviPeriodRequest>(JsonUtils.dtoObjectMapper)
-                   .withCurrentCustomer(customerId)
-                   .withAccessRights(customerId, accessRight)
-                   .withUserName(randomString())
-                   .build();
-    }
+  private InputStream createRequestWithAccessRight(AccessRight accessRight)
+      throws JsonProcessingException {
+    var customerId = randomUri();
+    return new HandlerRequestBuilder<UpsertNviPeriodRequest>(JsonUtils.dtoObjectMapper)
+        .withCurrentCustomer(customerId)
+        .withAccessRights(customerId, accessRight)
+        .withUserName(randomString())
+        .build();
+  }
 }

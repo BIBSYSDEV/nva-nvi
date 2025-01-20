@@ -8,6 +8,5 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @JsonSerialize
 public record CustomerResponse(@JsonProperty(NVI_INSTITUTION) boolean nviInstitution) {
 
-    public static final String NVI_INSTITUTION = "nviInstitution";
-
+  public static final String NVI_INSTITUTION = "nviInstitution";
 }

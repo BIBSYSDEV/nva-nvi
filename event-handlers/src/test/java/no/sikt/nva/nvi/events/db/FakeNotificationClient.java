@@ -9,20 +9,20 @@ import software.amazon.awssdk.services.sns.model.PublishRequest;
 
 public class FakeNotificationClient implements NotificationClient<NviPublishMessageResponse> {
 
-    private final List<PublishRequest> publishedMessages = new ArrayList<>();
+  private final List<PublishRequest> publishedMessages = new ArrayList<>();
 
-    public List<PublishRequest> getPublishedMessages() {
-        return publishedMessages;
-    }
+  public List<PublishRequest> getPublishedMessages() {
+    return publishedMessages;
+  }
 
-    @Override
-    public NviPublishMessageResponse publish(String message, String topic) {
-        var request = createRequest(message, topic);
-        publishedMessages.add(request);
-        return new NviPublishMessageResponse(UUID.randomUUID().toString());
-    }
+  @Override
+  public NviPublishMessageResponse publish(String message, String topic) {
+    var request = createRequest(message, topic);
+    publishedMessages.add(request);
+    return new NviPublishMessageResponse(UUID.randomUUID().toString());
+  }
 
-    private static PublishRequest createRequest(String message, String topic) {
-        return PublishRequest.builder().message(message).topicArn(topic).build();
-    }
+  private static PublishRequest createRequest(String message, String topic) {
+    return PublishRequest.builder().message(message).topicArn(topic).build();
+  }
 }

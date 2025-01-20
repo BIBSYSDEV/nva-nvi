@@ -13,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
+
 import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.ByteArrayOutputStream;
@@ -45,178 +46,203 @@ import org.zalando.problem.Problem;
 
 class CreateNoteHandlerTest extends LocalDynamoTest {
 
-    public static final int YEAR = Year.now().getValue();
-    private Context context;
-    private ByteArrayOutputStream output;
-    private CreateNoteHandler handler;
-    private CandidateRepository candidateRepository;
-    private PeriodRepository periodRepository;
-    private ViewingScopeValidator viewingScopeValidatorReturningFalse;
+  public static final int YEAR = Year.now().getValue();
+  private Context context;
+  private ByteArrayOutputStream output;
+  private CreateNoteHandler handler;
+  private CandidateRepository candidateRepository;
+  private PeriodRepository periodRepository;
+  private ViewingScopeValidator viewingScopeValidatorReturningFalse;
 
-    @BeforeEach
-    void setUp() {
-        output = new ByteArrayOutputStream();
-        context = mock(Context.class);
-        localDynamo = initializeTestDatabase();
-        candidateRepository = new CandidateRepository(localDynamo);
-        periodRepository = TestUtils.periodRepositoryReturningOpenedPeriod(YEAR);
-        viewingScopeValidatorReturningFalse = new FakeViewingScopeValidator(true);
-        handler = new CreateNoteHandler(candidateRepository, periodRepository, viewingScopeValidatorReturningFalse);
-    }
+  @BeforeEach
+  void setUp() {
+    output = new ByteArrayOutputStream();
+    context = mock(Context.class);
+    localDynamo = initializeTestDatabase();
+    candidateRepository = new CandidateRepository(localDynamo);
+    periodRepository = TestUtils.periodRepositoryReturningOpenedPeriod(YEAR);
+    viewingScopeValidatorReturningFalse = new FakeViewingScopeValidator(true);
+    handler =
+        new CreateNoteHandler(
+            candidateRepository, periodRepository, viewingScopeValidatorReturningFalse);
+  }
 
-    @Test
-    void shouldReturnUnauthorizedWhenMissingAccessRights() throws IOException {
-        handler.handleRequest(requestWithoutAccessRights(UUID.randomUUID(), randomNote()), output, context);
-        var response = GatewayResponse.fromOutputStream(output, Problem.class);
+  @Test
+  void shouldReturnUnauthorizedWhenMissingAccessRights() throws IOException {
+    handler.handleRequest(
+        requestWithoutAccessRights(UUID.randomUUID(), randomNote()), output, context);
+    var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
-        assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
-    }
+    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
+  }
 
-    @Test
-    void shouldReturnUnauthorizedWhenCandidateIsNotInUsersViewingScope() throws IOException {
-        var candidate = upsert(randomUpsertRequestBuilder().build());
-        var request = createRequest(candidate.getIdentifier(), new NviNoteRequest("The note"), randomString());
-        viewingScopeValidatorReturningFalse = new FakeViewingScopeValidator(false);
-        handler = new CreateNoteHandler(candidateRepository, periodRepository, viewingScopeValidatorReturningFalse);
-        handler.handleRequest(request, output, context);
-        var response = GatewayResponse.fromOutputStream(output, Problem.class);
-        assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
-    }
+  @Test
+  void shouldReturnUnauthorizedWhenCandidateIsNotInUsersViewingScope() throws IOException {
+    var candidate = upsert(randomUpsertRequestBuilder().build());
+    var request =
+        createRequest(candidate.getIdentifier(), new NviNoteRequest("The note"), randomString());
+    viewingScopeValidatorReturningFalse = new FakeViewingScopeValidator(false);
+    handler =
+        new CreateNoteHandler(
+            candidateRepository, periodRepository, viewingScopeValidatorReturningFalse);
+    handler.handleRequest(request, output, context);
+    var response = GatewayResponse.fromOutputStream(output, Problem.class);
+    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
+  }
 
-    @Test
-    void shouldReturnBadRequestIfCreateNoteRequestIsInvalid() throws IOException {
-        var invalidRequestBody = JsonUtils.dtoObjectMapper.writeValueAsString(
+  @Test
+  void shouldReturnBadRequestIfCreateNoteRequestIsInvalid() throws IOException {
+    var invalidRequestBody =
+        JsonUtils.dtoObjectMapper.writeValueAsString(
             Map.of("someInvalidInputField", randomString()));
-        var request = createRequest(UUID.randomUUID(), invalidRequestBody, randomString());
+    var request = createRequest(UUID.randomUUID(), invalidRequestBody, randomString());
 
-        handler.handleRequest(request, output, context);
-        var response = GatewayResponse.fromOutputStream(output, Problem.class);
+    handler.handleRequest(request, output, context);
+    var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
-        assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_BAD_REQUEST)));
-    }
+    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_BAD_REQUEST)));
+  }
 
-    @Test
-    void shouldAddNoteToCandidateWhenNoteIsValid() throws IOException {
-        var candidate = upsert(randomUpsertRequestBuilder().build());
-        var theNote = "The note";
-        var userName = randomString();
+  @Test
+  void shouldAddNoteToCandidateWhenNoteIsValid() throws IOException {
+    var candidate = upsert(randomUpsertRequestBuilder().build());
+    var theNote = "The note";
+    var userName = randomString();
 
-        var request = createRequest(candidate.getIdentifier(), new NviNoteRequest(theNote), userName);
-        handler.handleRequest(request, output, context);
-        var gatewayResponse = GatewayResponse.fromOutputStream(output, CandidateDto.class);
-        var actualNote = gatewayResponse.getBodyObject(CandidateDto.class).notes().getFirst();
+    var request = createRequest(candidate.getIdentifier(), new NviNoteRequest(theNote), userName);
+    handler.handleRequest(request, output, context);
+    var gatewayResponse = GatewayResponse.fromOutputStream(output, CandidateDto.class);
+    var actualNote = gatewayResponse.getBodyObject(CandidateDto.class).notes().getFirst();
 
-        assertThat(actualNote.text(), is(equalTo(theNote)));
-        assertThat(actualNote.user(), is(equalTo(userName)));
-    }
+    assertThat(actualNote.text(), is(equalTo(theNote)));
+    assertThat(actualNote.user(), is(equalTo(userName)));
+  }
 
-    @Test
-    void shouldReturnConflictWhenCreatingNoteAndReportingPeriodIsClosed() throws IOException {
-        var candidate = upsert(randomUpsertRequestBuilder().build());
-        var request = createRequest(candidate.getIdentifier(), new NviNoteRequest(randomString()), randomString());
-        var handler = new CreateNoteHandler(candidateRepository, periodRepositoryReturningClosedPeriod(YEAR),
-                                            viewingScopeValidatorReturningFalse);
-        handler.handleRequest(request, output, context);
-        var response = GatewayResponse.fromOutputStream(output, Problem.class);
+  @Test
+  void shouldReturnConflictWhenCreatingNoteAndReportingPeriodIsClosed() throws IOException {
+    var candidate = upsert(randomUpsertRequestBuilder().build());
+    var request =
+        createRequest(
+            candidate.getIdentifier(), new NviNoteRequest(randomString()), randomString());
+    var handler =
+        new CreateNoteHandler(
+            candidateRepository,
+            periodRepositoryReturningClosedPeriod(YEAR),
+            viewingScopeValidatorReturningFalse);
+    handler.handleRequest(request, output, context);
+    var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
-        assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_CONFLICT)));
-    }
+    assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_CONFLICT)));
+  }
 
-    @Test
-    void shouldReturn405NotAllowedWhenAddingNoteToNonCandidate() throws IOException {
-        var candidateBO = upsert(randomUpsertRequestBuilder().build());
-        var nonCandidate = Candidate.updateNonCandidate(
-            createUpsertNonCandidateRequest(candidateBO.getPublicationId()),
-            candidateRepository).orElseThrow();
-        var request = createRequest(nonCandidate.getIdentifier(), randomNote().toJsonString(), randomString());
-        handler.handleRequest(request, output, context);
-        var response = GatewayResponse.fromOutputStream(output, Problem.class);
+  @Test
+  void shouldReturn405NotAllowedWhenAddingNoteToNonCandidate() throws IOException {
+    var candidateBO = upsert(randomUpsertRequestBuilder().build());
+    var nonCandidate =
+        Candidate.updateNonCandidate(
+                createUpsertNonCandidateRequest(candidateBO.getPublicationId()),
+                candidateRepository)
+            .orElseThrow();
+    var request =
+        createRequest(nonCandidate.getIdentifier(), randomNote().toJsonString(), randomString());
+    handler.handleRequest(request, output, context);
+    var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
-        assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_BAD_METHOD)));
-    }
+    assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_BAD_METHOD)));
+  }
 
-    @Test
-    void shouldSetUserAsAssigneeWhenUsersInstitutionApprovalIsUnassigned() throws IOException {
-        var institutionId = randomUri();
-        var candidate = upsert(createUpsertCandidateRequest(institutionId).build());
-        assertNull(candidate.getApprovals().get(institutionId).getAssigneeUsername());
-        var userName = randomString();
-        var request = createRequest(candidate.getIdentifier(), randomNote(), userName, institutionId);
-        handler.handleRequest(request, output, context);
-        var response = GatewayResponse.fromOutputStream(output, CandidateDto.class).getBodyObject(CandidateDto.class);
-        var actualAssignee = getActualAssignee(response, institutionId);
-        assertEquals(userName, actualAssignee);
-    }
+  @Test
+  void shouldSetUserAsAssigneeWhenUsersInstitutionApprovalIsUnassigned() throws IOException {
+    var institutionId = randomUri();
+    var candidate = upsert(createUpsertCandidateRequest(institutionId).build());
+    assertNull(candidate.getApprovals().get(institutionId).getAssigneeUsername());
+    var userName = randomString();
+    var request = createRequest(candidate.getIdentifier(), randomNote(), userName, institutionId);
+    handler.handleRequest(request, output, context);
+    var response =
+        GatewayResponse.fromOutputStream(output, CandidateDto.class)
+            .getBodyObject(CandidateDto.class);
+    var actualAssignee = getActualAssignee(response, institutionId);
+    assertEquals(userName, actualAssignee);
+  }
 
-    @Test
-    void shouldNotSetUserAsAssigneeWhenUsersInstitutionApprovalHasAssignee() throws IOException {
-        var institutionId = randomUri();
-        var candidate = upsert(createUpsertCandidateRequest(institutionId).build());
-        var existingApprovalAssignee = randomString();
-        candidate.updateApprovalAssignee(new UpdateAssigneeRequest(institutionId, existingApprovalAssignee));
-        assertNotNull(candidate.getApprovals().get(institutionId).getAssigneeUsername());
-        var request = createRequest(candidate.getIdentifier(), randomNote(), randomString(), institutionId);
-        handler.handleRequest(request, output, context);
-        var response = GatewayResponse.fromOutputStream(output, CandidateDto.class).getBodyObject(CandidateDto.class);
-        var actualAssignee = getActualAssignee(response, institutionId);
-        assertEquals(existingApprovalAssignee, actualAssignee);
-    }
+  @Test
+  void shouldNotSetUserAsAssigneeWhenUsersInstitutionApprovalHasAssignee() throws IOException {
+    var institutionId = randomUri();
+    var candidate = upsert(createUpsertCandidateRequest(institutionId).build());
+    var existingApprovalAssignee = randomString();
+    candidate.updateApprovalAssignee(
+        new UpdateAssigneeRequest(institutionId, existingApprovalAssignee));
+    assertNotNull(candidate.getApprovals().get(institutionId).getAssigneeUsername());
+    var request =
+        createRequest(candidate.getIdentifier(), randomNote(), randomString(), institutionId);
+    handler.handleRequest(request, output, context);
+    var response =
+        GatewayResponse.fromOutputStream(output, CandidateDto.class)
+            .getBodyObject(CandidateDto.class);
+    var actualAssignee = getActualAssignee(response, institutionId);
+    assertEquals(existingApprovalAssignee, actualAssignee);
+  }
 
-    private static String getActualAssignee(CandidateDto response, URI institutionId) {
-        return response.approvals().stream()
-                   .filter(approval -> isInstitutionId(institutionId, approval))
-                   .findFirst()
-                   .orElseThrow()
-                   .assignee();
-    }
+  private static String getActualAssignee(CandidateDto response, URI institutionId) {
+    return response.approvals().stream()
+        .filter(approval -> isInstitutionId(institutionId, approval))
+        .findFirst()
+        .orElseThrow()
+        .assignee();
+  }
 
-    private static boolean isInstitutionId(URI institutionId, ApprovalDto approval) {
-        return approval.institutionId().equals(institutionId);
-    }
+  private static boolean isInstitutionId(URI institutionId, ApprovalDto approval) {
+    return approval.institutionId().equals(institutionId);
+  }
 
-    private InputStream createRequest(UUID identifier, NviNoteRequest body, String userName)
-        throws JsonProcessingException {
-        return createRequest(identifier, body, userName, randomUri());
-    }
+  private InputStream createRequest(UUID identifier, NviNoteRequest body, String userName)
+      throws JsonProcessingException {
+    return createRequest(identifier, body, userName, randomUri());
+  }
 
-    private InputStream createRequest(UUID identifier, NviNoteRequest body, String userName, URI institutionId)
-        throws JsonProcessingException {
-        var customerId = randomUri();
-        return new HandlerRequestBuilder<NviNoteRequest>(JsonUtils.dtoObjectMapper)
-                   .withBody(body)
-                   .withCurrentCustomer(customerId)
-                   .withTopLevelCristinOrgId(institutionId)
-                   .withPathParameters(Map.of("candidateIdentifier", identifier.toString()))
-                   .withAccessRights(customerId, AccessRight.MANAGE_NVI_CANDIDATES)
-                   .withUserName(userName)
-                   .build();
-    }
+  private InputStream createRequest(
+      UUID identifier, NviNoteRequest body, String userName, URI institutionId)
+      throws JsonProcessingException {
+    var customerId = randomUri();
+    return new HandlerRequestBuilder<NviNoteRequest>(JsonUtils.dtoObjectMapper)
+        .withBody(body)
+        .withCurrentCustomer(customerId)
+        .withTopLevelCristinOrgId(institutionId)
+        .withPathParameters(Map.of("candidateIdentifier", identifier.toString()))
+        .withAccessRights(customerId, AccessRight.MANAGE_NVI_CANDIDATES)
+        .withUserName(userName)
+        .build();
+  }
 
-    private InputStream createRequest(UUID identifier, String body, String userName) throws JsonProcessingException {
-        var customerId = randomUri();
-        return new HandlerRequestBuilder<String>(JsonUtils.dtoObjectMapper)
-                   .withBody(body)
-                   .withCurrentCustomer(customerId)
-                   .withTopLevelCristinOrgId(randomUri())
-                   .withPathParameters(Map.of("candidateIdentifier", identifier.toString()))
-                   .withAccessRights(customerId, AccessRight.MANAGE_NVI_CANDIDATES)
-                   .withUserName(userName)
-                   .build();
-    }
+  private InputStream createRequest(UUID identifier, String body, String userName)
+      throws JsonProcessingException {
+    var customerId = randomUri();
+    return new HandlerRequestBuilder<String>(JsonUtils.dtoObjectMapper)
+        .withBody(body)
+        .withCurrentCustomer(customerId)
+        .withTopLevelCristinOrgId(randomUri())
+        .withPathParameters(Map.of("candidateIdentifier", identifier.toString()))
+        .withAccessRights(customerId, AccessRight.MANAGE_NVI_CANDIDATES)
+        .withUserName(userName)
+        .build();
+  }
 
-    private Candidate upsert(UpsertCandidateRequest request) {
-        Candidate.upsert(request, candidateRepository, periodRepository);
-        return Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository);
-    }
+  private Candidate upsert(UpsertCandidateRequest request) {
+    Candidate.upsert(request, candidateRepository, periodRepository);
+    return Candidate.fetchByPublicationId(
+        request::publicationId, candidateRepository, periodRepository);
+  }
 
-    private NviNoteRequest randomNote() {
-        return new NviNoteRequest(randomString());
-    }
+  private NviNoteRequest randomNote() {
+    return new NviNoteRequest(randomString());
+  }
 
-    private InputStream requestWithoutAccessRights(UUID candidateIdentifier, NviNoteRequest request)
-        throws JsonProcessingException {
-        return new HandlerRequestBuilder<NviNoteRequest>(JsonUtils.dtoObjectMapper)
-                   .withPathParameters(Map.of("candidateIdentifier", candidateIdentifier.toString()))
-                   .withBody(request).build();
-    }
+  private InputStream requestWithoutAccessRights(UUID candidateIdentifier, NviNoteRequest request)
+      throws JsonProcessingException {
+    return new HandlerRequestBuilder<NviNoteRequest>(JsonUtils.dtoObjectMapper)
+        .withPathParameters(Map.of("candidateIdentifier", candidateIdentifier.toString()))
+        .withBody(request)
+        .build();
+  }
 }

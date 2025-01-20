@@ -4,6 +4,7 @@ import static no.sikt.nva.nvi.index.aws.OpenSearchClient.defaultOpenSearchClient
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_AFFILIATIONS;
 import static no.sikt.nva.nvi.index.utils.PaginatedResultConverter.toPaginatedResult;
 import static nva.commons.core.attempt.Try.attempt;
+
 import com.amazonaws.services.lambda.runtime.Context;
 import java.net.HttpURLConnection;
 import java.net.URI;
@@ -37,130 +38,140 @@ import org.slf4j.LoggerFactory;
 public class SearchNviCandidatesHandler
     extends ApiGatewayHandler<Void, PaginatedSearchResult<NviCandidateIndexDocument>> {
 
-    private static final String CRISTIN_PATH = "cristin";
-    private static final String ORGANIZATION_PATH = "organization";
-    private final Logger logger = LoggerFactory.getLogger(SearchNviCandidatesHandler.class);
-    private final SearchClient<NviCandidateIndexDocument> openSearchClient;
-    private final ViewingScopeValidator viewingScopeValidator;
-    private final IdentityServiceClient identityServiceClient;
-    private final String apiHost;
+  private static final String CRISTIN_PATH = "cristin";
+  private static final String ORGANIZATION_PATH = "organization";
+  private final Logger logger = LoggerFactory.getLogger(SearchNviCandidatesHandler.class);
+  private final SearchClient<NviCandidateIndexDocument> openSearchClient;
+  private final ViewingScopeValidator viewingScopeValidator;
+  private final IdentityServiceClient identityServiceClient;
+  private final String apiHost;
 
-    @JacocoGenerated
-    public SearchNviCandidatesHandler() {
-        this(defaultOpenSearchClient(), defaultViewingScopeValidator(), IdentityServiceClient.prepare(),
-             new Environment());
-    }
+  @JacocoGenerated
+  public SearchNviCandidatesHandler() {
+    this(
+        defaultOpenSearchClient(),
+        defaultViewingScopeValidator(),
+        IdentityServiceClient.prepare(),
+        new Environment());
+  }
 
-    public SearchNviCandidatesHandler(SearchClient<NviCandidateIndexDocument> openSearchClient,
-                                      ViewingScopeValidator viewingScopeValidator,
-                                      IdentityServiceClient identityServiceClient,
-                                      Environment environment) {
-        super(Void.class);
-        this.openSearchClient = openSearchClient;
-        this.viewingScopeValidator = viewingScopeValidator;
-        this.identityServiceClient = identityServiceClient;
-        this.apiHost = environment.readEnv("API_HOST");
-    }
+  public SearchNviCandidatesHandler(
+      SearchClient<NviCandidateIndexDocument> openSearchClient,
+      ViewingScopeValidator viewingScopeValidator,
+      IdentityServiceClient identityServiceClient,
+      Environment environment) {
+    super(Void.class);
+    this.openSearchClient = openSearchClient;
+    this.viewingScopeValidator = viewingScopeValidator;
+    this.identityServiceClient = identityServiceClient;
+    this.apiHost = environment.readEnv("API_HOST");
+  }
 
-    @Override
-    protected void validateRequest(Void unused, RequestInfo requestInfo, Context context) throws ApiGatewayException {
-        validateAccessRights(requestInfo);
-    }
+  @Override
+  protected void validateRequest(Void unused, RequestInfo requestInfo, Context context)
+      throws ApiGatewayException {
+    validateAccessRights(requestInfo);
+  }
 
-    @Override
-    protected PaginatedSearchResult<NviCandidateIndexDocument> processInput(Void input, RequestInfo requestInfo,
-                                                                            Context context)
-        throws UnauthorizedException, BadRequestException {
-        var affiliations = getQueryParamAffiliationsOrViewingScope(requestInfo);
-        var candidateSearchParameters = CandidateSearchParameters.fromRequestInfo(requestInfo, affiliations);
-        logAggregationType(candidateSearchParameters);
-        return attempt(() -> openSearchClient.search(candidateSearchParameters))
-                   .map(searchResponse -> toPaginatedResult(searchResponse, candidateSearchParameters))
-                   .orElseThrow();
-    }
+  @Override
+  protected PaginatedSearchResult<NviCandidateIndexDocument> processInput(
+      Void input, RequestInfo requestInfo, Context context)
+      throws UnauthorizedException, BadRequestException {
+    var affiliations = getQueryParamAffiliationsOrViewingScope(requestInfo);
+    var candidateSearchParameters =
+        CandidateSearchParameters.fromRequestInfo(requestInfo, affiliations);
+    logAggregationType(candidateSearchParameters);
+    return attempt(() -> openSearchClient.search(candidateSearchParameters))
+        .map(searchResponse -> toPaginatedResult(searchResponse, candidateSearchParameters))
+        .orElseThrow();
+  }
 
-    @Override
-    protected Integer getSuccessStatusCode(Void input, PaginatedSearchResult<NviCandidateIndexDocument> output) {
-        return HttpURLConnection.HTTP_OK;
-    }
+  @Override
+  protected Integer getSuccessStatusCode(
+      Void input, PaginatedSearchResult<NviCandidateIndexDocument> output) {
+    return HttpURLConnection.HTTP_OK;
+  }
 
-    @JacocoGenerated
-    private static ViewingScopeValidatorImpl defaultViewingScopeValidator() {
-        return new ViewingScopeValidatorImpl(IdentityServiceClient.prepare(),
-                                             new OrganizationRetriever(new UriRetriever()));
-    }
+  @JacocoGenerated
+  private static ViewingScopeValidatorImpl defaultViewingScopeValidator() {
+    return new ViewingScopeValidatorImpl(
+        IdentityServiceClient.prepare(), new OrganizationRetriever(new UriRetriever()));
+  }
 
-    private static boolean userIsNviAdmin(RequestInfo requestInfo) {
-        return requestInfo.userIsAuthorized(AccessRight.MANAGE_NVI);
-    }
+  private static boolean userIsNviAdmin(RequestInfo requestInfo) {
+    return requestInfo.userIsAuthorized(AccessRight.MANAGE_NVI);
+  }
 
-    private static Optional<List<String>> extractQueryParamAffiliations(RequestInfo requestInfo) {
-        return requestInfo.getQueryParameterOpt(QUERY_PARAM_AFFILIATIONS)
-                   .map(SearchNviCandidatesHandler::toListOfIdentifiers);
-    }
+  private static Optional<List<String>> extractQueryParamAffiliations(RequestInfo requestInfo) {
+    return requestInfo
+        .getQueryParameterOpt(QUERY_PARAM_AFFILIATIONS)
+        .map(SearchNviCandidatesHandler::toListOfIdentifiers);
+  }
 
-    private static List<String> toListOfIdentifiers(String identifierListAsString) {
-        return Arrays.stream(identifierListAsString.split(COMMA)).collect(Collectors.toList());
-    }
+  private static List<String> toListOfIdentifiers(String identifierListAsString) {
+    return Arrays.stream(identifierListAsString.split(COMMA)).collect(Collectors.toList());
+  }
 
-    private static boolean userIsNotNviAdmin(RequestInfo requestInfo) {
-        return !userIsNviAdmin(requestInfo);
-    }
+  private static boolean userIsNotNviAdmin(RequestInfo requestInfo) {
+    return !userIsNviAdmin(requestInfo);
+  }
 
-    private List<String> getQueryParamAffiliationsOrViewingScope(RequestInfo requestInfo)
-        throws UnauthorizedException {
-        return extractQueryParamAffiliations(requestInfo).orElse(getDefaultAffiliations(requestInfo));
-    }
+  private List<String> getQueryParamAffiliationsOrViewingScope(RequestInfo requestInfo)
+      throws UnauthorizedException {
+    return extractQueryParamAffiliations(requestInfo).orElse(getDefaultAffiliations(requestInfo));
+  }
 
-    private List<String> getDefaultAffiliations(RequestInfo requestInfo) throws UnauthorizedException {
-        return userIsNviAdmin(requestInfo)
-                   ? List.of()
-                   : getAffiliationsFromViewingScope(requestInfo);
-    }
+  private List<String> getDefaultAffiliations(RequestInfo requestInfo)
+      throws UnauthorizedException {
+    return userIsNviAdmin(requestInfo) ? List.of() : getAffiliationsFromViewingScope(requestInfo);
+  }
 
-    private List<String> getAffiliationsFromViewingScope(RequestInfo requestInfo) throws UnauthorizedException {
-        return fetchViewingScope(requestInfo.getUserName()).stream()
-                   .map(UriWrapper::fromUri)
-                   .map(UriWrapper::getLastPathElement)
-                   .collect(Collectors.toList());
-    }
+  private List<String> getAffiliationsFromViewingScope(RequestInfo requestInfo)
+      throws UnauthorizedException {
+    return fetchViewingScope(requestInfo.getUserName()).stream()
+        .map(UriWrapper::fromUri)
+        .map(UriWrapper::getLastPathElement)
+        .collect(Collectors.toList());
+  }
 
-    private Set<URI> fetchViewingScope(String userName) {
-        var user = attempt(() -> identityServiceClient.getUser(userName)).orElseThrow();
-        return new HashSet<>(user.viewingScope().includedUnits());
-    }
+  private Set<URI> fetchViewingScope(String userName) {
+    var user = attempt(() -> identityServiceClient.getUser(userName)).orElseThrow();
+    return new HashSet<>(user.viewingScope().includedUnits());
+  }
 
-    private URI toCristinOrgUri(String identifier) {
-        return UriWrapper.fromHost(apiHost)
-                   .addChild(CRISTIN_PATH, ORGANIZATION_PATH)
-                   .addChild(identifier)
-                   .getUri();
-    }
+  private URI toCristinOrgUri(String identifier) {
+    return UriWrapper.fromHost(apiHost)
+        .addChild(CRISTIN_PATH, ORGANIZATION_PATH)
+        .addChild(identifier)
+        .getUri();
+  }
 
-    private void logAggregationType(CandidateSearchParameters candidateSearchParameters) {
-        logger.info("Aggregation type {} requested for topLevelCristinOrg {}",
-                    candidateSearchParameters.aggregationType(),
-                    candidateSearchParameters.topLevelCristinOrg());
-    }
+  private void logAggregationType(CandidateSearchParameters candidateSearchParameters) {
+    logger.info(
+        "Aggregation type {} requested for topLevelCristinOrg {}",
+        candidateSearchParameters.aggregationType(),
+        candidateSearchParameters.topLevelCristinOrg());
+  }
 
-    private void validateAccessRights(RequestInfo requestInfo) throws UnauthorizedException {
-        if (userIsNotNviAdmin(requestInfo)) {
-            var requestedOrganizations = extractQueryParamAffiliations(requestInfo)
-                                             .map(this::toOrganizationUris)
-                                             .orElse(List.of());
-            if (userIsNotAllowedToView(requestInfo, requestedOrganizations)) {
-                throw new UnauthorizedException("User is not allowed to view requested organizations");
-            }
-        }
+  private void validateAccessRights(RequestInfo requestInfo) throws UnauthorizedException {
+    if (userIsNotNviAdmin(requestInfo)) {
+      var requestedOrganizations =
+          extractQueryParamAffiliations(requestInfo)
+              .map(this::toOrganizationUris)
+              .orElse(List.of());
+      if (userIsNotAllowedToView(requestInfo, requestedOrganizations)) {
+        throw new UnauthorizedException("User is not allowed to view requested organizations");
+      }
     }
+  }
 
-    private boolean userIsNotAllowedToView(RequestInfo requestInfo, List<URI> requestedOrganizations)
-        throws UnauthorizedException {
-        return !viewingScopeValidator.userIsAllowedToAccessAll(requestInfo.getUserName(), requestedOrganizations);
-    }
+  private boolean userIsNotAllowedToView(RequestInfo requestInfo, List<URI> requestedOrganizations)
+      throws UnauthorizedException {
+    return !viewingScopeValidator.userIsAllowedToAccessAll(
+        requestInfo.getUserName(), requestedOrganizations);
+  }
 
-    private List<URI> toOrganizationUris(List<String> affiliationIdentifiers) {
-        return affiliationIdentifiers.stream().map(this::toCristinOrgUri).toList();
-    }
+  private List<URI> toOrganizationUris(List<String> affiliationIdentifiers) {
+    return affiliationIdentifiers.stream().map(this::toCristinOrgUri).toList();
+  }
 }
-

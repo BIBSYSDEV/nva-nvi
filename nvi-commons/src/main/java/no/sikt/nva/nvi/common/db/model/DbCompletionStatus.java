@@ -5,25 +5,24 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Arrays;
 
 public enum DbCompletionStatus {
-    COMPLETED("Completed"), IN_PROGRESS("In progress");
+  COMPLETED("Completed"),
+  IN_PROGRESS("In progress");
 
-    @JsonValue
-    private final String value;
+  @JsonValue private final String value;
 
-    DbCompletionStatus(String value) {
-        this.value = value;
-    }
+  DbCompletionStatus(String value) {
+    this.value = value;
+  }
 
-    @JsonCreator
-    public static DbCompletionStatus parse(String value) {
-        return Arrays
-                   .stream(values())
-                   .filter(level -> level.getValue().equalsIgnoreCase(value))
-                   .findFirst()
-                   .orElseThrow();
-    }
+  @JsonCreator
+  public static DbCompletionStatus parse(String value) {
+    return Arrays.stream(values())
+        .filter(level -> level.getValue().equalsIgnoreCase(value))
+        .findFirst()
+        .orElseThrow();
+  }
 
-    public String getValue() {
-        return value;
-    }
+  public String getValue() {
+    return value;
+  }
 }

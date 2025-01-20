@@ -4,11 +4,11 @@ import java.time.Instant;
 
 public interface UpsertPeriodRequest {
 
-    Integer publishingYear();
+  Integer publishingYear();
 
-    Instant startDate();
+  Instant startDate();
 
-    Instant reportingDate();
+  Instant reportingDate();
 
-    void validate();
+  void validate();
 }

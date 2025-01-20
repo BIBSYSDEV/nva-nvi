@@ -1,5 +1,3 @@
 package no.sikt.nva.nvi.common.notification;
 
-public record NviPublishMessageResponse(String messageId) {
-
-}
+public record NviPublishMessageResponse(String messageId) {}
