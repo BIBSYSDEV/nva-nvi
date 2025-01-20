@@ -11,10 +11,7 @@ import java.net.URI;
 @JsonSerialize
 @JsonTypeName(NviPeriodDto.NVI_PERIOD)
 @JsonTypeInfo(use = Id.NAME, property = "type")
-public record NviPeriodDto(URI id,
-                           String publishingYear,
-                           String startDate,
-                           String reportingDate) {
+public record NviPeriodDto(URI id, String publishingYear, String startDate, String reportingDate) {
 
-    public static final String NVI_PERIOD = "NviPeriod";
+  public static final String NVI_PERIOD = "NviPeriod";
 }

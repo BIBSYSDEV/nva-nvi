@@ -9,13 +9,11 @@ import org.opensearch.client.opensearch.core.SearchResponse;
 
 public interface SearchClient<T> {
 
-    IndexResponse addDocumentToIndex(T indexDocument);
+  IndexResponse addDocumentToIndex(T indexDocument);
 
-    DeleteResponse removeDocumentFromIndex(UUID identifier);
+  DeleteResponse removeDocumentFromIndex(UUID identifier);
 
-    SearchResponse<T> search(CandidateSearchParameters candidateSearchParameters)
-        throws IOException;
+  SearchResponse<T> search(CandidateSearchParameters candidateSearchParameters) throws IOException;
 
-    void deleteIndex() throws IOException;
-
+  void deleteIndex() throws IOException;
 }

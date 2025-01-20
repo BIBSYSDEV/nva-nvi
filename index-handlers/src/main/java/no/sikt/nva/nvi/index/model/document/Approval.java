@@ -14,90 +14,97 @@ import no.sikt.nva.nvi.index.model.document.InstitutionPoints.CreatorAffiliation
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
-@JsonTypeInfo(
-    use = JsonTypeInfo.Id.NAME,
-    property = "type")
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonTypeName("Approval")
-public record Approval(URI institutionId,
-                       Map<String, String> labels,
-                       ApprovalStatus approvalStatus,
-                       InstitutionPoints points,
-                       Set<URI> involvedOrganizations,
-                       String assignee,
-                       GlobalApprovalStatus globalApprovalStatus) {
+public record Approval(
+    URI institutionId,
+    Map<String, String> labels,
+    ApprovalStatus approvalStatus,
+    InstitutionPoints points,
+    Set<URI> involvedOrganizations,
+    String assignee,
+    GlobalApprovalStatus globalApprovalStatus) {
 
-    public static Builder builder() {
-        return new Builder();
+  public static Builder builder() {
+    return new Builder();
+  }
+
+  public BigDecimal getPointsForAffiliation(
+      NviContributor nviContributor, NviOrganization affiliation) {
+    return points.creatorAffiliationPoints().stream()
+        .filter(hasAffiliationId(affiliation))
+        .filter(hasContributor(nviContributor))
+        .map(CreatorAffiliationPoints::points)
+        .findFirst()
+        .orElseThrow();
+  }
+
+  private static Predicate<CreatorAffiliationPoints> hasContributor(NviContributor nviContributor) {
+    return creatorAffiliationPoints ->
+        creatorAffiliationPoints.nviCreator().toString().equals(nviContributor.id());
+  }
+
+  private static Predicate<CreatorAffiliationPoints> hasAffiliationId(NviOrganization affiliation) {
+    return creatorAffiliationPoints ->
+        creatorAffiliationPoints.affiliationId().equals(affiliation.id());
+  }
+
+  public static final class Builder {
+
+    private URI institutionId;
+    private Map<String, String> labels;
+    private ApprovalStatus approvalStatus;
+    private InstitutionPoints points;
+    private Set<URI> involvedOrganizations;
+    private String assignee;
+    private GlobalApprovalStatus globalApprovalStatus;
+
+    private Builder() {}
+
+    public Builder withInstitutionId(URI institutionId) {
+      this.institutionId = institutionId;
+      return this;
     }
 
-    public BigDecimal getPointsForAffiliation(NviContributor nviContributor, NviOrganization affiliation) {
-        return points.creatorAffiliationPoints().stream()
-                   .filter(hasAffiliationId(affiliation))
-                   .filter(hasContributor(nviContributor))
-                   .map(CreatorAffiliationPoints::points)
-                   .findFirst()
-                   .orElseThrow();
+    public Builder withLabels(Map<String, String> labels) {
+      this.labels = labels;
+      return this;
     }
 
-    private static Predicate<CreatorAffiliationPoints> hasContributor(NviContributor nviContributor) {
-        return creatorAffiliationPoints -> creatorAffiliationPoints.nviCreator().toString().equals(nviContributor.id());
+    public Builder withApprovalStatus(ApprovalStatus approvalStatus) {
+      this.approvalStatus = approvalStatus;
+      return this;
     }
 
-    private static Predicate<CreatorAffiliationPoints> hasAffiliationId(NviOrganization affiliation) {
-        return creatorAffiliationPoints -> creatorAffiliationPoints.affiliationId().equals(affiliation.id());
+    public Builder withPoints(InstitutionPoints points) {
+      this.points = points;
+      return this;
     }
 
-    public static final class Builder {
-
-        private URI institutionId;
-        private Map<String, String> labels;
-        private ApprovalStatus approvalStatus;
-        private InstitutionPoints points;
-        private Set<URI> involvedOrganizations;
-        private String assignee;
-        private GlobalApprovalStatus globalApprovalStatus;
-
-        private Builder() {
-        }
-
-        public Builder withInstitutionId(URI institutionId) {
-            this.institutionId = institutionId;
-            return this;
-        }
-
-        public Builder withLabels(Map<String, String> labels) {
-            this.labels = labels;
-            return this;
-        }
-
-        public Builder withApprovalStatus(ApprovalStatus approvalStatus) {
-            this.approvalStatus = approvalStatus;
-            return this;
-        }
-
-        public Builder withPoints(InstitutionPoints points) {
-            this.points = points;
-            return this;
-        }
-
-        public Builder withInvolvedOrganizations(Set<URI> involvedOrganizations) {
-            this.involvedOrganizations = involvedOrganizations;
-            return this;
-        }
-
-        public Builder withAssignee(String assignee) {
-            this.assignee = assignee;
-            return this;
-        }
-
-        public Builder withGlobalApprovalStatus(GlobalApprovalStatus globalApprovalStatus) {
-            this.globalApprovalStatus = globalApprovalStatus;
-            return this;
-        }
-
-        public Approval build() {
-            return new Approval(institutionId, labels, approvalStatus, points, involvedOrganizations, assignee,
-                                globalApprovalStatus);
-        }
+    public Builder withInvolvedOrganizations(Set<URI> involvedOrganizations) {
+      this.involvedOrganizations = involvedOrganizations;
+      return this;
     }
+
+    public Builder withAssignee(String assignee) {
+      this.assignee = assignee;
+      return this;
+    }
+
+    public Builder withGlobalApprovalStatus(GlobalApprovalStatus globalApprovalStatus) {
+      this.globalApprovalStatus = globalApprovalStatus;
+      return this;
+    }
+
+    public Approval build() {
+      return new Approval(
+          institutionId,
+          labels,
+          approvalStatus,
+          points,
+          involvedOrganizations,
+          assignee,
+          globalApprovalStatus);
+    }
+  }
 }

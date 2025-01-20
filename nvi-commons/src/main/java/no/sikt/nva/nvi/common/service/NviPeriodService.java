@@ -7,21 +7,21 @@ import no.sikt.nva.nvi.common.service.model.NviPeriod;
 
 public class NviPeriodService {
 
-    private final PeriodRepository periodRepository;
+  private final PeriodRepository periodRepository;
 
-    public NviPeriodService(PeriodRepository periodRepository) {
-        this.periodRepository = periodRepository;
-    }
+  public NviPeriodService(PeriodRepository periodRepository) {
+    this.periodRepository = periodRepository;
+  }
 
-    public List<NviPeriod> fetchAll() {
-        return periodRepository.getPeriods().stream().map(NviPeriod::fromDbPeriod).toList();
-    }
+  public List<NviPeriod> fetchAll() {
+    return periodRepository.getPeriods().stream().map(NviPeriod::fromDbPeriod).toList();
+  }
 
-    public Optional<Integer> fetchLatestClosedPeriodYear() {
-        return periodRepository.getPeriods().stream()
-                   .map(NviPeriod::fromDbPeriod)
-                   .filter(NviPeriod::isClosed)
-                   .map(NviPeriod::getPublishingYear)
-                   .reduce(Integer::max);
-    }
+  public Optional<Integer> fetchLatestClosedPeriodYear() {
+    return periodRepository.getPeriods().stream()
+        .map(NviPeriod::fromDbPeriod)
+        .filter(NviPeriod::isClosed)
+        .map(NviPeriod::getPublishingYear)
+        .reduce(Integer::max);
+  }
 }

@@ -6,15 +6,14 @@ import java.util.List;
 import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 
-public record PointCalculation(InstanceType instanceType,
-                               PublicationChannel channelType,
-                               URI publicationChannelId,
-                               Level level,
-                               boolean isInternationalCollaboration,
-                               BigDecimal collaborationFactor,
-                               BigDecimal basePoints,
-                               int creatorShareCount,
-                               List<InstitutionPoints> institutionPoints,
-                               BigDecimal totalPoints) {
-
-}
+public record PointCalculation(
+    InstanceType instanceType,
+    PublicationChannel channelType,
+    URI publicationChannelId,
+    Level level,
+    boolean isInternationalCollaboration,
+    BigDecimal collaborationFactor,
+    BigDecimal basePoints,
+    int creatorShareCount,
+    List<InstitutionPoints> institutionPoints,
+    BigDecimal totalPoints) {}

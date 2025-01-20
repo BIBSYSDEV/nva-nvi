@@ -6,81 +6,76 @@ import java.net.URI;
 import java.util.Arrays;
 
 @JsonSerialize
-public record PublicationChannel(URI id,
-                                 String type,
-                                 ScientificValue scientificValue,
-                                 String name,
-                                 String printIssn) {
+public record PublicationChannel(
+    URI id, String type, ScientificValue scientificValue, String name, String printIssn) {
 
-    public static Builder builder() {
-        return new Builder();
+  public static Builder builder() {
+    return new Builder();
+  }
+
+  public enum ScientificValue {
+    LEVEL_ONE("LevelOne"),
+    LEVEL_TWO("LevelTwo");
+    @JsonValue private final String value;
+
+    ScientificValue(String value) {
+      this.value = value;
     }
 
-    public enum ScientificValue {
-        LEVEL_ONE("LevelOne"),
-        LEVEL_TWO("LevelTwo");
-        @JsonValue
-        private final String value;
-
-        ScientificValue(String value) {
-            this.value = value;
-        }
-
-        public static ScientificValue parse(String value) {
-            return Arrays.stream(values())
-                       .filter(type -> type.getValue().equalsIgnoreCase(value))
-                       .findFirst()
-                       .orElseThrow(ScientificValue::getIllegalArgumentException);
-        }
-
-        public String getValue() {
-            return value;
-        }
-
-        private static IllegalArgumentException getIllegalArgumentException() {
-            return new IllegalArgumentException(String.format("Unknown value. Valid values are: %s",
-                                                              Arrays.toString(values())));
-        }
+    public static ScientificValue parse(String value) {
+      return Arrays.stream(values())
+          .filter(type -> type.getValue().equalsIgnoreCase(value))
+          .findFirst()
+          .orElseThrow(ScientificValue::getIllegalArgumentException);
     }
 
-    public static final class Builder {
-
-        private URI id;
-        private String type;
-        private ScientificValue scientificValue;
-        private String name;
-        private String printIssn;
-
-        private Builder() {
-        }
-
-        public Builder withId(URI id) {
-            this.id = id;
-            return this;
-        }
-
-        public Builder withType(String type) {
-            this.type = type;
-            return this;
-        }
-
-        public Builder withScientificValue(ScientificValue scientificValue) {
-            this.scientificValue = scientificValue;
-            return this;
-        }
-
-        public Builder withName(String name) {
-            this.name = name;
-            return this;
-        }
-
-        public Builder withPrintIssn(String printIssn) {
-            this.printIssn = printIssn;
-            return this;
-        }
-
-        public PublicationChannel build() {
-            return new PublicationChannel(id, type, scientificValue, name, printIssn);
-        }
+    public String getValue() {
+      return value;
     }
+
+    private static IllegalArgumentException getIllegalArgumentException() {
+      return new IllegalArgumentException(
+          String.format("Unknown value. Valid values are: %s", Arrays.toString(values())));
+    }
+  }
+
+  public static final class Builder {
+
+    private URI id;
+    private String type;
+    private ScientificValue scientificValue;
+    private String name;
+    private String printIssn;
+
+    private Builder() {}
+
+    public Builder withId(URI id) {
+      this.id = id;
+      return this;
+    }
+
+    public Builder withType(String type) {
+      this.type = type;
+      return this;
+    }
+
+    public Builder withScientificValue(ScientificValue scientificValue) {
+      this.scientificValue = scientificValue;
+      return this;
+    }
+
+    public Builder withName(String name) {
+      this.name = name;
+      return this;
+    }
+
+    public Builder withPrintIssn(String printIssn) {
+      this.printIssn = printIssn;
+      return this;
+    }
+
+    public PublicationChannel build() {
+      return new PublicationChannel(id, type, scientificValue, name, printIssn);
+    }
+  }
 }

@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.rest.model;
 
 import static nva.commons.core.attempt.Try.attempt;
+
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
@@ -14,29 +15,28 @@ import no.sikt.nva.nvi.common.service.model.UpdatePeriodRequest;
 @JsonSerialize
 @JsonTypeName(UpsertNviPeriodRequest.NVI_PERIOD)
 @JsonTypeInfo(use = Id.NAME, property = "type")
-public record UpsertNviPeriodRequest(String publishingYear,
-                                     String startDate,
-                                     String reportingDate) {
+public record UpsertNviPeriodRequest(
+    String publishingYear, String startDate, String reportingDate) {
 
-    public static final String INVALID_DATE_FORMAT = "Invalid date format!";
-    public static final String NVI_PERIOD = "NviPeriod";
+  public static final String INVALID_DATE_FORMAT = "Invalid date format!";
+  public static final String NVI_PERIOD = "NviPeriod";
 
-    public CreatePeriodRequest.Builder toCreatePeriodRequest() {
-        return CreatePeriodRequest.builder()
-                   .withPublishingYear(Integer.parseInt(publishingYear))
-                   .withStartDate(toInstant(startDate))
-                   .withReportingDate(toInstant(reportingDate));
-    }
+  public CreatePeriodRequest.Builder toCreatePeriodRequest() {
+    return CreatePeriodRequest.builder()
+        .withPublishingYear(Integer.parseInt(publishingYear))
+        .withStartDate(toInstant(startDate))
+        .withReportingDate(toInstant(reportingDate));
+  }
 
-    public UpdatePeriodRequest.Builder toUpdatePeriodRequest() {
-        return UpdatePeriodRequest.builder()
-                   .withPublishingYear(Integer.parseInt(publishingYear))
-                   .withStartDate(toInstant(startDate))
-                   .withReportingDate(toInstant(reportingDate));
-    }
+  public UpdatePeriodRequest.Builder toUpdatePeriodRequest() {
+    return UpdatePeriodRequest.builder()
+        .withPublishingYear(Integer.parseInt(publishingYear))
+        .withStartDate(toInstant(startDate))
+        .withReportingDate(toInstant(reportingDate));
+  }
 
-    private Instant toInstant(String reportingDate) {
-        return attempt(() -> Instant.parse(reportingDate))
-                   .orElseThrow(failure -> new IllegalArgumentException(INVALID_DATE_FORMAT));
-    }
+  private Instant toInstant(String reportingDate) {
+    return attempt(() -> Instant.parse(reportingDate))
+        .orElseThrow(failure -> new IllegalArgumentException(INVALID_DATE_FORMAT));
+  }
 }

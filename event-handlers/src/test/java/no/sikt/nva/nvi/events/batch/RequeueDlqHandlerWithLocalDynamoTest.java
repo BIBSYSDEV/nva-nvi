@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
 import com.amazonaws.services.lambda.runtime.Context;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
@@ -22,36 +23,38 @@ import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 
 class RequeueDlqHandlerWithLocalDynamoTest extends LocalDynamoTest {
 
-    public static final Context CONTEXT = mock(Context.class);
-    public static final int YEAR = 2021;
-    private static final String DLQ_URL = "https://some-sqs-url";
-    private SqsClient sqsClient;
-    private CandidateRepository candidateRepository;
-    private PeriodRepository periodRepository;
-    private NviQueueClient client;
+  public static final Context CONTEXT = mock(Context.class);
+  public static final int YEAR = 2021;
+  private static final String DLQ_URL = "https://some-sqs-url";
+  private SqsClient sqsClient;
+  private CandidateRepository candidateRepository;
+  private PeriodRepository periodRepository;
+  private NviQueueClient client;
 
-    @BeforeEach
-    void setUp() {
-        sqsClient = setupSqsClient();
-        client = new NviQueueClient(sqsClient);
-        var localDynamoDbClient = initializeTestDatabase();
-        candidateRepository = new CandidateRepository(localDynamoDbClient);
-        periodRepository = TestUtils.periodRepositoryReturningOpenedPeriod(YEAR);
-    }
+  @BeforeEach
+  void setUp() {
+    sqsClient = setupSqsClient();
+    client = new NviQueueClient(sqsClient);
+    var localDynamoDbClient = initializeTestDatabase();
+    candidateRepository = new CandidateRepository(localDynamoDbClient);
+    periodRepository = TestUtils.periodRepositoryReturningOpenedPeriod(YEAR);
+  }
 
-    @Test
-    void shouldRequeueCandidateWithoutLossOfInformation() {
-        var expectedCandidate = createCandidateDao(candidateRepository, randomCandidateWithYear(String.valueOf(YEAR)));
-        when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class)))
-            .thenReturn(ReceiveMessageResponse.builder()
-                            .messages(generateMessages(1, "firstBatch",
-                                                       expectedCandidate.identifier()))
-                            .build());
+  @Test
+  void shouldRequeueCandidateWithoutLossOfInformation() {
+    var expectedCandidate =
+        createCandidateDao(candidateRepository, randomCandidateWithYear(String.valueOf(YEAR)));
+    when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class)))
+        .thenReturn(
+            ReceiveMessageResponse.builder()
+                .messages(generateMessages(1, "firstBatch", expectedCandidate.identifier()))
+                .build());
 
-        var handler = new RequeueDlqHandler(client, DLQ_URL, candidateRepository, periodRepository);
-        handler.handleRequest(new RequeueDlqInput(1), CONTEXT);
-        var actualCandidate = candidateRepository.findCandidateById(expectedCandidate.identifier()).orElseThrow();
-        assertEquals(expectedCandidate.identifier(), actualCandidate.identifier());
-        assertEquals(expectedCandidate.candidate(), actualCandidate.candidate());
-    }
+    var handler = new RequeueDlqHandler(client, DLQ_URL, candidateRepository, periodRepository);
+    handler.handleRequest(new RequeueDlqInput(1), CONTEXT);
+    var actualCandidate =
+        candidateRepository.findCandidateById(expectedCandidate.identifier()).orElseThrow();
+    assertEquals(expectedCandidate.identifier(), actualCandidate.identifier());
+    assertEquals(expectedCandidate.candidate(), actualCandidate.candidate());
+  }
 }

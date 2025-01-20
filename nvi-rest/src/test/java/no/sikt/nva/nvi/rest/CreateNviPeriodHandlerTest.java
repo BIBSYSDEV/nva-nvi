@@ -7,6 +7,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.mock;
+
 import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.ByteArrayOutputStream;
@@ -29,73 +30,76 @@ import org.zalando.problem.Problem;
 
 class CreateNviPeriodHandlerTest extends LocalDynamoTest {
 
-    private Context context;
-    private ByteArrayOutputStream output;
-    private CreateNviPeriodHandler handler;
-    private PeriodRepository periodRepository;
+  private Context context;
+  private ByteArrayOutputStream output;
+  private CreateNviPeriodHandler handler;
+  private PeriodRepository periodRepository;
 
-    @BeforeEach
-    void init() {
-        output = new ByteArrayOutputStream();
-        context = mock(Context.class);
-        periodRepository = new PeriodRepository(initializeTestDatabase());
-        handler = new CreateNviPeriodHandler(periodRepository);
-    }
+  @BeforeEach
+  void init() {
+    output = new ByteArrayOutputStream();
+    context = mock(Context.class);
+    periodRepository = new PeriodRepository(initializeTestDatabase());
+    handler = new CreateNviPeriodHandler(periodRepository);
+  }
 
-    @Test
-    void shouldReturnUnauthorizedWhenMissingAccessRightsToOpenNviPeriod() throws IOException {
-        handler.handleRequest(createRequestWithoutAccessRights(), output, context);
-        var response = GatewayResponse.fromOutputStream(output, Problem.class);
+  @Test
+  void shouldReturnUnauthorizedWhenMissingAccessRightsToOpenNviPeriod() throws IOException {
+    handler.handleRequest(createRequestWithoutAccessRights(), output, context);
+    var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
-        assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
-    }
+    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
+  }
 
-    @Test
-    void shouldReturnBadRequestWhenInvalidReportingDate() throws IOException {
-        var period = new UpsertNviPeriodRequest("2023", null, "invalidValue");
-        handler.handleRequest(createRequest(period), output, context);
-        var response = GatewayResponse.fromOutputStream(output, Problem.class);
+  @Test
+  void shouldReturnBadRequestWhenInvalidReportingDate() throws IOException {
+    var period = new UpsertNviPeriodRequest("2023", null, "invalidValue");
+    handler.handleRequest(createRequest(period), output, context);
+    var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
-        assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_BAD_REQUEST)));
-    }
+    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_BAD_REQUEST)));
+  }
 
-    @Test
-    void shouldReturnBadRequestWhenPeriodExists() throws IOException {
-        var year = String.valueOf(ZonedDateTime.now().getYear());
-        setupPersistedPeriod(year, periodRepository);
-        var period = upsertRequest(year);
-        handler.handleRequest(createRequest(period), output, context);
-        var response = GatewayResponse.fromOutputStream(output, Problem.class);
-        assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_BAD_REQUEST)));
-    }
+  @Test
+  void shouldReturnBadRequestWhenPeriodExists() throws IOException {
+    var year = String.valueOf(ZonedDateTime.now().getYear());
+    setupPersistedPeriod(year, periodRepository);
+    var period = upsertRequest(year);
+    handler.handleRequest(createRequest(period), output, context);
+    var response = GatewayResponse.fromOutputStream(output, Problem.class);
+    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_BAD_REQUEST)));
+  }
 
-    @Test
-    void shouldCreateNviPeriod() throws IOException {
-        var year = String.valueOf(ZonedDateTime.now().getYear());
-        var period = upsertRequest(year);
-        handler.handleRequest(createRequest(period), output, context);
-        var persistedPeriod = NviPeriod.fetchByPublishingYear(year, periodRepository);
-        assertThat(period.publishingYear(), is(equalTo(persistedPeriod.getPublishingYear().toString())));
-    }
+  @Test
+  void shouldCreateNviPeriod() throws IOException {
+    var year = String.valueOf(ZonedDateTime.now().getYear());
+    var period = upsertRequest(year);
+    handler.handleRequest(createRequest(period), output, context);
+    var persistedPeriod = NviPeriod.fetchByPublishingYear(year, periodRepository);
+    assertThat(
+        period.publishingYear(), is(equalTo(persistedPeriod.getPublishingYear().toString())));
+  }
 
-    private InputStream createRequestWithoutAccessRights() throws JsonProcessingException {
-        return new HandlerRequestBuilder<UpsertNviPeriodRequest>(JsonUtils.dtoObjectMapper)
-                   .withBody(upsertRequest(String.valueOf(ZonedDateTime.now().getYear()))).build();
-    }
+  private InputStream createRequestWithoutAccessRights() throws JsonProcessingException {
+    return new HandlerRequestBuilder<UpsertNviPeriodRequest>(JsonUtils.dtoObjectMapper)
+        .withBody(upsertRequest(String.valueOf(ZonedDateTime.now().getYear())))
+        .build();
+  }
 
-    private InputStream createRequest(UpsertNviPeriodRequest period) throws JsonProcessingException {
-        var customerId = randomUri();
-        return new HandlerRequestBuilder<UpsertNviPeriodRequest>(JsonUtils.dtoObjectMapper)
-                   .withBody(period)
-                   .withCurrentCustomer(customerId)
-                   .withAccessRights(customerId, AccessRight.MANAGE_NVI)
-                   .withUserName(randomString())
-                   .build();
-    }
+  private InputStream createRequest(UpsertNviPeriodRequest period) throws JsonProcessingException {
+    var customerId = randomUri();
+    return new HandlerRequestBuilder<UpsertNviPeriodRequest>(JsonUtils.dtoObjectMapper)
+        .withBody(period)
+        .withCurrentCustomer(customerId)
+        .withAccessRights(customerId, AccessRight.MANAGE_NVI)
+        .withUserName(randomString())
+        .build();
+  }
 
-    private UpsertNviPeriodRequest upsertRequest(String year) {
-        return new UpsertNviPeriodRequest(year,
-                                          ZonedDateTime.now().plusMonths(1).toInstant().toString(),
-                                          ZonedDateTime.now().plusMonths(10).toInstant().toString());
-    }
+  private UpsertNviPeriodRequest upsertRequest(String year) {
+    return new UpsertNviPeriodRequest(
+        year,
+        ZonedDateTime.now().plusMonths(1).toInstant().toString(),
+        ZonedDateTime.now().plusMonths(10).toInstant().toString());
+  }
 }

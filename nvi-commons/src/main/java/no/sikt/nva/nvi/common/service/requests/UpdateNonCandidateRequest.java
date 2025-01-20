@@ -4,5 +4,5 @@ import java.net.URI;
 
 public interface UpdateNonCandidateRequest {
 
-    URI publicationId();
+  URI publicationId();
 }

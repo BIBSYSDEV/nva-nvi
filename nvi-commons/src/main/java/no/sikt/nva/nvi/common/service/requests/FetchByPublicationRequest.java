@@ -5,5 +5,5 @@ import java.net.URI;
 @FunctionalInterface
 public interface FetchByPublicationRequest {
 
-    URI publicationId();
+  URI publicationId();
 }

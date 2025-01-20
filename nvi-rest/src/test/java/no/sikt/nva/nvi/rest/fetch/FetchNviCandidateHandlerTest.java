@@ -16,6 +16,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
+
 import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.net.HttpHeaders;
@@ -47,153 +48,156 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 class FetchNviCandidateHandlerTest extends LocalDynamoTest {
 
-    private static final Context CONTEXT = mock(Context.class);
-    private final DynamoDbClient localDynamo = initializeTestDatabase();
-    private ByteArrayOutputStream output;
-    private FetchNviCandidateHandler handler;
-    private CandidateRepository candidateRepository;
-    private PeriodRepository periodRepository;
+  private static final Context CONTEXT = mock(Context.class);
+  private final DynamoDbClient localDynamo = initializeTestDatabase();
+  private ByteArrayOutputStream output;
+  private FetchNviCandidateHandler handler;
+  private CandidateRepository candidateRepository;
+  private PeriodRepository periodRepository;
 
-    @BeforeEach
-    public void setUp() {
-        output = new ByteArrayOutputStream();
-        candidateRepository = new CandidateRepository(localDynamo);
-        periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
-        handler = new FetchNviCandidateHandler(candidateRepository, periodRepository,
-                                               new FakeViewingScopeValidator(true));
-    }
+  @BeforeEach
+  public void setUp() {
+    output = new ByteArrayOutputStream();
+    candidateRepository = new CandidateRepository(localDynamo);
+    periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
+    handler =
+        new FetchNviCandidateHandler(
+            candidateRepository, periodRepository, new FakeViewingScopeValidator(true));
+  }
 
-    @Test
-    void shouldReturnNotFoundWhenCandidateDoesNotExist() throws IOException {
-        handler.handleRequest(createRequest(randomUUID(), randomUri(), MANAGE_NVI_CANDIDATES),
-                              output, CONTEXT);
-        var gatewayResponse = getGatewayResponse();
+  @Test
+  void shouldReturnNotFoundWhenCandidateDoesNotExist() throws IOException {
+    handler.handleRequest(
+        createRequest(randomUUID(), randomUri(), MANAGE_NVI_CANDIDATES), output, CONTEXT);
+    var gatewayResponse = getGatewayResponse();
 
-        assertEquals(HttpStatus.SC_NOT_FOUND, gatewayResponse.getStatusCode());
-    }
+    assertEquals(HttpStatus.SC_NOT_FOUND, gatewayResponse.getStatusCode());
+  }
 
-    @Test
-    void shouldReturnNotFoundWhenCandidateExistsButNotApplicable() throws IOException {
-        var institutionId = randomUri();
-        var nonApplicableCandidate = setupNonApplicableCandidate(institutionId);
-        handler.handleRequest(createRequest(nonApplicableCandidate.getIdentifier(), institutionId,
-                                            MANAGE_NVI_CANDIDATES), output, CONTEXT);
-        var gatewayResponse = getGatewayResponse();
+  @Test
+  void shouldReturnNotFoundWhenCandidateExistsButNotApplicable() throws IOException {
+    var institutionId = randomUri();
+    var nonApplicableCandidate = setupNonApplicableCandidate(institutionId);
+    handler.handleRequest(
+        createRequest(nonApplicableCandidate.getIdentifier(), institutionId, MANAGE_NVI_CANDIDATES),
+        output,
+        CONTEXT);
+    var gatewayResponse = getGatewayResponse();
 
-        assertEquals(HttpStatus.SC_NOT_FOUND, gatewayResponse.getStatusCode());
-    }
+    assertEquals(HttpStatus.SC_NOT_FOUND, gatewayResponse.getStatusCode());
+  }
 
-    @Test
-    void shouldReturnUnauthorizedWhenCandidateIsNotInUsersViewingScope() throws IOException {
-        var institutionId = randomUri();
-        var candidate = upsert(createUpsertCandidateRequest(institutionId).build());
-        var request = createRequest(candidate.getIdentifier(), institutionId, MANAGE_NVI_CANDIDATES);
-        var viewingScopeValidatorReturningFalse = new FakeViewingScopeValidator(false);
-        handler = new FetchNviCandidateHandler(candidateRepository, periodRepository,
-                                               viewingScopeValidatorReturningFalse);
-        handler.handleRequest(request, output, CONTEXT);
-        var response = GatewayResponse.fromOutputStream(output, Problem.class);
-        assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
-    }
+  @Test
+  void shouldReturnUnauthorizedWhenCandidateIsNotInUsersViewingScope() throws IOException {
+    var institutionId = randomUri();
+    var candidate = upsert(createUpsertCandidateRequest(institutionId).build());
+    var request = createRequest(candidate.getIdentifier(), institutionId, MANAGE_NVI_CANDIDATES);
+    var viewingScopeValidatorReturningFalse = new FakeViewingScopeValidator(false);
+    handler =
+        new FetchNviCandidateHandler(
+            candidateRepository, periodRepository, viewingScopeValidatorReturningFalse);
+    handler.handleRequest(request, output, CONTEXT);
+    var response = GatewayResponse.fromOutputStream(output, Problem.class);
+    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
+  }
 
-    @Test
-    void shouldReturnUnauthorizedWhenUserDoesNotHaveSufficientAccessRight() throws IOException {
-        var institutionId = randomUri();
-        var candidate = upsert(createUpsertCandidateRequest(institutionId).build());
-        var request = createRequestWithoutAccessRight(candidate.getIdentifier(), institutionId);
-        handler.handleRequest(request, output, CONTEXT);
-        var response = GatewayResponse.fromOutputStream(output, Problem.class);
+  @Test
+  void shouldReturnUnauthorizedWhenUserDoesNotHaveSufficientAccessRight() throws IOException {
+    var institutionId = randomUri();
+    var candidate = upsert(createUpsertCandidateRequest(institutionId).build());
+    var request = createRequestWithoutAccessRight(candidate.getIdentifier(), institutionId);
+    handler.handleRequest(request, output, CONTEXT);
+    var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
-        assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
-    }
+    assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
+  }
 
-    @Test
-    void shouldReturnValidCandidateWhenCandidateExists() throws IOException {
-        var institutionId = randomUri();
-        var candidate = upsert(createUpsertCandidateRequest(institutionId).build());
-        var request = createRequest(candidate.getIdentifier(), institutionId, MANAGE_NVI_CANDIDATES);
+  @Test
+  void shouldReturnValidCandidateWhenCandidateExists() throws IOException {
+    var institutionId = randomUri();
+    var candidate = upsert(createUpsertCandidateRequest(institutionId).build());
+    var request = createRequest(candidate.getIdentifier(), institutionId, MANAGE_NVI_CANDIDATES);
 
-        handler.handleRequest(request, output, CONTEXT);
-        var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
-        var expectedResponse = candidate.toDto();
-        var actualResponse = response.getBodyObject(CandidateDto.class);
+    handler.handleRequest(request, output, CONTEXT);
+    var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
+    var expectedResponse = candidate.toDto();
+    var actualResponse = response.getBodyObject(CandidateDto.class);
 
-        assertEquals(expectedResponse, actualResponse);
-    }
+    assertEquals(expectedResponse, actualResponse);
+  }
 
-    @Test
-    void shouldReturnCandidateDtoWithApprovalStatusNewWhenApprovalStatusIsPendingAndUnassigned() throws IOException {
-        var institutionId = randomUri();
-        var candidate = upsert(createUpsertCandidateRequest(institutionId).build());
-        var request = createRequest(candidate.getIdentifier(), institutionId, MANAGE_NVI_CANDIDATES);
-        handler.handleRequest(request, output, CONTEXT);
-        var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
-        var actualResponse = response.getBodyObject(CandidateDto.class);
-        var actualStatus = actualResponse.approvals().get(0).status();
+  @Test
+  void shouldReturnCandidateDtoWithApprovalStatusNewWhenApprovalStatusIsPendingAndUnassigned()
+      throws IOException {
+    var institutionId = randomUri();
+    var candidate = upsert(createUpsertCandidateRequest(institutionId).build());
+    var request = createRequest(candidate.getIdentifier(), institutionId, MANAGE_NVI_CANDIDATES);
+    handler.handleRequest(request, output, CONTEXT);
+    var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
+    var actualResponse = response.getBodyObject(CandidateDto.class);
+    var actualStatus = actualResponse.approvals().get(0).status();
 
-        assertEquals(ApprovalStatusDto.NEW, actualStatus);
-    }
+    assertEquals(ApprovalStatusDto.NEW, actualStatus);
+  }
 
-    @Test
-    void shouldReturnValidCandidateWhenUserIsNviAdmin() throws IOException {
-        var institutionId = randomUri();
-        var candidate = upsert(createUpsertCandidateRequest(institutionId).build());
-        var request = createRequest(candidate.getIdentifier(), institutionId, MANAGE_NVI);
+  @Test
+  void shouldReturnValidCandidateWhenUserIsNviAdmin() throws IOException {
+    var institutionId = randomUri();
+    var candidate = upsert(createUpsertCandidateRequest(institutionId).build());
+    var request = createRequest(candidate.getIdentifier(), institutionId, MANAGE_NVI);
 
-        handler.handleRequest(request, output, CONTEXT);
-        var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
-        var expectedResponse = candidate.toDto();
-        var actualResponse = response.getBodyObject(CandidateDto.class);
+    handler.handleRequest(request, output, CONTEXT);
+    var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
+    var expectedResponse = candidate.toDto();
+    var actualResponse = response.getBodyObject(CandidateDto.class);
 
-        assertEquals(expectedResponse, actualResponse);
-    }
+    assertEquals(expectedResponse, actualResponse);
+  }
 
-    private static InputStream createRequest(UUID candidateIdentifier, URI cristinInstitutionId,
-                                             AccessRight accessRight)
-        throws JsonProcessingException {
-        var customerId = randomUri();
-        return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
-                   .withHeaders(Map.of(HttpHeaders.ACCEPT, ContentType.APPLICATION_JSON.getMimeType()))
-                   .withCurrentCustomer(customerId)
-                   .withTopLevelCristinOrgId(cristinInstitutionId)
-                   .withAccessRights(customerId, accessRight)
-                   .withUserName(randomString())
-                   .withPathParameters(Map.of(CANDIDATE_IDENTIFIER, candidateIdentifier.toString()))
-                   .build();
-    }
+  private static InputStream createRequest(
+      UUID candidateIdentifier, URI cristinInstitutionId, AccessRight accessRight)
+      throws JsonProcessingException {
+    var customerId = randomUri();
+    return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
+        .withHeaders(Map.of(HttpHeaders.ACCEPT, ContentType.APPLICATION_JSON.getMimeType()))
+        .withCurrentCustomer(customerId)
+        .withTopLevelCristinOrgId(cristinInstitutionId)
+        .withAccessRights(customerId, accessRight)
+        .withUserName(randomString())
+        .withPathParameters(Map.of(CANDIDATE_IDENTIFIER, candidateIdentifier.toString()))
+        .build();
+  }
 
-    private static InputStream createRequestWithoutAccessRight(UUID candidateIdentifier, URI cristinInstitutionId)
-        throws JsonProcessingException {
-        var customerId = randomUri();
-        return new HandlerRequestBuilder<>(dtoObjectMapper)
-                   .withHeaders(Map.of(HttpHeaders.ACCEPT, ContentType.APPLICATION_JSON.getMimeType()))
-                   .withCurrentCustomer(customerId)
-                   .withTopLevelCristinOrgId(cristinInstitutionId)
-                   .withUserName(randomString())
-                   .withPathParameters(Map.of(CANDIDATE_IDENTIFIER, candidateIdentifier.toString()))
-                   .build();
-    }
+  private static InputStream createRequestWithoutAccessRight(
+      UUID candidateIdentifier, URI cristinInstitutionId) throws JsonProcessingException {
+    var customerId = randomUri();
+    return new HandlerRequestBuilder<>(dtoObjectMapper)
+        .withHeaders(Map.of(HttpHeaders.ACCEPT, ContentType.APPLICATION_JSON.getMimeType()))
+        .withCurrentCustomer(customerId)
+        .withTopLevelCristinOrgId(cristinInstitutionId)
+        .withUserName(randomString())
+        .withPathParameters(Map.of(CANDIDATE_IDENTIFIER, candidateIdentifier.toString()))
+        .build();
+  }
 
-    private Candidate upsert(UpsertCandidateRequest request) {
-        Candidate.upsert(request, candidateRepository, periodRepository);
-        return Candidate.fetchByPublicationId(request::publicationId, candidateRepository, periodRepository);
-    }
+  private Candidate upsert(UpsertCandidateRequest request) {
+    Candidate.upsert(request, candidateRepository, periodRepository);
+    return Candidate.fetchByPublicationId(
+        request::publicationId, candidateRepository, periodRepository);
+  }
 
-    private Candidate setupNonApplicableCandidate(URI institutionId) {
-        var candidate = upsert(createUpsertCandidateRequest(institutionId).build());
-        return Candidate.updateNonCandidate(
-            createUpsertNonCandidateRequest(candidate.getPublicationId()),
-            candidateRepository).orElseThrow();
-    }
+  private Candidate setupNonApplicableCandidate(URI institutionId) {
+    var candidate = upsert(createUpsertCandidateRequest(institutionId).build());
+    return Candidate.updateNonCandidate(
+            createUpsertNonCandidateRequest(candidate.getPublicationId()), candidateRepository)
+        .orElseThrow();
+  }
 
-    private GatewayResponse<CandidateDto> getGatewayResponse()
-        throws JsonProcessingException {
-        return dtoObjectMapper.readValue(
-            output.toString(),
-            dtoObjectMapper.getTypeFactory()
-                .constructParametricType(
-                    GatewayResponse.class,
-                    CandidateDto.class
-                ));
-    }
+  private GatewayResponse<CandidateDto> getGatewayResponse() throws JsonProcessingException {
+    return dtoObjectMapper.readValue(
+        output.toString(),
+        dtoObjectMapper
+            .getTypeFactory()
+            .constructParametricType(GatewayResponse.class, CandidateDto.class));
+  }
 }

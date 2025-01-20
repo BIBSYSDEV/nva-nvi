@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.common.db;
 
 import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.utils.ApplicationConstants.NVI_TABLE_NAME;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -14,48 +15,48 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 public class PeriodRepository extends DynamoRepository {
 
-    public static final String PERIOD = "PERIOD";
-    protected final DynamoDbTable<NviPeriodDao> nviPeriodTable;
+  public static final String PERIOD = "PERIOD";
+  protected final DynamoDbTable<NviPeriodDao> nviPeriodTable;
 
-    public PeriodRepository(DynamoDbClient client) {
-        super(client);
-        this.nviPeriodTable = this.client.table(NVI_TABLE_NAME, NviPeriodDao.TABLE_SCHEMA);
-    }
+  public PeriodRepository(DynamoDbClient client) {
+    super(client);
+    this.nviPeriodTable = this.client.table(NVI_TABLE_NAME, NviPeriodDao.TABLE_SCHEMA);
+  }
 
-    public DbNviPeriod save(DbNviPeriod nviPeriod) {
-        var nviPeriodDao = NviPeriodDao.builder()
-                               .identifier(nviPeriod.publishingYear())
-                               .nviPeriod(nviPeriod)
-                               .version(randomUUID().toString())
-                               .build();
+  public DbNviPeriod save(DbNviPeriod nviPeriod) {
+    var nviPeriodDao =
+        NviPeriodDao.builder()
+            .identifier(nviPeriod.publishingYear())
+            .nviPeriod(nviPeriod)
+            .version(randomUUID().toString())
+            .build();
 
-        this.nviPeriodTable.putItem(nviPeriodDao);
+    this.nviPeriodTable.putItem(nviPeriodDao);
 
-        var fetched = this.nviPeriodTable.getItem(nviPeriodDao);
-        return fetched.nviPeriod();
-    }
+    var fetched = this.nviPeriodTable.getItem(nviPeriodDao);
+    return fetched.nviPeriod();
+  }
 
-    public Optional<DbNviPeriod> findByPublishingYear(String publishingYear) {
-        var queryObj = NviPeriodDao.builder()
-                           .nviPeriod(DbNviPeriod.builder().publishingYear(publishingYear).build())
-                           .identifier(publishingYear)
-                           .build();
-        var fetched = this.nviPeriodTable.getItem(queryObj);
-        return Optional.ofNullable(fetched).map(NviPeriodDao::nviPeriod);
-    }
+  public Optional<DbNviPeriod> findByPublishingYear(String publishingYear) {
+    var queryObj =
+        NviPeriodDao.builder()
+            .nviPeriod(DbNviPeriod.builder().publishingYear(publishingYear).build())
+            .identifier(publishingYear)
+            .build();
+    var fetched = this.nviPeriodTable.getItem(queryObj);
+    return Optional.ofNullable(fetched).map(NviPeriodDao::nviPeriod);
+  }
 
-    public List<DbNviPeriod> getPeriods() {
-        return this.nviPeriodTable.query(beginsWithPeriodQuery()).stream()
-                   .map(Page::items)
-                   .flatMap(Collection::stream)
-                   .map(NviPeriodDao::nviPeriod)
-                   .toList();
-    }
+  public List<DbNviPeriod> getPeriods() {
+    return this.nviPeriodTable.query(beginsWithPeriodQuery()).stream()
+        .map(Page::items)
+        .flatMap(Collection::stream)
+        .map(NviPeriodDao::nviPeriod)
+        .toList();
+  }
 
-    protected static BeginsWithConditional beginsWithPeriodQuery() {
-        return new BeginsWithConditional(Key.builder()
-                                             .partitionValue(PERIOD)
-                                             .sortValue(PERIOD)
-                                             .build());
-    }
+  protected static BeginsWithConditional beginsWithPeriodQuery() {
+    return new BeginsWithConditional(
+        Key.builder().partitionValue(PERIOD).sortValue(PERIOD).build());
+  }
 }

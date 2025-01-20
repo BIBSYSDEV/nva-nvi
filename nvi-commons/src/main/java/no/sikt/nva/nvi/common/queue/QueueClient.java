@@ -5,13 +5,13 @@ import java.util.UUID;
 
 public interface QueueClient {
 
-    NviSendMessageResponse sendMessage(String message, String queueUrl);
+  NviSendMessageResponse sendMessage(String message, String queueUrl);
 
-    NviSendMessageResponse sendMessage(String message, String queueUrl, UUID candidateIdentifier);
+  NviSendMessageResponse sendMessage(String message, String queueUrl, UUID candidateIdentifier);
 
-    NviSendMessageBatchResponse sendMessageBatch(Collection<String> messages, String queueUrl);
+  NviSendMessageBatchResponse sendMessageBatch(Collection<String> messages, String queueUrl);
 
-    NviReceiveMessageResponse receiveMessage(String queueUrl, int maxNumberOfMessages);
+  NviReceiveMessageResponse receiveMessage(String queueUrl, int maxNumberOfMessages);
 
-    void deleteMessage(String dlqQueueUrl, String receiptHandle);
+  void deleteMessage(String dlqQueueUrl, String receiptHandle);
 }

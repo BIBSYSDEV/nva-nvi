@@ -5,9 +5,9 @@ import java.util.List;
 
 public sealed interface NviCreator permits VerifiedNviCreator, UnverifiedNviCreator {
 
-    List<NviOrganization> nviAffiliations();
+  List<NviOrganization> nviAffiliations();
 
-    List<URI> nviAffiliationsIds();
+  List<URI> nviAffiliationsIds();
 
-    boolean isAffiliatedWith(URI institutionId);
+  boolean isAffiliatedWith(URI institutionId);
 }

@@ -12,6 +12,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.mock;
+
 import com.amazonaws.services.lambda.runtime.Context;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -41,119 +42,129 @@ import org.zalando.problem.Problem;
 
 class RemoveNoteHandlerTest extends LocalDynamoTest {
 
-    public static final int YEAR = Calendar.getInstance().getWeeksInWeekYear();
-    private Context context;
-    private ByteArrayOutputStream output;
-    private RemoveNoteHandler handler;
-    private PeriodRepository periodRepository;
-    private CandidateRepository candidateRepository;
+  public static final int YEAR = Calendar.getInstance().getWeeksInWeekYear();
+  private Context context;
+  private ByteArrayOutputStream output;
+  private RemoveNoteHandler handler;
+  private PeriodRepository periodRepository;
+  private CandidateRepository candidateRepository;
 
-    @BeforeEach
-    void setUp() {
-        output = new ByteArrayOutputStream();
-        context = mock(Context.class);
-        localDynamo = initializeTestDatabase();
-        candidateRepository = new CandidateRepository(localDynamo);
-        periodRepository = periodRepositoryReturningOpenedPeriod(YEAR);
-        handler = new RemoveNoteHandler(candidateRepository, periodRepository, new FakeViewingScopeValidator(true));
-    }
+  @BeforeEach
+  void setUp() {
+    output = new ByteArrayOutputStream();
+    context = mock(Context.class);
+    localDynamo = initializeTestDatabase();
+    candidateRepository = new CandidateRepository(localDynamo);
+    periodRepository = periodRepositoryReturningOpenedPeriod(YEAR);
+    handler =
+        new RemoveNoteHandler(
+            candidateRepository, periodRepository, new FakeViewingScopeValidator(true));
+  }
 
-    @Test
-    void shouldReturnUnauthorizedWhenMissingAccessRights() throws IOException {
-        handler.handleRequest(
-            createRequestWithoutAccessRights(randomUri(), randomString(), randomString(), randomString()).build(),
-            output, context);
-        var response = GatewayResponse.fromOutputStream(output, Problem.class);
+  @Test
+  void shouldReturnUnauthorizedWhenMissingAccessRights() throws IOException {
+    handler.handleRequest(
+        createRequestWithoutAccessRights(
+                randomUri(), randomString(), randomString(), randomString())
+            .build(),
+        output,
+        context);
+    var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
-        assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
-    }
+    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
+  }
 
-    @Test
-    void shouldReturnUnauthorizedWhenCandidateIsNotInUsersViewingScope() throws IOException {
-        var candidate = createCandidate();
-        var user = randomUsername();
-        var candidateWithNote = createNote(candidate, user);
-        var noteId = candidateWithNote.toDto().notes().get(0).identifier();
-        var request = createRequest(candidate.getIdentifier(), noteId, user.value()).build();
-        var viewingScopeValidatorReturningFalse = new FakeViewingScopeValidator(false);
-        handler = new RemoveNoteHandler(candidateRepository, periodRepository, viewingScopeValidatorReturningFalse);
-        handler.handleRequest(request, output, context);
-        var response = GatewayResponse.fromOutputStream(output, Problem.class);
-        assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
-    }
+  @Test
+  void shouldReturnUnauthorizedWhenCandidateIsNotInUsersViewingScope() throws IOException {
+    var candidate = createCandidate();
+    var user = randomUsername();
+    var candidateWithNote = createNote(candidate, user);
+    var noteId = candidateWithNote.toDto().notes().get(0).identifier();
+    var request = createRequest(candidate.getIdentifier(), noteId, user.value()).build();
+    var viewingScopeValidatorReturningFalse = new FakeViewingScopeValidator(false);
+    handler =
+        new RemoveNoteHandler(
+            candidateRepository, periodRepository, viewingScopeValidatorReturningFalse);
+    handler.handleRequest(request, output, context);
+    var response = GatewayResponse.fromOutputStream(output, Problem.class);
+    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
+  }
 
-    @Test
-    void shouldReturnUnauthorizedWhenNotTheUserThatCreatedTheNote() throws IOException {
-        var candidate = createCandidate();
-        var user = randomUsername();
-        var candidateWithNote = createNote(candidate, user);
-        var noteId = candidateWithNote.toDto().notes().get(0).identifier();
-        var request = createRequest(candidate.getIdentifier(), noteId, randomString()).build();
-        handler.handleRequest(request, output, context);
-        var response = GatewayResponse.fromOutputStream(output, Problem.class);
-        assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
-    }
+  @Test
+  void shouldReturnUnauthorizedWhenNotTheUserThatCreatedTheNote() throws IOException {
+    var candidate = createCandidate();
+    var user = randomUsername();
+    var candidateWithNote = createNote(candidate, user);
+    var noteId = candidateWithNote.toDto().notes().get(0).identifier();
+    var request = createRequest(candidate.getIdentifier(), noteId, randomString()).build();
+    handler.handleRequest(request, output, context);
+    var response = GatewayResponse.fromOutputStream(output, Problem.class);
+    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
+  }
 
-    @Test
-    void shouldBeAbleToRemoveNoteWhenTheUserThatCreatedIt() throws IOException {
-        var candidate = createCandidate();
-        var user = randomUsername();
-        var candidateWithNote = createNote(candidate, user);
-        var noteId = candidateWithNote.toDto().notes().get(0).identifier();
-        var request = createRequest(candidate.getIdentifier(), noteId, user.value()).build();
-        handler.handleRequest(request, output, context);
-        var gatewayResponse = GatewayResponse.fromOutputStream(output, CandidateDto.class);
-        var body = gatewayResponse.getBodyObject(CandidateDto.class);
-        assertThat(body.notes(), hasSize(0));
-    }
+  @Test
+  void shouldBeAbleToRemoveNoteWhenTheUserThatCreatedIt() throws IOException {
+    var candidate = createCandidate();
+    var user = randomUsername();
+    var candidateWithNote = createNote(candidate, user);
+    var noteId = candidateWithNote.toDto().notes().get(0).identifier();
+    var request = createRequest(candidate.getIdentifier(), noteId, user.value()).build();
+    handler.handleRequest(request, output, context);
+    var gatewayResponse = GatewayResponse.fromOutputStream(output, CandidateDto.class);
+    var body = gatewayResponse.getBodyObject(CandidateDto.class);
+    assertThat(body.notes(), hasSize(0));
+  }
 
-    @Test
-    void shouldReturnNotFoundWhenNoteDoesntExist() throws IOException {
-        var request = createRequest(UUID.randomUUID(), UUID.randomUUID(), randomString()).build();
-        handler.handleRequest(request, output, context);
-        var response = GatewayResponse.fromOutputStream(output, Problem.class);
-        assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_NOT_FOUND)));
-    }
+  @Test
+  void shouldReturnNotFoundWhenNoteDoesntExist() throws IOException {
+    var request = createRequest(UUID.randomUUID(), UUID.randomUUID(), randomString()).build();
+    handler.handleRequest(request, output, context);
+    var response = GatewayResponse.fromOutputStream(output, Problem.class);
+    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_NOT_FOUND)));
+  }
 
-    @Test
-    void shouldReturnConflictWhenRemovingNoteAndReportingPeriodIsClosed() throws IOException {
-        var candidate = createCandidate();
-        var user = randomString();
-        candidate.createNote(new CreateNoteRequest(randomString(), user, randomUri()), candidateRepository);
-        var noteId = candidate.toDto().notes().get(0).identifier();
-        var request = createRequest(candidate.getIdentifier(), noteId, user).build();
-        handler = new RemoveNoteHandler(candidateRepository, periodRepositoryReturningClosedPeriod(YEAR),
-                                        new FakeViewingScopeValidator(true));
-        handler.handleRequest(request, output, context);
-        var response = GatewayResponse.fromOutputStream(output, Problem.class);
+  @Test
+  void shouldReturnConflictWhenRemovingNoteAndReportingPeriodIsClosed() throws IOException {
+    var candidate = createCandidate();
+    var user = randomString();
+    candidate.createNote(
+        new CreateNoteRequest(randomString(), user, randomUri()), candidateRepository);
+    var noteId = candidate.toDto().notes().get(0).identifier();
+    var request = createRequest(candidate.getIdentifier(), noteId, user).build();
+    handler =
+        new RemoveNoteHandler(
+            candidateRepository,
+            periodRepositoryReturningClosedPeriod(YEAR),
+            new FakeViewingScopeValidator(true));
+    handler.handleRequest(request, output, context);
+    var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
-        assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_CONFLICT)));
-    }
+    assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_CONFLICT)));
+  }
 
-    private static HandlerRequestBuilder<NviNoteRequest> createRequestWithoutAccessRights(URI customerId,
-                                                                                          String candidateId,
-                                                                                          String noteId,
-                                                                                          String userName) {
-        return new HandlerRequestBuilder<NviNoteRequest>(JsonUtils.dynamoObjectMapper).withPathParameters(
-                Map.of(CANDIDATE_IDENTIFIER, candidateId, PARAM_NOTE_IDENTIFIER, noteId))
-                   .withCurrentCustomer(customerId)
-                   .withUserName(userName);
-    }
+  private static HandlerRequestBuilder<NviNoteRequest> createRequestWithoutAccessRights(
+      URI customerId, String candidateId, String noteId, String userName) {
+    return new HandlerRequestBuilder<NviNoteRequest>(JsonUtils.dynamoObjectMapper)
+        .withPathParameters(
+            Map.of(CANDIDATE_IDENTIFIER, candidateId, PARAM_NOTE_IDENTIFIER, noteId))
+        .withCurrentCustomer(customerId)
+        .withUserName(userName);
+  }
 
-    private Candidate createNote(Candidate candidate, Username user) {
-        return candidate.createNote(new CreateNoteRequest(randomString(), user.value(), randomUri()),
-                                    candidateRepository);
-    }
+  private Candidate createNote(Candidate candidate, Username user) {
+    return candidate.createNote(
+        new CreateNoteRequest(randomString(), user.value(), randomUri()), candidateRepository);
+  }
 
-    private Candidate createCandidate() {
-        return TestUtils.randomApplicableCandidate(candidateRepository, periodRepository);
-    }
+  private Candidate createCandidate() {
+    return TestUtils.randomApplicableCandidate(candidateRepository, periodRepository);
+  }
 
-    private HandlerRequestBuilder<NviNoteRequest> createRequest(UUID candidateIdentifier, UUID noteIdentifier,
-                                                                String userName) {
-        var customerId = randomUri();
-        return createRequestWithoutAccessRights(customerId, candidateIdentifier.toString(), noteIdentifier.toString(),
-                                                userName).withAccessRights(customerId,
-                                                                           AccessRight.MANAGE_NVI_CANDIDATES);
-    }
+  private HandlerRequestBuilder<NviNoteRequest> createRequest(
+      UUID candidateIdentifier, UUID noteIdentifier, String userName) {
+    var customerId = randomUri();
+    return createRequestWithoutAccessRights(
+            customerId, candidateIdentifier.toString(), noteIdentifier.toString(), userName)
+        .withAccessRights(customerId, AccessRight.MANAGE_NVI_CANDIDATES);
+  }
 }

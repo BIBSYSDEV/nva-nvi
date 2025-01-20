@@ -7,6 +7,5 @@ import no.sikt.nva.nvi.common.service.requests.UpdateNonCandidateRequest;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSerialize
-public record NonNviCandidate(URI publicationId) implements CandidateType, UpdateNonCandidateRequest {
-
-}
+public record NonNviCandidate(URI publicationId)
+    implements CandidateType, UpdateNonCandidateRequest {}

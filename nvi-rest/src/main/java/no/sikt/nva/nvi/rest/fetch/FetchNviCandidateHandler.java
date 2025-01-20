@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.rest.fetch;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
 import static nva.commons.core.attempt.Try.attempt;
+
 import com.amazonaws.services.lambda.runtime.Context;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
@@ -21,68 +22,77 @@ import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.apigateway.exceptions.UnauthorizedException;
 import nva.commons.core.JacocoGenerated;
 
-public class FetchNviCandidateHandler extends ApiGatewayHandler<Void, CandidateDto> implements ViewingScopeHandler {
+public class FetchNviCandidateHandler extends ApiGatewayHandler<Void, CandidateDto>
+    implements ViewingScopeHandler {
 
-    public static final String CANDIDATE_IDENTIFIER = "candidateIdentifier";
-    private final CandidateRepository candidateRepository;
-    private final PeriodRepository periodRepository;
-    private final ViewingScopeValidator viewingScopeValidator;
+  public static final String CANDIDATE_IDENTIFIER = "candidateIdentifier";
+  private final CandidateRepository candidateRepository;
+  private final PeriodRepository periodRepository;
+  private final ViewingScopeValidator viewingScopeValidator;
 
-    @JacocoGenerated
-    public FetchNviCandidateHandler() {
-        this(new CandidateRepository(defaultDynamoClient()), new PeriodRepository(defaultDynamoClient()),
-             ViewingScopeHandler.defaultViewingScopeValidator());
+  @JacocoGenerated
+  public FetchNviCandidateHandler() {
+    this(
+        new CandidateRepository(defaultDynamoClient()),
+        new PeriodRepository(defaultDynamoClient()),
+        ViewingScopeHandler.defaultViewingScopeValidator());
+  }
+
+  public FetchNviCandidateHandler(
+      CandidateRepository candidateRepository,
+      PeriodRepository periodRepository,
+      ViewingScopeValidator viewingScopeValidator) {
+    super(Void.class);
+    this.candidateRepository = candidateRepository;
+    this.periodRepository = periodRepository;
+    this.viewingScopeValidator = viewingScopeValidator;
+  }
+
+  @Override
+  protected void validateRequest(Void unused, RequestInfo requestInfo, Context context)
+      throws ApiGatewayException {
+    validateAccessRight(requestInfo);
+  }
+
+  @Override
+  protected CandidateDto processInput(Void input, RequestInfo requestInfo, Context context)
+      throws ApiGatewayException {
+    return attempt(() -> requestInfo.getPathParameter(CANDIDATE_IDENTIFIER))
+        .map(UUID::fromString)
+        .map(identifier -> Candidate.fetch(() -> identifier, candidateRepository, periodRepository))
+        .map(this::checkIfApplicable)
+        .map(
+            candidate ->
+                validateViewingScope(
+                    viewingScopeValidator, RequestUtil.getUsername(requestInfo), candidate))
+        .map(Candidate::toDto)
+        .orElseThrow(ExceptionMapper::map);
+  }
+
+  @Override
+  protected Integer getSuccessStatusCode(Void input, CandidateDto output) {
+    return HTTP_OK;
+  }
+
+  private static void validateAccessRight(RequestInfo requestInfo) throws UnauthorizedException {
+    if (isNviCurator(requestInfo) || isNviAdmin(requestInfo)) {
+      return;
     }
+    throw new UnauthorizedException();
+  }
 
-    public FetchNviCandidateHandler(CandidateRepository candidateRepository, PeriodRepository periodRepository,
-                                    ViewingScopeValidator viewingScopeValidator) {
-        super(Void.class);
-        this.candidateRepository = candidateRepository;
-        this.periodRepository = periodRepository;
-        this.viewingScopeValidator = viewingScopeValidator;
-    }
+  private static boolean isNviAdmin(RequestInfo requestInfo) {
+    return requestInfo.userIsAuthorized(AccessRight.MANAGE_NVI);
+  }
 
-    @Override
-    protected void validateRequest(Void unused, RequestInfo requestInfo, Context context) throws ApiGatewayException {
-        validateAccessRight(requestInfo);
-    }
+  private static boolean isNviCurator(RequestInfo requestInfo) {
+    return requestInfo.userIsAuthorized(AccessRight.MANAGE_NVI_CANDIDATES);
+  }
 
-    @Override
-    protected CandidateDto processInput(Void input, RequestInfo requestInfo, Context context)
-        throws ApiGatewayException {
-        return attempt(() -> requestInfo.getPathParameter(CANDIDATE_IDENTIFIER)).map(UUID::fromString)
-                   .map(identifier -> Candidate.fetch(() -> identifier, candidateRepository, periodRepository))
-                   .map(this::checkIfApplicable)
-                   .map(candidate -> validateViewingScope(viewingScopeValidator, RequestUtil.getUsername(requestInfo),
-                                                          candidate))
-                   .map(Candidate::toDto)
-                   .orElseThrow(ExceptionMapper::map);
+  private Candidate checkIfApplicable(Candidate candidate) {
+    if (candidate.isApplicable()) {
+      return candidate;
     }
-
-    @Override
-    protected Integer getSuccessStatusCode(Void input, CandidateDto output) {
-        return HTTP_OK;
-    }
-
-    private static void validateAccessRight(RequestInfo requestInfo) throws UnauthorizedException {
-        if (isNviCurator(requestInfo) || isNviAdmin(requestInfo)) {
-            return;
-        }
-        throw new UnauthorizedException();
-    }
-
-    private static boolean isNviAdmin(RequestInfo requestInfo) {
-        return requestInfo.userIsAuthorized(AccessRight.MANAGE_NVI);
-    }
-
-    private static boolean isNviCurator(RequestInfo requestInfo) {
-        return requestInfo.userIsAuthorized(AccessRight.MANAGE_NVI_CANDIDATES);
-    }
-
-    private Candidate checkIfApplicable(Candidate candidate) {
-        if (candidate.isApplicable()) {
-            return candidate;
-        }
-        throw new CandidateNotFoundException();
-    }
+    throw new CandidateNotFoundException();
+  }
 }

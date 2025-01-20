@@ -5,6 +5,7 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+
 import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.ByteArrayOutputStream;
@@ -26,44 +27,44 @@ import software.amazon.awssdk.utils.MapUtils;
 
 class FetchNviPeriodHandlerTest extends LocalDynamoTest {
 
-    private Context context;
-    private ByteArrayOutputStream output;
-    private FetchNviPeriodHandler handler;
-    private PeriodRepository periodRepository;
+  private Context context;
+  private ByteArrayOutputStream output;
+  private FetchNviPeriodHandler handler;
+  private PeriodRepository periodRepository;
 
-    @BeforeEach
-    public void setUp() {
-        output = new ByteArrayOutputStream();
-        context = new FakeContext();
-        periodRepository = new PeriodRepository(initializeTestDatabase());
-        handler = new FetchNviPeriodHandler(periodRepository);
-    }
+  @BeforeEach
+  public void setUp() {
+    output = new ByteArrayOutputStream();
+    context = new FakeContext();
+    periodRepository = new PeriodRepository(initializeTestDatabase());
+    handler = new FetchNviPeriodHandler(periodRepository);
+  }
 
-    @Test
-    void shouldReturnNotFoundWhenPeriodDoesNotExist() throws IOException {
-        var periodYear = randomString();
-        handler.handleRequest(createRequestForPeriod(periodYear), output, context);
-        var response = GatewayResponse.fromOutputStream(output, Problem.class);
-        var expectedMessage = String.format("Period for year %s does not exist!", periodYear);
+  @Test
+  void shouldReturnNotFoundWhenPeriodDoesNotExist() throws IOException {
+    var periodYear = randomString();
+    handler.handleRequest(createRequestForPeriod(periodYear), output, context);
+    var response = GatewayResponse.fromOutputStream(output, Problem.class);
+    var expectedMessage = String.format("Period for year %s does not exist!", periodYear);
 
-        assertThat(response.getBodyObject(Problem.class).getDetail(), is(equalTo(expectedMessage)));
-        assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_NOT_FOUND)));
-    }
+    assertThat(response.getBodyObject(Problem.class).getDetail(), is(equalTo(expectedMessage)));
+    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_NOT_FOUND)));
+  }
 
-    @Test
-    void shouldReturnPeriodSuccessfully() throws IOException {
-        var publishingYear = String.valueOf(ZonedDateTime.now().getYear());
-        var expectedPeriod = setupPersistedPeriod(publishingYear, periodRepository).toDto();
-        handler.handleRequest(createRequestForPeriod(publishingYear), output, context);
-        var response = GatewayResponse.fromOutputStream(output, NviPeriodDto.class);
+  @Test
+  void shouldReturnPeriodSuccessfully() throws IOException {
+    var publishingYear = String.valueOf(ZonedDateTime.now().getYear());
+    var expectedPeriod = setupPersistedPeriod(publishingYear, periodRepository).toDto();
+    handler.handleRequest(createRequestForPeriod(publishingYear), output, context);
+    var response = GatewayResponse.fromOutputStream(output, NviPeriodDto.class);
 
-        assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_OK)));
-        assertThat(response.getBodyObject(NviPeriodDto.class), is(equalTo(expectedPeriod)));
-    }
+    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_OK)));
+    assertThat(response.getBodyObject(NviPeriodDto.class), is(equalTo(expectedPeriod)));
+  }
 
-    private InputStream createRequestForPeriod(String period) throws JsonProcessingException {
-        return new HandlerRequestBuilder<Void>(JsonUtils.dtoObjectMapper)
-                   .withPathParameters(MapUtils.of("periodIdentifier", period))
-                   .build();
-    }
+  private InputStream createRequestForPeriod(String period) throws JsonProcessingException {
+    return new HandlerRequestBuilder<Void>(JsonUtils.dtoObjectMapper)
+        .withPathParameters(MapUtils.of("periodIdentifier", period))
+        .build();
+  }
 }

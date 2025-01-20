@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.index.model.document;
 
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -18,33 +19,34 @@ public record IndexDocumentWithConsumptionAttributes(
     @JsonProperty(BODY) NviCandidateIndexDocument indexDocument,
     @JsonProperty(CONSUMPTION_ATTRIBUTES) ConsumptionAttributes consumptionAttributes) {
 
-    private static final String CONSUMPTION_ATTRIBUTES = "consumptionAttributes";
-    private static final String BODY = "body";
+  private static final String CONSUMPTION_ATTRIBUTES = "consumptionAttributes";
+  private static final String BODY = "body";
 
-    public static IndexDocumentWithConsumptionAttributes from(NviCandidateIndexDocument document) {
-        return new IndexDocumentWithConsumptionAttributes(
-            document, ConsumptionAttributes.from(document.identifier()));
-    }
+  public static IndexDocumentWithConsumptionAttributes from(NviCandidateIndexDocument document) {
+    return new IndexDocumentWithConsumptionAttributes(
+        document, ConsumptionAttributes.from(document.identifier()));
+  }
 
-    public static IndexDocumentWithConsumptionAttributes from(Candidate candidate,
-                                                              PersistedResource persistedResource,
-                                                              UriRetriever uriRetriever) {
-        var indexDocument = generateIndexDocument(candidate, uriRetriever, persistedResource.getExpandedResource());
-        var consumptionAttributes = ConsumptionAttributes.from(indexDocument.identifier());
-        return new IndexDocumentWithConsumptionAttributes(indexDocument, consumptionAttributes);
-    }
+  public static IndexDocumentWithConsumptionAttributes from(
+      Candidate candidate, PersistedResource persistedResource, UriRetriever uriRetriever) {
+    var indexDocument =
+        generateIndexDocument(candidate, uriRetriever, persistedResource.getExpandedResource());
+    var consumptionAttributes = ConsumptionAttributes.from(indexDocument.identifier());
+    return new IndexDocumentWithConsumptionAttributes(indexDocument, consumptionAttributes);
+  }
 
-    public URI persist(StorageWriter<IndexDocumentWithConsumptionAttributes> storageWriter) throws IOException {
-        return storageWriter.write(this);
-    }
+  public URI persist(StorageWriter<IndexDocumentWithConsumptionAttributes> storageWriter)
+      throws IOException {
+    return storageWriter.write(this);
+  }
 
-    public String toJsonString() throws JsonProcessingException {
-        return dtoObjectMapper.writeValueAsString(this);
-    }
+  public String toJsonString() throws JsonProcessingException {
+    return dtoObjectMapper.writeValueAsString(this);
+  }
 
-    private static NviCandidateIndexDocument generateIndexDocument(Candidate candidate,
-                                                                   UriRetriever uriRetriever,
-                                                                   JsonNode expandedResource) {
-        return attempt(() -> NviCandidateIndexDocument.from(expandedResource, candidate, uriRetriever)).orElseThrow();
-    }
+  private static NviCandidateIndexDocument generateIndexDocument(
+      Candidate candidate, UriRetriever uriRetriever, JsonNode expandedResource) {
+    return attempt(() -> NviCandidateIndexDocument.from(expandedResource, candidate, uriRetriever))
+        .orElseThrow();
+  }
 }

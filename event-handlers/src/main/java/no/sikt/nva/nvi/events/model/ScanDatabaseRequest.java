@@ -4,6 +4,7 @@ import static java.util.Collections.emptyList;
 import static java.util.Objects.nonNull;
 import static nva.commons.core.attempt.Try.attempt;
 import static nva.commons.core.ioutils.IoUtils.streamToString;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -20,95 +21,93 @@ import software.amazon.awssdk.services.eventbridge.EventBridgeClient;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequest;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
 
-public record ScanDatabaseRequest(@JsonProperty("pageSize") int pageSize,
-                                  @JsonProperty("startMarker") Map<String, String> startMarker,
-                                  @JsonProperty("types") List<KeyField> types,
-                                  @JsonProperty("topic") String topic) implements JsonSerializable {
+public record ScanDatabaseRequest(
+    @JsonProperty("pageSize") int pageSize,
+    @JsonProperty("startMarker") Map<String, String> startMarker,
+    @JsonProperty("types") List<KeyField> types,
+    @JsonProperty("topic") String topic)
+    implements JsonSerializable {
 
-    private static final Logger logger = LoggerFactory.getLogger(ScanDatabaseRequest.class);
-    private static final String LOG_INITIALIZATION_MESSAGE_TEMPLATE =
-        "Starting scanning with pageSize equal to: {}. Set 'pageSize' between [1,1000] "
-        + "if you want a different pageSize value.";
-    private static final int DEFAULT_PAGE_SIZE = 700; // Choosing for safety 3/4 of max page size.
-    private static final int MAX_PAGE_SIZE = 1000;
+  private static final Logger logger = LoggerFactory.getLogger(ScanDatabaseRequest.class);
+  private static final String LOG_INITIALIZATION_MESSAGE_TEMPLATE =
+      "Starting scanning with pageSize equal to: {}. Set 'pageSize' between [1,1000] "
+          + "if you want a different pageSize value.";
+  private static final int DEFAULT_PAGE_SIZE = 700; // Choosing for safety 3/4 of max page size.
+  private static final int MAX_PAGE_SIZE = 1000;
 
-    public static ScanDatabaseRequest fromJson(String detail) throws JsonProcessingException {
-        return JsonUtils.dtoObjectMapper.readValue(detail, ScanDatabaseRequest.class);
+  public static ScanDatabaseRequest fromJson(String detail) throws JsonProcessingException {
+    return JsonUtils.dtoObjectMapper.readValue(detail, ScanDatabaseRequest.class);
+  }
+
+  public static Builder builder() {
+    return new Builder();
+  }
+
+  @Override
+  public int pageSize() {
+    return pageSizeWithinLimits(pageSize) ? pageSize : DEFAULT_PAGE_SIZE;
+  }
+
+  @Override
+  public List<KeyField> types() {
+    return nonNull(types) ? types : emptyList();
+  }
+
+  public ScanDatabaseRequest newScanDatabaseRequest(Map<String, String> newStartMarker) {
+    return new ScanDatabaseRequest(this.pageSize(), newStartMarker, this.types(), topic);
+  }
+
+  public PutEventsRequestEntry createNewEventEntry(
+      String eventBusName, String detailType, String invokedFunctionArn) {
+    return PutEventsRequestEntry.builder()
+        .eventBusName(eventBusName)
+        .detail(this.toJsonString())
+        .detailType(detailType)
+        .resources(invokedFunctionArn)
+        .time(Instant.now())
+        .source(invokedFunctionArn)
+        .build();
+  }
+
+  public void sendEvent(EventBridgeClient client, EventDetail details) {
+    logger.info(LOG_INITIALIZATION_MESSAGE_TEMPLATE, this.pageSize());
+    var event =
+        this.createNewEventEntry(details.eventBus(), details.detail(), details.functionArn());
+    var putEventsRequest = PutEventsRequest.builder().entries(event).build();
+    var response = client.putEvents(putEventsRequest).toString();
+    logger.info("Put event response: {}", response);
+  }
+
+  private boolean pageSizeWithinLimits(int pageSize) {
+    return pageSize > 0 && pageSize <= MAX_PAGE_SIZE;
+  }
+
+  public static final class Builder {
+
+    public static final ObjectMapper MAPPER = JsonUtils.dtoObjectMapper;
+    private Map<String, String> startMarker;
+    private int pageSize;
+    private List<KeyField> types;
+
+    private String topic;
+
+    public Builder fromInputStream(InputStream inputStream) {
+      var request =
+          attempt(() -> MAPPER.readValue(streamToString(inputStream), ScanDatabaseRequest.class))
+              .orElseThrow();
+      this.startMarker = request.startMarker();
+      this.pageSize = request.pageSize();
+      this.types = request.types();
+      return this;
     }
 
-    public static Builder builder() {
-        return new Builder();
+    public Builder withTopic(String topic) {
+      this.topic = topic;
+      return this;
     }
 
-    @Override
-    public int pageSize() {
-        return pageSizeWithinLimits(pageSize)
-                   ? pageSize
-                   : DEFAULT_PAGE_SIZE;
+    public ScanDatabaseRequest build() {
+      return new ScanDatabaseRequest(pageSize, startMarker, types, topic);
     }
-
-    @Override
-    public List<KeyField> types() {
-        return nonNull(types) ? types : emptyList();
-    }
-
-    public ScanDatabaseRequest newScanDatabaseRequest(Map<String, String> newStartMarker) {
-        return new ScanDatabaseRequest(this.pageSize(), newStartMarker, this.types(), topic);
-    }
-
-    public PutEventsRequestEntry createNewEventEntry(
-        String eventBusName,
-        String detailType,
-        String invokedFunctionArn
-    ) {
-        return PutEventsRequestEntry
-                   .builder()
-                   .eventBusName(eventBusName)
-                   .detail(this.toJsonString())
-                   .detailType(detailType)
-                   .resources(invokedFunctionArn)
-                   .time(Instant.now())
-                   .source(invokedFunctionArn)
-                   .build();
-    }
-
-    public void sendEvent(EventBridgeClient client, EventDetail details) {
-        logger.info(LOG_INITIALIZATION_MESSAGE_TEMPLATE, this.pageSize());
-        var event = this.createNewEventEntry(details.eventBus(), details.detail(), details.functionArn());
-        var putEventsRequest = PutEventsRequest.builder().entries(event).build();
-        var response = client.putEvents(putEventsRequest).toString();
-        logger.info("Put event response: {}", response);
-    }
-
-    private boolean pageSizeWithinLimits(int pageSize) {
-        return pageSize > 0 && pageSize <= MAX_PAGE_SIZE;
-    }
-
-    public static final class Builder {
-
-        public static final ObjectMapper MAPPER = JsonUtils.dtoObjectMapper;
-        private Map<String, String> startMarker;
-        private int pageSize;
-        private List<KeyField> types;
-
-        private String topic;
-
-        public Builder fromInputStream(InputStream inputStream) {
-            var request = attempt(() -> MAPPER.readValue(streamToString(inputStream), ScanDatabaseRequest.class))
-                              .orElseThrow();
-            this.startMarker = request.startMarker();
-            this.pageSize = request.pageSize();
-            this.types = request.types();
-            return this;
-        }
-
-        public Builder withTopic(String topic) {
-            this.topic = topic;
-            return this;
-        }
-
-        public ScanDatabaseRequest build() {
-            return new ScanDatabaseRequest(pageSize, startMarker, types, topic);
-        }
-    }
+  }
 }

@@ -5,7 +5,7 @@ import nva.commons.core.JacocoGenerated;
 @JacocoGenerated
 public interface Typed {
 
-    String TYPE_FIELD = "type";
+  String TYPE_FIELD = "type";
 
-    String type();
+  String type();
 }

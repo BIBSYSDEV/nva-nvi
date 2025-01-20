@@ -8,6 +8,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -19,38 +20,38 @@ import org.junit.jupiter.api.Test;
 
 class OrganizationRetrieverTest {
 
-    private UriRetriever uriRetriever;
-    private OrganizationRetriever organizationRetriever;
+  private UriRetriever uriRetriever;
+  private OrganizationRetriever organizationRetriever;
 
-    @BeforeEach
-    void setUp() {
-        uriRetriever = mock(UriRetriever.class);
-        organizationRetriever = new OrganizationRetriever(uriRetriever);
-    }
+  @BeforeEach
+  void setUp() {
+    uriRetriever = mock(UriRetriever.class);
+    organizationRetriever = new OrganizationRetriever(uriRetriever);
+  }
 
-    @Test
-    void shouldFetchOrganization() {
-        var expectedOrganization = randomOrganizationWithPartOf();
-        mockUriRetriever(expectedOrganization);
-        var actualOrganization = organizationRetriever.fetchOrganization(expectedOrganization.id());
-        assertEquals(expectedOrganization, actualOrganization);
-    }
+  @Test
+  void shouldFetchOrganization() {
+    var expectedOrganization = randomOrganizationWithPartOf();
+    mockUriRetriever(expectedOrganization);
+    var actualOrganization = organizationRetriever.fetchOrganization(expectedOrganization.id());
+    assertEquals(expectedOrganization, actualOrganization);
+  }
 
-    private static Builder randomOrganization() {
-        return Organization.builder()
-                   .withId(randomUri())
-                   .withContext(randomString())
-                   .withLabels(Map.of(randomString(), randomString()))
-                   .withType(randomString());
-    }
+  private static Builder randomOrganization() {
+    return Organization.builder()
+        .withId(randomUri())
+        .withContext(randomString())
+        .withLabels(Map.of(randomString(), randomString()))
+        .withType(randomString());
+  }
 
-    private static Organization randomOrganizationWithPartOf() {
-        return randomOrganization().withPartOf(List.of(randomOrganization().build())).build();
-    }
+  private static Organization randomOrganizationWithPartOf() {
+    return randomOrganization().withPartOf(List.of(randomOrganization().build())).build();
+  }
 
-    private void mockUriRetriever(Organization expectedOrganization) {
-        var response = createResponse(expectedOrganization.toJsonString());
-        when(uriRetriever.fetchResponse(eq(expectedOrganization.id()), any()))
-            .thenReturn(Optional.of(response));
-    }
+  private void mockUriRetriever(Organization expectedOrganization) {
+    var response = createResponse(expectedOrganization.toJsonString());
+    when(uriRetriever.fetchResponse(eq(expectedOrganization.id()), any()))
+        .thenReturn(Optional.of(response));
+  }
 }

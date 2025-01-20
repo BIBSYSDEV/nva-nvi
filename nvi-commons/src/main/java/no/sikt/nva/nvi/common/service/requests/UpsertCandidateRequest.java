@@ -4,45 +4,45 @@ import java.math.BigDecimal;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
-import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 
 public interface UpsertCandidateRequest {
 
-    URI publicationBucketUri();
+  URI publicationBucketUri();
 
-    URI publicationId();
+  URI publicationId();
 
-    boolean isApplicable();
+  boolean isApplicable();
 
-    boolean isInternationalCollaboration();
+  boolean isInternationalCollaboration();
 
-    Map<URI, List<URI>> creators();
+  Map<URI, List<URI>> creators();
 
-    List<VerifiedNviCreatorDto> verifiedCreators();
+  List<VerifiedNviCreatorDto> verifiedCreators();
 
-    List<UnverifiedNviCreatorDto> unverifiedCreators();
+  List<UnverifiedNviCreatorDto> unverifiedCreators();
 
-    String channelType();
+  String channelType();
 
-    URI publicationChannelId();
+  URI publicationChannelId();
 
-    String level();
+  String level();
 
-    InstanceType instanceType();
+  InstanceType instanceType();
 
-    PublicationDate publicationDate();
+  PublicationDate publicationDate();
 
-    int creatorShareCount();
+  int creatorShareCount();
 
-    BigDecimal collaborationFactor();
+  BigDecimal collaborationFactor();
 
-    BigDecimal basePoints();
+  BigDecimal basePoints();
 
-    List<InstitutionPoints> institutionPoints();
+  List<InstitutionPoints> institutionPoints();
 
-    BigDecimal totalPoints();
+  BigDecimal totalPoints();
 }

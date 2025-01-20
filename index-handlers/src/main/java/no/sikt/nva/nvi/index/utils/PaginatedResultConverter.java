@@ -12,6 +12,7 @@ import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PAR
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_SORT_ORDER;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_TITLE;
 import static nva.commons.apigateway.RestRequestHandler.COMMA;
+
 import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
@@ -29,21 +30,22 @@ import org.slf4j.LoggerFactory;
 
 public final class PaginatedResultConverter {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(PaginatedResultConverter.class);
-    private static final Environment ENVIRONMENT = new Environment();
-    private static final String HOST = ENVIRONMENT.readEnv("API_HOST");
-    private static final String CUSTOM_DOMAIN_BASE_PATH = ENVIRONMENT.readEnv("CUSTOM_DOMAIN_BASE_PATH");
-    private static final String CANDIDATE_PATH = "candidate";
+  private static final Logger LOGGER = LoggerFactory.getLogger(PaginatedResultConverter.class);
+  private static final Environment ENVIRONMENT = new Environment();
+  private static final String HOST = ENVIRONMENT.readEnv("API_HOST");
+  private static final String CUSTOM_DOMAIN_BASE_PATH =
+      ENVIRONMENT.readEnv("CUSTOM_DOMAIN_BASE_PATH");
+  private static final String CANDIDATE_PATH = "candidate";
 
-    private PaginatedResultConverter() {
+  private PaginatedResultConverter() {}
 
-    }
-
-    public static PaginatedSearchResult<NviCandidateIndexDocument> toPaginatedResult(
-        SearchResponse<NviCandidateIndexDocument> searchResponse, CandidateSearchParameters candidateSearchParameters)
-        throws UnprocessableContentException {
-        var searchResultParameters = candidateSearchParameters.searchResultParameters();
-        var paginatedSearchResult = PaginatedSearchResult.create(
+  public static PaginatedSearchResult<NviCandidateIndexDocument> toPaginatedResult(
+      SearchResponse<NviCandidateIndexDocument> searchResponse,
+      CandidateSearchParameters candidateSearchParameters)
+      throws UnprocessableContentException {
+    var searchResultParameters = candidateSearchParameters.searchResultParameters();
+    var paginatedSearchResult =
+        PaginatedSearchResult.create(
             constructBaseUri(),
             searchResultParameters.offset(),
             searchResultParameters.size(),
@@ -52,66 +54,72 @@ public final class PaginatedResultConverter {
             getQueryParameters(candidateSearchParameters),
             AggregationFormatter.format(searchResponse.aggregations()));
 
-        LOGGER.info("Returning paginatedSearchResult with id: {}", paginatedSearchResult.getId().toString());
-        return paginatedSearchResult;
-    }
+    LOGGER.info(
+        "Returning paginatedSearchResult with id: {}", paginatedSearchResult.getId().toString());
+    return paginatedSearchResult;
+  }
 
-    private static Map<String, String> getQueryParameters(CandidateSearchParameters parameters) {
-        var queryParams = new HashMap<String, String>();
-        putIfValueNotNull(queryParams, QUERY_PARAM_SEARCH_TERM, parameters.searchTerm());
-        putAffiliationsIfNotNullOrEmpty(queryParams, QUERY_PARAM_AFFILIATIONS, parameters.affiliationIdentifiers());
-        putIfTrue(queryParams, QUERY_PARAM_EXCLUDE_SUB_UNITS, parameters.excludeSubUnits());
-        putIfValueNotEmpty(queryParams, QUERY_PARAM_FILTER, parameters.filter());
-        putIfValueNotNull(queryParams, QUERY_PARAM_CATEGORY, parameters.category());
-        putIfValueNotNull(queryParams, QUERY_PARAM_TITLE, parameters.title());
-        putIfValueNotNull(queryParams, QUERY_PARAM_ASSIGNEE, parameters.assignee());
-        putIfValueNotNull(queryParams, QUERY_AGGREGATION_TYPE, parameters.aggregationType());
-        putIfValueNotNull(queryParams, QUERY_PARAM_ORDER_BY, parameters.searchResultParameters().orderBy());
-        putIfValueNotNull(queryParams, QUERY_PARAM_SORT_ORDER, parameters.searchResultParameters().sortOrder());
-        return queryParams;
-    }
+  private static Map<String, String> getQueryParameters(CandidateSearchParameters parameters) {
+    var queryParams = new HashMap<String, String>();
+    putIfValueNotNull(queryParams, QUERY_PARAM_SEARCH_TERM, parameters.searchTerm());
+    putAffiliationsIfNotNullOrEmpty(
+        queryParams, QUERY_PARAM_AFFILIATIONS, parameters.affiliationIdentifiers());
+    putIfTrue(queryParams, QUERY_PARAM_EXCLUDE_SUB_UNITS, parameters.excludeSubUnits());
+    putIfValueNotEmpty(queryParams, QUERY_PARAM_FILTER, parameters.filter());
+    putIfValueNotNull(queryParams, QUERY_PARAM_CATEGORY, parameters.category());
+    putIfValueNotNull(queryParams, QUERY_PARAM_TITLE, parameters.title());
+    putIfValueNotNull(queryParams, QUERY_PARAM_ASSIGNEE, parameters.assignee());
+    putIfValueNotNull(queryParams, QUERY_AGGREGATION_TYPE, parameters.aggregationType());
+    putIfValueNotNull(
+        queryParams, QUERY_PARAM_ORDER_BY, parameters.searchResultParameters().orderBy());
+    putIfValueNotNull(
+        queryParams, QUERY_PARAM_SORT_ORDER, parameters.searchResultParameters().sortOrder());
+    return queryParams;
+  }
 
-    private static void putIfValueNotNull(Map<String, String> map, String key, String value) {
-        if (nonNull(value)) {
-            map.put(key, value);
-        }
+  private static void putIfValueNotNull(Map<String, String> map, String key, String value) {
+    if (nonNull(value)) {
+      map.put(key, value);
     }
+  }
 
-    private static void putAffiliationsIfNotNullOrEmpty(Map<String, String> map, String key,
-                                                        List<String> affiliationIdentifiers) {
-        if (nonNull(affiliationIdentifiers) && !affiliationIdentifiers.isEmpty()) {
-            map.put(key, String.join(COMMA, affiliationIdentifiers));
-        }
+  private static void putAffiliationsIfNotNullOrEmpty(
+      Map<String, String> map, String key, List<String> affiliationIdentifiers) {
+    if (nonNull(affiliationIdentifiers) && !affiliationIdentifiers.isEmpty()) {
+      map.put(key, String.join(COMMA, affiliationIdentifiers));
     }
+  }
 
-    private static void putIfTrue(Map<String, String> map, String key, boolean condition) {
-        if (condition) {
-            map.put(key, String.valueOf(true));
-        }
+  private static void putIfTrue(Map<String, String> map, String key, boolean condition) {
+    if (condition) {
+      map.put(key, String.valueOf(true));
     }
+  }
 
-    private static void putIfValueNotEmpty(Map<String, String> map, String key, String value) {
-        if (isNotEmpty(value)) {
-            map.put(key, value);
-        }
+  private static void putIfValueNotEmpty(Map<String, String> map, String key, String value) {
+    if (isNotEmpty(value)) {
+      map.put(key, value);
     }
+  }
 
-    private static boolean isNotEmpty(String filter) {
-        return !filter.isEmpty();
-    }
+  private static boolean isNotEmpty(String filter) {
+    return !filter.isEmpty();
+  }
 
-    private static int extractTotalNumberOfHits(SearchResponse<NviCandidateIndexDocument> searchResponse) {
-        return (int) searchResponse.hits().total().value();
-    }
+  private static int extractTotalNumberOfHits(
+      SearchResponse<NviCandidateIndexDocument> searchResponse) {
+    return (int) searchResponse.hits().total().value();
+  }
 
-    private static List<NviCandidateIndexDocument> extractsHits(
-        SearchResponse<NviCandidateIndexDocument> searchResponse) {
-        return searchResponse.hits().hits().stream()
-                   .map(Hit::source)
-                   .toList();
-    }
+  private static List<NviCandidateIndexDocument> extractsHits(
+      SearchResponse<NviCandidateIndexDocument> searchResponse) {
+    return searchResponse.hits().hits().stream().map(Hit::source).toList();
+  }
 
-    private static URI constructBaseUri() {
-        return UriWrapper.fromHost(HOST).addChild(CUSTOM_DOMAIN_BASE_PATH).addChild(CANDIDATE_PATH).getUri();
-    }
+  private static URI constructBaseUri() {
+    return UriWrapper.fromHost(HOST)
+        .addChild(CUSTOM_DOMAIN_BASE_PATH)
+        .addChild(CANDIDATE_PATH)
+        .getUri();
+  }
 }
