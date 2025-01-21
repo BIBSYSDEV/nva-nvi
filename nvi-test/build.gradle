@@ -2,9 +2,9 @@ plugins {
     id 'nva.nvi.java-conventions'
     id 'nva.nvi.dynamodblocal'
 }
+
 dependencies {
     implementation project(':nvi-commons')
-    implementation project(':index-handlers')
     implementation libs.bundles.testing
     implementation libs.nva.commons.core
     implementation libs.nva.commons.apigateway
@@ -16,7 +16,6 @@ dependencies {
     implementation libs.aws.sdk2.dynamodbenhanced
     implementation libs.aws.sdk2.sqs
     implementation libs.aws.lambda.events
-
 
     implementation(group: 'com.amazonaws', name: 'DynamoDBLocal', version: '1.19.0') {
         exclude group: 'com.amazonaws', module: 'aws-java-sdk-dynamodb'
