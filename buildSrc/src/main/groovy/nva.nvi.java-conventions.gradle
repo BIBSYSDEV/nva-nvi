@@ -32,15 +32,6 @@ tasks.named('test') {
     }
 }
 
-// Reformat project before build and test if needed
-tasks.named('build').configure {
-    dependsOn 'spotlessApply'
-}
-
-tasks.named('test').configure {
-    dependsOn 'spotlessApply'
-}
-
 pmd {
     toolVersion = '7.8.0'
     ruleSetConfig = rootProject.resources.text.fromFile('config/pmd/ruleset.xml')
@@ -93,8 +84,22 @@ spotless {
 
     format 'misc', {
         target '.gitignore', '.gitattributes', '.editorconfig', '**/*.gradle'
-        indentWithSpaces(4)
+        leadingTabsToSpaces(4)
         trimTrailingWhitespace()
         endWithNewline()
     }
+}
+
+// Reformat project before build and test if needed
+tasks.named('build').configure {
+    dependsOn 'spotlessApply'
+}
+
+tasks.named('test').configure {
+    dependsOn 'spotlessApply'
+}
+
+// This is a workaround for a bug in sam build and/or Gradle
+tasks.named('spotlessMisc') {
+    dependsOn 'copyNativeDeps'
 }
