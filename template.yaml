@@ -13,6 +13,8 @@ Globals:
     MemorySize: 1536
     Environment:
       Variables:
+        BACKEND_CLIENT_AUTH_URL: !Ref CognitoAuthorizationUri
+        BACKEND_CLIENT_SECRET_NAME: 'BackendCognitoClientCredentials'
         NVI_TABLE_NAME: !Ref NvaNviTable
         SEARCH_INFRASTRUCTURE_API_HOST: !Ref SearchInfrastructureApiHost
         SEARCH_INFRASTRUCTURE_AUTH_URI: !Ref SearchInfrastructureAuthUri
@@ -713,8 +715,6 @@ Resources:
         ApplyOn: PublishedVersions
       Environment:
         Variables:
-          BACKEND_CLIENT_AUTH_URL: !Ref CognitoAuthorizationUri
-          BACKEND_CLIENT_SECRET_NAME: 'BackendCognitoClientCredentials'
           EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
           CANDIDATE_QUEUE_URL: !Ref EvaluatedCandidateQueue
       Events:
@@ -1039,8 +1039,6 @@ Resources:
         Variables:
           ALLOWED_ORIGIN: !Ref AllowedOrigins
           COGNITO_HOST: !Ref CognitoAuthorizationUri
-          BACKEND_CLIENT_AUTH_URL: !Ref CognitoAuthorizationUri
-          BACKEND_CLIENT_SECRET_NAME: 'BackendCognitoClientCredentials'
       Events:
         GetEvent:
           Type: Api
@@ -1107,8 +1105,6 @@ Resources:
         Variables:
           ALLOWED_ORIGIN: !Ref AllowedOrigins
           COGNITO_HOST: !Ref CognitoAuthorizationUri
-          BACKEND_CLIENT_AUTH_URL: !Ref CognitoAuthorizationUri
-          BACKEND_CLIENT_SECRET_NAME: 'BackendCognitoClientCredentials'
       Events:
         GetEvent:
           Type: Api
@@ -1131,8 +1127,6 @@ Resources:
       Environment:
         Variables:
           ALLOWED_ORIGIN: !Ref AllowedOrigins
-          BACKEND_CLIENT_AUTH_URL: !Ref CognitoAuthorizationUri
-          BACKEND_CLIENT_SECRET_NAME: 'BackendCognitoClientCredentials'
           COGNITO_HOST: !Ref CognitoAuthorizationUri
       Events:
         GetEvent:
@@ -1156,8 +1150,6 @@ Resources:
       Environment:
         Variables:
           ALLOWED_ORIGIN: !Ref AllowedOrigins
-          BACKEND_CLIENT_AUTH_URL: !Ref CognitoAuthorizationUri
-          BACKEND_CLIENT_SECRET_NAME: 'BackendCognitoClientCredentials'
           COGNITO_HOST: !Ref CognitoAuthorizationUri
       Events:
         GetEvent:
@@ -1181,8 +1173,6 @@ Resources:
       Environment:
         Variables:
           ALLOWED_ORIGIN: !Ref AllowedOrigins
-          BACKEND_CLIENT_AUTH_URL: !Ref CognitoAuthorizationUri
-          BACKEND_CLIENT_SECRET_NAME: 'BackendCognitoClientCredentials'
           COGNITO_HOST: !Ref CognitoAuthorizationUri
       Events:
         GetEvent:
@@ -1342,8 +1332,6 @@ Resources:
         Variables:
           ALLOWED_ORIGIN: !Ref AllowedOrigins
           COGNITO_HOST: !Ref CognitoAuthorizationUri
-          BACKEND_CLIENT_AUTH_URL: !Ref CognitoAuthorizationUri
-          BACKEND_CLIENT_SECRET_NAME: 'BackendCognitoClientCredentials'
       Events:
         GetEvent:
           Type: Api

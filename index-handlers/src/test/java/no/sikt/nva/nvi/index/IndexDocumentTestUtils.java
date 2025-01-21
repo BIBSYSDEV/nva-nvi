@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.test;
+package no.sikt.nva.nvi.index;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
@@ -52,6 +52,7 @@ import no.sikt.nva.nvi.index.model.document.PublicationChannel.ScientificValue;
 import no.sikt.nva.nvi.index.model.document.PublicationDate;
 import no.sikt.nva.nvi.index.model.document.PublicationDetails;
 import no.sikt.nva.nvi.index.model.document.ReportingPeriod;
+import no.sikt.nva.nvi.test.ExpandedResourceGenerator;
 import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
 

@@ -1,6 +1,9 @@
 package no.sikt.nva.nvi.index.aws;
 
 import static java.util.Objects.requireNonNull;
+import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomNviContributor;
+import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomPages;
+import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomPublicationChannel;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.NEW;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.PENDING;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.REJECTED;
@@ -18,9 +21,6 @@ import static no.sikt.nva.nvi.index.query.SearchAggregation.PENDING_COLLABORATIO
 import static no.sikt.nva.nvi.index.query.SearchAggregation.REJECTED_AGG;
 import static no.sikt.nva.nvi.index.query.SearchAggregation.REJECTED_COLLABORATION_AGG;
 import static no.sikt.nva.nvi.index.query.SearchAggregation.TOTAL_COUNT_AGGREGATION_AGG;
-import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.randomNviContributor;
-import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.randomPages;
-import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.randomPublicationChannel;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
