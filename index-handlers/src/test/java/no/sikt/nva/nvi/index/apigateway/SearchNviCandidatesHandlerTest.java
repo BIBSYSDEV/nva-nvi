@@ -1,5 +1,7 @@
 package no.sikt.nva.nvi.index.apigateway;
 
+import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomPages;
+import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomPublicationChannel;
 import static no.sikt.nva.nvi.index.apigateway.utils.AggregateResponseTestUtil.filterAggregate;
 import static no.sikt.nva.nvi.index.apigateway.utils.AggregateResponseTestUtil.getGlobalAggregate;
 import static no.sikt.nva.nvi.index.apigateway.utils.AggregateResponseTestUtil.organizationApprovalStatusAggregate;
@@ -9,8 +11,6 @@ import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PAR
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_SEARCH_TERM;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_SORT_ORDER;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_TITLE;
-import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.randomPages;
-import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.randomPublicationChannel;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;

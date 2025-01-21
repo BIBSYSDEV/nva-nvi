@@ -1,9 +1,9 @@
 package no.sikt.nva.nvi.index;
 
-import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.NVI_CONTEXT;
-import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.createPath;
-import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.expandApprovals;
-import static no.sikt.nva.nvi.test.IndexDocumentTestUtils.expandPublicationDetails;
+import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.NVI_CONTEXT;
+import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.createPath;
+import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.expandApprovals;
+import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.expandPublicationDetails;
 import static no.sikt.nva.nvi.test.QueueServiceTestUtils.invalidSqsMessage;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.unit.nva.s3.S3Driver.S3_SCHEME;

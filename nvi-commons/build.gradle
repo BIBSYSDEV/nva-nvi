@@ -2,6 +2,7 @@ plugins {
     id 'nva.nvi.java-conventions'
     id 'nva.nvi.dynamodblocal'
 }
+
 dependencies {
     implementation libs.jackson.databind
     implementation libs.nva.commons.apigateway
