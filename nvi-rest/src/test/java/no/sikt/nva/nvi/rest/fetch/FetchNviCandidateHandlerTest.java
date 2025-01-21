@@ -5,6 +5,7 @@ import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateHandler.CANDIDATE_IDEN
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertNonCandidateRequest;
+import static no.sikt.nva.nvi.test.TestUtils.mockOrganizationResponseForAffiliation;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeriod;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -25,16 +26,20 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatusDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
+import no.sikt.nva.nvi.common.service.dto.CandidateOperation;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.test.FakeViewingScopeValidator;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
+import no.unit.nva.auth.uriretriever.UriRetriever;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
@@ -49,20 +54,29 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 class FetchNviCandidateHandlerTest extends LocalDynamoTest {
 
   private static final Context CONTEXT = mock(Context.class);
+  private static final URI DEFAULT_TOP_LEVEL_INSTITUTION_ID =
+      URI.create("https://www.example.com/toplevelOrganization");
+  private static final URI DEFAULT_SUB_UNIT_INSTITUTION_ID =
+      URI.create("https://www.example.com/subOrganization");
   private final DynamoDbClient localDynamo = initializeTestDatabase();
   private ByteArrayOutputStream output;
   private FetchNviCandidateHandler handler;
   private CandidateRepository candidateRepository;
   private PeriodRepository periodRepository;
+  private OrganizationRetriever mockOrganizationRetriever;
 
   @BeforeEach
   public void setUp() {
     output = new ByteArrayOutputStream();
     candidateRepository = new CandidateRepository(localDynamo);
     periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
+    var mockUriRetriever = mock(UriRetriever.class);
+    mockOrganizationRetriever = new OrganizationRetriever(mockUriRetriever);
     handler =
         new FetchNviCandidateHandler(
-            candidateRepository, periodRepository, new FakeViewingScopeValidator(true));
+            candidateRepository, periodRepository, new FakeViewingScopeValidator(true), mockOrganizationRetriever);
+    mockOrganizationResponseForAffiliation(
+        DEFAULT_TOP_LEVEL_INSTITUTION_ID, DEFAULT_SUB_UNIT_INSTITUTION_ID, mockUriRetriever);
   }
 
   @Test
@@ -95,7 +109,7 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
     var viewingScopeValidatorReturningFalse = new FakeViewingScopeValidator(false);
     handler =
         new FetchNviCandidateHandler(
-            candidateRepository, periodRepository, viewingScopeValidatorReturningFalse);
+            candidateRepository, periodRepository, viewingScopeValidatorReturningFalse, mockOrganizationRetriever);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
     assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
@@ -152,6 +166,19 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
     var actualResponse = response.getBodyObject(CandidateDto.class);
 
     assertEquals(expectedResponse, actualResponse);
+  }
+
+  @Test
+  void shouldIncludeAllowedOperationsField() throws IOException {
+    var candidate = upsert(createUpsertCandidateRequest(DEFAULT_TOP_LEVEL_INSTITUTION_ID).build());
+    var request = createRequest(candidate.getIdentifier(), DEFAULT_TOP_LEVEL_INSTITUTION_ID, MANAGE_NVI_CANDIDATES);
+
+    handler.handleRequest(request, output, CONTEXT);
+    var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
+    var actualResponse = response.getBodyObject(CandidateDto.class);
+    var expectedAllowedOperations = List.of(CandidateOperation.APPROVAL_APPROVE, CandidateOperation.APPROVAL_REJECT);
+    assertThat(actualResponse.allowedOperations(), Matchers.notNullValue());
+    assertThat(actualResponse.allowedOperations(), Matchers.containsInAnyOrder(expectedAllowedOperations.toArray()));
   }
 
   private static InputStream createRequest(

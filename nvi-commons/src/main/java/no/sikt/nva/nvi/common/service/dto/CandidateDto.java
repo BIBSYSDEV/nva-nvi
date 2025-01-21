@@ -24,13 +24,28 @@ public record CandidateDto(
     BigDecimal totalPoints,
     List<NoteDto> notes,
     PeriodStatusDto period,
-    String status)
+    String status,
+    List<CandidateOperation> allowedOperations)
     implements JsonSerializable {
 
   public static final String NVI_CANDIDATE = "NviCandidate";
 
   public static Builder builder() {
     return new Builder();
+  }
+
+  public Builder copy() {
+    return new Builder()
+        .withId(id)
+        .withContext(context)
+        .withIdentifier(identifier)
+        .withPublicationId(publicationId)
+        .withApprovals(approvals)
+        .withTotalPoints(totalPoints)
+        .withNotes(notes)
+        .withPeriod(period)
+        .withReportStatus(status)
+        .withCandidateOperations(allowedOperations);
   }
 
   public static final class Builder {
@@ -44,6 +59,7 @@ public record CandidateDto(
     private List<NoteDto> notes;
     private PeriodStatusDto periodStatus;
     private String reportStatus;
+    private List<CandidateOperation> candidateOperations;
 
     private Builder() {}
 
@@ -92,6 +108,11 @@ public record CandidateDto(
       return this;
     }
 
+    public Builder withCandidateOperations(List<CandidateOperation> candidateOperations) {
+      this.candidateOperations = candidateOperations;
+      return this;
+    }
+
     public CandidateDto build() {
       return new CandidateDto(
           id,
@@ -102,7 +123,8 @@ public record CandidateDto(
           totalPoints,
           notes,
           periodStatus,
-          reportStatus);
+          reportStatus,
+          candidateOperations);
     }
   }
 }

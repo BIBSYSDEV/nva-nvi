@@ -1,11 +1,15 @@
 package no.sikt.nva.nvi.common.validator;
 
 import java.net.URI;
+import java.util.Collection;
+import java.util.List;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
+import no.sikt.nva.nvi.common.service.dto.CandidateOperation;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
+import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 
 public final class UpdateNviCandidateStatusValidator {
@@ -34,6 +38,25 @@ public final class UpdateNviCandidateStatusValidator {
       case PENDING -> true;
       case APPROVED, REJECTED -> !hasUnverifiedCreator;
     };
+  }
+
+  public static Collection<CandidateOperation> getAllowedOperations(
+      Candidate candidate, URI customerId, OrganizationRetriever organizationRetriever) {
+    var hasUnverifiedCreator = hasUnverifiedCreator(candidate, customerId, organizationRetriever);
+    var currentStatus = candidate.getApprovals().get(customerId).getStatus();
+
+    var canFinalize = !hasUnverifiedCreator && ApprovalStatus.PENDING.equals(currentStatus);
+    var canReset =
+        ApprovalStatus.APPROVED.equals(currentStatus)
+            || ApprovalStatus.REJECTED.equals(currentStatus);
+
+    if (canFinalize) {
+      return List.of(CandidateOperation.APPROVAL_APPROVE, CandidateOperation.APPROVAL_REJECT);
+    } else if (canReset) {
+      return List.of(CandidateOperation.APPROVAL_PENDING);
+    } else {
+      return List.of();
+    }
   }
 
   private static boolean hasUnverifiedCreator(
