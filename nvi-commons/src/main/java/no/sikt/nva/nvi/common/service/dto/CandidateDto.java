@@ -45,7 +45,7 @@ public record CandidateDto(
         .withNotes(notes)
         .withPeriod(period)
         .withReportStatus(status)
-        .withCandidateOperations(allowedOperations);
+        .withAllowedOperations(allowedOperations);
   }
 
   public static final class Builder {
@@ -59,7 +59,7 @@ public record CandidateDto(
     private List<NoteDto> notes;
     private PeriodStatusDto periodStatus;
     private String reportStatus;
-    private List<CandidateOperation> candidateOperations;
+    private List<CandidateOperation> allowedOperations;
 
     private Builder() {}
 
@@ -108,8 +108,8 @@ public record CandidateDto(
       return this;
     }
 
-    public Builder withCandidateOperations(List<CandidateOperation> candidateOperations) {
-      this.candidateOperations = candidateOperations;
+    public Builder withAllowedOperations(List<CandidateOperation> allowedOperations) {
+      this.allowedOperations = allowedOperations;
       return this;
     }
 
@@ -124,7 +124,7 @@ public record CandidateDto(
           notes,
           periodStatus,
           reportStatus,
-          candidateOperations);
+          allowedOperations);
     }
   }
 }

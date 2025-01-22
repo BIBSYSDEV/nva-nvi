@@ -435,4 +435,20 @@ class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
     var candidate = upsert(upsertRequest);
     return createRequest(candidate.getIdentifier(), topLevelInstitution, newStatus);
   }
+
+  private InputStream createCoolUpsertCandidateRequest(
+      URI topLevelInstitution, URI subInstitution, ApprovalStatus newStatus)
+      throws JsonProcessingException {
+    var unverifiedCreator =
+        UnverifiedNviCreatorDto.builder()
+                               .withAffiliations(List.of(subInstitution))
+                               .withName(randomString())
+                               .build();
+    var upsertRequest =
+        createUpsertCandidateRequest(topLevelInstitution)
+            .withUnverifiedCreators(List.of(unverifiedCreator))
+            .build();
+    var candidate = upsert(upsertRequest);
+    return createRequest(candidate.getIdentifier(), topLevelInstitution, newStatus);
+  }
 }

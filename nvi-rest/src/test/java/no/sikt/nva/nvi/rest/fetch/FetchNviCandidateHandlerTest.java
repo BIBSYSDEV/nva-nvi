@@ -1,6 +1,8 @@
 package no.sikt.nva.nvi.rest.fetch;
 
+import static java.util.Collections.emptyList;
 import static java.util.UUID.randomUUID;
+import static no.sikt.nva.nvi.rest.TestUtils.setupDefaultApplicableCandidate;
 import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateHandler.CANDIDATE_IDENTIFIER;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
@@ -63,14 +65,41 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
   private FetchNviCandidateHandler handler;
   private CandidateRepository candidateRepository;
   private PeriodRepository periodRepository;
+  private UriRetriever mockUriRetriever;
   private OrganizationRetriever mockOrganizationRetriever;
+
+  private static InputStream createRequest(
+      UUID candidateIdentifier, URI cristinInstitutionId, AccessRight accessRight)
+      throws JsonProcessingException {
+    var customerId = randomUri();
+    return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
+        .withHeaders(Map.of(HttpHeaders.ACCEPT, ContentType.APPLICATION_JSON.getMimeType()))
+        .withCurrentCustomer(customerId)
+        .withTopLevelCristinOrgId(cristinInstitutionId)
+        .withAccessRights(customerId, accessRight)
+        .withUserName(randomString())
+        .withPathParameters(Map.of(CANDIDATE_IDENTIFIER, candidateIdentifier.toString()))
+        .build();
+  }
+
+  private static InputStream createRequestWithoutAccessRight(
+      UUID candidateIdentifier, URI cristinInstitutionId) throws JsonProcessingException {
+    var customerId = randomUri();
+    return new HandlerRequestBuilder<>(dtoObjectMapper)
+        .withHeaders(Map.of(HttpHeaders.ACCEPT, ContentType.APPLICATION_JSON.getMimeType()))
+        .withCurrentCustomer(customerId)
+        .withTopLevelCristinOrgId(cristinInstitutionId)
+        .withUserName(randomString())
+        .withPathParameters(Map.of(CANDIDATE_IDENTIFIER, candidateIdentifier.toString()))
+        .build();
+  }
 
   @BeforeEach
   public void setUp() {
     output = new ByteArrayOutputStream();
     candidateRepository = new CandidateRepository(localDynamo);
     periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
-    var mockUriRetriever = mock(UriRetriever.class);
+    mockUriRetriever = mock(UriRetriever.class);
     mockOrganizationRetriever = new OrganizationRetriever(mockUriRetriever);
     handler =
         new FetchNviCandidateHandler(
@@ -169,42 +198,47 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
   }
 
   @Test
-  void shouldIncludeAllowedOperationsField() throws IOException {
-    var candidate = upsert(createUpsertCandidateRequest(DEFAULT_TOP_LEVEL_INSTITUTION_ID).build());
+  void shouldIncludeFinalizeOperationsForNewValidCandidate() throws IOException {
+    var candidate = setupDefaultApplicableCandidate(candidateRepository, periodRepository, mockUriRetriever,
+        1, 0);
     var request = createRequest(candidate.getIdentifier(), DEFAULT_TOP_LEVEL_INSTITUTION_ID, MANAGE_NVI_CANDIDATES);
 
-    handler.handleRequest(request, output, CONTEXT);
-    var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
-    var actualResponse = response.getBodyObject(CandidateDto.class);
+    var candidateDto = handleRequest(request);
+
     var expectedAllowedOperations = List.of(CandidateOperation.APPROVAL_APPROVE, CandidateOperation.APPROVAL_REJECT);
-    assertThat(actualResponse.allowedOperations(), Matchers.notNullValue());
-    assertThat(actualResponse.allowedOperations(), Matchers.containsInAnyOrder(expectedAllowedOperations.toArray()));
+    assertThat(candidateDto.allowedOperations(), Matchers.notNullValue());
+    assertThat(candidateDto.allowedOperations(), Matchers.containsInAnyOrder(expectedAllowedOperations.toArray()));
   }
 
-  private static InputStream createRequest(
-      UUID candidateIdentifier, URI cristinInstitutionId, AccessRight accessRight)
-      throws JsonProcessingException {
-    var customerId = randomUri();
-    return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
-        .withHeaders(Map.of(HttpHeaders.ACCEPT, ContentType.APPLICATION_JSON.getMimeType()))
-        .withCurrentCustomer(customerId)
-        .withTopLevelCristinOrgId(cristinInstitutionId)
-        .withAccessRights(customerId, accessRight)
-        .withUserName(randomString())
-        .withPathParameters(Map.of(CANDIDATE_IDENTIFIER, candidateIdentifier.toString()))
-        .build();
+  @Test
+  void shouldIncludeFinalizeOperationsForCandidateWithUnverifiedCreators2() throws IOException {
+    var candidate = setupDefaultApplicableCandidate(candidateRepository, periodRepository, mockUriRetriever,
+                                                    1, 1);
+    var request = createRequest(candidate.getIdentifier(), DEFAULT_TOP_LEVEL_INSTITUTION_ID, MANAGE_NVI_CANDIDATES);
+
+    var candidateDto = handleRequest(request);
+
+    var expectedAllowedOperations = emptyList();
+    assertThat(candidateDto.allowedOperations(), Matchers.notNullValue());
+    assertThat(candidateDto.allowedOperations(), Matchers.containsInAnyOrder(expectedAllowedOperations.toArray()));
   }
 
-  private static InputStream createRequestWithoutAccessRight(
-      UUID candidateIdentifier, URI cristinInstitutionId) throws JsonProcessingException {
-    var customerId = randomUri();
-    return new HandlerRequestBuilder<>(dtoObjectMapper)
-        .withHeaders(Map.of(HttpHeaders.ACCEPT, ContentType.APPLICATION_JSON.getMimeType()))
-        .withCurrentCustomer(customerId)
-        .withTopLevelCristinOrgId(cristinInstitutionId)
-        .withUserName(randomString())
-        .withPathParameters(Map.of(CANDIDATE_IDENTIFIER, candidateIdentifier.toString()))
-        .build();
+  @Test
+  void shouldIncludeFinalizeOperationsForCandidateWithUnverifiedCreators() throws IOException {
+    var candidate = setupDefaultApplicableCandidate(candidateRepository, periodRepository, mockUriRetriever,
+                                                    1, 1);
+    var request = createRequest(candidate.getIdentifier(), DEFAULT_TOP_LEVEL_INSTITUTION_ID, MANAGE_NVI_CANDIDATES);
+
+    var candidateDto = handleRequest(request);
+
+    var expectedAllowedOperations = List.of(CandidateOperation.APPROVAL_PENDING);
+    assertThat(candidateDto.allowedOperations(), Matchers.notNullValue());
+    assertThat(candidateDto.allowedOperations(), Matchers.containsInAnyOrder(expectedAllowedOperations.toArray()));
+  }
+
+  private CandidateDto handleRequest(InputStream request) throws IOException {
+    handler.handleRequest(request, output, CONTEXT);
+    return getGatewayResponse().getBodyObject(CandidateDto.class);
   }
 
   private Candidate upsert(UpsertCandidateRequest request) {

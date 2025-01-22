@@ -16,6 +16,7 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomInstant;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -107,6 +108,144 @@ class DataEntryUpdateHandlerTest {
     snsClient = new FakeNotificationClient();
     queueClient = new FakeSqsClient();
     handler = new DataEntryUpdateHandler(snsClient, ENVIRONMENT, queueClient);
+  }
+
+  @Test
+  void debug() {
+    var sqsEvent = new SQSEvent();
+    var message1 = new SQSEvent.SQSMessage();
+    var debugEvent =
+        """
+{
+              "eventID" : "V7xYgXzQULzr6HRttY",
+              "eventName" : "INSERT",
+              "eventVersion" : "ul9IHviwR4DUF8bFkx",
+              "eventSource" : "ON3Ii8LYRX4Y3jbqTA",
+              "awsRegion" : "aSNHif3atCVRq",
+              "dynamodb" : {
+                "keys" : {
+                  "PrimaryKeyRangeKey" : {
+                    "s" : "CANDIDATE#6340f1f9-bac6-4581-94b8-0dfab0452d22"
+                  }
+                },
+                "NewImage": {
+                      "identifier": { "S": "216af187-1771-43d5-b84b-9a18512e72cd" },
+                      "SecondaryIndex1HashKey": {
+                        "S": "https://api.dev.nva.aws.unit.no/publication/01926df19f1d-4c676840-b675-41c1-a11b-2fbdc53f36f8"
+                      },
+                      "data": {
+                        "M": {
+                          "collaborationFactor": { "N": "1.3" },
+                          "level": { "S": "LEVEL_TWO" },
+                          "creators": {
+                            "L": [
+                              {
+                                "M": {
+                                  "creatorName": { "S": "Johan L Dellgren" },
+                                  "affiliations": {
+                                    "L": [
+                                      {
+                                        "S": "https://api.dev.nva.aws.unit.no/cristin/organization/184.0.0.0"
+                                      }
+                                    ]
+                                  },
+                                  "type": { "S": "DbUnverifiedCreator" }
+                                }
+                              },
+                              {
+                                "M": {
+                                  "creatorName": { "S": "Govind Persad" },
+                                  "affiliations": {
+                                    "L": [
+                                      {
+                                        "S": "https://api.dev.nva.aws.unit.no/cristin/organization/184.0.0.0"
+                                      }
+                                    ]
+                                  },
+                                  "type": { "S": "DbUnverifiedCreator" }
+                                }
+                              },
+                              {
+                                "M": {
+                                  "creatorName": { "S": "Ezekiel J Emanuel" },
+                                  "affiliations": {
+                                    "L": [
+                                      {
+                                        "S": "https://api.dev.nva.aws.unit.no/cristin/organization/184.0.0.0"
+                                      }
+                                    ]
+                                  },
+                                  "type": { "S": "DbUnverifiedCreator" }
+                                }
+                              }
+                            ]
+                          },
+                          "instanceType": { "S": "AcademicLiteratureReview" },
+                          "reportStatus": { "NULL": true },
+                          "applicable": { "BOOL": true },
+                          "channelType": { "S": "JOURNAL" },
+                          "creatorShareCount": { "N": "6" },
+                          "basePoints": { "N": "3" },
+                          "points": {
+                            "L": [
+                              {
+                                "M": {
+                                  "institutionId": {
+                                    "S": "https://api.dev.nva.aws.unit.no/cristin/organization/184.0.0.0"
+                                  },
+                                  "creatorAffiliationPoints": { "L": [] },
+                                  "points": { "N": "0" }
+                                }
+                              }
+                            ]
+                          },
+                          "createdDate": { "S": "2024-12-18T15:16:18.314088533Z" },
+                          "totalPoints": { "N": "0" },
+                          "creatorCount": { "N": "0" },
+                          "modifiedDate": { "S": "2025-01-22T12:35:47.521948209Z" },
+                          "publicationBucketUri": {
+                            "S": "s3://persisted-resources-884807050265/resources/01926df19f1d-4c676840-b675-41c1-a11b-2fbdc53f36f8.gz"
+                          },
+                          "publicationId": {
+                            "S": "https://api.dev.nva.aws.unit.no/publication/01926df19f1d-4c676840-b675-41c1-a11b-2fbdc53f36f8"
+                          },
+                          "publicationDate": {
+                            "M": {
+                              "month": { "NULL": true },
+                              "year": { "S": "2024" },
+                              "day": { "NULL": true }
+                            }
+                          },
+                          "channelId": {
+                            "S": "https://api.dev.nva.aws.unit.no/publication-channels-v2/serial-publication/072F144A-1679-4128-AE42-AAA67D18AC1A/2024"
+                          },
+                          "internationalCollaboration": { "BOOL": true }
+                        }
+                      },
+                      "periodYear": { "S": "2024" },
+                      "SearchByYearRangeKey": { "S": "216af187-1771-43d5-b84b-9a18512e72cd" },
+                      "SecondaryIndex1RangeKey": {
+                        "S": "https://api.dev.nva.aws.unit.no/publication/01926df19f1d-4c676840-b675-41c1-a11b-2fbdc53f36f8"
+                      },
+                      "SearchByYearHashKey": { "S": "2024" },
+                      "PrimaryKeyHashKey": {
+                        "S": "CANDIDATE#216af187-1771-43d5-b84b-9a18512e72cd"
+                      },
+                      "PrimaryKeyRangeKey": {
+                        "S": "CANDIDATE#216af187-1771-43d5-b84b-9a18512e72cd"
+                      },
+                      "type": { "S": "CANDIDATE" },
+                      "version": { "S": "ec13893f-7ccb-49ca-8208-2ef440548517" }
+                    }
+              }
+            }            """;
+    message1.setBody(debugEvent);
+    sqsEvent.setRecords(List.of(message1));
+
+    handler.handleRequest(sqsEvent, CONTEXT);
+
+    var publishedMessage = snsClient.getPublishedMessages().getFirst();
+    assertNotNull(publishedMessage);
   }
 
   @ParameterizedTest(name = "shouldConvertDynamoDbEventToDataEntryUpdateEvent {index}")

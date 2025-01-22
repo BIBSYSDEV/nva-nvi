@@ -321,6 +321,22 @@ public final class Candidate {
     return publicationDetails.publicationChannel().id();
   }
 
+  public CandidateDto toDto2() {
+    return CandidateDto.builder()
+                       .withId(getId())
+                       .withContext(CONTEXT_URI)
+                       .withIdentifier(identifier)
+                       .withPublicationId(getPublicationId())
+                       .withApprovals(mapToApprovalDtos())
+               .withAllowedOperations(null)
+                       .withNotes(mapToNoteDtos())
+                       .withPeriod(mapToPeriodStatusDto())
+                       .withTotalPoints(totalPoints)
+                       .withReportStatus(
+                           Optional.ofNullable(reportStatus).map(ReportStatus::getValue).orElse(null))
+                       .build();
+  }
+
   public CandidateDto toDto() {
     return CandidateDto.builder()
         .withId(getId())

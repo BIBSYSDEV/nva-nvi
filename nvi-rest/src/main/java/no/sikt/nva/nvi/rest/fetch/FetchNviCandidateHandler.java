@@ -14,6 +14,7 @@ import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.utils.ExceptionMapper;
 import no.sikt.nva.nvi.common.utils.RequestUtil;
+import no.sikt.nva.nvi.common.validator.UpdateNviCandidateStatusValidator;
 import no.sikt.nva.nvi.common.validator.ViewingScopeValidator;
 import no.sikt.nva.nvi.rest.ViewingScopeHandler;
 import no.unit.nva.auth.uriretriever.UriRetriever;
@@ -89,8 +90,9 @@ public class FetchNviCandidateHandler extends ApiGatewayHandler<Void, CandidateD
 
   private CandidateDto toDtoWithAllowedOperations(Candidate candidate) {
     var candidateDto = candidate.toDto();
-    var allowedOperations = getAllowedOperations(candidate, candidateDto.context(), organizationRetriever);
-    return candidateDto.copy().withCandidateOperations(candidateDto.allowedOperations());
+    var allowedOperations = UpdateNviCandidateStatusValidator.getAllowedOperations(candidate, candidateDto.context(),
+                                                                                   organizationRetriever);
+    return candidateDto.copy().withAllowedOperations(candidateDto.allowedOperations()).build();
   }
 
   private static boolean isNviAdmin(RequestInfo requestInfo) {

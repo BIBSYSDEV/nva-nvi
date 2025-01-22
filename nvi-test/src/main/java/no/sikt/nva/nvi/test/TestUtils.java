@@ -26,7 +26,9 @@ import java.time.Year;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -53,6 +55,7 @@ import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
+import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
@@ -303,6 +306,48 @@ public final class TestUtils {
         .build();
   }
 
+  public static UpsertRequestBuilder createUpsertCandidateRequest(
+      Collection<VerifiedNviCreatorDto> verifiedNviCreators,
+      Collection<UnverifiedNviCreatorDto> unverifiedNviCreators) {
+    // Collect all affiliations (institutions)
+    var allInstitutions = new HashSet<URI>();
+    verifiedNviCreators.forEach(creator -> allInstitutions.addAll(creator.affiliations()));
+    unverifiedNviCreators.forEach(creator -> allInstitutions.addAll(creator.affiliations()));
+
+    // Assign random points for each verified affiliation
+    var totalPoints = randomBigDecimal();
+    var creatorCount = verifiedNviCreators.size() + unverifiedNviCreators.size();
+    var pointsPerInstitution =
+        totalPoints.divide(BigDecimal.valueOf(allInstitutions.size()), RoundingMode.HALF_UP);
+    var pointsPerCreatorAffiliation =
+        totalPoints.divide(BigDecimal.valueOf(creatorCount), RoundingMode.HALF_UP);
+    var points =
+        allInstitutions.stream()
+            .map(
+                institution -> {
+                  var verifiedCreatorPoints =
+                      verifiedNviCreators.stream()
+                          .filter(creator -> creator.affiliations().contains(institution))
+                          .map(
+                              creator ->
+                                  new CreatorAffiliationPoints(
+                                      creator.id(), institution, pointsPerCreatorAffiliation))
+                          .toList();
+                  return new InstitutionPoints(
+                      institution, pointsPerInstitution, verifiedCreatorPoints);
+                })
+            .toList();
+
+    var creatorMap =
+        verifiedNviCreators.stream()
+            .collect(
+                Collectors.toMap(VerifiedNviCreatorDto::id, VerifiedNviCreatorDto::affiliations));
+    return randomUpsertRequestBuilder()
+        .withVerifiedCreators(verifiedNviCreators)
+        .withCreators(creatorMap)
+        .withPoints(points);
+  }
+
   public static UpsertRequestBuilder createUpsertCandidateRequest(URI... institutions) {
     var creators =
         IntStream.of(1)
@@ -397,14 +442,6 @@ public final class TestUtils {
     when(uriRetriever.fetchResponse(eq(organization.id()), any())).thenReturn(response);
   }
 
-  private static String generateResponseBody(Organization organization) {
-    try {
-      return dtoObjectMapper.writeValueAsString(organization);
-    } catch (JsonProcessingException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
   @Deprecated
   // This method is used to set up a reported candidate, but should be removed once Candidate.report
   // is implemented
@@ -416,6 +453,14 @@ public final class TestUtils {
             .reportStatus(ReportStatus.REPORTED)
             .build(),
         List.of(randomApproval(institutionId)));
+  }
+
+  private static String generateResponseBody(Organization organization) {
+    try {
+      return dtoObjectMapper.writeValueAsString(organization);
+    } catch (JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   private static DbPublicationDate publicationDate(String year) {
