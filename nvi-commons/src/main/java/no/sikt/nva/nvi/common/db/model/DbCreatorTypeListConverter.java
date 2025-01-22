@@ -1,6 +1,6 @@
 package no.sikt.nva.nvi.common.db.model;
 
-import static no.unit.nva.commons.json.JsonUtils.dynamoObjectMapper;
+import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 
 import java.util.List;
@@ -48,7 +48,7 @@ public class DbCreatorTypeListConverter implements AttributeConverter<List<DbCre
   private DbCreatorType toCreator(Map<String, AttributeValue> attributeValueMap) {
     return attempt(
             () ->
-                dynamoObjectMapper.readValue(
+                dtoObjectMapper.readValue(
                     EnhancedDocument.fromAttributeValueMap(attributeValueMap).toJson(),
                     DbCreatorType.class))
         .orElseThrow();
@@ -58,7 +58,7 @@ public class DbCreatorTypeListConverter implements AttributeConverter<List<DbCre
     return AttributeValue.builder()
         .m(
             EnhancedDocument.fromJson(
-                    attempt(() -> dynamoObjectMapper.writeValueAsString(creator)).orElseThrow())
+                    attempt(() -> dtoObjectMapper.writeValueAsString(creator)).orElseThrow())
                 .toMap())
         .build();
   }

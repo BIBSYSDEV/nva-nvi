@@ -5,6 +5,7 @@ import static no.sikt.nva.nvi.rest.remove.RemoveNoteHandler.PARAM_NOTE_IDENTIFIE
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningClosedPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.randomUsername;
+import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -31,7 +32,6 @@ import no.sikt.nva.nvi.rest.create.NviNoteRequest;
 import no.sikt.nva.nvi.test.FakeViewingScopeValidator;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
-import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
@@ -48,6 +48,15 @@ class RemoveNoteHandlerTest extends LocalDynamoTest {
   private RemoveNoteHandler handler;
   private PeriodRepository periodRepository;
   private CandidateRepository candidateRepository;
+
+  private static HandlerRequestBuilder<NviNoteRequest> createRequestWithoutAccessRights(
+      URI customerId, String candidateId, String noteId, String userName) {
+    return new HandlerRequestBuilder<NviNoteRequest>(dtoObjectMapper)
+        .withPathParameters(
+            Map.of(CANDIDATE_IDENTIFIER, candidateId, PARAM_NOTE_IDENTIFIER, noteId))
+        .withCurrentCustomer(customerId)
+        .withUserName(userName);
+  }
 
   @BeforeEach
   void setUp() {
@@ -140,15 +149,6 @@ class RemoveNoteHandlerTest extends LocalDynamoTest {
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
     assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_CONFLICT)));
-  }
-
-  private static HandlerRequestBuilder<NviNoteRequest> createRequestWithoutAccessRights(
-      URI customerId, String candidateId, String noteId, String userName) {
-    return new HandlerRequestBuilder<NviNoteRequest>(JsonUtils.dynamoObjectMapper)
-        .withPathParameters(
-            Map.of(CANDIDATE_IDENTIFIER, candidateId, PARAM_NOTE_IDENTIFIER, noteId))
-        .withCurrentCustomer(customerId)
-        .withUserName(userName);
   }
 
   private Candidate createNote(Candidate candidate, Username user) {

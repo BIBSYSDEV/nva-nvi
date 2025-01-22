@@ -3,7 +3,7 @@ package no.sikt.nva.nvi.index;
 import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
 import static no.sikt.nva.nvi.common.utils.ExceptionUtils.getStackTrace;
 import static no.sikt.nva.nvi.index.aws.S3StorageWriter.GZIP_ENDING;
-import static no.unit.nva.commons.json.JsonUtils.dynamoObjectMapper;
+import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 
 import com.amazonaws.services.lambda.runtime.Context;
@@ -158,7 +158,7 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
   }
 
   private DynamodbStreamRecord mapToDynamoDbRecord(String body) {
-    return attempt(() -> dynamoObjectMapper.readValue(body, DynamodbStreamRecord.class))
+    return attempt(() -> dtoObjectMapper.readValue(body, DynamodbStreamRecord.class))
         .orElse(
             failure -> {
               handleFailure(failure, body);
