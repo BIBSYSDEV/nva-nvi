@@ -4,6 +4,7 @@ import static java.util.Collections.emptyList;
 import static java.util.Objects.nonNull;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -52,12 +53,16 @@ public record ContributorDto(
       var affiliations =
           expandedAffiliations().stream().map(ExpandedAffiliationDto::toDto).toList();
 
-      return new ContributorDto(name, id, verificationStatus, roleType, affiliations);
+      // FIXME: This is a temporary fix to handle the fact that the name field can be an array.
+      // We should handle this properly in the whole chain, but for now we just take the first
+      // element and discard other names.
+      return new ContributorDto(name.getFirst(), id, verificationStatus, roleType, affiliations);
     }
   }
 
   public record ExpandedIdentityDto(
-      @JsonProperty("name") String name,
+      @JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY) @JsonProperty("name")
+          List<String> name,
       @JsonProperty("id") URI id,
       @JsonProperty("verificationStatus") String verificationStatus) {}
 
