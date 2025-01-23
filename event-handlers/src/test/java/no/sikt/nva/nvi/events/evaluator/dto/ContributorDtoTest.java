@@ -20,7 +20,6 @@ class ContributorDtoTest {
               "verificationStatus": "NotVerified",
               "additionalIdentifiers": []
           },
-          "affiliations": [],
           "role": {
               "type": "Creator"
           },

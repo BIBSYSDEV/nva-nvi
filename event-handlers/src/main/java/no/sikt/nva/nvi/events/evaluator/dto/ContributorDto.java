@@ -1,5 +1,7 @@
 package no.sikt.nva.nvi.events.evaluator.dto;
 
+import static java.util.Collections.emptyList;
+import static java.util.Objects.nonNull;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -31,6 +33,16 @@ public record ContributorDto(
       @JsonProperty("identity") ExpandedIdentityDto expandedIdentity,
       @JsonProperty("role") ExpandedRoleDto role,
       @JsonProperty("affiliations") List<ExpandedAffiliationDto> expandedAffiliations) {
+
+    public ExpandedContributorDto(
+        ExpandedIdentityDto expandedIdentity,
+        ExpandedRoleDto role,
+        List<ExpandedAffiliationDto> expandedAffiliations) {
+      this.expandedIdentity = expandedIdentity;
+      this.role = role;
+      this.expandedAffiliations =
+          nonNull(expandedAffiliations) ? expandedAffiliations : emptyList();
+    }
 
     public ContributorDto toDto() {
       var name = expandedIdentity().name();
