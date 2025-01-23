@@ -4,6 +4,7 @@ import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
 import static no.sikt.nva.nvi.common.utils.ExceptionUtils.getStackTrace;
 import static no.sikt.nva.nvi.index.aws.S3StorageWriter.GZIP_ENDING;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
+import static nva.commons.core.StringUtils.isBlank;
 import static nva.commons.core.attempt.Try.attempt;
 
 import com.amazonaws.services.lambda.runtime.Context;
@@ -51,6 +52,7 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
       "Failed to fetch candidate with identifier: {}";
   private static final String FAILED_TO_GENERATE_INDEX_DOCUMENT_MESSAGE =
       "Failed to generate index document for candidate with identifier: {}";
+  private static final String BLANK_ERROR_MESSAGE_PASSED_TO_ERROR_HANDLER = "An unexpected error occurred with a blank message passed to error handler.";
   private final StorageReader<URI> storageReader;
   private final StorageWriter<IndexDocumentWithConsumptionAttributes> storageWriter;
   private final CandidateRepository candidateRepository;
@@ -226,13 +228,22 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
     return IndexDocumentWithConsumptionAttributes.from(candidate, persistedResource, uriRetriever);
   }
 
+  private void validateErrorMessage(String message) {
+    if (isBlank(message)) {
+      LOGGER.error(BLANK_ERROR_MESSAGE_PASSED_TO_ERROR_HANDLER, message);
+      sqsClient.sendMessage(BLANK_ERROR_MESSAGE_PASSED_TO_ERROR_HANDLER, dlqUrl);
+    }
+  }
+
   private void handleFailure(Failure<?> failure, String messageArgument) {
+    validateErrorMessage(messageArgument);
     logFailure(FAILED_TO_PARSE_EVENT_MESSAGE, messageArgument, failure.getException());
     sqsClient.sendMessage(failure.getException().getMessage(), dlqUrl);
   }
 
   private void handleFailure(
-      Failure<?> failure, String message, String messageArgument, UUID candidateIdentifier) {
+    Failure<?> failure, String message, String messageArgument, UUID candidateIdentifier) {
+    validateErrorMessage(messageArgument);
     logFailure(message, messageArgument, failure.getException());
     sqsClient.sendMessage(failure.getException().getMessage(), dlqUrl, candidateIdentifier);
   }
