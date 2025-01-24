@@ -231,7 +231,7 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
 
   private void validateErrorMessage(String message) {
     if (isBlank(message)) {
-      LOGGER.error(BLANK_ERROR_MESSAGE_PASSED_TO_ERROR_HANDLER, message);
+      LOGGER.error(BLANK_ERROR_MESSAGE_PASSED_TO_ERROR_HANDLER);
       sqsClient.sendMessage(BLANK_ERROR_MESSAGE_PASSED_TO_ERROR_HANDLER, dlqUrl);
     }
   }
