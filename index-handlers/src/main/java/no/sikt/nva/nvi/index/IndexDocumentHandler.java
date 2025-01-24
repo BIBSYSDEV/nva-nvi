@@ -52,7 +52,8 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
       "Failed to fetch candidate with identifier: {}";
   private static final String FAILED_TO_GENERATE_INDEX_DOCUMENT_MESSAGE =
       "Failed to generate index document for candidate with identifier: {}";
-  private static final String BLANK_ERROR_MESSAGE_PASSED_TO_ERROR_HANDLER = "An unexpected error occurred with a blank message passed to error handler.";
+  private static final String BLANK_ERROR_MESSAGE_PASSED_TO_ERROR_HANDLER =
+      "An unexpected error occurred with a blank message passed to error handler.";
   private final StorageReader<URI> storageReader;
   private final StorageWriter<IndexDocumentWithConsumptionAttributes> storageWriter;
   private final CandidateRepository candidateRepository;
@@ -242,7 +243,7 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
   }
 
   private void handleFailure(
-    Failure<?> failure, String message, String messageArgument, UUID candidateIdentifier) {
+      Failure<?> failure, String message, String messageArgument, UUID candidateIdentifier) {
     validateErrorMessage(messageArgument);
     logFailure(message, messageArgument, failure.getException());
     sqsClient.sendMessage(failure.getException().getMessage(), dlqUrl, candidateIdentifier);
