@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.common.service.model;
 
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.math.BigDecimal;
 import java.util.List;
