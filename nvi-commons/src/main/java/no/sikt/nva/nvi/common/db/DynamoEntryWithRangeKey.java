@@ -1,6 +1,6 @@
 package no.sikt.nva.nvi.common.db;
 
-import static no.unit.nva.commons.json.JsonUtils.dynamoObjectMapper;
+import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
@@ -18,7 +18,7 @@ public interface DynamoEntryWithRangeKey extends Typed {
   static Dao parseAttributeValuesMap(Map<String, AttributeValue> value, Class<Dao> daoClass) {
     return attempt(
             () ->
-                dynamoObjectMapper.readValue(
+                dtoObjectMapper.readValue(
                     EnhancedDocument.fromAttributeValueMap(value).toJson(), daoClass))
         .orElseThrow();
   }
