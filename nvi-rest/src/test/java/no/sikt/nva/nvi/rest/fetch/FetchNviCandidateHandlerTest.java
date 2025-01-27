@@ -2,7 +2,7 @@ package no.sikt.nva.nvi.rest.fetch;
 
 import static java.util.Collections.emptyList;
 import static java.util.UUID.randomUUID;
-import static no.sikt.nva.nvi.rest.TestUtils.setupDefaultApplicableCandidate;
+import static no.sikt.nva.nvi.rest.TestUtils.*;
 import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateHandler.CANDIDATE_IDENTIFIER;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
@@ -199,8 +199,10 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
 
   @Test
   void shouldIncludeFinalizeOperationsForNewValidCandidate() throws IOException {
-    var candidate = setupDefaultApplicableCandidate(candidateRepository, periodRepository, mockUriRetriever,
-        1, 0);
+    var verifiedCreator = setupVerifiedCreatorWithAffiliation(DEFAULT_TOP_LEVEL_INSTITUTION_ID,
+        DEFAULT_SUB_UNIT_INSTITUTION_ID, mockUriRetriever);
+    var candidate = setupDefaultApplicableCandidate(candidateRepository, periodRepository,
+      List.of(verifiedCreator), emptyList());
     var request = createRequest(candidate.getIdentifier(), DEFAULT_TOP_LEVEL_INSTITUTION_ID, MANAGE_NVI_CANDIDATES);
 
     var candidateDto = handleRequest(request);
@@ -211,9 +213,13 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
   }
 
   @Test
-  void shouldIncludeFinalizeOperationsForCandidateWithUnverifiedCreators2() throws IOException {
-    var candidate = setupDefaultApplicableCandidate(candidateRepository, periodRepository, mockUriRetriever,
-                                                    1, 1);
+  void shouldNotIncludeFinalizeOperationsForCandidateWithUnverifiedCreators() throws IOException {
+    var verifiedCreator = setupVerifiedCreatorWithAffiliation(DEFAULT_TOP_LEVEL_INSTITUTION_ID,
+      DEFAULT_SUB_UNIT_INSTITUTION_ID, mockUriRetriever);
+    var unverifiedCreator = setupUnverifiedCreatorWithAffiliation(DEFAULT_TOP_LEVEL_INSTITUTION_ID,
+      DEFAULT_SUB_UNIT_INSTITUTION_ID, mockUriRetriever);
+    var candidate = setupDefaultApplicableCandidate(candidateRepository, periodRepository,
+      List.of(verifiedCreator), List.of(unverifiedCreator));
     var request = createRequest(candidate.getIdentifier(), DEFAULT_TOP_LEVEL_INSTITUTION_ID, MANAGE_NVI_CANDIDATES);
 
     var candidateDto = handleRequest(request);
@@ -222,16 +228,20 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
     assertThat(candidateDto.allowedOperations(), Matchers.notNullValue());
     assertThat(candidateDto.allowedOperations(), Matchers.containsInAnyOrder(expectedAllowedOperations.toArray()));
   }
-
+   // TODO: Parameterize these tests (with allowed operations and creators as params)
   @Test
-  void shouldIncludeFinalizeOperationsForCandidateWithUnverifiedCreators() throws IOException {
-    var candidate = setupDefaultApplicableCandidate(candidateRepository, periodRepository, mockUriRetriever,
-                                                    1, 1);
+  void shouldIncludeFinalizeOperationsForCandidateWithUnverifiedCreatorsFromAnotherInstitution() throws IOException {
+    var verifiedCreator = setupVerifiedCreatorWithAffiliation(DEFAULT_TOP_LEVEL_INSTITUTION_ID,
+      DEFAULT_SUB_UNIT_INSTITUTION_ID, mockUriRetriever);
+    var unverifiedCreator = setupUnverifiedCreatorWithAffiliation(randomUri(),
+      randomUri(), mockUriRetriever);
+    var candidate = setupDefaultApplicableCandidate(candidateRepository, periodRepository,
+      List.of(verifiedCreator), List.of(unverifiedCreator));
     var request = createRequest(candidate.getIdentifier(), DEFAULT_TOP_LEVEL_INSTITUTION_ID, MANAGE_NVI_CANDIDATES);
 
     var candidateDto = handleRequest(request);
 
-    var expectedAllowedOperations = List.of(CandidateOperation.APPROVAL_PENDING);
+    var expectedAllowedOperations = List.of(CandidateOperation.APPROVAL_APPROVE, CandidateOperation.APPROVAL_REJECT);
     assertThat(candidateDto.allowedOperations(), Matchers.notNullValue());
     assertThat(candidateDto.allowedOperations(), Matchers.containsInAnyOrder(expectedAllowedOperations.toArray()));
   }

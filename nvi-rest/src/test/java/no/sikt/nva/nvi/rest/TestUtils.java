@@ -42,7 +42,7 @@ public final class TestUtils {
       int verifiedCreatorCount,
       int unverifiedCreatorCount) {
     mockOrganizationResponseForAffiliation(
-        DEFAULT_TOP_LEVEL_INSTITUTION_ID, DEFAULT_SUB_UNIT_INSTITUTION_ID, mockUriRetriever);
+        DEFAULT_TOP_LEVEL_INSTITUTION_ID, DEFAULT_SUB_UNIT_INSTITUTION_ID, mockUriRetriever); // FIXME: Move this
     var verifiedCreators =
         Stream.generate(() -> createVerifiedCreatorFrom(DEFAULT_SUB_UNIT_INSTITUTION_ID))
             .limit(verifiedCreatorCount)
@@ -56,6 +56,32 @@ public final class TestUtils {
     return Candidate.updateNonCandidate(
             createUpsertNonCandidateRequest(candidate.getPublicationId()), candidateRepository)
         .orElseThrow();
+  }
+
+  public static VerifiedNviCreatorDto setupVerifiedCreatorWithAffiliation(URI topLevelAffiliation,
+      URI affiliationId, UriRetriever mockUriRetriever) {
+    mockOrganizationResponseForAffiliation(
+      topLevelAffiliation, affiliationId, mockUriRetriever);
+    return new VerifiedNviCreatorDto(randomUri(), List.of(affiliationId));
+  }
+
+  public static UnverifiedNviCreatorDto setupUnverifiedCreatorWithAffiliation(URI topLevelAffiliation,
+                                                                          URI affiliationId, UriRetriever mockUriRetriever) {
+    mockOrganizationResponseForAffiliation(
+      topLevelAffiliation, affiliationId, mockUriRetriever);
+    return new UnverifiedNviCreatorDto(randomString(), List.of(affiliationId));
+  }
+
+  public static Candidate setupDefaultApplicableCandidate(
+    CandidateRepository candidateRepository,
+    PeriodRepository periodRepository,
+    Collection<VerifiedNviCreatorDto> verifiedNviCreators,
+    Collection<UnverifiedNviCreatorDto> unverifiedNviCreators) {
+    var upsertRequest = createUpsertCandidateRequest(verifiedNviCreators, unverifiedNviCreators).build();
+    var candidate = upsertCandidate(candidateRepository, periodRepository, upsertRequest);
+    return Candidate.updateNonCandidate(
+        createUpsertNonCandidateRequest(candidate.getPublicationId()), candidateRepository)
+      .orElseThrow();
   }
 
   private static UpsertRequestBuilder createUpsertCandidateRequest(
