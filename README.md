@@ -45,6 +45,19 @@ to step 3.
 }
 ```
 
+## How to start re-evaluation scan
+
+To start a batch re-evaluation of existing publications for a given year as NVI candidates, trigger `BatchReEvaluateNviCandidatesHandler` with the following input:
+
+```json
+{
+  "detail": {
+    "pageSize": 500,
+    "year": "2024"
+  }
+}
+```
+
 ## Error handling
 
 ### How to requeue candidates in IndexDLQ
