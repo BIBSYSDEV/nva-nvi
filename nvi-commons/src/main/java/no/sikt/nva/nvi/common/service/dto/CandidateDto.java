@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.math.BigDecimal;
 import java.net.URI;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import no.unit.nva.commons.json.JsonSerializable;
@@ -25,7 +26,7 @@ public record CandidateDto(
     List<NoteDto> notes,
     PeriodStatusDto period,
     String status,
-    List<CandidateOperation> allowedOperations)
+    Collection<CandidateOperation> allowedOperations)
     implements JsonSerializable {
 
   public static final String NVI_CANDIDATE = "NviCandidate";
@@ -59,7 +60,7 @@ public record CandidateDto(
     private List<NoteDto> notes;
     private PeriodStatusDto periodStatus;
     private String reportStatus;
-    private List<CandidateOperation> allowedOperations;
+    private Collection<CandidateOperation> allowedOperations;
 
     private Builder() {}
 
@@ -108,7 +109,7 @@ public record CandidateDto(
       return this;
     }
 
-    public Builder withAllowedOperations(List<CandidateOperation> allowedOperations) {
+    public Builder withAllowedOperations(Collection<CandidateOperation> allowedOperations) {
       this.allowedOperations = allowedOperations;
       return this;
     }

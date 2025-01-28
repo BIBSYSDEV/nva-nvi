@@ -1,8 +1,8 @@
 package no.sikt.nva.nvi.common.validator;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.client.model.Organization;
@@ -45,18 +45,23 @@ public final class UpdateNviCandidateStatusValidator {
     var hasUnverifiedCreator = hasUnverifiedCreator(candidate, customerId, organizationRetriever);
     var currentStatus = candidate.getApprovals().get(customerId).getStatus();
 
-    var canFinalize = !hasUnverifiedCreator && ApprovalStatus.PENDING.equals(currentStatus);
-    var canReset =
-        ApprovalStatus.APPROVED.equals(currentStatus)
-            || ApprovalStatus.REJECTED.equals(currentStatus);
+    var canFinalize = !hasUnverifiedCreator;
+    var canReset = !ApprovalStatus.PENDING.equals(currentStatus);
+    var canApprove = canFinalize && !ApprovalStatus.APPROVED.equals(currentStatus);
+    var canReject = canFinalize && !ApprovalStatus.REJECTED.equals(currentStatus);
 
-    if (canFinalize) {
-      return List.of(CandidateOperation.APPROVAL_APPROVE, CandidateOperation.APPROVAL_REJECT);
-    } else if (canReset) {
-      return List.of(CandidateOperation.APPROVAL_PENDING);
-    } else {
-      return List.of();
+    // FIXME: Clean this up
+    var allowedOperations = new ArrayList<CandidateOperation>();
+    if (canApprove) {
+      allowedOperations.add(CandidateOperation.APPROVAL_APPROVE);
     }
+    if (canReject) {
+      allowedOperations.add(CandidateOperation.APPROVAL_REJECT);
+    }
+    if (canReset) {
+      allowedOperations.add(CandidateOperation.APPROVAL_PENDING);
+    }
+    return allowedOperations;
   }
 
   private static boolean hasUnverifiedCreator(

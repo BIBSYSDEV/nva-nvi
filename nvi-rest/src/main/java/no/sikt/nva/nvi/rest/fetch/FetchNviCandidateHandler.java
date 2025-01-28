@@ -72,7 +72,9 @@ public class FetchNviCandidateHandler extends ApiGatewayHandler<Void, CandidateD
             candidate ->
                 validateViewingScope(
                     viewingScopeValidator, RequestUtil.getUsername(requestInfo), candidate))
-        .map(Candidate::toDto)
+        .map(
+            candidate ->
+                Candidate.toDto(candidate, requestInfo.getCurrentCustomer(), organizationRetriever))
         .orElseThrow(ExceptionMapper::map);
   }
 
@@ -88,19 +90,20 @@ public class FetchNviCandidateHandler extends ApiGatewayHandler<Void, CandidateD
     throw new UnauthorizedException();
   }
 
-  private CandidateDto toDtoWithAllowedOperations(Candidate candidate) {
-    var candidateDto = candidate.toDto();
-    var allowedOperations = UpdateNviCandidateStatusValidator.getAllowedOperations(candidate, candidateDto.context(),
-                                                                                   organizationRetriever);
-    return candidateDto.copy().withAllowedOperations(candidateDto.allowedOperations()).build();
-  }
-
   private static boolean isNviAdmin(RequestInfo requestInfo) {
     return requestInfo.userIsAuthorized(AccessRight.MANAGE_NVI);
   }
 
   private static boolean isNviCurator(RequestInfo requestInfo) {
     return requestInfo.userIsAuthorized(AccessRight.MANAGE_NVI_CANDIDATES);
+  }
+
+  private CandidateDto toDtoWithAllowedOperations(Candidate candidate) {
+    var candidateDto = candidate.toDto();
+    var allowedOperations =
+        UpdateNviCandidateStatusValidator.getAllowedOperations(
+            candidate, candidateDto.context(), organizationRetriever);
+    return candidateDto.copy().withAllowedOperations(candidateDto.allowedOperations()).build();
   }
 
   private Candidate checkIfApplicable(Candidate candidate) {

@@ -9,6 +9,7 @@ import static no.sikt.nva.nvi.common.service.model.ApprovalStatus.PENDING;
 import static no.sikt.nva.nvi.common.service.model.ApprovalStatus.REJECTED;
 import static no.sikt.nva.nvi.common.utils.DecimalUtils.adjustScaleAndRoundingMode;
 import static no.sikt.nva.nvi.common.utils.RequestUtil.getAllCreators;
+import static no.sikt.nva.nvi.common.validator.UpdateNviCandidateStatusValidator.getAllowedOperations;
 import static no.sikt.nva.nvi.common.validator.UpdateNviCandidateStatusValidator.isValidUpdateStatusRequest;
 import static nva.commons.core.attempt.Try.attempt;
 import static nva.commons.core.ioutils.IoUtils.stringFromResources;
@@ -230,6 +231,10 @@ public final class Candidate {
     return period;
   }
 
+  public ReportStatus getReportStatus() {
+    return reportStatus;
+  }
+
   public UUID getIdentifier() {
     return identifier;
   }
@@ -321,22 +326,6 @@ public final class Candidate {
     return publicationDetails.publicationChannel().id();
   }
 
-  public CandidateDto toDto2() {
-    return CandidateDto.builder()
-                       .withId(getId())
-                       .withContext(CONTEXT_URI)
-                       .withIdentifier(identifier)
-                       .withPublicationId(getPublicationId())
-                       .withApprovals(mapToApprovalDtos())
-               .withAllowedOperations(null)
-                       .withNotes(mapToNoteDtos())
-                       .withPeriod(mapToPeriodStatusDto())
-                       .withTotalPoints(totalPoints)
-                       .withReportStatus(
-                           Optional.ofNullable(reportStatus).map(ReportStatus::getValue).orElse(null))
-                       .build();
-  }
-
   public CandidateDto toDto() {
     return CandidateDto.builder()
         .withId(getId())
@@ -349,6 +338,42 @@ public final class Candidate {
         .withTotalPoints(totalPoints)
         .withReportStatus(
             Optional.ofNullable(reportStatus).map(ReportStatus::getValue).orElse(null))
+        .build();
+  }
+
+  public CandidateDto toDto(URI customerInstitutionId,
+                                   OrganizationRetriever organizationRetriever) {
+    var allowedOperations = getAllowedOperations(this, customerInstitutionId, organizationRetriever);
+    return CandidateDto.builder()
+                       .withId(getId())
+                       .withContext(CONTEXT_URI)
+                       .withIdentifier(getIdentifier())
+                       .withPublicationId(getPublicationId())
+                       .withApprovals(mapToApprovalDtos())
+                       .withAllowedOperations(allowedOperations)
+                       .withNotes(mapToNoteDtos())
+                       .withPeriod(mapToPeriodStatusDto())
+                       .withTotalPoints(getTotalPoints())
+                       .withReportStatus(
+                           Optional.ofNullable(getReportStatus()).map(ReportStatus::getValue).orElse(null))
+                       .build();
+  }
+
+  public static CandidateDto toDto(Candidate candidate, URI customerInstitutionId,
+                            OrganizationRetriever organizationRetriever) {
+    var allowedOperations = getAllowedOperations(candidate, customerInstitutionId, organizationRetriever);
+    return CandidateDto.builder()
+        .withId(candidate.getId())
+        .withContext(CONTEXT_URI)
+        .withIdentifier(candidate.getIdentifier())
+        .withPublicationId(candidate.getPublicationId())
+        .withApprovals(candidate.mapToApprovalDtos())
+        .withAllowedOperations(allowedOperations)
+        .withNotes(candidate.mapToNoteDtos())
+        .withPeriod(candidate.mapToPeriodStatusDto())
+        .withTotalPoints(candidate.getTotalPoints())
+        .withReportStatus(
+            Optional.ofNullable(candidate.getReportStatus()).map(ReportStatus::getValue).orElse(null))
         .build();
   }
 

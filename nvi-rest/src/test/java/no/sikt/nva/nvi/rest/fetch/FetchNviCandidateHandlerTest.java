@@ -7,7 +7,6 @@ import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateHandler.CANDIDATE_IDEN
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertNonCandidateRequest;
-import static no.sikt.nva.nvi.test.TestUtils.mockOrganizationResponseForAffiliation;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeriod;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -16,6 +15,7 @@ import static nva.commons.apigateway.AccessRight.MANAGE_NVI;
 import static nva.commons.apigateway.AccessRight.MANAGE_NVI_CANDIDATES;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -31,7 +31,6 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatusDto;
@@ -41,7 +40,6 @@ import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.test.FakeViewingScopeValidator;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
-import no.unit.nva.auth.uriretriever.UriRetriever;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
@@ -56,56 +54,23 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 class FetchNviCandidateHandlerTest extends LocalDynamoTest {
 
   private static final Context CONTEXT = mock(Context.class);
-  private static final URI DEFAULT_TOP_LEVEL_INSTITUTION_ID =
-      URI.create("https://www.example.com/toplevelOrganization");
-  private static final URI DEFAULT_SUB_UNIT_INSTITUTION_ID =
-      URI.create("https://www.example.com/subOrganization");
   private final DynamoDbClient localDynamo = initializeTestDatabase();
   private ByteArrayOutputStream output;
   private FetchNviCandidateHandler handler;
   private CandidateRepository candidateRepository;
   private PeriodRepository periodRepository;
-  private UriRetriever mockUriRetriever;
-  private OrganizationRetriever mockOrganizationRetriever;
-
-  private static InputStream createRequest(
-      UUID candidateIdentifier, URI cristinInstitutionId, AccessRight accessRight)
-      throws JsonProcessingException {
-    var customerId = randomUri();
-    return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
-        .withHeaders(Map.of(HttpHeaders.ACCEPT, ContentType.APPLICATION_JSON.getMimeType()))
-        .withCurrentCustomer(customerId)
-        .withTopLevelCristinOrgId(cristinInstitutionId)
-        .withAccessRights(customerId, accessRight)
-        .withUserName(randomString())
-        .withPathParameters(Map.of(CANDIDATE_IDENTIFIER, candidateIdentifier.toString()))
-        .build();
-  }
-
-  private static InputStream createRequestWithoutAccessRight(
-      UUID candidateIdentifier, URI cristinInstitutionId) throws JsonProcessingException {
-    var customerId = randomUri();
-    return new HandlerRequestBuilder<>(dtoObjectMapper)
-        .withHeaders(Map.of(HttpHeaders.ACCEPT, ContentType.APPLICATION_JSON.getMimeType()))
-        .withCurrentCustomer(customerId)
-        .withTopLevelCristinOrgId(cristinInstitutionId)
-        .withUserName(randomString())
-        .withPathParameters(Map.of(CANDIDATE_IDENTIFIER, candidateIdentifier.toString()))
-        .build();
-  }
 
   @BeforeEach
   public void setUp() {
     output = new ByteArrayOutputStream();
     candidateRepository = new CandidateRepository(localDynamo);
     periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
-    mockUriRetriever = mock(UriRetriever.class);
-    mockOrganizationRetriever = new OrganizationRetriever(mockUriRetriever);
     handler =
         new FetchNviCandidateHandler(
-            candidateRepository, periodRepository, new FakeViewingScopeValidator(true), mockOrganizationRetriever);
-    mockOrganizationResponseForAffiliation(
-        DEFAULT_TOP_LEVEL_INSTITUTION_ID, DEFAULT_SUB_UNIT_INSTITUTION_ID, mockUriRetriever);
+            candidateRepository,
+            periodRepository,
+            new FakeViewingScopeValidator(true),
+            mockOrganizationRetriever);
   }
 
   @Test
@@ -138,7 +103,10 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
     var viewingScopeValidatorReturningFalse = new FakeViewingScopeValidator(false);
     handler =
         new FetchNviCandidateHandler(
-            candidateRepository, periodRepository, viewingScopeValidatorReturningFalse, mockOrganizationRetriever);
+            candidateRepository,
+            periodRepository,
+            viewingScopeValidatorReturningFalse,
+            mockOrganizationRetriever);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
     assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
@@ -157,93 +125,138 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
 
   @Test
   void shouldReturnValidCandidateWhenCandidateExists() throws IOException {
-    var institutionId = randomUri();
-    var candidate = upsert(createUpsertCandidateRequest(institutionId).build());
-    var request = createRequest(candidate.getIdentifier(), institutionId, MANAGE_NVI_CANDIDATES);
+    var candidate = setupCandidateWithVerifiedCreator(candidateRepository, periodRepository);
+    var request = createDefaultRequestWithManageCandidatesAccess(candidate);
 
-    handler.handleRequest(request, output, CONTEXT);
-    var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
-    var expectedResponse = candidate.toDto();
-    var actualResponse = response.getBodyObject(CandidateDto.class);
+    var actualCandidateDto = handleRequest(request);
+    var expectedCandidateDto =
+        candidate.toDto(DEFAULT_TOP_LEVEL_INSTITUTION_ID, mockOrganizationRetriever);
 
-    assertEquals(expectedResponse, actualResponse);
+    assertEquals(expectedCandidateDto, actualCandidateDto);
   }
 
   @Test
   void shouldReturnCandidateDtoWithApprovalStatusNewWhenApprovalStatusIsPendingAndUnassigned()
       throws IOException {
-    var institutionId = randomUri();
-    var candidate = upsert(createUpsertCandidateRequest(institutionId).build());
-    var request = createRequest(candidate.getIdentifier(), institutionId, MANAGE_NVI_CANDIDATES);
-    handler.handleRequest(request, output, CONTEXT);
-    var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
-    var actualResponse = response.getBodyObject(CandidateDto.class);
-    var actualStatus = actualResponse.approvals().get(0).status();
+    var candidate = setupCandidateWithVerifiedCreator(candidateRepository, periodRepository);
+    var request = createDefaultRequestWithManageCandidatesAccess(candidate);
 
-    assertEquals(ApprovalStatusDto.NEW, actualStatus);
+    var candidateDto = handleRequest(request);
+    var actualStatus = candidateDto.approvals().getFirst().status();
+    var expectedStatus = ApprovalStatusDto.NEW;
+    assertEquals(expectedStatus, actualStatus);
   }
 
   @Test
   void shouldReturnValidCandidateWhenUserIsNviAdmin() throws IOException {
-    var institutionId = randomUri();
-    var candidate = upsert(createUpsertCandidateRequest(institutionId).build());
-    var request = createRequest(candidate.getIdentifier(), institutionId, MANAGE_NVI);
+    var candidate = setupCandidateWithVerifiedCreator(candidateRepository, periodRepository);
+    var request =
+        createRequest(
+            candidate.getIdentifier(),
+            DEFAULT_TOP_LEVEL_INSTITUTION_ID,
+            DEFAULT_TOP_LEVEL_INSTITUTION_ID,
+            MANAGE_NVI);
 
-    handler.handleRequest(request, output, CONTEXT);
-    var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
-    var expectedResponse = candidate.toDto();
-    var actualResponse = response.getBodyObject(CandidateDto.class);
+    var actualCandidateDto = handleRequest(request);
+    var expectedCandidateDto =
+        candidate.toDto(DEFAULT_TOP_LEVEL_INSTITUTION_ID, mockOrganizationRetriever);
 
-    assertEquals(expectedResponse, actualResponse);
+    assertEquals(expectedCandidateDto, actualCandidateDto);
   }
 
   @Test
-  void shouldIncludeFinalizeOperationsForNewValidCandidate() throws IOException {
-    var verifiedCreator = setupVerifiedCreatorWithAffiliation(DEFAULT_TOP_LEVEL_INSTITUTION_ID,
-        DEFAULT_SUB_UNIT_INSTITUTION_ID, mockUriRetriever);
-    var candidate = setupDefaultApplicableCandidate(candidateRepository, periodRepository,
-      List.of(verifiedCreator), emptyList());
-    var request = createRequest(candidate.getIdentifier(), DEFAULT_TOP_LEVEL_INSTITUTION_ID, MANAGE_NVI_CANDIDATES);
+  void shouldAllowFinalizingNewValidCandidate() throws IOException {
+    var candidate = setupCandidateWithVerifiedCreator(candidateRepository, periodRepository);
+    var request = createDefaultRequestWithManageCandidatesAccess(candidate);
 
     var candidateDto = handleRequest(request);
 
-    var expectedAllowedOperations = List.of(CandidateOperation.APPROVAL_APPROVE, CandidateOperation.APPROVAL_REJECT);
-    assertThat(candidateDto.allowedOperations(), Matchers.notNullValue());
-    assertThat(candidateDto.allowedOperations(), Matchers.containsInAnyOrder(expectedAllowedOperations.toArray()));
+    var actualAllowedOperations = candidateDto.allowedOperations();
+    var expectedAllowedOperations =
+        List.of(CandidateOperation.APPROVAL_APPROVE, CandidateOperation.APPROVAL_REJECT);
+    assertThat(actualAllowedOperations, containsInAnyOrder(expectedAllowedOperations.toArray()));
   }
 
   @Test
-  void shouldNotIncludeFinalizeOperationsForCandidateWithUnverifiedCreators() throws IOException {
-    var verifiedCreator = setupVerifiedCreatorWithAffiliation(DEFAULT_TOP_LEVEL_INSTITUTION_ID,
-      DEFAULT_SUB_UNIT_INSTITUTION_ID, mockUriRetriever);
-    var unverifiedCreator = setupUnverifiedCreatorWithAffiliation(DEFAULT_TOP_LEVEL_INSTITUTION_ID,
-      DEFAULT_SUB_UNIT_INSTITUTION_ID, mockUriRetriever);
-    var candidate = setupDefaultApplicableCandidate(candidateRepository, periodRepository,
-      List.of(verifiedCreator), List.of(unverifiedCreator));
-    var request = createRequest(candidate.getIdentifier(), DEFAULT_TOP_LEVEL_INSTITUTION_ID, MANAGE_NVI_CANDIDATES);
+  void shouldNotAllowFinalizingNewCandidateWithUnverifiedCreator() throws IOException {
+    var candidate = setupCandidateWithUnverifiedCreator(candidateRepository, periodRepository);
+    var request = createDefaultRequestWithManageCandidatesAccess(candidate);
 
     var candidateDto = handleRequest(request);
 
+    var actualAllowedOperations = candidateDto.allowedOperations();
     var expectedAllowedOperations = emptyList();
-    assertThat(candidateDto.allowedOperations(), Matchers.notNullValue());
-    assertThat(candidateDto.allowedOperations(), Matchers.containsInAnyOrder(expectedAllowedOperations.toArray()));
+    assertThat(actualAllowedOperations, containsInAnyOrder(expectedAllowedOperations.toArray()));
   }
-   // TODO: Parameterize these tests (with allowed operations and creators as params)
+
   @Test
-  void shouldIncludeFinalizeOperationsForCandidateWithUnverifiedCreatorsFromAnotherInstitution() throws IOException {
-    var verifiedCreator = setupVerifiedCreatorWithAffiliation(DEFAULT_TOP_LEVEL_INSTITUTION_ID,
-      DEFAULT_SUB_UNIT_INSTITUTION_ID, mockUriRetriever);
-    var unverifiedCreator = setupUnverifiedCreatorWithAffiliation(randomUri(),
-      randomUri(), mockUriRetriever);
-    var candidate = setupDefaultApplicableCandidate(candidateRepository, periodRepository,
-      List.of(verifiedCreator), List.of(unverifiedCreator));
-    var request = createRequest(candidate.getIdentifier(), DEFAULT_TOP_LEVEL_INSTITUTION_ID, MANAGE_NVI_CANDIDATES);
+  void shouldAllowFinalizingCandidateWithUnverifiedCreatorFromAnotherInstitution()
+      throws IOException {
+    var candidate =
+        setupCandidateWithUnverifiedCreatorFromAnotherInstitution(
+            candidateRepository, periodRepository);
+    var request = createDefaultRequestWithManageCandidatesAccess(candidate);
 
     var candidateDto = handleRequest(request);
 
-    var expectedAllowedOperations = List.of(CandidateOperation.APPROVAL_APPROVE, CandidateOperation.APPROVAL_REJECT);
-    assertThat(candidateDto.allowedOperations(), Matchers.notNullValue());
-    assertThat(candidateDto.allowedOperations(), Matchers.containsInAnyOrder(expectedAllowedOperations.toArray()));
+    var actualAllowedOperations = candidateDto.allowedOperations();
+    var expectedAllowedOperations =
+        List.of(CandidateOperation.APPROVAL_APPROVE, CandidateOperation.APPROVAL_REJECT);
+    assertThat(actualAllowedOperations, containsInAnyOrder(expectedAllowedOperations.toArray()));
+  }
+
+  @Test
+  void shouldAllowResettingApprovalForApprovedCandidate() throws IOException {
+    var candidate = setupCandidateWithApproval(candidateRepository, periodRepository);
+    var request = createDefaultRequestWithManageCandidatesAccess(candidate);
+
+    var candidateDto = handleRequest(request);
+
+    var actualAllowedOperations = candidateDto.allowedOperations();
+    var expectedAllowedOperations =
+        List.of(CandidateOperation.APPROVAL_PENDING, CandidateOperation.APPROVAL_REJECT);
+    assertThat(actualAllowedOperations, containsInAnyOrder(expectedAllowedOperations.toArray()));
+  }
+
+  private static InputStream createDefaultRequestWithManageCandidatesAccess(Candidate candidate)
+      throws JsonProcessingException {
+    return createRequest(
+        candidate.getIdentifier(),
+        DEFAULT_TOP_LEVEL_INSTITUTION_ID,
+        DEFAULT_TOP_LEVEL_INSTITUTION_ID,
+        MANAGE_NVI_CANDIDATES);
+  }
+
+  private static InputStream createRequest(
+      UUID candidateIdentifier, URI cristinInstitutionId, URI customerId, AccessRight accessRight)
+      throws JsonProcessingException {
+    return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
+        .withHeaders(Map.of(HttpHeaders.ACCEPT, ContentType.APPLICATION_JSON.getMimeType()))
+        .withCurrentCustomer(customerId)
+        .withTopLevelCristinOrgId(cristinInstitutionId)
+        .withAccessRights(customerId, accessRight)
+        .withUserName(randomString())
+        .withPathParameters(Map.of(CANDIDATE_IDENTIFIER, candidateIdentifier.toString()))
+        .build();
+  }
+
+  private static InputStream createRequest(
+      UUID candidateIdentifier, URI cristinInstitutionId, AccessRight accessRight)
+      throws JsonProcessingException {
+    var customerId = randomUri();
+    return createRequest(candidateIdentifier, cristinInstitutionId, customerId, accessRight);
+  }
+
+  private static InputStream createRequestWithoutAccessRight(
+      UUID candidateIdentifier, URI cristinInstitutionId) throws JsonProcessingException {
+    var customerId = randomUri();
+    return new HandlerRequestBuilder<>(dtoObjectMapper)
+        .withHeaders(Map.of(HttpHeaders.ACCEPT, ContentType.APPLICATION_JSON.getMimeType()))
+        .withCurrentCustomer(customerId)
+        .withTopLevelCristinOrgId(cristinInstitutionId)
+        .withUserName(randomString())
+        .withPathParameters(Map.of(CANDIDATE_IDENTIFIER, candidateIdentifier.toString()))
+        .build();
   }
 
   private CandidateDto handleRequest(InputStream request) throws IOException {

@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.rest.upsert;
 
 import static java.util.UUID.randomUUID;
+import static no.sikt.nva.nvi.rest.TestUtils.createStatusRequest;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.mockOrganizationResponseForAffiliation;
@@ -31,7 +32,6 @@ import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatusDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
@@ -341,15 +341,6 @@ class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
     assertThat(candidateResponse.approvals().get(0).assignee(), is(equalTo(assignee)));
   }
 
-  private static UpdateStatusRequest createStatusRequest(ApprovalStatus status) {
-    return UpdateStatusRequest.builder()
-        .withInstitutionId(DEFAULT_TOP_LEVEL_INSTITUTION_ID)
-        .withApprovalStatus(status)
-        .withUsername(randomString())
-        .withReason(ApprovalStatus.REJECTED.equals(status) ? randomString() : null)
-        .build();
-  }
-
   private static InputStream createRequest(
       UUID candidateIdentifier, URI institutionId, NviStatusRequest requestBody)
       throws JsonProcessingException {
@@ -428,22 +419,6 @@ class UpdateNviCandidateStatusHandlerTest extends LocalDynamoTest {
             .withAffiliations(List.of(subInstitution))
             .withName(randomString())
             .build();
-    var upsertRequest =
-        createUpsertCandidateRequest(topLevelInstitution)
-            .withUnverifiedCreators(List.of(unverifiedCreator))
-            .build();
-    var candidate = upsert(upsertRequest);
-    return createRequest(candidate.getIdentifier(), topLevelInstitution, newStatus);
-  }
-
-  private InputStream createCoolUpsertCandidateRequest(
-      URI topLevelInstitution, URI subInstitution, ApprovalStatus newStatus)
-      throws JsonProcessingException {
-    var unverifiedCreator =
-        UnverifiedNviCreatorDto.builder()
-                               .withAffiliations(List.of(subInstitution))
-                               .withName(randomString())
-                               .build();
     var upsertRequest =
         createUpsertCandidateRequest(topLevelInstitution)
             .withUnverifiedCreators(List.of(unverifiedCreator))
