@@ -48,6 +48,8 @@ import org.apache.hc.core5.http.HttpStatus;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.zalando.problem.Problem;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
@@ -95,11 +97,16 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
     assertEquals(HttpStatus.SC_NOT_FOUND, gatewayResponse.getStatusCode());
   }
 
-  @Test
-  void shouldReturnUnauthorizedWhenCandidateIsNotInUsersViewingScope() throws IOException {
+  @ParameterizedTest
+  @EnumSource(
+      value = AccessRight.class,
+      names = {"MANAGE_NVI_CANDIDATES", "MANAGE_NVI"},
+      mode = EnumSource.Mode.INCLUDE)
+  void shouldReturnUnauthorizedWhenCandidateIsNotInUsersViewingScope(AccessRight accessRight)
+      throws IOException {
     var institutionId = randomUri();
     var candidate = upsert(createUpsertCandidateRequest(institutionId).build());
-    var request = createRequest(candidate.getIdentifier(), institutionId, MANAGE_NVI_CANDIDATES);
+    var request = createRequest(candidate.getIdentifier(), institutionId, accessRight);
     var viewingScopeValidatorReturningFalse = new FakeViewingScopeValidator(false);
     handler =
         new FetchNviCandidateHandler(
@@ -162,6 +169,19 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
         candidate.toDto(DEFAULT_TOP_LEVEL_INSTITUTION_ID, mockOrganizationRetriever);
 
     assertEquals(expectedCandidateDto, actualCandidateDto);
+  }
+
+  @Test
+  void shouldNotAllowFinalizingNewCandidateWhenUserIsNviAdmin() throws IOException {
+    var candidate = setupCandidateWithVerifiedCreator(candidateRepository, periodRepository);
+    var customerId = randomUri();
+    var request = createRequest(candidate.getIdentifier(), customerId, customerId, MANAGE_NVI);
+
+    var candidateDto = handleRequest(request);
+
+    var actualAllowedOperations = candidateDto.allowedOperations();
+    var expectedAllowedOperations = emptyList();
+    assertThat(actualAllowedOperations, containsInAnyOrder(expectedAllowedOperations.toArray()));
   }
 
   @Test

@@ -911,6 +911,18 @@ components:
               type: string
             startDate:
               type: string
+        allowedOperations:
+          type: array
+          description: >
+            List of operations that the user is allowed to perform on the candidate.
+            The operations are based on the approval status of the candidate and the user's role.
+            This is a work in progress and does not include all possible operations yet.
+          items:
+            type: string
+            enum:
+              - "approval/reject-candidate"
+              - "approval/approve-candidate"
+              - "approval/reset-approval"
 
     NviInstitutionReportResponse:
       type: object

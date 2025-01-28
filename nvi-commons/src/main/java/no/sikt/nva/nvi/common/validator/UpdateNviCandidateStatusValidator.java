@@ -2,7 +2,7 @@ package no.sikt.nva.nvi.common.validator;
 
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Collection;
+import java.util.Set;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.client.model.Organization;
@@ -40,7 +40,7 @@ public final class UpdateNviCandidateStatusValidator {
     };
   }
 
-  public static Collection<CandidateOperation> getAllowedOperations(
+  public static Set<CandidateOperation> getAllowedOperations(
       Candidate candidate, URI customerId, OrganizationRetriever organizationRetriever) {
     var hasUnverifiedCreator = hasUnverifiedCreator(candidate, customerId, organizationRetriever);
     var currentStatus = candidate.getApprovals().get(customerId).getStatus();
@@ -61,7 +61,7 @@ public final class UpdateNviCandidateStatusValidator {
     if (canReset) {
       allowedOperations.add(CandidateOperation.APPROVAL_PENDING);
     }
-    return allowedOperations;
+    return Set.copyOf(allowedOperations);
   }
 
   private static boolean hasUnverifiedCreator(

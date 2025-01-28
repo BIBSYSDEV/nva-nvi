@@ -341,27 +341,29 @@ public final class Candidate {
         .build();
   }
 
-  public CandidateDto toDto(URI customerInstitutionId,
-                                   OrganizationRetriever organizationRetriever) {
-    var allowedOperations = getAllowedOperations(this, customerInstitutionId, organizationRetriever);
+  public CandidateDto toDto(
+      URI customerInstitutionId, OrganizationRetriever organizationRetriever) {
+    var allowedOperations =
+        getAllowedOperations(this, customerInstitutionId, organizationRetriever);
     return CandidateDto.builder()
-                       .withId(getId())
-                       .withContext(CONTEXT_URI)
-                       .withIdentifier(getIdentifier())
-                       .withPublicationId(getPublicationId())
-                       .withApprovals(mapToApprovalDtos())
-                       .withAllowedOperations(allowedOperations)
-                       .withNotes(mapToNoteDtos())
-                       .withPeriod(mapToPeriodStatusDto())
-                       .withTotalPoints(getTotalPoints())
-                       .withReportStatus(
-                           Optional.ofNullable(getReportStatus()).map(ReportStatus::getValue).orElse(null))
-                       .build();
+        .withId(getId())
+        .withContext(CONTEXT_URI)
+        .withIdentifier(getIdentifier())
+        .withPublicationId(getPublicationId())
+        .withApprovals(mapToApprovalDtos())
+        .withAllowedOperations(allowedOperations)
+        .withNotes(mapToNoteDtos())
+        .withPeriod(mapToPeriodStatusDto())
+        .withTotalPoints(getTotalPoints())
+        .withReportStatus(
+            Optional.ofNullable(getReportStatus()).map(ReportStatus::getValue).orElse(null))
+        .build();
   }
 
-  public static CandidateDto toDto(Candidate candidate, URI customerInstitutionId,
-                            OrganizationRetriever organizationRetriever) {
-    var allowedOperations = getAllowedOperations(candidate, customerInstitutionId, organizationRetriever);
+  public static CandidateDto toDto(
+      Candidate candidate, URI customerInstitutionId, OrganizationRetriever organizationRetriever) {
+    var allowedOperations =
+        getAllowedOperations(candidate, customerInstitutionId, organizationRetriever);
     return CandidateDto.builder()
         .withId(candidate.getId())
         .withContext(CONTEXT_URI)
@@ -373,7 +375,9 @@ public final class Candidate {
         .withPeriod(candidate.mapToPeriodStatusDto())
         .withTotalPoints(candidate.getTotalPoints())
         .withReportStatus(
-            Optional.ofNullable(candidate.getReportStatus()).map(ReportStatus::getValue).orElse(null))
+            Optional.ofNullable(candidate.getReportStatus())
+                .map(ReportStatus::getValue)
+                .orElse(null))
         .build();
   }
 
