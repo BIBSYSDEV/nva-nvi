@@ -2,7 +2,7 @@ package no.sikt.nva.nvi.common.utils;
 
 import static java.util.Collections.emptyList;
 import static java.util.Objects.nonNull;
-import static no.unit.nva.commons.json.JsonUtils.dynamoObjectMapper;
+import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent.DynamodbStreamRecord;
@@ -35,7 +35,7 @@ public final class DynamoDbUtils {
 
   public static DynamodbStreamRecord toDynamodbStreamRecord(String body)
       throws JsonProcessingException {
-    return dynamoObjectMapper.readValue(body, DynamodbStreamRecord.class);
+    return dtoObjectMapper.readValue(body, DynamodbStreamRecord.class);
   }
 
   private static String extractIdentifier(DynamodbStreamRecord record) {
@@ -76,7 +76,7 @@ public final class DynamoDbUtils {
       return AttributeValue.builder().l(emptyList()).build();
     }
     var json = writeAsString(value);
-    return dynamoObjectMapper.readValue(json, AttributeValue.serializableBuilderClass()).build();
+    return dtoObjectMapper.readValue(json, AttributeValue.serializableBuilderClass()).build();
   }
 
   private static AttributeValue mapEachAttributeValueToDynamoDbValue(
@@ -103,6 +103,6 @@ public final class DynamoDbUtils {
   private static String writeAsString(
       com.amazonaws.services.lambda.runtime.events.models.dynamodb.AttributeValue attributeValue)
       throws JsonProcessingException {
-    return dynamoObjectMapper.writeValueAsString(attributeValue);
+    return dtoObjectMapper.writeValueAsString(attributeValue);
   }
 }

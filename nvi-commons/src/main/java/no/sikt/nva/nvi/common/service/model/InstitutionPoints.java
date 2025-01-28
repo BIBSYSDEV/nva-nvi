@@ -1,11 +1,13 @@
 package no.sikt.nva.nvi.common.service.model;
 
+import static java.util.Collections.emptyList;
 import static java.util.Objects.nonNull;
 
 import java.math.BigDecimal;
 import java.net.URI;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints.DbCreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.utils.DecimalUtils;
@@ -17,12 +19,14 @@ public record InstitutionPoints(
     List<CreatorAffiliationPoints> creatorAffiliationPoints) {
 
   public static InstitutionPoints from(DbInstitutionPoints dbInstitutionPoints) {
+    var creatorAffiliationPoints =
+        Optional.ofNullable(dbInstitutionPoints.creatorAffiliationPoints())
+            .map(list -> list.stream().map(CreatorAffiliationPoints::from).toList())
+            .orElse(emptyList());
     return new InstitutionPoints(
         dbInstitutionPoints.institutionId(),
         dbInstitutionPoints.points(),
-        dbInstitutionPoints.creatorAffiliationPoints().stream()
-            .map(CreatorAffiliationPoints::from)
-            .toList());
+        creatorAffiliationPoints);
   }
 
   @Override

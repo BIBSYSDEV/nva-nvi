@@ -3,7 +3,7 @@ package no.sikt.nva.nvi.events.db;
 import static no.sikt.nva.nvi.common.utils.DynamoDbUtils.extractIdFromRecord;
 import static no.sikt.nva.nvi.common.utils.DynamoDbUtils.getImage;
 import static no.sikt.nva.nvi.common.utils.ExceptionUtils.getStackTrace;
-import static no.unit.nva.commons.json.JsonUtils.dynamoObjectMapper;
+import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 
 import com.amazonaws.services.lambda.runtime.Context;
@@ -60,16 +60,6 @@ public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
     this.dlqUrl = environment.readEnv(INDEX_DLQ);
   }
 
-  @Override
-  public Void handleRequest(SQSEvent input, Context context) {
-    input.getRecords().stream()
-        .map(SQSMessage::getBody)
-        .map(this::mapToDynamoDbRecord)
-        .filter(Objects::nonNull)
-        .forEach(this::publishToTopic);
-    return null;
-  }
-
   private static boolean isNotCandidateOrApproval(Dao dao) {
     return !(dao instanceof CandidateDao || dao instanceof ApprovalStatusDao);
   }
@@ -81,6 +71,16 @@ public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
   private static void logFailure(String message, String body, Exception exception) {
     LOGGER.error(message, body);
     LOGGER.error(ERROR_MESSAGE, getStackTrace(exception));
+  }
+
+  @Override
+  public Void handleRequest(SQSEvent input, Context context) {
+    input.getRecords().stream()
+        .map(SQSMessage::getBody)
+        .map(this::mapToDynamoDbRecord)
+        .filter(Objects::nonNull)
+        .forEach(this::publishToTopic);
+    return null;
   }
 
   private void publishToTopic(DynamodbStreamRecord streamRecord) {
@@ -124,11 +124,11 @@ public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
   }
 
   private String writeAsString(DynamodbStreamRecord streamRecord) {
-    return attempt(() -> dynamoObjectMapper.writeValueAsString(streamRecord)).orElseThrow();
+    return attempt(() -> dtoObjectMapper.writeValueAsString(streamRecord)).orElseThrow();
   }
 
   private DynamodbStreamRecord mapToDynamoDbRecord(String body) {
-    return attempt(() -> dynamoObjectMapper.readValue(body, DynamodbStreamRecord.class))
+    return attempt(() -> dtoObjectMapper.readValue(body, DynamodbStreamRecord.class))
         .orElse(
             failure -> {
               handleFailure(failure, body);
