@@ -9,10 +9,8 @@ import static no.sikt.nva.nvi.rest.TestUtils.setupCandidateWithUnverifiedCreator
 import static no.sikt.nva.nvi.rest.TestUtils.setupCandidateWithUnverifiedCreatorFromAnotherInstitution;
 import static no.sikt.nva.nvi.rest.TestUtils.setupCandidateWithVerifiedCreator;
 import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateHandler.CANDIDATE_IDENTIFIER;
-import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertNonCandidateRequest;
-import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeriod;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -23,12 +21,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.mock;
 
-import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.net.HttpHeaders;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
@@ -36,15 +31,13 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatusDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateOperation;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
+import no.sikt.nva.nvi.rest.BaseCandidateRestHandlerTest;
 import no.sikt.nva.nvi.test.FakeViewingScopeValidator;
-import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
@@ -56,22 +49,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.zalando.problem.Problem;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
-class FetchNviCandidateHandlerTest extends LocalDynamoTest {
-
-  private static final Context CONTEXT = mock(Context.class);
-  private final DynamoDbClient localDynamo = initializeTestDatabase();
-  private ByteArrayOutputStream output;
+class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
   private FetchNviCandidateHandler handler;
-  private CandidateRepository candidateRepository;
-  private PeriodRepository periodRepository;
 
   @BeforeEach
-  public void setUp() {
-    output = new ByteArrayOutputStream();
-    candidateRepository = new CandidateRepository(localDynamo);
-    periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
+  void setUp() {
     handler =
         new FetchNviCandidateHandler(
             candidateRepository,
