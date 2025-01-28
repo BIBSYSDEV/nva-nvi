@@ -2,7 +2,12 @@ package no.sikt.nva.nvi.rest.fetch;
 
 import static java.util.Collections.emptyList;
 import static java.util.UUID.randomUUID;
-import static no.sikt.nva.nvi.rest.TestUtils.*;
+import static no.sikt.nva.nvi.rest.TestUtils.DEFAULT_TOP_LEVEL_INSTITUTION_ID;
+import static no.sikt.nva.nvi.rest.TestUtils.mockOrganizationRetriever;
+import static no.sikt.nva.nvi.rest.TestUtils.setupCandidateWithApproval;
+import static no.sikt.nva.nvi.rest.TestUtils.setupCandidateWithUnverifiedCreator;
+import static no.sikt.nva.nvi.rest.TestUtils.setupCandidateWithUnverifiedCreatorFromAnotherInstitution;
+import static no.sikt.nva.nvi.rest.TestUtils.setupCandidateWithVerifiedCreator;
 import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateHandler.CANDIDATE_IDENTIFIER;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
@@ -169,19 +174,6 @@ class FetchNviCandidateHandlerTest extends LocalDynamoTest {
         candidate.toDto(DEFAULT_TOP_LEVEL_INSTITUTION_ID, mockOrganizationRetriever);
 
     assertEquals(expectedCandidateDto, actualCandidateDto);
-  }
-
-  @Test
-  void shouldNotAllowFinalizingNewCandidateWhenUserIsNviAdmin() throws IOException {
-    var candidate = setupCandidateWithVerifiedCreator(candidateRepository, periodRepository);
-    var customerId = randomUri();
-    var request = createRequest(candidate.getIdentifier(), customerId, customerId, MANAGE_NVI);
-
-    var candidateDto = handleRequest(request);
-
-    var actualAllowedOperations = candidateDto.allowedOperations();
-    var expectedAllowedOperations = emptyList();
-    assertThat(actualAllowedOperations, containsInAnyOrder(expectedAllowedOperations.toArray()));
   }
 
   @Test

@@ -18,7 +18,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.StringContains.containsString;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -337,6 +339,14 @@ class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
     return institutionPoints.stream().map(DbInstitutionPoints::from).toList();
   }
 
+  private static List<DbCreatorType> getExpectedCreators(NviCandidate evaluatedNviCandidate) {
+    Stream<DbCreatorType> verifiedCreators =
+        evaluatedNviCandidate.verifiedCreators().stream().map(VerifiedNviCreatorDto::toDao);
+    Stream<DbCreatorType> unverifiedCreators =
+        evaluatedNviCandidate.unverifiedCreators().stream().map(UnverifiedNviCreatorDto::toDao);
+    return Stream.concat(verifiedCreators, unverifiedCreators).toList();
+  }
+
   private List<DbApprovalStatus> fetchApprovals(CandidateDao actualPersistedCandidateDao) {
     return candidateRepository.fetchApprovals(actualPersistedCandidateDao.identifier()).stream()
         .map(ApprovalStatusDao::approvalStatus)
@@ -386,14 +396,6 @@ class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         .points(mapToInstitutionPoints(evaluatedNviCandidate.institutionPoints()))
         .totalPoints(evaluatedNviCandidate.totalPoints())
         .build();
-  }
-
-  private static List<DbCreatorType> getExpectedCreators(NviCandidate evaluatedNviCandidate) {
-    Stream<DbCreatorType> verifiedCreators =
-        evaluatedNviCandidate.verifiedCreators().stream().map(VerifiedNviCreatorDto::toDao);
-    Stream<DbCreatorType> unverifiedCreators =
-        evaluatedNviCandidate.unverifiedCreators().stream().map(UnverifiedNviCreatorDto::toDao);
-    return Stream.concat(verifiedCreators, unverifiedCreators).toList();
   }
 
   private CandidateEvaluatedMessage nonCandidateMessageForExistingCandidate(Candidate candidate) {
