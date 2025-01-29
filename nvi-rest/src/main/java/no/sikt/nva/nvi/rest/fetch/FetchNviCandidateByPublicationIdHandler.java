@@ -2,6 +2,8 @@ package no.sikt.nva.nvi.rest.fetch;
 
 import static java.net.HttpURLConnection.HTTP_OK;
 import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
+import static no.sikt.nva.nvi.common.utils.RequestUtil.isNviAdmin;
+import static no.sikt.nva.nvi.common.utils.RequestUtil.isNviCurator;
 import static nva.commons.core.attempt.Try.attempt;
 
 import com.amazonaws.services.lambda.runtime.Context;
@@ -20,6 +22,7 @@ import no.sikt.nva.nvi.rest.ViewingScopeHandler;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
+import nva.commons.apigateway.exceptions.UnauthorizedException;
 import nva.commons.core.JacocoGenerated;
 
 public class FetchNviCandidateByPublicationIdHandler extends ApiGatewayHandler<Void, CandidateDto>
@@ -50,7 +53,9 @@ public class FetchNviCandidateByPublicationIdHandler extends ApiGatewayHandler<V
 
   @Override
   protected void validateRequest(Void unused, RequestInfo requestInfo, Context context)
-      throws ApiGatewayException {}
+      throws ApiGatewayException {
+    validateAccessRight(requestInfo);
+  }
 
   @Override
   protected CandidateDto processInput(Void input, RequestInfo requestInfo, Context context)
@@ -85,5 +90,12 @@ public class FetchNviCandidateByPublicationIdHandler extends ApiGatewayHandler<V
       return candidate;
     }
     throw new CandidateNotFoundException();
+  }
+
+  private static void validateAccessRight(RequestInfo requestInfo) throws UnauthorizedException {
+    if (isNviCurator(requestInfo) || isNviAdmin(requestInfo)) {
+      return;
+    }
+    throw new UnauthorizedException();
   }
 }
