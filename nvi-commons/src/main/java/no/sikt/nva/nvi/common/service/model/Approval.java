@@ -80,7 +80,7 @@ public class Approval {
       var newDao = repository.updateApprovalStatusDao(identifier, updateAssignee(request));
       return new Approval(repository, identifier, newDao);
     } else if (input instanceof UpdateStatusRequest request) {
-      validate(request);
+      validateUpdateStatusRequest(request);
       var newDao = repository.updateApprovalStatusDao(identifier, updateStatus(request));
       return new Approval(repository, identifier, newDao);
     } else {
@@ -196,7 +196,7 @@ public class Approval {
         : username;
   }
 
-  private void validate(UpdateStatusRequest input) {
+  public static void validateUpdateStatusRequest(UpdateStatusRequest input) {
     if (isNull(input.username())) {
       throw new IllegalArgumentException(ERROR_MSG_USERNAME_NULL);
     }

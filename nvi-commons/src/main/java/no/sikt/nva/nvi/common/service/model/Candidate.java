@@ -4,6 +4,7 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.db.ReportStatus.REPORTED;
+import static no.sikt.nva.nvi.common.service.model.Approval.validateUpdateStatusRequest;
 import static no.sikt.nva.nvi.common.service.model.ApprovalStatus.APPROVED;
 import static no.sikt.nva.nvi.common.service.model.ApprovalStatus.PENDING;
 import static no.sikt.nva.nvi.common.service.model.ApprovalStatus.REJECTED;
@@ -380,6 +381,7 @@ public final class Candidate {
 
   public Candidate updateApprovalStatus(
       UpdateStatusRequest input, OrganizationRetriever organizationRetriever) {
+    validateUpdateStatusRequest(input);
     validateCandidateState();
     var currentState = getApprovalStatus(input.institutionId());
     var newState = input.approvalStatus();
