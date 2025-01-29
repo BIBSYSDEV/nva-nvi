@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.index.apigateway;
 
+import static no.sikt.nva.nvi.common.utils.RequestUtil.isNviAdmin;
 import static no.sikt.nva.nvi.index.aws.OpenSearchClient.defaultOpenSearchClient;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_AFFILIATIONS;
 import static no.sikt.nva.nvi.index.utils.PaginatedResultConverter.toPaginatedResult;
@@ -98,10 +99,6 @@ public class SearchNviCandidatesHandler
         IdentityServiceClient.prepare(), new OrganizationRetriever(new UriRetriever()));
   }
 
-  private static boolean userIsNviAdmin(RequestInfo requestInfo) {
-    return requestInfo.userIsAuthorized(AccessRight.MANAGE_NVI);
-  }
-
   private static Optional<List<String>> extractQueryParamAffiliations(RequestInfo requestInfo) {
     return requestInfo
         .getQueryParameterOpt(QUERY_PARAM_AFFILIATIONS)
@@ -113,7 +110,7 @@ public class SearchNviCandidatesHandler
   }
 
   private static boolean userIsNotNviAdmin(RequestInfo requestInfo) {
-    return !userIsNviAdmin(requestInfo);
+    return !isNviAdmin(requestInfo);
   }
 
   private List<String> getQueryParamAffiliationsOrViewingScope(RequestInfo requestInfo)
@@ -123,7 +120,7 @@ public class SearchNviCandidatesHandler
 
   private List<String> getDefaultAffiliations(RequestInfo requestInfo)
       throws UnauthorizedException {
-    return userIsNviAdmin(requestInfo) ? List.of() : getAffiliationsFromViewingScope(requestInfo);
+    return isNviAdmin(requestInfo) ? List.of() : getAffiliationsFromViewingScope(requestInfo);
   }
 
   private List<String> getAffiliationsFromViewingScope(RequestInfo requestInfo)

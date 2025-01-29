@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.index.apigateway;
 
 import static java.lang.Integer.parseInt;
+import static no.sikt.nva.nvi.common.utils.RequestUtil.isNviCurator;
 import static nva.commons.core.attempt.Try.attempt;
 
 import com.amazonaws.services.lambda.runtime.Context;
@@ -52,7 +53,7 @@ public class FetchInstitutionReportHandler extends ApiGatewayHandler<Void, Strin
   @Override
   protected void validateRequest(Void unused, RequestInfo requestInfo, Context context)
       throws ApiGatewayException {
-    if (!requestInfo.userIsAuthorized(AccessRight.MANAGE_NVI_CANDIDATES)) {
+    if (!isNviCurator(requestInfo)) {
       throw new UnauthorizedException();
     }
     if (isInvalidPathParameterYear(requestInfo)) {

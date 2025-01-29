@@ -25,6 +25,14 @@ public final class RequestUtil {
     }
   }
 
+  public static boolean isNviAdmin(RequestInfo requestInfo) {
+    return requestInfo.userIsAuthorized(AccessRight.MANAGE_NVI);
+  }
+
+  public static boolean isNviCurator(RequestInfo requestInfo) {
+    return requestInfo.userIsAuthorized(AccessRight.MANAGE_NVI_CANDIDATES);
+  }
+
   public static List<NviCreatorDto> getAllCreators(UpsertCandidateRequest request) {
     Stream<NviCreatorDto> verifiedCreators =
         request.creators().entrySet().stream()

@@ -10,6 +10,7 @@ import static no.sikt.nva.nvi.test.TestUtils.setupReportedCandidate;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
+import static nva.commons.apigateway.AccessRight.MANAGE_NVI_CANDIDATES;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -116,7 +117,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends LocalDynamoTest {
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
     var actualResponse = response.getBodyObject(CandidateDto.class);
-    var actualStatus = actualResponse.approvals().get(0).status();
+    var actualStatus = actualResponse.approvals().getFirst().status();
 
     assertEquals(ApprovalStatusDto.NEW, actualStatus);
   }
@@ -140,6 +141,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends LocalDynamoTest {
     return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
         .withHeaders(Map.of(HttpHeaders.ACCEPT, ContentType.APPLICATION_JSON.getMimeType()))
         .withCurrentCustomer(CUSTOMER_ID)
+        .withAccessRights(CUSTOMER_ID, MANAGE_NVI_CANDIDATES)
         .withUserName(randomString())
         .withPathParameters(Map.of(CANDIDATE_PUBLICATION_ID, publicationId.toString()))
         .build();
