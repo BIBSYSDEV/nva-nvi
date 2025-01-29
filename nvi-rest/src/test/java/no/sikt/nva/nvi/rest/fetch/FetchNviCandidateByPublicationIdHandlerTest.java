@@ -19,20 +19,21 @@ import no.sikt.nva.nvi.test.FakeViewingScopeValidator;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.GatewayResponse;
 import org.apache.hc.core5.http.HttpStatus;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.zalando.problem.Problem;
 
 class FetchNviCandidateByPublicationIdHandlerTest extends BaseCandidateRestHandlerTest {
 
-  @BeforeAll
-  public static void init() {
-    resourcePathParameter = CANDIDATE_PUBLICATION_ID;
-  }
-
+  @Override
   protected ApiGatewayHandler<Void, CandidateDto> createHandler() {
     return new FetchNviCandidateByPublicationIdHandler(
         candidateRepository, periodRepository, mockViewingScopeValidator);
+  }
+
+  @BeforeEach
+  void setUp() {
+    resourcePathParameter = CANDIDATE_PUBLICATION_ID;
   }
 
   @Test

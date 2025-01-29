@@ -49,46 +49,58 @@ import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.GatewayResponse;
+import nva.commons.core.JacocoGenerated;
 import org.apache.hc.core5.http.ContentType;
 import org.junit.jupiter.api.BeforeEach;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 /** Base test class for handlers that return a CandidateDto. */
+@SuppressWarnings("PMD.CouplingBetweenObjects")
 public abstract class BaseCandidateRestHandlerTest extends LocalDynamoTest {
   protected static final UriRetriever mockUriRetriever = mock(UriRetriever.class);
   protected static final OrganizationRetriever mockOrganizationRetriever =
       new OrganizationRetriever(mockUriRetriever);
   protected static final ViewingScopeValidator mockViewingScopeValidator =
       new FakeViewingScopeValidator(true);
-  protected static final URI DEFAULT_VERIFIED_CREATOR_ID =
-      URI.create("https://www.example.com/verifiedCreator");
-  protected static final String DEFAULT_UNVERIFIED_CREATOR_NAME = "Unverified Creator";
   protected static final Context CONTEXT = mock(Context.class);
-  protected static String resourcePathParameter;
-  protected static URI currentCustomerId;
-  protected static URI topLevelCristinOrgId;
-  protected static URI subUnitCristinOrgId;
   protected final DynamoDbClient localDynamo = initializeTestDatabase();
+  protected String resourcePathParameter;
+  protected URI currentCustomerId;
+  protected URI topLevelCristinOrgId;
+  protected URI subUnitCristinOrgId;
   protected ByteArrayOutputStream output;
   protected CandidateRepository candidateRepository;
   protected PeriodRepository periodRepository;
   protected ApiGatewayHandler<?, CandidateDto> handler;
 
-  protected static InputStream createRequestWithAdminAccess(String resourceIdentifier)
+  protected InputStream createRequestWithAdminAccess(String resourceIdentifier)
       throws JsonProcessingException {
     return createRequest(resourceIdentifier, topLevelCristinOrgId, currentCustomerId, MANAGE_NVI);
   }
 
+  protected InputStream createRequest(
+      String resourceIdentifier, URI cristinInstitutionId, URI customerId, AccessRight accessRight)
+      throws JsonProcessingException {
+    return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
+        .withHeaders(Map.of(HttpHeaders.ACCEPT, ContentType.APPLICATION_JSON.getMimeType()))
+        .withCurrentCustomer(customerId)
+        .withTopLevelCristinOrgId(cristinInstitutionId)
+        .withAccessRights(customerId, accessRight)
+        .withUserName(randomString())
+        .withPathParameters(Map.of(resourcePathParameter, resourceIdentifier))
+        .build();
+  }
+
   @BeforeEach
   protected void commonSetup() {
+    subUnitCristinOrgId = randomUri();
+    topLevelCristinOrgId = randomUri();
+    currentCustomerId = topLevelCristinOrgId;
+
     output = new ByteArrayOutputStream();
     candidateRepository = new CandidateRepository(localDynamo);
     periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
     handler = createHandler();
-
-    subUnitCristinOrgId = randomUri();
-    topLevelCristinOrgId = randomUri();
-    currentCustomerId = topLevelCristinOrgId;
   }
 
   protected abstract ApiGatewayHandler<?, CandidateDto> createHandler();
@@ -110,19 +122,6 @@ public abstract class BaseCandidateRestHandlerTest extends LocalDynamoTest {
         resourceIdentifier, topLevelCristinOrgId, currentCustomerId, MANAGE_NVI_CANDIDATES);
   }
 
-  protected static InputStream createRequest(
-      String resourceIdentifier, URI cristinInstitutionId, URI customerId, AccessRight accessRight)
-      throws JsonProcessingException {
-    return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
-        .withHeaders(Map.of(HttpHeaders.ACCEPT, ContentType.APPLICATION_JSON.getMimeType()))
-        .withCurrentCustomer(customerId)
-        .withTopLevelCristinOrgId(cristinInstitutionId)
-        .withAccessRights(customerId, accessRight)
-        .withUserName(randomString())
-        .withPathParameters(Map.of(resourcePathParameter, resourceIdentifier))
-        .build();
-  }
-
   protected Candidate setupValidCandidate(URI institutionId) {
     var verifiedCreator = setupDefaultVerifiedCreator();
     var request =
@@ -132,8 +131,7 @@ public abstract class BaseCandidateRestHandlerTest extends LocalDynamoTest {
   }
 
   protected VerifiedNviCreatorDto setupDefaultVerifiedCreator() {
-    return setupVerifiedCreator(
-        DEFAULT_VERIFIED_CREATOR_ID, List.of(subUnitCristinOrgId), topLevelCristinOrgId);
+    return setupVerifiedCreator(randomUri(), List.of(subUnitCristinOrgId), topLevelCristinOrgId);
   }
 
   protected static UpsertRequestBuilder createUpsertCandidateRequestWithPoints(
@@ -222,19 +220,19 @@ public abstract class BaseCandidateRestHandlerTest extends LocalDynamoTest {
         .orElseThrow();
   }
 
-  protected Candidate setupCandidateWithUnverifiedCreator() {
+  protected Candidate setupCandidateWithUnverifiedCreator(URI institutionId) {
     var verifiedCreator = setupDefaultVerifiedCreator();
     var unverifiedCreator = setupDefaultUnverifiedCreator();
     var request =
         createUpsertCandidateRequestWithPoints(
-                Map.of(subUnitCristinOrgId, List.of(verifiedCreator, unverifiedCreator)))
+                Map.of(institutionId, List.of(verifiedCreator, unverifiedCreator)))
             .build();
     return upsert(request);
   }
 
   protected UnverifiedNviCreatorDto setupDefaultUnverifiedCreator() {
     return setupUnverifiedCreator(
-        DEFAULT_UNVERIFIED_CREATOR_NAME, List.of(subUnitCristinOrgId), topLevelCristinOrgId);
+        randomString(), List.of(subUnitCristinOrgId), topLevelCristinOrgId);
   }
 
   protected static UnverifiedNviCreatorDto setupUnverifiedCreator(
@@ -246,6 +244,8 @@ public abstract class BaseCandidateRestHandlerTest extends LocalDynamoTest {
     return new UnverifiedNviCreatorDto(name, List.copyOf(affiliations));
   }
 
+  // Not used (yet)
+  @JacocoGenerated
   protected Candidate setupCandidateWithApproval() {
     // Create a candidate in a "valid" state
     var verifiedCreator = setupDefaultVerifiedCreator();
@@ -260,7 +260,7 @@ public abstract class BaseCandidateRestHandlerTest extends LocalDynamoTest {
     return candidate.updateApprovalStatus(updateStatusRequest, mockOrganizationRetriever);
   }
 
-  protected static UpdateStatusRequest createStatusRequest(ApprovalStatus status) {
+  protected UpdateStatusRequest createStatusRequest(ApprovalStatus status) {
     return UpdateStatusRequest.builder()
         .withInstitutionId(currentCustomerId)
         .withApprovalStatus(status)
@@ -269,6 +269,8 @@ public abstract class BaseCandidateRestHandlerTest extends LocalDynamoTest {
         .build();
   }
 
+  // Not used (yet)
+  @JacocoGenerated
   protected Candidate setupCandidateWithUnverifiedCreatorFromAnotherInstitution() {
     var verifiedCreator = setupDefaultVerifiedCreator();
     var otherInstitutionId = randomUri();

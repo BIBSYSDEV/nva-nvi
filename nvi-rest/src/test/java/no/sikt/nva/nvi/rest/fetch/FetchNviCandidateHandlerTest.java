@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.rest.fetch;
 
-import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateHandler.CANDIDATE_IDENTIFIER;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -17,20 +16,21 @@ import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.GatewayResponse;
 import org.apache.hc.core5.http.HttpStatus;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.zalando.problem.Problem;
 
 class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
 
-  @BeforeAll
-  public static void init() {
-    resourcePathParameter = CANDIDATE_IDENTIFIER;
-  }
-
+  @Override
   protected ApiGatewayHandler<Void, CandidateDto> createHandler() {
     return new FetchNviCandidateHandler(
         candidateRepository, periodRepository, mockViewingScopeValidator);
+  }
+
+  @BeforeEach
+  void setUp() {
+    resourcePathParameter = "candidateIdentifier";
   }
 
   @Test
@@ -96,7 +96,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
     var actualResponse = response.getBodyObject(CandidateDto.class);
-    var actualStatus = actualResponse.approvals().get(0).status();
+    var actualStatus = actualResponse.approvals().getFirst().status();
 
     assertEquals(ApprovalStatusDto.NEW, actualStatus);
   }
