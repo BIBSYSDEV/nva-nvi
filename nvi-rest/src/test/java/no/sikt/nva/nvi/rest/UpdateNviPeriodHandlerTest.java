@@ -88,11 +88,9 @@ class UpdateNviPeriodHandlerTest extends LocalDynamoTest {
   }
 
   private InputStream toInputStream(UpsertNviPeriodRequest request) throws JsonProcessingException {
-    var customerId = randomUri();
     return new HandlerRequestBuilder<UpsertNviPeriodRequest>(JsonUtils.dtoObjectMapper)
         .withBody(request)
-        .withCurrentCustomer(customerId)
-        .withAccessRights(customerId, AccessRight.MANAGE_NVI)
+        .withAccessRights(randomUri(), AccessRight.MANAGE_NVI)
         .withUserName(randomString())
         .build();
   }

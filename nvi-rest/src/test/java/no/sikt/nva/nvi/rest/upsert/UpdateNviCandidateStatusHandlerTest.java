@@ -133,14 +133,13 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
   }
 
   private static InputStream createRequest(
-      UUID candidateIdentifier, URI institutionId, NviStatusRequest requestBody)
+      UUID candidateIdentifier, URI organizationId, NviStatusRequest requestBody)
       throws JsonProcessingException {
     return new HandlerRequestBuilder<NviStatusRequest>(JsonUtils.dtoObjectMapper)
         .withPathParameters(Map.of(CANDIDATE_IDENTIFIER_PATH, candidateIdentifier.toString()))
         .withBody(requestBody)
-        .withCurrentCustomer(institutionId)
-        .withTopLevelCristinOrgId(institutionId)
-        .withAccessRights(institutionId, AccessRight.MANAGE_NVI_CANDIDATES)
+        .withTopLevelCristinOrgId(organizationId)
+        .withAccessRights(organizationId, AccessRight.MANAGE_NVI_CANDIDATES)
         .withUserName(randomString())
         .build();
   }
@@ -188,8 +187,8 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
       names = {STATUS_APPROVED, STATUS_REJECTED})
   void shouldReturnConflictWhenUpdatingStatusAndInstitutionHasUnverifiedCreators(
       ApprovalStatus newStatus) throws IOException {
-    var candidate = setupCandidateWithUnverifiedCreator(topLevelCristinOrgId);
-    var request = createRequest(candidate.getIdentifier(), topLevelCristinOrgId, newStatus);
+    var candidate = setupCandidateWithUnverifiedCreator(topLevelOrganizationId);
+    var request = createRequest(candidate.getIdentifier(), topLevelOrganizationId, newStatus);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
@@ -202,8 +201,8 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
       names = {STATUS_APPROVED, STATUS_REJECTED})
   void shouldReturnConflictWhenUpdatingStatusAndSubInstitutionHasUnverifiedCreators(
       ApprovalStatus newStatus) throws IOException {
-    var candidate = setupCandidateWithUnverifiedCreator(subUnitCristinOrgId);
-    var request = createRequest(candidate.getIdentifier(), topLevelCristinOrgId, newStatus);
+    var candidate = setupCandidateWithUnverifiedCreator(subOrganizationId);
+    var request = createRequest(candidate.getIdentifier(), topLevelOrganizationId, newStatus);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
@@ -220,9 +219,9 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
             periodRepository,
             mockViewingScopeValidator,
             mockOrganizationRetriever);
-    var candidate = setupValidCandidate(currentCustomerId);
+    var candidate = setupValidCandidate(topLevelOrganizationId);
     var request =
-        createRequest(candidate.getIdentifier(), currentCustomerId, ApprovalStatus.APPROVED);
+        createRequest(candidate.getIdentifier(), topLevelOrganizationId, ApprovalStatus.APPROVED);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
@@ -231,8 +230,8 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldReturnBadRequestIfRejectionDoesNotContainReason() throws IOException {
-    var candidate = setupValidCandidate(currentCustomerId);
-    var request = createRequestWithoutReason(candidate.getIdentifier(), currentCustomerId);
+    var candidate = setupValidCandidate(topLevelOrganizationId);
+    var request = createRequestWithoutReason(candidate.getIdentifier(), topLevelOrganizationId);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
@@ -251,9 +250,9 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
   @MethodSource("approvalStatusProvider")
   void shouldUpdateApprovalStatus(ApprovalStatus oldStatus, ApprovalStatus newStatus)
       throws IOException {
-    var candidate = setupValidCandidate(currentCustomerId);
+    var candidate = setupValidCandidate(topLevelOrganizationId);
     candidate.updateApprovalStatus(createStatusRequest(oldStatus), mockOrganizationRetriever);
-    var request = createRequest(candidate.getIdentifier(), currentCustomerId, newStatus);
+    var request = createRequest(candidate.getIdentifier(), topLevelOrganizationId, newStatus);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
     var candidateResponse = response.getBodyObject(CandidateDto.class);
@@ -277,10 +276,10 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
       names = {STATUS_REJECTED, STATUS_APPROVED})
   void shouldResetFinalizedValuesWhenUpdatingStatusToPending(ApprovalStatus oldStatus)
       throws IOException {
-    var candidate = setupValidCandidate(currentCustomerId);
+    var candidate = setupValidCandidate(topLevelOrganizationId);
     candidate.updateApprovalStatus(createStatusRequest(oldStatus), mockOrganizationRetriever);
     var newStatus = ApprovalStatus.PENDING;
-    var request = createRequest(candidate.getIdentifier(), currentCustomerId, newStatus);
+    var request = createRequest(candidate.getIdentifier(), topLevelOrganizationId, newStatus);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
     var candidateResponse = response.getBodyObject(CandidateDto.class);
@@ -295,14 +294,18 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
       value = ApprovalStatus.class,
       names = {STATUS_PENDING, STATUS_APPROVED})
   void shouldUpdateApprovalStatusToRejectedWithReason(ApprovalStatus oldStatus) throws IOException {
-    var candidate = setupValidCandidate(currentCustomerId);
+    var candidate = setupValidCandidate(topLevelOrganizationId);
     candidate.updateApprovalStatus(createStatusRequest(oldStatus), mockOrganizationRetriever);
     var rejectionReason = randomString();
     var requestBody =
         new NviStatusRequest(
-            candidate.getIdentifier(), currentCustomerId, ApprovalStatus.REJECTED, rejectionReason);
+            candidate.getIdentifier(),
+            topLevelOrganizationId,
+            ApprovalStatus.REJECTED,
+            rejectionReason);
     var request =
-        createRequest(candidate.getIdentifier(), currentCustomerId, requestBody, randomString());
+        createRequest(
+            candidate.getIdentifier(), topLevelOrganizationId, requestBody, randomString());
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
     var candidateResponse = response.getBodyObject(CandidateDto.class);
@@ -313,14 +316,13 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
   }
 
   private static InputStream createRequest(
-      UUID candidateIdentifier, URI institutionId, NviStatusRequest requestBody, String username)
+      UUID candidateIdentifier, URI organizationId, NviStatusRequest requestBody, String username)
       throws JsonProcessingException {
     return new HandlerRequestBuilder<NviStatusRequest>(JsonUtils.dtoObjectMapper)
         .withPathParameters(Map.of(CANDIDATE_IDENTIFIER_PATH, candidateIdentifier.toString()))
         .withBody(requestBody)
-        .withCurrentCustomer(institutionId)
-        .withTopLevelCristinOrgId(institutionId)
-        .withAccessRights(institutionId, AccessRight.MANAGE_NVI_CANDIDATES)
+        .withTopLevelCristinOrgId(organizationId)
+        .withAccessRights(organizationId, AccessRight.MANAGE_NVI_CANDIDATES)
         .withUserName(username)
         .build();
   }
@@ -331,13 +333,13 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
       names = {STATUS_PENDING, STATUS_APPROVED})
   void shouldRemoveReasonWhenUpdatingStatusFromRejected(ApprovalStatus newStatus)
       throws IOException {
-    var candidate = setupValidCandidate(currentCustomerId);
+    var candidate = setupValidCandidate(topLevelOrganizationId);
     candidate.updateApprovalStatus(
         createStatusRequest(ApprovalStatus.REJECTED), mockOrganizationRetriever);
     var request =
         createRequest(
             candidate.getIdentifier(),
-            currentCustomerId,
+            topLevelOrganizationId,
             ApprovalStatus.parse(newStatus.getValue()));
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
@@ -350,13 +352,13 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldUpdateAssigneeWhenFinalizingApprovalWithoutAssignee() throws IOException {
-    var candidate = setupValidCandidate(currentCustomerId);
+    var candidate = setupValidCandidate(topLevelOrganizationId);
     var assignee = randomString();
     var requestBody =
         new NviStatusRequest(
-            candidate.getIdentifier(), currentCustomerId, ApprovalStatus.APPROVED, null);
+            candidate.getIdentifier(), topLevelOrganizationId, ApprovalStatus.APPROVED, null);
     var request =
-        createRequest(candidate.getIdentifier(), currentCustomerId, requestBody, assignee);
+        createRequest(candidate.getIdentifier(), topLevelOrganizationId, requestBody, assignee);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
     var candidateResponse = response.getBodyObject(CandidateDto.class);

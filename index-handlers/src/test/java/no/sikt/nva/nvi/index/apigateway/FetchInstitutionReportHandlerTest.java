@@ -140,13 +140,9 @@ class FetchInstitutionReportHandlerTest {
   @Test
   void shouldReturnUnauthorizedWhenUserDoesNotHaveSufficientAccessRight() throws IOException {
     var institutionId = randomUri();
-    var customerId = randomUri();
     var request =
         createRequest(
-                institutionId,
-                AccessRight.MANAGE_DOI,
-                customerId,
-                Map.of(YEAR, String.valueOf(CURRENT_YEAR)))
+                institutionId, AccessRight.MANAGE_DOI, Map.of(YEAR, String.valueOf(CURRENT_YEAR)))
             .build();
     handler.handleRequest(request, output, CONTEXT);
     var response = fromOutputStream(output, Problem.class);
@@ -256,9 +252,7 @@ class FetchInstitutionReportHandlerTest {
     var topLevelCristinOrg = randomCristinOrgUri();
     var year = "2021";
     var request =
-        createRequest(
-                topLevelCristinOrg, MANAGE_NVI_CANDIDATES, topLevelCristinOrg, Map.of(YEAR, year))
-            .build();
+        createRequest(topLevelCristinOrg, MANAGE_NVI_CANDIDATES, Map.of(YEAR, year)).build();
     when(openSearchClient.search(any()))
         .thenReturn(aggregationResponse(1))
         .thenReturn(
@@ -282,9 +276,7 @@ class FetchInstitutionReportHandlerTest {
     var topLevelCristinOrg = randomCristinOrgUri();
     var year = "2021";
     var request =
-        createRequest(
-                topLevelCristinOrg, MANAGE_NVI_CANDIDATES, topLevelCristinOrg, Map.of(YEAR, year))
-            .build();
+        createRequest(topLevelCristinOrg, MANAGE_NVI_CANDIDATES, Map.of(YEAR, year)).build();
     when(openSearchClient.search(any()))
         .thenReturn(aggregationResponse(1))
         .thenReturn(
@@ -562,7 +554,7 @@ class FetchInstitutionReportHandlerTest {
 
   private static InputStream requestWithInvalidYearParam() throws JsonProcessingException {
     var invalidYear = "someInvalidYear";
-    return createRequest(randomUri(), MANAGE_NVI_CANDIDATES, randomUri(), Map.of())
+    return createRequest(randomUri(), MANAGE_NVI_CANDIDATES, Map.of())
         .withPathParameters(Map.of(YEAR, invalidYear))
         .build();
   }
@@ -570,22 +562,15 @@ class FetchInstitutionReportHandlerTest {
   private static InputStream requestWithMediaType(String mediaType, URI topLevelCristinOrg)
       throws JsonProcessingException {
     return createRequest(
-            topLevelCristinOrg,
-            MANAGE_NVI_CANDIDATES,
-            randomUri(),
-            Map.of(YEAR, String.valueOf(CURRENT_YEAR)))
+            topLevelCristinOrg, MANAGE_NVI_CANDIDATES, Map.of(YEAR, String.valueOf(CURRENT_YEAR)))
         .withHeaders(Map.of(ACCEPT, mediaType))
         .build();
   }
 
   private static HandlerRequestBuilder<InputStream> createRequest(
-      URI topLevelCristinOrg,
-      AccessRight accessRight,
-      URI customerId,
-      Map<String, String> pathParameters) {
+      URI topLevelCristinOrg, AccessRight accessRight, Map<String, String> pathParameters) {
     return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
-        .withCurrentCustomer(customerId)
-        .withAccessRights(customerId, accessRight)
+        .withAccessRights(topLevelCristinOrg, accessRight)
         .withTopLevelCristinOrgId(topLevelCristinOrg)
         .withUserName(randomString())
         .withPathParameters(pathParameters);

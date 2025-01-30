@@ -37,8 +37,9 @@ public final class UpdateNviCandidateStatusValidator {
   }
 
   private static boolean hasUnverifiedCreator(
-      Candidate candidate, URI customerId, OrganizationRetriever organizationRetriever) {
-    var customerOrganization = organizationRetriever.fetchOrganization(customerId).getTopLevelOrg();
+      Candidate candidate, URI institutionId, OrganizationRetriever organizationRetriever) {
+    var customerOrganization =
+        organizationRetriever.fetchOrganization(institutionId).getTopLevelOrg();
     var unverifiedCreators = candidate.getPublicationDetails().getUnverifiedCreators();
     return unverifiedCreators.stream()
         .flatMap(contributor -> getTopLevelAffiliations(contributor, organizationRetriever))

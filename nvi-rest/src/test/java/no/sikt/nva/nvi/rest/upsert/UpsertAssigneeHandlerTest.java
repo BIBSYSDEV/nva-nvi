@@ -135,11 +135,14 @@ class UpsertAssigneeHandlerTest extends LocalDynamoTest {
     mockUserApiResponse(USER_RESPONSE_BODY_WITH_ACCESS_RIGHT_JSON);
     var candidate = createCandidate();
     var assignee = randomString();
-    var periodRepository = periodRepositoryReturningClosedPeriod(YEAR);
-    var handler =
+    var periodRepositoryForClosedPeriod = periodRepositoryReturningClosedPeriod(YEAR);
+    var customHandler =
         new UpsertAssigneeHandler(
-            candidateRepository, periodRepository, uriRetriever, viewingScopeValidator);
-    handler.handleRequest(createRequest(candidate, assignee), output, context);
+            candidateRepository,
+            periodRepositoryForClosedPeriod,
+            uriRetriever,
+            viewingScopeValidator);
+    customHandler.handleRequest(createRequest(candidate, assignee), output, context);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
     assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_CONFLICT)));
@@ -151,11 +154,14 @@ class UpsertAssigneeHandlerTest extends LocalDynamoTest {
     mockUserApiResponse(USER_RESPONSE_BODY_WITH_ACCESS_RIGHT_JSON);
     var candidate = createCandidate();
     var assignee = randomString();
-    var periodRepository = periodRepositoryReturningNotOpenedPeriod(YEAR);
-    var handler =
+    var periodRepositoryForNotYetOpenPeriod = periodRepositoryReturningNotOpenedPeriod(YEAR);
+    var customHandler =
         new UpsertAssigneeHandler(
-            candidateRepository, periodRepository, uriRetriever, viewingScopeValidator);
-    handler.handleRequest(createRequest(candidate, assignee), output, context);
+            candidateRepository,
+            periodRepositoryForNotYetOpenPeriod,
+            uriRetriever,
+            viewingScopeValidator);
+    customHandler.handleRequest(createRequest(candidate, assignee), output, context);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
     assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_CONFLICT)));
@@ -170,7 +176,7 @@ class UpsertAssigneeHandlerTest extends LocalDynamoTest {
     var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
 
     assertThat(
-        response.getBodyObject(CandidateDto.class).approvals().get(0).assignee(),
+        response.getBodyObject(CandidateDto.class).approvals().getFirst().assignee(),
         is(equalTo(assignee)));
     assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_OK)));
   }
@@ -183,7 +189,8 @@ class UpsertAssigneeHandlerTest extends LocalDynamoTest {
     var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
 
     assertThat(
-        response.getBodyObject(CandidateDto.class).approvals().get(0).assignee(), is(nullValue()));
+        response.getBodyObject(CandidateDto.class).approvals().getFirst().assignee(),
+        is(nullValue()));
     assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_OK)));
   }
 
@@ -196,7 +203,7 @@ class UpsertAssigneeHandlerTest extends LocalDynamoTest {
     var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
 
     assertThat(
-        response.getBodyObject(CandidateDto.class).approvals().get(0).assignee(),
+        response.getBodyObject(CandidateDto.class).approvals().getFirst().assignee(),
         is(equalTo(newAssignee)));
   }
 
@@ -231,12 +238,10 @@ class UpsertAssigneeHandlerTest extends LocalDynamoTest {
       throws JsonProcessingException {
     var approvalToUpdate = candidate.toDto().approvals().getFirst();
     var requestBody = new UpsertAssigneeRequest(newAssignee, approvalToUpdate.institutionId());
-    var customerId = randomUri();
     return new HandlerRequestBuilder<UpsertAssigneeRequest>(JsonUtils.dtoObjectMapper)
         .withBody(randomAssigneeRequest())
-        .withCurrentCustomer(customerId)
         .withTopLevelCristinOrgId(requestBody.institutionId())
-        .withAccessRights(customerId, AccessRight.MANAGE_NVI_CANDIDATES)
+        .withAccessRights(requestBody.institutionId(), AccessRight.MANAGE_NVI_CANDIDATES)
         .withUserName(randomString())
         .withBody(requestBody)
         .withPathParameters(Map.of(CANDIDATE_IDENTIFIER, candidate.getIdentifier().toString()))
@@ -244,14 +249,12 @@ class UpsertAssigneeHandlerTest extends LocalDynamoTest {
   }
 
   private InputStream createRequestWithNonExistingCandidate() throws JsonProcessingException {
-    var approvalToUpdate = createCandidate().toDto().approvals().get(0);
-    var requestBody = new UpsertAssigneeRequest(randomString(), approvalToUpdate.institutionId());
-    var customerId = randomUri();
+    var organizationId = randomUri();
+    var requestBody = new UpsertAssigneeRequest(randomString(), organizationId);
     return new HandlerRequestBuilder<UpsertAssigneeRequest>(JsonUtils.dtoObjectMapper)
         .withBody(randomAssigneeRequest())
-        .withCurrentCustomer(customerId)
-        .withTopLevelCristinOrgId(requestBody.institutionId())
-        .withAccessRights(customerId, AccessRight.MANAGE_NVI_CANDIDATES)
+        .withTopLevelCristinOrgId(organizationId)
+        .withAccessRights(organizationId, AccessRight.MANAGE_NVI_CANDIDATES)
         .withUserName(randomString())
         .withBody(requestBody)
         .withPathParameters(Map.of(CANDIDATE_IDENTIFIER, randomUUID().toString()))
@@ -267,7 +270,7 @@ class UpsertAssigneeHandlerTest extends LocalDynamoTest {
   private InputStream createRequestWithDifferentInstitution() throws JsonProcessingException {
     return new HandlerRequestBuilder<UpsertAssigneeRequest>(JsonUtils.dtoObjectMapper)
         .withBody(randomAssigneeRequest())
-        .withCurrentCustomer(randomUri())
+        .withTopLevelCristinOrgId(randomUri())
         .build();
   }
 

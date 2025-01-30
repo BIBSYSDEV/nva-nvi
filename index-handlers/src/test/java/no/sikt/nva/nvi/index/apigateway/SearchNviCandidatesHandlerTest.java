@@ -572,7 +572,6 @@ class SearchNviCandidatesHandlerTest {
     return new HandlerRequestBuilder<Void>(JsonUtils.dtoObjectMapper)
         .withTopLevelCristinOrgId(topLevelCristinOrgId)
         .withUserName(randomString())
-        .withCurrentCustomer(topLevelCristinOrgId)
         .withAccessRights(topLevelCristinOrgId, AccessRight.MANAGE_NVI)
         .build();
   }
