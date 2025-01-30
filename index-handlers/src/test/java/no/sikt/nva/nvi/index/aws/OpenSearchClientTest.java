@@ -90,6 +90,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.opensearch.client.Request;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
@@ -108,7 +109,6 @@ import org.opensearch.testcontainers.OpensearchContainer;
 @SuppressWarnings({"PMD.AvoidUsingHardCodedIP", "PMD.GodClass", "PMD.CouplingBetweenObjects"})
 class OpenSearchClientTest {
 
-  public static final int DELAY_ON_INDEX = 2000;
   public static final String YEAR = "2023";
   public static final String CATEGORY = "AcademicArticle";
   public static final String UNEXISTING_FILTER = "unexisting-filter";
@@ -192,7 +192,7 @@ class OpenSearchClientTest {
 
   @ParameterizedTest(name = "shouldOrderResult {0}")
   @ValueSource(strings = {"asc", "desc"})
-  void shouldOrderResult(String sortOrder) throws InterruptedException, IOException {
+  void shouldOrderResult(String sortOrder) throws IOException {
     var createdFirst = documentWithCreatedDate(Instant.now());
     var createdSecond = documentWithCreatedDate(Instant.now().plus(1, ChronoUnit.MINUTES));
     addDocumentsToIndex(createdFirst, createdSecond);
@@ -215,8 +215,7 @@ class OpenSearchClientTest {
   }
 
   @Test
-  void shouldDeleteIndexAndThrowExceptionWhenSearchingInNonExistentIndex()
-      throws IOException, InterruptedException {
+  void shouldDeleteIndexAndThrowExceptionWhenSearchingInNonExistentIndex() throws IOException {
     var document = singleNviCandidateIndexDocument().build();
     addDocumentsToIndex(document);
     openSearchClient.deleteIndex();
@@ -231,12 +230,11 @@ class OpenSearchClientTest {
   }
 
   @Test
-  @SuppressWarnings("PMD.DoNotUseThreads")
-  void shouldRemoveDocumentFromIndex() throws InterruptedException, IOException {
+  void shouldRemoveDocumentFromIndex() throws IOException {
     var document = singleNviCandidateIndexDocument().build();
     addDocumentsToIndex(document);
     openSearchClient.removeDocumentFromIndex(document.identifier());
-    Thread.sleep(DELAY_ON_INDEX);
+    refreshIndex();
     var searchParameters = defaultSearchParameters().build();
     var searchResponse = openSearchClient.search(searchParameters);
     var nviCandidateIndexDocument = searchResponse.hits().hits();
@@ -246,8 +244,7 @@ class OpenSearchClientTest {
 
   @ParameterizedTest(name = "shouldReturnAggregationsWithExpectedCount {0}")
   @MethodSource("aggregationNameAndExpectedCountProvider")
-  void shouldReturnAggregationsWithExpectedCount(Entry<String, Integer> entry)
-      throws IOException, InterruptedException {
+  void shouldReturnAggregationsWithExpectedCount(Entry<String, Integer> entry) throws IOException {
     addDocumentsToIndex(
         documentFromString(DOCUMENT_NEW_JSON),
         documentFromString("document_new_collaboration.json"),
@@ -276,7 +273,7 @@ class OpenSearchClientTest {
         Arrays.stream(SearchAggregation.values())
             .filter(aggregation -> !ORGANIZATION_APPROVAL_STATUS_AGGREGATION.equals(aggregation))
             .toList();
-    assertEquals(expectedAggregations.size(), aggregations.keySet().size());
+    assertEquals(expectedAggregations.size(), aggregations.size());
   }
 
   @Test
@@ -286,13 +283,13 @@ class OpenSearchClientTest {
         CandidateSearchParameters.builder().withAggregationType(requestedAggregation).build();
     var searchResponse = openSearchClient.search(searchParameters);
     var aggregations = searchResponse.aggregations();
-    assertEquals(1, aggregations.keySet().size());
+    assertEquals(1, aggregations.size());
     assertEquals(requestedAggregation, aggregations.keySet().iterator().next());
   }
 
   @Test
   void shouldReturnSearchResultsWithContributorAffiliatedWithSubUnitOfSearchedInstitution()
-      throws IOException, InterruptedException {
+      throws IOException {
     addDocumentsToIndex(
         documentFromString(DOCUMENT_WITH_CONTRIBUTOR_FROM_NTNU_SUBUNIT_JSON),
         documentFromString("document_with_contributor_from_sikt.json"));
@@ -306,7 +303,7 @@ class OpenSearchClientTest {
 
   @Test
   void shouldReturnSearchResultsWithContributorOfSearchedInstitutionWhenSearchingSubUnit()
-      throws IOException, InterruptedException {
+      throws IOException {
     addDocumentsToIndex(documentFromString(DOCUMENT_WITH_CONTRIBUTOR_FROM_NTNU_SUBUNIT_JSON));
 
     var searchParameters =
@@ -319,7 +316,7 @@ class OpenSearchClientTest {
   @Test
   void
       shouldReturnSearchResultsWithContributorOfSearchedInstitutionWhenSearchingTopLevelInstitution()
-          throws IOException, InterruptedException {
+          throws IOException {
     addDocumentsToIndex(
         documentFromString(DOCUMENT_WITH_CONTRIBUTOR_FROM_NTNU_SUBUNIT_JSON),
         documentFromString("document_with_contributor_from_ntnu_toplevel.json"),
@@ -335,7 +332,7 @@ class OpenSearchClientTest {
   @Test
   void
       shouldReturnSearchResultsWithContributorOfSearchedInstitutionWhenSearchingTopLevelInstitutionExcludingSubUnit()
-          throws IOException, InterruptedException {
+          throws IOException {
     var subUnitDoc = documentFromString(DOCUMENT_WITH_CONTRIBUTOR_FROM_NTNU_SUBUNIT_JSON);
     var topLevelDoc = documentFromString("document_with_contributor_from_ntnu_toplevel.json");
 
@@ -353,8 +350,7 @@ class OpenSearchClientTest {
 
   @ParameterizedTest(name = "shouldReturnSearchResultsUsingFilter {0}")
   @MethodSource("filterNameProvider")
-  void shouldReturnSearchResultsUsingFilter(Entry<String, Integer> entry)
-      throws IOException, InterruptedException {
+  void shouldReturnSearchResultsUsingFilter(Entry<String, Integer> entry) throws IOException {
     addDocumentsToIndex(
         documentFromString(DOCUMENT_NEW_JSON),
         documentFromString("document_new_collaboration.json"),
@@ -379,8 +375,7 @@ class OpenSearchClientTest {
   }
 
   @Test
-  void shouldNotIncludeDisputesForOtherOrganizationsInDisputeFilter()
-      throws IOException, InterruptedException {
+  void shouldNotIncludeDisputesForOtherOrganizationsInDisputeFilter() throws IOException {
     addDocumentsToIndex(
         documentFromString(DOCUMENT_ORGANIZATION_AGGREGATION_DISPUTE_JSON),
         documentFromString("document_dispute_not_sikt.json"));
@@ -398,7 +393,7 @@ class OpenSearchClientTest {
   }
 
   @Test
-  void shouldReturnHitOnSearchTermPublicationIdentifier() throws IOException, InterruptedException {
+  void shouldReturnHitOnSearchTermPublicationIdentifier() throws IOException {
     var indexDocuments = generateNumberOfCandidates(5);
     addDocumentsToIndex(indexDocuments.toArray(new NviCandidateIndexDocument[0]));
     var searchTerm = indexDocuments.get(2).publicationDetails().identifier();
@@ -409,7 +404,7 @@ class OpenSearchClientTest {
   }
 
   @Test
-  void shouldReturnHitOnSearchTermCandidateIdentifier() throws IOException, InterruptedException {
+  void shouldReturnHitOnSearchTermCandidateIdentifier() throws IOException {
     var indexDocuments = generateNumberOfCandidates(5);
     addDocumentsToIndex(indexDocuments.toArray(new NviCandidateIndexDocument[0]));
     var searchTerm = indexDocuments.get(2).identifier().toString();
@@ -420,7 +415,7 @@ class OpenSearchClientTest {
   }
 
   @Test
-  void shouldReturnHitOnSearchTermPublicationTitle() throws IOException, InterruptedException {
+  void shouldReturnHitOnSearchTermPublicationTitle() throws IOException {
     var indexDocuments = generateNumberOfCandidates(5);
     addDocumentsToIndex(indexDocuments.toArray(new NviCandidateIndexDocument[0]));
     var searchTerm = indexDocuments.get(2).publicationDetails().title();
@@ -431,8 +426,7 @@ class OpenSearchClientTest {
   }
 
   @Test
-  void shouldReturnHitsOnSearchTermsPartOfPublicationTitle()
-      throws IOException, InterruptedException {
+  void shouldReturnHitsOnSearchTermsPartOfPublicationTitle() throws IOException {
     var firstTitle = "Start of sentence. Lorem ipsum dolor sit amet, consectetur adipiscing elit";
     var secondTitle = "Another hit. First word lorem ipsum dolor sit amet, something else";
     var thirdTitleShouldNotGetHit = "Some other title";
@@ -454,7 +448,7 @@ class OpenSearchClientTest {
   }
 
   @Test
-  void shouldReturnHitOnSearchTermContributorName() throws IOException, InterruptedException {
+  void shouldReturnHitOnSearchTermContributorName() throws IOException {
     var indexDocuments = generateNumberOfCandidates(5);
     addDocumentsToIndex(indexDocuments.toArray(new NviCandidateIndexDocument[0]));
     var expectedHit = indexDocuments.get(2);
@@ -466,7 +460,7 @@ class OpenSearchClientTest {
   }
 
   @Test
-  void shouldReturnHitOnSearchTermPublicationAbstract() throws IOException, InterruptedException {
+  void shouldReturnHitOnSearchTermPublicationAbstract() throws IOException {
     var indexDocuments = generateNumberOfCandidates(5);
     addDocumentsToIndex(indexDocuments.toArray(new NviCandidateIndexDocument[0]));
     var searchTerm = indexDocuments.get(2).publicationDetails().abstractText();
@@ -477,7 +471,7 @@ class OpenSearchClientTest {
   }
 
   @Test
-  void shouldReturnAllWhenSearchTermNotProvided() throws InterruptedException, IOException {
+  void shouldReturnAllWhenSearchTermNotProvided() throws IOException {
     var indexDocuments = generateNumberOfCandidates(5);
     addDocumentsToIndex(indexDocuments.toArray(new NviCandidateIndexDocument[0]));
     var searchParameters = defaultSearchParameters().build();
@@ -486,8 +480,7 @@ class OpenSearchClientTest {
   }
 
   @Test
-  void shouldReturnOneHitWhenSearchTermExactlyPublicationIdentifier()
-      throws IOException, InterruptedException {
+  void shouldReturnOneHitWhenSearchTermExactlyPublicationIdentifier() throws IOException {
     var expectedHit = singleNviCandidateIndexDocument().build();
     var searchTerm = expectedHit.publicationDetails().identifier();
     var someTitleIncludingPartsOfSearchTerm = "Some title including " + searchTerm.split("-")[0];
@@ -501,7 +494,7 @@ class OpenSearchClientTest {
   }
 
   @Test
-  void shouldReturnSingleDocumentWhenFilteringByYear() throws InterruptedException, IOException {
+  void shouldReturnSingleDocumentWhenFilteringByYear() throws IOException {
     var customer = randomUri();
     var year = randomString();
     var document =
@@ -524,7 +517,7 @@ class OpenSearchClientTest {
   }
 
   @Test
-  void shouldReturnSingleDocumentWhenFilteringByTitle() throws InterruptedException, IOException {
+  void shouldReturnSingleDocumentWhenFilteringByTitle() throws IOException {
     var customer = randomUri();
     var title =
         randomString().concat(" ").concat(randomString()).concat(" ").concat(randomString());
@@ -549,8 +542,7 @@ class OpenSearchClientTest {
   }
 
   @Test
-  void shouldReturnSingleDocumentWhenFilteringByAssignee()
-      throws InterruptedException, IOException {
+  void shouldReturnSingleDocumentWhenFilteringByAssignee() throws IOException {
     var customer = randomUri();
     var assignee =
         randomString().concat(" ").concat(randomString()).concat(" ").concat(randomString());
@@ -577,7 +569,7 @@ class OpenSearchClientTest {
   @ParameterizedTest(name = "shouldReturnSearchResultsUsingFilterAndSearchTermCombined {0}")
   @MethodSource("filterNameProvider")
   void shouldReturnSearchResultsUsingFilterAndSearchTermCombined(Entry<String, Integer> entry)
-      throws IOException, InterruptedException {
+      throws IOException {
     addDocumentsToIndex(
         documentFromString(DOCUMENT_NEW_JSON),
         documentFromString("document_new_collaboration.json"),
@@ -601,8 +593,7 @@ class OpenSearchClientTest {
   }
 
   @Test
-  void shouldReturnSingleDocumentWhenFilteringByCategory()
-      throws InterruptedException, IOException {
+  void shouldReturnSingleDocumentWhenFilteringByCategory() throws IOException {
     addDocumentsToIndex(
         documentFromString(DOCUMENT_NEW_JSON),
         documentFromString("document_pending_category_degree_bachelor.json"));
@@ -630,7 +621,7 @@ class OpenSearchClientTest {
 
   @Test
   void shouldReturnAllSearchResultsWhenSearchingWithoutCustomerAndAffiliations()
-      throws IOException, InterruptedException {
+      throws IOException {
     addDocumentsToIndex(
         documentFromString(DOCUMENT_WITH_CONTRIBUTOR_FROM_NTNU_SUBUNIT_JSON),
         documentFromString("document_with_contributor_from_sikt.json"));
@@ -642,8 +633,7 @@ class OpenSearchClientTest {
   }
 
   @Test
-  void shouldReturnOrganizationAggregationWithSubAggregations()
-      throws IOException, InterruptedException {
+  void shouldReturnOrganizationAggregationWithSubAggregations() throws IOException {
     addDocumentsToIndex(documentFromString("document_organization_aggregation_pending.json"));
     addDocumentsToIndex(documentFromString("document_organization_aggregation_new.json"));
     addDocumentsToIndex(documentFromString(DOCUMENT_ORGANIZATION_AGGREGATION_DISPUTE_JSON));
@@ -665,7 +655,7 @@ class OpenSearchClientTest {
 
   @Test
   void shouldNotIncludeRejectedPointsInOrganizationAggregationWithSubAggregations()
-      throws IOException, InterruptedException {
+      throws IOException {
     addDocumentsToIndex(documentFromString("document_organization_aggregation_pending.json"));
     addDocumentsToIndex(documentFromString("document_organization_aggregation_new.json"));
     addDocumentsToIndex(documentFromString("document_organization_aggregation_rejected.json"));
@@ -687,7 +677,7 @@ class OpenSearchClientTest {
 
   @Test
   void shouldReturnOrganizationAggregationWithSubAggregationsForUpToOneThousandInvolvedOrgs()
-      throws IOException, InterruptedException {
+      throws IOException {
     addDocumentsToIndex(nviCandidateWithOneThousandInvolvedOrgs());
     var aggregation = ORGANIZATION_APPROVAL_STATUS_AGGREGATION.getAggregationName();
     var searchParameters = defaultSearchParameters().withAggregationType(aggregation).build();
@@ -707,7 +697,7 @@ class OpenSearchClientTest {
 
   @Test
   void organizationAggregationShouldNotContainAggregationsForOtherTopLevelOrgs()
-      throws IOException, InterruptedException {
+      throws IOException {
     addDocumentsToIndex(documentFromString("document_organization_aggregation_collaboration.json"));
     var aggregation = ORGANIZATION_APPROVAL_STATUS_AGGREGATION.getAggregationName();
     var searchParameters =
@@ -732,7 +722,7 @@ class OpenSearchClientTest {
   }
 
   @Test
-  void shouldExcludeFields() throws IOException, InterruptedException {
+  void shouldExcludeFields() throws IOException {
     var document = documentWithContributors();
     addDocumentsToIndex(document);
     var searchParameters =
@@ -871,13 +861,9 @@ class OpenSearchClientTest {
   }
 
   private static void addDocumentToIndex() {
-    try {
-      addDocumentsToIndex(
-          singleNviCandidateIndexDocumentWithCustomer(
-              ORGANIZATION, randomString(), randomString(), YEAR, randomString()));
-    } catch (InterruptedException exception) {
-      throw new RuntimeException(exception);
-    }
+    addDocumentsToIndex(
+        singleNviCandidateIndexDocumentWithCustomer(
+            ORGANIZATION, randomString(), randomString(), YEAR, randomString()));
   }
 
   @NotNull
@@ -1018,11 +1004,21 @@ class OpenSearchClientTest {
         .withContributors(List.of(randomNviContributor(randomUri())));
   }
 
-  @SuppressWarnings("PMD.DoNotUseThreads")
-  private static void addDocumentsToIndex(NviCandidateIndexDocument... documents)
-      throws InterruptedException {
+  private static void addDocumentsToIndex(NviCandidateIndexDocument... documents) {
     Arrays.stream(documents).forEach(openSearchClient::addDocumentToIndex);
-    Thread.sleep(DELAY_ON_INDEX);
+    refreshIndex();
+  }
+
+  /**
+   * Refreshes all indices to make sure that new documents are searchable before tests are executed.
+   */
+  private static void refreshIndex() {
+    var refreshRequest = new Request("POST", "/_refresh");
+    try {
+      restClient.performRequest(refreshRequest);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   private static Stream<Entry<String, Integer>> aggregationNameAndExpectedCountProvider() {
