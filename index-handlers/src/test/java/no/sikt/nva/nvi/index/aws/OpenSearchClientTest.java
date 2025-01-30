@@ -192,7 +192,7 @@ class OpenSearchClientTest {
 
   @ParameterizedTest(name = "shouldOrderResult {0}")
   @ValueSource(strings = {"asc", "desc"})
-  void shouldOrderResult(String sortOrder) throws  IOException {
+  void shouldOrderResult(String sortOrder) throws IOException {
     var createdFirst = documentWithCreatedDate(Instant.now());
     var createdSecond = documentWithCreatedDate(Instant.now().plus(1, ChronoUnit.MINUTES));
     addDocumentsToIndex(createdFirst, createdSecond);
@@ -215,8 +215,7 @@ class OpenSearchClientTest {
   }
 
   @Test
-  void shouldDeleteIndexAndThrowExceptionWhenSearchingInNonExistentIndex()
-      throws IOException {
+  void shouldDeleteIndexAndThrowExceptionWhenSearchingInNonExistentIndex() throws IOException {
     var document = singleNviCandidateIndexDocument().build();
     addDocumentsToIndex(document);
     openSearchClient.deleteIndex();
@@ -245,8 +244,7 @@ class OpenSearchClientTest {
 
   @ParameterizedTest(name = "shouldReturnAggregationsWithExpectedCount {0}")
   @MethodSource("aggregationNameAndExpectedCountProvider")
-  void shouldReturnAggregationsWithExpectedCount(Entry<String, Integer> entry)
-      throws IOException {
+  void shouldReturnAggregationsWithExpectedCount(Entry<String, Integer> entry) throws IOException {
     addDocumentsToIndex(
         documentFromString(DOCUMENT_NEW_JSON),
         documentFromString("document_new_collaboration.json"),
@@ -352,8 +350,7 @@ class OpenSearchClientTest {
 
   @ParameterizedTest(name = "shouldReturnSearchResultsUsingFilter {0}")
   @MethodSource("filterNameProvider")
-  void shouldReturnSearchResultsUsingFilter(Entry<String, Integer> entry)
-      throws IOException {
+  void shouldReturnSearchResultsUsingFilter(Entry<String, Integer> entry) throws IOException {
     addDocumentsToIndex(
         documentFromString(DOCUMENT_NEW_JSON),
         documentFromString("document_new_collaboration.json"),
@@ -378,8 +375,7 @@ class OpenSearchClientTest {
   }
 
   @Test
-  void shouldNotIncludeDisputesForOtherOrganizationsInDisputeFilter()
-      throws IOException {
+  void shouldNotIncludeDisputesForOtherOrganizationsInDisputeFilter() throws IOException {
     addDocumentsToIndex(
         documentFromString(DOCUMENT_ORGANIZATION_AGGREGATION_DISPUTE_JSON),
         documentFromString("document_dispute_not_sikt.json"));
@@ -430,8 +426,7 @@ class OpenSearchClientTest {
   }
 
   @Test
-  void shouldReturnHitsOnSearchTermsPartOfPublicationTitle()
-      throws IOException {
+  void shouldReturnHitsOnSearchTermsPartOfPublicationTitle() throws IOException {
     var firstTitle = "Start of sentence. Lorem ipsum dolor sit amet, consectetur adipiscing elit";
     var secondTitle = "Another hit. First word lorem ipsum dolor sit amet, something else";
     var thirdTitleShouldNotGetHit = "Some other title";
@@ -485,8 +480,7 @@ class OpenSearchClientTest {
   }
 
   @Test
-  void shouldReturnOneHitWhenSearchTermExactlyPublicationIdentifier()
-      throws IOException {
+  void shouldReturnOneHitWhenSearchTermExactlyPublicationIdentifier() throws IOException {
     var expectedHit = singleNviCandidateIndexDocument().build();
     var searchTerm = expectedHit.publicationDetails().identifier();
     var someTitleIncludingPartsOfSearchTerm = "Some title including " + searchTerm.split("-")[0];
@@ -548,8 +542,7 @@ class OpenSearchClientTest {
   }
 
   @Test
-  void shouldReturnSingleDocumentWhenFilteringByAssignee()
-      throws IOException {
+  void shouldReturnSingleDocumentWhenFilteringByAssignee() throws IOException {
     var customer = randomUri();
     var assignee =
         randomString().concat(" ").concat(randomString()).concat(" ").concat(randomString());
@@ -600,8 +593,7 @@ class OpenSearchClientTest {
   }
 
   @Test
-  void shouldReturnSingleDocumentWhenFilteringByCategory()
-      throws IOException {
+  void shouldReturnSingleDocumentWhenFilteringByCategory() throws IOException {
     addDocumentsToIndex(
         documentFromString(DOCUMENT_NEW_JSON),
         documentFromString("document_pending_category_degree_bachelor.json"));
@@ -641,8 +633,7 @@ class OpenSearchClientTest {
   }
 
   @Test
-  void shouldReturnOrganizationAggregationWithSubAggregations()
-      throws IOException {
+  void shouldReturnOrganizationAggregationWithSubAggregations() throws IOException {
     addDocumentsToIndex(documentFromString("document_organization_aggregation_pending.json"));
     addDocumentsToIndex(documentFromString("document_organization_aggregation_new.json"));
     addDocumentsToIndex(documentFromString(DOCUMENT_ORGANIZATION_AGGREGATION_DISPUTE_JSON));
