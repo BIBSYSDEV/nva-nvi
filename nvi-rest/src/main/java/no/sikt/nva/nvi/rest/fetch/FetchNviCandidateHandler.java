@@ -72,7 +72,10 @@ public class FetchNviCandidateHandler extends ApiGatewayHandler<Void, CandidateD
             candidate ->
                 validateViewingScope(
                     viewingScopeValidator, RequestUtil.getUsername(requestInfo), candidate))
-        .map(candidate -> candidate.toDto(requestInfo.getCurrentCustomer(), organizationRetriever))
+        .map(
+            candidate ->
+                candidate.toDto(
+                    requestInfo.getTopLevelOrgCristinId().orElseThrow(), organizationRetriever))
         .orElseThrow(ExceptionMapper::map);
   }
 

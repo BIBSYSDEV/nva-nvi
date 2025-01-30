@@ -49,7 +49,6 @@ import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.GatewayResponse;
-import nva.commons.core.JacocoGenerated;
 import org.apache.hc.core5.http.ContentType;
 import org.junit.jupiter.api.BeforeEach;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
@@ -230,7 +229,7 @@ public abstract class BaseCandidateRestHandlerTest extends LocalDynamoTest {
         randomString(), List.of(subUnitCristinOrgId), topLevelCristinOrgId);
   }
 
-  protected static UnverifiedNviCreatorDto setupUnverifiedCreator(
+  protected UnverifiedNviCreatorDto setupUnverifiedCreator(
       String name, Collection<URI> affiliations, URI topLevelInstitutionId) {
     affiliations.forEach(
         affiliation ->
@@ -239,8 +238,6 @@ public abstract class BaseCandidateRestHandlerTest extends LocalDynamoTest {
     return new UnverifiedNviCreatorDto(name, List.copyOf(affiliations));
   }
 
-  // Not used (yet)
-  @JacocoGenerated
   protected Candidate setupCandidateWithApproval() {
     // Create a candidate in a "valid" state
     var verifiedCreator = setupDefaultVerifiedCreator();
@@ -264,8 +261,6 @@ public abstract class BaseCandidateRestHandlerTest extends LocalDynamoTest {
         .build();
   }
 
-  // Not used (yet)
-  @JacocoGenerated
   protected Candidate setupCandidateWithUnverifiedCreatorFromAnotherInstitution() {
     var verifiedCreator = setupDefaultVerifiedCreator();
     var otherInstitutionId = randomUri();
