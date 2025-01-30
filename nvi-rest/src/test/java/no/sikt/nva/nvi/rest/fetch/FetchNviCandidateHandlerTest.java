@@ -1,23 +1,30 @@
 package no.sikt.nva.nvi.rest.fetch;
 
+import static java.util.Collections.emptyList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
+import java.util.List;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatusDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
+import no.sikt.nva.nvi.common.service.dto.CandidateOperation;
 import no.sikt.nva.nvi.rest.BaseCandidateRestHandlerTest;
 import no.sikt.nva.nvi.test.FakeViewingScopeValidator;
+import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.GatewayResponse;
 import org.apache.hc.core5.http.HttpStatus;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.zalando.problem.Problem;
 
 class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
@@ -25,7 +32,10 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
   @Override
   protected ApiGatewayHandler<Void, CandidateDto> createHandler() {
     return new FetchNviCandidateHandler(
-        candidateRepository, periodRepository, mockViewingScopeValidator);
+        candidateRepository,
+        periodRepository,
+        mockViewingScopeValidator,
+        mockOrganizationRetriever);
   }
 
   @BeforeEach
@@ -52,14 +62,23 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
     assertEquals(HttpStatus.SC_NOT_FOUND, gatewayResponse.getStatusCode());
   }
 
-  @Test
-  void shouldReturnUnauthorizedWhenCandidateIsNotInUsersViewingScope() throws IOException {
+  @ParameterizedTest
+  @EnumSource(
+      value = AccessRight.class,
+      names = {"MANAGE_NVI_CANDIDATES", "MANAGE_NVI"},
+      mode = EnumSource.Mode.INCLUDE)
+  void shouldReturnUnauthorizedWhenCandidateIsNotInUsersViewingScope(AccessRight accessRight)
+      throws IOException {
     var candidate = setupValidCandidate(topLevelCristinOrgId);
-    var request = createRequestWithCuratorAccess(candidate.getIdentifier().toString());
+    var request =
+        createRequest(candidate.getIdentifier().toString(), topLevelCristinOrgId, accessRight);
     var viewingScopeValidatorReturningFalse = new FakeViewingScopeValidator(false);
     handler =
         new FetchNviCandidateHandler(
-            candidateRepository, periodRepository, viewingScopeValidatorReturningFalse);
+            candidateRepository,
+            periodRepository,
+            viewingScopeValidatorReturningFalse,
+            mockOrganizationRetriever);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
     assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
@@ -112,5 +131,57 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
     var actualResponse = response.getBodyObject(CandidateDto.class);
 
     assertEquals(expectedResponse, actualResponse);
+  }
+
+  @Test
+  void shouldAllowFinalizingNewValidCandidate() throws IOException {
+    var candidate = setupValidCandidate(topLevelCristinOrgId);
+    var request = createRequestWithCuratorAccess(candidate.getIdentifier().toString());
+
+    var candidateDto = handleRequest(request);
+
+    var actualAllowedOperations = candidateDto.allowedOperations();
+    var expectedAllowedOperations =
+        List.of(CandidateOperation.APPROVAL_APPROVE, CandidateOperation.APPROVAL_REJECT);
+    assertThat(actualAllowedOperations, containsInAnyOrder(expectedAllowedOperations.toArray()));
+  }
+
+  @Test
+  void shouldNotAllowFinalizingNewCandidateWithUnverifiedCreator() throws IOException {
+    var candidate = setupCandidateWithUnverifiedCreator(topLevelCristinOrgId);
+    var request = createRequestWithCuratorAccess(candidate.getIdentifier().toString());
+
+    var candidateDto = handleRequest(request);
+
+    var actualAllowedOperations = candidateDto.allowedOperations();
+    var expectedAllowedOperations = emptyList();
+    assertThat(actualAllowedOperations, containsInAnyOrder(expectedAllowedOperations.toArray()));
+  }
+
+  @Test
+  void shouldAllowFinalizingCandidateWithUnverifiedCreatorFromAnotherInstitution()
+      throws IOException {
+    var candidate = setupCandidateWithUnverifiedCreatorFromAnotherInstitution();
+    var request = createRequestWithCuratorAccess(candidate.getIdentifier().toString());
+
+    var candidateDto = handleRequest(request);
+
+    var actualAllowedOperations = candidateDto.allowedOperations();
+    var expectedAllowedOperations =
+        List.of(CandidateOperation.APPROVAL_APPROVE, CandidateOperation.APPROVAL_REJECT);
+    assertThat(actualAllowedOperations, containsInAnyOrder(expectedAllowedOperations.toArray()));
+  }
+
+  @Test
+  void shouldAllowResettingApprovalForApprovedCandidate() throws IOException {
+    var candidate = setupCandidateWithApproval();
+    var request = createRequestWithCuratorAccess(candidate.getIdentifier().toString());
+
+    var candidateDto = handleRequest(request);
+
+    var actualAllowedOperations = candidateDto.allowedOperations();
+    var expectedAllowedOperations =
+        List.of(CandidateOperation.APPROVAL_PENDING, CandidateOperation.APPROVAL_REJECT);
+    assertThat(actualAllowedOperations, containsInAnyOrder(expectedAllowedOperations.toArray()));
   }
 }

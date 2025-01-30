@@ -8,6 +8,7 @@ import static nva.commons.core.attempt.Try.attempt;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import java.util.UUID;
+import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
@@ -17,6 +18,7 @@ import no.sikt.nva.nvi.common.utils.ExceptionMapper;
 import no.sikt.nva.nvi.common.utils.RequestUtil;
 import no.sikt.nva.nvi.common.validator.ViewingScopeValidator;
 import no.sikt.nva.nvi.rest.ViewingScopeHandler;
+import no.unit.nva.auth.uriretriever.UriRetriever;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
@@ -30,23 +32,27 @@ public class FetchNviCandidateHandler extends ApiGatewayHandler<Void, CandidateD
   private final CandidateRepository candidateRepository;
   private final PeriodRepository periodRepository;
   private final ViewingScopeValidator viewingScopeValidator;
+  private final OrganizationRetriever organizationRetriever;
 
   @JacocoGenerated
   public FetchNviCandidateHandler() {
     this(
         new CandidateRepository(defaultDynamoClient()),
         new PeriodRepository(defaultDynamoClient()),
-        ViewingScopeHandler.defaultViewingScopeValidator());
+        ViewingScopeHandler.defaultViewingScopeValidator(),
+        new OrganizationRetriever(new UriRetriever()));
   }
 
   public FetchNviCandidateHandler(
       CandidateRepository candidateRepository,
       PeriodRepository periodRepository,
-      ViewingScopeValidator viewingScopeValidator) {
+      ViewingScopeValidator viewingScopeValidator,
+      OrganizationRetriever organizationRetriever) {
     super(Void.class);
     this.candidateRepository = candidateRepository;
     this.periodRepository = periodRepository;
     this.viewingScopeValidator = viewingScopeValidator;
+    this.organizationRetriever = organizationRetriever;
   }
 
   @Override
@@ -66,7 +72,7 @@ public class FetchNviCandidateHandler extends ApiGatewayHandler<Void, CandidateD
             candidate ->
                 validateViewingScope(
                     viewingScopeValidator, RequestUtil.getUsername(requestInfo), candidate))
-        .map(Candidate::toDto)
+        .map(candidate -> candidate.toDto(requestInfo.getCurrentCustomer(), organizationRetriever))
         .orElseThrow(ExceptionMapper::map);
   }
 

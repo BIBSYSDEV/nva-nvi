@@ -339,6 +339,14 @@ class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
     return institutionPoints.stream().map(DbInstitutionPoints::from).toList();
   }
 
+  private static List<DbCreatorType> getExpectedCreators(NviCandidate evaluatedNviCandidate) {
+    Stream<DbCreatorType> verifiedCreators =
+        evaluatedNviCandidate.verifiedCreators().stream().map(VerifiedNviCreatorDto::toDao);
+    Stream<DbCreatorType> unverifiedCreators =
+        evaluatedNviCandidate.unverifiedCreators().stream().map(UnverifiedNviCreatorDto::toDao);
+    return Stream.concat(verifiedCreators, unverifiedCreators).toList();
+  }
+
   private List<DbApprovalStatus> fetchApprovals(CandidateDao actualPersistedCandidateDao) {
     return candidateRepository.fetchApprovals(actualPersistedCandidateDao.identifier()).stream()
         .map(ApprovalStatusDao::approvalStatus)
@@ -388,14 +396,6 @@ class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
         .points(mapToInstitutionPoints(evaluatedNviCandidate.institutionPoints()))
         .totalPoints(evaluatedNviCandidate.totalPoints())
         .build();
-  }
-
-  private static List<DbCreatorType> getExpectedCreators(NviCandidate evaluatedNviCandidate) {
-    Stream<DbCreatorType> verifiedCreators =
-        evaluatedNviCandidate.verifiedCreators().stream().map(VerifiedNviCreatorDto::toDao);
-    Stream<DbCreatorType> unverifiedCreators =
-        evaluatedNviCandidate.unverifiedCreators().stream().map(UnverifiedNviCreatorDto::toDao);
-    return Stream.concat(verifiedCreators, unverifiedCreators).toList();
   }
 
   private CandidateEvaluatedMessage nonCandidateMessageForExistingCandidate(Candidate candidate) {
