@@ -53,18 +53,16 @@ class RequeueDlqHandlerTest {
   private NviQueueClient client;
   private CandidateRepository candidateRepository;
   private PeriodRepository periodRepository;
+  private String messageId;
 
   @BeforeEach
   void setUp() {
     sqsClient = setupSqsClient();
-
     client = new NviQueueClient(sqsClient);
-
     candidateRepository = setupCandidateRepository();
-
     periodRepository = mock(PeriodRepository.class);
-
     handler = new RequeueDlqHandler(client, DLQ_URL, candidateRepository, periodRepository);
+    messageId = UUID.randomUUID().toString();
   }
 
   @Test
@@ -139,12 +137,11 @@ class RequeueDlqHandlerTest {
   }
 
   @Test
-  @SuppressWarnings("PMD.AvoidDuplicateLiterals")
   void shouldIgnoreDuplicates() {
     var message =
         Message.builder()
-            .messageId("sameOldThing")
-            .receiptHandle("sameOldThing")
+            .messageId(messageId)
+            .receiptHandle(messageId)
             .messageAttributes(
                 Map.of(
                     "candidateIdentifier",
@@ -165,8 +162,7 @@ class RequeueDlqHandlerTest {
 
   @Test
   void missingCustomAttributeShouldFail() {
-    var message =
-        Message.builder().messageId("simpleMessage").receiptHandle("simpleMessage").build();
+    var message = Message.builder().messageId(messageId).receiptHandle(messageId).build();
 
     when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class)))
         .thenReturn(ReceiveMessageResponse.builder().messages(List.of(message)).build())
@@ -182,9 +178,8 @@ class RequeueDlqHandlerTest {
   }
 
   @Test
-  @SuppressWarnings("PMD.AvoidDuplicateLiterals")
   void shouldStopRepeatedErrors() {
-    var message = Message.builder().messageId("sameOldThing").receiptHandle("sameOldThing").build();
+    var message = Message.builder().messageId(messageId).receiptHandle(messageId).build();
 
     when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class)))
         .thenReturn(ReceiveMessageResponse.builder().messages(List.of(message)).build());
@@ -238,9 +233,9 @@ class RequeueDlqHandlerTest {
     // This is not a valid state for candidates created in nva-nvi, but it may occur for candidates
     // imported via
     // Cristin.
-    var handler = setupHandlerReceivingCandidateWithoutChannelType();
+    var handlerWithoutChannelType = setupHandlerReceivingCandidateWithoutChannelType();
 
-    var response = handler.handleRequest(new RequeueDlqInput(1), CONTEXT);
+    var response = handlerWithoutChannelType.handleRequest(new RequeueDlqInput(1), CONTEXT);
 
     assertEquals(0, response.failedBatchesCount());
   }
@@ -282,7 +277,7 @@ class RequeueDlqHandlerTest {
   private static Builder randomCandidateBuilder() {
     return DbCandidate.builder()
         .publicationDate(DbPublicationDate.builder().day("1").month("1").year("2000").build())
-        .points(List.of(generateInstitutionPoints(randomUri(), BigDecimal.ONE, randomUri())))
+        .points(List.of(generateInstitutionPoints(randomUri(), randomUri())))
         .instanceType(InstanceType.ACADEMIC_ARTICLE.getValue())
         .creators(
             List.of(
@@ -298,21 +293,16 @@ class RequeueDlqHandlerTest {
         .publicationBucketUri(randomUri());
   }
 
-  private static DbInstitutionPoints generateInstitutionPoints(
-      URI institutionId, BigDecimal institutionPoints, URI creatorId) {
+  private static DbInstitutionPoints generateInstitutionPoints(URI institutionId, URI creatorId) {
+    var points = BigDecimal.ONE;
     return DbInstitutionPoints.builder()
         .institutionId(randomUri())
-        .points(BigDecimal.valueOf(1))
+        .points(points)
         .institutionId(institutionId)
-        .points(institutionPoints)
+        .points(points)
         .creatorAffiliationPoints(
-            List.of(generateCreatorAffiliationPoints(institutionId, institutionPoints, creatorId)))
+            List.of(new DbCreatorAffiliationPoints(creatorId, institutionId, points)))
         .build();
-  }
-
-  private static DbCreatorAffiliationPoints generateCreatorAffiliationPoints(
-      URI institutionId, BigDecimal institutionPoints, URI creatorId) {
-    return new DbCreatorAffiliationPoints(creatorId, institutionId, institutionPoints);
   }
 
   private RequeueDlqHandler setupHandlerReceivingCandidateWithoutChannelType() {
