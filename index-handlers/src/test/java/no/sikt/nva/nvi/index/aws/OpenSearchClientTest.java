@@ -109,7 +109,6 @@ import org.opensearch.testcontainers.OpensearchContainer;
 @SuppressWarnings({"PMD.AvoidUsingHardCodedIP", "PMD.GodClass", "PMD.CouplingBetweenObjects"})
 class OpenSearchClientTest {
 
-  public static final int DELAY_ON_INDEX = 2000;
   public static final String YEAR = "2023";
   public static final String CATEGORY = "AcademicArticle";
   public static final String UNEXISTING_FILTER = "unexisting-filter";
