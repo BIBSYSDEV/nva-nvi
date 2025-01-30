@@ -23,7 +23,6 @@
   </rule>
 
   <rule ref="category/java/bestpractices.xml">
-    <exclude name="SystemPrintln"/>
     <exclude name="GuardLogStatement"/>
     <exclude name="AvoidPrintStackTrace"/>
     <exclude name="UnitTestAssertionsShouldIncludeMessage"/>
