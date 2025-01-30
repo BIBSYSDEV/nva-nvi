@@ -178,7 +178,6 @@ class RequeueDlqHandlerTest {
   }
 
   @Test
-  @SuppressWarnings("PMD.AvoidDuplicateLiterals")
   void shouldStopRepeatedErrors() {
     var message = Message.builder().messageId(messageId).receiptHandle(messageId).build();
 

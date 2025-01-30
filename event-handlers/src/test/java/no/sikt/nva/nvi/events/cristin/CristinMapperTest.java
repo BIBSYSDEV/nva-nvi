@@ -37,7 +37,6 @@ import nva.commons.core.ioutils.IoUtils;
 import nva.commons.core.paths.UriWrapper;
 import org.junit.jupiter.api.Test;
 
-@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class CristinMapperTest {
 
   public static final String BASE_POINTS_CRISTIN_ENTRY = "1.0";
@@ -51,6 +50,10 @@ class CristinMapperTest {
   private static final CristinMapper cristinMapper =
       CristinMapper.withDepartmentTransfers(readCristinDepartments());
   private static final String VALID_QUALITY_CODE = "1";
+  private static final URI WORLD_SCIENTIFIC_JOURNAL =
+      URI.create(
+          "https://api.test.nva.aws.unit"
+              + ".no/publication-channels-v2/publisher/7BB46297-D894-4A65-B113-6462C58DE20A/2013");
 
   @Test
   void shouldThrowNullPointerExceptionWhenQualityCodeIsMissing() {
@@ -311,10 +314,7 @@ class CristinMapperTest {
         nviReportWithInstanceTypeAndReference("AcademicMonograph", academicArticleReference);
     var dbCandidate = cristinMapper.toDbCandidate(nviReport);
 
-    var expectedChannelId =
-        URI.create(
-            "https://api.test.nva.aws.unit.no/publication-channels-v2/publisher/7BB46297-D894-4A65-B113-6462C58DE20A"
-                + "/2013");
+    var expectedChannelId = WORLD_SCIENTIFIC_JOURNAL;
     var expectedChannelType = ChannelType.PUBLISHER;
 
     assertEquals(expectedChannelId, dbCandidate.channelId());
@@ -410,10 +410,7 @@ class CristinMapperTest {
         nviReportWithInstanceTypeAndReference("AcademicChapter", academicArticleReference);
     var dbCandidate = cristinMapper.toDbCandidate(nviReport);
 
-    var expectedChannelId =
-        URI.create(
-            "https://api.test.nva.aws.unit.no/publication-channels-v2/publisher/7BB46297-D894-4A65-B113-6462C58DE20A"
-                + "/2013");
+    var expectedChannelId = WORLD_SCIENTIFIC_JOURNAL;
     var expectedChannelType = ChannelType.PUBLISHER;
 
     assertEquals(expectedChannelId, dbCandidate.channelId());
