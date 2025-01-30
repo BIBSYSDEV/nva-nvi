@@ -29,6 +29,9 @@
     <exclude name="UnitTestAssertionsShouldIncludeMessage"/>
     <exclude name="UnitTestContainsTooManyAsserts"/>
 
+    <!-- Disabled because Cristin IDs are misinterpreted as IPs -->
+    <exclude name="AvoidUsingHardCodedIP"/>
+
     <!-- In TableManager we map ResourceNotFoundException to TableNotFoundException -->
     <exclude name="PreserveStackTrace"/>
 
