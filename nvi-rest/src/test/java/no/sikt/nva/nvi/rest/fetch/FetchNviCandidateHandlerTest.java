@@ -25,7 +25,6 @@ import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.GatewayResponse;
-import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpStatus;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,7 +32,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.zalando.problem.Problem;
-
+import org.apache.hc.core5.http.ContentType;
 class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Override
@@ -61,7 +60,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldReturnNotFoundWhenCandidateExistsButNotApplicable() throws IOException {
-    var nonApplicableCandidate = setupNonApplicableCandidate(topLevelCristinOrgId);
+    var nonApplicableCandidate = setupNonApplicableCandidate(topLevelOrganizationId);
     var request = createRequestWithCuratorAccess(nonApplicableCandidate.getIdentifier().toString());
     handler.handleRequest(request, output, CONTEXT);
     var gatewayResponse = getGatewayResponse();
@@ -76,9 +75,9 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
       mode = EnumSource.Mode.INCLUDE)
   void shouldReturnUnauthorizedWhenCandidateIsNotInUsersViewingScope(AccessRight accessRight)
       throws IOException {
-    var candidate = setupValidCandidate(topLevelCristinOrgId);
+    var candidate = setupValidCandidate(topLevelOrganizationId);
     var request =
-        createRequest(candidate.getIdentifier().toString(), topLevelCristinOrgId, accessRight);
+        createRequest(candidate.getIdentifier().toString(), topLevelOrganizationId, accessRight);
     var viewingScopeValidatorReturningFalse = new FakeViewingScopeValidator(false);
     handler =
         new FetchNviCandidateHandler(
@@ -93,7 +92,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldReturnUnauthorizedWhenUserDoesNotHaveSufficientAccessRight() throws IOException {
-    var candidate = setupValidCandidate(topLevelCristinOrgId);
+    var candidate = setupValidCandidate(topLevelOrganizationId);
     var request = createRequestWithoutAccessRight(candidate.getIdentifier().toString());
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
@@ -103,7 +102,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldReturnUnauthorizedWhenRequestDoesNotContainOrganizationId() throws IOException {
-    var candidate = setupValidCandidate(topLevelCristinOrgId);
+    var candidate = setupValidCandidate(topLevelOrganizationId);
     var request =
         new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
             .withHeaders(Map.of(HttpHeaders.ACCEPT, ContentType.APPLICATION_JSON.getMimeType()))
@@ -119,19 +118,19 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldReturnValidCandidateWhenCandidateExists() throws IOException {
-    var candidate = setupValidCandidate(topLevelCristinOrgId);
+    var candidate = setupValidCandidate(topLevelOrganizationId);
     var request = createRequestWithCuratorAccess(candidate.getIdentifier().toString());
 
     var responseDto = handleRequest(request);
 
-    var expectedCandidateDto = candidate.toDto(topLevelCristinOrgId, mockOrganizationRetriever);
+    var expectedCandidateDto = candidate.toDto(topLevelOrganizationId, mockOrganizationRetriever);
     assertEquals(expectedCandidateDto, responseDto);
   }
 
   @Test
   void shouldReturnCandidateDtoWithApprovalStatusNewWhenApprovalStatusIsPendingAndUnassigned()
       throws IOException {
-    var candidate = setupValidCandidate(topLevelCristinOrgId);
+    var candidate = setupValidCandidate(topLevelOrganizationId);
     var request = createRequestWithCuratorAccess(candidate.getIdentifier().toString());
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
@@ -143,18 +142,18 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldReturnValidCandidateWhenUserIsNviAdmin() throws IOException {
-    var candidate = setupValidCandidate(topLevelCristinOrgId);
+    var candidate = setupValidCandidate(topLevelOrganizationId);
     var request = createRequestWithAdminAccess(candidate.getIdentifier().toString());
 
     var responseDto = handleRequest(request);
 
-    var expectedCandidateDto = candidate.toDto(topLevelCristinOrgId, mockOrganizationRetriever);
+    var expectedCandidateDto = candidate.toDto(topLevelOrganizationId, mockOrganizationRetriever);
     assertEquals(expectedCandidateDto, responseDto);
   }
 
   @Test
   void shouldAllowFinalizingNewValidCandidate() throws IOException {
-    var candidate = setupValidCandidate(topLevelCristinOrgId);
+    var candidate = setupValidCandidate(topLevelOrganizationId);
     var request = createRequestWithCuratorAccess(candidate.getIdentifier().toString());
 
     var candidateDto = handleRequest(request);
@@ -167,7 +166,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldNotAllowFinalizingNewCandidateWithUnverifiedCreator() throws IOException {
-    var candidate = setupCandidateWithUnverifiedCreator(topLevelCristinOrgId);
+    var candidate = setupCandidateWithUnverifiedCreator(topLevelOrganizationId);
     var request = createRequestWithCuratorAccess(candidate.getIdentifier().toString());
 
     var candidateDto = handleRequest(request);
