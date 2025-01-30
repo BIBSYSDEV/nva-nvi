@@ -24,7 +24,6 @@ import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import no.unit.nva.clients.IdentityServiceClient;
 import no.unit.nva.commons.pagination.PaginatedSearchResult;
-import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
