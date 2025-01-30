@@ -90,6 +90,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.opensearch.client.Request;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
@@ -231,12 +232,11 @@ class OpenSearchClientTest {
   }
 
   @Test
-  @SuppressWarnings("PMD.DoNotUseThreads")
   void shouldRemoveDocumentFromIndex() throws InterruptedException, IOException {
     var document = singleNviCandidateIndexDocument().build();
     addDocumentsToIndex(document);
     openSearchClient.removeDocumentFromIndex(document.identifier());
-    Thread.sleep(DELAY_ON_INDEX);
+    refreshIndex();
     var searchParameters = defaultSearchParameters().build();
     var searchResponse = openSearchClient.search(searchParameters);
     var nviCandidateIndexDocument = searchResponse.hits().hits();
@@ -1018,11 +1018,22 @@ class OpenSearchClientTest {
         .withContributors(List.of(randomNviContributor(randomUri())));
   }
 
-  @SuppressWarnings("PMD.DoNotUseThreads")
   private static void addDocumentsToIndex(NviCandidateIndexDocument... documents)
       throws InterruptedException {
     Arrays.stream(documents).forEach(openSearchClient::addDocumentToIndex);
-    Thread.sleep(DELAY_ON_INDEX);
+    refreshIndex();
+  }
+
+  /**
+   * Refreshes all indices to make sure that new documents are searchable before tests are executed.
+   */
+  private static void refreshIndex() {
+    var refreshRequest = new Request("POST", "/_refresh");
+    try {
+      restClient.performRequest(refreshRequest);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   private static Stream<Entry<String, Integer>> aggregationNameAndExpectedCountProvider() {
