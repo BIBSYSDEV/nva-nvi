@@ -263,7 +263,7 @@ class UpsertAssigneeHandlerTest extends LocalDynamoTest {
   private InputStream createRequestWithDifferentInstitution() throws JsonProcessingException {
     return new HandlerRequestBuilder<UpsertAssigneeRequest>(JsonUtils.dtoObjectMapper)
         .withBody(randomAssigneeRequest())
-        .withCurrentCustomer(randomUri())
+        .withTopLevelCristinOrgId(randomUri())
         .build();
   }
 
