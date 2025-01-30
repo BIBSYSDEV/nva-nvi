@@ -47,7 +47,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends BaseCandidateRestHandl
 
   @Test
   void shouldReturnNotFoundWhenCandidateExistsButNotApplicable() throws IOException {
-    var nonApplicableCandidate = setupNonApplicableCandidate(currentCustomerId);
+    var nonApplicableCandidate = setupNonApplicableCandidate(topLevelCristinOrgId);
     var request = createRequestWithCuratorAccess(nonApplicableCandidate.getIdentifier().toString());
     handler.handleRequest(request, output, CONTEXT);
     var gatewayResponse = getGatewayResponse();
@@ -57,7 +57,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends BaseCandidateRestHandl
 
   @Test
   void shouldReturnValidCandidateWhenCandidateExists() throws IOException {
-    var candidate = setupValidCandidate(currentCustomerId);
+    var candidate = setupValidCandidate(topLevelCristinOrgId);
     var request = createRequestWithCuratorAccess(candidate.getPublicationId().toString());
 
     handler.handleRequest(request, output, CONTEXT);
@@ -84,7 +84,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends BaseCandidateRestHandl
   @Test
   void shouldReturnCandidateDtoWithApprovalStatusNewWhenApprovalStatusIsPendingAndUnassigned()
       throws IOException {
-    var candidate = setupValidCandidate(currentCustomerId);
+    var candidate = setupValidCandidate(topLevelCristinOrgId);
     var request = createRequestWithCuratorAccess(candidate.getPublicationId().toString());
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
@@ -96,7 +96,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends BaseCandidateRestHandl
 
   @Test
   void shouldReturnUnauthorizedWhenCandidateIsNotInUsersViewingScope() throws IOException {
-    var candidate = setupValidCandidate(currentCustomerId);
+    var candidate = setupValidCandidate(topLevelCristinOrgId);
     var request = createRequestWithCuratorAccess(candidate.getPublicationId().toString());
     handler =
         new FetchNviCandidateByPublicationIdHandler(

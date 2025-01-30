@@ -18,7 +18,6 @@ import com.amazonaws.services.lambda.runtime.Context;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.HttpURLConnection;
-import java.net.URI;
 import java.util.Calendar;
 import java.util.Map;
 import java.util.UUID;
@@ -50,11 +49,10 @@ class RemoveNoteHandlerTest extends LocalDynamoTest {
   private CandidateRepository candidateRepository;
 
   private static HandlerRequestBuilder<NviNoteRequest> createRequestWithoutAccessRights(
-      URI customerId, String candidateId, String noteId, String userName) {
+      String candidateId, String noteId, String userName) {
     return new HandlerRequestBuilder<NviNoteRequest>(dtoObjectMapper)
         .withPathParameters(
             Map.of(CANDIDATE_IDENTIFIER, candidateId, PARAM_NOTE_IDENTIFIER, noteId))
-        .withCurrentCustomer(customerId)
         .withUserName(userName);
   }
 
@@ -73,9 +71,7 @@ class RemoveNoteHandlerTest extends LocalDynamoTest {
   @Test
   void shouldReturnUnauthorizedWhenMissingAccessRights() throws IOException {
     handler.handleRequest(
-        createRequestWithoutAccessRights(
-                randomUri(), randomString(), randomString(), randomString())
-            .build(),
+        createRequestWithoutAccessRights(randomString(), randomString(), randomString()).build(),
         output,
         context);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
@@ -162,9 +158,8 @@ class RemoveNoteHandlerTest extends LocalDynamoTest {
 
   private HandlerRequestBuilder<NviNoteRequest> createRequest(
       UUID candidateIdentifier, UUID noteIdentifier, String userName) {
-    var customerId = randomUri();
     return createRequestWithoutAccessRights(
-            customerId, candidateIdentifier.toString(), noteIdentifier.toString(), userName)
-        .withAccessRights(customerId, AccessRight.MANAGE_NVI_CANDIDATES);
+            candidateIdentifier.toString(), noteIdentifier.toString(), userName)
+        .withAccessRights(randomUri(), AccessRight.MANAGE_NVI_CANDIDATES);
   }
 }

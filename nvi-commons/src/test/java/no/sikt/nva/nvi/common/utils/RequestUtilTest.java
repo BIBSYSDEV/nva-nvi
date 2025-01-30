@@ -57,11 +57,9 @@ class RequestUtilTest {
   private static InputStream createRequest(
       URI userTopLevelCristinInstitution, AccessRight accessRight, String userName)
       throws JsonProcessingException {
-    var customerId = randomUri();
     return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
-        .withCurrentCustomer(customerId)
         .withTopLevelCristinOrgId(userTopLevelCristinInstitution)
-        .withAccessRights(customerId, accessRight)
+        .withAccessRights(userTopLevelCristinInstitution, accessRight)
         .withUserName(userName)
         .build();
   }

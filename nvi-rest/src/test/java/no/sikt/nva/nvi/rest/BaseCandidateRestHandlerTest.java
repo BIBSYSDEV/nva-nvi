@@ -65,7 +65,6 @@ public abstract class BaseCandidateRestHandlerTest extends LocalDynamoTest {
   protected static final Context CONTEXT = mock(Context.class);
   protected final DynamoDbClient localDynamo = initializeTestDatabase();
   protected String resourcePathParameter;
-  protected URI currentCustomerId;
   protected URI topLevelCristinOrgId;
   protected URI subUnitCristinOrgId;
   protected ByteArrayOutputStream output;
@@ -75,17 +74,16 @@ public abstract class BaseCandidateRestHandlerTest extends LocalDynamoTest {
 
   protected InputStream createRequestWithAdminAccess(String resourceIdentifier)
       throws JsonProcessingException {
-    return createRequest(resourceIdentifier, topLevelCristinOrgId, currentCustomerId, MANAGE_NVI);
+    return createRequest(resourceIdentifier, topLevelCristinOrgId, MANAGE_NVI);
   }
 
   protected InputStream createRequest(
-      String resourceIdentifier, URI cristinInstitutionId, URI customerId, AccessRight accessRight)
+      String resourceIdentifier, URI cristinInstitutionId, AccessRight accessRight)
       throws JsonProcessingException {
     return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
         .withHeaders(Map.of(HttpHeaders.ACCEPT, ContentType.APPLICATION_JSON.getMimeType()))
-        .withCurrentCustomer(customerId)
         .withTopLevelCristinOrgId(cristinInstitutionId)
-        .withAccessRights(customerId, accessRight)
+        .withAccessRights(cristinInstitutionId, accessRight)
         .withUserName(randomString())
         .withPathParameters(Map.of(resourcePathParameter, resourceIdentifier))
         .build();
@@ -95,7 +93,6 @@ public abstract class BaseCandidateRestHandlerTest extends LocalDynamoTest {
   protected void commonSetup() {
     subUnitCristinOrgId = randomUri();
     topLevelCristinOrgId = randomUri();
-    currentCustomerId = topLevelCristinOrgId;
 
     output = new ByteArrayOutputStream();
     candidateRepository = new CandidateRepository(localDynamo);
@@ -109,7 +106,6 @@ public abstract class BaseCandidateRestHandlerTest extends LocalDynamoTest {
       throws JsonProcessingException {
     return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
         .withHeaders(Map.of(HttpHeaders.ACCEPT, ContentType.APPLICATION_JSON.getMimeType()))
-        .withCurrentCustomer(currentCustomerId)
         .withTopLevelCristinOrgId(topLevelCristinOrgId)
         .withUserName(randomString())
         .withPathParameters(Map.of(resourcePathParameter, resourceIdentifier))
@@ -118,8 +114,7 @@ public abstract class BaseCandidateRestHandlerTest extends LocalDynamoTest {
 
   protected InputStream createRequestWithCuratorAccess(String resourceIdentifier)
       throws JsonProcessingException {
-    return createRequest(
-        resourceIdentifier, topLevelCristinOrgId, currentCustomerId, MANAGE_NVI_CANDIDATES);
+    return createRequest(resourceIdentifier, topLevelCristinOrgId, MANAGE_NVI_CANDIDATES);
   }
 
   protected Candidate setupValidCandidate(URI institutionId) {
@@ -262,7 +257,7 @@ public abstract class BaseCandidateRestHandlerTest extends LocalDynamoTest {
 
   protected UpdateStatusRequest createStatusRequest(ApprovalStatus status) {
     return UpdateStatusRequest.builder()
-        .withInstitutionId(currentCustomerId)
+        .withInstitutionId(topLevelCristinOrgId)
         .withApprovalStatus(status)
         .withUsername(randomString())
         .withReason(ApprovalStatus.REJECTED.equals(status) ? randomString() : null)

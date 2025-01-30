@@ -204,26 +204,23 @@ class CreateNoteHandlerTest extends LocalDynamoTest {
   private InputStream createRequest(
       UUID identifier, NviNoteRequest body, String userName, URI institutionId)
       throws JsonProcessingException {
-    var customerId = randomUri();
     return new HandlerRequestBuilder<NviNoteRequest>(JsonUtils.dtoObjectMapper)
         .withBody(body)
-        .withCurrentCustomer(customerId)
         .withTopLevelCristinOrgId(institutionId)
         .withPathParameters(Map.of("candidateIdentifier", identifier.toString()))
-        .withAccessRights(customerId, AccessRight.MANAGE_NVI_CANDIDATES)
+        .withAccessRights(institutionId, AccessRight.MANAGE_NVI_CANDIDATES)
         .withUserName(userName)
         .build();
   }
 
   private InputStream createRequest(UUID identifier, String body, String userName)
       throws JsonProcessingException {
-    var customerId = randomUri();
+    var topLevelCristinOrgId = randomUri();
     return new HandlerRequestBuilder<String>(JsonUtils.dtoObjectMapper)
         .withBody(body)
-        .withCurrentCustomer(customerId)
-        .withTopLevelCristinOrgId(randomUri())
+        .withTopLevelCristinOrgId(topLevelCristinOrgId)
         .withPathParameters(Map.of("candidateIdentifier", identifier.toString()))
-        .withAccessRights(customerId, AccessRight.MANAGE_NVI_CANDIDATES)
+        .withAccessRights(topLevelCristinOrgId, AccessRight.MANAGE_NVI_CANDIDATES)
         .withUserName(userName)
         .build();
   }

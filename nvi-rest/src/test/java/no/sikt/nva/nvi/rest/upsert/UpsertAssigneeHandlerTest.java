@@ -231,12 +231,10 @@ class UpsertAssigneeHandlerTest extends LocalDynamoTest {
       throws JsonProcessingException {
     var approvalToUpdate = candidate.toDto().approvals().getFirst();
     var requestBody = new UpsertAssigneeRequest(newAssignee, approvalToUpdate.institutionId());
-    var customerId = randomUri();
     return new HandlerRequestBuilder<UpsertAssigneeRequest>(JsonUtils.dtoObjectMapper)
         .withBody(randomAssigneeRequest())
-        .withCurrentCustomer(customerId)
         .withTopLevelCristinOrgId(requestBody.institutionId())
-        .withAccessRights(customerId, AccessRight.MANAGE_NVI_CANDIDATES)
+        .withAccessRights(requestBody.institutionId(), AccessRight.MANAGE_NVI_CANDIDATES)
         .withUserName(randomString())
         .withBody(requestBody)
         .withPathParameters(Map.of(CANDIDATE_IDENTIFIER, candidate.getIdentifier().toString()))
@@ -246,12 +244,10 @@ class UpsertAssigneeHandlerTest extends LocalDynamoTest {
   private InputStream createRequestWithNonExistingCandidate() throws JsonProcessingException {
     var approvalToUpdate = createCandidate().toDto().approvals().get(0);
     var requestBody = new UpsertAssigneeRequest(randomString(), approvalToUpdate.institutionId());
-    var customerId = randomUri();
     return new HandlerRequestBuilder<UpsertAssigneeRequest>(JsonUtils.dtoObjectMapper)
         .withBody(randomAssigneeRequest())
-        .withCurrentCustomer(customerId)
         .withTopLevelCristinOrgId(requestBody.institutionId())
-        .withAccessRights(customerId, AccessRight.MANAGE_NVI_CANDIDATES)
+        .withAccessRights(requestBody.institutionId(), AccessRight.MANAGE_NVI_CANDIDATES)
         .withUserName(randomString())
         .withBody(requestBody)
         .withPathParameters(Map.of(CANDIDATE_IDENTIFIER, randomUUID().toString()))

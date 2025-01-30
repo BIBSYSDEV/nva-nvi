@@ -44,7 +44,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldReturnNotFoundWhenCandidateExistsButNotApplicable() throws IOException {
-    var nonApplicableCandidate = setupNonApplicableCandidate(currentCustomerId);
+    var nonApplicableCandidate = setupNonApplicableCandidate(topLevelCristinOrgId);
     var request = createRequestWithCuratorAccess(nonApplicableCandidate.getIdentifier().toString());
     handler.handleRequest(request, output, CONTEXT);
     var gatewayResponse = getGatewayResponse();
@@ -54,7 +54,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldReturnUnauthorizedWhenCandidateIsNotInUsersViewingScope() throws IOException {
-    var candidate = setupValidCandidate(currentCustomerId);
+    var candidate = setupValidCandidate(topLevelCristinOrgId);
     var request = createRequestWithCuratorAccess(candidate.getIdentifier().toString());
     var viewingScopeValidatorReturningFalse = new FakeViewingScopeValidator(false);
     handler =
@@ -67,7 +67,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldReturnUnauthorizedWhenUserDoesNotHaveSufficientAccessRight() throws IOException {
-    var candidate = setupValidCandidate(currentCustomerId);
+    var candidate = setupValidCandidate(topLevelCristinOrgId);
     var request = createRequestWithoutAccessRight(candidate.getIdentifier().toString());
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
@@ -77,7 +77,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldReturnValidCandidateWhenCandidateExists() throws IOException {
-    var candidate = setupValidCandidate(currentCustomerId);
+    var candidate = setupValidCandidate(topLevelCristinOrgId);
     var request = createRequestWithCuratorAccess(candidate.getIdentifier().toString());
 
     handler.handleRequest(request, output, CONTEXT);
@@ -91,7 +91,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
   @Test
   void shouldReturnCandidateDtoWithApprovalStatusNewWhenApprovalStatusIsPendingAndUnassigned()
       throws IOException {
-    var candidate = setupValidCandidate(currentCustomerId);
+    var candidate = setupValidCandidate(topLevelCristinOrgId);
     var request = createRequestWithCuratorAccess(candidate.getIdentifier().toString());
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
@@ -103,7 +103,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldReturnValidCandidateWhenUserIsNviAdmin() throws IOException {
-    var candidate = setupValidCandidate(currentCustomerId);
+    var candidate = setupValidCandidate(topLevelCristinOrgId);
     var request = createRequestWithAdminAccess(candidate.getIdentifier().toString());
 
     handler.handleRequest(request, output, CONTEXT);

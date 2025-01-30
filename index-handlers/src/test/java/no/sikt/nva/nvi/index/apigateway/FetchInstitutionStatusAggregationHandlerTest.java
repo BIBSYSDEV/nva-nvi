@@ -86,11 +86,9 @@ class FetchInstitutionStatusAggregationHandlerTest {
 
   private static HandlerRequestBuilder<InputStream> createRequest(
       URI userTopLevelCristinInstitution, URI institutionId, int year, AccessRight accessRight) {
-    var customerId = randomUri();
     return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
-        .withCurrentCustomer(customerId)
         .withTopLevelCristinOrgId(userTopLevelCristinInstitution)
-        .withAccessRights(customerId, accessRight)
+        .withAccessRights(userTopLevelCristinInstitution, accessRight)
         .withUserName(randomString())
         .withPathParameters(
             Map.of(
@@ -102,9 +100,7 @@ class FetchInstitutionStatusAggregationHandlerTest {
 
   private static HandlerRequestBuilder<InputStream> createRequestWithoutAccessRight(
       URI userTopLevelCristinInstitution, URI institutionId, int year) {
-    var customerId = randomUri();
     return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
-        .withCurrentCustomer(customerId)
         .withTopLevelCristinOrgId(userTopLevelCristinInstitution)
         .withUserName(randomString())
         .withPathParameters(
