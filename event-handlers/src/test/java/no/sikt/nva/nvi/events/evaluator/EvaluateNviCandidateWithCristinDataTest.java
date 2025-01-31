@@ -29,17 +29,19 @@ import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
 import org.junit.jupiter.api.Test;
 
-@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class EvaluateNviCandidateWithCristinDataTest extends EvaluationTest {
 
+  private static final URI BASE_PATH =
+      URI.create("https://api.sandbox.nva.aws.unit.no/cristin/organization");
   private static final URI NTNU_TOP_LEVEL_ORG_ID =
-      URI.create("https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0");
+      UriWrapper.fromUri(BASE_PATH).addChild("194.0.0.0").getUri();
   private static final URI ST_OLAVS_TOP_LEVEL_ORG_ID =
-      URI.create("https://api.sandbox.nva.aws.unit.no/cristin/organization/1920.0.0.0");
+      UriWrapper.fromUri(BASE_PATH).addChild("1920.0.0.0").getUri();
   private static final URI UIO_TOP_LEVEL_ORG_ID =
-      URI.create("https://api.sandbox.nva.aws.unit.no/cristin/organization/185.90.0.0");
+      UriWrapper.fromUri(BASE_PATH).addChild("185.90.0.0").getUri();
   private static final URI SINTEF_TOP_LEVEL_ORG_ID =
-      URI.create("https://api.sandbox.nva.aws.unit.no/cristin/organization/7401.0.0.0");
+      UriWrapper.fromUri(BASE_PATH).addChild("7401.0.0.0").getUri();
+
   private static final String CUSTOMER = "customer";
   private static final String API_HOST = new Environment().readEnv("API_HOST");
   private static final String CRISTIN_ID = "cristinId";
@@ -63,11 +65,8 @@ class EvaluateNviCandidateWithCristinDataTest extends EvaluationTest {
   @Test
   void shouldReturnSamePointsAsPointsCalculatedByCristinForAcademicMonographFrom2022()
       throws IOException {
-    mockOrganizationResponseForAffiliation(
-        UIO_TOP_LEVEL_ORG_ID,
-        URI.create(
-            "https://api.sandbox.nva.aws.unit" + ".no/cristin/organization/185.15.13" + ".55"),
-        uriRetriever);
+    var subUnitId = UriWrapper.fromUri(BASE_PATH).addChild("185.15.13.55").getUri();
+    mockOrganizationResponseForAffiliation(UIO_TOP_LEVEL_ORG_ID, subUnitId, uriRetriever);
     mockCristinResponseForNonNviOrganizationsForAcademicMonograph();
     mockCustomerApi(UIO_TOP_LEVEL_ORG_ID);
 
@@ -82,11 +81,8 @@ class EvaluateNviCandidateWithCristinDataTest extends EvaluationTest {
   @Test
   void shouldReturnSamePointsAsPointsCalculatedByCristinForLiteratureReviewFrom2022()
       throws IOException {
-    mockOrganizationResponseForAffiliation(
-        NTNU_TOP_LEVEL_ORG_ID,
-        URI.create(
-            "https://api.sandbox.nva.aws.unit" + ".no/cristin/organization/194.65.15" + ".0"),
-        uriRetriever);
+    var subUnitId = UriWrapper.fromUri(BASE_PATH).addChild("194.65.15.0").getUri();
+    mockOrganizationResponseForAffiliation(NTNU_TOP_LEVEL_ORG_ID, subUnitId, uriRetriever);
     mockCristinResponseForNonNviOrganizationsForLiteratureReview();
     mockCustomerApi(NTNU_TOP_LEVEL_ORG_ID);
 
@@ -128,43 +124,26 @@ class EvaluateNviCandidateWithCristinDataTest extends EvaluationTest {
   }
 
   private void mockCristinResponseForNonNviOrganizationsForLiteratureReview() {
-    mockOrganizationResponseForAffiliation(
-        URI.create("https://api.sandbox.nva.aws.unit" + ".no/cristin/organization/13900000.0.0.0"),
-        null,
-        uriRetriever);
-    mockOrganizationResponseForAffiliation(
-        URI.create("https://api.sandbox.nva.aws.unit.no/cristin/organization/13920157.0.0.0"),
-        null,
-        uriRetriever);
+    var organization1 = UriWrapper.fromUri(BASE_PATH).addChild("13900000.0.0.0").getUri();
+    var organization2 = UriWrapper.fromUri(BASE_PATH).addChild("13920157.0.0.0").getUri();
+    mockOrganizationResponseForAffiliation(organization1, null, uriRetriever);
+    mockOrganizationResponseForAffiliation(organization2, null, uriRetriever);
   }
 
   private void mockCristinResponseForNonNviOrganizationsForAcademicMonograph() {
-    mockOrganizationResponseForAffiliation(
-        URI.create("https://api.sandbox.nva.aws.unit.no/cristin/organization/14100020.0.0.0"),
-        null,
-        uriRetriever);
-    mockOrganizationResponseForAffiliation(
-        URI.create("https://api.sandbox.nva.aws.unit.no/cristin/organization/12300050.0.0.0"),
-        null,
-        uriRetriever);
+    var organization1 = UriWrapper.fromUri(BASE_PATH).addChild("14100020.0.0.0").getUri();
+    var organization2 = UriWrapper.fromUri(BASE_PATH).addChild("12300050.0.0.0").getUri();
+    mockOrganizationResponseForAffiliation(organization1, null, uriRetriever);
+    mockOrganizationResponseForAffiliation(organization2, null, uriRetriever);
   }
 
   private void mockCristinApiResponsesForAllSubUnitsInAcademicChapter() {
-    mockOrganizationResponseForAffiliation(
-        NTNU_TOP_LEVEL_ORG_ID,
-        URI.create(
-            "https://api.sandbox.nva.aws.unit" + ".no/cristin/organization/194.64.94" + ".0"),
-        uriRetriever);
-    mockOrganizationResponseForAffiliation(
-        NTNU_TOP_LEVEL_ORG_ID,
-        URI.create(
-            "https://api.sandbox.nva.aws.unit" + ".no/cristin/organization/194.64.45" + ".0"),
-        uriRetriever);
-    mockOrganizationResponseForAffiliation(
-        SINTEF_TOP_LEVEL_ORG_ID,
-        URI.create(
-            "https://api.sandbox.nva.aws.unit" + ".no/cristin/organization/7401.30" + ".40.0"),
-        uriRetriever);
+    var organization1 = UriWrapper.fromUri(BASE_PATH).addChild("194.64.94.0").getUri();
+    var organization2 = UriWrapper.fromUri(BASE_PATH).addChild("194.64.45.0").getUri();
+    var organization3 = UriWrapper.fromUri(BASE_PATH).addChild("7401.30.40.0").getUri();
+    mockOrganizationResponseForAffiliation(NTNU_TOP_LEVEL_ORG_ID, organization1, uriRetriever);
+    mockOrganizationResponseForAffiliation(NTNU_TOP_LEVEL_ORG_ID, organization2, uriRetriever);
+    mockOrganizationResponseForAffiliation(SINTEF_TOP_LEVEL_ORG_ID, organization3, uriRetriever);
   }
 
   private SQSEvent setupSqsEvent(String path) throws IOException {
@@ -174,25 +153,14 @@ class EvaluateNviCandidateWithCristinDataTest extends EvaluationTest {
   }
 
   private void mockCristinApiResponsesForAllSubUnitsInAcademicArticle() {
-    mockOrganizationResponseForAffiliation(
-        NTNU_TOP_LEVEL_ORG_ID,
-        URI.create("https://api.sandbox.nva.aws.unit.no/cristin/organization/194.65.0" + ".0"),
-        uriRetriever);
-    mockOrganizationResponseForAffiliation(
-        NTNU_TOP_LEVEL_ORG_ID,
-        URI.create(
-            "https://api.sandbox.nva.aws.unit" + ".no/cristin/organization/194.63.10" + ".0"),
-        uriRetriever);
-    mockOrganizationResponseForAffiliation(
-        ST_OLAVS_TOP_LEVEL_ORG_ID,
-        URI.create(
-            "https://api.sandbox.nva.aws.unit" + ".no/cristin/organization/1920" + ".13.0.0"),
-        uriRetriever);
-    mockOrganizationResponseForAffiliation(
-        NTNU_TOP_LEVEL_ORG_ID,
-        URI.create(
-            "https://api.sandbox.nva.aws.unit" + ".no/cristin/organization/194.65.25" + ".0"),
-        uriRetriever);
+    var organization1 = UriWrapper.fromUri(BASE_PATH).addChild("194.65.0.0").getUri();
+    var organization2 = UriWrapper.fromUri(BASE_PATH).addChild("194.63.10.0").getUri();
+    var organization3 = UriWrapper.fromUri(BASE_PATH).addChild("1920.13.0.0").getUri();
+    var organization4 = UriWrapper.fromUri(BASE_PATH).addChild("194.65.25.0").getUri();
+    mockOrganizationResponseForAffiliation(NTNU_TOP_LEVEL_ORG_ID, organization1, uriRetriever);
+    mockOrganizationResponseForAffiliation(NTNU_TOP_LEVEL_ORG_ID, organization2, uriRetriever);
+    mockOrganizationResponseForAffiliation(ST_OLAVS_TOP_LEVEL_ORG_ID, organization3, uriRetriever);
+    mockOrganizationResponseForAffiliation(NTNU_TOP_LEVEL_ORG_ID, organization4, uriRetriever);
     mockOrganizationResponseForAffiliation(ST_OLAVS_TOP_LEVEL_ORG_ID, null, uriRetriever);
   }
 
