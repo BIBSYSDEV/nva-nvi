@@ -6,15 +6,18 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.params.provider.Arguments.argumentSet;
+import static org.mockito.Mockito.mock;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.InputStream;
 import java.net.URI;
+import java.net.http.HttpClient;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.service.model.Username;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.RequestInfo;
+import nva.commons.apigateway.exceptions.ApiIoException;
 import nva.commons.apigateway.exceptions.UnauthorizedException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -22,12 +25,13 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class RequestUtilTest {
+  private final HttpClient httpClient = mock(HttpClient.class);
 
   @Test
-  void shouldGetUsername() throws UnauthorizedException, JsonProcessingException {
+  void shouldGetUsername() throws UnauthorizedException, JsonProcessingException, ApiIoException {
     var userName = randomString();
-    var requestInfo =
-        RequestInfo.fromRequest(createRequest(randomUri(), AccessRight.MANAGE_NVI, userName));
+    var request = createRequest(randomUri(), AccessRight.MANAGE_NVI, userName);
+    var requestInfo = RequestInfo.fromRequest(request, httpClient);
     var actual = RequestUtil.getUsername(requestInfo);
     assertEquals(Username.fromString(userName), actual);
   }
@@ -35,9 +39,9 @@ class RequestUtilTest {
   @ParameterizedTest
   @MethodSource("accessRightsProvider")
   void shouldParseAccessRights(AccessRight accessRight, boolean isNviAdmin, boolean isNviCurator)
-      throws JsonProcessingException {
-    var requestInfo =
-        RequestInfo.fromRequest(createRequest(randomUri(), accessRight, randomString()));
+      throws JsonProcessingException, ApiIoException {
+    var request = createRequest(randomUri(), accessRight, randomString());
+    var requestInfo = RequestInfo.fromRequest(request, httpClient);
     var actualIsNviAdmin = RequestUtil.isNviAdmin(requestInfo);
     var actualIsNviCurator = RequestUtil.isNviCurator(requestInfo);
     assertEquals(isNviAdmin, actualIsNviAdmin);
@@ -46,9 +50,9 @@ class RequestUtilTest {
 
   @Test
   void shouldThrowUnauthorizedExceptionIfUserDoesNotHaveAccessRight()
-      throws JsonProcessingException {
-    var requestInfo =
-        RequestInfo.fromRequest(createRequest(randomUri(), AccessRight.MANAGE_DOI, randomString()));
+      throws JsonProcessingException, ApiIoException {
+    var request = createRequest(randomUri(), AccessRight.MANAGE_DOI, randomString());
+    var requestInfo = RequestInfo.fromRequest(request, httpClient);
     assertThrows(
         UnauthorizedException.class,
         () -> RequestUtil.hasAccessRight(requestInfo, AccessRight.MANAGE_NVI));
