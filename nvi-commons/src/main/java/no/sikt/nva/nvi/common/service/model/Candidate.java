@@ -20,8 +20,8 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -396,17 +396,21 @@ public final class Candidate {
       UpdateStatusRequest input, OrganizationRetriever organizationRetriever) {
     validateUpdateStatusRequest(input);
     validateCandidateState();
+
     var currentState = getApprovalStatus(input.institutionId());
     var newState = input.approvalStatus();
-    if (isValidStatusChange(input, organizationRetriever)) {
-      approvals.computeIfPresent(input.institutionId(), (uri, approval) -> approval.update(input));
+
+    if (currentState.equals(newState)) {
+      // No change in state, return without making any changes
       return this;
-    } else if (currentState.equals(newState)) {
-      // No change in state, no need to update or raise an error
-      return this;
-    } else {
+    }
+
+    if (!isValidStatusChange(input, organizationRetriever)) {
       throw new IllegalStateException("Cannot update approval status");
     }
+
+    approvals.computeIfPresent(input.institutionId(), (uri, approval) -> approval.update(input));
+    return this;
   }
 
   public Candidate createNote(CreateNoteRequest input, CandidateRepository repository) {
@@ -895,48 +899,36 @@ public final class Candidate {
     }
   }
 
+  private boolean isValidStatusChange(
+      UpdateStatusRequest updateRequest, OrganizationRetriever organizationRetriever) {
+    var allowedOperations =
+        getAllowedOperations(updateRequest.institutionId(), organizationRetriever);
+    var attemptedOperation = CandidateOperation.fromApprovalStatus(updateRequest.approvalStatus());
+    return allowedOperations.contains(attemptedOperation);
+  }
+
   /**
-   * This validates the update status request for the candidate, checking if this institution can
-   * set the new status.
+   * This checks which operations this organization is allowed to perform on this candidate.
    *
    * <p>This requires retrieving metadata about each creator's organization, which is not persisted
    * in the database yet. Once we persist the necessary metadata, we can simplify this check. TODO:
    * Persist full organization hierarchy for creators and simplify this validation.
    */
-  private boolean isValidStatusChange(
-      UpdateStatusRequest updateRequest, OrganizationRetriever organizationRetriever) {
-    var allowedOperations =
-        getAllowedOperations(updateRequest.institutionId(), organizationRetriever);
-    var newState = updateRequest.approvalStatus();
-
-    return switch (newState) {
-      case PENDING -> allowedOperations.contains(CandidateOperation.APPROVAL_PENDING);
-      case APPROVED -> allowedOperations.contains(CandidateOperation.APPROVAL_APPROVE);
-      case REJECTED -> allowedOperations.contains(CandidateOperation.APPROVAL_REJECT);
-    };
-  }
-
   public Set<CandidateOperation> getAllowedOperations(
       URI topLevelOrganizationId, OrganizationRetriever organizationRetriever) {
     var hasUnverifiedCreator =
         hasUnverifiedCreatorFromOrganization(topLevelOrganizationId, organizationRetriever);
+
     var currentStatus = getApprovalStatus(topLevelOrganizationId);
-    var operations = new HashSet<CandidateOperation>();
+    var validTransitions = currentStatus.getValidTransitions();
+    var validStatesForOrganization =
+        hasUnverifiedCreator ? EnumSet.of(PENDING) : EnumSet.of(PENDING, APPROVED, REJECTED);
 
-    if (!hasUnverifiedCreator) {
-      if (currentStatus != APPROVED) {
-        operations.add(CandidateOperation.APPROVAL_APPROVE);
-      }
-      if (currentStatus != REJECTED) {
-        operations.add(CandidateOperation.APPROVAL_REJECT);
-      }
-    }
-
-    if (currentStatus != PENDING) {
-      operations.add(CandidateOperation.APPROVAL_PENDING);
-    }
-
-    return Collections.unmodifiableSet(operations);
+    // Find the intersection of valid approvals for this organization and valid transitions
+    validStatesForOrganization.retainAll(validTransitions);
+    return validStatesForOrganization.stream()
+        .map(CandidateOperation::fromApprovalStatus)
+        .collect(Collectors.toUnmodifiableSet());
   }
 
   private boolean hasUnverifiedCreatorFromOrganization(
@@ -944,7 +936,8 @@ public final class Candidate {
     var unverifiedCreators = publicationDetails.getUnverifiedCreators();
     return unverifiedCreators.stream()
         .flatMap(contributor -> getTopLevelAffiliations(contributor, organizationRetriever))
-        .anyMatch(org -> org.id().equals(topLevelOrganizationId));
+        .map(Organization::id)
+        .anyMatch(organizationId -> organizationId.equals(topLevelOrganizationId));
   }
 
   private static Stream<Organization> getTopLevelAffiliations(
