@@ -22,9 +22,9 @@ class CandidateOperationTest {
 
   private static Stream<Arguments> candidateOperationSerializationProvider() {
     return Stream.of(
-        argumentSet("APPROVAL_REJECT", CandidateOperation.APPROVAL_REJECT, "\"reject-candidate\""),
+        argumentSet("APPROVAL_REJECT", CandidateOperation.APPROVAL_REJECT, "\"approval/reject-candidate\""),
         argumentSet(
-            "APPROVAL_APPROVE", CandidateOperation.APPROVAL_APPROVE, "\"approve-candidate\""),
-        argumentSet("APPROVAL_PENDING", CandidateOperation.APPROVAL_PENDING, "\"reset-approval\""));
+            "APPROVAL_APPROVE", CandidateOperation.APPROVAL_APPROVE, "\"approval/approve-candidate\""),
+        argumentSet("APPROVAL_PENDING", CandidateOperation.APPROVAL_PENDING, "\"approval/reset-approval\""));
   }
 }
