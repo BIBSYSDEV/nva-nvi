@@ -167,7 +167,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldNotAllowFinalizingNewCandidateWithUnverifiedCreator() throws IOException {
-    var candidate = setupCandidateWithUnverifiedCreator(topLevelOrganizationId);
+    var candidate = setupCandidateWithUnverifiedCreator();
     var request = createRequestWithCuratorAccess(candidate.getIdentifier().toString());
 
     var candidateDto = handleRequest(request);

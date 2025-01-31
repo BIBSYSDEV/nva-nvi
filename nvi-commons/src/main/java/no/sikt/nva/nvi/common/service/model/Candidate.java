@@ -273,7 +273,7 @@ public final class Candidate {
     return new HashMap<>(approvals);
   }
 
-  public ApprovalStatus getApprovalStatus(URI institutionId) {
+  private ApprovalStatus getApprovalStatus(URI institutionId) {
     return approvals.get(institutionId).getStatus();
   }
 
@@ -354,8 +354,8 @@ public final class Candidate {
   }
 
   public CandidateDto toDto(
-      URI customerInstitutionId, OrganizationRetriever organizationRetriever) {
-    var allowedOperations = getAllowedOperations(customerInstitutionId, organizationRetriever);
+      URI userTopLevelOrganizationId, OrganizationRetriever organizationRetriever) {
+    var allowedOperations = getAllowedOperations(userTopLevelOrganizationId, organizationRetriever);
     return CandidateDto.builder()
         .withId(getId())
         .withContext(CONTEXT_URI)
@@ -917,15 +917,15 @@ public final class Candidate {
     var operations = EnumSet.noneOf(CandidateOperation.class);
 
     if (!hasUnverifiedCreator) {
-      if (currentStatus != ApprovalStatus.APPROVED) {
+      if (currentStatus != APPROVED) {
         operations.add(CandidateOperation.APPROVAL_APPROVE);
       }
-      if (currentStatus != ApprovalStatus.REJECTED) {
+      if (currentStatus != REJECTED) {
         operations.add(CandidateOperation.APPROVAL_REJECT);
       }
     }
 
-    if (currentStatus != ApprovalStatus.PENDING) {
+    if (currentStatus != PENDING) {
       operations.add(CandidateOperation.APPROVAL_PENDING);
     }
 
