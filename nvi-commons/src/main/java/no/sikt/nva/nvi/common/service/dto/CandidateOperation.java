@@ -3,11 +3,11 @@ package no.sikt.nva.nvi.common.service.dto;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum CandidateOperation {
-  APPROVAL_REJECT("approval/reject-candidate"),
-  APPROVAL_APPROVE("approval/approve-candidate"),
-  APPROVAL_PENDING("approval/reset-approval");
+  APPROVAL_REJECT("reject-candidate"),
+  APPROVAL_APPROVE("approve-candidate"),
+  APPROVAL_PENDING("reset-approval");
 
-  private String value;
+  private final String value;
 
   CandidateOperation(String value) {
     this.value = value;
@@ -16,9 +16,5 @@ public enum CandidateOperation {
   @JsonValue
   public String getValue() {
     return value;
-  }
-
-  public void setValue(String value) {
-    this.value = value;
   }
 }

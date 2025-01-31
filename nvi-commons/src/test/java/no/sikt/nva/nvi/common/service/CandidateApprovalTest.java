@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.common.service;
 
+import static java.util.Collections.emptyList;
 import static no.sikt.nva.nvi.test.TestUtils.createUpdateStatusRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertNonCandidateRequest;
@@ -8,10 +9,12 @@ import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningClosedPeri
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningNotOpenedPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.randomApplicableCandidate;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
+import static no.sikt.nva.nvi.test.TestUtils.randomUriWithSuffix;
 import static no.sikt.nva.nvi.test.UpsertRequestBuilder.randomUpsertRequestBuilder;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
@@ -25,7 +28,6 @@ import static org.mockito.Mockito.mock;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.time.ZonedDateTime;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -36,6 +38,7 @@ import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.model.InvalidNviCandidateException;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
+import no.sikt.nva.nvi.common.service.dto.CandidateOperation;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
@@ -71,7 +74,8 @@ class CandidateApprovalTest extends CandidateTestSetup {
   private static final InstanceType HARDCODED_INSTANCE_TYPE = InstanceType.ACADEMIC_ARTICLE;
   private static final BigDecimal HARDCODED_POINTS =
       BigDecimal.ONE.setScale(EXPECTED_SCALE, EXPECTED_ROUNDING_MODE);
-  private OrganizationRetriever organizationRetriever;
+  private OrganizationRetriever mockOrganizationRetriever;
+  private URI topLevelOrganizationId;
 
   public static Stream<Arguments> statusProvider() {
     return Stream.of(
@@ -99,7 +103,9 @@ class CandidateApprovalTest extends CandidateTestSetup {
   @BeforeEach
   void setUp() {
     var mockUriRetriever = mock(UriRetriever.class);
-    organizationRetriever = new OrganizationRetriever(mockUriRetriever);
+    mockOrganizationRetriever = new OrganizationRetriever(mockUriRetriever);
+    topLevelOrganizationId = randomUriWithSuffix("topLevelOrganization");
+    mockOrganizationResponseForAffiliation(topLevelOrganizationId, null, mockUriRetriever);
     mockOrganizationResponseForAffiliation(
         HARDCODED_INSTITUTION_ID, HARDCODED_SUBUNIT_ID, mockUriRetriever);
   }
@@ -128,7 +134,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var upsertCandidateRequest = createUpsertCandidateRequest(HARDCODED_INSTITUTION_ID).build();
     var candidate = upsert(upsertCandidateRequest);
     var assignee = randomString();
-    candidate.updateApproval(new UpdateAssigneeRequest(HARDCODED_INSTITUTION_ID, assignee));
+    candidate.updateApprovalAssignee(new UpdateAssigneeRequest(HARDCODED_INSTITUTION_ID, assignee));
     updateApprovalStatus(candidate, oldStatus);
 
     updateApprovalStatus(candidate, ApprovalStatus.PENDING);
@@ -164,7 +170,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
         UnsupportedOperationException.class,
         () ->
             updatedCandidate.updateApprovalStatus(
-                createRejectionRequestWithoutReason(randomString()), organizationRetriever));
+                createRejectionRequestWithoutReason(randomString()), mockOrganizationRetriever));
   }
 
   @ParameterizedTest(name = "Should remove reason when updating from rejection status to {0}")
@@ -180,7 +186,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
             .updateApprovalStatus(
                 createUpdateStatusRequest(
                     ApprovalStatus.REJECTED, HARDCODED_INSTITUTION_ID, randomString()),
-                organizationRetriever);
+                mockOrganizationRetriever);
 
     var updatedCandidate = updateApprovalStatus(rejectedCandidate, newStatus);
     assertThat(updatedCandidate.getApprovals().size(), is(equalTo(1)));
@@ -203,7 +209,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var invalidRequest = createUpdateStatusRequest(newStatus, HARDCODED_INSTITUTION_ID, null);
     assertThrows(
         IllegalArgumentException.class,
-        () -> candidate.updateApprovalStatus(invalidRequest, organizationRetriever));
+        () -> candidate.updateApprovalStatus(invalidRequest, mockOrganizationRetriever));
   }
 
   @Test
@@ -270,10 +276,10 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var candidate =
         Candidate.fetchByPublicationId(
                 request::publicationId, candidateRepository, periodRepository)
-            .updateApproval(new UpdateAssigneeRequest(HARDCODED_INSTITUTION_ID, assignee));
+            .updateApprovalAssignee(new UpdateAssigneeRequest(HARDCODED_INSTITUTION_ID, assignee));
     candidate = updateApprovalStatus(candidate, ApprovalStatus.APPROVED);
     candidate = updateApprovalStatus(candidate, ApprovalStatus.REJECTED);
-    var candidateDto = candidate.toDto();
+    var candidateDto = candidate.toDto(HARDCODED_INSTITUTION_ID, mockOrganizationRetriever);
     assertThat(candidateDto.approvals().getFirst().assignee(), is(equalTo(assignee)));
     assertThat(candidateDto.approvals().getFirst().finalizedBy(), is(not(equalTo(assignee))));
   }
@@ -283,11 +289,12 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var upsertCandidateRequest = createUpsertCandidateRequest(HARDCODED_INSTITUTION_ID).build();
     var candidate = upsert(upsertCandidateRequest);
     var newUsername = randomString();
-    candidate.updateApproval(new UpdateAssigneeRequest(HARDCODED_INSTITUTION_ID, newUsername));
+    candidate.updateApprovalAssignee(
+        new UpdateAssigneeRequest(HARDCODED_INSTITUTION_ID, newUsername));
 
     var assignee =
         Candidate.fetch(candidate::getIdentifier, candidateRepository, periodRepository)
-            .toDto()
+            .toDto(HARDCODED_INSTITUTION_ID, mockOrganizationRetriever)
             .approvals()
             .getFirst()
             .assignee();
@@ -295,6 +302,10 @@ class CandidateApprovalTest extends CandidateTestSetup {
     assertThat(assignee, is(equalTo(newUsername)));
   }
 
+  /*
+  This is deprecated because the method being tested is deprecated, remove both.
+  */
+  @Deprecated(since = "2025-01-31", forRemoval = true)
   @Test
   void shouldNotAllowUpdateApprovalStatusWhenTryingToPassAnonymousImplementations() {
     var upsertCandidateRequest = createUpsertCandidateRequest(HARDCODED_INSTITUTION_ID).build();
@@ -311,7 +322,9 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var candidate = randomApplicableCandidate(candidateRepository, periodRepository);
     assertThrows(
         IllegalStateException.class,
-        () -> candidate.updateApproval(new UpdateAssigneeRequest(randomUri(), randomString())));
+        () ->
+            candidate.updateApprovalAssignee(
+                new UpdateAssigneeRequest(randomUri(), randomString())));
   }
 
   @Test
@@ -338,7 +351,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
     candidate.updateApprovalStatus(
         new UpdateStatusRequest(
             HARDCODED_INSTITUTION_ID, ApprovalStatus.APPROVED, randomString(), randomString()),
-        organizationRetriever);
+        mockOrganizationRetriever);
     var points =
         List.of(
             new InstitutionPoints(
@@ -363,7 +376,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
     candidate.updateApprovalStatus(
         new UpdateStatusRequest(
             HARDCODED_INSTITUTION_ID, ApprovalStatus.APPROVED, randomString(), randomString()),
-        organizationRetriever);
+        mockOrganizationRetriever);
     var approval = candidate.getApprovals().get(HARDCODED_INSTITUTION_ID);
     var samePointsWithDifferentScale =
         upsertCandidateRequest.institutionPoints().stream()
@@ -430,6 +443,36 @@ class CandidateApprovalTest extends CandidateTestSetup {
     assertThat(updatedApproval.getStatus(), is(equalTo(ApprovalStatus.PENDING)));
   }
 
+  @Test
+  void shouldAllowFinalizingNewValidCandidate() {
+    var request = createUpsertCandidateRequest(topLevelOrganizationId).build();
+    var candidate = upsert(request);
+
+    var candidateDto = candidate.toDto(topLevelOrganizationId, mockOrganizationRetriever);
+
+    var actualAllowedOperations = candidateDto.allowedOperations();
+    var expectedAllowedOperations =
+        List.of(CandidateOperation.APPROVAL_APPROVE, CandidateOperation.APPROVAL_REJECT);
+    assertThat(actualAllowedOperations, containsInAnyOrder(expectedAllowedOperations.toArray()));
+  }
+
+  @Test
+  void shouldNotAllowFinalizingNewCandidateWithUnverifiedCreator() {
+    var unverifiedCreator =
+        new UnverifiedNviCreatorDto(randomString(), List.of(topLevelOrganizationId));
+    var request =
+        createUpsertCandidateRequest(topLevelOrganizationId)
+            .withUnverifiedCreators(List.of(unverifiedCreator))
+            .build();
+    var candidate = upsert(request);
+
+    var candidateDto = candidate.toDto(topLevelOrganizationId, mockOrganizationRetriever);
+
+    var actualAllowedOperations = candidateDto.allowedOperations();
+    var expectedAllowedOperations = emptyList();
+    assertThat(actualAllowedOperations, containsInAnyOrder(expectedAllowedOperations.toArray()));
+  }
+
   private static UpdateStatusRequest createRejectionRequestWithoutReason(String username) {
     return UpdateStatusRequest.builder()
         .withApprovalStatus(ApprovalStatus.REJECTED)
@@ -472,9 +515,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
         Arguments.of(
             Named.of(
                 "creator removed",
-                CandidateResetCauseArgument.defaultBuilder()
-                    .withCreators(Collections.emptyList())
-                    .build())),
+                CandidateResetCauseArgument.defaultBuilder().withCreators(emptyList()).build())),
         Arguments.of(
             Named.of(
                 "creator added",
@@ -489,7 +530,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
 
   private Candidate updateApprovalStatus(Candidate candidate, ApprovalStatus status) {
     var updateRequest = createUpdateStatusRequest(status, HARDCODED_INSTITUTION_ID, randomString());
-    return candidate.updateApprovalStatus(updateRequest, organizationRetriever);
+    return candidate.updateApprovalStatus(updateRequest, mockOrganizationRetriever);
   }
 
   private UpsertCandidateRequest getUpsertCandidateRequestWithHardcodedValues() {

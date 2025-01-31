@@ -371,7 +371,15 @@ public final class Candidate {
         .build();
   }
 
-  @Deprecated
+  /**
+   * @deprecated Use either
+   * {@link #updateApprovalAssignee(UpdateAssigneeRequest input) or
+   * {@link #updateApprovalStatus(
+   *  UpdateStatusRequest input,
+   *  OrganizationRetriever organizationRetriever
+   *  )} instead.
+   */
+  @Deprecated(since = "2025-01-31", forRemoval = true)
   public Candidate updateApproval(UpdateApprovalRequest input) {
     validateCandidateState();
     approvals.computeIfPresent(input.institutionId(), (uri, approval) -> approval.update(input));
