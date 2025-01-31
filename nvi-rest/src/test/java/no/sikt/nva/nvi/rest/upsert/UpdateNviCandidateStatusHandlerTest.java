@@ -3,7 +3,6 @@ package no.sikt.nva.nvi.rest.upsert;
 import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
-import static no.sikt.nva.nvi.test.TestUtils.mockOrganizationResponseForAffiliation;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningClosedPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningNotOpenedPeriod;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -51,10 +50,6 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
   private static final String STATUS_APPROVED = "APPROVED";
   private static final String STATUS_PENDING = "PENDING";
   private static final String STATUS_REJECTED = "REJECTED";
-  private static final URI DEFAULT_TOP_LEVEL_INSTITUTION_ID =
-      URI.create("https://www.example.com/toplevelOrganization");
-  private static final URI DEFAULT_SUB_UNIT_INSTITUTION_ID =
-      URI.create("https://www.example.com/subOrganization");
 
   public static Stream<Arguments> approvalStatusProvider() {
     return Stream.of(
@@ -78,8 +73,6 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
   @BeforeEach
   void setUp() {
     resourcePathParameter = "candidateIdentifier";
-    mockOrganizationResponseForAffiliation(
-        DEFAULT_TOP_LEVEL_INSTITUTION_ID, DEFAULT_SUB_UNIT_INSTITUTION_ID, mockUriRetriever);
   }
 
   @Test
@@ -104,10 +97,9 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldReturnUnauthorizedWhenCandidateIsNotInUsersViewingScope() throws IOException {
-    var candidate = upsert(createUpsertCandidateRequest(DEFAULT_TOP_LEVEL_INSTITUTION_ID).build());
+    var candidate = upsert(createUpsertCandidateRequest(topLevelOrganizationId).build());
     var request =
-        createRequest(
-            candidate.getIdentifier(), DEFAULT_TOP_LEVEL_INSTITUTION_ID, ApprovalStatus.APPROVED);
+        createRequest(candidate.getIdentifier(), topLevelOrganizationId, ApprovalStatus.APPROVED);
     handler =
         new UpdateNviCandidateStatusHandler(
             candidateRepository,
@@ -147,13 +139,10 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
   @Test
   void shouldBeForbiddenToChangeStatusOfOtherInstitution() throws IOException {
     var otherInstitutionId = randomUri();
-    var candidate = upsert(createUpsertCandidateRequest(DEFAULT_TOP_LEVEL_INSTITUTION_ID).build());
+    var candidate = upsert(createUpsertCandidateRequest(topLevelOrganizationId).build());
     var requestBody =
         new NviStatusRequest(
-            candidate.getIdentifier(),
-            DEFAULT_TOP_LEVEL_INSTITUTION_ID,
-            ApprovalStatus.PENDING,
-            null);
+            candidate.getIdentifier(), topLevelOrganizationId, ApprovalStatus.PENDING, null);
     var request = createRequest(candidate.getIdentifier(), otherInstitutionId, requestBody);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
@@ -171,23 +160,22 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
             periodRepository,
             mockViewingScopeValidator,
             mockOrganizationRetriever);
-    var candidate = upsert(createUpsertCandidateRequest(DEFAULT_TOP_LEVEL_INSTITUTION_ID).build());
+    var candidate = upsert(createUpsertCandidateRequest(topLevelOrganizationId).build());
     var request =
-        createRequest(
-            candidate.getIdentifier(), DEFAULT_TOP_LEVEL_INSTITUTION_ID, ApprovalStatus.APPROVED);
+        createRequest(candidate.getIdentifier(), topLevelOrganizationId, ApprovalStatus.APPROVED);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
     assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_CONFLICT)));
   }
 
-  @ParameterizedTest(name = "Should not allow status {0} for institution with unverified creators")
+  @ParameterizedTest(name = "Should not allow status {0} if organization has unverified creators")
   @EnumSource(
       value = ApprovalStatus.class,
       names = {STATUS_APPROVED, STATUS_REJECTED})
   void shouldReturnConflictWhenUpdatingStatusAndInstitutionHasUnverifiedCreators(
       ApprovalStatus newStatus) throws IOException {
-    var candidate = setupCandidateWithUnverifiedCreator(topLevelOrganizationId);
+    var candidate = setupCandidateWithUnverifiedCreator();
     var request = createRequest(candidate.getIdentifier(), topLevelOrganizationId, newStatus);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
@@ -195,13 +183,14 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
     assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_CONFLICT)));
   }
 
-  @ParameterizedTest(name = "Should not allow status {0} for institution with unverified creators")
+  @ParameterizedTest(
+      name = "Should not allow status {0} if sub-organization has unverified creators")
   @EnumSource(
       value = ApprovalStatus.class,
       names = {STATUS_APPROVED, STATUS_REJECTED})
   void shouldReturnConflictWhenUpdatingStatusAndSubInstitutionHasUnverifiedCreators(
       ApprovalStatus newStatus) throws IOException {
-    var candidate = setupCandidateWithUnverifiedCreator(subOrganizationId);
+    var candidate = setupCandidateWithUnverifiedCreator();
     var request = createRequest(candidate.getIdentifier(), topLevelOrganizationId, newStatus);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);

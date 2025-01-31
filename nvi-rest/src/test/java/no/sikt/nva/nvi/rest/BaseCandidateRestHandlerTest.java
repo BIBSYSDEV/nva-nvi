@@ -7,6 +7,7 @@ import static no.sikt.nva.nvi.test.TestUtils.createUpsertNonCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.mockOrganizationResponseForAffiliation;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
+import static no.sikt.nva.nvi.test.TestUtils.randomUriWithSuffix;
 import static no.sikt.nva.nvi.test.UpsertRequestBuilder.randomUpsertRequestBuilder;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -49,7 +50,6 @@ import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.GatewayResponse;
-import nva.commons.core.JacocoGenerated;
 import org.apache.hc.core5.http.ContentType;
 import org.junit.jupiter.api.BeforeEach;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
@@ -57,13 +57,13 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 /** Base test class for handlers that return a CandidateDto. */
 @SuppressWarnings("PMD.CouplingBetweenObjects")
 public abstract class BaseCandidateRestHandlerTest extends LocalDynamoTest {
-  protected static final UriRetriever mockUriRetriever = mock(UriRetriever.class);
-  protected static final OrganizationRetriever mockOrganizationRetriever =
-      new OrganizationRetriever(mockUriRetriever);
   protected static final ViewingScopeValidator mockViewingScopeValidator =
       new FakeViewingScopeValidator(true);
   protected static final Context CONTEXT = mock(Context.class);
   protected final DynamoDbClient localDynamo = initializeTestDatabase();
+  protected UriRetriever mockUriRetriever = mock(UriRetriever.class);
+  protected OrganizationRetriever mockOrganizationRetriever =
+      new OrganizationRetriever(mockUriRetriever);
   protected String resourcePathParameter;
   protected URI topLevelOrganizationId;
   protected URI subOrganizationId;
@@ -91,8 +91,12 @@ public abstract class BaseCandidateRestHandlerTest extends LocalDynamoTest {
 
   @BeforeEach
   protected void commonSetup() {
-    subOrganizationId = randomUri();
-    topLevelOrganizationId = randomUri();
+    mockUriRetriever = mock(UriRetriever.class);
+    mockOrganizationRetriever = new OrganizationRetriever(mockUriRetriever);
+    subOrganizationId = randomUriWithSuffix("subOrganization");
+    topLevelOrganizationId = randomUriWithSuffix("topLevelOrganization");
+    mockOrganizationResponseForAffiliation(
+        topLevelOrganizationId, subOrganizationId, mockUriRetriever);
 
     output = new ByteArrayOutputStream();
     candidateRepository = new CandidateRepository(localDynamo);
@@ -117,10 +121,11 @@ public abstract class BaseCandidateRestHandlerTest extends LocalDynamoTest {
     return createRequest(resourceIdentifier, topLevelOrganizationId, MANAGE_NVI_CANDIDATES);
   }
 
-  protected Candidate setupValidCandidate(URI organizationId) {
+  protected Candidate setupValidCandidate(URI topLevelOrganizationId) {
     var verifiedCreator = setupDefaultVerifiedCreator();
     var request =
-        createUpsertCandidateRequestWithPoints(Map.of(organizationId, List.of(verifiedCreator)))
+        createUpsertCandidateRequestWithPoints(
+                Map.of(topLevelOrganizationId, List.of(verifiedCreator)))
             .build();
     return upsert(request);
   }
@@ -175,7 +180,7 @@ public abstract class BaseCandidateRestHandlerTest extends LocalDynamoTest {
         request::publicationId, candidateRepository, periodRepository);
   }
 
-  protected static VerifiedNviCreatorDto setupVerifiedCreator(
+  protected VerifiedNviCreatorDto setupVerifiedCreator(
       URI id, Collection<URI> affiliations, URI topLevelInstitutionId) {
     affiliations.forEach(
         affiliation ->
@@ -215,12 +220,12 @@ public abstract class BaseCandidateRestHandlerTest extends LocalDynamoTest {
         .orElseThrow();
   }
 
-  protected Candidate setupCandidateWithUnverifiedCreator(URI organizationId) {
+  protected Candidate setupCandidateWithUnverifiedCreator() {
     var verifiedCreator = setupDefaultVerifiedCreator();
     var unverifiedCreator = setupDefaultUnverifiedCreator();
     var request =
         createUpsertCandidateRequestWithPoints(
-                Map.of(organizationId, List.of(verifiedCreator, unverifiedCreator)))
+                Map.of(topLevelOrganizationId, List.of(verifiedCreator, unverifiedCreator)))
             .build();
     return upsert(request);
   }
@@ -230,7 +235,7 @@ public abstract class BaseCandidateRestHandlerTest extends LocalDynamoTest {
         randomString(), List.of(subOrganizationId), topLevelOrganizationId);
   }
 
-  protected static UnverifiedNviCreatorDto setupUnverifiedCreator(
+  protected UnverifiedNviCreatorDto setupUnverifiedCreator(
       String name, Collection<URI> affiliations, URI topLevelOrganizationId) {
     affiliations.forEach(
         affiliation ->
@@ -239,8 +244,6 @@ public abstract class BaseCandidateRestHandlerTest extends LocalDynamoTest {
     return new UnverifiedNviCreatorDto(name, List.copyOf(affiliations));
   }
 
-  // Not used (yet)
-  @JacocoGenerated
   protected Candidate setupCandidateWithApproval() {
     // Create a candidate in a "valid" state
     var verifiedCreator = setupDefaultVerifiedCreator();
@@ -264,8 +267,6 @@ public abstract class BaseCandidateRestHandlerTest extends LocalDynamoTest {
         .build();
   }
 
-  // Not used (yet)
-  @JacocoGenerated
   protected Candidate setupCandidateWithUnverifiedCreatorFromAnotherInstitution() {
     var verifiedCreator = setupDefaultVerifiedCreator();
     var otherInstitutionId = randomUri();
@@ -273,7 +274,7 @@ public abstract class BaseCandidateRestHandlerTest extends LocalDynamoTest {
         setupUnverifiedCreator(randomString(), List.of(otherInstitutionId), otherInstitutionId);
     var request =
         createUpsertCandidateRequestWithPoints(
-                Map.of(subOrganizationId, List.of(verifiedCreator, unverifiedCreator)))
+                Map.of(topLevelOrganizationId, List.of(verifiedCreator, unverifiedCreator)))
             .build();
     return upsert(request);
   }

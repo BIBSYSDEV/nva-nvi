@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.rest.upsert;
 
 import static java.net.HttpURLConnection.HTTP_OK;
 import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
+import static no.sikt.nva.nvi.common.utils.RequestUtil.hasAccessRight;
 import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateHandler.CANDIDATE_IDENTIFIER;
 import static nva.commons.core.attempt.Try.attempt;
 
@@ -84,7 +85,7 @@ public class UpdateNviCandidateStatusHandler
   private static void validateCustomerAndAccessRight(
       NviStatusRequest input, RequestInfo requestInfo)
       throws UnauthorizedException, ForbiddenException {
-    RequestUtil.hasAccessRight(requestInfo, AccessRight.MANAGE_NVI_CANDIDATES);
+    hasAccessRight(requestInfo, AccessRight.MANAGE_NVI_CANDIDATES);
     hasSameCustomer(requestInfo, input);
   }
 

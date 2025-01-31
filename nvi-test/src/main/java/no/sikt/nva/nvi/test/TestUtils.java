@@ -176,6 +176,13 @@ public final class TestUtils {
     return randomApproval(randomUri());
   }
 
+  public static URI randomUriWithSuffix(String suffix) {
+    return UriWrapper.fromHost("https://example.org/")
+        .addChild(randomString())
+        .addChild(suffix)
+        .getUri();
+  }
+
   public static List<CandidateDao> createNumberOfCandidatesForYear(
       String year, int number, CandidateRepository repository) {
     return IntStream.range(0, number)

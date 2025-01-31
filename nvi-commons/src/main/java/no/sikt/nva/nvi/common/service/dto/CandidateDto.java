@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import no.unit.nva.commons.json.JsonSerializable;
 
@@ -24,7 +25,8 @@ public record CandidateDto(
     BigDecimal totalPoints,
     List<NoteDto> notes,
     PeriodStatusDto period,
-    String status)
+    String status,
+    Set<CandidateOperation> allowedOperations)
     implements JsonSerializable {
 
   public static final String NVI_CANDIDATE = "NviCandidate";
@@ -44,6 +46,7 @@ public record CandidateDto(
     private List<NoteDto> notes;
     private PeriodStatusDto periodStatus;
     private String reportStatus;
+    private Set<CandidateOperation> allowedOperations;
 
     private Builder() {}
 
@@ -92,6 +95,11 @@ public record CandidateDto(
       return this;
     }
 
+    public Builder withAllowedOperations(Set<CandidateOperation> allowedOperations) {
+      this.allowedOperations = allowedOperations;
+      return this;
+    }
+
     public CandidateDto build() {
       return new CandidateDto(
           id,
@@ -102,7 +110,8 @@ public record CandidateDto(
           totalPoints,
           notes,
           periodStatus,
-          reportStatus);
+          reportStatus,
+          allowedOperations);
     }
   }
 }
