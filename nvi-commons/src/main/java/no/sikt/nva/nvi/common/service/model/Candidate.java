@@ -20,8 +20,8 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -900,9 +900,8 @@ public final class Candidate {
    * set the new status.
    *
    * <p>This requires retrieving metadata about each creator's organization, which is not persisted
-   * in the database yet. Once we persist the necessary metadata, we can move this logic to the
-   * domain model or service layer. TODO: Persist full organization hierarchy for creators and
-   * simplify this validation.
+   * in the database yet. Once we persist the necessary metadata, we can simplify this check. TODO:
+   * Persist full organization hierarchy for creators and simplify this validation.
    */
   private boolean isValidStatusChange(
       UpdateStatusRequest updateRequest, OrganizationRetriever organizationRetriever) {
@@ -918,11 +917,11 @@ public final class Candidate {
   }
 
   public Set<CandidateOperation> getAllowedOperations(
-      URI customerId, OrganizationRetriever organizationRetriever) {
+      URI topLevelOrganizationId, OrganizationRetriever organizationRetriever) {
     var hasUnverifiedCreator =
-        hasUnverifiedCreatorFromOrganization(customerId, organizationRetriever);
-    var currentStatus = getApprovalStatus(customerId);
-    var operations = EnumSet.noneOf(CandidateOperation.class);
+        hasUnverifiedCreatorFromOrganization(topLevelOrganizationId, organizationRetriever);
+    var currentStatus = getApprovalStatus(topLevelOrganizationId);
+    var operations = new HashSet<CandidateOperation>();
 
     if (!hasUnverifiedCreator) {
       if (currentStatus != APPROVED) {

@@ -12,7 +12,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 class CandidateOperationTest {
 
-  @ParameterizedTest(name = "shouldSerializeTo {0}")
+  @ParameterizedTest(name = "should serialize {0} to {1}")
   @MethodSource("candidateOperationSerializationProvider")
   void shouldSerializeUsingValue(CandidateOperation candidateOperation, String expectedValue) {
     var serialized =
@@ -22,9 +22,15 @@ class CandidateOperationTest {
 
   private static Stream<Arguments> candidateOperationSerializationProvider() {
     return Stream.of(
-        argumentSet("APPROVAL_REJECT", CandidateOperation.APPROVAL_REJECT, "\"approval/reject-candidate\""),
         argumentSet(
-            "APPROVAL_APPROVE", CandidateOperation.APPROVAL_APPROVE, "\"approval/approve-candidate\""),
-        argumentSet("APPROVAL_PENDING", CandidateOperation.APPROVAL_PENDING, "\"approval/reset-approval\""));
+            "APPROVAL_REJECT", CandidateOperation.APPROVAL_REJECT, "\"approval/reject-candidate\""),
+        argumentSet(
+            "APPROVAL_APPROVE",
+            CandidateOperation.APPROVAL_APPROVE,
+            "\"approval/approve-candidate\""),
+        argumentSet(
+            "APPROVAL_PENDING",
+            CandidateOperation.APPROVAL_PENDING,
+            "\"approval/reset-approval\""));
   }
 }
