@@ -20,12 +20,8 @@ dependencies {
             { exclude group: 'org.apache.logging.log4j', module: 'log4j-api' }
     testImplementation libs.nva.testutils
     testImplementation libs.bundles.testing
+    testImplementation libs.dynamodDbLocal
     testImplementation project(':nvi-test')
-
-    testImplementation(group: 'com.amazonaws', name: 'DynamoDBLocal', version: '1.19.0') {
-        exclude group: 'com.amazonaws', module: 'aws-java-sdk-dynamodb'
-        exclude group: 'com.amazonaws', module: 'aws-java-sdk-core'
-    }
 }
 
 test {

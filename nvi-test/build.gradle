@@ -16,11 +16,7 @@ dependencies {
     implementation libs.aws.sdk2.dynamodbenhanced
     implementation libs.aws.sdk2.sqs
     implementation libs.aws.lambda.events
-
-    implementation(group: 'com.amazonaws', name: 'DynamoDBLocal', version: '1.19.0') {
-        exclude group: 'com.amazonaws', module: 'aws-java-sdk-dynamodb'
-        exclude group: 'com.amazonaws', module: 'aws-java-sdk-core'
-    }
+    implementation libs.dynamodDbLocal
 }
 
 test {
