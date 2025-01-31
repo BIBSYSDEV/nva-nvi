@@ -398,7 +398,7 @@ public final class Candidate {
     validateCandidateState();
     var currentState = getApprovalStatus(input.institutionId());
     var newState = input.approvalStatus();
-    if (isValidUpdateStatusRequest(input, organizationRetriever)) {
+    if (isValidStatusChange(input, organizationRetriever)) {
       approvals.computeIfPresent(input.institutionId(), (uri, approval) -> approval.update(input));
       return this;
     } else if (currentState.equals(newState)) {
@@ -904,7 +904,7 @@ public final class Candidate {
    * domain model or service layer. TODO: Persist full organization hierarchy for creators and
    * simplify this validation.
    */
-  private boolean isValidUpdateStatusRequest(
+  private boolean isValidStatusChange(
       UpdateStatusRequest updateRequest, OrganizationRetriever organizationRetriever) {
     var allowedOperations =
         getAllowedOperations(updateRequest.institutionId(), organizationRetriever);
