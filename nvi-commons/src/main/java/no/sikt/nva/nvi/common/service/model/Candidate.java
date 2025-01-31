@@ -940,9 +940,7 @@ public final class Candidate {
   }
 
   private boolean hasUnverifiedCreatorFromOrganization(
-      URI customerId, OrganizationRetriever organizationRetriever) {
-    var customerOrganization = organizationRetriever.fetchOrganization(customerId);
-    var topLevelOrganizationId = customerOrganization.getTopLevelOrg().id();
+      URI topLevelOrganizationId, OrganizationRetriever organizationRetriever) {
     var unverifiedCreators = publicationDetails.getUnverifiedCreators();
     return unverifiedCreators.stream()
         .flatMap(contributor -> getTopLevelAffiliations(contributor, organizationRetriever))
