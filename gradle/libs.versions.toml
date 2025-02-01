@@ -1,25 +1,25 @@
 [versions]
 junit = { strictly = '5.11.0' }
-nva = { strictly = '1.40.20' }
+nva = { strictly = '1.41.4' }
 nvaLanguage = { strictly = '1.2.0' }
-jackson = { strictly = '2.17.2' }
-mockito = { strictly = '5.13.0' }
+jackson = { strictly = '2.18.2' }
+mockito = { strictly = '5.15.2' }
 hamcrest = { strictly = '3.0' }
 zalando = { strictly = '0.27.1' }
 awsLambdaJavaCore = { strictly = '1.2.3' }
-awsLambdaEvents = { strictly = '3.13.0' }
-log4j = { strictly = '2.24.0' }
+awsLambdaEvents = { strictly = '3.14.0' }
+log4j = { strictly = '2.24.3' }
 slf4j = { require = '2.0.16' }
 awslog4j2 = { strictly = '1.5.1' }
-wiremock = { strictly = "3.9.1" }
+wiremock = { strictly = '3.10.0' }
 commons-validator-version = { strictly = '1.7' }
-awsSdk = { strictly = '1.12.772' }
-awsSdk2 = { strictly = '2.27.24' }
+awsSdk = { strictly = '1.12.780' }
+awsSdk2 = { strictly = '2.29.47' }
 jena = { strictly = '4.10.0'}
-openSearchRestClient = { strictly = '2.9.0' }
-openSearchJava = { strictly = '2.6.0' }
+openSearchRestClient = { strictly = '2.18.0' }
+openSearchJava = { strictly = '2.19.0' }
 com-auth0-jwt = { strictly = '4.4.0' }
-guava = { require = '32.1.2-jre' }
+guava = { strictly = '33.4.0-jre' }
 dynamoDbLocal = { strictly = '2.0.0' }
 
 [libraries]
