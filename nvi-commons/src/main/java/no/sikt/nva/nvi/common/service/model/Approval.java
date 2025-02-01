@@ -22,6 +22,8 @@ public class Approval {
   private static final String UNKNOWN_REQUEST_TYPE_MESSAGE = "Unknown request type";
   private static final String ERROR_MISSING_REJECTION_REASON =
       "Cannot reject approval status without reason.";
+  private static final String ERROR_MSG_MISSING_ORGANIZATION_ID =
+      "Request is missing required organization ID";
   private final CandidateRepository repository;
   private final UUID identifier;
   private final URI institutionId;
@@ -199,6 +201,9 @@ public class Approval {
   public static void validateUpdateStatusRequest(UpdateStatusRequest input) {
     if (isNull(input.username())) {
       throw new IllegalArgumentException(ERROR_MSG_USERNAME_NULL);
+    }
+    if (isNull(input.institutionId())) {
+      throw new IllegalArgumentException(ERROR_MSG_MISSING_ORGANIZATION_ID);
     }
   }
 }
