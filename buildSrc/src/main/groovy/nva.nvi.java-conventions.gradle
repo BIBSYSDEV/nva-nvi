@@ -8,6 +8,10 @@ plugins {
 
 group = 'com.github.bibsysdev'
 
+repositories {
+    mavenCentral()
+}
+
 dependencies {
     testImplementation libs.bundles.testing
 
@@ -97,9 +101,4 @@ tasks.named('build').configure {
 
 tasks.named('test').configure {
     dependsOn 'spotlessApply'
-}
-
-// This is a workaround for a bug in sam build and/or Gradle
-tasks.named('spotlessMisc') {
-    dependsOn 'copyNativeDeps'
 }

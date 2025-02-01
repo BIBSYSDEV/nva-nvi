@@ -1,6 +1,5 @@
 plugins {
     id 'nva.nvi.java-conventions'
-    id 'nva.nvi.dynamodblocal'
 }
 
 dependencies {
@@ -21,10 +20,7 @@ dependencies {
     implementation libs.aws.lambda.events
     implementation libs.bundles.jena
 
-    testImplementation(group: 'com.amazonaws', name: 'DynamoDBLocal', version: '1.19.0') {
-        exclude group: 'com.amazonaws', module: 'aws-java-sdk-dynamodb'
-        exclude group: 'com.amazonaws', module: 'aws-java-sdk-core'
-    }
+    testImplementation libs.dynamodDbLocal
     testImplementation project(':nvi-test')
 }
 
