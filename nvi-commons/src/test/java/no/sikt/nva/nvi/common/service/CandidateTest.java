@@ -103,7 +103,7 @@ class CandidateTest extends CandidateTestSetup {
     var upsertCandidateRequest =
         randomUpsertRequestBuilder().withUnverifiedCreators(List.of(unverifiedCreator)).build();
     var expectedUnverifiedCreatorCount = upsertCandidateRequest.unverifiedCreators().size();
-    var expectedVerifiedCreatorCount = upsertCandidateRequest.creators().keySet().size();
+    var expectedVerifiedCreatorCount = upsertCandidateRequest.creators().size();
 
     var fetchedCandidate = upsert(upsertCandidateRequest);
 
@@ -248,6 +248,7 @@ class CandidateTest extends CandidateTestSetup {
     var expectedDto =
         CandidateDto.builder()
             .withApprovals(mapToApprovalDtos(candidate))
+            .withAllowedOperations(Collections.emptySet())
             .withId(candidate.getId())
             .withPublicationId(candidate.getPublicationId())
             .withIdentifier(candidate.getIdentifier())
