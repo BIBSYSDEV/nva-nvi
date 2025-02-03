@@ -35,7 +35,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.zalando.problem.Problem;
 
-// TODO: Migrate to abstract test class
 class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Override
