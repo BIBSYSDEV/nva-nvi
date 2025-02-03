@@ -10,6 +10,7 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.util.Objects;
 import java.util.UUID;
+import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.exceptions.NotApplicableException;
@@ -21,6 +22,7 @@ import no.sikt.nva.nvi.common.utils.ExceptionMapper;
 import no.sikt.nva.nvi.common.utils.RequestUtil;
 import no.sikt.nva.nvi.common.validator.ViewingScopeValidator;
 import no.sikt.nva.nvi.rest.ViewingScopeHandler;
+import no.unit.nva.auth.uriretriever.UriRetriever;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
@@ -35,23 +37,27 @@ public class CreateNoteHandler extends ApiGatewayHandler<NviNoteRequest, Candida
   private final CandidateRepository candidateRepository;
   private final PeriodRepository periodRepository;
   private final ViewingScopeValidator viewingScopeValidator;
+  private final OrganizationRetriever organizationRetriever;
 
   @JacocoGenerated
   public CreateNoteHandler() {
     this(
         new CandidateRepository(defaultDynamoClient()),
         new PeriodRepository(defaultDynamoClient()),
-        ViewingScopeHandler.defaultViewingScopeValidator());
+        ViewingScopeHandler.defaultViewingScopeValidator(),
+        new OrganizationRetriever(new UriRetriever()));
   }
 
   public CreateNoteHandler(
       CandidateRepository candidateRepository,
       PeriodRepository periodRepository,
-      ViewingScopeValidator viewingScopeValidator) {
+      ViewingScopeValidator viewingScopeValidator,
+      OrganizationRetriever organizationRetriever) {
     super(NviNoteRequest.class);
     this.candidateRepository = candidateRepository;
     this.periodRepository = periodRepository;
     this.viewingScopeValidator = viewingScopeValidator;
+    this.organizationRetriever = organizationRetriever;
   }
 
   @Override
@@ -72,8 +78,13 @@ public class CreateNoteHandler extends ApiGatewayHandler<NviNoteRequest, Candida
         .map(this::checkIfApplicable)
         .map(candidate -> validateViewingScope(viewingScopeValidator, username, candidate))
         .map(candidate -> createNote(input, candidate, username, institutionId))
-        .map(Candidate::toDto)
+        .map(candidate -> toCandidateDto(requestInfo, candidate))
         .orElseThrow(ExceptionMapper::map);
+  }
+
+  private CandidateDto toCandidateDto(RequestInfo requestInfo, Candidate candidate) {
+    return candidate.toDto(
+        requestInfo.getTopLevelOrgCristinId().orElseThrow(), organizationRetriever);
   }
 
   @Override
