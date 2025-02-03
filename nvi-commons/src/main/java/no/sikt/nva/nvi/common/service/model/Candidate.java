@@ -345,6 +345,7 @@ public final class Candidate {
         .withIdentifier(identifier)
         .withPublicationId(getPublicationId())
         .withApprovals(mapToApprovalDtos())
+        .withAllowedOperations(Collections.emptySet())
         .withNotes(mapToNoteDtos())
         .withPeriod(mapToPeriodStatusDto())
         .withTotalPoints(totalPoints)
