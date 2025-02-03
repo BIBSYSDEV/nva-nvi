@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.rest.upsert;
 
-import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningClosedPeriod;
@@ -92,7 +91,7 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
   }
 
   private NviStatusRequest randomStatusRequest() {
-    return new NviStatusRequest(randomUUID(), randomUri(), ApprovalStatus.APPROVED, null);
+    return new NviStatusRequest(randomUri(), ApprovalStatus.APPROVED, null);
   }
 
   @Test
@@ -117,10 +116,7 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
       throws JsonProcessingException {
     var requestBody =
         new NviStatusRequest(
-            candidateIdentifier,
-            institutionId,
-            status,
-            ApprovalStatus.REJECTED.equals(status) ? randomString() : null);
+            institutionId, status, ApprovalStatus.REJECTED.equals(status) ? randomString() : null);
     return createRequest(candidateIdentifier, institutionId, requestBody);
   }
 
@@ -140,9 +136,7 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
   void shouldBeForbiddenToChangeStatusOfOtherInstitution() throws IOException {
     var otherInstitutionId = randomUri();
     var candidate = upsert(createUpsertCandidateRequest(topLevelOrganizationId).build());
-    var requestBody =
-        new NviStatusRequest(
-            candidate.getIdentifier(), topLevelOrganizationId, ApprovalStatus.PENDING, null);
+    var requestBody = new NviStatusRequest(topLevelOrganizationId, ApprovalStatus.PENDING, null);
     var request = createRequest(candidate.getIdentifier(), otherInstitutionId, requestBody);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
@@ -230,8 +224,7 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
 
   private InputStream createRequestWithoutReason(UUID candidateIdentifier, URI institutionId)
       throws JsonProcessingException {
-    var requestBody =
-        new NviStatusRequest(candidateIdentifier, institutionId, ApprovalStatus.REJECTED, null);
+    var requestBody = new NviStatusRequest(institutionId, ApprovalStatus.REJECTED, null);
     return createRequest(candidateIdentifier, institutionId, requestBody);
   }
 
@@ -287,11 +280,7 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
     candidate.updateApprovalStatus(createStatusRequest(oldStatus), mockOrganizationRetriever);
     var rejectionReason = randomString();
     var requestBody =
-        new NviStatusRequest(
-            candidate.getIdentifier(),
-            topLevelOrganizationId,
-            ApprovalStatus.REJECTED,
-            rejectionReason);
+        new NviStatusRequest(topLevelOrganizationId, ApprovalStatus.REJECTED, rejectionReason);
     var request =
         createRequest(
             candidate.getIdentifier(), topLevelOrganizationId, requestBody, randomString());
@@ -343,9 +332,7 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
   void shouldUpdateAssigneeWhenFinalizingApprovalWithoutAssignee() throws IOException {
     var candidate = setupValidCandidate(topLevelOrganizationId);
     var assignee = randomString();
-    var requestBody =
-        new NviStatusRequest(
-            candidate.getIdentifier(), topLevelOrganizationId, ApprovalStatus.APPROVED, null);
+    var requestBody = new NviStatusRequest(topLevelOrganizationId, ApprovalStatus.APPROVED, null);
     var request =
         createRequest(candidate.getIdentifier(), topLevelOrganizationId, requestBody, assignee);
     handler.handleRequest(request, output, CONTEXT);
