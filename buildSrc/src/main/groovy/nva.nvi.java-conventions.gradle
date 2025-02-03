@@ -30,9 +30,9 @@ tasks.named('test') {
     useJUnitPlatform()
     failFast = false
     testLogging {
-        events 'skipped', 'passed', 'failed'
-        showCauses true
-        exceptionFormat "full"
+        events = ['skipped', 'passed', 'failed']
+        showCauses = true
+        exceptionFormat = "full"
     }
 }
 
@@ -50,13 +50,13 @@ checkstyle {
 
 tasks.withType(Checkstyle).configureEach {
     reports {
-        xml.required
-        html.required
+        xml.required = true
+        html.required = true
         html.stylesheet rootProject.resources.text.fromFile('config/checkstyle/checkstyle-simple.xsl')
     }
 }
 
-check.dependsOn jacocoTestCoverageVerification
+check.dependsOn(jacocoTestCoverageVerification)
 jacocoTestCoverageVerification.dependsOn(jacocoTestReport)
 
 jacocoTestCoverageVerification {
@@ -96,9 +96,9 @@ spotless {
 
 // Reformat project before build and test if needed
 tasks.named('build').configure {
-    dependsOn 'spotlessApply'
+    dependsOn('spotlessApply')
 }
 
 tasks.named('test').configure {
-    dependsOn 'spotlessApply'
+    dependsOn('spotlessApply')
 }
