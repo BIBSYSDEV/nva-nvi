@@ -4,15 +4,13 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 
 import java.net.URI;
-import java.util.UUID;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 
-public record NviStatusRequest(
-    UUID candidateId, URI institutionId, ApprovalStatus status, String reason) {
+public record NviStatusRequest(URI institutionId, ApprovalStatus status, String reason) {
 
   public void validate() {
-    if (isNull(candidateId) || isNull(institutionId) || isNull(status)) {
+    if (isNull(institutionId) || isNull(status)) {
       throw new IllegalArgumentException("Missing required fields");
     }
   }
