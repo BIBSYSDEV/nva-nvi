@@ -10,9 +10,7 @@ awsLambdaJavaCore = { strictly = '1.2.3' }
 awsLambdaEvents = { strictly = '3.14.0' }
 log4j = { strictly = '2.24.3' }
 slf4j = { require = '2.0.16' }
-awslog4j2 = { strictly = '1.5.1' }
 wiremock = { strictly = '3.10.0' }
-commons-validator-version = { strictly = '1.7' }
 awsSdk = { strictly = '1.12.780' }
 awsSdk2 = { strictly = '2.29.47' }
 jena = { strictly = '4.10.0'}
@@ -20,7 +18,7 @@ openSearchRestClient = { strictly = '2.18.0' }
 openSearchJava = { strictly = '2.19.0' }
 com-auth0-jwt = { strictly = '4.4.0' }
 guava = { strictly = '33.4.0-jre' }
-dynamoDbLocal = { strictly = '2.0.0' }
+dynamoDbLocal = { strictly = '2.5.4' }
 
 [libraries]
 junit-jupiter-api = { group = 'org.junit.jupiter', name = 'junit-jupiter-api', version.ref = 'junit' }
@@ -53,9 +51,6 @@ aws-sdk2-sns = { group = 'software.amazon.awssdk', name = 'sns', version.ref = '
 aws-sdk2-core = { group = 'software.amazon.awssdk', name = 'sdk-core', version.ref = 'awsSdk2' }
 aws-sdk2-urlconnection = { group = 'software.amazon.awssdk', name = 'url-connection-client', version.ref = 'awsSdk2' }
 aws-sdk2-apache-client = { group = 'software.amazon.awssdk', name = 'apache-client', version.ref = 'awsSdk2' }
-aws-sdk2-httpClientApi = { group = 'software.amazon.awssdk', name = 'http-client-spi', version.ref = 'awsSdk2' }
-aws-sdk2-utils = { group = 'software.amazon.awssdk', name = 'utils', version.ref = 'awsSdk2' }
-aws-sdk2-auth = { group = 'software.amazon.awssdk', name = 'auth', version.ref = 'awsSdk2' }
 aws-sdk2-secrets = { group = 'software.amazon.awssdk', name = 'secretsmanager', version.ref = 'awsSdk2' }
 aws-sdk2-regions = { group = 'software.amazon.awssdk', name = 'regions', version.ref = 'awsSdk2' }
 aws-sdk2-dynamodb = { group = 'software.amazon.awssdk', name = 'dynamodb', version.ref = 'awsSdk2' }
@@ -63,18 +58,14 @@ aws-sdk2-dynamodbenhanced = { group = 'software.amazon.awssdk', name = 'dynamodb
 
 jackson-core = { group = 'com.fasterxml.jackson.core', name = 'jackson-core', version.ref = 'jackson' }
 jackson-databind = { group = 'com.fasterxml.jackson.core', name = 'jackson-databind', version.ref = 'jackson' }
-jackson-annotations = { group = 'com.fasterxml.jackson.core', name = 'jackson-annotations', version.ref = 'jackson' }
-jackson-datatype-jdk8 = { group = 'com.fasterxml.jackson.datatype', name = 'jackson-datatype-jdk8', version.ref = 'jackson' }
 jackson-datatype-jsr310 = { group = 'com.fasterxml.jackson.datatype', name = 'jackson-datatype-jsr310', version.ref = 'jackson' }
 jackson-jr-objects = { group = 'com.fasterxml.jackson.jr', name = 'jackson-jr-objects', version.ref = 'jackson' }
 jackson-jr-annotations = { group = 'com.fasterxml.jackson.jr', name = 'jackson-jr-annotation-support', version.ref = 'jackson' }
 jackson-csv = { group = 'com.fasterxml.jackson.dataformat', name = 'jackson-dataformat-csv', version.ref = 'jackson' }
 
-
 aws-java-sdk-core = { group = 'com.amazonaws', name = 'aws-java-sdk-core', version.ref = 'awsSdk' }
 aws-lambda-java-core = { group = 'com.amazonaws', name = 'aws-lambda-java-core', version.ref = 'awsLambdaJavaCore' }
 aws-lambda-events = { group = 'com.amazonaws', name = 'aws-lambda-java-events', version.ref = 'awsLambdaEvents' }
-aws-lambda-log4j2 = { group = 'com.amazonaws', name = 'aws-lambda-java-log4j2', version.ref = 'awslog4j2' }
 
 com-auth0-jwt = { group = 'com.auth0', name = 'java-jwt', version.ref = 'com-auth0-jwt' }
 
@@ -90,16 +81,11 @@ wiremock = { group = "org.wiremock", name = "wiremock-jetty12", version.ref = "w
 
 guava = { group = 'com.google.guava', name = 'guava', version.ref = 'guava' }
 
-commons-validator = { group = 'commons-validator', name = 'commons-validator', version.ref = 'commons-validator-version' }
-
 jena-core = { group = 'org.apache.jena', name = 'jena-core', version.ref = 'jena' }
 jena-arq = { group = 'org.apache.jena', name = 'jena-arq', version.ref = 'jena' }
 
 [bundles]
-nva = ['nva-commons-core', 'nva-commons-apigateway', 'nva-json', 'nva-commons-pagination', 'nva-commons-secrets']
 logging = ['log4j-core', 'log4j-api', 'log4j-slf4j18-impl', 'slf4j-api', 'nva-logutils']
 testing = ['junit-jupiter-api', 'junit-jupiter-params', 'junit-jupiter-engine', 'mockito-core', 'hamcrest', 'nva-testutils', 'nva-logutils', 'zalando', 'wiremock']
-jackson = ['jackson-core', 'jackson-databind', 'jackson-annotations', 'jackson-datatype-jdk8', 'jackson-datatype-jsr310']
 jacksonjr = ['jackson-jr-objects', 'jackson-jr-annotations']
-others = ['slf4j-api', 'log4j-api', 'aws-lambda-java-core']
 jena = ['jena-core', 'jena-arq']
