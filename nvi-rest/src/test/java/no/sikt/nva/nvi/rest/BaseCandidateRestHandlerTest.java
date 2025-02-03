@@ -54,6 +54,7 @@ import org.apache.hc.core5.http.ContentType;
 import org.junit.jupiter.api.BeforeEach;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
+// TODO: Move allowedOperation tests here
 /** Base test class for handlers that return a CandidateDto. */
 @SuppressWarnings("PMD.CouplingBetweenObjects")
 public abstract class BaseCandidateRestHandlerTest extends LocalDynamoTest {
