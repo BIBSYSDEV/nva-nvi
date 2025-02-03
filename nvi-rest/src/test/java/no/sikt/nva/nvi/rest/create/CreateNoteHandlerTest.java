@@ -1,7 +1,6 @@
 package no.sikt.nva.nvi.rest.create;
 
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
-import static no.sikt.nva.nvi.test.TestUtils.createUpsertNonCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningClosedPeriod;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -22,7 +21,6 @@ import java.util.UUID;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.service.dto.ApprovalDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
-import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.rest.BaseCandidateRestHandlerTest;
 import no.sikt.nva.nvi.test.FakeViewingScopeValidator;
 import no.unit.nva.commons.json.JsonUtils;
@@ -117,12 +115,7 @@ class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldReturn405NotAllowedWhenAddingNoteToNonCandidate() throws IOException {
-    var candidateBO = setupValidCandidate(topLevelOrganizationId);
-    var nonCandidate =
-        Candidate.updateNonCandidate(
-                createUpsertNonCandidateRequest(candidateBO.getPublicationId()),
-                candidateRepository)
-            .orElseThrow();
+    var nonCandidate = setupNonApplicableCandidate(topLevelOrganizationId);
     var request =
         createRequest(nonCandidate.getIdentifier(), randomNote().toJsonString(), randomString());
     handler.handleRequest(request, output, CONTEXT);

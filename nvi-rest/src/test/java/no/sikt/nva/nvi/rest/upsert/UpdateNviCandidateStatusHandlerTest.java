@@ -2,7 +2,6 @@ package no.sikt.nva.nvi.rest.upsert;
 
 import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
-import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningClosedPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningNotOpenedPeriod;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -97,7 +96,7 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldReturnUnauthorizedWhenCandidateIsNotInUsersViewingScope() throws IOException {
-    var candidate = upsert(createUpsertCandidateRequest(topLevelOrganizationId).build());
+    var candidate = setupValidCandidate(topLevelOrganizationId);
     var request =
         createRequest(candidate.getIdentifier(), topLevelOrganizationId, ApprovalStatus.APPROVED);
     handler =
@@ -139,7 +138,7 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
   @Test
   void shouldBeForbiddenToChangeStatusOfOtherInstitution() throws IOException {
     var otherInstitutionId = randomUri();
-    var candidate = upsert(createUpsertCandidateRequest(topLevelOrganizationId).build());
+    var candidate = setupValidCandidate(topLevelOrganizationId);
     var requestBody =
         new NviStatusRequest(
             candidate.getIdentifier(), topLevelOrganizationId, ApprovalStatus.PENDING, null);
@@ -160,7 +159,7 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
             periodRepository,
             mockViewingScopeValidator,
             mockOrganizationRetriever);
-    var candidate = upsert(createUpsertCandidateRequest(topLevelOrganizationId).build());
+    var candidate = setupValidCandidate(topLevelOrganizationId);
     var request =
         createRequest(candidate.getIdentifier(), topLevelOrganizationId, ApprovalStatus.APPROVED);
     handler.handleRequest(request, output, CONTEXT);
