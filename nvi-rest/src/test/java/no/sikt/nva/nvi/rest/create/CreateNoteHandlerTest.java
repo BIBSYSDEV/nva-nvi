@@ -1,9 +1,7 @@
 package no.sikt.nva.nvi.rest.create;
 
-import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
-import static no.sikt.nva.nvi.test.TestUtils.createUpsertNonCandidateRequest;
+import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningClosedPeriod;
-import static no.sikt.nva.nvi.test.UpsertRequestBuilder.randomUpsertRequestBuilder;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -12,65 +10,45 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.Mockito.mock;
 
-import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
-import java.time.Year;
 import java.util.Map;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.service.dto.ApprovalDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
-import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
-import no.sikt.nva.nvi.common.validator.ViewingScopeValidator;
+import no.sikt.nva.nvi.rest.BaseCandidateRestHandlerTest;
 import no.sikt.nva.nvi.test.FakeViewingScopeValidator;
-import no.sikt.nva.nvi.test.LocalDynamoTest;
-import no.sikt.nva.nvi.test.TestUtils;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
+import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.GatewayResponse;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.zalando.problem.Problem;
 
-class CreateNoteHandlerTest extends LocalDynamoTest {
+class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
 
-  public static final int YEAR = Year.now().getValue();
-  private Context context;
-  private ByteArrayOutputStream output;
-  private CreateNoteHandler handler;
-  private CandidateRepository candidateRepository;
-  private PeriodRepository periodRepository;
-  private ViewingScopeValidator viewingScopeValidatorReturningFalse;
+  @Override
+  protected ApiGatewayHandler<NviNoteRequest, CandidateDto> createHandler() {
+    return new CreateNoteHandler(candidateRepository, periodRepository, mockViewingScopeValidator);
+  }
 
   @BeforeEach
   void setUp() {
-    output = new ByteArrayOutputStream();
-    context = mock(Context.class);
-    localDynamo = initializeTestDatabase();
-    candidateRepository = new CandidateRepository(localDynamo);
-    periodRepository = TestUtils.periodRepositoryReturningOpenedPeriod(YEAR);
-    viewingScopeValidatorReturningFalse = new FakeViewingScopeValidator(true);
-    handler =
-        new CreateNoteHandler(
-            candidateRepository, periodRepository, viewingScopeValidatorReturningFalse);
+    resourcePathParameter = "candidateIdentifier";
   }
 
   @Test
   void shouldReturnUnauthorizedWhenMissingAccessRights() throws IOException {
     handler.handleRequest(
-        requestWithoutAccessRights(UUID.randomUUID(), randomNote()), output, context);
+        requestWithoutAccessRights(UUID.randomUUID(), randomNote()), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
     assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
@@ -78,14 +56,14 @@ class CreateNoteHandlerTest extends LocalDynamoTest {
 
   @Test
   void shouldReturnUnauthorizedWhenCandidateIsNotInUsersViewingScope() throws IOException {
-    var candidate = upsert(randomUpsertRequestBuilder().build());
+    var candidate = setupValidCandidate(topLevelOrganizationId);
     var request =
         createRequest(candidate.getIdentifier(), new NviNoteRequest("The note"), randomString());
-    viewingScopeValidatorReturningFalse = new FakeViewingScopeValidator(false);
+    var viewingScopeValidatorReturningFalse = new FakeViewingScopeValidator(false);
     handler =
         new CreateNoteHandler(
             candidateRepository, periodRepository, viewingScopeValidatorReturningFalse);
-    handler.handleRequest(request, output, context);
+    handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
     assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
   }
@@ -97,7 +75,7 @@ class CreateNoteHandlerTest extends LocalDynamoTest {
             Map.of("someInvalidInputField", randomString()));
     var request = createRequest(UUID.randomUUID(), invalidRequestBody, randomString());
 
-    handler.handleRequest(request, output, context);
+    handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
     assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_BAD_REQUEST)));
@@ -105,12 +83,12 @@ class CreateNoteHandlerTest extends LocalDynamoTest {
 
   @Test
   void shouldAddNoteToCandidateWhenNoteIsValid() throws IOException {
-    var candidate = upsert(randomUpsertRequestBuilder().build());
+    var candidate = setupValidCandidate(topLevelOrganizationId);
     var theNote = "The note";
     var userName = randomString();
 
     var request = createRequest(candidate.getIdentifier(), new NviNoteRequest(theNote), userName);
-    handler.handleRequest(request, output, context);
+    handler.handleRequest(request, output, CONTEXT);
     var gatewayResponse = GatewayResponse.fromOutputStream(output, CandidateDto.class);
     var actualNote = gatewayResponse.getBodyObject(CandidateDto.class).notes().getFirst();
 
@@ -120,16 +98,16 @@ class CreateNoteHandlerTest extends LocalDynamoTest {
 
   @Test
   void shouldReturnConflictWhenCreatingNoteAndReportingPeriodIsClosed() throws IOException {
-    var candidate = upsert(randomUpsertRequestBuilder().build());
+    var candidate = setupValidCandidate(topLevelOrganizationId);
     var request =
         createRequest(
             candidate.getIdentifier(), new NviNoteRequest(randomString()), randomString());
     var handler =
         new CreateNoteHandler(
             candidateRepository,
-            periodRepositoryReturningClosedPeriod(YEAR),
-            viewingScopeValidatorReturningFalse);
-    handler.handleRequest(request, output, context);
+            periodRepositoryReturningClosedPeriod(CURRENT_YEAR),
+            mockViewingScopeValidator);
+    handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
     assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_CONFLICT)));
@@ -137,15 +115,10 @@ class CreateNoteHandlerTest extends LocalDynamoTest {
 
   @Test
   void shouldReturn405NotAllowedWhenAddingNoteToNonCandidate() throws IOException {
-    var candidateBO = upsert(randomUpsertRequestBuilder().build());
-    var nonCandidate =
-        Candidate.updateNonCandidate(
-                createUpsertNonCandidateRequest(candidateBO.getPublicationId()),
-                candidateRepository)
-            .orElseThrow();
+    var nonCandidate = setupNonApplicableCandidate(topLevelOrganizationId);
     var request =
         createRequest(nonCandidate.getIdentifier(), randomNote().toJsonString(), randomString());
-    handler.handleRequest(request, output, context);
+    handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
     assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_BAD_METHOD)));
@@ -153,34 +126,34 @@ class CreateNoteHandlerTest extends LocalDynamoTest {
 
   @Test
   void shouldSetUserAsAssigneeWhenUsersInstitutionApprovalIsUnassigned() throws IOException {
-    var institutionId = randomUri();
-    var candidate = upsert(createUpsertCandidateRequest(institutionId).build());
-    assertNull(candidate.getApprovals().get(institutionId).getAssigneeUsername());
+    var candidate = setupValidCandidate(topLevelOrganizationId);
+    assertNull(candidate.getApprovals().get(topLevelOrganizationId).getAssigneeUsername());
     var userName = randomString();
-    var request = createRequest(candidate.getIdentifier(), randomNote(), userName, institutionId);
-    handler.handleRequest(request, output, context);
+    var request =
+        createRequest(candidate.getIdentifier(), randomNote(), userName, topLevelOrganizationId);
+    handler.handleRequest(request, output, CONTEXT);
     var response =
         GatewayResponse.fromOutputStream(output, CandidateDto.class)
             .getBodyObject(CandidateDto.class);
-    var actualAssignee = getActualAssignee(response, institutionId);
+    var actualAssignee = getActualAssignee(response, topLevelOrganizationId);
     assertEquals(userName, actualAssignee);
   }
 
   @Test
   void shouldNotSetUserAsAssigneeWhenUsersInstitutionApprovalHasAssignee() throws IOException {
-    var institutionId = randomUri();
-    var candidate = upsert(createUpsertCandidateRequest(institutionId).build());
+    var candidate = setupValidCandidate(topLevelOrganizationId);
     var existingApprovalAssignee = randomString();
     candidate.updateApprovalAssignee(
-        new UpdateAssigneeRequest(institutionId, existingApprovalAssignee));
-    assertNotNull(candidate.getApprovals().get(institutionId).getAssigneeUsername());
+        new UpdateAssigneeRequest(topLevelOrganizationId, existingApprovalAssignee));
+    assertNotNull(candidate.getApprovals().get(topLevelOrganizationId).getAssigneeUsername());
     var request =
-        createRequest(candidate.getIdentifier(), randomNote(), randomString(), institutionId);
-    handler.handleRequest(request, output, context);
+        createRequest(
+            candidate.getIdentifier(), randomNote(), randomString(), topLevelOrganizationId);
+    handler.handleRequest(request, output, CONTEXT);
     var response =
         GatewayResponse.fromOutputStream(output, CandidateDto.class)
             .getBodyObject(CandidateDto.class);
-    var actualAssignee = getActualAssignee(response, institutionId);
+    var actualAssignee = getActualAssignee(response, topLevelOrganizationId);
     assertEquals(existingApprovalAssignee, actualAssignee);
   }
 
@@ -207,7 +180,7 @@ class CreateNoteHandlerTest extends LocalDynamoTest {
     return new HandlerRequestBuilder<NviNoteRequest>(JsonUtils.dtoObjectMapper)
         .withBody(body)
         .withTopLevelCristinOrgId(topLevelOrganizationId)
-        .withPathParameters(Map.of("candidateIdentifier", identifier.toString()))
+        .withPathParameters(Map.of(resourcePathParameter, identifier.toString()))
         .withAccessRights(topLevelOrganizationId, AccessRight.MANAGE_NVI_CANDIDATES)
         .withUserName(userName)
         .build();
@@ -219,16 +192,10 @@ class CreateNoteHandlerTest extends LocalDynamoTest {
     return new HandlerRequestBuilder<String>(JsonUtils.dtoObjectMapper)
         .withBody(body)
         .withTopLevelCristinOrgId(topLevelOrganizationId)
-        .withPathParameters(Map.of("candidateIdentifier", identifier.toString()))
+        .withPathParameters(Map.of(resourcePathParameter, identifier.toString()))
         .withAccessRights(topLevelOrganizationId, AccessRight.MANAGE_NVI_CANDIDATES)
         .withUserName(userName)
         .build();
-  }
-
-  private Candidate upsert(UpsertCandidateRequest request) {
-    Candidate.upsert(request, candidateRepository, periodRepository);
-    return Candidate.fetchByPublicationId(
-        request::publicationId, candidateRepository, periodRepository);
   }
 
   private NviNoteRequest randomNote() {
@@ -238,7 +205,7 @@ class CreateNoteHandlerTest extends LocalDynamoTest {
   private InputStream requestWithoutAccessRights(UUID candidateIdentifier, NviNoteRequest request)
       throws JsonProcessingException {
     return new HandlerRequestBuilder<NviNoteRequest>(JsonUtils.dtoObjectMapper)
-        .withPathParameters(Map.of("candidateIdentifier", candidateIdentifier.toString()))
+        .withPathParameters(Map.of(resourcePathParameter, candidateIdentifier.toString()))
         .withBody(request)
         .build();
   }

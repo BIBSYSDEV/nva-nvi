@@ -1,12 +1,9 @@
 package no.sikt.nva.nvi.rest.upsert;
 
 import static java.util.UUID.randomUUID;
-import static no.sikt.nva.nvi.rest.upsert.UpsertAssigneeHandler.CANDIDATE_IDENTIFIER;
-import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
-import static no.sikt.nva.nvi.test.TestUtils.mockOrganizationResponseForAffiliation;
+import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningClosedPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningNotOpenedPeriod;
-import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeriod;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -14,36 +11,28 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.nio.file.Path;
-import java.util.Calendar;
 import java.util.Map;
 import java.util.Optional;
-import no.sikt.nva.nvi.common.client.OrganizationRetriever;
-import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.rest.BaseCandidateRestHandlerTest;
 import no.sikt.nva.nvi.rest.model.UpsertAssigneeRequest;
 import no.sikt.nva.nvi.test.FakeViewingScopeValidator;
-import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
-import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
-import no.unit.nva.auth.uriretriever.UriRetriever;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
+import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.GatewayResponse;
 import nva.commons.core.ioutils.IoUtils;
 import org.hamcrest.CoreMatchers;
@@ -51,37 +40,27 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.zalando.problem.Problem;
 
-class UpsertAssigneeHandlerTest extends LocalDynamoTest {
+class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
 
-  private static final int YEAR = Calendar.getInstance().getWeekYear();
   private static final String USER_RESPONSE_BODY_WITHOUT_ACCESS_RIGHT_JSON =
       "userResponseBodyWithoutAccessRight" + ".json";
   private static final String USER_RESPONSE_BODY_WITH_ACCESS_RIGHT_JSON =
       "userResponseBodyWithAccessRight.json";
-  private Context context;
-  private ByteArrayOutputStream output;
-  private UpsertAssigneeHandler handler;
-  private CandidateRepository candidateRepository;
-  private PeriodRepository periodRepository;
-  private AuthorizedBackendUriRetriever uriRetriever;
-  private FakeViewingScopeValidator viewingScopeValidator;
+
+  @Override
+  protected ApiGatewayHandler<UpsertAssigneeRequest, CandidateDto> createHandler() {
+    return new UpsertAssigneeHandler(
+        candidateRepository, periodRepository, mockUriRetriever, mockViewingScopeValidator);
+  }
 
   @BeforeEach
-  void init() {
-    output = new ByteArrayOutputStream();
-    context = mock(Context.class);
-    candidateRepository = new CandidateRepository(initializeTestDatabase());
-    periodRepository = periodRepositoryReturningOpenedPeriod(YEAR);
-    uriRetriever = mock(AuthorizedBackendUriRetriever.class);
-    viewingScopeValidator = new FakeViewingScopeValidator(true);
-    handler =
-        new UpsertAssigneeHandler(
-            candidateRepository, periodRepository, uriRetriever, viewingScopeValidator);
+  void setUp() {
+    resourcePathParameter = "candidateIdentifier";
   }
 
   @Test
   void shouldReturnUnauthorizedWhenMissingAccessRights() throws IOException {
-    handler.handleRequest(createRequestWithoutAccessRights(), output, context);
+    handler.handleRequest(createRequestWithoutAccessRights(), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
     assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
@@ -89,7 +68,7 @@ class UpsertAssigneeHandlerTest extends LocalDynamoTest {
 
   @Test
   void shouldReturnUnauthorizedWhenAssigneeIsNotFromTheSameInstitution() throws IOException {
-    handler.handleRequest(createRequestWithDifferentInstitution(), output, context);
+    handler.handleRequest(createRequestWithDifferentInstitution(), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
     assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
@@ -100,7 +79,7 @@ class UpsertAssigneeHandlerTest extends LocalDynamoTest {
     mockUserApiResponse(USER_RESPONSE_BODY_WITHOUT_ACCESS_RIGHT_JSON);
     var candidate = createCandidate();
     var assignee = randomString();
-    handler.handleRequest(createRequest(candidate, assignee), output, context);
+    handler.handleRequest(createRequest(candidate, assignee), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
 
     assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
@@ -111,11 +90,14 @@ class UpsertAssigneeHandlerTest extends LocalDynamoTest {
     mockUserApiResponse(USER_RESPONSE_BODY_WITHOUT_ACCESS_RIGHT_JSON);
     var candidate = createCandidate();
     var assignee = randomString();
-    viewingScopeValidator = new FakeViewingScopeValidator(false);
+    var viewingScopeValidatorReturningFalse = new FakeViewingScopeValidator(false);
     handler =
         new UpsertAssigneeHandler(
-            candidateRepository, periodRepository, uriRetriever, viewingScopeValidator);
-    handler.handleRequest(createRequest(candidate, assignee), output, context);
+            candidateRepository,
+            periodRepository,
+            mockUriRetriever,
+            viewingScopeValidatorReturningFalse);
+    handler.handleRequest(createRequest(candidate, assignee), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
     assertThat(
         response.getStatusCode(), is(CoreMatchers.equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
@@ -124,7 +106,7 @@ class UpsertAssigneeHandlerTest extends LocalDynamoTest {
   @Test
   void shouldReturnNotFoundWhenCandidateDoesNotExist() throws IOException {
     mockUserApiResponse(USER_RESPONSE_BODY_WITH_ACCESS_RIGHT_JSON);
-    handler.handleRequest(createRequestWithNonExistingCandidate(), output, context);
+    handler.handleRequest(createRequestWithNonExistingCandidate(), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
     assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_NOT_FOUND)));
@@ -135,14 +117,14 @@ class UpsertAssigneeHandlerTest extends LocalDynamoTest {
     mockUserApiResponse(USER_RESPONSE_BODY_WITH_ACCESS_RIGHT_JSON);
     var candidate = createCandidate();
     var assignee = randomString();
-    var periodRepositoryForClosedPeriod = periodRepositoryReturningClosedPeriod(YEAR);
+    var periodRepositoryForClosedPeriod = periodRepositoryReturningClosedPeriod(CURRENT_YEAR);
     var customHandler =
         new UpsertAssigneeHandler(
             candidateRepository,
             periodRepositoryForClosedPeriod,
-            uriRetriever,
-            viewingScopeValidator);
-    customHandler.handleRequest(createRequest(candidate, assignee), output, context);
+            mockUriRetriever,
+            mockViewingScopeValidator);
+    customHandler.handleRequest(createRequest(candidate, assignee), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
     assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_CONFLICT)));
@@ -154,14 +136,15 @@ class UpsertAssigneeHandlerTest extends LocalDynamoTest {
     mockUserApiResponse(USER_RESPONSE_BODY_WITH_ACCESS_RIGHT_JSON);
     var candidate = createCandidate();
     var assignee = randomString();
-    var periodRepositoryForNotYetOpenPeriod = periodRepositoryReturningNotOpenedPeriod(YEAR);
+    var periodRepositoryForNotYetOpenPeriod =
+        periodRepositoryReturningNotOpenedPeriod(CURRENT_YEAR);
     var customHandler =
         new UpsertAssigneeHandler(
             candidateRepository,
             periodRepositoryForNotYetOpenPeriod,
-            uriRetriever,
-            viewingScopeValidator);
-    customHandler.handleRequest(createRequest(candidate, assignee), output, context);
+            mockUriRetriever,
+            mockViewingScopeValidator);
+    customHandler.handleRequest(createRequest(candidate, assignee), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
     assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_CONFLICT)));
@@ -172,7 +155,7 @@ class UpsertAssigneeHandlerTest extends LocalDynamoTest {
     mockUserApiResponse(USER_RESPONSE_BODY_WITH_ACCESS_RIGHT_JSON);
     var candidate = createCandidate();
     var assignee = randomString();
-    handler.handleRequest(createRequest(candidate, assignee), output, context);
+    handler.handleRequest(createRequest(candidate, assignee), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
 
     assertThat(
@@ -185,7 +168,7 @@ class UpsertAssigneeHandlerTest extends LocalDynamoTest {
   void shouldRemoveAssigneeWhenAssigneeIsPresent() throws IOException {
     mockUserApiResponse(USER_RESPONSE_BODY_WITH_ACCESS_RIGHT_JSON);
     var candidate = createCandidate();
-    handler.handleRequest(createRequest(candidate, null), output, context);
+    handler.handleRequest(createRequest(candidate, null), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
 
     assertThat(
@@ -199,7 +182,7 @@ class UpsertAssigneeHandlerTest extends LocalDynamoTest {
     mockUserApiResponse(USER_RESPONSE_BODY_WITH_ACCESS_RIGHT_JSON);
     var newAssignee = randomString();
     var candidate = candidateWithFinalizedApproval(newAssignee);
-    handler.handleRequest(createRequest(candidate, newAssignee), output, context);
+    handler.handleRequest(createRequest(candidate, newAssignee), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
 
     assertThat(
@@ -212,25 +195,18 @@ class UpsertAssigneeHandlerTest extends LocalDynamoTest {
   }
 
   private Candidate candidateWithFinalizedApproval(String newAssignee) {
-    var institutionId = randomUri();
-    var mockUriRetriever = mock(UriRetriever.class);
-    var mockOrganizationRetriever = new OrganizationRetriever(mockUriRetriever);
-    mockOrganizationResponseForAffiliation(institutionId, null, mockUriRetriever);
-    var request = createUpsertCandidateRequest(institutionId).build();
-    Candidate.upsert(request, candidateRepository, periodRepository);
-    var candidate =
-        Candidate.fetchByPublicationId(
-            request::publicationId, candidateRepository, periodRepository);
-    candidate.updateApprovalAssignee(new UpdateAssigneeRequest(institutionId, newAssignee));
+    var candidate = setupValidCandidate(topLevelOrganizationId);
+    candidate.updateApprovalAssignee(
+        new UpdateAssigneeRequest(topLevelOrganizationId, newAssignee));
     candidate.updateApprovalStatus(
         new UpdateStatusRequest(
-            institutionId, ApprovalStatus.APPROVED, randomString(), randomString()),
+            topLevelOrganizationId, ApprovalStatus.APPROVED, randomString(), randomString()),
         mockOrganizationRetriever);
     return candidate;
   }
 
   private void mockUserApiResponse(String responseFile) {
-    when(uriRetriever.getRawContent(any(), any()))
+    when(mockUriRetriever.getRawContent(any(), any()))
         .thenReturn(Optional.ofNullable(IoUtils.stringFromResources(Path.of(responseFile))));
   }
 
@@ -244,7 +220,7 @@ class UpsertAssigneeHandlerTest extends LocalDynamoTest {
         .withAccessRights(requestBody.institutionId(), AccessRight.MANAGE_NVI_CANDIDATES)
         .withUserName(randomString())
         .withBody(requestBody)
-        .withPathParameters(Map.of(CANDIDATE_IDENTIFIER, candidate.getIdentifier().toString()))
+        .withPathParameters(Map.of(resourcePathParameter, candidate.getIdentifier().toString()))
         .build();
   }
 
@@ -257,7 +233,7 @@ class UpsertAssigneeHandlerTest extends LocalDynamoTest {
         .withAccessRights(organizationId, AccessRight.MANAGE_NVI_CANDIDATES)
         .withUserName(randomString())
         .withBody(requestBody)
-        .withPathParameters(Map.of(CANDIDATE_IDENTIFIER, randomUUID().toString()))
+        .withPathParameters(Map.of(resourcePathParameter, randomUUID().toString()))
         .build();
   }
 
