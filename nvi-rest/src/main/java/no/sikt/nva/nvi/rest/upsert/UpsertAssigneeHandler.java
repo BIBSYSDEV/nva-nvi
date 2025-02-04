@@ -26,18 +26,12 @@ import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.apigateway.exceptions.NotFoundException;
 import nva.commons.apigateway.exceptions.UnauthorizedException;
-import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 
 public class UpsertAssigneeHandler extends ApiGatewayHandler<UpsertAssigneeRequest, CandidateDto>
     implements ViewingScopeHandler {
 
   public static final String CANDIDATE_IDENTIFIER = "candidateIdentifier";
-  public static final Environment ENVIRONMENT = new Environment();
-  public static final String BACKEND_CLIENT_AUTH_URL =
-      ENVIRONMENT.readEnv("BACKEND_CLIENT_AUTH_URL");
-  public static final String BACKEND_CLIENT_SECRET_NAME =
-      ENVIRONMENT.readEnv("BACKEND_CLIENT_SECRET_NAME");
   private final CandidateRepository candidateRepository;
   private final PeriodRepository periodRepository;
   private final IdentityServiceClient identityServiceClient;
