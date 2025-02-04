@@ -4,6 +4,7 @@ import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.createUpdateStatusRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertNonCandidateRequest;
+import static no.sikt.nva.nvi.test.TestUtils.mockOrganizationResponseForAffiliation;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningClosedPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.randomApplicableCandidate;
 import static no.sikt.nva.nvi.test.TestUtils.randomApproval;
@@ -32,6 +33,7 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.CandidateDao;
@@ -47,6 +49,7 @@ import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.service.dto.ApprovalDto;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatusDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
+import no.sikt.nva.nvi.common.service.dto.CandidateOperation;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
@@ -245,10 +248,14 @@ class CandidateTest extends CandidateTestSetup {
   @Test
   void shouldReturnExpectedDto() {
     var candidate = upsert(randomUpsertRequestBuilder().build());
+    var userOrganizationId = getAnyOrganizationId(candidate);
+    mockOrganizationResponseForAffiliation(userOrganizationId, null, mockUriRetriever);
+
     var expectedDto =
         CandidateDto.builder()
             .withApprovals(mapToApprovalDtos(candidate))
-            .withAllowedOperations(Collections.emptySet())
+            .withAllowedOperations(
+                Set.of(CandidateOperation.APPROVAL_APPROVE, CandidateOperation.APPROVAL_REJECT))
             .withId(candidate.getId())
             .withPublicationId(candidate.getPublicationId())
             .withIdentifier(candidate.getIdentifier())
@@ -257,7 +264,7 @@ class CandidateTest extends CandidateTestSetup {
             .withTotalPoints(candidate.getTotalPoints())
             .withNotes(Collections.emptyList())
             .build();
-    assertEquals(expectedDto, candidate.toDto());
+    assertEquals(expectedDto, candidate.toDto(userOrganizationId, mockOrganizationRetriever));
   }
 
   @Test()
@@ -336,8 +343,12 @@ class CandidateTest extends CandidateTestSetup {
   void shouldReturnCandidateWithReportStatus() {
     var dao = setupReportedCandidate(candidateRepository, randomYear());
     var candidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
-    assertThat(candidate.toDto().status(), is(equalTo(ReportStatus.REPORTED.getValue())));
-    assertThat(candidate.toDto().status(), is(equalTo(ReportStatus.REPORTED.getValue())));
+    var currentUserOrganizationId = getAnyOrganizationId(candidate);
+
+    var actualStatus =
+        candidate.toDto(currentUserOrganizationId, mockOrganizationRetriever).status();
+    var expectedStatus = ReportStatus.REPORTED.getValue();
+    assertEquals(expectedStatus, actualStatus);
   }
 
   @Test
