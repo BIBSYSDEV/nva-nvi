@@ -55,7 +55,8 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
         candidateRepository,
         periodRepository,
         mockIdentityServiceClient,
-        mockViewingScopeValidator);
+        mockViewingScopeValidator,
+        mockOrganizationRetriever);
   }
 
   @BeforeEach
@@ -99,7 +100,8 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
             candidateRepository,
             periodRepository,
             mockIdentityServiceClient,
-            viewingScopeValidatorReturningFalse);
+            viewingScopeValidatorReturningFalse,
+            mockOrganizationRetriever);
     handler.handleRequest(createRequest(candidate, assignee), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
     assertThat(
@@ -126,7 +128,8 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
             candidateRepository,
             periodRepositoryForClosedPeriod,
             mockIdentityServiceClient,
-            mockViewingScopeValidator);
+            mockViewingScopeValidator,
+            mockOrganizationRetriever);
     customHandler.handleRequest(createRequest(candidate, assignee), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
@@ -145,7 +148,8 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
             candidateRepository,
             periodRepositoryForNotYetOpenPeriod,
             mockIdentityServiceClient,
-            mockViewingScopeValidator);
+            mockViewingScopeValidator,
+            mockOrganizationRetriever);
     customHandler.handleRequest(createRequest(candidate, assignee), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
