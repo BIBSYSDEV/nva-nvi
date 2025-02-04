@@ -8,6 +8,7 @@ import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningNotOpenedP
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
@@ -23,6 +24,7 @@ import java.util.Map;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
+import no.sikt.nva.nvi.common.service.dto.CandidateOperation;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.rest.BaseCandidateRestHandlerTest;
@@ -185,6 +187,19 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
     assertThat(
         response.getBodyObject(CandidateDto.class).approvals().getFirst().assignee(),
         is(equalTo(newAssignee)));
+  }
+
+  @Test
+  void shouldIncludeAllowedOperations() throws IOException {
+    var assignee = randomString();
+    mockNviCuratorAccessForUser(assignee);
+    var request = createRequest(candidate, assignee);
+    var candidateDto = handleRequest(request);
+
+    var actualAllowedOperations = candidateDto.allowedOperations();
+    var expectedAllowedOperations =
+        List.of(CandidateOperation.APPROVAL_APPROVE, CandidateOperation.APPROVAL_REJECT);
+    assertThat(actualAllowedOperations, containsInAnyOrder(expectedAllowedOperations.toArray()));
   }
 
   private Candidate candidateWithFinalizedApproval(String newAssignee) {
