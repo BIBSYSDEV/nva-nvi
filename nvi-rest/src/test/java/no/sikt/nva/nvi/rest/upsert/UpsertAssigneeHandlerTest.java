@@ -28,7 +28,6 @@ import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.rest.BaseCandidateRestHandlerTest;
 import no.sikt.nva.nvi.rest.model.UpsertAssigneeRequest;
 import no.sikt.nva.nvi.test.FakeViewingScopeValidator;
-import no.sikt.nva.nvi.test.TestUtils;
 import no.unit.nva.clients.GetUserResponse;
 import no.unit.nva.clients.IdentityServiceClient;
 import no.unit.nva.commons.json.JsonUtils;
@@ -43,6 +42,7 @@ import org.junit.jupiter.api.Test;
 import org.zalando.problem.Problem;
 
 class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
+  private Candidate candidate;
 
   private static final IdentityServiceClient mockIdentityServiceClient =
       mock(IdentityServiceClient.class);
@@ -59,6 +59,7 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
   @BeforeEach
   void setUp() {
     resourcePathParameter = "candidateIdentifier";
+    candidate = setupValidCandidate(topLevelOrganizationId);
   }
 
   @Test
@@ -79,7 +80,6 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldReturnUnauthorizedWhenAssigningToUserWithoutAccessRight() throws IOException {
-    var candidate = createCandidate();
     var assignee = randomString();
     mockNoAccessForUser(assignee);
     handler.handleRequest(createRequest(candidate, assignee), output, CONTEXT);
@@ -90,7 +90,6 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldReturnUnauthorizedWhenCandidateIsNotInUsersViewingScope() throws IOException {
-    var candidate = createCandidate();
     var assignee = randomString();
     var viewingScopeValidatorReturningFalse = new FakeViewingScopeValidator(false);
     handler =
@@ -117,7 +116,6 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldReturnConflictWhenUpdatingAssigneeAndReportingPeriodIsClosed() throws IOException {
-    var candidate = createCandidate();
     var assignee = randomString();
     mockNviCuratorAccessForUser(assignee);
     var periodRepositoryForClosedPeriod = periodRepositoryReturningClosedPeriod(CURRENT_YEAR);
@@ -136,7 +134,6 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
   @Test
   void shouldReturnConflictWhenUpdatingAssigneeAndReportingPeriodIsNotOpenedYet()
       throws IOException {
-    var candidate = createCandidate();
     var assignee = randomString();
     mockNviCuratorAccessForUser(assignee);
     var periodRepositoryForNotYetOpenPeriod =
@@ -155,7 +152,6 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldUpdateAssigneeWhenAssigneeIsNotPresent() throws IOException {
-    var candidate = createCandidate();
     var assignee = randomString();
     mockNviCuratorAccessForUser(assignee);
     handler.handleRequest(createRequest(candidate, assignee), output, CONTEXT);
@@ -169,7 +165,6 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldRemoveAssigneeWhenAssigneeIsPresent() throws IOException {
-    var candidate = createCandidate();
     handler.handleRequest(createRequest(candidate, null), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
 
@@ -183,8 +178,8 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
   void shouldUpdateAssigneeWhenExistingApprovalIsFinalized() throws IOException {
     var newAssignee = randomString();
     mockNviCuratorAccessForUser(newAssignee);
-    var candidate = candidateWithFinalizedApproval(newAssignee);
-    handler.handleRequest(createRequest(candidate, newAssignee), output, CONTEXT);
+    var newCandidate = candidateWithFinalizedApproval(newAssignee);
+    handler.handleRequest(createRequest(newCandidate, newAssignee), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
 
     assertThat(
@@ -192,12 +187,7 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
         is(equalTo(newAssignee)));
   }
 
-  private Candidate createCandidate() {
-    return TestUtils.randomApplicableCandidate(candidateRepository, periodRepository);
-  }
-
   private Candidate candidateWithFinalizedApproval(String newAssignee) {
-    var candidate = setupValidCandidate(topLevelOrganizationId);
     candidate.updateApprovalAssignee(
         new UpdateAssigneeRequest(topLevelOrganizationId, newAssignee));
     candidate.updateApprovalStatus(
@@ -209,7 +199,8 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
 
   private InputStream createRequest(Candidate candidate, String newAssignee)
       throws JsonProcessingException {
-    var approvalToUpdate = candidate.toDto().approvals().getFirst();
+    var approvalToUpdate =
+        candidate.toDto(topLevelOrganizationId, mockOrganizationRetriever).approvals().getFirst();
     var requestBody = new UpsertAssigneeRequest(newAssignee, approvalToUpdate.institutionId());
     return new HandlerRequestBuilder<UpsertAssigneeRequest>(JsonUtils.dtoObjectMapper)
         .withBody(randomAssigneeRequest())
