@@ -11,6 +11,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -29,6 +30,7 @@ import no.sikt.nva.nvi.rest.BaseCandidateRestHandlerTest;
 import no.sikt.nva.nvi.rest.model.UpsertAssigneeRequest;
 import no.sikt.nva.nvi.test.FakeViewingScopeValidator;
 import no.sikt.nva.nvi.test.TestUtils;
+import no.unit.nva.clients.IdentityServiceClient;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
@@ -46,16 +48,22 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
       "userResponseBodyWithoutAccessRight" + ".json";
   private static final String USER_RESPONSE_BODY_WITH_ACCESS_RIGHT_JSON =
       "userResponseBodyWithAccessRight.json";
+  private IdentityServiceClient mockIdentityServiceClient;
 
   @Override
   protected ApiGatewayHandler<UpsertAssigneeRequest, CandidateDto> createHandler() {
     return new UpsertAssigneeHandler(
-        candidateRepository, periodRepository, mockUriRetriever, mockViewingScopeValidator);
+        candidateRepository,
+        periodRepository,
+        mockUriRetriever,
+        mockIdentityServiceClient,
+        mockViewingScopeValidator);
   }
 
   @BeforeEach
   void setUp() {
     resourcePathParameter = "candidateIdentifier";
+    mockIdentityServiceClient = mock(IdentityServiceClient.class);
   }
 
   @Test
@@ -96,6 +104,7 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
             candidateRepository,
             periodRepository,
             mockUriRetriever,
+            mockIdentityServiceClient,
             viewingScopeValidatorReturningFalse);
     handler.handleRequest(createRequest(candidate, assignee), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
@@ -123,6 +132,7 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
             candidateRepository,
             periodRepositoryForClosedPeriod,
             mockUriRetriever,
+            mockIdentityServiceClient,
             mockViewingScopeValidator);
     customHandler.handleRequest(createRequest(candidate, assignee), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
@@ -143,6 +153,7 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
             candidateRepository,
             periodRepositoryForNotYetOpenPeriod,
             mockUriRetriever,
+            mockIdentityServiceClient,
             mockViewingScopeValidator);
     customHandler.handleRequest(createRequest(candidate, assignee), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);

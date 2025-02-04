@@ -24,6 +24,7 @@ import no.sikt.nva.nvi.rest.model.User;
 import no.sikt.nva.nvi.rest.model.User.Role;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.auth.uriretriever.RawContentRetriever;
+import no.unit.nva.clients.IdentityServiceClient;
 import no.unit.nva.commons.json.JsonUtils;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
@@ -50,6 +51,7 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<UpsertAssigneeReque
   private final RawContentRetriever uriRetriever;
   private final CandidateRepository candidateRepository;
   private final PeriodRepository periodRepository;
+  private final IdentityServiceClient identityServiceClient;
   private final ViewingScopeValidator viewingScopeValidator;
 
   @JacocoGenerated
@@ -58,6 +60,7 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<UpsertAssigneeReque
         new CandidateRepository(DynamoRepository.defaultDynamoClient()),
         new PeriodRepository(DynamoRepository.defaultDynamoClient()),
         new AuthorizedBackendUriRetriever(BACKEND_CLIENT_AUTH_URL, BACKEND_CLIENT_SECRET_NAME),
+        IdentityServiceClient.prepare(),
         ViewingScopeHandler.defaultViewingScopeValidator());
   }
 
@@ -65,11 +68,13 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<UpsertAssigneeReque
       CandidateRepository candidateRepository,
       PeriodRepository periodRepository,
       RawContentRetriever uriRetriever,
+      IdentityServiceClient identityServiceClient,
       ViewingScopeValidator viewingScopeValidator) {
     super(UpsertAssigneeRequest.class);
     this.candidateRepository = candidateRepository;
     this.periodRepository = periodRepository;
     this.uriRetriever = uriRetriever;
+    this.identityServiceClient = identityServiceClient;
     this.viewingScopeValidator = viewingScopeValidator;
   }
 
