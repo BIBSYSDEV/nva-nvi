@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.rest.upsert;
 
+import static java.util.Collections.emptyList;
 import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningClosedPeriod;
@@ -10,7 +11,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -18,9 +18,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
-import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
@@ -30,13 +29,14 @@ import no.sikt.nva.nvi.rest.BaseCandidateRestHandlerTest;
 import no.sikt.nva.nvi.rest.model.UpsertAssigneeRequest;
 import no.sikt.nva.nvi.test.FakeViewingScopeValidator;
 import no.sikt.nva.nvi.test.TestUtils;
+import no.unit.nva.clients.GetUserResponse;
 import no.unit.nva.clients.IdentityServiceClient;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.GatewayResponse;
-import nva.commons.core.ioutils.IoUtils;
+import nva.commons.apigateway.exceptions.NotFoundException;
 import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,18 +44,14 @@ import org.zalando.problem.Problem;
 
 class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
 
-  private static final String USER_RESPONSE_BODY_WITHOUT_ACCESS_RIGHT_JSON =
-      "userResponseBodyWithoutAccessRight" + ".json";
-  private static final String USER_RESPONSE_BODY_WITH_ACCESS_RIGHT_JSON =
-      "userResponseBodyWithAccessRight.json";
-  private IdentityServiceClient mockIdentityServiceClient;
+  private static final IdentityServiceClient mockIdentityServiceClient =
+      mock(IdentityServiceClient.class);
 
   @Override
   protected ApiGatewayHandler<UpsertAssigneeRequest, CandidateDto> createHandler() {
     return new UpsertAssigneeHandler(
         candidateRepository,
         periodRepository,
-        mockUriRetriever,
         mockIdentityServiceClient,
         mockViewingScopeValidator);
   }
@@ -63,7 +59,6 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
   @BeforeEach
   void setUp() {
     resourcePathParameter = "candidateIdentifier";
-    mockIdentityServiceClient = mock(IdentityServiceClient.class);
   }
 
   @Test
@@ -84,9 +79,9 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldReturnUnauthorizedWhenAssigningToUserWithoutAccessRight() throws IOException {
-    mockUserApiResponse(USER_RESPONSE_BODY_WITHOUT_ACCESS_RIGHT_JSON);
     var candidate = createCandidate();
     var assignee = randomString();
+    mockNoAccessForUser(assignee);
     handler.handleRequest(createRequest(candidate, assignee), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
 
@@ -95,7 +90,6 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldReturnUnauthorizedWhenCandidateIsNotInUsersViewingScope() throws IOException {
-    mockUserApiResponse(USER_RESPONSE_BODY_WITHOUT_ACCESS_RIGHT_JSON);
     var candidate = createCandidate();
     var assignee = randomString();
     var viewingScopeValidatorReturningFalse = new FakeViewingScopeValidator(false);
@@ -103,7 +97,6 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
         new UpsertAssigneeHandler(
             candidateRepository,
             periodRepository,
-            mockUriRetriever,
             mockIdentityServiceClient,
             viewingScopeValidatorReturningFalse);
     handler.handleRequest(createRequest(candidate, assignee), output, CONTEXT);
@@ -114,8 +107,9 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldReturnNotFoundWhenCandidateDoesNotExist() throws IOException {
-    mockUserApiResponse(USER_RESPONSE_BODY_WITH_ACCESS_RIGHT_JSON);
-    handler.handleRequest(createRequestWithNonExistingCandidate(), output, CONTEXT);
+    var assignee = randomString();
+    mockNviCuratorAccessForUser(assignee);
+    handler.handleRequest(createRequestWithNonExistingCandidate(assignee), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
     assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_NOT_FOUND)));
@@ -123,15 +117,14 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldReturnConflictWhenUpdatingAssigneeAndReportingPeriodIsClosed() throws IOException {
-    mockUserApiResponse(USER_RESPONSE_BODY_WITH_ACCESS_RIGHT_JSON);
     var candidate = createCandidate();
     var assignee = randomString();
+    mockNviCuratorAccessForUser(assignee);
     var periodRepositoryForClosedPeriod = periodRepositoryReturningClosedPeriod(CURRENT_YEAR);
     var customHandler =
         new UpsertAssigneeHandler(
             candidateRepository,
             periodRepositoryForClosedPeriod,
-            mockUriRetriever,
             mockIdentityServiceClient,
             mockViewingScopeValidator);
     customHandler.handleRequest(createRequest(candidate, assignee), output, CONTEXT);
@@ -143,16 +136,15 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
   @Test
   void shouldReturnConflictWhenUpdatingAssigneeAndReportingPeriodIsNotOpenedYet()
       throws IOException {
-    mockUserApiResponse(USER_RESPONSE_BODY_WITH_ACCESS_RIGHT_JSON);
     var candidate = createCandidate();
     var assignee = randomString();
+    mockNviCuratorAccessForUser(assignee);
     var periodRepositoryForNotYetOpenPeriod =
         periodRepositoryReturningNotOpenedPeriod(CURRENT_YEAR);
     var customHandler =
         new UpsertAssigneeHandler(
             candidateRepository,
             periodRepositoryForNotYetOpenPeriod,
-            mockUriRetriever,
             mockIdentityServiceClient,
             mockViewingScopeValidator);
     customHandler.handleRequest(createRequest(candidate, assignee), output, CONTEXT);
@@ -163,9 +155,9 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldUpdateAssigneeWhenAssigneeIsNotPresent() throws IOException {
-    mockUserApiResponse(USER_RESPONSE_BODY_WITH_ACCESS_RIGHT_JSON);
     var candidate = createCandidate();
     var assignee = randomString();
+    mockNviCuratorAccessForUser(assignee);
     handler.handleRequest(createRequest(candidate, assignee), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
 
@@ -177,7 +169,6 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldRemoveAssigneeWhenAssigneeIsPresent() throws IOException {
-    mockUserApiResponse(USER_RESPONSE_BODY_WITH_ACCESS_RIGHT_JSON);
     var candidate = createCandidate();
     handler.handleRequest(createRequest(candidate, null), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
@@ -190,8 +181,8 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldUpdateAssigneeWhenExistingApprovalIsFinalized() throws IOException {
-    mockUserApiResponse(USER_RESPONSE_BODY_WITH_ACCESS_RIGHT_JSON);
     var newAssignee = randomString();
+    mockNviCuratorAccessForUser(newAssignee);
     var candidate = candidateWithFinalizedApproval(newAssignee);
     handler.handleRequest(createRequest(candidate, newAssignee), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
@@ -216,11 +207,6 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
     return candidate;
   }
 
-  private void mockUserApiResponse(String responseFile) {
-    when(mockUriRetriever.getRawContent(any(), any()))
-        .thenReturn(Optional.ofNullable(IoUtils.stringFromResources(Path.of(responseFile))));
-  }
-
   private InputStream createRequest(Candidate candidate, String newAssignee)
       throws JsonProcessingException {
     var approvalToUpdate = candidate.toDto().approvals().getFirst();
@@ -235,9 +221,10 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
         .build();
   }
 
-  private InputStream createRequestWithNonExistingCandidate() throws JsonProcessingException {
+  private InputStream createRequestWithNonExistingCandidate(String assignee)
+      throws JsonProcessingException {
     var organizationId = randomUri();
-    var requestBody = new UpsertAssigneeRequest(randomString(), organizationId);
+    var requestBody = new UpsertAssigneeRequest(assignee, organizationId);
     return new HandlerRequestBuilder<UpsertAssigneeRequest>(JsonUtils.dtoObjectMapper)
         .withBody(randomAssigneeRequest())
         .withTopLevelCristinOrgId(organizationId)
@@ -263,5 +250,23 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
 
   private UpsertAssigneeRequest randomAssigneeRequest() {
     return new UpsertAssigneeRequest(randomString(), randomUri());
+  }
+
+  private void mockUserIdentity(String userName, List<String> accessRights) {
+    var user =
+        GetUserResponse.builder().withUsername(userName).withAccessRights(accessRights).build();
+    try {
+      when(mockIdentityServiceClient.getUser(userName)).thenReturn(user);
+    } catch (NotFoundException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private void mockNviCuratorAccessForUser(String userName) {
+    mockUserIdentity(userName, List.of(AccessRight.MANAGE_NVI_CANDIDATES.toString()));
+  }
+
+  private void mockNoAccessForUser(String userName) {
+    mockUserIdentity(userName, emptyList());
   }
 }
