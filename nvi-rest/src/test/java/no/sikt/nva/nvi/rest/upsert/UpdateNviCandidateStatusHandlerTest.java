@@ -6,6 +6,7 @@ import static no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningNotOpenedP
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -17,12 +18,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatusDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
+import no.sikt.nva.nvi.common.service.dto.CandidateOperation;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.rest.BaseCandidateRestHandlerTest;
 import no.sikt.nva.nvi.test.FakeViewingScopeValidator;
@@ -325,5 +328,21 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
     var candidateResponse = response.getBodyObject(CandidateDto.class);
 
     assertThat(candidateResponse.approvals().getFirst().assignee(), is(equalTo(assignee)));
+  }
+
+  @Test
+  void shouldIncludeAllowedOperations() throws IOException {
+    var candidate = setupValidCandidate(topLevelOrganizationId);
+    var assignee = randomString();
+    var requestBody = new NviStatusRequest(topLevelOrganizationId, ApprovalStatus.PENDING, null);
+    var request =
+        createRequest(candidate.getIdentifier(), topLevelOrganizationId, requestBody, assignee);
+
+    var candidateDto = handleRequest(request);
+
+    var actualAllowedOperations = candidateDto.allowedOperations();
+    var expectedAllowedOperations =
+        List.of(CandidateOperation.APPROVAL_APPROVE, CandidateOperation.APPROVAL_REJECT);
+    assertThat(actualAllowedOperations, containsInAnyOrder(expectedAllowedOperations.toArray()));
   }
 }

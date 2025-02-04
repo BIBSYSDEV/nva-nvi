@@ -73,13 +73,18 @@ public class UpdateNviCandidateStatusHandler
             () -> Candidate.fetch(() -> candidateIdentifier, candidateRepository, periodRepository))
         .map(candidate -> validateViewingScope(viewingScopeValidator, username, candidate))
         .map(candidate -> candidate.updateApprovalStatus(updateRequest, organizationRetriever))
-        .map(Candidate::toDto)
+        .map(candidate -> toCandidateDto(requestInfo, candidate))
         .orElseThrow(ExceptionMapper::map);
   }
 
   @Override
   protected Integer getSuccessStatusCode(NviStatusRequest input, CandidateDto output) {
     return HTTP_OK;
+  }
+
+  private CandidateDto toCandidateDto(RequestInfo requestInfo, Candidate candidate) {
+    return candidate.toDto(
+        requestInfo.getTopLevelOrgCristinId().orElseThrow(), organizationRetriever);
   }
 
   private static void validateCustomerAndAccessRight(
