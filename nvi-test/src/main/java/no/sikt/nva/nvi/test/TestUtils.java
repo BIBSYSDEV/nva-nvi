@@ -69,7 +69,7 @@ import nva.commons.core.paths.UriWrapper;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 // Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
-@SuppressWarnings("PMD.CouplingBetweenObjects")
+@SuppressWarnings({"PMD.CouplingBetweenObjects", "PMD.GodClass"})
 public final class TestUtils {
 
   public static final int SCALE = 4;
@@ -423,6 +423,20 @@ public final class TestUtils {
             .reportStatus(ReportStatus.REPORTED)
             .build(),
         List.of(randomApproval(institutionId)));
+  }
+
+  /*
+   * This method is used to set up a reported candidate, but should be removed once Candidate.report is implemented.
+   */
+  @Deprecated
+  public static CandidateDao setupReportedCandidate(
+      CandidateRepository repository, String year, URI organizationId) {
+    return repository.create(
+        randomCandidateBuilder(true, organizationId)
+            .publicationDate(DbPublicationDate.builder().year(year).build())
+            .reportStatus(ReportStatus.REPORTED)
+            .build(),
+        List.of(randomApproval(organizationId)));
   }
 
   private static DbPublicationDate publicationDate(String year) {

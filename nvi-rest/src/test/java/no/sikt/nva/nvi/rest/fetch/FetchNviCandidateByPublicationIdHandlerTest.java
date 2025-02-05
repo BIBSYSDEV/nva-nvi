@@ -6,14 +6,17 @@ import static no.sikt.nva.nvi.test.TestUtils.setupReportedCandidate;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
+import java.util.List;
 import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatusDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
+import no.sikt.nva.nvi.common.service.dto.CandidateOperation;
 import no.sikt.nva.nvi.rest.BaseCandidateRestHandlerTest;
 import no.sikt.nva.nvi.test.FakeViewingScopeValidator;
 import nva.commons.apigateway.ApiGatewayHandler;
@@ -28,7 +31,10 @@ class FetchNviCandidateByPublicationIdHandlerTest extends BaseCandidateRestHandl
   @Override
   protected ApiGatewayHandler<Void, CandidateDto> createHandler() {
     return new FetchNviCandidateByPublicationIdHandler(
-        candidateRepository, periodRepository, mockViewingScopeValidator);
+        candidateRepository,
+        periodRepository,
+        mockViewingScopeValidator,
+        mockOrganizationRetriever);
   }
 
   @BeforeEach
@@ -62,7 +68,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends BaseCandidateRestHandl
 
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
-    var expectedResponse = candidate.toDto();
+    var expectedResponse = candidate.toDto(topLevelOrganizationId, mockOrganizationRetriever);
     var actualResponse = response.getBodyObject(CandidateDto.class);
 
     assertEquals(expectedResponse, actualResponse);
@@ -70,7 +76,8 @@ class FetchNviCandidateByPublicationIdHandlerTest extends BaseCandidateRestHandl
 
   @Test
   void shouldReturnCandidateWithReportStatus() throws IOException {
-    var candidate = setupReportedCandidate(candidateRepository, randomYear());
+    var candidate =
+        setupReportedCandidate(candidateRepository, randomYear(), topLevelOrganizationId);
     var publicationId = candidate.candidate().publicationId();
     var request = createRequestWithCuratorAccess(publicationId.toString());
 
@@ -100,10 +107,26 @@ class FetchNviCandidateByPublicationIdHandlerTest extends BaseCandidateRestHandl
     var request = createRequestWithCuratorAccess(candidate.getPublicationId().toString());
     handler =
         new FetchNviCandidateByPublicationIdHandler(
-            candidateRepository, periodRepository, new FakeViewingScopeValidator(false));
+            candidateRepository,
+            periodRepository,
+            new FakeViewingScopeValidator(false),
+            mockOrganizationRetriever);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
     assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
+  }
+
+  @Test
+  void shouldIncludeAllowedOperations() throws IOException {
+    var candidate = setupValidCandidate(topLevelOrganizationId);
+    var request = createRequestWithCuratorAccess(candidate.getPublicationId().toString());
+
+    var candidateDto = handleRequest(request);
+
+    var actualAllowedOperations = candidateDto.allowedOperations();
+    var expectedAllowedOperations =
+        List.of(CandidateOperation.APPROVAL_APPROVE, CandidateOperation.APPROVAL_REJECT);
+    assertThat(actualAllowedOperations, containsInAnyOrder(expectedAllowedOperations.toArray()));
   }
 }

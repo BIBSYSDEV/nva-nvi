@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.common.service;
 
 import static no.sikt.nva.nvi.test.TestUtils.createNoteRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
+import static no.sikt.nva.nvi.test.TestUtils.mockOrganizationResponseForAffiliation;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -27,10 +28,12 @@ class CandidateNotesTest extends CandidateTestSetup {
     var candidate = createCandidate();
     var noteRequest = createNoteRequest(randomString(), randomString());
     candidate.createNote(noteRequest, candidateRepository);
+    var userOrganizationId = getAnyOrganizationId(candidate);
+    mockOrganizationResponseForAffiliation(userOrganizationId, null, mockUriRetriever);
 
     var actualNote =
         Candidate.fetch(candidate::getIdentifier, candidateRepository, periodRepository)
-            .toDto()
+            .toDto(userOrganizationId, mockOrganizationRetriever)
             .notes()
             .getFirst();
 
@@ -67,11 +70,16 @@ class CandidateNotesTest extends CandidateTestSetup {
     var candidateWithNote =
         candidate.createNote(
             new CreateNoteRequest(randomString(), username, randomUri()), candidateRepository);
-    var noteToDelete = candidateWithNote.toDto().notes().getFirst();
+    var userOrganizationId = getAnyOrganizationId(candidateWithNote);
+    mockOrganizationResponseForAffiliation(userOrganizationId, null, mockUriRetriever);
+
+    var candidateDto = candidateWithNote.toDto(userOrganizationId, mockOrganizationRetriever);
+    var noteToDelete = candidateDto.notes().getFirst();
     var updatedCandidate =
         candidate.deleteNote(new DeleteNoteRequest(noteToDelete.identifier(), username));
 
-    assertThat(updatedCandidate.toDto().notes(), is(emptyIterable()));
+    var updatedCandidateDto = updatedCandidate.toDto(userOrganizationId, mockOrganizationRetriever);
+    assertThat(updatedCandidateDto.notes(), is(emptyIterable()));
   }
 
   @Test
@@ -81,7 +89,11 @@ class CandidateNotesTest extends CandidateTestSetup {
         candidate.createNote(
             new CreateNoteRequest(randomString(), randomString(), randomUri()),
             candidateRepository);
-    var noteToDelete = candidateWithNote.toDto().notes().getFirst();
+    var userOrganizationId = getAnyOrganizationId(candidateWithNote);
+    mockOrganizationResponseForAffiliation(userOrganizationId, null, mockUriRetriever);
+
+    var candidateDto = candidateWithNote.toDto(userOrganizationId, mockOrganizationRetriever);
+    var noteToDelete = candidateDto.notes().getFirst();
 
     assertThrows(
         UnauthorizedOperationException.class,

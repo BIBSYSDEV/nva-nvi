@@ -6,6 +6,7 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -16,11 +17,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.service.dto.ApprovalDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
+import no.sikt.nva.nvi.common.service.dto.CandidateOperation;
 import no.sikt.nva.nvi.rest.BaseCandidateRestHandlerTest;
 import no.sikt.nva.nvi.test.FakeViewingScopeValidator;
 import no.unit.nva.commons.json.JsonUtils;
@@ -37,7 +40,11 @@ class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Override
   protected ApiGatewayHandler<NviNoteRequest, CandidateDto> createHandler() {
-    return new CreateNoteHandler(candidateRepository, periodRepository, mockViewingScopeValidator);
+    return new CreateNoteHandler(
+        candidateRepository,
+        periodRepository,
+        mockViewingScopeValidator,
+        mockOrganizationRetriever);
   }
 
   @BeforeEach
@@ -62,7 +69,10 @@ class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
     var viewingScopeValidatorReturningFalse = new FakeViewingScopeValidator(false);
     handler =
         new CreateNoteHandler(
-            candidateRepository, periodRepository, viewingScopeValidatorReturningFalse);
+            candidateRepository,
+            periodRepository,
+            viewingScopeValidatorReturningFalse,
+            mockOrganizationRetriever);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
     assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
@@ -106,7 +116,8 @@ class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
         new CreateNoteHandler(
             candidateRepository,
             periodRepositoryReturningClosedPeriod(CURRENT_YEAR),
-            mockViewingScopeValidator);
+            mockViewingScopeValidator,
+            mockOrganizationRetriever);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
@@ -157,6 +168,21 @@ class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
     assertEquals(existingApprovalAssignee, actualAssignee);
   }
 
+  @Test
+  void shouldIncludeAllowedOperations() throws IOException {
+    var candidate = setupValidCandidate(topLevelOrganizationId);
+
+    var request =
+        createRequest(
+            candidate.getIdentifier(), new NviNoteRequest(randomString()), randomString());
+    var candidateDto = handleRequest(request);
+
+    var actualAllowedOperations = candidateDto.allowedOperations();
+    var expectedAllowedOperations =
+        List.of(CandidateOperation.APPROVAL_APPROVE, CandidateOperation.APPROVAL_REJECT);
+    assertThat(actualAllowedOperations, containsInAnyOrder(expectedAllowedOperations.toArray()));
+  }
+
   private static String getActualAssignee(CandidateDto response, URI institutionId) {
     return response.approvals().stream()
         .filter(approval -> isInstitutionId(institutionId, approval))
@@ -171,7 +197,7 @@ class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
 
   private InputStream createRequest(UUID identifier, NviNoteRequest body, String userName)
       throws JsonProcessingException {
-    return createRequest(identifier, body, userName, randomUri());
+    return createRequest(identifier, body, userName, topLevelOrganizationId);
   }
 
   private InputStream createRequest(

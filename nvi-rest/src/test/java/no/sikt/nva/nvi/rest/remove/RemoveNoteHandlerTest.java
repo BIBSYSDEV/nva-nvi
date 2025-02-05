@@ -10,16 +10,19 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
+import no.sikt.nva.nvi.common.service.dto.CandidateOperation;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.rest.BaseCandidateRestHandlerTest;
 import no.sikt.nva.nvi.rest.create.NviNoteRequest;
@@ -44,7 +47,11 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Override
   protected ApiGatewayHandler<Void, CandidateDto> createHandler() {
-    return new RemoveNoteHandler(candidateRepository, periodRepository, mockViewingScopeValidator);
+    return new RemoveNoteHandler(
+        candidateRepository,
+        periodRepository,
+        mockViewingScopeValidator,
+        mockOrganizationRetriever);
   }
 
   @BeforeEach
@@ -68,12 +75,15 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
     var candidate = setupValidCandidate(topLevelOrganizationId);
     var user = randomUsername();
     var candidateWithNote = createNote(candidate, user);
-    var noteId = candidateWithNote.toDto().notes().getFirst().identifier();
+    var noteId = getIdOfFirstNote(candidateWithNote);
     var request = createRequest(candidate.getIdentifier(), noteId, user.value()).build();
     var viewingScopeValidatorReturningFalse = new FakeViewingScopeValidator(false);
     handler =
         new RemoveNoteHandler(
-            candidateRepository, periodRepository, viewingScopeValidatorReturningFalse);
+            candidateRepository,
+            periodRepository,
+            viewingScopeValidatorReturningFalse,
+            mockOrganizationRetriever);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
     assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
@@ -84,7 +94,7 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
     var candidate = setupValidCandidate(topLevelOrganizationId);
     var user = randomUsername();
     var candidateWithNote = createNote(candidate, user);
-    var noteId = candidateWithNote.toDto().notes().getFirst().identifier();
+    var noteId = getIdOfFirstNote(candidateWithNote);
     var request = createRequest(candidate.getIdentifier(), noteId, randomString()).build();
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
@@ -96,7 +106,7 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
     var candidate = setupValidCandidate(topLevelOrganizationId);
     var user = randomUsername();
     var candidateWithNote = createNote(candidate, user);
-    var noteId = candidateWithNote.toDto().notes().getFirst().identifier();
+    var noteId = getIdOfFirstNote(candidateWithNote);
     var request = createRequest(candidate.getIdentifier(), noteId, user.value()).build();
     handler.handleRequest(request, output, CONTEXT);
     var gatewayResponse = GatewayResponse.fromOutputStream(output, CandidateDto.class);
@@ -118,28 +128,55 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
     var user = randomString();
     candidate.createNote(
         new CreateNoteRequest(randomString(), user, randomUri()), candidateRepository);
-    var noteId = candidate.toDto().notes().getFirst().identifier();
+    var noteId = getIdOfFirstNote(candidate);
     var request = createRequest(candidate.getIdentifier(), noteId, user).build();
     handler =
         new RemoveNoteHandler(
             candidateRepository,
             periodRepositoryReturningClosedPeriod(CURRENT_YEAR),
-            new FakeViewingScopeValidator(true));
+            new FakeViewingScopeValidator(true),
+            mockOrganizationRetriever);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
     assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_CONFLICT)));
   }
 
+  @Test
+  void shouldIncludeAllowedOperations() throws IOException {
+    var candidate = setupValidCandidate(topLevelOrganizationId);
+    var user = randomUsername();
+    var candidateWithNote = createNote(candidate, user);
+    var noteId = getIdOfFirstNote(candidateWithNote);
+
+    var request = createRequest(candidate.getIdentifier(), noteId, user.value()).build();
+    var candidateDto = handleRequest(request);
+
+    var actualAllowedOperations = candidateDto.allowedOperations();
+    var expectedAllowedOperations =
+        List.of(CandidateOperation.APPROVAL_APPROVE, CandidateOperation.APPROVAL_REJECT);
+    assertThat(actualAllowedOperations, containsInAnyOrder(expectedAllowedOperations.toArray()));
+  }
+
   private Candidate createNote(Candidate candidate, Username user) {
     return candidate.createNote(
-        new CreateNoteRequest(randomString(), user.value(), randomUri()), candidateRepository);
+        new CreateNoteRequest(randomString(), user.value(), topLevelOrganizationId),
+        candidateRepository);
   }
 
   private HandlerRequestBuilder<NviNoteRequest> createRequest(
       UUID candidateIdentifier, UUID noteIdentifier, String userName) {
     return createRequestWithoutAccessRights(
             candidateIdentifier.toString(), noteIdentifier.toString(), userName)
-        .withAccessRights(randomUri(), AccessRight.MANAGE_NVI_CANDIDATES);
+        .withTopLevelCristinOrgId(topLevelOrganizationId)
+        .withAccessRights(topLevelOrganizationId, AccessRight.MANAGE_NVI_CANDIDATES);
+  }
+
+  private UUID getIdOfFirstNote(Candidate candidateWithNote) {
+    return candidateWithNote
+        .toDto(topLevelOrganizationId, mockOrganizationRetriever)
+        .notes()
+        .getFirst()
+        .identifier();
   }
 }

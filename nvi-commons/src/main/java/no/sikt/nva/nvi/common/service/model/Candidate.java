@@ -333,27 +333,6 @@ public final class Candidate {
     return publicationDetails.publicationChannel().id();
   }
 
-  /**
-   * @deprecated Use {@link #toDto(URI customerInstitutionId, OrganizationRetriever
-   *     organizationRetriever)} instead.
-   */
-  @Deprecated(since = "2025-01-30", forRemoval = true)
-  public CandidateDto toDto() {
-    return CandidateDto.builder()
-        .withId(getId())
-        .withContext(CONTEXT_URI)
-        .withIdentifier(identifier)
-        .withPublicationId(getPublicationId())
-        .withApprovals(mapToApprovalDtos())
-        .withAllowedOperations(Collections.emptySet())
-        .withNotes(mapToNoteDtos())
-        .withPeriod(mapToPeriodStatusDto())
-        .withTotalPoints(totalPoints)
-        .withReportStatus(
-            Optional.ofNullable(reportStatus).map(ReportStatus::getValue).orElse(null))
-        .build();
-  }
-
   public CandidateDto toDto(
       URI userTopLevelOrganizationId, OrganizationRetriever organizationRetriever) {
     var allowedOperations = getAllowedOperations(userTopLevelOrganizationId, organizationRetriever);
