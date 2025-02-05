@@ -21,6 +21,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -31,6 +32,7 @@ import java.net.URI;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
@@ -43,6 +45,7 @@ import no.sikt.nva.nvi.common.service.dto.CandidateOperation;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.issue.UnverifiedCreatorExists;
+import no.sikt.nva.nvi.common.service.dto.issue.UnverifiedCreatorExistsForOrg;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.InstanceType;
@@ -54,7 +57,6 @@ import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.test.UpsertRequestBuilder;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
@@ -489,7 +491,6 @@ class CandidateApprovalTest extends CandidateTestSetup {
   }
 
   @Test
-  @Disabled
   void shouldIncludeIssuesWhenCandidateHasUnverifiedCreator() {
     var unverifiedCreator =
         new UnverifiedNviCreatorDto(randomString(), List.of(topLevelOrganizationId));
@@ -501,9 +502,14 @@ class CandidateApprovalTest extends CandidateTestSetup {
 
     var candidateDto = candidate.toDto(topLevelOrganizationId, mockOrganizationRetriever);
 
-    var expectedIssue = new UnverifiedCreatorExists("test");
+    var expectedIssue1 = new UnverifiedCreatorExists("Unverified contributor exists");
+    var expectedIssue2 =
+        new UnverifiedCreatorExistsForOrg(
+            "Unverified contributor affiliated with current " + "organization",
+            topLevelOrganizationId);
+    var expectedIssues = Set.of(expectedIssue1, expectedIssue2);
     var actualIssues = candidateDto.issues();
-    assertThat(actualIssues, contains(expectedIssue));
+    assertEquals(expectedIssues, actualIssues);
   }
 
   private static UpdateStatusRequest createRejectionRequestWithoutReason(String username) {
