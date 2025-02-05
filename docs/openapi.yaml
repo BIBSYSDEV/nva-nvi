@@ -923,6 +923,14 @@ components:
               - "approval/reject-candidate"
               - "approval/approve-candidate"
               - "approval/reset-approval"
+        candidateIssues:
+          type: array
+          description: >
+            List of issues that may impact available operations on the Candidate.
+            Issues can indicate problems like approval blocks or other candidate-specific errors.
+            This is a work in progress and does not include all possible issues yet.
+          items:
+            $ref: '#/components/schemas/CandidateIssue'
 
     NviInstitutionReportResponse:
       type: object
@@ -1037,6 +1045,28 @@ components:
       type: string
       pattern: 'https:\/\/.*$'
       description: The URI of the object ID
+    CandidateIssue:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Identifier for the issue type.
+        title:
+          type: string
+          description: Human-readable description of the issue.
+        scope:
+          type: string
+          description: The scope of the issue, either "organization" or "global".
+          oneOf:
+            - title: organization
+              const: organization
+              description: The issue is specific to the organization of the current user.
+            - title: global
+              const: global
+              description: The issue is global and not specific to the organization of the current user.
+        message:
+          type: string
+          description: Additional details about the issue and potential solutions.
     Problem:
       type: object
       description: NVA error reporting object
