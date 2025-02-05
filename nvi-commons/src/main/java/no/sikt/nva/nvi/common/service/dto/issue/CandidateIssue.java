@@ -6,15 +6,10 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 
 @JsonTypeInfo(use = Id.NAME, property = "type")
 @JsonSubTypes({
-  @JsonSubTypes.Type(name = "UnverifiedCreatorExists", value = UnverifiedCreatorExists.class),
-  @JsonSubTypes.Type(
-      name = "UnverifiedCreatorExistsForOrg",
-      value = UnverifiedCreatorExistsForOrg.class)
+  @JsonSubTypes.Type(name = "UnverifiedCreatorExists", value = UnverifiedCreatorIssue.class),
 })
 public interface CandidateIssue {
   String GLOBAL_SCOPE = "Global";
-
-  String ORGANIZATION_SCOPE = "Organization";
 
   String title();
 

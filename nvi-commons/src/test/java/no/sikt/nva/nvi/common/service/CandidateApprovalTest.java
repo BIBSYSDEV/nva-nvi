@@ -14,7 +14,6 @@ import static no.sikt.nva.nvi.test.UpsertRequestBuilder.randomUpsertRequestBuild
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
@@ -44,8 +43,7 @@ import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.dto.CandidateOperation;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
-import no.sikt.nva.nvi.common.service.dto.issue.UnverifiedCreatorExists;
-import no.sikt.nva.nvi.common.service.dto.issue.UnverifiedCreatorExistsForOrg;
+import no.sikt.nva.nvi.common.service.dto.issue.UnverifiedCreatorIssue;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.InstanceType;
@@ -502,12 +500,8 @@ class CandidateApprovalTest extends CandidateTestSetup {
 
     var candidateDto = candidate.toDto(topLevelOrganizationId, mockOrganizationRetriever);
 
-    var expectedIssue1 = new UnverifiedCreatorExists("Unverified contributor exists");
-    var expectedIssue2 =
-        new UnverifiedCreatorExistsForOrg(
-            "Unverified contributor affiliated with current " + "organization",
-            topLevelOrganizationId);
-    var expectedIssues = Set.of(expectedIssue1, expectedIssue2);
+    var expectedIssue = new UnverifiedCreatorIssue();
+    var expectedIssues = Set.of(expectedIssue);
     var actualIssues = candidateDto.issues();
     assertEquals(expectedIssues, actualIssues);
   }

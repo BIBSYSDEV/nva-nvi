@@ -21,8 +21,7 @@ import java.util.UUID;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatusDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateOperation;
-import no.sikt.nva.nvi.common.service.dto.issue.UnverifiedCreatorExists;
-import no.sikt.nva.nvi.common.service.dto.issue.UnverifiedCreatorExistsForOrg;
+import no.sikt.nva.nvi.common.service.dto.issue.UnverifiedCreatorIssue;
 import no.sikt.nva.nvi.rest.BaseCandidateRestHandlerTest;
 import no.sikt.nva.nvi.test.FakeViewingScopeValidator;
 import no.unit.nva.testutils.HandlerRequestBuilder;
@@ -227,12 +226,8 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
 
     var candidateDto = handleRequest(request);
 
-    var expectedIssue1 = new UnverifiedCreatorExists("Unverified contributor exists");
-    var expectedIssue2 =
-        new UnverifiedCreatorExistsForOrg(
-            "Unverified contributor affiliated with current " + "organization",
-            topLevelOrganizationId);
-    var expectedIssues = Set.of(expectedIssue1, expectedIssue2);
+    var expectedIssue = new UnverifiedCreatorIssue();
+    var expectedIssues = Set.of(expectedIssue);
     var actualIssues = candidateDto.issues();
     assertEquals(expectedIssues, actualIssues);
   }
@@ -245,7 +240,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
 
     var candidateDto = handleRequest(request);
 
-    var expectedIssue = new UnverifiedCreatorExists("Unverified contributor exists");
+    var expectedIssue = new UnverifiedCreatorIssue();
     var actualIssues = candidateDto.issues();
     assertThat(actualIssues, contains(expectedIssue));
     assertThat(actualIssues.size(), is(Matchers.equalTo(1)));
