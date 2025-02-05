@@ -927,7 +927,8 @@ components:
           type: array
           description: >
             List of issues that may impact available operations on the Candidate.
-            Issues can indicate problems like approval blocks or other candidate-specific errors.
+            Issues can indicate problems that block one or all organizations from approving the
+            candidate, or other candidate-specific errors.
             This is a work in progress and does not include all possible issues yet.
           items:
             $ref: '#/components/schemas/CandidateIssue'

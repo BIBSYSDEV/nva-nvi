@@ -14,6 +14,7 @@ import static no.sikt.nva.nvi.test.UpsertRequestBuilder.randomUpsertRequestBuild
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
@@ -41,6 +42,7 @@ import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.dto.CandidateOperation;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
+import no.sikt.nva.nvi.common.service.dto.issue.UnverifiedCreatorExists;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.InstanceType;
@@ -52,6 +54,7 @@ import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.test.UpsertRequestBuilder;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
@@ -471,6 +474,36 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var actualAllowedOperations = candidateDto.allowedOperations();
     var expectedAllowedOperations = emptyList();
     assertThat(actualAllowedOperations, containsInAnyOrder(expectedAllowedOperations.toArray()));
+  }
+
+  @Test
+  void shouldHaveNoIssuesWhenCandidateIsValid() {
+    var request = createUpsertCandidateRequest(topLevelOrganizationId).build();
+    var candidate = upsert(request);
+
+    var candidateDto = candidate.toDto(topLevelOrganizationId, mockOrganizationRetriever);
+
+    var actualIssues = candidateDto.issues();
+    var expectedIssues = emptyList();
+    assertThat(actualIssues, containsInAnyOrder(expectedIssues.toArray()));
+  }
+
+  @Test
+  @Disabled
+  void shouldIncludeIssuesWhenCandidateHasUnverifiedCreator() {
+    var unverifiedCreator =
+        new UnverifiedNviCreatorDto(randomString(), List.of(topLevelOrganizationId));
+    var request =
+        createUpsertCandidateRequest(topLevelOrganizationId)
+            .withUnverifiedCreators(List.of(unverifiedCreator))
+            .build();
+    var candidate = upsert(request);
+
+    var candidateDto = candidate.toDto(topLevelOrganizationId, mockOrganizationRetriever);
+
+    var expectedIssue = new UnverifiedCreatorExists("test");
+    var actualIssues = candidateDto.issues();
+    assertThat(actualIssues, contains(expectedIssue));
   }
 
   private static UpdateStatusRequest createRejectionRequestWithoutReason(String username) {

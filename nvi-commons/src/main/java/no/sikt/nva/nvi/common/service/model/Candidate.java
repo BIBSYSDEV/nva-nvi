@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.common.service.model;
 
+import static java.util.Collections.emptySet;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.UUID.randomUUID;
@@ -61,6 +62,7 @@ import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
+import no.sikt.nva.nvi.common.service.dto.issue.CandidateIssue;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
@@ -336,6 +338,7 @@ public final class Candidate {
   public CandidateDto toDto(
       URI userTopLevelOrganizationId, OrganizationRetriever organizationRetriever) {
     var allowedOperations = getAllowedOperations(userTopLevelOrganizationId, organizationRetriever);
+    Set<CandidateIssue> issues = emptySet();
     return CandidateDto.builder()
         .withId(getId())
         .withContext(CONTEXT_URI)
@@ -343,6 +346,7 @@ public final class Candidate {
         .withPublicationId(getPublicationId())
         .withApprovals(mapToApprovalDtos())
         .withAllowedOperations(allowedOperations)
+        .withIssues(issues)
         .withNotes(mapToNoteDtos())
         .withPeriod(mapToPeriodStatusDto())
         .withTotalPoints(getTotalPoints())
