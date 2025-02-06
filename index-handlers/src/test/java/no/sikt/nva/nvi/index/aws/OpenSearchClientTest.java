@@ -127,7 +127,8 @@ class OpenSearchClientTest {
   private static final URI ORGANIZATION =
       URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0");
   private static final String USERNAME = "user1";
-  private static final OpensearchContainer<?> container = new OpensearchContainer<>(OPEN_SEARCH_IMAGE);
+  private static final OpensearchContainer<?> container =
+      new OpensearchContainer<>(OPEN_SEARCH_IMAGE);
   private static final String DOCUMENT_NEW_JSON = "document_new.json";
   private static final String DOCUMENT_ORGANIZATION_AGGREGATION_DISPUTE_JSON =
       "document_organization_aggregation_dispute.json";
