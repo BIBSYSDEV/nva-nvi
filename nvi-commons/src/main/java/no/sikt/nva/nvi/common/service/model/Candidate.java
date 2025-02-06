@@ -909,10 +909,6 @@ public final class Candidate {
 
   /**
    * This checks which operations this organization is allowed to perform on this candidate.
-   *
-   * <p>This requires retrieving metadata about each creator's organization, which is not persisted
-   * in the database yet. Once we persist the necessary metadata, we can simplify this check. TODO:
-   * Persist full organization hierarchy for creators and simplify this validation.
    */
   private Set<CandidateOperation> getAllowedOperations(
       URI topLevelOrganizationId, OrganizationRetriever organizationRetriever) {
@@ -952,6 +948,12 @@ public final class Candidate {
         .toList();
   }
 
+  /**
+   * This finds the top-level affiliations of a creator, which is not currently persisted. Once we
+   * persist the necessary metadata, we can simplify this check and avoid the lookup.
+   *
+   * <p>TODO: Persist full organization hierarchy for creators and simplify this validation.
+   */
   private static Stream<Organization> getTopLevelAffiliations(
       NviCreatorDto contributor, OrganizationRetriever organizationRetriever) {
     return contributor.affiliations().stream()
