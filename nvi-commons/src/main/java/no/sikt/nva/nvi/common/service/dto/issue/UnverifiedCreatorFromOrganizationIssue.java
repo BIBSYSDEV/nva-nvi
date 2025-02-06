@@ -17,7 +17,7 @@ or receive NVI points for it, until the contributor is verified or removed from 
   public UnverifiedCreatorFromOrganizationIssue(Collection<String> contributors) {
     this(
         DEFAULT_TITLE,
-        GLOBAL_SCOPE,
+        ORGANIZATION_SCOPE,
         DEFAULT_DESCRIPTION,
         contributors.stream().collect(Collectors.toSet()));
   }

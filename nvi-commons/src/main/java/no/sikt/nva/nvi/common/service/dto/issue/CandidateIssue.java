@@ -13,6 +13,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 })
 public interface CandidateIssue {
   String GLOBAL_SCOPE = "Global";
+  String ORGANIZATION_SCOPE = "Organization";
 
   String title();
 
