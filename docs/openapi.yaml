@@ -1069,6 +1069,11 @@ components:
         detail:
           type: string
           description: Additional details about the issue and potential solutions.
+        contributors:
+            type: array
+            items:
+                type: string
+            description: List of contributors that cause or are affected by the issue, if relevant.
     Problem:
       type: object
       description: NVA error reporting object
