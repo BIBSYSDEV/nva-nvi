@@ -63,6 +63,7 @@ import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.issue.CandidateIssue;
+import no.sikt.nva.nvi.common.service.dto.issue.UnverifiedCreatorFromOrganizationIssue;
 import no.sikt.nva.nvi.common.service.dto.issue.UnverifiedCreatorIssue;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException;
@@ -95,6 +96,7 @@ public final class Candidate {
   private static final String INVALID_CANDIDATE_MESSAGE = "Candidate is missing mandatory fields";
   private static final PeriodStatus PERIOD_STATUS_NO_PERIOD =
       PeriodStatus.builder().withStatus(Status.NO_PERIOD).build();
+  private final Set<CandidateIssue> issues = new HashSet<>();
   private final UUID identifier;
   private final boolean applicable;
   private final Map<URI, Approval> approvals;
@@ -891,6 +893,20 @@ public final class Candidate {
     return allowedOperations.contains(attemptedOperation);
   }
 
+  private void validateCreators(
+      URI userTopLevelOrganizationId, OrganizationRetriever organizationRetriever) {
+    var allCreatorsAreVerified = publicationDetails.getUnverifiedCreators().isEmpty();
+    if (!allCreatorsAreVerified) {
+      issues.add(new UnverifiedCreatorIssue());
+    }
+
+    var unverifiedCreators =
+        getUnverifiedCreatorsFromOrganization(userTopLevelOrganizationId, organizationRetriever);
+    if (!unverifiedCreators.isEmpty()) {
+      issues.add(new UnverifiedCreatorFromOrganizationIssue(unverifiedCreators));
+    }
+  }
+
   /**
    * This checks which operations this organization is allowed to perform on this candidate.
    *
@@ -898,10 +914,11 @@ public final class Candidate {
    * in the database yet. Once we persist the necessary metadata, we can simplify this check. TODO:
    * Persist full organization hierarchy for creators and simplify this validation.
    */
-  public Set<CandidateOperation> getAllowedOperations(
+  private Set<CandidateOperation> getAllowedOperations(
       URI topLevelOrganizationId, OrganizationRetriever organizationRetriever) {
+    validateCreators(topLevelOrganizationId, organizationRetriever);
     var hasUnverifiedCreator =
-        hasUnverifiedCreatorFromOrganization(topLevelOrganizationId, organizationRetriever);
+        issues.stream().anyMatch(issue -> issue instanceof UnverifiedCreatorFromOrganizationIssue);
 
     var currentStatus = getApprovalStatus(topLevelOrganizationId);
     var validTransitions = currentStatus.getValidTransitions();
@@ -916,11 +933,6 @@ public final class Candidate {
   }
 
   public Set<CandidateIssue> getIssues() {
-    var issues = new HashSet<CandidateIssue>();
-    var unverifiedCreators = publicationDetails.getUnverifiedCreators();
-    if (!unverifiedCreators.isEmpty()) {
-      issues.add(new UnverifiedCreatorIssue());
-    }
     return issues;
   }
 
@@ -931,6 +943,22 @@ public final class Candidate {
         .flatMap(contributor -> getTopLevelAffiliations(contributor, organizationRetriever))
         .map(Organization::id)
         .anyMatch(organizationId -> organizationId.equals(topLevelOrganizationId));
+  }
+
+  private List<String> getUnverifiedCreatorsFromOrganization(
+      URI topLevelOrganizationId, OrganizationRetriever organizationRetriever) {
+    var unverifiedCreators = publicationDetails.getUnverifiedCreators();
+    return unverifiedCreators.stream()
+        .filter(
+            contributor -> {
+              var topLevelAffiliations =
+                  getTopLevelAffiliations(contributor, organizationRetriever)
+                      .map(Organization::id)
+                      .collect(Collectors.toSet());
+              return topLevelAffiliations.contains(topLevelOrganizationId);
+            })
+        .map(UnverifiedNviCreatorDto::name)
+        .toList();
   }
 
   private static Stream<Organization> getTopLevelAffiliations(

@@ -1,12 +1,12 @@
 package no.sikt.nva.nvi.common.service.dto.issue;
 
-public record UnverifiedCreatorIssue(String title, String scope, String description)
+public record UnverifiedCreatorIssue(String title, String scope, String detail)
     implements CandidateIssue {
   private static final String DEFAULT_TITLE = "Unverified contributor exists";
   private static final String DEFAULT_DESCRIPTION =
       """
 At least one of the contributors associated with this publication is unverified. \
-Organizations affiliated with this contributor cannot approve/reject the publication as an NVI candidate, \
+Organizations affiliated with this contributor cannot approve or reject the publication as an NVI candidate, \
 or receive NVI points for it, until the contributor is verified or removed from the publication.\
 """;
 

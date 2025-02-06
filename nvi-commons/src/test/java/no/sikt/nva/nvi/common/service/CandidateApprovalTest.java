@@ -43,6 +43,7 @@ import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.dto.CandidateOperation;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
+import no.sikt.nva.nvi.common.service.dto.issue.UnverifiedCreatorFromOrganizationIssue;
 import no.sikt.nva.nvi.common.service.dto.issue.UnverifiedCreatorIssue;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
@@ -500,8 +501,10 @@ class CandidateApprovalTest extends CandidateTestSetup {
 
     var candidateDto = candidate.toDto(topLevelOrganizationId, mockOrganizationRetriever);
 
-    var expectedIssue = new UnverifiedCreatorIssue();
-    var expectedIssues = Set.of(expectedIssue);
+    var expectedIssues =
+        Set.of(
+            new UnverifiedCreatorIssue(),
+            new UnverifiedCreatorFromOrganizationIssue(List.of(unverifiedCreator.name())));
     var actualIssues = candidateDto.issues();
     assertEquals(expectedIssues, actualIssues);
   }

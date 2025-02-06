@@ -1048,8 +1048,13 @@ components:
       description: The URI of the object ID
     CandidateIssue:
       type: object
+      description: An issue with the candidate that may impact available operations for the user.
+      required:
+        - title
+        - scope
+        - detail
       properties:
-        code:
+        type:
           type: string
           description: Identifier for the issue type.
         title:
@@ -1061,7 +1066,7 @@ components:
             The scope of the issue, indicating whether it is a general issue ("Global") or only 
             affects the organization of the current user.
           enum: [ 'Organization','Global' ]
-        description:
+        detail:
           type: string
           description: Additional details about the issue and potential solutions.
     Problem:

@@ -7,6 +7,9 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 @JsonTypeInfo(use = Id.NAME, property = "type")
 @JsonSubTypes({
   @JsonSubTypes.Type(name = "UnverifiedCreatorExists", value = UnverifiedCreatorIssue.class),
+  @JsonSubTypes.Type(
+      name = "UnverifiedCreatorFromOrganizationIssue",
+      value = UnverifiedCreatorFromOrganizationIssue.class),
 })
 public interface CandidateIssue {
   String GLOBAL_SCOPE = "Global";
@@ -15,5 +18,5 @@ public interface CandidateIssue {
 
   String scope();
 
-  String description();
+  String detail();
 }

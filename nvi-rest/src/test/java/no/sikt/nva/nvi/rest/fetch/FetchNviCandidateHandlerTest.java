@@ -21,6 +21,7 @@ import java.util.UUID;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatusDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateOperation;
+import no.sikt.nva.nvi.common.service.dto.issue.UnverifiedCreatorFromOrganizationIssue;
 import no.sikt.nva.nvi.common.service.dto.issue.UnverifiedCreatorIssue;
 import no.sikt.nva.nvi.rest.BaseCandidateRestHandlerTest;
 import no.sikt.nva.nvi.test.FakeViewingScopeValidator;
@@ -223,11 +224,15 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
   void shouldIncludeIssuesWhenCandidateHasUnverifiedCreator() throws IOException {
     var candidate = setupCandidateWithUnverifiedCreator();
     var request = createRequestWithCuratorAccess(candidate.getIdentifier().toString());
+    var unverifiedNviCreatorNames =
+        candidate.getPublicationDetails().getUnverifiedNviCreatorNames();
 
     var candidateDto = handleRequest(request);
 
-    var expectedIssue = new UnverifiedCreatorIssue();
-    var expectedIssues = Set.of(expectedIssue);
+    var expectedIssues =
+        Set.of(
+            new UnverifiedCreatorIssue(),
+            new UnverifiedCreatorFromOrganizationIssue(unverifiedNviCreatorNames));
     var actualIssues = candidateDto.issues();
     assertEquals(expectedIssues, actualIssues);
   }

@@ -21,7 +21,7 @@ class CandidateIssueTest {
     assertEquals(candidateIssue, roundTrippedIssue);
     assertEquals(candidateIssue.title(), roundTrippedIssue.title());
     assertEquals(candidateIssue.scope(), roundTrippedIssue.scope());
-    assertEquals(candidateIssue.description(), roundTrippedIssue.description());
+    assertEquals(candidateIssue.detail(), roundTrippedIssue.detail());
   }
 
   private static Stream<Arguments> provideCandidateIssueInstances() {
