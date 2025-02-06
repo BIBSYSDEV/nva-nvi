@@ -1,11 +1,11 @@
 package no.sikt.nva.nvi.rest.fetch;
 
 import static java.util.Collections.emptyList;
+import static java.util.Collections.emptySet;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -216,8 +216,8 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
     var candidateDto = handleRequest(request);
 
     var actualIssues = candidateDto.issues();
-    var expectedIssues = emptyList();
-    assertThat(actualIssues, containsInAnyOrder(expectedIssues.toArray()));
+    var expectedIssues = emptySet();
+    assertEquals(actualIssues, expectedIssues);
   }
 
   @Test
@@ -234,7 +234,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
             new UnverifiedCreatorIssue(),
             new UnverifiedCreatorFromOrganizationIssue(unverifiedNviCreatorNames));
     var actualIssues = candidateDto.issues();
-    assertEquals(expectedIssues, actualIssues);
+    assertEquals(actualIssues, expectedIssues);
   }
 
   @Test
@@ -245,9 +245,8 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
 
     var candidateDto = handleRequest(request);
 
-    var expectedIssue = new UnverifiedCreatorIssue();
+    var expectedIssues = Set.of(new UnverifiedCreatorIssue());
     var actualIssues = candidateDto.issues();
-    assertThat(actualIssues, contains(expectedIssue));
-    assertThat(actualIssues.size(), is(Matchers.equalTo(1)));
+    assertEquals(actualIssues, expectedIssues);
   }
 }

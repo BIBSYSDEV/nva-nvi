@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.common.service;
 
 import static java.util.Collections.emptyList;
+import static java.util.Collections.emptySet;
 import static no.sikt.nva.nvi.test.TestUtils.createUpdateStatusRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertNonCandidateRequest;
@@ -485,8 +486,8 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var candidateDto = candidate.toDto(topLevelOrganizationId, mockOrganizationRetriever);
 
     var actualIssues = candidateDto.issues();
-    var expectedIssues = emptyList();
-    assertThat(actualIssues, containsInAnyOrder(expectedIssues.toArray()));
+    var expectedIssues = emptySet();
+    assertEquals(actualIssues, expectedIssues);
   }
 
   @Test
@@ -506,7 +507,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
             new UnverifiedCreatorIssue(),
             new UnverifiedCreatorFromOrganizationIssue(List.of(unverifiedCreator.name())));
     var actualIssues = candidateDto.issues();
-    assertEquals(expectedIssues, actualIssues);
+    assertEquals(actualIssues, expectedIssues);
   }
 
   private static UpdateStatusRequest createRejectionRequestWithoutReason(String username) {

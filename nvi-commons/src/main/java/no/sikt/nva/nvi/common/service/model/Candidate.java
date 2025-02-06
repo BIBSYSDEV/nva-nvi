@@ -918,7 +918,7 @@ public final class Candidate {
       URI topLevelOrganizationId, OrganizationRetriever organizationRetriever) {
     validateCreators(topLevelOrganizationId, organizationRetriever);
     var hasUnverifiedCreator =
-        issues.stream().anyMatch(issue -> issue instanceof UnverifiedCreatorFromOrganizationIssue);
+        issues.stream().anyMatch(UnverifiedCreatorFromOrganizationIssue.class::isInstance);
 
     var currentStatus = getApprovalStatus(topLevelOrganizationId);
     var validTransitions = currentStatus.getValidTransitions();
@@ -934,15 +934,6 @@ public final class Candidate {
 
   public Set<CandidateIssue> getIssues() {
     return issues;
-  }
-
-  private boolean hasUnverifiedCreatorFromOrganization(
-      URI topLevelOrganizationId, OrganizationRetriever organizationRetriever) {
-    var unverifiedCreators = publicationDetails.getUnverifiedCreators();
-    return unverifiedCreators.stream()
-        .flatMap(contributor -> getTopLevelAffiliations(contributor, organizationRetriever))
-        .map(Organization::id)
-        .anyMatch(organizationId -> organizationId.equals(topLevelOrganizationId));
   }
 
   private List<String> getUnverifiedCreatorsFromOrganization(
