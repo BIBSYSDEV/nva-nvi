@@ -39,8 +39,10 @@ pmd {
 }
 
 checkstyle {
+    toolVersion = "10.21.2"
     configFile = rootProject.resources.text.fromFile('config/checkstyle/checkstyle.xml').asFile()
     showViolations = true
+    ignoreFailures = false
 }
 
 tasks.withType(Checkstyle).configureEach {
