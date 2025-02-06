@@ -43,6 +43,8 @@ dependencies {
 
     implementation libs.bundles.jacksonjr
     implementation libs.bundles.logging
+
+    testImplementation(testFixtures(project(":nvi-commons")))
 }
 
 test {
