@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.common.service.dto.issue;
+package no.sikt.nva.nvi.common.service.dto.problem;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -6,12 +6,12 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 
 @JsonTypeInfo(use = Id.NAME, property = "type")
 @JsonSubTypes({
-  @JsonSubTypes.Type(name = "UnverifiedCreatorExists", value = UnverifiedCreatorIssue.class),
+  @JsonSubTypes.Type(name = "UnverifiedCreatorExists", value = UnverifiedCreatorProblem.class),
   @JsonSubTypes.Type(
-      name = "UnverifiedCreatorFromOrganizationIssue",
-      value = UnverifiedCreatorFromOrganizationIssue.class),
+      name = "UnverifiedCreatorFromOrganizationProblem",
+      value = UnverifiedCreatorFromOrganizationProblem.class),
 })
-public interface CandidateIssue {
+public interface CandidateProblem {
   String GLOBAL_SCOPE = "Global";
   String ORGANIZATION_SCOPE = "Organization";
 

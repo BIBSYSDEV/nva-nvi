@@ -44,8 +44,8 @@ import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.dto.CandidateOperation;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
-import no.sikt.nva.nvi.common.service.dto.issue.UnverifiedCreatorFromOrganizationIssue;
-import no.sikt.nva.nvi.common.service.dto.issue.UnverifiedCreatorIssue;
+import no.sikt.nva.nvi.common.service.dto.problem.UnverifiedCreatorFromOrganizationProblem;
+import no.sikt.nva.nvi.common.service.dto.problem.UnverifiedCreatorProblem;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.InstanceType;
@@ -479,19 +479,19 @@ class CandidateApprovalTest extends CandidateTestSetup {
   }
 
   @Test
-  void shouldHaveNoIssuesWhenCandidateIsValid() {
+  void shouldHaveNoProblemsWhenCandidateIsValid() {
     var request = createUpsertCandidateRequest(topLevelOrganizationId).build();
     var candidate = upsert(request);
 
     var candidateDto = candidate.toDto(topLevelOrganizationId, mockOrganizationRetriever);
 
-    var actualIssues = candidateDto.issues();
-    var expectedIssues = emptySet();
-    assertEquals(actualIssues, expectedIssues);
+    var actualProblems = candidateDto.problems();
+    var expectedProblems = emptySet();
+    assertEquals(actualProblems, expectedProblems);
   }
 
   @Test
-  void shouldIncludeIssuesWhenCandidateHasUnverifiedCreator() {
+  void shouldIncludeProblemsWhenCandidateHasUnverifiedCreator() {
     var unverifiedCreator =
         new UnverifiedNviCreatorDto(randomString(), List.of(topLevelOrganizationId));
     var request =
@@ -502,12 +502,12 @@ class CandidateApprovalTest extends CandidateTestSetup {
 
     var candidateDto = candidate.toDto(topLevelOrganizationId, mockOrganizationRetriever);
 
-    var expectedIssues =
+    var expectedProblems =
         Set.of(
-            new UnverifiedCreatorIssue(),
-            new UnverifiedCreatorFromOrganizationIssue(List.of(unverifiedCreator.name())));
-    var actualIssues = candidateDto.issues();
-    assertEquals(actualIssues, expectedIssues);
+            new UnverifiedCreatorProblem(),
+            new UnverifiedCreatorFromOrganizationProblem(List.of(unverifiedCreator.name())));
+    var actualProblems = candidateDto.problems();
+    assertEquals(actualProblems, expectedProblems);
   }
 
   private static UpdateStatusRequest createRejectionRequestWithoutReason(String username) {

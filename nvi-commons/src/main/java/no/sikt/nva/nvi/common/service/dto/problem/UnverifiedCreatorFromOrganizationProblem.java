@@ -1,11 +1,12 @@
-package no.sikt.nva.nvi.common.service.dto.issue;
+package no.sikt.nva.nvi.common.service.dto.problem;
 
 import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public record UnverifiedCreatorFromOrganizationIssue(
-    String title, String scope, String detail, Set<String> contributors) implements CandidateIssue {
+public record UnverifiedCreatorFromOrganizationProblem(
+    String title, String scope, String detail, Set<String> contributors)
+    implements CandidateProblem {
   private static final String DEFAULT_TITLE = "Unverified contributor from this organization";
   private static final String DEFAULT_DESCRIPTION =
       """
@@ -14,7 +15,7 @@ Organizations affiliated with this contributor cannot approve or reject the publ
 or receive NVI points for it, until the contributor is verified or removed from the publication.\
 """;
 
-  public UnverifiedCreatorFromOrganizationIssue(Collection<String> contributors) {
+  public UnverifiedCreatorFromOrganizationProblem(Collection<String> contributors) {
     this(
         DEFAULT_TITLE,
         ORGANIZATION_SCOPE,

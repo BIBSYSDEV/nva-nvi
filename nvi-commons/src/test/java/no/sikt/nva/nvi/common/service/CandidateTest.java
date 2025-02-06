@@ -257,7 +257,7 @@ class CandidateTest extends CandidateTestSetup {
             .withApprovals(mapToApprovalDtos(candidate))
             .withAllowedOperations(
                 Set.of(CandidateOperation.APPROVAL_APPROVE, CandidateOperation.APPROVAL_REJECT))
-            .withIssues(emptySet())
+            .withProblems(emptySet())
             .withId(candidate.getId())
             .withPublicationId(candidate.getPublicationId())
             .withIdentifier(candidate.getIdentifier())

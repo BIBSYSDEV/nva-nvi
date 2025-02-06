@@ -21,8 +21,8 @@ import java.util.UUID;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatusDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateOperation;
-import no.sikt.nva.nvi.common.service.dto.issue.UnverifiedCreatorFromOrganizationIssue;
-import no.sikt.nva.nvi.common.service.dto.issue.UnverifiedCreatorIssue;
+import no.sikt.nva.nvi.common.service.dto.problem.UnverifiedCreatorFromOrganizationProblem;
+import no.sikt.nva.nvi.common.service.dto.problem.UnverifiedCreatorProblem;
 import no.sikt.nva.nvi.rest.BaseCandidateRestHandlerTest;
 import no.sikt.nva.nvi.test.FakeViewingScopeValidator;
 import no.unit.nva.testutils.HandlerRequestBuilder;
@@ -209,19 +209,19 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
   }
 
   @Test
-  void shouldHaveNoIssuesWhenCandidateIsValid() throws IOException {
+  void shouldHaveNoProblemsWhenCandidateIsValid() throws IOException {
     var candidate = setupValidCandidate(topLevelOrganizationId);
     var request = createRequestWithCuratorAccess(candidate.getIdentifier().toString());
 
     var candidateDto = handleRequest(request);
 
-    var actualIssues = candidateDto.issues();
-    var expectedIssues = emptySet();
-    assertEquals(actualIssues, expectedIssues);
+    var actualProblems = candidateDto.problems();
+    var expectedProblems = emptySet();
+    assertEquals(actualProblems, expectedProblems);
   }
 
   @Test
-  void shouldIncludeIssuesWhenCandidateHasUnverifiedCreator() throws IOException {
+  void shouldIncludeProblemsWhenCandidateHasUnverifiedCreator() throws IOException {
     var candidate = setupCandidateWithUnverifiedCreator();
     var request = createRequestWithCuratorAccess(candidate.getIdentifier().toString());
     var unverifiedNviCreatorNames =
@@ -229,24 +229,24 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
 
     var candidateDto = handleRequest(request);
 
-    var expectedIssues =
+    var expectedProblems =
         Set.of(
-            new UnverifiedCreatorIssue(),
-            new UnverifiedCreatorFromOrganizationIssue(unverifiedNviCreatorNames));
-    var actualIssues = candidateDto.issues();
-    assertEquals(actualIssues, expectedIssues);
+            new UnverifiedCreatorProblem(),
+            new UnverifiedCreatorFromOrganizationProblem(unverifiedNviCreatorNames));
+    var actualProblems = candidateDto.problems();
+    assertEquals(actualProblems, expectedProblems);
   }
 
   @Test
-  void shouldIncludeIssueWhenCandidateHasUnverifiedCreatorFromAnotherOrganization()
+  void shouldIncludeProblemWhenCandidateHasUnverifiedCreatorFromAnotherOrganization()
       throws IOException {
     var candidate = setupCandidateWithUnverifiedCreatorFromAnotherInstitution();
     var request = createRequestWithCuratorAccess(candidate.getIdentifier().toString());
 
     var candidateDto = handleRequest(request);
 
-    var expectedIssues = Set.of(new UnverifiedCreatorIssue());
-    var actualIssues = candidateDto.issues();
-    assertEquals(actualIssues, expectedIssues);
+    var expectedProblems = Set.of(new UnverifiedCreatorProblem());
+    var actualProblems = candidateDto.problems();
+    assertEquals(actualProblems, expectedProblems);
   }
 }

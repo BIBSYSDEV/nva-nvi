@@ -923,15 +923,15 @@ components:
               - "approval/reject-candidate"
               - "approval/approve-candidate"
               - "approval/reset-approval"
-        issues:
+        problems:
           type: array
           description: >
-            List of issues that may impact available operations on the Candidate.
-            Issues can indicate problems that block one or all organizations from approving the
+            List of problems that may impact available operations on the Candidate.
+            These can indicate something that blocks one or all organizations from approving the
             candidate, or other candidate-specific errors.
-            This is a work in progress and does not include all possible issues yet.
+            This is a work in progress and does not include all possible problems yet.
           items:
-            $ref: '#/components/schemas/CandidateIssue'
+            $ref: '#/components/schemas/CandidateProblem'
 
     NviInstitutionReportResponse:
       type: object
@@ -1046,7 +1046,7 @@ components:
       type: string
       pattern: 'https:\/\/.*$'
       description: The URI of the object ID
-    CandidateIssue:
+    CandidateProblem:
       type: object
       description: An issue with the candidate that may impact available operations for the user.
       required:

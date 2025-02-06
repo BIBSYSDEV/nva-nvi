@@ -1,7 +1,7 @@
-package no.sikt.nva.nvi.common.service.dto.issue;
+package no.sikt.nva.nvi.common.service.dto.problem;
 
-public record UnverifiedCreatorIssue(String title, String scope, String detail)
-    implements CandidateIssue {
+public record UnverifiedCreatorProblem(String title, String scope, String detail)
+    implements CandidateProblem {
   private static final String DEFAULT_TITLE = "Unverified contributor exists";
   private static final String DEFAULT_DESCRIPTION =
       """
@@ -10,7 +10,7 @@ Organizations affiliated with this contributor cannot approve or reject the publ
 or receive NVI points for it, until the contributor is verified or removed from the publication.\
 """;
 
-  public UnverifiedCreatorIssue() {
+  public UnverifiedCreatorProblem() {
     this(DEFAULT_TITLE, GLOBAL_SCOPE, DEFAULT_DESCRIPTION);
   }
 }
