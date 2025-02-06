@@ -28,6 +28,7 @@ dependencies {
     testFixturesImplementation libs.bundles.testing
     testFixturesImplementation libs.nva.core
     testFixturesImplementation libs.nva.json
+    testFixturesImplementation libs.nva.commons.auth
 }
 
 test {
