@@ -907,9 +907,7 @@ public final class Candidate {
     }
   }
 
-  /**
-   * This checks which operations this organization is allowed to perform on this candidate.
-   */
+  /** This checks which operations this organization is allowed to perform on this candidate. */
   private Set<CandidateOperation> getAllowedOperations(
       URI topLevelOrganizationId, OrganizationRetriever organizationRetriever) {
     validateCreators(topLevelOrganizationId, organizationRetriever);
