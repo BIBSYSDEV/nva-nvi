@@ -13,10 +13,6 @@ dependencies {
     implementation libs.aws.sdk2.dynamodb
     implementation libs.aws.sdk2.dynamodbenhanced
     implementation libs.guava
-    implementation('org.apache.poi:poi:5.2.4')
-            { exclude group: 'org.apache.logging.log4j', module: 'log4j-api' }
-    implementation('org.apache.poi:poi-ooxml:5.2.4')
-            { exclude group: 'org.apache.logging.log4j', module: 'log4j-api' }
     testImplementation libs.nva.testutils
     testImplementation libs.dynamodDbLocal
     testImplementation libs.bundles.testing
