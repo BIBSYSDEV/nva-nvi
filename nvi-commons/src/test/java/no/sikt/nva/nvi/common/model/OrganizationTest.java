@@ -1,13 +1,10 @@
 package no.sikt.nva.nvi.common.model;
 
-import static no.unit.nva.testutils.RandomDataGenerator.randomString;
-import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
+import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganization;
+import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationWithPartOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.util.List;
-import java.util.Map;
 import no.sikt.nva.nvi.common.client.model.Organization;
-import no.sikt.nva.nvi.common.client.model.Organization.Builder;
 import org.junit.jupiter.api.Test;
 
 class OrganizationTest {
@@ -33,17 +30,5 @@ class OrganizationTest {
     var json = organization.toJsonString();
     var actualOrganization = Organization.from(json);
     assertEquals(organization, actualOrganization);
-  }
-
-  private static Builder randomOrganization() {
-    return Organization.builder()
-        .withId(randomUri())
-        .withContext(randomString())
-        .withLabels(Map.of(randomString(), randomString()))
-        .withType(randomString());
-  }
-
-  private static Organization randomOrganizationWithPartOf(Organization topLevelOrg) {
-    return randomOrganization().withPartOf(List.of(topLevelOrg)).build();
   }
 }
