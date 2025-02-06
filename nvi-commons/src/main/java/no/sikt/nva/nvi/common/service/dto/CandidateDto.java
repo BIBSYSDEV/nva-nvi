@@ -10,6 +10,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import no.sikt.nva.nvi.common.service.dto.problem.CandidateProblem;
 import no.unit.nva.commons.json.JsonSerializable;
 
 @JsonTypeName(CandidateDto.NVI_CANDIDATE)
@@ -26,7 +27,8 @@ public record CandidateDto(
     List<NoteDto> notes,
     PeriodStatusDto period,
     String status,
-    Set<CandidateOperation> allowedOperations)
+    Set<CandidateOperation> allowedOperations,
+    Set<CandidateProblem> problems)
     implements JsonSerializable {
 
   public static final String NVI_CANDIDATE = "NviCandidate";
@@ -47,6 +49,7 @@ public record CandidateDto(
     private PeriodStatusDto periodStatus;
     private String reportStatus;
     private Set<CandidateOperation> allowedOperations;
+    private Set<CandidateProblem> problems;
 
     private Builder() {}
 
@@ -100,6 +103,11 @@ public record CandidateDto(
       return this;
     }
 
+    public Builder withProblems(Set<CandidateProblem> problems) {
+      this.problems = problems;
+      return this;
+    }
+
     public CandidateDto build() {
       return new CandidateDto(
           id,
@@ -111,7 +119,8 @@ public record CandidateDto(
           notes,
           periodStatus,
           reportStatus,
-          allowedOperations);
+          allowedOperations,
+          problems);
     }
   }
 }

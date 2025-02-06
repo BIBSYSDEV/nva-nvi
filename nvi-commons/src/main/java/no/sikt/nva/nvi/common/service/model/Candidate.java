@@ -20,7 +20,6 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +31,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
-import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
@@ -55,9 +53,7 @@ import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.dto.ApprovalDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
-import no.sikt.nva.nvi.common.service.dto.CandidateOperation;
 import no.sikt.nva.nvi.common.service.dto.NoteDto;
-import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
@@ -70,6 +66,7 @@ import no.sikt.nva.nvi.common.service.requests.FetchByPublicationRequest;
 import no.sikt.nva.nvi.common.service.requests.FetchCandidateRequest;
 import no.sikt.nva.nvi.common.service.requests.UpdateNonCandidateRequest;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
+import no.sikt.nva.nvi.common.validator.CandidateUpdateValidator;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.paths.UriWrapper;
@@ -273,7 +270,7 @@ public final class Candidate {
     return new HashMap<>(approvals);
   }
 
-  private ApprovalStatus getApprovalStatus(URI institutionId) {
+  public ApprovalStatus getApprovalStatus(URI institutionId) {
     return approvals.get(institutionId).getStatus();
   }
 
@@ -335,14 +332,16 @@ public final class Candidate {
 
   public CandidateDto toDto(
       URI userTopLevelOrganizationId, OrganizationRetriever organizationRetriever) {
-    var allowedOperations = getAllowedOperations(userTopLevelOrganizationId, organizationRetriever);
+    var validator =
+        new CandidateUpdateValidator(this, organizationRetriever, userTopLevelOrganizationId);
     return CandidateDto.builder()
         .withId(getId())
         .withContext(CONTEXT_URI)
         .withIdentifier(getIdentifier())
         .withPublicationId(getPublicationId())
         .withApprovals(mapToApprovalDtos())
-        .withAllowedOperations(allowedOperations)
+        .withAllowedOperations(validator.getAllowedOperations())
+        .withProblems(validator.getProblems())
         .withNotes(mapToNoteDtos())
         .withPeriod(mapToPeriodStatusDto())
         .withTotalPoints(getTotalPoints())
@@ -376,6 +375,8 @@ public final class Candidate {
       UpdateStatusRequest input, OrganizationRetriever organizationRetriever) {
     validateUpdateStatusRequest(input);
     validateCandidateState();
+    var validator =
+        new CandidateUpdateValidator(this, organizationRetriever, input.institutionId());
 
     var currentState = getApprovalStatus(input.institutionId());
     var newState = input.approvalStatus();
@@ -385,7 +386,7 @@ public final class Candidate {
       return this;
     }
 
-    if (!isValidStatusChange(input, organizationRetriever)) {
+    if (!validator.isValidStatusChange(input)) {
       throw new IllegalStateException("Cannot update approval status");
     }
 
@@ -877,55 +878,6 @@ public final class Candidate {
         || Status.UNOPENED_PERIOD.equals(period.status())) {
       throw new IllegalStateException(PERIOD_NOT_OPENED_MESSAGE);
     }
-  }
-
-  private boolean isValidStatusChange(
-      UpdateStatusRequest updateRequest, OrganizationRetriever organizationRetriever) {
-    var allowedOperations =
-        getAllowedOperations(updateRequest.institutionId(), organizationRetriever);
-    var attemptedOperation = CandidateOperation.fromApprovalStatus(updateRequest.approvalStatus());
-    return allowedOperations.contains(attemptedOperation);
-  }
-
-  /**
-   * This checks which operations this organization is allowed to perform on this candidate.
-   *
-   * <p>This requires retrieving metadata about each creator's organization, which is not persisted
-   * in the database yet. Once we persist the necessary metadata, we can simplify this check. TODO:
-   * Persist full organization hierarchy for creators and simplify this validation.
-   */
-  public Set<CandidateOperation> getAllowedOperations(
-      URI topLevelOrganizationId, OrganizationRetriever organizationRetriever) {
-    var hasUnverifiedCreator =
-        hasUnverifiedCreatorFromOrganization(topLevelOrganizationId, organizationRetriever);
-
-    var currentStatus = getApprovalStatus(topLevelOrganizationId);
-    var validTransitions = currentStatus.getValidTransitions();
-    var validStatesForOrganization =
-        hasUnverifiedCreator ? EnumSet.of(PENDING) : EnumSet.of(PENDING, APPROVED, REJECTED);
-
-    // Find the intersection of valid approvals for this organization and valid transitions
-    validStatesForOrganization.retainAll(validTransitions);
-    return validStatesForOrganization.stream()
-        .map(CandidateOperation::fromApprovalStatus)
-        .collect(Collectors.toUnmodifiableSet());
-  }
-
-  private boolean hasUnverifiedCreatorFromOrganization(
-      URI topLevelOrganizationId, OrganizationRetriever organizationRetriever) {
-    var unverifiedCreators = publicationDetails.getUnverifiedCreators();
-    return unverifiedCreators.stream()
-        .flatMap(contributor -> getTopLevelAffiliations(contributor, organizationRetriever))
-        .map(Organization::id)
-        .anyMatch(organizationId -> organizationId.equals(topLevelOrganizationId));
-  }
-
-  private static Stream<Organization> getTopLevelAffiliations(
-      NviCreatorDto contributor, OrganizationRetriever organizationRetriever) {
-    return contributor.affiliations().stream()
-        .distinct()
-        .map(organizationRetriever::fetchOrganization)
-        .map(Organization::getTopLevelOrg);
   }
 
   private PeriodStatusDto mapToPeriodStatusDto() {

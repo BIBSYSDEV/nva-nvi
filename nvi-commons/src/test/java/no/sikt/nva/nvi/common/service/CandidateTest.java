@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.common.service;
 
+import static java.util.Collections.emptySet;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.createUpdateStatusRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
@@ -256,6 +257,7 @@ class CandidateTest extends CandidateTestSetup {
             .withApprovals(mapToApprovalDtos(candidate))
             .withAllowedOperations(
                 Set.of(CandidateOperation.APPROVAL_APPROVE, CandidateOperation.APPROVAL_REJECT))
+            .withProblems(emptySet())
             .withId(candidate.getId())
             .withPublicationId(candidate.getPublicationId())
             .withIdentifier(candidate.getIdentifier())

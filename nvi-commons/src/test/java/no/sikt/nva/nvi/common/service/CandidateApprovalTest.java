@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.common.service;
 
 import static java.util.Collections.emptyList;
+import static java.util.Collections.emptySet;
 import static no.sikt.nva.nvi.test.TestUtils.createUpdateStatusRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertNonCandidateRequest;
@@ -20,6 +21,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -30,6 +32,7 @@ import java.net.URI;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
@@ -41,6 +44,8 @@ import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.dto.CandidateOperation;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
+import no.sikt.nva.nvi.common.service.dto.problem.UnverifiedCreatorFromOrganizationProblem;
+import no.sikt.nva.nvi.common.service.dto.problem.UnverifiedCreatorProblem;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.InstanceType;
@@ -471,6 +476,38 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var actualAllowedOperations = candidateDto.allowedOperations();
     var expectedAllowedOperations = emptyList();
     assertThat(actualAllowedOperations, containsInAnyOrder(expectedAllowedOperations.toArray()));
+  }
+
+  @Test
+  void shouldHaveNoProblemsWhenCandidateIsValid() {
+    var request = createUpsertCandidateRequest(topLevelOrganizationId).build();
+    var candidate = upsert(request);
+
+    var candidateDto = candidate.toDto(topLevelOrganizationId, mockOrganizationRetriever);
+
+    var actualProblems = candidateDto.problems();
+    var expectedProblems = emptySet();
+    assertEquals(actualProblems, expectedProblems);
+  }
+
+  @Test
+  void shouldIncludeProblemsWhenCandidateHasUnverifiedCreator() {
+    var unverifiedCreator =
+        new UnverifiedNviCreatorDto(randomString(), List.of(topLevelOrganizationId));
+    var request =
+        createUpsertCandidateRequest(topLevelOrganizationId)
+            .withUnverifiedCreators(List.of(unverifiedCreator))
+            .build();
+    var candidate = upsert(request);
+
+    var candidateDto = candidate.toDto(topLevelOrganizationId, mockOrganizationRetriever);
+
+    var expectedProblems =
+        Set.of(
+            new UnverifiedCreatorProblem(),
+            new UnverifiedCreatorFromOrganizationProblem(List.of(unverifiedCreator.name())));
+    var actualProblems = candidateDto.problems();
+    assertEquals(actualProblems, expectedProblems);
   }
 
   private static UpdateStatusRequest createRejectionRequestWithoutReason(String username) {

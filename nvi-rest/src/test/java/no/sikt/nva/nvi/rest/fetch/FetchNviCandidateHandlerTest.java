@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.rest.fetch;
 
 import static java.util.Collections.emptyList;
+import static java.util.Collections.emptySet;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -15,10 +16,13 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatusDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateOperation;
+import no.sikt.nva.nvi.common.service.dto.problem.UnverifiedCreatorFromOrganizationProblem;
+import no.sikt.nva.nvi.common.service.dto.problem.UnverifiedCreatorProblem;
 import no.sikt.nva.nvi.rest.BaseCandidateRestHandlerTest;
 import no.sikt.nva.nvi.test.FakeViewingScopeValidator;
 import no.unit.nva.testutils.HandlerRequestBuilder;
@@ -202,5 +206,47 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
     var expectedAllowedOperations =
         List.of(CandidateOperation.APPROVAL_PENDING, CandidateOperation.APPROVAL_REJECT);
     assertThat(actualAllowedOperations, containsInAnyOrder(expectedAllowedOperations.toArray()));
+  }
+
+  @Test
+  void shouldHaveNoProblemsWhenCandidateIsValid() throws IOException {
+    var candidate = setupValidCandidate(topLevelOrganizationId);
+    var request = createRequestWithCuratorAccess(candidate.getIdentifier().toString());
+
+    var candidateDto = handleRequest(request);
+
+    var actualProblems = candidateDto.problems();
+    var expectedProblems = emptySet();
+    assertEquals(actualProblems, expectedProblems);
+  }
+
+  @Test
+  void shouldIncludeProblemsWhenCandidateHasUnverifiedCreator() throws IOException {
+    var candidate = setupCandidateWithUnverifiedCreator();
+    var request = createRequestWithCuratorAccess(candidate.getIdentifier().toString());
+    var unverifiedNviCreatorNames =
+        candidate.getPublicationDetails().getUnverifiedNviCreatorNames();
+
+    var candidateDto = handleRequest(request);
+
+    var expectedProblems =
+        Set.of(
+            new UnverifiedCreatorProblem(),
+            new UnverifiedCreatorFromOrganizationProblem(unverifiedNviCreatorNames));
+    var actualProblems = candidateDto.problems();
+    assertEquals(actualProblems, expectedProblems);
+  }
+
+  @Test
+  void shouldIncludeProblemWhenCandidateHasUnverifiedCreatorFromAnotherOrganization()
+      throws IOException {
+    var candidate = setupCandidateWithUnverifiedCreatorFromAnotherInstitution();
+    var request = createRequestWithCuratorAccess(candidate.getIdentifier().toString());
+
+    var candidateDto = handleRequest(request);
+
+    var expectedProblems = Set.of(new UnverifiedCreatorProblem());
+    var actualProblems = candidateDto.problems();
+    assertEquals(actualProblems, expectedProblems);
   }
 }

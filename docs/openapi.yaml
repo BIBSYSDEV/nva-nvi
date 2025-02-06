@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: NVA Scientific Index API
-  version: 1.0.0
+  version: 1.0.1
   description: Public API for scientific index candidates in NVA.
 x-amazon-apigateway-request-validators:
   validate_body:
@@ -923,6 +923,15 @@ components:
               - "approval/reject-candidate"
               - "approval/approve-candidate"
               - "approval/reset-approval"
+        problems:
+          type: array
+          description: >
+            List of problems that may impact available operations on the Candidate.
+            These can indicate something that blocks one or all organizations from approving the
+            candidate, or other candidate-specific errors.
+            This is a work in progress and does not include all possible problems yet.
+          items:
+            $ref: '#/components/schemas/CandidateProblem'
 
     NviInstitutionReportResponse:
       type: object
@@ -1037,6 +1046,34 @@ components:
       type: string
       pattern: 'https:\/\/.*$'
       description: The URI of the object ID
+    CandidateProblem:
+      type: object
+      description: An issue with the candidate that may impact available operations for the user.
+      required:
+        - title
+        - scope
+        - detail
+      properties:
+        type:
+          type: string
+          description: Identifier for the issue type.
+        title:
+          type: string
+          description: Human-readable title of the issue.
+        scope:
+          type: string
+          description: > 
+            The scope of the issue, indicating whether it is a general issue ("Global") or only 
+            affects the organization of the current user.
+          enum: [ 'Organization','Global' ]
+        detail:
+          type: string
+          description: Additional details about the issue and potential solutions.
+        contributors:
+            type: array
+            items:
+                type: string
+            description: List of contributors that cause or are affected by the issue, if relevant.
     Problem:
       type: object
       description: NVA error reporting object
