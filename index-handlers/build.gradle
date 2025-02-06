@@ -32,7 +32,7 @@ dependencies {
     implementation libs.bundles.apachePoi
 
     testImplementation libs.bundles.testContainers
-    testImplementation 'com.opencsv:opencsv:5.9'
+    testImplementation libs.openCsv
     testImplementation libs.dynamodDbLocal
     testImplementation project(':nvi-test')
 
