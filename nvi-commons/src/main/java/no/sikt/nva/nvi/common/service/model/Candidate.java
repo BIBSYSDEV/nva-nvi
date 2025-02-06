@@ -935,13 +935,9 @@ public final class Candidate {
     var unverifiedCreators = publicationDetails.getUnverifiedCreators();
     return unverifiedCreators.stream()
         .filter(
-            contributor -> {
-              var topLevelAffiliations =
-                  getTopLevelAffiliations(contributor, organizationRetriever)
-                      .map(Organization::id)
-                      .collect(Collectors.toSet());
-              return topLevelAffiliations.contains(topLevelOrganizationId);
-            })
+            contributor ->
+                getTopLevelAffiliations(contributor, organizationRetriever)
+                    .contains(topLevelOrganizationId))
         .map(UnverifiedNviCreatorDto::name)
         .toList();
   }
@@ -952,12 +948,14 @@ public final class Candidate {
    *
    * <p>TODO: Persist full organization hierarchy for creators and simplify this validation.
    */
-  private static Stream<Organization> getTopLevelAffiliations(
+  private static Set<URI> getTopLevelAffiliations(
       NviCreatorDto contributor, OrganizationRetriever organizationRetriever) {
     return contributor.affiliations().stream()
         .distinct()
         .map(organizationRetriever::fetchOrganization)
-        .map(Organization::getTopLevelOrg);
+        .map(Organization::getTopLevelOrg)
+        .map(Organization::id)
+        .collect(Collectors.toSet());
   }
 
   private PeriodStatusDto mapToPeriodStatusDto() {
