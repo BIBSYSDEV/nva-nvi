@@ -1,7 +1,7 @@
-openapi: 3.1.1
+openapi: 3.0.3
 info:
   title: NVA Scientific Index API
-  version: 1.0.0
+  version: 1.0.1
   description: Public API for scientific index candidates in NVA.
 x-amazon-apigateway-request-validators:
   validate_body:
@@ -1054,18 +1054,14 @@ components:
           description: Identifier for the issue type.
         title:
           type: string
-          description: Human-readable description of the issue.
+          description: Human-readable title of the issue.
         scope:
           type: string
-          description: The scope of the issue, either "organization" or "global".
-          oneOf:
-            - title: organization
-              const: organization
-              description: The issue is specific to the organization of the current user.
-            - title: global
-              const: global
-              description: The issue is global and not specific to the organization of the current user.
-        message:
+          description: > 
+            The scope of the issue, indicating whether it is a general issue ("Global") or only 
+            affects the organization of the current user.
+          enum: [ 'Organization','Global' ]
+        description:
           type: string
           description: Additional details about the issue and potential solutions.
     Problem:
