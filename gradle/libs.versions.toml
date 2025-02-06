@@ -21,6 +21,7 @@ com-auth0-jwt = { strictly = '4.4.0' }
 guava = { strictly = '33.4.0-jre' }
 dynamoDbLocal = { strictly = '2.5.4' }
 apache-poi = { strictly = '5.4.0' }
+openCsv = { strictly = '5.10' }
 testContainers = { strictly = '1.20.4' }
 
 [libraries]
@@ -89,6 +90,7 @@ jena-arq = { group = 'org.apache.jena', name = 'jena-arq', version.ref = 'jena' 
 
 apache-poi = { group = 'org.apache.poi', name = 'poi', version.ref = 'apache-poi' }
 apache-poi-ooxml = { group = 'org.apache.poi', name = 'poi-ooxml', version.ref = 'apache-poi' }
+openCsv = { group = 'com.opencsv', name = 'opencsv', version.ref = 'openCsv' }
 
 testContainers = { group = 'org.testcontainers', name = 'testcontainers', version.ref = 'testContainers' }
 testContainersJunit = { group = 'org.testcontainers', name = 'junit-jupiter', version.ref = 'testContainers' }
