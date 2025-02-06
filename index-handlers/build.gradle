@@ -31,10 +31,7 @@ dependencies {
     implementation libs.jena.core
     implementation libs.bundles.apachePoi
 
-    testImplementation 'org.opensearch:opensearch-testcontainers:2.0.0'
-    testImplementation "org.testcontainers:testcontainers:1.18.3"
-    testImplementation 'org.testcontainers:junit-jupiter:1.18.3'
-
+    testImplementation libs.bundles.testContainers
     testImplementation 'com.opencsv:opencsv:5.9'
     testImplementation libs.dynamodDbLocal
     testImplementation project(':nvi-test')
