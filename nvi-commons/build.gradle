@@ -1,5 +1,7 @@
 plugins {
     id 'nva.nvi.java-conventions'
+    id 'java-library'
+    id 'java-test-fixtures'
 }
 
 dependencies {
@@ -22,6 +24,11 @@ dependencies {
 
     testImplementation libs.dynamodDbLocal
     testImplementation project(':nvi-test')
+
+    testFixturesImplementation libs.bundles.testing
+    testFixturesImplementation libs.nva.core
+    testFixturesImplementation libs.nva.json
+    testFixturesImplementation libs.nva.commons.auth
 }
 
 test {
