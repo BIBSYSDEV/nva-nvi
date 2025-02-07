@@ -3,19 +3,19 @@ plugins {
 }
 
 dependencies {
-    implementation project(':nvi-commons')
-    implementation libs.bundles.testing
-    implementation libs.nva.commons.core
-    implementation libs.nva.commons.apigateway
-    implementation libs.nva.commons.auth
-    implementation libs.nva.json
-    implementation libs.nva.testutils
-    implementation libs.jackson.databind
+    implementation libs.aws.lambda.events
     implementation libs.aws.sdk2.dynamodb
     implementation libs.aws.sdk2.dynamodbenhanced
     implementation libs.aws.sdk2.sqs
-    implementation libs.aws.lambda.events
+    implementation libs.bundles.testing
     implementation libs.dynamodDbLocal
+    implementation libs.jackson.databind
+    implementation libs.nva.commons.apigateway
+    implementation libs.nva.commons.auth
+    implementation libs.nva.commons.core
+    implementation libs.nva.json
+    implementation libs.nva.testutils
+    implementation project(':nvi-commons')
 }
 
 test {

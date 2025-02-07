@@ -2,43 +2,39 @@ plugins {
     id 'nva.nvi.java-conventions'
 }
 dependencies {
-    implementation project(':nvi-commons')
-    implementation libs.nva.json
-    implementation libs.nva.core
-    implementation libs.nva.commons.secrets
-    implementation libs.nva.commons.auth
-    implementation libs.nva.commons.apigateway
-    implementation libs.nva.commons.pagination
-    implementation libs.nva.commons.clients
-    implementation libs.nva.s3
-    implementation libs.nva.language
-
-    implementation libs.aws.lambda.java.core
-    implementation libs.aws.lambda.events
     implementation libs.aws.java.sdk.core
+    implementation libs.aws.lambda.events
+    implementation libs.aws.lambda.java.core
+    implementation libs.aws.sdk2.apache.client
+    implementation libs.aws.sdk2.dynamodb
+    implementation libs.aws.sdk2.regions
     implementation libs.aws.sdk2.s3
     implementation libs.aws.sdk2.sqs
-    implementation libs.aws.sdk2.apache.client
-    implementation libs.aws.sdk2.regions
-    implementation libs.aws.sdk2.dynamodb
-
-    implementation libs.opensearch.java
-    implementation libs.opensearch.rest.client
-    implementation libs.jackson.core
-    implementation libs.jackson.databind
-    implementation libs.com.auth0.jwt
-    implementation libs.guava
-    implementation libs.jena.core
     implementation libs.bundles.apachePoi
-
-    testImplementation libs.bundles.testContainers
-    testImplementation libs.openCsv
-    testImplementation libs.dynamodDbLocal
-    testImplementation project(':nvi-test')
-
     implementation libs.bundles.jacksonjr
     implementation libs.bundles.logging
+    implementation libs.com.auth0.jwt
+    implementation libs.guava
+    implementation libs.jackson.core
+    implementation libs.jackson.databind
+    implementation libs.jena.core
+    implementation libs.nva.commons.apigateway
+    implementation libs.nva.commons.auth
+    implementation libs.nva.commons.clients
+    implementation libs.nva.commons.pagination
+    implementation libs.nva.commons.secrets
+    implementation libs.nva.core
+    implementation libs.nva.json
+    implementation libs.nva.language
+    implementation libs.nva.s3
+    implementation libs.opensearch.java
+    implementation libs.opensearch.rest.client
+    implementation project(':nvi-commons')
 
+    testImplementation libs.bundles.testContainers
+    testImplementation libs.dynamodDbLocal
+    testImplementation libs.openCsv
+    testImplementation project(':nvi-test')
     testImplementation(testFixtures(project(":nvi-commons")))
 }
 

@@ -2,22 +2,22 @@ plugins {
     id 'nva.nvi.java-conventions'
 }
 dependencies {
-    implementation project(':nvi-commons')
-    implementation libs.nva.commons.apigateway
-    implementation libs.nva.commons.core
-    implementation libs.nva.json
-    implementation libs.nva.commons.clients
-    implementation libs.jackson.databind
-    implementation libs.nva.commons.auth
-    implementation libs.jackson.databind
     implementation libs.aws.sdk2.dynamodb
     implementation libs.aws.sdk2.dynamodbenhanced
     implementation libs.guava
-    testImplementation libs.nva.testutils
-    testImplementation libs.dynamodDbLocal
-    testImplementation libs.bundles.testing
-    testImplementation project(':nvi-test')
+    implementation libs.jackson.databind
+    implementation libs.jackson.databind
+    implementation libs.nva.commons.apigateway
+    implementation libs.nva.commons.auth
+    implementation libs.nva.commons.clients
+    implementation libs.nva.commons.core
+    implementation libs.nva.json
+    implementation project(':nvi-commons')
 
+    testImplementation libs.bundles.testing
+    testImplementation libs.dynamodDbLocal
+    testImplementation libs.nva.testutils
+    testImplementation project(':nvi-test')
     testImplementation(testFixtures(project(":nvi-commons")))
 }
 

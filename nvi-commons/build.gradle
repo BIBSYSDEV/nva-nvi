@@ -5,30 +5,30 @@ plugins {
 }
 
 dependencies {
-    implementation libs.jackson.databind
-    implementation libs.nva.commons.apigateway
-    implementation libs.nva.core
-    implementation libs.nva.json
-    implementation libs.nva.commons.auth
-    implementation libs.nva.commons.clients
-    implementation libs.nva.s3
+    implementation libs.aws.lambda.events
     implementation libs.aws.sdk2.apache.client
-    implementation libs.aws.sdk2.s3
-    implementation libs.aws.sdk2.sqs
-    implementation libs.aws.sdk2.sns
     implementation libs.aws.sdk2.dynamodb
     implementation libs.aws.sdk2.dynamodbenhanced
+    implementation libs.aws.sdk2.s3
+    implementation libs.aws.sdk2.sns
+    implementation libs.aws.sdk2.sqs
     implementation libs.aws.sdk2.urlconnection
-    implementation libs.aws.lambda.events
     implementation libs.bundles.jena
+    implementation libs.jackson.databind
+    implementation libs.nva.commons.apigateway
+    implementation libs.nva.commons.auth
+    implementation libs.nva.commons.clients
+    implementation libs.nva.core
+    implementation libs.nva.json
+    implementation libs.nva.s3
+
+    testFixturesImplementation libs.bundles.testing
+    testFixturesImplementation libs.nva.commons.auth
+    testFixturesImplementation libs.nva.core
+    testFixturesImplementation libs.nva.json
 
     testImplementation libs.dynamodDbLocal
     testImplementation project(':nvi-test')
-
-    testFixturesImplementation libs.bundles.testing
-    testFixturesImplementation libs.nva.core
-    testFixturesImplementation libs.nva.json
-    testFixturesImplementation libs.nva.commons.auth
 }
 
 test {
