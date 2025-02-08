@@ -15,12 +15,6 @@ import no.sikt.nva.nvi.common.service.model.NviPeriod;
 
 public class PeriodRepositoryFixtures {
 
-  private static PeriodRepository mockPeriodRepositoryReturn(DbNviPeriod period) {
-    var nviPeriodRepository = mock(PeriodRepository.class);
-    when(nviPeriodRepository.findByPublishingYear(anyString())).thenReturn(Optional.of(period));
-    return nviPeriodRepository;
-  }
-
   public static PeriodRepository periodRepositoryReturningClosedPeriod(int year) {
     var period =
         DbNviPeriod.builder()
@@ -61,5 +55,11 @@ public class PeriodRepositoryFixtures {
             .withCreatedBy(no.sikt.nva.nvi.common.service.model.Username.fromString(randomString()))
             .build(),
         periodRepository);
+  }
+
+  private static PeriodRepository mockPeriodRepositoryReturn(DbNviPeriod period) {
+    var nviPeriodRepository = mock(PeriodRepository.class);
+    when(nviPeriodRepository.findByPublishingYear(anyString())).thenReturn(Optional.of(period));
+    return nviPeriodRepository;
   }
 }
