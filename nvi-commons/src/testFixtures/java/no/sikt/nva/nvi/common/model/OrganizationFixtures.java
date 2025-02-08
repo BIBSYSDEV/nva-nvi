@@ -22,16 +22,16 @@ import no.unit.nva.auth.uriretriever.UriRetriever;
 
 public class OrganizationFixtures {
 
+  public static Organization randomOrganizationWithPartOf(Organization topLevelOrg) {
+    return randomOrganization().withPartOf(List.of(topLevelOrg)).build();
+  }
+
   public static Builder randomOrganization() {
     return Organization.builder()
         .withId(randomUri())
         .withContext(randomString())
         .withLabels(Map.of(randomString(), randomString()))
         .withType(randomString());
-  }
-
-  public static Organization randomOrganizationWithPartOf(Organization topLevelOrg) {
-    return randomOrganization().withPartOf(List.of(topLevelOrg)).build();
   }
 
   public static void mockOrganizationResponseForAffiliation(
