@@ -1,8 +1,7 @@
-package no.sikt.nva.nvi.test;
+package no.sikt.nva.nvi.common.validator;
 
 import java.net.URI;
 import java.util.List;
-import no.sikt.nva.nvi.common.validator.ViewingScopeValidator;
 
 public class FakeViewingScopeValidator implements ViewingScopeValidator {
 
