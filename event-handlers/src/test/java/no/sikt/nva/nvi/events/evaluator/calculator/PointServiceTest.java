@@ -2,9 +2,9 @@ package no.sikt.nva.nvi.events.evaluator.calculator;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
+import static no.sikt.nva.nvi.common.model.OrganizationFixtures.mockOrganizationResponseForAffiliation;
 import static no.sikt.nva.nvi.events.evaluator.calculator.PointCalculationConstants.RESULT_SCALE;
 import static no.sikt.nva.nvi.events.evaluator.calculator.PointCalculationConstants.ROUNDING_MODE;
-import static no.sikt.nva.nvi.test.TestUtils.mockOrganizationResponseForAffiliation;
 import static no.sikt.nva.nvi.test.TestUtils.randomIntBetween;
 import static no.unit.nva.events.EventsConfig.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
