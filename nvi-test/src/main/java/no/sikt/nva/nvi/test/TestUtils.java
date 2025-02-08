@@ -10,7 +10,6 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -23,7 +22,6 @@ import java.net.http.HttpResponse;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.Year;
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -56,17 +54,13 @@ import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.sikt.nva.nvi.common.service.model.CreatePeriodRequest;
 import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
-import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.common.service.requests.UpdateNonCandidateRequest;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
-import no.sikt.nva.nvi.common.utils.BatchScanUtil;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import nva.commons.core.paths.UriWrapper;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 // Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
 @SuppressWarnings({"PMD.CouplingBetweenObjects", "PMD.GodClass"})
@@ -233,67 +227,6 @@ public final class TestUtils {
         MIN_BIG_DECIMAL.add(
             BigDecimal.valueOf(Math.random()).multiply(MAX_BIG_DECIMAL.subtract(MIN_BIG_DECIMAL)));
     return randomBigDecimal.setScale(scale, RoundingMode.HALF_UP);
-  }
-
-  public static BatchScanUtil nviServiceReturningOpenPeriod(DynamoDbClient client, int year) {
-    var nviPeriodRepository = mock(PeriodRepository.class);
-    var nviService = new BatchScanUtil(new CandidateRepository(client));
-    var period =
-        DbNviPeriod.builder()
-            .publishingYear(String.valueOf(year))
-            .startDate(Instant.now())
-            .reportingDate(Instant.now().plusSeconds(300))
-            .build();
-    when(nviPeriodRepository.findByPublishingYear(anyString())).thenReturn(Optional.of(period));
-    return nviService;
-  }
-
-  public static PeriodRepository periodRepositoryReturningClosedPeriod(int year) {
-    var nviPeriodRepository = mock(PeriodRepository.class);
-    var period =
-        DbNviPeriod.builder()
-            .publishingYear(String.valueOf(year))
-            .startDate(ZonedDateTime.now().minusMonths(10).toInstant())
-            .reportingDate(ZonedDateTime.now().minusMonths(1).toInstant())
-            .build();
-    when(nviPeriodRepository.findByPublishingYear(anyString())).thenReturn(Optional.of(period));
-    return nviPeriodRepository;
-  }
-
-  public static PeriodRepository periodRepositoryReturningNotOpenedPeriod(int year) {
-    var nviPeriodRepository = mock(PeriodRepository.class);
-    var period =
-        DbNviPeriod.builder()
-            .publishingYear(String.valueOf(year))
-            .startDate(ZonedDateTime.now().plusMonths(1).toInstant())
-            .reportingDate(ZonedDateTime.now().plusMonths(10).toInstant())
-            .build();
-    when(nviPeriodRepository.findByPublishingYear(anyString())).thenReturn(Optional.of(period));
-    return nviPeriodRepository;
-  }
-
-  public static PeriodRepository periodRepositoryReturningOpenedPeriod(int year) {
-    var nviPeriodRepository = mock(PeriodRepository.class);
-    var period =
-        DbNviPeriod.builder()
-            .publishingYear(String.valueOf(year))
-            .id(randomUri())
-            .startDate(Instant.now())
-            .reportingDate(ZonedDateTime.now().plusMonths(10).toInstant())
-            .build();
-    when(nviPeriodRepository.findByPublishingYear(anyString())).thenReturn(Optional.of(period));
-    return nviPeriodRepository;
-  }
-
-  public static NviPeriod setupPersistedPeriod(String year, PeriodRepository periodRepository) {
-    return NviPeriod.create(
-        CreatePeriodRequest.builder()
-            .withPublishingYear(Integer.parseInt(year))
-            .withStartDate(ZonedDateTime.now().plusMonths(1).toInstant())
-            .withReportingDate(ZonedDateTime.now().plusMonths(10).toInstant())
-            .withCreatedBy(no.sikt.nva.nvi.common.service.model.Username.fromString(randomString()))
-            .build(),
-        periodRepository);
   }
 
   public static UpdateNonCandidateRequest createUpsertNonCandidateRequest(URI publicationId) {

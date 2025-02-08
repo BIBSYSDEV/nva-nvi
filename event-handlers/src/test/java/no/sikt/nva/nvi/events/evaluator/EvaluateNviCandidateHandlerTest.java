@@ -54,6 +54,7 @@ import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
@@ -133,7 +134,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
   void shouldNotEvaluateExistingCandidateInClosedPeriod() throws IOException {
     var year = LocalDateTime.now().getYear();
     var resourceFileUri = setupCandidate(year);
-    periodRepository = no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningClosedPeriod(year);
+    periodRepository = PeriodRepositoryFixtures.periodRepositoryReturningClosedPeriod(year);
     setupEvaluatorService(periodRepository);
     handler = new EvaluateNviCandidateHandler(evaluatorService, queueClient, env);
     var event = createEvent(new PersistedResourceMessage(resourceFileUri));
@@ -161,7 +162,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
     var year = LocalDateTime.now().getYear();
     var resourceFileUri = setupCandidate(year);
-    periodRepository = no.sikt.nva.nvi.test.TestUtils.periodRepositoryReturningOpenedPeriod(year);
+    periodRepository = PeriodRepositoryFixtures.periodRepositoryReturningOpenedPeriod(year);
     setupEvaluatorService(periodRepository);
     handler = new EvaluateNviCandidateHandler(evaluatorService, queueClient, env);
     var event = createEvent(new PersistedResourceMessage(resourceFileUri));

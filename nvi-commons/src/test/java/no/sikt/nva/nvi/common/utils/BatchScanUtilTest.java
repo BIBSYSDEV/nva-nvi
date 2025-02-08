@@ -24,8 +24,8 @@ import java.util.UUID;
 import java.util.stream.IntStream;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
+import no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
-import no.sikt.nva.nvi.test.TestUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
@@ -44,7 +44,7 @@ class BatchScanUtilTest extends LocalDynamoTest {
   void setup() {
     localDynamo = initializeTestDatabase();
     candidateRepository = new CandidateRepositoryHelper(localDynamo);
-    batchScanUtil = TestUtils.nviServiceReturningOpenPeriod(localDynamo, YEAR);
+    batchScanUtil = PeriodRepositoryFixtures.nviServiceReturningOpenPeriod(localDynamo, YEAR);
   }
 
   @Test

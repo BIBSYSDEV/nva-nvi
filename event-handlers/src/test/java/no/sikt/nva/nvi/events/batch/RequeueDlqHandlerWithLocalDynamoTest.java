@@ -12,9 +12,9 @@ import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.test.LocalDynamoTest;
-import no.sikt.nva.nvi.test.TestUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.sqs.SqsClient;
@@ -37,7 +37,7 @@ class RequeueDlqHandlerWithLocalDynamoTest extends LocalDynamoTest {
     client = new NviQueueClient(sqsClient);
     var localDynamoDbClient = initializeTestDatabase();
     candidateRepository = new CandidateRepository(localDynamoDbClient);
-    periodRepository = TestUtils.periodRepositoryReturningOpenedPeriod(YEAR);
+    periodRepository = PeriodRepositoryFixtures.periodRepositoryReturningOpenedPeriod(YEAR);
   }
 
   @Test

@@ -1,6 +1,6 @@
 package no.sikt.nva.nvi.rest;
 
-import static no.sikt.nva.nvi.test.TestUtils.setupPersistedPeriod;
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupPersistedPeriod;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;

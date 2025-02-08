@@ -23,6 +23,7 @@ dependencies {
     implementation libs.nva.s3
 
     testFixturesImplementation libs.bundles.testing
+    testFixturesImplementation libs.dynamodDbLocal
     testFixturesImplementation libs.nva.commons.auth
     testFixturesImplementation libs.nva.core
     testFixturesImplementation libs.nva.json

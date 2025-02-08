@@ -59,6 +59,7 @@ import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
@@ -133,7 +134,8 @@ class IndexDocumentHandlerTest extends LocalDynamoTest {
     s3Writer = new S3Driver(s3Client, BUCKET_NAME);
     var localDynamoDbClient = initializeTestDatabase();
     candidateRepository = new CandidateRepository(localDynamoDbClient);
-    periodRepository = TestUtils.periodRepositoryReturningOpenedPeriod(SOME_REPORTING_YEAR);
+    periodRepository =
+        PeriodRepositoryFixtures.periodRepositoryReturningOpenedPeriod(SOME_REPORTING_YEAR);
     uriRetriever = mock(UriRetriever.class);
     sqsClient = new FakeSqsClient();
     handler =

@@ -47,6 +47,7 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.queue.QueueClient;
@@ -90,7 +91,8 @@ class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
   void setup() {
     localDynamo = initializeTestDatabase();
     candidateRepository = new CandidateRepository(localDynamo);
-    periodRepository = TestUtils.periodRepositoryReturningOpenedPeriod(Year.now().getValue());
+    periodRepository =
+        PeriodRepositoryFixtures.periodRepositoryReturningOpenedPeriod(Year.now().getValue());
     queueClient = mock(QueueClient.class);
     environment = mock(Environment.class);
     when(environment.readEnv("UPSERT_CANDIDATE_DLQ_QUEUE_URL")).thenReturn(DLQ_QUEUE_URL);
