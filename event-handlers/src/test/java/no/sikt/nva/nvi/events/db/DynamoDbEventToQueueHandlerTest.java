@@ -19,7 +19,7 @@ import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.util.List;
 import java.util.UUID;
-import no.sikt.nva.nvi.test.FakeSqsClient;
+import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import nva.commons.core.Environment;
 import nva.commons.logutils.LogUtils;
 import org.junit.jupiter.api.BeforeEach;

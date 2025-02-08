@@ -22,6 +22,7 @@ dependencies {
     implementation libs.nva.json
     implementation libs.nva.s3
 
+    testFixturesImplementation libs.aws.sdk2.sqs
     testFixturesImplementation libs.bundles.testing
     testFixturesImplementation libs.dynamodDbLocal
     testFixturesImplementation libs.nva.commons.auth
