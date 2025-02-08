@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.common.db;
 
+import static no.sikt.nva.nvi.common.model.InstanceTypeFixtures.randomInstanceType;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
-import static no.sikt.nva.nvi.test.TestUtils.randomInstanceType;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;

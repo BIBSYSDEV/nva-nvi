@@ -1,11 +1,11 @@
 package no.sikt.nva.nvi.events.persist;
 
 import static java.util.Collections.emptyList;
+import static no.sikt.nva.nvi.common.model.InstanceTypeFixtures.randomInstanceType;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
 import static no.sikt.nva.nvi.test.TestUtils.generateS3BucketUri;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
-import static no.sikt.nva.nvi.test.TestUtils.randomInstanceType;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;

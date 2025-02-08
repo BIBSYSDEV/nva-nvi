@@ -137,7 +137,7 @@ public final class TestUtils {
     return randomCandidateBuilder(applicable, randomUri());
   }
 
-  public static InstanceType randomInstanceType() {
+  private static InstanceType randomInstanceType() {
     var instanceTypes = Arrays.stream(InstanceType.values()).toList();
     return instanceTypes.get(RANDOM.nextInt(instanceTypes.size()));
   }
