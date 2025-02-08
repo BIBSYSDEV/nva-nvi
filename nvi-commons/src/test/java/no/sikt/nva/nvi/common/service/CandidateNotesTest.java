@@ -1,6 +1,6 @@
 package no.sikt.nva.nvi.common.service;
 
-import static no.sikt.nva.nvi.test.TestUtils.createNoteRequest;
+import static no.sikt.nva.nvi.common.RequestFixtures.createNoteRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.mockOrganizationResponseForAffiliation;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;

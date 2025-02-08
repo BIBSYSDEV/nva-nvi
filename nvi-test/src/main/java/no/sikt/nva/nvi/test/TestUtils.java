@@ -48,7 +48,6 @@ import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.db.model.Username;
-import no.sikt.nva.nvi.common.model.CreateNoteRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
@@ -285,10 +284,6 @@ public final class TestUtils {
         .withVerifiedCreators(verifiedCreators)
         .withPoints(institutionPoints)
         .build();
-  }
-
-  public static CreateNoteRequest createNoteRequest(String text, String username) {
-    return new CreateNoteRequest(text, username, randomUri());
   }
 
   public static DbCandidate randomCandidateWithYear(String year) {
