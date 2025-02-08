@@ -27,6 +27,7 @@ dependencies {
     testFixturesImplementation libs.nva.commons.auth
     testFixturesImplementation libs.nva.core
     testFixturesImplementation libs.nva.json
+    testFixturesImplementation project(':nvi-test')
 
     testImplementation libs.dynamodDbLocal
     testImplementation project(':nvi-test')

@@ -44,7 +44,6 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints.DbCreatorAffil
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
@@ -166,6 +165,10 @@ public final class TestUtils {
         randomString());
   }
 
+  private static Username randomUsername() {
+    return Username.fromString(randomString());
+  }
+
   public static DbApprovalStatus randomApproval() {
     return randomApproval(randomUri());
   }
@@ -190,14 +193,6 @@ public final class TestUtils {
     return repository.create(candidate, List.of());
   }
 
-  public static DbNviPeriod.Builder randomNviPeriodBuilder() {
-    return DbNviPeriod.builder()
-        .createdBy(randomUsername())
-        .modifiedBy(randomUsername())
-        .reportingDate(getNowWithMillisecondAccuracy())
-        .publishingYear(randomYear());
-  }
-
   public static List<CandidateDao> sortByIdentifier(List<CandidateDao> candidates, Integer limit) {
     var comparator = Comparator.comparing(TestUtils::getCharacterValues);
     return candidates.stream()
@@ -212,10 +207,6 @@ public final class TestUtils {
         "PrimaryKeyHashKey", dao.primaryKeyHashKey(),
         "SearchByYearHashKey", String.valueOf(dao.searchByYearHashKey()),
         "SearchByYearRangeKey", String.valueOf(dao.searchByYearSortKey()));
-  }
-
-  public static Username randomUsername() {
-    return Username.fromString(randomString());
   }
 
   public static BigDecimal randomBigDecimal() {
@@ -378,10 +369,5 @@ public final class TestUtils {
 
   private static String getCharacterValues(UUID uuid) {
     return uuid.toString().replaceAll(UUID_SEPARATOR, "");
-  }
-
-  private static Instant getNowWithMillisecondAccuracy() {
-    var now = Instant.now();
-    return Instant.ofEpochMilli(now.toEpochMilli());
   }
 }
