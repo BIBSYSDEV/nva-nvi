@@ -21,7 +21,7 @@ java {
     targetCompatibility = JavaVersion.VERSION_21 // bytecode target version
 }
 
-tasks.named('test') {
+tasks.named('test', Test) {
     useJUnitPlatform()
     failFast = false
     testLogging {
