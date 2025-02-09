@@ -1,12 +1,12 @@
 package no.sikt.nva.nvi.events.db;
 
 import static java.util.Collections.emptyList;
+import static no.sikt.nva.nvi.common.DynamoDbTestUtils.randomDynamoDbEvent;
+import static no.sikt.nva.nvi.common.QueueServiceTestUtils.createEvent;
+import static no.sikt.nva.nvi.common.QueueServiceTestUtils.createEventWithMessages;
+import static no.sikt.nva.nvi.common.QueueServiceTestUtils.createEventWithOneInvalidRecord;
+import static no.sikt.nva.nvi.common.QueueServiceTestUtils.createMessage;
 import static no.sikt.nva.nvi.common.db.UsernameFixtures.randomUsername;
-import static no.sikt.nva.nvi.test.DynamoDbTestUtils.randomDynamoDbEvent;
-import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEvent;
-import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEventWithMessages;
-import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEventWithOneInvalidRecord;
-import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createMessage;
 import static no.sikt.nva.nvi.test.TestUtils.randomApproval;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidateBuilder;

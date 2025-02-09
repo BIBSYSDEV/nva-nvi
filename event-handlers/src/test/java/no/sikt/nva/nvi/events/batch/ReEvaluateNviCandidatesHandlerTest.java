@@ -25,6 +25,7 @@ import com.amazonaws.services.lambda.runtime.Context;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.util.List;
+import no.sikt.nva.nvi.common.LocalDynamoTestSetup;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
@@ -33,7 +34,6 @@ import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import no.sikt.nva.nvi.common.utils.BatchScanUtil;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.sikt.nva.nvi.events.model.ReEvaluateRequest;
-import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.events.models.AwsEventBridgeEvent;
 import no.unit.nva.stubs.FakeEventBridgeClient;
 import nva.commons.core.Environment;
@@ -44,7 +44,7 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequestEntry;
 
-class ReEvaluateNviCandidatesHandlerTest extends LocalDynamoTest {
+class ReEvaluateNviCandidatesHandlerTest extends LocalDynamoTestSetup {
 
   private static final int MAX_PAGE_SIZE = 1000;
   private static final int DEFAULT_PAGE_SIZE = 500;

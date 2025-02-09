@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.test;
+package no.sikt.nva.nvi.common;
 
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.DatabaseConstants.HASH_KEY;

@@ -13,12 +13,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
+import no.sikt.nva.nvi.common.LocalDynamoTestSetup;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.rest.model.NviPeriodsResponse;
 import no.sikt.nva.nvi.rest.model.UpsertNviPeriodRequest;
-import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.testutils.HandlerRequestBuilder;
@@ -27,7 +27,7 @@ import nva.commons.apigateway.GatewayResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class FetchNviPeriodsHandlerTest extends LocalDynamoTest {
+class FetchNviPeriodsHandlerTest extends LocalDynamoTestSetup {
 
   private Context context;
   private ByteArrayOutputStream output;

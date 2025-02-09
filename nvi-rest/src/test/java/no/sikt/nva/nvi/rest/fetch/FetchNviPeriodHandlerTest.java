@@ -13,9 +13,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.time.ZonedDateTime;
+import no.sikt.nva.nvi.common.LocalDynamoTestSetup;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.dto.NviPeriodDto;
-import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.testutils.HandlerRequestBuilder;
@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.zalando.problem.Problem;
 import software.amazon.awssdk.utils.MapUtils;
 
-class FetchNviPeriodHandlerTest extends LocalDynamoTest {
+class FetchNviPeriodHandlerTest extends LocalDynamoTestSetup {
 
   private Context context;
   private ByteArrayOutputStream output;

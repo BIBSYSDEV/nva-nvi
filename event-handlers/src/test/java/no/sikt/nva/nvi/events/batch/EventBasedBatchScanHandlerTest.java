@@ -29,6 +29,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import no.sikt.nva.nvi.common.LocalDynamoTestSetup;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
 import no.sikt.nva.nvi.common.db.CandidateDao;
@@ -50,7 +51,6 @@ import no.sikt.nva.nvi.common.model.ListingResult;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.utils.BatchScanUtil;
 import no.sikt.nva.nvi.events.model.ScanDatabaseRequest;
-import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import no.unit.nva.commons.json.JsonUtils;
@@ -71,7 +71,7 @@ import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
 
 // Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
 @SuppressWarnings("PMD.CouplingBetweenObjects")
-class EventBasedBatchScanHandlerTest extends LocalDynamoTest {
+class EventBasedBatchScanHandlerTest extends LocalDynamoTestSetup {
 
   private static final int ONE_ENTRY_PER_EVENT = 1;
   private static final Map<String, String> START_FROM_BEGINNING = null;

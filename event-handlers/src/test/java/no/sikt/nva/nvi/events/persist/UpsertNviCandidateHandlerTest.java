@@ -36,6 +36,7 @@ import java.time.Year;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
+import no.sikt.nva.nvi.common.LocalDynamoTestSetup;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
@@ -63,7 +64,6 @@ import no.sikt.nva.nvi.events.model.NonNviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate.Builder;
 import no.sikt.nva.nvi.events.model.PublicationDate;
-import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
 import nva.commons.core.Environment;
 import nva.commons.logutils.LogUtils;
@@ -74,7 +74,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 // Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
 @SuppressWarnings("PMD.CouplingBetweenObjects")
-class UpsertNviCandidateHandlerTest extends LocalDynamoTest {
+class UpsertNviCandidateHandlerTest extends LocalDynamoTestSetup {
 
   public static final Context CONTEXT = mock(Context.class);
   public static final String ERROR_MESSAGE_BODY_INVALID = "Message body invalid";

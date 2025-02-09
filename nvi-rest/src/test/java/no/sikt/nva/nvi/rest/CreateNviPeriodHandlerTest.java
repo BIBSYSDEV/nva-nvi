@@ -15,11 +15,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.time.ZonedDateTime;
+import no.sikt.nva.nvi.common.LocalDynamoTestSetup;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.rest.create.CreateNviPeriodHandler;
 import no.sikt.nva.nvi.rest.model.UpsertNviPeriodRequest;
-import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
@@ -28,7 +28,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.zalando.problem.Problem;
 
-class CreateNviPeriodHandlerTest extends LocalDynamoTest {
+class CreateNviPeriodHandlerTest extends LocalDynamoTestSetup {
 
   private Context context;
   private ByteArrayOutputStream output;

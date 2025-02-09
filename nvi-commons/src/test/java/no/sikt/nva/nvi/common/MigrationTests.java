@@ -25,13 +25,12 @@ import no.sikt.nva.nvi.common.db.model.DbCreatorTypeListConverter;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.utils.BatchScanUtil;
-import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
-class MigrationTests extends LocalDynamoTest {
+class MigrationTests extends LocalDynamoTestSetup {
 
   public static final int DEFAULT_PAGE_SIZE = 700;
   private CandidateRepository candidateRepository;

@@ -1,6 +1,6 @@
 package no.sikt.nva.nvi.common.utils;
 
-import static no.sikt.nva.nvi.test.DynamoDbTestUtils.getAttributeValueMap;
+import static no.sikt.nva.nvi.common.DynamoDbTestUtils.getAttributeValueMap;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

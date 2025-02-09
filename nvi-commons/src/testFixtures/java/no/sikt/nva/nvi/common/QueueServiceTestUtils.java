@@ -1,9 +1,9 @@
-package no.sikt.nva.nvi.test;
+package no.sikt.nva.nvi.common;
 
-import static no.sikt.nva.nvi.test.DynamoDbTestUtils.dynamoDbEventWithEmptyPayload;
-import static no.sikt.nva.nvi.test.DynamoDbTestUtils.eventWithCandidate;
-import static no.sikt.nva.nvi.test.DynamoDbTestUtils.eventWithCandidateIdentifier;
-import static no.sikt.nva.nvi.test.DynamoDbTestUtils.mapToString;
+import static no.sikt.nva.nvi.common.DynamoDbTestUtils.dynamoDbEventWithEmptyPayload;
+import static no.sikt.nva.nvi.common.DynamoDbTestUtils.eventWithCandidate;
+import static no.sikt.nva.nvi.common.DynamoDbTestUtils.eventWithCandidateIdentifier;
+import static no.sikt.nva.nvi.common.DynamoDbTestUtils.mapToString;
 
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent.DynamodbStreamRecord;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;

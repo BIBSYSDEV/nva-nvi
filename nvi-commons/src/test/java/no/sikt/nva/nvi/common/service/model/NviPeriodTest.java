@@ -11,16 +11,16 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import no.sikt.nva.nvi.common.LocalDynamoTestSetup;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.exception.PeriodAlreadyExistsException;
 import no.sikt.nva.nvi.common.service.exception.PeriodNotFoundException;
-import no.sikt.nva.nvi.test.LocalDynamoTest;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class NviPeriodTest extends LocalDynamoTest {
+class NviPeriodTest extends LocalDynamoTestSetup {
 
   private static final int YEAR = LocalDateTime.now().getYear() + 1;
   private PeriodRepository periodRepository;

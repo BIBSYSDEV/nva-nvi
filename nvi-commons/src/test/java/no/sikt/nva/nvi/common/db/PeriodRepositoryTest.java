@@ -5,12 +5,12 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 
-import no.sikt.nva.nvi.test.LocalDynamoTest;
+import no.sikt.nva.nvi.common.LocalDynamoTestSetup;
 import no.sikt.nva.nvi.test.TestUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class PeriodRepositoryTest extends LocalDynamoTest {
+class PeriodRepositoryTest extends LocalDynamoTestSetup {
 
   private PeriodRepository periodRepository;
 
