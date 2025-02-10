@@ -12,6 +12,7 @@ import java.util.Optional;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.service.model.CreatePeriodRequest;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
+import no.sikt.nva.nvi.common.service.model.Username;
 
 public class PeriodRepositoryFixtures {
 
@@ -52,13 +53,14 @@ public class PeriodRepositoryFixtures {
     return mockPeriodRepositoryReturn(period);
   }
 
-  public static NviPeriod setupPersistedPeriod(String year, PeriodRepository periodRepository) {
+  public static NviPeriod setupPersistedNotOpenedPeriod(
+      String year, PeriodRepository periodRepository) {
     return NviPeriod.create(
         CreatePeriodRequest.builder()
             .withPublishingYear(Integer.parseInt(year))
             .withStartDate(ZonedDateTime.now().plusMonths(1).toInstant())
             .withReportingDate(ZonedDateTime.now().plusMonths(10).toInstant())
-            .withCreatedBy(no.sikt.nva.nvi.common.service.model.Username.fromString(randomString()))
+            .withCreatedBy(Username.fromString(randomString()))
             .build(),
         periodRepository);
   }

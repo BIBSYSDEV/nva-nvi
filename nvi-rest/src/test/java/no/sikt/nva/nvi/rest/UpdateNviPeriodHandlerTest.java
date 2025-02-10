@@ -1,6 +1,6 @@
 package no.sikt.nva.nvi.rest;
 
-import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupPersistedPeriod;
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupPersistedNotOpenedPeriod;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -64,7 +64,7 @@ class UpdateNviPeriodHandlerTest extends LocalDynamoTestSetup {
   @Test
   void shouldUpdateNviPeriodSuccessfully() throws IOException {
     var year = String.valueOf(ZonedDateTime.now().getYear());
-    var persistedPeriod = setupPersistedPeriod(year, periodRepository);
+    var persistedPeriod = setupPersistedNotOpenedPeriod(year, periodRepository);
     var updateRequest = updateRequest(year, persistedPeriod);
     handler.handleRequest(toInputStream(updateRequest), output, context);
     var updatedPeriod = NviPeriod.fetchByPublishingYear(year, periodRepository);
