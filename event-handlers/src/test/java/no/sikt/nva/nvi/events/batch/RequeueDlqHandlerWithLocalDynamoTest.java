@@ -10,18 +10,18 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.amazonaws.services.lambda.runtime.Context;
+import no.sikt.nva.nvi.common.LocalDynamoTestSetup;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
-import no.sikt.nva.nvi.test.LocalDynamoTest;
-import no.sikt.nva.nvi.test.TestUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 
-class RequeueDlqHandlerWithLocalDynamoTest extends LocalDynamoTest {
+class RequeueDlqHandlerWithLocalDynamoTest extends LocalDynamoTestSetup {
 
   public static final Context CONTEXT = mock(Context.class);
   public static final int YEAR = 2021;
@@ -37,7 +37,7 @@ class RequeueDlqHandlerWithLocalDynamoTest extends LocalDynamoTest {
     client = new NviQueueClient(sqsClient);
     var localDynamoDbClient = initializeTestDatabase();
     candidateRepository = new CandidateRepository(localDynamoDbClient);
-    periodRepository = TestUtils.periodRepositoryReturningOpenedPeriod(YEAR);
+    periodRepository = PeriodRepositoryFixtures.periodRepositoryReturningOpenedPeriod(YEAR);
   }
 
   @Test

@@ -1,9 +1,9 @@
 package no.sikt.nva.nvi.events.db;
 
-import static no.sikt.nva.nvi.test.DynamoDbTestUtils.eventWithCandidateIdentifier;
-import static no.sikt.nva.nvi.test.DynamoDbTestUtils.mapToMessageBodies;
-import static no.sikt.nva.nvi.test.DynamoDbTestUtils.randomDynamoDbEvent;
-import static no.sikt.nva.nvi.test.DynamoDbTestUtils.randomEventWithNumberOfDynamoRecords;
+import static no.sikt.nva.nvi.common.DynamoDbTestUtils.eventWithCandidateIdentifier;
+import static no.sikt.nva.nvi.common.DynamoDbTestUtils.mapToMessageBodies;
+import static no.sikt.nva.nvi.common.DynamoDbTestUtils.randomDynamoDbEvent;
+import static no.sikt.nva.nvi.common.DynamoDbTestUtils.randomEventWithNumberOfDynamoRecords;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -19,7 +19,7 @@ import static org.mockito.Mockito.when;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.util.List;
 import java.util.UUID;
-import no.sikt.nva.nvi.test.FakeSqsClient;
+import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import nva.commons.core.Environment;
 import nva.commons.logutils.LogUtils;
 import org.junit.jupiter.api.BeforeEach;

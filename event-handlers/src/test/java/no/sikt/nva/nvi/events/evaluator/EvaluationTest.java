@@ -9,15 +9,15 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
 import java.net.http.HttpResponse;
+import no.sikt.nva.nvi.common.LocalDynamoTestSetup;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil;
 import no.sikt.nva.nvi.events.model.NviCandidate;
-import no.sikt.nva.nvi.test.FakeSqsClient;
-import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.auth.uriretriever.BackendClientCredentials;
 import no.unit.nva.auth.uriretriever.UriRetriever;
@@ -28,7 +28,7 @@ import nva.commons.core.Environment;
 import nva.commons.core.StringUtils;
 import org.junit.jupiter.api.BeforeEach;
 
-public class EvaluationTest extends LocalDynamoTest {
+public class EvaluationTest extends LocalDynamoTestSetup {
 
   protected static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
 

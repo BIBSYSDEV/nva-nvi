@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.test;
+package no.sikt.nva.nvi.common;
 
 import static no.sikt.nva.nvi.common.DatabaseConstants.HASH_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_1_HASH_KEY;
@@ -31,7 +31,7 @@ import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
 import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
 import software.amazon.awssdk.services.dynamodb.model.TableStatus;
 
-public class LocalDynamoTest {
+public class LocalDynamoTestSetup {
 
   public static final int SINGLE_TABLE_EXPECTED = 1;
   private static final Long CAPACITY_DOES_NOT_MATTER = 1000L;

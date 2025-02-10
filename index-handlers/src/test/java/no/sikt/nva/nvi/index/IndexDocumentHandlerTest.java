@@ -2,6 +2,8 @@ package no.sikt.nva.nvi.index;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
+import static no.sikt.nva.nvi.common.QueueServiceTestUtils.createEvent;
+import static no.sikt.nva.nvi.common.QueueServiceTestUtils.createEventWithOneInvalidRecord;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_AFFILIATIONS;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_BODY;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_TYPE;
@@ -11,8 +13,6 @@ import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.HARD_CODED_TOP_LEVEL_
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.NVI_CANDIDATES_FOLDER;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.expandApprovals;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.expandPublicationDetails;
-import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEvent;
-import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEventWithOneInvalidRecord;
 import static no.sikt.nva.nvi.test.TestConstants.EN_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_ENGLISH_LABEL;
 import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_NORWEGIAN_LABEL;
@@ -56,10 +56,13 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
+import no.sikt.nva.nvi.common.LocalDynamoTestSetup;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
+import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.index.aws.S3StorageWriter;
@@ -72,8 +75,6 @@ import no.sikt.nva.nvi.index.model.document.NviContributor;
 import no.sikt.nva.nvi.index.model.document.OrganizationType;
 import no.sikt.nva.nvi.index.model.document.ReportingPeriod;
 import no.sikt.nva.nvi.test.ExpandedResourceGenerator;
-import no.sikt.nva.nvi.test.FakeSqsClient;
-import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import no.unit.nva.s3.S3Driver;
@@ -94,7 +95,7 @@ import software.amazon.awssdk.services.sqs.model.SqsException;
 
 // Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
 @SuppressWarnings({"PMD.GodClass", "PMD.CouplingBetweenObjects"})
-class IndexDocumentHandlerTest extends LocalDynamoTest {
+class IndexDocumentHandlerTest extends LocalDynamoTestSetup {
 
   public static final int SOME_REPORTING_YEAR = 2023;
   private static final String JSON_PTR_CONTRIBUTOR = "/publicationDetails/contributors";
@@ -133,7 +134,8 @@ class IndexDocumentHandlerTest extends LocalDynamoTest {
     s3Writer = new S3Driver(s3Client, BUCKET_NAME);
     var localDynamoDbClient = initializeTestDatabase();
     candidateRepository = new CandidateRepository(localDynamoDbClient);
-    periodRepository = TestUtils.periodRepositoryReturningOpenedPeriod(SOME_REPORTING_YEAR);
+    periodRepository =
+        PeriodRepositoryFixtures.periodRepositoryReturningOpenedPeriod(SOME_REPORTING_YEAR);
     uriRetriever = mock(UriRetriever.class);
     sqsClient = new FakeSqsClient();
     handler =

@@ -15,26 +15,23 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.IntStream;
+import no.sikt.nva.nvi.common.LocalDynamoTestSetup;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.test.LocalDynamoTest;
-import no.sikt.nva.nvi.test.TestUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
 
-class BatchScanUtilTest extends LocalDynamoTest {
+class BatchScanUtilTest extends LocalDynamoTestSetup {
 
-  private static final int YEAR = ZonedDateTime.now().getYear();
   private static final int DEFAULT_PAGE_SIZE = 700;
   private static final int SECOND_ROW = 1;
   private BatchScanUtil batchScanUtil;
@@ -44,7 +41,7 @@ class BatchScanUtilTest extends LocalDynamoTest {
   void setup() {
     localDynamo = initializeTestDatabase();
     candidateRepository = new CandidateRepositoryHelper(localDynamo);
-    batchScanUtil = TestUtils.nviServiceReturningOpenPeriod(localDynamo, YEAR);
+    batchScanUtil = new BatchScanUtil(candidateRepository);
   }
 
   @Test

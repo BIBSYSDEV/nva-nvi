@@ -1,16 +1,16 @@
 package no.sikt.nva.nvi.common.db;
 
-import static no.sikt.nva.nvi.test.TestUtils.randomNviPeriodBuilder;
+import static no.sikt.nva.nvi.common.db.DbNviPeriodFixtures.randomNviPeriodBuilder;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 
-import no.sikt.nva.nvi.test.LocalDynamoTest;
+import no.sikt.nva.nvi.common.LocalDynamoTestSetup;
 import no.sikt.nva.nvi.test.TestUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class PeriodRepositoryTest extends LocalDynamoTest {
+class PeriodRepositoryTest extends LocalDynamoTestSetup {
 
   private PeriodRepository periodRepository;
 
@@ -24,8 +24,8 @@ class PeriodRepositoryTest extends LocalDynamoTest {
   void shouldUpdateExistingRecordWhenSavedSecondTime() {
 
     var year = TestUtils.randomYear();
-    var user1 = TestUtils.randomUsername();
-    var user2 = TestUtils.randomUsername();
+    var user1 = UsernameFixtures.randomUsername();
+    var user2 = UsernameFixtures.randomUsername();
 
     var nviPeriod1 = randomNviPeriodBuilder().publishingYear(year).modifiedBy(user1).build();
     var nviPeriod2 = randomNviPeriodBuilder().publishingYear(year).modifiedBy(user2).build();

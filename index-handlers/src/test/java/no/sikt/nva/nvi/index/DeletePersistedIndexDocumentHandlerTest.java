@@ -1,11 +1,11 @@
 package no.sikt.nva.nvi.index;
 
+import static no.sikt.nva.nvi.common.DynamoDbTestUtils.randomDynamoDbEvent;
+import static no.sikt.nva.nvi.common.QueueServiceTestUtils.createEvent;
+import static no.sikt.nva.nvi.common.QueueServiceTestUtils.createEventWithDynamodbRecords;
+import static no.sikt.nva.nvi.common.QueueServiceTestUtils.createEventWithOneInvalidRecord;
 import static no.sikt.nva.nvi.index.aws.S3StorageWriter.GZIP_ENDING;
 import static no.sikt.nva.nvi.index.aws.S3StorageWriter.NVI_CANDIDATES_FOLDER;
-import static no.sikt.nva.nvi.test.DynamoDbTestUtils.randomDynamoDbEvent;
-import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEvent;
-import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEventWithDynamodbRecords;
-import static no.sikt.nva.nvi.test.QueueServiceTestUtils.createEventWithOneInvalidRecord;
 import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static nva.commons.core.attempt.Try.attempt;
@@ -17,12 +17,12 @@ import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.UUID;
+import no.sikt.nva.nvi.common.DynamoDbTestUtils;
 import no.sikt.nva.nvi.common.db.CandidateDao;
+import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import no.sikt.nva.nvi.index.aws.S3StorageWriter;
 import no.sikt.nva.nvi.index.model.document.IndexDocumentWithConsumptionAttributes;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
-import no.sikt.nva.nvi.test.DynamoDbTestUtils;
-import no.sikt.nva.nvi.test.FakeSqsClient;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.Environment;

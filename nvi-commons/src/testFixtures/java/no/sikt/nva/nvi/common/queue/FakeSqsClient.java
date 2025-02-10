@@ -1,16 +1,10 @@
-package no.sikt.nva.nvi.test;
+package no.sikt.nva.nvi.common.queue;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.queue.NviReceiveMessage;
-import no.sikt.nva.nvi.common.queue.NviReceiveMessageResponse;
-import no.sikt.nva.nvi.common.queue.NviSendMessageBatchResponse;
-import no.sikt.nva.nvi.common.queue.NviSendMessageResponse;
-import no.sikt.nva.nvi.common.queue.QueueClient;
-import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.services.sqs.model.BatchResultErrorEntry;
 import software.amazon.awssdk.services.sqs.model.DeleteMessageRequest;
 import software.amazon.awssdk.services.sqs.model.MessageAttributeValue;
@@ -23,7 +17,6 @@ import software.amazon.awssdk.services.sqs.model.SendMessageBatchResultEntry;
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
-@JacocoGenerated
 public class FakeSqsClient implements QueueClient {
 
   public static final String MESSAGE_ATTRIBUTE_CANDIDATE_IDENTIFIER_QUEUE = "candidateIdentifier";
@@ -83,12 +76,21 @@ public class FakeSqsClient implements QueueClient {
     deleteMessages.add(request);
   }
 
-  private static List<String> extractSuccessfulEntryIds(SendMessageBatchResponse response) {
-    return response.successful().stream().map(SendMessageBatchResultEntry::id).toList();
+  private ReceiveMessageRequest createReceiveRequest(String queueUrl, int maxNumberOfMessages) {
+    return ReceiveMessageRequest.builder()
+        .queueUrl(queueUrl)
+        .maxNumberOfMessages(maxNumberOfMessages)
+        .build();
   }
 
-  private static List<String> extractFailedEntryIds(SendMessageBatchResponse response) {
-    return response.failed().stream().map(BatchResultErrorEntry::id).toList();
+  private NviReceiveMessageResponse createResponse(ReceiveMessageResponse receiveMessageResponse) {
+    return new NviReceiveMessageResponse(
+        receiveMessageResponse.messages().stream()
+            .map(
+                m ->
+                    new NviReceiveMessage(
+                        m.body(), m.messageId(), m.attributesAsStrings(), m.receiptHandle()))
+            .toList());
   }
 
   private SendMessageBatchRequest createBatchRequest(Collection<String> messages, String queueUrl) {
@@ -98,16 +100,25 @@ public class FakeSqsClient implements QueueClient {
         .build();
   }
 
+  private NviSendMessageBatchResponse createResponse(SendMessageBatchResponse response) {
+    return new NviSendMessageBatchResponse(
+        extractSuccessfulEntryIds(response), extractFailedEntryIds(response));
+  }
+
   private Collection<SendMessageBatchRequestEntry> createBatchEntries(Collection<String> messages) {
     return messages.stream().map(this::createBatchEntry).toList();
   }
 
-  private SendMessageBatchRequestEntry createBatchEntry(String message) {
-    return SendMessageBatchRequestEntry.builder().messageBody(message).build();
+  private static List<String> extractSuccessfulEntryIds(SendMessageBatchResponse response) {
+    return response.successful().stream().map(SendMessageBatchResultEntry::id).toList();
   }
 
-  private SendMessageRequest createRequest(String body, String queueUrl) {
-    return SendMessageRequest.builder().queueUrl(queueUrl).messageBody(body).build();
+  private static List<String> extractFailedEntryIds(SendMessageBatchResponse response) {
+    return response.failed().stream().map(BatchResultErrorEntry::id).toList();
+  }
+
+  private SendMessageBatchRequestEntry createBatchEntry(String message) {
+    return SendMessageBatchRequestEntry.builder().messageBody(message).build();
   }
 
   private SendMessageRequest createRequest(String body, String queueUrl, UUID candidateIdentifier) {
@@ -124,29 +135,11 @@ public class FakeSqsClient implements QueueClient {
         .build();
   }
 
-  private ReceiveMessageRequest createReceiveRequest(String queueUrl, int maxNumberOfMessages) {
-    return ReceiveMessageRequest.builder()
-        .queueUrl(queueUrl)
-        .maxNumberOfMessages(maxNumberOfMessages)
-        .build();
+  private SendMessageRequest createRequest(String body, String queueUrl) {
+    return SendMessageRequest.builder().queueUrl(queueUrl).messageBody(body).build();
   }
 
   private NviSendMessageResponse createResponse(SendMessageResponse response) {
     return new NviSendMessageResponse(response.messageId());
-  }
-
-  private NviSendMessageBatchResponse createResponse(SendMessageBatchResponse response) {
-    return new NviSendMessageBatchResponse(
-        extractSuccessfulEntryIds(response), extractFailedEntryIds(response));
-  }
-
-  private NviReceiveMessageResponse createResponse(ReceiveMessageResponse receiveMessageResponse) {
-    return new NviReceiveMessageResponse(
-        receiveMessageResponse.messages().stream()
-            .map(
-                m ->
-                    new NviReceiveMessage(
-                        m.body(), m.messageId(), m.attributesAsStrings(), m.receiptHandle()))
-            .toList());
   }
 }

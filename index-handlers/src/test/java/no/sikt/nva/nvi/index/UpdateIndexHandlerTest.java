@@ -1,10 +1,10 @@
 package no.sikt.nva.nvi.index;
 
+import static no.sikt.nva.nvi.common.QueueServiceTestUtils.invalidSqsMessage;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.NVI_CONTEXT;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.createPath;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.expandApprovals;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.expandPublicationDetails;
-import static no.sikt.nva.nvi.test.QueueServiceTestUtils.invalidSqsMessage;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.unit.nva.s3.S3Driver.S3_SCHEME;
 import static nva.commons.core.attempt.Try.attempt;
@@ -22,10 +22,12 @@ import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.net.URI;
 import java.util.List;
+import no.sikt.nva.nvi.common.LocalDynamoTestSetup;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
@@ -33,8 +35,6 @@ import no.sikt.nva.nvi.index.model.PersistedIndexDocumentMessage;
 import no.sikt.nva.nvi.index.model.document.IndexDocumentWithConsumptionAttributes;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.test.ExpandedResourceGenerator;
-import no.sikt.nva.nvi.test.FakeSqsClient;
-import no.sikt.nva.nvi.test.LocalDynamoTest;
 import no.sikt.nva.nvi.test.TestUtils;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
@@ -45,7 +45,7 @@ import org.junit.jupiter.api.Test;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import software.amazon.awssdk.services.s3.S3Client;
 
-class UpdateIndexHandlerTest extends LocalDynamoTest {
+class UpdateIndexHandlerTest extends LocalDynamoTestSetup {
 
   public static final Context CONTEXT = mock(Context.class);
   public static final Environment ENVIRONMENT = new Environment();
