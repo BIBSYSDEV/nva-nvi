@@ -24,13 +24,10 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
-import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
-import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.service.requests.UpdateNonCandidateRequest;
@@ -67,18 +64,6 @@ public final class TestUtils {
         .addChild(PUBLICATION_API_PATH)
         .addChild(identifier.toString())
         .getUri();
-  }
-
-  public static Candidate randomApplicableCandidate(
-      CandidateRepository candidateRepository, PeriodRepository periodRepository) {
-    var request = randomUpsertRequestBuilder().build();
-    Candidate.upsert(request, candidateRepository, periodRepository);
-    return Candidate.fetchByPublicationId(
-        request::publicationId, candidateRepository, periodRepository);
-  }
-
-  public static no.sikt.nva.nvi.common.service.model.Username randomUserName() {
-    return no.sikt.nva.nvi.common.service.model.Username.fromString(randomString());
   }
 
   public static String randomYear() {

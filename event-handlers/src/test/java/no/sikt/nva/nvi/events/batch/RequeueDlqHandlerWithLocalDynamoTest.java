@@ -1,9 +1,9 @@
 package no.sikt.nva.nvi.events.batch;
 
-import static no.sikt.nva.nvi.events.batch.RequeueDlqTestUtils.generateMessages;
-import static no.sikt.nva.nvi.events.batch.RequeueDlqTestUtils.setupSqsClient;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.createCandidateDao;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidateWithYear;
+import static no.sikt.nva.nvi.events.batch.RequeueDlqTestUtils.generateMessages;
+import static no.sikt.nva.nvi.events.batch.RequeueDlqTestUtils.setupSqsClient;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
