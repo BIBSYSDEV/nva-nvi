@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.test;
+package no.sikt.nva.nvi.index;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
