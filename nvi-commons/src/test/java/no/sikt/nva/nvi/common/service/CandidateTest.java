@@ -10,7 +10,7 @@ import static no.sikt.nva.nvi.test.TestUtils.createUpsertNonCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.randomApplicableCandidate;
 import static no.sikt.nva.nvi.test.TestUtils.randomApproval;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
-import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
+import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidate;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.sikt.nva.nvi.test.TestUtils.setupReportedCandidate;
 import static no.sikt.nva.nvi.test.UpsertRequestBuilder.randomUpsertRequestBuilder;

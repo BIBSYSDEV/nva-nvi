@@ -21,7 +21,7 @@ import static no.sikt.nva.nvi.test.TestConstants.NB_FIELD;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.createUpsertNonCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.randomApproval;
-import static no.sikt.nva.nvi.test.TestUtils.randomCandidateBuilder;
+import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidateBuilder;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.sikt.nva.nvi.test.TestUtils.setupReportedCandidate;
 import static no.sikt.nva.nvi.test.UpsertRequestBuilder.randomUpsertRequestBuilder;

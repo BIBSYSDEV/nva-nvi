@@ -2,10 +2,8 @@ package no.sikt.nva.nvi.test;
 
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.test.UpsertRequestBuilder.randomUpsertRequestBuilder;
-import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInstant;
-import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.mockito.Mockito.mock;
@@ -15,7 +13,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
 import java.net.http.HttpResponse;
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.Year;
 import java.util.Arrays;
@@ -31,21 +28,15 @@ import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints.DbCreatorAffiliationPoints;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.ReportStatus;
-import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.service.requests.UpdateNonCandidateRequest;
@@ -92,58 +83,12 @@ public final class TestUtils {
         request::publicationId, candidateRepository, periodRepository);
   }
 
-  public static DbCandidate.Builder randomCandidateBuilder(boolean applicable, URI institutionId) {
-    var creatorId = randomUri();
-    var institutionPoints = randomBigDecimal();
-    return DbCandidate.builder()
-        .publicationId(randomUri())
-        .publicationBucketUri(randomUri())
-        .applicable(applicable)
-        .instanceType(randomInstanceType().getValue())
-        .points(
-            List.of(
-                new DbInstitutionPoints(
-                    institutionId,
-                    institutionPoints,
-                    List.of(
-                        new DbCreatorAffiliationPoints(
-                            creatorId, institutionId, institutionPoints)))))
-        .level(DbLevel.LEVEL_ONE)
-        .channelType(randomElement(ChannelType.values()))
-        .channelId(randomUri())
-        .publicationDate(new DbPublicationDate(randomString(), randomString(), randomString()))
-        .internationalCollaboration(randomBoolean())
-        .creatorCount(randomInteger())
-        .createdDate(Instant.now())
-        .modifiedDate(Instant.now())
-        .totalPoints(randomBigDecimal())
-        .creators(
-            List.of(
-                DbCreator.builder()
-                    .creatorId(creatorId)
-                    .affiliations(List.of(institutionId))
-                    .build()));
-  }
-
-  public static DbCandidate.Builder randomCandidateBuilder(boolean applicable) {
-    return randomCandidateBuilder(applicable, randomUri());
-  }
-
-  private static InstanceType randomInstanceType() {
-    var instanceTypes = Arrays.stream(InstanceType.values()).toList();
-    return instanceTypes.get(RANDOM.nextInt(instanceTypes.size()));
-  }
-
   public static no.sikt.nva.nvi.common.service.model.Username randomUserName() {
     return no.sikt.nva.nvi.common.service.model.Username.fromString(randomString());
   }
 
   public static String randomYear() {
     return String.valueOf(randomIntBetween(START_DATE.getYear(), LocalDate.now().getYear()));
-  }
-
-  public static DbCandidate randomCandidate() {
-    return randomCandidateBuilder(true).build();
   }
 
   public static DbApprovalStatus randomApproval(URI institutionId) {
@@ -279,7 +224,8 @@ public final class TestUtils {
   }
 
   public static DbCandidate randomCandidateWithYear(String year) {
-    return randomCandidateBuilder(true).publicationDate(publicationDate(year)).build();
+    return DbCandidateFixtures
+               .randomCandidateBuilder(true).publicationDate(publicationDate(year)).build();
   }
 
   public static HttpResponse<String> createResponse(int status, String body) {
@@ -295,7 +241,8 @@ public final class TestUtils {
   public static CandidateDao setupReportedCandidate(CandidateRepository repository, String year) {
     var institutionId = randomUri();
     return repository.create(
-        randomCandidateBuilder(true, institutionId)
+        DbCandidateFixtures
+            .randomCandidateBuilder(true, institutionId)
             .publicationDate(DbPublicationDate.builder().year(year).build())
             .reportStatus(ReportStatus.REPORTED)
             .build(),
@@ -309,7 +256,8 @@ public final class TestUtils {
   public static CandidateDao setupReportedCandidate(
       CandidateRepository repository, String year, URI organizationId) {
     return repository.create(
-        randomCandidateBuilder(true, organizationId)
+        DbCandidateFixtures
+            .randomCandidateBuilder(true, organizationId)
             .publicationDate(DbPublicationDate.builder().year(year).build())
             .reportStatus(ReportStatus.REPORTED)
             .build(),
