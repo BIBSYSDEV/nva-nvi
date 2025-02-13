@@ -1,6 +1,6 @@
 package no.sikt.nva.nvi.common.model;
 
-import static no.sikt.nva.nvi.test.UpsertRequestBuilder.randomUpsertRequestBuilder;
+import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
 
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
