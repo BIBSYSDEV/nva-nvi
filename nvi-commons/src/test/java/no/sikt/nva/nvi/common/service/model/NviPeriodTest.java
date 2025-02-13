@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.common.service.model;
 
 import static java.time.temporal.ChronoUnit.DAYS;
-import static no.sikt.nva.nvi.test.TestUtils.randomUserName;
+import static no.sikt.nva.nvi.common.model.UsernameFixtures.randomUserName;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;

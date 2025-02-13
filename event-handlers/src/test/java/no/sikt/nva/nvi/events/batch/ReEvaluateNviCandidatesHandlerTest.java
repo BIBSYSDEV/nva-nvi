@@ -1,11 +1,11 @@
 package no.sikt.nva.nvi.events.batch;
 
-import static no.sikt.nva.nvi.test.TestUtils.createNumberOfCandidatesForYear;
-import static no.sikt.nva.nvi.test.TestUtils.getYearIndexStartMarker;
+import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.createNumberOfCandidatesForYear;
+import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.getYearIndexStartMarker;
+import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.setupReportedCandidate;
+import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.sortByIdentifier;
 import static no.sikt.nva.nvi.test.TestUtils.randomIntBetween;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
-import static no.sikt.nva.nvi.test.TestUtils.setupReportedCandidate;
-import static no.sikt.nva.nvi.test.TestUtils.sortByIdentifier;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;

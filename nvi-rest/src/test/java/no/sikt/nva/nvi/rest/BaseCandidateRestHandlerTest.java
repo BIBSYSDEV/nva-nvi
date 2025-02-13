@@ -1,14 +1,14 @@
 package no.sikt.nva.nvi.rest;
 
 import static java.math.BigDecimal.ZERO;
+import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
+import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequest;
+import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertNonCandidateRequest;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.periodRepositoryReturningOpenedPeriod;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.mockOrganizationResponseForAffiliation;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
-import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
-import static no.sikt.nva.nvi.test.TestUtils.createUpsertNonCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.sikt.nva.nvi.test.TestUtils.randomUriWithSuffix;
-import static no.sikt.nva.nvi.test.UpsertRequestBuilder.randomUpsertRequestBuilder;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.LocalDynamoTestSetup;
+import no.sikt.nva.nvi.common.UpsertRequestBuilder;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
@@ -44,7 +45,6 @@ import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliation
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.common.validator.FakeViewingScopeValidator;
 import no.sikt.nva.nvi.common.validator.ViewingScopeValidator;
-import no.sikt.nva.nvi.test.UpsertRequestBuilder;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;

@@ -1,8 +1,8 @@
 package no.sikt.nva.nvi.events.persist;
 
 import static java.util.Collections.emptyList;
+import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.common.model.InstanceTypeFixtures.randomInstanceType;
-import static no.sikt.nva.nvi.test.TestUtils.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
 import static no.sikt.nva.nvi.test.TestUtils.generateS3BucketUri;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
@@ -50,6 +50,7 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
+import no.sikt.nva.nvi.common.model.CandidateFixtures;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
@@ -64,7 +65,6 @@ import no.sikt.nva.nvi.events.model.NonNviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate.Builder;
 import no.sikt.nva.nvi.events.model.PublicationDate;
-import no.sikt.nva.nvi.test.TestUtils;
 import nva.commons.core.Environment;
 import nva.commons.logutils.LogUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -147,7 +147,8 @@ class UpsertNviCandidateHandlerTest extends LocalDynamoTestSetup {
 
   @Test
   void shouldUpdateExistingNviCandidateToNonCandidateWhenIncomingEventIsNonCandidate() {
-    var candidate = TestUtils.randomApplicableCandidate(candidateRepository, periodRepository);
+    var candidate =
+        CandidateFixtures.randomApplicableCandidate(candidateRepository, periodRepository);
     var eventMessage = nonCandidateMessageForExistingCandidate(candidate);
     handler.handleRequest(createEvent(eventMessage), CONTEXT);
     var updatedCandidate =

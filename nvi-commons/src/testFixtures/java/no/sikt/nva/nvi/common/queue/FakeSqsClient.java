@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.UUID;
 import software.amazon.awssdk.services.sqs.model.BatchResultErrorEntry;
 import software.amazon.awssdk.services.sqs.model.DeleteMessageRequest;
+import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.MessageAttributeValue;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
@@ -86,11 +87,13 @@ public class FakeSqsClient implements QueueClient {
   private NviReceiveMessageResponse createResponse(ReceiveMessageResponse receiveMessageResponse) {
     return new NviReceiveMessageResponse(
         receiveMessageResponse.messages().stream()
-            .map(
-                m ->
-                    new NviReceiveMessage(
-                        m.body(), m.messageId(), m.attributesAsStrings(), m.receiptHandle()))
+            .map(FakeSqsClient::mapToNviReceiveMessage)
             .toList());
+  }
+
+  private static NviReceiveMessage mapToNviReceiveMessage(Message m) {
+    return new NviReceiveMessage(
+        m.body(), m.messageId(), m.attributesAsStrings(), m.receiptHandle());
   }
 
   private SendMessageBatchRequest createBatchRequest(Collection<String> messages, String queueUrl) {

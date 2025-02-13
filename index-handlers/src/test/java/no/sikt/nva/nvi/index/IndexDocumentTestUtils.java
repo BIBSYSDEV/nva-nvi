@@ -4,8 +4,8 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PUBLICATION_CONTEXT;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.extractJsonNodeTextValue;
+import static no.sikt.nva.nvi.index.ExpandedResourceGenerator.extractAffiliations;
 import static no.sikt.nva.nvi.index.utils.NviCandidateIndexDocumentGenerator.getAnyNviCreatorIfPresent;
-import static no.sikt.nva.nvi.test.ExpandedResourceGenerator.extractAffiliations;
 import static no.sikt.nva.nvi.test.TestConstants.EN_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_ENGLISH_LABEL;
 import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_NORWEGIAN_LABEL;
@@ -52,7 +52,6 @@ import no.sikt.nva.nvi.index.model.document.PublicationChannel.ScientificValue;
 import no.sikt.nva.nvi.index.model.document.PublicationDate;
 import no.sikt.nva.nvi.index.model.document.PublicationDetails;
 import no.sikt.nva.nvi.index.model.document.ReportingPeriod;
-import no.sikt.nva.nvi.test.ExpandedResourceGenerator;
 import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
 

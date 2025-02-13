@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.test;
+package no.sikt.nva.nvi.common;
 
 import static java.util.Collections.emptyList;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;

@@ -30,8 +30,6 @@ public final class TestConstants {
       URI.create("https://api.dev.nva.aws.unit.no/cristin/person/997998");
   public static final SampleExpandedPublicationDate HARDCODED_JSON_PUBLICATION_DATE =
       new SampleExpandedPublicationDate("2023", null, null);
-  public static final URI HARDCODED_PUBLICATION_CHANNEL_ID =
-      URI.create("https://api.dev.nva.aws.unit.no/publication-channels/series/490845/2023");
   public static final URI HARDCODED_PUBLICATION_ID =
       URI.create(
           "https://api.dev.nva.aws.unit.no/publication/01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d");

@@ -3,7 +3,7 @@ package no.sikt.nva.nvi.index;
 import static no.sikt.nva.nvi.common.QueueServiceTestUtils.createEvent;
 import static no.sikt.nva.nvi.common.QueueServiceTestUtils.createEventWithDynamoEventMissingIdentifier;
 import static no.sikt.nva.nvi.common.QueueServiceTestUtils.createEventWithOneInvalidRecord;
-import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
+import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidate;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;

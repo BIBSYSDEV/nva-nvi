@@ -46,12 +46,12 @@ import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.db.model.KeyField;
+import no.sikt.nva.nvi.common.model.CandidateFixtures;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
 import no.sikt.nva.nvi.common.model.ListingResult;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.utils.BatchScanUtil;
 import no.sikt.nva.nvi.events.model.ScanDatabaseRequest;
-import no.sikt.nva.nvi.test.TestUtils;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.events.models.AwsEventBridgeEvent;
@@ -421,7 +421,9 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTestSetup {
   private Stream<Candidate> createRandomCandidates(int i) {
     return IntStream.range(0, i)
         .boxed()
-        .map(item -> TestUtils.randomApplicableCandidate(candidateRepository, periodRepository))
+        .map(
+            item ->
+                CandidateFixtures.randomApplicableCandidate(candidateRepository, periodRepository))
         .map(
             a ->
                 a.createNote(

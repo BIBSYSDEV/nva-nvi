@@ -1,6 +1,6 @@
 package no.sikt.nva.nvi.common.db;
 
-import static no.sikt.nva.nvi.test.TestUtils.randomCandidate;
+import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidate;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

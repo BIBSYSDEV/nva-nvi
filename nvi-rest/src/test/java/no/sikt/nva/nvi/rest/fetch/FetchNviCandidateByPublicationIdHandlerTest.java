@@ -1,8 +1,8 @@
 package no.sikt.nva.nvi.rest.fetch;
 
+import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.setupReportedCandidate;
 import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateByPublicationIdHandler.CANDIDATE_PUBLICATION_ID;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
-import static no.sikt.nva.nvi.test.TestUtils.setupReportedCandidate;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
