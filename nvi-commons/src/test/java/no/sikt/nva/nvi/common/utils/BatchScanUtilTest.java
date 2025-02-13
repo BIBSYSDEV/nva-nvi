@@ -6,7 +6,7 @@ import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.getYearIndexStartMa
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidate;
 import static no.sikt.nva.nvi.test.TestUtils.randomIntBetween;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
-import static no.sikt.nva.nvi.test.TestUtils.setupReportedCandidate;
+import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.setupReportedCandidate;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.sortByIdentifier;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;

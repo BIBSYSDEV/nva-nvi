@@ -24,12 +24,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
-import no.sikt.nva.nvi.common.db.CandidateDao;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
@@ -192,50 +188,10 @@ public final class TestUtils {
         .build();
   }
 
-  public static DbCandidate randomCandidateWithYear(String year) {
-    return DbCandidateFixtures
-               .randomCandidateBuilder(true).publicationDate(publicationDate(year)).build();
-  }
-
   public static HttpResponse<String> createResponse(int status, String body) {
     var response = (HttpResponse<String>) mock(HttpResponse.class);
     when(response.statusCode()).thenReturn(status);
     when(response.body()).thenReturn(body);
     return response;
   }
-
-  @Deprecated
-  // This method is used to set up a reported candidate, but should be removed once Candidate.report
-  // is implemented
-  public static CandidateDao setupReportedCandidate(CandidateRepository repository, String year) {
-    var institutionId = randomUri();
-    return repository.create(
-        DbCandidateFixtures
-            .randomCandidateBuilder(true, institutionId)
-            .publicationDate(DbPublicationDate.builder().year(year).build())
-            .reportStatus(ReportStatus.REPORTED)
-            .build(),
-        List.of(randomApproval(institutionId)));
-  }
-
-  /*
-   * This method is used to set up a reported candidate, but should be removed once Candidate.report is implemented.
-   */
-  @Deprecated
-  public static CandidateDao setupReportedCandidate(
-      CandidateRepository repository, String year, URI organizationId) {
-    return repository.create(
-        DbCandidateFixtures
-            .randomCandidateBuilder(true, organizationId)
-            .publicationDate(DbPublicationDate.builder().year(year).build())
-            .reportStatus(ReportStatus.REPORTED)
-            .build(),
-        List.of(randomApproval(organizationId)));
-  }
-
-  private static DbPublicationDate publicationDate(String year) {
-    return new DbPublicationDate(year, null, null);
-  }
-
-
 }
