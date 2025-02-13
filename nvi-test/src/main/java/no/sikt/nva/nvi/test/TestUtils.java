@@ -22,8 +22,6 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
-import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
@@ -68,24 +66,6 @@ public final class TestUtils {
 
   public static String randomYear() {
     return String.valueOf(randomIntBetween(START_DATE.getYear(), LocalDate.now().getYear()));
-  }
-
-  public static DbApprovalStatus randomApproval(URI institutionId) {
-    return new DbApprovalStatus(
-        institutionId,
-        randomElement(DbStatus.values()),
-        randomUsername(),
-        randomUsername(),
-        randomInstant(),
-        randomString());
-  }
-
-  private static Username randomUsername() {
-    return Username.fromString(randomString());
-  }
-
-  public static DbApprovalStatus randomApproval() {
-    return randomApproval(randomUri());
   }
 
   public static URI randomUriWithSuffix(String suffix) {

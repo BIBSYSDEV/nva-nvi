@@ -11,7 +11,6 @@ import java.util.UUID;
 import java.util.stream.IntStream;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
-import no.sikt.nva.nvi.test.TestUtils;
 
 public class CandidateDaoFixtures {
   private static final String UUID_SEPARATOR = "-";
@@ -52,7 +51,7 @@ public class CandidateDaoFixtures {
             .publicationDate(DbPublicationDate.builder().year(year).build())
             .reportStatus(ReportStatus.REPORTED)
             .build(),
-        List.of(TestUtils.randomApproval(institutionId)));
+        List.of(DbApprovalStatusFixtures.randomApproval(institutionId)));
   }
 
   /*
@@ -66,7 +65,7 @@ public class CandidateDaoFixtures {
             .publicationDate(DbPublicationDate.builder().year(year).build())
             .reportStatus(ReportStatus.REPORTED)
             .build(),
-        List.of(TestUtils.randomApproval(organizationId)));
+        List.of(DbApprovalStatusFixtures.randomApproval(organizationId)));
   }
 
   public static Map<String, String> getYearIndexStartMarker(CandidateDao dao) {
