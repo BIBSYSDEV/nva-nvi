@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.test;
 
-import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.test.UpsertRequestBuilder.randomUpsertRequestBuilder;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInstant;
@@ -16,7 +15,6 @@ import java.net.http.HttpResponse;
 import java.time.LocalDate;
 import java.time.Year;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -52,7 +50,7 @@ public final class TestUtils {
   public static final BigDecimal MAX_BIG_DECIMAL = BigDecimal.TEN;
   public static final int CURRENT_YEAR = Year.now().getValue();
   public static final Random RANDOM = new Random();
-  public static final String UUID_SEPARATOR = "-";
+
   private static final String BUCKET_HOST = "example.org";
   private static final LocalDate START_DATE = LocalDate.of(1970, 1, 1);
   private static final String PUBLICATION_API_PATH = "publication";
@@ -114,35 +112,6 @@ public final class TestUtils {
         .addChild(randomString())
         .addChild(suffix)
         .getUri();
-  }
-
-  public static List<CandidateDao> createNumberOfCandidatesForYear(
-      String year, int number, CandidateRepository repository) {
-    return IntStream.range(0, number)
-        .mapToObj(i -> randomCandidateWithYear(year))
-        .map(candidate -> createCandidateDao(repository, candidate))
-        .toList();
-  }
-
-  public static CandidateDao createCandidateDao(
-      CandidateRepository repository, DbCandidate candidate) {
-    return repository.create(candidate, List.of());
-  }
-
-  public static List<CandidateDao> sortByIdentifier(List<CandidateDao> candidates, Integer limit) {
-    var comparator = Comparator.comparing(TestUtils::getCharacterValues);
-    return candidates.stream()
-        .sorted(Comparator.comparing(CandidateDao::identifier, comparator))
-        .limit(nonNull(limit) ? limit : candidates.size())
-        .toList();
-  }
-
-  public static Map<String, String> getYearIndexStartMarker(CandidateDao dao) {
-    return Map.of(
-        "PrimaryKeyRangeKey", dao.primaryKeyRangeKey(),
-        "PrimaryKeyHashKey", dao.primaryKeyHashKey(),
-        "SearchByYearHashKey", String.valueOf(dao.searchByYearHashKey()),
-        "SearchByYearRangeKey", String.valueOf(dao.searchByYearSortKey()));
   }
 
   public static BigDecimal randomBigDecimal() {
@@ -268,7 +237,5 @@ public final class TestUtils {
     return new DbPublicationDate(year, null, null);
   }
 
-  private static String getCharacterValues(UUID uuid) {
-    return uuid.toString().replaceAll(UUID_SEPARATOR, "");
-  }
+
 }

@@ -1,13 +1,13 @@
 package no.sikt.nva.nvi.common.utils;
 
 import static java.util.Collections.emptyList;
-import static no.sikt.nva.nvi.test.TestUtils.createNumberOfCandidatesForYear;
-import static no.sikt.nva.nvi.test.TestUtils.getYearIndexStartMarker;
+import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.createNumberOfCandidatesForYear;
+import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.getYearIndexStartMarker;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidate;
 import static no.sikt.nva.nvi.test.TestUtils.randomIntBetween;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.sikt.nva.nvi.test.TestUtils.setupReportedCandidate;
-import static no.sikt.nva.nvi.test.TestUtils.sortByIdentifier;
+import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.sortByIdentifier;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
