@@ -15,13 +15,17 @@ import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.common.service.model.Username;
 
 public class PeriodRepositoryFixtures {
+  private static final Instant previousMonth = ZonedDateTime.now().minusMonths(1).toInstant();
+  private static final Instant previousYear = ZonedDateTime.now().minusMonths(12).toInstant();
+  private static final Instant nextMonth = ZonedDateTime.now().plusMonths(1).toInstant();
+  private static final Instant nextYear = ZonedDateTime.now().plusMonths(12).toInstant();
 
   public static PeriodRepository periodRepositoryReturningClosedPeriod(int year) {
     var period =
         DbNviPeriod.builder()
             .publishingYear(String.valueOf(year))
-            .startDate(ZonedDateTime.now().minusMonths(10).toInstant())
-            .reportingDate(ZonedDateTime.now().minusMonths(1).toInstant())
+            .startDate(previousYear)
+            .reportingDate(previousMonth)
             .build();
     return mockPeriodRepositoryReturn(period);
   }
@@ -36,8 +40,8 @@ public class PeriodRepositoryFixtures {
     var period =
         DbNviPeriod.builder()
             .publishingYear(String.valueOf(year))
-            .startDate(ZonedDateTime.now().plusMonths(1).toInstant())
-            .reportingDate(ZonedDateTime.now().plusMonths(10).toInstant())
+            .startDate(nextMonth)
+            .reportingDate(nextYear)
             .build();
     return mockPeriodRepositoryReturn(period);
   }
@@ -47,8 +51,8 @@ public class PeriodRepositoryFixtures {
         DbNviPeriod.builder()
             .publishingYear(String.valueOf(year))
             .id(randomUri())
-            .startDate(Instant.now())
-            .reportingDate(ZonedDateTime.now().plusMonths(10).toInstant())
+            .startDate(previousMonth)
+            .reportingDate(nextYear)
             .build();
     return mockPeriodRepositoryReturn(period);
   }
@@ -58,8 +62,8 @@ public class PeriodRepositoryFixtures {
     return NviPeriod.create(
         CreatePeriodRequest.builder()
             .withPublishingYear(Integer.parseInt(year))
-            .withStartDate(ZonedDateTime.now().plusMonths(1).toInstant())
-            .withReportingDate(ZonedDateTime.now().plusMonths(10).toInstant())
+            .withStartDate(nextMonth)
+            .withReportingDate(nextYear)
             .withCreatedBy(Username.fromString(randomString()))
             .build(),
         periodRepository);
