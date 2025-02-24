@@ -76,7 +76,6 @@ public class EvaluatorService {
     var publicationDate = extractPublicationDate(publication);
     var candidate = fetchOptionalCandidate(publicationId).orElse(null);
 
-    // Extract to "shouldSkip" or something?
     if (hasInvalidPublicationYear(publicationDate)) {
       logger.warn(
           "Skipping evaluation due to invalid year format {}. Publication id {}",
