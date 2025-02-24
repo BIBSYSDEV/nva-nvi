@@ -245,6 +245,12 @@ public final class Candidate {
         .getUri();
   }
 
+  /**
+   * A candidate is considered "Applicable" if the publication itself fulfills the criteria for
+   * NVI reporting. This is determined by facts such as the type of publication and level of the
+   * publication channel. This does not take into account metadata such as approvals and status of
+   * the relevant reporting period.
+   */
   public boolean isApplicable() {
     return applicable;
   }
