@@ -50,6 +50,10 @@ public class EvaluatorService {
 
   private static final String NON_NVI_CANDIDATE_MESSAGE =
       "Evaluated publication with id {} as NonNviCandidate.";
+  private static final String MALFORMED_DATE_MESSAGE =
+      "Skipping evaluation due to invalid year format {}. Publication id {}";
+  private static final String REPORTED_CANDIDATE_MESSAGE =
+      "Publication with id {} is already reported and cannot be updated.";
   private final Logger logger = LoggerFactory.getLogger(EvaluatorService.class);
   private final StorageReader<URI> storageReader;
   private final CreatorVerificationUtil creatorVerificationUtil;
@@ -77,19 +81,13 @@ public class EvaluatorService {
     var candidate = fetchOptionalCandidate(publicationId).orElse(null);
 
     if (hasInvalidPublicationYear(publicationDate)) {
-      logger.warn(
-          "Skipping evaluation due to invalid year format {}. Publication id {}",
-          publicationDate.year(),
-          publicationId);
+      logger.warn(MALFORMED_DATE_MESSAGE, publicationDate.year(), publicationId);
       return Optional.empty();
     }
 
     var isReported = nonNull(candidate) && candidate.isReported();
     if (isReported) {
-      logger.warn(
-          "Skipping evaluation because the publication is already reported and cannot be updated."
-              + " Publication id {}",
-          publicationId);
+      logger.warn(REPORTED_CANDIDATE_MESSAGE, publicationId);
       return Optional.empty();
     }
 
