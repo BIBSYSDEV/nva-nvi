@@ -44,6 +44,8 @@ import no.sikt.nva.nvi.events.model.PublicationDate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+// Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
+@SuppressWarnings({"PMD.CouplingBetweenObjects"})
 public class EvaluatorService {
 
   private static final String NON_NVI_CANDIDATE_MESSAGE =
@@ -205,25 +207,18 @@ public class EvaluatorService {
     }
   }
 
-  private Optional<NviPeriod> fetchOptionalPeriod(String year) {
-    try {
-      return Optional.of(fetchByPublishingYear(year, periodRepository));
-    } catch (PeriodNotFoundException notFoundException) {
-      return Optional.empty();
-    }
-  }
-
+  /*
+   * Checks that the publication can be evaluated in the target period.
+   * If the period is closed, only existing candidates should be re-evaluated.
+   * New candidates can only be evaluated in an open period.
+   */
   private boolean canEvaluateInNviPeriod(String year, Candidate optionalCandidate) {
-    // Cannot evaluate if the period does not exist
-    var optionalPeriod = fetchOptionalPeriod(year);
-    if (optionalPeriod.isEmpty()) {
+    try {
+      var period = fetchByPublishingYear(year, periodRepository);
+      return !period.isClosed() || isAlreadyCandidateInPeriod(period, optionalCandidate);
+    } catch (PeriodNotFoundException notFoundException) {
       return false;
     }
-
-    // Can always evaluate if the period is open, but
-    // only existing candidates should be re-evaluated in a closed period.
-    var period = optionalPeriod.get();
-    return !period.isClosed() || isAlreadyCandidateInPeriod(period, optionalCandidate);
   }
 
   private boolean isAlreadyCandidateInPeriod(NviPeriod period, Candidate optionalCandidate) {
