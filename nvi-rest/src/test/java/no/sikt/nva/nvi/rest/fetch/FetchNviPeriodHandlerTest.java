@@ -1,6 +1,6 @@
 package no.sikt.nva.nvi.rest.fetch;
 
-import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupPersistedNotOpenedPeriod;
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupFuturePeriod;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -54,7 +54,7 @@ class FetchNviPeriodHandlerTest extends LocalDynamoTestSetup {
   @Test
   void shouldReturnPeriodSuccessfully() throws IOException {
     var publishingYear = String.valueOf(ZonedDateTime.now().getYear());
-    var expectedPeriod = setupPersistedNotOpenedPeriod(publishingYear, periodRepository).toDto();
+    var expectedPeriod = setupFuturePeriod(publishingYear, periodRepository).toDto();
     handler.handleRequest(createRequestForPeriod(publishingYear), output, context);
     var response = GatewayResponse.fromOutputStream(output, NviPeriodDto.class);
 

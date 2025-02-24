@@ -1,6 +1,6 @@
 package no.sikt.nva.nvi.rest;
 
-import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupPersistedNotOpenedPeriod;
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupFuturePeriod;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -63,7 +63,7 @@ class CreateNviPeriodHandlerTest extends LocalDynamoTestSetup {
   @Test
   void shouldReturnBadRequestWhenPeriodExists() throws IOException {
     var year = String.valueOf(ZonedDateTime.now().getYear());
-    setupPersistedNotOpenedPeriod(year, periodRepository);
+    setupFuturePeriod(year, periodRepository);
     var period = upsertRequest(year);
     handler.handleRequest(createRequest(period), output, context);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);

@@ -4,6 +4,9 @@ import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
 import static java.util.Collections.emptyList;
 import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
+import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.setupReportedCandidate;
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeriod;
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.mockOrganizationResponseForAffiliation;
 import static no.sikt.nva.nvi.common.service.model.InstanceType.ACADEMIC_COMMENTARY;
 import static no.sikt.nva.nvi.common.service.model.InstanceType.ACADEMIC_LITERATURE_REVIEW;
@@ -877,6 +880,77 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       assertEquals(testScenario.expectedEvaluatedMessage(), messageBody);
     }
 
+    @Test
+    void shouldEvaluateCandidateInOpenPeriod() throws IOException {
+      // Given an applicable publication
+      // And the publication is published in an open period
+      // When the publication is evaluated
+      // Then it should be evaluated as a Candidate
+      var year = HARDCODED_JSON_PUBLICATION_DATE.year();
+      setupOpenPeriod(year, periodRepository);
+      var testScenario = getCandidateScenario();
+
+      handler.handleRequest(testScenario.event(), context);
+      var messageBody = getMessageBody();
+
+      assertEquals(testScenario.expectedEvaluatedMessage(), messageBody);
+    }
+
+    @Test
+    void shouldEvaluateExistingCandidateInClosedPeriod() throws IOException {
+      // Given an applicable publication
+      // And the publication is published in a closed period
+      // And the publication is already a Candidate
+      // When the publication is evaluated
+      // Then it should be evaluated as a Candidate
+      var year = HARDCODED_JSON_PUBLICATION_DATE.year();
+      setupClosedPeriod(year, periodRepository);
+      setupCandidateMatchingPublication(buildExpectedPublication());
+      var testScenario = getCandidateScenario();
+
+      handler.handleRequest(testScenario.event(), context);
+      var messageBody = getMessageBody();
+
+      assertEquals(testScenario.expectedEvaluatedMessage(), messageBody);
+    }
+
+    @Test
+    void shouldEvaluateNewPublicationAsNonCandidateInClosedPeriod() throws IOException {
+      // Given an applicable publication
+      // And the publication is published in a closed period
+      // And the publication is not already a Candidate
+      // When the publication is evaluated
+      // Then it should be evaluated as a NonCandidate
+      var year = HARDCODED_JSON_PUBLICATION_DATE.year();
+      setupClosedPeriod(year, periodRepository);
+      var testScenario = getNonCandidateScenario();
+
+      handler.handleRequest(testScenario.event(), context);
+      var messageBody = getMessageBody();
+
+      assertEquals(testScenario.expectedEvaluatedMessage(), messageBody);
+    }
+
+    @Test
+    void shouldNotEvaluateReportedCandidate() throws IOException {
+      // Given an applicable publication
+      // And the publication is already a Candidate
+      // And the publication is already Reported
+      // When the publication is evaluated
+      // Then it should be skipped
+      // And no upsert message should be sent
+      var year = HARDCODED_JSON_PUBLICATION_DATE.year();
+      setupOpenPeriod(year, periodRepository);
+      var existingCandidateDao = setupReportedCandidate(candidateRepository, year);
+      publicationBuilder =
+          publicationBuilder.withId(existingCandidateDao.candidate().publicationId());
+      var testScenario = getCandidateScenario();
+
+      handler.handleRequest(testScenario.event(), context);
+
+      assertEquals(0, queueClient.getSentMessages().size());
+    }
+
     private static PublicationDate getPublicationDate(
         SampleExpandedPublicationDate publicationDate) {
       return new PublicationDate(
@@ -983,5 +1057,16 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
         SampleExpandedPublication publication,
         CandidateEvaluatedMessage expectedEvaluatedMessage,
         SQSEvent event) {}
+
+    private void setupCandidateMatchingPublication(
+        SampleExpandedPublication sampleExpandedPublication) {
+      var year = sampleExpandedPublication.publicationDate().year();
+      var upsertCandidateRequest =
+          randomUpsertRequestBuilder()
+              .withPublicationDate(new PublicationDetails.PublicationDate(year, null, null))
+              .withPublicationId(sampleExpandedPublication.id())
+              .build();
+      Candidate.upsert(upsertCandidateRequest, candidateRepository, periodRepository);
+    }
   }
 }

@@ -53,8 +53,8 @@ class FetchNviPeriodsHandlerTest extends LocalDynamoTestSetup {
 
   @Test
   void shouldReturnPeriodsWhenUserHasAccessRights() throws IOException {
-    PeriodRepositoryFixtures.setupPersistedNotOpenedPeriod("2023", periodRepository);
-    PeriodRepositoryFixtures.setupPersistedNotOpenedPeriod("2024", periodRepository);
+    PeriodRepositoryFixtures.setupFuturePeriod("2023", periodRepository);
+    PeriodRepositoryFixtures.setupFuturePeriod("2024", periodRepository);
     handler.handleRequest(createRequestWithAccessRight(AccessRight.MANAGE_NVI), output, context);
     var response = GatewayResponse.fromOutputStream(output, NviPeriodsResponse.class);
 

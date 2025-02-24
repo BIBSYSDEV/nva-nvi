@@ -57,8 +57,7 @@ public class PeriodRepositoryFixtures {
     return mockPeriodRepositoryReturn(period);
   }
 
-  public static NviPeriod setupPersistedNotOpenedPeriod(
-      String year, PeriodRepository periodRepository) {
+  public static NviPeriod setupFuturePeriod(String year, PeriodRepository periodRepository) {
     return NviPeriod.create(
         CreatePeriodRequest.builder()
             .withPublishingYear(Integer.parseInt(year))
@@ -66,6 +65,28 @@ public class PeriodRepositoryFixtures {
             .withReportingDate(nextYear)
             .withCreatedBy(Username.fromString(randomString()))
             .build(),
+        periodRepository);
+  }
+
+  public static NviPeriod setupOpenPeriod(String year, PeriodRepository periodRepository) {
+    return NviPeriod.create(
+        CreatePeriodRequest.builder()
+            .withPublishingYear(Integer.parseInt(year))
+            .withStartDate(previousMonth)
+            .withReportingDate(nextYear)
+            .withCreatedBy(Username.fromString(randomString()))
+            .build(),
+        periodRepository);
+  }
+
+  public static NviPeriod setupClosedPeriod(String year, PeriodRepository periodRepository) {
+    return NviPeriod.create(
+        CreatePeriodRequest.builder()
+                           .withPublishingYear(Integer.parseInt(year))
+                           .withStartDate(previousYear)
+                           .withReportingDate(previousMonth)
+                           .withCreatedBy(Username.fromString(randomString()))
+                           .build(),
         periodRepository);
   }
 }
