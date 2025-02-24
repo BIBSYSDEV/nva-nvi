@@ -6,7 +6,6 @@ import static java.util.Collections.emptyList;
 import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.setupReportedCandidate;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeriod;
-import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.mockOrganizationResponseForAffiliation;
 import static no.sikt.nva.nvi.common.service.model.InstanceType.ACADEMIC_COMMENTARY;
 import static no.sikt.nva.nvi.common.service.model.InstanceType.ACADEMIC_LITERATURE_REVIEW;
@@ -131,18 +130,6 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     handler.handleRequest(event, context);
     var candidate = (NviCandidate) getMessageBody().candidate();
     assertThat(candidate.publicationBucketUri(), is(equalTo(fileUri)));
-  }
-
-  @Test
-  void shouldNotEvaluateExistingCandidateInClosedPeriod() throws IOException {
-    var year = LocalDateTime.now().getYear();
-    var resourceFileUri = setupCandidate(year);
-    periodRepository = PeriodRepositoryFixtures.periodRepositoryReturningClosedPeriod(year);
-    setupEvaluatorService(periodRepository);
-    handler = new EvaluateNviCandidateHandler(evaluatorService, queueClient, env);
-    var event = createEvent(new PersistedResourceMessage(resourceFileUri));
-    handler.handleRequest(event, context);
-    assertEquals(0, queueClient.getSentMessages().size());
   }
 
   @Test
@@ -412,23 +399,6 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     handler.handleRequest(event, context);
     var nonCandidate = (NonNviCandidate) getMessageBody().candidate();
     assertThat(nonCandidate.publicationId(), is(equalTo(HARDCODED_PUBLICATION_ID)));
-  }
-
-  @Test
-  void shouldNotEvaluatePublicationPublishedBeforeLatestClosedPeriod() throws IOException {
-    mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-    var path = "evaluator/candidate_publicationDate_replace_year.json";
-    var previousYear = LocalDateTime.now().getYear() - 1;
-    var yearBeforePreviousYear = previousYear - 1;
-    persistPeriod(yearBeforePreviousYear);
-    persistPeriod(previousYear);
-    var content =
-        IoUtils.stringFromResources(Path.of(path))
-            .replace("__REPLACE_YEAR__", String.valueOf(yearBeforePreviousYear));
-    var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
-    var event = createEvent(new PersistedResourceMessage(fileUri));
-    handler.handleRequest(event, context);
-    assertEquals(0, queueClient.getSentMessages().size());
   }
 
   @Test
@@ -886,8 +856,6 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       // And the publication is published in an open period
       // When the publication is evaluated
       // Then it should be evaluated as a Candidate
-      var year = HARDCODED_JSON_PUBLICATION_DATE.year();
-      setupOpenPeriod(year, periodRepository);
       var testScenario = getCandidateScenario();
 
       handler.handleRequest(testScenario.event(), context);
@@ -932,6 +900,25 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     }
 
     @Test
+    void shouldEvaluatePublicationAsNonCandidateIfPeriodDoesNotExist() throws IOException {
+      // Given an applicable publication
+      // And the publication is published before the first registered NVI period
+      // When the publication is evaluated
+      // Then it should be evaluated as a NonCandidate
+      var year = "2000";
+      var publicationDate = new SampleExpandedPublicationDate(year, null, null);
+      publicationBuilder = publicationBuilder.withPublicationDate(publicationDate);
+      var testScenario = getNonCandidateScenario();
+
+      handler.handleRequest(testScenario.event(), context);
+      var messageBody = getMessageBody();
+      var nviPeriod = periodRepository.findByPublishingYear(year);
+
+      assertTrue(nviPeriod.isEmpty());
+      assertEquals(testScenario.expectedEvaluatedMessage(), messageBody);
+    }
+
+    @Test
     void shouldNotEvaluateReportedCandidate() throws IOException {
       // Given an applicable publication
       // And the publication is already a Candidate
@@ -940,7 +927,6 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       // Then it should be skipped
       // And no upsert message should be sent
       var year = HARDCODED_JSON_PUBLICATION_DATE.year();
-      setupOpenPeriod(year, periodRepository);
       var existingCandidateDao = setupReportedCandidate(candidateRepository, year);
       publicationBuilder =
           publicationBuilder.withId(existingCandidateDao.candidate().publicationId());

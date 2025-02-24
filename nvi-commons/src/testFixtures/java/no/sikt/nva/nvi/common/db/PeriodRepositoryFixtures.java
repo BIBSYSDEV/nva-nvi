@@ -12,6 +12,7 @@ import java.util.Optional;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.service.model.CreatePeriodRequest;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
+import no.sikt.nva.nvi.common.service.model.UpdatePeriodRequest;
 import no.sikt.nva.nvi.common.service.model.Username;
 
 public class PeriodRepositoryFixtures {
@@ -58,35 +59,38 @@ public class PeriodRepositoryFixtures {
   }
 
   public static NviPeriod setupFuturePeriod(String year, PeriodRepository periodRepository) {
-    return NviPeriod.create(
-        CreatePeriodRequest.builder()
-            .withPublishingYear(Integer.parseInt(year))
-            .withStartDate(nextMonth)
-            .withReportingDate(nextYear)
-            .withCreatedBy(Username.fromString(randomString()))
-            .build(),
-        periodRepository);
+    return upsertPeriod(year, nextMonth, nextYear, periodRepository);
   }
 
   public static NviPeriod setupOpenPeriod(String year, PeriodRepository periodRepository) {
-    return NviPeriod.create(
-        CreatePeriodRequest.builder()
-            .withPublishingYear(Integer.parseInt(year))
-            .withStartDate(previousMonth)
-            .withReportingDate(nextYear)
-            .withCreatedBy(Username.fromString(randomString()))
-            .build(),
-        periodRepository);
+    return upsertPeriod(year, previousMonth, nextYear, periodRepository);
   }
 
   public static NviPeriod setupClosedPeriod(String year, PeriodRepository periodRepository) {
-    return NviPeriod.create(
+    return upsertPeriod(year, previousYear, previousMonth, periodRepository);
+  }
+
+  private static NviPeriod upsertPeriod(
+      String year, Instant startDate, Instant reportingDate, PeriodRepository periodRepository) {
+    var user = Username.fromString(randomString());
+    var existingPeriod = periodRepository.findByPublishingYear(year);
+    if (existingPeriod.isPresent()) {
+      var request =
+          UpdatePeriodRequest.builder()
+              .withPublishingYear(Integer.parseInt(year))
+              .withStartDate(startDate)
+              .withReportingDate(reportingDate)
+              .withModifiedBy(user)
+              .build();
+      return NviPeriod.update(request, periodRepository);
+    }
+    var request =
         CreatePeriodRequest.builder()
-                           .withPublishingYear(Integer.parseInt(year))
-                           .withStartDate(previousYear)
-                           .withReportingDate(previousMonth)
-                           .withCreatedBy(Username.fromString(randomString()))
-                           .build(),
-        periodRepository);
+            .withPublishingYear(Integer.parseInt(year))
+            .withStartDate(startDate)
+            .withReportingDate(reportingDate)
+            .withCreatedBy(user)
+            .build();
+    return NviPeriod.create(request, periodRepository);
   }
 }
