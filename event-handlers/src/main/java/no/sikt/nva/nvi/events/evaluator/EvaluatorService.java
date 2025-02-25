@@ -123,8 +123,7 @@ public class EvaluatorService {
       return true;
     }
 
-    var isReported = nonNull(candidate) && candidate.isReported();
-    if (isReported) {
+    if (nonNull(candidate) && candidate.isReported()) {
       logger.warn(REPORTED_CANDIDATE_MESSAGE);
       return true;
     }
