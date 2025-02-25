@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.events.evaluator;
 
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.mockOrganizationResponseForAffiliation;
 import static no.sikt.nva.nvi.events.evaluator.TestUtils.createEvent;
 import static no.sikt.nva.nvi.test.TestUtils.createResponse;
@@ -27,6 +28,7 @@ import nva.commons.core.Environment;
 import nva.commons.core.ioutils.IoUtils;
 import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class EvaluateNviCandidateWithCristinDataTest extends EvaluationTest {
@@ -45,6 +47,11 @@ class EvaluateNviCandidateWithCristinDataTest extends EvaluationTest {
   private static final String CUSTOMER = "customer";
   private static final String API_HOST = new Environment().readEnv("API_HOST");
   private static final String CRISTIN_ID = "cristinId";
+
+  @BeforeEach
+  void setup() {
+    setupOpenPeriod("2022", periodRepository);
+  }
 
   @Test
   void shouldReturnSamePointsAsPointsCalculatedByCristinForAcademicArticleFrom2022()

@@ -4,6 +4,9 @@ import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
 import static java.util.Collections.emptyList;
 import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
+import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.setupReportedCandidate;
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeriod;
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.mockOrganizationResponseForAffiliation;
 import static no.sikt.nva.nvi.common.service.model.InstanceType.ACADEMIC_COMMENTARY;
 import static no.sikt.nva.nvi.common.service.model.InstanceType.ACADEMIC_LITERATURE_REVIEW;
@@ -43,16 +46,12 @@ import java.net.URLEncoder;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
-import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
@@ -131,18 +130,6 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
   }
 
   @Test
-  void shouldNotEvaluateExistingCandidateInClosedPeriod() throws IOException {
-    var year = LocalDateTime.now().getYear();
-    var resourceFileUri = setupCandidate(year);
-    periodRepository = PeriodRepositoryFixtures.periodRepositoryReturningClosedPeriod(year);
-    setupEvaluatorService(periodRepository);
-    handler = new EvaluateNviCandidateHandler(evaluatorService, queueClient, env);
-    var event = createEvent(new PersistedResourceMessage(resourceFileUri));
-    handler.handleRequest(event, context);
-    assertEquals(0, queueClient.getSentMessages().size());
-  }
-
-  @Test
   void shouldSkipEvaluationAndLogWarningOnPublicationWithInvalidYear() throws IOException {
     var invalidYear = "1948-1997";
     var fileUri = setupPublicationWithInvalidYear(invalidYear);
@@ -151,7 +138,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     handler.handleRequest(event, context);
     var expectedLogMessage =
         String.format(
-            "Skipping evaluation due to invalid year format %s. Publication id %s",
+            "Skipping evaluation due to invalid year format %s.",
             invalidYear, HARDCODED_PUBLICATION_ID);
     assertTrue(logAppender.getMessages().contains(expectedLogMessage));
     assertEquals(0, queueClient.getSentMessages().size());
@@ -412,23 +399,6 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
   }
 
   @Test
-  void shouldNotEvaluatePublicationPublishedBeforeLatestClosedPeriod() throws IOException {
-    mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-    var path = "evaluator/candidate_publicationDate_replace_year.json";
-    var previousYear = LocalDateTime.now().getYear() - 1;
-    var yearBeforePreviousYear = previousYear - 1;
-    persistPeriod(yearBeforePreviousYear);
-    persistPeriod(previousYear);
-    var content =
-        IoUtils.stringFromResources(Path.of(path))
-            .replace("__REPLACE_YEAR__", String.valueOf(yearBeforePreviousYear));
-    var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
-    var event = createEvent(new PersistedResourceMessage(fileUri));
-    handler.handleRequest(event, context);
-    assertEquals(0, queueClient.getSentMessages().size());
-  }
-
-  @Test
   void shouldCreateNonCandidateEventWhenPublicationIsNotPublished() throws IOException {
     var path = "evaluator/nonCandidate_notPublished.json";
     var content = IoUtils.inputStreamFromResources(path);
@@ -624,16 +594,6 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     return s3Driver.insertFile(UnixPath.of(path), content);
   }
 
-  private void persistPeriod(int publishingYear) {
-    var startDate = LocalDate.of(publishingYear, 4, 1).atTime(LocalTime.MAX);
-    periodRepository.save(
-        DbNviPeriod.builder()
-            .publishingYear(String.valueOf(publishingYear))
-            .startDate(startDate.toInstant(ZoneOffset.UTC))
-            .reportingDate(startDate.plusYears(1).toInstant(ZoneOffset.UTC))
-            .build());
-  }
-
   private void setupEvaluatorService(PeriodRepository periodRepository) {
     var calculator = new CreatorVerificationUtil(authorizedBackendUriRetriever, uriRetriever);
     var organizationRetriever = new OrganizationRetriever(uriRetriever);
@@ -715,11 +675,11 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     int creatorShareCount;
 
     URI publicationChannelId;
-    PublicationChannel publicationChannelType;
-    Level publicationChannelLevel;
+    String publicationChannelType;
+    String publicationChannelLevel;
     List<SampleExpandedPublicationChannel.Builder> publicationChannels;
 
-    InstanceType publicationInstanceType;
+    String publicationInstanceType;
     SampleExpandedPublication.Builder publicationBuilder;
 
     BigDecimal expectedTotalPoints;
@@ -743,9 +703,9 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       creatorShareCount = 1;
 
       publicationChannelId = HARDCODED_PUBLICATION_CHANNEL_ID;
-      publicationChannelType = JOURNAL;
-      publicationChannelLevel = Level.LEVEL_ONE;
-      publicationInstanceType = InstanceType.ACADEMIC_ARTICLE;
+      publicationChannelType = JOURNAL.getValue();
+      publicationChannelLevel = Level.LEVEL_ONE.getValue();
+      publicationInstanceType = InstanceType.ACADEMIC_ARTICLE.getValue();
       publicationChannels = List.of(getDefaultPublicationChannelBuilder());
 
       publicationBuilder =
@@ -877,6 +837,115 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       assertEquals(testScenario.expectedEvaluatedMessage(), messageBody);
     }
 
+    @Test
+    void shouldEvaluateCandidateInOpenPeriod() throws IOException {
+      // Given a publication that fulfills all criteria for NVI reporting
+      // And the publication is published in an open period
+      // When the publication is evaluated
+      // Then it should be evaluated as a Candidate
+      var testScenario = getCandidateScenario();
+      var year = HARDCODED_JSON_PUBLICATION_DATE.year();
+      setupOpenPeriod(year, periodRepository);
+
+      handler.handleRequest(testScenario.event(), context);
+      var messageBody = getMessageBody();
+
+      assertEquals(testScenario.expectedEvaluatedMessage(), messageBody);
+    }
+
+    @Test
+    void shouldEvaluateExistingCandidateInClosedPeriod() throws IOException {
+      // Given a publication that has been evaluated as an applicable Candidate
+      // And the publication is published in a closed period
+      // When the publication is evaluated
+      // Then it should be evaluated as a Candidate
+      var year = HARDCODED_JSON_PUBLICATION_DATE.year();
+      setupClosedPeriod(year, periodRepository);
+      setupCandidateMatchingPublication(buildExpectedPublication());
+      var testScenario = getCandidateScenario();
+
+      handler.handleRequest(testScenario.event(), context);
+      var messageBody = getMessageBody();
+
+      assertEquals(testScenario.expectedEvaluatedMessage(), messageBody);
+    }
+
+    @Test
+    void shouldEvaluateExistingCandidateInClosedPeriodThatIsNoLongerApplicable()
+        throws IOException {
+      // Given a publication that has been evaluated as an applicable Candidate
+      // And the publication is published in a closed period
+      // When the publication is updated to be no longer applicable
+      // Then it should be re-evaluated as a NonCandidate
+      var year = HARDCODED_JSON_PUBLICATION_DATE.year();
+      setupClosedPeriod(year, periodRepository);
+      setupCandidateMatchingPublication(buildExpectedPublication());
+      publicationInstanceType = "ComicBook";
+      var testScenario = getNonCandidateScenario();
+
+      handler.handleRequest(testScenario.event(), context);
+      var messageBody = getMessageBody();
+
+      assertEquals(testScenario.expectedEvaluatedMessage(), messageBody);
+    }
+
+    @Test
+    void shouldEvaluateNewPublicationAsNonCandidateInClosedPeriod() throws IOException {
+      // Given a publication that fulfills all criteria for NVI reporting except for the publication
+      // year
+      // And the publication is published in a closed period
+      // And the publication is not already a Candidate
+      // When the publication is evaluated
+      // Then it should be evaluated as a NonCandidate
+      var year = HARDCODED_JSON_PUBLICATION_DATE.year();
+      setupClosedPeriod(year, periodRepository);
+      var testScenario = getNonCandidateScenario();
+
+      handler.handleRequest(testScenario.event(), context);
+      var messageBody = getMessageBody();
+
+      assertEquals(testScenario.expectedEvaluatedMessage(), messageBody);
+    }
+
+    @Test
+    void shouldEvaluatePublicationAsNonCandidateIfPeriodDoesNotExist() throws IOException {
+      // Given a publication that fulfills all criteria for NVI reporting except for the publication
+      // year
+      // And the publication is published before the first registered NVI period
+      // When the publication is evaluated
+      // Then it should be evaluated as a NonCandidate
+      var year = "2000";
+      var publicationDate = new SampleExpandedPublicationDate(year, null, null);
+      publicationBuilder = publicationBuilder.withPublicationDate(publicationDate);
+      var testScenario = getNonCandidateScenario();
+
+      handler.handleRequest(testScenario.event(), context);
+      var messageBody = getMessageBody();
+      var nviPeriod = periodRepository.findByPublishingYear(year);
+
+      assertTrue(nviPeriod.isEmpty());
+      assertEquals(testScenario.expectedEvaluatedMessage(), messageBody);
+    }
+
+    @Test
+    void shouldNotEvaluateReportedCandidate() throws IOException {
+      // Given a publication that fulfills all criteria for NVI reporting
+      // And the publication is already a Candidate
+      // And the publication is already Reported
+      // When the publication is evaluated
+      // Then the evaluation should be skipped
+      // And the Candidate entry in the database should not be updated
+      var year = HARDCODED_JSON_PUBLICATION_DATE.year();
+      var existingCandidateDao = setupReportedCandidate(candidateRepository, year);
+      publicationBuilder =
+          publicationBuilder.withId(existingCandidateDao.candidate().publicationId());
+      var testScenario = getCandidateScenario();
+
+      handler.handleRequest(testScenario.event(), context);
+
+      assertEquals(0, queueClient.getSentMessages().size());
+    }
+
     private static PublicationDate getPublicationDate(
         SampleExpandedPublicationDate publicationDate) {
       return new PublicationDate(
@@ -909,7 +978,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
               .map(SampleExpandedContributor.Builder::build)
               .toList();
       return publicationBuilder
-          .withInstanceType(publicationInstanceType.getValue())
+          .withInstanceType(publicationInstanceType)
           .withPublicationChannels(
               publicationChannels.stream()
                   .map(SampleExpandedPublicationChannel.Builder::build)
@@ -921,8 +990,8 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     private SampleExpandedPublicationChannel.Builder getDefaultPublicationChannelBuilder() {
       return SampleExpandedPublicationChannel.builder()
           .withId(publicationChannelId)
-          .withType(publicationChannelType.getValue())
-          .withLevel(publicationChannelLevel.getValue());
+          .withType(publicationChannelType)
+          .withLevel(publicationChannelLevel);
     }
 
     private CandidateEvaluatedMessage getCandidateResponse(
@@ -936,9 +1005,9 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
               .withPublicationBucketUri(fileUri)
               .withDate(publicationDate)
               .withInstanceType(InstanceType.parse(publication.instanceType()))
-              .withChannelType(publicationChannelType.getValue())
+              .withChannelType(publicationChannelType)
               .withPublicationChannelId(publicationChannelId)
-              .withLevel(publicationChannelLevel.getValue())
+              .withLevel(publicationChannelLevel)
               .withInstitutionPoints(expectedPointsPerInstitution)
               .withTotalPoints(expectedTotalPoints)
               .withVerifiedNviCreators(verifiedCreators)
@@ -983,5 +1052,16 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
         SampleExpandedPublication publication,
         CandidateEvaluatedMessage expectedEvaluatedMessage,
         SQSEvent event) {}
+
+    private void setupCandidateMatchingPublication(
+        SampleExpandedPublication sampleExpandedPublication) {
+      var year = sampleExpandedPublication.publicationDate().year();
+      var upsertCandidateRequest =
+          randomUpsertRequestBuilder()
+              .withPublicationDate(new PublicationDetails.PublicationDate(year, null, null))
+              .withPublicationId(sampleExpandedPublication.id())
+              .build();
+      Candidate.upsert(upsertCandidateRequest, candidateRepository, periodRepository);
+    }
   }
 }

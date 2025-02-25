@@ -219,6 +219,11 @@ public record SampleExpandedPublication(
       this.issn = other.issn;
     }
 
+    public Builder withId(URI id) {
+      this.id = id;
+      return this;
+    }
+
     public Builder withContributors(List<SampleExpandedContributor> contributors) {
       this.contributors = contributors;
       return this;

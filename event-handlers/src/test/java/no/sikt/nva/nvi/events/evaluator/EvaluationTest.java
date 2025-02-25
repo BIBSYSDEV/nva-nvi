@@ -1,5 +1,7 @@
 package no.sikt.nva.nvi.events.evaluator;
 
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
+import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_JSON_PUBLICATION_DATE;
 import static no.sikt.nva.nvi.test.TestUtils.createResponse;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -61,7 +63,7 @@ public class EvaluationTest extends LocalDynamoTestSetup {
   }
 
   @BeforeEach
-  void setup() {
+  void commonSetup() {
     env = mock(Environment.class);
     when(env.readEnv("CANDIDATE_QUEUE_URL")).thenReturn("My test candidate queue url");
     when(env.readEnv("CANDIDATE_DLQ_URL")).thenReturn("My test candidate dlq url");
@@ -75,6 +77,7 @@ public class EvaluationTest extends LocalDynamoTestSetup {
     uriRetriever = mock(UriRetriever.class);
     storageReader = new S3StorageReader(s3Client, BUCKET_NAME);
     periodRepository = new PeriodRepository(dynamoDbClient);
+    setupOpenPeriod(HARDCODED_JSON_PUBLICATION_DATE.year(), periodRepository);
     var calculator = new CreatorVerificationUtil(authorizedBackendUriRetriever, uriRetriever);
     var organizationRetriever = new OrganizationRetriever(uriRetriever);
     var pointCalculator = new PointService(organizationRetriever);

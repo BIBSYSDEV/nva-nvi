@@ -12,16 +12,21 @@ import java.util.Optional;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.service.model.CreatePeriodRequest;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
+import no.sikt.nva.nvi.common.service.model.UpdatePeriodRequest;
 import no.sikt.nva.nvi.common.service.model.Username;
 
 public class PeriodRepositoryFixtures {
+  private static final Instant previousMonth = ZonedDateTime.now().minusMonths(1).toInstant();
+  private static final Instant previousYear = ZonedDateTime.now().minusMonths(12).toInstant();
+  private static final Instant nextMonth = ZonedDateTime.now().plusMonths(1).toInstant();
+  private static final Instant nextYear = ZonedDateTime.now().plusMonths(12).toInstant();
 
   public static PeriodRepository periodRepositoryReturningClosedPeriod(int year) {
     var period =
         DbNviPeriod.builder()
             .publishingYear(String.valueOf(year))
-            .startDate(ZonedDateTime.now().minusMonths(10).toInstant())
-            .reportingDate(ZonedDateTime.now().minusMonths(1).toInstant())
+            .startDate(previousYear)
+            .reportingDate(previousMonth)
             .build();
     return mockPeriodRepositoryReturn(period);
   }
@@ -36,8 +41,8 @@ public class PeriodRepositoryFixtures {
     var period =
         DbNviPeriod.builder()
             .publishingYear(String.valueOf(year))
-            .startDate(ZonedDateTime.now().plusMonths(1).toInstant())
-            .reportingDate(ZonedDateTime.now().plusMonths(10).toInstant())
+            .startDate(nextMonth)
+            .reportingDate(nextYear)
             .build();
     return mockPeriodRepositoryReturn(period);
   }
@@ -47,21 +52,45 @@ public class PeriodRepositoryFixtures {
         DbNviPeriod.builder()
             .publishingYear(String.valueOf(year))
             .id(randomUri())
-            .startDate(Instant.now())
-            .reportingDate(ZonedDateTime.now().plusMonths(10).toInstant())
+            .startDate(previousMonth)
+            .reportingDate(nextYear)
             .build();
     return mockPeriodRepositoryReturn(period);
   }
 
-  public static NviPeriod setupPersistedNotOpenedPeriod(
-      String year, PeriodRepository periodRepository) {
-    return NviPeriod.create(
+  public static NviPeriod setupFuturePeriod(String year, PeriodRepository periodRepository) {
+    return upsertPeriod(year, nextMonth, nextYear, periodRepository);
+  }
+
+  public static NviPeriod setupOpenPeriod(String year, PeriodRepository periodRepository) {
+    return upsertPeriod(year, previousMonth, nextYear, periodRepository);
+  }
+
+  public static NviPeriod setupClosedPeriod(String year, PeriodRepository periodRepository) {
+    return upsertPeriod(year, previousYear, previousMonth, periodRepository);
+  }
+
+  private static NviPeriod upsertPeriod(
+      String year, Instant startDate, Instant reportingDate, PeriodRepository periodRepository) {
+    var user = Username.fromString(randomString());
+    var existingPeriod = periodRepository.findByPublishingYear(year);
+    if (existingPeriod.isPresent()) {
+      var request =
+          UpdatePeriodRequest.builder()
+              .withPublishingYear(Integer.parseInt(year))
+              .withStartDate(startDate)
+              .withReportingDate(reportingDate)
+              .withModifiedBy(user)
+              .build();
+      return NviPeriod.update(request, periodRepository);
+    }
+    var request =
         CreatePeriodRequest.builder()
             .withPublishingYear(Integer.parseInt(year))
-            .withStartDate(ZonedDateTime.now().plusMonths(1).toInstant())
-            .withReportingDate(ZonedDateTime.now().plusMonths(10).toInstant())
-            .withCreatedBy(Username.fromString(randomString()))
-            .build(),
-        periodRepository);
+            .withStartDate(startDate)
+            .withReportingDate(reportingDate)
+            .withCreatedBy(user)
+            .build();
+    return NviPeriod.create(request, periodRepository);
   }
 }
