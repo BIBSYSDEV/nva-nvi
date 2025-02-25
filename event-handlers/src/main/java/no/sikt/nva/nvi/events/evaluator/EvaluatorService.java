@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.events.evaluator;
 
-import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.service.model.NviPeriod.fetchByPublishingYear;
 import static no.sikt.nva.nvi.common.utils.GraphUtils.createModel;
@@ -21,6 +20,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.net.URI;
 import java.time.Year;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.StorageReader;
@@ -33,27 +33,28 @@ import no.sikt.nva.nvi.common.service.exception.PeriodNotFoundException;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil;
-import no.sikt.nva.nvi.events.evaluator.model.PointCalculation;
+import no.sikt.nva.nvi.events.evaluator.model.NviCreator;
 import no.sikt.nva.nvi.events.evaluator.model.UnverifiedNviCreator;
 import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
-import no.sikt.nva.nvi.events.model.CandidateType;
 import no.sikt.nva.nvi.events.model.NonNviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate;
 import no.sikt.nva.nvi.events.model.PublicationDate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-// Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
-@SuppressWarnings({"PMD.CouplingBetweenObjects"})
 public class EvaluatorService {
 
+  private static final String NVI_CANDIDATE_MESSAGE =
+      "Evaluated publication with id {} as NviCandidate.";
   private static final String NON_NVI_CANDIDATE_MESSAGE =
       "Evaluated publication with id {} as NonNviCandidate.";
+  private static final String SKIPPED_EVALUATION_MESSAGE =
+      "Skipping evaluation of publication with id {}.";
   private static final String MALFORMED_DATE_MESSAGE =
-      "Skipping evaluation due to invalid year format {}. Publication id {}";
+      "Skipping evaluation due to invalid year format {}.";
   private static final String REPORTED_CANDIDATE_MESSAGE =
-      "Publication with id {} is already reported and cannot be updated.";
+      "Publication is already reported and cannot be updated.";
   private final Logger logger = LoggerFactory.getLogger(EvaluatorService.class);
   private final StorageReader<URI> storageReader;
   private final CreatorVerificationUtil creatorVerificationUtil;
@@ -79,61 +80,76 @@ public class EvaluatorService {
     var publicationId = extractPublicationId(publication);
     var publicationDate = extractPublicationDate(publication);
     var candidate = fetchOptionalCandidate(publicationId).orElse(null);
+    var period = fetchOptionalPeriod(publicationDate.year()).orElse(null);
 
-    if (hasInvalidPublicationYear(publicationDate)) {
-      logger.warn(MALFORMED_DATE_MESSAGE, publicationDate.year(), publicationId);
+    // Check if the publication can be evaluated
+    if (shouldSkipEvaluation(candidate, publicationDate)) {
+      logger.info(SKIPPED_EVALUATION_MESSAGE, publicationId);
       return Optional.empty();
+    }
+
+    // Check if the publication meets the requirements to be a candidate
+    if (doesNotMeetNviRequirements(publication)) {
+      logger.info(NON_NVI_CANDIDATE_MESSAGE, publicationId);
+      return createNonNviCandidateMessage(publicationId);
+    }
+    var creators = creatorVerificationUtil.getNviCreatorsWithNviInstitutions(publication);
+    if (creators.isEmpty()) {
+      logger.info(NON_NVI_CANDIDATE_MESSAGE, publicationId);
+      return createNonNviCandidateMessage(publicationId);
+    }
+
+    // Check that the publication can be a candidate in the target period
+    var periodExists = nonNull(period);
+    var periodIsOpen = periodExists && !period.isClosed();
+    var candidateExistsInPeriod =
+        periodExists && nonNull(candidate) && isApplicableInPeriod(period, candidate);
+    var canEvaluateInPeriod = periodIsOpen || candidateExistsInPeriod;
+    if (!canEvaluateInPeriod) {
+      logger.info(NON_NVI_CANDIDATE_MESSAGE, publicationId);
+      return createNonNviCandidateMessage(publicationId);
+    }
+
+    logger.info(NVI_CANDIDATE_MESSAGE, publicationId);
+    var nviCandidate =
+        constructNviCandidate(
+            publication, publicationId, publicationBucketUri, publicationDate, creators);
+    return createNviCandidateMessage(nviCandidate);
+  }
+
+  private boolean shouldSkipEvaluation(Candidate candidate, PublicationDate publicationDate) {
+    if (hasInvalidPublicationYear(publicationDate)) {
+      logger.warn(MALFORMED_DATE_MESSAGE, publicationDate.year());
+      return true;
     }
 
     var isReported = nonNull(candidate) && candidate.isReported();
     if (isReported) {
-      logger.warn(REPORTED_CANDIDATE_MESSAGE, publicationId);
-      return Optional.empty();
+      logger.warn(REPORTED_CANDIDATE_MESSAGE);
+      return true;
     }
-
-    if (!canEvaluateInNviPeriod(publicationDate.year(), candidate)) {
-      logger.info(NON_NVI_CANDIDATE_MESSAGE, publicationId);
-      return createNonNviMessage(publicationId);
-    }
-
-    if (doesNotMeetNviRequirements(publication)) {
-      logger.info(NON_NVI_CANDIDATE_MESSAGE, publicationId);
-      return createNonNviMessage(publicationId);
-    }
-
-    var creators = creatorVerificationUtil.getNviCreatorsWithNviInstitutions(publication);
-    var verifiedCreatorsWithNviInstitutions = getVerifiedCreators(creators);
-    var unverifiedCreatorsWithNviInstitutions = getUnverifiedCreators(creators);
-
-    if (!creators.isEmpty()) {
-      var pointCalculation =
-          pointService.calculatePoints(
-              publication,
-              verifiedCreatorsWithNviInstitutions,
-              unverifiedCreatorsWithNviInstitutions);
-      var nviCandidate =
-          constructNviCandidate(
-              verifiedCreatorsWithNviInstitutions,
-              unverifiedCreatorsWithNviInstitutions,
-              pointCalculation,
-              publicationId,
-              publicationBucketUri,
-              publicationDate);
-      logger.info("Evaluated publication with id {} as NviCandidate.", publicationId);
-      return Optional.of(constructMessage(nviCandidate));
-    } else {
-      logger.info(NON_NVI_CANDIDATE_MESSAGE, publicationId);
-      return createNonNviMessage(publicationId);
-    }
+    return false;
   }
 
-  private static NviCandidate constructNviCandidate(
-      List<VerifiedNviCreator> verifiedCreatorsWithNviInstitutions,
-      List<UnverifiedNviCreator> unverifiedCreatorsWithNviInstitutions,
-      PointCalculation pointCalculation,
+  private boolean isApplicableInPeriod(NviPeriod period, Candidate candidate) {
+    var hasSamePeriod = candidate.getPeriod().id().equals(period.getId());
+    return candidate.isApplicable() && hasSamePeriod;
+  }
+
+  private NviCandidate constructNviCandidate(
+      JsonNode publication,
       URI publicationId,
       URI publicationBucketUri,
-      PublicationDate date) {
+      PublicationDate date,
+      Collection<NviCreator> creators) {
+    var verifiedCreatorsWithNviInstitutions = getVerifiedCreators(creators);
+    var unverifiedCreatorsWithNviInstitutions = getUnverifiedCreators(creators);
+    var pointCalculation =
+        pointService.calculatePoints(
+            publication,
+            verifiedCreatorsWithNviInstitutions,
+            unverifiedCreatorsWithNviInstitutions);
+
     return NviCandidate.builder()
         .withPublicationId(publicationId)
         .withPublicationBucketUri(publicationBucketUri)
@@ -185,10 +201,6 @@ public class EvaluatorService {
     return attempt(() -> Year.parse(publicationDate.year())).isFailure();
   }
 
-  private Optional<CandidateEvaluatedMessage> createNonNviMessage(URI publicationId) {
-    return Optional.of(constructMessage(new NonNviCandidate(publicationId)));
-  }
-
   private boolean doesNotMeetNviRequirements(JsonNode publication) {
     var model = createModel(publication);
     return !isNviCandidate(model);
@@ -204,30 +216,21 @@ public class EvaluatorService {
     }
   }
 
-  /*
-   * Checks that the publication can be evaluated in the target period.
-   * If the period is closed, only existing candidates should be re-evaluated.
-   * New candidates can only be evaluated in an open period.
-   */
-  private boolean canEvaluateInNviPeriod(String year, Candidate optionalCandidate) {
+  private Optional<NviPeriod> fetchOptionalPeriod(String year) {
     try {
-      var period = fetchByPublishingYear(year, periodRepository);
-      return !period.isClosed() || isAlreadyCandidateInPeriod(period, optionalCandidate);
+      return Optional.of(fetchByPublishingYear(year, periodRepository));
     } catch (PeriodNotFoundException notFoundException) {
-      return false;
+      return Optional.empty();
     }
   }
 
-  private boolean isAlreadyCandidateInPeriod(NviPeriod period, Candidate optionalCandidate) {
-    if (isNull(optionalCandidate)) {
-      return false;
-    }
-    var hasSamePeriod = optionalCandidate.getPeriod().id().equals(period.getId());
-    return optionalCandidate.isApplicable() && hasSamePeriod;
+  private Optional<CandidateEvaluatedMessage> createNonNviCandidateMessage(URI publicationId) {
+    var nonCandidate = new NonNviCandidate(publicationId);
+    return Optional.of(CandidateEvaluatedMessage.builder().withCandidateType(nonCandidate).build());
   }
 
-  private CandidateEvaluatedMessage constructMessage(CandidateType candidateType) {
-    return CandidateEvaluatedMessage.builder().withCandidateType(candidateType).build();
+  private Optional<CandidateEvaluatedMessage> createNviCandidateMessage(NviCandidate nviCandidate) {
+    return Optional.of(CandidateEvaluatedMessage.builder().withCandidateType(nviCandidate).build());
   }
 
   private JsonNode extractBodyFromContent(String content) {

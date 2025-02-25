@@ -138,7 +138,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     handler.handleRequest(event, context);
     var expectedLogMessage =
         String.format(
-            "Skipping evaluation due to invalid year format %s. Publication id %s",
+            "Skipping evaluation due to invalid year format %s.",
             invalidYear, HARDCODED_PUBLICATION_ID);
     assertTrue(logAppender.getMessages().contains(expectedLogMessage));
     assertEquals(0, queueClient.getSentMessages().size());
