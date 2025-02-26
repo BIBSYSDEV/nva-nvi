@@ -13,6 +13,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import java.net.URI;
 import java.net.http.HttpResponse;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -51,6 +52,26 @@ public class OrganizationFixtures {
     var topLevelOrganization =
         Organization.builder().withId(topLevelInstitutionId).withHasPart(subUnits).build();
     mockOrganizationResponse(topLevelOrganization, uriRetriever);
+  }
+
+  public static void mockOrganizationResponseForAffiliations(
+      URI topLevelInstitutionId, Collection<URI> subUnitIds, UriRetriever uriRetriever) {
+    var leafNode = Organization.builder().withId(topLevelInstitutionId).build();
+    var subUnits =
+        subUnitIds.stream()
+            .map(subUnitId -> mockedSubOrganization(leafNode, subUnitId, uriRetriever))
+            .toList();
+    var topLevelOrganization =
+        Organization.builder().withId(topLevelInstitutionId).withHasPart(subUnits).build();
+    mockOrganizationResponse(topLevelOrganization, uriRetriever);
+  }
+
+  private static Organization mockedSubOrganization(
+      Organization topLevelOrganization, URI subUnitId, UriRetriever uriRetriever) {
+    var subUnitOrganization =
+        Organization.builder().withId(subUnitId).withPartOf(List.of(topLevelOrganization)).build();
+    mockOrganizationResponse(subUnitOrganization, uriRetriever);
+    return subUnitOrganization;
   }
 
   private static void mockOrganizationResponse(

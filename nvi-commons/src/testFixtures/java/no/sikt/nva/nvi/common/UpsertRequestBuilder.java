@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.common;
 
+import static java.math.BigDecimal.ZERO;
 import static java.util.Collections.emptyList;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
@@ -11,6 +12,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
+import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.InstanceType;
@@ -177,6 +179,66 @@ public class UpsertRequestBuilder {
   public UpsertRequestBuilder withTotalPoints(BigDecimal totalPoints) {
     this.totalPoints = totalPoints;
     return this;
+  }
+
+  // Sets all creator and point fields based on the creatorsPerInstitution map
+  public UpsertRequestBuilder withCreatorsAndPoints(
+      Map<URI, Collection<NviCreatorDto>> creatorsPerInstitution) {
+    this.verifiedCreators = getVerifiedCreators(creatorsPerInstitution);
+    this.unverifiedCreators = getUnverifiedCreators(creatorsPerInstitution);
+    this.points = getAllInstitutionPoints(creatorsPerInstitution);
+    this.totalPoints =
+        points.stream().map(InstitutionPoints::institutionPoints).reduce(ZERO, BigDecimal::add);
+    return this;
+  }
+
+  private static List<VerifiedNviCreatorDto> getVerifiedCreators(
+      Map<URI, Collection<NviCreatorDto>> creatorsPerInstitution) {
+    return creatorsPerInstitution.values().stream()
+        .flatMap(Collection::stream)
+        .filter(VerifiedNviCreatorDto.class::isInstance)
+        .map(VerifiedNviCreatorDto.class::cast)
+        .toList();
+  }
+
+  private static List<UnverifiedNviCreatorDto> getUnverifiedCreators(
+      Map<URI, Collection<NviCreatorDto>> creatorsPerInstitution) {
+    return creatorsPerInstitution.values().stream()
+        .flatMap(Collection::stream)
+        .filter(UnverifiedNviCreatorDto.class::isInstance)
+        .map(UnverifiedNviCreatorDto.class::cast)
+        .toList();
+  }
+
+  private List<InstitutionPoints> getAllInstitutionPoints(
+      Map<URI, Collection<NviCreatorDto>> creatorsPerInstitution) {
+    return creatorsPerInstitution.entrySet().stream()
+        .map(entry -> getInstitutionPoints(entry))
+        .toList();
+  }
+
+  private InstitutionPoints getInstitutionPoints(Map.Entry<URI, Collection<NviCreatorDto>> entry) {
+    var institution = entry.getKey();
+    var creators = entry.getValue();
+    var creatorPoints = getAllCreatorPoints(creators);
+    var institutionTotal =
+        creatorPoints.stream().map(CreatorAffiliationPoints::points).reduce(ZERO, BigDecimal::add);
+    return new InstitutionPoints(institution, institutionTotal, creatorPoints);
+  }
+
+  private List<CreatorAffiliationPoints> getAllCreatorPoints(Collection<NviCreatorDto> creators) {
+    return creators.stream()
+        .filter(VerifiedNviCreatorDto.class::isInstance)
+        .map(VerifiedNviCreatorDto.class::cast)
+        .map(this::getCreatorPoints)
+        .flatMap(Collection::stream)
+        .toList();
+  }
+
+  private List<CreatorAffiliationPoints> getCreatorPoints(VerifiedNviCreatorDto creator) {
+    return creator.affiliations().stream()
+        .map(affiliation -> new CreatorAffiliationPoints(creator.id(), affiliation, basePoints))
+        .toList();
   }
 
   public UpsertCandidateRequest build() {
