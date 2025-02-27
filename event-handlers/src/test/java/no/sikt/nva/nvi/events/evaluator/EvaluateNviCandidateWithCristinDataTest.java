@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.events.evaluator;
 
-import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.mockOrganizationResponseForAffiliation;
 import static no.sikt.nva.nvi.events.evaluator.TestUtils.createEvent;
 import static no.sikt.nva.nvi.test.TestUtils.createResponse;
@@ -50,7 +49,7 @@ class EvaluateNviCandidateWithCristinDataTest extends EvaluationTest {
 
   @BeforeEach
   void setup() {
-    setupOpenPeriod("2022", periodRepository);
+    scenario.setupOpenPeriod("2022");
   }
 
   @Test
@@ -59,7 +58,7 @@ class EvaluateNviCandidateWithCristinDataTest extends EvaluationTest {
     mockCristinApiResponsesForAllSubUnitsInAcademicArticle();
     mockCustomerApi();
     var event = setupSqsEvent("evaluator/cristin_candidate_2022_academicArticle.json");
-    handler.handleRequest(event, context);
+    handler.handleRequest(event, CONTEXT);
     var candidate = getMessageBody();
     assertThat(
         getPointsForInstitution(candidate, NTNU_TOP_LEVEL_ORG_ID),
@@ -78,7 +77,7 @@ class EvaluateNviCandidateWithCristinDataTest extends EvaluationTest {
     mockCustomerApi(UIO_TOP_LEVEL_ORG_ID);
 
     var event = setupSqsEvent("evaluator/cristin_candidate_2022_academicMonograph.json");
-    handler.handleRequest(event, context);
+    handler.handleRequest(event, CONTEXT);
     var candidate = getMessageBody();
     assertThat(
         getPointsForInstitution(candidate, UIO_TOP_LEVEL_ORG_ID),
@@ -94,7 +93,7 @@ class EvaluateNviCandidateWithCristinDataTest extends EvaluationTest {
     mockCustomerApi(NTNU_TOP_LEVEL_ORG_ID);
 
     var event = setupSqsEvent("evaluator/cristin_candidate_2022_academicLiteratureReview.json");
-    handler.handleRequest(event, context);
+    handler.handleRequest(event, CONTEXT);
     var candidate = getMessageBody();
     assertThat(
         getPointsForInstitution(candidate, NTNU_TOP_LEVEL_ORG_ID),
@@ -109,7 +108,7 @@ class EvaluateNviCandidateWithCristinDataTest extends EvaluationTest {
     mockCustomerApi(SINTEF_TOP_LEVEL_ORG_ID);
 
     var event = setupSqsEvent("evaluator/cristin_candidate_2022_academicChapter.json");
-    handler.handleRequest(event, context);
+    handler.handleRequest(event, CONTEXT);
     var candidate = getMessageBody();
     assertThat(
         getPointsForInstitution(candidate, NTNU_TOP_LEVEL_ORG_ID),

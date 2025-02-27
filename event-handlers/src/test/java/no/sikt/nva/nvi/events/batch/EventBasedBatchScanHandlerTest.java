@@ -80,7 +80,7 @@ class EventBasedBatchScanHandlerTest {
   private static final int PAGE_SIZE = 4;
   private EventBasedBatchScanHandler handler;
   private ByteArrayOutputStream output;
-  private Context context;
+  private static final Context CONTEXT = mock(Context.class);
   private FakeEventBridgeClient eventBridgeClient;
   private NviCandidateRepositoryHelper candidateRepository;
   private NviPeriodRepositoryHelper periodRepository;
@@ -88,8 +88,7 @@ class EventBasedBatchScanHandlerTest {
   @BeforeEach
   public void init() {
     this.output = new ByteArrayOutputStream();
-    this.context = mock(Context.class);
-    when(context.getInvokedFunctionArn()).thenReturn(randomString());
+    when(CONTEXT.getInvokedFunctionArn()).thenReturn(randomString());
     this.eventBridgeClient = new FakeEventBridgeClient();
     var db = initializeTestDatabase();
     candidateRepository = new NviCandidateRepositoryHelper(db);
@@ -344,7 +343,7 @@ class EventBasedBatchScanHandlerTest {
   private void consumeEvents() {
     while (thereAreMoreEventsInEventBridge()) {
       var currentRequest = consumeLatestEmittedEvent();
-      handler.handleRequest(eventToInputStream(currentRequest), output, context);
+      handler.handleRequest(eventToInputStream(currentRequest), output, CONTEXT);
     }
   }
 

@@ -31,7 +31,7 @@ import org.zalando.problem.Problem;
 
 class UpdateNviPeriodHandlerTest {
 
-  private Context context;
+  private static final Context CONTEXT = mock(Context.class);
   private ByteArrayOutputStream output;
   private UpdateNviPeriodHandler handler;
   private TestScenario scenario;
@@ -40,13 +40,12 @@ class UpdateNviPeriodHandlerTest {
   void init() {
     scenario = new TestScenario();
     output = new ByteArrayOutputStream();
-    context = mock(Context.class);
     handler = new UpdateNviPeriodHandler(scenario.getPeriodRepository());
   }
 
   @Test
   void shouldReturnUnauthorizedWhenMissingAccessRights() throws IOException {
-    handler.handleRequest(createRequestWithoutAccessRights(), output, context);
+    handler.handleRequest(createRequestWithoutAccessRights(), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
     assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
@@ -54,7 +53,7 @@ class UpdateNviPeriodHandlerTest {
 
   @Test
   void shouldReturnNotFoundWhenPeriodDoesNotExists() throws IOException {
-    handler.handleRequest(toInputStream(randomUpsertNviPeriodRequest()), output, context);
+    handler.handleRequest(toInputStream(randomUpsertNviPeriodRequest()), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
     assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_NOT_FOUND)));
@@ -65,7 +64,7 @@ class UpdateNviPeriodHandlerTest {
     var year = String.valueOf(ZonedDateTime.now().getYear());
     var persistedPeriod = scenario.setupFuturePeriod(year);
     var updateRequest = updateRequest(year, persistedPeriod);
-    handler.handleRequest(toInputStream(updateRequest), output, context);
+    handler.handleRequest(toInputStream(updateRequest), output, CONTEXT);
     var updatedPeriod = NviPeriod.fetchByPublishingYear(year, scenario.getPeriodRepository());
 
     assertThat(
