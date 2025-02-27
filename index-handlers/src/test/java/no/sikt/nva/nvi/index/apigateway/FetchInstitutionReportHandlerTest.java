@@ -5,9 +5,10 @@ import static com.google.common.net.HttpHeaders.CONTENT_TYPE;
 import static com.google.common.net.MediaType.ANY_APPLICATION_TYPE;
 import static com.google.common.net.MediaType.MICROSOFT_EXCEL;
 import static com.google.common.net.MediaType.OOXML_SHEET;
+import static java.util.Collections.emptyList;
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.indexDocumentMissingApprovals;
-import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.indexDocumentMissingCreatorAffiliationPoints;
+import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.indexDocumentMissingVerifiedCreators;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.indexDocumentWithLanguage;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.indexDocumentWithoutIssn;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.indexDocumentWithoutLanguage;
@@ -248,6 +249,26 @@ class FetchInstitutionReportHandlerTest {
   }
 
   @Test
+  void shouldNotFailForCandidateWithOnlyUnverifiedCreators() throws IOException {
+    var topLevelCristinOrg = randomCristinOrgUri();
+    var expectedIndexDocument =
+        indexDocumentMissingVerifiedCreators(CURRENT_YEAR, topLevelCristinOrg);
+    var candidatesInIndex = mockCandidatesInOpenSearch(List.of(expectedIndexDocument));
+    var expected = getExpectedReport(candidatesInIndex, topLevelCristinOrg);
+    var institutionPoints = candidatesInIndex.getFirst().approvals().getFirst().points();
+
+    handler.handleRequest(
+        requestWithMediaType(MICROSOFT_EXCEL.toString(), topLevelCristinOrg), output, CONTEXT);
+
+    var decodedResponse =
+        Base64.getDecoder().decode(fromOutputStream(output, String.class).getBody());
+    var actual = fromInputStream(new ByteArrayInputStream(decodedResponse));
+
+    assertEquals(institutionPoints.creatorAffiliationPoints(), emptyList());
+    assertEquals(expected, actual);
+  }
+
+  @Test
   void shouldPerformSearchForGivenInstitutionAndYear() throws IOException {
     var topLevelCristinOrg = randomCristinOrgUri();
     var year = "2021";
@@ -314,15 +335,14 @@ class FetchInstitutionReportHandlerTest {
   @Test
   void shouldLogCandidateIdOnFailure() throws IOException {
     var topLevelCristinOrg = randomCristinOrgUri();
-    var indexDocument =
-        indexDocumentMissingCreatorAffiliationPoints(CURRENT_YEAR, topLevelCristinOrg);
+    var indexDocument = indexDocumentMissingApprovals(CURRENT_YEAR, topLevelCristinOrg);
     when(openSearchClient.search(any()))
         .thenReturn(aggregationResponse(1))
         .thenReturn(createSearchResponse(indexDocument));
     var appender = LogUtils.getTestingAppender(NviCandidateIndexDocument.class);
     handler.handleRequest(
         requestWithMediaType(MICROSOFT_EXCEL.toString(), topLevelCristinOrg), output, CONTEXT);
-    assertTrue(appender.getMessages().contains(indexDocument.id().toString()));
+    assertTrue(appender.getMessages().contains(indexDocument.identifier().toString()));
   }
 
   @Test
@@ -661,7 +681,7 @@ class FetchInstitutionReportHandlerTest {
     expectedRow.add(
         nonNull(publicationChannel.printIssn()) ? publicationChannel.printIssn() : EMPTY_STRING);
     expectedRow.add(publicationChannel.scientificValue().getValue());
-    expectedRow.add(nviContributor.id());
+    expectedRow.add(nonNull(nviContributor.id()) ? nviContributor.id() : EMPTY_STRING);
     expectedRow.add(affiliation.getInstitutionIdentifier());
     expectedRow.add(affiliation.getFacultyIdentifier());
     expectedRow.add(affiliation.getDepartmentIdentifier());
@@ -705,10 +725,7 @@ class FetchInstitutionReportHandlerTest {
   private List<NviCandidateIndexDocument> mockCandidatesInOpenSearch(URI topLevelCristinOrg)
       throws IOException {
     var indexDocuments = List.of(randomIndexDocumentWith(CURRENT_YEAR, topLevelCristinOrg));
-    when(openSearchClient.search(any()))
-        .thenReturn(aggregationResponse(indexDocuments.size()))
-        .thenReturn(createSearchResponse(indexDocuments));
-    return indexDocuments;
+    return mockCandidatesInOpenSearch(indexDocuments);
   }
 
   private List<NviCandidateIndexDocument> mockCandidatesWithoutOptionalDataInOpenSearch(
@@ -719,6 +736,11 @@ class FetchInstitutionReportHandlerTest {
             indexDocumentWithoutOptionalPublicationChannelData(CURRENT_YEAR, topLevelCristinOrg),
             indexDocumentWithoutIssn(CURRENT_YEAR, topLevelCristinOrg),
             indexDocumentWithoutLanguage(CURRENT_YEAR, topLevelCristinOrg));
+    return mockCandidatesInOpenSearch(indexDocuments);
+  }
+
+  private List<NviCandidateIndexDocument> mockCandidatesInOpenSearch(
+      List<NviCandidateIndexDocument> indexDocuments) throws IOException {
     when(openSearchClient.search(any()))
         .thenReturn(aggregationResponse(indexDocuments.size()))
         .thenReturn(createSearchResponse(indexDocuments));
