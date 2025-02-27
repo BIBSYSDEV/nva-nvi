@@ -10,6 +10,7 @@ import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertNonCandid
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.periodRepositoryReturningClosedPeriod;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.periodRepositoryReturningNotOpenedPeriod;
 import static no.sikt.nva.nvi.common.model.CandidateFixtures.randomApplicableCandidate;
+import static no.sikt.nva.nvi.common.model.CandidateFixtures.setupApprovedCandidate;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.mockOrganizationResponseForAffiliation;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.sikt.nva.nvi.test.TestUtils.randomUriWithSuffix;
@@ -38,7 +39,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.TestScenario;
-import no.sikt.nva.nvi.common.UpsertRequestBuilder;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
@@ -359,7 +359,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var organization = scenario.getDefaultOrganization();
     var creator = createVerifiedCreator(organization);
     Map<URI, Collection<NviCreatorDto>> creatorMap = Map.of(organization.id(), List.of(creator));
-    var requestBuilder = setupApprovedCandidate(organization.id(), creatorMap);
+    var requestBuilder = setupApprovedCandidate(scenario, organization.id(), creatorMap);
 
     var otherSubUnitId = organization.hasPart().get(1).id();
     var updatedCreator = new VerifiedNviCreatorDto(creator.id(), List.of(otherSubUnitId));
@@ -383,7 +383,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
 
     Map<URI, Collection<NviCreatorDto>> creatorMap =
         Map.of(organization.id(), List.of(creator), otherOrganization.id(), List.of(otherCreator));
-    var requestBuilder = setupApprovedCandidate(organization.id(), creatorMap);
+    var requestBuilder = setupApprovedCandidate(scenario, organization.id(), creatorMap);
 
     var updatedRequest = requestBuilder.withCreatorsAndPoints(creatorMap).build();
     var updatedCandidate = scenario.upsertCandidate(updatedRequest);
@@ -399,7 +399,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var organization = scenario.getDefaultOrganization();
     var creator = createVerifiedCreator(organization);
     Map<URI, Collection<NviCreatorDto>> creatorMap = Map.of(organization.id(), List.of(creator));
-    var requestBuilder = setupApprovedCandidate(organization.id(), creatorMap);
+    var requestBuilder = setupApprovedCandidate(scenario, organization.id(), creatorMap);
 
     var updatedCreator = new UnverifiedNviCreatorDto(randomString(), creator.affiliations());
     var updatedRequest =
@@ -419,7 +419,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var organization = scenario.getDefaultOrganization();
     var creator = createVerifiedCreator(organization);
     Map<URI, Collection<NviCreatorDto>> creatorMap = Map.of(organization.id(), List.of(creator));
-    var requestBuilder = setupApprovedCandidate(organization.id(), creatorMap);
+    var requestBuilder = setupApprovedCandidate(scenario, organization.id(), creatorMap);
 
     var otherOrganization = scenario.setupTopLevelOrganizationWithSubUnits();
     var otherSubUnitId = otherOrganization.hasPart().getFirst().id();
@@ -445,15 +445,6 @@ class CandidateApprovalTest extends CandidateTestSetup {
   private UnverifiedNviCreatorDto createUnverifiedCreator(Organization topLevelOrg) {
     var subUnitId = topLevelOrg.hasPart().getFirst().id();
     return new UnverifiedNviCreatorDto(randomString(), List.of(subUnitId));
-  }
-
-  private UpsertRequestBuilder setupApprovedCandidate(
-      URI approvedByOrg, Map<URI, Collection<NviCreatorDto>> creatorMap) {
-    var upsertRequest = randomUpsertRequestBuilder().withCreatorsAndPoints(creatorMap).build();
-    scenario.setupOpenPeriod(upsertRequest.publicationDate().year());
-    var candidate = scenario.upsertCandidate(upsertRequest);
-    scenario.updateApprovalStatus(candidate, ApprovalStatus.APPROVED, approvedByOrg);
-    return fromRequest(upsertRequest);
   }
 
   @Test
