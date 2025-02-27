@@ -36,7 +36,7 @@ public record Approval(
         .filter(hasContributor(nviContributor))
         .map(CreatorAffiliationPoints::points)
         .findFirst()
-        .orElseThrow();
+        .orElse(BigDecimal.ZERO);
   }
 
   private static Predicate<CreatorAffiliationPoints> hasContributor(NviContributor nviContributor) {
