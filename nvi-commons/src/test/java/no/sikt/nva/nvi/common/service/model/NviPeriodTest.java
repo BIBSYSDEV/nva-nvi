@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.common.service.model;
 
 import static java.time.temporal.ChronoUnit.DAYS;
+import static no.sikt.nva.nvi.common.LocalDynamoTestSetup.initializeTestDatabase;
 import static no.sikt.nva.nvi.common.model.UsernameFixtures.randomUserName;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -11,7 +12,6 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import no.sikt.nva.nvi.common.LocalDynamoTestSetup;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.exception.PeriodAlreadyExistsException;
 import no.sikt.nva.nvi.common.service.exception.PeriodNotFoundException;
@@ -20,15 +20,14 @@ import nva.commons.core.paths.UriWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class NviPeriodTest extends LocalDynamoTestSetup {
+class NviPeriodTest {
 
   private static final int YEAR = LocalDateTime.now().getYear() + 1;
   private PeriodRepository periodRepository;
 
   @BeforeEach
   void setup() {
-    localDynamo = initializeTestDatabase();
-    periodRepository = new PeriodRepository(localDynamo);
+    periodRepository = new PeriodRepository(initializeTestDatabase());
   }
 
   @Test

@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.rest;
 
 import static java.math.BigDecimal.ZERO;
+import static no.sikt.nva.nvi.common.LocalDynamoTestSetup.initializeTestDatabase;
 import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertNonCandidateRequest;
@@ -28,7 +29,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-import no.sikt.nva.nvi.common.LocalDynamoTestSetup;
 import no.sikt.nva.nvi.common.UpsertRequestBuilder;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
@@ -56,7 +56,7 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 /** Base test class for handlers that return a CandidateDto. */
 @SuppressWarnings("PMD.CouplingBetweenObjects")
-public abstract class BaseCandidateRestHandlerTest extends LocalDynamoTestSetup {
+public abstract class BaseCandidateRestHandlerTest {
   protected static final ViewingScopeValidator mockViewingScopeValidator =
       new FakeViewingScopeValidator(true);
   protected static final Context CONTEXT = mock(Context.class);

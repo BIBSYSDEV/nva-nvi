@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.rest.fetch;
 
+import static no.sikt.nva.nvi.common.LocalDynamoTestSetup.initializeTestDatabase;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupFuturePeriod;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -13,7 +14,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.time.ZonedDateTime;
-import no.sikt.nva.nvi.common.LocalDynamoTestSetup;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.dto.NviPeriodDto;
 import no.unit.nva.commons.json.JsonUtils;
@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.zalando.problem.Problem;
 import software.amazon.awssdk.utils.MapUtils;
 
-class FetchNviPeriodHandlerTest extends LocalDynamoTestSetup {
+class FetchNviPeriodHandlerTest {
 
   private Context context;
   private ByteArrayOutputStream output;

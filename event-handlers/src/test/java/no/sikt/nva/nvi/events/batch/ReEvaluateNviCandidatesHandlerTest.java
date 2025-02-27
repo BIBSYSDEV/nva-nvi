@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.events.batch;
 
+import static no.sikt.nva.nvi.common.LocalDynamoTestSetup.initializeTestDatabase;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.createNumberOfCandidatesForYear;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.getYearIndexStartMarker;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.setupReportedCandidate;
@@ -25,7 +26,6 @@ import com.amazonaws.services.lambda.runtime.Context;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.util.List;
-import no.sikt.nva.nvi.common.LocalDynamoTestSetup;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
@@ -44,7 +44,7 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequestEntry;
 
-class ReEvaluateNviCandidatesHandlerTest extends LocalDynamoTestSetup {
+class ReEvaluateNviCandidatesHandlerTest {
 
   private static final int MAX_PAGE_SIZE = 1000;
   private static final int DEFAULT_PAGE_SIZE = 500;
@@ -62,8 +62,7 @@ class ReEvaluateNviCandidatesHandlerTest extends LocalDynamoTestSetup {
   void setUp() {
     outputStream = new ByteArrayOutputStream();
     sqsClient = new FakeSqsClient();
-    var localDynamoDbClient = initializeTestDatabase();
-    candidateRepository = new CandidateRepository(localDynamoDbClient);
+    candidateRepository = new CandidateRepository(initializeTestDatabase());
     var nviService = new BatchScanUtil(candidateRepository);
     this.eventBridgeClient = new FakeEventBridgeClient();
     handler =

@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.common;
 
+import static no.sikt.nva.nvi.common.LocalDynamoTestSetup.initializeTestDatabase;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpdateStatusRequest;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.mockOrganizationResponseForAffiliations;
 import static no.sikt.nva.nvi.test.TestUtils.randomUriWithSuffix;
@@ -19,7 +20,7 @@ import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
-public class TestScenario extends LocalDynamoTestSetup {
+public class TestScenario {
 
   private final DynamoDbClient localDynamo = initializeTestDatabase();
   private final CandidateRepository candidateRepository;

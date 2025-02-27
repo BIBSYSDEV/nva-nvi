@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.events.evaluator;
 
+import static no.sikt.nva.nvi.common.LocalDynamoTestSetup.initializeTestDatabase;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_JSON_PUBLICATION_DATE;
 import static no.sikt.nva.nvi.test.TestUtils.createResponse;
@@ -11,7 +12,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
 import java.net.http.HttpResponse;
-import no.sikt.nva.nvi.common.LocalDynamoTestSetup;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
@@ -30,7 +30,7 @@ import nva.commons.core.Environment;
 import nva.commons.core.StringUtils;
 import org.junit.jupiter.api.BeforeEach;
 
-public class EvaluationTest extends LocalDynamoTestSetup {
+public class EvaluationTest {
 
   protected static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
 

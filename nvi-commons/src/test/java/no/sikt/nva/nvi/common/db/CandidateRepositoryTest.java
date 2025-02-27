@@ -1,5 +1,7 @@
 package no.sikt.nva.nvi.common.db;
 
+import static no.sikt.nva.nvi.common.LocalDynamoTestSetup.initializeTestDatabase;
+import static no.sikt.nva.nvi.common.LocalDynamoTestSetup.scanDB;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidateBuilder;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -13,7 +15,6 @@ import java.math.BigDecimal;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
-import no.sikt.nva.nvi.common.LocalDynamoTestSetup;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
@@ -23,9 +24,11 @@ import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
-class CandidateRepositoryTest extends LocalDynamoTestSetup {
+class CandidateRepositoryTest {
 
+  private DynamoDbClient localDynamo;
   private CandidateRepository candidateRepository;
   private PeriodRepository periodRepository;
 
@@ -43,7 +46,7 @@ class CandidateRepositoryTest extends LocalDynamoTestSetup {
     var candidate2 = randomCandidateBuilder(true).publicationId(publicationId).build();
     candidateRepository.create(candidate1, List.of());
     assertThrows(RuntimeException.class, () -> candidateRepository.create(candidate2, List.of()));
-    assertThat(scanDB().count(), is(equalTo(2)));
+    assertThat(scanDB(localDynamo).count(), is(equalTo(2)));
   }
 
   @Test
@@ -59,7 +62,7 @@ class CandidateRepositoryTest extends LocalDynamoTestSetup {
     var updatedDbCandidate =
         candidateRepository.findCandidateById(candidateDao.identifier()).get().candidate();
 
-    assertThat(scanDB().count(), is(equalTo(3)));
+    assertThat(scanDB(localDynamo).count(), is(equalTo(3)));
     assertThat(updatedDbCandidate, is(not(equalTo(originalDbCandidate))));
   }
 

@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.common.utils;
 
 import static java.util.Collections.emptyList;
+import static no.sikt.nva.nvi.common.LocalDynamoTestSetup.initializeTestDatabase;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.createNumberOfCandidatesForYear;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.getYearIndexStartMarker;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.setupReportedCandidate;
@@ -21,7 +22,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.IntStream;
-import no.sikt.nva.nvi.common.LocalDynamoTestSetup;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,10 +30,11 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
 
-class BatchScanUtilTest extends LocalDynamoTestSetup {
+class BatchScanUtilTest {
 
   private static final int DEFAULT_PAGE_SIZE = 700;
   private static final int SECOND_ROW = 1;
+  private DynamoDbClient localDynamo;
   private BatchScanUtil batchScanUtil;
   private CandidateRepositoryHelper candidateRepository;
 

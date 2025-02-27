@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.rest;
 
+import static no.sikt.nva.nvi.common.LocalDynamoTestSetup.initializeTestDatabase;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupFuturePeriod;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -17,7 +18,6 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
-import no.sikt.nva.nvi.common.LocalDynamoTestSetup;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.rest.model.UpsertNviPeriodRequest;
@@ -30,7 +30,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.zalando.problem.Problem;
 
-class UpdateNviPeriodHandlerTest extends LocalDynamoTestSetup {
+class UpdateNviPeriodHandlerTest {
 
   private Context context;
   private ByteArrayOutputStream output;

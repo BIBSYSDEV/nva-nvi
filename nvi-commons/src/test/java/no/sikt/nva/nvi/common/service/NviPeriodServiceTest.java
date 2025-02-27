@@ -1,17 +1,17 @@
 package no.sikt.nva.nvi.common.service;
 
+import static no.sikt.nva.nvi.common.LocalDynamoTestSetup.initializeTestDatabase;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import no.sikt.nva.nvi.common.LocalDynamoTestSetup;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class NviPeriodServiceTest extends LocalDynamoTestSetup {
+class NviPeriodServiceTest {
 
   private PeriodRepository periodRepository;
   private NviPeriodService nviPeriodService;

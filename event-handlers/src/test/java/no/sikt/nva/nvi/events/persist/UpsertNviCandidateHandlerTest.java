@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.events.persist;
 
 import static java.util.Collections.emptyList;
+import static no.sikt.nva.nvi.common.LocalDynamoTestSetup.initializeTestDatabase;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.common.model.InstanceTypeFixtures.randomInstanceType;
 import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
@@ -36,7 +37,6 @@ import java.time.Year;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
-import no.sikt.nva.nvi.common.LocalDynamoTestSetup;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
@@ -74,7 +74,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 // Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
 @SuppressWarnings("PMD.CouplingBetweenObjects")
-class UpsertNviCandidateHandlerTest extends LocalDynamoTestSetup {
+class UpsertNviCandidateHandlerTest {
 
   public static final Context CONTEXT = mock(Context.class);
   public static final String ERROR_MESSAGE_BODY_INVALID = "Message body invalid";
@@ -89,8 +89,7 @@ class UpsertNviCandidateHandlerTest extends LocalDynamoTestSetup {
 
   @BeforeEach
   void setup() {
-    localDynamo = initializeTestDatabase();
-    candidateRepository = new CandidateRepository(localDynamo);
+    candidateRepository = new CandidateRepository(initializeTestDatabase());
     periodRepository =
         PeriodRepositoryFixtures.periodRepositoryReturningOpenedPeriod(Year.now().getValue());
     queueClient = mock(QueueClient.class);

@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.events.cristin;
 
 import static java.util.UUID.randomUUID;
+import static no.sikt.nva.nvi.common.LocalDynamoTestSetup.initializeTestDatabase;
 import static no.sikt.nva.nvi.events.cristin.CristinMapper.AFFILIATION_DELIMITER;
 import static no.sikt.nva.nvi.events.cristin.CristinMapper.API_HOST;
 import static no.sikt.nva.nvi.events.cristin.CristinMapper.PERSISTED_RESOURCES_BUCKET;
@@ -22,7 +23,6 @@ import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
-import no.sikt.nva.nvi.common.LocalDynamoTestSetup;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
@@ -41,7 +41,7 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class CristinNviReportEventConsumerTest extends LocalDynamoTestSetup {
+class CristinNviReportEventConsumerTest {
 
   public static final LocalDate DATE_CONTROLLED = LocalDate.now();
   public static final String STATUS_CONTROLLED = "J";
@@ -55,7 +55,7 @@ class CristinNviReportEventConsumerTest extends LocalDynamoTestSetup {
 
   @BeforeEach
   void setup() {
-    localDynamo = initializeTestDatabase();
+    var localDynamo = initializeTestDatabase();
     candidateRepository = new CandidateRepository(localDynamo);
     periodRepository = new PeriodRepository(localDynamo);
     var s3Client = new FakeS3Client();

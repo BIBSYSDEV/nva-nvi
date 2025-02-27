@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.index;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
+import static no.sikt.nva.nvi.common.LocalDynamoTestSetup.initializeTestDatabase;
 import static no.sikt.nva.nvi.common.QueueServiceTestUtils.createEvent;
 import static no.sikt.nva.nvi.common.QueueServiceTestUtils.createEventWithOneInvalidRecord;
 import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
@@ -56,7 +57,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
-import no.sikt.nva.nvi.common.LocalDynamoTestSetup;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
@@ -94,7 +94,7 @@ import software.amazon.awssdk.services.sqs.model.SqsException;
 
 // Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
 @SuppressWarnings({"PMD.GodClass", "PMD.CouplingBetweenObjects"})
-class IndexDocumentHandlerTest extends LocalDynamoTestSetup {
+class IndexDocumentHandlerTest {
 
   public static final int SOME_REPORTING_YEAR = 2023;
   private static final String JSON_PTR_CONTRIBUTOR = "/publicationDetails/contributors";
@@ -131,8 +131,7 @@ class IndexDocumentHandlerTest extends LocalDynamoTestSetup {
   void setup() {
     s3Reader = new S3Driver(s3Client, BUCKET_NAME);
     s3Writer = new S3Driver(s3Client, BUCKET_NAME);
-    var localDynamoDbClient = initializeTestDatabase();
-    candidateRepository = new CandidateRepository(localDynamoDbClient);
+    candidateRepository = new CandidateRepository(initializeTestDatabase());
     periodRepository =
         PeriodRepositoryFixtures.periodRepositoryReturningOpenedPeriod(SOME_REPORTING_YEAR);
     uriRetriever = mock(UriRetriever.class);
