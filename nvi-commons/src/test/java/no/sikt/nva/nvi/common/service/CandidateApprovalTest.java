@@ -70,6 +70,8 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
+// Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
+@SuppressWarnings("PMD.CouplingBetweenObjects")
 class CandidateApprovalTest extends CandidateTestSetup {
 
   private static final String APPROVED = "APPROVED";
@@ -372,7 +374,6 @@ class CandidateApprovalTest extends CandidateTestSetup {
     assertThat(1, is(equalTo(updatedApprovals.size())));
   }
 
-  // FIXME: Test OK, but failing because of bug in the code
   @Test
   void shouldNotResetApprovalWhenOtherCreatorBecomesVerified() {
     var organization = scenario.getDefaultOrganization();
@@ -384,10 +385,6 @@ class CandidateApprovalTest extends CandidateTestSetup {
         Map.of(organization.id(), List.of(creator), otherOrganization.id(), List.of(otherCreator));
     var requestBuilder = setupApprovedCandidate(organization.id(), creatorMap);
 
-    var updatedCreator = new VerifiedNviCreatorDto(randomUri(), otherCreator.affiliations());
-    creatorMap =
-        Map.of(
-            organization.id(), List.of(creator), otherOrganization.id(), List.of(updatedCreator));
     var updatedRequest = requestBuilder.withCreatorsAndPoints(creatorMap).build();
     var updatedCandidate = scenario.upsertCandidate(updatedRequest);
 
@@ -449,18 +446,6 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var subUnitId = topLevelOrg.hasPart().getFirst().id();
     return new UnverifiedNviCreatorDto(randomString(), List.of(subUnitId));
   }
-
-  //  private UpsertRequestBuilder setupApprovedCandidate(
-  //      Organization organization, Collection<NviCreatorDto> creators) {
-  //    var upsertRequest =
-  //        randomUpsertRequestBuilder()
-  //            .withCreatorsAndPoints(Map.of(organization.id(), creators))
-  //            .build();
-  //    scenario.setupOpenPeriod(upsertRequest.publicationDate().year());
-  //    var candidate = scenario.upsertCandidate(upsertRequest);
-  //    scenario.updateApprovalStatus(candidate, ApprovalStatus.APPROVED, organization.id());
-  //    return fromRequest(upsertRequest);
-  //  }
 
   private UpsertRequestBuilder setupApprovedCandidate(
       URI approvedByOrg, Map<URI, Collection<NviCreatorDto>> creatorMap) {

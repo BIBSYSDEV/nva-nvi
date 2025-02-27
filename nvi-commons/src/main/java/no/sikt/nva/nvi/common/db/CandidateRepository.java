@@ -136,7 +136,8 @@ public class CandidateRepository extends DynamoRepository {
     client.transactWriteItems(transaction.build());
   }
 
-  public void updateCandidate(CandidateDao candidateDao, List<DbApprovalStatus> approvals) {
+  public void updateCandidateAndDeleteOtherApprovals(
+      CandidateDao candidateDao, List<DbApprovalStatus> approvals) {
     var updatedApprovals =
         approvals.stream()
             .map(approval -> mapToApprovalStatusDao(candidateDao.identifier(), approval))
@@ -150,6 +151,23 @@ public class CandidateRepository extends DynamoRepository {
         identifyApprovalsForDeletion(candidateDao.identifier(), updatedApprovals);
     approvalsForDeletion.forEach(
         approvalStatusDao -> transaction.addDeleteItem(approvalStatusTable, approvalStatusDao));
+    updatedApprovals
+        .values()
+        .forEach(approvalStatus -> transaction.addPutItem(approvalStatusTable, approvalStatus));
+    client.transactWriteItems(transaction.build());
+  }
+
+  public void updateCandidateAndKeepOtherApprovals(
+      CandidateDao candidateDao, List<DbApprovalStatus> approvals) {
+    var updatedApprovals =
+        approvals.stream()
+            .map(approval -> mapToApprovalStatusDao(candidateDao.identifier(), approval))
+            .collect(
+                toMap(
+                    approvalStatusDao -> approvalStatusDao.approvalStatus().institutionId(),
+                    Function.identity()));
+    var transaction = TransactWriteItemsEnhancedRequest.builder();
+    transaction.addPutItem(candidateTable, candidateDao);
     updatedApprovals
         .values()
         .forEach(approvalStatus -> transaction.addPutItem(approvalStatusTable, approvalStatus));
