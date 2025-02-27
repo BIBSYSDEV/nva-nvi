@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.common.service.model;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.UUID.randomUUID;
+import static java.util.function.Predicate.not;
 import static no.sikt.nva.nvi.common.db.ReportStatus.REPORTED;
 import static no.sikt.nva.nvi.common.service.model.Approval.validateUpdateStatusRequest;
 import static no.sikt.nva.nvi.common.service.model.ApprovalStatus.APPROVED;
@@ -21,6 +22,7 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -268,7 +270,7 @@ public final class Candidate {
   // TODO: Make method return InstitutionPoints once we have migrated candidates from Cristin
   public Optional<InstitutionPoints> getInstitutionPoints(URI institutionId) {
     return institutionPoints.stream()
-        .filter(institutionPoints -> institutionPoints.institutionId().equals(institutionId))
+        .filter(points -> points.institutionId().equals(institutionId))
         .findFirst();
   }
 
@@ -527,30 +529,33 @@ public final class Candidate {
   }
 
   private static void updateCandidate(
-      UpsertCandidateRequest request, CandidateRepository repository, Candidate existingCandidate) {
+      UpsertCandidateRequest request, CandidateRepository repository, Candidate candidate) {
     validateCandidate(request);
-    if (shouldResetCandidate(request, existingCandidate) || isNotApplicable(existingCandidate)) {
-      resetCandidate(request, repository, existingCandidate);
+    var updatedCandidate = candidate.apply(request);
+    if (shouldResetCandidate(request, candidate) || isNotApplicable(candidate)) {
+      var newApprovals = mapToApprovals(updatedCandidate.getInstitutionPoints());
+      repository.updateCandidateAndDeleteOtherApprovals(updatedCandidate.toDao(), newApprovals);
     } else {
-      updateCandidateKeepingApprovalsAndNotes(request, repository, existingCandidate);
+      var updatedApprovals = getIndividualApprovalsToReset(candidate, updatedCandidate);
+      repository.updateCandidateAndKeepOtherApprovals(updatedCandidate.toDao(), updatedApprovals);
     }
+  }
+
+  /**
+   * Returns new approvals in a pending state for all institutions that should have their approvals
+   * reset.
+   */
+  private static List<DbApprovalStatus> getIndividualApprovalsToReset(
+      Candidate candidate, Candidate updatedCandidate) {
+    return updatedCandidate.getInstitutionPoints().stream()
+        .filter(institutionPoints -> !hasSameInstitutionPoints(candidate, institutionPoints))
+        .map(InstitutionPoints::institutionId)
+        .map(Candidate::mapToApproval)
+        .toList();
   }
 
   private static boolean isNotApplicable(Candidate candidate) {
     return !candidate.isApplicable();
-  }
-
-  private static void resetCandidate(
-      UpsertCandidateRequest request, CandidateRepository repository, Candidate existingCandidate) {
-    var updatedCandidate = existingCandidate.apply(request);
-    var newApprovals = mapToApprovals(updatedCandidate.getInstitutionPoints());
-    repository.updateCandidate(updatedCandidate.toDao(), newApprovals);
-  }
-
-  private static void updateCandidateKeepingApprovalsAndNotes(
-      UpsertCandidateRequest request, CandidateRepository repository, Candidate existingCandidate) {
-    var updatedCandidateDao = existingCandidate.apply(request).toDao();
-    repository.updateCandidate(updatedCandidateDao);
   }
 
   private static boolean shouldResetCandidate(UpsertCandidateRequest request, Candidate candidate) {
@@ -558,7 +563,7 @@ public final class Candidate {
         || publicationChannelIsUpdated(request, candidate)
         || instanceTypeIsUpdated(request, candidate)
         || creatorsAreUpdated(request, candidate)
-        || institutionPointsAreUpdated(request, candidate)
+        || hasChangeInTopLevelOrganizations(request, candidate)
         || publicationYearIsUpdated(request, candidate);
   }
 
@@ -575,10 +580,17 @@ public final class Candidate {
         .equals(candidate.getPublicationDetails().publicationDate().year());
   }
 
-  private static boolean institutionPointsAreUpdated(
+  private static boolean hasChangeInTopLevelOrganizations(
       UpsertCandidateRequest request, Candidate candidate) {
-    return !request.institutionPoints().stream()
-        .allMatch(institutionPoints -> hasSameInstitutionPoints(candidate, institutionPoints));
+    var oldTopLevelOrganizations =
+        candidate.getInstitutionPoints().stream()
+            .map(InstitutionPoints::institutionId)
+            .collect(Collectors.toSet());
+    var newTopLevelOrganizations =
+        request.institutionPoints().stream()
+            .map(InstitutionPoints::institutionId)
+            .collect(Collectors.toSet());
+    return !oldTopLevelOrganizations.equals(newTopLevelOrganizations);
   }
 
   private static Boolean hasSameInstitutionPoints(
@@ -596,33 +608,40 @@ public final class Candidate {
         adjustScaleAndRoundingMode(currentPoints), adjustScaleAndRoundingMode(newPoints));
   }
 
+  /*
+   * Checks whether the set of creators is the same in the request and the candidate.
+   * This allows for unverified creators to be converted to verified creators by assuming that
+   * a removed creator is replaced by a new creator with the same affiliations.
+   */
   private static boolean creatorsAreUpdated(UpsertCandidateRequest request, Candidate candidate) {
-    // TODO: This only compares by name/ID now, but should include top-level affiliations too
-    // (NP-48112)
-    return hasChangeInVerifiedCreators(request, candidate)
-        || hasChangeInUnverifiedCreators(request, candidate);
+    var oldCreatorCount = candidate.getPublicationDetails().creators().size();
+    var newCreatorCount = getAllCreators(request).size();
+    var hasSameCount = oldCreatorCount == newCreatorCount;
+    var hasSameCreators = hasSameCreators(request, candidate);
+    return !(hasSameCount && hasSameCreators);
   }
 
-  private static boolean hasChangeInVerifiedCreators(
-      UpsertCandidateRequest request, Candidate candidate) {
-    // Verified creators can be compared by ID
-    var oldCreatorIds = candidate.getVerifiedNviCreatorIds();
-    var newCreatorIds =
+  private static boolean hasSameCreators(UpsertCandidateRequest request, Candidate candidate) {
+    var affiliationsOfRemovedUnverifiedCreators =
+        candidate.getPublicationDetails().getUnverifiedCreators().stream()
+            .filter(not(creator -> request.unverifiedCreators().contains(creator)))
+            .map(UnverifiedNviCreatorDto::affiliations)
+            .map(HashSet::new)
+            .toList();
+
+    var currentCreatorIds = candidate.getVerifiedNviCreatorIds();
+    var affiliationsOfNewVerifiedCreators =
         request.verifiedCreators().stream()
-            .map(VerifiedNviCreatorDto::id)
-            .collect(Collectors.toSet());
-    return !oldCreatorIds.equals(newCreatorIds);
-  }
+            .filter(not(creator -> currentCreatorIds.contains(creator.id())))
+            .map(VerifiedNviCreatorDto::affiliations)
+            .map(HashSet::new)
+            .toList();
 
-  private static boolean hasChangeInUnverifiedCreators(
-      UpsertCandidateRequest request, Candidate candidate) {
-    // Unverified creators do not have an ID, so we must compare by name
-    var oldCreatorNames = candidate.getUnverifiedNviCreatorNames();
-    var newCreatorNames =
-        request.unverifiedCreators().stream()
-            .map(UnverifiedNviCreatorDto::name)
-            .collect(Collectors.toSet());
-    return !oldCreatorNames.equals(newCreatorNames);
+    var removedInNew =
+        affiliationsOfNewVerifiedCreators.containsAll(affiliationsOfRemovedUnverifiedCreators);
+    var newInRemoved =
+        affiliationsOfRemovedUnverifiedCreators.containsAll(affiliationsOfNewVerifiedCreators);
+    return removedInNew && newInRemoved;
   }
 
   private static boolean instanceTypeIsUpdated(
@@ -758,10 +777,6 @@ public final class Candidate {
 
   private Set<URI> getVerifiedNviCreatorIds() {
     return publicationDetails.getVerifiedNviCreatorIds();
-  }
-
-  private Set<String> getUnverifiedNviCreatorNames() {
-    return publicationDetails.getUnverifiedNviCreatorNames();
   }
 
   private Builder copy() {

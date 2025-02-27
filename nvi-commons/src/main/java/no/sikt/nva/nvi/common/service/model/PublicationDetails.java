@@ -59,14 +59,6 @@ public record PublicationDetails(
         .collect(Collectors.toSet());
   }
 
-  public Set<String> getUnverifiedNviCreatorNames() {
-    return creators.stream()
-        .filter(UnverifiedNviCreatorDto.class::isInstance)
-        .map(UnverifiedNviCreatorDto.class::cast)
-        .map(UnverifiedNviCreatorDto::name)
-        .collect(Collectors.toSet());
-  }
-
   public record PublicationDate(String year, String month, String day) {
 
     public static PublicationDate from(DbPublicationDate dbPublicationDate) {

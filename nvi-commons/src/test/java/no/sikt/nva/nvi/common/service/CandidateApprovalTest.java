@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.common.service;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
+import static no.sikt.nva.nvi.common.UpsertRequestBuilder.fromRequest;
 import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpdateStatusRequest;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequest;
@@ -30,19 +31,23 @@ import static org.mockito.Mockito.mock;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.time.ZonedDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.UpsertRequestBuilder;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
+import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.model.InvalidNviCandidateException;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.dto.CandidateOperation;
+import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.problem.UnverifiedCreatorFromOrganizationProblem;
@@ -65,6 +70,8 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
+// Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
+@SuppressWarnings("PMD.CouplingBetweenObjects")
 class CandidateApprovalTest extends CandidateTestSetup {
 
   private static final String APPROVED = "APPROVED";
@@ -81,6 +88,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
       BigDecimal.ONE.setScale(EXPECTED_SCALE, EXPECTED_ROUNDING_MODE);
   private OrganizationRetriever mockOrganizationRetriever;
   private URI topLevelOrganizationId;
+  private TestScenario scenario;
 
   public static Stream<Arguments> statusProvider() {
     return Stream.of(
@@ -113,6 +121,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
     mockOrganizationResponseForAffiliation(topLevelOrganizationId, null, mockUriRetriever);
     mockOrganizationResponseForAffiliation(
         HARDCODED_INSTITUTION_ID, HARDCODED_SUBUNIT_ID, mockUriRetriever);
+    scenario = new TestScenario();
   }
 
   @ParameterizedTest(name = "Should update from old status {0} to new status {1}")
@@ -225,7 +234,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
         createUpsertCandidateRequest(keepInstitutionId, deleteInstitutionId, randomUri()).build();
     Candidate.upsert(createCandidateRequest, candidateRepository, periodRepository);
     var updateRequest =
-        UpsertRequestBuilder.fromRequest(createCandidateRequest)
+        fromRequest(createCandidateRequest)
             .withPoints(List.of(new InstitutionPoints(keepInstitutionId, randomBigDecimal(), null)))
             .build();
     var updatedCandidate = upsert(updateRequest);
@@ -345,33 +354,106 @@ class CandidateApprovalTest extends CandidateTestSetup {
     assertThat(updatedApproval, is(equalTo(approval)));
   }
 
-  // FIXME: This test compares random URIs, there is no actual check that they belong to the same
-  // organization
-  // We also lack the mirror case, where the top-level affiliation changes and resets the approval
-  // (NP-48112)
   @Test
   void shouldNotResetApprovalsWhenCreatorAffiliationChangesWithinSameInstitution() {
-    var upsertCandidateRequest = getUpsertCandidateRequestWithHardcodedValues();
-    var candidate = upsert(upsertCandidateRequest);
-    candidate.updateApprovalStatus(
-        new UpdateStatusRequest(
-            HARDCODED_INSTITUTION_ID, ApprovalStatus.APPROVED, randomString(), randomString()),
-        mockOrganizationRetriever);
-    var points =
-        List.of(
-            new InstitutionPoints(
-                HARDCODED_INSTITUTION_ID,
-                HARDCODED_POINTS,
-                List.of(
-                    new CreatorAffiliationPoints(
-                        HARDCODED_CREATOR_ID, HARDCODED_SUBUNIT_ID, HARDCODED_POINTS))));
+    var organization = scenario.getDefaultOrganization();
+    var creator = createVerifiedCreator(organization);
+    Map<URI, Collection<NviCreatorDto>> creatorMap = Map.of(organization.id(), List.of(creator));
+    var requestBuilder = setupApprovedCandidate(organization.id(), creatorMap);
 
-    var newUpsertRequest =
-        UpsertRequestBuilder.fromRequest(upsertCandidateRequest).withPoints(points).build();
-    var updatedCandidate = upsert(newUpsertRequest);
-    var updatedApproval = updatedCandidate.getApprovals().get(HARDCODED_INSTITUTION_ID);
+    var otherSubUnitId = organization.hasPart().get(1).id();
+    var updatedCreator = new VerifiedNviCreatorDto(creator.id(), List.of(otherSubUnitId));
+    creatorMap = Map.of(organization.id(), List.of(updatedCreator));
+    var updatedRequest = requestBuilder.withCreatorsAndPoints(creatorMap).build();
+    var updatedCandidate = scenario.upsertCandidate(updatedRequest);
 
-    assertThat(updatedApproval.getStatus(), is(equalTo(ApprovalStatus.APPROVED)));
+    var updatedApprovals = updatedCandidate.getApprovals();
+    var updatedApproval = updatedApprovals.get(organization.id());
+    assertThat(creator.affiliations(), is(not(equalTo(updatedCreator.affiliations()))));
+    assertThat(ApprovalStatus.APPROVED, is(equalTo(updatedApproval.getStatus())));
+    assertThat(1, is(equalTo(updatedApprovals.size())));
+  }
+
+  @Test
+  void shouldNotResetApprovalWhenOtherCreatorBecomesVerified() {
+    var organization = scenario.getDefaultOrganization();
+    var creator = createVerifiedCreator(organization);
+    var otherOrganization = scenario.setupTopLevelOrganizationWithSubUnits();
+    var otherCreator = createUnverifiedCreator(otherOrganization);
+
+    Map<URI, Collection<NviCreatorDto>> creatorMap =
+        Map.of(organization.id(), List.of(creator), otherOrganization.id(), List.of(otherCreator));
+    var requestBuilder = setupApprovedCandidate(organization.id(), creatorMap);
+
+    var updatedRequest = requestBuilder.withCreatorsAndPoints(creatorMap).build();
+    var updatedCandidate = scenario.upsertCandidate(updatedRequest);
+
+    var updatedApprovals = updatedCandidate.getApprovals();
+    var updatedApproval = updatedApprovals.get(organization.id());
+    assertThat(ApprovalStatus.APPROVED, is(equalTo(updatedApproval.getStatus())));
+    assertThat(2, is(equalTo(updatedApprovals.size())));
+  }
+
+  @Test
+  void shouldResetApprovalWhenCreatorBecomesUnverified() {
+    var organization = scenario.getDefaultOrganization();
+    var creator = createVerifiedCreator(organization);
+    Map<URI, Collection<NviCreatorDto>> creatorMap = Map.of(organization.id(), List.of(creator));
+    var requestBuilder = setupApprovedCandidate(organization.id(), creatorMap);
+
+    var updatedCreator = new UnverifiedNviCreatorDto(randomString(), creator.affiliations());
+    var updatedRequest =
+        requestBuilder
+            .withCreatorsAndPoints(Map.of(organization.id(), List.of(updatedCreator)))
+            .build();
+    var updatedCandidate = scenario.upsertCandidate(updatedRequest);
+
+    var updatedApprovals = updatedCandidate.getApprovals();
+    var updatedApproval = updatedApprovals.get(organization.id());
+    assertThat(ApprovalStatus.PENDING, is(equalTo(updatedApproval.getStatus())));
+    assertThat(1, is(equalTo(updatedApprovals.size())));
+  }
+
+  @Test
+  void shouldResetApprovalWhenTopLevelAffiliationChanges() {
+    var organization = scenario.getDefaultOrganization();
+    var creator = createVerifiedCreator(organization);
+    Map<URI, Collection<NviCreatorDto>> creatorMap = Map.of(organization.id(), List.of(creator));
+    var requestBuilder = setupApprovedCandidate(organization.id(), creatorMap);
+
+    var otherOrganization = scenario.setupTopLevelOrganizationWithSubUnits();
+    var otherSubUnitId = otherOrganization.hasPart().getFirst().id();
+    var updatedCreator = new VerifiedNviCreatorDto(creator.id(), List.of(otherSubUnitId));
+    var updatedRequest =
+        requestBuilder
+            .withCreatorsAndPoints(Map.of(otherOrganization.id(), List.of(updatedCreator)))
+            .build();
+    var updatedCandidate = scenario.upsertCandidate(updatedRequest);
+
+    var updatedApprovals = updatedCandidate.getApprovals();
+    var updatedApproval = updatedApprovals.get(otherOrganization.id());
+    assertThat(ApprovalStatus.PENDING, is(equalTo(updatedApproval.getStatus())));
+    assertThat(1, is(equalTo(updatedApprovals.size())));
+  }
+
+  private VerifiedNviCreatorDto createVerifiedCreator(Organization topLevelOrg) {
+    var subUnitId = topLevelOrg.hasPart().getFirst().id();
+    var creatorId = randomUriWithSuffix("creatorId");
+    return new VerifiedNviCreatorDto(creatorId, List.of(subUnitId));
+  }
+
+  private UnverifiedNviCreatorDto createUnverifiedCreator(Organization topLevelOrg) {
+    var subUnitId = topLevelOrg.hasPart().getFirst().id();
+    return new UnverifiedNviCreatorDto(randomString(), List.of(subUnitId));
+  }
+
+  private UpsertRequestBuilder setupApprovedCandidate(
+      URI approvedByOrg, Map<URI, Collection<NviCreatorDto>> creatorMap) {
+    var upsertRequest = randomUpsertRequestBuilder().withCreatorsAndPoints(creatorMap).build();
+    scenario.setupOpenPeriod(upsertRequest.publicationDate().year());
+    var candidate = scenario.upsertCandidate(upsertRequest);
+    scenario.updateApprovalStatus(candidate, ApprovalStatus.APPROVED, approvedByOrg);
+    return fromRequest(upsertRequest);
   }
 
   @Test
@@ -393,9 +475,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
                         institutionPoints.creatorAffiliationPoints()))
             .toList();
     var newUpsertRequest =
-        UpsertRequestBuilder.fromRequest(upsertCandidateRequest)
-            .withPoints(samePointsWithDifferentScale)
-            .build();
+        fromRequest(upsertCandidateRequest).withPoints(samePointsWithDifferentScale).build();
     var updatedCandidate = upsert(newUpsertRequest);
     var updatedApproval = updatedCandidate.getApprovals().get(HARDCODED_INSTITUTION_ID);
 
@@ -434,7 +514,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
                 Collectors.toMap(VerifiedNviCreatorDto::id, VerifiedNviCreatorDto::affiliations));
 
     var newUpsertRequest =
-        UpsertRequestBuilder.fromRequest(upsertCandidateRequest)
+        fromRequest(upsertCandidateRequest)
             .withCreators(creators)
             .withVerifiedCreators(arguments.creators())
             .withInstanceType(arguments.type())
