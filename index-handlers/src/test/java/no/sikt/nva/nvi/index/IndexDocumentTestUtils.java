@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.index;
 
+import static java.util.Collections.emptyList;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PUBLICATION_CONTEXT;
@@ -21,7 +22,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import java.net.URI;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -176,12 +176,14 @@ public final class IndexDocumentTestUtils {
     return getBuilder(year, approvals, publicationDetails).build();
   }
 
-  public static NviCandidateIndexDocument indexDocumentMissingCreatorAffiliationPoints(
+  public static NviCandidateIndexDocument indexDocumentMissingVerifiedCreators(
       int year, URI institutionId) {
+    var unverifiedCreator = randomNviContributorBuilder(institutionId).withId(null).build();
     var publicationDetails =
-        publicationDetailsWithNviContributorsAffiliatedWith(institutionId).build();
-    var approvalsWithoutCreatorAffiliationPoints =
-        createApprovals(institutionId, Collections.emptyList());
+        publicationDetailsWithNviContributorsAffiliatedWith(institutionId)
+            .withContributors(List.of(unverifiedCreator))
+            .build();
+    var approvalsWithoutCreatorAffiliationPoints = createApprovals(institutionId, emptyList());
     return getBuilder(year, approvalsWithoutCreatorAffiliationPoints, publicationDetails).build();
   }
 
@@ -213,7 +215,7 @@ public final class IndexDocumentTestUtils {
         .build();
   }
 
-  public static NviContributor randomNviContributor(URI institutionId) {
+  public static NviContributor.Builder randomNviContributorBuilder(URI institutionId) {
     return NviContributor.builder()
         .withId(randomUri().toString())
         .withName(randomString())
@@ -224,8 +226,11 @@ public final class IndexDocumentTestUtils {
                 randomSubUnitNviAffiliation(institutionId),
                 nviOrganization(institutionId),
                 nviOrganization(randomUri()),
-                randomNonNviAffiliation()))
-        .build();
+                randomNonNviAffiliation()));
+  }
+
+  public static NviContributor randomNviContributor(URI institutionId) {
+    return randomNviContributorBuilder(institutionId).build();
   }
 
   private static String extractOptionalLanguage(JsonNode expandedResource) {
@@ -444,7 +449,7 @@ public final class IndexDocumentTestUtils {
   }
 
   private static NviOrganization generateTopLevelNviOrg(URI id) {
-    return NviOrganization.builder().withId(id).withPartOf(Collections.emptyList()).build();
+    return NviOrganization.builder().withId(id).withPartOf(emptyList()).build();
   }
 
   private static PublicationDetails.Builder publicationDetailsWithNviContributorsAffiliatedWith(
