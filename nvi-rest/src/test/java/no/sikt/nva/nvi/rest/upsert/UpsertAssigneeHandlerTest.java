@@ -120,7 +120,7 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
   void shouldReturnConflictWhenUpdatingAssigneeAndReportingPeriodIsClosed() throws IOException {
     var assignee = randomString();
     mockNviCuratorAccessForUser(assignee);
-    scenario.setupClosedPeriod(String.valueOf(CURRENT_YEAR));
+    scenario.setupClosedPeriod(CURRENT_YEAR);
     handler.handleRequest(createRequest(candidate, assignee), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
@@ -132,7 +132,7 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
       throws IOException {
     var assignee = randomString();
     mockNviCuratorAccessForUser(assignee);
-    scenario.setupFuturePeriod(String.valueOf(CURRENT_YEAR));
+    scenario.setupFuturePeriod(CURRENT_YEAR);
     handler.handleRequest(createRequest(candidate, assignee), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 

@@ -111,7 +111,7 @@ class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
     var request =
         createRequest(
             candidate.getIdentifier(), new NviNoteRequest(randomString()), randomString());
-    scenario.setupClosedPeriod(String.valueOf(CURRENT_YEAR));
+    scenario.setupClosedPeriod(CURRENT_YEAR);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 

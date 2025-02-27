@@ -1,7 +1,6 @@
 package no.sikt.nva.nvi.rest;
 
-import static no.sikt.nva.nvi.common.LocalDynamoTestSetup.initializeTestDatabase;
-import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupFuturePeriod;
+import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -16,7 +15,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.time.ZonedDateTime;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.rest.create.CreateNviPeriodHandler;
 import no.sikt.nva.nvi.rest.model.UpsertNviPeriodRequest;
@@ -33,14 +32,14 @@ class CreateNviPeriodHandlerTest {
   private Context context;
   private ByteArrayOutputStream output;
   private CreateNviPeriodHandler handler;
-  private PeriodRepository periodRepository;
+  private TestScenario scenario;
 
   @BeforeEach
   void init() {
+    scenario = new TestScenario();
     output = new ByteArrayOutputStream();
     context = mock(Context.class);
-    periodRepository = new PeriodRepository(initializeTestDatabase());
-    handler = new CreateNviPeriodHandler(periodRepository);
+    handler = new CreateNviPeriodHandler(scenario.getPeriodRepository());
   }
 
   @Test
@@ -62,8 +61,8 @@ class CreateNviPeriodHandlerTest {
 
   @Test
   void shouldReturnBadRequestWhenPeriodExists() throws IOException {
-    var year = String.valueOf(ZonedDateTime.now().getYear());
-    setupFuturePeriod(year, periodRepository);
+    var year = String.valueOf(CURRENT_YEAR);
+    scenario.setupFuturePeriod(year);
     var period = upsertRequest(year);
     handler.handleRequest(createRequest(period), output, context);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
@@ -72,10 +71,10 @@ class CreateNviPeriodHandlerTest {
 
   @Test
   void shouldCreateNviPeriod() throws IOException {
-    var year = String.valueOf(ZonedDateTime.now().getYear());
+    var year = String.valueOf(CURRENT_YEAR);
     var period = upsertRequest(year);
     handler.handleRequest(createRequest(period), output, context);
-    var persistedPeriod = NviPeriod.fetchByPublishingYear(year, periodRepository);
+    var persistedPeriod = NviPeriod.fetchByPublishingYear(year, scenario.getPeriodRepository());
     assertThat(
         period.publishingYear(), is(equalTo(persistedPeriod.getPublishingYear().toString())));
   }

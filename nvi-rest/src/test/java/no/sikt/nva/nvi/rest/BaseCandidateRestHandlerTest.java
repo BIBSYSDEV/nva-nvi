@@ -7,7 +7,6 @@ import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertNonCandid
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.mockOrganizationResponseForAffiliation;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
-import static no.sikt.nva.nvi.test.TestUtils.randomUriWithSuffix;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -55,9 +54,8 @@ public abstract class BaseCandidateRestHandlerTest {
   protected static final ViewingScopeValidator mockViewingScopeValidator =
       new FakeViewingScopeValidator(true);
   protected static final Context CONTEXT = mock(Context.class);
-  protected UriRetriever mockUriRetriever = mock(UriRetriever.class);
-  protected OrganizationRetriever mockOrganizationRetriever =
-      new OrganizationRetriever(mockUriRetriever);
+  protected UriRetriever mockUriRetriever;
+  protected OrganizationRetriever mockOrganizationRetriever;
   protected String resourcePathParameter;
   protected URI topLevelOrganizationId;
   protected URI subOrganizationId;
@@ -84,16 +82,14 @@ public abstract class BaseCandidateRestHandlerTest {
 
   @BeforeEach
   protected void commonSetup() {
-    mockUriRetriever = mock(UriRetriever.class);
-    mockOrganizationRetriever = new OrganizationRetriever(mockUriRetriever);
-    subOrganizationId = randomUriWithSuffix("subOrganization");
-    topLevelOrganizationId = randomUriWithSuffix("topLevelOrganization");
-    mockOrganizationResponseForAffiliation(
-        topLevelOrganizationId, subOrganizationId, mockUriRetriever);
+    scenario = new TestScenario();
+    scenario.setupOpenPeriod(CURRENT_YEAR);
+    topLevelOrganizationId = scenario.getDefaultOrganization().id();
+    subOrganizationId = scenario.getDefaultOrganization().hasPart().getFirst().id();
+    mockOrganizationRetriever = scenario.getOrganizationRetriever();
+    mockUriRetriever = scenario.getUriRetriever();
 
     output = new ByteArrayOutputStream();
-    scenario = new TestScenario();
-    scenario.setupOpenPeriod(String.valueOf(CURRENT_YEAR));
     handler = createHandler();
   }
 

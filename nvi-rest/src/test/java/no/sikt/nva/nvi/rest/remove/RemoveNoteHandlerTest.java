@@ -130,7 +130,7 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
         scenario.getCandidateRepository());
     var noteId = getIdOfFirstNote(candidate);
     var request = createRequest(candidate.getIdentifier(), noteId, user).build();
-    scenario.setupClosedPeriod(String.valueOf(CURRENT_YEAR));
+    scenario.setupClosedPeriod(CURRENT_YEAR);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 

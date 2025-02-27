@@ -2,7 +2,6 @@ package no.sikt.nva.nvi.index;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
-import static no.sikt.nva.nvi.common.LocalDynamoTestSetup.initializeTestDatabase;
 import static no.sikt.nva.nvi.common.QueueServiceTestUtils.createEvent;
 import static no.sikt.nva.nvi.common.QueueServiceTestUtils.createEventWithOneInvalidRecord;
 import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
@@ -58,9 +57,9 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.S3StorageReader;
+import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.model.CandidateFixtures;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
@@ -129,11 +128,13 @@ class IndexDocumentHandlerTest {
 
   @BeforeEach
   void setup() {
+    var scenario = new TestScenario();
+    scenario.setupOpenPeriod(SOME_REPORTING_YEAR);
+    candidateRepository = scenario.getCandidateRepository();
+    periodRepository = scenario.getPeriodRepository();
+
     s3Reader = new S3Driver(s3Client, BUCKET_NAME);
     s3Writer = new S3Driver(s3Client, BUCKET_NAME);
-    candidateRepository = new CandidateRepository(initializeTestDatabase());
-    periodRepository =
-        PeriodRepositoryFixtures.periodRepositoryReturningOpenedPeriod(SOME_REPORTING_YEAR);
     uriRetriever = mock(UriRetriever.class);
     sqsClient = new FakeSqsClient();
     handler =

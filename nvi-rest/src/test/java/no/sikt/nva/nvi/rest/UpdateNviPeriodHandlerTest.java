@@ -1,7 +1,6 @@
 package no.sikt.nva.nvi.rest;
 
-import static no.sikt.nva.nvi.common.LocalDynamoTestSetup.initializeTestDatabase;
-import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupFuturePeriod;
+import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -18,7 +17,7 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.rest.model.UpsertNviPeriodRequest;
 import no.sikt.nva.nvi.rest.upsert.UpdateNviPeriodHandler;
@@ -35,14 +34,14 @@ class UpdateNviPeriodHandlerTest {
   private Context context;
   private ByteArrayOutputStream output;
   private UpdateNviPeriodHandler handler;
-  private PeriodRepository periodRepository;
+  private TestScenario scenario;
 
   @BeforeEach
   void init() {
+    scenario = new TestScenario();
     output = new ByteArrayOutputStream();
     context = mock(Context.class);
-    periodRepository = new PeriodRepository(initializeTestDatabase());
-    handler = new UpdateNviPeriodHandler(periodRepository);
+    handler = new UpdateNviPeriodHandler(scenario.getPeriodRepository());
   }
 
   @Test
@@ -64,10 +63,10 @@ class UpdateNviPeriodHandlerTest {
   @Test
   void shouldUpdateNviPeriodSuccessfully() throws IOException {
     var year = String.valueOf(ZonedDateTime.now().getYear());
-    var persistedPeriod = setupFuturePeriod(year, periodRepository);
+    var persistedPeriod = scenario.setupFuturePeriod(year);
     var updateRequest = updateRequest(year, persistedPeriod);
     handler.handleRequest(toInputStream(updateRequest), output, context);
-    var updatedPeriod = NviPeriod.fetchByPublishingYear(year, periodRepository);
+    var updatedPeriod = NviPeriod.fetchByPublishingYear(year, scenario.getPeriodRepository());
 
     assertThat(
         persistedPeriod.getReportingDate(), is(not(equalTo(updatedPeriod.getReportingDate()))));
@@ -82,7 +81,7 @@ class UpdateNviPeriodHandlerTest {
 
   private UpsertNviPeriodRequest randomUpsertNviPeriodRequest() {
     return new UpsertNviPeriodRequest(
-        String.valueOf(ZonedDateTime.now().getYear()),
+        String.valueOf(CURRENT_YEAR + 1),
         ZonedDateTime.now().plusMonths(1).toInstant().toString(),
         ZonedDateTime.now().plusMonths(10).toInstant().toString());
   }

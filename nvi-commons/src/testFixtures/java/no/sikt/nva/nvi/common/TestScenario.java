@@ -16,6 +16,7 @@ import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
@@ -52,20 +53,40 @@ public class TestScenario {
     return periodRepository;
   }
 
+  public OrganizationRetriever getOrganizationRetriever() {
+    return mockOrganizationRetriever;
+  }
+
+  public UriRetriever getUriRetriever() {
+    return mockUriRetriever;
+  }
+
   public Organization getDefaultOrganization() {
     return defaultOrganization;
   }
 
-  public void setupFuturePeriod(String year) {
-    PeriodRepositoryFixtures.setupFuturePeriod(year, periodRepository);
+  public NviPeriod setupFuturePeriod(String year) {
+    return PeriodRepositoryFixtures.setupFuturePeriod(year, periodRepository);
   }
 
-  public void setupOpenPeriod(String year) {
-    PeriodRepositoryFixtures.setupOpenPeriod(year, periodRepository);
+  public NviPeriod setupFuturePeriod(int year) {
+    return setupFuturePeriod(String.valueOf(year));
   }
 
-  public void setupClosedPeriod(String year) {
-    PeriodRepositoryFixtures.setupClosedPeriod(year, periodRepository);
+  public NviPeriod setupOpenPeriod(String year) {
+    return PeriodRepositoryFixtures.setupOpenPeriod(year, periodRepository);
+  }
+
+  public NviPeriod setupOpenPeriod(int year) {
+    return setupOpenPeriod(String.valueOf(year));
+  }
+
+  public NviPeriod setupClosedPeriod(String year) {
+    return PeriodRepositoryFixtures.setupClosedPeriod(year, periodRepository);
+  }
+
+  public NviPeriod setupClosedPeriod(int year) {
+    return setupClosedPeriod(String.valueOf(year));
   }
 
   public Candidate upsertCandidate(UpsertCandidateRequest request) {
