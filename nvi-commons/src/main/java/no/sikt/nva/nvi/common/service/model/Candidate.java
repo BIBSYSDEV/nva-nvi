@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.common.service.model;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.UUID.randomUUID;
+import static java.util.function.Predicate.not;
 import static no.sikt.nva.nvi.common.db.ReportStatus.REPORTED;
 import static no.sikt.nva.nvi.common.service.model.Approval.validateUpdateStatusRequest;
 import static no.sikt.nva.nvi.common.service.model.ApprovalStatus.APPROVED;
@@ -540,8 +541,9 @@ public final class Candidate {
     }
   }
 
-  /*
-   * Create new approvals in a pending state for institutions that have changes to their points.
+  /**
+   * Returns new approvals in a pending state for all institutions that should have their approvals
+   * reset.
    */
   private static List<DbApprovalStatus> getIndividualApprovalsToReset(
       Candidate candidate, Candidate updatedCandidate) {
@@ -622,7 +624,7 @@ public final class Candidate {
   private static boolean hasSameCreators(UpsertCandidateRequest request, Candidate candidate) {
     var affiliationsOfRemovedUnverifiedCreators =
         candidate.getPublicationDetails().getUnverifiedCreators().stream()
-            .filter(creator -> !request.unverifiedCreators().contains(creator))
+            .filter(not(creator -> request.unverifiedCreators().contains(creator)))
             .map(UnverifiedNviCreatorDto::affiliations)
             .map(HashSet::new)
             .toList();
@@ -630,7 +632,7 @@ public final class Candidate {
     var currentCreatorIds = candidate.getVerifiedNviCreatorIds();
     var affiliationsOfNewVerifiedCreators =
         request.verifiedCreators().stream()
-            .filter(creator -> !currentCreatorIds.contains(creator.id()))
+            .filter(not(creator -> currentCreatorIds.contains(creator.id())))
             .map(VerifiedNviCreatorDto::affiliations)
             .map(HashSet::new)
             .toList();
