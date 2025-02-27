@@ -212,9 +212,7 @@ public class UpsertRequestBuilder {
 
   private List<InstitutionPoints> getAllInstitutionPoints(
       Map<URI, Collection<NviCreatorDto>> creatorsPerInstitution) {
-    return creatorsPerInstitution.entrySet().stream()
-        .map(entry -> getInstitutionPoints(entry))
-        .toList();
+    return creatorsPerInstitution.entrySet().stream().map(this::getInstitutionPoints).toList();
   }
 
   private InstitutionPoints getInstitutionPoints(Map.Entry<URI, Collection<NviCreatorDto>> entry) {

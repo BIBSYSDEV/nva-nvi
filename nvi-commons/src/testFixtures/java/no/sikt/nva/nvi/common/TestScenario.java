@@ -27,6 +27,22 @@ public class TestScenario extends LocalDynamoTestSetup {
   private final UriRetriever mockUriRetriever = mock(UriRetriever.class);
   private final OrganizationRetriever mockOrganizationRetriever =
       new OrganizationRetriever(mockUriRetriever);
+  private final Organization defaultOrganization;
+
+  public TestScenario() {
+    super();
+    this.candidateRepository = new CandidateRepository(localDynamo);
+    this.periodRepository = new PeriodRepository(localDynamo);
+    this.defaultOrganization = setupTopLevelOrganizationWithSubUnits();
+  }
+
+  public final Organization setupTopLevelOrganizationWithSubUnits() {
+    var topLevelId = randomUriWithSuffix("topLevel");
+    var subUnits = List.of(randomUriWithSuffix("subUnit1"), randomUriWithSuffix("subUnit2"));
+
+    mockOrganizationResponseForAffiliations(topLevelId, subUnits, mockUriRetriever);
+    return mockOrganizationRetriever.fetchOrganization(topLevelId);
+  }
 
   public CandidateRepository getCandidateRepository() {
     return candidateRepository;
@@ -38,14 +54,6 @@ public class TestScenario extends LocalDynamoTestSetup {
 
   public Organization getDefaultOrganization() {
     return defaultOrganization;
-  }
-
-  private Organization defaultOrganization;
-
-  public TestScenario() {
-    this.candidateRepository = new CandidateRepository(localDynamo);
-    this.periodRepository = new PeriodRepository(localDynamo);
-    this.defaultOrganization = setupTopLevelOrganizationWithSubUnits();
   }
 
   public void setupFuturePeriod(String year) {
@@ -70,13 +78,5 @@ public class TestScenario extends LocalDynamoTestSetup {
       Candidate candidate, ApprovalStatus status, URI topLevelOrganizationId) {
     var updateRequest = createUpdateStatusRequest(status, topLevelOrganizationId, randomString());
     return candidate.updateApprovalStatus(updateRequest, mockOrganizationRetriever);
-  }
-
-  public Organization setupTopLevelOrganizationWithSubUnits() {
-    var topLevelId = randomUriWithSuffix("topLevel");
-    var subUnits = List.of(randomUriWithSuffix("subUnit1"), randomUriWithSuffix("subUnit2"));
-
-    mockOrganizationResponseForAffiliations(topLevelId, subUnits, mockUriRetriever);
-    return mockOrganizationRetriever.fetchOrganization(topLevelId);
   }
 }

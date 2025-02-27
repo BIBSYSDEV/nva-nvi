@@ -18,11 +18,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatusDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateOperation;
+import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.problem.UnverifiedCreatorFromOrganizationProblem;
 import no.sikt.nva.nvi.common.service.dto.problem.UnverifiedCreatorProblem;
+import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.validator.FakeViewingScopeValidator;
 import no.sikt.nva.nvi.rest.BaseCandidateRestHandlerTest;
 import no.unit.nva.testutils.HandlerRequestBuilder;
@@ -224,8 +227,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
   void shouldIncludeProblemsWhenCandidateHasUnverifiedCreator() throws IOException {
     var candidate = setupCandidateWithUnverifiedCreator();
     var request = createRequestWithCuratorAccess(candidate.getIdentifier().toString());
-    var unverifiedNviCreatorNames =
-        candidate.getPublicationDetails().getUnverifiedNviCreatorNames();
+    var unverifiedNviCreatorNames = getUnverifiedNviCreatorNames(candidate);
 
     var candidateDto = handleRequest(request);
 
@@ -235,6 +237,12 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
             new UnverifiedCreatorFromOrganizationProblem(unverifiedNviCreatorNames));
     var actualProblems = candidateDto.problems();
     assertEquals(actualProblems, expectedProblems);
+  }
+
+  private static Set<String> getUnverifiedNviCreatorNames(Candidate candidate) {
+    return candidate.getPublicationDetails().getUnverifiedCreators().stream()
+        .map(UnverifiedNviCreatorDto::name)
+        .collect(Collectors.toSet());
   }
 
   @Test
