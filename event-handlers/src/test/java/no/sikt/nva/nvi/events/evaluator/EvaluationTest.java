@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.events.evaluator;
 
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_JSON_PUBLICATION_DATE;
 import static no.sikt.nva.nvi.test.TestUtils.createResponse;
 import static org.mockito.Mockito.mock;
@@ -73,7 +74,7 @@ public class EvaluationTest {
     uriRetriever = scenario.getUriRetriever();
     candidateRepository = scenario.getCandidateRepository();
     periodRepository = scenario.getPeriodRepository();
-    scenario.setupOpenPeriod(HARDCODED_JSON_PUBLICATION_DATE.year());
+    setupOpenPeriod(scenario, HARDCODED_JSON_PUBLICATION_DATE.year());
 
     setupHttpResponses();
     mockSecretManager();

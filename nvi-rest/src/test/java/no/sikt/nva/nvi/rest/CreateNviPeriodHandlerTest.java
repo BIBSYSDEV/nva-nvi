@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.rest;
 
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupFuturePeriod;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -62,7 +63,7 @@ class CreateNviPeriodHandlerTest {
   @Test
   void shouldReturnBadRequestWhenPeriodExists() throws IOException {
     var year = String.valueOf(CURRENT_YEAR);
-    scenario.setupFuturePeriod(year);
+    setupFuturePeriod(scenario, year);
     var period = upsertRequest(year);
     handler.handleRequest(createRequest(period), output, context);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);

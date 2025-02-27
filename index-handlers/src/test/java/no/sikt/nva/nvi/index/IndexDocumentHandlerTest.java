@@ -10,6 +10,7 @@ import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertNonCandid
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.setupReportedCandidate;
 import static no.sikt.nva.nvi.common.db.DbApprovalStatusFixtures.randomApproval;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidateBuilder;
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_AFFILIATIONS;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_BODY;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_TYPE;
@@ -129,7 +130,7 @@ class IndexDocumentHandlerTest {
   @BeforeEach
   void setup() {
     var scenario = new TestScenario();
-    scenario.setupOpenPeriod(SOME_REPORTING_YEAR);
+    setupOpenPeriod(scenario, SOME_REPORTING_YEAR);
     candidateRepository = scenario.getCandidateRepository();
     periodRepository = scenario.getPeriodRepository();
 

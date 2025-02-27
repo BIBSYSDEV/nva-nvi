@@ -2,6 +2,8 @@ package no.sikt.nva.nvi.rest.upsert;
 
 import static java.util.Collections.emptyList;
 import static java.util.UUID.randomUUID;
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeriod;
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupFuturePeriod;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -120,7 +122,7 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
   void shouldReturnConflictWhenUpdatingAssigneeAndReportingPeriodIsClosed() throws IOException {
     var assignee = randomString();
     mockNviCuratorAccessForUser(assignee);
-    scenario.setupClosedPeriod(CURRENT_YEAR);
+    setupClosedPeriod(scenario, CURRENT_YEAR);
     handler.handleRequest(createRequest(candidate, assignee), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
@@ -132,7 +134,7 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
       throws IOException {
     var assignee = randomString();
     mockNviCuratorAccessForUser(assignee);
-    scenario.setupFuturePeriod(CURRENT_YEAR);
+    setupFuturePeriod(scenario, CURRENT_YEAR);
     handler.handleRequest(createRequest(candidate, assignee), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 

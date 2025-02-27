@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.rest;
 
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertNonCandidateRequest;
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.model.CandidateFixtures.randomApplicableCandidate;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.mockOrganizationResponseForAffiliation;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
@@ -75,7 +76,7 @@ public abstract class BaseCandidateRestHandlerTest {
   @BeforeEach
   protected void commonSetup() {
     scenario = new TestScenario();
-    scenario.setupOpenPeriod(CURRENT_YEAR);
+    setupOpenPeriod(scenario, CURRENT_YEAR);
     topLevelOrganizationId = scenario.getDefaultOrganization().id();
     subOrganizationId = scenario.getDefaultOrganization().hasPart().getFirst().id();
     mockOrganizationRetriever = scenario.getOrganizationRetriever();

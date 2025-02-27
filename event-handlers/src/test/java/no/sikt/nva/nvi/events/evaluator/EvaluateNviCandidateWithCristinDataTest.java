@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.events.evaluator;
 
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.mockOrganizationResponseForAffiliation;
 import static no.sikt.nva.nvi.events.evaluator.TestUtils.createEvent;
 import static no.sikt.nva.nvi.test.TestUtils.createResponse;
@@ -49,7 +50,7 @@ class EvaluateNviCandidateWithCristinDataTest extends EvaluationTest {
 
   @BeforeEach
   void setup() {
-    scenario.setupOpenPeriod("2022");
+    setupOpenPeriod(scenario, "2022");
   }
 
   @Test

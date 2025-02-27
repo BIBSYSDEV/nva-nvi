@@ -845,7 +845,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       // Then it should be evaluated as a Candidate
       var testScenario = getCandidateScenario();
       var year = HARDCODED_JSON_PUBLICATION_DATE.year();
-      setupOpenPeriod(year, periodRepository);
+      setupOpenPeriod(scenario, year);
 
       handler.handleRequest(testScenario.event(), CONTEXT);
       var messageBody = getMessageBody();
@@ -860,7 +860,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       // When the publication is evaluated
       // Then it should be evaluated as a Candidate
       var year = HARDCODED_JSON_PUBLICATION_DATE.year();
-      setupClosedPeriod(year, periodRepository);
+      setupClosedPeriod(scenario, year);
       setupCandidateMatchingPublication(buildExpectedPublication());
       var testScenario = getCandidateScenario();
 
@@ -878,7 +878,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       // When the publication is updated to be no longer applicable
       // Then it should be re-evaluated as a NonCandidate
       var year = HARDCODED_JSON_PUBLICATION_DATE.year();
-      setupClosedPeriod(year, periodRepository);
+      setupClosedPeriod(scenario, year);
       setupCandidateMatchingPublication(buildExpectedPublication());
       publicationInstanceType = "ComicBook";
       var testScenario = getNonCandidateScenario();
@@ -898,7 +898,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       // When the publication is evaluated
       // Then it should be evaluated as a NonCandidate
       var year = HARDCODED_JSON_PUBLICATION_DATE.year();
-      setupClosedPeriod(year, periodRepository);
+      setupClosedPeriod(scenario, year);
       var testScenario = getNonCandidateScenario();
 
       handler.handleRequest(testScenario.event(), CONTEXT);

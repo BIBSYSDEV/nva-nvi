@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.rest.remove;
 
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeriod;
 import static no.sikt.nva.nvi.common.db.UsernameFixtures.randomUsername;
 import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateHandler.CANDIDATE_IDENTIFIER;
 import static no.sikt.nva.nvi.rest.remove.RemoveNoteHandler.PARAM_NOTE_IDENTIFIER;
@@ -130,7 +131,7 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
         scenario.getCandidateRepository());
     var noteId = getIdOfFirstNote(candidate);
     var request = createRequest(candidate.getIdentifier(), noteId, user).build();
-    scenario.setupClosedPeriod(CURRENT_YEAR);
+    setupClosedPeriod(scenario, CURRENT_YEAR);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 

@@ -1,5 +1,7 @@
 package no.sikt.nva.nvi.rest.upsert;
 
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeriod;
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupFuturePeriod;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -145,7 +147,7 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldReturnConflictWhenUpdatingStatusAndReportingPeriodIsClosed() throws IOException {
-    scenario.setupClosedPeriod(CURRENT_YEAR);
+    setupClosedPeriod(scenario, CURRENT_YEAR);
     var candidate = setupValidCandidate(topLevelOrganizationId);
     var request =
         createRequest(candidate.getIdentifier(), topLevelOrganizationId, ApprovalStatus.APPROVED);
@@ -172,7 +174,7 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldReturnConflictWhenUpdatingStatusAndNotOpenedPeriod() throws IOException {
-    scenario.setupFuturePeriod(CURRENT_YEAR);
+    setupFuturePeriod(scenario, CURRENT_YEAR);
     var candidate = setupValidCandidate(topLevelOrganizationId);
     var request =
         createRequest(candidate.getIdentifier(), topLevelOrganizationId, ApprovalStatus.APPROVED);

@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.rest.create;
 
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -111,7 +112,7 @@ class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
     var request =
         createRequest(
             candidate.getIdentifier(), new NviNoteRequest(randomString()), randomString());
-    scenario.setupClosedPeriod(CURRENT_YEAR);
+    setupClosedPeriod(scenario, CURRENT_YEAR);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 

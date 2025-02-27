@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.rest;
 
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupFuturePeriod;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -62,7 +63,7 @@ class UpdateNviPeriodHandlerTest {
   @Test
   void shouldUpdateNviPeriodSuccessfully() throws IOException {
     var year = String.valueOf(ZonedDateTime.now().getYear());
-    var persistedPeriod = scenario.setupFuturePeriod(year);
+    var persistedPeriod = setupFuturePeriod(scenario, year);
     var updateRequest = updateRequest(year, persistedPeriod);
     handler.handleRequest(toInputStream(updateRequest), output, CONTEXT);
     var updatedPeriod = NviPeriod.fetchByPublishingYear(year, scenario.getPeriodRepository());

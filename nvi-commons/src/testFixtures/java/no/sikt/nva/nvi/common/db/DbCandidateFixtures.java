@@ -1,10 +1,10 @@
 package no.sikt.nva.nvi.common.db;
 
 import static no.sikt.nva.nvi.common.model.InstanceTypeFixtures.randomInstanceType;
+import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
-import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 
 import java.net.URI;
@@ -33,6 +33,7 @@ public class DbCandidateFixtures {
     var creatorId = randomUri();
     var institutionPoints = TestUtils.randomBigDecimal();
     var instanceType = randomInstanceType().getValue();
+    var publicationDate = new DbPublicationDate(String.valueOf(CURRENT_YEAR), "10", "10");
     return DbCandidate.builder()
         .publicationId(randomUri())
         .publicationBucketUri(randomUri())
@@ -49,7 +50,7 @@ public class DbCandidateFixtures {
         .level(DbLevel.LEVEL_ONE)
         .channelType(randomElement(ChannelType.values()))
         .channelId(randomUri())
-        .publicationDate(new DbPublicationDate(randomString(), randomString(), randomString()))
+        .publicationDate(publicationDate)
         .internationalCollaboration(randomBoolean())
         .creatorCount(randomInteger())
         .createdDate(Instant.now())

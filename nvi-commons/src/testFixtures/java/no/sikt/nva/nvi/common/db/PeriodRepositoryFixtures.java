@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.Optional;
+import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.service.model.CreatePeriodRequest;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
@@ -58,16 +59,28 @@ public class PeriodRepositoryFixtures {
     return mockPeriodRepositoryReturn(period);
   }
 
-  public static NviPeriod setupFuturePeriod(String year, PeriodRepository periodRepository) {
-    return upsertPeriod(year, nextMonth, nextYear, periodRepository);
+  public static NviPeriod setupFuturePeriod(TestScenario scenario, String year) {
+    return upsertPeriod(year, nextMonth, nextYear, scenario.getPeriodRepository());
   }
 
-  public static NviPeriod setupOpenPeriod(String year, PeriodRepository periodRepository) {
-    return upsertPeriod(year, previousMonth, nextYear, periodRepository);
+  public static NviPeriod setupFuturePeriod(TestScenario scenario, int year) {
+    return setupFuturePeriod(scenario, String.valueOf(year));
   }
 
-  public static NviPeriod setupClosedPeriod(String year, PeriodRepository periodRepository) {
-    return upsertPeriod(year, previousYear, previousMonth, periodRepository);
+  public static NviPeriod setupOpenPeriod(TestScenario scenario, String year) {
+    return upsertPeriod(year, previousMonth, nextYear, scenario.getPeriodRepository());
+  }
+
+  public static NviPeriod setupOpenPeriod(TestScenario scenario, int year) {
+    return setupOpenPeriod(scenario, String.valueOf(year));
+  }
+
+  public static NviPeriod setupClosedPeriod(TestScenario scenario, String year) {
+    return upsertPeriod(year, previousYear, previousMonth, scenario.getPeriodRepository());
+  }
+
+  public static NviPeriod setupClosedPeriod(TestScenario scenario, int year) {
+    return setupClosedPeriod(scenario, String.valueOf(year));
   }
 
   private static NviPeriod upsertPeriod(

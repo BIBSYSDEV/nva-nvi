@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.common.model;
 
 import static no.sikt.nva.nvi.common.UpsertRequestBuilder.fromRequest;
 import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 
 import java.net.URI;
 import java.util.Collection;
@@ -37,7 +38,7 @@ public class CandidateFixtures {
       Map<URI, Collection<NviCreatorDto>> creatorsPerOrganization) {
     var candidateRequest =
         randomUpsertRequestBuilder().withCreatorsAndPoints(creatorsPerOrganization).build();
-    scenario.setupOpenPeriod(candidateRequest.publicationDate().year());
+    setupOpenPeriod(scenario, candidateRequest.publicationDate().year());
     var candidate = scenario.upsertCandidate(candidateRequest);
 
     scenario.updateApprovalStatus(candidate, ApprovalStatus.APPROVED, approvedByOrg);

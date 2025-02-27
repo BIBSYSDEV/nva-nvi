@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.rest.fetch;
 
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupFuturePeriod;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -52,8 +53,8 @@ class FetchNviPeriodsHandlerTest {
 
   @Test
   void shouldReturnPeriodsWhenUserHasAccessRights() throws IOException {
-    scenario.setupFuturePeriod(CURRENT_YEAR + 1);
-    scenario.setupFuturePeriod(CURRENT_YEAR + 2);
+    setupFuturePeriod(scenario, CURRENT_YEAR + 1);
+    setupFuturePeriod(scenario, CURRENT_YEAR + 2);
     handler.handleRequest(createRequestWithAccessRight(AccessRight.MANAGE_NVI), output, context);
     var response = GatewayResponse.fromOutputStream(output, NviPeriodsResponse.class);
 

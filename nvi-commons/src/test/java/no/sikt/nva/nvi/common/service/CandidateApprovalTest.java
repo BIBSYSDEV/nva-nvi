@@ -38,8 +38,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import no.sikt.nva.nvi.common.TestScenario;
-import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
@@ -60,7 +58,6 @@ import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliation
 import no.sikt.nva.nvi.common.service.model.PublicationChannel;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
-import no.unit.nva.auth.uriretriever.UriRetriever;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Named;
@@ -86,9 +83,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
   private static final InstanceType HARDCODED_INSTANCE_TYPE = InstanceType.ACADEMIC_ARTICLE;
   private static final BigDecimal HARDCODED_POINTS =
       BigDecimal.ONE.setScale(EXPECTED_SCALE, EXPECTED_ROUNDING_MODE);
-  private OrganizationRetriever mockOrganizationRetriever;
   private URI topLevelOrganizationId;
-  private TestScenario scenario;
 
   public static Stream<Arguments> statusProvider() {
     return Stream.of(
@@ -115,13 +110,10 @@ class CandidateApprovalTest extends CandidateTestSetup {
 
   @BeforeEach
   void setUp() {
-    var mockUriRetriever = mock(UriRetriever.class);
-    mockOrganizationRetriever = new OrganizationRetriever(mockUriRetriever);
     topLevelOrganizationId = randomUriWithSuffix("topLevelOrganization");
     mockOrganizationResponseForAffiliation(topLevelOrganizationId, null, mockUriRetriever);
     mockOrganizationResponseForAffiliation(
         HARDCODED_INSTITUTION_ID, HARDCODED_SUBUNIT_ID, mockUriRetriever);
-    scenario = new TestScenario();
   }
 
   @ParameterizedTest(name = "Should update from old status {0} to new status {1}")
