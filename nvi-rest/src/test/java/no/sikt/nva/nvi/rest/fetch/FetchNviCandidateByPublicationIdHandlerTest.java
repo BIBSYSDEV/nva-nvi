@@ -31,8 +31,8 @@ class FetchNviCandidateByPublicationIdHandlerTest extends BaseCandidateRestHandl
   @Override
   protected ApiGatewayHandler<Void, CandidateDto> createHandler() {
     return new FetchNviCandidateByPublicationIdHandler(
-        candidateRepository,
-        periodRepository,
+        scenario.getCandidateRepository(),
+        scenario.getPeriodRepository(),
         mockViewingScopeValidator,
         mockOrganizationRetriever);
   }
@@ -77,7 +77,8 @@ class FetchNviCandidateByPublicationIdHandlerTest extends BaseCandidateRestHandl
   @Test
   void shouldReturnCandidateWithReportStatus() throws IOException {
     var candidate =
-        setupReportedCandidate(candidateRepository, randomYear(), topLevelOrganizationId);
+        setupReportedCandidate(
+            scenario.getCandidateRepository(), randomYear(), topLevelOrganizationId);
     var publicationId = candidate.candidate().publicationId();
     var request = createRequestWithCuratorAccess(publicationId.toString());
 
@@ -107,8 +108,8 @@ class FetchNviCandidateByPublicationIdHandlerTest extends BaseCandidateRestHandl
     var request = createRequestWithCuratorAccess(candidate.getPublicationId().toString());
     handler =
         new FetchNviCandidateByPublicationIdHandler(
-            candidateRepository,
-            periodRepository,
+            scenario.getCandidateRepository(),
+            scenario.getPeriodRepository(),
             new FakeViewingScopeValidator(false),
             mockOrganizationRetriever);
     handler.handleRequest(request, output, CONTEXT);

@@ -2,8 +2,6 @@ package no.sikt.nva.nvi.rest.upsert;
 
 import static java.util.Collections.emptyList;
 import static java.util.UUID.randomUUID;
-import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.periodRepositoryReturningClosedPeriod;
-import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.periodRepositoryReturningNotOpenedPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -52,8 +50,8 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
   @Override
   protected ApiGatewayHandler<UpsertAssigneeRequest, CandidateDto> createHandler() {
     return new UpsertAssigneeHandler(
-        candidateRepository,
-        periodRepository,
+        scenario.getCandidateRepository(),
+        scenario.getPeriodRepository(),
         mockIdentityServiceClient,
         mockViewingScopeValidator,
         mockOrganizationRetriever);
@@ -97,8 +95,8 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
     var viewingScopeValidatorReturningFalse = new FakeViewingScopeValidator(false);
     handler =
         new UpsertAssigneeHandler(
-            candidateRepository,
-            periodRepository,
+            scenario.getCandidateRepository(),
+            scenario.getPeriodRepository(),
             mockIdentityServiceClient,
             viewingScopeValidatorReturningFalse,
             mockOrganizationRetriever);
@@ -122,15 +120,8 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
   void shouldReturnConflictWhenUpdatingAssigneeAndReportingPeriodIsClosed() throws IOException {
     var assignee = randomString();
     mockNviCuratorAccessForUser(assignee);
-    var periodRepositoryForClosedPeriod = periodRepositoryReturningClosedPeriod(CURRENT_YEAR);
-    var customHandler =
-        new UpsertAssigneeHandler(
-            candidateRepository,
-            periodRepositoryForClosedPeriod,
-            mockIdentityServiceClient,
-            mockViewingScopeValidator,
-            mockOrganizationRetriever);
-    customHandler.handleRequest(createRequest(candidate, assignee), output, CONTEXT);
+    scenario.setupClosedPeriod(String.valueOf(CURRENT_YEAR));
+    handler.handleRequest(createRequest(candidate, assignee), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
     assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_CONFLICT)));
@@ -141,16 +132,8 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
       throws IOException {
     var assignee = randomString();
     mockNviCuratorAccessForUser(assignee);
-    var periodRepositoryForNotYetOpenPeriod =
-        periodRepositoryReturningNotOpenedPeriod(CURRENT_YEAR);
-    var customHandler =
-        new UpsertAssigneeHandler(
-            candidateRepository,
-            periodRepositoryForNotYetOpenPeriod,
-            mockIdentityServiceClient,
-            mockViewingScopeValidator,
-            mockOrganizationRetriever);
-    customHandler.handleRequest(createRequest(candidate, assignee), output, CONTEXT);
+    scenario.setupFuturePeriod(String.valueOf(CURRENT_YEAR));
+    handler.handleRequest(createRequest(candidate, assignee), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
     assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_CONFLICT)));

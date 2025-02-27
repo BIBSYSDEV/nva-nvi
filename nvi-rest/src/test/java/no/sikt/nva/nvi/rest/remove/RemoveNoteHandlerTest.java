@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.rest.remove;
 
-import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.periodRepositoryReturningClosedPeriod;
 import static no.sikt.nva.nvi.common.db.UsernameFixtures.randomUsername;
 import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateHandler.CANDIDATE_IDENTIFIER;
 import static no.sikt.nva.nvi.rest.remove.RemoveNoteHandler.PARAM_NOTE_IDENTIFIER;
@@ -48,8 +47,8 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
   @Override
   protected ApiGatewayHandler<Void, CandidateDto> createHandler() {
     return new RemoveNoteHandler(
-        candidateRepository,
-        periodRepository,
+        scenario.getCandidateRepository(),
+        scenario.getPeriodRepository(),
         mockViewingScopeValidator,
         mockOrganizationRetriever);
   }
@@ -80,8 +79,8 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
     var viewingScopeValidatorReturningFalse = new FakeViewingScopeValidator(false);
     handler =
         new RemoveNoteHandler(
-            candidateRepository,
-            periodRepository,
+            scenario.getCandidateRepository(),
+            scenario.getPeriodRepository(),
             viewingScopeValidatorReturningFalse,
             mockOrganizationRetriever);
     handler.handleRequest(request, output, CONTEXT);
@@ -127,15 +126,11 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
     var candidate = setupValidCandidate(topLevelOrganizationId);
     var user = randomString();
     candidate.createNote(
-        new CreateNoteRequest(randomString(), user, randomUri()), candidateRepository);
+        new CreateNoteRequest(randomString(), user, randomUri()),
+        scenario.getCandidateRepository());
     var noteId = getIdOfFirstNote(candidate);
     var request = createRequest(candidate.getIdentifier(), noteId, user).build();
-    handler =
-        new RemoveNoteHandler(
-            candidateRepository,
-            periodRepositoryReturningClosedPeriod(CURRENT_YEAR),
-            new FakeViewingScopeValidator(true),
-            mockOrganizationRetriever);
+    scenario.setupClosedPeriod(String.valueOf(CURRENT_YEAR));
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
@@ -161,7 +156,7 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
   private Candidate createNote(Candidate candidate, Username user) {
     return candidate.createNote(
         new CreateNoteRequest(randomString(), user.value(), topLevelOrganizationId),
-        candidateRepository);
+        scenario.getCandidateRepository());
   }
 
   private HandlerRequestBuilder<NviNoteRequest> createRequest(

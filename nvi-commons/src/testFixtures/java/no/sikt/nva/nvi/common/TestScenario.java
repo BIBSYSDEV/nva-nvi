@@ -31,7 +31,6 @@ public class TestScenario {
   private final Organization defaultOrganization;
 
   public TestScenario() {
-    super();
     this.candidateRepository = new CandidateRepository(localDynamo);
     this.periodRepository = new PeriodRepository(localDynamo);
     this.defaultOrganization = setupTopLevelOrganizationWithSubUnits();
