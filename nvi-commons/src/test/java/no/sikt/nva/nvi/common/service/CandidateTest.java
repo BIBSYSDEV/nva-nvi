@@ -8,8 +8,8 @@ import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertNonCandid
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.setupReportedCandidate;
 import static no.sikt.nva.nvi.common.db.DbApprovalStatusFixtures.randomApproval;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidate;
-import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.periodRepositoryReturningClosedPeriod;
-import static no.sikt.nva.nvi.common.model.CandidateFixtures.randomApplicableCandidate;
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeriod;
+import static no.sikt.nva.nvi.common.model.CandidateFixtures.setupRandomApplicableCandidate;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.mockOrganizationResponseForAffiliation;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
@@ -205,7 +205,7 @@ class CandidateTest extends CandidateTestSetup {
 
   @Test
   void shouldFetchCandidateByPublicationId() {
-    var candidate = randomApplicableCandidate(candidateRepository, periodRepository);
+    var candidate = setupRandomApplicableCandidate(candidateRepository, periodRepository);
     var fetchedCandidate =
         Candidate.fetchByPublicationId(
             candidate::getPublicationId, candidateRepository, periodRepository);
@@ -303,7 +303,7 @@ class CandidateTest extends CandidateTestSetup {
 
   @Test
   void shouldReturnCandidateWithNoPeriodWhenNotApplicable() {
-    var tempCandidate = randomApplicableCandidate(candidateRepository, periodRepository);
+    var tempCandidate = setupRandomApplicableCandidate(candidateRepository, periodRepository);
     var updateRequest = createUpsertNonCandidateRequest(tempCandidate.getPublicationId());
     var candidateBO =
         Candidate.updateNonCandidate(updateRequest, candidateRepository).orElseThrow();
@@ -414,7 +414,7 @@ class CandidateTest extends CandidateTestSetup {
 
   @Test
   void shouldUpdateVersion() {
-    var candidate = randomApplicableCandidate(candidateRepository, periodRepository);
+    var candidate = setupRandomApplicableCandidate(candidateRepository, periodRepository);
     var dao = candidateRepository.findCandidateById(candidate.getIdentifier()).orElseThrow();
 
     candidate.updateVersion(candidateRepository);
@@ -459,23 +459,15 @@ class CandidateTest extends CandidateTestSetup {
 
   @Test
   void shouldReturnTrueWhenCandidateIsNotReportedInClosedPeriod() {
-    var periodRepository = periodRepositoryReturningClosedPeriod(CURRENT_YEAR);
-    var requestForClosedPeriod =
-        randomUpsertRequestBuilder()
-            .withPublicationDate(new PublicationDate(String.valueOf(CURRENT_YEAR), null, null))
-            .build();
-    Candidate.upsert(requestForClosedPeriod, candidateRepository, this.periodRepository);
-    var candidate =
-        Candidate.fetchByPublicationId(
-            requestForClosedPeriod::publicationId, candidateRepository, periodRepository);
-
+    setupClosedPeriod(scenario, CURRENT_YEAR);
+    var candidate = setupRandomApplicableCandidate(scenario, CURRENT_YEAR);
     assertTrue(candidate.isNotReportedInClosedPeriod());
   }
 
   @Test
   void shouldReturnFalseWhenCandidateIsReportedInClosedPeriod() {
     var dao = setupReportedCandidate(candidateRepository, String.valueOf(CURRENT_YEAR));
-    var periodRepository = periodRepositoryReturningClosedPeriod(CURRENT_YEAR);
+    setupClosedPeriod(scenario, CURRENT_YEAR);
     var candidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
     assertFalse(candidate.isNotReportedInClosedPeriod());
   }
@@ -511,7 +503,7 @@ class CandidateTest extends CandidateTestSetup {
   }
 
   private Candidate nonApplicableCandidate() {
-    var tempCandidate = randomApplicableCandidate(candidateRepository, periodRepository);
+    var tempCandidate = setupRandomApplicableCandidate(candidateRepository, periodRepository);
     var updateRequest = createUpsertNonCandidateRequest(tempCandidate.getPublicationId());
     var candidateBO =
         Candidate.updateNonCandidate(updateRequest, candidateRepository).orElseThrow();

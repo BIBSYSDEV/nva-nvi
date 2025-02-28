@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.rest.upsert;
 
-import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.periodRepositoryReturningClosedPeriod;
-import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.periodRepositoryReturningNotOpenedPeriod;
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeriod;
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupFuturePeriod;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
-import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatusDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateOperation;
@@ -65,8 +64,8 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
   @Override
   protected ApiGatewayHandler<NviStatusRequest, CandidateDto> createHandler() {
     return new UpdateNviCandidateStatusHandler(
-        candidateRepository,
-        periodRepository,
+        scenario.getCandidateRepository(),
+        scenario.getPeriodRepository(),
         mockViewingScopeValidator,
         mockOrganizationRetriever);
   }
@@ -103,8 +102,8 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
         createRequest(candidate.getIdentifier(), topLevelOrganizationId, ApprovalStatus.APPROVED);
     handler =
         new UpdateNviCandidateStatusHandler(
-            candidateRepository,
-            periodRepository,
+            scenario.getCandidateRepository(),
+            scenario.getPeriodRepository(),
             new FakeViewingScopeValidator(false),
             mockOrganizationRetriever);
     handler.handleRequest(request, output, CONTEXT);
@@ -148,14 +147,7 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldReturnConflictWhenUpdatingStatusAndReportingPeriodIsClosed() throws IOException {
-    candidateRepository = new CandidateRepository(localDynamo);
-    periodRepository = periodRepositoryReturningClosedPeriod(CURRENT_YEAR);
-    handler =
-        new UpdateNviCandidateStatusHandler(
-            candidateRepository,
-            periodRepository,
-            mockViewingScopeValidator,
-            mockOrganizationRetriever);
+    setupClosedPeriod(scenario, CURRENT_YEAR);
     var candidate = setupValidCandidate(topLevelOrganizationId);
     var request =
         createRequest(candidate.getIdentifier(), topLevelOrganizationId, ApprovalStatus.APPROVED);
@@ -182,14 +174,7 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldReturnConflictWhenUpdatingStatusAndNotOpenedPeriod() throws IOException {
-    candidateRepository = new CandidateRepository(localDynamo);
-    periodRepository = periodRepositoryReturningNotOpenedPeriod(CURRENT_YEAR);
-    handler =
-        new UpdateNviCandidateStatusHandler(
-            candidateRepository,
-            periodRepository,
-            mockViewingScopeValidator,
-            mockOrganizationRetriever);
+    setupFuturePeriod(scenario, CURRENT_YEAR);
     var candidate = setupValidCandidate(topLevelOrganizationId);
     var request =
         createRequest(candidate.getIdentifier(), topLevelOrganizationId, ApprovalStatus.APPROVED);

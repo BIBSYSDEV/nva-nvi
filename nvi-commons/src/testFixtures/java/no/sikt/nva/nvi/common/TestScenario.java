@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.common;
 
+import static no.sikt.nva.nvi.common.LocalDynamoTestSetup.initializeTestDatabase;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpdateStatusRequest;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.mockOrganizationResponseForAffiliations;
 import static no.sikt.nva.nvi.test.TestUtils.randomUriWithSuffix;
@@ -12,14 +13,13 @@ import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
-public class TestScenario extends LocalDynamoTestSetup {
+public class TestScenario {
 
   private final DynamoDbClient localDynamo = initializeTestDatabase();
   private final CandidateRepository candidateRepository;
@@ -30,7 +30,6 @@ public class TestScenario extends LocalDynamoTestSetup {
   private final Organization defaultOrganization;
 
   public TestScenario() {
-    super();
     this.candidateRepository = new CandidateRepository(localDynamo);
     this.periodRepository = new PeriodRepository(localDynamo);
     this.defaultOrganization = setupTopLevelOrganizationWithSubUnits();
@@ -52,20 +51,16 @@ public class TestScenario extends LocalDynamoTestSetup {
     return periodRepository;
   }
 
+  public OrganizationRetriever getOrganizationRetriever() {
+    return mockOrganizationRetriever;
+  }
+
+  public UriRetriever getUriRetriever() {
+    return mockUriRetriever;
+  }
+
   public Organization getDefaultOrganization() {
     return defaultOrganization;
-  }
-
-  public void setupFuturePeriod(String year) {
-    PeriodRepositoryFixtures.setupFuturePeriod(year, periodRepository);
-  }
-
-  public void setupOpenPeriod(String year) {
-    PeriodRepositoryFixtures.setupOpenPeriod(year, periodRepository);
-  }
-
-  public void setupClosedPeriod(String year) {
-    PeriodRepositoryFixtures.setupClosedPeriod(year, periodRepository);
   }
 
   public Candidate upsertCandidate(UpsertCandidateRequest request) {

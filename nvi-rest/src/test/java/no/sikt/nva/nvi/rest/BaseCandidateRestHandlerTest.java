@@ -1,14 +1,10 @@
 package no.sikt.nva.nvi.rest;
 
-import static java.math.BigDecimal.ZERO;
-import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertNonCandidateRequest;
-import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.periodRepositoryReturningOpenedPeriod;
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.mockOrganizationResponseForAffiliation;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
-import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
-import static no.sikt.nva.nvi.test.TestUtils.randomUriWithSuffix;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -22,27 +18,19 @@ import com.google.common.net.HttpHeaders;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.math.BigDecimal;
 import java.net.URI;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
-import no.sikt.nva.nvi.common.LocalDynamoTestSetup;
-import no.sikt.nva.nvi.common.UpsertRequestBuilder;
+import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
-import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.model.CandidateFixtures;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
-import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
-import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
-import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.common.validator.FakeViewingScopeValidator;
 import no.sikt.nva.nvi.common.validator.ViewingScopeValidator;
 import no.unit.nva.auth.uriretriever.UriRetriever;
@@ -52,25 +40,21 @@ import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.GatewayResponse;
 import org.apache.hc.core5.http.ContentType;
 import org.junit.jupiter.api.BeforeEach;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 /** Base test class for handlers that return a CandidateDto. */
 @SuppressWarnings("PMD.CouplingBetweenObjects")
-public abstract class BaseCandidateRestHandlerTest extends LocalDynamoTestSetup {
+public abstract class BaseCandidateRestHandlerTest {
   protected static final ViewingScopeValidator mockViewingScopeValidator =
       new FakeViewingScopeValidator(true);
   protected static final Context CONTEXT = mock(Context.class);
-  protected final DynamoDbClient localDynamo = initializeTestDatabase();
-  protected UriRetriever mockUriRetriever = mock(UriRetriever.class);
-  protected OrganizationRetriever mockOrganizationRetriever =
-      new OrganizationRetriever(mockUriRetriever);
+  protected UriRetriever mockUriRetriever;
+  protected OrganizationRetriever mockOrganizationRetriever;
   protected String resourcePathParameter;
   protected URI topLevelOrganizationId;
   protected URI subOrganizationId;
   protected ByteArrayOutputStream output;
-  protected CandidateRepository candidateRepository;
-  protected PeriodRepository periodRepository;
   protected ApiGatewayHandler<?, CandidateDto> handler;
+  protected TestScenario scenario;
 
   protected InputStream createRequestWithAdminAccess(String resourceIdentifier)
       throws JsonProcessingException {
@@ -91,16 +75,14 @@ public abstract class BaseCandidateRestHandlerTest extends LocalDynamoTestSetup 
 
   @BeforeEach
   protected void commonSetup() {
-    mockUriRetriever = mock(UriRetriever.class);
-    mockOrganizationRetriever = new OrganizationRetriever(mockUriRetriever);
-    subOrganizationId = randomUriWithSuffix("subOrganization");
-    topLevelOrganizationId = randomUriWithSuffix("topLevelOrganization");
-    mockOrganizationResponseForAffiliation(
-        topLevelOrganizationId, subOrganizationId, mockUriRetriever);
+    scenario = new TestScenario();
+    setupOpenPeriod(scenario, CURRENT_YEAR);
+    topLevelOrganizationId = scenario.getDefaultOrganization().id();
+    subOrganizationId = scenario.getDefaultOrganization().hasPart().getFirst().id();
+    mockOrganizationRetriever = scenario.getOrganizationRetriever();
+    mockUriRetriever = scenario.getUriRetriever();
 
     output = new ByteArrayOutputStream();
-    candidateRepository = new CandidateRepository(localDynamo);
-    periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
     handler = createHandler();
   }
 
@@ -121,65 +103,6 @@ public abstract class BaseCandidateRestHandlerTest extends LocalDynamoTestSetup 
     return createRequest(resourceIdentifier, topLevelOrganizationId, MANAGE_NVI_CANDIDATES);
   }
 
-  protected Candidate setupValidCandidate(URI topLevelOrganizationId) {
-    var verifiedCreator = setupDefaultVerifiedCreator();
-    var request =
-        createUpsertCandidateRequestWithPoints(
-                Map.of(topLevelOrganizationId, List.of(verifiedCreator)))
-            .build();
-    return upsert(request);
-  }
-
-  protected VerifiedNviCreatorDto setupDefaultVerifiedCreator() {
-    return setupVerifiedCreator(randomUri(), List.of(subOrganizationId), topLevelOrganizationId);
-  }
-
-  protected static UpsertRequestBuilder createUpsertCandidateRequestWithPoints(
-      Map<URI, Collection<NviCreatorDto>> nviCreatorsPerInstitution) {
-    var institutionPoints =
-        nviCreatorsPerInstitution.entrySet().stream()
-            .map(BaseCandidateRestHandlerTest::getCreatorPoints)
-            .toList();
-    var totalPoints =
-        institutionPoints.stream()
-            .map(InstitutionPoints::institutionPoints)
-            .reduce(ZERO, BigDecimal::add);
-    var verifiedCreators =
-        nviCreatorsPerInstitution.values().stream()
-            .flatMap(Collection::stream)
-            .filter(VerifiedNviCreatorDto.class::isInstance)
-            .map(VerifiedNviCreatorDto.class::cast)
-            .toList();
-    var unverifiedCreators =
-        nviCreatorsPerInstitution.values().stream()
-            .flatMap(Collection::stream)
-            .filter(UnverifiedNviCreatorDto.class::isInstance)
-            .map(UnverifiedNviCreatorDto.class::cast)
-            .toList();
-
-    var creatorMap =
-        nviCreatorsPerInstitution.entrySet().stream()
-            .flatMap(
-                entry ->
-                    entry.getValue().stream()
-                        .filter(VerifiedNviCreatorDto.class::isInstance)
-                        .map(VerifiedNviCreatorDto.class::cast)
-                        .map(creator -> Map.entry(creator.id(), creator.affiliations())))
-            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-    return randomUpsertRequestBuilder()
-        .withVerifiedCreators(verifiedCreators)
-        .withUnverifiedCreators(unverifiedCreators)
-        .withCreators(creatorMap)
-        .withPoints(institutionPoints)
-        .withTotalPoints(totalPoints);
-  }
-
-  protected Candidate upsert(UpsertCandidateRequest request) {
-    Candidate.upsert(request, candidateRepository, periodRepository);
-    return Candidate.fetchByPublicationId(
-        request::publicationId, candidateRepository, periodRepository);
-  }
-
   protected VerifiedNviCreatorDto setupVerifiedCreator(
       URI id, Collection<URI> affiliations, URI topLevelInstitutionId) {
     affiliations.forEach(
@@ -189,45 +112,8 @@ public abstract class BaseCandidateRestHandlerTest extends LocalDynamoTestSetup 
     return new VerifiedNviCreatorDto(id, List.copyOf(affiliations));
   }
 
-  private static InstitutionPoints getCreatorPoints(
-      Map.Entry<URI, Collection<NviCreatorDto>> entry) {
-    var institution = entry.getKey();
-    var creators = entry.getValue();
-    var creatorPoints = getCreatorPoints(creators);
-    var pointsPerInstitution =
-        creatorPoints.stream().map(CreatorAffiliationPoints::points).reduce(ZERO, BigDecimal::add);
-    return new InstitutionPoints(institution, pointsPerInstitution, creatorPoints);
-  }
-
-  private static List<CreatorAffiliationPoints> getCreatorPoints(
-      Collection<NviCreatorDto> creators) {
-    return creators.stream()
-        .filter(VerifiedNviCreatorDto.class::isInstance)
-        .map(VerifiedNviCreatorDto.class::cast)
-        .map(BaseCandidateRestHandlerTest::getCreatorPoints)
-        .toList();
-  }
-
-  private static CreatorAffiliationPoints getCreatorPoints(VerifiedNviCreatorDto creator) {
-    return new CreatorAffiliationPoints(
-        creator.id(), creator.affiliations().getFirst(), randomBigDecimal());
-  }
-
-  protected Candidate setupNonApplicableCandidate(URI institutionId) {
-    var candidate = upsert(createUpsertCandidateRequest(institutionId).build());
-    return Candidate.updateNonCandidate(
-            createUpsertNonCandidateRequest(candidate.getPublicationId()), candidateRepository)
-        .orElseThrow();
-  }
-
-  protected Candidate setupCandidateWithUnverifiedCreator() {
-    var verifiedCreator = setupDefaultVerifiedCreator();
-    var unverifiedCreator = setupDefaultUnverifiedCreator();
-    var request =
-        createUpsertCandidateRequestWithPoints(
-                Map.of(topLevelOrganizationId, List.of(verifiedCreator, unverifiedCreator)))
-            .build();
-    return upsert(request);
+  protected VerifiedNviCreatorDto setupDefaultVerifiedCreator() {
+    return setupVerifiedCreator(randomUri(), List.of(subOrganizationId), topLevelOrganizationId);
   }
 
   protected UnverifiedNviCreatorDto setupDefaultUnverifiedCreator() {
@@ -244,18 +130,49 @@ public abstract class BaseCandidateRestHandlerTest extends LocalDynamoTestSetup 
     return new UnverifiedNviCreatorDto(name, List.copyOf(affiliations));
   }
 
-  protected Candidate setupCandidateWithApproval() {
-    // Create a candidate in a "valid" state
+  protected Candidate setupValidCandidate(URI topLevelOrganizationId) {
     var verifiedCreator = setupDefaultVerifiedCreator();
-    var initialRequest =
-        createUpsertCandidateRequestWithPoints(
-                Map.of(topLevelOrganizationId, List.of(verifiedCreator)))
-            .build();
-    var candidate = upsert(initialRequest);
+    return CandidateFixtures.setupRandomApplicableCandidate(
+        scenario, Map.of(topLevelOrganizationId, List.of(verifiedCreator)));
+  }
 
-    // Approve the candidate
-    var updateStatusRequest = createStatusRequest(ApprovalStatus.APPROVED);
-    return candidate.updateApprovalStatus(updateStatusRequest, mockOrganizationRetriever);
+  protected Candidate setupNonApplicableCandidate(URI institutionId) {
+    var candidate = scenario.upsertCandidate(createUpsertCandidateRequest(institutionId).build());
+    return Candidate.updateNonCandidate(
+            createUpsertNonCandidateRequest(candidate.getPublicationId()),
+            scenario.getCandidateRepository())
+        .orElseThrow();
+  }
+
+  protected Candidate setupCandidateWithUnverifiedCreator() {
+    var verifiedCreator = setupDefaultVerifiedCreator();
+    var unverifiedCreator = setupDefaultUnverifiedCreator();
+    return CandidateFixtures.setupRandomApplicableCandidate(
+        scenario, Map.of(topLevelOrganizationId, List.of(verifiedCreator, unverifiedCreator)));
+  }
+
+  protected Candidate setupCandidateWithApproval() {
+    var verifiedCreator = setupDefaultVerifiedCreator();
+    var candidate =
+        CandidateFixtures.setupRandomApplicableCandidate(
+            scenario, Map.of(topLevelOrganizationId, List.of(verifiedCreator)));
+    return scenario.updateApprovalStatus(
+        candidate, ApprovalStatus.APPROVED, topLevelOrganizationId);
+  }
+
+  protected Candidate setupCandidateWithUnverifiedCreatorFromAnotherInstitution() {
+    var verifiedCreator = setupDefaultVerifiedCreator();
+    var otherInstitutionId = randomUri();
+    var unverifiedCreator =
+        setupUnverifiedCreator(randomString(), List.of(otherInstitutionId), otherInstitutionId);
+
+    return CandidateFixtures.setupRandomApplicableCandidate(
+        scenario,
+        Map.of(
+            topLevelOrganizationId,
+            List.of(verifiedCreator),
+            otherInstitutionId,
+            List.of(unverifiedCreator)));
   }
 
   protected UpdateStatusRequest createStatusRequest(ApprovalStatus status) {
@@ -265,18 +182,6 @@ public abstract class BaseCandidateRestHandlerTest extends LocalDynamoTestSetup 
         .withUsername(randomString())
         .withReason(ApprovalStatus.REJECTED.equals(status) ? randomString() : null)
         .build();
-  }
-
-  protected Candidate setupCandidateWithUnverifiedCreatorFromAnotherInstitution() {
-    var verifiedCreator = setupDefaultVerifiedCreator();
-    var otherInstitutionId = randomUri();
-    var unverifiedCreator =
-        setupUnverifiedCreator(randomString(), List.of(otherInstitutionId), otherInstitutionId);
-    var request =
-        createUpsertCandidateRequestWithPoints(
-                Map.of(topLevelOrganizationId, List.of(verifiedCreator, unverifiedCreator)))
-            .build();
-    return upsert(request);
   }
 
   protected CandidateDto handleRequest(InputStream request) throws IOException {

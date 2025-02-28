@@ -10,6 +10,7 @@ import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertNonCandid
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.setupReportedCandidate;
 import static no.sikt.nva.nvi.common.db.DbApprovalStatusFixtures.randomApproval;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidateBuilder;
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_AFFILIATIONS;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_BODY;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_TYPE;
@@ -56,11 +57,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
-import no.sikt.nva.nvi.common.LocalDynamoTestSetup;
 import no.sikt.nva.nvi.common.S3StorageReader;
+import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.model.CandidateFixtures;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
@@ -94,7 +94,7 @@ import software.amazon.awssdk.services.sqs.model.SqsException;
 
 // Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
 @SuppressWarnings({"PMD.GodClass", "PMD.CouplingBetweenObjects"})
-class IndexDocumentHandlerTest extends LocalDynamoTestSetup {
+class IndexDocumentHandlerTest {
 
   public static final int SOME_REPORTING_YEAR = 2023;
   private static final String JSON_PTR_CONTRIBUTOR = "/publicationDetails/contributors";
@@ -129,12 +129,13 @@ class IndexDocumentHandlerTest extends LocalDynamoTestSetup {
 
   @BeforeEach
   void setup() {
+    var scenario = new TestScenario();
+    setupOpenPeriod(scenario, SOME_REPORTING_YEAR);
+    candidateRepository = scenario.getCandidateRepository();
+    periodRepository = scenario.getPeriodRepository();
+
     s3Reader = new S3Driver(s3Client, BUCKET_NAME);
     s3Writer = new S3Driver(s3Client, BUCKET_NAME);
-    var localDynamoDbClient = initializeTestDatabase();
-    candidateRepository = new CandidateRepository(localDynamoDbClient);
-    periodRepository =
-        PeriodRepositoryFixtures.periodRepositoryReturningOpenedPeriod(SOME_REPORTING_YEAR);
     uriRetriever = mock(UriRetriever.class);
     sqsClient = new FakeSqsClient();
     handler =
@@ -890,7 +891,7 @@ class IndexDocumentHandlerTest extends LocalDynamoTestSetup {
   }
 
   private Candidate randomApplicableCandidate() {
-    return CandidateFixtures.randomApplicableCandidate(candidateRepository, periodRepository);
+    return CandidateFixtures.setupRandomApplicableCandidate(candidateRepository, periodRepository);
   }
 
   private Candidate randomApplicableCandidate(URI topLevelOrg, URI affiliation) {

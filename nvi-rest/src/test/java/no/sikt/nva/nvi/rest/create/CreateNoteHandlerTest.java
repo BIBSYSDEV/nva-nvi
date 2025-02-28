@@ -1,6 +1,6 @@
 package no.sikt.nva.nvi.rest.create;
 
-import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.periodRepositoryReturningClosedPeriod;
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -41,8 +41,8 @@ class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
   @Override
   protected ApiGatewayHandler<NviNoteRequest, CandidateDto> createHandler() {
     return new CreateNoteHandler(
-        candidateRepository,
-        periodRepository,
+        scenario.getCandidateRepository(),
+        scenario.getPeriodRepository(),
         mockViewingScopeValidator,
         mockOrganizationRetriever);
   }
@@ -69,8 +69,8 @@ class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
     var viewingScopeValidatorReturningFalse = new FakeViewingScopeValidator(false);
     handler =
         new CreateNoteHandler(
-            candidateRepository,
-            periodRepository,
+            scenario.getCandidateRepository(),
+            scenario.getPeriodRepository(),
             viewingScopeValidatorReturningFalse,
             mockOrganizationRetriever);
     handler.handleRequest(request, output, CONTEXT);
@@ -112,12 +112,7 @@ class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
     var request =
         createRequest(
             candidate.getIdentifier(), new NviNoteRequest(randomString()), randomString());
-    var handler =
-        new CreateNoteHandler(
-            candidateRepository,
-            periodRepositoryReturningClosedPeriod(CURRENT_YEAR),
-            mockViewingScopeValidator,
-            mockOrganizationRetriever);
+    setupClosedPeriod(scenario, CURRENT_YEAR);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 

@@ -13,8 +13,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.time.ZonedDateTime;
-import no.sikt.nva.nvi.common.LocalDynamoTestSetup;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.service.dto.NviPeriodDto;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.stubs.FakeContext;
@@ -25,19 +24,19 @@ import org.junit.jupiter.api.Test;
 import org.zalando.problem.Problem;
 import software.amazon.awssdk.utils.MapUtils;
 
-class FetchNviPeriodHandlerTest extends LocalDynamoTestSetup {
+class FetchNviPeriodHandlerTest {
 
   private Context context;
   private ByteArrayOutputStream output;
   private FetchNviPeriodHandler handler;
-  private PeriodRepository periodRepository;
+  private TestScenario scenario;
 
   @BeforeEach
   public void setUp() {
+    scenario = new TestScenario();
     output = new ByteArrayOutputStream();
     context = new FakeContext();
-    periodRepository = new PeriodRepository(initializeTestDatabase());
-    handler = new FetchNviPeriodHandler(periodRepository);
+    handler = new FetchNviPeriodHandler(scenario.getPeriodRepository());
   }
 
   @Test
@@ -54,7 +53,7 @@ class FetchNviPeriodHandlerTest extends LocalDynamoTestSetup {
   @Test
   void shouldReturnPeriodSuccessfully() throws IOException {
     var publishingYear = String.valueOf(ZonedDateTime.now().getYear());
-    var expectedPeriod = setupFuturePeriod(publishingYear, periodRepository).toDto();
+    var expectedPeriod = setupFuturePeriod(scenario, publishingYear).toDto();
     handler.handleRequest(createRequestForPeriod(publishingYear), output, context);
     var response = GatewayResponse.fromOutputStream(output, NviPeriodDto.class);
 

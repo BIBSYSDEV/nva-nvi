@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.rest.fetch;
 
+import static no.sikt.nva.nvi.common.LocalDynamoTestSetup.initializeTestDatabase;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.setupReportedCandidate;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.periodRepositoryReturningClosedPeriod;
@@ -18,7 +19,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.util.Map;
-import no.sikt.nva.nvi.common.LocalDynamoTestSetup;
 import no.sikt.nva.nvi.common.UpsertRequestBuilder;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
@@ -37,7 +37,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-class FetchReportStatusByPublicationIdHandlerTest extends LocalDynamoTestSetup {
+class FetchReportStatusByPublicationIdHandlerTest {
 
   private static final String PATH_PARAM_PUBLICATION_ID = "publicationId";
   private Context context;
@@ -49,8 +49,7 @@ class FetchReportStatusByPublicationIdHandlerTest extends LocalDynamoTestSetup {
   public void setUp() {
     output = new ByteArrayOutputStream();
     context = new FakeContext();
-    localDynamo = initializeTestDatabase();
-    candidateRepository = new CandidateRepository(localDynamo);
+    candidateRepository = new CandidateRepository(initializeTestDatabase());
     periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
   }
 

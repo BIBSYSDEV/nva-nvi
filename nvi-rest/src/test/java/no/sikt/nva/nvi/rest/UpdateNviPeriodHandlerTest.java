@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.rest;
 
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupFuturePeriod;
+import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -17,8 +18,7 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
-import no.sikt.nva.nvi.common.LocalDynamoTestSetup;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.rest.model.UpsertNviPeriodRequest;
 import no.sikt.nva.nvi.rest.upsert.UpdateNviPeriodHandler;
@@ -30,24 +30,23 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.zalando.problem.Problem;
 
-class UpdateNviPeriodHandlerTest extends LocalDynamoTestSetup {
+class UpdateNviPeriodHandlerTest {
 
-  private Context context;
+  private static final Context CONTEXT = mock(Context.class);
   private ByteArrayOutputStream output;
   private UpdateNviPeriodHandler handler;
-  private PeriodRepository periodRepository;
+  private TestScenario scenario;
 
   @BeforeEach
   void init() {
+    scenario = new TestScenario();
     output = new ByteArrayOutputStream();
-    context = mock(Context.class);
-    periodRepository = new PeriodRepository(initializeTestDatabase());
-    handler = new UpdateNviPeriodHandler(periodRepository);
+    handler = new UpdateNviPeriodHandler(scenario.getPeriodRepository());
   }
 
   @Test
   void shouldReturnUnauthorizedWhenMissingAccessRights() throws IOException {
-    handler.handleRequest(createRequestWithoutAccessRights(), output, context);
+    handler.handleRequest(createRequestWithoutAccessRights(), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
     assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
@@ -55,7 +54,7 @@ class UpdateNviPeriodHandlerTest extends LocalDynamoTestSetup {
 
   @Test
   void shouldReturnNotFoundWhenPeriodDoesNotExists() throws IOException {
-    handler.handleRequest(toInputStream(randomUpsertNviPeriodRequest()), output, context);
+    handler.handleRequest(toInputStream(randomUpsertNviPeriodRequest()), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
     assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_NOT_FOUND)));
@@ -64,10 +63,10 @@ class UpdateNviPeriodHandlerTest extends LocalDynamoTestSetup {
   @Test
   void shouldUpdateNviPeriodSuccessfully() throws IOException {
     var year = String.valueOf(ZonedDateTime.now().getYear());
-    var persistedPeriod = setupFuturePeriod(year, periodRepository);
+    var persistedPeriod = setupFuturePeriod(scenario, year);
     var updateRequest = updateRequest(year, persistedPeriod);
-    handler.handleRequest(toInputStream(updateRequest), output, context);
-    var updatedPeriod = NviPeriod.fetchByPublishingYear(year, periodRepository);
+    handler.handleRequest(toInputStream(updateRequest), output, CONTEXT);
+    var updatedPeriod = NviPeriod.fetchByPublishingYear(year, scenario.getPeriodRepository());
 
     assertThat(
         persistedPeriod.getReportingDate(), is(not(equalTo(updatedPeriod.getReportingDate()))));
@@ -82,7 +81,7 @@ class UpdateNviPeriodHandlerTest extends LocalDynamoTestSetup {
 
   private UpsertNviPeriodRequest randomUpsertNviPeriodRequest() {
     return new UpsertNviPeriodRequest(
-        String.valueOf(ZonedDateTime.now().getYear()),
+        String.valueOf(CURRENT_YEAR + 1),
         ZonedDateTime.now().plusMonths(1).toInstant().toString(),
         ZonedDateTime.now().plusMonths(10).toInstant().toString());
   }

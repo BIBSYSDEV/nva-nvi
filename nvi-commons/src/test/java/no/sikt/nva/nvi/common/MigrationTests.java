@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.common;
 
 import static java.util.Collections.emptyList;
+import static no.sikt.nva.nvi.common.LocalDynamoTestSetup.initializeTestDatabase;
 import static no.sikt.nva.nvi.common.RequestFixtures.createNoteRequest;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpdateStatusRequest;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidate;
@@ -30,7 +31,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
-class MigrationTests extends LocalDynamoTestSetup {
+class MigrationTests {
 
   public static final int DEFAULT_PAGE_SIZE = 700;
   private CandidateRepository candidateRepository;
@@ -111,7 +112,7 @@ class MigrationTests extends LocalDynamoTestSetup {
 
   private Candidate setupCandidateWithApprovalAndNotes() {
     var candidate =
-        CandidateFixtures.randomApplicableCandidate(candidateRepository, periodRepository)
+        CandidateFixtures.setupRandomApplicableCandidate(candidateRepository, periodRepository)
             .createNote(createNoteRequest(randomString(), randomString()), candidateRepository);
 
     return candidate.updateApproval(

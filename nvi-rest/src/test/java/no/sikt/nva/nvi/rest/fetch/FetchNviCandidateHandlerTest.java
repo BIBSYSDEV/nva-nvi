@@ -46,8 +46,8 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
   @Override
   protected ApiGatewayHandler<Void, CandidateDto> createHandler() {
     return new FetchNviCandidateHandler(
-        candidateRepository,
-        periodRepository,
+        scenario.getCandidateRepository(),
+        scenario.getPeriodRepository(),
         mockViewingScopeValidator,
         mockOrganizationRetriever);
   }
@@ -89,8 +89,8 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
     var viewingScopeValidatorReturningFalse = new FakeViewingScopeValidator(false);
     handler =
         new FetchNviCandidateHandler(
-            candidateRepository,
-            periodRepository,
+            scenario.getCandidateRepository(),
+            scenario.getPeriodRepository(),
             viewingScopeValidatorReturningFalse,
             mockOrganizationRetriever);
     handler.handleRequest(request, output, CONTEXT);

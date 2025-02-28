@@ -1,18 +1,17 @@
 package no.sikt.nva.nvi.common.service;
 
 import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
-import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.periodRepositoryReturningOpenedPeriod;
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
+import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
-import static org.mockito.Mockito.mock;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
-import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
-import no.sikt.nva.nvi.common.LocalDynamoTestSetup;
+import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
@@ -26,7 +25,7 @@ import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
 import org.junit.jupiter.api.BeforeEach;
 
-public class CandidateTestSetup extends LocalDynamoTestSetup {
+public class CandidateTestSetup {
 
   protected static final int EXPECTED_SCALE = 4;
   protected static final RoundingMode EXPECTED_ROUNDING_MODE = RoundingMode.HALF_UP;
@@ -35,11 +34,11 @@ public class CandidateTestSetup extends LocalDynamoTestSetup {
   private static final String API_DOMAIN = ENVIRONMENT.readEnv("API_HOST");
   public static final URI CONTEXT_URI =
       UriWrapper.fromHost(API_DOMAIN).addChild(BASE_PATH, "context").getUri();
+  protected TestScenario scenario;
   protected CandidateRepository candidateRepository;
   protected PeriodRepository periodRepository;
-  protected UriRetriever mockUriRetriever = mock(UriRetriever.class);
-  protected OrganizationRetriever mockOrganizationRetriever =
-      new OrganizationRetriever(mockUriRetriever);
+  protected UriRetriever mockUriRetriever;
+  protected OrganizationRetriever mockOrganizationRetriever;
 
   protected static UpsertCandidateRequest createUpsertRequestWithDecimalScale(
       int scale, URI institutionId) {
@@ -61,9 +60,12 @@ public class CandidateTestSetup extends LocalDynamoTestSetup {
 
   @BeforeEach
   void setup() {
-    localDynamo = initializeTestDatabase();
-    candidateRepository = new CandidateRepository(localDynamo);
-    periodRepository = periodRepositoryReturningOpenedPeriod(ZonedDateTime.now().getYear());
+    scenario = new TestScenario();
+    candidateRepository = scenario.getCandidateRepository();
+    periodRepository = scenario.getPeriodRepository();
+    mockUriRetriever = scenario.getUriRetriever();
+    mockOrganizationRetriever = scenario.getOrganizationRetriever();
+    setupOpenPeriod(scenario, CURRENT_YEAR);
   }
 
   private static InstitutionPoints createInstitutionPoints(

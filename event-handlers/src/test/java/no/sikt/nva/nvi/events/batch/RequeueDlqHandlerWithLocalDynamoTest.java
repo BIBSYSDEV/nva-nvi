@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.events.batch;
 
+import static no.sikt.nva.nvi.common.LocalDynamoTestSetup.initializeTestDatabase;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.createCandidateDao;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidateWithYear;
 import static no.sikt.nva.nvi.events.batch.RequeueDlqTestUtils.generateMessages;
@@ -10,7 +11,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.amazonaws.services.lambda.runtime.Context;
-import no.sikt.nva.nvi.common.LocalDynamoTestSetup;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures;
@@ -21,7 +21,7 @@ import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 
-class RequeueDlqHandlerWithLocalDynamoTest extends LocalDynamoTestSetup {
+class RequeueDlqHandlerWithLocalDynamoTest {
 
   public static final Context CONTEXT = mock(Context.class);
   public static final int YEAR = 2021;
@@ -35,8 +35,7 @@ class RequeueDlqHandlerWithLocalDynamoTest extends LocalDynamoTestSetup {
   void setUp() {
     sqsClient = setupSqsClient();
     client = new NviQueueClient(sqsClient);
-    var localDynamoDbClient = initializeTestDatabase();
-    candidateRepository = new CandidateRepository(localDynamoDbClient);
+    candidateRepository = new CandidateRepository(initializeTestDatabase());
     periodRepository = PeriodRepositoryFixtures.periodRepositoryReturningOpenedPeriod(YEAR);
   }
 

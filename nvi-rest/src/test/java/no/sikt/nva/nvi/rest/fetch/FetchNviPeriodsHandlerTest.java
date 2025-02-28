@@ -1,5 +1,7 @@
 package no.sikt.nva.nvi.rest.fetch;
 
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupFuturePeriod;
+import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -13,9 +15,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
-import no.sikt.nva.nvi.common.LocalDynamoTestSetup;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures;
+import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.rest.model.NviPeriodsResponse;
 import no.sikt.nva.nvi.rest.model.UpsertNviPeriodRequest;
@@ -27,19 +27,19 @@ import nva.commons.apigateway.GatewayResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class FetchNviPeriodsHandlerTest extends LocalDynamoTestSetup {
+class FetchNviPeriodsHandlerTest {
 
   private Context context;
   private ByteArrayOutputStream output;
   private FetchNviPeriodsHandler handler;
-  private PeriodRepository periodRepository;
+  private TestScenario scenario;
 
   @BeforeEach
   public void setUp() {
+    scenario = new TestScenario();
     output = new ByteArrayOutputStream();
     context = new FakeContext();
-    periodRepository = new PeriodRepository(initializeTestDatabase());
-    handler = new FetchNviPeriodsHandler(new NviPeriodService(periodRepository));
+    handler = new FetchNviPeriodsHandler(new NviPeriodService(scenario.getPeriodRepository()));
   }
 
   @Test
@@ -53,8 +53,8 @@ class FetchNviPeriodsHandlerTest extends LocalDynamoTestSetup {
 
   @Test
   void shouldReturnPeriodsWhenUserHasAccessRights() throws IOException {
-    PeriodRepositoryFixtures.setupFuturePeriod("2023", periodRepository);
-    PeriodRepositoryFixtures.setupFuturePeriod("2024", periodRepository);
+    setupFuturePeriod(scenario, CURRENT_YEAR + 1);
+    setupFuturePeriod(scenario, CURRENT_YEAR + 2);
     handler.handleRequest(createRequestWithAccessRight(AccessRight.MANAGE_NVI), output, context);
     var response = GatewayResponse.fromOutputStream(output, NviPeriodsResponse.class);
 

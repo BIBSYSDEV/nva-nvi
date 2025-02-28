@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.events.batch;
 
+import static no.sikt.nva.nvi.common.LocalDynamoTestSetup.initializeTestDatabase;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -29,7 +30,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import no.sikt.nva.nvi.common.LocalDynamoTestSetup;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
 import no.sikt.nva.nvi.common.db.CandidateDao;
@@ -71,7 +71,7 @@ import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
 
 // Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
 @SuppressWarnings("PMD.CouplingBetweenObjects")
-class EventBasedBatchScanHandlerTest extends LocalDynamoTestSetup {
+class EventBasedBatchScanHandlerTest {
 
   private static final int ONE_ENTRY_PER_EVENT = 1;
   private static final Map<String, String> START_FROM_BEGINNING = null;
@@ -80,7 +80,7 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTestSetup {
   private static final int PAGE_SIZE = 4;
   private EventBasedBatchScanHandler handler;
   private ByteArrayOutputStream output;
-  private Context context;
+  private static final Context CONTEXT = mock(Context.class);
   private FakeEventBridgeClient eventBridgeClient;
   private NviCandidateRepositoryHelper candidateRepository;
   private NviPeriodRepositoryHelper periodRepository;
@@ -88,8 +88,7 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTestSetup {
   @BeforeEach
   public void init() {
     this.output = new ByteArrayOutputStream();
-    this.context = mock(Context.class);
-    when(context.getInvokedFunctionArn()).thenReturn(randomString());
+    when(CONTEXT.getInvokedFunctionArn()).thenReturn(randomString());
     this.eventBridgeClient = new FakeEventBridgeClient();
     var db = initializeTestDatabase();
     candidateRepository = new NviCandidateRepositoryHelper(db);
@@ -344,7 +343,7 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTestSetup {
   private void consumeEvents() {
     while (thereAreMoreEventsInEventBridge()) {
       var currentRequest = consumeLatestEmittedEvent();
-      handler.handleRequest(eventToInputStream(currentRequest), output, context);
+      handler.handleRequest(eventToInputStream(currentRequest), output, CONTEXT);
     }
   }
 
@@ -423,7 +422,8 @@ class EventBasedBatchScanHandlerTest extends LocalDynamoTestSetup {
         .boxed()
         .map(
             item ->
-                CandidateFixtures.randomApplicableCandidate(candidateRepository, periodRepository))
+                CandidateFixtures.setupRandomApplicableCandidate(
+                    candidateRepository, periodRepository))
         .map(
             a ->
                 a.createNote(

@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.index;
 
+import static no.sikt.nva.nvi.common.LocalDynamoTestSetup.initializeTestDatabase;
 import static no.sikt.nva.nvi.common.QueueServiceTestUtils.invalidSqsMessage;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.NVI_CONTEXT;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.createPath;
@@ -22,7 +23,6 @@ import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.net.URI;
 import java.util.List;
-import no.sikt.nva.nvi.common.LocalDynamoTestSetup;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
@@ -44,7 +44,7 @@ import org.junit.jupiter.api.Test;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import software.amazon.awssdk.services.s3.S3Client;
 
-class UpdateIndexHandlerTest extends LocalDynamoTestSetup {
+class UpdateIndexHandlerTest {
 
   public static final Context CONTEXT = mock(Context.class);
   public static final Environment ENVIRONMENT = new Environment();
@@ -196,6 +196,6 @@ class UpdateIndexHandlerTest extends LocalDynamoTestSetup {
   }
 
   private Candidate randomApplicableCandidate() {
-    return CandidateFixtures.randomApplicableCandidate(candidateRepository, periodRepository);
+    return CandidateFixtures.setupRandomApplicableCandidate(candidateRepository, periodRepository);
   }
 }

@@ -11,9 +11,8 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
 import java.net.http.HttpResponse;
-import no.sikt.nva.nvi.common.LocalDynamoTestSetup;
 import no.sikt.nva.nvi.common.S3StorageReader;
-import no.sikt.nva.nvi.common.client.OrganizationRetriever;
+import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
@@ -28,18 +27,20 @@ import no.unit.nva.stubs.FakeS3Client;
 import no.unit.nva.stubs.FakeSecretsManagerClient;
 import nva.commons.core.Environment;
 import nva.commons.core.StringUtils;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 
-public class EvaluationTest extends LocalDynamoTestSetup {
+public class EvaluationTest {
 
   protected static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
-
+  protected static final Environment ENVIRONMENT = mock(Environment.class);
+  protected static final Context CONTEXT = mock(Context.class);
   protected static final int SCALE = 4;
 
   protected static final String BUCKET_NAME = "ignoredBucket";
   protected static final String CUSTOMER_API_NVI_RESPONSE =
       "{" + "\"nviInstitution\" : \"true\"" + "}";
-  protected final Context context = mock(Context.class);
+  protected TestScenario scenario;
   protected HttpResponse<String> notFoundResponse;
   protected HttpResponse<String> internalServerErrorResponse;
   protected HttpResponse<String> okResponse;
@@ -49,7 +50,6 @@ public class EvaluationTest extends LocalDynamoTestSetup {
   protected UriRetriever uriRetriever;
   protected FakeSqsClient queueClient;
   protected CandidateRepository candidateRepository;
-  protected Environment env;
   protected S3StorageReader storageReader;
   protected PeriodRepository periodRepository;
   protected EvaluatorService evaluatorService;
@@ -62,30 +62,33 @@ public class EvaluationTest extends LocalDynamoTestSetup {
         .orElseThrow();
   }
 
+  @BeforeAll
+  static void init() {
+    when(ENVIRONMENT.readEnv("CANDIDATE_QUEUE_URL")).thenReturn("My test candidate queue url");
+    when(ENVIRONMENT.readEnv("CANDIDATE_DLQ_URL")).thenReturn("My test candidate dlq url");
+  }
+
   @BeforeEach
   void commonSetup() {
-    env = mock(Environment.class);
-    when(env.readEnv("CANDIDATE_QUEUE_URL")).thenReturn("My test candidate queue url");
-    when(env.readEnv("CANDIDATE_DLQ_URL")).thenReturn("My test candidate dlq url");
+    scenario = new TestScenario();
+    uriRetriever = scenario.getUriRetriever();
+    candidateRepository = scenario.getCandidateRepository();
+    periodRepository = scenario.getPeriodRepository();
+    setupOpenPeriod(scenario, HARDCODED_JSON_PUBLICATION_DATE.year());
+
     setupHttpResponses();
     mockSecretManager();
     var s3Client = new FakeS3Client();
     authorizedBackendUriRetriever = mock(AuthorizedBackendUriRetriever.class);
     queueClient = new FakeSqsClient();
     s3Driver = new S3Driver(s3Client, BUCKET_NAME);
-    var dynamoDbClient = initializeTestDatabase();
-    uriRetriever = mock(UriRetriever.class);
     storageReader = new S3StorageReader(s3Client, BUCKET_NAME);
-    periodRepository = new PeriodRepository(dynamoDbClient);
-    setupOpenPeriod(HARDCODED_JSON_PUBLICATION_DATE.year(), periodRepository);
     var calculator = new CreatorVerificationUtil(authorizedBackendUriRetriever, uriRetriever);
-    var organizationRetriever = new OrganizationRetriever(uriRetriever);
-    var pointCalculator = new PointService(organizationRetriever);
-    candidateRepository = new CandidateRepository(dynamoDbClient);
+    var pointCalculator = new PointService(scenario.getOrganizationRetriever());
     evaluatorService =
         new EvaluatorService(
             storageReader, calculator, pointCalculator, candidateRepository, periodRepository);
-    handler = new EvaluateNviCandidateHandler(evaluatorService, queueClient, env);
+    handler = new EvaluateNviCandidateHandler(evaluatorService, queueClient, ENVIRONMENT);
   }
 
   private static void mockSecretManager() {
