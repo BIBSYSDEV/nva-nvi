@@ -112,7 +112,7 @@ class MigrationTests {
 
   private Candidate setupCandidateWithApprovalAndNotes() {
     var candidate =
-        CandidateFixtures.randomApplicableCandidate(candidateRepository, periodRepository)
+        CandidateFixtures.setupRandomApplicableCandidate(candidateRepository, periodRepository)
             .createNote(createNoteRequest(randomString(), randomString()), candidateRepository);
 
     return candidate.updateApproval(

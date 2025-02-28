@@ -147,7 +147,7 @@ class UpsertNviCandidateHandlerTest {
   @Test
   void shouldUpdateExistingNviCandidateToNonCandidateWhenIncomingEventIsNonCandidate() {
     var candidate =
-        CandidateFixtures.randomApplicableCandidate(candidateRepository, periodRepository);
+        CandidateFixtures.setupRandomApplicableCandidate(candidateRepository, periodRepository);
     var eventMessage = nonCandidateMessageForExistingCandidate(candidate);
     handler.handleRequest(createEvent(eventMessage), CONTEXT);
     var updatedCandidate =

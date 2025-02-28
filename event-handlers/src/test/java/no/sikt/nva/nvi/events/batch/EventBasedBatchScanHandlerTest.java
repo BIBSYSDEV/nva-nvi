@@ -422,7 +422,8 @@ class EventBasedBatchScanHandlerTest {
         .boxed()
         .map(
             item ->
-                CandidateFixtures.randomApplicableCandidate(candidateRepository, periodRepository))
+                CandidateFixtures.setupRandomApplicableCandidate(
+                    candidateRepository, periodRepository))
         .map(
             a ->
                 a.createNote(

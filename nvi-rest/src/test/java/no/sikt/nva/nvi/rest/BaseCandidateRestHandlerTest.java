@@ -3,7 +3,6 @@ package no.sikt.nva.nvi.rest;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertNonCandidateRequest;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
-import static no.sikt.nva.nvi.common.model.CandidateFixtures.randomApplicableCandidate;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.mockOrganizationResponseForAffiliation;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
@@ -25,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
+import no.sikt.nva.nvi.common.model.CandidateFixtures;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
@@ -132,7 +132,7 @@ public abstract class BaseCandidateRestHandlerTest {
 
   protected Candidate setupValidCandidate(URI topLevelOrganizationId) {
     var verifiedCreator = setupDefaultVerifiedCreator();
-    return randomApplicableCandidate(
+    return CandidateFixtures.setupRandomApplicableCandidate(
         scenario, Map.of(topLevelOrganizationId, List.of(verifiedCreator)));
   }
 
@@ -147,14 +147,14 @@ public abstract class BaseCandidateRestHandlerTest {
   protected Candidate setupCandidateWithUnverifiedCreator() {
     var verifiedCreator = setupDefaultVerifiedCreator();
     var unverifiedCreator = setupDefaultUnverifiedCreator();
-    return randomApplicableCandidate(
+    return CandidateFixtures.setupRandomApplicableCandidate(
         scenario, Map.of(topLevelOrganizationId, List.of(verifiedCreator, unverifiedCreator)));
   }
 
   protected Candidate setupCandidateWithApproval() {
     var verifiedCreator = setupDefaultVerifiedCreator();
     var candidate =
-        randomApplicableCandidate(
+        CandidateFixtures.setupRandomApplicableCandidate(
             scenario, Map.of(topLevelOrganizationId, List.of(verifiedCreator)));
     return scenario.updateApprovalStatus(
         candidate, ApprovalStatus.APPROVED, topLevelOrganizationId);
@@ -166,7 +166,7 @@ public abstract class BaseCandidateRestHandlerTest {
     var unverifiedCreator =
         setupUnverifiedCreator(randomString(), List.of(otherInstitutionId), otherInstitutionId);
 
-    return randomApplicableCandidate(
+    return CandidateFixtures.setupRandomApplicableCandidate(
         scenario,
         Map.of(
             topLevelOrganizationId,

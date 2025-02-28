@@ -196,6 +196,6 @@ class UpdateIndexHandlerTest {
   }
 
   private Candidate randomApplicableCandidate() {
-    return CandidateFixtures.randomApplicableCandidate(candidateRepository, periodRepository);
+    return CandidateFixtures.setupRandomApplicableCandidate(candidateRepository, periodRepository);
   }
 }

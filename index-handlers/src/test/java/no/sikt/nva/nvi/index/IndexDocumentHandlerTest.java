@@ -891,7 +891,7 @@ class IndexDocumentHandlerTest {
   }
 
   private Candidate randomApplicableCandidate() {
-    return CandidateFixtures.randomApplicableCandidate(candidateRepository, periodRepository);
+    return CandidateFixtures.setupRandomApplicableCandidate(candidateRepository, periodRepository);
   }
 
   private Candidate randomApplicableCandidate(URI topLevelOrg, URI affiliation) {
