@@ -38,16 +38,6 @@ public class PeriodRepositoryFixtures {
     return nviPeriodRepository;
   }
 
-  public static PeriodRepository periodRepositoryReturningNotOpenedPeriod(int year) {
-    var period =
-        DbNviPeriod.builder()
-            .publishingYear(String.valueOf(year))
-            .startDate(nextMonth)
-            .reportingDate(nextYear)
-            .build();
-    return mockPeriodRepositoryReturn(period);
-  }
-
   public static PeriodRepository periodRepositoryReturningOpenedPeriod(int year) {
     var period =
         DbNviPeriod.builder()
