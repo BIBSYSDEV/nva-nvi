@@ -21,6 +21,7 @@ import static no.sikt.nva.nvi.index.query.SearchAggregation.PENDING_COLLABORATIO
 import static no.sikt.nva.nvi.index.query.SearchAggregation.REJECTED_AGG;
 import static no.sikt.nva.nvi.index.query.SearchAggregation.REJECTED_COLLABORATION_AGG;
 import static no.sikt.nva.nvi.index.query.SearchAggregation.TOTAL_COUNT_AGGREGATION_AGG;
+import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
@@ -71,6 +72,7 @@ import no.sikt.nva.nvi.index.model.document.NviContributor;
 import no.sikt.nva.nvi.index.model.document.NviOrganization;
 import no.sikt.nva.nvi.index.model.document.PublicationDate;
 import no.sikt.nva.nvi.index.model.document.PublicationDetails;
+import no.sikt.nva.nvi.index.model.document.ReportingPeriod;
 import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
 import no.sikt.nva.nvi.index.model.search.OrderByFields;
 import no.sikt.nva.nvi.index.model.search.SearchResultParameters;
@@ -217,7 +219,7 @@ class OpenSearchClientTest {
 
   @Test
   void shouldDeleteIndexAndThrowExceptionWhenSearchingInNonExistentIndex() throws IOException {
-    var document = singleNviCandidateIndexDocument().build();
+    var document = randomIndexDocumentBuilder().build();
     addDocumentsToIndex(document);
     openSearchClient.deleteIndex();
     var searchParameters = defaultSearchParameters().build();
@@ -232,7 +234,7 @@ class OpenSearchClientTest {
 
   @Test
   void shouldRemoveDocumentFromIndex() throws IOException {
-    var document = singleNviCandidateIndexDocument().build();
+    var document = randomIndexDocumentBuilder().build();
     addDocumentsToIndex(document);
     openSearchClient.removeDocumentFromIndex(document.identifier());
     refreshIndex();
@@ -482,7 +484,7 @@ class OpenSearchClientTest {
 
   @Test
   void shouldReturnOneHitWhenSearchTermExactlyPublicationIdentifier() throws IOException {
-    var expectedHit = singleNviCandidateIndexDocument().build();
+    var expectedHit = randomIndexDocumentBuilder().build();
     var searchTerm = expectedHit.publicationDetails().identifier();
     var someTitleIncludingPartsOfSearchTerm = "Some title including " + searchTerm.split("-")[0];
     var indexDocuments =
@@ -499,11 +501,10 @@ class OpenSearchClientTest {
     var customer = randomUri();
     var year = randomString();
     var document =
-        singleNviCandidateIndexDocumentWithCustomer(
-            customer, randomString(), randomString(), year, randomString());
+        indexDocumentWithCustomer(customer, randomString(), randomString(), year, randomString());
     addDocumentsToIndex(
         document,
-        singleNviCandidateIndexDocumentWithCustomer(
+        indexDocumentWithCustomer(
             customer, randomString(), randomString(), randomString(), randomString()));
 
     var searchParameters =
@@ -522,12 +523,10 @@ class OpenSearchClientTest {
     var customer = randomUri();
     var title =
         randomString().concat(" ").concat(randomString()).concat(" ").concat(randomString());
-    var document =
-        singleNviCandidateIndexDocumentWithCustomer(
-            customer, randomString(), randomString(), YEAR, title);
+    var document = indexDocumentWithCustomer(customer, randomString(), randomString(), YEAR, title);
     addDocumentsToIndex(
         document,
-        singleNviCandidateIndexDocumentWithCustomer(
+        indexDocumentWithCustomer(
             customer, randomString(), randomString(), randomString(), randomString()));
 
     var searchParameters =
@@ -548,11 +547,10 @@ class OpenSearchClientTest {
     var assignee =
         randomString().concat(" ").concat(randomString()).concat(" ").concat(randomString());
     var document =
-        singleNviCandidateIndexDocumentWithCustomer(
-            customer, randomString(), assignee, YEAR, randomString());
+        indexDocumentWithCustomer(customer, randomString(), assignee, YEAR, randomString());
     addDocumentsToIndex(
         document,
-        singleNviCandidateIndexDocumentWithCustomer(
+        indexDocumentWithCustomer(
             customer, randomString(), randomString(), randomString(), randomString()));
 
     var searchParameters =
@@ -735,13 +733,86 @@ class OpenSearchClientTest {
     assertNull(requireNonNull(firstHit).publicationDetails().contributors());
   }
 
+  @Test
+  void shouldSearchByReportingYearWhenDocumentHasReportingPeriod() throws IOException {
+    // Given an index document with mismatched publication date and reporting period
+    var publicationYear = String.valueOf(CURRENT_YEAR);
+    var reportedYear = String.valueOf(CURRENT_YEAR - 1);
+    var expectedDocument = indexDocumentWithYear(publicationYear, reportedYear);
+    addDocumentsToIndex(expectedDocument);
+
+    // When a query is made with reporting year as the year parameter
+    var searchParameters = defaultSearchParameters().withYear(reportedYear).build();
+    var searchResponse = openSearchClient.search(searchParameters);
+    assertThat(searchResponse.hits().hits(), hasSize(1));
+
+    // Then the returned document has the expected publication date and reporting period
+    var actualDocument = getFirstHit(searchResponse);
+    assertEquals(expectedDocument, actualDocument);
+  }
+
+  @Test
+  void shouldHaveBothReportingPeriodAndPublicationDateInIndexDocument() throws IOException {
+    // Given an index document with mismatched publication date and reporting period
+    var publicationYear = String.valueOf(CURRENT_YEAR);
+    var reportedYear = String.valueOf(CURRENT_YEAR - 1);
+    var expectedDocument = indexDocumentWithYear(publicationYear, reportedYear);
+    addDocumentsToIndex(expectedDocument);
+
+    // When a query is made with reporting year as the year parameter
+    var searchParameters = defaultSearchParameters().withYear(reportedYear).build();
+    var searchResponse = openSearchClient.search(searchParameters);
+    assertThat(searchResponse.hits().hits(), hasSize(1));
+
+    // Then the returned document has the expected publication date and reporting period
+    var actualDocument = getFirstHit(searchResponse);
+    var actualReportingYear = actualDocument.reportingPeriod().year();
+    var actualPublicationYear = actualDocument.publicationDetails().publicationDate().year();
+    assertEquals(reportedYear, actualReportingYear);
+    assertEquals(publicationYear, actualPublicationYear);
+  }
+
+  @Test
+  void shouldNotReturnDocumentByPublicationDate() throws IOException {
+    // Given an index document with mismatched publication date and reporting period
+    var publicationYear = String.valueOf(CURRENT_YEAR);
+    var reportedYear = String.valueOf(CURRENT_YEAR - 1);
+    var expectedDocument = indexDocumentWithYear(publicationYear, reportedYear);
+    addDocumentsToIndex(expectedDocument);
+
+    // When a query is made with publication year as the year parameter
+    var searchParameters = defaultSearchParameters().withYear(publicationYear).build();
+    var searchResponse = openSearchClient.search(searchParameters);
+
+    // Then the response does not include the document
+    assertThat(searchResponse.hits().hits(), hasSize(0));
+  }
+
+  @Test
+  void shouldNotFailWhenDocumentIsMissingReportingPeriod() throws IOException {
+    // Given an index document with missing reporting period
+    var expectedDocument = randomIndexDocumentBuilder().withReportingPeriod(null).build();
+    addDocumentsToIndex(expectedDocument);
+
+    // When a query is made without a year parameter
+    // And with the publication title as the search term
+    var expectedTitle = expectedDocument.publicationDetails().title();
+    var searchParameters = defaultSearchParameters().withTitle(expectedTitle).build();
+    var searchResponse = openSearchClient.search(searchParameters);
+
+    // Then the response includes the document
+    assertThat(searchResponse.hits().hits(), hasSize(1));
+    var actualDocument = getFirstHit(searchResponse);
+    assertEquals(expectedDocument, actualDocument);
+  }
+
   private static void assertExpectedPointWithoutRejectedPoints(
       Buckets<StringTermsBucket> actualOrgBuckets) {
     actualOrgBuckets.array().forEach(OpenSearchClientTest::assertExpectedPointAggregations);
   }
 
   private static NviCandidateIndexDocument nviCandidateWithOneThousandInvolvedOrgs() {
-    return singleNviCandidateIndexDocument()
+    return randomIndexDocumentBuilder()
         .withApprovals(
             List.of(
                 Approval.builder()
@@ -768,15 +839,13 @@ class OpenSearchClientTest {
   }
 
   private static List<NviCandidateIndexDocument> generateNumberOfCandidates(int number) {
-    return IntStream.range(0, number)
-        .mapToObj(i -> singleNviCandidateIndexDocument().build())
-        .toList();
+    return IntStream.range(0, number).mapToObj(i -> randomIndexDocumentBuilder().build()).toList();
   }
 
   private static NviCandidateIndexDocument documentWithContributors() {
-    return singleNviCandidateIndexDocument()
+    return randomIndexDocumentBuilder()
         .withPublicationDetails(
-            publicationDetailsBuilder()
+            randomPublicationDetailsBuilder()
                 .withContributors(List.of(randomNviContributor(randomUri())))
                 .build())
         .build();
@@ -863,7 +932,7 @@ class OpenSearchClientTest {
 
   private static void addDocumentToIndex() {
     addDocumentsToIndex(
-        singleNviCandidateIndexDocumentWithCustomer(
+        indexDocumentWithCustomer(
             ORGANIZATION, randomString(), randomString(), YEAR, randomString()));
   }
 
@@ -883,38 +952,50 @@ class OpenSearchClientTest {
     return dtoObjectMapper.readValue(string, NviCandidateIndexDocument.class);
   }
 
-  private static NviCandidateIndexDocument.Builder singleNviCandidateIndexDocument() {
-    return singleNviCandidateIndexDocument(randomPublicationDetails());
+  private static NviCandidateIndexDocument.Builder randomIndexDocumentBuilder() {
+    return randomIndexDocumentBuilder(randomPublicationDetailsBuilder().build());
   }
 
-  private static NviCandidateIndexDocument indexDocumentWithTitle(String title) {
-    var publicationDetails = publicationDetailsWithTitle(title);
-    return singleNviCandidateIndexDocument(publicationDetails).build();
-  }
-
-  private static NviCandidateIndexDocument.Builder singleNviCandidateIndexDocument(
+  private static NviCandidateIndexDocument.Builder randomIndexDocumentBuilder(
       PublicationDetails publicationDetails) {
     var approvals = randomApprovalList();
+    var publicationYear = publicationDetails.publicationDate().year();
+    var reportingPeriod = new ReportingPeriod(publicationYear);
     return NviCandidateIndexDocument.builder()
         .withIdentifier(UUID.randomUUID())
         .withPublicationDetails(publicationDetails)
         .withApprovals(approvals)
         .withNumberOfApprovals(approvals.size())
         .withPoints(randomBigDecimal())
-        .withCreatedDate(Instant.now());
+        .withReportingPeriod(reportingPeriod)
+        .withCreatedDate(Instant.now())
+        .withModifiedDate(Instant.now());
   }
 
-  private static NviCandidateIndexDocument singleNviCandidateIndexDocumentWithCustomer(
+  private static NviCandidateIndexDocument indexDocumentWithTitle(String title) {
+    var publicationDetails = publicationDetailsWithTitle(title);
+    return randomIndexDocumentBuilder(publicationDetails).build();
+  }
+
+  private static NviCandidateIndexDocument indexDocumentWithCustomer(
       URI customer, String contributor, String assignee, String year, String title) {
-    return NviCandidateIndexDocument.builder()
-        .withIdentifier(UUID.randomUUID())
-        .withPublicationDetails(
-            randomPublicationDetailsWithCustomer(customer, contributor, year, title))
+    var publicationDetails =
+        randomPublicationDetailsWithCustomer(customer, contributor, year, title);
+    return randomIndexDocumentBuilder(publicationDetails)
         .withApprovals(List.of(randomApprovalWithCustomerAndAssignee(customer, assignee)))
         .withNumberOfApprovals(1)
-        .withPoints(randomBigDecimal())
-        .withCreatedDate(Instant.now())
-        .withModifiedDate(Instant.now())
+        .build();
+  }
+
+  private static NviCandidateIndexDocument indexDocumentWithYear(
+      String publicationYear, String reportedYear) {
+    var publicationDate = PublicationDate.builder().withYear(publicationYear).build();
+    var publicationDetails =
+        randomPublicationDetailsBuilder().withPublicationDate(publicationDate).build();
+    var reportingPeriod = new ReportingPeriod(reportedYear);
+
+    return randomIndexDocumentBuilder(publicationDetails)
+        .withReportingPeriod(reportingPeriod)
         .build();
   }
 
@@ -986,15 +1067,11 @@ class OpenSearchClientTest {
     return randomElement(GlobalApprovalStatus.values());
   }
 
-  private static PublicationDetails randomPublicationDetails() {
-    return publicationDetailsBuilder().build();
-  }
-
   private static PublicationDetails publicationDetailsWithTitle(String title) {
-    return publicationDetailsBuilder().withTitle(title).build();
+    return randomPublicationDetailsBuilder().withTitle(title).build();
   }
 
-  private static PublicationDetails.Builder publicationDetailsBuilder() {
+  private static PublicationDetails.Builder randomPublicationDetailsBuilder() {
     return PublicationDetails.builder()
         .withId(UriWrapper.fromUri(randomUri()).addChild(UUID.randomUUID().toString()).toString())
         .withTitle(randomString())
@@ -1058,8 +1135,7 @@ class OpenSearchClientTest {
     return CandidateSearchParameters.builder()
         .withAffiliations(List.of())
         .withTopLevelCristinOrg(ORGANIZATION)
-        .withUsername(USERNAME)
-        .withYear(YEAR);
+        .withUsername(USERNAME);
   }
 
   private static String getRandomWord(String str) {
@@ -1077,7 +1153,7 @@ class OpenSearchClientTest {
   }
 
   private NviCandidateIndexDocument documentWithCreatedDate(Instant createdDate) {
-    return singleNviCandidateIndexDocument().withCreatedDate(createdDate).build();
+    return randomIndexDocumentBuilder().withCreatedDate(createdDate).build();
   }
 
   public static final class FakeCachedJwtProvider {

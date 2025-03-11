@@ -27,8 +27,8 @@ import static no.sikt.nva.nvi.index.utils.SearchConstants.KEYWORD;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.NAME;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.NVI_CONTRIBUTORS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.PART_OF_IDENTIFIERS;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.PUBLICATION_DATE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.PUBLICATION_DETAILS;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.REPORTING_PERIOD;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.TITLE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.TYPE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.YEAR;
@@ -116,7 +116,7 @@ public class CandidateQuery {
 
   private static Query yearQuery(String year) {
     return fieldValueQuery(
-        jsonPathOf(PUBLICATION_DETAILS, PUBLICATION_DATE, YEAR, KEYWORD),
+        jsonPathOf(REPORTING_PERIOD, YEAR, KEYWORD),
         nonNull(year) ? year : String.valueOf(ZonedDateTime.now().getYear()));
   }
 

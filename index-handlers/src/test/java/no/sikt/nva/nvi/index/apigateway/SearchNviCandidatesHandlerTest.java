@@ -11,6 +11,8 @@ import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PAR
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_SEARCH_TERM;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_SORT_ORDER;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_TITLE;
+import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_YEAR;
+import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
@@ -458,6 +460,23 @@ class SearchNviCandidatesHandlerTest {
     handler.handleRequest(requestWithoutQueryParameters(userName), output, context);
     Mockito.verify(openSearchClient, times(1))
         .search(argThat(argument -> argument.excludeFields().equals(expectedExcludeFields)));
+  }
+
+  @Test
+  void shouldSearchByReportingPeriodWhenYearParamIsSet() throws IOException {
+    var reportedYear = String.valueOf(CURRENT_YEAR - 1);
+    var userName = randomString();
+    mockIdentityService(userName);
+    mockOpenSearchClient();
+
+    var request =
+        createRequest(TOP_LEVEL_CRISTIN_ORG, Map.of(QUERY_PARAM_YEAR, reportedYear), userName);
+    handler.handleRequest(request, output, context);
+    var response = GatewayResponse.fromOutputStream(output, PaginatedSearchResult.class);
+    var paginatedSearchResult = response.getBodyObject(PaginatedSearchResult.class);
+
+    var actualId = paginatedSearchResult.getId().toString();
+    assertThat(actualId, containsString(QUERY_PARAM_YEAR + "=" + reportedYear));
   }
 
   private static void mockOpenSearchClientWithParameterMatchingViewingScope(

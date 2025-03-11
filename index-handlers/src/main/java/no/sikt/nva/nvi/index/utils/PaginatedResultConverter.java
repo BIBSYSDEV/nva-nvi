@@ -11,6 +11,7 @@ import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PAR
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_SEARCH_TERM;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_SORT_ORDER;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_TITLE;
+import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_YEAR;
 import static nva.commons.apigateway.RestRequestHandler.COMMA;
 
 import java.net.URI;
@@ -74,6 +75,7 @@ public final class PaginatedResultConverter {
         queryParams, QUERY_PARAM_ORDER_BY, parameters.searchResultParameters().orderBy());
     putIfValueNotNull(
         queryParams, QUERY_PARAM_SORT_ORDER, parameters.searchResultParameters().sortOrder());
+    putIfValueNotNull(queryParams, QUERY_PARAM_YEAR, parameters.year());
     return queryParams;
   }
 
