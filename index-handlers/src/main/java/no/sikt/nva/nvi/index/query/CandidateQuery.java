@@ -99,7 +99,7 @@ public class CandidateQuery {
                             AFFILIATIONS,
                             PART_OF_IDENTIFIERS))))
             .build()
-            ._toQuery());
+            .toQuery());
   }
 
   private static Query contributorQueryExcludingSubUnits(List<String> organizations) {
@@ -111,7 +111,7 @@ public class CandidateQuery {
                     organizations,
                     jsonPathOf(PUBLICATION_DETAILS, NVI_CONTRIBUTORS, AFFILIATIONS, IDENTIFIER)))
             .build()
-            ._toQuery());
+            .toQuery());
   }
 
   private static Query yearQuery(String year) {
@@ -138,7 +138,7 @@ public class CandidateQuery {
         .operator(Operator.And)
         .type(TextQueryType.CrossFields)
         .build()
-        ._toQuery();
+        .toQuery();
   }
 
   private List<Query> specificMatch() {
@@ -233,7 +233,7 @@ public class CandidateQuery {
                     .field(jsonPathOf(PUBLICATION_DETAILS, TITLE))
                     .query(t)
                     .build()
-                    ._toQuery());
+                    .toQuery());
   }
 
   private Optional<Query> createAssigneeQuery(String assignee) {
@@ -244,7 +244,7 @@ public class CandidateQuery {
                     .field(jsonPathOf(APPROVALS, ASSIGNEE))
                     .query(a)
                     .build()
-                    ._toQuery());
+                    .toQuery());
   }
 
   public enum QueryFilterType {
