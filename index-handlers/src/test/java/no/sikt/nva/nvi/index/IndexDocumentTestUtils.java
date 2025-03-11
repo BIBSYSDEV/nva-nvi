@@ -466,7 +466,7 @@ public final class IndexDocumentTestUtils {
   }
 
   private static NviOrganization nviOrganization(URI id) {
-    return NviOrganization.builder().withId(id).build();
+    return NviOrganization.builder().withId(id).withPartOf(emptyList()).build();
   }
 
   private static Organization randomNonNviAffiliation() {
