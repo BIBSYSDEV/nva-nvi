@@ -26,6 +26,7 @@ import java.util.Optional;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.etl.ExpandedPublicationTransformer;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
@@ -61,6 +62,7 @@ public class EvaluatorService {
   private final PointService pointService;
   private final CandidateRepository candidateRepository;
   private final PeriodRepository periodRepository;
+  private final ExpandedPublicationTransformer dataLoader;
 
   public EvaluatorService(
       StorageReader<URI> storageReader,
@@ -73,6 +75,7 @@ public class EvaluatorService {
     this.pointService = pointService;
     this.candidateRepository = candidateRepository;
     this.periodRepository = periodRepository;
+    this.dataLoader = new ExpandedPublicationTransformer(storageReader);
   }
 
   public Optional<CandidateEvaluatedMessage> evaluateCandidacy(URI publicationBucketUri) {
@@ -81,6 +84,9 @@ public class EvaluatorService {
     var publicationDate = extractPublicationDate(publication);
     var candidate = fetchOptionalCandidate(publicationId).orElse(null);
     var period = fetchOptionalPeriod(publicationDate.year()).orElse(null);
+
+    var tempModel = dataLoader.extract(publicationBucketUri);
+    var tempDto = dataLoader.transform(tempModel);
 
     // Check if the publication can be evaluated
     if (shouldSkipEvaluation(candidate, publicationDate)) {

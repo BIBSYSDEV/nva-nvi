@@ -1,0 +1,67 @@
+{
+  "@context": {
+    "@vocab": "https://nva.sikt.no/ontology/publication#",
+    "type": "@type",
+    "id": "@id",
+    "graph": "@graph",
+    "value": "@value",
+    "ExpandedPublication": "ExpandedPublication",
+    "modifiedDate": {
+      "@id": "modifiedDate",
+      "@type": "xsd:dateTime"
+    },
+    "isInternationalCollaboration": {
+      "@id": "isInternationalCollaboration",
+      "@type": "xsd:boolean"
+    },
+    "topLevelOrganizations": {
+      "@id": "topLevelOrganizations",
+      "@container": "@set"
+    },
+    "affiliations": {
+      "@container": "@set"
+    },
+    "hasPart": {
+      "@id": "hasPart",
+      "@type": "@id",
+      "@container": "@set"
+    },
+    "partOf": {
+      "@container": "@set"
+    },
+    "publicationLanguage" : {
+      "@type" : "@id"
+    },
+    "publicationChannels" : {
+      "@container": "@set"
+    },
+    "publicationStatus" : {
+      "@context" : {
+        "@vocab" : "https://nva.sikt.no/ontology/publication#"
+      },
+      "@type" : "@vocab"
+    },
+    "publicationType" : {
+      "@context" : {
+        "@vocab" : "https://nva.sikt.no/ontology/publication#"
+      },
+      "@type" : "@vocab"
+    },
+    "channelType" : {
+      "@context" : {
+        "@vocab" : "https://nva.sikt.no/ontology/publication#"
+      },
+      "@type" : "@vocab"
+    },
+    "role" : {
+      "@context" : {
+        "@vocab" : "https://nva.sikt.no/ontology/publication#"
+      },
+      "@type" : "@vocab"
+    },
+    "xsd": "http://www.w3.org/2001/XMLSchema#"
+  },
+  "publicationDate": {
+    "@type": "PublicationDate"
+  }
+}
