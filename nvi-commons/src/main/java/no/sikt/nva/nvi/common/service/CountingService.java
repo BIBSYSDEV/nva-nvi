@@ -1,4 +1,4 @@
-package cucumber;
+package no.sikt.nva.nvi.common.service;
 
 public class CountingService {
   private int count;

@@ -2,7 +2,7 @@ package cucumber.steps;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import cucumber.ScenarioContext;
+import cucumber.contexts.ScenarioContext;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;

@@ -1,7 +1,6 @@
 package cucumber.steps;
 
-
-import cucumber.ScenarioContext;
+import cucumber.contexts.ScenarioContext;
 import io.cucumber.java.en.When;
 
 public class MultiplicationSteps {

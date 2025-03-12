@@ -1,4 +1,6 @@
-package cucumber;
+package cucumber.contexts;
+
+import no.sikt.nva.nvi.common.service.CountingService;
 
 public class ScenarioContext {
 
