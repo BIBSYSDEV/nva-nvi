@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.events.evaluator;
 
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.service.model.NviPeriod.fetchByPublishingYear;
 import static no.sikt.nva.nvi.common.utils.GraphUtils.createModel;
@@ -100,7 +101,7 @@ public class EvaluatorService {
     }
 
     // Check that the publication can be a candidate in the target period
-    var periodExists = nonNull(period);
+    var periodExists = nonNull(period) && nonNull(period.getId());
     var periodIsOpen = periodExists && !period.isClosed();
     var candidateExistsInPeriod =
         periodExists && nonNull(candidate) && isApplicableInPeriod(period, candidate);
@@ -130,8 +131,12 @@ public class EvaluatorService {
     return false;
   }
 
-  private boolean isApplicableInPeriod(NviPeriod period, Candidate candidate) {
-    var hasSamePeriod = candidate.getPeriod().id().equals(period.getId());
+  private boolean isApplicableInPeriod(NviPeriod targetPeriod, Candidate candidate) {
+    var candidatePeriod = candidate.getPeriod();
+    if (isNull(candidatePeriod) || isNull(candidatePeriod.id())) {
+      return false;
+    }
+    var hasSamePeriod = candidatePeriod.id().equals(targetPeriod.getId());
     return candidate.isApplicable() && hasSamePeriod;
   }
 
