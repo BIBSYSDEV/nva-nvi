@@ -316,6 +316,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     assertThat(candidate.publicationBucketUri(), is(equalTo(fileUri)));
   }
 
+  // TODO: Test this
   @Test
   void
       shouldCreateNewCandidateEventOnValidAcademicMonographWithSeriesLevelUnassignedWithPublisherLevel()
@@ -409,6 +410,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     assertThat(nonCandidate.publicationId(), is(equalTo(HARDCODED_PUBLICATION_ID)));
   }
 
+  // TODO: test this
   @Test
   void shouldCreateNonCandidateForMusicalArts() throws IOException {
     var path = "evaluator/nonCandidate_musicalArts.json";

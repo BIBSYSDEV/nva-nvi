@@ -5,22 +5,29 @@ import static java.util.Objects.requireNonNull;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
-import java.util.UUID;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSerialize
-public record PublicationChannel(
+public record PublicationChannelTemp(
     URI id,
     String channelType,
-    UUID identifier,
+    String identifier,
     String name,
-    String scientificLevel,
+    String year,
+    String scientificValue,
     String onlineIssn,
-    String printIssn) {
+    String printIssn,
+    String sameAs) {
 
-  public PublicationChannel {
+  public PublicationChannelTemp {
+    requireNonNull(id, "Required field 'id' is null");
+        requireNonNull(channelType, "Required field 'channelType' is null");
+        requireNonNull(scientificValue, "Required field 'scientificLevel' is null");
+  }
+
+  public void validate() {
     requireNonNull(id, "Required field 'id' is null");
     requireNonNull(channelType, "Required field 'channelType' is null");
-    requireNonNull(scientificLevel, "Required field 'scientificLevel' is null");
+    requireNonNull(scientificValue, "Required field 'scientificLevel' is null");
   }
 }

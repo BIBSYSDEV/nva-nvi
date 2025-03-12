@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.common.etl;
 
 import static no.sikt.nva.nvi.common.utils.GraphUtils.createModel;
+import static no.sikt.nva.nvi.common.utils.GraphUtils.toTurtle;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 
 import com.apicatalog.jsonld.JsonLd;
@@ -14,7 +15,6 @@ import java.io.StringReader;
 import java.net.URI;
 import java.nio.file.Path;
 import no.sikt.nva.nvi.common.StorageReader;
-import no.unit.nva.commons.json.JsonUtils;
 import nva.commons.core.ioutils.IoUtils;
 import org.apache.jena.query.QueryExecutionFactory;
 import org.apache.jena.rdf.model.Model;
@@ -27,12 +27,14 @@ public class ExpandedPublicationTransformer {
   private static final String JSON_PTR_BODY = "/body";
   private static final String CONTEXT_NODE = "@context";
   private static final String JSON_PTR_CONTEXT = "/@context";
-  private static final String NVI_CONTEXT_JSONLD = "nvi_context.jsonld";
-  private static final String NVA_CONTEXT_JSONLD = "nva_context.jsonld";
+  private static final String NVI_CONTEXT_JSONLD = "nvi_context.json";
+  private static final String NVA_CONTEXT_JSONLD = "nva_context.json";
   private static final String PUBLICATION_SPARQL =
       IoUtils.stringFromResources(Path.of("sparql/publication.sparql"));
   private final Logger logger = LoggerFactory.getLogger(ExpandedPublicationTransformer.class);
   private final StorageReader<URI> storageReader;
+  private static final String contextString =
+      IoUtils.stringFromResources(Path.of(NVA_CONTEXT_JSONLD));
 
   public ExpandedPublicationTransformer(StorageReader<URI> storageReader) {
     this.storageReader = storageReader;
@@ -41,6 +43,7 @@ public class ExpandedPublicationTransformer {
   public Model extract(URI publicationBucketUri) {
     var document = storageReader.read(publicationBucketUri);
     var body = extractBody(document);
+    var turtles = toTurtle(createModel(body));
     return createModel(body);
   }
 
@@ -48,9 +51,11 @@ public class ExpandedPublicationTransformer {
     // TODO: Set base NVA context from local JSON file
     // TODO: Set base NVI context from local JSON file
     // TODO: Split references between NVI and NVA contexts in SPARQL query
+    var turtles = toTurtle(publication);
     try {
       var queryExecution = QueryExecutionFactory.create(PUBLICATION_SPARQL, publication);
       var model = queryExecution.execConstruct();
+      var superTurtles = toTurtle(model);
       var document = JsonDocument.of(toJsonReader(model));
       var frame = IoUtils.inputStreamFromResources(Path.of("publicationDtoFrame.json"));
       var context = JsonDocument.of(frame);
@@ -66,23 +71,14 @@ public class ExpandedPublicationTransformer {
 
   private JsonNode extractBody(String content) {
     try {
+      var replacementContext = dtoObjectMapper.readTree(contextString);
       var document = dtoObjectMapper.readTree(content);
       var body = (ObjectNode) document.at(JSON_PTR_BODY);
-      body.set(CONTEXT_NODE, getReplacementContext(body));
+      //      body.set(CONTEXT_NODE, replacementContext);
       return body;
     } catch (JsonProcessingException e) {
       throw new RuntimeException(e);
     }
-  }
-
-  private JsonNode getReplacementContext(JsonNode jsonld) throws JsonProcessingException {
-    var originalContext = jsonld.at(JSON_PTR_CONTEXT).asText();
-    if (originalContext.isBlank()) {
-      return jsonld;
-    }
-    // TODO: Should we add a check for unexpected context values?
-    var contextFile = IoUtils.stringFromResources(Path.of(NVA_CONTEXT_JSONLD));
-    return JsonUtils.dtoObjectMapper.readTree(contextFile);
   }
 
   private static StringReader toJsonReader(Model resultModel) {

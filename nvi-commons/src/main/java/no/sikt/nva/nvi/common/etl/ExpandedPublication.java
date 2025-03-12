@@ -21,12 +21,16 @@ public record ExpandedPublication(
     String publicationType,
     String publicationLanguage,
     boolean isInternationalCollaboration,
-    Collection<PublicationChannel> publicationChannels,
+    Collection<PublicationChannelTemp> publicationChannels,
     Collection<Contributor> contributors,
     Collection<Organization> topLevelOrganizations,
     Instant modifiedDate) {
 
   public ExpandedPublication {
+    requireNonNull(id, "Required field 'id' is null");
+  }
+
+  public void validate() {
     requireNonNull(id, "Required field 'id' is null");
     requireNonNull(publicationDate, "Required field 'publicationDate' is null");
     requireNonNull(publicationStatus, "Required field 'publicationStatus' is null");
@@ -34,6 +38,9 @@ public record ExpandedPublication(
     requireNonNull(publicationChannels, "Required field 'publicationChannels' is null");
     requireNonNull(contributors, "Required field 'contributors' is null");
     requireNonNull(topLevelOrganizations, "Required field 'topLevelOrganizations' is null");
+
+    publicationChannels.forEach(PublicationChannelTemp::validate);
+    contributors.forEach(Contributor::validate);
   }
 
   public static ExpandedPublication from(String json) throws JsonProcessingException {

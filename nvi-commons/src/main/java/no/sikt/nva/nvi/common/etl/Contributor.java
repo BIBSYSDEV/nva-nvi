@@ -19,7 +19,15 @@ public record Contributor(
 
   public Contributor {
     requireNonNull(affiliations, "Required field 'affiliations' is null");
+  }
+
+  public void validate() {
+    if (nonNull(id)) {
+      requireNonNull(name, "Both 'id' and 'name' is null, one of these fields must be set");
+    }
     requireNonNull(verificationStatus, "Required field 'verificationStatus' is null");
+    requireNonNull(role, "Required field 'role' is null");
+    requireNonNull(affiliations, "Required field 'affiliations' is null");
   }
 
   @JsonIgnore
