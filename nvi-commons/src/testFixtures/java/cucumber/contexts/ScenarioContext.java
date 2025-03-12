@@ -4,21 +4,21 @@ import no.sikt.nva.nvi.common.service.CountingService;
 
 public class ScenarioContext {
 
-  private CountingService coolCounter;
+  private final CountingService exampleCounter;
 
-  public ScenarioContext(CountingService coolCounter) {
-    this.coolCounter = coolCounter;
+  public ScenarioContext(CountingService exampleCounter) {
+    this.exampleCounter = exampleCounter;
   }
 
   public void addCount(int count) {
-    coolCounter.addCount(count);
+    exampleCounter.addCount(count);
   }
 
   public void setCount(int count) {
-    coolCounter.setCount(count);
+    exampleCounter.setCount(count);
   }
 
   public int getCount() {
-    return coolCounter.getCount();
+    return exampleCounter.getCount();
   }
 }
