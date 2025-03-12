@@ -31,8 +31,8 @@ dependencies {
     testFixturesImplementation libs.nva.json
     testFixturesImplementation project(':nvi-test')
 
-    testImplementation libs.dynamodDbLocal
     testImplementation libs.bundles.cucumber
+    testImplementation libs.dynamodDbLocal
     testImplementation project(':nvi-test')
 }
 

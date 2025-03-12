@@ -1,36 +1,22 @@
 package cucumber;
 
-import no.sikt.nva.nvi.common.service.model.Candidate;
-
 public class ScenarioContext {
 
-  private Candidate candidate;
-  private String exampleName;
-  private int potato;
+  private CountingService coolCounter;
 
-  public ScenarioContext() {}
-
-  public String getExampleName() {
-    return exampleName;
+  public ScenarioContext(CountingService coolCounter) {
+    this.coolCounter = coolCounter;
   }
 
-  public void setExampleName(String exampleName) {
-    this.exampleName = exampleName;
+  public void addCount(int count) {
+    coolCounter.addCount(count);
   }
 
-  public Candidate getCandidate() {
-    return candidate;
+  public void setCount(int count) {
+    coolCounter.setCount(count);
   }
 
-  public void setCandidate(Candidate candidate) {
-    this.candidate = candidate;
-  }
-
-  public int getPotato() {
-    return potato;
-  }
-
-  public void setPotato(int potato) {
-    this.potato = potato;
+  public int getCount() {
+    return coolCounter.getCount();
   }
 }
