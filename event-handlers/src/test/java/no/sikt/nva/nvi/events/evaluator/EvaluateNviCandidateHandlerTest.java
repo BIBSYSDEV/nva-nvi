@@ -20,6 +20,7 @@ import static no.sikt.nva.nvi.test.TestConstants.CRISTIN_NVI_ORG_TOP_LEVEL_ID;
 import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_CREATOR_ID;
 import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_JSON_PUBLICATION_DATE;
 import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_PUBLICATION_ID;
+import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.createResponse;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static nva.commons.core.attempt.Try.attempt;
@@ -944,6 +945,59 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       handler.handleRequest(testScenario.event(), CONTEXT);
 
       assertEquals(0, queueClient.getSentMessages().size());
+    }
+
+    @Test
+    void shouldReEvaluatePublicationMovedToFuturePeriod() throws IOException {
+      // Given a publication that is an applicable Candidate
+      // And the publication is published in an open period
+      // When the publication date is updated to a year with no registered NVI period
+      // Then the publication should be re-evaluated as a NonCandidate
+      var openPeriod = CURRENT_YEAR;
+      var nonPeriod = CURRENT_YEAR + 10;
+      setupOpenPeriod(scenario, openPeriod);
+      var originalDate = new SampleExpandedPublicationDate(String.valueOf(openPeriod), null, null);
+      var newDate = new SampleExpandedPublicationDate(String.valueOf(nonPeriod), null, null);
+
+      publicationBuilder = publicationBuilder.withPublicationDate(originalDate);
+      setupCandidateMatchingPublication(buildExpectedPublication());
+
+      publicationBuilder = publicationBuilder.withPublicationDate(newDate);
+      setupCandidateMatchingPublication(buildExpectedPublication());
+
+      var testScenario = getNonCandidateScenario();
+      handler.handleRequest(testScenario.event(), CONTEXT);
+      var messageBody = getMessageBody();
+
+      assertEquals(testScenario.expectedEvaluatedMessage(), messageBody);
+    }
+
+    @Test
+    void shouldReEvaluatePublicationMovedFromFuturePeriodToOpenPeriod() throws IOException {
+      // Given a publication that is an applicable Candidate
+      // And the publication is published in an open period
+      // When the publication date is updated to a year with no registered NVI period
+      // And the publication date is updated to a year with an open NVI period
+      // Then the publication should be re-evaluated as a Candidate
+      var openPeriod = CURRENT_YEAR;
+      var nonPeriod = CURRENT_YEAR + 10;
+      setupOpenPeriod(scenario, openPeriod);
+      var originalDate = new SampleExpandedPublicationDate(String.valueOf(openPeriod), null, null);
+      var newDate = new SampleExpandedPublicationDate(String.valueOf(nonPeriod), null, null);
+
+      publicationBuilder = publicationBuilder.withPublicationDate(originalDate);
+      setupCandidateMatchingPublication(buildExpectedPublication());
+
+      publicationBuilder = publicationBuilder.withPublicationDate(newDate);
+      setupCandidateMatchingPublication(buildExpectedPublication());
+
+      publicationBuilder = publicationBuilder.withPublicationDate(originalDate);
+
+      var testScenario = getCandidateScenario();
+      handler.handleRequest(testScenario.event(), CONTEXT);
+      var messageBody = getMessageBody();
+
+      assertEquals(testScenario.expectedEvaluatedMessage(), messageBody);
     }
 
     private static PublicationDate getPublicationDate(
