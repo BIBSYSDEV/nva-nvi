@@ -24,38 +24,38 @@ public class ReportingPeriodSteps {
     this.scenarioContext = scenarioContext;
   }
 
-  @Given("a closed period for year {int}")
+  @Given("a closed period for year {string}")
   public void givenClosedPeriod(String year) {
     upsertPeriod(year, previousYear, previousMonth, scenarioContext.getPeriodRepository());
   }
 
-  @Given("an open period for year {int}")
+  @Given("an open period for year {string}")
   public void givenOpenPeriod(String year) {
     upsertPeriod(year, previousMonth, nextYear, scenarioContext.getPeriodRepository());
   }
 
-  @Given("a future period for year {int}")
+  @Given("a future period for year {string}")
   public void givenFuturePeriod(String year) {
     upsertPeriod(year, nextMonth, nextYear, scenarioContext.getPeriodRepository());
   }
 
-  @When("the period for year {int} is updated with a reporting date in the past")
+  @When("the period for year {string} is updated with a reporting date in the past")
   public void whenPeriodIsMovedToPast(String year) {
     updatePeriod(year, previousYear, previousMonth, scenarioContext.getPeriodRepository());
   }
 
-  @When("the period for year {int} is updated with a reporting date in the future")
+  @When("the period for year {string} is updated with a reporting date in the future")
   public void whenPeriodIsMovedToFuture(String year) {
     updatePeriod(year, previousMonth, nextYear, scenarioContext.getPeriodRepository());
   }
 
-  @Then("the period for {int} should be closed")
+  @Then("the period for {string} should be closed")
   public void thenPeriodIsClosed(String year) {
     var period = NviPeriod.fetchByPublishingYear(year, scenarioContext.getPeriodRepository());
     assertTrue(period.isClosed());
   }
 
-  @Then("the period for {int} should not be closed")
+  @Then("the period for {string} should not be closed")
   public void thenPeriodIsNotClosed(String year) {
     var period = NviPeriod.fetchByPublishingYear(year, scenarioContext.getPeriodRepository());
     assertFalse(period.isClosed());

@@ -1,0 +1,22 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="true" type="CucumberJavaRunConfigurationType" factoryName="Cucumber java">
+    <envs>
+      <env name="API_HOST" value="example.org" />
+      <env name="NVI_TABLE_NAME" value="some-table" />
+      <env name="CUSTOM_DOMAIN_BASE_PATH" value="scientific-index" />
+      <env name="SEARCH_INFRASTRUCTURE_AUTH_URI" value="localhost" />
+      <env name="SEARCH_INFRASTRUCTURE_API_HOST" value="localhost" />
+      <env name="BACKEND_CLIENT_AUTH_URL" value="example.org/auth" />
+    </envs>
+    <shortenClasspath name="NONE" />
+    <option name="WORKING_DIRECTORY" value="$MODULE_WORKING_DIR$" />
+    <extension name="software.aws.toolkits.jetbrains.core.execution.JavaAwsConnectionExtension">
+      <option name="credential" />
+      <option name="region" />
+      <option name="useCurrentConnection" value="false" />
+    </extension>
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
