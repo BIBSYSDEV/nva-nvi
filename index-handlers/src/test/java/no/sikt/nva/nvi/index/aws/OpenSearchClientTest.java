@@ -807,16 +807,14 @@ class OpenSearchClientTest {
 
   @Test
   void shouldFindDocumentByPartialAuthorName() throws IOException {
-    // Given a publication with a contributor named "John Smith"
-    // And an index document for this publication
+    // Given an index document with an NviContributor named "John Smith"
     var name = "John Smith";
     var expectedDocument =
         indexDocumentWithCustomer(randomUri(), name, randomString(), null, randomString());
     addDocumentsToIndex(expectedDocument);
 
-    // When a query is made with search term "Smith"
-    // And with the publication title as the search term
-    var searchParameters = defaultSearchParameters().withSearchTerm("Smith").build();
+    // When a query is made with search term "smith"
+    var searchParameters = defaultSearchParameters().withSearchTerm("smith").build();
     var searchResponse = openSearchClient.search(searchParameters);
 
     // Then the response includes the document
