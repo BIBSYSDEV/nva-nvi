@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.index.aws;
 
 import static java.util.Objects.requireNonNull;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomNviContributor;
+import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomNviContributorBuilder;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomPages;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomPublicationChannel;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.NEW;
@@ -68,8 +69,6 @@ import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.InstitutionPoints;
 import no.sikt.nva.nvi.index.model.document.InstitutionPoints.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
-import no.sikt.nva.nvi.index.model.document.NviContributor;
-import no.sikt.nva.nvi.index.model.document.NviOrganization;
 import no.sikt.nva.nvi.index.model.document.PublicationDate;
 import no.sikt.nva.nvi.index.model.document.PublicationDetails;
 import no.sikt.nva.nvi.index.model.document.ReportingPeriod;
@@ -806,6 +805,24 @@ class OpenSearchClientTest {
     assertEquals(expectedDocument, actualDocument);
   }
 
+  @Test
+  void shouldFindDocumentByPartialAuthorName() throws IOException {
+    // Given an index document with an NviContributor named "John Smith"
+    var name = "John Smith";
+    var expectedDocument =
+        indexDocumentWithCustomer(randomUri(), name, randomString(), null, randomString());
+    addDocumentsToIndex(expectedDocument);
+
+    // When a query is made with search term "smith"
+    var searchParameters = defaultSearchParameters().withSearchTerm("smith").build();
+    var searchResponse = openSearchClient.search(searchParameters);
+
+    // Then the response includes the document
+    assertThat(searchResponse.hits().hits(), hasSize(1));
+    var actualDocument = getFirstHit(searchResponse);
+    assertEquals(expectedDocument, actualDocument);
+  }
+
   private static void assertExpectedPointWithoutRejectedPoints(
       Buckets<StringTermsBucket> actualOrgBuckets) {
     actualOrgBuckets.array().forEach(OpenSearchClientTest::assertExpectedPointAggregations);
@@ -1000,22 +1017,20 @@ class OpenSearchClientTest {
   }
 
   private static PublicationDetails randomPublicationDetailsWithCustomer(
-      URI affiliation, String contributor, String year, String title) {
+      URI affiliation, String contributorName, String year, String title) {
     var publicationDate =
         year != null
             ? PublicationDate.builder().withYear(year).build()
             : PublicationDate.builder().withYear(YEAR).build();
-    var contributorBuilder =
-        NviContributor.builder()
+    var contributor =
+        randomNviContributorBuilder(affiliation)
             .withRole("Creator")
-            .withAffiliations(List.of(NviOrganization.builder().withId(affiliation).build()));
-    if (contributor != null) {
-      contributorBuilder.withName(contributor);
-    }
+            .withName(contributorName)
+            .build();
     return PublicationDetails.builder()
         .withTitle(title)
         .withPublicationDate(publicationDate)
-        .withContributors(List.of(contributorBuilder.build()))
+        .withContributors(List.of(contributor))
         .withPublicationChannel(randomPublicationChannel())
         .withPages(randomPages())
         .build();

@@ -134,6 +134,7 @@ public class CandidateQuery {
             jsonPathOf(PUBLICATION_DETAILS, IDENTIFIER),
             jsonPathOf(PUBLICATION_DETAILS, TITLE),
             jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS, NAME),
+            jsonPathOf(PUBLICATION_DETAILS, NVI_CONTRIBUTORS, NAME),
             jsonPathOf(PUBLICATION_DETAILS, ABSTRACT))
         .operator(Operator.And)
         .type(TextQueryType.CrossFields)

@@ -22,7 +22,6 @@ public final class SearchConstants {
   public static final String ASSIGNEE = "assignee";
   public static final String NUMBER_OF_APPROVALS = "numberOfApprovals";
   public static final String APPROVALS = "approvals";
-  public static final String PUBLICATION_DATE = "publicationDate";
   public static final String YEAR = "year";
   public static final String TYPE = "type";
   public static final String TITLE = "title";
