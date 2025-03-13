@@ -73,20 +73,18 @@ public class PeriodRepositoryFixtures {
     return setupClosedPeriod(scenario, String.valueOf(year));
   }
 
-  private static NviPeriod upsertPeriod(
+  public static NviPeriod upsertPeriod(
       String year, Instant startDate, Instant reportingDate, PeriodRepository periodRepository) {
-    var user = Username.fromString(randomString());
     var existingPeriod = periodRepository.findByPublishingYear(year);
     if (existingPeriod.isPresent()) {
-      var request =
-          UpdatePeriodRequest.builder()
-              .withPublishingYear(Integer.parseInt(year))
-              .withStartDate(startDate)
-              .withReportingDate(reportingDate)
-              .withModifiedBy(user)
-              .build();
-      return NviPeriod.update(request, periodRepository);
+      return updatePeriod(year, startDate, reportingDate, periodRepository);
     }
+    return createPeriod(year, startDate, reportingDate, periodRepository);
+  }
+
+  public static NviPeriod createPeriod(
+      String year, Instant startDate, Instant reportingDate, PeriodRepository periodRepository) {
+    var user = Username.fromString(randomString());
     var request =
         CreatePeriodRequest.builder()
             .withPublishingYear(Integer.parseInt(year))
@@ -95,5 +93,18 @@ public class PeriodRepositoryFixtures {
             .withCreatedBy(user)
             .build();
     return NviPeriod.create(request, periodRepository);
+  }
+
+  public static NviPeriod updatePeriod(
+      String year, Instant startDate, Instant reportingDate, PeriodRepository periodRepository) {
+    var user = Username.fromString(randomString());
+    var request =
+        UpdatePeriodRequest.builder()
+            .withPublishingYear(Integer.parseInt(year))
+            .withStartDate(startDate)
+            .withReportingDate(reportingDate)
+            .withModifiedBy(user)
+            .build();
+    return NviPeriod.update(request, periodRepository);
   }
 }

@@ -1,9 +1,12 @@
-Feature: Example feature
+Feature: Reporting periods
+  Rule: A period is open or closed based on the reporting date
+    Scenario: A period is closed if the reporting date is in the past
+      Given an open period for year 2020
+      When the period for year 2020 is updated with a reporting date in the past
+      Then the period for 2020 should be closed
 
-  Scenario: We can count
-    Given that we start counting at 4
-    When we add 1
-    And we add 2
-    And we double the number
-    Then we should have counted to 14
+    Scenario: A period is open if the reporting date is in the future
+      Given an open period for year 2020
+      When the period for year 2020 is updated with a reporting date in the future
+      Then the period for 2020 should not be closed
 
