@@ -22,13 +22,13 @@ public final class SearchConstants {
   public static final String ASSIGNEE = "assignee";
   public static final String NUMBER_OF_APPROVALS = "numberOfApprovals";
   public static final String APPROVALS = "approvals";
-  public static final String PUBLICATION_DATE = "publicationDate";
   public static final String YEAR = "year";
   public static final String TYPE = "type";
   public static final String TITLE = "title";
   public static final String ABSTRACT = "abstract";
   public static final String KEYWORD = "keyword";
   public static final String APPROVAL_STATUS = "approvalStatus";
+  public static final String REPORTING_PERIOD = "reportingPeriod";
   public static final String PUBLICATION_DETAILS = "publicationDetails";
   public static final String CONTRIBUTORS = "contributors";
   public static final String NVI_CONTRIBUTORS = "nviContributors";

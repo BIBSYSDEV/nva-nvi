@@ -25,6 +25,7 @@ import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_ENGLISH_LABEL;
 import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_NORWEGIAN_LABEL;
 import static no.sikt.nva.nvi.test.TestConstants.LABELS_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.NB_FIELD;
+import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.s3.S3Driver.S3_SCHEME;
@@ -96,7 +97,6 @@ import software.amazon.awssdk.services.sqs.model.SqsException;
 @SuppressWarnings({"PMD.GodClass", "PMD.CouplingBetweenObjects"})
 class IndexDocumentHandlerTest {
 
-  public static final int SOME_REPORTING_YEAR = 2023;
   private static final String JSON_PTR_CONTRIBUTOR = "/publicationDetails/contributors";
   private static final String JSON_PTR_APPROVALS = "/approvals";
   private static final Environment ENVIRONMENT = new Environment();
@@ -130,7 +130,7 @@ class IndexDocumentHandlerTest {
   @BeforeEach
   void setup() {
     var scenario = new TestScenario();
-    setupOpenPeriod(scenario, SOME_REPORTING_YEAR);
+    setupOpenPeriod(scenario, CURRENT_YEAR);
     candidateRepository = scenario.getCandidateRepository();
     periodRepository = scenario.getPeriodRepository();
 
