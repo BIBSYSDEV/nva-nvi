@@ -17,11 +17,9 @@ import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.unit.nva.auth.uriretriever.UriRetriever;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 public class TestScenario {
 
-  private final DynamoDbClient localDynamo = initializeTestDatabase();
   private final CandidateRepository candidateRepository;
   private final PeriodRepository periodRepository;
   private final UriRetriever mockUriRetriever = mock(UriRetriever.class);
@@ -30,6 +28,7 @@ public class TestScenario {
   private final Organization defaultOrganization;
 
   public TestScenario() {
+    var localDynamo = initializeTestDatabase();
     this.candidateRepository = new CandidateRepository(localDynamo);
     this.periodRepository = new PeriodRepository(localDynamo);
     this.defaultOrganization = setupTopLevelOrganizationWithSubUnits();

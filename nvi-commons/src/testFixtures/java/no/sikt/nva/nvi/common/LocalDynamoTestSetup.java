@@ -39,7 +39,7 @@ public class LocalDynamoTestSetup {
   private static final Long CAPACITY_DOES_NOT_MATTER = 1000L;
 
   public static DynamoDbClient initializeTestDatabase() {
-    var localDynamo = DynamoDBEmbedded.create().dynamoDbClient();
+    var localDynamo = DynamoDBEmbedded.create(null, true).dynamoDbClient();
     var tableName = NVI_TABLE_NAME;
     var createTableResult = createTable(localDynamo, tableName);
     var tableDescription = createTableResult.tableDescription();

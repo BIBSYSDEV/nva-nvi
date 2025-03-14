@@ -30,6 +30,7 @@ dependencies {
     implementation libs.nva.s3
     implementation project(':nvi-commons')
 
+    testImplementation libs.bundles.cucumber
     testImplementation libs.dynamodDbLocal
     testImplementation libs.jackson.datatype.jsr310
     testImplementation libs.nva.testutils
