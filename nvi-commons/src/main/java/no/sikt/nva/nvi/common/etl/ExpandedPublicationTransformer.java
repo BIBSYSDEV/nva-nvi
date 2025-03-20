@@ -40,6 +40,11 @@ public class ExpandedPublicationTransformer {
     this.storageReader = storageReader;
   }
 
+  public ExpandedPublication extractAndTransform(URI publicationBucketUri) {
+    var model = extract(publicationBucketUri);
+    return transform(model);
+  }
+
   public Model extract(URI publicationBucketUri) {
     var document = storageReader.read(publicationBucketUri);
     var body = extractBody(document);
