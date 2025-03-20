@@ -31,6 +31,7 @@ dependencies {
     implementation libs.opensearch.rest.client
     implementation project(':nvi-commons')
 
+    testImplementation libs.bundles.cucumber
     testImplementation libs.bundles.testContainers
     testImplementation libs.dynamodDbLocal
     testImplementation libs.openCsv

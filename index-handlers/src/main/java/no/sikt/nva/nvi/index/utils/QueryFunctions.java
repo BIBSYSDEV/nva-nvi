@@ -35,16 +35,16 @@ public final class QueryFunctions {
   private QueryFunctions() {}
 
   public static Query nestedQuery(String path, Query query) {
-    return new NestedQuery.Builder().path(path).query(query).build()._toQuery();
+    return new NestedQuery.Builder().path(path).query(query).build().toQuery();
   }
 
   public static Query nestedQuery(String path, Query... queries) {
-    return new NestedQuery.Builder().path(path).query(mustMatch(queries)).build()._toQuery();
+    return new NestedQuery.Builder().path(path).query(mustMatch(queries)).build().toQuery();
   }
 
   public static Query fieldValueQuery(String field, String value) {
     return nonNull(value)
-        ? new TermQuery.Builder().field(field).value(getFieldValue(value)).build()._toQuery()
+        ? new TermQuery.Builder().field(field).value(getFieldValue(value)).build().toQuery()
         : matchAllQuery();
   }
 
@@ -54,7 +54,7 @@ public final class QueryFunctions {
         .field(field)
         .terms(new TermsQueryField.Builder().value(termsFields).build())
         .build()
-        ._toQuery();
+        .toQuery();
   }
 
   public static Query rangeFromQuery(String field, int greaterThanOrEqualTo) {
@@ -62,7 +62,7 @@ public final class QueryFunctions {
         .field(field)
         .gte(JsonData.of(greaterThanOrEqualTo))
         .build()
-        ._toQuery();
+        .toQuery();
   }
 
   public static Query mustNotMatch(String value, String field) {
@@ -70,7 +70,7 @@ public final class QueryFunctions {
   }
 
   public static Query mustNotMatch(Query query) {
-    return new Builder().mustNot(query).build()._toQuery();
+    return new Builder().mustNot(query).build().toQuery();
   }
 
   public static Query matchAtLeastOne(Query... queries) {
@@ -86,7 +86,7 @@ public final class QueryFunctions {
   }
 
   public static Query matchQuery(String value, String field) {
-    return new MatchQuery.Builder().field(field).query(getFieldValue(value)).build()._toQuery();
+    return new MatchQuery.Builder().field(field).query(getFieldValue(value)).build().toQuery();
   }
 
   public static Query containsNonFinalizedStatusQuery() {
@@ -133,7 +133,7 @@ public final class QueryFunctions {
   }
 
   private static Query matchAllQuery() {
-    return new MatchAllQuery.Builder().build()._toQuery();
+    return new MatchAllQuery.Builder().build().toQuery();
   }
 
   private static FieldValue getFieldValue(String value) {

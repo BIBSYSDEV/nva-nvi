@@ -24,6 +24,7 @@ dependencies {
 
     testFixturesImplementation libs.aws.lambda.events
     testFixturesImplementation libs.aws.sdk2.sqs
+    testFixturesImplementation libs.bundles.cucumber
     testFixturesImplementation libs.bundles.testing
     testFixturesImplementation libs.dynamodDbLocal
     testFixturesImplementation libs.nva.commons.auth
@@ -31,6 +32,7 @@ dependencies {
     testFixturesImplementation libs.nva.json
     testFixturesImplementation project(':nvi-test')
 
+    testImplementation libs.bundles.cucumber
     testImplementation libs.dynamodDbLocal
     testImplementation project(':nvi-test')
 }

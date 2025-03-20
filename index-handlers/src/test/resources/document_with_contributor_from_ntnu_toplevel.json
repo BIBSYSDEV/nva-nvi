@@ -2,6 +2,11 @@
     "@context" : "https://bibsysdev.github.io/src/nvi-context.json",
     "type": "NviCandidate",
     "identifier" : "27a0f52b-2d86-447d-a2cc-48ac4b8789dd",
+    "reportingPeriod" : {
+      "type" : "ReportingPeriod",
+      "year" : "2023"
+    },
+    "reported" : false,
     "publicationDetails" : {
       "id" : "https://api.dev.nva.aws.unit.no/publication/018a03b59fd9-88b45d41-03e8-4feb-a3e5-3ad865aea1ca",
       "type" : "AcademicArticle",
