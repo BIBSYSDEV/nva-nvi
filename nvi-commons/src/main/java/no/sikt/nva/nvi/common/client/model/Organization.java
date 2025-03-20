@@ -18,8 +18,7 @@ public record Organization(
     @JsonProperty("partOf") List<Organization> partOf,
     @JsonProperty("hasPart") List<Organization> hasPart,
     @JsonProperty("labels") Map<String, String> labels,
-    @JsonProperty("type") String type,
-    @JsonProperty("@context") Object context)
+    @JsonProperty("type") String type)
     implements JsonSerializable {
 
   public static Organization from(String json) throws JsonProcessingException {
@@ -92,7 +91,7 @@ public record Organization(
     }
 
     public Organization build() {
-      return new Organization(id, partOf, hasPart, labels, type, context);
+      return new Organization(id, partOf, hasPart, labels, type);
     }
   }
 }
