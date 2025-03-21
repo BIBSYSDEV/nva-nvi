@@ -4,7 +4,9 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static nva.commons.core.ioutils.IoUtils.stringFromResources;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 import cucumber.contexts.ScenarioContext;
 import io.cucumber.java.en.Given;
@@ -48,13 +50,6 @@ public class PublicationTransformationSteps {
     this.documentLocation = s3Driver.insertFile(UnixPath.of(randomString()), documentContent);
   }
 
-  @When("the document is extracted and transformed")
-  public void theDocumentIsExtractedAndTransformed() {
-    var storageReader = new S3StorageReader(scenarioContext.getS3Client(), BUCKET_NAME);
-    var dataLoader = new ExpandedPublicationTransformer(storageReader);
-    this.publication = dataLoader.extractAndTransform(documentLocation);
-  }
-
   @When("a PublicationDto is created from the document")
   public void aPublicationDtoIsCreatedFromTheDocument() {
     var storageReader = new S3StorageReader(scenarioContext.getS3Client(), BUCKET_NAME);
@@ -91,5 +86,37 @@ public class PublicationTransformationSteps {
   @Then("the PublicationDto has language {string}")
   public void thePublicationDtoHasLanguage(String expectedValue) {
     assertEquals(expectedValue, publication.publicationLanguage());
+  }
+
+  @Then("the PublicationDto has modified date {string}")
+  public void thePublicationDtoHasModifiedDate(String expectedValue) {
+    assertEquals(expectedValue, publication.modifiedDate().toString());
+  }
+
+  @Then("the PublicationDto is not an international collaboration")
+  public void thePublicationDtoIsNotAnInternationalCollaboration() {
+    assertFalse(publication.isInternationalCollaboration());
+  }
+
+  @Then("the PublicationDto has {int} contributor\\(s)")
+  public void thePublicationDtoHasContributors(Integer expectedCount) {
+    assertThat(publication.contributors(), hasSize(expectedCount));
+  }
+
+  @Then("the Contributor with ID {string} has the expected properties")
+  public void theContributorWithIDHasTheExpectedProperties(String contributorId) {
+    var contributor =
+        publication.contributors().stream()
+            .filter(c -> c.id().equals(URI.create(contributorId)))
+            .findFirst()
+            .orElseThrow();
+
+    var expectedOrganizationId = "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0";
+    var actualTopLevelOrganizationId = contributor.affiliations().getFirst().id();
+    assertEquals(URI.create(contributorId), contributor.id());
+    assertEquals("Mona Ullah", contributor.name());
+    assertEquals("Verified", contributor.verificationStatus());
+    assertEquals("Creator", contributor.role());
+    assertEquals(URI.create(expectedOrganizationId), actualTopLevelOrganizationId);
   }
 }

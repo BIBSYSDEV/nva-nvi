@@ -14,8 +14,8 @@ import no.sikt.nva.nvi.common.client.model.Organization;
 @JsonSerialize
 public record Contributor(
     URI id, String name, String verificationStatus, String role, List<Organization> affiliations) {
-  private static final String CREATOR = "Verified";
-  private static final String VERIFIED = "Creator";
+  private static final String VERIFIED = "Verified";
+  private static final String CREATOR = "Creator";
 
   public Contributor {
     requireNonNull(affiliations, "Required field 'affiliations' is null");

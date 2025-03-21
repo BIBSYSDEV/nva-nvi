@@ -9,6 +9,7 @@ PREFIX nva: <https://nva.sikt.no/ontology/publication#>
 CONSTRUCT {
   # Build a simplified version of the main publication object
   ?pub a nva:ExpandedPublication ;
+  nva:identifier ?identifier ;
   nva:publicationTitle ?title ;
   nva:publicationDate ?date ;
   nva:publicationStatus ?status ;
@@ -53,6 +54,7 @@ CONSTRUCT {
 
 WHERE {
   ?pub a nva:Publication .
+  ?pub nva:identifier ?identifier .
   ?pub nva:status ?status .
   ?pub nva:entityDescription ?entityDescription .
   OPTIONAL { ?entityDescription nva:mainTitle ?title . }
@@ -69,7 +71,6 @@ WHERE {
   ?reference a nva:Reference .
   ?reference nva:publicationInstance ?instance .
   ?instance a ?instanceType .
-
 
   # Find all publication channels
   OPTIONAL {
