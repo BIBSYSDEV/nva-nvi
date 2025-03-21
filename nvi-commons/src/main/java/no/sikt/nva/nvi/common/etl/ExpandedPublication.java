@@ -15,6 +15,7 @@ import no.sikt.nva.nvi.common.client.model.Organization;
 @JsonSerialize
 public record ExpandedPublication(
     URI id,
+    String identifier,
     String publicationTitle,
     PublicationDate publicationDate,
     String publicationStatus,
@@ -32,6 +33,7 @@ public record ExpandedPublication(
 
   public void validate() {
     requireNonNull(id, "Required field 'id' is null");
+    requireNonNull(identifier, "Required field 'identifier' is null");
     requireNonNull(publicationDate, "Required field 'publicationDate' is null");
     requireNonNull(publicationStatus, "Required field 'publicationStatus' is null");
     requireNonNull(publicationType, "Required field 'publicationType' is null");
