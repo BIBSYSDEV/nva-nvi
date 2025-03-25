@@ -1,7 +1,6 @@
 package no.sikt.nva.nvi.common.etl;
 
 import static no.sikt.nva.nvi.common.utils.GraphUtils.createModel;
-import static no.sikt.nva.nvi.common.utils.GraphUtils.toTurtle;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.ioutils.IoUtils.inputStreamFromResources;
 import static nva.commons.core.ioutils.IoUtils.stringFromResources;
@@ -62,7 +61,6 @@ public class PublicationLoader {
       var model = queryExecution.execConstruct();
       var document = JsonDocument.of(toJsonReader(model));
       var context = JsonDocument.of(inputStreamFromResources(Path.of(PUBLICATION_FRAME_JSONLD)));
-      var turtleOutput = toTurtle(model);
       var jsonString = JsonLd.frame(document, context).get().toString();
       var publication = Publication.from(jsonString);
       logger.info("Transformed publication with ID: {}", publication.id());

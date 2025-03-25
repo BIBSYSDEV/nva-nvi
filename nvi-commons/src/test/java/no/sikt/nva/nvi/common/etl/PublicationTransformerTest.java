@@ -5,6 +5,7 @@ import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_2;
 import static nva.commons.core.ioutils.IoUtils.stringFromResources;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.params.provider.Arguments.argumentSet;
 
@@ -19,12 +20,17 @@ import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.paths.UnixPath;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class PublicationTransformerTest {
   private static final String BUCKET_NAME = "testBucket";
+  private static final String EXAMPLE_PUBLICATION_1 =
+      "expandedPublications/validNviCandidate1.json";
+  private static final String EXAMPLE_PUBLICATION_2 =
+      "expandedPublications/validNviCandidate2.json";
 
   private S3Driver s3Driver;
   private PublicationLoader dataLoader;
@@ -35,6 +41,12 @@ class PublicationTransformerTest {
     var storageReader = new S3StorageReader(s3Client, BUCKET_NAME);
     dataLoader = new PublicationLoader(storageReader);
     s3Driver = new S3Driver(s3Client, BUCKET_NAME);
+  }
+
+  @Test
+  void shouldNotFailWhenValidatingExampleDocuments() {
+    var actual = parseExampleDocument(EXAMPLE_PUBLICATION_2);
+    assertDoesNotThrow(actual::validate);
   }
 
   @ParameterizedTest
@@ -106,7 +118,7 @@ class PublicationTransformerTest {
   private static Stream<Arguments> exampleDocumentTestProvider() {
 
     return Stream.of(
-        argumentSet("Minimal example", "expandedPublications/validNviCandidate1.json", EXAMPLE_1),
-        argumentSet("Full example", "expandedPublications/validNviCandidate2.json", EXAMPLE_2));
+        argumentSet("Minimal example", EXAMPLE_PUBLICATION_1, EXAMPLE_1),
+        argumentSet("Full example", EXAMPLE_PUBLICATION_2, EXAMPLE_2));
   }
 }
