@@ -3,12 +3,14 @@ package no.sikt.nva.nvi.common.etl;
 import static java.util.Objects.requireNonNull;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
 
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSerialize
-public record PublicationChannelTemp(
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
+@JsonTypeName("PublicationChannel")
+public record PublicationChannelDto(
     URI id,
     String channelType,
     String identifier,
@@ -18,7 +20,7 @@ public record PublicationChannelTemp(
     String onlineIssn,
     String printIssn) {
 
-  public PublicationChannelTemp {
+  public PublicationChannelDto {
     requireNonNull(id, "Required field 'id' is null");
     requireNonNull(channelType, "Required field 'channelType' is null");
     requireNonNull(scientificValue, "Required field 'scientificLevel' is null");
@@ -87,8 +89,8 @@ public record PublicationChannelTemp(
       return this;
     }
 
-    public PublicationChannelTemp build() {
-      return new PublicationChannelTemp(
+    public PublicationChannelDto build() {
+      return new PublicationChannelDto(
           id, channelType, identifier, name, year, scientificValue, onlineIssn, printIssn);
     }
   }

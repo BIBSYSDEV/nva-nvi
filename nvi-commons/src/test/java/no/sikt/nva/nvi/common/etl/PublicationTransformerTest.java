@@ -27,8 +27,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 class PublicationTransformerTest {
   private static final String BUCKET_NAME = "testBucket";
 
-  private static final PublicationChannelTemp EXAMPLE_1_CHANNEL =
-      PublicationChannelTemp.builder()
+  private static final PublicationChannelDto EXAMPLE_1_CHANNEL =
+      PublicationChannelDto.builder()
           .withId(
               URI.create(
                   "https://api.sandbox.nva.aws.unit.no/publication-channels-v2/serial-publication/013E7484-327D-4F42-ACA4-8F975CCFF34C/2025"))
@@ -82,8 +82,8 @@ class PublicationTransformerTest {
                       .withPartOf(List.of(Organization.builder().withId(SIKT_ID).build()))
                       .build()))
           .build();
-  private static final Contributor EXAMPLE_2_CONTRIBUTOR_3 =
-      Contributor.builder()
+  private static final ContributorDto EXAMPLE_2_CONTRIBUTOR_3 =
+      ContributorDto.builder()
           .withId(URI.create("https://api.sandbox.nva.aws.unit.no/cristin/person/1685065"))
           .withName("Donald Duck")
           .withRole("Creator")
@@ -96,8 +96,8 @@ class PublicationTransformerTest {
           .withLabels(NTNU_LABELS)
           .withType("Organization")
           .build();
-  private static final Contributor EXAMPLE_2_CONTRIBUTOR_1 =
-      Contributor.builder()
+  private static final ContributorDto EXAMPLE_2_CONTRIBUTOR_1 =
+      ContributorDto.builder()
           .withName("Petter Smart")
           .withRole("Creator")
           .withVerificationStatus("NotVerified")
@@ -124,8 +124,8 @@ class PublicationTransformerTest {
                       .withHasPart(List.of(Organization.builder().withId(SIKT_SUBUNIT_ID).build()))
                       .build()))
           .build();
-  private static final Contributor EXAMPLE_1_CONTRIBUTOR =
-      Contributor.builder()
+  private static final ContributorDto EXAMPLE_1_CONTRIBUTOR =
+      ContributorDto.builder()
           .withId(URI.create("https://api.sandbox.nva.aws.unit.no/cristin/person/1215176"))
           .withName("Ola Nordmann")
           .withRole("Creator")
@@ -139,7 +139,7 @@ class PublicationTransformerTest {
                   "https://api.sandbox.nva.aws.unit.no/publication/0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5"))
           .withIdentifier("0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5")
           .withTitle("Example NVI candidate #1")
-          .withPublicationDate(new PublicationDate("2025", null, null))
+          .withPublicationDate(new PublicationDateDto("2025", null, null))
           .withStatus("PUBLISHED")
           .withPublicationType("AcademicArticle")
           .withModifiedDate(Instant.parse("2025-03-24T06:59:56.170369925Z"))
@@ -150,31 +150,31 @@ class PublicationTransformerTest {
           .withTopLevelOrganizations(
               List.of(TOP_LEVEL_ORGANIZATION_NTNU, TOP_LEVEL_ORGANIZATION_SIKT))
           .build();
-  private static final Contributor EXAMPLE_2_CONTRIBUTOR_4 =
-      Contributor.builder()
+  private static final ContributorDto EXAMPLE_2_CONTRIBUTOR_4 =
+      ContributorDto.builder()
           .withId(URI.create("https://api.sandbox.nva.aws.unit.no/cristin/person/1685046"))
           .withName("Skrue McDuck")
           .withRole("ContactPerson")
           .withVerificationStatus("Verified")
           .withAffiliations(List.of(SUB_ORGANIZATION_SIKT))
           .build();
-  private static final Contributor EXAMPLE_2_CONTRIBUTOR_5 =
-      Contributor.builder()
+  private static final ContributorDto EXAMPLE_2_CONTRIBUTOR_5 =
+      ContributorDto.builder()
           .withId(URI.create("https://api.sandbox.nva.aws.unit.no/cristin/person/1215176"))
           .withName("Ola Nordmann")
           .withRole("Creator")
           .withVerificationStatus("Verified")
           .withAffiliations(List.of(SUB_ORGANIZATION_SIKT, TOP_LEVEL_ORGANIZATION_NTNU))
           .build();
-  private static final Contributor EXAMPLE_2_CONTRIBUTOR_2 =
-      Contributor.builder()
+  private static final ContributorDto EXAMPLE_2_CONTRIBUTOR_2 =
+      ContributorDto.builder()
           .withName("John Doe")
           .withRole("Creator")
           .withVerificationStatus("NotVerified")
           .withAffiliations(List.of(EXAMPLE_TOP_LEVEL_ORGANIZATION_3))
           .build();
-  private static final PublicationChannelTemp EXAMPLE_2_PUBLISHER =
-      PublicationChannelTemp.builder()
+  private static final PublicationChannelDto EXAMPLE_2_PUBLISHER =
+      PublicationChannelDto.builder()
           .withId(
               URI.create(
                   "https://api.sandbox.nva.aws.unit.no/publication-channels-v2/publisher/DF3FB68B-F613-4D6F-90D5-38FEC2A61A41/2025"))
@@ -184,8 +184,8 @@ class PublicationTransformerTest {
           .withYear("2025")
           .withScientificValue("LevelOne")
           .build();
-  private static final PublicationChannelTemp EXAMPLE_2_SERIES =
-      PublicationChannelTemp.builder()
+  private static final PublicationChannelDto EXAMPLE_2_SERIES =
+      PublicationChannelDto.builder()
           .withId(
               URI.create(
                   "https://api.sandbox.nva.aws.unit.no/publication-channels-v2/serial-publication/4DB8ADA8-2031-4092-864B-795432CCBD68/2025"))
@@ -203,7 +203,7 @@ class PublicationTransformerTest {
                   "https://api.sandbox.nva.aws.unit.no/publication/0195c6f37392-68057afa-9b9f-4e7a-8c9a-f5aef6b657be"))
           .withIdentifier("0195c6f37392-68057afa-9b9f-4e7a-8c9a-f5aef6b657be")
           .withTitle("Example NVI candidate #2")
-          .withPublicationDate(new PublicationDate("2025", "3", "24"))
+          .withPublicationDate(new PublicationDateDto("2025", "3", "24"))
           .withStatus("PUBLISHED")
           .withPublicationType("AcademicMonograph")
           .withModifiedDate(Instant.parse("2025-03-24T08:23:24.859620342Z"))
@@ -267,7 +267,7 @@ class PublicationTransformerTest {
   void shouldGetExpectedContributorsFromExampleDocument(String filename, Publication expected) {
     var actual = parseExampleDocument(filename);
     assertThat(actual.contributors(), hasSize(expected.contributors().size()));
-    for (Contributor contributor : expected.contributors()) {
+    for (ContributorDto contributor : expected.contributors()) {
       Assertions.assertThat(actual.contributors())
           .filteredOn("name", contributor.name())
           .containsOnly(contributor);
@@ -280,7 +280,7 @@ class PublicationTransformerTest {
       String filename, Publication expected) {
     var actual = parseExampleDocument(filename);
     assertThat(actual.publicationChannels(), hasSize(expected.publicationChannels().size()));
-    for (PublicationChannelTemp channel : expected.publicationChannels()) {
+    for (PublicationChannelDto channel : expected.publicationChannels()) {
       Assertions.assertThat(actual.publicationChannels())
           .filteredOn("channelType", channel.channelType())
           .containsOnly(channel);

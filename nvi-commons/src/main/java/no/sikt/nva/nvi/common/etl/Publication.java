@@ -4,6 +4,7 @@ import static java.util.Objects.requireNonNull;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
@@ -11,19 +12,20 @@ import java.time.Instant;
 import java.util.Collection;
 import no.sikt.nva.nvi.common.client.model.Organization;
 
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSerialize
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
+@JsonTypeName("Publication")
 public record Publication(
     URI id,
     String identifier,
     String title,
     String status,
     String language,
-    PublicationDate publicationDate,
+    PublicationDateDto publicationDate,
     String publicationType,
     boolean isInternationalCollaboration,
-    Collection<PublicationChannelTemp> publicationChannels,
-    Collection<Contributor> contributors,
+    Collection<PublicationChannelDto> publicationChannels,
+    Collection<ContributorDto> contributors,
     Collection<Organization> topLevelOrganizations,
     Instant modifiedDate) {
 
@@ -41,8 +43,8 @@ public record Publication(
     requireNonNull(contributors, "Required field 'contributors' is null");
     requireNonNull(topLevelOrganizations, "Required field 'topLevelOrganizations' is null");
 
-    publicationChannels.forEach(PublicationChannelTemp::validate);
-    contributors.forEach(Contributor::validate);
+    publicationChannels.forEach(PublicationChannelDto::validate);
+    contributors.forEach(ContributorDto::validate);
   }
 
   public static Publication from(String json) throws JsonProcessingException {
@@ -60,11 +62,11 @@ public record Publication(
     private String title;
     private String status;
     private String language;
-    private PublicationDate publicationDate;
+    private PublicationDateDto publicationDate;
     private String publicationType;
     private boolean isInternationalCollaboration;
-    private Collection<PublicationChannelTemp> publicationChannels;
-    private Collection<Contributor> contributors;
+    private Collection<PublicationChannelDto> publicationChannels;
+    private Collection<ContributorDto> contributors;
     private Collection<Organization> topLevelOrganizations;
     private Instant modifiedDate;
 
@@ -85,7 +87,7 @@ public record Publication(
       return this;
     }
 
-    public Builder withPublicationDate(PublicationDate publicationDate) {
+    public Builder withPublicationDate(PublicationDateDto publicationDate) {
       this.publicationDate = publicationDate;
       return this;
     }
@@ -110,12 +112,12 @@ public record Publication(
       return this;
     }
 
-    public Builder withPublicationChannels(Collection<PublicationChannelTemp> publicationChannels) {
+    public Builder withPublicationChannels(Collection<PublicationChannelDto> publicationChannels) {
       this.publicationChannels = publicationChannels;
       return this;
     }
 
-    public Builder withContributors(Collection<Contributor> contributors) {
+    public Builder withContributors(Collection<ContributorDto> contributors) {
       this.contributors = contributors;
       return this;
     }

@@ -5,19 +5,21 @@ import static java.util.Objects.requireNonNull;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
 import java.util.List;
 import no.sikt.nva.nvi.common.client.model.Organization;
 
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSerialize
-public record Contributor(
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
+@JsonTypeName("Contributor")
+public record ContributorDto(
     URI id, String name, String verificationStatus, String role, List<Organization> affiliations) {
   private static final String VERIFIED = "Verified";
   private static final String CREATOR = "Creator";
 
-  public Contributor {
+  public ContributorDto {
     requireNonNull(affiliations, "Required field 'affiliations' is null");
   }
 
@@ -82,8 +84,8 @@ public record Contributor(
       return this;
     }
 
-    public Contributor build() {
-      return new Contributor(id, name, verificationStatus, role, affiliations);
+    public ContributorDto build() {
+      return new ContributorDto(id, name, verificationStatus, role, affiliations);
     }
   }
 }

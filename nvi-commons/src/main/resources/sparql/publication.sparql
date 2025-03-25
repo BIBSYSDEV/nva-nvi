@@ -21,7 +21,7 @@ CONSTRUCT {
   :topLevelOrganization ?topOrg ;
   :modifiedDate ?modifiedDate .
 
-  ?channel a :PublicationChannelTemp ;
+  ?channel a :PublicationChannel ;
   :channelType ?channelType ;
   :identifier ?channelIdentifier ;
   :name ?channelName ;
