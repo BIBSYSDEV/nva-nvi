@@ -20,16 +20,14 @@ import org.apache.jena.riot.RiotException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class GraphUtils {
-  public static final String APPLICATION_JSON = "application/json";
+public final class GraphUtils {
   public static final String PART_OF_PROPERTY = "https://nva.sikt.no/ontology/publication#partOf";
   public static final String HAS_PART_PROPERTY = "https://nva.sikt.no/ontology/publication#hasPart";
   private static final String NVI_SPARQL =
       IoUtils.stringFromResources(Path.of("sparql/nvi.sparql"));
   private static final Logger LOGGER = LoggerFactory.getLogger(GraphUtils.class);
 
-  @JacocoGenerated
-  public GraphUtils() {}
+  private GraphUtils() {}
 
   public static Model createModel(JsonNode body) {
     var model = ModelFactory.createDefaultModel();

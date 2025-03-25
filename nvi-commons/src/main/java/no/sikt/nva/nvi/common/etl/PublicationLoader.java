@@ -45,47 +45,53 @@ public class PublicationLoader {
 
   public Publication extractAndTransform(URI publicationBucketUri) {
     logger.info("Extracting and transforming publication from S3: {}", publicationBucketUri);
-    var model = extract(publicationBucketUri);
-    return transform(model);
+    var content = extractContentFromStorage(publicationBucketUri);
+    var model = loadModelFromJson(content);
+    var publication = transformToPublication(model);
+    logger.info("Successfully transformed publication with ID: {}", publication.id());
+    return publication;
   }
 
-  public Model extract(URI publicationBucketUri) {
-    var document = storageReader.read(publicationBucketUri);
-    var body = extractBody(document);
-    return createModel(body);
-  }
-
-  public Publication transform(Model publicationModel) {
+  private JsonNode extractContentFromStorage(URI publicationBucketUri) {
+    logger.info("Extracting publication from S3: {}", publicationBucketUri);
     try {
-      var queryExecution = QueryExecutionFactory.create(PUBLICATION_SPARQL, publicationModel);
-      var model = queryExecution.execConstruct();
-      var document = JsonDocument.of(toJsonReader(model));
-      var context = JsonDocument.of(inputStreamFromResources(Path.of(PUBLICATION_FRAME_JSONLD)));
-      var jsonString = JsonLd.frame(document, context).get().toString();
-      var publication = Publication.from(jsonString);
-      logger.info("Transformed publication with ID: {}", publication.id());
-      return publication;
-    } catch (JsonProcessingException | JsonLdError e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  private JsonNode extractBody(String content) {
-    try {
-      var document = dtoObjectMapper.readTree(content);
-      var body = (ObjectNode) document.at(JSON_PTR_BODY);
-      return replaceContextNode(body);
+      var jsonString = storageReader.read(publicationBucketUri);
+      var jsonDocument = dtoObjectMapper.readTree(jsonString);
+      var body = (ObjectNode) jsonDocument.at(JSON_PTR_BODY);
+      return withReplacementContext(body);
     } catch (JsonProcessingException e) {
       throw new RuntimeException(e);
     }
   }
 
-  /*
-   * Replaces the context node in the JSON-LD document with a static copy
-   * to avoid network calls. This static context should be kept in sync with
-   * the source at https://api.nva.unit.no/publication/context
+  private Model loadModelFromJson(JsonNode body) {
+    logger.info("Querying JSON-LD document to generate RDF model");
+    var model = createModel(body);
+    var queryExecution = QueryExecutionFactory.create(PUBLICATION_SPARQL, model);
+    return queryExecution.execConstruct();
+  }
+
+  private Publication transformToPublication(Model model) {
+    logger.info("Transforming RDF model to simplified Publication object");
+    try {
+      var document = JsonDocument.of(toJsonReader(model));
+      var context = JsonDocument.of(inputStreamFromResources(Path.of(PUBLICATION_FRAME_JSONLD)));
+      var jsonString = JsonLd.frame(document, context).get().toString();
+      return Publication.from(jsonString);
+    } catch (JsonProcessingException | JsonLdError e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  /**
+   * Replaces the context node in the JSON-LD document with a static copy to avoid network calls.
+   * This static context should be kept in sync with the source
+   * (https://api.nva.unit.no/publication/context).
+   *
+   * @param body Content of the JSON-LD document to be transformed
+   * @return JsonNode with the context node replaced
    */
-  private JsonNode replaceContextNode(ObjectNode body) {
+  private JsonNode withReplacementContext(ObjectNode body) {
     try {
       var replacementContext = dtoObjectMapper.readTree(contextString);
       body.set(CONTEXT_NODE, replacementContext);

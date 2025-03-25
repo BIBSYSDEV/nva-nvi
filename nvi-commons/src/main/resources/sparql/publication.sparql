@@ -21,6 +21,7 @@ CONSTRUCT {
   :topLevelOrganization ?topOrg ;
   :modifiedDate ?modifiedDate .
 
+  # Include publication channels
   ?channel a :PublicationChannel ;
   :channelType ?channelType ;
   :identifier ?channelIdentifier ;
@@ -53,6 +54,7 @@ CONSTRUCT {
 }
 
 WHERE {
+  # Find the main publication object and basic fields
   ?pub a :Publication .
   ?pub :status ?status .
   OPTIONAL { ?pub :identifier ?identifier }
@@ -62,13 +64,13 @@ WHERE {
   OPTIONAL { ?entityDescription :mainTitle ?title }
   OPTIONAL { ?entityDescription :language ?language }
 
-  # Extract publication date
+  # Find publication date
   ?date a :PublicationDate .
   ?date :year ?year .
   OPTIONAL { ?date :month ?month . }
   OPTIONAL { ?date :day ?day . }
 
-  # Extract publication type
+  # Find publication type
   ?reference a :Reference .
   ?reference :publicationInstance ?instance .
   ?instance a ?instanceType .
@@ -111,34 +113,31 @@ WHERE {
     }
   }
 
-  # Get the top-level organizations
+  # Find the top-level organizations as a separate node
   # TODO: Derive this from Organization nodes instead of relying on a fixed property?
   OPTIONAL {
     ?pub :topLevelOrganization ?topOrg .
     ?topOrg a :Organization .
   }
 
-  # Map organizations as a single tree structure
+  # Find all organizations
   ?org a :Organization .
   OPTIONAL { ?org :partOf ?parent }
   OPTIONAL { ?org :hasPart ?child }
   OPTIONAL { ?org :label ?label }
   OPTIONAL { ?org :country ?country }
-  OPTIONAL {
-    ?pub :topLevelOrganization ?topOrg .
-    # Check if the publication is an international collaboration
-    {
-      SELECT (COUNT(?nonNorOrg) AS ?nonNorCount)
-      WHERE {
-        ?nonNorOrg a :Organization .
-        OPTIONAL { ?nonNorOrg :country ?country }
-        FILTER(bound(?country) && ?country != "NO")
-      }
-    }
-    BIND(IF(?nonNorCount > 0, true, false) AS ?isInternationalCollaboration)
+
+  # Check if the publication is an international collaboration
+  {
+    SELECT (EXISTS {
+      ?nonNorwegianOrganization a :Organization ;
+      :country ?country .
+      FILTER(?country != "NO")
+    } AS ?isInternationalCollaboration)
+    WHERE {}
   }
 
-  # Contributors
+  # Find all contributors
   OPTIONAL {
     SELECT DISTINCT ?personId ?contributorName ?verificationStatus ?roleType ?affiliations
     WHERE {
