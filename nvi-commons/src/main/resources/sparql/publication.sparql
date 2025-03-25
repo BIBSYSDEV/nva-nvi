@@ -120,8 +120,8 @@ WHERE {
 
   # Map organizations as a single tree structure
   ?org a :Organization .
-  OPTIONAL { ?org :partOf+ ?parent }
-  OPTIONAL { ?org :hasPart+ ?child }
+  OPTIONAL { ?org :partOf ?parent }
+  OPTIONAL { ?org :hasPart ?child }
   OPTIONAL { ?org :label ?label }
   OPTIONAL { ?org :country ?country }
   OPTIONAL {
