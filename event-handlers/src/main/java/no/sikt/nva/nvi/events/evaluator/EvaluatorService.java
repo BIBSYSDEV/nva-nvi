@@ -45,7 +45,8 @@ import no.sikt.nva.nvi.events.model.PublicationDate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@SuppressWarnings({"PMD.CouplingBetweenObjects"})
+// FIXME: Temporary suppression while refactoring, should be removed.
+@SuppressWarnings({"PMD.CouplingBetweenObjects", "PMD.AvoidLiteralsInIfCondition"})
 public class EvaluatorService {
 
   private static final String NVI_CANDIDATE_MESSAGE =
@@ -89,8 +90,10 @@ public class EvaluatorService {
 
     // TODO: Running extraction here to verify that it works, but we do not use the result yet.
     // TODO: Replace use of JsonNode with the extracted Publication object.
-    var tempPublication = dataLoader.extractAndTransform(publicationBucketUri);
-    logger.info("Publication: {}", tempPublication.id());
+    if ("2042".equals(publicationDate.year())) {
+      var tempPublication = dataLoader.extractAndTransform(publicationBucketUri);
+      logger.info("Publication: {}", tempPublication.id());
+    }
 
     // Check if the publication can be evaluated
     if (shouldSkipEvaluation(candidate, publicationDate)) {

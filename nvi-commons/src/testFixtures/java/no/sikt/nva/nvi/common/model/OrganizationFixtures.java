@@ -30,7 +30,9 @@ public class OrganizationFixtures {
   public static Builder randomOrganization() {
     return Organization.builder()
         .withId(randomUri())
-        .withLabels(Map.of(randomString(), randomString()));
+        .withContext(randomString())
+        .withLabels(Map.of(randomString(), randomString()))
+        .withType(randomString());
   }
 
   public static void mockOrganizationResponseForAffiliation(
