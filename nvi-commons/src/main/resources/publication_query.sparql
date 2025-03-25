@@ -77,7 +77,8 @@ WHERE {
   ?instance a ?instanceType .
 
   # Find all publication channels
-  VALUES ?validChannelType { :Publisher :Series :Journal }
+  VALUES ?validChannelTypes { :Publisher :Series :Journal }
+  BIND (?validChannelTypes AS ?validChannelType)
   OPTIONAL {
     ?channel a ?validChannelType .
     OPTIONAL { ?channel :scientificValue ?scientificValue }
@@ -96,7 +97,7 @@ WHERE {
       SAMPLE(?publisherType)
       ) AS ?channelType)
       WHERE {
-        ?channel a ?allowedChannelType .
+        ?channel a ?validChannelType .
         OPTIONAL {
           ?channel a :Journal .
           BIND(:Journal AS ?journalType)
@@ -115,13 +116,12 @@ WHERE {
   }
 
   # Check whether the publication is 'applicable', i.e. can be an NVI candidate
-  OPTIONAL {
+  {
     SELECT (EXISTS {
-      VALUES ?validPublicationType { :AcademicMonograph :AcademicCommentary :AcademicChapter :AcademicArticle :AcademicLiteratureReview }
-      VALUES ?validChannelType { :Publisher :Series :Journal }
-      VALUES ?validLevel {"LevelOne" "LevelTwo"}
+      VALUES ?applicablePublicationType { :AcademicMonograph :AcademicCommentary :AcademicChapter :AcademicArticle :AcademicLiteratureReview }
+      VALUES ?applicableLevel {"LevelOne" "LevelTwo"}
 
-      ?instance a ?validPublicationType .
+      ?instance a ?applicablePublicationType .
       ?channel a ?validChannelType .
       ?channel :scientificValue ?channelLevel .
 
@@ -132,17 +132,10 @@ WHERE {
         FILTER (?seriesScientificValue != "Unassigned")
       }
       BIND(COALESCE(?seriesScientificValue, ?channelLevel) AS ?scientificValue)
-      FILTER(?scientificValue = ?validLevel)
+      FILTER(?scientificValue = ?applicableLevel)
     } AS ?isApplicable)
     WHERE {
     }
-  }
-
-  # Find the top-level organizations as a separate node
-  # TODO: Derive this from Organization nodes instead of relying on a fixed property?
-  OPTIONAL {
-    ?pub :topLevelOrganization ?topOrg .
-    ?topOrg a :Organization .
   }
 
   # Find all organizations
@@ -184,5 +177,12 @@ WHERE {
       ?contributor :affiliation ?affiliations .
     }
     GROUP BY ?personId ?contributorName ?verificationStatus ?roleType ?affiliations
+  }
+
+  # Find any top-level organization with a contributor
+  OPTIONAL {
+    ?affiliations :partOf* ?topOrg .
+    ?topOrg a :Organization .
+    FILTER NOT EXISTS { ?topOrg :partOf ?parent }
   }
 }

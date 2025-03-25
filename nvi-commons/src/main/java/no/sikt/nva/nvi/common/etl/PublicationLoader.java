@@ -1,7 +1,6 @@
 package no.sikt.nva.nvi.common.etl;
 
 import static no.sikt.nva.nvi.common.utils.GraphUtils.createModel;
-import static no.sikt.nva.nvi.common.utils.GraphUtils.toTurtle;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.ioutils.IoUtils.inputStreamFromResources;
 import static nva.commons.core.ioutils.IoUtils.stringFromResources;
@@ -74,7 +73,6 @@ public class PublicationLoader {
 
   private Publication transformToPublication(Model model) {
     logger.info("Transforming RDF model to simplified Publication object");
-    var foo = toTurtle(model);
     try {
       var document = JsonDocument.of(toJsonReader(model));
       var context = JsonDocument.of(inputStreamFromResources(PUBLICATION_FRAME_JSONLD));
