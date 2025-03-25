@@ -48,7 +48,7 @@ public final class TestConstants {
   public static final String PUBLICATION_CONTEXT_FIELD = "publicationContext";
   public static final String REFERENCE_FIELD = "reference";
   public static final String ENTITY_DESCRIPTION_FIELD = "entityDescription";
-  public static final String TOP_LEVEL_ORGANIZATIONS_FIELD = "topLevelOrganization";
+  public static final String TOP_LEVEL_ORGANIZATIONS_FIELD = "topLevelOrganizations";
   public static final String BODY_FIELD = "body";
   public static final String LANGUAGE_FIELD = "language";
   public static final String ABSTRACT_FIELD = "abstract";
