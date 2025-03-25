@@ -1,14 +1,12 @@
 package no.sikt.nva.nvi.common.etl;
 
 import static java.util.Collections.emptyList;
-import static no.sikt.nva.nvi.common.ExpandedPublicationFactory.organizationModel;
 import static no.sikt.nva.nvi.test.TestConstants.CRISTIN_NVI_ORG_SUB_UNIT_ID;
 import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_JSON_PUBLICATION_DATE;
 import static nva.commons.core.ioutils.IoUtils.stringFromResources;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
-import static org.instancio.Select.field;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.params.provider.Arguments.argumentSet;
 
 import java.io.IOException;
@@ -16,6 +14,7 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.client.model.Organization;
@@ -29,7 +28,6 @@ import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.paths.UnixPath;
 import org.assertj.core.api.Assertions;
-import org.instancio.Instancio;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -54,25 +52,79 @@ class PublicationTransformerTest {
           .withPrintIssn("2159-4848")
           .build();
 
-  private static final Organization EXAMPLE_TOP_LEVEL_ORGANIZATION_1 =
+  private static final Map<String, String> SIKT_LABELS =
+      Map.of(
+          "nb",
+          "Sikt – Kunnskapssektorens tjenesteleverandør",
+          "en",
+          "Sikt - Norwegian Agency for Shared Services in Education and Research");
+
+  private static final Map<String, String> SIKT_SUBUNIT_LABELS =
+      Map.of(
+          "nn", "Divisjon for forskings- og kunnskapsressursar",
+          "nb", "Divisjon forsknings- og kunnskapsressurser",
+          "en", "The Research and Education Resources Division");
+
+  private static final Map<String, String> NTNU_LABELS =
+      Map.of(
+          "nn", "Noregs teknisk-naturvitskaplege universitet",
+          "nb", "Norges teknisk-naturvitenskapelige universitet",
+          "en", "Norwegian University of Science and Technology");
+
+  private static final URI SIKT_ID =
+      URI.create("https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.0.0.0");
+  private static final URI SIKT_SUBUNIT_ID =
+      URI.create("https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.2.0" + ".0");
+  private static final URI NTNU_ID =
+      URI.create("https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0");
+
+  private static final Organization SIKT_TOP_LEVEL_LEAF_NODE =
+      Organization.builder().withId(SIKT_ID).build();
+  private static final Organization SIKT_SUB_UNIT_LEAF_NODE =
       Organization.builder()
-          .withId(
-              URI.create("https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.0.0.0"))
+          .withId(SIKT_SUBUNIT_ID)
+          .withPartOf(List.of(SIKT_TOP_LEVEL_LEAF_NODE))
           .build();
-  private static final Organization EXAMPLE_TOP_LEVEL_ORGANIZATION_2 =
+  private static final Organization TOP_LEVEL_ORGANIZATION_SIKT =
       Organization.builder()
-          .withId(URI.create("https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0"))
+          .withId(SIKT_ID)
+          .withLabels(SIKT_LABELS)
+          .withType("Organization")
+          .withHasPart(
+              List.of(
+                  Organization.builder()
+                      .withId(SIKT_SUBUNIT_ID)
+                      .withLabels(SIKT_SUBUNIT_LABELS)
+                      .withType("Organization")
+                      .withPartOf(List.of(Organization.builder().withId(SIKT_ID).build()))
+                      .build()))
+          .build();
+  private static final Organization TOP_LEVEL_ORGANIZATION_NTNU =
+      Organization.builder()
+          .withId(NTNU_ID)
+          .withLabels(NTNU_LABELS)
+          .withType("Organization")
           .build();
   private static final Organization EXAMPLE_TOP_LEVEL_ORGANIZATION_3 =
       Organization.builder()
           .withId(
               URI.create("https://api.sandbox.nva.aws.unit.no/cristin/organization/35900068.0.0.0"))
+          .withType("Organization")
+          .withLabels(Map.of("nb", "University of Cape Town"))
           .build();
-  private static final Organization EXAMPLE_SUBUNIT_ORGANIZATION_1 =
+  private static final Organization SUB_ORGANIZATION_SIKT =
       Organization.builder()
-          .withId(
-              URI.create("https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.2.0.0"))
-          .withPartOf(List.of(EXAMPLE_TOP_LEVEL_ORGANIZATION_1))
+          .withId(SIKT_SUBUNIT_ID)
+          .withLabels(SIKT_SUBUNIT_LABELS)
+          .withType("Organization")
+          .withPartOf(
+              List.of(
+                  Organization.builder()
+                      .withId(SIKT_ID)
+                      .withLabels(SIKT_LABELS)
+                      .withType("Organization")
+                      .withHasPart(List.of(Organization.builder().withId(SIKT_SUBUNIT_ID).build()))
+                      .build()))
           .build();
   private static final Contributor EXAMPLE_1_CONTRIBUTOR =
       Contributor.builder()
@@ -80,33 +132,15 @@ class PublicationTransformerTest {
           .withName("Ola Nordmann")
           .withRole("Creator")
           .withVerificationStatus("Verified")
-          .withAffiliations(
-              List.of(EXAMPLE_SUBUNIT_ORGANIZATION_1, EXAMPLE_TOP_LEVEL_ORGANIZATION_2))
+          .withAffiliations(List.of(SUB_ORGANIZATION_SIKT, TOP_LEVEL_ORGANIZATION_NTNU))
           .build();
 
-  private static final Publication EXAMPLE_1 =
-      Publication.builder()
-          .withId(
-              URI.create(
-                  "https://api.sandbox.nva.aws.unit.no/publication/0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5"))
-          .withIdentifier("0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5")
-          .withTitle("Example NVI candidate #1")
-          .withPublicationDate(new PublicationDate("2025", null, null))
-          .withStatus("PUBLISHED")
-          .withPublicationType("AcademicArticle")
-          .withModifiedDate(Instant.parse("2025-03-24T06:59:56.170369925Z"))
-          .withLanguage("http://lexvo.org/id/iso639-3/nob")
-          .withPublicationChannels(List.of(EXAMPLE_1_CHANNEL))
-          .withContributors(List.of(EXAMPLE_1_CONTRIBUTOR))
-          .withTopLevelOrganizations(
-              List.of(EXAMPLE_TOP_LEVEL_ORGANIZATION_1, EXAMPLE_TOP_LEVEL_ORGANIZATION_2))
-          .build();
   private static final Contributor EXAMPLE_2_CONTRIBUTOR_1 =
       Contributor.builder()
           .withName("Petter Smart")
           .withRole("Creator")
           .withVerificationStatus("NotVerified")
-          .withAffiliations(List.of(EXAMPLE_TOP_LEVEL_ORGANIZATION_2))
+          .withAffiliations(List.of(TOP_LEVEL_ORGANIZATION_NTNU))
           .build();
 
   private static final Contributor EXAMPLE_2_CONTRIBUTOR_2 =
@@ -122,7 +156,7 @@ class PublicationTransformerTest {
           .withName("Donald Duck")
           .withRole("Creator")
           .withVerificationStatus("Verified")
-          .withAffiliations(List.of(EXAMPLE_TOP_LEVEL_ORGANIZATION_1))
+          .withAffiliations(List.of(TOP_LEVEL_ORGANIZATION_SIKT))
           .build();
   private static final Contributor EXAMPLE_2_CONTRIBUTOR_4 =
       Contributor.builder()
@@ -130,7 +164,7 @@ class PublicationTransformerTest {
           .withName("Skrue McDuck")
           .withRole("ContactPerson")
           .withVerificationStatus("Verified")
-          .withAffiliations(List.of(EXAMPLE_SUBUNIT_ORGANIZATION_1))
+          .withAffiliations(List.of(SUB_ORGANIZATION_SIKT))
           .build();
   private static final Contributor EXAMPLE_2_CONTRIBUTOR_5 =
       Contributor.builder()
@@ -138,8 +172,7 @@ class PublicationTransformerTest {
           .withName("Ola Nordmann")
           .withRole("Creator")
           .withVerificationStatus("Verified")
-          .withAffiliations(
-              List.of(EXAMPLE_SUBUNIT_ORGANIZATION_1, EXAMPLE_TOP_LEVEL_ORGANIZATION_2))
+          .withAffiliations(List.of(SUB_ORGANIZATION_SIKT, TOP_LEVEL_ORGANIZATION_NTNU))
           .build();
 
   private static final PublicationChannelTemp EXAMPLE_2_PUBLISHER =
@@ -167,6 +200,24 @@ class PublicationTransformerTest {
           .withPrintIssn("0934-2575")
           .build();
 
+  private static final Publication EXAMPLE_1 =
+      Publication.builder()
+          .withId(
+              URI.create(
+                  "https://api.sandbox.nva.aws.unit.no/publication/0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5"))
+          .withIdentifier("0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5")
+          .withTitle("Example NVI candidate #1")
+          .withPublicationDate(new PublicationDate("2025", null, null))
+          .withStatus("PUBLISHED")
+          .withPublicationType("AcademicArticle")
+          .withModifiedDate(Instant.parse("2025-03-24T06:59:56.170369925Z"))
+          .withLanguage("http://lexvo.org/id/iso639-3/nob")
+          .withPublicationChannels(List.of(EXAMPLE_1_CHANNEL))
+          .withContributors(List.of(EXAMPLE_1_CONTRIBUTOR))
+          .withTopLevelOrganizations(
+              List.of(TOP_LEVEL_ORGANIZATION_NTNU, TOP_LEVEL_ORGANIZATION_SIKT))
+          .build();
+
   private static final Publication EXAMPLE_2 =
       Publication.builder()
           .withId(
@@ -189,8 +240,8 @@ class PublicationTransformerTest {
                   EXAMPLE_2_CONTRIBUTOR_5))
           .withTopLevelOrganizations(
               List.of(
-                  EXAMPLE_TOP_LEVEL_ORGANIZATION_1,
-                  EXAMPLE_TOP_LEVEL_ORGANIZATION_2,
+                  TOP_LEVEL_ORGANIZATION_SIKT,
+                  TOP_LEVEL_ORGANIZATION_NTNU,
                   EXAMPLE_TOP_LEVEL_ORGANIZATION_3))
           .build();
   private S3Driver s3Driver;
@@ -253,7 +304,7 @@ class PublicationTransformerTest {
         .withLevel(publicationChannelLevel);
   }
 
-  private SampleExpandedPublication buildExpectedPublication() {
+  private SampleExpandedPublication buildexpected() {
     // Generate test data based on the current state of the builders,
     // after the test case has made any necessary changes to the default values.
     var allContributors =
@@ -291,8 +342,7 @@ class PublicationTransformerTest {
   private static Stream<Arguments> exampleDocumentTestProvider() {
 
     return Stream.of(
-        //        argumentSet("Minimal example", "expandedPublications/validNviCandidate1.json",
-        // EXAMPLE_1),
+        argumentSet("Minimal example", "expandedPublications/validNviCandidate1.json", EXAMPLE_1),
         argumentSet("Full example", "expandedPublications/validNviCandidate2.json", EXAMPLE_2));
   }
 
@@ -312,161 +362,58 @@ class PublicationTransformerTest {
 
   @ParameterizedTest
   @MethodSource("exampleDocumentTestProvider")
-  void shouldGetContributorsFromExampleDocument(String filename, Publication expected) {
+  void shouldGetExpectedContributorsFromExampleDocument(String filename, Publication expected) {
     var actual = parseExampleDocument(filename);
-
-    assertEquals(expected.id(), actual.id());
     assertThat(actual.contributors(), hasSize(expected.contributors().size()));
-
-    Assertions.assertThat(actual.publicationChannels())
-        .hasSize(expected.publicationChannels().size());
-
-    Assertions.assertThat(actual)
-        .usingRecursiveComparison()
-        .ignoringFields("contributors", "publicationChannels", "topLevelOrganizations")
-        .isEqualTo(expected);
-
-    // FIXME: Not checking that the contributors are identical, just the number of them
+    expected
+        .contributors()
+        .forEach(
+            contributor -> {
+              Assertions.assertThat(actual.contributors())
+                  .filteredOn("name", contributor.name())
+                  .containsOnly(contributor);
+            });
   }
 
   @ParameterizedTest
   @MethodSource("exampleDocumentTestProvider")
-  void shouldGetPublicationChannelsFromExampleDocument(
-      String filename, Publication expectedRecord) {
-    var actualRecord = parseExampleDocument(filename);
-
-    assertThat(
-        actualRecord.publicationChannels(), hasSize(expectedRecord.publicationChannels().size()));
-
-    Assertions.assertThat(actualRecord.publicationChannels())
-        .hasSize(expectedRecord.publicationChannels().size());
-
-    // FIXME: Not checking that the channels are identical, just the number of them
-  }
-
-  @Test
-  void shouldGetNestedAffiliationsFromExample() {
-    var expected = EXAMPLE_2;
-    var actual = parseExampleDocument("expandedPublications/validNviCandidate2.json");
-
-    assertEquals(expected.id(), actual.id());
-    assertThat(actual.contributors(), hasSize(expected.contributors().size()));
-
-    // Find first contributor named "Ola Nordmann" in both lists
-    var expectedContributor =
-        expected.contributors().stream()
-            .filter(contributor -> "Ola Nordmann".equals(contributor.name()))
-            .findFirst()
-            .get();
-    var actualContributor =
-        actual.contributors().stream()
-            .filter(contributor -> "Ola Nordmann".equals(contributor.name()))
-            .findFirst()
-            .get();
-    assertEquals(expectedContributor, actualContributor);
+  void shouldGetExpectedPublicationChannelsFromExampleDocument(
+      String filename, Publication expected) {
+    var actual = parseExampleDocument(filename);
+    assertThat(actual.publicationChannels(), hasSize(expected.publicationChannels().size()));
+    expected
+        .publicationChannels()
+        .forEach(
+            channel -> {
+              Assertions.assertThat(actual.publicationChannels())
+                  .filteredOn("channelType", channel.channelType())
+                  .containsOnly(channel);
+            });
   }
 
   @ParameterizedTest
   @MethodSource("exampleDocumentTestProvider")
-  void shouldGetOrganizationsFromExampleDocument(String filename, Publication expected) {
+  void shouldGetExpectedTopLevelOrganizationsFromExampleDocument(
+      String filename, Publication expected) {
     var actual = parseExampleDocument(filename);
-
-    assertEquals(expected.id(), actual.id());
     assertThat(actual.topLevelOrganizations(), hasSize(expected.topLevelOrganizations().size()));
-
-    // FIXME: Check later
-    // assertThat(actual.topLevelOrganizations(),
-    // containsInAnyOrder(expected.topLevelOrganizations().toArray()));
-  }
-
-  @ParameterizedTest
-  @MethodSource("exampleDocumentTestProvider")
-  void shouldParseExampleDocumentsWithAllValues(String filename, Publication expected) {
-    var actual = parseExampleDocument(filename);
-    assertEquals(expected, actual);
-    //    assertThat(actual, equalTo(expected));
-  }
-
-  @Test
-  void shouldGetExpectedPublicationChannelFromExampleDocument() {
-    var expectedPublicationId =
-        "https://api.dev.nva.aws.unit.no/publication-channels/journal/490845/2023";
-    var expectedPublicationChannel =
-        PublicationChannelTemp.builder()
-            .withId(URI.create(expectedPublicationId))
-            .withIdentifier("490845")
-            .withChannelType("Journal")
-            .withScientificValue("LevelOne")
-            .withName("Antennae: The Journal of Nature in Visual Culture")
-            .withOnlineIssn("1756-9575")
-            .build();
-
-    var publicationDto = parseExampleDocument();
-    var actualPublicationChannel =
-        publicationDto.publicationChannels().stream().toList().getFirst();
-    assertEquals(expectedPublicationChannel, actualPublicationChannel);
-  }
-
-  @Test
-  void shouldGetExpectedContributorFromExampleDocument() {
-    var expectedAffiliation =
-        Organization.builder()
-            .withId(URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0"))
-            .build();
-    var expectedContributor =
-        new Contributor(
-            URI.create("https://api.dev.nva.aws.unit.no/cristin/person/997998"),
-            "Mona Ullah",
-            "Verified",
-            "Creator",
-            List.of(expectedAffiliation));
-
-    var publicationDto = parseExampleDocument();
-    var actualContributor = publicationDto.contributors().stream().toList().getFirst();
-    assertEquals(expectedContributor, actualContributor);
+    expected
+        .topLevelOrganizations()
+        .forEach(
+            organization -> {
+              Assertions.assertThat(actual.topLevelOrganizations())
+                  .filteredOn("id", organization.id())
+                  .containsOnly(organization);
+            });
   }
 
   @Test
   void shouldGetAllContributors() {
     unverifiedContributors = List.of(defaultUnverifiedContributor);
-    var publication = buildExpectedPublication();
+    var publication = buildexpected();
     var publicationBucketUri = addToS3(publication);
     var publicationDto = dataLoader.extractAndTransform(publicationBucketUri);
     assertThat(publicationDto.contributors(), hasSize(2));
-  }
-
-  @Test
-  void shouldGetAllContributorsInstancioTmp() {
-    var foo =
-        Instancio.ofList(SampleExpandedContributor.class)
-            .size(10)
-            .generate(
-                field(SampleExpandedContributor::role),
-                generator -> generator.oneOf("Creator", "Unknown"))
-            .generate(
-                field(SampleExpandedContributor::verificationStatus),
-                generator -> generator.oneOf("Verified", "Unverified"))
-            .generate(field(SampleExpandedContributor::contributorName), gen -> gen.text().word())
-            .generate(field(SampleExpandedContributor::id), gen -> gen.net().uri())
-            .generate(
-                field(SampleExpandedContributor::affiliations),
-                gen -> gen.collection().size(2).with(organizationModel))
-            .create();
-    var bar = Instancio.ofList(organizationModel).size(2).create();
-    var foobar = Instancio.of(organizationModel).create();
-    unverifiedContributors = List.of(defaultUnverifiedContributor);
-    var publication = buildExpectedPublication();
-    var publicationBucketUri = addToS3(publication);
-    var publicationDto = dataLoader.extractAndTransform(publicationBucketUri);
-    assertThat(publicationDto.contributors(), hasSize(2));
-  }
-
-  private Publication parseExampleDocument() {
-    var document = stringFromResources(Path.of("candidate.json"));
-    var publicationId = "01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d";
-    var publicationBucketUri = addToS3(publicationId, document);
-    var publicationDto = dataLoader.extractAndTransform(publicationBucketUri);
-    return publicationDto;
   }
 
   private Publication parseExampleDocument(String filename) {

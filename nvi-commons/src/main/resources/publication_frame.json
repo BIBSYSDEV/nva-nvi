@@ -28,6 +28,11 @@
       "@id": "modifiedDate",
       "@type": "xsd:dateTime"
     },
+    "publicationChannels": {
+      "@id": "publicationChannel",
+      "@type": "@id",
+      "@container": "@set"
+    },
     "publicationType": {
       "@type": "@vocab"
     },
