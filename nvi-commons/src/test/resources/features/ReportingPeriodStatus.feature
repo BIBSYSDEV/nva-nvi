@@ -1,4 +1,3 @@
-@ignore
 Feature: Reporting period status
   Rule: A period is open or closed based on the reporting date
     Scenario: A period is closed if the reporting date is in the past

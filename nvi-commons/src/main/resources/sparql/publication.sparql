@@ -2,7 +2,7 @@ PREFIX : <https://nva.sikt.no/ontology/publication#>
 # This builds a flattened and simplified version of an expanded publication.
 # We assume the JSON contains a single publication object, and we extract the relevant fields.
 # In order to handle edge-cases and to guard against missing data, we use tricks like
-# OPTIONAL, COALESCE, and MAX to ensure the output is as complete as possible.
+# OPTIONAL, COALESCE, and SAMPLE to ensure the output is as complete as possible.
 # This means that even if a field is set as OPTIONAL in this query, it probably should never be
 # missing in production data.
 
@@ -54,11 +54,12 @@ CONSTRUCT {
 
 WHERE {
   ?pub a :Publication .
-  ?pub :identifier ?identifier .
   ?pub :status ?status .
-  ?pub :entityDescription ?entityDescription .
-  OPTIONAL { ?entityDescription :mainTitle ?title . }
+  OPTIONAL { ?pub :identifier ?identifier }
   OPTIONAL { ?pub :modifiedDate ?modifiedDate }
+
+  ?pub :entityDescription ?entityDescription .
+  OPTIONAL { ?entityDescription :mainTitle ?title }
   OPTIONAL { ?entityDescription :language ?language }
 
   # Extract publication date
@@ -110,10 +111,14 @@ WHERE {
     }
   }
 
-  # Map organizations as a single tree structure
-  ?pub :topLevelOrganization ?topOrg .
-  ?topOrg a :Organization .
+  # Get the top-level organizations
+  # TODO: Derive this from Organization nodes instead of relying on a fixed property
+  OPTIONAL {
+    ?pub :topLevelOrganization ?topOrg .
+    ?topOrg a :Organization .
+  }
 
+  # Map organizations as a single tree structure
   ?org a :Organization .
   OPTIONAL { ?org :partOf+ ?parent }
   OPTIONAL { ?org :hasPart+ ?child }
