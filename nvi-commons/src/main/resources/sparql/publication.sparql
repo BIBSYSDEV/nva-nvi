@@ -112,7 +112,7 @@ WHERE {
   }
 
   # Get the top-level organizations
-  # TODO: Derive this from Organization nodes instead of relying on a fixed property
+  # TODO: Derive this from Organization nodes instead of relying on a fixed property?
   OPTIONAL {
     ?pub :topLevelOrganization ?topOrg .
     ?topOrg a :Organization .
@@ -125,7 +125,7 @@ WHERE {
   OPTIONAL { ?org :label ?label }
   OPTIONAL { ?org :country ?country }
   OPTIONAL {
-    ?pub :topLevelOrganizations ?topOrg .
+    ?pub :topLevelOrganization ?topOrg .
     # Check if the publication is an international collaboration
     {
       SELECT (COUNT(?nonNorOrg) AS ?nonNorCount)

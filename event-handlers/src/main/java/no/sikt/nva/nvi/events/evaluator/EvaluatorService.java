@@ -45,6 +45,7 @@ import no.sikt.nva.nvi.events.model.PublicationDate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@SuppressWarnings({"PMD.CouplingBetweenObjects"})
 public class EvaluatorService {
 
   private static final String NVI_CANDIDATE_MESSAGE =
@@ -86,7 +87,8 @@ public class EvaluatorService {
     var candidate = fetchOptionalCandidate(publicationId).orElse(null);
     var period = fetchOptionalPeriod(publicationDate.year()).orElse(null);
 
-    // FIXME: Temp debugging
+    // TODO: Running extraction here to verify that it works, but we do not use the result yet.
+    // TODO: Replace use of JsonNode with the extracted Publication object.
     var tempPublication = dataLoader.extractAndTransform(publicationBucketUri);
     logger.info("Publication: {}", tempPublication.id());
 

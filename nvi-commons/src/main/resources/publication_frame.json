@@ -3,14 +3,6 @@
     "@vocab": "https://nva.sikt.no/ontology/publication#",
     "id": "@id",
     "type": "@type",
-    "organization": {
-      "@id": "organization",
-      "@type": "@id",
-      "@container": "@set"
-    },
-    "role": {
-      "@type": "@vocab"
-    },
     "affiliations": {
       "@id": "affiliation",
       "@type": "@id",
@@ -24,24 +16,12 @@
       "@type": "@id",
       "@container": "@set"
     },
-    "modifiedDate": {
-      "@id": "modifiedDate",
-      "@type": "xsd:dateTime"
+    "isInternationalCollaboration": {
+      "@id": "isInternationalCollaboration",
+      "@type": "xsd:boolean"
     },
-    "publicationChannels": {
-      "@id": "publicationChannel",
-      "@type": "@id",
-      "@container": "@set"
-    },
-    "publicationType": {
-      "@type": "@vocab"
-    },
-    "status": {
-      "@type": "@vocab"
-    },
-    "topLevelOrganizations": {
-      "@id": "topLevelOrganization",
-      "@type": "@id",
+    "hasPart": {
+      "@id": "hasPart",
       "@container": "@set"
     },
     "labels": {
@@ -51,12 +31,36 @@
     "language": {
       "@type": "@id"
     },
-    "hasPart": {
-      "@id": "hasPart",
+    "modifiedDate": {
+      "@id": "modifiedDate",
+      "@type": "xsd:dateTime"
+    },
+    "organization": {
+      "@id": "organization",
+      "@type": "@id",
       "@container": "@set"
     },
     "partOf": {
       "@id": "partOf",
+      "@container": "@set"
+    },
+    "publicationChannels": {
+      "@id": "publicationChannel",
+      "@type": "@id",
+      "@container": "@set"
+    },
+    "publicationType": {
+      "@type": "@vocab"
+    },
+    "role": {
+      "@type": "@vocab"
+    },
+    "status": {
+      "@type": "@vocab"
+    },
+    "topLevelOrganizations": {
+      "@id": "topLevelOrganization",
+      "@type": "@id",
       "@container": "@set"
     },
     "xsd": "http://www.w3.org/2001/XMLSchema#"

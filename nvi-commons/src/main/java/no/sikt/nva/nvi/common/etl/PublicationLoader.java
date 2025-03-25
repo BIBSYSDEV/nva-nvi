@@ -60,17 +60,14 @@ public class PublicationLoader {
     try {
       var queryExecution = QueryExecutionFactory.create(PUBLICATION_SPARQL, publicationModel);
       var model = queryExecution.execConstruct();
-      var turtleInput = toTurtle(publicationModel); // FIXME: Temp debugging
-      var turtleOutput = toTurtle(model); // FIXME: Temp debugging
       var document = JsonDocument.of(toJsonReader(model));
       var context = JsonDocument.of(inputStreamFromResources(Path.of(PUBLICATION_FRAME_JSONLD)));
+      var turtleOutput = toTurtle(model);
       var jsonString = JsonLd.frame(document, context).get().toString();
       var publication = Publication.from(jsonString);
       logger.info("Transformed publication with ID: {}", publication.id());
       return publication;
-    } catch (JsonProcessingException e) {
-      throw new RuntimeException(e);
-    } catch (JsonLdError e) {
+    } catch (JsonProcessingException | JsonLdError e) {
       throw new RuntimeException(e);
     }
   }

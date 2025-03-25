@@ -146,6 +146,7 @@ class PublicationTransformerTest {
           .withLanguage("http://lexvo.org/id/iso639-3/nob")
           .withPublicationChannels(List.of(EXAMPLE_1_CHANNEL))
           .withContributors(List.of(EXAMPLE_1_CONTRIBUTOR))
+          .withIsInternationalCollaboration(false)
           .withTopLevelOrganizations(
               List.of(TOP_LEVEL_ORGANIZATION_NTNU, TOP_LEVEL_ORGANIZATION_SIKT))
           .build();
@@ -208,6 +209,7 @@ class PublicationTransformerTest {
           .withModifiedDate(Instant.parse("2025-03-24T08:23:24.859620342Z"))
           .withLanguage("http://lexvo.org/id/iso639-3/eng")
           .withPublicationChannels(List.of(EXAMPLE_2_PUBLISHER, EXAMPLE_2_SERIES))
+          .withIsInternationalCollaboration(true)
           .withContributors(
               List.of(
                   EXAMPLE_2_CONTRIBUTOR_1,
