@@ -23,6 +23,7 @@ public record Publication(
     String language,
     PublicationDateDto publicationDate,
     String publicationType,
+    boolean isApplicable,
     boolean isInternationalCollaboration,
     Collection<PublicationChannelDto> publicationChannels,
     Collection<ContributorDto> contributors,
@@ -64,6 +65,7 @@ public record Publication(
     private String language;
     private PublicationDateDto publicationDate;
     private String publicationType;
+    private boolean isApplicable;
     private boolean isInternationalCollaboration;
     private Collection<PublicationChannelDto> publicationChannels;
     private Collection<ContributorDto> contributors;
@@ -107,6 +109,11 @@ public record Publication(
       return this;
     }
 
+    public Builder withIsApplicable(boolean isApplicable) {
+      this.isApplicable = isApplicable;
+      return this;
+    }
+
     public Builder withIsInternationalCollaboration(boolean isInternationalCollaboration) {
       this.isInternationalCollaboration = isInternationalCollaboration;
       return this;
@@ -141,6 +148,7 @@ public record Publication(
           language,
           publicationDate,
           publicationType,
+          isApplicable,
           isInternationalCollaboration,
           publicationChannels,
           contributors,

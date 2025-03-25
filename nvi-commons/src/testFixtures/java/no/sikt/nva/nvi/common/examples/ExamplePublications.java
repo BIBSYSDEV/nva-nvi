@@ -39,6 +39,7 @@ public class ExamplePublications {
           .withLanguage("http://lexvo.org/id/iso639-3/nob")
           .withPublicationChannels(List.of(JOURNAL_OF_TESTING))
           .withContributors(List.of(EXAMPLE_1_CONTRIBUTOR))
+          .withIsApplicable(true)
           .withIsInternationalCollaboration(false)
           .withTopLevelOrganizations(
               List.of(TOP_LEVEL_ORGANIZATION_NTNU, TOP_LEVEL_ORGANIZATION_SIKT))
@@ -57,6 +58,7 @@ public class ExamplePublications {
           .withModifiedDate(Instant.parse("2025-03-24T08:23:24.859620342Z"))
           .withLanguage("http://lexvo.org/id/iso639-3/eng")
           .withPublicationChannels(List.of(PUBLISHER_OF_TESTING, SERIES_OF_TESTING))
+          .withIsApplicable(true)
           .withIsInternationalCollaboration(true)
           .withContributors(
               List.of(

@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.common.etl;
 
 import static no.sikt.nva.nvi.common.utils.GraphUtils.createModel;
+import static no.sikt.nva.nvi.common.utils.GraphUtils.toTurtle;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.ioutils.IoUtils.inputStreamFromResources;
 import static nva.commons.core.ioutils.IoUtils.stringFromResources;
@@ -34,10 +35,10 @@ public class PublicationLoader {
   private static final String NVA_CONTEXT_JSONLD = "nva_context.json";
   private static final String PUBLICATION_FRAME_JSONLD = "publication_frame.json";
   private static final String PUBLICATION_SPARQL =
-      stringFromResources(Path.of("sparql/publication.sparql"));
+      stringFromResources(Path.of("publication_query.sparql"));
+  private static final String STATIC_CONTEXT = stringFromResources(Path.of(NVA_CONTEXT_JSONLD));
   private final Logger logger = LoggerFactory.getLogger(PublicationLoader.class);
   private final StorageReader<URI> storageReader;
-  private static final String contextString = stringFromResources(Path.of(NVA_CONTEXT_JSONLD));
 
   public PublicationLoader(StorageReader<URI> storageReader) {
     this.storageReader = storageReader;
@@ -73,9 +74,10 @@ public class PublicationLoader {
 
   private Publication transformToPublication(Model model) {
     logger.info("Transforming RDF model to simplified Publication object");
+    var foo = toTurtle(model);
     try {
       var document = JsonDocument.of(toJsonReader(model));
-      var context = JsonDocument.of(inputStreamFromResources(Path.of(PUBLICATION_FRAME_JSONLD)));
+      var context = JsonDocument.of(inputStreamFromResources(PUBLICATION_FRAME_JSONLD));
       var jsonString = JsonLd.frame(document, context).get().toString();
       return Publication.from(jsonString);
     } catch (JsonProcessingException | JsonLdError e) {
@@ -93,7 +95,7 @@ public class PublicationLoader {
    */
   private JsonNode withReplacementContext(ObjectNode body) {
     try {
-      var replacementContext = dtoObjectMapper.readTree(contextString);
+      var replacementContext = dtoObjectMapper.readTree(STATIC_CONTEXT);
       body.set(CONTEXT_NODE, replacementContext);
       return body;
     } catch (JsonProcessingException e) {

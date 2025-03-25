@@ -61,6 +61,7 @@ class PublicationTransformerTest {
     assertEquals(expected.publicationDate(), actual.publicationDate());
     assertEquals(expected.status(), actual.status());
     assertEquals(expected.modifiedDate(), actual.modifiedDate());
+    assertEquals(expected.isApplicable(), actual.isApplicable());
     assertEquals(expected.isInternationalCollaboration(), actual.isInternationalCollaboration());
   }
 

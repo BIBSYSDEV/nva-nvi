@@ -20,6 +20,10 @@
       "@id": "isInternationalCollaboration",
       "@type": "xsd:boolean"
     },
+    "isApplicable": {
+      "@id": "isApplicable",
+      "@type": "xsd:boolean"
+    },
     "hasPart": {
       "@id": "hasPart",
       "@container": "@set"

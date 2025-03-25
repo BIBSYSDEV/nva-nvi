@@ -3,8 +3,6 @@ package no.sikt.nva.nvi.events.evaluator;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.service.model.NviPeriod.fetchByPublishingYear;
-import static no.sikt.nva.nvi.common.utils.GraphUtils.createModel;
-import static no.sikt.nva.nvi.common.utils.GraphUtils.isNviCandidate;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_BODY;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_DAY;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_ID;
@@ -88,12 +86,10 @@ public class EvaluatorService {
     var candidate = fetchOptionalCandidate(publicationId).orElse(null);
     var period = fetchOptionalPeriod(publicationDate.year()).orElse(null);
 
-    // TODO: Running extraction here to verify that it works, but we do not use the result yet.
+    // TODO: Running extraction here to verify that it works, but we do not fully use it yet.
     // TODO: Replace use of JsonNode with the extracted Publication object.
-    //    if ("2022".equals(publicationDate.year())) {
-    //    }
-    var tempPublication = dataLoader.extractAndTransform(publicationBucketUri);
-    logger.info("Publication: {}", tempPublication.id());
+    var publicationDto = dataLoader.extractAndTransform(publicationBucketUri);
+    logger.info("Publication: {}", publicationDto.id());
 
     // Check if the publication can be evaluated
     if (shouldSkipEvaluation(candidate, publicationDate)) {
@@ -102,7 +98,7 @@ public class EvaluatorService {
     }
 
     // Check if the publication meets the requirements to be a candidate
-    if (doesNotMeetNviRequirements(publication)) {
+    if (!publicationDto.isApplicable()) {
       logger.info(NON_NVI_CANDIDATE_MESSAGE, publicationId);
       return createNonNviCandidateMessage(publicationId);
     }
@@ -215,11 +211,6 @@ public class EvaluatorService {
 
   private boolean hasInvalidPublicationYear(PublicationDate publicationDate) {
     return attempt(() -> Year.parse(publicationDate.year())).isFailure();
-  }
-
-  private boolean doesNotMeetNviRequirements(JsonNode publication) {
-    var model = createModel(publication);
-    return !isNviCandidate(model);
   }
 
   private Optional<Candidate> fetchOptionalCandidate(URI publicationId) {

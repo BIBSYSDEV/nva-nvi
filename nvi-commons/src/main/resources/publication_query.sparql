@@ -15,6 +15,7 @@ CONSTRUCT {
   :language ?language ;
   :publicationDate ?date ;
   :publicationType ?instanceType ;
+  :isApplicable ?isApplicable ;
   :isInternationalCollaboration ?isInternationalCollaboration ;
   :publicationChannel ?channel ;
   :contributor ?personId ;
@@ -26,7 +27,7 @@ CONSTRUCT {
   :channelType ?channelType ;
   :identifier ?channelIdentifier ;
   :name ?channelName ;
-  :scientificValue ?channelLevel ;
+  :scientificValue ?scientificValue ;
   :year ?channelYear ;
   :onlineIssn ?onlineIssn ;
   :printIssn ?printIssn .
@@ -76,9 +77,10 @@ WHERE {
   ?instance a ?instanceType .
 
   # Find all publication channels
+  VALUES ?validChannelType { :Publisher :Series :Journal }
   OPTIONAL {
-    ?channel a ?allowedChannelType .
-    OPTIONAL { ?channel :scientificValue ?channelLevel }
+    ?channel a ?validChannelType .
+    OPTIONAL { ?channel :scientificValue ?scientificValue }
     OPTIONAL { ?channel :name ?channelName }
     OPTIONAL { ?channel :identifier ?channelIdentifier }
     OPTIONAL { ?channel :year ?channelYear }
@@ -87,7 +89,6 @@ WHERE {
 
     # Flatten type to a single value (in order of preference: Journal, Series, Publisher)
     # This is done to handle edge-cases where a channel has multiple types due to inconsistent data.
-    VALUES ?allowedChannelType { :Publisher :Series :Journal }
     {
       SELECT ?channel (COALESCE(
       SAMPLE(?journalType),
@@ -110,6 +111,30 @@ WHERE {
         }
       }
       GROUP BY ?channel
+    }
+  }
+
+  # Check whether the publication is 'applicable', i.e. can be an NVI candidate
+  OPTIONAL {
+    SELECT (EXISTS {
+      VALUES ?validPublicationType { :AcademicMonograph :AcademicCommentary :AcademicChapter :AcademicArticle :AcademicLiteratureReview }
+      VALUES ?validChannelType { :Publisher :Series :Journal }
+      VALUES ?validLevel {"LevelOne" "LevelTwo"}
+
+      ?instance a ?validPublicationType .
+      ?channel a ?validChannelType .
+      ?channel :scientificValue ?channelLevel .
+
+      # Prefer Series level if set and multiple channels are available
+      OPTIONAL {
+        ?series a :Series ;
+        :scientificValue ?seriesScientificValue .
+        FILTER (?seriesScientificValue != "Unassigned")
+      }
+      BIND(COALESCE(?seriesScientificValue, ?channelLevel) AS ?scientificValue)
+      FILTER(?scientificValue = ?validLevel)
+    } AS ?isApplicable)
+    WHERE {
     }
   }
 
