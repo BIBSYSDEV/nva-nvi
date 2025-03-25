@@ -87,8 +87,8 @@ public class EvaluatorService {
     var period = fetchOptionalPeriod(publicationDate.year()).orElse(null);
 
     // FIXME: Temp debugging
-    var tempPublication = dataLoader.extractAndTransform(publicationBucketUri);
-    logger.info("Publication: {}", tempPublication.id());
+    //    var tempPublication = dataLoader.extractAndTransform(publicationBucketUri);
+    //    logger.info("Publication: {}", tempPublication.id());
 
     // Check if the publication can be evaluated
     if (shouldSkipEvaluation(candidate, publicationDate)) {

@@ -18,7 +18,8 @@ import java.util.Map;
 import nva.commons.core.JacocoGenerated;
 
 @JacocoGenerated
-public record SampleExpandedAffiliation(URI id, List<URI> partOf, String countryCode, Map<String, String> labels) {
+public record SampleExpandedAffiliation(
+    URI id, List<URI> partOf, String countryCode, Map<String, String> labels) {
   private static final String TYPE_VALUE = "Organization";
 
   public static Builder builder() {

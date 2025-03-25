@@ -96,7 +96,7 @@ class ViewingScopeValidatorImplTest {
   }
 
   private static Builder defaultBuilder(URI organizationId) {
-    return Organization.builder().withId(organizationId);
+    return Organization.builder().withId(organizationId).withContext(getOrganizationContext());
   }
 
   private static GetUserResponse userWithViewingScope(URI allowedOrg) {
