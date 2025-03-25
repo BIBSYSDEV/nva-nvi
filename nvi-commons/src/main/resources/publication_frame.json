@@ -24,6 +24,10 @@
       "@type": "@id",
       "@container": "@set"
     },
+    "modifiedDate": {
+      "@id": "modifiedDate",
+      "@type": "xsd:dateTime"
+    },
     "publicationType": {
       "@type": "@vocab"
     },
@@ -44,14 +48,13 @@
     },
     "hasPart": {
       "@id": "hasPart",
-      "@type": "@id",
       "@container": "@set"
     },
     "partOf": {
       "@id": "partOf",
-      "@type": "@id",
       "@container": "@set"
-    }
+    },
+    "xsd": "http://www.w3.org/2001/XMLSchema#"
   },
   "@type": "Publication",
   "@embed": "@always"

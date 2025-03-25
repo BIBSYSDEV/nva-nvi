@@ -38,8 +38,7 @@ public class PublicationLoader {
       stringFromResources(Path.of("sparql/publication.sparql"));
   private final Logger logger = LoggerFactory.getLogger(PublicationLoader.class);
   private final StorageReader<URI> storageReader;
-  private static final String contextString =
-      stringFromResources(Path.of(NVA_CONTEXT_JSONLD));
+  private static final String contextString = stringFromResources(Path.of(NVA_CONTEXT_JSONLD));
 
   public PublicationLoader(StorageReader<URI> storageReader) {
     this.storageReader = storageReader;
