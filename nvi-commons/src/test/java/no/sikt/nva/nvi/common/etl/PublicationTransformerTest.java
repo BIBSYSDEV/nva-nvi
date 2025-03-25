@@ -31,6 +31,7 @@ class PublicationTransformerTest {
       "expandedPublications/validNviCandidate1.json";
   private static final String EXAMPLE_PUBLICATION_2 =
       "expandedPublications/validNviCandidate2.json";
+  private static final String EXAMPLE_DOCUMENT_TEST_PROVIDER = "exampleDocumentTestProvider";
 
   private S3Driver s3Driver;
   private PublicationLoader dataLoader;
@@ -50,7 +51,7 @@ class PublicationTransformerTest {
   }
 
   @ParameterizedTest
-  @MethodSource("exampleDocumentTestProvider")
+  @MethodSource(EXAMPLE_DOCUMENT_TEST_PROVIDER)
   void shouldGetExpectedFieldsFromExampleDocument(String filename, Publication expected) {
     var actual = parseExampleDocument(filename);
 
@@ -61,6 +62,44 @@ class PublicationTransformerTest {
     assertEquals(expected.status(), actual.status());
     assertEquals(expected.modifiedDate(), actual.modifiedDate());
     assertEquals(expected.isInternationalCollaboration(), actual.isInternationalCollaboration());
+  }
+
+  @ParameterizedTest
+  @MethodSource(EXAMPLE_DOCUMENT_TEST_PROVIDER)
+  void shouldGetExpectedContributorsFromExampleDocument(String filename, Publication expected) {
+    var actual = parseExampleDocument(filename);
+    assertThat(actual.contributors(), hasSize(expected.contributors().size()));
+    for (ContributorDto contributor : expected.contributors()) {
+      Assertions.assertThat(actual.contributors())
+          .filteredOn("name", contributor.name())
+          .containsOnly(contributor);
+    }
+  }
+
+  @ParameterizedTest
+  @MethodSource(EXAMPLE_DOCUMENT_TEST_PROVIDER)
+  void shouldGetExpectedPublicationChannelsFromExampleDocument(
+      String filename, Publication expected) {
+    var actual = parseExampleDocument(filename);
+    assertThat(actual.publicationChannels(), hasSize(expected.publicationChannels().size()));
+    for (PublicationChannelDto channel : expected.publicationChannels()) {
+      Assertions.assertThat(actual.publicationChannels())
+          .filteredOn("channelType", channel.channelType())
+          .containsOnly(channel);
+    }
+  }
+
+  @ParameterizedTest
+  @MethodSource(EXAMPLE_DOCUMENT_TEST_PROVIDER)
+  void shouldGetExpectedTopLevelOrganizationsFromExampleDocument(
+      String filename, Publication expected) {
+    var actual = parseExampleDocument(filename);
+    assertThat(actual.topLevelOrganizations(), hasSize(expected.topLevelOrganizations().size()));
+    for (Organization organization : expected.topLevelOrganizations()) {
+      Assertions.assertThat(actual.topLevelOrganizations())
+          .filteredOn("id", organization.id())
+          .containsOnly(organization);
+    }
   }
 
   private Publication parseExampleDocument(String filename) {
@@ -74,44 +113,6 @@ class PublicationTransformerTest {
       return s3Driver.insertFile(UnixPath.of(identifier), document);
     } catch (IOException e) {
       throw new RuntimeException("Failed to add publication to S3", e);
-    }
-  }
-
-  @ParameterizedTest
-  @MethodSource("exampleDocumentTestProvider")
-  void shouldGetExpectedContributorsFromExampleDocument(String filename, Publication expected) {
-    var actual = parseExampleDocument(filename);
-    assertThat(actual.contributors(), hasSize(expected.contributors().size()));
-    for (ContributorDto contributor : expected.contributors()) {
-      Assertions.assertThat(actual.contributors())
-          .filteredOn("name", contributor.name())
-          .containsOnly(contributor);
-    }
-  }
-
-  @ParameterizedTest
-  @MethodSource("exampleDocumentTestProvider")
-  void shouldGetExpectedPublicationChannelsFromExampleDocument(
-      String filename, Publication expected) {
-    var actual = parseExampleDocument(filename);
-    assertThat(actual.publicationChannels(), hasSize(expected.publicationChannels().size()));
-    for (PublicationChannelDto channel : expected.publicationChannels()) {
-      Assertions.assertThat(actual.publicationChannels())
-          .filteredOn("channelType", channel.channelType())
-          .containsOnly(channel);
-    }
-  }
-
-  @ParameterizedTest
-  @MethodSource("exampleDocumentTestProvider")
-  void shouldGetExpectedTopLevelOrganizationsFromExampleDocument(
-      String filename, Publication expected) {
-    var actual = parseExampleDocument(filename);
-    assertThat(actual.topLevelOrganizations(), hasSize(expected.topLevelOrganizations().size()));
-    for (Organization organization : expected.topLevelOrganizations()) {
-      Assertions.assertThat(actual.topLevelOrganizations())
-          .filteredOn("id", organization.id())
-          .containsOnly(organization);
     }
   }
 

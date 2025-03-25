@@ -15,19 +15,21 @@ import no.sikt.nva.nvi.common.etl.ContributorDto;
  */
 public class ExampleContributors {
 
+  private static final String ROLE_CREATOR = "Creator";
+  private static final String STATUS_VERIFIED = "Verified";
   public static final ContributorDto EXAMPLE_2_CONTRIBUTOR_3 =
       ContributorDto.builder()
           .withId(URI.create("https://api.sandbox.nva.aws.unit.no/cristin/person/1685065"))
           .withName("Donald Duck")
-          .withRole("Creator")
-          .withVerificationStatus("Verified")
+          .withRole(ROLE_CREATOR)
+          .withVerificationStatus(STATUS_VERIFIED)
           .withAffiliations(List.of(TOP_LEVEL_ORGANIZATION_SIKT))
           .build();
 
   public static final ContributorDto EXAMPLE_2_CONTRIBUTOR_1 =
       ContributorDto.builder()
           .withName("Petter Smart")
-          .withRole("Creator")
+          .withRole(ROLE_CREATOR)
           .withVerificationStatus("NotVerified")
           .withAffiliations(List.of(TOP_LEVEL_ORGANIZATION_NTNU))
           .build();
@@ -36,8 +38,8 @@ public class ExampleContributors {
       ContributorDto.builder()
           .withId(URI.create("https://api.sandbox.nva.aws.unit.no/cristin/person/1215176"))
           .withName("Ola Nordmann")
-          .withRole("Creator")
-          .withVerificationStatus("Verified")
+          .withRole(ROLE_CREATOR)
+          .withVerificationStatus(STATUS_VERIFIED)
           .withAffiliations(List.of(SUB_ORGANIZATION_SIKT, TOP_LEVEL_ORGANIZATION_NTNU))
           .build();
 
@@ -46,7 +48,7 @@ public class ExampleContributors {
           .withId(URI.create("https://api.sandbox.nva.aws.unit.no/cristin/person/1685046"))
           .withName("Skrue McDuck")
           .withRole("ContactPerson")
-          .withVerificationStatus("Verified")
+          .withVerificationStatus(STATUS_VERIFIED)
           .withAffiliations(List.of(SUB_ORGANIZATION_SIKT))
           .build();
 
@@ -54,15 +56,15 @@ public class ExampleContributors {
       ContributorDto.builder()
           .withId(URI.create("https://api.sandbox.nva.aws.unit.no/cristin/person/1215176"))
           .withName("Ola Nordmann")
-          .withRole("Creator")
-          .withVerificationStatus("Verified")
+          .withRole(ROLE_CREATOR)
+          .withVerificationStatus(STATUS_VERIFIED)
           .withAffiliations(List.of(SUB_ORGANIZATION_SIKT, TOP_LEVEL_ORGANIZATION_NTNU))
           .build();
 
   public static final ContributorDto EXAMPLE_2_CONTRIBUTOR_2 =
       ContributorDto.builder()
           .withName("John Doe")
-          .withRole("Creator")
+          .withRole(ROLE_CREATOR)
           .withVerificationStatus("NotVerified")
           .withAffiliations(List.of(EXAMPLE_TOP_LEVEL_ORGANIZATION_3))
           .build();

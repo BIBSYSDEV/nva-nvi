@@ -37,24 +37,25 @@ public class ExampleOrganizations {
           "nb", "Norges teknisk-naturvitenskapelige universitet",
           "en", "Norwegian University of Science and Technology");
 
+  private static final String TYPE_ORGANIZATION = "Organization";
   public static final Organization TOP_LEVEL_ORGANIZATION_NTNU =
       Organization.builder()
           .withId(NTNU_ID)
           .withLabels(NTNU_LABELS)
-          .withType("Organization")
+          .withType(TYPE_ORGANIZATION)
           .build();
 
   public static final Organization TOP_LEVEL_ORGANIZATION_SIKT =
       Organization.builder()
           .withId(SIKT_ID)
           .withLabels(SIKT_LABELS)
-          .withType("Organization")
+          .withType(TYPE_ORGANIZATION)
           .withHasPart(
               List.of(
                   Organization.builder()
                       .withId(SIKT_SUBUNIT_ID)
                       .withLabels(SIKT_SUBUNIT_LABELS)
-                      .withType("Organization")
+                      .withType(TYPE_ORGANIZATION)
                       .withPartOf(List.of(Organization.builder().withId(SIKT_ID).build()))
                       .build()))
           .build();
@@ -63,13 +64,13 @@ public class ExampleOrganizations {
       Organization.builder()
           .withId(SIKT_SUBUNIT_ID)
           .withLabels(SIKT_SUBUNIT_LABELS)
-          .withType("Organization")
+          .withType(TYPE_ORGANIZATION)
           .withPartOf(
               List.of(
                   Organization.builder()
                       .withId(SIKT_ID)
                       .withLabels(SIKT_LABELS)
-                      .withType("Organization")
+                      .withType(TYPE_ORGANIZATION)
                       .withHasPart(List.of(Organization.builder().withId(SIKT_SUBUNIT_ID).build()))
                       .build()))
           .build();
@@ -78,7 +79,7 @@ public class ExampleOrganizations {
       Organization.builder()
           .withId(
               URI.create("https://api.sandbox.nva.aws.unit.no/cristin/organization/35900068.0.0.0"))
-          .withType("Organization")
+          .withType(TYPE_ORGANIZATION)
           .withLabels(Map.of("nb", "University of Cape Town"))
           .build();
 }
