@@ -8,7 +8,7 @@ PREFIX : <https://nva.sikt.no/ontology/publication#>
 
 CONSTRUCT {
   # Build a simplified version of the main publication object
-  ?pub a :Publication ;
+  ?publication a :Publication ;
   :identifier ?identifier ;
   :title ?title ;
   :status ?status ;
@@ -19,7 +19,7 @@ CONSTRUCT {
   :isInternationalCollaboration ?isInternationalCollaboration ;
   :publicationChannel ?channel ;
   :contributor ?personId ;
-  :topLevelOrganization ?topOrg ;
+  :topLevelOrganization ?topLevelOrganization ;
   :modifiedDate ?modifiedDate .
 
   # Include publication channels
@@ -39,8 +39,8 @@ CONSTRUCT {
   :day ?day .
 
   # Include the organization hierarchy
-  ?topOrg a :Organization .
-  ?org a :Organization ;
+  ?topLevelOrganization a :Organization .
+  ?organization a :Organization ;
   :countryCode ?country ;
   :label ?label ;
   :partOf ?parent ;
@@ -48,7 +48,7 @@ CONSTRUCT {
 
   # Include all contributors
   ?personId a :Contributor ;
-  :affiliation ?affiliations ;
+  :affiliation ?affiliation ;
   :role ?roleType ;
   :verificationStatus ?verificationStatus ;
   :name ?contributorName .
@@ -56,12 +56,12 @@ CONSTRUCT {
 
 WHERE {
   # Find the main publication object and basic fields
-  ?pub a :Publication .
-  ?pub :status ?status .
-  OPTIONAL { ?pub :identifier ?identifier }
-  OPTIONAL { ?pub :modifiedDate ?modifiedDate }
+  ?publication a :Publication .
+  ?publication :status ?status .
+  OPTIONAL { ?publication :identifier ?identifier }
+  OPTIONAL { ?publication :modifiedDate ?modifiedDate }
 
-  ?pub :entityDescription ?entityDescription .
+  ?publication :entityDescription ?entityDescription .
   OPTIONAL { ?entityDescription :mainTitle ?title }
   OPTIONAL { ?entityDescription :language ?language }
 
@@ -94,7 +94,7 @@ WHERE {
       SELECT ?channel (COALESCE(
       SAMPLE(?journalType),
       SAMPLE(?seriesType),
-      SAMPLE(?publisherType)
+      SAMPLE(?publicationlisherType)
       ) AS ?channelType)
       WHERE {
         ?channel a ?validChannelType .
@@ -108,7 +108,7 @@ WHERE {
         }
         OPTIONAL {
           ?channel a :Publisher .
-          BIND(:Publisher AS ?publisherType)
+          BIND(:Publisher AS ?publicationlisherType)
         }
       }
       GROUP BY ?channel
@@ -139,11 +139,11 @@ WHERE {
   }
 
   # Find all organizations
-  ?org a :Organization .
-  OPTIONAL { ?org :partOf ?parent }
-  OPTIONAL { ?org :hasPart ?child }
-  OPTIONAL { ?org :label ?label }
-  OPTIONAL { ?org :country ?country }
+  ?organization a :Organization .
+  OPTIONAL { ?organization :partOf ?parent }
+  OPTIONAL { ?organization :hasPart ?child }
+  OPTIONAL { ?organization :label ?label }
+  OPTIONAL { ?organization :country ?country }
 
   # Check if the publication is an international collaboration
   {
@@ -157,9 +157,9 @@ WHERE {
 
   # Find all contributors
   OPTIONAL {
-    SELECT DISTINCT ?personId ?contributorName ?verificationStatus ?roleType ?affiliations
+    SELECT DISTINCT ?personId ?contributorName ?verificationStatus ?roleType ?affiliation
     WHERE {
-      ?pub :entityDescription/:contributor ?contributor .
+      ?publication :entityDescription/:contributor ?contributor .
       ?contributor :identity ?personId .
 
       OPTIONAL {
@@ -174,15 +174,15 @@ WHERE {
 
       ?contributor :role ?role .
       ?role a ?roleType .
-      ?contributor :affiliation ?affiliations .
+      ?contributor :affiliation ?affiliation .
     }
-    GROUP BY ?personId ?contributorName ?verificationStatus ?roleType ?affiliations
+    GROUP BY ?personId ?contributorName ?verificationStatus ?roleType ?affiliation
   }
 
   # Find any top-level organization with a contributor
   OPTIONAL {
-    ?affiliations :partOf* ?topOrg .
-    ?topOrg a :Organization .
-    FILTER NOT EXISTS { ?topOrg :partOf ?parent }
+    ?affiliation :partOf* ?topLevelOrganization .
+    ?topLevelOrganization a :Organization .
+    FILTER NOT EXISTS { ?topLevelOrganization :partOf ?parent }
   }
 }
