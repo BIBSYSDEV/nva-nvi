@@ -41,4 +41,49 @@ public record Contributor(
         && nonNull(verificationStatus)
         && VERIFIED.equalsIgnoreCase(verificationStatus);
   }
+
+  @JsonIgnore
+  public static Builder builder() {
+    return new Builder();
+  }
+
+  public static final class Builder {
+
+    private URI id;
+    private String name;
+    private String verificationStatus;
+    private String role;
+    private List<Organization> affiliations;
+
+    private Builder() {}
+
+    public Builder withId(URI id) {
+      this.id = id;
+      return this;
+    }
+
+    public Builder withName(String name) {
+      this.name = name;
+      return this;
+    }
+
+    public Builder withVerificationStatus(String verificationStatus) {
+      this.verificationStatus = verificationStatus;
+      return this;
+    }
+
+    public Builder withRole(String role) {
+      this.role = role;
+      return this;
+    }
+
+    public Builder withAffiliations(List<Organization> affiliations) {
+      this.affiliations = affiliations;
+      return this;
+    }
+
+    public Contributor build() {
+      return new Contributor(id, name, verificationStatus, role, affiliations);
+    }
+  }
 }

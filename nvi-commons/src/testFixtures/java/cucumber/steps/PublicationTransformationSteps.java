@@ -15,9 +15,12 @@ import io.cucumber.java.en.When;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
+import java.util.Map;
 import no.sikt.nva.nvi.common.S3StorageReader;
-import no.sikt.nva.nvi.common.etl.ExpandedPublication;
-import no.sikt.nva.nvi.common.etl.ExpandedPublicationTransformer;
+import no.sikt.nva.nvi.common.client.model.Organization;
+import no.sikt.nva.nvi.common.etl.Contributor;
+import no.sikt.nva.nvi.common.etl.Publication;
+import no.sikt.nva.nvi.common.etl.PublicationLoader;
 import no.unit.nva.s3.S3Driver;
 import nva.commons.core.paths.UnixPath;
 
@@ -26,7 +29,9 @@ public class PublicationTransformationSteps {
   private final ScenarioContext scenarioContext;
   private String documentContent;
   private URI documentLocation;
-  private ExpandedPublication publication;
+  private Publication publication;
+  private Organization organization;
+  private Contributor contributor;
 
   public PublicationTransformationSteps(ScenarioContext scenarioContext) {
     this.scenarioContext = scenarioContext;
@@ -53,7 +58,7 @@ public class PublicationTransformationSteps {
   @When("a PublicationDto is created from the document")
   public void aPublicationDtoIsCreatedFromTheDocument() {
     var storageReader = new S3StorageReader(scenarioContext.getS3Client(), BUCKET_NAME);
-    var dataLoader = new ExpandedPublicationTransformer(storageReader);
+    var dataLoader = new PublicationLoader(storageReader);
     this.publication = dataLoader.extractAndTransform(documentLocation);
   }
 
@@ -70,7 +75,7 @@ public class PublicationTransformationSteps {
 
   @Then("the PublicationDto has the title {string}")
   public void thePublicationDtoHasTitle(String expectedValue) {
-    assertEquals(expectedValue, publication.publicationTitle());
+    assertEquals(expectedValue, publication.title());
   }
 
   @Then("the PublicationDto has publication year {string}")
@@ -80,12 +85,12 @@ public class PublicationTransformationSteps {
 
   @Then("the PublicationDto has status {string}")
   public void thePublicationDtoHasStatus(String expectedValue) {
-    assertEquals(expectedValue, publication.publicationStatus());
+    assertEquals(expectedValue, publication.status());
   }
 
   @Then("the PublicationDto has language {string}")
   public void thePublicationDtoHasLanguage(String expectedValue) {
-    assertEquals(expectedValue, publication.publicationLanguage());
+    assertEquals(expectedValue, publication.language());
   }
 
   @Then("the PublicationDto has modified date {string}")
@@ -118,5 +123,31 @@ public class PublicationTransformationSteps {
     assertEquals("Verified", contributor.verificationStatus());
     assertEquals("Creator", contributor.role());
     assertEquals(URI.create(expectedOrganizationId), actualTopLevelOrganizationId);
+  }
+
+  @Then("the PublicationDto has {int} top-level organization\\(s)")
+  public void thePublicationDtoHasTopLevelOrganizations(Integer expectedCount) {
+    assertThat(publication.topLevelOrganizations(), hasSize(expectedCount));
+  }
+
+  @Then("the PublicationDto has an Organization with ID {string}")
+  public void thePublicationDtoHasAnOrganizationWithID(String organizationId) {
+    organization =
+        publication.topLevelOrganizations().stream()
+            .filter(org -> org.id().equals(URI.create(organizationId)))
+            .findFirst()
+            .orElseThrow();
+  }
+
+  @Then("the Organization has the expected properties")
+  public void theOrganizationHasTheExpectedProperties() {
+    var expectedLabels =
+        Map.of(
+            "en",
+            "Sikt - Norwegian Agency for Shared Services in Education and Research",
+            "nb",
+            "Sikt – Kunnskapssektorens tjenesteleverandør");
+    assertThat(organization.hasPart(), hasSize(6));
+    assertEquals(expectedLabels, organization.labels());
   }
 }

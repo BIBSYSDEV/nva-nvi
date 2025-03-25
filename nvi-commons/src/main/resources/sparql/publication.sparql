@@ -1,4 +1,4 @@
-PREFIX nva: <https://nva.sikt.no/ontology/publication#>
+PREFIX : <https://nva.sikt.no/ontology/publication#>
 # This builds a flattened and simplified version of an expanded publication.
 # We assume the JSON contains a single publication object, and we extract the relevant fields.
 # In order to handle edge-cases and to guard against missing data, we use tricks like
@@ -8,84 +8,83 @@ PREFIX nva: <https://nva.sikt.no/ontology/publication#>
 
 CONSTRUCT {
   # Build a simplified version of the main publication object
-  ?pub a nva:ExpandedPublication ;
-  nva:identifier ?identifier ;
-  nva:publicationTitle ?title ;
-  nva:publicationDate ?date ;
-  nva:publicationStatus ?status ;
-  nva:publicationType ?instanceType ;
-  nva:publicationLanguage ?language ;
-  nva:isInternationalCollaboration ?isInternationalCollaboration ;
-  nva:publicationChannels ?channel ;
-  nva:contributors ?contributorNode ;
-  nva:topLevelOrganizations ?topOrg ;
-  nva:modifiedDate ?modifiedDate .
+  ?pub a :Publication ;
+  :identifier ?identifier ;
+  :title ?title ;
+  :status ?status ;
+  :language ?language ;
+  :publicationDate ?date ;
+  :publicationType ?instanceType ;
+  :isInternationalCollaboration ?isInternationalCollaboration ;
+  :publicationChannel ?channel ;
+  :contributor ?personId ;
+  :topLevelOrganization ?topOrg ;
+  :modifiedDate ?modifiedDate .
 
-  ?channel a nva:PublicationChannelTemp ;
-  nva:channelType ?channelType ;
-  nva:identifier ?channelIdentifier ;
-  nva:name ?channelName ;
-  nva:scientificValue ?channelLevel ;
-  nva:year ?channelYear ;
-  nva:onlineIssn ?onlineIssn ;
-  nva:printIssn ?printIssn ;
-  nva:sameAs ?sameAs .
+  ?channel a :PublicationChannelTemp ;
+  :channelType ?channelType ;
+  :identifier ?channelIdentifier ;
+  :name ?channelName ;
+  :scientificValue ?channelLevel ;
+  :year ?channelYear ;
+  :onlineIssn ?onlineIssn ;
+  :printIssn ?printIssn .
 
   # Include the publication date
-  ?date a nva:PublicationDate ;
-  nva:year ?year ;
-  nva:month ?month ;
-  nva:day ?day .
+  ?date a :PublicationDate ;
+  :year ?year ;
+  :month ?month ;
+  :day ?day .
 
   # Include the organization hierarchy
-  ?org a nva:Organization ;
-  nva:country ?country ;
-  nva:label ?label ;
-  nva:partOf ?parent ;
-  nva:hasPart ?child .
+  ?topOrg a :Organization .
+  ?org a :Organization ;
+  :countryCode ?country ;
+  :label ?label ;
+  :partOf ?parent ;
+  :hasPart ?child .
 
   # Include all contributors
-  ?contributorNode a nva:Contributor ;
-  nva:affiliations ?affiliations ;
-  nva:role ?roleType ;
-  nva:verificationStatus ?verificationStatus ;
-  nva:name ?contributorName .
+  ?personId a :Contributor ;
+  :affiliation ?affiliations ;
+  :role ?roleType ;
+  :verificationStatus ?verificationStatus ;
+  :name ?contributorName .
 }
 
 WHERE {
-  ?pub a nva:Publication .
-  ?pub nva:identifier ?identifier .
-  ?pub nva:status ?status .
-  ?pub nva:entityDescription ?entityDescription .
-  OPTIONAL { ?entityDescription nva:mainTitle ?title . }
-  OPTIONAL { ?pub nva:modifiedDate ?modifiedDate }
-  OPTIONAL { ?entityDescription nva:language ?language }
+  ?pub a :Publication .
+  ?pub :identifier ?identifier .
+  ?pub :status ?status .
+  ?pub :entityDescription ?entityDescription .
+  OPTIONAL { ?entityDescription :mainTitle ?title . }
+  OPTIONAL { ?pub :modifiedDate ?modifiedDate }
+  OPTIONAL { ?entityDescription :language ?language }
 
   # Extract publication date
-  ?date a nva:PublicationDate .
-  ?date nva:year ?year .
-  OPTIONAL { ?date nva:month ?month . }
-  OPTIONAL { ?date nva:day ?day . }
+  ?date a :PublicationDate .
+  ?date :year ?year .
+  OPTIONAL { ?date :month ?month . }
+  OPTIONAL { ?date :day ?day . }
 
   # Extract publication type
-  ?reference a nva:Reference .
-  ?reference nva:publicationInstance ?instance .
+  ?reference a :Reference .
+  ?reference :publicationInstance ?instance .
   ?instance a ?instanceType .
 
   # Find all publication channels
   OPTIONAL {
     ?channel a ?allowedChannelType .
-    OPTIONAL { ?channel nva:scientificValue ?channelLevel }
-    OPTIONAL { ?channel nva:name ?channelName }
-    OPTIONAL { ?channel nva:identifier ?channelIdentifier }
-    OPTIONAL { ?channel nva:year ?channelYear }
-    OPTIONAL { ?channel nva:onlineIssn ?onlineIssn } .
-    OPTIONAL { ?channel nva:printIssn ?printIssn } .
-    OPTIONAL { ?channel nva:sameAs ?sameAs } .
+    OPTIONAL { ?channel :scientificValue ?channelLevel }
+    OPTIONAL { ?channel :name ?channelName }
+    OPTIONAL { ?channel :identifier ?channelIdentifier }
+    OPTIONAL { ?channel :year ?channelYear }
+    OPTIONAL { ?channel :onlineIssn ?onlineIssn } .
+    OPTIONAL { ?channel :printIssn ?printIssn } .
 
     # Flatten type to a single value (in order of preference: Journal, Series, Publisher)
     # This is done to handle edge-cases where a channel has multiple types due to inconsistent data.
-    VALUES ?allowedChannelType { nva:Publisher nva:Series nva:Journal }
+    VALUES ?allowedChannelType { :Publisher :Series :Journal }
     {
       SELECT ?channel (COALESCE(
       SAMPLE(?journalType),
@@ -95,16 +94,16 @@ WHERE {
       WHERE {
         ?channel a ?allowedChannelType .
         OPTIONAL {
-          ?channel a nva:Journal .
-          BIND(nva:Journal AS ?journalType)
+          ?channel a :Journal .
+          BIND(:Journal AS ?journalType)
         }
         OPTIONAL {
-          ?channel a nva:Series .
-          BIND(nva:Series AS ?seriesType)
+          ?channel a :Series .
+          BIND(:Series AS ?seriesType)
         }
         OPTIONAL {
-          ?channel a nva:Publisher .
-          BIND(nva:Publisher AS ?publisherType)
+          ?channel a :Publisher .
+          BIND(:Publisher AS ?publisherType)
         }
       }
       GROUP BY ?channel
@@ -112,54 +111,49 @@ WHERE {
   }
 
   # Map organizations as a single tree structure
-  # FIXME: Some docs are plural, some are not?
-  OPTIONAL  { ?pub nva:topLevelOrganization ?topOrg }
+  ?pub :topLevelOrganization ?topOrg .
+  ?topOrg a :Organization .
 
-  ?org a nva:Organization .
-  OPTIONAL { ?org nva:partOf ?parent }
-  OPTIONAL { ?org nva:hasPart ?child }
-  OPTIONAL { ?org nva:label ?label }
-  OPTIONAL { ?org nva:country ?country }
+  ?org a :Organization .
+  OPTIONAL { ?org :partOf+ ?parent }
+  OPTIONAL { ?org :hasPart+ ?child }
+  OPTIONAL { ?org :label ?label }
+  OPTIONAL { ?org :country ?country }
   OPTIONAL {
-    ?pub nva:topLevelOrganizations ?topOrg .
+    ?pub :topLevelOrganizations ?topOrg .
     # Check if the publication is an international collaboration
     {
       SELECT (COUNT(?nonNorOrg) AS ?nonNorCount)
       WHERE {
-        ?nonNorOrg a nva:Organization .
-        OPTIONAL { ?nonNorOrg nva:country ?country }
+        ?nonNorOrg a :Organization .
+        OPTIONAL { ?nonNorOrg :country ?country }
         FILTER(bound(?country) && ?country != "NO")
       }
     }
     BIND(IF(?nonNorCount > 0, true, false) AS ?isInternationalCollaboration)
   }
 
-  # Contributors - Find contributors and flatten the data structure
+  # Contributors
   OPTIONAL {
-    ?contributor a nva:Contributor .
-    ?contributor nva:identity ?personId .
-    ?contributor nva:affiliation ?affiliations .
-    #    ?contributor nva:role ?roleRaw .
-    #    ?roleRaw a ?roleType
+    SELECT DISTINCT ?personId ?contributorName ?verificationStatus ?roleType ?affiliations
+    WHERE {
+      ?pub :entityDescription/:contributor ?contributor .
+      ?contributor :identity ?personId .
 
-    {
-      SELECT (MAX(?thing) AS ?roleType)
-      WHERE {
-        ?contributor nva:role ?roleRaw .
-        ?roleRaw a ?thing
+      OPTIONAL {
+        ?contributor :identity ?personId .
+        FILTER(BOUND(?personId))
+
+        OPTIONAL {
+          ?personId :name ?contributorName .
+        }
+        ?personId :verificationStatus ?verificationStatus .
       }
-    }
 
-    OPTIONAL { ?personId nva:verificationStatus ?verificationStatus }
-    OPTIONAL { ?personId nva:name ?contributorName }
-    OPTIONAL {
-      ?personId nva:id ?identifierUri ;
-      BIND(REPLACE(STR(?identifierUri), "^.*/([^/]*)$", "$1") AS ?contributorIdentifier)
+      ?contributor :role ?role .
+      ?role a ?roleType .
+      ?contributor :affiliation ?affiliations .
     }
-    #    BIND(REPLACE(STR(?roleType), "https://nva.sikt.no/ontology/publication#", "", "i") AS ?contributorRole)
-
-    # Cast ID to string to include blank nodes (generates a unique ID if the value is missing)
-    BIND(IRI(STR(?personId)) AS ?contributorNode)
+    GROUP BY ?personId ?contributorName ?verificationStatus ?roleType ?affiliations
   }
-
 }

@@ -5,7 +5,9 @@ import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
@@ -13,12 +15,13 @@ import no.unit.nva.commons.json.JsonSerializable;
 import nva.commons.core.SingletonCollector;
 
 @SuppressWarnings("PMD.LinguisticNaming")
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
+@JsonSerialize
 public record Organization(
     @JsonProperty("id") URI id,
     @JsonProperty("partOf") List<Organization> partOf,
     @JsonProperty("hasPart") List<Organization> hasPart,
-    @JsonProperty("labels") Map<String, String> labels,
-    @JsonProperty("type") String type)
+    @JsonProperty("labels") Map<String, String> labels)
     implements JsonSerializable {
 
   public static Organization from(String json) throws JsonProcessingException {
@@ -55,8 +58,6 @@ public record Organization(
     private List<Organization> partOf;
     private List<Organization> hasPart;
     private Map<String, String> labels;
-    private String type;
-    private Object context;
 
     private Builder() {}
 
@@ -80,18 +81,8 @@ public record Organization(
       return this;
     }
 
-    public Builder withType(String type) {
-      this.type = type;
-      return this;
-    }
-
-    public Builder withContext(Object context) {
-      this.context = context;
-      return this;
-    }
-
     public Organization build() {
-      return new Organization(id, partOf, hasPart, labels, type);
+      return new Organization(id, partOf, hasPart, labels);
     }
   }
 }

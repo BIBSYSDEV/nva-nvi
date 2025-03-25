@@ -24,3 +24,10 @@ Feature: Extract and transform publication from S3 URI of JSON document
       When a PublicationDto is created from the document
       Then the PublicationDto has 1 contributor(s)
       And the Contributor with ID "https://api.dev.nva.aws.unit.no/cristin/person/997998" has the expected properties
+
+    Scenario: PublicationDto has expected top-level organizations
+      Given a valid example document "candidate.json" in S3
+      When a PublicationDto is created from the document
+      Then the PublicationDto has 1 top-level organization(s)
+      And the PublicationDto has an Organization with ID "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0"
+      And the Organization has the expected properties

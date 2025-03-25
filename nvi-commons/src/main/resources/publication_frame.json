@@ -1,0 +1,58 @@
+{
+  "@context": {
+    "@vocab": "https://nva.sikt.no/ontology/publication#",
+    "id": "@id",
+    "type": "@type",
+    "organization": {
+      "@id": "organization",
+      "@type": "@id",
+      "@container": "@set"
+    },
+    "role": {
+      "@type": "@vocab"
+    },
+    "affiliations": {
+      "@id": "affiliation",
+      "@type": "@id",
+      "@container": "@set"
+    },
+    "channelType": {
+      "@type": "@vocab"
+    },
+    "contributors": {
+      "@id": "contributor",
+      "@type": "@id",
+      "@container": "@set"
+    },
+    "publicationType": {
+      "@type": "@vocab"
+    },
+    "status": {
+      "@type": "@vocab"
+    },
+    "topLevelOrganizations": {
+      "@id": "topLevelOrganization",
+      "@type": "@id",
+      "@container": "@set"
+    },
+    "labels": {
+      "@id": "label",
+      "@container": "@language"
+    },
+    "language": {
+      "@type": "@id"
+    },
+    "hasPart": {
+      "@id": "hasPart",
+      "@type": "@id",
+      "@container": "@set"
+    },
+    "partOf": {
+      "@id": "partOf",
+      "@type": "@id",
+      "@container": "@set"
+    }
+  },
+  "@type": "Publication",
+  "@embed": "@always"
+}

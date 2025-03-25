@@ -3,6 +3,8 @@ package no.sikt.nva.nvi.common.etl;
 import static no.sikt.nva.nvi.common.utils.GraphUtils.createModel;
 import static no.sikt.nva.nvi.common.utils.GraphUtils.toTurtle;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
+import static nva.commons.core.ioutils.IoUtils.inputStreamFromResources;
+import static nva.commons.core.ioutils.IoUtils.stringFromResources;
 
 import com.apicatalog.jsonld.JsonLd;
 import com.apicatalog.jsonld.JsonLdError;
@@ -15,7 +17,6 @@ import java.io.StringReader;
 import java.net.URI;
 import java.nio.file.Path;
 import no.sikt.nva.nvi.common.StorageReader;
-import nva.commons.core.ioutils.IoUtils;
 import org.apache.jena.query.QueryExecutionFactory;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.riot.Lang;
@@ -23,24 +24,29 @@ import org.apache.jena.riot.RDFDataMgr;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ExpandedPublicationTransformer {
-  private static final String JSON_PTR_BODY = "/body";
+/*
+ * This utility class is intended for extracting and transforming expanded publications
+ * stored as JSON documents in an S3 bucket. It is a wrapper around a SPARQL query that
+ * extracts and flattens relevant fields, and a JSON-LD frame that structures the output.
+ */
+public class PublicationLoader {
   private static final String CONTEXT_NODE = "@context";
-  private static final String JSON_PTR_CONTEXT = "/@context";
-  private static final String NVI_CONTEXT_JSONLD = "nvi_context.json";
+  private static final String JSON_PTR_BODY = "/body";
   private static final String NVA_CONTEXT_JSONLD = "nva_context.json";
+  private static final String PUBLICATION_FRAME_JSONLD = "publication_frame.json";
   private static final String PUBLICATION_SPARQL =
-      IoUtils.stringFromResources(Path.of("sparql/publication.sparql"));
-  private final Logger logger = LoggerFactory.getLogger(ExpandedPublicationTransformer.class);
+      stringFromResources(Path.of("sparql/publication.sparql"));
+  private final Logger logger = LoggerFactory.getLogger(PublicationLoader.class);
   private final StorageReader<URI> storageReader;
   private static final String contextString =
-      IoUtils.stringFromResources(Path.of(NVA_CONTEXT_JSONLD));
+      stringFromResources(Path.of(NVA_CONTEXT_JSONLD));
 
-  public ExpandedPublicationTransformer(StorageReader<URI> storageReader) {
+  public PublicationLoader(StorageReader<URI> storageReader) {
     this.storageReader = storageReader;
   }
 
-  public ExpandedPublication extractAndTransform(URI publicationBucketUri) {
+  public Publication extractAndTransform(URI publicationBucketUri) {
+    logger.info("Extracting and transforming publication from S3: {}", publicationBucketUri);
     var model = extract(publicationBucketUri);
     return transform(model);
   }
@@ -48,25 +54,21 @@ public class ExpandedPublicationTransformer {
   public Model extract(URI publicationBucketUri) {
     var document = storageReader.read(publicationBucketUri);
     var body = extractBody(document);
-    var turtles = toTurtle(createModel(body));
     return createModel(body);
   }
 
-  public ExpandedPublication transform(Model publication) {
-    // TODO: Set base NVA context from local JSON file
-    // TODO: Set base NVI context from local JSON file
-    // TODO: Split references between NVI and NVA contexts in SPARQL query
-    var turtles = toTurtle(publication);
+  public Publication transform(Model publicationModel) {
     try {
-      var queryExecution = QueryExecutionFactory.create(PUBLICATION_SPARQL, publication);
+      var queryExecution = QueryExecutionFactory.create(PUBLICATION_SPARQL, publicationModel);
       var model = queryExecution.execConstruct();
-      var superTurtles = toTurtle(model);
+      var turtleInput = toTurtle(publicationModel); // FIXME: Temp debugging
+      var turtleOutput = toTurtle(model); // FIXME: Temp debugging
       var document = JsonDocument.of(toJsonReader(model));
-      var frame = IoUtils.inputStreamFromResources(Path.of("publicationDtoFrame.json"));
-      var context = JsonDocument.of(frame);
+      var context = JsonDocument.of(inputStreamFromResources(Path.of(PUBLICATION_FRAME_JSONLD)));
       var jsonString = JsonLd.frame(document, context).get().toString();
-      var parsedJson = ExpandedPublication.from(jsonString);
-      return parsedJson;
+      var publication = Publication.from(jsonString);
+      logger.info("Transformed publication with ID: {}", publication.id());
+      return publication;
     } catch (JsonProcessingException e) {
       throw new RuntimeException(e);
     } catch (JsonLdError e) {
@@ -76,10 +78,23 @@ public class ExpandedPublicationTransformer {
 
   private JsonNode extractBody(String content) {
     try {
-      var replacementContext = dtoObjectMapper.readTree(contextString);
       var document = dtoObjectMapper.readTree(content);
       var body = (ObjectNode) document.at(JSON_PTR_BODY);
-      //      body.set(CONTEXT_NODE, replacementContext);
+      return replaceContextNode(body);
+    } catch (JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  /*
+   * Replaces the context node in the JSON-LD document with a static copy
+   * to avoid network calls. This static context should be kept in sync with
+   * the source at https://api.nva.unit.no/publication/context
+   */
+  private JsonNode replaceContextNode(ObjectNode body) {
+    try {
+      var replacementContext = dtoObjectMapper.readTree(contextString);
+      body.set(CONTEXT_NODE, replacementContext);
       return body;
     } catch (JsonProcessingException e) {
       throw new RuntimeException(e);

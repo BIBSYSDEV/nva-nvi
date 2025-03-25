@@ -16,8 +16,7 @@ public record PublicationChannelTemp(
     String year,
     String scientificValue,
     String onlineIssn,
-    String printIssn,
-    String sameAs) {
+    String printIssn) {
 
   public PublicationChannelTemp {
     requireNonNull(id, "Required field 'id' is null");
@@ -29,5 +28,68 @@ public record PublicationChannelTemp(
     requireNonNull(id, "Required field 'id' is null");
     requireNonNull(channelType, "Required field 'channelType' is null");
     requireNonNull(scientificValue, "Required field 'scientificLevel' is null");
+  }
+
+  public static Builder builder() {
+    return new Builder();
+  }
+
+  public static final class Builder {
+
+    private URI id;
+    private String channelType;
+    private String identifier;
+    private String name;
+    private String year;
+    private String scientificValue;
+    private String onlineIssn;
+    private String printIssn;
+
+    private Builder() {}
+
+    public Builder withId(URI id) {
+      this.id = id;
+      return this;
+    }
+
+    public Builder withChannelType(String channelType) {
+      this.channelType = channelType;
+      return this;
+    }
+
+    public Builder withIdentifier(String identifier) {
+      this.identifier = identifier;
+      return this;
+    }
+
+    public Builder withName(String name) {
+      this.name = name;
+      return this;
+    }
+
+    public Builder withYear(String year) {
+      this.year = year;
+      return this;
+    }
+
+    public Builder withScientificValue(String scientificValue) {
+      this.scientificValue = scientificValue;
+      return this;
+    }
+
+    public Builder withOnlineIssn(String onlineIssn) {
+      this.onlineIssn = onlineIssn;
+      return this;
+    }
+
+    public Builder withPrintIssn(String printIssn) {
+      this.printIssn = printIssn;
+      return this;
+    }
+
+    public PublicationChannelTemp build() {
+      return new PublicationChannelTemp(
+          id, channelType, identifier, name, year, scientificValue, onlineIssn, printIssn);
+    }
   }
 }
