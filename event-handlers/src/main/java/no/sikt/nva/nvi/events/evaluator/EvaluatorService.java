@@ -3,6 +3,8 @@ package no.sikt.nva.nvi.events.evaluator;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.service.model.NviPeriod.fetchByPublishingYear;
+import static no.sikt.nva.nvi.common.utils.GraphUtils.createModel;
+import static no.sikt.nva.nvi.common.utils.GraphUtils.isNviCandidate;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_BODY;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_DAY;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_ID;
@@ -25,7 +27,6 @@ import java.util.Optional;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.common.etl.PublicationLoader;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
@@ -43,8 +44,6 @@ import no.sikt.nva.nvi.events.model.PublicationDate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-// FIXME: Temporary suppression while refactoring, should be removed.
-@SuppressWarnings({"PMD.CouplingBetweenObjects", "PMD.AvoidLiteralsInIfCondition"})
 public class EvaluatorService {
 
   private static final String NVI_CANDIDATE_MESSAGE =
@@ -63,7 +62,6 @@ public class EvaluatorService {
   private final PointService pointService;
   private final CandidateRepository candidateRepository;
   private final PeriodRepository periodRepository;
-  private final PublicationLoader dataLoader;
 
   public EvaluatorService(
       StorageReader<URI> storageReader,
@@ -76,7 +74,6 @@ public class EvaluatorService {
     this.pointService = pointService;
     this.candidateRepository = candidateRepository;
     this.periodRepository = periodRepository;
-    this.dataLoader = new PublicationLoader(storageReader);
   }
 
   public Optional<CandidateEvaluatedMessage> evaluateCandidacy(URI publicationBucketUri) {
@@ -86,11 +83,6 @@ public class EvaluatorService {
     var candidate = fetchOptionalCandidate(publicationId).orElse(null);
     var period = fetchOptionalPeriod(publicationDate.year()).orElse(null);
 
-    // TODO: Running extraction here to verify that it works, but we do not fully use it yet.
-    // TODO: Replace use of JsonNode with the extracted Publication object.
-    var publicationDto = dataLoader.extractAndTransform(publicationBucketUri);
-    logger.info("Publication: {}", publicationDto.id());
-
     // Check if the publication can be evaluated
     if (shouldSkipEvaluation(candidate, publicationDate)) {
       logger.info(SKIPPED_EVALUATION_MESSAGE, publicationId);
@@ -98,7 +90,7 @@ public class EvaluatorService {
     }
 
     // Check if the publication meets the requirements to be a candidate
-    if (!publicationDto.isApplicable()) {
+    if (doesNotMeetNviRequirements(publication)) {
       logger.info(NON_NVI_CANDIDATE_MESSAGE, publicationId);
       return createNonNviCandidateMessage(publicationId);
     }
@@ -211,6 +203,11 @@ public class EvaluatorService {
 
   private boolean hasInvalidPublicationYear(PublicationDate publicationDate) {
     return attempt(() -> Year.parse(publicationDate.year())).isFailure();
+  }
+
+  private boolean doesNotMeetNviRequirements(JsonNode publication) {
+    var model = createModel(publication);
+    return !isNviCandidate(model);
   }
 
   private Optional<Candidate> fetchOptionalCandidate(URI publicationId) {

@@ -8,9 +8,7 @@
       <env name="SEARCH_INFRASTRUCTURE_API_HOST" value="localhost" />
       <env name="BACKEND_CLIENT_AUTH_URL" value="example.org/auth" />
     </envs>
-    <option name="GLUE" value="cucumber/steps" />
     <shortenClasspath name="NONE" />
-    <option name="VM_PARAMETERS" value="-Dcucumber.snippet-type=camelcase -Dcucumber.filter.tags=&quot;not @ignore&quot;" />
     <option name="WORKING_DIRECTORY" value="$MODULE_WORKING_DIR$" />
     <extension name="software.aws.toolkits.jetbrains.core.execution.JavaAwsConnectionExtension">
       <option name="credential" />

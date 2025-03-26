@@ -1,0 +1,13 @@
+PREFIX  nva: <https://nva.sikt.no/ontology/publication#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT  ?affiliation
+WHERE {
+    ?publication a nva:Publication ;
+                 (<>|!<>)+ ?contributor .
+
+    ?contributor (<>|!<>)+ nva:Creator ;
+#                 nva:identity/nva:verificationStatus "Verified" ;
+                 nva:affiliation ?affiliation .
+}
