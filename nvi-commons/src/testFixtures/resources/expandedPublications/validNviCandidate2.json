@@ -1,0 +1,466 @@
+{
+  "body" : {
+    "type" : "Publication",
+    "publicationContextUris" : [ "https://api.sandbox.nva.aws.unit.no/publication-channels-v2/publisher/DF3FB68B-F613-4D6F-90D5-38FEC2A61A41/2025", "https://api.sandbox.nva.aws.unit.no/publication-channels-v2/serial-publication/4DB8ADA8-2031-4092-864B-795432CCBD68/2025" ],
+    "id" : "https://api.sandbox.nva.aws.unit.no/publication/0195c6f37392-68057afa-9b9f-4e7a-8c9a-f5aef6b657be",
+    "associatedArtifacts" : [ {
+      "type" : "NullAssociatedArtifact"
+    } ],
+    "contributorOrganizations" : [ "https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.0.0.0", "https://api.sandbox.nva.aws.unit.no/cristin/organization/35900068.0.0.0", "https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.2.0.0", "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0" ],
+    "createdDate" : "2025-03-24T06:59:58.482817521Z",
+    "curatingInstitutions" : [ "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0", "https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.0.0.0" ],
+    "entityDescription" : {
+      "type" : "EntityDescription",
+      "abstract" : "Lorem ipsum dolor sit amet",
+      "alternativeAbstracts" : { },
+      "contributors" : [ {
+        "type" : "Contributor",
+        "affiliations" : [ {
+          "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.2.0.0",
+          "type" : "Organization",
+          "countryCode" : "NO",
+          "labels" : {
+            "nn" : "Divisjon for forskings- og kunnskapsressursar",
+            "nb" : "Divisjon forsknings- og kunnskapsressurser",
+            "en" : "The Research and Education Resources Division"
+          },
+          "partOf" : [ {
+            "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.0.0.0"
+          } ]
+        }, {
+          "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0",
+          "type" : "Organization",
+          "contributorCristinIds" : [ {
+            "id" : "https://api.sandbox.nva.aws.unit.no/cristin/person/1215176",
+            "type" : "Identity",
+            "name" : "Ola Nordmann",
+            "verificationStatus" : "Verified"
+          } ],
+          "countryCode" : "NO",
+          "labels" : {
+            "nn" : "Noregs teknisk-naturvitskaplege universitet",
+            "nb" : "Norges teknisk-naturvitenskapelige universitet",
+            "en" : "Norwegian University of Science and Technology"
+          }
+        } ],
+        "correspondingAuthor" : "false",
+        "identity" : {
+          "id" : "https://api.sandbox.nva.aws.unit.no/cristin/person/1215176",
+          "type" : "Identity",
+          "name" : "Ola Nordmann",
+          "verificationStatus" : "Verified"
+        },
+        "role" : {
+          "type" : "Creator"
+        },
+        "sequence" : "1"
+      }, {
+        "type" : "Contributor",
+        "affiliations" : [ {
+          "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.0.0.0",
+          "type" : "Organization",
+          "contributorCristinIds" : [ {
+            "id" : "https://api.sandbox.nva.aws.unit.no/cristin/person/1685046",
+            "type" : "Identity",
+            "name" : "Skrue McDuck",
+            "verificationStatus" : "Verified"
+          }, {
+            "id" : "https://api.sandbox.nva.aws.unit.no/cristin/person/1685065",
+            "type" : "Identity",
+            "name" : "Donald Duck",
+            "verificationStatus" : "Verified"
+          }, {
+            "id" : "https://api.sandbox.nva.aws.unit.no/cristin/person/1215176",
+            "type" : "Identity",
+            "name" : "Ola Nordmann",
+            "verificationStatus" : "Verified"
+          } ],
+          "countryCode" : "NO",
+          "hasPart" : [ {
+            "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.2.0.0"
+          } ],
+          "labels" : {
+            "nb" : "Sikt – Kunnskapssektorens tjenesteleverandør",
+            "en" : "Sikt - Norwegian Agency for Shared Services in Education and Research"
+          }
+        } ],
+        "correspondingAuthor" : "false",
+        "identity" : {
+          "id" : "https://api.sandbox.nva.aws.unit.no/cristin/person/1685065",
+          "type" : "Identity",
+          "name" : "Donald Duck",
+          "verificationStatus" : "Verified"
+        },
+        "role" : {
+          "type" : "Creator"
+        },
+        "sequence" : "2"
+      }, {
+        "type" : "Contributor",
+        "affiliations" : [ {
+          "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.2.0.0",
+          "type" : "Organization",
+          "countryCode" : "NO",
+          "labels" : {
+            "nn" : "Divisjon for forskings- og kunnskapsressursar",
+            "nb" : "Divisjon forsknings- og kunnskapsressurser",
+            "en" : "The Research and Education Resources Division"
+          },
+          "partOf" : [ {
+            "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.0.0.0"
+          } ]
+        } ],
+        "correspondingAuthor" : "false",
+        "identity" : {
+          "id" : "https://api.sandbox.nva.aws.unit.no/cristin/person/1685046",
+          "type" : "Identity",
+          "name" : "Skrue McDuck",
+          "verificationStatus" : "Verified"
+        },
+        "role" : {
+          "type" : "ContactPerson"
+        },
+        "sequence" : "3"
+      }, {
+        "type" : "Contributor",
+        "affiliations" : [ {
+          "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/35900068.0.0.0",
+          "type" : "Organization",
+          "countryCode" : "ZA",
+          "labels" : {
+            "nb" : "University of Cape Town"
+          }
+        } ],
+        "correspondingAuthor" : "false",
+        "identity" : {
+          "type" : "Identity",
+          "name" : "John Doe",
+          "verificationStatus" : "NotVerified"
+        },
+        "role" : {
+          "type" : "Creator"
+        },
+        "sequence" : "4"
+      }, {
+        "type" : "Contributor",
+        "affiliations" : [ {
+          "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0",
+          "type" : "Organization",
+          "contributorCristinIds" : [ {
+            "id" : "https://api.sandbox.nva.aws.unit.no/cristin/person/1215176",
+            "type" : "Identity",
+            "name" : "Ola Nordmann",
+            "verificationStatus" : "Verified"
+          } ],
+          "countryCode" : "NO",
+          "labels" : {
+            "nn" : "Noregs teknisk-naturvitskaplege universitet",
+            "nb" : "Norges teknisk-naturvitenskapelige universitet",
+            "en" : "Norwegian University of Science and Technology"
+          }
+        } ],
+        "correspondingAuthor" : "false",
+        "identity" : {
+          "type" : "Identity",
+          "name" : "Petter Smart",
+          "verificationStatus" : "NotVerified"
+        },
+        "role" : {
+          "type" : "Creator"
+        },
+        "sequence" : "5"
+      } ],
+      "description" : "Mer tekst her da",
+      "language" : "http://lexvo.org/id/iso639-3/eng",
+      "mainTitle" : "Example NVI candidate #2",
+      "npiSubjectHeading" : "1003",
+      "publicationDate" : {
+        "type" : "PublicationDate",
+        "day" : "24",
+        "month" : "3",
+        "year" : "2025"
+      },
+      "reference" : {
+        "type" : "Reference",
+        "publicationContext" : {
+          "type" : "Book",
+          "isbnList" : [ "9783161484100" ],
+          "publisher" : {
+            "id" : "https://api.sandbox.nva.aws.unit.no/publication-channels-v2/publisher/DF3FB68B-F613-4D6F-90D5-38FEC2A61A41/2025",
+            "type" : "Publisher",
+            "identifier" : "DF3FB68B-F613-4D6F-90D5-38FEC2A61A41",
+            "isbnPrefix" : "978-0-8031",
+            "name" : "American Society for Testing & Materials (ASTM) International",
+            "sameAs" : "https://kanalregister-test.hkdir.no/publiseringskanaler/info/forlag?pid=DF3FB68B-F613-4D6F-90D5-38FEC2A61A41",
+            "scientificValue" : "LevelOne",
+            "valid" : "true",
+            "year" : "2025"
+          },
+          "revision" : "Revised",
+          "series" : {
+            "id" : "https://api.sandbox.nva.aws.unit.no/publication-channels-v2/serial-publication/4DB8ADA8-2031-4092-864B-795432CCBD68/2025",
+            "type" : "Series",
+            "identifier" : "4DB8ADA8-2031-4092-864B-795432CCBD68",
+            "name" : "Beihefte zur Zeitschrift für die alttestamentliche Wissenschaft",
+            "printIssn" : "0934-2575",
+            "sameAs" : "https://kanalregister-test.hkdir.no/publiseringskanaler/info/tidsskrift?pid=4DB8ADA8-2031-4092-864B-795432CCBD68",
+            "scientificValue" : "LevelOne",
+            "year" : "2025"
+          },
+          "seriesNumber" : "4"
+        },
+        "publicationInstance" : {
+          "type" : "AcademicMonograph",
+          "pages" : {
+            "type" : "MonographPages",
+            "illustrated" : "false",
+            "pages" : "42"
+          }
+        }
+      },
+      "tags" : [ "test", "testing" ],
+      "contributorsCount" : 5,
+      "contributorsPreview" : [ {
+        "type" : "Contributor",
+        "affiliations" : [ {
+          "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.2.0.0",
+          "type" : "Organization",
+          "countryCode" : "NO",
+          "labels" : {
+            "nn" : "Divisjon for forskings- og kunnskapsressursar",
+            "nb" : "Divisjon forsknings- og kunnskapsressurser",
+            "en" : "The Research and Education Resources Division"
+          },
+          "partOf" : [ {
+            "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.0.0.0"
+          } ]
+        }, {
+          "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0",
+          "type" : "Organization",
+          "contributorCristinIds" : [ {
+            "id" : "https://api.sandbox.nva.aws.unit.no/cristin/person/1215176",
+            "type" : "Identity",
+            "name" : "Ola Nordmann",
+            "verificationStatus" : "Verified"
+          } ],
+          "countryCode" : "NO",
+          "labels" : {
+            "nn" : "Noregs teknisk-naturvitskaplege universitet",
+            "nb" : "Norges teknisk-naturvitenskapelige universitet",
+            "en" : "Norwegian University of Science and Technology"
+          }
+        } ],
+        "correspondingAuthor" : "false",
+        "identity" : {
+          "id" : "https://api.sandbox.nva.aws.unit.no/cristin/person/1215176",
+          "type" : "Identity",
+          "name" : "Ola Nordmann",
+          "verificationStatus" : "Verified"
+        },
+        "role" : {
+          "type" : "Creator"
+        },
+        "sequence" : "1"
+      }, {
+        "type" : "Contributor",
+        "affiliations" : [ {
+          "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.0.0.0",
+          "type" : "Organization",
+          "contributorCristinIds" : [ {
+            "id" : "https://api.sandbox.nva.aws.unit.no/cristin/person/1685046",
+            "type" : "Identity",
+            "name" : "Skrue McDuck",
+            "verificationStatus" : "Verified"
+          }, {
+            "id" : "https://api.sandbox.nva.aws.unit.no/cristin/person/1685065",
+            "type" : "Identity",
+            "name" : "Donald Duck",
+            "verificationStatus" : "Verified"
+          }, {
+            "id" : "https://api.sandbox.nva.aws.unit.no/cristin/person/1215176",
+            "type" : "Identity",
+            "name" : "Ola Nordmann",
+            "verificationStatus" : "Verified"
+          } ],
+          "countryCode" : "NO",
+          "hasPart" : [ {
+            "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.2.0.0"
+          } ],
+          "labels" : {
+            "nb" : "Sikt – Kunnskapssektorens tjenesteleverandør",
+            "en" : "Sikt - Norwegian Agency for Shared Services in Education and Research"
+          }
+        } ],
+        "correspondingAuthor" : "false",
+        "identity" : {
+          "id" : "https://api.sandbox.nva.aws.unit.no/cristin/person/1685065",
+          "type" : "Identity",
+          "name" : "Donald Duck",
+          "verificationStatus" : "Verified"
+        },
+        "role" : {
+          "type" : "Creator"
+        },
+        "sequence" : "2"
+      }, {
+        "type" : "Contributor",
+        "affiliations" : [ {
+          "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.2.0.0",
+          "type" : "Organization",
+          "countryCode" : "NO",
+          "labels" : {
+            "nn" : "Divisjon for forskings- og kunnskapsressursar",
+            "nb" : "Divisjon forsknings- og kunnskapsressurser",
+            "en" : "The Research and Education Resources Division"
+          },
+          "partOf" : [ {
+            "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.0.0.0"
+          } ]
+        } ],
+        "correspondingAuthor" : "false",
+        "identity" : {
+          "id" : "https://api.sandbox.nva.aws.unit.no/cristin/person/1685046",
+          "type" : "Identity",
+          "name" : "Skrue McDuck",
+          "verificationStatus" : "Verified"
+        },
+        "role" : {
+          "type" : "ContactPerson"
+        },
+        "sequence" : "3"
+      }, {
+        "type" : "Contributor",
+        "affiliations" : [ {
+          "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/35900068.0.0.0",
+          "type" : "Organization",
+          "countryCode" : "ZA",
+          "labels" : {
+            "nb" : "University of Cape Town"
+          }
+        } ],
+        "correspondingAuthor" : "false",
+        "identity" : {
+          "type" : "Identity",
+          "name" : "John Doe",
+          "verificationStatus" : "NotVerified"
+        },
+        "role" : {
+          "type" : "Creator"
+        },
+        "sequence" : "4"
+      }, {
+        "type" : "Contributor",
+        "affiliations" : [ {
+          "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0",
+          "type" : "Organization",
+          "contributorCristinIds" : [ {
+            "id" : "https://api.sandbox.nva.aws.unit.no/cristin/person/1215176",
+            "type" : "Identity",
+            "name" : "Ola Nordmann",
+            "verificationStatus" : "Verified"
+          } ],
+          "countryCode" : "NO",
+          "labels" : {
+            "nn" : "Noregs teknisk-naturvitskaplege universitet",
+            "nb" : "Norges teknisk-naturvitenskapelige universitet",
+            "en" : "Norwegian University of Science and Technology"
+          }
+        } ],
+        "correspondingAuthor" : "false",
+        "identity" : {
+          "type" : "Identity",
+          "name" : "Petter Smart",
+          "verificationStatus" : "NotVerified"
+        },
+        "role" : {
+          "type" : "Creator"
+        },
+        "sequence" : "5"
+      } ]
+    },
+    "identifier" : "0195c6f37392-68057afa-9b9f-4e7a-8c9a-f5aef6b657be",
+    "modelVersion" : "0.23.3",
+    "modifiedDate" : "2025-03-24T08:23:24.859620342Z",
+    "pendingOpenFileCount" : "0",
+    "publishedDate" : "2025-03-24T07:04:07.974662076Z",
+    "publisher" : {
+      "id" : "https://api.sandbox.nva.aws.unit.no/customer/bb3d0c0c-5065-4623-9b98-5810983c2478",
+      "type" : "Organization"
+    },
+    "resourceOwner" : {
+      "owner" : "1215176@20754.0.0.0",
+      "ownerAffiliation" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.0.0.0"
+    },
+    "scientificIndex" : { },
+    "status" : "PUBLISHED",
+    "topLevelOrganizations" : [ {
+      "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.0.0.0",
+      "type" : "Organization",
+      "contributorCristinIds" : [ {
+        "id" : "https://api.sandbox.nva.aws.unit.no/cristin/person/1685046",
+        "type" : "Identity",
+        "name" : "Skrue McDuck",
+        "verificationStatus" : "Verified"
+      }, {
+        "id" : "https://api.sandbox.nva.aws.unit.no/cristin/person/1685065",
+        "type" : "Identity",
+        "name" : "Donald Duck",
+        "verificationStatus" : "Verified"
+      }, {
+        "id" : "https://api.sandbox.nva.aws.unit.no/cristin/person/1215176",
+        "type" : "Identity",
+        "name" : "Ola Nordmann",
+        "verificationStatus" : "Verified"
+      } ],
+      "countryCode" : "NO",
+      "hasPart" : [ {
+        "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.2.0.0",
+        "type" : "Organization",
+        "countryCode" : "NO",
+        "labels" : {
+          "nn" : "Divisjon for forskings- og kunnskapsressursar",
+          "nb" : "Divisjon forsknings- og kunnskapsressurser",
+          "en" : "The Research and Education Resources Division"
+        },
+        "partOf" : [ {
+          "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.0.0.0"
+        } ]
+      } ],
+      "labels" : {
+        "nb" : "Sikt – Kunnskapssektorens tjenesteleverandør",
+        "en" : "Sikt - Norwegian Agency for Shared Services in Education and Research"
+      }
+    }, {
+      "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0",
+      "type" : "Organization",
+      "contributorCristinIds" : [ {
+        "id" : "https://api.sandbox.nva.aws.unit.no/cristin/person/1215176",
+        "type" : "Identity",
+        "name" : "Ola Nordmann",
+        "verificationStatus" : "Verified"
+      } ],
+      "countryCode" : "NO",
+      "labels" : {
+        "nn" : "Noregs teknisk-naturvitskaplege universitet",
+        "nb" : "Norges teknisk-naturvitenskapelige universitet",
+        "en" : "Norwegian University of Science and Technology"
+      }
+    }, {
+      "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/35900068.0.0.0",
+      "type" : "Organization",
+      "countryCode" : "ZA",
+      "labels" : {
+        "nb" : "University of Cape Town"
+      }
+    } ],
+    "@context" : "https://api.sandbox.nva.aws.unit.no/publication/context",
+    "filesStatus" : "noFiles",
+    "joinField" : {
+      "name" : "hasParts"
+    }
+  },
+  "consumptionAttributes" : {
+    "index" : "resources",
+    "documentIdentifier" : "0195c6f37392-68057afa-9b9f-4e7a-8c9a-f5aef6b657be"
+  }
+}
