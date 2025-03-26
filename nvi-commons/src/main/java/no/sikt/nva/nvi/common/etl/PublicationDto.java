@@ -15,7 +15,7 @@ import no.sikt.nva.nvi.common.client.model.Organization;
 @JsonSerialize
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonTypeName("Publication")
-public record Publication(
+public record PublicationDto(
     URI id,
     String identifier,
     String title,
@@ -30,7 +30,7 @@ public record Publication(
     Collection<Organization> topLevelOrganizations,
     Instant modifiedDate) {
 
-  public Publication {
+  public PublicationDto {
     requireNonNull(id, "Required field 'id' is null");
   }
 
@@ -48,8 +48,8 @@ public record Publication(
     contributors.forEach(ContributorDto::validate);
   }
 
-  public static Publication from(String json) throws JsonProcessingException {
-    return dtoObjectMapper.readValue(json, Publication.class);
+  public static PublicationDto from(String json) throws JsonProcessingException {
+    return dtoObjectMapper.readValue(json, PublicationDto.class);
   }
 
   public static Builder builder() {
@@ -139,8 +139,8 @@ public record Publication(
       return this;
     }
 
-    public Publication build() {
-      return new Publication(
+    public PublicationDto build() {
+      return new PublicationDto(
           id,
           identifier,
           title,

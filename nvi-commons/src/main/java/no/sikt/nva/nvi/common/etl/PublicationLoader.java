@@ -43,7 +43,7 @@ public class PublicationLoader {
     this.storageReader = storageReader;
   }
 
-  public Publication extractAndTransform(URI publicationBucketUri) {
+  public PublicationDto extractAndTransform(URI publicationBucketUri) {
     logger.info("Extracting and transforming publication from S3: {}", publicationBucketUri);
     var content = extractContentFromStorage(publicationBucketUri);
     var model = loadModelFromJson(content);
@@ -71,13 +71,13 @@ public class PublicationLoader {
     return queryExecution.execConstruct();
   }
 
-  private Publication transformToPublication(Model model) {
+  private PublicationDto transformToPublication(Model model) {
     logger.info("Transforming RDF model to simplified Publication object");
     try {
       var document = JsonDocument.of(toJsonReader(model));
       var context = JsonDocument.of(inputStreamFromResources(PUBLICATION_FRAME_JSONLD));
       var jsonString = JsonLd.frame(document, context).get().toString();
-      return Publication.from(jsonString);
+      return PublicationDto.from(jsonString);
     } catch (JsonProcessingException | JsonLdError e) {
       throw new RuntimeException(e);
     }

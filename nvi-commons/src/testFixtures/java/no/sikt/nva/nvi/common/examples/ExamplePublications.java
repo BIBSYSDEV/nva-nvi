@@ -16,8 +16,8 @@ import static no.sikt.nva.nvi.common.examples.ExamplePublicationChannels.SERIES_
 import java.net.URI;
 import java.time.Instant;
 import java.util.List;
-import no.sikt.nva.nvi.common.etl.Publication;
 import no.sikt.nva.nvi.common.etl.PublicationDateDto;
+import no.sikt.nva.nvi.common.etl.PublicationDto;
 
 /**
  * Example models for testing purposes, corresponding to the data in
@@ -25,8 +25,8 @@ import no.sikt.nva.nvi.common.etl.PublicationDateDto;
  */
 public class ExamplePublications {
 
-  public static final Publication EXAMPLE_1 =
-      Publication.builder()
+  public static final PublicationDto EXAMPLE_1 =
+      PublicationDto.builder()
           .withId(
               URI.create(
                   "https://api.sandbox.nva.aws.unit.no/publication/0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5"))
@@ -45,8 +45,8 @@ public class ExamplePublications {
               List.of(TOP_LEVEL_ORGANIZATION_NTNU, TOP_LEVEL_ORGANIZATION_SIKT))
           .build();
 
-  public static final Publication EXAMPLE_2 =
-      Publication.builder()
+  public static final PublicationDto EXAMPLE_2 =
+      PublicationDto.builder()
           .withId(
               URI.create(
                   "https://api.sandbox.nva.aws.unit.no/publication/0195c6f37392-68057afa-9b9f-4e7a-8c9a-f5aef6b657be"))

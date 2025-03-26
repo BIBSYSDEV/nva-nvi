@@ -52,7 +52,7 @@ class PublicationTransformerTest {
 
   @ParameterizedTest
   @MethodSource(EXAMPLE_DOCUMENT_TEST_PROVIDER)
-  void shouldGetExpectedFieldsFromExampleDocument(String filename, Publication expected) {
+  void shouldGetExpectedFieldsFromExampleDocument(String filename, PublicationDto expected) {
     var actual = parseExampleDocument(filename);
 
     assertEquals(expected.id(), actual.id());
@@ -67,7 +67,7 @@ class PublicationTransformerTest {
 
   @ParameterizedTest
   @MethodSource(EXAMPLE_DOCUMENT_TEST_PROVIDER)
-  void shouldGetExpectedContributorsFromExampleDocument(String filename, Publication expected) {
+  void shouldGetExpectedContributorsFromExampleDocument(String filename, PublicationDto expected) {
     var actual = parseExampleDocument(filename);
     assertThat(actual.contributors(), hasSize(expected.contributors().size()));
     for (ContributorDto contributor : expected.contributors()) {
@@ -80,7 +80,7 @@ class PublicationTransformerTest {
   @ParameterizedTest
   @MethodSource(EXAMPLE_DOCUMENT_TEST_PROVIDER)
   void shouldGetExpectedPublicationChannelsFromExampleDocument(
-      String filename, Publication expected) {
+      String filename, PublicationDto expected) {
     var actual = parseExampleDocument(filename);
     assertThat(actual.publicationChannels(), hasSize(expected.publicationChannels().size()));
     for (PublicationChannelDto channel : expected.publicationChannels()) {
@@ -93,7 +93,7 @@ class PublicationTransformerTest {
   @ParameterizedTest
   @MethodSource(EXAMPLE_DOCUMENT_TEST_PROVIDER)
   void shouldGetExpectedTopLevelOrganizationsFromExampleDocument(
-      String filename, Publication expected) {
+      String filename, PublicationDto expected) {
     var actual = parseExampleDocument(filename);
     assertThat(actual.topLevelOrganizations(), hasSize(expected.topLevelOrganizations().size()));
     for (Organization organization : expected.topLevelOrganizations()) {
@@ -103,7 +103,7 @@ class PublicationTransformerTest {
     }
   }
 
-  private Publication parseExampleDocument(String filename) {
+  private PublicationDto parseExampleDocument(String filename) {
     var document = stringFromResources(Path.of(filename));
     var publicationBucketUri = addToS3(filename, document);
     return dataLoader.extractAndTransform(publicationBucketUri);
