@@ -152,7 +152,7 @@ public class Approval {
     return switch (request.approvalStatus()) {
       case APPROVED -> finalizeApprovedStatus(request);
       case REJECTED -> finalizeRejectedStatus(request);
-      case PENDING -> resetStatus();
+      case PENDING, NONE -> resetStatus();
     };
   }
 

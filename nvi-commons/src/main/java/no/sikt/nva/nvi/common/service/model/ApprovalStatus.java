@@ -1,5 +1,7 @@
 package no.sikt.nva.nvi.common.service.model;
 
+import static java.util.Collections.emptySet;
+
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonValue;
@@ -10,7 +12,8 @@ import java.util.Set;
 public enum ApprovalStatus {
   APPROVED("Approved"),
   PENDING("Pending"),
-  REJECTED("Rejected");
+  REJECTED("Rejected"),
+  NONE("None");
 
   @JsonValue private final String value;
 
@@ -36,6 +39,7 @@ public enum ApprovalStatus {
       case APPROVED -> EnumSet.of(PENDING, REJECTED);
       case PENDING -> EnumSet.of(APPROVED, REJECTED);
       case REJECTED -> EnumSet.of(PENDING, APPROVED);
+      case NONE -> emptySet();
     };
   }
 }

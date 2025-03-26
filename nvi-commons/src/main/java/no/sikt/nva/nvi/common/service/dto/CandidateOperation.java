@@ -26,6 +26,7 @@ public enum CandidateOperation {
       case APPROVED -> APPROVAL_APPROVE;
       case PENDING -> APPROVAL_PENDING;
       case REJECTED -> APPROVAL_REJECT;
+      case NONE -> throw new IllegalArgumentException("Cannot create operation from NONE status");
     };
   }
 }

@@ -7,7 +7,8 @@ public enum ApprovalStatusDto {
   NEW("New"),
   PENDING("Pending"),
   APPROVED("Approved"),
-  REJECTED("Rejected");
+  REJECTED("Rejected"),
+  NONE("None");
 
   @JsonValue private final String value;
 
@@ -20,6 +21,7 @@ public enum ApprovalStatusDto {
       case PENDING -> approval.isAssigned() ? PENDING : NEW;
       case APPROVED -> APPROVED;
       case REJECTED -> REJECTED;
+      case NONE -> NONE;
     };
   }
 }

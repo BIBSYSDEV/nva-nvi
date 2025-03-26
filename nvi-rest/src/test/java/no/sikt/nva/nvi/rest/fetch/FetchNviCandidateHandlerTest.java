@@ -4,6 +4,7 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
+import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -26,7 +27,6 @@ import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.problem.UnverifiedCreatorFromOrganizationProblem;
 import no.sikt.nva.nvi.common.service.dto.problem.UnverifiedCreatorProblem;
 import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.sikt.nva.nvi.common.validator.FakeViewingScopeValidator;
 import no.sikt.nva.nvi.rest.BaseCandidateRestHandlerTest;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
@@ -48,7 +48,6 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
     return new FetchNviCandidateHandler(
         scenario.getCandidateRepository(),
         scenario.getPeriodRepository(),
-        mockViewingScopeValidator,
         mockOrganizationRetriever);
   }
 
@@ -81,18 +80,26 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
       value = AccessRight.class,
       names = {"MANAGE_NVI_CANDIDATES", "MANAGE_NVI"},
       mode = EnumSource.Mode.INCLUDE)
-  void shouldReturnUnauthorizedWhenCandidateIsNotInUsersViewingScope(AccessRight accessRight)
+  void shouldReturnCandidateWhenUserHasNviRoleInAnyOrganization(AccessRight accessRight)
       throws IOException {
     var candidate = setupValidCandidate(topLevelOrganizationId);
+    var randomOrganizationId = randomUri();
     var request =
-        createRequest(candidate.getIdentifier().toString(), topLevelOrganizationId, accessRight);
-    var viewingScopeValidatorReturningFalse = new FakeViewingScopeValidator(false);
-    handler =
-        new FetchNviCandidateHandler(
-            scenario.getCandidateRepository(),
-            scenario.getPeriodRepository(),
-            viewingScopeValidatorReturningFalse,
-            mockOrganizationRetriever);
+        createRequest(candidate.getIdentifier().toString(), randomOrganizationId, accessRight);
+    var responseDto = handleRequest(request);
+    var expectedCandidateDto = candidate.toDto(randomOrganizationId, mockOrganizationRetriever);
+    assertEquals(expectedCandidateDto, responseDto);
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = AccessRight.class,
+      names = {"MANAGE_NVI_CANDIDATES", "MANAGE_NVI"},
+      mode = EnumSource.Mode.EXCLUDE)
+  void shouldReturnUnauthorizedWhenUserDoesNotHaveRoleWithAccess(AccessRight accessRight)
+      throws IOException {
+    var candidate = setupValidCandidate(topLevelOrganizationId);
+    var request = createRequest(candidate.getIdentifier().toString(), randomUri(), accessRight);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
     assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));

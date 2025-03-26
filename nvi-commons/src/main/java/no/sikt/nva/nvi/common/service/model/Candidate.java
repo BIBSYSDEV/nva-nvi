@@ -278,8 +278,9 @@ public final class Candidate {
     return new HashMap<>(approvals);
   }
 
-  public ApprovalStatus getApprovalStatus(URI institutionId) {
-    return approvals.get(institutionId).getStatus();
+  public ApprovalStatus getApprovalStatus(URI organizationId) {
+    var approval = approvals.get(organizationId);
+    return nonNull(approval) ? approval.getStatus() : ApprovalStatus.NONE;
   }
 
   public BigDecimal getBasePoints() {

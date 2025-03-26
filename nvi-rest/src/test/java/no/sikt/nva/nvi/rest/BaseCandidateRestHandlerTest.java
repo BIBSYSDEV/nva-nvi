@@ -56,23 +56,6 @@ public abstract class BaseCandidateRestHandlerTest {
   protected ApiGatewayHandler<?, CandidateDto> handler;
   protected TestScenario scenario;
 
-  protected InputStream createRequestWithAdminAccess(String resourceIdentifier)
-      throws JsonProcessingException {
-    return createRequest(resourceIdentifier, topLevelOrganizationId, MANAGE_NVI);
-  }
-
-  protected InputStream createRequest(
-      String resourceIdentifier, URI organizationId, AccessRight accessRight)
-      throws JsonProcessingException {
-    return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
-        .withHeaders(Map.of(HttpHeaders.ACCEPT, ContentType.APPLICATION_JSON.getMimeType()))
-        .withTopLevelCristinOrgId(organizationId)
-        .withAccessRights(organizationId, accessRight)
-        .withUserName(randomString())
-        .withPathParameters(Map.of(resourcePathParameter, resourceIdentifier))
-        .build();
-  }
-
   @BeforeEach
   protected void commonSetup() {
     scenario = new TestScenario();
@@ -87,21 +70,6 @@ public abstract class BaseCandidateRestHandlerTest {
   }
 
   protected abstract ApiGatewayHandler<?, CandidateDto> createHandler();
-
-  protected InputStream createRequestWithoutAccessRight(String resourceIdentifier)
-      throws JsonProcessingException {
-    return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
-        .withHeaders(Map.of(HttpHeaders.ACCEPT, ContentType.APPLICATION_JSON.getMimeType()))
-        .withTopLevelCristinOrgId(topLevelOrganizationId)
-        .withUserName(randomString())
-        .withPathParameters(Map.of(resourcePathParameter, resourceIdentifier))
-        .build();
-  }
-
-  protected InputStream createRequestWithCuratorAccess(String resourceIdentifier)
-      throws JsonProcessingException {
-    return createRequest(resourceIdentifier, topLevelOrganizationId, MANAGE_NVI_CANDIDATES);
-  }
 
   protected VerifiedNviCreatorDto setupVerifiedCreator(
       URI id, Collection<URI> affiliations, URI topLevelInstitutionId) {
@@ -195,5 +163,45 @@ public abstract class BaseCandidateRestHandlerTest {
         dtoObjectMapper
             .getTypeFactory()
             .constructParametricType(GatewayResponse.class, CandidateDto.class));
+  }
+
+  protected HandlerRequestBuilder<InputStream> createDefaultRequestBuilder(
+      String resourceIdentifier) {
+    return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
+        .withHeaders(Map.of(HttpHeaders.ACCEPT, ContentType.APPLICATION_JSON.getMimeType()))
+        .withUserName(randomString())
+        .withPathParameters(Map.of(resourcePathParameter, resourceIdentifier));
+  }
+
+  protected InputStream createRequestWithAdminAccess(String resourceIdentifier)
+      throws JsonProcessingException {
+    return createDefaultRequestBuilder(resourceIdentifier)
+        .withAccessRights(topLevelOrganizationId, MANAGE_NVI)
+        .withTopLevelCristinOrgId(topLevelOrganizationId)
+        .build();
+  }
+
+  protected InputStream createRequestWithCuratorAccess(String resourceIdentifier)
+      throws JsonProcessingException {
+    return createDefaultRequestBuilder(resourceIdentifier)
+        .withAccessRights(topLevelOrganizationId, MANAGE_NVI_CANDIDATES)
+        .withTopLevelCristinOrgId(topLevelOrganizationId)
+        .build();
+  }
+
+  protected InputStream createRequestWithoutAccessRight(String resourceIdentifier)
+      throws JsonProcessingException {
+    return createDefaultRequestBuilder(resourceIdentifier)
+        .withTopLevelCristinOrgId(topLevelOrganizationId)
+        .build();
+  }
+
+  protected InputStream createRequest(
+      String resourceIdentifier, URI organizationId, AccessRight accessRight)
+      throws JsonProcessingException {
+    return createDefaultRequestBuilder(resourceIdentifier)
+        .withAccessRights(organizationId, accessRight)
+        .withTopLevelCristinOrgId(organizationId)
+        .build();
   }
 }

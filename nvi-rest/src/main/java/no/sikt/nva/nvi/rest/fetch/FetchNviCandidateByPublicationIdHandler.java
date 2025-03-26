@@ -17,8 +17,6 @@ import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.utils.ExceptionMapper;
-import no.sikt.nva.nvi.common.utils.RequestUtil;
-import no.sikt.nva.nvi.common.validator.ViewingScopeValidator;
 import no.sikt.nva.nvi.rest.ViewingScopeHandler;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import nva.commons.apigateway.ApiGatewayHandler;
@@ -33,7 +31,6 @@ public class FetchNviCandidateByPublicationIdHandler extends ApiGatewayHandler<V
   public static final String CANDIDATE_PUBLICATION_ID = "candidatePublicationId";
   private final CandidateRepository candidateRepository;
   private final PeriodRepository periodRepository;
-  private final ViewingScopeValidator viewingScopeValidator;
   private final OrganizationRetriever organizationRetriever;
 
   @JacocoGenerated
@@ -41,19 +38,16 @@ public class FetchNviCandidateByPublicationIdHandler extends ApiGatewayHandler<V
     this(
         new CandidateRepository(defaultDynamoClient()),
         new PeriodRepository(defaultDynamoClient()),
-        ViewingScopeHandler.defaultViewingScopeValidator(),
         new OrganizationRetriever(new UriRetriever()));
   }
 
   public FetchNviCandidateByPublicationIdHandler(
       CandidateRepository candidateRepository,
       PeriodRepository periodRepository,
-      ViewingScopeValidator viewingScopeValidator,
       OrganizationRetriever organizationRetriever) {
     super(Void.class);
     this.candidateRepository = candidateRepository;
     this.periodRepository = periodRepository;
-    this.viewingScopeValidator = viewingScopeValidator;
     this.organizationRetriever = organizationRetriever;
   }
 
@@ -72,10 +66,6 @@ public class FetchNviCandidateByPublicationIdHandler extends ApiGatewayHandler<V
                 Candidate.fetchByPublicationId(
                     () -> identifier, candidateRepository, periodRepository))
         .map(this::checkIfApplicable)
-        .map(
-            candidate ->
-                validateViewingScope(
-                    viewingScopeValidator, RequestUtil.getUsername(requestInfo), candidate))
         .map(candidate -> toCandidateDto(requestInfo, candidate))
         .orElseThrow(ExceptionMapper::map);
   }
