@@ -39,7 +39,6 @@ CONSTRUCT {
   :day ?day .
 
   # Include the organization hierarchy
-  ?topLevelOrganization a :Organization .
   ?organization a :Organization ;
   :countryCode ?country ;
   :label ?label ;
