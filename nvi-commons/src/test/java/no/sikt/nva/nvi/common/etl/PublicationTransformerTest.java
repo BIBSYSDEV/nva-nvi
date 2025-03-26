@@ -70,7 +70,7 @@ class PublicationTransformerTest {
   void shouldGetExpectedContributorsFromExampleDocument(String filename, PublicationDto expected) {
     var actual = parseExampleDocument(filename);
     assertThat(actual.contributors(), hasSize(expected.contributors().size()));
-    for (ContributorDto contributor : expected.contributors()) {
+    for (var contributor : expected.contributors()) {
       Assertions.assertThat(actual.contributors())
           .filteredOn("name", contributor.name())
           .containsOnly(contributor);
