@@ -8,6 +8,7 @@ import static no.sikt.nva.nvi.common.examples.ExampleOrganizations.TOP_LEVEL_ORG
 import java.net.URI;
 import java.util.List;
 import no.sikt.nva.nvi.common.etl.ContributorDto;
+import no.sikt.nva.nvi.common.etl.ContributorRole;
 
 /**
  * Example models for testing purposes, corresponding to the data in
@@ -15,7 +16,8 @@ import no.sikt.nva.nvi.common.etl.ContributorDto;
  */
 public class ExampleContributors {
 
-  private static final String ROLE_CREATOR = "Creator";
+  private static final ContributorRole ROLE_CREATOR = new ContributorRole("Creator");
+  private static final ContributorRole ROLE_OTHER = new ContributorRole("ContactPerson");
   private static final String STATUS_VERIFIED = "Verified";
   public static final ContributorDto EXAMPLE_2_CONTRIBUTOR_3 =
       ContributorDto.builder()
@@ -47,7 +49,7 @@ public class ExampleContributors {
       ContributorDto.builder()
           .withId(URI.create("https://api.sandbox.nva.aws.unit.no/cristin/person/1685046"))
           .withName("Skrue McDuck")
-          .withRole("ContactPerson")
+          .withRole(ROLE_OTHER)
           .withVerificationStatus(STATUS_VERIFIED)
           .withAffiliations(List.of(SUB_ORGANIZATION_SIKT))
           .build();

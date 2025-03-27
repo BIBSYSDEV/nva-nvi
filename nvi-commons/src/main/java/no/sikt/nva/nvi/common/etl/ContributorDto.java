@@ -16,9 +16,12 @@ import no.sikt.nva.nvi.common.client.model.Organization;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonTypeName("Contributor")
 public record ContributorDto(
-    URI id, String name, String verificationStatus, String role, List<Organization> affiliations) {
+    URI id,
+    String name,
+    String verificationStatus,
+    ContributorRole role,
+    List<Organization> affiliations) {
   private static final String VERIFIED = "Verified";
-  private static final String CREATOR = "Creator";
 
   public ContributorDto {
     requireNonNull(affiliations, "Required field 'affiliations' is null");
@@ -35,7 +38,7 @@ public record ContributorDto(
 
   @JsonIgnore
   public boolean isCreator() {
-    return nonNull(role) && CREATOR.equalsIgnoreCase(role);
+    return nonNull(role) && role.isCreator();
   }
 
   @JsonIgnore
@@ -55,7 +58,7 @@ public record ContributorDto(
     private URI id;
     private String name;
     private String verificationStatus;
-    private String role;
+    private ContributorRole role;
     private List<Organization> affiliations;
 
     private Builder() {}
@@ -75,7 +78,7 @@ public record ContributorDto(
       return this;
     }
 
-    public Builder withRole(String role) {
+    public Builder withRole(ContributorRole role) {
       this.role = role;
       return this;
     }
