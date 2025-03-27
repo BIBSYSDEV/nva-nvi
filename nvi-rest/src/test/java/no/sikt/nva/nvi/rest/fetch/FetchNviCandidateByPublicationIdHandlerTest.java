@@ -17,13 +17,15 @@ import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatusDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateOperation;
-import no.sikt.nva.nvi.common.validator.FakeViewingScopeValidator;
 import no.sikt.nva.nvi.rest.BaseCandidateRestHandlerTest;
+import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.GatewayResponse;
 import org.apache.hc.core5.http.HttpStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.zalando.problem.Problem;
 
 class FetchNviCandidateByPublicationIdHandlerTest extends BaseCandidateRestHandlerTest {
@@ -33,7 +35,6 @@ class FetchNviCandidateByPublicationIdHandlerTest extends BaseCandidateRestHandl
     return new FetchNviCandidateByPublicationIdHandler(
         scenario.getCandidateRepository(),
         scenario.getPeriodRepository(),
-        mockViewingScopeValidator,
         mockOrganizationRetriever);
   }
 
@@ -59,6 +60,36 @@ class FetchNviCandidateByPublicationIdHandlerTest extends BaseCandidateRestHandl
     var gatewayResponse = getGatewayResponse();
 
     assertEquals(HttpStatus.SC_NOT_FOUND, gatewayResponse.getStatusCode());
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = AccessRight.class,
+      names = {"MANAGE_NVI_CANDIDATES", "MANAGE_NVI"},
+      mode = EnumSource.Mode.INCLUDE)
+  void shouldReturnCandidateWhenUserHasNviRoleInAnyOrganization(AccessRight accessRight)
+      throws IOException {
+    var candidate = setupValidCandidate(topLevelOrganizationId);
+    var randomOrganizationId = randomUri();
+    var request =
+        createRequest(candidate.getPublicationId().toString(), randomOrganizationId, accessRight);
+    var responseDto = handleRequest(request);
+    var expectedCandidateDto = candidate.toDto(randomOrganizationId, mockOrganizationRetriever);
+    assertEquals(expectedCandidateDto, responseDto);
+  }
+
+  @ParameterizedTest
+  @EnumSource(
+      value = AccessRight.class,
+      names = {"MANAGE_NVI_CANDIDATES", "MANAGE_NVI"},
+      mode = EnumSource.Mode.EXCLUDE)
+  void shouldReturnUnauthorizedWhenUserDoesNotHaveRoleWithAccess(AccessRight accessRight)
+      throws IOException {
+    var candidate = setupValidCandidate(topLevelOrganizationId);
+    var request = createRequest(candidate.getIdentifier().toString(), randomUri(), accessRight);
+    handler.handleRequest(request, output, CONTEXT);
+    var response = GatewayResponse.fromOutputStream(output, Problem.class);
+    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
   }
 
   @Test
@@ -100,22 +131,6 @@ class FetchNviCandidateByPublicationIdHandlerTest extends BaseCandidateRestHandl
     var actualStatus = actualResponse.approvals().getFirst().status();
 
     assertEquals(ApprovalStatusDto.NEW, actualStatus);
-  }
-
-  @Test
-  void shouldReturnUnauthorizedWhenCandidateIsNotInUsersViewingScope() throws IOException {
-    var candidate = setupValidCandidate(topLevelOrganizationId);
-    var request = createRequestWithCuratorAccess(candidate.getPublicationId().toString());
-    handler =
-        new FetchNviCandidateByPublicationIdHandler(
-            scenario.getCandidateRepository(),
-            scenario.getPeriodRepository(),
-            new FakeViewingScopeValidator(false),
-            mockOrganizationRetriever);
-    handler.handleRequest(request, output, CONTEXT);
-    var response = GatewayResponse.fromOutputStream(output, Problem.class);
-
-    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
   }
 
   @Test

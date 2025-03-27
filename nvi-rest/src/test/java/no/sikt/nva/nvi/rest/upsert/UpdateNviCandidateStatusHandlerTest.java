@@ -221,6 +221,7 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
       case PENDING -> ApprovalStatusDto.PENDING;
       case APPROVED -> ApprovalStatusDto.APPROVED;
       case REJECTED -> ApprovalStatusDto.REJECTED;
+      default -> throw new IllegalArgumentException("Unexpected value: " + status);
     };
   }
 
