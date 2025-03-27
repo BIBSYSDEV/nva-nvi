@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
+import nva.commons.core.JacocoGenerated;
 
 @JsonSerialize
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
@@ -44,6 +45,7 @@ public record PublicationChannelDto(
     private String name;
     private String year;
     private String scientificValue;
+    private String onlineIssn;
     private String printIssn;
 
     private Builder() {}
@@ -78,6 +80,12 @@ public record PublicationChannelDto(
       return this;
     }
 
+    @JacocoGenerated
+    public Builder withOnlineIssn(String onlineIssn) {
+      this.onlineIssn = onlineIssn;
+      return this;
+    }
+
     public Builder withPrintIssn(String printIssn) {
       this.printIssn = printIssn;
       return this;
@@ -85,7 +93,7 @@ public record PublicationChannelDto(
 
     public PublicationChannelDto build() {
       return new PublicationChannelDto(
-          id, channelType, identifier, name, year, scientificValue, null, printIssn);
+          id, channelType, identifier, name, year, scientificValue, onlineIssn, printIssn);
     }
   }
 }
