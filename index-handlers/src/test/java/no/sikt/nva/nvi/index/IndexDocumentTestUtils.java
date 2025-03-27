@@ -30,6 +30,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
+import no.sikt.nva.nvi.common.dto.ScientificValue;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.Candidate;
@@ -48,7 +49,6 @@ import no.sikt.nva.nvi.index.model.document.Organization;
 import no.sikt.nva.nvi.index.model.document.OrganizationType;
 import no.sikt.nva.nvi.index.model.document.Pages;
 import no.sikt.nva.nvi.index.model.document.PublicationChannel;
-import no.sikt.nva.nvi.index.model.document.PublicationChannel.ScientificValue;
 import no.sikt.nva.nvi.index.model.document.PublicationDate;
 import no.sikt.nva.nvi.index.model.document.PublicationDetails;
 import no.sikt.nva.nvi.index.model.document.ReportingPeriod;
@@ -251,7 +251,7 @@ public final class IndexDocumentTestUtils {
     var channelType = candidate.getPublicationChannelType();
     var publicationChannelBuilder =
         PublicationChannel.builder()
-            .withScientificValue(ScientificValue.parse(candidate.getScientificLevel()))
+            .withScientificValue(ScientificValue.valueOf(candidate.getScientificLevel()))
             .withName(extractChannelName(expandedResource, channelType));
     if (nonNull(candidate.getPublicationChannelId())) {
       publicationChannelBuilder.withId(candidate.getPublicationChannelId());

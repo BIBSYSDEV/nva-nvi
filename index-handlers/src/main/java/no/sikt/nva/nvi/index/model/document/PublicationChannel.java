@@ -1,9 +1,8 @@
 package no.sikt.nva.nvi.index.model.document;
 
-import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
-import java.util.Arrays;
+import no.sikt.nva.nvi.common.dto.ScientificValue;
 
 @JsonSerialize
 public record PublicationChannel(
@@ -11,32 +10,6 @@ public record PublicationChannel(
 
   public static Builder builder() {
     return new Builder();
-  }
-
-  public enum ScientificValue {
-    LEVEL_ONE("LevelOne"),
-    LEVEL_TWO("LevelTwo");
-    @JsonValue private final String value;
-
-    ScientificValue(String value) {
-      this.value = value;
-    }
-
-    public static ScientificValue parse(String value) {
-      return Arrays.stream(values())
-          .filter(type -> type.getValue().equalsIgnoreCase(value))
-          .findFirst()
-          .orElseThrow(ScientificValue::getIllegalArgumentException);
-    }
-
-    public String getValue() {
-      return value;
-    }
-
-    private static IllegalArgumentException getIllegalArgumentException() {
-      return new IllegalArgumentException(
-          String.format("Unknown value. Valid values are: %s", Arrays.toString(values())));
-    }
   }
 
   public static final class Builder {
