@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.common.etl;
+package no.sikt.nva.nvi.common.dto;
 
 import static no.sikt.nva.nvi.common.examples.ExampleContributors.EXAMPLE_1_CONTRIBUTOR;
 import static no.sikt.nva.nvi.common.examples.ExampleContributors.EXAMPLE_2_CONTRIBUTOR_1;

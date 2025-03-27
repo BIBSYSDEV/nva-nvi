@@ -16,8 +16,8 @@ import static no.sikt.nva.nvi.common.examples.ExamplePublicationChannels.SERIES_
 import java.net.URI;
 import java.time.Instant;
 import java.util.List;
-import no.sikt.nva.nvi.common.etl.PublicationDateDto;
-import no.sikt.nva.nvi.common.etl.PublicationDto;
+import no.sikt.nva.nvi.common.dto.PublicationDateDto;
+import no.sikt.nva.nvi.common.dto.PublicationDto;
 import no.sikt.nva.nvi.common.service.model.InstanceType;
 
 /**

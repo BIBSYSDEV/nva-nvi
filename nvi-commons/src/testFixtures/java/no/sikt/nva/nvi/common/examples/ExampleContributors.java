@@ -7,9 +7,9 @@ import static no.sikt.nva.nvi.common.examples.ExampleOrganizations.TOP_LEVEL_ORG
 
 import java.net.URI;
 import java.util.List;
-import no.sikt.nva.nvi.common.etl.ContributorDto;
-import no.sikt.nva.nvi.common.etl.ContributorRole;
-import no.sikt.nva.nvi.common.etl.VerificationStatus;
+import no.sikt.nva.nvi.common.dto.ContributorDto;
+import no.sikt.nva.nvi.common.dto.ContributorRole;
+import no.sikt.nva.nvi.common.dto.VerificationStatus;
 
 /**
  * Example models for testing purposes, corresponding to the data in

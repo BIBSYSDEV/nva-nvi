@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.common.examples;
 
 import java.net.URI;
-import no.sikt.nva.nvi.common.etl.PublicationChannelDto;
+import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
 
 /**
  * Example models for testing purposes, corresponding to the data in

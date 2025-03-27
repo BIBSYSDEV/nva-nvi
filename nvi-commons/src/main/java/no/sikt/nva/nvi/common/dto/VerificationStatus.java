@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.common.etl;
+package no.sikt.nva.nvi.common.dto;
 
 import static nva.commons.core.StringUtils.isBlank;
 

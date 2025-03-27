@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.common.etl;
+package no.sikt.nva.nvi.common.service;
 
 import static no.sikt.nva.nvi.common.utils.GraphUtils.createModel;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
@@ -16,6 +16,7 @@ import java.io.StringReader;
 import java.net.URI;
 import java.nio.file.Path;
 import no.sikt.nva.nvi.common.StorageReader;
+import no.sikt.nva.nvi.common.dto.PublicationDto;
 import org.apache.jena.query.QueryExecutionFactory;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.riot.Lang;
@@ -28,7 +29,7 @@ import org.slf4j.LoggerFactory;
  * stored as JSON documents in an S3 bucket. It is a wrapper around a SPARQL query that
  * extracts and flattens relevant fields, and a JSON-LD frame that structures the output.
  */
-public class PublicationLoader {
+public class PublicationLoaderService {
   private static final String CONTEXT_NODE = "@context";
   private static final String JSON_PTR_BODY = "/body";
   private static final String NVA_CONTEXT_JSONLD = "nva_context.json";
@@ -36,10 +37,10 @@ public class PublicationLoader {
   private static final String PUBLICATION_SPARQL =
       stringFromResources(Path.of("publication_query.sparql"));
   private static final String STATIC_CONTEXT = stringFromResources(Path.of(NVA_CONTEXT_JSONLD));
-  private final Logger logger = LoggerFactory.getLogger(PublicationLoader.class);
+  private final Logger logger = LoggerFactory.getLogger(PublicationLoaderService.class);
   private final StorageReader<URI> storageReader;
 
-  public PublicationLoader(StorageReader<URI> storageReader) {
+  public PublicationLoaderService(StorageReader<URI> storageReader) {
     this.storageReader = storageReader;
   }
 

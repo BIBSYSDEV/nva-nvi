@@ -1,11 +1,10 @@
-package no.sikt.nva.nvi.common.etl;
+package no.sikt.nva.nvi.common.service;
 
 import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_1;
 import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_2;
 import static nva.commons.core.ioutils.IoUtils.stringFromResources;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.params.provider.Arguments.argumentSet;
 
@@ -15,6 +14,8 @@ import java.nio.file.Path;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.client.model.Organization;
+import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
+import no.sikt.nva.nvi.common.dto.PublicationDto;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.paths.UnixPath;
@@ -25,7 +26,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-class PublicationTransformerTest {
+class PublicationLoaderServiceTest {
   private static final String BUCKET_NAME = "testBucket";
   private static final String EXAMPLE_PUBLICATION_1 =
       "expandedPublications/validNviCandidate1.json";
@@ -34,20 +35,20 @@ class PublicationTransformerTest {
   private static final String EXAMPLE_DOCUMENT_TEST_PROVIDER = "exampleDocumentTestProvider";
 
   private S3Driver s3Driver;
-  private PublicationLoader dataLoader;
+  private PublicationLoaderService dataLoader;
 
   @BeforeEach
   void setUp() {
     var s3Client = new FakeS3Client();
     var storageReader = new S3StorageReader(s3Client, BUCKET_NAME);
-    dataLoader = new PublicationLoader(storageReader);
+    dataLoader = new PublicationLoaderService(storageReader);
     s3Driver = new S3Driver(s3Client, BUCKET_NAME);
   }
 
   @Test
   void shouldNotFailWhenValidatingExampleDocuments() {
     var actual = parseExampleDocument(EXAMPLE_PUBLICATION_2);
-    assertDoesNotThrow(actual::validate);
+    org.junit.jupiter.api.Assertions.assertDoesNotThrow(actual::validate);
   }
 
   @ParameterizedTest

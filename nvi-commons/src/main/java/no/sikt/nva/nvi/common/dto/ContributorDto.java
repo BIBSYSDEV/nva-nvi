@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.common.etl;
+package no.sikt.nva.nvi.common.dto;
 
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;

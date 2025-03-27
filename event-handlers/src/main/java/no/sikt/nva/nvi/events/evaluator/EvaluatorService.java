@@ -25,7 +25,7 @@ import java.util.Optional;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.common.etl.PublicationLoader;
+import no.sikt.nva.nvi.common.service.PublicationLoaderService;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
@@ -63,7 +63,7 @@ public class EvaluatorService {
   private final PointService pointService;
   private final CandidateRepository candidateRepository;
   private final PeriodRepository periodRepository;
-  private final PublicationLoader dataLoader;
+  private final PublicationLoaderService dataLoader;
 
   public EvaluatorService(
       StorageReader<URI> storageReader,
@@ -76,7 +76,7 @@ public class EvaluatorService {
     this.pointService = pointService;
     this.candidateRepository = candidateRepository;
     this.periodRepository = periodRepository;
-    this.dataLoader = new PublicationLoader(storageReader);
+    this.dataLoader = new PublicationLoaderService(storageReader);
   }
 
   public Optional<CandidateEvaluatedMessage> evaluateCandidacy(URI publicationBucketUri) {
