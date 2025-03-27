@@ -18,6 +18,7 @@ import java.time.Instant;
 import java.util.List;
 import no.sikt.nva.nvi.common.etl.PublicationDateDto;
 import no.sikt.nva.nvi.common.etl.PublicationDto;
+import no.sikt.nva.nvi.common.service.model.InstanceType;
 
 /**
  * Example models for testing purposes, corresponding to the data in
@@ -34,7 +35,7 @@ public class ExamplePublications {
           .withTitle("Example NVI candidate #1")
           .withPublicationDate(new PublicationDateDto("2025", null, null))
           .withStatus("PUBLISHED")
-          .withPublicationType("AcademicArticle")
+          .withPublicationType(InstanceType.ACADEMIC_ARTICLE)
           .withModifiedDate(Instant.parse("2025-03-24T06:59:56.170369925Z"))
           .withLanguage("http://lexvo.org/id/iso639-3/nob")
           .withPublicationChannels(List.of(JOURNAL_OF_TESTING))
@@ -54,7 +55,7 @@ public class ExamplePublications {
           .withTitle("Example NVI candidate #2")
           .withPublicationDate(new PublicationDateDto("2025", "3", "24"))
           .withStatus("PUBLISHED")
-          .withPublicationType("AcademicMonograph")
+          .withPublicationType(InstanceType.ACADEMIC_MONOGRAPH)
           .withModifiedDate(Instant.parse("2025-03-24T08:23:24.859620342Z"))
           .withLanguage("http://lexvo.org/id/iso639-3/eng")
           .withPublicationChannels(List.of(PUBLISHER_OF_TESTING, SERIES_OF_TESTING))

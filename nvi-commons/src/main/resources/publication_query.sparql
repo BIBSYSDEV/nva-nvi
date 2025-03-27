@@ -5,6 +5,7 @@ PREFIX : <https://nva.sikt.no/ontology/publication#>
 # OPTIONAL, COALESCE, and SAMPLE to ensure the output is as complete as possible.
 # This means that even if a field is set as OPTIONAL in this query, it probably should never be
 # missing in production data.
+# NOTE: The query filters out fields/values that are assumed to be invalid for an NVI candidate.
 
 CONSTRUCT {
   # Build a simplified version of the main publication object
@@ -70,10 +71,16 @@ WHERE {
   OPTIONAL { ?date :month ?month . }
   OPTIONAL { ?date :day ?day . }
 
-  # Find publication type
-  ?reference a :Reference .
-  ?reference :publicationInstance ?instance .
-  ?instance a ?instanceType .
+  # Find publication type (if applicable)
+  VALUES ?applicablePublicationType {
+    :AcademicMonograph :AcademicCommentary :AcademicChapter :AcademicArticle :AcademicLiteratureReview
+  }
+  OPTIONAL {
+    ?reference a :Reference .
+    ?reference :publicationInstance ?instance .
+    ?instance a ?instanceType .
+    FILTER (?instanceType = ?applicablePublicationType)
+  }
 
   # Find all publication channels
   VALUES ?validChannelTypes { :Publisher :Series :Journal }
@@ -117,23 +124,37 @@ WHERE {
   # Check whether the publication is 'applicable', i.e. can be an NVI candidate
   {
     SELECT (EXISTS {
-      VALUES ?applicablePublicationType { :AcademicMonograph :AcademicCommentary :AcademicChapter :AcademicArticle :AcademicLiteratureReview }
-      VALUES ?applicableLevel {"LevelOne" "LevelTwo"}
+      ?publication a :Publication .
+      ?publication :status :PUBLISHED .
 
-      ?instance a ?applicablePublicationType .
+      VALUES ?applicablePublicationType {
+        :AcademicMonograph :AcademicCommentary :AcademicChapter :AcademicArticle :AcademicLiteratureReview
+      }
+      FILTER (?instanceType = ?applicablePublicationType)
+
+      # Find any channel level
       ?channel a ?validChannelType .
       ?channel :scientificValue ?channelLevel .
 
-      # Prefer Series level if set and multiple channels are available
-      OPTIONAL {
-        ?series a :Series ;
-        :scientificValue ?seriesScientificValue .
-        FILTER (?seriesScientificValue != "Unassigned")
-      }
-      BIND(COALESCE(?seriesScientificValue, ?channelLevel) AS ?scientificValue)
+      # Prefer series level if set and multiple channels are available
+      BIND(COALESCE(?seriesLevel, ?channelLevel) AS ?scientificValue)
+      VALUES ?applicableLevel {"LevelOne" "LevelTwo"}
       FILTER(?scientificValue = ?applicableLevel)
     } AS ?isApplicable)
     WHERE {
+      # Find the publication type
+      OPTIONAL {
+        ?reference a :Reference .
+        ?reference :publicationInstance ?instance .
+        ?instance a ?instanceType .
+      }
+
+      # Find series level (if set)
+      OPTIONAL {
+        ?series a :Series ;
+        :scientificValue ?seriesLevel .
+        FILTER (?seriesLevel != "Unassigned")
+      }
     }
   }
 

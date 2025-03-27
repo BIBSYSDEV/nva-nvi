@@ -11,6 +11,7 @@ import java.net.URI;
 import java.time.Instant;
 import java.util.Collection;
 import no.sikt.nva.nvi.common.client.model.Organization;
+import no.sikt.nva.nvi.common.service.model.InstanceType;
 
 @JsonSerialize
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
@@ -22,7 +23,7 @@ public record PublicationDto(
     String status,
     String language,
     PublicationDateDto publicationDate,
-    String publicationType,
+    InstanceType publicationType,
     boolean isApplicable,
     boolean isInternationalCollaboration,
     Collection<PublicationChannelDto> publicationChannels,
@@ -64,7 +65,7 @@ public record PublicationDto(
     private String status;
     private String language;
     private PublicationDateDto publicationDate;
-    private String publicationType;
+    private InstanceType publicationType;
     private boolean isApplicable;
     private boolean isInternationalCollaboration;
     private Collection<PublicationChannelDto> publicationChannels;
@@ -99,7 +100,7 @@ public record PublicationDto(
       return this;
     }
 
-    public Builder withPublicationType(String publicationType) {
+    public Builder withPublicationType(InstanceType publicationType) {
       this.publicationType = publicationType;
       return this;
     }
