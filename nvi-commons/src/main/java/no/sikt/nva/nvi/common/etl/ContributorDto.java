@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.common.etl;
 
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
+import static nva.commons.core.StringUtils.isBlank;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -24,8 +25,8 @@ public record ContributorDto(
   }
 
   public void validate() {
-    if (nonNull(id)) {
-      requireNonNull(name, "Both 'id' and 'name' is null, one of these fields must be set");
+    if (isBlank(name)) {
+      requireNonNull(id, "Both 'id' and 'name' is null, one of these fields must be set");
     }
     requireNonNull(verificationStatus, "Required field 'verificationStatus' is null");
     requireNonNull(role, "Required field 'role' is null");
