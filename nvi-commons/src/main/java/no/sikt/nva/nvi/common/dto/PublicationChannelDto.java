@@ -17,7 +17,7 @@ public record PublicationChannelDto(
     String identifier,
     String name,
     String year,
-    String scientificValue,
+    ScientificValue scientificValue,
     String onlineIssn,
     String printIssn) {
 
@@ -30,7 +30,9 @@ public record PublicationChannelDto(
   public void validate() {
     requireNonNull(id, "Required field 'id' is null");
     requireNonNull(channelType, "Required field 'channelType' is null");
-    requireNonNull(scientificValue, "Required field 'scientificValue' is null");
+    if (!scientificValue.isValid()) {
+      throw new IllegalArgumentException("Invalid scientific value");
+    }
   }
 
   public static Builder builder() {
@@ -44,7 +46,7 @@ public record PublicationChannelDto(
     private String identifier;
     private String name;
     private String year;
-    private String scientificValue;
+    private ScientificValue scientificValue;
     private String onlineIssn;
     private String printIssn;
 
@@ -75,7 +77,7 @@ public record PublicationChannelDto(
       return this;
     }
 
-    public Builder withScientificValue(String scientificValue) {
+    public Builder withScientificValue(ScientificValue scientificValue) {
       this.scientificValue = scientificValue;
       return this;
     }

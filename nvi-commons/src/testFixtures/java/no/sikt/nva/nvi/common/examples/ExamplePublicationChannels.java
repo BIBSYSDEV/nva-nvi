@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.common.examples;
 
 import java.net.URI;
 import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
+import no.sikt.nva.nvi.common.dto.ScientificValue;
 
 /**
  * Example models for testing purposes, corresponding to the data in
@@ -20,7 +21,7 @@ public class ExamplePublicationChannels {
               "IEEE International Conference on Software Testing Verification and Validation"
                   + " Workshop, ICSTW")
           .withYear("2025")
-          .withScientificValue("LevelOne")
+          .withScientificValue(ScientificValue.LEVEL_ONE)
           .withPrintIssn("2159-4848")
           .build();
 
@@ -33,7 +34,7 @@ public class ExamplePublicationChannels {
           .withChannelType("Publisher")
           .withName("American Society for Testing & Materials (ASTM) International")
           .withYear("2025")
-          .withScientificValue("LevelOne")
+          .withScientificValue(ScientificValue.LEVEL_ONE)
           .build();
 
   public static final PublicationChannelDto SERIES_OF_TESTING =
@@ -45,7 +46,7 @@ public class ExamplePublicationChannels {
           .withChannelType("Series")
           .withName("Beihefte zur Zeitschrift für die alttestamentliche Wissenschaft")
           .withYear("2025")
-          .withScientificValue("LevelOne")
+          .withScientificValue(ScientificValue.LEVEL_ONE)
           .withPrintIssn("0934-2575")
           .build();
 }
