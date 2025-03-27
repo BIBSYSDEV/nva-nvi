@@ -23,13 +23,13 @@ public record PublicationChannelDto(
   public PublicationChannelDto {
     requireNonNull(id, "Required field 'id' is null");
     requireNonNull(channelType, "Required field 'channelType' is null");
-    requireNonNull(scientificValue, "Required field 'scientificLevel' is null");
+    requireNonNull(scientificValue, "Required field 'scientificValue' is null");
   }
 
   public void validate() {
     requireNonNull(id, "Required field 'id' is null");
     requireNonNull(channelType, "Required field 'channelType' is null");
-    requireNonNull(scientificValue, "Required field 'scientificLevel' is null");
+    requireNonNull(scientificValue, "Required field 'scientificValue' is null");
   }
 
   public static Builder builder() {
