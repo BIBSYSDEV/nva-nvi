@@ -18,10 +18,9 @@ import no.sikt.nva.nvi.common.client.model.Organization;
 public record ContributorDto(
     URI id,
     String name,
-    String verificationStatus,
+    VerificationStatus verificationStatus,
     ContributorRole role,
     List<Organization> affiliations) {
-  private static final String VERIFIED = "Verified";
 
   public ContributorDto {
     requireNonNull(affiliations, "Required field 'affiliations' is null");
@@ -31,21 +30,17 @@ public record ContributorDto(
     if (isBlank(name)) {
       requireNonNull(id, "Both 'id' and 'name' is null, one of these fields must be set");
     }
-    requireNonNull(verificationStatus, "Required field 'verificationStatus' is null");
-    requireNonNull(role, "Required field 'role' is null");
     requireNonNull(affiliations, "Required field 'affiliations' is null");
   }
 
   @JsonIgnore
   public boolean isCreator() {
-    return nonNull(role) && role.isCreator();
+    return role.isCreator();
   }
 
   @JsonIgnore
   public boolean isVerified() {
-    return nonNull(id)
-        && nonNull(verificationStatus)
-        && VERIFIED.equalsIgnoreCase(verificationStatus);
+    return nonNull(id) && verificationStatus.isVerified();
   }
 
   @JsonIgnore
@@ -57,7 +52,7 @@ public record ContributorDto(
 
     private URI id;
     private String name;
-    private String verificationStatus;
+    private VerificationStatus verificationStatus;
     private ContributorRole role;
     private List<Organization> affiliations;
 
@@ -73,7 +68,7 @@ public record ContributorDto(
       return this;
     }
 
-    public Builder withVerificationStatus(String verificationStatus) {
+    public Builder withVerificationStatus(VerificationStatus verificationStatus) {
       this.verificationStatus = verificationStatus;
       return this;
     }
