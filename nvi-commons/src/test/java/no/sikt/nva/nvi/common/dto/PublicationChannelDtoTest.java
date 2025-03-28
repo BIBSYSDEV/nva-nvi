@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.common.dto;
 import static org.junit.Assert.assertThrows;
 
 import java.util.NoSuchElementException;
+import no.sikt.nva.nvi.common.model.ScientificValue;
 import org.junit.jupiter.api.Test;
 
 class PublicationChannelDtoTest {

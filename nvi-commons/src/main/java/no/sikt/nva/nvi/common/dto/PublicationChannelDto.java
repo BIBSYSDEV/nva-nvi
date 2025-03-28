@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
+import no.sikt.nva.nvi.common.model.ScientificValue;
 import nva.commons.core.JacocoGenerated;
 
 @JsonSerialize

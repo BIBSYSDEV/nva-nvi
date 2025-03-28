@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.events.evaluator.calculator;
 
-import static no.sikt.nva.nvi.common.dto.ScientificValue.LEVEL_ONE;
-import static no.sikt.nva.nvi.common.dto.ScientificValue.LEVEL_TWO;
+import static no.sikt.nva.nvi.common.model.ScientificValue.LEVEL_ONE;
+import static no.sikt.nva.nvi.common.model.ScientificValue.LEVEL_TWO;
 import static no.sikt.nva.nvi.common.service.model.InstanceType.ACADEMIC_ARTICLE;
 import static no.sikt.nva.nvi.common.service.model.InstanceType.ACADEMIC_CHAPTER;
 import static no.sikt.nva.nvi.common.service.model.InstanceType.ACADEMIC_COMMENTARY;
@@ -15,7 +15,7 @@ import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
 import java.util.Map;
-import no.sikt.nva.nvi.common.dto.ScientificValue;
+import no.sikt.nva.nvi.common.model.ScientificValue;
 import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.events.evaluator.model.PublicationChannel;
 

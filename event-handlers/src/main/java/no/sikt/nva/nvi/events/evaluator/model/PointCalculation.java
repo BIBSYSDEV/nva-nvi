@@ -3,7 +3,7 @@ package no.sikt.nva.nvi.events.evaluator.model;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.util.List;
-import no.sikt.nva.nvi.common.dto.ScientificValue;
+import no.sikt.nva.nvi.common.model.ScientificValue;
 import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 

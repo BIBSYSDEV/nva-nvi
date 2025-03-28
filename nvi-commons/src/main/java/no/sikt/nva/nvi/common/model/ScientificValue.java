@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.common.dto;
+package no.sikt.nva.nvi.common.model;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Arrays;

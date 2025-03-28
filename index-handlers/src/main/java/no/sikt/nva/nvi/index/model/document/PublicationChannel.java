@@ -2,7 +2,7 @@ package no.sikt.nva.nvi.index.model.document;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
-import no.sikt.nva.nvi.common.dto.ScientificValue;
+import no.sikt.nva.nvi.common.model.ScientificValue;
 
 @JsonSerialize
 public record PublicationChannel(
