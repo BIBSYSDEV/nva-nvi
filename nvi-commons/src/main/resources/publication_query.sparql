@@ -100,7 +100,7 @@ WHERE {
       SELECT ?channel (COALESCE(
       SAMPLE(?journalType),
       SAMPLE(?seriesType),
-      SAMPLE(?publicationlisherType)
+      SAMPLE(?publisherType)
       ) AS ?channelType)
       WHERE {
         ?channel a ?validChannelType .
@@ -114,7 +114,7 @@ WHERE {
         }
         OPTIONAL {
           ?channel a :Publisher .
-          BIND(:Publisher AS ?publicationlisherType)
+          BIND(:Publisher AS ?publisherType)
         }
       }
       GROUP BY ?channel
