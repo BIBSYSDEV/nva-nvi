@@ -44,7 +44,7 @@ class PublicationLoaderServiceTest {
   @MethodSource(EXAMPLE_PROVIDER)
   void shouldNotFailWhenValidatingExampleDocument(String filename) {
     var actual = parseExampleDocument(filename);
-    assertThatNoException().isThrownBy(() -> actual.validate());
+    assertThatNoException().isThrownBy(actual::validate);
   }
 
   @ParameterizedTest
