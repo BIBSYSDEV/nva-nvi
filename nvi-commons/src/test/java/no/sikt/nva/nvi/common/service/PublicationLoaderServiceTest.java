@@ -3,9 +3,8 @@ package no.sikt.nva.nvi.common.service;
 import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_1;
 import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_2;
 import static nva.commons.core.ioutils.IoUtils.stringFromResources;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasSize;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.junit.jupiter.params.provider.Arguments.argumentSet;
 
 import java.io.IOException;
@@ -13,15 +12,11 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.S3StorageReader;
-import no.sikt.nva.nvi.common.client.model.Organization;
-import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
 import no.sikt.nva.nvi.common.dto.PublicationDto;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.paths.UnixPath;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -32,7 +27,7 @@ class PublicationLoaderServiceTest {
       "expandedPublications/validNviCandidate1.json";
   private static final String EXAMPLE_PUBLICATION_2 =
       "expandedPublications/validNviCandidate2.json";
-  private static final String EXAMPLE_DOCUMENT_TEST_PROVIDER = "exampleDocumentTestProvider";
+  private static final String EXAMPLE_PROVIDER = "exampleDocumentTestProvider";
 
   private S3Driver s3Driver;
   private PublicationLoaderService dataLoader;
@@ -45,63 +40,47 @@ class PublicationLoaderServiceTest {
     s3Driver = new S3Driver(s3Client, BUCKET_NAME);
   }
 
-  @Test
-  void shouldNotFailWhenValidatingExampleDocuments() {
-    var actual = parseExampleDocument(EXAMPLE_PUBLICATION_2);
-    org.junit.jupiter.api.Assertions.assertDoesNotThrow(actual::validate);
+  @ParameterizedTest
+  @MethodSource(EXAMPLE_PROVIDER)
+  void shouldNotFailWhenValidatingExampleDocument(String filename) {
+    var actual = parseExampleDocument(filename);
+    assertThatNoException().isThrownBy(() -> actual.validate());
   }
 
   @ParameterizedTest
-  @MethodSource(EXAMPLE_DOCUMENT_TEST_PROVIDER)
+  @MethodSource(EXAMPLE_PROVIDER)
   void shouldGetExpectedFieldsFromExampleDocument(String filename, PublicationDto expected) {
     var actual = parseExampleDocument(filename);
-
-    assertEquals(expected.id(), actual.id());
-    assertEquals(expected.identifier(), actual.identifier());
-    assertEquals(expected.title(), actual.title());
-    assertEquals(expected.publicationDate(), actual.publicationDate());
-    assertEquals(expected.status(), actual.status());
-    assertEquals(expected.modifiedDate(), actual.modifiedDate());
-    assertEquals(expected.isApplicable(), actual.isApplicable());
-    assertEquals(expected.isInternationalCollaboration(), actual.isInternationalCollaboration());
+    assertThat(actual)
+        .usingRecursiveComparison()
+        .ignoringFields("publicationChannels", "contributors", "topLevelOrganizations")
+        .isEqualTo(expected);
   }
 
   @ParameterizedTest
-  @MethodSource(EXAMPLE_DOCUMENT_TEST_PROVIDER)
+  @MethodSource(EXAMPLE_PROVIDER)
   void shouldGetExpectedContributorsFromExampleDocument(String filename, PublicationDto expected) {
-    var actual = parseExampleDocument(filename);
-    assertThat(actual.contributors(), hasSize(expected.contributors().size()));
-    for (var contributor : expected.contributors()) {
-      Assertions.assertThat(actual.contributors())
-          .filteredOn("name", contributor.name())
-          .containsOnly(contributor);
-    }
+    var expectedContributors = expected.contributors();
+    var actualContributors = parseExampleDocument(filename).contributors();
+    assertThat(actualContributors).containsExactlyInAnyOrderElementsOf(expectedContributors);
   }
 
   @ParameterizedTest
-  @MethodSource(EXAMPLE_DOCUMENT_TEST_PROVIDER)
+  @MethodSource(EXAMPLE_PROVIDER)
   void shouldGetExpectedPublicationChannelsFromExampleDocument(
       String filename, PublicationDto expected) {
-    var actual = parseExampleDocument(filename);
-    assertThat(actual.publicationChannels(), hasSize(expected.publicationChannels().size()));
-    for (PublicationChannelDto channel : expected.publicationChannels()) {
-      Assertions.assertThat(actual.publicationChannels())
-          .filteredOn("channelType", channel.channelType())
-          .containsOnly(channel);
-    }
+    var expectedChannels = expected.publicationChannels();
+    var actualChannels = parseExampleDocument(filename).publicationChannels();
+    assertThat(actualChannels).containsExactlyInAnyOrderElementsOf(expectedChannels);
   }
 
   @ParameterizedTest
-  @MethodSource(EXAMPLE_DOCUMENT_TEST_PROVIDER)
+  @MethodSource(EXAMPLE_PROVIDER)
   void shouldGetExpectedTopLevelOrganizationsFromExampleDocument(
       String filename, PublicationDto expected) {
-    var actual = parseExampleDocument(filename);
-    assertThat(actual.topLevelOrganizations(), hasSize(expected.topLevelOrganizations().size()));
-    for (Organization organization : expected.topLevelOrganizations()) {
-      Assertions.assertThat(actual.topLevelOrganizations())
-          .filteredOn("id", organization.id())
-          .containsOnly(organization);
-    }
+    var expectedOrganizations = expected.topLevelOrganizations();
+    var actualOrganizations = parseExampleDocument(filename).topLevelOrganizations();
+    assertThat(actualOrganizations).containsExactlyInAnyOrderElementsOf(expectedOrganizations);
   }
 
   private PublicationDto parseExampleDocument(String filename) {
