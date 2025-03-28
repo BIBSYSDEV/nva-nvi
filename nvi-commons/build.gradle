@@ -23,6 +23,7 @@ dependencies {
     implementation libs.nva.s3
 
     testFixturesImplementation libs.aws.lambda.events
+    testFixturesImplementation libs.aws.sdk2.s3
     testFixturesImplementation libs.aws.sdk2.sqs
     testFixturesImplementation libs.bundles.cucumber
     testFixturesImplementation libs.bundles.testing
@@ -30,6 +31,7 @@ dependencies {
     testFixturesImplementation libs.nva.commons.auth
     testFixturesImplementation libs.nva.core
     testFixturesImplementation libs.nva.json
+    testFixturesImplementation libs.nva.s3
     testFixturesImplementation project(':nvi-test')
 
     testImplementation libs.bundles.cucumber

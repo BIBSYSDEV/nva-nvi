@@ -1,5 +1,6 @@
 [versions]
 apache-poi = { strictly = '5.4.0' }
+assertj = { strictly = '3.27.3' }
 awsLambdaEvents = { strictly = '3.14.0' }
 awsLambdaJavaCore = { strictly = '1.2.3' }
 awsSdk = { strictly = '1.12.780' }
@@ -10,7 +11,7 @@ dynamoDbLocal = { strictly = '2.5.4' }
 guava = { strictly = '33.4.0-jre' }
 hamcrest = { strictly = '3.0' }
 jackson = { strictly = '2.18.2' }
-jena = { strictly = '4.10.0'}
+jena = { strictly = '4.10.0' }
 junit = { strictly = '5.11.4' }
 junitPlatform = { strictly = '1.11.4' } # May need to sync minor&patch version with 'junit' version
 log4j = { strictly = '2.24.3' }
@@ -29,6 +30,7 @@ zalando = { strictly = '0.27.1' }
 [libraries]
 apache-poi = { group = 'org.apache.poi', name = 'poi', version.ref = 'apache-poi' }
 apache-poi-ooxml = { group = 'org.apache.poi', name = 'poi-ooxml', version.ref = 'apache-poi' }
+assertj-core = { group = 'org.assertj', name = 'assertj-core', version.ref = 'assertj' }
 aws-java-sdk-core = { group = 'com.amazonaws', name = 'aws-java-sdk-core', version.ref = 'awsSdk' }
 aws-lambda-events = { group = 'com.amazonaws', name = 'aws-lambda-java-events', version.ref = 'awsLambdaEvents' }
 aws-lambda-java-core = { group = 'com.amazonaws', name = 'aws-lambda-java-core', version.ref = 'awsLambdaJavaCore' }
@@ -97,5 +99,5 @@ jacksonjr = ['jackson-jr-objects', 'jackson-jr-annotations']
 jena = ['jena-core', 'jena-arq']
 logging = ['log4j-core', 'log4j-api', 'log4j-slf4j18-impl', 'slf4j-api', 'nva-logutils']
 testContainers = ['testContainers', 'testContainersJunit', 'testContainersOpenSearch']
-testing = ['junit-jupiter-api', 'junit-jupiter-params', 'junit-jupiter-engine', 'junit-platform-suite', 'mockito-core', 'hamcrest', 'nva-testutils', 'nva-logutils', 'zalando', 'wiremock']
+testing = ['assertj-core', 'junit-jupiter-api', 'junit-jupiter-params', 'junit-jupiter-engine', 'junit-platform-suite', 'mockito-core', 'hamcrest', 'nva-testutils', 'nva-logutils', 'zalando', 'wiremock']
 cucumber = ['cucumber-java', 'cucumber-junit', 'cucumber-junit-platform-engine', 'cucumber-picocontainer']
