@@ -166,13 +166,12 @@ WHERE {
   OPTIONAL { ?organization :country ?country }
 
   # Check if the publication is an international collaboration
-  {
-    SELECT (EXISTS {
+  OPTIONAL {
+    BIND(EXISTS {
       ?nonNorwegianOrganization a :Organization ;
       :country ?country .
       FILTER(?country != "NO")
     } AS ?isInternationalCollaboration)
-    WHERE {}
   }
 
   # Find all contributors
