@@ -187,15 +187,9 @@ WHERE {
       :role ?role .
       ?role a ?roleType .
 
-      OPTIONAL {
-        ?contributor :identity ?personId .
-        ?personId :verificationStatus ?verificationStatus .
-#        FILTER(BOUND(?personId))
-
-        OPTIONAL {
-          ?personId :name ?contributorName .
-        }
-      }
+      OPTIONAL { ?contributor :identity ?personId }
+      OPTIONAL { ?personId :verificationStatus ?verificationStatus }
+      OPTIONAL { ?personId :name ?contributorName }
     }
     GROUP BY ?personId ?contributorName ?verificationStatus ?roleType ?affiliation
   }
