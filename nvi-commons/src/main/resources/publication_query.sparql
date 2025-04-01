@@ -56,28 +56,28 @@ CONSTRUCT {
 
 WHERE {
   # Find the main publication object and basic fields
-  ?publication a :Publication .
-  ?publication :status ?status .
+  ?publication a :Publication ;
+  :status ?status ;
+  :entityDescription ?entityDescription .
+
   OPTIONAL { ?publication :identifier ?identifier }
   OPTIONAL { ?publication :modifiedDate ?modifiedDate }
-
-  ?publication :entityDescription ?entityDescription .
   OPTIONAL { ?entityDescription :mainTitle ?title }
   OPTIONAL { ?entityDescription :language ?language }
 
   # Find publication date
-  ?date a :PublicationDate .
-  ?date :year ?year .
-  OPTIONAL { ?date :month ?month . }
-  OPTIONAL { ?date :day ?day . }
+  ?date a :PublicationDate ;
+  :year ?year .
+  OPTIONAL { ?date :month ?month }
+  OPTIONAL { ?date :day ?day }
 
   # Find publication type (if applicable)
   VALUES ?applicablePublicationType {
     :AcademicMonograph :AcademicCommentary :AcademicChapter :AcademicArticle :AcademicLiteratureReview
   }
   OPTIONAL {
-    ?reference a :Reference .
-    ?reference :publicationInstance ?instance .
+    ?reference a :Reference ;
+    :publicationInstance ?instance .
     ?instance a ?instanceType .
     FILTER (?instanceType = ?applicablePublicationType)
   }
@@ -85,14 +85,15 @@ WHERE {
   # Find all publication channels
   VALUES ?validChannelTypes { :Publisher :Series :Journal }
   BIND (?validChannelTypes AS ?validChannelType)
+
   OPTIONAL {
     ?channel a ?validChannelType .
     OPTIONAL { ?channel :scientificValue ?scientificValue }
     OPTIONAL { ?channel :name ?channelName }
     OPTIONAL { ?channel :identifier ?channelIdentifier }
     OPTIONAL { ?channel :year ?channelYear }
-    OPTIONAL { ?channel :onlineIssn ?onlineIssn } .
-    OPTIONAL { ?channel :printIssn ?printIssn } .
+    OPTIONAL { ?channel :onlineIssn ?onlineIssn }
+    OPTIONAL { ?channel :printIssn ?printIssn }
 
     # Flatten type to a single value (in order of preference: Journal, Series, Publisher)
     # This is done to handle edge-cases where a channel has multiple types due to inconsistent data:
@@ -126,8 +127,8 @@ WHERE {
   # Check whether the publication is 'applicable', i.e. can be an NVI candidate
   {
     SELECT (EXISTS {
-      ?publication a :Publication .
-      ?publication :status :PUBLISHED .
+      ?publication a :Publication ;
+      :status :PUBLISHED .
 
       VALUES ?applicablePublicationType {
         :AcademicMonograph :AcademicCommentary :AcademicChapter :AcademicArticle :AcademicLiteratureReview
@@ -135,8 +136,8 @@ WHERE {
       FILTER (?instanceType = ?applicablePublicationType)
 
       # Find any channel level
-      ?channel a ?validChannelType .
-      ?channel :scientificValue ?channelLevel .
+      ?channel a ?validChannelType ;
+      :scientificValue ?channelLevel .
 
       # Prefer series level if set and multiple channels are available
       BIND(COALESCE(?seriesLevel, ?channelLevel) AS ?scientificValue)
@@ -146,8 +147,8 @@ WHERE {
     WHERE {
       # Find the publication type
       OPTIONAL {
-        ?reference a :Reference .
-        ?reference :publicationInstance ?instance .
+        ?reference a :Reference ;
+        :publicationInstance ?instance .
         ?instance a ?instanceType .
       }
 
@@ -181,7 +182,10 @@ WHERE {
     SELECT DISTINCT ?personId ?contributorName ?verificationStatus ?roleType ?affiliation
     WHERE {
       ?publication :entityDescription/:contributor ?contributor .
-      ?contributor :identity ?personId .
+      ?contributor :identity ?personId ;
+      :affiliation ?affiliation ;
+      :role ?role .
+      ?role a ?roleType .
 
       OPTIONAL {
         ?contributor :identity ?personId .
@@ -192,10 +196,6 @@ WHERE {
         }
         ?personId :verificationStatus ?verificationStatus .
       }
-
-      ?contributor :role ?role .
-      ?role a ?roleType .
-      ?contributor :affiliation ?affiliation .
     }
     GROUP BY ?personId ?contributorName ?verificationStatus ?roleType ?affiliation
   }
