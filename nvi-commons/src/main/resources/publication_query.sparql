@@ -1,4 +1,5 @@
 PREFIX : <https://nva.sikt.no/ontology/publication#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 # This builds a flattened and simplified version of an expanded publication.
 # We assume the JSON contains a single publication object, and we extract the relevant fields.
 # In order to handle edge-cases and to guard against missing data, we use tricks like
@@ -83,9 +84,7 @@ WHERE {
   }
 
   # Find all publication channels
-  VALUES ?validChannelTypes { :Publisher :Series :Journal }
-  BIND (?validChannelTypes AS ?validChannelType)
-
+  VALUES ?validChannelType { :Publisher :Series :Journal }
   OPTIONAL {
     ?channel a ?validChannelType .
     OPTIONAL { ?channel :scientificValue ?scientificValue }
@@ -146,11 +145,8 @@ WHERE {
     } AS ?isApplicable)
     WHERE {
       # Find the publication type
-      OPTIONAL {
-        ?reference a :Reference ;
-        :publicationInstance ?instance .
-        ?instance a ?instanceType .
-      }
+      ?reference a :Reference ;
+      :publicationInstance/rdf:type ?instanceType .
 
       # Find series level (if set)
       OPTIONAL {
