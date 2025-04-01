@@ -189,12 +189,12 @@ WHERE {
 
       OPTIONAL {
         ?contributor :identity ?personId .
-        FILTER(BOUND(?personId))
+        ?personId :verificationStatus ?verificationStatus .
+#        FILTER(BOUND(?personId))
 
         OPTIONAL {
           ?personId :name ?contributorName .
         }
-        ?personId :verificationStatus ?verificationStatus .
       }
     }
     GROUP BY ?personId ?contributorName ?verificationStatus ?roleType ?affiliation
