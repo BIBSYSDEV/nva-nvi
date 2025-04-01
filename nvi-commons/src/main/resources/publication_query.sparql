@@ -1,5 +1,4 @@
 PREFIX : <https://nva.sikt.no/ontology/publication#>
-PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 # This builds a flattened and simplified version of an expanded publication.
 # We assume the JSON contains a single publication object, and we extract the relevant fields.
 # In order to handle edge-cases and to guard against missing data, we use tricks like
@@ -124,37 +123,26 @@ WHERE {
   }
 
   # Check whether the publication is 'applicable', i.e. can be an NVI candidate
-  {
-    SELECT (EXISTS {
-      ?publication a :Publication ;
-      :status :PUBLISHED .
+  OPTIONAL {
+    # Filter on valid status and publication type
+    FILTER (?status = :PUBLISHED)
+    FILTER (?instanceType = ?applicablePublicationType)
 
-      VALUES ?applicablePublicationType {
-        :AcademicMonograph :AcademicCommentary :AcademicChapter :AcademicArticle :AcademicLiteratureReview
-      }
-      FILTER (?instanceType = ?applicablePublicationType)
-
-      # Find any channel level
-      ?channel a ?validChannelType ;
-      :scientificValue ?channelLevel .
-
-      # Prefer series level if set and multiple channels are available
-      BIND(COALESCE(?seriesLevel, ?channelLevel) AS ?scientificValue)
-      VALUES ?applicableLevel {"LevelOne" "LevelTwo"}
-      FILTER(?scientificValue = ?applicableLevel)
-    } AS ?isApplicable)
-    WHERE {
-      # Find the publication type
-      ?reference a :Reference ;
-      :publicationInstance/rdf:type ?instanceType .
-
-      # Find series level (if set)
-      OPTIONAL {
-        ?series a :Series ;
-        :scientificValue ?seriesLevel .
-        FILTER (?seriesLevel != "Unassigned")
-      }
+    # If the publication is part of a series with a scientific value set, use that for filtering.
+    # Otherwise, check other channels for a valid scientific value.
+    OPTIONAL {
+      ?series a :Series ;
+      :scientificValue ?seriesLevel .
+      FILTER (?seriesLevel != "Unassigned")
     }
+    BIND(COALESCE(?series, ?channel) AS ?channelForLevel)
+
+    # Filter on the scientific value of the channel
+    BIND(EXISTS {
+      VALUES ?applicableLevel {"LevelOne" "LevelTwo"}
+      ?channelForLevel :scientificValue ?scientificLevel .
+      FILTER(?scientificLevel = ?applicableLevel)
+    } AS ?isApplicable)
   }
 
   # Find all organizations
@@ -175,19 +163,13 @@ WHERE {
 
   # Find all contributors
   OPTIONAL {
-    SELECT DISTINCT ?personId ?contributorName ?verificationStatus ?roleType ?affiliation
-    WHERE {
-      ?publication :entityDescription/:contributor ?contributor .
-      ?contributor :identity ?personId ;
-      :affiliation ?affiliation ;
-      :role ?role .
-      ?role a ?roleType .
-
-      OPTIONAL { ?contributor :identity ?personId }
-      OPTIONAL { ?personId :verificationStatus ?verificationStatus }
-      OPTIONAL { ?personId :name ?contributorName }
-    }
-    GROUP BY ?personId ?contributorName ?verificationStatus ?roleType ?affiliation
+    ?publication :entityDescription/:contributor ?contributor .
+    ?contributor :identity ?personId ;
+    :affiliation ?affiliation ;
+    :role ?role .
+    ?role a ?roleType .
+    OPTIONAL { ?personId :verificationStatus ?verificationStatus }
+    OPTIONAL { ?personId :name ?contributorName }
   }
 
   # Find any top-level organization with a contributor
