@@ -95,7 +95,9 @@ WHERE {
     OPTIONAL { ?channel :printIssn ?printIssn } .
 
     # Flatten type to a single value (in order of preference: Journal, Series, Publisher)
-    # This is done to handle edge-cases where a channel has multiple types due to inconsistent data.
+    # This is done to handle edge-cases where a channel has multiple types due to inconsistent data:
+    # 1: A channel with multiple types (e.g. both Journal and Series) should be considered a Journal.
+    # 2: A publication with multiple channels should include all channels
     {
       SELECT ?channel (COALESCE(
       SAMPLE(?journalType),
