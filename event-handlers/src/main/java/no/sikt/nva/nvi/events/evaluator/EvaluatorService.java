@@ -170,7 +170,7 @@ public class EvaluatorService {
         .withBasePoints(pointCalculation.basePoints())
         .withPublicationChannelId(pointCalculation.publicationChannelId())
         .withChannelType(pointCalculation.channelType().getValue())
-        .withLevel(pointCalculation.level().getValue())
+        .withLevel(pointCalculation.scientificValue().getValue())
         .withIsInternationalCollaboration(pointCalculation.isInternationalCollaboration())
         .withCollaborationFactor(pointCalculation.collaborationFactor())
         .withCreatorShareCount(pointCalculation.creatorShareCount())

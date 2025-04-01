@@ -64,7 +64,7 @@ public class PointCalculator {
         instanceType,
         publicationChannel.type(),
         publicationChannel.id(),
-        publicationChannel.level(),
+        publicationChannel.scientificValue(),
         internationalCollaborationFactor,
         collaborationFactor,
         basePoints,
@@ -78,7 +78,7 @@ public class PointCalculator {
     return INSTANCE_TYPE_AND_LEVEL_POINT_MAP
         .get(instanceType)
         .get(channel.type())
-        .get(channel.level());
+        .get(channel.scientificValue());
   }
 
   private static BigDecimal getInternationalCollaborationFactor(

@@ -11,7 +11,7 @@ public record PointCalculation(
     InstanceType instanceType,
     PublicationChannel channelType,
     URI publicationChannelId,
-    ScientificValue level,
+    ScientificValue scientificValue,
     boolean isInternationalCollaboration,
     BigDecimal collaborationFactor,
     BigDecimal basePoints,
