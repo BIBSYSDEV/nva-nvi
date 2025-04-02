@@ -4,12 +4,6 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.service.model.NviPeriod.fetchByPublishingYear;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_BODY;
-import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_DAY;
-import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_ID;
-import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_MONTH;
-import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PUBLICATION_DATE;
-import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_YEAR;
-import static no.sikt.nva.nvi.common.utils.JsonUtils.extractJsonNodeTextValue;
 import static no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil.getUnverifiedCreators;
 import static no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil.getVerifiedCreators;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
@@ -25,6 +19,7 @@ import java.util.Optional;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.service.PublicationLoaderService;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
@@ -39,7 +34,6 @@ import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.NonNviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate;
-import no.sikt.nva.nvi.events.model.PublicationDate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,13 +80,11 @@ public class EvaluatorService {
     logger.info("Publication: {}", publicationDto.id());
 
     var publication = extractBodyFromContent(storageReader.read(publicationBucketUri));
-    var publicationDate = extractPublicationDate(publication);
     var candidate = fetchOptionalCandidate(publicationDto.id()).orElse(null);
-    var period = fetchOptionalPeriod(publicationDate.year()).orElse(null);
-
+    var period = fetchOptionalPeriod(publicationDto.publicationDate().year()).orElse(null);
 
     // Check if the publication can be evaluated
-    if (shouldSkipEvaluation(candidate, publicationDate)) {
+    if (shouldSkipEvaluation(candidate, publicationDto.publicationDate())) {
       logger.info(SKIPPED_EVALUATION_MESSAGE, publicationDto.id());
       return Optional.empty();
     }
@@ -122,11 +114,15 @@ public class EvaluatorService {
     logger.info(NVI_CANDIDATE_MESSAGE, publicationDto.id());
     var nviCandidate =
         constructNviCandidate(
-            publication, publicationDto.id(), publicationBucketUri, publicationDate, creators);
+            publication,
+            publicationDto.id(),
+            publicationBucketUri,
+            publicationDto.publicationDate(),
+            creators);
     return createNviCandidateMessage(nviCandidate);
   }
 
-  private boolean shouldSkipEvaluation(Candidate candidate, PublicationDate publicationDate) {
+  private boolean shouldSkipEvaluation(Candidate candidate, PublicationDateDto publicationDate) {
     if (hasInvalidPublicationYear(publicationDate)) {
       logger.warn(MALFORMED_DATE_MESSAGE, publicationDate.year());
       return true;
@@ -152,7 +148,7 @@ public class EvaluatorService {
       JsonNode publication,
       URI publicationId,
       URI publicationBucketUri,
-      PublicationDate date,
+      PublicationDateDto date,
       Collection<NviCreator> creators) {
     var verifiedCreatorsWithNviInstitutions = getVerifiedCreators(creators);
     var unverifiedCreatorsWithNviInstitutions = getUnverifiedCreators(creators);
@@ -192,24 +188,7 @@ public class EvaluatorService {
     return nviCreators.stream().map(UnverifiedNviCreator::toDto).toList();
   }
 
-  private static URI extractPublicationId(JsonNode publication) {
-    return URI.create(extractJsonNodeTextValue(publication, JSON_PTR_ID));
-  }
-
-  private static PublicationDate extractPublicationDate(JsonNode publication) {
-    return mapToPublicationDate(publication.at(JSON_PTR_PUBLICATION_DATE));
-  }
-
-  private static PublicationDate mapToPublicationDate(JsonNode publicationDateNode) {
-    var year = publicationDateNode.at(JSON_PTR_YEAR);
-    var month = publicationDateNode.at(JSON_PTR_MONTH);
-    var day = publicationDateNode.at(JSON_PTR_DAY);
-
-    return Optional.of(new PublicationDate(day.textValue(), month.textValue(), year.textValue()))
-        .orElse(new PublicationDate(null, null, year.textValue()));
-  }
-
-  private boolean hasInvalidPublicationYear(PublicationDate publicationDate) {
+  private boolean hasInvalidPublicationYear(PublicationDateDto publicationDate) {
     return attempt(() -> Year.parse(publicationDate.year())).isFailure();
   }
 

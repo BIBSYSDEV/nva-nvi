@@ -55,6 +55,7 @@ import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures;
+import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.model.ScientificValue;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
@@ -69,7 +70,6 @@ import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.NonNviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
-import no.sikt.nva.nvi.events.model.PublicationDate;
 import no.sikt.nva.nvi.test.SampleExpandedAffiliation;
 import no.sikt.nva.nvi.test.SampleExpandedContributor;
 import no.sikt.nva.nvi.test.SampleExpandedPublication;
@@ -88,8 +88,8 @@ import org.junit.jupiter.api.Test;
 @SuppressWarnings("PMD.CouplingBetweenObjects")
 class EvaluateNviCandidateHandlerTest extends EvaluationTest {
 
-  public static final PublicationDate HARDCODED_PUBLICATION_DATE =
-      new PublicationDate(null, null, "2023");
+  public static final PublicationDateDto HARDCODED_PUBLICATION_DATE =
+      new PublicationDateDto("2023", null, null);
   public static final URI HARDCODED_PUBLICATION_CHANNEL_ID =
       URI.create("https://api.dev.nva.aws.unit.no/publication-channels/series/490845/2023");
   public static final URI SIKT_CRISTIN_ORG_ID =
@@ -1000,10 +1000,10 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       assertEquals(testScenario.expectedEvaluatedMessage(), messageBody);
     }
 
-    private static PublicationDate getPublicationDate(
+    private static PublicationDateDto getPublicationDate(
         SampleExpandedPublicationDate publicationDate) {
-      return new PublicationDate(
-          publicationDate.day(), publicationDate.month(), publicationDate.year());
+      return new PublicationDateDto(
+          publicationDate.year(), publicationDate.month(), publicationDate.day());
     }
 
     private TestScenario getCandidateScenario() throws IOException {

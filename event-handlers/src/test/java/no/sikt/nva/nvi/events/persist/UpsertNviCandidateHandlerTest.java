@@ -50,6 +50,7 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
+import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.model.CandidateFixtures;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.queue.QueueClient;
@@ -64,7 +65,6 @@ import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.NonNviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate.Builder;
-import no.sikt.nva.nvi.events.model.PublicationDate;
 import nva.commons.core.Environment;
 import nva.commons.logutils.LogUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -312,12 +312,12 @@ class UpsertNviCandidateHandlerTest {
     return Stream.of(createEvalMessage(NviCandidate.builder().withPublicationId(null).build()));
   }
 
-  private static PublicationDate randomPublicationDate() {
+  private static PublicationDateDto randomPublicationDate() {
     var randomDate = randomLocalDate();
-    return new PublicationDate(
-        String.valueOf(randomDate.getYear()),
+    return new PublicationDateDto(
+        String.valueOf(randomDate.getDayOfMonth()),
         String.valueOf(randomDate.getMonthValue()),
-        String.valueOf(randomDate.getDayOfMonth()));
+        String.valueOf(randomDate.getYear()));
   }
 
   private static SQSEvent createEventWithInvalidBody() {
@@ -365,7 +365,7 @@ class UpsertNviCandidateHandlerTest {
         .withInstanceType(request.instanceType())
         .withLevel(request.level())
         .withPublicationChannelId(request.publicationChannelId())
-        .withDate(new PublicationDate(null, "3", Year.now().toString()))
+        .withDate(new PublicationDateDto(Year.now().toString(), "3", null))
         .withVerifiedNviCreators(List.of(creator))
         .withInstitutionPoints(request.institutionPoints())
         .build();
