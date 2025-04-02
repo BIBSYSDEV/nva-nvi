@@ -1,0 +1,181 @@
+PREFIX : <https://nva.sikt.no/ontology/publication#>
+# This builds a flattened and simplified version of an expanded publication.
+# We assume the JSON contains a single publication object, and we extract the relevant fields.
+# In order to handle edge-cases and to guard against missing data, we use tricks like
+# OPTIONAL, COALESCE, and SAMPLE to ensure the output is as complete as possible.
+# This means that even if a field is set as OPTIONAL in this query, it probably should never be
+# missing in production data.
+# NOTE: The query filters out fields/values that are assumed to be invalid for an NVI candidate.
+
+CONSTRUCT {
+  # Build a simplified version of the main publication object
+  ?publication a :Publication ;
+  :identifier ?identifier ;
+  :title ?title ;
+  :status ?status ;
+  :language ?language ;
+  :publicationDate ?date ;
+  :publicationType ?instanceType ;
+  :isApplicable ?isApplicable ;
+  :isInternationalCollaboration ?isInternationalCollaboration ;
+  :publicationChannel ?channel ;
+  :contributor ?personId ;
+  :topLevelOrganization ?topLevelOrganization ;
+  :modifiedDate ?modifiedDate .
+
+  # Include publication channels
+  ?channel a :PublicationChannel ;
+  :channelType ?channelType ;
+  :identifier ?channelIdentifier ;
+  :name ?channelName ;
+  :scientificValue ?scientificValue ;
+  :year ?channelYear ;
+  :onlineIssn ?onlineIssn ;
+  :printIssn ?printIssn .
+
+  # Include the publication date
+  ?date a :PublicationDate ;
+  :year ?year ;
+  :month ?month ;
+  :day ?day .
+
+  # Include the organization hierarchy
+  ?organization a :Organization ;
+  :countryCode ?country ;
+  :label ?label ;
+  :partOf ?parent ;
+  :hasPart ?child .
+
+  # Include all contributors
+  ?personId a :Contributor ;
+  :affiliation ?affiliation ;
+  :role ?roleType ;
+  :verificationStatus ?verificationStatus ;
+  :name ?contributorName .
+}
+
+WHERE {
+  # Find the main publication object and basic fields
+  ?publication a :Publication ;
+  :status ?status ;
+  :entityDescription ?entityDescription .
+
+  OPTIONAL { ?publication :identifier ?identifier }
+  OPTIONAL { ?publication :modifiedDate ?modifiedDate }
+  OPTIONAL { ?entityDescription :mainTitle ?title }
+  OPTIONAL { ?entityDescription :language ?language }
+
+  # Find publication date
+  ?date a :PublicationDate ;
+  :year ?year .
+  OPTIONAL { ?date :month ?month }
+  OPTIONAL { ?date :day ?day }
+
+  # Find publication type (if applicable)
+  VALUES ?applicablePublicationType {
+    :AcademicMonograph :AcademicCommentary :AcademicChapter :AcademicArticle :AcademicLiteratureReview
+  }
+  OPTIONAL {
+    ?reference a :Reference ;
+    :publicationInstance ?instance .
+    ?instance a ?instanceType .
+    FILTER (?instanceType = ?applicablePublicationType)
+  }
+
+  # Find all publication channels
+  VALUES ?validChannelType { :Publisher :Series :Journal }
+  OPTIONAL {
+    ?channel a ?validChannelType .
+    OPTIONAL { ?channel :scientificValue ?scientificValue }
+    OPTIONAL { ?channel :name ?channelName }
+    OPTIONAL { ?channel :identifier ?channelIdentifier }
+    OPTIONAL { ?channel :year ?channelYear }
+    OPTIONAL { ?channel :onlineIssn ?onlineIssn }
+    OPTIONAL { ?channel :printIssn ?printIssn }
+
+    # Flatten type to a single value (in order of preference: Journal, Series, Publisher)
+    # This is done to handle edge-cases where a channel has multiple types due to inconsistent data:
+    # 1: A channel with multiple types (e.g. both Journal and Series) should be considered a Journal.
+    # 2: A publication with multiple channels should include all channels
+    {
+      SELECT ?channel (COALESCE(
+      SAMPLE(?journalType),
+      SAMPLE(?seriesType),
+      SAMPLE(?publisherType)
+      ) AS ?channelType)
+      WHERE {
+        ?channel a ?validChannelType .
+        OPTIONAL {
+          ?channel a :Journal .
+          BIND(:Journal AS ?journalType)
+        }
+        OPTIONAL {
+          ?channel a :Series .
+          BIND(:Series AS ?seriesType)
+        }
+        OPTIONAL {
+          ?channel a :Publisher .
+          BIND(:Publisher AS ?publisherType)
+        }
+      }
+      GROUP BY ?channel
+    }
+  }
+
+  # Check whether the publication is 'applicable', i.e. can be an NVI candidate
+  OPTIONAL {
+    # Filter on valid status and publication type
+    FILTER (?status = :PUBLISHED)
+    FILTER (?instanceType = ?applicablePublicationType)
+
+    # If the publication is part of a series with a scientific value set, use that for filtering.
+    # Otherwise, check other channels for a valid scientific value.
+    OPTIONAL {
+      ?series a :Series ;
+      :scientificValue ?seriesLevel .
+      FILTER (?seriesLevel != "Unassigned")
+    }
+    BIND(COALESCE(?series, ?channel) AS ?channelForLevel)
+
+    # Filter on the scientific value of the channel
+    BIND(EXISTS {
+      VALUES ?applicableLevel {"LevelOne" "LevelTwo"}
+      ?channelForLevel :scientificValue ?scientificLevel .
+      FILTER(?scientificLevel = ?applicableLevel)
+    } AS ?isApplicable)
+  }
+
+  # Find all organizations
+  ?organization a :Organization .
+  OPTIONAL { ?organization :partOf ?parent }
+  OPTIONAL { ?organization :hasPart ?child }
+  OPTIONAL { ?organization :label ?label }
+  OPTIONAL { ?organization :country ?country }
+
+  # Check if the publication is an international collaboration
+  OPTIONAL {
+    BIND(EXISTS {
+      ?nonNorwegianOrganization a :Organization ;
+      :country ?country .
+      FILTER(?country != "NO")
+    } AS ?isInternationalCollaboration)
+  }
+
+  # Find all contributors
+  OPTIONAL {
+    ?publication :entityDescription/:contributor ?contributor .
+    ?contributor :identity ?personId ;
+    :affiliation ?affiliation ;
+    :role ?role .
+    ?role a ?roleType .
+    OPTIONAL { ?personId :verificationStatus ?verificationStatus }
+    OPTIONAL { ?personId :name ?contributorName }
+  }
+
+  # Find any top-level organization with a contributor
+  OPTIONAL {
+    ?affiliation :partOf* ?topLevelOrganization .
+    ?topLevelOrganization a :Organization .
+    FILTER NOT EXISTS { ?topLevelOrganization :partOf ?parent }
+  }
+}

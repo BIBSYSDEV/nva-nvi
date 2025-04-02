@@ -55,6 +55,7 @@ import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures;
+import no.sikt.nva.nvi.common.model.ScientificValue;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
@@ -63,7 +64,6 @@ import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails;
 import no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil;
-import no.sikt.nva.nvi.events.evaluator.model.Level;
 import no.sikt.nva.nvi.events.evaluator.model.PublicationChannel;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.NonNviCandidate;
@@ -537,7 +537,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
                 instanceType,
                 Map.of(CRISTIN_NVI_ORG_TOP_LEVEL_ID, points.setScale(SCALE, RoundingMode.HALF_UP)),
                 publicationChannel,
-                Level.LEVEL_ONE.getValue(),
+                ScientificValue.LEVEL_ONE.getValue(),
                 basePoints,
                 totalPoints,
                 bucketUri))
@@ -705,7 +705,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
 
       publicationChannelId = HARDCODED_PUBLICATION_CHANNEL_ID;
       publicationChannelType = JOURNAL.getValue();
-      publicationChannelLevel = Level.LEVEL_ONE.getValue();
+      publicationChannelLevel = ScientificValue.LEVEL_ONE.getValue();
       publicationInstanceType = InstanceType.ACADEMIC_ARTICLE.getValue();
       publicationChannels = List.of(getDefaultPublicationChannelBuilder());
 

@@ -244,7 +244,7 @@
             "verificationStatus": "Verified"
           },
           "role": {
-            "type": "Creator"
+            "type": "RoleOther"
           }
         }
       ],

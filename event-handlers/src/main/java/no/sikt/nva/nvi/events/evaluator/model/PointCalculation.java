@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.events.evaluator.model;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.util.List;
+import no.sikt.nva.nvi.common.model.ScientificValue;
 import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 
@@ -10,7 +11,7 @@ public record PointCalculation(
     InstanceType instanceType,
     PublicationChannel channelType,
     URI publicationChannelId,
-    Level level,
+    ScientificValue scientificValue,
     boolean isInternationalCollaboration,
     BigDecimal collaborationFactor,
     BigDecimal basePoints,
