@@ -80,32 +80,32 @@ public class EvaluatorService {
   }
 
   public Optional<CandidateEvaluatedMessage> evaluateCandidacy(URI publicationBucketUri) {
-    var publication = extractBodyFromContent(storageReader.read(publicationBucketUri));
-    var publicationId = extractPublicationId(publication);
-    var publicationDate = extractPublicationDate(publication);
-    var candidate = fetchOptionalCandidate(publicationId).orElse(null);
-    var period = fetchOptionalPeriod(publicationDate.year()).orElse(null);
-
     // TODO: Running extraction here to verify that it works, but we do not fully use it yet.
     // TODO: Replace use of JsonNode with the extracted Publication object.
     var publicationDto = dataLoader.extractAndTransform(publicationBucketUri);
     logger.info("Publication: {}", publicationDto.id());
 
+    var publication = extractBodyFromContent(storageReader.read(publicationBucketUri));
+    var publicationDate = extractPublicationDate(publication);
+    var candidate = fetchOptionalCandidate(publicationDto.id()).orElse(null);
+    var period = fetchOptionalPeriod(publicationDate.year()).orElse(null);
+
+
     // Check if the publication can be evaluated
     if (shouldSkipEvaluation(candidate, publicationDate)) {
-      logger.info(SKIPPED_EVALUATION_MESSAGE, publicationId);
+      logger.info(SKIPPED_EVALUATION_MESSAGE, publicationDto.id());
       return Optional.empty();
     }
 
     // Check if the publication meets the requirements to be a candidate
     if (!publicationDto.isApplicable()) {
-      logger.info(NON_NVI_CANDIDATE_MESSAGE, publicationId);
-      return createNonNviCandidateMessage(publicationId);
+      logger.info(NON_NVI_CANDIDATE_MESSAGE, publicationDto.id());
+      return createNonNviCandidateMessage(publicationDto.id());
     }
     var creators = creatorVerificationUtil.getNviCreatorsWithNviInstitutions(publication);
     if (creators.isEmpty()) {
-      logger.info(NON_NVI_CANDIDATE_MESSAGE, publicationId);
-      return createNonNviCandidateMessage(publicationId);
+      logger.info(NON_NVI_CANDIDATE_MESSAGE, publicationDto.id());
+      return createNonNviCandidateMessage(publicationDto.id());
     }
 
     // Check that the publication can be a candidate in the target period
@@ -115,14 +115,14 @@ public class EvaluatorService {
         periodExists && nonNull(candidate) && isApplicableInPeriod(period, candidate);
     var canEvaluateInPeriod = periodIsOpen || candidateExistsInPeriod;
     if (!canEvaluateInPeriod) {
-      logger.info(NON_NVI_CANDIDATE_MESSAGE, publicationId);
-      return createNonNviCandidateMessage(publicationId);
+      logger.info(NON_NVI_CANDIDATE_MESSAGE, publicationDto.id());
+      return createNonNviCandidateMessage(publicationDto.id());
     }
 
-    logger.info(NVI_CANDIDATE_MESSAGE, publicationId);
+    logger.info(NVI_CANDIDATE_MESSAGE, publicationDto.id());
     var nviCandidate =
         constructNviCandidate(
-            publication, publicationId, publicationBucketUri, publicationDate, creators);
+            publication, publicationDto.id(), publicationBucketUri, publicationDate, creators);
     return createNviCandidateMessage(nviCandidate);
   }
 
