@@ -8,6 +8,7 @@ import static no.sikt.nva.nvi.test.TestConstants.IDENTITY;
 import static no.sikt.nva.nvi.test.TestConstants.IDENTITY_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.ID_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.NAME_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.ONE;
 import static no.sikt.nva.nvi.test.TestConstants.ORCID_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.ROLE_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.TYPE_FIELD;
@@ -26,7 +27,7 @@ import nva.commons.core.JacocoGenerated;
 public record SampleExpandedContributor(
     URI id,
     String verificationStatus,
-    String contributorName,
+    List<String> names,
     String role,
     List<SampleExpandedAffiliation> affiliations,
     String orcId) {
@@ -54,8 +55,14 @@ public record SampleExpandedContributor(
     if (nonNull(id)) {
       identityNode.put(ID_FIELD, id.toString());
     }
-    if (nonNull(contributorName)) {
-      identityNode.put(NAME_FIELD, contributorName);
+    if (nonNull(names) && !names.isEmpty()) {
+      if (names.size() > ONE) {
+        var nameArrayNode = objectMapper.createArrayNode();
+        names.forEach(nameArrayNode::add);
+        identityNode.set(NAME_FIELD, nameArrayNode);
+      } else {
+        identityNode.put(NAME_FIELD, names.getFirst());
+      }
     }
     if (nonNull(orcId)) {
       identityNode.put(ORCID_FIELD, orcId);
@@ -85,7 +92,7 @@ public record SampleExpandedContributor(
   public static final class Builder {
 
     private URI id = randomUri();
-    private String contributorName = randomString();
+    private List<String> names = List.of(randomString());
     private String role = CREATOR;
     private String verificationStatus;
     private String orcId;
@@ -96,7 +103,7 @@ public record SampleExpandedContributor(
     private Builder(SampleExpandedContributor other) {
       this.id = other.id;
       this.verificationStatus = other.verificationStatus;
-      this.contributorName = other.contributorName;
+      this.names = other.names;
       this.role = other.role;
       this.affiliations = other.affiliations;
       this.orcId = other.orcId;
@@ -112,8 +119,8 @@ public record SampleExpandedContributor(
       return this;
     }
 
-    public Builder withName(String contributorName) {
-      this.contributorName = contributorName;
+    public Builder withNames(List<String> names) {
+      this.names = names;
       return this;
     }
 
@@ -124,7 +131,7 @@ public record SampleExpandedContributor(
 
     public SampleExpandedContributor build() {
       return new SampleExpandedContributor(
-          id, verificationStatus, contributorName, role, affiliations, orcId);
+          id, verificationStatus, names, role, affiliations, orcId);
     }
   }
 }

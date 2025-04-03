@@ -79,7 +79,7 @@ public class EvaluatorService {
     var publicationDto = dataLoader.extractAndTransform(publicationBucketUri);
     logger.info("Publication: {}", publicationDto.id());
 
-    var publication = extractBodyFromContent(storageReader.read(publicationBucketUri));
+    var publicationJsonNode = extractBodyFromContent(storageReader.read(publicationBucketUri));
     var candidate = fetchOptionalCandidate(publicationDto.id()).orElse(null);
     var period = fetchOptionalPeriod(publicationDto.publicationDate().year()).orElse(null);
 
@@ -94,7 +94,7 @@ public class EvaluatorService {
       logger.info(NON_NVI_CANDIDATE_MESSAGE, publicationDto.id());
       return createNonNviCandidateMessage(publicationDto.id());
     }
-    var creators = creatorVerificationUtil.getNviCreatorsWithNviInstitutions(publication);
+    var creators = creatorVerificationUtil.getNviCreatorsWithNviInstitutions(publicationDto);
     if (creators.isEmpty()) {
       logger.info(NON_NVI_CANDIDATE_MESSAGE, publicationDto.id());
       return createNonNviCandidateMessage(publicationDto.id());
@@ -114,7 +114,7 @@ public class EvaluatorService {
     logger.info(NVI_CANDIDATE_MESSAGE, publicationDto.id());
     var nviCandidate =
         constructNviCandidate(
-            publication,
+            publicationJsonNode,
             publicationDto.id(),
             publicationBucketUri,
             publicationDto.publicationDate(),

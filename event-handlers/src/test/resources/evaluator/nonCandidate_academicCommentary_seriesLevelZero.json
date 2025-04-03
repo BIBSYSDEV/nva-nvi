@@ -216,11 +216,20 @@
         {
           "type": "Contributor",
           "affiliations": [
-            {
-              "id": "https://api.dev.nva.aws.unit.no/cristin/organization/194.64.20.0",
-              "type": "Organization",
-              "countryCode": "NO"
-            }
+             {
+            "id": "https://api.dev.nva.aws.unit.no/cristin/organization/194.64.20.0",
+            "type": "Organization",
+            "countryCode": "NO",
+            "labels": {
+              "nb": "Institutt for marin teknikk",
+              "en": "Department of Marine Technology"
+            },
+            "partOf": [
+              {
+                "id": "https://api.dev.nva.aws.unit.no/cristin/organization/194.64.0.0"
+              }
+            ]
+          }
           ],
           "identity": {
             "id": "https://api.dev.nva.aws.unit.no/cristin/person/997998",

@@ -210,11 +210,20 @@
         {
           "type": "Contributor",
           "affiliations": [
-            {
-              "id": "https://api.dev.nva.aws.unit.no/cristin/organization/194.64.20.0",
-              "type": "Organization",
-              "countryCode": "NO"
-            }
+             {
+            "id": "https://api.dev.nva.aws.unit.no/cristin/organization/194.64.20.0",
+            "type": "Organization",
+            "countryCode": "NO",
+            "labels": {
+              "nb": "Institutt for marin teknikk",
+              "en": "Department of Marine Technology"
+            },
+            "partOf": [
+              {
+                "id": "https://api.dev.nva.aws.unit.no/cristin/organization/194.64.0.0"
+              }
+            ]
+          }
           ],
           "identity": {
             "type": "Identity",
@@ -276,7 +285,51 @@
         }
       }
     },
-    "status": "PUBLISHED"
+    "status": "PUBLISHED",
+    "topLevelOrganizations": [
+      {
+        "id": "https://api.dev.nva.aws.unit.no/cristin/organization/194.0.0.0",
+        "type": "Organization",
+        "countryCode": "NO",
+        "hasPart": [
+          {
+            "id": "https://api.dev.nva.aws.unit.no/cristin/organization/194.64.0.0",
+            "type": "Organization",
+            "countryCode": "NO",
+            "hasPart": [
+              {
+                "id": "https://api.dev.nva.aws.unit.no/cristin/organization/194.64.20.0",
+                "type": "Organization",
+                "countryCode": "NO",
+                "labels": {
+                  "nb": "Institutt for marin teknikk",
+                  "en": "Department of Marine Technology"
+                },
+                "partOf": [
+                  {
+                    "id": "https://api.dev.nva.aws.unit.no/cristin/organization/194.64.0.0"
+                  }
+                ]
+              }
+            ],
+            "labels": {
+              "nb": "Fakultet for ingeniørvitenskap",
+              "en": "Faculty of Engineering"
+            },
+            "partOf": [
+              {
+                "id": "https://api.dev.nva.aws.unit.no/cristin/organization/194.0.0.0"
+              }
+            ]
+          }
+        ],
+        "labels": {
+          "nn": "Noregs teknisk-naturvitskaplege universitet",
+          "nb": "Norges teknisk-naturvitenskapelige universitet",
+          "en": "Norwegian University of Science and Technology"
+        }
+      }
+    ]
   },
   "consumptionAttributes": {
     "index": "resources",
