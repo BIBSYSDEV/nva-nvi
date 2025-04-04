@@ -206,9 +206,7 @@
       }
     ],
     "contributorOrganizations": [
-      "https://api.dev.nva.aws.unit.no/cristin/organization/194.0.0.0",
-      "https://api.dev.nva.aws.unit.no/cristin/organization/68400000.0.0.0",
-      "https://api.dev.nva.aws.unit.no/cristin/organization/14400237.0.0.0"
+      "https://api.dev.nva.aws.unit.no/cristin/organization/194.0.0.0"
     ],
     "createdDate": "2023-01-23T00:00:00Z",
     "curatingInstitutions": [
@@ -320,15 +318,6 @@
     "status": "PUBLISHED",
     "topLevelOrganizations": [
       {
-        "id": "https://api.dev.nva.aws.unit.no/cristin/organization/14400237.0.0.0",
-        "type": "Organization",
-        "countryCode": "DE",
-        "labels": {
-          "nb": "Rheinische Friedrich-Wilhelms-Universität Bonn",
-          "en": "University of Bonn"
-        }
-      },
-      {
         "id": "https://api.dev.nva.aws.unit.no/cristin/organization/194.0.0.0",
         "type": "Organization",
         "countryCode": "NO",
@@ -368,15 +357,6 @@
           "nn": "Noregs teknisk-naturvitskaplege universitet",
           "nb": "Norges teknisk-naturvitenskapelige universitet",
           "en": "Norwegian University of Science and Technology"
-        }
-      },
-      {
-        "id": "https://api.dev.nva.aws.unit.no/cristin/organization/68400000.0.0.0",
-        "type": "Organization",
-        "countryCode": "US",
-        "labels": {
-          "nb": "USA",
-          "en": "USA"
         }
       }
     ],

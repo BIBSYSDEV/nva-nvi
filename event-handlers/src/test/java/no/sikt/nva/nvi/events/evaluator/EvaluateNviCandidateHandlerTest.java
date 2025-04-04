@@ -54,7 +54,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
-import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
@@ -579,7 +578,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
   }
 
   private static int countCreatorShares(List<VerifiedNviCreatorDto> nviCreators) {
-    return (int) nviCreators.stream().mapToLong(creator -> creator.affiliations().size()).sum();
+    return nviCreators.stream().mapToInt(creator -> creator.affiliations().size()).sum();
   }
 
   private URI setupPublicationWithInvalidYear(String year) throws IOException {
@@ -590,8 +589,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
 
   private void setupEvaluatorService(PeriodRepository periodRepository) {
     var calculator = new CreatorVerificationUtil(authorizedBackendUriRetriever);
-    var organizationRetriever = new OrganizationRetriever(uriRetriever);
-    var pointCalculator = new PointService(organizationRetriever);
+    var pointCalculator = new PointService();
     evaluatorService =
         new EvaluatorService(
             storageReader, calculator, pointCalculator, candidateRepository, periodRepository);
@@ -652,8 +650,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
   private void mockCristinResponseAndCustomerApiResponseForNviInstitution(
       HttpResponse<String> httpResponse) {
     //     FIXME: Remove this
-    mockOrganizationResponseForAffiliation(
-        CRISTIN_NVI_ORG_TOP_LEVEL_ID, CRISTIN_NVI_ORG_SUB_UNIT_ID, uriRetriever);
+    mockOrganizationResponseForAffiliation(CRISTIN_NVI_ORG_TOP_LEVEL_ID, null, uriRetriever);
     when(authorizedBackendUriRetriever.fetchResponse(
             eq(CUSTOMER_API_CRISTIN_NVI_ORG_TOP_LEVEL), any()))
         .thenReturn(Optional.of(httpResponse));

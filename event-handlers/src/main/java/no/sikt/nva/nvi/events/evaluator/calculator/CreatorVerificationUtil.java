@@ -130,6 +130,7 @@ public class CreatorVerificationUtil {
         .build();
   }
 
+  // FIXME: Check if this allows duplicate top-level entries (it shouldn't)
   private List<NviOrganization> getNviAffiliationsIfExist(ContributorDto contributor) {
     return contributor.affiliations().stream()
         .filter(CreatorVerificationUtil::hasRelevantCountryCode)

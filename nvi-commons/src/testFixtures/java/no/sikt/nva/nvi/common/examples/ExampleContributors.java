@@ -4,23 +4,20 @@ import static no.sikt.nva.nvi.common.examples.ExampleOrganizations.EXAMPLE_TOP_L
 import static no.sikt.nva.nvi.common.examples.ExampleOrganizations.SUB_ORGANIZATION_SIKT;
 import static no.sikt.nva.nvi.common.examples.ExampleOrganizations.TOP_LEVEL_ORGANIZATION_NTNU;
 import static no.sikt.nva.nvi.common.examples.ExampleOrganizations.TOP_LEVEL_ORGANIZATION_SIKT;
+import static no.sikt.nva.nvi.common.model.ContributorFixtures.ROLE_CREATOR;
+import static no.sikt.nva.nvi.common.model.ContributorFixtures.ROLE_OTHER;
+import static no.sikt.nva.nvi.common.model.ContributorFixtures.STATUS_UNVERIFIED;
+import static no.sikt.nva.nvi.common.model.ContributorFixtures.STATUS_VERIFIED;
 
 import java.net.URI;
 import java.util.List;
 import no.sikt.nva.nvi.common.dto.ContributorDto;
-import no.sikt.nva.nvi.common.dto.ContributorRole;
-import no.sikt.nva.nvi.common.dto.VerificationStatus;
 
 /**
  * Example models for testing purposes, corresponding to the data in
  * /resources/expandedPublications/
  */
 public class ExampleContributors {
-
-  private static final ContributorRole ROLE_CREATOR = new ContributorRole("Creator");
-  private static final ContributorRole ROLE_OTHER = new ContributorRole("ContactPerson");
-  private static final VerificationStatus STATUS_VERIFIED = new VerificationStatus("Verified");
-  private static final VerificationStatus STATUS_UNVERIFIED = new VerificationStatus("NotVerified");
 
   public static final ContributorDto EXAMPLE_1_CONTRIBUTOR =
       ContributorDto.builder()

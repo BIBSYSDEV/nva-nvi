@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.common.service;
 
 import static no.sikt.nva.nvi.common.utils.GraphUtils.createModel;
+import static no.sikt.nva.nvi.common.utils.GraphUtils.toTurtle;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.ioutils.IoUtils.inputStreamFromResources;
 import static nva.commons.core.ioutils.IoUtils.stringFromResources;
@@ -68,6 +69,7 @@ public class PublicationLoaderService {
   private Model loadModelFromJson(JsonNode body) {
     logger.info("Querying JSON-LD document to generate RDF model");
     var model = createModel(body);
+    var turtles = toTurtle(model);
     var queryExecution = QueryExecutionFactory.create(PUBLICATION_SPARQL, model);
     return queryExecution.execConstruct();
   }
@@ -75,6 +77,7 @@ public class PublicationLoaderService {
   private PublicationDto transformToPublication(Model model) {
     logger.info("Transforming RDF model to simplified Publication object");
     try {
+      var turtles = toTurtle(model);
       var document = JsonDocument.of(toJsonReader(model));
       var context = JsonDocument.of(inputStreamFromResources(PUBLICATION_FRAME_JSONLD));
       var jsonString = JsonLd.frame(document, context).get().toString();
