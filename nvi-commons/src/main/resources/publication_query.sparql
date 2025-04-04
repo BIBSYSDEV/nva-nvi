@@ -41,7 +41,7 @@ CONSTRUCT {
 
   # Include the organization hierarchy
   ?organization a :Organization ;
-  :countryCode ?country ;
+  :country ?country ;
   :label ?label ;
   :partOf ?parent ;
   :hasPart ?child .
@@ -83,43 +83,28 @@ WHERE {
   }
 
   # Find all publication channels
-  VALUES ?validChannelType { :Publisher :Series :Journal }
+  VALUES ?journalPublications {
+    :AcademicArticle :AcademicLiteratureReview
+  }
+  VALUES ?nonJournalPublications {
+    :AcademicMonograph :AcademicCommentary :AcademicChapter
+  }
   OPTIONAL {
-    ?channel a ?validChannelType .
+    # In rare cases a channel can be listed as both a Journal and a Series, but only one of these
+    # is relevant for a given publication type.
+    # This filter should ensure that we only keep relevant channel types.
+    ?channel a ?channelType .
+    FILTER (
+    ( ?channelType = :Journal && ?instanceType IN (?journalPublications) ) ||
+    ( ?channelType IN (:Series, :Publisher) && ?instanceType IN (?nonJournalPublications) )
+    )
+
     OPTIONAL { ?channel :scientificValue ?scientificValue }
     OPTIONAL { ?channel :name ?channelName }
     OPTIONAL { ?channel :identifier ?channelIdentifier }
     OPTIONAL { ?channel :year ?channelYear }
     OPTIONAL { ?channel :onlineIssn ?onlineIssn }
     OPTIONAL { ?channel :printIssn ?printIssn }
-
-    # Flatten type to a single value (in order of preference: Journal, Series, Publisher)
-    # This is done to handle edge-cases where a channel has multiple types due to inconsistent data:
-    # 1: A channel with multiple types (e.g. both Journal and Series) should be considered a Journal.
-    # 2: A publication with multiple channels should include all channels
-    {
-      SELECT ?channel (COALESCE(
-      SAMPLE(?journalType),
-      SAMPLE(?seriesType),
-      SAMPLE(?publisherType)
-      ) AS ?channelType)
-      WHERE {
-        ?channel a ?validChannelType .
-        OPTIONAL {
-          ?channel a :Journal .
-          BIND(:Journal AS ?journalType)
-        }
-        OPTIONAL {
-          ?channel a :Series .
-          BIND(:Series AS ?seriesType)
-        }
-        OPTIONAL {
-          ?channel a :Publisher .
-          BIND(:Publisher AS ?publisherType)
-        }
-      }
-      GROUP BY ?channel
-    }
   }
 
   # Check whether the publication is 'applicable', i.e. can be an NVI candidate
@@ -169,7 +154,15 @@ WHERE {
     :role ?role .
     ?role a ?roleType .
     OPTIONAL { ?personId :verificationStatus ?verificationStatus }
-    OPTIONAL { ?personId :name ?contributorName }
+    OPTIONAL {
+      ?personId :name ?contributorName
+      # In rare cases, multiple names are given for the same contributor, but we need at most one.
+      # This filter works as a "MAX(name)" while avoiding the use of subqueries.
+      FILTER NOT EXISTS {
+        ?personId :name ?otherName .
+        FILTER(?otherName > ?contributorName)
+      }
+    }
   }
 
   # Find any top-level organization with a contributor

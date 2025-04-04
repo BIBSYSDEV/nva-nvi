@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.common.dto;
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 import static nva.commons.core.StringUtils.isBlank;
+import static nva.commons.core.StringUtils.isNotBlank;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -41,6 +42,11 @@ public record ContributorDto(
   @JsonIgnore
   public boolean isVerified() {
     return nonNull(id) && verificationStatus.isVerified();
+  }
+
+  @JsonIgnore
+  public boolean isNamed() {
+    return isNotBlank(name);
   }
 
   @JsonIgnore

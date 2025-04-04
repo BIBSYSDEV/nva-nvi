@@ -2,15 +2,18 @@ package no.sikt.nva.nvi.events.evaluator.calculator;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
+import static no.sikt.nva.nvi.common.model.ContributorFixtures.STATUS_UNVERIFIED;
+import static no.sikt.nva.nvi.common.model.ContributorFixtures.randomCreator;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.mockOrganizationResponseForAffiliation;
-import static no.sikt.nva.nvi.events.evaluator.calculator.PointCalculationConstants.RESULT_SCALE;
-import static no.sikt.nva.nvi.events.evaluator.calculator.PointCalculationConstants.ROUNDING_MODE;
-import static no.sikt.nva.nvi.test.TestUtils.randomIntBetween;
+import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganization;
+import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationWithSubUnits;
 import static no.unit.nva.events.EventsConfig.objectMapper;
+import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.mockito.Mockito.mock;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -19,13 +22,19 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import no.sikt.nva.nvi.common.client.OrganizationRetriever;
+import no.sikt.nva.nvi.common.client.model.Organization;
+import no.sikt.nva.nvi.common.dto.ContributorDto;
+import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
+import no.sikt.nva.nvi.common.dto.PublicationDto;
+import no.sikt.nva.nvi.common.model.ScientificValue;
+import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.events.evaluator.PointService;
@@ -37,7 +46,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.mockito.Mockito;
 
 // Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
 @SuppressWarnings({"PMD.AvoidDuplicateLiterals", "PMD.GodClass"})
@@ -67,9 +75,28 @@ class PointServiceTest {
 
   @BeforeEach
   void setup() {
-    uriRetriever = Mockito.mock(UriRetriever.class);
-    var organizationRetriever = new OrganizationRetriever(uriRetriever);
-    pointService = new PointService(organizationRetriever);
+    uriRetriever = mock(UriRetriever.class);
+    pointService = new PointService();
+  }
+
+  private static PublicationChannelDto createPublicationChannel(PointParameters parameters) {
+    var channelLevel = ScientificValue.parse(parameters.level);
+    return PublicationChannelDto.builder()
+        .withId(randomUri())
+        .withChannelType(parameters.channelType())
+        .withScientificValue(channelLevel)
+        .build();
+  }
+
+  private static PublicationDto.Builder randomPublicationBuilder(PointParameters parameters) {
+    var channel = createPublicationChannel(parameters);
+    return PublicationDto.builder()
+        .withId(randomUri())
+        .withIdentifier(randomString())
+        .withPublicationChannels(List.of(channel))
+        .withPublicationType(InstanceType.parse(parameters.instanceType))
+        .withIsInternationalCollaboration(parameters.isInternationalCollaboration)
+        .withStatus("PUBLISHED");
   }
 
   @ParameterizedTest(
@@ -78,21 +105,18 @@ class PointServiceTest {
               + "institution. No international collaboration.")
   @MethodSource("singleCreatorSingleInstitutionPointProvider")
   void shouldCalculateNviPointsForSingleInstitution(PointParameters parameters) {
-
-    var creatorId = randomUri();
-    var institutionId = URI.create("www.example.org/123");
-    mockOrganizationResponseForAffiliation(institutionId, null, uriRetriever);
-    var expandedResource =
-        setupSingleContributorWithSingleInstitution(parameters, creatorId, institutionId);
+    var organization = randomOrganization().build();
+    var contributor = randomCreator(organization).build();
+    var publication = createPublication(parameters, List.of(contributor), List.of(organization));
 
     var pointCalculation =
         pointService.calculatePoints(
-            expandedResource,
-            List.of(createCreator(creatorId, List.of(institutionId))),
+            publication,
+            List.of(createCreator(contributor.id(), List.of(organization.id()))),
             emptyList());
 
     assertThat(
-        getActualPoints(pointCalculation, institutionId),
+        getActualPoints(pointCalculation, organization.id()),
         is(equalTo(parameters.institution1Points())));
     assertThat(pointCalculation.totalPoints(), is(equalTo(parameters.totalPoints())));
   }
@@ -104,31 +128,32 @@ class PointServiceTest {
   @MethodSource("twoCreatorsAffiliatedWithOneInstitutionPointProvider")
   void shouldCalculateNviPointsForCoPublishingTwoCreatorsAffiliatedWithOneInstitution(
       PointParameters parameters) {
-    var nviInstitution1 = randomUri();
-    var nviInstitution2 = randomUri();
-    var creator1 = randomUri();
-    var creator2 = randomUri();
-    var creator1Institutions = List.of(nviInstitution1, nviInstitution2);
-    var creator2Institutions = List.of(nviInstitution1);
-    mockOrganizationResponseForAffiliation(nviInstitution1, null, uriRetriever);
-    mockOrganizationResponseForAffiliation(nviInstitution2, null, uriRetriever);
-    var expandedResource =
-        createExpandedResourceWithManyCreators(
-            parameters, creator1, creator2, creator1Institutions, creator2Institutions);
+    var nviOrganization1 = randomOrganization().build();
+    var nviOrganization2 = randomOrganization().build();
+    var contributor1 = randomCreator(nviOrganization1, nviOrganization2).build();
+    var contributor2 = randomCreator(nviOrganization1).build();
 
+    var publication =
+        createPublication(
+            parameters,
+            List.of(contributor1, contributor2),
+            List.of(nviOrganization1, nviOrganization2));
+
+    var creator1Institutions = contributor1.affiliations().stream().map(Organization::id).toList();
+    var creator2Institutions = contributor2.affiliations().stream().map(Organization::id).toList();
     var pointCalculation =
         pointService.calculatePoints(
-            expandedResource,
+            publication,
             List.of(
-                createCreator(creator1, creator1Institutions),
-                createCreator(creator2, creator2Institutions)),
+                createCreator(contributor1.id(), creator1Institutions),
+                createCreator(contributor2.id(), creator2Institutions)),
             emptyList());
 
     assertThat(
-        getActualPoints(pointCalculation, nviInstitution1),
+        getActualPoints(pointCalculation, nviOrganization1.id()),
         is(equalTo(parameters.institution1Points())));
     assertThat(
-        getActualPoints(pointCalculation, nviInstitution2),
+        getActualPoints(pointCalculation, nviOrganization2.id()),
         is(equalTo(parameters.institution2Points())));
     assertThat(pointCalculation.totalPoints(), is(equalTo(parameters.totalPoints())));
   }
@@ -140,200 +165,39 @@ class PointServiceTest {
   @MethodSource("twoCreatorsAffiliatedWithTwoDifferentInstitutionsPointProvider")
   void shouldCalculateNviPointsForCoPublishingTwoCreatorsTwoInstitutions(
       PointParameters parameters) {
-    var nviInstitution1 = randomUri();
-    var nviInstitution2 = randomUri();
+    var nviOrganization1 = randomOrganization().build();
+    var nviOrganization2 = randomOrganization().build();
+    var contributor1 = randomCreator(nviOrganization1).build();
+    var contributor2 = randomCreator(nviOrganization2).build();
 
-    var creator1 = randomUri();
-    var creator2 = randomUri();
-    var creator1Institutions = List.of(nviInstitution1);
-    var creator2Institutions = List.of(nviInstitution2);
-    mockOrganizationResponseForAffiliation(nviInstitution1, null, uriRetriever);
-    mockOrganizationResponseForAffiliation(nviInstitution2, null, uriRetriever);
-    var expandedResource =
-        setupCoPublishingTwoCreatorsTwoInstitutions(
-            parameters, creator1, creator2, creator1Institutions);
+    var publication =
+        createPublication(
+            parameters,
+            List.of(contributor1, contributor2),
+            List.of(nviOrganization1, nviOrganization2));
+
+    var creator1Institutions = contributor1.affiliations().stream().map(Organization::id).toList();
+    var creator2Institutions = contributor2.affiliations().stream().map(Organization::id).toList();
 
     var pointCalculation =
         pointService.calculatePoints(
-            expandedResource,
+            publication,
             List.of(
-                createCreator(creator1, creator1Institutions),
-                createCreator(creator2, creator2Institutions)),
+                createCreator(contributor1.id(), creator1Institutions),
+                createCreator(contributor2.id(), creator2Institutions)),
             emptyList());
 
     assertThat(
-        getActualPoints(pointCalculation, nviInstitution1),
+        getActualPoints(pointCalculation, nviOrganization1.id()),
         is(equalTo(parameters.institution1Points())));
     assertThat(
-        getActualPoints(pointCalculation, nviInstitution2),
+        getActualPoints(pointCalculation, nviOrganization2.id()),
         is(equalTo(parameters.institution2Points())));
     assertThat(pointCalculation.totalPoints(), is(equalTo(parameters.totalPoints())));
   }
 
   @Test
   void shouldCountTotalCreatorSharesForTopLevelAffiliations() {
-    var creatorId = randomUri();
-    var topLevelInstitutionId = randomUri();
-    var subUnit1Id = randomUri();
-    var subUnit2Id = randomUri();
-    var expandedResource =
-        createExpandedResource(
-            randomUri(),
-            createContributorNodes(
-                createContributorNode(
-                    creatorId,
-                    true,
-                    Map.of(subUnit1Id, COUNTRY_CODE_NO, subUnit2Id, COUNTRY_CODE_NO),
-                    ROLE_CREATOR,
-                    0)),
-            HARDCODED_JOURNAL_REFERENCE);
-    mockOrganizationResponseForAffiliation(topLevelInstitutionId, subUnit1Id, uriRetriever);
-    mockOrganizationResponseForAffiliation(topLevelInstitutionId, subUnit2Id, uriRetriever);
-
-    var pointCalculation =
-        pointService.calculatePoints(
-            expandedResource,
-            List.of(createCreator(creatorId, List.of(topLevelInstitutionId))),
-            emptyList());
-
-    assertThat(
-        getActualPoints(pointCalculation, topLevelInstitutionId), is(equalTo(asBigDecimal("1"))));
-  }
-
-  @Test
-  void shouldNotGiveInternationalPointsIfNonCreatorAffiliatedWithInternationalInstitution() {
-    var creatorId = randomUri();
-    var institutionId = randomUri();
-    mockOrganizationResponseForAffiliation(institutionId, null, uriRetriever);
-    var expandedResource =
-        setupNonCreatorAffiliatedWithInternationalInstitution(creatorId, institutionId);
-
-    var pointCalculation =
-        pointService.calculatePoints(
-            expandedResource,
-            List.of(createCreator(creatorId, List.of(institutionId))),
-            emptyList());
-
-    assertThat(getActualPoints(pointCalculation, institutionId), is(equalTo(asBigDecimal("1"))));
-  }
-
-  @Test
-  void shouldNotCountCreatorSharesForNonCreators() {
-    var creatorId = randomUri();
-    var institutionId = randomUri();
-    mockOrganizationResponseForAffiliation(institutionId, null, uriRetriever);
-    var expandedResource = setupResourceWithNonCreator(creatorId, institutionId);
-
-    var pointCalculation =
-        pointService.calculatePoints(
-            expandedResource,
-            List.of(createCreator(creatorId, List.of(institutionId))),
-            emptyList());
-
-    assertThat(getActualPoints(pointCalculation, institutionId), is(equalTo(asBigDecimal("1"))));
-  }
-
-  @Test
-  void shouldCountOneCreatorShareForCreatorsWithoutAffiliations() {
-    var nviCreatorId = randomUri();
-    var nviInstitutionId = randomUri();
-    mockOrganizationResponseForAffiliation(nviInstitutionId, null, uriRetriever);
-    var expandedResource =
-        setupResourceWithCreatorsWithoutAffiliations(nviCreatorId, nviInstitutionId);
-    var pointCalculation =
-        pointService.calculatePoints(
-            expandedResource,
-            List.of(createCreator(nviCreatorId, List.of(nviInstitutionId))),
-            emptyList());
-
-    assertThat(
-        getActualPoints(pointCalculation, nviInstitutionId), is(equalTo(asBigDecimal("0.7071"))));
-  }
-
-  @Test
-  void shouldNotCountCreatorSharesForAffiliationsWithoutId() {
-    var nviCreatorId = randomUri();
-    var nviInstitutionId = randomUri();
-    int numberOfAffiliationsWithoutId = randomIntBetween(2, 10);
-    mockOrganizationResponseForAffiliation(nviInstitutionId, null, uriRetriever);
-    var expandedResource =
-        setupResourceWithCreatorWithUnverifiedAffiliations(
-            nviCreatorId, nviInstitutionId, numberOfAffiliationsWithoutId);
-
-    var institutionPoints =
-        pointService.calculatePoints(
-            expandedResource,
-            List.of(createCreator(nviCreatorId, List.of(nviInstitutionId))),
-            emptyList());
-
-    assertThat(
-        getActualPoints(institutionPoints, nviInstitutionId), is(equalTo(asBigDecimal("1"))));
-  }
-
-  @Test
-  void shouldCountOneCreatorShareForCreatorsWithOnlyAffiliationsWithoutId() {
-    var nviCreatorId = randomUri();
-    var nviInstitutionId = randomUri();
-    int numberOfAffiliationsWithoutId = randomIntBetween(2, 10);
-    mockOrganizationResponseForAffiliation(nviInstitutionId, null, uriRetriever);
-    var expandedResource =
-        setupResourceWithOneCreatorWithUnverifiedAffiliations(
-            nviCreatorId, nviInstitutionId, numberOfAffiliationsWithoutId);
-
-    var institutionPoints =
-        pointService.calculatePoints(
-            expandedResource,
-            List.of(createCreator(nviCreatorId, List.of(nviInstitutionId))),
-            emptyList());
-
-    assertThat(
-        getActualPoints(institutionPoints, nviInstitutionId), is(equalTo(asBigDecimal("0.7071"))));
-  }
-
-  @Test
-  void shouldCountOneInstitutionShareForCreatorsWithSeveralAffiliationsInSameInstitution() {
-    int creatorShareCount = 1;
-    var parameters =
-        new PointParameters(
-            "AcademicArticle",
-            "Journal",
-            "LevelTwo",
-            false,
-            creatorShareCount,
-            asBigDecimal("3"),
-            null,
-            asBigDecimal("3"));
-    var creator = randomUri();
-    var someSubUnitId = randomUri();
-    var someOtherSubUnitId = randomUri();
-    var institutionId = randomUri();
-    mockOrganizationResponseForAffiliation(institutionId, someSubUnitId, uriRetriever);
-    mockOrganizationResponseForAffiliation(institutionId, someOtherSubUnitId, uriRetriever);
-    var affiliations = List.of(someSubUnitId, someOtherSubUnitId);
-    var expandedResource = createExpandedResource(parameters, creator, affiliations);
-    var nviCreators =
-        List.of(
-            creatorWithAffiliations(
-                creator,
-                List.of(
-                    createNviOrganization(someSubUnitId, institutionId),
-                    createNviOrganization(someOtherSubUnitId, institutionId))));
-    var pointCalculation = pointService.calculatePoints(expandedResource, nviCreators, emptyList());
-    assertThat(
-        getActualPoints(pointCalculation, institutionId),
-        is(equalTo(parameters.institution1Points())));
-    var expectedPointsForAffiliation =
-        parameters
-            .institution1Points()
-            .divide(BigDecimal.valueOf(affiliations.size()), ROUNDING_MODE)
-            .setScale(RESULT_SCALE, ROUNDING_MODE);
-    assertThat(
-        getActualAffiliationPoints(pointCalculation, institutionId, someSubUnitId, creator),
-        is(equalTo(expectedPointsForAffiliation)));
-  }
-
-  @Test
-  void shouldCalculatePointsForCreatorAffiliations() {
     var parameters =
         new PointParameters(
             "AcademicArticle",
@@ -344,32 +208,206 @@ class PointServiceTest {
             asBigDecimal("1"),
             null,
             asBigDecimal("1"));
-    var creator1 = randomUri();
-    var creator2 = randomUri();
-    var someSubUnitId = randomUri();
-    var someOtherSubUnitId = randomUri();
-    var institutionId = randomUri();
-    mockOrganizationResponseForAffiliation(institutionId, someSubUnitId, uriRetriever);
-    mockOrganizationResponseForAffiliation(institutionId, someOtherSubUnitId, uriRetriever);
-    var creator1Affiliations = List.of(someSubUnitId);
-    var creator2Affiliations = List.of(someSubUnitId, someOtherSubUnitId);
-    var expandedResource =
-        createExpandedResourceWithManyCreators(
-            parameters, creator1, creator2, creator1Affiliations, creator2Affiliations);
-    var nviCreators =
-        setupNviCreators(
-            creator1, creator2, creator1Affiliations, creator2Affiliations, institutionId);
-    var pointCalculation = pointService.calculatePoints(expandedResource, nviCreators, emptyList());
+    var topLevelOrganization = randomOrganizationWithSubUnits(2).build();
+    var subOrganization1 = topLevelOrganization.hasPart().get(0);
+    var subOrganization2 = topLevelOrganization.hasPart().get(1);
+    var contributor = randomCreator(subOrganization1, subOrganization2).build();
+    var publication =
+        createPublication(parameters, List.of(contributor), List.of(topLevelOrganization));
+
+    var pointCalculation =
+        pointService.calculatePoints(
+            publication,
+            List.of(createCreator(contributor.id(), List.of(topLevelOrganization.id()))),
+            emptyList());
+
     assertThat(
-        getActualAffiliationPoints(pointCalculation, institutionId, someSubUnitId, creator1),
-        is(equalTo(BigDecimal.valueOf(0.5000).setScale(RESULT_SCALE, ROUNDING_MODE))));
+        getActualPoints(pointCalculation, topLevelOrganization.id()),
+        is(equalTo(asBigDecimal("1"))));
     assertThat(
-        getActualAffiliationPoints(pointCalculation, institutionId, someSubUnitId, creator2),
-        is(equalTo(BigDecimal.valueOf(0.2500).setScale(RESULT_SCALE, ROUNDING_MODE))));
-    assertThat(
-        getActualAffiliationPoints(pointCalculation, institutionId, someOtherSubUnitId, creator2),
-        is(equalTo(BigDecimal.valueOf(0.2500).setScale(RESULT_SCALE, ROUNDING_MODE))));
+        getActualPoints(pointCalculation, topLevelOrganization.id()),
+        is(equalTo(parameters.institution1Points())));
+    assertThat(pointCalculation.totalPoints(), is(equalTo(parameters.totalPoints())));
   }
+
+  //
+  //  @Test
+  //  void shouldNotGiveInternationalPointsIfNonCreatorAffiliatedWithInternationalInstitution() {
+  //    var creatorId = randomUri();
+  //    var institutionId = randomUri();
+  //    mockOrganizationResponseForAffiliation(institutionId, null, uriRetriever);
+  //    var expandedResource =
+  //        setupNonCreatorAffiliatedWithInternationalInstitution(creatorId, institutionId);
+  //
+  //    var pointCalculation =
+  //        pointService.calculatePoints(
+  //            expandedResource,
+  //            List.of(createCreator(creatorId, List.of(institutionId))),
+  //            emptyList());
+  //
+  //    assertThat(getActualPoints(pointCalculation, institutionId),
+  // is(equalTo(asBigDecimal("1"))));
+  //  }
+  //
+  //  @Test
+  //  void shouldNotCountCreatorSharesForNonCreators() {
+  //    var creatorId = randomUri();
+  //    var institutionId = randomUri();
+  //    mockOrganizationResponseForAffiliation(institutionId, null, uriRetriever);
+  //    var expandedResource = setupResourceWithNonCreator(creatorId, institutionId);
+  //
+  //    var pointCalculation =
+  //        pointService.calculatePoints(
+  //            expandedResource,
+  //            List.of(createCreator(creatorId, List.of(institutionId))),
+  //            emptyList());
+  //
+  //    assertThat(getActualPoints(pointCalculation, institutionId),
+  // is(equalTo(asBigDecimal("1"))));
+  //  }
+  //
+  //  @Test
+  //  void shouldCountOneCreatorShareForCreatorsWithoutAffiliations() {
+  //    var nviCreatorId = randomUri();
+  //    var nviInstitutionId = randomUri();
+  //    mockOrganizationResponseForAffiliation(nviInstitutionId, null, uriRetriever);
+  //    var expandedResource =
+  //        setupResourceWithCreatorsWithoutAffiliations(nviCreatorId, nviInstitutionId);
+  //    var pointCalculation =
+  //        pointService.calculatePoints(
+  //            expandedResource,
+  //            List.of(createCreator(nviCreatorId, List.of(nviInstitutionId))),
+  //            emptyList());
+  //
+  //    assertThat(
+  //        getActualPoints(pointCalculation, nviInstitutionId),
+  // is(equalTo(asBigDecimal("0.7071"))));
+  //  }
+  //
+  //  @Test
+  //  void shouldNotCountCreatorSharesForAffiliationsWithoutId() {
+  //    var nviCreatorId = randomUri();
+  //    var nviInstitutionId = randomUri();
+  //    int numberOfAffiliationsWithoutId = randomIntBetween(2, 10);
+  //    mockOrganizationResponseForAffiliation(nviInstitutionId, null, uriRetriever);
+  //    var expandedResource =
+  //        setupResourceWithCreatorWithUnverifiedAffiliations(
+  //            nviCreatorId, nviInstitutionId, numberOfAffiliationsWithoutId);
+  //
+  //    var institutionPoints =
+  //        pointService.calculatePoints(
+  //            expandedResource,
+  //            List.of(createCreator(nviCreatorId, List.of(nviInstitutionId))),
+  //            emptyList());
+  //
+  //    assertThat(
+  //        getActualPoints(institutionPoints, nviInstitutionId), is(equalTo(asBigDecimal("1"))));
+  //  }
+  //
+  //  @Test
+  //  void shouldCountOneCreatorShareForCreatorsWithOnlyAffiliationsWithoutId() {
+  //    var nviCreatorId = randomUri();
+  //    var nviInstitutionId = randomUri();
+  //    int numberOfAffiliationsWithoutId = randomIntBetween(2, 10);
+  //    mockOrganizationResponseForAffiliation(nviInstitutionId, null, uriRetriever);
+  //    var expandedResource =
+  //        setupResourceWithOneCreatorWithUnverifiedAffiliations(
+  //            nviCreatorId, nviInstitutionId, numberOfAffiliationsWithoutId);
+  //
+  //    var institutionPoints =
+  //        pointService.calculatePoints(
+  //            expandedResource,
+  //            List.of(createCreator(nviCreatorId, List.of(nviInstitutionId))),
+  //            emptyList());
+  //
+  //    assertThat(
+  //        getActualPoints(institutionPoints, nviInstitutionId),
+  // is(equalTo(asBigDecimal("0.7071"))));
+  //  }
+  //
+  //  @Test
+  //  void shouldCountOneInstitutionShareForCreatorsWithSeveralAffiliationsInSameInstitution() {
+  //    int creatorShareCount = 1;
+  //    var parameters =
+  //        new PointParameters(
+  //            "AcademicArticle",
+  //            "Journal",
+  //            "LevelTwo",
+  //            false,
+  //            creatorShareCount,
+  //            asBigDecimal("3"),
+  //            null,
+  //            asBigDecimal("3"));
+  //    var creator = randomUri();
+  //    var someSubUnitId = randomUri();
+  //    var someOtherSubUnitId = randomUri();
+  //    var institutionId = randomUri();
+  //    mockOrganizationResponseForAffiliation(institutionId, someSubUnitId, uriRetriever);
+  //    mockOrganizationResponseForAffiliation(institutionId, someOtherSubUnitId, uriRetriever);
+  //    var affiliations = List.of(someSubUnitId, someOtherSubUnitId);
+  //    var expandedResource = createExpandedResource(parameters, creator, affiliations);
+  //    var nviCreators =
+  //        List.of(
+  //            creatorWithAffiliations(
+  //                creator,
+  //                List.of(
+  //                    createNviOrganization(someSubUnitId, institutionId),
+  //                    createNviOrganization(someOtherSubUnitId, institutionId))));
+  //    var pointCalculation = pointService.calculatePoints(expandedResource, nviCreators,
+  // emptyList());
+  //    assertThat(
+  //        getActualPoints(pointCalculation, institutionId),
+  //        is(equalTo(parameters.institution1Points())));
+  //    var expectedPointsForAffiliation =
+  //        parameters
+  //            .institution1Points()
+  //            .divide(BigDecimal.valueOf(affiliations.size()), ROUNDING_MODE)
+  //            .setScale(RESULT_SCALE, ROUNDING_MODE);
+  //    assertThat(
+  //        getActualAffiliationPoints(pointCalculation, institutionId, someSubUnitId, creator),
+  //        is(equalTo(expectedPointsForAffiliation)));
+  //  }
+  //
+  //  @Test
+  //  void shouldCalculatePointsForCreatorAffiliations() {
+  //    var parameters =
+  //        new PointParameters(
+  //            "AcademicArticle",
+  //            "Journal",
+  //            "LevelOne",
+  //            false,
+  //            2,
+  //            asBigDecimal("1"),
+  //            null,
+  //            asBigDecimal("1"));
+  //    var creator1 = randomUri();
+  //    var creator2 = randomUri();
+  //    var someSubUnitId = randomUri();
+  //    var someOtherSubUnitId = randomUri();
+  //    var institutionId = randomUri();
+  //    mockOrganizationResponseForAffiliation(institutionId, someSubUnitId, uriRetriever);
+  //    mockOrganizationResponseForAffiliation(institutionId, someOtherSubUnitId, uriRetriever);
+  //    var creator1Affiliations = List.of(someSubUnitId);
+  //    var creator2Affiliations = List.of(someSubUnitId, someOtherSubUnitId);
+  //    var expandedResource =
+  //        createExpandedResourceWithManyCreators(
+  //            parameters, creator1, creator2, creator1Affiliations, creator2Affiliations);
+  //    var nviCreators =
+  //        setupNviCreators(
+  //            creator1, creator2, creator1Affiliations, creator2Affiliations, institutionId);
+  //    var pointCalculation = pointService.calculatePoints(expandedResource, nviCreators,
+  // emptyList());
+  //    assertThat(
+  //        getActualAffiliationPoints(pointCalculation, institutionId, someSubUnitId, creator1),
+  //        is(equalTo(BigDecimal.valueOf(0.5000).setScale(RESULT_SCALE, ROUNDING_MODE))));
+  //    assertThat(
+  //        getActualAffiliationPoints(pointCalculation, institutionId, someSubUnitId, creator2),
+  //        is(equalTo(BigDecimal.valueOf(0.2500).setScale(RESULT_SCALE, ROUNDING_MODE))));
+  //    assertThat(
+  //        getActualAffiliationPoints(pointCalculation, institutionId, someOtherSubUnitId,
+  // creator2),
+  //        is(equalTo(BigDecimal.valueOf(0.2500).setScale(RESULT_SCALE, ROUNDING_MODE))));
+  //  }
 
   private static List<VerifiedNviCreator> setupNviCreators(
       URI creator1,
@@ -886,6 +924,72 @@ class PointServiceTest {
         .boxed()
         .map(e -> randomUri())
         .toList();
+  }
+
+  private static List<Organization> createRandomNviOrganizations(int count) {
+    return IntStream.range(0, count)
+        .mapToObj(i -> randomOrganization().withCountryCode(COUNTRY_CODE_NO).build())
+        .toList();
+  }
+
+  private static List<Organization> createRandomNonNviOrganizations(
+      int count, boolean isInternationalCollaboration) {
+    var countryCodeForNonNviCreators =
+        isInternationalCollaboration ? SOME_INTERNATIONAL_COUNTRY_CODE : COUNTRY_CODE_NO;
+    return IntStream.range(0, count)
+        .mapToObj(i -> randomOrganization().withCountryCode(countryCodeForNonNviCreators).build())
+        .toList();
+  }
+
+  private static Organization createRandomNonNviOrganization(boolean isInternationalCollaboration) {
+    var countryCodeForNonNviCreators =
+        isInternationalCollaboration ? SOME_INTERNATIONAL_COUNTRY_CODE : COUNTRY_CODE_NO;
+    return randomOrganization().withCountryCode(countryCodeForNonNviCreators).build();
+  }
+
+  private static List<ContributorDto> createRandomNonNviContributors(
+      int count, Organization organization) {
+    return IntStream.range(0, count)
+        .mapToObj(
+            i ->
+                randomCreator(organization)
+                    .withId(null)
+                    .withVerificationStatus(STATUS_UNVERIFIED)
+                    .build())
+        .toList();
+  }
+
+  private static List<Organization> createRandomOrganizations(int count) {
+    return IntStream.range(0, count).mapToObj(i -> randomOrganization().build()).toList();
+  }
+
+  private static PublicationDto createPublication(
+      PointParameters parameters,
+      Collection<ContributorDto> nviCreators,
+      Collection<Organization> nviOrganizations) {
+    var nviAffiliationCount =
+        nviCreators.stream().map(ContributorDto::affiliations).mapToInt(List::size).sum();
+    var nonNviAffiliationCount = parameters.creatorShareCount() - nviAffiliationCount;
+    var nonNviOrganizations =
+        createRandomNonNviOrganizations(
+            nonNviAffiliationCount, parameters.isInternationalCollaboration());
+    var nonNviContributors =
+        nonNviOrganizations.stream()
+            .map(
+                organization ->
+                    randomCreator(organization)
+                        .withId(null)
+                        .withVerificationStatus(STATUS_UNVERIFIED)
+                        .build())
+            .toList();
+
+    var organizations =
+        Stream.concat(nviOrganizations.stream(), nonNviOrganizations.stream()).toList();
+    var contributors = Stream.concat(nviCreators.stream(), nonNviContributors.stream()).toList();
+    return randomPublicationBuilder(parameters)
+        .withContributors(contributors)
+        .withTopLevelOrganizations(organizations)
+        .build();
   }
 
   private static JsonNode createContributorNodes(JsonNode... contributorNode) {

@@ -1,5 +1,7 @@
 package no.sikt.nva.nvi.common.examples;
 
+import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_NORWAY;
+
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +43,7 @@ public class ExampleOrganizations {
   public static final Organization TOP_LEVEL_ORGANIZATION_NTNU =
       Organization.builder()
           .withId(NTNU_ID)
+          .withCountryCode(COUNTRY_CODE_NORWAY)
           .withLabels(NTNU_LABELS)
           .withType(TYPE_ORGANIZATION)
           .build();
@@ -48,12 +51,14 @@ public class ExampleOrganizations {
   public static final Organization TOP_LEVEL_ORGANIZATION_SIKT =
       Organization.builder()
           .withId(SIKT_ID)
+          .withCountryCode(COUNTRY_CODE_NORWAY)
           .withLabels(SIKT_LABELS)
           .withType(TYPE_ORGANIZATION)
           .withHasPart(
               List.of(
                   Organization.builder()
                       .withId(SIKT_SUBUNIT_ID)
+                      .withCountryCode(COUNTRY_CODE_NORWAY)
                       .withLabels(SIKT_SUBUNIT_LABELS)
                       .withType(TYPE_ORGANIZATION)
                       .withPartOf(List.of(Organization.builder().withId(SIKT_ID).build()))
@@ -63,12 +68,14 @@ public class ExampleOrganizations {
   public static final Organization SUB_ORGANIZATION_SIKT =
       Organization.builder()
           .withId(SIKT_SUBUNIT_ID)
+          .withCountryCode(COUNTRY_CODE_NORWAY)
           .withLabels(SIKT_SUBUNIT_LABELS)
           .withType(TYPE_ORGANIZATION)
           .withPartOf(
               List.of(
                   Organization.builder()
                       .withId(SIKT_ID)
+                      .withCountryCode(COUNTRY_CODE_NORWAY)
                       .withLabels(SIKT_LABELS)
                       .withType(TYPE_ORGANIZATION)
                       .withHasPart(List.of(Organization.builder().withId(SIKT_SUBUNIT_ID).build()))
@@ -79,6 +86,7 @@ public class ExampleOrganizations {
       Organization.builder()
           .withId(
               URI.create("https://api.sandbox.nva.aws.unit.no/cristin/organization/35900068.0.0.0"))
+          .withCountryCode("ZA")
           .withType(TYPE_ORGANIZATION)
           .withLabels(Map.of("nb", "University of Cape Town"))
           .build();

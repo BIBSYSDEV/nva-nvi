@@ -21,7 +21,7 @@ public record PublicationChannelDto(
     ScientificValue scientificValue,
     String onlineIssn,
     String printIssn) {
-
+  // FIXME: Use enum for channel type?
   public PublicationChannelDto {
     requireNonNull(id, "Required field 'id' is null");
     requireNonNull(channelType, "Required field 'channelType' is null");

@@ -15,7 +15,9 @@ import static no.sikt.nva.nvi.events.evaluator.TestUtils.createEvent;
 import static no.sikt.nva.nvi.events.evaluator.model.PublicationChannel.JOURNAL;
 import static no.sikt.nva.nvi.events.evaluator.model.PublicationChannel.SERIES;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_SWEDEN;
+import static no.sikt.nva.nvi.test.TestConstants.CRISTIN_NVI_ORG_FACULTY_ID;
 import static no.sikt.nva.nvi.test.TestConstants.CRISTIN_NVI_ORG_SUB_UNIT_ID;
+import static no.sikt.nva.nvi.test.TestConstants.CRISTIN_NVI_ORG_TOP_LEVEL;
 import static no.sikt.nva.nvi.test.TestConstants.CRISTIN_NVI_ORG_TOP_LEVEL_ID;
 import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_CREATOR_ID;
 import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_JSON_PUBLICATION_DATE;
@@ -52,9 +54,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
-import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures;
+import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.model.ScientificValue;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
@@ -69,9 +71,9 @@ import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.NonNviCandidate;
 import no.sikt.nva.nvi.events.model.NviCandidate;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
-import no.sikt.nva.nvi.events.model.PublicationDate;
 import no.sikt.nva.nvi.test.SampleExpandedAffiliation;
 import no.sikt.nva.nvi.test.SampleExpandedContributor;
+import no.sikt.nva.nvi.test.SampleExpandedOrganization;
 import no.sikt.nva.nvi.test.SampleExpandedPublication;
 import no.sikt.nva.nvi.test.SampleExpandedPublicationChannel;
 import no.sikt.nva.nvi.test.SampleExpandedPublicationDate;
@@ -88,8 +90,8 @@ import org.junit.jupiter.api.Test;
 @SuppressWarnings("PMD.CouplingBetweenObjects")
 class EvaluateNviCandidateHandlerTest extends EvaluationTest {
 
-  public static final PublicationDate HARDCODED_PUBLICATION_DATE =
-      new PublicationDate(null, null, "2023");
+  public static final PublicationDateDto HARDCODED_PUBLICATION_DATE =
+      new PublicationDateDto("2023", null, null);
   public static final URI HARDCODED_PUBLICATION_CHANNEL_ID =
       URI.create("https://api.dev.nva.aws.unit.no/publication-channels/series/490845/2023");
   public static final URI SIKT_CRISTIN_ORG_ID =
@@ -106,10 +108,11 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
   private static final String ACADEMIC_ARTICLE =
       IoUtils.stringFromResources(Path.of(ACADEMIC_ARTICLE_PATH))
           .replace("__REPLACE_WITH_PUBLICATION_ID__", HARDCODED_PUBLICATION_ID.toString());
-  private static final String ERROR_COULD_NOT_FETCH_CRISTIN_ORG =
-      "Could not fetch Cristin organization for: ";
   private static final SampleExpandedAffiliation DEFAULT_SUBUNIT_AFFILIATION =
-      SampleExpandedAffiliation.builder().withId(CRISTIN_NVI_ORG_SUB_UNIT_ID).build();
+      SampleExpandedAffiliation.builder()
+          .withId(CRISTIN_NVI_ORG_SUB_UNIT_ID)
+          .withPartOf(List.of(CRISTIN_NVI_ORG_FACULTY_ID))
+          .build();
   private static final URI CUSTOMER_API_CRISTIN_NVI_ORG_TOP_LEVEL =
       URI.create(
           "https://api.dev.nva.aws.unit.no/customer/cristinId/https%3A%2F%2Fapi"
@@ -450,17 +453,6 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
   }
 
   @Test
-  void shouldThrowExceptionWhenProblemsFetchingCristinOrganization() throws IOException {
-    when(uriRetriever.fetchResponse(any(), any()))
-        .thenReturn(Optional.of(internalServerErrorResponse));
-    var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH), ACADEMIC_ARTICLE);
-    var event = createEvent(new PersistedResourceMessage(fileUri));
-    var appender = LogUtils.getTestingAppenderForRootLogger();
-    assertThrows(RuntimeException.class, () -> handler.handleRequest(event, CONTEXT));
-    assertThat(appender.getMessages(), containsString(ERROR_COULD_NOT_FETCH_CRISTIN_ORG));
-  }
-
-  @Test
   void shouldThrowExceptionWhenProblemsFetchingCustomer() throws IOException {
     mockCristinResponseAndCustomerApiResponseForNviInstitution(internalServerErrorResponse);
     var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH), ACADEMIC_ARTICLE);
@@ -586,7 +578,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
   }
 
   private static int countCreatorShares(List<VerifiedNviCreatorDto> nviCreators) {
-    return (int) nviCreators.stream().mapToLong(creator -> creator.affiliations().size()).sum();
+    return nviCreators.stream().mapToInt(creator -> creator.affiliations().size()).sum();
   }
 
   private URI setupPublicationWithInvalidYear(String year) throws IOException {
@@ -596,9 +588,8 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
   }
 
   private void setupEvaluatorService(PeriodRepository periodRepository) {
-    var calculator = new CreatorVerificationUtil(authorizedBackendUriRetriever, uriRetriever);
-    var organizationRetriever = new OrganizationRetriever(uriRetriever);
-    var pointCalculator = new PointService(organizationRetriever);
+    var calculator = new CreatorVerificationUtil(authorizedBackendUriRetriever);
+    var pointCalculator = new PointService();
     evaluatorService =
         new EvaluatorService(
             storageReader, calculator, pointCalculator, candidateRepository, periodRepository);
@@ -651,14 +642,15 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     when(authorizedBackendUriRetriever.fetchResponse(
             eq(cristinOrgNonNviTopLevelCustomerApiUri), any()))
         .thenReturn(Optional.of(expectedResponse));
+    //     FIXME: Remove this
     mockOrganizationResponseForAffiliation(
         cristinOrgNonNviTopLevel, cristinOrgNonNviSubUnit, uriRetriever);
   }
 
   private void mockCristinResponseAndCustomerApiResponseForNviInstitution(
       HttpResponse<String> httpResponse) {
-    mockOrganizationResponseForAffiliation(
-        CRISTIN_NVI_ORG_TOP_LEVEL_ID, CRISTIN_NVI_ORG_SUB_UNIT_ID, uriRetriever);
+    //     FIXME: Remove this
+    mockOrganizationResponseForAffiliation(CRISTIN_NVI_ORG_TOP_LEVEL_ID, null, uriRetriever);
     when(authorizedBackendUriRetriever.fetchResponse(
             eq(CUSTOMER_API_CRISTIN_NVI_ORG_TOP_LEVEL), any()))
         .thenReturn(Optional.of(httpResponse));
@@ -673,6 +665,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     SampleExpandedContributor.Builder defaultUnverifiedContributor;
     List<SampleExpandedContributor.Builder> verifiedContributors;
     List<SampleExpandedContributor.Builder> unverifiedContributors;
+    List<SampleExpandedOrganization> topLevelOrganizations;
     int creatorShareCount;
 
     URI publicationChannelId;
@@ -701,6 +694,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
               .withAffiliations(List.of(DEFAULT_SUBUNIT_AFFILIATION));
       verifiedContributors = List.of(defaultVerifiedContributor);
       unverifiedContributors = emptyList();
+      topLevelOrganizations = List.of(CRISTIN_NVI_ORG_TOP_LEVEL);
       creatorShareCount = 1;
 
       publicationChannelId = HARDCODED_PUBLICATION_CHANNEL_ID;
@@ -710,7 +704,9 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       publicationChannels = List.of(getDefaultPublicationChannelBuilder());
 
       publicationBuilder =
-          SampleExpandedPublication.builder().withPublicationDate(HARDCODED_JSON_PUBLICATION_DATE);
+          SampleExpandedPublication.builder()
+              .withPublicationDate(HARDCODED_JSON_PUBLICATION_DATE)
+              .withTopLevelOrganizations(topLevelOrganizations);
 
       expectedTotalPoints = ONE.setScale(SCALE, ROUNDING_MODE);
       expectedPointsPerInstitution =
@@ -760,7 +756,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
 
     @Test
     void shouldIdentifyCandidateWithUnnamedVerifiedAuthor() throws IOException {
-      var verifiedContributor = defaultVerifiedContributor.withName(null);
+      var verifiedContributor = defaultVerifiedContributor.withNames(emptyList());
       verifiedContributors = List.of(verifiedContributor);
       var testScenario = getCandidateScenario();
 
@@ -772,10 +768,29 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
 
     @Test
     void shouldRejectUnverifiedAuthorsWithoutName() throws IOException {
-      var unnamedContributor = defaultUnverifiedContributor.withName(null);
+      var unnamedContributor = defaultUnverifiedContributor.withNames(emptyList());
       verifiedContributors = emptyList();
       unverifiedContributors = List.of(unnamedContributor);
       var testScenario = getNonCandidateScenario();
+
+      handler.handleRequest(testScenario.event(), CONTEXT);
+      var messageBody = getMessageBody();
+
+      assertEquals(testScenario.expectedEvaluatedMessage(), messageBody);
+    }
+
+    @Test
+    void shouldHandleUnverifiedAuthorsWithMultipleNames() throws IOException {
+      var unnamedContributor =
+          defaultUnverifiedContributor.withNames(List.of("Ignacio N. Kognito", "I.N. Kognito"));
+      verifiedContributors = emptyList();
+      unverifiedContributors = List.of(unnamedContributor);
+      expectedTotalPoints = ZERO.setScale(SCALE, ROUNDING_MODE);
+      expectedPointsPerInstitution =
+          List.of(
+              new InstitutionPoints(
+                  CRISTIN_NVI_ORG_TOP_LEVEL_ID, expectedTotalPoints, emptyList()));
+      var testScenario = getCandidateScenario();
 
       handler.handleRequest(testScenario.event(), CONTEXT);
       var messageBody = getMessageBody();
@@ -1000,10 +1015,10 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       assertEquals(testScenario.expectedEvaluatedMessage(), messageBody);
     }
 
-    private static PublicationDate getPublicationDate(
+    private static PublicationDateDto getPublicationDate(
         SampleExpandedPublicationDate publicationDate) {
-      return new PublicationDate(
-          publicationDate.day(), publicationDate.month(), publicationDate.year());
+      return new PublicationDateDto(
+          publicationDate.year(), publicationDate.month(), publicationDate.day());
     }
 
     private TestScenario getCandidateScenario() throws IOException {
@@ -1092,7 +1107,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
           .map(
               contributor ->
                   new UnverifiedNviCreatorDto(
-                      contributor.contributorName(), contributor.affiliationIds()))
+                      contributor.names().getFirst(), contributor.affiliationIds()))
           .toList();
     }
 

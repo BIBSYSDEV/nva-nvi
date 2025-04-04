@@ -83,8 +83,8 @@ public class EvaluationTest {
     queueClient = new FakeSqsClient();
     s3Driver = new S3Driver(s3Client, BUCKET_NAME);
     storageReader = new S3StorageReader(s3Client, BUCKET_NAME);
-    var calculator = new CreatorVerificationUtil(authorizedBackendUriRetriever, uriRetriever);
-    var pointCalculator = new PointService(scenario.getOrganizationRetriever());
+    var calculator = new CreatorVerificationUtil(authorizedBackendUriRetriever);
+    var pointCalculator = new PointService();
     evaluatorService =
         new EvaluatorService(
             storageReader, calculator, pointCalculator, candidateRepository, periodRepository);

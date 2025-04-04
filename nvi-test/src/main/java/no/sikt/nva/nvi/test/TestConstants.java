@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.test;
 
 import java.net.URI;
+import java.util.Map;
 
 public final class TestConstants {
 
@@ -35,8 +36,35 @@ public final class TestConstants {
           "https://api.dev.nva.aws.unit.no/publication/01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d");
   public static final URI CRISTIN_NVI_ORG_TOP_LEVEL_ID =
       URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/194.0.0.0");
+  public static final URI CRISTIN_NVI_ORG_FACULTY_ID =
+      URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/194.64.0.0");
   public static final URI CRISTIN_NVI_ORG_SUB_UNIT_ID =
       URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/194.64.20.0");
+
+  public static final SampleExpandedOrganization CRISTIN_NVI_ORG_SUB_UNIT =
+      SampleExpandedOrganization.builder()
+          .withId(CRISTIN_NVI_ORG_SUB_UNIT_ID)
+          .withType()
+          .withCountryCode(COUNTRY_CODE_NORWAY)
+          .withParentOrganizations(CRISTIN_NVI_ORG_FACULTY_ID)
+          .build();
+  public static final SampleExpandedOrganization CRISTIN_NVI_ORG_FACULTY =
+      SampleExpandedOrganization.builder()
+          .withId(CRISTIN_NVI_ORG_FACULTY_ID)
+          .withType()
+          .withCountryCode(COUNTRY_CODE_NORWAY)
+          .withParentOrganizations(CRISTIN_NVI_ORG_TOP_LEVEL_ID)
+          .withSubOrganizations(CRISTIN_NVI_ORG_SUB_UNIT)
+          .build();
+  public static final SampleExpandedOrganization CRISTIN_NVI_ORG_TOP_LEVEL =
+      SampleExpandedOrganization.builder()
+          .withId(CRISTIN_NVI_ORG_TOP_LEVEL_ID)
+          .withType()
+          .withCountryCode(COUNTRY_CODE_NORWAY)
+          .withLabels(
+              Map.of(NB_FIELD, HARDCODED_NORWEGIAN_LABEL, EN_FIELD, HARDCODED_ENGLISH_LABEL))
+          .withSubOrganizations(CRISTIN_NVI_ORG_FACULTY)
+          .build();
 
   public static final int ONE = 1;
   public static final String AFFILIATIONS_FIELD = "affiliations";

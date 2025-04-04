@@ -10,10 +10,6 @@ public final class JsonPointers {
   public static final String JSON_PTR_PUBLICATION_DATE = "/entityDescription/publicationDate";
   public static final String JSON_PTR_MAIN_TITLE = "/entityDescription/mainTitle";
   public static final String JSON_PTR_ABSTRACT = "/entityDescription/abstract";
-  public static final String JSON_POINTER_IDENTITY_ID = "/identity/id";
-  public static final String JSON_POINTER_IDENTITY_NAME = "/identity/name";
-  public static final String JSON_POINTER_IDENTITY_VERIFICATION_STATUS =
-      "/identity/verificationStatus";
   public static final String JSON_PTR_INSTANCE_TYPE =
       "/entityDescription/reference/publicationInstance/type";
   public static final String JSON_PTR_PUBLICATION_CONTEXT =
@@ -51,7 +47,7 @@ public final class JsonPointers {
   public static final String JSON_PTR_SERIES_NAME =
       "/entityDescription/reference/publicationContext/series/name";
   public static final String JSON_PTR_PUBLISHER_NAME =
-      "/entityDescription/reference/publicationContext/publisher" + "/name";
+      "/entityDescription/reference/publicationContext/publisher/name";
   public static final String JSON_PTR_JOURNAL_NAME =
       "/entityDescription/reference/publicationContext/name";
   public static final String JSON_PTR_LANGUAGE = "/entityDescription/language";
