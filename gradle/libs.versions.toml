@@ -8,6 +8,8 @@ awsSdk2 = { strictly = '2.29.47' }
 com-auth0-jwt = { strictly = '4.4.0' }
 cucumber = { strictly = '7.21.1' }
 dynamoDbLocal = { strictly = '2.5.4' }
+errorprone = { strictly = '2.37.0' }
+errorpronePlugin = { strictly = '4.1.0' }
 guava = { strictly = '33.4.0-jre' }
 hamcrest = { strictly = '3.0' }
 jackson = { strictly = '2.18.2' }
@@ -23,6 +25,7 @@ openSearchJava = { strictly = '2.19.0' }
 openSearchRestClient = { strictly = '2.18.0' }
 openSearchTestContainer = { strictly = '2.1.2' }
 slf4j = { require = '2.0.16' }
+spotless = { strictly = '7.0.2' }
 testContainers = { strictly = '1.20.4' }
 wiremock = { strictly = '3.10.0' }
 zalando = { strictly = '0.27.1' }
@@ -52,6 +55,8 @@ cucumber-junit = { group = 'io.cucumber', name = 'cucumber-junit', version.ref =
 cucumber-junit-platform-engine = { group = 'io.cucumber', name = 'cucumber-junit-platform-engine', version.ref = 'cucumber' }
 cucumber-picocontainer = { group = 'io.cucumber', name = 'cucumber-picocontainer', version.ref = 'cucumber' }
 dynamodDbLocal = { group = 'com.amazonaws', name = 'DynamoDBLocal', version.ref = 'dynamoDbLocal' }
+errorprone = { group = 'com.google.errorprone', name = 'error_prone_core', version.ref = 'errorprone' }
+errorprone-plugin = { group = 'net.ltgt.errorprone', name = 'net.ltgt.errorprone.gradle.plugin', version.ref = 'errorpronePlugin' }
 guava = { group = 'com.google.guava', name = 'guava', version.ref = 'guava' }
 hamcrest = { group = 'org.hamcrest', name = 'hamcrest', version.ref = 'hamcrest' }
 jackson-core = { group = 'com.fasterxml.jackson.core', name = 'jackson-core', version.ref = 'jackson' }
@@ -87,6 +92,7 @@ openCsv = { group = 'com.opencsv', name = 'opencsv', version.ref = 'openCsv' }
 opensearch-java = { group = 'org.opensearch.client', name = 'opensearch-java', version.ref = 'openSearchJava' }
 opensearch-rest-client = { group = 'org.opensearch.client', name = 'opensearch-rest-client', version.ref = 'openSearchRestClient' }
 slf4j-api = { group = 'org.slf4j', name = 'slf4j-api', version.ref = 'slf4j' }
+spotless = { group = 'com.diffplug.spotless', name = 'spotless-plugin-gradle', version.ref = 'spotless' }
 testContainers = { group = 'org.testcontainers', name = 'testcontainers', version.ref = 'testContainers' }
 testContainersJunit = { group = 'org.testcontainers', name = 'junit-jupiter', version.ref = 'testContainers' }
 testContainersOpenSearch = { group = 'org.opensearch', name = 'opensearch-testcontainers', version.ref = 'openSearchTestContainer' }
@@ -95,6 +101,7 @@ zalando = { group = 'org.zalando', name = 'problem', version.ref = 'zalando' }
 
 [bundles]
 apachePoi = ['apache-poi', 'apache-poi-ooxml']
+buildtools = ['errorprone-plugin', 'spotless']
 jacksonjr = ['jackson-jr-objects', 'jackson-jr-annotations']
 jena = ['jena-core', 'jena-arq']
 logging = ['log4j-core', 'log4j-api', 'log4j-slf4j18-impl', 'slf4j-api', 'nva-logutils']

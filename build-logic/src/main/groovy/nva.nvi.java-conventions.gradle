@@ -1,0 +1,76 @@
+plugins {
+    id 'nva.nvi.common-conventions'
+    id 'checkstyle'
+    id 'java-library'
+    id 'jacoco'
+    id 'pmd'
+    id 'net.ltgt.errorprone'
+}
+
+group = 'com.github.bibsysdev'
+
+dependencies {
+    testImplementation libs.bundles.testing
+
+    // Add ErrorProne for static analysis during compilation
+    annotationProcessor libs.errorprone
+    testAnnotationProcessor libs.errorprone
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.errorprone {
+        // Suppress build failures from lint errors (remove this if possible)
+        allErrorsAsWarnings = true
+    }
+}
+
+pmd {
+    toolVersion = '7.8.0'
+    ruleSetConfig = rootProject.resources.text.fromFile('config/pmd/ruleset.xml')
+    ruleSets = []
+    ignoreFailures = false
+}
+
+checkstyle {
+    toolVersion = '10.21.2'
+    configFile = rootProject.resources.text.fromFile('config/checkstyle/checkstyle.xml').asFile()
+    showViolations = true
+    ignoreFailures = false
+}
+
+tasks.withType(Checkstyle).configureEach {
+    reports {
+        xml.required = true
+        html.required = true
+        html.stylesheet = rootProject.resources.text.fromFile('config/checkstyle/checkstyle-simple.xsl')
+    }
+}
+
+tasks.named('test', Test) {
+    useJUnitPlatform()
+    failFast = false
+    testLogging {
+        events = ['skipped', 'passed', 'failed']
+        showCauses = true
+        exceptionFormat = "full"
+    }
+}
+
+// Do not generate test reports for individual projects
+tasks.named("jacocoTestReport", JacocoReport) {
+    enabled = false
+    reports {
+        xml.required = true
+        html.required = true
+    }
+}
+
+tasks.named('check') {
+    dependsOn tasks.named('test')
+}
