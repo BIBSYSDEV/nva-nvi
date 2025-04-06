@@ -111,7 +111,10 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
   private static final String ERROR_COULD_NOT_FETCH_CRISTIN_ORG =
       "Could not fetch Cristin organization for: ";
   private static final SampleExpandedAffiliation DEFAULT_SUBUNIT_AFFILIATION =
-      SampleExpandedAffiliation.builder().withId(CRISTIN_NVI_ORG_SUB_UNIT_ID).build();
+      SampleExpandedAffiliation.builder()
+          .withId(CRISTIN_NVI_ORG_SUB_UNIT_ID)
+          .withPartOf(List.of(CRISTIN_NVI_ORG_FACULTY_ID))
+          .build();
   private static final URI CUSTOMER_API_CRISTIN_NVI_ORG_TOP_LEVEL =
       URI.create(
           "https://api.dev.nva.aws.unit.no/customer/cristinId/https%3A%2F%2Fapi"
@@ -588,7 +591,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
   }
 
   private static int countCreatorShares(List<VerifiedNviCreatorDto> nviCreators) {
-    return (int) nviCreators.stream().mapToLong(creator -> creator.affiliations().size()).sum();
+    return nviCreators.stream().mapToInt(creator -> creator.affiliations().size()).sum();
   }
 
   private URI setupPublicationWithInvalidYear(String year) throws IOException {
@@ -598,7 +601,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
   }
 
   private void setupEvaluatorService(PeriodRepository periodRepository) {
-    var calculator = new CreatorVerificationUtil(authorizedBackendUriRetriever, uriRetriever);
+    var calculator = new CreatorVerificationUtil(authorizedBackendUriRetriever);
     var organizationRetriever = new OrganizationRetriever(uriRetriever);
     var pointCalculator = new PointService(organizationRetriever);
     evaluatorService =
@@ -782,6 +785,25 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       verifiedContributors = emptyList();
       unverifiedContributors = List.of(unnamedContributor);
       var testScenario = getNonCandidateScenario();
+
+      handler.handleRequest(testScenario.event(), CONTEXT);
+      var messageBody = getMessageBody();
+
+      assertEquals(testScenario.expectedEvaluatedMessage(), messageBody);
+    }
+
+    @Test
+    void shouldHandleUnverifiedAuthorsWithMultipleNames() throws IOException {
+      var unnamedContributor =
+          defaultUnverifiedContributor.withNames(List.of("Ignacio N. Kognito", "I.N. Kognito"));
+      verifiedContributors = emptyList();
+      unverifiedContributors = List.of(unnamedContributor);
+      expectedTotalPoints = ZERO.setScale(SCALE, ROUNDING_MODE);
+      expectedPointsPerInstitution =
+          List.of(
+              new InstitutionPoints(
+                  CRISTIN_NVI_ORG_TOP_LEVEL_ID, expectedTotalPoints, emptyList()));
+      var testScenario = getCandidateScenario();
 
       handler.handleRequest(testScenario.event(), CONTEXT);
       var messageBody = getMessageBody();

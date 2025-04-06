@@ -25,6 +25,7 @@ class ContributorDtoTest {
     var contributor = EXAMPLE_1_CONTRIBUTOR;
     assertTrue(contributor.isCreator());
     assertTrue(contributor.isVerified());
+    assertTrue(contributor.isNamed());
   }
 
   @ParameterizedTest

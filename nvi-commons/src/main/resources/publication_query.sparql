@@ -169,7 +169,15 @@ WHERE {
     :role ?role .
     ?role a ?roleType .
     OPTIONAL { ?personId :verificationStatus ?verificationStatus }
-    OPTIONAL { ?personId :name ?contributorName }
+    OPTIONAL {
+      ?personId :name ?contributorName
+      # In rare cases, multiple names are given for the same contributor, but we need at most one.
+      # This filter works as a "MAX(name)" while avoiding the use of subqueries.
+      FILTER NOT EXISTS {
+        ?personId :name ?otherName .
+        FILTER(?otherName > ?contributorName)
+      }
+    }
   }
 
   # Find any top-level organization with a contributor
