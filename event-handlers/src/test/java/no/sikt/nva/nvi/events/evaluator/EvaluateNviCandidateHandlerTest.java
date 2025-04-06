@@ -760,7 +760,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
 
     @Test
     void shouldIdentifyCandidateWithUnnamedVerifiedAuthor() throws IOException {
-      var verifiedContributor = defaultVerifiedContributor.withName(null);
+      var verifiedContributor = defaultVerifiedContributor.withNames(emptyList());
       verifiedContributors = List.of(verifiedContributor);
       var testScenario = getCandidateScenario();
 
@@ -772,7 +772,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
 
     @Test
     void shouldRejectUnverifiedAuthorsWithoutName() throws IOException {
-      var unnamedContributor = defaultUnverifiedContributor.withName(null);
+      var unnamedContributor = defaultUnverifiedContributor.withNames(emptyList());
       verifiedContributors = emptyList();
       unverifiedContributors = List.of(unnamedContributor);
       var testScenario = getNonCandidateScenario();
@@ -1092,7 +1092,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
           .map(
               contributor ->
                   new UnverifiedNviCreatorDto(
-                      contributor.contributorName(), contributor.affiliationIds()))
+                      contributor.names().getFirst(), contributor.affiliationIds()))
           .toList();
     }
 
