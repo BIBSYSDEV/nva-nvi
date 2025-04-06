@@ -30,6 +30,12 @@ public record SampleExpandedAffiliation(
     return new Builder(other);
   }
 
+  private static ObjectNode createAffiliationLeafNode(URI id) {
+    var affiliationNode = objectMapper.createObjectNode();
+    affiliationNode.put(ID_FIELD, id.toString());
+    return affiliationNode;
+  }
+
   public ObjectNode asObjectNode() {
     var affiliationNode = objectMapper.createObjectNode();
     affiliationNode.put(TYPE_FIELD, TYPE_VALUE);
@@ -40,7 +46,9 @@ public record SampleExpandedAffiliation(
 
     if (nonNull(partOf) && !partOf.isEmpty()) {
       var partOfNode = objectMapper.createArrayNode();
-      partOf.forEach(uri -> partOfNode.add(uri.toString()));
+      partOf.stream()
+          .map(SampleExpandedAffiliation::createAffiliationLeafNode)
+          .forEach(partOfNode::add);
       affiliationNode.set("partOf", partOfNode);
     }
 

@@ -16,6 +16,7 @@ import static no.sikt.nva.nvi.events.evaluator.model.PublicationChannel.JOURNAL;
 import static no.sikt.nva.nvi.events.evaluator.model.PublicationChannel.SERIES;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_SWEDEN;
 import static no.sikt.nva.nvi.test.TestConstants.CRISTIN_NVI_ORG_SUB_UNIT_ID;
+import static no.sikt.nva.nvi.test.TestConstants.CRISTIN_NVI_ORG_TOP_LEVEL;
 import static no.sikt.nva.nvi.test.TestConstants.CRISTIN_NVI_ORG_TOP_LEVEL_ID;
 import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_CREATOR_ID;
 import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_JSON_PUBLICATION_DATE;
@@ -72,6 +73,7 @@ import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.sikt.nva.nvi.events.model.PublicationDate;
 import no.sikt.nva.nvi.test.SampleExpandedAffiliation;
 import no.sikt.nva.nvi.test.SampleExpandedContributor;
+import no.sikt.nva.nvi.test.SampleExpandedOrganization;
 import no.sikt.nva.nvi.test.SampleExpandedPublication;
 import no.sikt.nva.nvi.test.SampleExpandedPublicationChannel;
 import no.sikt.nva.nvi.test.SampleExpandedPublicationDate;
@@ -673,6 +675,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     SampleExpandedContributor.Builder defaultUnverifiedContributor;
     List<SampleExpandedContributor.Builder> verifiedContributors;
     List<SampleExpandedContributor.Builder> unverifiedContributors;
+    List<SampleExpandedOrganization> topLevelOrganizations;
     int creatorShareCount;
 
     URI publicationChannelId;
@@ -701,6 +704,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
               .withAffiliations(List.of(DEFAULT_SUBUNIT_AFFILIATION));
       verifiedContributors = List.of(defaultVerifiedContributor);
       unverifiedContributors = emptyList();
+      topLevelOrganizations = List.of(CRISTIN_NVI_ORG_TOP_LEVEL);
       creatorShareCount = 1;
 
       publicationChannelId = HARDCODED_PUBLICATION_CHANNEL_ID;
@@ -710,7 +714,9 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       publicationChannels = List.of(getDefaultPublicationChannelBuilder());
 
       publicationBuilder =
-          SampleExpandedPublication.builder().withPublicationDate(HARDCODED_JSON_PUBLICATION_DATE);
+          SampleExpandedPublication.builder()
+              .withPublicationDate(HARDCODED_JSON_PUBLICATION_DATE)
+              .withTopLevelOrganizations(topLevelOrganizations);
 
       expectedTotalPoints = ONE.setScale(SCALE, ROUNDING_MODE);
       expectedPointsPerInstitution =
@@ -760,7 +766,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
 
     @Test
     void shouldIdentifyCandidateWithUnnamedVerifiedAuthor() throws IOException {
-      var verifiedContributor = defaultVerifiedContributor.withName(null);
+      var verifiedContributor = defaultVerifiedContributor.withNames(emptyList());
       verifiedContributors = List.of(verifiedContributor);
       var testScenario = getCandidateScenario();
 
@@ -772,7 +778,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
 
     @Test
     void shouldRejectUnverifiedAuthorsWithoutName() throws IOException {
-      var unnamedContributor = defaultUnverifiedContributor.withName(null);
+      var unnamedContributor = defaultUnverifiedContributor.withNames(emptyList());
       verifiedContributors = emptyList();
       unverifiedContributors = List.of(unnamedContributor);
       var testScenario = getNonCandidateScenario();
@@ -1092,7 +1098,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
           .map(
               contributor ->
                   new UnverifiedNviCreatorDto(
-                      contributor.contributorName(), contributor.affiliationIds()))
+                      contributor.names().getFirst(), contributor.affiliationIds()))
           .toList();
     }
 
