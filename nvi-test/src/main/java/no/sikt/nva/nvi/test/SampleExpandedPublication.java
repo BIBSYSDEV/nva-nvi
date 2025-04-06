@@ -6,15 +6,10 @@ import static no.sikt.nva.nvi.test.TestConstants.ABSTRACT_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.BODY_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.CONTRIBUTORS_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.ENTITY_DESCRIPTION_FIELD;
-import static no.sikt.nva.nvi.test.TestConstants.EN_FIELD;
-import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_ENGLISH_LABEL;
-import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_NORWEGIAN_LABEL;
 import static no.sikt.nva.nvi.test.TestConstants.IDENTIFIER_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.ID_FIELD;
-import static no.sikt.nva.nvi.test.TestConstants.LABELS_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.LANGUAGE_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.MAIN_TITLE_FIELD;
-import static no.sikt.nva.nvi.test.TestConstants.NB_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.ONE;
 import static no.sikt.nva.nvi.test.TestConstants.PAGES_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.PUBLICATION_CONTEXT_FIELD;
@@ -54,7 +49,8 @@ public record SampleExpandedPublication(
     String abstractText,
     String language,
     String status,
-    List<SampleExpandedContributor> contributors) {
+    List<SampleExpandedContributor> contributors,
+    List<SampleExpandedOrganization> topLevelOrganizations) {
 
   private static final String TEMPLATE_JSON_PATH = "template_publication.json";
   private static final String PUBLICATION_CHANNELS_MUST_NOT_BE_EMPTY =
@@ -101,17 +97,6 @@ public record SampleExpandedPublication(
     return publicationInstance;
   }
 
-  private static JsonNode createOrganizationNode(String affiliationId) {
-    var organization = objectMapper.createObjectNode();
-    organization.put(ID_FIELD, affiliationId);
-    organization.put(TYPE_FIELD, "Organization");
-    var labels = objectMapper.createObjectNode();
-    labels.put(NB_FIELD, HARDCODED_NORWEGIAN_LABEL);
-    labels.put(EN_FIELD, HARDCODED_ENGLISH_LABEL);
-    organization.set(LABELS_FIELD, labels);
-    return organization;
-  }
-
   private JsonNode createExpandedResource() {
     try (var content = IoUtils.inputStreamFromResources(TEMPLATE_JSON_PATH)) {
       var root = (ObjectNode) objectMapper.readTree(content);
@@ -130,15 +115,11 @@ public record SampleExpandedPublication(
   }
 
   private JsonNode createTopLevelOrganizationsNode() {
-    var topLevelOrganizations = objectMapper.createArrayNode();
-    contributors.stream()
-        .map(SampleExpandedContributor::affiliationIds)
-        .flatMap(List::stream)
-        .distinct()
-        .map(URI::toString)
-        .map(SampleExpandedPublication::createOrganizationNode)
-        .forEach(topLevelOrganizations::add);
-    return topLevelOrganizations;
+    var topLevelOrganizationsNode = objectMapper.createArrayNode();
+    topLevelOrganizations.stream()
+        .map(SampleExpandedOrganization::asObjectNode)
+        .forEach(topLevelOrganizationsNode::add);
+    return topLevelOrganizationsNode;
   }
 
   private ObjectNode createReferenceNode() {
@@ -201,6 +182,7 @@ public record SampleExpandedPublication(
     private List<SampleExpandedPublicationChannel> publicationChannels;
     private SampleExpandedPublicationDate publicationDate;
     private String issn;
+    private List<SampleExpandedOrganization> topLevelOrganizations;
 
     private Builder() {}
 
@@ -217,6 +199,7 @@ public record SampleExpandedPublication(
       this.publicationChannels = other.publicationChannels;
       this.publicationDate = other.publicationDate;
       this.issn = other.issn;
+      this.topLevelOrganizations = other.topLevelOrganizations;
     }
 
     public Builder withId(URI id) {
@@ -245,6 +228,11 @@ public record SampleExpandedPublication(
       return this;
     }
 
+    public Builder withTopLevelOrganizations(List<SampleExpandedOrganization> organizations) {
+      this.topLevelOrganizations = organizations;
+      return this;
+    }
+
     public SampleExpandedPublication build() {
       if (isNull(id)) {
         id = generatePublicationId(identifier);
@@ -261,7 +249,8 @@ public record SampleExpandedPublication(
           abstractText,
           language,
           status,
-          contributors);
+          contributors,
+          topLevelOrganizations);
     }
   }
 }
