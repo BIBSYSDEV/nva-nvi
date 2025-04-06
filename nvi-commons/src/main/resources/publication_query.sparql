@@ -41,7 +41,7 @@ CONSTRUCT {
 
   # Include the organization hierarchy
   ?organization a :Organization ;
-  :countryCode ?country ;
+  :country ?country ;
   :label ?label ;
   :partOf ?parent ;
   :hasPart ?child .
