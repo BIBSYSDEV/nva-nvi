@@ -9,6 +9,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.InstanceType;
@@ -22,7 +23,7 @@ public record NviCandidate(
     URI publicationId,
     URI publicationBucketUri,
     InstanceType instanceType,
-    @JsonProperty("publicationDate") PublicationDate date,
+    @JsonProperty("publicationDate") PublicationDateDto date,
     List<VerifiedNviCreatorDto> verifiedCreators,
     List<UnverifiedNviCreatorDto> unverifiedCreators,
     String channelType,
@@ -53,13 +54,7 @@ public record NviCandidate(
 
   @Override
   public PublicationDetails.PublicationDate publicationDate() {
-    return mapToPublicationDate(date);
-  }
-
-  private static PublicationDetails.PublicationDate mapToPublicationDate(
-      PublicationDate publicationDate) {
-    return new PublicationDetails.PublicationDate(
-        publicationDate.year(), publicationDate.month(), publicationDate.day());
+    return new PublicationDetails.PublicationDate(date.year(), date.month(), date.day());
   }
 
   public static Builder builder() {
@@ -71,7 +66,7 @@ public record NviCandidate(
     private URI publicationId;
     private URI publicationBucketUri;
     private InstanceType instanceType;
-    private PublicationDate date;
+    private PublicationDateDto date;
     private List<VerifiedNviCreatorDto> verifiedNviCreators = Collections.emptyList();
     private List<UnverifiedNviCreatorDto> unverifiedNviCreators = Collections.emptyList();
     private String channelType;
@@ -101,7 +96,7 @@ public record NviCandidate(
       return this;
     }
 
-    public Builder withDate(PublicationDate date) {
+    public Builder withDate(PublicationDateDto date) {
       this.date = date;
       return this;
     }

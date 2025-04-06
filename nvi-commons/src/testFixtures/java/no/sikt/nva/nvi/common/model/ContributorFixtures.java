@@ -22,10 +22,10 @@ public class ContributorFixtures {
 
   public static Builder randomCreator(List<Organization> affiliations) {
     return ContributorDto.builder()
-                         .withId(randomUri())
-                         .withName(randomString())
-                         .withRole(ROLE_CREATOR)
-                         .withVerificationStatus(STATUS_VERIFIED)
-                         .withAffiliations(affiliations);
+        .withId(randomUri())
+        .withName(randomString())
+        .withRole(ROLE_CREATOR)
+        .withVerificationStatus(STATUS_VERIFIED)
+        .withAffiliations(affiliations);
   }
 }

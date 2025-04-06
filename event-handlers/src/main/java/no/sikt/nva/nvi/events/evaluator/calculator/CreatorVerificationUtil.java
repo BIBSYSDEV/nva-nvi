@@ -1,13 +1,9 @@
 package no.sikt.nva.nvi.events.evaluator.calculator;
 
-import static java.util.Objects.isNull;
-import static java.util.Objects.nonNull;
-import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_CONTRIBUTOR;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.StringUtils.isBlank;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URLEncoder;
@@ -16,19 +12,15 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
-import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.client.model.Organization;
-import no.sikt.nva.nvi.events.evaluator.dto.AffiliationDto;
-import no.sikt.nva.nvi.events.evaluator.dto.ContributorDto;
+import no.sikt.nva.nvi.common.dto.ContributorDto;
+import no.sikt.nva.nvi.common.dto.PublicationDto;
 import no.sikt.nva.nvi.events.evaluator.model.CustomerResponse;
 import no.sikt.nva.nvi.events.evaluator.model.NviCreator;
 import no.sikt.nva.nvi.events.evaluator.model.NviOrganization;
 import no.sikt.nva.nvi.events.evaluator.model.UnverifiedNviCreator;
 import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
-import no.unit.nva.auth.uriretriever.UriRetriever;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
 import org.slf4j.Logger;
@@ -37,22 +29,17 @@ import org.slf4j.LoggerFactory;
 public class CreatorVerificationUtil {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CreatorVerificationUtil.class);
-  private static final String CREATOR = "Creator";
   private static final String CONTENT_TYPE = "application/json";
   private static final String FAILED_TO_FETCH_CUSTOMER_MESSAGE =
       "Failed to fetch customer for %s (status code: %d)";
   private static final String CUSTOMER = "customer";
   private static final String CRISTIN_ID = "cristinId";
-  private static final String VERIFIED = "Verified";
   private static final String API_HOST = new Environment().readEnv("API_HOST");
   private static final String COUNTRY_CODE_NORWAY = "NO";
   private final AuthorizedBackendUriRetriever authorizedBackendUriRetriever;
-  private final OrganizationRetriever organizationRetriever;
 
-  public CreatorVerificationUtil(
-      AuthorizedBackendUriRetriever authorizedBackendUriRetriever, UriRetriever uriRetriever) {
+  public CreatorVerificationUtil(AuthorizedBackendUriRetriever authorizedBackendUriRetriever) {
     this.authorizedBackendUriRetriever = authorizedBackendUriRetriever;
-    this.organizationRetriever = new OrganizationRetriever(uriRetriever);
   }
 
   public static List<VerifiedNviCreator> getVerifiedCreators(Collection<NviCreator> creators) {
@@ -69,10 +56,9 @@ public class CreatorVerificationUtil {
         .toList();
   }
 
-  public List<NviCreator> getNviCreatorsWithNviInstitutions(JsonNode body) {
-    return getStreamOfContributorNodes(body)
-        .map(ContributorDto::fromJsonNode)
-        .filter(CreatorVerificationUtil::isCreator)
+  public List<NviCreator> getNviCreatorsWithNviInstitutions(PublicationDto publication) {
+    return publication.contributors().stream()
+        .filter(ContributorDto::isCreator)
         .filter(CreatorVerificationUtil::isValidContributor)
         .map(this::toNviCreator)
         .filter(CreatorVerificationUtil::isAffiliatedWithNviOrganization)
@@ -92,25 +78,11 @@ public class CreatorVerificationUtil {
   }
 
   private static boolean isValidContributor(ContributorDto contributorDto) {
-    return isVerifiedContributor(contributorDto) || isNamedContributor(contributorDto);
-  }
-
-  private static boolean isVerifiedContributor(ContributorDto contributorDto) {
-    var status = contributorDto.verificationStatus();
-    var id = contributorDto.id();
-    return VERIFIED.equals(status) && nonNull(id);
-  }
-
-  private static boolean isNamedContributor(ContributorDto contributorDto) {
-    return !isBlank(contributorDto.name());
+    return contributorDto.isVerified() || contributorDto.isNamed();
   }
 
   private static boolean isAffiliatedWithNviOrganization(NviCreator creator) {
     return !creator.nviAffiliations().isEmpty();
-  }
-
-  private static boolean isCreator(ContributorDto contributor) {
-    return CREATOR.equals(contributor.role());
   }
 
   private static boolean isHttpOk(HttpResponse<String> response) {
@@ -121,10 +93,6 @@ public class CreatorVerificationUtil {
     return response.statusCode() == HttpURLConnection.HTTP_NOT_FOUND;
   }
 
-  private static Stream<JsonNode> getStreamOfContributorNodes(JsonNode body) {
-    return StreamSupport.stream(body.at(JSON_PTR_CONTRIBUTOR).spliterator(), false);
-  }
-
   private static NviOrganization toNviOrganization(Organization organization) {
     return NviOrganization.builder()
         .withId(organization.id())
@@ -133,16 +101,16 @@ public class CreatorVerificationUtil {
         .build();
   }
 
-  private static boolean hasRelevantCountryCode(AffiliationDto expandedAffiliationDto) {
+  private static boolean hasRelevantCountryCode(Organization organization) {
     // We only need to check the affiliation if the country code is set to `NO` or missing.
     // Otherwise, we can skip it and not check if it is an NVI institution, saving us a network
     // call.
-    return isNull(expandedAffiliationDto.countryCode())
-        || COUNTRY_CODE_NORWAY.equalsIgnoreCase(expandedAffiliationDto.countryCode());
+    return isBlank(organization.countryCode())
+        || COUNTRY_CODE_NORWAY.equalsIgnoreCase(organization.countryCode());
   }
 
   private NviCreator toNviCreator(ContributorDto contributor) {
-    if (isVerifiedContributor(contributor)) {
+    if (contributor.isVerified()) {
       return toVerifiedNviCreator(contributor);
     }
     return toUnverifiedNviCreator(contributor);
@@ -162,12 +130,10 @@ public class CreatorVerificationUtil {
         .build();
   }
 
+  // FIXME: Check if this allows duplicate top-level entries (it shouldn't)
   private List<NviOrganization> getNviAffiliationsIfExist(ContributorDto contributor) {
     return contributor.affiliations().stream()
         .filter(CreatorVerificationUtil::hasRelevantCountryCode)
-        .map(AffiliationDto::id)
-        .distinct()
-        .map(organizationRetriever::fetchOrganization)
         .filter(this::topLevelOrgIsNviInstitution)
         .map(CreatorVerificationUtil::toNviOrganization)
         .toList();
