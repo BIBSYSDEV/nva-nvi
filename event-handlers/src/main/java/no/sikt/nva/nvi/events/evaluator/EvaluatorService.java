@@ -95,8 +95,8 @@ public class EvaluatorService {
       logger.info(NON_NVI_CANDIDATE_MESSAGE, publicationDto.id());
       return createNonNviCandidateMessage(publicationDto.id());
     }
-    //    var creatorService = new CreatorVerificationService(publicationDto,
-    // creatorVerificationUtil);
+
+    
     var creators = creatorVerificationUtil.getNviCreatorsWithNviInstitutions(publicationDto);
     if (creators.isEmpty()) {
       logger.info(NON_NVI_CANDIDATE_MESSAGE, publicationDto.id());
