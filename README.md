@@ -6,7 +6,7 @@
 
 ## Introduction
 
-`nva-nvi` is designed to manage and process publication data for nvi (Norsk vitenskapsindeks) reporting. 
+`nva-nvi` is designed to manage and process publication data for nvi (Norsk vitenskapsindeks) reporting.
 The project enables evaluation, point calculation and curator management of publications that qualify as nvi candidates.
 
 [SWAGGER UI](https://petstore.swagger.io/?url=https://raw.githubusercontent.com/BIBSYSDEV/nva-nvi/refs/heads/main/docs/openapi.yaml)

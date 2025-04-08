@@ -1,0 +1,80 @@
+plugins {
+    id 'nva.nvi.common-conventions'
+    id 'jacoco'
+}
+
+tasks.register('testCodeCoverageReport', JacocoReport) {
+    group = "test coverage"
+    description = "Aggregate test coverage from all subprojects"
+    dependsOn(tasks.named('test'))
+    dependsOn subprojects.collect { it.tasks.named('test') }
+
+    executionData fileTree(rootDir) {
+        include '**/build/jacoco/test.exec', '**/build/jacoco/test.exec'
+    }
+
+    // Collect all classes and sources from subprojects
+    def mainOutputs = subprojects.collect { it.sourceSets.main.output }
+    def mainSources = subprojects.collect { it.sourceSets.main.allSource.srcDirs }
+
+    classDirectories.from(mainOutputs)
+    sourceDirectories.from(mainSources)
+
+    reports {
+        xml.required = true
+        html.required = true
+    }
+}
+
+// Verify that all classes and methods are covered by tests
+tasks.register('verifyCoverage', JacocoCoverageVerification) {
+    group = "test coverage"
+    description = "Verify test coverage"
+    dependsOn tasks.named('testCodeCoverageReport', JacocoReport)
+
+    executionData = testCodeCoverageReport.executionData
+    sourceDirectories = testCodeCoverageReport.sourceDirectories
+    classDirectories = testCodeCoverageReport.classDirectories
+
+    violationRules {
+
+        rule {
+            limit {
+                counter = 'METHOD'
+                value = 'COVEREDRATIO'
+                minimum = 1.000
+            }
+        }
+
+        rule {
+            limit {
+                counter = 'CLASS'
+                value = 'COVEREDRATIO'
+                minimum = 1.000
+            }
+        }
+    }
+}
+
+tasks.register('showCoverageReport') {
+    group = "test coverage"
+    description = "Show clickable link to test coverage report"
+    dependsOn tasks.named('testCodeCoverageReport', JacocoReport)
+    outputs.upToDateWhen { false }
+
+    doLast {
+        def reportDirPath = "reports/jacoco/testCodeCoverageReport/html"
+        def reportDir = layout.buildDirectory.dir(reportDirPath).get().asFile
+        logger.quiet("Combined coverage report:")
+        logger.quiet("file://${reportDir}/index.html")
+    }
+}
+
+tasks.named('check') {
+    dependsOn tasks.named('verifyCoverage', JacocoCoverageVerification)
+    finalizedBy tasks.named('showCoverageReport')
+}
+
+tasks.named('verifyCoverage', JacocoCoverageVerification) {
+    finalizedBy tasks.named('showCoverageReport')
+}
