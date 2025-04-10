@@ -1,7 +1,11 @@
 package no.sikt.nva.nvi.common.service;
 
-import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_1;
-import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_2;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_ACADEMIC_CHAPTER;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_ACADEMIC_CHAPTER_PATH;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_PUBLICATION_1;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_PUBLICATION_1_PATH;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_PUBLICATION_2;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_PUBLICATION_2_PATH;
 import static nva.commons.core.ioutils.IoUtils.stringFromResources;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
@@ -23,10 +27,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 class PublicationLoaderServiceTest {
   private static final String BUCKET_NAME = "testBucket";
-  private static final String EXAMPLE_PUBLICATION_1 =
-      "expandedPublications/validNviCandidate1.json";
-  private static final String EXAMPLE_PUBLICATION_2 =
-      "expandedPublications/validNviCandidate2.json";
   private static final String EXAMPLE_PROVIDER = "exampleDocumentTestProvider";
 
   private S3Driver s3Driver;
@@ -98,9 +98,9 @@ class PublicationLoaderServiceTest {
   }
 
   private static Stream<Arguments> exampleDocumentTestProvider() {
-
     return Stream.of(
-        argumentSet("Minimal example", EXAMPLE_PUBLICATION_1, EXAMPLE_1),
-        argumentSet("Full example", EXAMPLE_PUBLICATION_2, EXAMPLE_2));
+        argumentSet("Minimal example", EXAMPLE_PUBLICATION_1_PATH, EXAMPLE_PUBLICATION_1),
+        argumentSet("Full example", EXAMPLE_PUBLICATION_2_PATH, EXAMPLE_PUBLICATION_2),
+        argumentSet("Academic chapter", EXAMPLE_ACADEMIC_CHAPTER_PATH, EXAMPLE_ACADEMIC_CHAPTER));
   }
 }

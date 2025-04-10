@@ -96,7 +96,6 @@ public class EvaluatorService {
       return createNonNviCandidateMessage(publicationDto.id());
     }
 
-    
     var creators = creatorVerificationUtil.getNviCreatorsWithNviInstitutions(publicationDto);
     if (creators.isEmpty()) {
       logger.info(NON_NVI_CANDIDATE_MESSAGE, publicationDto.id());

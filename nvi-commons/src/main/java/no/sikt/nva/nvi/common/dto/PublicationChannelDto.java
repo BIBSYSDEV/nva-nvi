@@ -7,7 +7,6 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
 import no.sikt.nva.nvi.common.model.ScientificValue;
-import nva.commons.core.JacocoGenerated;
 
 @JsonSerialize
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
@@ -83,7 +82,6 @@ public record PublicationChannelDto(
       return this;
     }
 
-    @JacocoGenerated
     public Builder withOnlineIssn(String onlineIssn) {
       this.onlineIssn = onlineIssn;
       return this;
