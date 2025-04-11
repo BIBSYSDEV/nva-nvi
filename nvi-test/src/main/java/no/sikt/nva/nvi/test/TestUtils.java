@@ -1,9 +1,14 @@
 package no.sikt.nva.nvi.test;
 
+import static java.util.Objects.nonNull;
+import static no.sikt.nva.nvi.test.TestConstants.TYPE_FIELD;
+import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
+import static nva.commons.core.StringUtils.isNotBlank;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
@@ -73,5 +78,23 @@ public final class TestUtils {
     when(response.statusCode()).thenReturn(status);
     when(response.body()).thenReturn(body);
     return response;
+  }
+
+  public static ObjectNode createNodeWithType(String type) {
+    var node = objectMapper.createObjectNode();
+    node.put(TYPE_FIELD, type);
+    return node;
+  }
+
+  public static void putIfNotBlank(ObjectNode node, String field, String value) {
+    if (isNotBlank(value)) {
+      node.put(field, value);
+    }
+  }
+
+  public static void putIfNotNull(ObjectNode node, String field, URI value) {
+    if (nonNull(value)) {
+      node.put(field, value.toString());
+    }
   }
 }

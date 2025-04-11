@@ -6,7 +6,9 @@ import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_NORWAY;
 import static no.sikt.nva.nvi.test.TestConstants.ID_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.LABELS_FIELD;
-import static no.sikt.nva.nvi.test.TestConstants.TYPE_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.PART_OF_FIELD;
+import static no.sikt.nva.nvi.test.TestUtils.createNodeWithType;
+import static no.sikt.nva.nvi.test.TestUtils.putIfNotBlank;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 
@@ -15,48 +17,35 @@ import java.net.URI;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import nva.commons.core.JacocoGenerated;
 
-@JacocoGenerated
 public record SampleExpandedAffiliation(
     URI id, List<URI> partOf, String countryCode, Map<String, String> labels) {
-  private static final String TYPE_VALUE = "Organization";
+  private static final String AFFILIATION_NODE_TYPE = "Organization";
 
   public static Builder builder() {
     return new Builder();
   }
 
-  public static Builder from(SampleExpandedAffiliation other) {
-    return new Builder(other);
-  }
-
   private static ObjectNode createAffiliationLeafNode(URI id) {
-    var affiliationNode = objectMapper.createObjectNode();
-    affiliationNode.put(ID_FIELD, id.toString());
+    var affiliationNode = createNodeWithType(ID_FIELD);
+    TestUtils.putIfNotNull(affiliationNode, ID_FIELD, id);
     return affiliationNode;
   }
 
   public ObjectNode asObjectNode() {
-    var affiliationNode = objectMapper.createObjectNode();
-    affiliationNode.put(TYPE_FIELD, TYPE_VALUE);
-
-    if (nonNull(id)) {
-      affiliationNode.put(ID_FIELD, id.toString());
-    }
+    var affiliationNode = createNodeWithType(AFFILIATION_NODE_TYPE);
+    TestUtils.putIfNotNull(affiliationNode, ID_FIELD, id);
+    putIfNotBlank(affiliationNode, COUNTRY_CODE_FIELD, countryCode);
 
     if (nonNull(partOf) && !partOf.isEmpty()) {
       var partOfNode = objectMapper.createArrayNode();
       partOf.stream()
           .map(SampleExpandedAffiliation::createAffiliationLeafNode)
           .forEach(partOfNode::add);
-      affiliationNode.set("partOf", partOfNode);
+      affiliationNode.set(PART_OF_FIELD, partOfNode);
     }
 
-    if (nonNull(countryCode)) {
-      affiliationNode.put(COUNTRY_CODE_FIELD, countryCode);
-    }
-
-    if (nonNull(labels)) {
+    if (nonNull(labels) && !labels.isEmpty()) {
       var labelsNode = objectMapper.createObjectNode();
       labels.forEach(labelsNode::put);
       affiliationNode.set(LABELS_FIELD, labelsNode);
@@ -65,21 +54,14 @@ public record SampleExpandedAffiliation(
     return affiliationNode;
   }
 
-  @JacocoGenerated
   public static final class Builder {
 
     private URI id = randomUri();
     private List<URI> partOf = emptyList();
     private String countryCode = COUNTRY_CODE_NORWAY;
-    private Map<String, String> labels = Map.of();
+    private final Map<String, String> labels = Map.of();
 
     private Builder() {}
-
-    private Builder(SampleExpandedAffiliation other) {
-      this.id = other.id();
-      this.countryCode = other.countryCode();
-      this.labels = other.labels();
-    }
 
     public Builder withPartOf(Collection<URI> partOf) {
       this.partOf = partOf.stream().toList();

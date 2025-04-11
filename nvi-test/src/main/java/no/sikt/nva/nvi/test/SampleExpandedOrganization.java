@@ -6,9 +6,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
-import nva.commons.core.JacocoGenerated;
+import java.util.stream.Stream;
 
-@JacocoGenerated
 public record SampleExpandedOrganization(
     URI id,
     String type,
@@ -22,11 +21,7 @@ public record SampleExpandedOrganization(
   }
 
   public ObjectNode asObjectNode() {
-    try {
-      return objectMapper.valueToTree(this);
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
+    return objectMapper.valueToTree(this);
   }
 
   public static final class Builder {
@@ -62,7 +57,7 @@ public record SampleExpandedOrganization(
 
     public Builder withParentOrganizations(URI... parentIds) {
       this.parentOrganizations =
-          List.of(parentIds).stream().map(id -> builder().withId(id).build()).toList();
+          Stream.of(parentIds).map(parentId -> builder().withId(parentId).build()).toList();
       return this;
     }
 

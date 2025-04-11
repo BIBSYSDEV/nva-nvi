@@ -13,6 +13,8 @@ import static no.sikt.nva.nvi.test.TestConstants.ORCID_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.ROLE_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.TYPE_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.VERIFICATION_STATUS_FIELD;
+import static no.sikt.nva.nvi.test.TestUtils.createNodeWithType;
+import static no.sikt.nva.nvi.test.TestUtils.putIfNotBlank;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -21,9 +23,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.net.URI;
 import java.util.List;
-import nva.commons.core.JacocoGenerated;
 
-@JacocoGenerated
 public record SampleExpandedContributor(
     URI id,
     String verificationStatus,
@@ -36,13 +36,8 @@ public record SampleExpandedContributor(
     return new Builder();
   }
 
-  public static Builder from(SampleExpandedContributor other) {
-    return new Builder(other);
-  }
-
   public ObjectNode asObjectNode() {
-    var contributorNode = objectMapper.createObjectNode();
-    contributorNode.put(TYPE_FIELD, CONTRIBUTOR);
+    var contributorNode = createNodeWithType(CONTRIBUTOR);
 
     contributorNode.set(AFFILIATIONS_FIELD, createAndPopulateAffiliationsNode());
 
@@ -50,26 +45,20 @@ public record SampleExpandedContributor(
     roleNode.put(TYPE_FIELD, role);
     contributorNode.set(ROLE_FIELD, roleNode);
 
-    var identityNode = objectMapper.createObjectNode();
+    var identityNode = createNodeWithType(IDENTITY);
     identityNode.put(TYPE_FIELD, IDENTITY);
-    if (nonNull(id)) {
-      identityNode.put(ID_FIELD, id.toString());
-    }
+    TestUtils.putIfNotNull(identityNode, ID_FIELD, id);
     if (nonNull(names) && !names.isEmpty()) {
       if (names.size() > ONE) {
         var nameArrayNode = objectMapper.createArrayNode();
         names.forEach(nameArrayNode::add);
         identityNode.set(NAME_FIELD, nameArrayNode);
       } else {
-        identityNode.put(NAME_FIELD, names.getFirst());
+        putIfNotBlank(identityNode, NAME_FIELD, names.getFirst());
       }
     }
-    if (nonNull(orcId)) {
-      identityNode.put(ORCID_FIELD, orcId);
-    }
-    if (nonNull(verificationStatus)) {
-      identityNode.put(VERIFICATION_STATUS_FIELD, verificationStatus);
-    }
+    putIfNotBlank(identityNode, ORCID_FIELD, orcId);
+    putIfNotBlank(identityNode, VERIFICATION_STATUS_FIELD, verificationStatus);
 
     contributorNode.set(IDENTITY_FIELD, identityNode);
     return contributorNode;
@@ -88,7 +77,6 @@ public record SampleExpandedContributor(
     return affiliationsRootNode;
   }
 
-  @JacocoGenerated
   public static final class Builder {
 
     private URI id = randomUri();
@@ -99,15 +87,6 @@ public record SampleExpandedContributor(
     private List<SampleExpandedAffiliation> affiliations;
 
     private Builder() {}
-
-    private Builder(SampleExpandedContributor other) {
-      this.id = other.id;
-      this.verificationStatus = other.verificationStatus;
-      this.names = other.names;
-      this.role = other.role;
-      this.affiliations = other.affiliations;
-      this.orcId = other.orcId;
-    }
 
     public Builder withId(URI id) {
       this.id = id;
@@ -131,6 +110,11 @@ public record SampleExpandedContributor(
 
     public Builder withAffiliations(List<SampleExpandedAffiliation> affiliations) {
       this.affiliations = affiliations;
+      return this;
+    }
+
+    public Builder withOrcId(String orcId) {
+      this.orcId = orcId;
       return this;
     }
 

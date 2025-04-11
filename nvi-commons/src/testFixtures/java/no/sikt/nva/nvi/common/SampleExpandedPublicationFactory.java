@@ -112,6 +112,7 @@ public class SampleExpandedPublicationFactory {
             .withId(randomUriWithSuffix("nviCreator"))
             .withNames(nonNull(name) ? List.of(name) : emptyList())
             .withRole(role)
+            .withOrcId(randomString())
             .withVerificationStatus("Verified")
             .withAffiliations(expandedAffiliations)
             .build();
