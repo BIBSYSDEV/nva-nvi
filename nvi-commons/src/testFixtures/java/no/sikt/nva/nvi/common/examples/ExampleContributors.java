@@ -19,12 +19,15 @@ import no.sikt.nva.nvi.common.dto.ContributorDto;
  */
 public class ExampleContributors {
 
-  public static final ContributorDto EXAMPLE_1_CONTRIBUTOR =
+  private static final ContributorDto.Builder defaultContributorBuilder =
       ContributorDto.builder()
           .withId(URI.create("https://api.sandbox.nva.aws.unit.no/cristin/person/1215176"))
           .withName("Ola Nordmann")
           .withRole(ROLE_CREATOR)
-          .withVerificationStatus(STATUS_VERIFIED)
+          .withVerificationStatus(STATUS_VERIFIED);
+
+  public static final ContributorDto EXAMPLE_1_CONTRIBUTOR =
+      defaultContributorBuilder
           .withAffiliations(List.of(SUB_ORGANIZATION_SIKT, TOP_LEVEL_ORGANIZATION_NTNU))
           .build();
 
@@ -63,11 +66,10 @@ public class ExampleContributors {
           .build();
 
   public static final ContributorDto EXAMPLE_2_CONTRIBUTOR_5 =
-      ContributorDto.builder()
-          .withId(URI.create("https://api.sandbox.nva.aws.unit.no/cristin/person/1215176"))
-          .withName("Ola Nordmann")
-          .withRole(ROLE_CREATOR)
-          .withVerificationStatus(STATUS_VERIFIED)
+      defaultContributorBuilder
           .withAffiliations(List.of(SUB_ORGANIZATION_SIKT, TOP_LEVEL_ORGANIZATION_NTNU))
           .build();
+
+  public static final ContributorDto ACADEMIC_CHAPTER_CONTRIBUTOR_1 =
+      defaultContributorBuilder.withAffiliations(List.of(SUB_ORGANIZATION_SIKT)).build();
 }

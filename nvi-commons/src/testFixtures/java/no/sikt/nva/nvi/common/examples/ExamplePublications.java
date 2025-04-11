@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.common.examples;
 
+import static no.sikt.nva.nvi.common.examples.ExampleContributors.ACADEMIC_CHAPTER_CONTRIBUTOR_1;
 import static no.sikt.nva.nvi.common.examples.ExampleContributors.EXAMPLE_1_CONTRIBUTOR;
 import static no.sikt.nva.nvi.common.examples.ExampleContributors.EXAMPLE_2_CONTRIBUTOR_1;
 import static no.sikt.nva.nvi.common.examples.ExampleContributors.EXAMPLE_2_CONTRIBUTOR_2;
@@ -11,6 +12,7 @@ import static no.sikt.nva.nvi.common.examples.ExampleOrganizations.TOP_LEVEL_ORG
 import static no.sikt.nva.nvi.common.examples.ExampleOrganizations.TOP_LEVEL_ORGANIZATION_SIKT;
 import static no.sikt.nva.nvi.common.examples.ExamplePublicationChannels.JOURNAL_OF_TESTING;
 import static no.sikt.nva.nvi.common.examples.ExamplePublicationChannels.PUBLISHER_OF_TESTING;
+import static no.sikt.nva.nvi.common.examples.ExamplePublicationChannels.SERIES_OF_ANTHOLOGY;
 import static no.sikt.nva.nvi.common.examples.ExamplePublicationChannels.SERIES_OF_TESTING;
 
 import java.net.URI;
@@ -25,8 +27,14 @@ import no.sikt.nva.nvi.common.service.model.InstanceType;
  * /resources/expandedPublications/
  */
 public class ExamplePublications {
+  public static final String EXAMPLE_PUBLICATION_1_PATH =
+      "expandedPublications/validNviCandidate1.json";
+  public static final String EXAMPLE_PUBLICATION_2_PATH =
+      "expandedPublications/validNviCandidate2.json";
+  public static final String EXAMPLE_ACADEMIC_CHAPTER_PATH =
+      "expandedPublications/applicableAcademicChapter.json";
 
-  public static final PublicationDto EXAMPLE_1 =
+  public static final PublicationDto EXAMPLE_PUBLICATION_1 =
       PublicationDto.builder()
           .withId(
               URI.create(
@@ -46,7 +54,7 @@ public class ExamplePublications {
               List.of(TOP_LEVEL_ORGANIZATION_NTNU, TOP_LEVEL_ORGANIZATION_SIKT))
           .build();
 
-  public static final PublicationDto EXAMPLE_2 =
+  public static final PublicationDto EXAMPLE_PUBLICATION_2 =
       PublicationDto.builder()
           .withId(
               URI.create(
@@ -73,5 +81,23 @@ public class ExamplePublications {
                   TOP_LEVEL_ORGANIZATION_SIKT,
                   TOP_LEVEL_ORGANIZATION_NTNU,
                   EXAMPLE_TOP_LEVEL_ORGANIZATION_3))
+          .build();
+
+  public static final PublicationDto EXAMPLE_ACADEMIC_CHAPTER =
+      PublicationDto.builder()
+          .withId(
+              URI.create(
+                  "https://api.sandbox.nva.aws.unit.no/publication/01961fbe4a94-6eb30f7c-836d-49ef-9acf-dc5d62fe9092"))
+          .withIdentifier("01961fbe4a94-6eb30f7c-836d-49ef-9acf-dc5d62fe9092")
+          .withTitle("2025-04-10 - Test av NVI")
+          .withPublicationDate(new PublicationDateDto("2025", null, null))
+          .withStatus("PUBLISHED")
+          .withPublicationType(InstanceType.ACADEMIC_CHAPTER)
+          .withModifiedDate(Instant.parse("2025-04-10T12:50:05.920945837Z"))
+          .withPublicationChannels(List.of(SERIES_OF_ANTHOLOGY))
+          .withIsApplicable(true)
+          .withIsInternationalCollaboration(false)
+          .withContributors(List.of(ACADEMIC_CHAPTER_CONTRIBUTOR_1))
+          .withTopLevelOrganizations(List.of(TOP_LEVEL_ORGANIZATION_SIKT))
           .build();
 }

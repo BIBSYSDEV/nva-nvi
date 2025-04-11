@@ -1,7 +1,11 @@
 package no.sikt.nva.nvi.common.service;
 
-import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_1;
-import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_2;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_ACADEMIC_CHAPTER;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_ACADEMIC_CHAPTER_PATH;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_PUBLICATION_1;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_PUBLICATION_1_PATH;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_PUBLICATION_2;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_PUBLICATION_2_PATH;
 import static nva.commons.core.ioutils.IoUtils.stringFromResources;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
@@ -23,11 +27,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 class PublicationLoaderServiceTest {
   private static final String BUCKET_NAME = "testBucket";
-  private static final String EXAMPLE_PUBLICATION_1 =
-      "expandedPublications/validNviCandidate1.json";
-  private static final String EXAMPLE_PUBLICATION_2 =
-      "expandedPublications/validNviCandidate2.json";
-  private static final String EXAMPLE_PROVIDER = "exampleDocumentTestProvider";
 
   private S3Driver s3Driver;
   private PublicationLoaderService dataLoader;
@@ -41,46 +40,17 @@ class PublicationLoaderServiceTest {
   }
 
   @ParameterizedTest
-  @MethodSource(EXAMPLE_PROVIDER)
+  @MethodSource("exampleDocumentTestProvider")
   void shouldNotFailWhenValidatingExampleDocument(String filename) {
     var actual = parseExampleDocument(filename);
     assertThatNoException().isThrownBy(actual::validate);
   }
 
   @ParameterizedTest
-  @MethodSource(EXAMPLE_PROVIDER)
-  void shouldGetExpectedFieldsFromExampleDocument(String filename, PublicationDto expected) {
+  @MethodSource("exampleDocumentTestProvider")
+  void shouldGetExpectedDataFromExampleDocuments(String filename, PublicationDto expected) {
     var actual = parseExampleDocument(filename);
-    assertThat(actual)
-        .usingRecursiveComparison()
-        .ignoringFields("publicationChannels", "contributors", "topLevelOrganizations")
-        .isEqualTo(expected);
-  }
-
-  @ParameterizedTest
-  @MethodSource(EXAMPLE_PROVIDER)
-  void shouldGetExpectedContributorsFromExampleDocument(String filename, PublicationDto expected) {
-    var expectedContributors = expected.contributors();
-    var actualContributors = parseExampleDocument(filename).contributors();
-    assertThat(actualContributors).containsExactlyInAnyOrderElementsOf(expectedContributors);
-  }
-
-  @ParameterizedTest
-  @MethodSource(EXAMPLE_PROVIDER)
-  void shouldGetExpectedPublicationChannelsFromExampleDocument(
-      String filename, PublicationDto expected) {
-    var expectedChannels = expected.publicationChannels();
-    var actualChannels = parseExampleDocument(filename).publicationChannels();
-    assertThat(actualChannels).containsExactlyInAnyOrderElementsOf(expectedChannels);
-  }
-
-  @ParameterizedTest
-  @MethodSource(EXAMPLE_PROVIDER)
-  void shouldGetExpectedTopLevelOrganizationsFromExampleDocument(
-      String filename, PublicationDto expected) {
-    var expectedOrganizations = expected.topLevelOrganizations();
-    var actualOrganizations = parseExampleDocument(filename).topLevelOrganizations();
-    assertThat(actualOrganizations).containsExactlyInAnyOrderElementsOf(expectedOrganizations);
+    assertThat(actual).usingRecursiveComparison().ignoringCollectionOrder().isEqualTo(expected);
   }
 
   private PublicationDto parseExampleDocument(String filename) {
@@ -98,9 +68,9 @@ class PublicationLoaderServiceTest {
   }
 
   private static Stream<Arguments> exampleDocumentTestProvider() {
-
     return Stream.of(
-        argumentSet("Minimal example", EXAMPLE_PUBLICATION_1, EXAMPLE_1),
-        argumentSet("Full example", EXAMPLE_PUBLICATION_2, EXAMPLE_2));
+        argumentSet("Minimal example", EXAMPLE_PUBLICATION_1_PATH, EXAMPLE_PUBLICATION_1),
+        argumentSet("Full example", EXAMPLE_PUBLICATION_2_PATH, EXAMPLE_PUBLICATION_2),
+        argumentSet("Academic chapter", EXAMPLE_ACADEMIC_CHAPTER_PATH, EXAMPLE_ACADEMIC_CHAPTER));
   }
 }
