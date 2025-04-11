@@ -124,6 +124,11 @@ public record SampleExpandedContributor(
       return this;
     }
 
+    public Builder withRole(String role) {
+      this.role = role;
+      return this;
+    }
+
     public Builder withAffiliations(List<SampleExpandedAffiliation> affiliations) {
       this.affiliations = affiliations;
       return this;

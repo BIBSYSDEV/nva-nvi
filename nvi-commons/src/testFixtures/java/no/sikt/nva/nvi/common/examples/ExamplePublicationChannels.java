@@ -49,4 +49,18 @@ public class ExamplePublicationChannels {
           .withScientificValue(ScientificValue.LEVEL_ONE)
           .withPrintIssn("0934-2575")
           .build();
+
+  public static final PublicationChannelDto SERIES_OF_ANTHOLOGY =
+      PublicationChannelDto.builder()
+          .withId(
+              URI.create(
+                  "https://api.sandbox.nva.aws.unit.no/publication-channels-v2/serial-publication/65CF2101-E6CE-437F-9DDD-07FC3DB6B119/2017"))
+          .withIdentifier("65CF2101-E6CE-437F-9DDD-07FC3DB6B119")
+          .withChannelType("Series")
+          .withName("Norsk veterinærtidsskrift")
+          .withYear("2017")
+          .withScientificValue(ScientificValue.LEVEL_ONE)
+          .withOnlineIssn("2704-0410")
+          .withPrintIssn("0332-5741")
+          .build();
 }

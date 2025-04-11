@@ -6,9 +6,11 @@ import static no.sikt.nva.nvi.test.TestConstants.NAME_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.TYPE_FIELD;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
+import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.net.URI;
+import java.util.Locale;
 import nva.commons.core.JacocoGenerated;
 
 @JacocoGenerated
@@ -46,7 +48,7 @@ public record SampleExpandedPublicationChannel(
   public static final class Builder {
 
     private String type;
-    private URI id;
+    private URI id = randomUri();
     private String name = randomString();
     private String level = "Unassigned";
     private Boolean valid;
@@ -64,7 +66,7 @@ public record SampleExpandedPublicationChannel(
     }
 
     public Builder withType(String type) {
-      this.type = type;
+      this.type = type.toLowerCase(Locale.ROOT);
       return this;
     }
 
