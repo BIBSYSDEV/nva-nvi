@@ -32,6 +32,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+// FIXME: Suppressing AvoidDuplicateLiterals because I don't want to touch the test data now.
+// We should consider moving the test data to a separate CSV file or something later.
+@SuppressWarnings("PMD.AvoidDuplicateLiterals")
 class PointCalculationTest extends EvaluationTest {
   private SampleExpandedPublicationFactory factory;
   private Organization nviOrganization1;
