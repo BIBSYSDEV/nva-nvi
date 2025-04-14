@@ -3,14 +3,10 @@ package no.sikt.nva.nvi.events.evaluator;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.service.model.NviPeriod.fetchByPublishingYear;
-import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_BODY;
 import static no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil.getUnverifiedCreators;
 import static no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil.getVerifiedCreators;
-import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import java.net.URI;
 import java.time.Year;
 import java.util.Collection;
@@ -38,8 +34,6 @@ import no.sikt.nva.nvi.events.model.NviCandidate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-// FIXME: Temporary suppression while refactoring, should be removed.
-@SuppressWarnings({"PMD.CouplingBetweenObjects", "PMD.AvoidLiteralsInIfCondition"})
 public class EvaluatorService {
 
   private static final String NVI_CANDIDATE_MESSAGE =
@@ -53,9 +47,7 @@ public class EvaluatorService {
   private static final String REPORTED_CANDIDATE_MESSAGE =
       "Publication is already reported and cannot be updated.";
   private final Logger logger = LoggerFactory.getLogger(EvaluatorService.class);
-  private final StorageReader<URI> storageReader;
   private final CreatorVerificationUtil creatorVerificationUtil;
-  private final PointService pointService;
   private final CandidateRepository candidateRepository;
   private final PeriodRepository periodRepository;
   private final PublicationLoaderService publicationLoader;
@@ -63,43 +55,37 @@ public class EvaluatorService {
   public EvaluatorService(
       StorageReader<URI> storageReader,
       CreatorVerificationUtil creatorVerificationUtil,
-      PointService pointService,
       CandidateRepository candidateRepository,
       PeriodRepository periodRepository) {
-    this.storageReader = storageReader;
     this.creatorVerificationUtil = creatorVerificationUtil;
-    this.pointService = pointService;
     this.candidateRepository = candidateRepository;
     this.periodRepository = periodRepository;
     this.publicationLoader = new PublicationLoaderService(storageReader);
   }
 
   public Optional<CandidateEvaluatedMessage> evaluateCandidacy(URI publicationBucketUri) {
-    var publication = extractBodyFromContent(storageReader.read(publicationBucketUri));
-    // TODO: Running extraction here to verify that it works, but we do not fully use it yet.
-    // TODO: Replace use of JsonNode with the extracted Publication object.
-    var publicationDto = publicationLoader.extractAndTransform(publicationBucketUri);
-    logger.info("Publication: {}", publicationDto.id());
+    var publication = publicationLoader.extractAndTransform(publicationBucketUri);
+    logger.info("Evaluating publication with ID: {}", publication.id());
 
-    var candidate = fetchOptionalCandidate(publicationDto.id()).orElse(null);
-    var period = fetchOptionalPeriod(publicationDto.publicationDate().year()).orElse(null);
+    var candidate = fetchOptionalCandidate(publication.id()).orElse(null);
+    var period = fetchOptionalPeriod(publication.publicationDate().year()).orElse(null);
 
     // Check if the publication can be evaluated
-    if (shouldSkipEvaluation(candidate, publicationDto.publicationDate())) {
-      logger.info(SKIPPED_EVALUATION_MESSAGE, publicationDto.id());
+    if (shouldSkipEvaluation(candidate, publication.publicationDate())) {
+      logger.info(SKIPPED_EVALUATION_MESSAGE, publication.id());
       return Optional.empty();
     }
 
     // Check if the publication meets the requirements to be a candidate
-    if (!publicationDto.isApplicable()) {
-      logger.info(NON_NVI_CANDIDATE_MESSAGE, publicationDto.id());
-      return createNonNviCandidateMessage(publicationDto.id());
+    if (!publication.isApplicable()) {
+      logger.info(NON_NVI_CANDIDATE_MESSAGE, publication.id());
+      return createNonNviCandidateMessage(publication.id());
     }
 
-    var creators = creatorVerificationUtil.getNviCreatorsWithNviInstitutions(publicationDto);
+    var creators = creatorVerificationUtil.getNviCreatorsWithNviInstitutions(publication);
     if (creators.isEmpty()) {
-      logger.info(NON_NVI_CANDIDATE_MESSAGE, publicationDto.id());
-      return createNonNviCandidateMessage(publicationDto.id());
+      logger.info(NON_NVI_CANDIDATE_MESSAGE, publication.id());
+      return createNonNviCandidateMessage(publication.id());
     }
 
     // Check that the publication can be a candidate in the target period
@@ -109,13 +95,12 @@ public class EvaluatorService {
         periodExists && nonNull(candidate) && isApplicableInPeriod(period, candidate);
     var canEvaluateInPeriod = periodIsOpen || candidateExistsInPeriod;
     if (!canEvaluateInPeriod) {
-      logger.info(NON_NVI_CANDIDATE_MESSAGE, publicationDto.id());
-      return createNonNviCandidateMessage(publicationDto.id());
+      logger.info(NON_NVI_CANDIDATE_MESSAGE, publication.id());
+      return createNonNviCandidateMessage(publication.id());
     }
 
-    logger.info(NVI_CANDIDATE_MESSAGE, publicationDto.id());
-    var nviCandidate =
-        constructNviCandidate(publication, publicationDto, publicationBucketUri, creators);
+    logger.info(NVI_CANDIDATE_MESSAGE, publication.id());
+    var nviCandidate = constructNviCandidate(publication, publicationBucketUri, creators);
     return createNviCandidateMessage(nviCandidate);
   }
 
@@ -142,15 +127,12 @@ public class EvaluatorService {
   }
 
   private NviCandidate constructNviCandidate(
-      JsonNode publication,
-      PublicationDto publicationDto,
-      URI publicationBucketUri,
-      Collection<NviCreator> creators) {
+      PublicationDto publicationDto, URI publicationBucketUri, Collection<NviCreator> creators) {
     var verifiedCreatorsWithNviInstitutions = getVerifiedCreators(creators);
     var unverifiedCreatorsWithNviInstitutions = getUnverifiedCreators(creators);
     var pointCalculation =
-        pointService.calculatePoints(
-            publication,
+        PointService.calculatePoints(
+            publicationDto,
             verifiedCreatorsWithNviInstitutions,
             unverifiedCreatorsWithNviInstitutions);
 
@@ -213,13 +195,5 @@ public class EvaluatorService {
 
   private Optional<CandidateEvaluatedMessage> createNviCandidateMessage(NviCandidate nviCandidate) {
     return Optional.of(CandidateEvaluatedMessage.builder().withCandidateType(nviCandidate).build());
-  }
-
-  private JsonNode extractBodyFromContent(String content) {
-    try {
-      return dtoObjectMapper.readTree(content).at(JSON_PTR_BODY);
-    } catch (JsonProcessingException e) {
-      throw new RuntimeException(e);
-    }
   }
 }
