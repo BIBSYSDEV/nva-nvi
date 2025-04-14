@@ -150,7 +150,7 @@ public class EvaluatorService {
     var unverifiedCreatorsWithNviInstitutions = getUnverifiedCreators(creators);
     var pointCalculation =
         pointService.calculatePoints(
-            publication,
+            publicationDto,
             verifiedCreatorsWithNviInstitutions,
             unverifiedCreatorsWithNviInstitutions);
 
