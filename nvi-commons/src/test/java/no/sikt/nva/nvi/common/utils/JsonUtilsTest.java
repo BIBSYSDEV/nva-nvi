@@ -63,11 +63,4 @@ class JsonUtilsTest {
         JsonUtils.streamNode(randomJsonNode).toList(),
         StreamSupport.stream(randomJsonNode.spliterator(), false).toList());
   }
-
-  @Test
-  void shouldExtractId() {
-    var id = randomUri();
-    var jsonNode = objectMapper.createObjectNode().put(ID_FIELD, id.toString());
-    assertEquals(JsonUtils.extractId(jsonNode), id);
-  }
 }
