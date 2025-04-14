@@ -87,13 +87,12 @@ public final class PointService {
    * extra share for each verified top-level affiliation beyond the first one.
    */
   private static int countOfExtraCreatorShares(NviCreator creator) {
-    int count =
-        (int)
-            creator.nviAffiliations().stream()
-                .map(NviOrganization::topLevelOrganization)
-                .map(NviOrganization::id)
-                .distinct()
-                .count();
-    return Math.max(0, count - 1);
+    var affiliationCount =
+        creator.nviAffiliations().stream()
+            .map(NviOrganization::topLevelOrganization)
+            .map(NviOrganization::id)
+            .distinct()
+            .count();
+    return (int) Math.max(0, affiliationCount - 1);
   }
 }
