@@ -9,7 +9,6 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.net.URI;
-import java.util.Locale;
 
 public record SampleExpandedPublicationChannel(String type, URI id, String name, String level) {
 
@@ -35,7 +34,7 @@ public record SampleExpandedPublicationChannel(String type, URI id, String name,
     private Builder() {}
 
     public Builder withType(String type) {
-      this.type = type.toLowerCase(Locale.ROOT);
+      this.type = type;
       return this;
     }
 
