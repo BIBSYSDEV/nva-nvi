@@ -16,9 +16,9 @@ import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
 
 public final class PointService {
 
-  public PointService() {}
+  private PointService() {}
 
-  public PointCalculation calculatePoints(
+  public static PointCalculation calculatePoints(
       PublicationDto publication,
       Collection<VerifiedNviCreator> verifiedNviCreators,
       Collection<UnverifiedNviCreator> unverifiedNviCreators) {

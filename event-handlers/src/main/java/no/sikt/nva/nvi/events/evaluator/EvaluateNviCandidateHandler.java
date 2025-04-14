@@ -42,7 +42,6 @@ public class EvaluateNviCandidateHandler implements RequestHandler<SQSEvent, Voi
         new EvaluatorService(
             new S3StorageReader(new Environment().readEnv("EXPANDED_RESOURCES_BUCKET")),
             new CreatorVerificationUtil(authorizedUriRetriever(new Environment())),
-            new PointService(),
             new CandidateRepository(defaultDynamoClient()),
             new PeriodRepository(defaultDynamoClient())),
         new NviQueueClient(),

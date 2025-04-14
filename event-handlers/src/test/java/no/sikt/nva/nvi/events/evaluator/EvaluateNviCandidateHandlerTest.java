@@ -600,10 +600,8 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
 
   private void setupEvaluatorService(PeriodRepository periodRepository) {
     var calculator = new CreatorVerificationUtil(authorizedBackendUriRetriever);
-    var pointCalculator = new PointService();
     evaluatorService =
-        new EvaluatorService(
-            storageReader, calculator, pointCalculator, candidateRepository, periodRepository);
+        new EvaluatorService(storageReader, calculator, candidateRepository, periodRepository);
   }
 
   private URI setupCandidate(int year) throws IOException {

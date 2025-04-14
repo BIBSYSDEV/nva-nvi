@@ -34,8 +34,6 @@ import no.sikt.nva.nvi.events.model.NviCandidate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-// FIXME: Temporary suppression while refactoring, should be removed.
-@SuppressWarnings({"PMD.CouplingBetweenObjects", "PMD.AvoidLiteralsInIfCondition"})
 public class EvaluatorService {
 
   private static final String NVI_CANDIDATE_MESSAGE =
@@ -50,7 +48,6 @@ public class EvaluatorService {
       "Publication is already reported and cannot be updated.";
   private final Logger logger = LoggerFactory.getLogger(EvaluatorService.class);
   private final CreatorVerificationUtil creatorVerificationUtil;
-  private final PointService pointService;
   private final CandidateRepository candidateRepository;
   private final PeriodRepository periodRepository;
   private final PublicationLoaderService publicationLoader;
@@ -58,11 +55,9 @@ public class EvaluatorService {
   public EvaluatorService(
       StorageReader<URI> storageReader,
       CreatorVerificationUtil creatorVerificationUtil,
-      PointService pointService,
       CandidateRepository candidateRepository,
       PeriodRepository periodRepository) {
     this.creatorVerificationUtil = creatorVerificationUtil;
-    this.pointService = pointService;
     this.candidateRepository = candidateRepository;
     this.periodRepository = periodRepository;
     this.publicationLoader = new PublicationLoaderService(storageReader);
@@ -136,7 +131,7 @@ public class EvaluatorService {
     var verifiedCreatorsWithNviInstitutions = getVerifiedCreators(creators);
     var unverifiedCreatorsWithNviInstitutions = getUnverifiedCreators(creators);
     var pointCalculation =
-        pointService.calculatePoints(
+        PointService.calculatePoints(
             publicationDto,
             verifiedCreatorsWithNviInstitutions,
             unverifiedCreatorsWithNviInstitutions);
