@@ -64,28 +64,28 @@ public class EvaluatorService {
   }
 
   public Optional<CandidateEvaluatedMessage> evaluateCandidacy(URI publicationBucketUri) {
-    var publicationDto = publicationLoader.extractAndTransform(publicationBucketUri);
-    logger.info("Evaluating publication with ID: {}", publicationDto.id());
+    var publication = publicationLoader.extractAndTransform(publicationBucketUri);
+    logger.info("Evaluating publication with ID: {}", publication.id());
 
-    var candidate = fetchOptionalCandidate(publicationDto.id()).orElse(null);
-    var period = fetchOptionalPeriod(publicationDto.publicationDate().year()).orElse(null);
+    var candidate = fetchOptionalCandidate(publication.id()).orElse(null);
+    var period = fetchOptionalPeriod(publication.publicationDate().year()).orElse(null);
 
     // Check if the publication can be evaluated
-    if (shouldSkipEvaluation(candidate, publicationDto.publicationDate())) {
-      logger.info(SKIPPED_EVALUATION_MESSAGE, publicationDto.id());
+    if (shouldSkipEvaluation(candidate, publication.publicationDate())) {
+      logger.info(SKIPPED_EVALUATION_MESSAGE, publication.id());
       return Optional.empty();
     }
 
     // Check if the publication meets the requirements to be a candidate
-    if (!publicationDto.isApplicable()) {
-      logger.info(NON_NVI_CANDIDATE_MESSAGE, publicationDto.id());
-      return createNonNviCandidateMessage(publicationDto.id());
+    if (!publication.isApplicable()) {
+      logger.info(NON_NVI_CANDIDATE_MESSAGE, publication.id());
+      return createNonNviCandidateMessage(publication.id());
     }
 
-    var creators = creatorVerificationUtil.getNviCreatorsWithNviInstitutions(publicationDto);
+    var creators = creatorVerificationUtil.getNviCreatorsWithNviInstitutions(publication);
     if (creators.isEmpty()) {
-      logger.info(NON_NVI_CANDIDATE_MESSAGE, publicationDto.id());
-      return createNonNviCandidateMessage(publicationDto.id());
+      logger.info(NON_NVI_CANDIDATE_MESSAGE, publication.id());
+      return createNonNviCandidateMessage(publication.id());
     }
 
     // Check that the publication can be a candidate in the target period
@@ -95,12 +95,12 @@ public class EvaluatorService {
         periodExists && nonNull(candidate) && isApplicableInPeriod(period, candidate);
     var canEvaluateInPeriod = periodIsOpen || candidateExistsInPeriod;
     if (!canEvaluateInPeriod) {
-      logger.info(NON_NVI_CANDIDATE_MESSAGE, publicationDto.id());
-      return createNonNviCandidateMessage(publicationDto.id());
+      logger.info(NON_NVI_CANDIDATE_MESSAGE, publication.id());
+      return createNonNviCandidateMessage(publication.id());
     }
 
-    logger.info(NVI_CANDIDATE_MESSAGE, publicationDto.id());
-    var nviCandidate = constructNviCandidate(publicationDto, publicationBucketUri, creators);
+    logger.info(NVI_CANDIDATE_MESSAGE, publication.id());
+    var nviCandidate = constructNviCandidate(publication, publicationBucketUri, creators);
     return createNviCandidateMessage(nviCandidate);
   }
 
