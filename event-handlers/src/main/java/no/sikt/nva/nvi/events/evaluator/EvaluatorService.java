@@ -3,14 +3,10 @@ package no.sikt.nva.nvi.events.evaluator;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.service.model.NviPeriod.fetchByPublishingYear;
-import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_BODY;
 import static no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil.getUnverifiedCreators;
 import static no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil.getVerifiedCreators;
-import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import java.net.URI;
 import java.time.Year;
 import java.util.Collection;
@@ -53,7 +49,6 @@ public class EvaluatorService {
   private static final String REPORTED_CANDIDATE_MESSAGE =
       "Publication is already reported and cannot be updated.";
   private final Logger logger = LoggerFactory.getLogger(EvaluatorService.class);
-  private final StorageReader<URI> storageReader;
   private final CreatorVerificationUtil creatorVerificationUtil;
   private final PointService pointService;
   private final CandidateRepository candidateRepository;
@@ -66,7 +61,6 @@ public class EvaluatorService {
       PointService pointService,
       CandidateRepository candidateRepository,
       PeriodRepository periodRepository) {
-    this.storageReader = storageReader;
     this.creatorVerificationUtil = creatorVerificationUtil;
     this.pointService = pointService;
     this.candidateRepository = candidateRepository;
@@ -75,11 +69,8 @@ public class EvaluatorService {
   }
 
   public Optional<CandidateEvaluatedMessage> evaluateCandidacy(URI publicationBucketUri) {
-    var publication = extractBodyFromContent(storageReader.read(publicationBucketUri));
-    // TODO: Running extraction here to verify that it works, but we do not fully use it yet.
-    // TODO: Replace use of JsonNode with the extracted Publication object.
     var publicationDto = publicationLoader.extractAndTransform(publicationBucketUri);
-    logger.info("Publication: {}", publicationDto.id());
+    logger.info("Evaluating publication with ID: {}", publicationDto.id());
 
     var candidate = fetchOptionalCandidate(publicationDto.id()).orElse(null);
     var period = fetchOptionalPeriod(publicationDto.publicationDate().year()).orElse(null);
@@ -114,8 +105,7 @@ public class EvaluatorService {
     }
 
     logger.info(NVI_CANDIDATE_MESSAGE, publicationDto.id());
-    var nviCandidate =
-        constructNviCandidate(publication, publicationDto, publicationBucketUri, creators);
+    var nviCandidate = constructNviCandidate(publicationDto, publicationBucketUri, creators);
     return createNviCandidateMessage(nviCandidate);
   }
 
@@ -142,10 +132,7 @@ public class EvaluatorService {
   }
 
   private NviCandidate constructNviCandidate(
-      JsonNode publication,
-      PublicationDto publicationDto,
-      URI publicationBucketUri,
-      Collection<NviCreator> creators) {
+      PublicationDto publicationDto, URI publicationBucketUri, Collection<NviCreator> creators) {
     var verifiedCreatorsWithNviInstitutions = getVerifiedCreators(creators);
     var unverifiedCreatorsWithNviInstitutions = getUnverifiedCreators(creators);
     var pointCalculation =
@@ -213,13 +200,5 @@ public class EvaluatorService {
 
   private Optional<CandidateEvaluatedMessage> createNviCandidateMessage(NviCandidate nviCandidate) {
     return Optional.of(CandidateEvaluatedMessage.builder().withCandidateType(nviCandidate).build());
-  }
-
-  private JsonNode extractBodyFromContent(String content) {
-    try {
-      return dtoObjectMapper.readTree(content).at(JSON_PTR_BODY);
-    } catch (JsonProcessingException e) {
-      throw new RuntimeException(e);
-    }
   }
 }
