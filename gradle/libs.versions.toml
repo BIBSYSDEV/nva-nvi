@@ -13,7 +13,7 @@ errorpronePlugin = { strictly = '4.1.0' }
 guava = { strictly = '33.4.0-jre' }
 hamcrest = { strictly = '3.0' }
 jackson = { strictly = '2.18.2' }
-jena = { strictly = '4.10.0' }
+jena = { strictly = '5.3.0' }
 junit = { strictly = '5.11.4' }
 junitPlatform = { strictly = '1.11.4' } # May need to sync minor&patch version with 'junit' version
 log4j = { strictly = '2.24.3' }
