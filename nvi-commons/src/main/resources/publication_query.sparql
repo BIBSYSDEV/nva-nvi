@@ -150,7 +150,6 @@ WHERE {
   OPTIONAL {
     ?publication :entityDescription/:contributor ?contributor .
     ?contributor :identity ?personId ;
-    :affiliation ?affiliation ;
     :role ?role .
     ?role a ?roleType .
     OPTIONAL { ?personId :verificationStatus ?verificationStatus }
@@ -163,12 +162,20 @@ WHERE {
         FILTER(?otherName > ?contributorName)
       }
     }
-  }
 
-  # Find any top-level organization with a contributor
-  OPTIONAL {
-    ?affiliation :partOf* ?topLevelOrganization .
-    ?topLevelOrganization a :Organization .
-    FILTER NOT EXISTS { ?topLevelOrganization :partOf ?parent }
+    # Find all valid affiliations for the contributor
+    OPTIONAL {
+      ?contributor :affiliation ?affiliation .
+      ?affiliation a :Organization .
+      FILTER(isIRI(?affiliation))
+
+      # Find the top-level organization for each affiliation
+      OPTIONAL {
+        ?affiliation :partOf* ?topLevelOrganization .
+        ?topLevelOrganization a :Organization .
+        FILTER(isIRI(?topLevelOrganization))
+        FILTER NOT EXISTS { ?topLevelOrganization :partOf ?parent }
+      }
+    }
   }
 }

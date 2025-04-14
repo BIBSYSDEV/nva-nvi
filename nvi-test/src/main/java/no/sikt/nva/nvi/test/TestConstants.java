@@ -10,6 +10,7 @@ public final class TestConstants {
   public static final String IDENTITY_FIELD = "identity";
   public static final String IDENTITY = "Identity";
   public static final String TYPE_FIELD = "type";
+  public static final String PART_OF_FIELD = "partOf";
   public static final String NAME_FIELD = "name";
   public static final String LABELS_FIELD = "labels";
   public static final String LEVEL_FIELD = "level";
@@ -75,11 +76,19 @@ public final class TestConstants {
   public static final String PUBLICATION_INSTANCE_FIELD = "publicationInstance";
   public static final String PUBLICATION_CONTEXT_FIELD = "publicationContext";
   public static final String REFERENCE_FIELD = "reference";
+  public static final String REFERENCE_TYPE = "Reference";
   public static final String ENTITY_DESCRIPTION_FIELD = "entityDescription";
+  public static final String ENTITY_DESCRIPTION_TYPE = "EntityDescription";
   public static final String TOP_LEVEL_ORGANIZATIONS_FIELD = "topLevelOrganizations";
   public static final String BODY_FIELD = "body";
   public static final String LANGUAGE_FIELD = "language";
   public static final String ABSTRACT_FIELD = "abstract";
+  public static final String ACADEMIC_CHAPTER = "AcademicChapter";
+  public static final String ACADEMIC_LITERATURE_REVIEW = "AcademicLiteratureReview";
+  public static final String ACADEMIC_ARTICLE = "AcademicArticle";
+  public static final String ACADEMIC_MONOGRAPH = "AcademicMonograph";
+  public static final String CHANNEL_PUBLISHER = "publisher";
+  public static final String CHANNEL_SERIES = "series";
 
   private TestConstants() {}
 }

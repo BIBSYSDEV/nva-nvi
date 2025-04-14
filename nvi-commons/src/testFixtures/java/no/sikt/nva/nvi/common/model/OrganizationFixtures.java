@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.IntStream;
+import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.client.model.Organization.Builder;
 import no.unit.nva.auth.uriretriever.UriRetriever;
@@ -37,15 +38,35 @@ public class OrganizationFixtures {
         .withLabels(Map.of(randomString(), randomString()));
   }
 
-  public static Builder randomOrganizationWithSubUnits(int numberOfSubUnits) {
-    var topLevelOrganizationId = randomUriWithSuffix("topLevel");
-    var topLevelLeafNode = Organization.builder().withId(topLevelOrganizationId).build();
+  public static Builder randomOrganization(String countryCode) {
+    return Organization.builder()
+        .withId(randomUri())
+        .withCountryCode(countryCode)
+        .withLabels(Map.of(randomString(), randomString()));
+  }
+
+  public static Organization setupRandomOrganization(
+      String countryCode, int numberOfSubOrganizations, UriRetriever uriRetriever) {
+    var topLevelOrganization = randomOrganization(countryCode, numberOfSubOrganizations).build();
+    var subOrganizationIds = topLevelOrganization.hasPart().stream().map(Organization::id).toList();
+    mockOrganizationResponseForAffiliations(
+        topLevelOrganization.id(), subOrganizationIds, uriRetriever);
+
+    var organizationRetriever = new OrganizationRetriever(uriRetriever);
+    return organizationRetriever.fetchOrganization(topLevelOrganization.id());
+  }
+
+  public static Builder randomOrganization(String countryCode, int numberOfSubOrganizations) {
+    var topLevelOrganizationId = randomUriWithSuffix("topLevelOrganization");
+    var topLevelLeafNode =
+        Organization.builder().withId(topLevelOrganizationId).withCountryCode(countryCode).build();
     var subOrganizations =
-        IntStream.range(0, numberOfSubUnits)
+        IntStream.range(0, numberOfSubOrganizations)
             .mapToObj(
                 i ->
                     randomOrganization()
-                        .withId(randomUriWithSuffix("subUnit"))
+                        .withId(randomUriWithSuffix("subOrganization"))
+                        .withCountryCode(countryCode)
                         .withPartOf(List.of(topLevelLeafNode))
                         .build())
             .toList();

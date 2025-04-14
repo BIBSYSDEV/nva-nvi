@@ -1,5 +1,7 @@
 package no.sikt.nva.nvi.common.dto;
 
+import static java.util.Collections.emptyList;
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 import static nva.commons.core.StringUtils.isBlank;
@@ -10,6 +12,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
+import java.util.Collection;
 import java.util.List;
 import no.sikt.nva.nvi.common.client.model.Organization;
 
@@ -21,17 +24,18 @@ public record ContributorDto(
     String name,
     VerificationStatus verificationStatus,
     ContributorRole role,
-    List<Organization> affiliations) {
+    Collection<Organization> affiliations) {
 
   public ContributorDto {
-    requireNonNull(affiliations, "Required field 'affiliations' is null");
+    if (isNull(affiliations)) {
+      affiliations = emptyList();
+    }
   }
 
   public void validate() {
     if (isBlank(name)) {
       requireNonNull(id, "Both 'id' and 'name' is null, one of these fields must be set");
     }
-    requireNonNull(affiliations, "Required field 'affiliations' is null");
   }
 
   @JsonIgnore

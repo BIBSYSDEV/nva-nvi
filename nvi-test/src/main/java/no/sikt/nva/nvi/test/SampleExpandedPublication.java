@@ -1,11 +1,15 @@
 package no.sikt.nva.nvi.test;
 
 import static java.util.Objects.isNull;
-import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.test.TestConstants.ABSTRACT_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.ACADEMIC_ARTICLE;
+import static no.sikt.nva.nvi.test.TestConstants.ACADEMIC_CHAPTER;
+import static no.sikt.nva.nvi.test.TestConstants.ACADEMIC_LITERATURE_REVIEW;
+import static no.sikt.nva.nvi.test.TestConstants.ACADEMIC_MONOGRAPH;
 import static no.sikt.nva.nvi.test.TestConstants.BODY_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.CONTRIBUTORS_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.ENTITY_DESCRIPTION_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.ENTITY_DESCRIPTION_TYPE;
 import static no.sikt.nva.nvi.test.TestConstants.IDENTIFIER_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.ID_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.LANGUAGE_FIELD;
@@ -16,16 +20,21 @@ import static no.sikt.nva.nvi.test.TestConstants.PUBLICATION_CONTEXT_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.PUBLICATION_DATE_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.PUBLICATION_INSTANCE_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.REFERENCE_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.REFERENCE_TYPE;
 import static no.sikt.nva.nvi.test.TestConstants.STATUS_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.TOP_LEVEL_ORGANIZATIONS_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.TYPE_FIELD;
+import static no.sikt.nva.nvi.test.TestUtils.createNodeWithType;
 import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
+import static no.sikt.nva.nvi.test.TestUtils.putIfNotBlank;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;
@@ -79,13 +88,13 @@ public record SampleExpandedPublication(
     publicationInstance.put(TYPE_FIELD, type);
 
     switch (type) {
-      case "AcademicArticle", "AcademicLiteratureReview", "AcademicChapter" -> {
+      case ACADEMIC_ARTICLE, ACADEMIC_LITERATURE_REVIEW, ACADEMIC_CHAPTER -> {
         var pages = objectMapper.createObjectNode();
         pages.put("begin", "pageBegin");
         pages.put("end", "pageEnd");
         publicationInstance.set(PAGES_FIELD, pages);
       }
-      case "AcademicMonograph" -> {
+      case ACADEMIC_MONOGRAPH -> {
         var pages = objectMapper.createObjectNode();
         pages.put(PAGES_FIELD, "numberOfPages");
         publicationInstance.set(PAGES_FIELD, pages);
@@ -109,8 +118,8 @@ public record SampleExpandedPublication(
       root.set(TOP_LEVEL_ORGANIZATIONS_FIELD, createTopLevelOrganizationsNode());
 
       return root;
-    } catch (Exception e) {
-      throw new IllegalStateException("Template could not be read", e);
+    } catch (IOException e) {
+      throw new UncheckedIOException("Template could not be read", e);
     }
   }
 
@@ -123,40 +132,62 @@ public record SampleExpandedPublication(
   }
 
   private ObjectNode createReferenceNode() {
-    var referenceNode = objectMapper.createObjectNode();
-    referenceNode.put(TYPE_FIELD, "Reference");
-    referenceNode.set(
-        PUBLICATION_INSTANCE_FIELD, createAndPopulatePublicationInstance(instanceType));
+    var node = createNodeWithType(REFERENCE_TYPE);
+    node.set(PUBLICATION_INSTANCE_FIELD, createAndPopulatePublicationInstance(instanceType));
+    node.set(PUBLICATION_CONTEXT_FIELD, createPublicationContextNode());
+    return node;
+  }
 
-    var publicationContextNode = objectMapper.createObjectNode();
+  private ObjectNode createPublicationContextNode() {
+    if (ACADEMIC_CHAPTER.equalsIgnoreCase(instanceType)) {
+      return createNestedAnthologyContext();
+    } else {
+      return createFlatPublicationContext();
+    }
+  }
+
+  private ObjectNode createFlatPublicationContext() {
     if (publicationChannels.isEmpty()) {
       throw new IllegalArgumentException(PUBLICATION_CHANNELS_MUST_NOT_BE_EMPTY);
-    } else if (publicationChannels.size() == ONE) {
-      publicationContextNode = publicationChannels.getFirst().asObjectNode();
-    } else {
-      publicationContextNode.put(TYPE_FIELD, publicationContextType);
-      for (SampleExpandedPublicationChannel publicationChannel : publicationChannels) {
-        publicationContextNode.set(publicationChannel.type(), publicationChannel.asObjectNode());
-      }
     }
-    referenceNode.set(PUBLICATION_CONTEXT_FIELD, publicationContextNode);
-    return referenceNode;
+    if (publicationChannels.size() == ONE) {
+      return publicationChannels.getFirst().asObjectNode();
+    } else {
+      var node = createNodeWithType(publicationContextType);
+      for (SampleExpandedPublicationChannel publicationChannel : publicationChannels) {
+        node.set(publicationChannel.type(), publicationChannel.asObjectNode());
+      }
+      return node;
+    }
+  }
+
+  private ObjectNode createNestedAnthologyContext() {
+    var node = createNodeWithType("Anthology");
+
+    var entityDescriptionNode = createNodeWithType(ENTITY_DESCRIPTION_TYPE);
+    node.set(ENTITY_DESCRIPTION_FIELD, entityDescriptionNode);
+
+    var referenceNode = createNodeWithType(REFERENCE_TYPE);
+    entityDescriptionNode.set(REFERENCE_FIELD, referenceNode);
+
+    var innerContextNode = createNodeWithType("Report");
+    for (SampleExpandedPublicationChannel publicationChannel : publicationChannels) {
+      innerContextNode.set(publicationChannel.type(), publicationChannel.asObjectNode());
+    }
+    referenceNode.set(PUBLICATION_CONTEXT_FIELD, innerContextNode);
+
+    return node;
   }
 
   private ObjectNode createEntityDescriptionNode() {
-    var entityDescriptionNode = objectMapper.createObjectNode();
-    entityDescriptionNode.put(TYPE_FIELD, "EntityDescription");
-    entityDescriptionNode.put(MAIN_TITLE_FIELD, mainTitle);
-    if (nonNull(language)) {
-      entityDescriptionNode.put(LANGUAGE_FIELD, language);
-    }
-    if (nonNull(abstractText)) {
-      entityDescriptionNode.put(ABSTRACT_FIELD, abstractText);
-    }
-    entityDescriptionNode.set(CONTRIBUTORS_FIELD, createContributorsNode());
-    entityDescriptionNode.set(PUBLICATION_DATE_FIELD, publicationDate.asObjectNode());
-    entityDescriptionNode.set(REFERENCE_FIELD, createReferenceNode());
-    return entityDescriptionNode;
+    var node = createNodeWithType(ENTITY_DESCRIPTION_FIELD);
+    putIfNotBlank(node, LANGUAGE_FIELD, language);
+    putIfNotBlank(node, ABSTRACT_FIELD, abstractText);
+    node.put(MAIN_TITLE_FIELD, mainTitle);
+    node.set(CONTRIBUTORS_FIELD, createContributorsNode());
+    node.set(PUBLICATION_DATE_FIELD, publicationDate.asObjectNode());
+    node.set(REFERENCE_FIELD, createReferenceNode());
+    return node;
   }
 
   private ArrayNode createContributorsNode() {
@@ -178,7 +209,7 @@ public record SampleExpandedPublication(
     private String language;
     private String abstractText;
     private String publicationContextType = "Book";
-    private String instanceType = "AcademicArticle";
+    private String instanceType = ACADEMIC_ARTICLE;
     private List<SampleExpandedPublicationChannel> publicationChannels;
     private SampleExpandedPublicationDate publicationDate;
     private String issn;
