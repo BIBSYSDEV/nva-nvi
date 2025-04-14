@@ -47,10 +47,10 @@ public class OrganizationFixtures {
 
   public static Organization setupRandomOrganization(
       String countryCode, int numberOfSubOrganizations, UriRetriever uriRetriever) {
-    var topLevelOrganization =
-        randomOrganization(countryCode, numberOfSubOrganizations).build();
+    var topLevelOrganization = randomOrganization(countryCode, numberOfSubOrganizations).build();
     var subOrganizationIds = topLevelOrganization.hasPart().stream().map(Organization::id).toList();
-    mockOrganizationResponseForAffiliations(topLevelOrganization.id(), subOrganizationIds, uriRetriever);
+    mockOrganizationResponseForAffiliations(
+        topLevelOrganization.id(), subOrganizationIds, uriRetriever);
 
     var organizationRetriever = new OrganizationRetriever(uriRetriever);
     return organizationRetriever.fetchOrganization(topLevelOrganization.id());

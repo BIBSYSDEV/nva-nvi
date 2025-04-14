@@ -89,13 +89,6 @@ public class SampleExpandedPublicationFactory {
         .build();
   }
 
-  private void mockCustomerApiResponseForNviInstitution(URI toplevelOrganizationId) {
-    var okResponse = createResponse(200, "{\"nviInstitution\" : \"true\"}");
-    var customerApiUriForOrganization = getCustomerApiUri(toplevelOrganizationId);
-    when(authorizedBackendUriRetriever.fetchResponse(eq(customerApiUriForOrganization), any()))
-        .thenReturn(Optional.of(okResponse));
-  }
-
   private URI getCustomerApiUri(URI organizationId) {
     var parameterId = URLEncoder.encode(organizationId.toString(), StandardCharsets.UTF_8);
     return URI.create(CUSTOMER_API + "/" + parameterId);
@@ -222,16 +215,13 @@ public class SampleExpandedPublicationFactory {
 
   public Organization setupTopLevelOrganization(String countryCode, boolean isNviOrganization) {
     var topLevelOrganization = setupRandomOrganization(countryCode, 2, uriRetriever);
-    if (isNviOrganization) {
-      mockCustomerApiResponseForNviInstitution(topLevelOrganization.id());
-    } else {
-      mockCustomerApiResponseForNonNviInstitution(topLevelOrganization.id());
-    }
+    mockCustomerApiResponse(topLevelOrganization.id(), isNviOrganization);
     return topLevelOrganization;
   }
 
-  private void mockCustomerApiResponseForNonNviInstitution(URI toplevelOrganizationId) {
-    var okResponse = createResponse(200, "{\"nviInstitution\" : \"false\"}");
+  private void mockCustomerApiResponse(URI toplevelOrganizationId, boolean isNviOrganization) {
+    var responseBody = String.format("{\"nviInstitution\" : \"%s\"}", isNviOrganization);
+    var okResponse = createResponse(200, responseBody);
     var customerApiUriForOrganization = getCustomerApiUri(toplevelOrganizationId);
     when(authorizedBackendUriRetriever.fetchResponse(eq(customerApiUriForOrganization), any()))
         .thenReturn(Optional.of(okResponse));
