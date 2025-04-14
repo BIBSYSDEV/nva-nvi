@@ -45,27 +45,27 @@ public class OrganizationFixtures {
         .withLabels(Map.of(randomString(), randomString()));
   }
 
-  public static Organization setupRandomOrganizationWithSubUnits(
-      String countryCode, int numberOfSubUnits, UriRetriever uriRetriever) {
-    var topLevelOrganization =
-        randomOrganizationWithSubUnits(countryCode, numberOfSubUnits).build();
-    var subUnitIds = topLevelOrganization.hasPart().stream().map(Organization::id).toList();
-    mockOrganizationResponseForAffiliations(topLevelOrganization.id(), subUnitIds, uriRetriever);
+  public static Organization setupRandomOrganization(
+      String countryCode, int numberOfSubOrganizations, UriRetriever uriRetriever) {
+    var topLevelOrganization = randomOrganization(countryCode, numberOfSubOrganizations).build();
+    var subOrganizationIds = topLevelOrganization.hasPart().stream().map(Organization::id).toList();
+    mockOrganizationResponseForAffiliations(
+        topLevelOrganization.id(), subOrganizationIds, uriRetriever);
 
     var organizationRetriever = new OrganizationRetriever(uriRetriever);
     return organizationRetriever.fetchOrganization(topLevelOrganization.id());
   }
 
-  public static Builder randomOrganizationWithSubUnits(String countryCode, int numberOfSubUnits) {
-    var topLevelOrganizationId = randomUriWithSuffix("topLevel");
+  public static Builder randomOrganization(String countryCode, int numberOfSubOrganizations) {
+    var topLevelOrganizationId = randomUriWithSuffix("topLevelOrganization");
     var topLevelLeafNode =
         Organization.builder().withId(topLevelOrganizationId).withCountryCode(countryCode).build();
     var subOrganizations =
-        IntStream.range(0, numberOfSubUnits)
+        IntStream.range(0, numberOfSubOrganizations)
             .mapToObj(
                 i ->
                     randomOrganization()
-                        .withId(randomUriWithSuffix("subUnit"))
+                        .withId(randomUriWithSuffix("subOrganization"))
                         .withCountryCode(countryCode)
                         .withPartOf(List.of(topLevelLeafNode))
                         .build())

@@ -3,7 +3,7 @@ package no.sikt.nva.nvi.common;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
-import static no.sikt.nva.nvi.common.model.OrganizationFixtures.setupRandomOrganizationWithSubUnits;
+import static no.sikt.nva.nvi.common.model.OrganizationFixtures.setupRandomOrganization;
 import static no.sikt.nva.nvi.test.TestConstants.CHANNEL_PUBLISHER;
 import static no.sikt.nva.nvi.test.TestConstants.CHANNEL_SERIES;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_NORWAY;
@@ -64,11 +64,11 @@ public class SampleExpandedPublicationFactory {
   }
 
   private void addTopLevelOrganization(Organization topLevelOrganization, String countryCode) {
-    var subUnitIds = topLevelOrganization.hasPart().stream().map(Organization::id).toList();
+    var subOrganizationIds = topLevelOrganization.hasPart().stream().map(Organization::id).toList();
     var expandedSubOrganizations = new ArrayList<SampleExpandedOrganization>();
-    for (URI subUnitId : subUnitIds) {
+    for (URI subOrganizationId : subOrganizationIds) {
       expandedSubOrganizations.add(
-          createSubOrganization(subUnitId, topLevelOrganization.id(), countryCode));
+          createSubOrganization(subOrganizationId, topLevelOrganization.id(), countryCode));
     }
     var expandedTopLevelOrganization =
         SampleExpandedOrganization.builder()
@@ -81,19 +81,12 @@ public class SampleExpandedPublicationFactory {
   }
 
   private static SampleExpandedOrganization createSubOrganization(
-      URI subUnitId, URI topLevelId, String countryCode) {
+      URI organizationId, URI topLevelId, String countryCode) {
     return SampleExpandedOrganization.builder()
-        .withId(subUnitId)
+        .withId(organizationId)
         .withParentOrganizations(topLevelId)
         .withCountryCode(countryCode)
         .build();
-  }
-
-  private void mockCustomerApiResponseForNviInstitution(URI toplevelOrganizationId) {
-    var okResponse = createResponse(200, "{\"nviInstitution\" : \"true\"}");
-    var customerApiUriForOrganization = getCustomerApiUri(toplevelOrganizationId);
-    when(authorizedBackendUriRetriever.fetchResponse(eq(customerApiUriForOrganization), any()))
-        .thenReturn(Optional.of(okResponse));
   }
 
   private URI getCustomerApiUri(URI organizationId) {
@@ -221,17 +214,14 @@ public class SampleExpandedPublicationFactory {
   }
 
   public Organization setupTopLevelOrganization(String countryCode, boolean isNviOrganization) {
-    var topLevelOrganization = setupRandomOrganizationWithSubUnits(countryCode, 2, uriRetriever);
-    if (isNviOrganization) {
-      mockCustomerApiResponseForNviInstitution(topLevelOrganization.id());
-    } else {
-      mockCustomerApiResponseForNonNviInstitution(topLevelOrganization.id());
-    }
+    var topLevelOrganization = setupRandomOrganization(countryCode, 2, uriRetriever);
+    mockCustomerApiResponse(topLevelOrganization.id(), isNviOrganization);
     return topLevelOrganization;
   }
 
-  private void mockCustomerApiResponseForNonNviInstitution(URI toplevelOrganizationId) {
-    var okResponse = createResponse(200, "{\"nviInstitution\" : \"false\"}");
+  private void mockCustomerApiResponse(URI toplevelOrganizationId, boolean isNviOrganization) {
+    var responseBody = String.format("{\"nviInstitution\" : \"%s\"}", isNviOrganization);
+    var okResponse = createResponse(200, responseBody);
     var customerApiUriForOrganization = getCustomerApiUri(toplevelOrganizationId);
     when(authorizedBackendUriRetriever.fetchResponse(eq(customerApiUriForOrganization), any()))
         .thenReturn(Optional.of(okResponse));
