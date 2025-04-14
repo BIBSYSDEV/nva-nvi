@@ -14,6 +14,7 @@ import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.apigateway.exceptions.BadGatewayException;
 import nva.commons.apigateway.exceptions.NotFoundException;
+import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.attempt.Failure;
 import org.slf4j.Logger;
@@ -29,11 +30,11 @@ public class FetchNviPeriodHandler extends ApiGatewayHandler<Void, NviPeriodDto>
 
   @JacocoGenerated
   public FetchNviPeriodHandler() {
-    this(new PeriodRepository(defaultDynamoClient()));
+    this(new PeriodRepository(defaultDynamoClient()), new Environment());
   }
 
-  public FetchNviPeriodHandler(PeriodRepository periodRepository) {
-    super(Void.class);
+  public FetchNviPeriodHandler(PeriodRepository periodRepository, Environment environment) {
+    super(Void.class, environment);
     this.periodRepository = periodRepository;
   }
 

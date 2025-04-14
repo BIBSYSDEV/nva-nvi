@@ -31,6 +31,7 @@ import no.sikt.nva.nvi.rest.fetch.ReportStatusDto.StatusDto;
 import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.GatewayResponse;
+import nva.commons.core.Environment;
 import org.apache.hc.core5.http.ContentType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,7 +39,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 class FetchReportStatusByPublicationIdHandlerTest {
-
+  private static final Environment ENVIRONMENT = new Environment();
   private static final String PATH_PARAM_PUBLICATION_ID = "publicationId";
   private Context context;
   private ByteArrayOutputStream output;
@@ -59,7 +60,8 @@ class FetchReportStatusByPublicationIdHandlerTest {
     var reportedCandidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
     periodRepository = periodRepositoryReturningClosedPeriod(CURRENT_YEAR);
     var handler =
-        new FetchReportStatusByPublicationIdHandler(candidateRepository, periodRepository);
+        new FetchReportStatusByPublicationIdHandler(
+            candidateRepository, periodRepository, ENVIRONMENT);
 
     handler.handleRequest(createRequest(reportedCandidate.getPublicationId()), output, context);
 
@@ -81,7 +83,8 @@ class FetchReportStatusByPublicationIdHandlerTest {
     var pendingCandidate = setupCandidateWithPublicationYear(CURRENT_YEAR);
     periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
     var handler =
-        new FetchReportStatusByPublicationIdHandler(candidateRepository, periodRepository);
+        new FetchReportStatusByPublicationIdHandler(
+            candidateRepository, periodRepository, ENVIRONMENT);
 
     handler.handleRequest(createRequest(pendingCandidate.getPublicationId()), output, context);
 
@@ -113,7 +116,8 @@ class FetchReportStatusByPublicationIdHandlerTest {
         new UpdateStatusRequest(institution1, approvalStatus, randomString(), randomString()));
     periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
     var handler =
-        new FetchReportStatusByPublicationIdHandler(candidateRepository, periodRepository);
+        new FetchReportStatusByPublicationIdHandler(
+            candidateRepository, periodRepository, ENVIRONMENT);
 
     handler.handleRequest(createRequest(candidate.getPublicationId()), output, context);
 
@@ -143,7 +147,8 @@ class FetchReportStatusByPublicationIdHandlerTest {
             institution2, ApprovalStatus.APPROVED, randomString(), randomString()));
     periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
     var handler =
-        new FetchReportStatusByPublicationIdHandler(candidateRepository, periodRepository);
+        new FetchReportStatusByPublicationIdHandler(
+            candidateRepository, periodRepository, ENVIRONMENT);
 
     handler.handleRequest(createRequest(candidate.getPublicationId()), output, context);
 
@@ -173,7 +178,8 @@ class FetchReportStatusByPublicationIdHandlerTest {
             institution2, ApprovalStatus.REJECTED, randomString(), randomString()));
     periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
     var handler =
-        new FetchReportStatusByPublicationIdHandler(candidateRepository, periodRepository);
+        new FetchReportStatusByPublicationIdHandler(
+            candidateRepository, periodRepository, ENVIRONMENT);
 
     handler.handleRequest(createRequest(candidate.getPublicationId()), output, context);
 
@@ -195,7 +201,8 @@ class FetchReportStatusByPublicationIdHandlerTest {
     var pendingCandidate = setupCandidateWithPublicationYear(CURRENT_YEAR);
     periodRepository = periodRepositoryReturningClosedPeriod(CURRENT_YEAR);
     var handler =
-        new FetchReportStatusByPublicationIdHandler(candidateRepository, periodRepository);
+        new FetchReportStatusByPublicationIdHandler(
+            candidateRepository, periodRepository, ENVIRONMENT);
 
     handler.handleRequest(createRequest(pendingCandidate.getPublicationId()), output, context);
 
@@ -217,7 +224,8 @@ class FetchReportStatusByPublicationIdHandlerTest {
     Candidate.updateNonCandidate(pendingCandidate::getPublicationId, candidateRepository);
     periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
     var handler =
-        new FetchReportStatusByPublicationIdHandler(candidateRepository, periodRepository);
+        new FetchReportStatusByPublicationIdHandler(
+            candidateRepository, periodRepository, ENVIRONMENT);
 
     handler.handleRequest(createRequest(pendingCandidate.getPublicationId()), output, context);
 
@@ -236,7 +244,8 @@ class FetchReportStatusByPublicationIdHandlerTest {
   void shouldReturnNotCandidateWhenPublicationIsNotFound() throws IOException {
     var notFoundPublicationId = randomUri();
     var handler =
-        new FetchReportStatusByPublicationIdHandler(candidateRepository, periodRepository);
+        new FetchReportStatusByPublicationIdHandler(
+            candidateRepository, periodRepository, ENVIRONMENT);
 
     handler.handleRequest(createRequest(notFoundPublicationId), output, context);
 

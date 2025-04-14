@@ -48,7 +48,8 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
     return new FetchNviCandidateHandler(
         scenario.getCandidateRepository(),
         scenario.getPeriodRepository(),
-        mockOrganizationRetriever);
+        mockOrganizationRetriever,
+        ENVIRONMENT);
   }
 
   @BeforeEach

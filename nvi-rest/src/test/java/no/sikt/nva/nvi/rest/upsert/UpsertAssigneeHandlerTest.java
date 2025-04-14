@@ -30,8 +30,8 @@ import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.validator.FakeViewingScopeValidator;
 import no.sikt.nva.nvi.rest.BaseCandidateRestHandlerTest;
 import no.sikt.nva.nvi.rest.model.UpsertAssigneeRequest;
-import no.unit.nva.clients.GetUserResponse;
 import no.unit.nva.clients.IdentityServiceClient;
+import no.unit.nva.clients.UserDto;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
@@ -56,7 +56,8 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
         scenario.getPeriodRepository(),
         mockIdentityServiceClient,
         mockViewingScopeValidator,
-        mockOrganizationRetriever);
+        mockOrganizationRetriever,
+        ENVIRONMENT);
   }
 
   @BeforeEach
@@ -101,7 +102,8 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
             scenario.getPeriodRepository(),
             mockIdentityServiceClient,
             viewingScopeValidatorReturningFalse,
-            mockOrganizationRetriever);
+            mockOrganizationRetriever,
+            ENVIRONMENT);
     handler.handleRequest(createRequest(candidate, assignee), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
     assertThat(
@@ -248,8 +250,7 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
   }
 
   private void mockUserIdentity(String userName, List<String> accessRights) {
-    var user =
-        GetUserResponse.builder().withUsername(userName).withAccessRights(accessRights).build();
+    var user = UserDto.builder().withUsername(userName).withAccessRights(accessRights).build();
     try {
       when(mockIdentityServiceClient.getUser(userName)).thenReturn(user);
     } catch (NotFoundException e) {

@@ -21,6 +21,7 @@ import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.apigateway.exceptions.UnauthorizedException;
+import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 
 public class FetchNviCandidateHandler extends ApiGatewayHandler<Void, CandidateDto>
@@ -36,14 +37,16 @@ public class FetchNviCandidateHandler extends ApiGatewayHandler<Void, CandidateD
     this(
         new CandidateRepository(defaultDynamoClient()),
         new PeriodRepository(defaultDynamoClient()),
-        new OrganizationRetriever(new UriRetriever()));
+        new OrganizationRetriever(new UriRetriever()),
+        new Environment());
   }
 
   public FetchNviCandidateHandler(
       CandidateRepository candidateRepository,
       PeriodRepository periodRepository,
-      OrganizationRetriever organizationRetriever) {
-    super(Void.class);
+      OrganizationRetriever organizationRetriever,
+      Environment environment) {
+    super(Void.class, environment);
     this.candidateRepository = candidateRepository;
     this.periodRepository = periodRepository;
     this.organizationRetriever = organizationRetriever;

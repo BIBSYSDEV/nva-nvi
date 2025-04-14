@@ -32,4 +32,5 @@ test {
     environment("BACKEND_CLIENT_AUTH_URL", "My url")
     environment("BACKEND_CLIENT_SECRET_NAME", "My secret name")
     environment("NVI_TABLE_NAME", "some-table")
+    environment("COGNITO_AUTHORIZER_URLS", "http://localhost:3000")
 }

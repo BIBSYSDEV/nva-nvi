@@ -17,6 +17,7 @@ import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.apigateway.exceptions.UnauthorizedException;
+import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 
@@ -30,11 +31,12 @@ public class FetchInstitutionStatusAggregationHandler extends ApiGatewayHandler<
 
   @JacocoGenerated
   public FetchInstitutionStatusAggregationHandler() {
-    this(OpenSearchClient.defaultOpenSearchClient());
+    this(OpenSearchClient.defaultOpenSearchClient(), new Environment());
   }
 
-  public FetchInstitutionStatusAggregationHandler(OpenSearchClient openSearchClient) {
-    super(Void.class);
+  public FetchInstitutionStatusAggregationHandler(
+      OpenSearchClient openSearchClient, Environment environment) {
+    super(Void.class, environment);
     this.openSearchClient = openSearchClient;
   }
 

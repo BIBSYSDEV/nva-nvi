@@ -22,6 +22,7 @@ import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
+import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 
 public class RemoveNoteHandler extends ApiGatewayHandler<Void, CandidateDto>
@@ -39,15 +40,17 @@ public class RemoveNoteHandler extends ApiGatewayHandler<Void, CandidateDto>
         new CandidateRepository(DynamoRepository.defaultDynamoClient()),
         new PeriodRepository(DynamoRepository.defaultDynamoClient()),
         ViewingScopeHandler.defaultViewingScopeValidator(),
-        new OrganizationRetriever(new UriRetriever()));
+        new OrganizationRetriever(new UriRetriever()),
+        new Environment());
   }
 
   public RemoveNoteHandler(
       CandidateRepository candidateRepository,
       PeriodRepository periodRepository,
       ViewingScopeValidator viewingScopeValidator,
-      OrganizationRetriever organizationRetriever) {
-    super(Void.class);
+      OrganizationRetriever organizationRetriever,
+      Environment environment) {
+    super(Void.class, environment);
     this.candidateRepository = candidateRepository;
     this.periodRepository = periodRepository;
     this.viewingScopeValidator = viewingScopeValidator;

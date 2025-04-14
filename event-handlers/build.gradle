@@ -63,4 +63,5 @@ test {
     environment("TOPIC_APPROVAL_INSERT", "APPROVAL_INSERT_TOPIC")
     environment("TOPIC_APPROVAL_UPDATE", "APPROVAL_UPDATE_TOPIC")
     environment("TOPIC_APPROVAL_REMOVE", "APPROVAL_REMOVE_TOPIC")
+    environment("COGNITO_AUTHORIZER_URLS", "http://localhost:3000")
 }

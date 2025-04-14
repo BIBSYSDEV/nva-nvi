@@ -28,6 +28,7 @@ import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.apigateway.exceptions.BadRequestException;
+import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 
 public class CreateNoteHandler extends ApiGatewayHandler<NviNoteRequest, CandidateDto>
@@ -45,15 +46,17 @@ public class CreateNoteHandler extends ApiGatewayHandler<NviNoteRequest, Candida
         new CandidateRepository(defaultDynamoClient()),
         new PeriodRepository(defaultDynamoClient()),
         ViewingScopeHandler.defaultViewingScopeValidator(),
-        new OrganizationRetriever(new UriRetriever()));
+        new OrganizationRetriever(new UriRetriever()),
+        new Environment());
   }
 
   public CreateNoteHandler(
       CandidateRepository candidateRepository,
       PeriodRepository periodRepository,
       ViewingScopeValidator viewingScopeValidator,
-      OrganizationRetriever organizationRetriever) {
-    super(NviNoteRequest.class);
+      OrganizationRetriever organizationRetriever,
+      Environment environment) {
+    super(NviNoteRequest.class, environment);
     this.candidateRepository = candidateRepository;
     this.periodRepository = periodRepository;
     this.viewingScopeValidator = viewingScopeValidator;
