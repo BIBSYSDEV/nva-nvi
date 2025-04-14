@@ -6,32 +6,13 @@ public final class JsonPointers {
   public static final String JSON_PTR_AFFILIATIONS = "/affiliations";
   public static final String JSON_PTR_ID = "/id";
   public static final String JSON_PTR_TYPE = "/type";
-  public static final String JSON_PTR_COUNTRY_CODE = "/countryCode";
   public static final String JSON_PTR_PUBLICATION_DATE = "/entityDescription/publicationDate";
   public static final String JSON_PTR_MAIN_TITLE = "/entityDescription/mainTitle";
   public static final String JSON_PTR_ABSTRACT = "/entityDescription/abstract";
-  public static final String JSON_POINTER_IDENTITY_ID = "/identity/id";
-  public static final String JSON_POINTER_IDENTITY_NAME = "/identity/name";
-  public static final String JSON_POINTER_IDENTITY_VERIFICATION_STATUS =
-      "/identity/verificationStatus";
   public static final String JSON_PTR_INSTANCE_TYPE =
       "/entityDescription/reference/publicationInstance/type";
   public static final String JSON_PTR_PUBLICATION_CONTEXT =
       "/entityDescription/reference/publicationContext";
-  public static final String JSON_PTR_SERIES_SCIENTIFIC_VALUE =
-      "/entityDescription/reference/publicationContext/series/scientificValue";
-  public static final String JSON_PTR_SERIES =
-      "/entityDescription/reference/publicationContext/series";
-  public static final String JSON_PTR_PUBLISHER =
-      "/entityDescription/reference/publicationContext/publisher";
-  public static final String JSON_PTR_CHAPTER_PUBLISHER =
-      "/entityDescription/reference/publicationContext/entityDescription/reference/publicationContext"
-          + "/publisher";
-  public static final String JSON_PTR_CHAPTER_SERIES_SCIENTIFIC_VALUE =
-      "/entityDescription/reference/publicationContext/entityDescription/reference/publicationContext/series"
-          + "/scientificValue";
-  public static final String JSON_PTR_CHAPTER_SERIES =
-      "/entityDescription/reference/publicationContext/entityDescription/reference/publicationContext/series";
   public static final String JSON_PTR_PAGES_BEGIN =
       "/entityDescription/reference/publicationInstance/pages/begin";
   public static final String JSON_PRT_PAGES_END =
