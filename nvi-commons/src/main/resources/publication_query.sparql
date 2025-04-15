@@ -57,17 +57,19 @@ CONSTRUCT {
 WHERE {
   # Find the main publication object and basic fields
   ?publication a :Publication ;
-  :status ?status ;
-  :entityDescription ?entityDescription .
+  :status ?status .
 
+  OPTIONAL { ?publication :entityDescription ?entityDescription }
   OPTIONAL { ?publication :identifier ?identifier }
   OPTIONAL { ?publication :modifiedDate ?modifiedDate }
   OPTIONAL { ?entityDescription :mainTitle ?title }
   OPTIONAL { ?entityDescription :language ?language }
 
   # Find publication date
-  ?date a :PublicationDate ;
-  :year ?year .
+  OPTIONAL {
+    ?date a :PublicationDate .
+    ?date :year ?year
+  }
   OPTIONAL { ?date :month ?month }
   OPTIONAL { ?date :day ?day }
 
@@ -131,7 +133,7 @@ WHERE {
   }
 
   # Find all organizations
-  ?organization a :Organization .
+  OPTIONAL { ?organization a :Organization }
   OPTIONAL { ?organization :partOf ?parent }
   OPTIONAL { ?organization :hasPart ?child }
   OPTIONAL { ?organization :label ?label }

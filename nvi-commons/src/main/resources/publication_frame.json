@@ -70,5 +70,8 @@
     "xsd": "http://www.w3.org/2001/XMLSchema#"
   },
   "@type": "Publication",
-  "@embed": "@always"
+  "@embed": "@always",
+  "isApplicable": {
+    "@default": false
+  }
 }

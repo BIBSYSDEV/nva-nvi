@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.IntStream;
-import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.client.model.Organization.Builder;
 import no.unit.nva.auth.uriretriever.UriRetriever;
@@ -51,9 +50,7 @@ public class OrganizationFixtures {
     var subOrganizationIds = topLevelOrganization.hasPart().stream().map(Organization::id).toList();
     mockOrganizationResponseForAffiliations(
         topLevelOrganization.id(), subOrganizationIds, uriRetriever);
-
-    var organizationRetriever = new OrganizationRetriever(uriRetriever);
-    return organizationRetriever.fetchOrganization(topLevelOrganization.id());
+    return topLevelOrganization;
   }
 
   public static Builder randomOrganization(String countryCode, int numberOfSubOrganizations) {
@@ -71,7 +68,10 @@ public class OrganizationFixtures {
                         .build())
             .toList();
 
-    return randomOrganization().withId(topLevelOrganizationId).withHasPart(subOrganizations);
+    return randomOrganization()
+        .withId(topLevelOrganizationId)
+        .withCountryCode(countryCode)
+        .withHasPart(subOrganizations);
   }
 
   public static void mockOrganizationResponseForAffiliation(

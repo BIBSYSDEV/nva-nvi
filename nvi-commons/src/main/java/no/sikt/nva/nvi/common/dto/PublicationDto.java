@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.common.dto;
 
 import static java.util.Objects.requireNonNull;
+import static no.sikt.nva.nvi.common.utils.Validator.shouldNotBeNull;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -33,17 +34,15 @@ public record PublicationDto(
 
   public PublicationDto {
     requireNonNull(id, "Required field 'id' is null");
+    requireNonNull(status, "Required field 'status' is null");
   }
 
   public void validate() {
-    requireNonNull(id, "Required field 'id' is null");
-    requireNonNull(identifier, "Required field 'identifier' is null");
-    requireNonNull(status, "Required field 'status' is null");
-    requireNonNull(publicationDate, "Required field 'publicationDate' is null");
-    requireNonNull(publicationType, "Required field 'publicationType' is null");
-    requireNonNull(publicationChannels, "Required field 'publicationChannels' is null");
-    requireNonNull(contributors, "Required field 'contributors' is null");
-    requireNonNull(topLevelOrganizations, "Required field 'topLevelOrganizations' is null");
+    shouldNotBeNull(publicationDate, "Required field 'publicationDate' is null");
+    shouldNotBeNull(publicationType, "Required field 'publicationType' is null");
+    shouldNotBeNull(publicationChannels, "Required field 'publicationChannels' is null");
+    shouldNotBeNull(contributors, "Required field 'contributors' is null");
+    shouldNotBeNull(topLevelOrganizations, "Required field 'topLevelOrganizations' is null");
 
     publicationChannels.forEach(PublicationChannelDto::validate);
     contributors.forEach(ContributorDto::validate);

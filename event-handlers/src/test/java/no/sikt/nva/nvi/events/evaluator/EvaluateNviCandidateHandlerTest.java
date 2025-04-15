@@ -25,6 +25,7 @@ import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_PUBLICATION_ID;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.createResponse;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
+import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static nva.commons.core.attempt.Try.attempt;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -36,6 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.params.provider.Arguments.argumentSet;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
@@ -85,6 +87,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 // Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
 @SuppressWarnings("PMD.CouplingBetweenObjects")
@@ -108,8 +113,6 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
   private static final String ACADEMIC_ARTICLE =
       IoUtils.stringFromResources(Path.of(ACADEMIC_ARTICLE_PATH))
           .replace("__REPLACE_WITH_PUBLICATION_ID__", HARDCODED_PUBLICATION_ID.toString());
-  private static final String ERROR_COULD_NOT_FETCH_CRISTIN_ORG =
-      "Could not fetch Cristin organization for: ";
   private static final SampleExpandedAffiliation DEFAULT_SUBUNIT_AFFILIATION =
       SampleExpandedAffiliation.builder()
           .withId(CRISTIN_NVI_ORG_SUB_UNIT_ID)
@@ -135,19 +138,29 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     assertThat(candidate.publicationBucketUri(), is(equalTo(fileUri)));
   }
 
-  @Test
-  void shouldSkipEvaluationAndLogWarningOnPublicationWithInvalidYear() throws IOException {
-    var invalidYear = "1948-1997";
-    var fileUri = setupPublicationWithInvalidYear(invalidYear);
+  @ParameterizedTest
+  @MethodSource("invalidPublicationProvider")
+  void shouldSkipEvaluationAndLogWarningOnPublicationWithInvalidYear(String content)
+      throws IOException {
+    var fileUri = s3Driver.insertFile(UnixPath.of(randomString()), content);
     var event = createEvent(new PersistedResourceMessage(fileUri));
     final var logAppender = LogUtils.getTestingAppender(EvaluatorService.class);
     handler.handleRequest(event, CONTEXT);
-    var expectedLogMessage =
-        String.format(
-            "Skipping evaluation due to invalid year format %s.",
-            invalidYear, HARDCODED_PUBLICATION_ID);
+    var expectedLogMessage = "Skipping evaluation due to invalid year format";
     assertTrue(logAppender.getMessages().contains(expectedLogMessage));
     assertEquals(0, queueClient.getSentMessages().size());
+  }
+
+  private static Stream<Arguments> invalidPublicationProvider() {
+    var documentWithMalformedDate =
+        IoUtils.stringFromResources(
+                Path.of("evaluator/candidate_publicationDate_replace_year.json"))
+            .replace("__REPLACE_YEAR__", "1948-1997");
+    var documentWithMissingDate =
+        IoUtils.stringFromResources(Path.of("expandedPublications/invalidDraft.json"));
+    return Stream.of(
+        argumentSet("Malformed publication year", documentWithMalformedDate),
+        argumentSet("Missing publication date", documentWithMissingDate));
   }
 
   @Test
@@ -590,12 +603,6 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
 
   private static int countCreatorShares(List<VerifiedNviCreatorDto> nviCreators) {
     return nviCreators.stream().mapToInt(creator -> creator.affiliations().size()).sum();
-  }
-
-  private URI setupPublicationWithInvalidYear(String year) throws IOException {
-    var path = "evaluator/candidate_publicationDate_replace_year.json";
-    var content = IoUtils.stringFromResources(Path.of(path)).replace("__REPLACE_YEAR__", year);
-    return s3Driver.insertFile(UnixPath.of(path), content);
   }
 
   private void setupEvaluatorService(PeriodRepository periodRepository) {
