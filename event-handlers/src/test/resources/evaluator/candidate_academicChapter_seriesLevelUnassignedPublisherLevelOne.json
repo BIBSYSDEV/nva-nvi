@@ -201,6 +201,7 @@
           ],
           "identity": {
             "type": "Identity",
+            "id": "https://www.example.org/person/456",
             "verificationStatus": "Verified"
           },
           "role": {

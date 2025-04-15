@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.common.utils;
 import static java.util.Objects.isNull;
 
 import java.time.Instant;
+import no.sikt.nva.nvi.common.exceptions.ValidationException;
 import no.sikt.nva.nvi.common.service.model.UpdatePeriodRequest;
 import no.sikt.nva.nvi.common.service.requests.CreatePeriodRequest;
 import no.sikt.nva.nvi.common.service.requests.UpsertPeriodRequest;
@@ -21,6 +22,12 @@ public final class Validator {
   public static void isBefore(Instant startDate, Instant endDate) {
     if (startDate.isAfter(endDate)) {
       throw new IllegalArgumentException("Start date can not be after end date!");
+    }
+  }
+
+  public static void shouldNotBeNull(Object object, String errorMessage) {
+    if (isNull(object)) {
+      throw new ValidationException(errorMessage);
     }
   }
 

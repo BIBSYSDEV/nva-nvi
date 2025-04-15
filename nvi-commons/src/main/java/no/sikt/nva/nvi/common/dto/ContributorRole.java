@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.common.dto;
 import static nva.commons.core.StringUtils.isBlank;
 
 import com.fasterxml.jackson.annotation.JsonValue;
+import no.sikt.nva.nvi.common.exceptions.ValidationException;
 
 public record ContributorRole(String value) {
 
@@ -10,7 +11,7 @@ public record ContributorRole(String value) {
 
   public ContributorRole {
     if (isBlank(value)) {
-      throw new IllegalArgumentException("Contributor role cannot be blank");
+      throw new ValidationException("Contributor role cannot be blank");
     }
   }
 

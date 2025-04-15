@@ -27,7 +27,7 @@ public record SampleExpandedAffiliation(
   }
 
   private static ObjectNode createAffiliationLeafNode(URI id) {
-    var affiliationNode = createNodeWithType(ID_FIELD);
+    var affiliationNode = objectMapper.createObjectNode();
     TestUtils.putIfNotNull(affiliationNode, ID_FIELD, id);
     return affiliationNode;
   }

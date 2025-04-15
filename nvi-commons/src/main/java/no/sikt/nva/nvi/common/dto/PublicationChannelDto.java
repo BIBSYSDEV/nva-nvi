@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.common.dto;
 
 import static java.util.Objects.requireNonNull;
+import static no.sikt.nva.nvi.common.utils.Validator.shouldNotBeNull;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
@@ -23,16 +24,11 @@ public record PublicationChannelDto(
 
   public PublicationChannelDto {
     requireNonNull(id, "Required field 'id' is null");
-    requireNonNull(channelType, "Required field 'channelType' is null");
-    requireNonNull(scientificValue, "Required field 'scientificValue' is null");
   }
 
   public void validate() {
-    requireNonNull(id, "Required field 'id' is null");
-    requireNonNull(channelType, "Required field 'channelType' is null");
-    if (!scientificValue.isValid()) {
-      throw new IllegalArgumentException("Invalid scientific value");
-    }
+    shouldNotBeNull(channelType, "Required field 'channelType' is null");
+    shouldNotBeNull(scientificValue, "Required field 'scientificValue' is null");
   }
 
   public static Builder builder() {

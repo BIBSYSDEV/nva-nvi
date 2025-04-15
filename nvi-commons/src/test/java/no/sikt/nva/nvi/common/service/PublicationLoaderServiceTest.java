@@ -21,6 +21,7 @@ import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.paths.UnixPath;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -51,6 +52,14 @@ class PublicationLoaderServiceTest {
   void shouldGetExpectedDataFromExampleDocuments(String filename, PublicationDto expected) {
     var actual = parseExampleDocument(filename);
     assertThat(actual).usingRecursiveComparison().ignoringCollectionOrder().isEqualTo(expected);
+  }
+
+  @Test
+  void shouldNotFailWhenParsingIncompleteDocument() {
+    var filePath = "expandedPublications/invalidDraft.json";
+    var document = stringFromResources(Path.of(filePath));
+    var publicationBucketUri = addToS3(filePath, document);
+    assertThatNoException().isThrownBy(() -> dataLoader.extractAndTransform(publicationBucketUri));
   }
 
   private PublicationDto parseExampleDocument(String filename) {
