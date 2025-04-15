@@ -21,7 +21,6 @@ CONSTRUCT {
   :publicationChannel ?channel ;
   :contributor ?personId ;
   :topLevelOrganization ?topLevelOrganization ;
-  :channelType ?channelForLevel ;
   :modifiedDate ?modifiedDate .
 
   # Include publication channels
