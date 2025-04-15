@@ -15,7 +15,7 @@ Globals:
       Variables:
         BACKEND_CLIENT_AUTH_URL: !Ref CognitoAuthorizationUri
         BACKEND_CLIENT_SECRET_NAME: 'BackendCognitoClientCredentials'
-        COGNITO_AUTHORIZER_URLS: !Ref CognitoAuthorizerUrls
+        COGNITO_AUTHORIZER_URLS: !Join [ ",", !Ref CognitoAuthorizerUrls ]
         NVI_TABLE_NAME: !Ref NvaNviTable
         SEARCH_INFRASTRUCTURE_API_HOST: !Ref SearchInfrastructureApiHost
         SEARCH_INFRASTRUCTURE_AUTH_URI: !Ref SearchInfrastructureAuthUri
@@ -33,7 +33,7 @@ Parameters:
     Description: Reference to Cognito UserPool for the stage
     Default: CognitoAuthorizerArn
   CognitoAuthorizerUrls:
-    Type: 'AWS::SSM::Parameter::Value<CommaDelimitedList>'
+    Type: 'AWS::SSM::Parameter::Value<List<String>>'
     Description: Combined URLs of the providers of the Amazon Cognito user pools
     Default: CognitoAuthorizerUrls
   CognitoAuthorizationUri:
