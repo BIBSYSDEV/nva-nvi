@@ -44,7 +44,8 @@ class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
         scenario.getCandidateRepository(),
         scenario.getPeriodRepository(),
         mockViewingScopeValidator,
-        mockOrganizationRetriever);
+        mockOrganizationRetriever,
+        ENVIRONMENT);
   }
 
   @BeforeEach
@@ -72,7 +73,8 @@ class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
             scenario.getCandidateRepository(),
             scenario.getPeriodRepository(),
             viewingScopeValidatorReturningFalse,
-            mockOrganizationRetriever);
+            mockOrganizationRetriever,
+            ENVIRONMENT);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
     assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));

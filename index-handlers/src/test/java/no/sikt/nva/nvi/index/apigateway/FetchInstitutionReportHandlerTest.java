@@ -122,6 +122,7 @@ class FetchInstitutionReportHandlerTest {
   private static final String YEAR = "year";
   private static final int CURRENT_YEAR = Year.now().getValue();
   private static final Context CONTEXT = mock(Context.class);
+  protected static final Environment ENVIRONMENT = new Environment();
   private static final int PAGE_SIZE =
       Integer.parseInt(new Environment().readEnv("INSTITUTION_REPORT_SEARCH_PAGE_SIZE"));
   private static final String NESTED_FIELD_CONTRIBUTORS = "publicationDetails.contributors";
@@ -135,7 +136,7 @@ class FetchInstitutionReportHandlerTest {
   public void setUp() {
     output = new ByteArrayOutputStream();
     openSearchClient = mock(OpenSearchClient.class);
-    handler = new FetchInstitutionReportHandler(openSearchClient);
+    handler = new FetchInstitutionReportHandler(openSearchClient, ENVIRONMENT);
   }
 
   @Test

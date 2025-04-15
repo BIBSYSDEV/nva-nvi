@@ -14,9 +14,9 @@ import java.util.List;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.client.model.Organization.Builder;
-import no.unit.nva.clients.GetUserResponse;
-import no.unit.nva.clients.GetUserResponse.ViewingScope;
 import no.unit.nva.clients.IdentityServiceClient;
+import no.unit.nva.clients.UserDto;
+import no.unit.nva.clients.UserDto.ViewingScope;
 import nva.commons.apigateway.exceptions.NotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -99,8 +99,8 @@ class ViewingScopeValidatorImplTest {
     return Organization.builder().withId(organizationId).withContext(getOrganizationContext());
   }
 
-  private static GetUserResponse userWithViewingScope(URI allowedOrg) {
-    return GetUserResponse.builder()
+  private static UserDto userWithViewingScope(URI allowedOrg) {
+    return UserDto.builder()
         .withViewingScope(ViewingScope.builder().withIncludedUnits(List.of(allowedOrg)).build())
         .build();
   }

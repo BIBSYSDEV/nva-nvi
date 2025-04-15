@@ -17,6 +17,7 @@ import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
+import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 
 public class CreateNviPeriodHandler
@@ -26,12 +27,11 @@ public class CreateNviPeriodHandler
 
   @JacocoGenerated
   public CreateNviPeriodHandler() {
-    super(UpsertNviPeriodRequest.class);
-    this.periodRepository = new PeriodRepository(defaultDynamoClient());
+    this(new PeriodRepository(defaultDynamoClient()), new Environment());
   }
 
-  public CreateNviPeriodHandler(PeriodRepository periodRepository) {
-    super(UpsertNviPeriodRequest.class);
+  public CreateNviPeriodHandler(PeriodRepository periodRepository, Environment environment) {
+    super(UpsertNviPeriodRequest.class, environment);
     this.periodRepository = periodRepository;
   }
 

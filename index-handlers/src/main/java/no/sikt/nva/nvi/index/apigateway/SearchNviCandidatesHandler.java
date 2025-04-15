@@ -60,7 +60,7 @@ public class SearchNviCandidatesHandler
       ViewingScopeValidator viewingScopeValidator,
       IdentityServiceClient identityServiceClient,
       Environment environment) {
-    super(Void.class);
+    super(Void.class, environment);
     this.openSearchClient = openSearchClient;
     this.viewingScopeValidator = viewingScopeValidator;
     this.identityServiceClient = identityServiceClient;

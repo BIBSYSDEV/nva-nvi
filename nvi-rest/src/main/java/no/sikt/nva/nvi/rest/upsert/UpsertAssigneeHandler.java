@@ -20,14 +20,15 @@ import no.sikt.nva.nvi.common.validator.ViewingScopeValidator;
 import no.sikt.nva.nvi.rest.ViewingScopeHandler;
 import no.sikt.nva.nvi.rest.model.UpsertAssigneeRequest;
 import no.unit.nva.auth.uriretriever.UriRetriever;
-import no.unit.nva.clients.GetUserResponse;
 import no.unit.nva.clients.IdentityServiceClient;
+import no.unit.nva.clients.UserDto;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.apigateway.exceptions.NotFoundException;
 import nva.commons.apigateway.exceptions.UnauthorizedException;
+import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 
 public class UpsertAssigneeHandler extends ApiGatewayHandler<UpsertAssigneeRequest, CandidateDto>
@@ -47,7 +48,8 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<UpsertAssigneeReque
         new PeriodRepository(DynamoRepository.defaultDynamoClient()),
         IdentityServiceClient.prepare(),
         ViewingScopeHandler.defaultViewingScopeValidator(),
-        new OrganizationRetriever(new UriRetriever()));
+        new OrganizationRetriever(new UriRetriever()),
+        new Environment());
   }
 
   public UpsertAssigneeHandler(
@@ -55,8 +57,9 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<UpsertAssigneeReque
       PeriodRepository periodRepository,
       IdentityServiceClient identityServiceClient,
       ViewingScopeValidator viewingScopeValidator,
-      OrganizationRetriever organizationRetriever) {
-    super(UpsertAssigneeRequest.class);
+      OrganizationRetriever organizationRetriever,
+      Environment environment) {
+    super(UpsertAssigneeRequest.class, environment);
     this.candidateRepository = candidateRepository;
     this.periodRepository = periodRepository;
     this.identityServiceClient = identityServiceClient;
@@ -129,7 +132,7 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<UpsertAssigneeReque
     }
   }
 
-  private static boolean isIsNviCurator(GetUserResponse user) {
+  private static boolean isIsNviCurator(UserDto user) {
     return user.accessRights().contains(AccessRight.MANAGE_NVI_CANDIDATES.name());
   }
 }
