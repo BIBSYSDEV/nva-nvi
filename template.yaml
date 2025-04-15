@@ -29,11 +29,11 @@ Globals:
 
 Parameters:
   CognitoAuthorizerArn:
-    Type: 'AWS::SSM::Parameter::Value<String>'
+    Type: 'AWS::SSM::Parameter::Value<List<String>>'
     Description: Reference to Cognito UserPool for the stage
     Default: CognitoAuthorizerArn
   CognitoAuthorizerUrls:
-    Type: 'AWS::SSM::Parameter::Value<String>'
+    Type: AWS::SSM::Parameter::Value<CommaDelimitedList>
     Description: Combined URLs of the providers of the Amazon Cognito user pools
     Default: CognitoAuthorizerUrls
   CognitoAuthorizationUri:
