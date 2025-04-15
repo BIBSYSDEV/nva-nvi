@@ -10,7 +10,6 @@ import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.S3StorageReader;
-import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
@@ -19,7 +18,6 @@ import no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
-import no.unit.nva.auth.uriretriever.UriRetriever;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.attempt.Failure;
@@ -44,7 +42,6 @@ public class EvaluateNviCandidateHandler implements RequestHandler<SQSEvent, Voi
         new EvaluatorService(
             new S3StorageReader(new Environment().readEnv("EXPANDED_RESOURCES_BUCKET")),
             new CreatorVerificationUtil(authorizedUriRetriever(new Environment())),
-            new PointService(new OrganizationRetriever(new UriRetriever())),
             new CandidateRepository(defaultDynamoClient()),
             new PeriodRepository(defaultDynamoClient())),
         new NviQueueClient(),

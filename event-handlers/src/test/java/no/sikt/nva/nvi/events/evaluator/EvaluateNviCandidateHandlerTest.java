@@ -54,7 +54,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
-import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
@@ -601,11 +600,8 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
 
   private void setupEvaluatorService(PeriodRepository periodRepository) {
     var calculator = new CreatorVerificationUtil(authorizedBackendUriRetriever);
-    var organizationRetriever = new OrganizationRetriever(uriRetriever);
-    var pointCalculator = new PointService(organizationRetriever);
     evaluatorService =
-        new EvaluatorService(
-            storageReader, calculator, pointCalculator, candidateRepository, periodRepository);
+        new EvaluatorService(storageReader, calculator, candidateRepository, periodRepository);
   }
 
   private URI setupCandidate(int year) throws IOException {

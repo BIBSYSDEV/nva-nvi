@@ -137,15 +137,6 @@ WHERE {
   OPTIONAL { ?organization :label ?label }
   OPTIONAL { ?organization :country ?country }
 
-  # Check if the publication is an international collaboration
-  OPTIONAL {
-    BIND(EXISTS {
-      ?nonNorwegianOrganization a :Organization ;
-      :country ?country .
-      FILTER(?country != "NO")
-    } AS ?isInternationalCollaboration)
-  }
-
   # Find all contributors
   OPTIONAL {
     ?publication :entityDescription/:contributor ?contributor .
@@ -177,5 +168,16 @@ WHERE {
         FILTER NOT EXISTS { ?topLevelOrganization :partOf ?parent }
       }
     }
+  }
+
+  # Check if any contributor is a Creator with a non-Norwegian affiliation.
+  # If so, the publication counts as an international collaboration.
+  OPTIONAL {
+    BIND(EXISTS {
+      ?contributor :role [ a :Creator ] ;
+      :affiliation [ :country ?countryCode ] .
+      FILTER (?countryCode != "NO")
+    } AS ?isInternationalCollaboration
+    )
   }
 }

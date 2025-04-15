@@ -29,10 +29,6 @@ public final class JsonUtils {
     return StreamSupport.stream(node.spliterator(), false);
   }
 
-  public static URI extractId(JsonNode jsonNode) {
-    return URI.create(extractJsonNodeTextValue(jsonNode, JSON_PTR_ID));
-  }
-
   private static boolean isNotMissingNode(JsonNode node) {
     return !node.isMissingNode() && !node.isNull() && node.isValueNode();
   }
