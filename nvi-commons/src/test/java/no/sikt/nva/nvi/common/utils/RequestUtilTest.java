@@ -6,12 +6,10 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.params.provider.Arguments.argumentSet;
-import static org.mockito.Mockito.mock;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.InputStream;
 import java.net.URI;
-import java.net.http.HttpClient;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.service.model.Username;
 import no.unit.nva.testutils.HandlerRequestBuilder;
@@ -25,13 +23,12 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 class RequestUtilTest {
-  private final HttpClient httpClient = mock(HttpClient.class);
 
   @Test
   void shouldGetUsername() throws UnauthorizedException, JsonProcessingException, ApiIoException {
     var userName = randomString();
     var request = createRequest(randomUri(), AccessRight.MANAGE_NVI, userName);
-    var requestInfo = RequestInfo.fromRequest(request, httpClient);
+    var requestInfo = RequestInfo.fromRequest(request);
     var actual = RequestUtil.getUsername(requestInfo);
     assertEquals(Username.fromString(userName), actual);
   }
@@ -41,7 +38,7 @@ class RequestUtilTest {
   void shouldParseAccessRights(AccessRight accessRight, boolean isNviAdmin, boolean isNviCurator)
       throws JsonProcessingException, ApiIoException {
     var request = createRequest(randomUri(), accessRight, randomString());
-    var requestInfo = RequestInfo.fromRequest(request, httpClient);
+    var requestInfo = RequestInfo.fromRequest(request);
     var actualIsNviAdmin = RequestUtil.isNviAdmin(requestInfo);
     var actualIsNviCurator = RequestUtil.isNviCurator(requestInfo);
     assertEquals(isNviAdmin, actualIsNviAdmin);
@@ -52,7 +49,7 @@ class RequestUtilTest {
   void shouldThrowUnauthorizedExceptionIfUserDoesNotHaveAccessRight()
       throws JsonProcessingException, ApiIoException {
     var request = createRequest(randomUri(), AccessRight.MANAGE_DOI, randomString());
-    var requestInfo = RequestInfo.fromRequest(request, httpClient);
+    var requestInfo = RequestInfo.fromRequest(request);
     assertThrows(
         UnauthorizedException.class,
         () -> RequestUtil.hasAccessRight(requestInfo, AccessRight.MANAGE_NVI));

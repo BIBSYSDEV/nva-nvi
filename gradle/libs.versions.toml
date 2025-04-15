@@ -1,10 +1,10 @@
 [versions]
 apache-poi = { strictly = '5.4.0' }
 assertj = { strictly = '3.27.3' }
-awsLambdaEvents = { strictly = '3.14.0' }
+awsLambdaEvents = { strictly = '3.15.0' }
 awsLambdaJavaCore = { strictly = '1.2.3' }
-awsSdk = { strictly = '1.12.780' }
-awsSdk2 = { strictly = '2.29.47' }
+awsSdk = { strictly = '1.12.782' }
+awsSdk2 = { strictly = '2.30.27' }
 com-auth0-jwt = { strictly = '4.4.0' }
 cucumber = { strictly = '7.21.1' }
 dynamoDbLocal = { strictly = '2.5.4' }
@@ -12,13 +12,13 @@ errorprone = { strictly = '2.37.0' }
 errorpronePlugin = { strictly = '4.1.0' }
 guava = { strictly = '33.4.0-jre' }
 hamcrest = { strictly = '3.0' }
-jackson = { strictly = '2.18.2' }
+jackson = { strictly = '2.18.3' }
 jena = { strictly = '5.3.0' }
 junit = { strictly = '5.11.4' }
 junitPlatform = { strictly = '1.11.4' } # May need to sync minor&patch version with 'junit' version
 log4j = { strictly = '2.24.3' }
 mockito = { strictly = '5.15.2' }
-nva = { strictly = '1.41.4' }
+nva = { strictly = '2.2.0' }
 nvaLanguage = { strictly = '1.2.1' }
 openCsv = { strictly = '5.10' }
 openSearchJava = { strictly = '2.19.0' }
@@ -27,7 +27,7 @@ openSearchTestContainer = { strictly = '2.1.2' }
 slf4j = { require = '2.0.16' }
 spotless = { strictly = '7.0.2' }
 testContainers = { strictly = '1.20.4' }
-wiremock = { strictly = '3.10.0' }
+wiremock = { strictly = '3.12.1' }
 zalando = { strictly = '0.27.1' }
 
 [libraries]

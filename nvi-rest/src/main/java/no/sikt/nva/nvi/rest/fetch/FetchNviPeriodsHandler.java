@@ -15,6 +15,7 @@ import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
+import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 
 public class FetchNviPeriodsHandler extends ApiGatewayHandler<Void, NviPeriodsResponse> {
@@ -23,11 +24,11 @@ public class FetchNviPeriodsHandler extends ApiGatewayHandler<Void, NviPeriodsRe
 
   @JacocoGenerated
   public FetchNviPeriodsHandler() {
-    this(new NviPeriodService(new PeriodRepository(defaultDynamoClient())));
+    this(new NviPeriodService(new PeriodRepository(defaultDynamoClient())), new Environment());
   }
 
-  public FetchNviPeriodsHandler(NviPeriodService nviPeriodService) {
-    super(Void.class);
+  public FetchNviPeriodsHandler(NviPeriodService nviPeriodService, Environment environment) {
+    super(Void.class, environment);
     this.nviPeriodService = nviPeriodService;
   }
 

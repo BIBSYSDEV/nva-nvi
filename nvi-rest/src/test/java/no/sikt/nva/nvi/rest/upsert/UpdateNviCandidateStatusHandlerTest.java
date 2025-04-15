@@ -67,7 +67,8 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
         scenario.getCandidateRepository(),
         scenario.getPeriodRepository(),
         mockViewingScopeValidator,
-        mockOrganizationRetriever);
+        mockOrganizationRetriever,
+        ENVIRONMENT);
   }
 
   @BeforeEach
@@ -105,7 +106,8 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
             scenario.getCandidateRepository(),
             scenario.getPeriodRepository(),
             new FakeViewingScopeValidator(false),
-            mockOrganizationRetriever);
+            mockOrganizationRetriever,
+            ENVIRONMENT);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
     assertThat(

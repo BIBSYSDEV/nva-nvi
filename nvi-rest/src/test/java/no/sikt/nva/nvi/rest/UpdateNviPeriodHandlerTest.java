@@ -26,6 +26,7 @@ import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
+import nva.commons.core.Environment;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.zalando.problem.Problem;
@@ -41,7 +42,7 @@ class UpdateNviPeriodHandlerTest {
   void init() {
     scenario = new TestScenario();
     output = new ByteArrayOutputStream();
-    handler = new UpdateNviPeriodHandler(scenario.getPeriodRepository());
+    handler = new UpdateNviPeriodHandler(scenario.getPeriodRepository(), new Environment());
   }
 
   @Test

@@ -33,11 +33,12 @@ public class FetchInstitutionReportHandler extends ApiGatewayHandler<Void, Strin
 
   @JacocoGenerated
   public FetchInstitutionReportHandler() {
-    this(OpenSearchClient.defaultOpenSearchClient());
+    this(OpenSearchClient.defaultOpenSearchClient(), new Environment());
   }
 
-  public FetchInstitutionReportHandler(SearchClient<NviCandidateIndexDocument> searchClient) {
-    super(Void.class);
+  public FetchInstitutionReportHandler(
+      SearchClient<NviCandidateIndexDocument> searchClient, Environment environment) {
+    super(Void.class, environment);
     this.searchClient = searchClient;
   }
 

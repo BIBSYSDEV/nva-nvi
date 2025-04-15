@@ -17,6 +17,7 @@ import no.sikt.nva.nvi.rest.fetch.ReportStatusDto.StatusDto;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
+import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.attempt.Failure;
 
@@ -31,12 +32,15 @@ public class FetchReportStatusByPublicationIdHandler
   public FetchReportStatusByPublicationIdHandler() {
     this(
         new CandidateRepository(defaultDynamoClient()),
-        new PeriodRepository(defaultDynamoClient()));
+        new PeriodRepository(defaultDynamoClient()),
+        new Environment());
   }
 
   public FetchReportStatusByPublicationIdHandler(
-      CandidateRepository candidateRepository, PeriodRepository periodRepository) {
-    super(Void.class);
+      CandidateRepository candidateRepository,
+      PeriodRepository periodRepository,
+      Environment environment) {
+    super(Void.class, environment);
     this.candidateRepository = candidateRepository;
     this.periodRepository = periodRepository;
   }

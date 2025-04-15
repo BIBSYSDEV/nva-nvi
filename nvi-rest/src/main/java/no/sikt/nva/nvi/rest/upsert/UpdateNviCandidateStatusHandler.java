@@ -24,6 +24,7 @@ import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.apigateway.exceptions.ForbiddenException;
 import nva.commons.apigateway.exceptions.UnauthorizedException;
+import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 
 public class UpdateNviCandidateStatusHandler
@@ -40,15 +41,17 @@ public class UpdateNviCandidateStatusHandler
         new CandidateRepository(defaultDynamoClient()),
         new PeriodRepository(defaultDynamoClient()),
         ViewingScopeHandler.defaultViewingScopeValidator(),
-        new OrganizationRetriever(new UriRetriever()));
+        new OrganizationRetriever(new UriRetriever()),
+        new Environment());
   }
 
   public UpdateNviCandidateStatusHandler(
       CandidateRepository candidateRepository,
       PeriodRepository periodRepository,
       ViewingScopeValidator viewingScopeValidator,
-      OrganizationRetriever organizationRetriever) {
-    super(NviStatusRequest.class);
+      OrganizationRetriever organizationRetriever,
+      Environment environment) {
+    super(NviStatusRequest.class, environment);
     this.candidateRepository = candidateRepository;
     this.periodRepository = periodRepository;
     this.viewingScopeValidator = viewingScopeValidator;

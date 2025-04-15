@@ -28,6 +28,7 @@ import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
+import nva.commons.core.Environment;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,6 +40,7 @@ class FetchInstitutionStatusAggregationHandlerTest {
   private static final String YEAR = "year";
   private static final int CURRENT_YEAR = Year.now().getValue();
   private static final Context CONTEXT = mock(Context.class);
+  protected static final Environment ENVIRONMENT = new Environment();
   private ByteArrayOutputStream output;
   private FetchInstitutionStatusAggregationHandler handler;
   private OpenSearchClient openSearchClient;
@@ -47,7 +49,7 @@ class FetchInstitutionStatusAggregationHandlerTest {
   public void setUp() {
     output = new ByteArrayOutputStream();
     openSearchClient = mock(OpenSearchClient.class);
-    handler = new FetchInstitutionStatusAggregationHandler(openSearchClient);
+    handler = new FetchInstitutionStatusAggregationHandler(openSearchClient, ENVIRONMENT);
   }
 
   @Test

@@ -14,6 +14,7 @@ import no.unit.nva.commons.json.JsonUtils;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
+import nva.commons.core.Environment;
 
 public class FetchNviCandidateContextHandler extends ApiGatewayHandler<Void, String> {
 
@@ -21,7 +22,7 @@ public class FetchNviCandidateContextHandler extends ApiGatewayHandler<Void, Str
   public static final String CONTEXT_PROPERTY = "@context";
 
   public FetchNviCandidateContextHandler() {
-    super(Void.class);
+    super(Void.class, new Environment());
   }
 
   @Override

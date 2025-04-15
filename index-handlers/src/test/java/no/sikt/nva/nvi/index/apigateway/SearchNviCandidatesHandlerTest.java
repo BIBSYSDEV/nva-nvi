@@ -57,9 +57,9 @@ import no.sikt.nva.nvi.index.model.document.PublicationDetails;
 import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
 import no.sikt.nva.nvi.index.model.search.OrderByFields;
 import no.sikt.nva.nvi.test.TestUtils;
-import no.unit.nva.clients.GetUserResponse;
-import no.unit.nva.clients.GetUserResponse.ViewingScope;
 import no.unit.nva.clients.IdentityServiceClient;
+import no.unit.nva.clients.UserDto;
+import no.unit.nva.clients.UserDto.ViewingScope;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.commons.pagination.PaginatedSearchResult;
 import no.unit.nva.testutils.HandlerRequestBuilder;
@@ -488,8 +488,8 @@ class SearchNviCandidatesHandlerTest {
         .thenReturn(createSearchResponse(singleNviCandidateIndexDocument()));
   }
 
-  private static GetUserResponse buildGetUserResponse(List<URI> usersViewingScopeIncludedUnits) {
-    return GetUserResponse.builder()
+  private static UserDto buildGetUserResponse(List<URI> usersViewingScopeIncludedUnits) {
+    return UserDto.builder()
         .withViewingScope(buildViewingScope(usersViewingScopeIncludedUnits))
         .build();
   }
@@ -548,7 +548,7 @@ class SearchNviCandidatesHandlerTest {
     return String.join(COMMA, institutions);
   }
 
-  private OngoingStubbing<GetUserResponse> mockIdentityService(String userName) {
+  private OngoingStubbing<UserDto> mockIdentityService(String userName) {
     return attempt(
             () ->
                 when(identityServiceClient.getUser(eq(userName)))

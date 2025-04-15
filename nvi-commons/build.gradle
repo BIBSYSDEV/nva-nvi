@@ -48,4 +48,5 @@ test {
     environment("SEARCH_INFRASTRUCTURE_API_URI", "localhost")
     environment("NVI_TABLE_NAME", "some-table")
     environment("BACKEND_CLIENT_AUTH_URL", "example.org/auth")
+    environment("COGNITO_AUTHORIZER_URLS", "http://localhost:3000")
 }

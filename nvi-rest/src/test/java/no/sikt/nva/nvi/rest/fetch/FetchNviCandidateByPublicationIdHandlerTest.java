@@ -35,7 +35,8 @@ class FetchNviCandidateByPublicationIdHandlerTest extends BaseCandidateRestHandl
     return new FetchNviCandidateByPublicationIdHandler(
         scenario.getCandidateRepository(),
         scenario.getPeriodRepository(),
-        mockOrganizationRetriever);
+        mockOrganizationRetriever,
+        ENVIRONMENT);
   }
 
   @BeforeEach

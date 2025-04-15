@@ -38,6 +38,7 @@ import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.GatewayResponse;
+import nva.commons.core.Environment;
 import org.apache.hc.core5.http.ContentType;
 import org.junit.jupiter.api.BeforeEach;
 
@@ -47,6 +48,7 @@ public abstract class BaseCandidateRestHandlerTest {
   protected static final ViewingScopeValidator mockViewingScopeValidator =
       new FakeViewingScopeValidator(true);
   protected static final Context CONTEXT = mock(Context.class);
+  protected static final Environment ENVIRONMENT = new Environment();
   protected UriRetriever mockUriRetriever;
   protected OrganizationRetriever mockOrganizationRetriever;
   protected String resourcePathParameter;
