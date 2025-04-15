@@ -3,7 +3,6 @@ package no.sikt.nva.nvi.common.utils;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.extractOptJsonNodeTextValue;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
-import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -12,7 +11,6 @@ import org.junit.jupiter.api.Test;
 
 class JsonUtilsTest {
 
-  public static final String ID_FIELD = "id";
   private static final String FIELD_NAME = "fieldName";
   private static final String JSON_PATH_DELIMITER = "/";
 

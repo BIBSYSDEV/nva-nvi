@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.common.dto;
 import static nva.commons.core.StringUtils.isBlank;
 
 import com.fasterxml.jackson.annotation.JsonValue;
+import no.sikt.nva.nvi.common.exceptions.ValidationException;
 
 public record VerificationStatus(String value) {
 
@@ -10,7 +11,7 @@ public record VerificationStatus(String value) {
 
   public VerificationStatus {
     if (isBlank(value)) {
-      throw new IllegalArgumentException("Verification status cannot be blank");
+      throw new ValidationException("Verification status cannot be blank");
     }
   }
 

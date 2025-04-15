@@ -3,7 +3,7 @@ package no.sikt.nva.nvi.common.dto;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
-import static java.util.Objects.requireNonNull;
+import static no.sikt.nva.nvi.common.utils.Validator.shouldNotBeNull;
 import static nva.commons.core.StringUtils.isBlank;
 import static nva.commons.core.StringUtils.isNotBlank;
 
@@ -34,7 +34,7 @@ public record ContributorDto(
 
   public void validate() {
     if (isBlank(name)) {
-      requireNonNull(id, "Both 'id' and 'name' is null, one of these fields must be set");
+      shouldNotBeNull(id, "Both 'id' and 'name' is null, one of these fields must be set");
     }
   }
 

@@ -73,6 +73,7 @@ public class SampleExpandedPublicationFactory {
     var expandedTopLevelOrganization =
         SampleExpandedOrganization.builder()
             .withId(topLevelOrganization.id())
+            .withType()
             .withCountryCode(countryCode)
             .withSubOrganizations(
                 expandedSubOrganizations.toArray(SampleExpandedOrganization[]::new))
@@ -84,6 +85,7 @@ public class SampleExpandedPublicationFactory {
       URI organizationId, URI topLevelId, String countryCode) {
     return SampleExpandedOrganization.builder()
         .withId(organizationId)
+        .withType()
         .withParentOrganizations(topLevelId)
         .withCountryCode(countryCode)
         .build();
