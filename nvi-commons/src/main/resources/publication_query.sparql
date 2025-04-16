@@ -142,7 +142,7 @@ WHERE {
 
   # Find all contributors
   OPTIONAL {
-    ?publication :entityDescription/:contributor ?contributor .
+    ?entityDescription :contributor ?contributor .
     ?contributor :identity ?personId ;
     :role ?role .
     ?role a ?roleType .
