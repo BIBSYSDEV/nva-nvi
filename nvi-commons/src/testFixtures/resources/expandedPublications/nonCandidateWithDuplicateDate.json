@@ -1,0 +1,226 @@
+{
+  "body": {
+    "type": "Publication",
+    "publicationContextUris": [
+      "https://api.dev.nva.aws.unit.no/publication-channels-v2/publisher/A04A15C5-1B21-46BB-BC1D-AA4EF9B6DEB9/2021"
+    ],
+    "id": "https://api.dev.nva.aws.unit.no/publication/0195ccbecbe4-690bc563-f42a-4094-b68e-f0fcbcebd529",
+    "additionalIdentifiers": [
+      {
+        "type": "CristinIdentifier",
+        "sourceName": "brage@nr",
+        "value": "1982198"
+      },
+      {
+        "type": "HandleIdentifier",
+        "sourceName": "brage@nr",
+        "value": "https://hdl.handle.net/11250/2874663"
+      }
+    ],
+    "associatedArtifacts": [
+      {
+        "type": "HiddenFile",
+        "identifier": "3a3d987c-b4d5-44dc-ba77-97b82f46b709",
+        "mimeType": "application/xml",
+        "name": "dublin_core.xml",
+        "rightsRetentionStrategy": {
+          "type": "NullRightsRetentionStrategy",
+          "configuredType": "Unknown"
+        },
+        "size": "3997",
+        "uploadDetails": {
+          "type": "ImportUploadDetails",
+          "archive": "NR",
+          "uploadedDate": "2025-03-25T10:00:09.612676204Z"
+        }
+      },
+      {
+        "type": "OpenFile",
+        "identifier": "23bf5405-8725-4ef8-bf5c-c4b79df7d63c",
+        "license": {
+          "type": "License",
+          "value": "https://creativecommons.org/licenses/by-nc-sa/4.0",
+          "name": "CC-NC-SA",
+          "labels": {
+            "en": "Creative Commons - Attribution-NonCommercial-ShareAlike",
+            "nb": "Creative Commons - Navngivelse-IkkeKommersiell-DelPåSammeVilkår"
+          }
+        },
+        "mimeType": "application/pdf",
+        "name": "thesis_FINAL_Martin_Tveten.pdf",
+        "publishedDate": "2025-03-25T10:00:10.653350303Z",
+        "publisherVersion": "PublishedVersion",
+        "rightsRetentionStrategy": {
+          "type": "NullRightsRetentionStrategy",
+          "configuredType": "Unknown"
+        },
+        "size": "26441742",
+        "uploadDetails": {
+          "type": "ImportUploadDetails",
+          "archive": "NR",
+          "uploadedDate": "2025-03-25T10:00:09.612670953Z"
+        }
+      }
+    ],
+    "createdDate": "2025-03-25T10:00:10.980112092Z",
+    "entityDescription": {
+      "type": "EntityDescription",
+      "alternativeAbstracts": {},
+      "contributors": [
+        {
+          "type": "Contributor",
+          "correspondingAuthor": "false",
+          "identity": {
+            "type": "Identity",
+            "name": "abc"
+          },
+          "role": {
+            "type": "Creator"
+          },
+          "sequence": "1"
+        },
+        {
+          "type": "Contributor",
+          "correspondingAuthor": "false",
+          "identity": {
+            "type": "Identity",
+            "name": "qwe"
+          },
+          "role": {
+            "type": "Creator"
+          },
+          "sequence": "2"
+        },
+        {
+          "type": "Contributor",
+          "correspondingAuthor": "false",
+          "identity": {
+            "type": "Identity",
+            "name": "def"
+          },
+          "role": {
+            "type": "Creator"
+          },
+          "sequence": "3"
+        }
+      ],
+      "language": "http://lexvo.org/id/iso639-3/eng",
+      "mainTitle": "Scalable change and anomaly detection in cross-correlated data",
+      "publicationDate": {
+        "type": "PublicationDate",
+        "year": "2021"
+      },
+      "reference": {
+        "type": "Reference",
+        "publicationContext": {
+          "type": "Degree",
+          "publisher": {
+            "id": "https://api.dev.nva.aws.unit.no/publication-channels-v2/publisher/A04A15C5-1B21-46BB-BC1D-AA4EF9B6DEB9/2021",
+            "type": "Publisher",
+            "identifier": "A04A15C5-1B21-46BB-BC1D-AA4EF9B6DEB9",
+            "name": "Universitetet i Oslo",
+            "sameAs": "https://kanalregister-test.hkdir.no/publiseringskanaler/info/nvakanal?pid=A04A15C5-1B21-46BB-BC1D-AA4EF9B6DEB9",
+            "scientificValue": "Unassigned",
+            "valid": "true",
+            "year": "2021"
+          }
+        },
+        "publicationInstance": {
+          "type": "DegreePhd",
+          "pages": {
+            "type": "MonographPages",
+            "illustrated": "false",
+            "pages": "161"
+          },
+          "submittedDate": {
+            "type": "PublicationDate",
+            "year": "2021"
+          }
+        }
+      },
+      "contributorsCount": 3,
+      "contributorsPreview": [
+        {
+          "type": "Contributor",
+          "correspondingAuthor": "false",
+          "identity": {
+            "type": "Identity",
+            "name": "abc"
+          },
+          "role": {
+            "type": "Creator"
+          },
+          "sequence": "1"
+        },
+        {
+          "type": "Contributor",
+          "correspondingAuthor": "false",
+          "identity": {
+            "type": "Identity",
+            "name": "qwe"
+          },
+          "role": {
+            "type": "Creator"
+          },
+          "sequence": "2"
+        },
+        {
+          "type": "Contributor",
+          "correspondingAuthor": "false",
+          "identity": {
+            "type": "Identity",
+            "name": "def"
+          },
+          "role": {
+            "type": "Creator"
+          },
+          "sequence": "3"
+        }
+      ]
+    },
+    "fundings": [
+      {
+        "id": "https://api.dev.nva.aws.unit.no/verified-funding/nfr/237718",
+        "type": "ConfirmedFunding",
+        "identifier": "237718",
+        "source": {
+          "id": "https://api.dev.nva.aws.unit.no/cristin/funding-sources/NFR",
+          "type": "FundingSource",
+          "identifier": "NFR",
+          "labels": {
+            "nb": "Norges forskningsråd",
+            "en": "Research Council of Norway (RCN)"
+          },
+          "name": {
+            "en": "Research Council of Norway (RCN)",
+            "nb": "Norges forskningsråd"
+          }
+        }
+      }
+    ],
+    "identifier": "0195ccbecbe4-690bc563-f42a-4094-b68e-f0fcbcebd529",
+    "modelVersion": "0.23.3",
+    "modifiedDate": "2025-03-25T10:00:10.980112092Z",
+    "pendingOpenFileCount": "0",
+    "publishedDate": "2025-03-25T10:00:10.980112092Z",
+    "publisher": {
+      "id": "https://api.dev.nva.aws.unit.no/customer/54bed9d9-2bc4-4fa4-a6c4-9e957f93870d",
+      "type": "Organization"
+    },
+    "resourceOwner": {
+      "owner": "nr@7467.0.0.0",
+      "ownerAffiliation": "https://api.dev.nva.aws.unit.no/cristin/organization/7467.0.0.0"
+    },
+    "scientificIndex": {},
+    "status": "PUBLISHED",
+    "@context": "https://api.dev.nva.aws.unit.no/publication/context",
+    "filesStatus": "hasPublicFiles",
+    "joinField": {
+      "name": "hasParts"
+    }
+  },
+  "consumptionAttributes": {
+    "index": "resources",
+    "documentIdentifier": "0195ccbecbe4-690bc563-f42a-4094-b68e-f0fcbcebd529"
+  }
+}

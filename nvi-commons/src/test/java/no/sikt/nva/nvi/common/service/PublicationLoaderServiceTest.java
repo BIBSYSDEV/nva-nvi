@@ -2,10 +2,12 @@ package no.sikt.nva.nvi.common.service;
 
 import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_ACADEMIC_CHAPTER;
 import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_ACADEMIC_CHAPTER_PATH;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_INVALID_DRAFT;
 import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_PUBLICATION_1;
 import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_PUBLICATION_1_PATH;
 import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_PUBLICATION_2;
 import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_PUBLICATION_2_PATH;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_WITH_DUPLICATE_DATE;
 import static nva.commons.core.ioutils.IoUtils.stringFromResources;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
@@ -21,7 +23,6 @@ import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.paths.UnixPath;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -41,25 +42,23 @@ class PublicationLoaderServiceTest {
   }
 
   @ParameterizedTest
-  @MethodSource("exampleDocumentTestProvider")
+  @MethodSource("exampleDocumentProvider")
+  void shouldNotFailWhenParsingExampleDocument(String filename) {
+    assertThatNoException().isThrownBy(() -> parseExampleDocument(filename));
+  }
+
+  @ParameterizedTest
+  @MethodSource("applicableCandidateDocumentProvider")
   void shouldNotFailWhenValidatingExampleDocument(String filename) {
     var actual = parseExampleDocument(filename);
     assertThatNoException().isThrownBy(actual::validate);
   }
 
   @ParameterizedTest
-  @MethodSource("exampleDocumentTestProvider")
+  @MethodSource("applicableCandidateDocumentProvider")
   void shouldGetExpectedDataFromExampleDocuments(String filename, PublicationDto expected) {
     var actual = parseExampleDocument(filename);
     assertThat(actual).usingRecursiveComparison().ignoringCollectionOrder().isEqualTo(expected);
-  }
-
-  @Test
-  void shouldNotFailWhenParsingIncompleteDocument() {
-    var filePath = "expandedPublications/invalidDraft.json";
-    var document = stringFromResources(Path.of(filePath));
-    var publicationBucketUri = addToS3(filePath, document);
-    assertThatNoException().isThrownBy(() -> dataLoader.extractAndTransform(publicationBucketUri));
   }
 
   private PublicationDto parseExampleDocument(String filename) {
@@ -76,7 +75,16 @@ class PublicationLoaderServiceTest {
     }
   }
 
-  private static Stream<Arguments> exampleDocumentTestProvider() {
+  private static Stream<Arguments> exampleDocumentProvider() {
+    return Stream.of(
+        argumentSet("Minimal example", EXAMPLE_PUBLICATION_1_PATH),
+        argumentSet("Full example", EXAMPLE_PUBLICATION_2_PATH),
+        argumentSet("Academic chapter", EXAMPLE_ACADEMIC_CHAPTER_PATH),
+        argumentSet("Invalid draft", EXAMPLE_INVALID_DRAFT),
+        argumentSet("NonCandidate with duplicate publication dates", EXAMPLE_WITH_DUPLICATE_DATE));
+  }
+
+  private static Stream<Arguments> applicableCandidateDocumentProvider() {
     return Stream.of(
         argumentSet("Minimal example", EXAMPLE_PUBLICATION_1_PATH, EXAMPLE_PUBLICATION_1),
         argumentSet("Full example", EXAMPLE_PUBLICATION_2_PATH, EXAMPLE_PUBLICATION_2),

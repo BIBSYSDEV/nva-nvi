@@ -33,6 +33,9 @@ public class ExamplePublications {
       "expandedPublications/validNviCandidate2.json";
   public static final String EXAMPLE_ACADEMIC_CHAPTER_PATH =
       "expandedPublications/applicableAcademicChapter.json";
+  public static final String EXAMPLE_INVALID_DRAFT = "expandedPublications/invalidDraft.json";
+  public static final String EXAMPLE_WITH_DUPLICATE_DATE =
+      "expandedPublications/nonCandidateWithDuplicateDate.json";
 
   public static final PublicationDto EXAMPLE_PUBLICATION_1 =
       PublicationDto.builder()
