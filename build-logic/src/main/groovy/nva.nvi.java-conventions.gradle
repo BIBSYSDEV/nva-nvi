@@ -1,6 +1,5 @@
 plugins {
     id 'nva.nvi.common-conventions'
-    id 'checkstyle'
     id 'java-library'
     id 'jacoco'
     id 'pmd'
@@ -35,21 +34,6 @@ pmd {
     ruleSetConfig = rootProject.resources.text.fromFile('config/pmd/ruleset.xml')
     ruleSets = []
     ignoreFailures = false
-}
-
-checkstyle {
-    toolVersion = '10.21.2'
-    configFile = rootProject.resources.text.fromFile('config/checkstyle/checkstyle.xml').asFile()
-    showViolations = true
-    ignoreFailures = false
-}
-
-tasks.withType(Checkstyle).configureEach {
-    reports {
-        xml.required = true
-        html.required = true
-        html.stylesheet = rootProject.resources.text.fromFile('config/checkstyle/checkstyle-simple.xsl')
-    }
 }
 
 tasks.named('test', Test) {
