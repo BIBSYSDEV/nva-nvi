@@ -67,6 +67,7 @@ WHERE {
 
   # Find publication date
   OPTIONAL {
+    ?entityDescription :publicationDate ?date .
     ?date a :PublicationDate .
     ?date :year ?year
   }
