@@ -55,44 +55,36 @@ CONSTRUCT {
 }
 
 WHERE {
-  # Find the main publication object and basic fields
-  ?publication a :Publication ;
-  :status ?status .
-
-  OPTIONAL { ?publication :entityDescription ?entityDescription }
-  OPTIONAL { ?publication :identifier ?identifier }
-  OPTIONAL { ?publication :modifiedDate ?modifiedDate }
-  OPTIONAL { ?entityDescription :mainTitle ?title }
-  OPTIONAL { ?entityDescription :language ?language }
-
-  # Find publication date
-  OPTIONAL {
+  # Find the main publication object and top-level values
+  ?publication a :Publication .
+  ?publication :status ?status .
+  {
+    OPTIONAL { ?publication :identifier ?identifier }
+    OPTIONAL { ?publication :modifiedDate ?modifiedDate }
+  } UNION {
+    # Find basic values under the entityDescription node
+    ?publication :entityDescription ?entityDescription .
+    OPTIONAL { ?entityDescription :mainTitle ?title }
+    OPTIONAL { ?entityDescription :language ?language }
+  } UNION {
+    # Find the publication date
+    ?publication :entityDescription ?entityDescription .
     ?entityDescription :publicationDate ?date .
     ?date a :PublicationDate .
     ?date :year ?year
-  }
-  OPTIONAL { ?date :month ?month }
-  OPTIONAL { ?date :day ?day }
-
-  # Find publication type (if applicable)
-  VALUES ?applicablePublicationType {
-    :AcademicMonograph :AcademicCommentary :AcademicChapter :AcademicArticle :AcademicLiteratureReview
-  }
-  OPTIONAL {
+    OPTIONAL { ?date :month ?month }
+    OPTIONAL { ?date :day ?day }
+  } UNION {
+    # Find all publication channels
     ?reference a :Reference ;
     :publicationInstance ?instance .
     ?instance a ?instanceType .
-    FILTER (?instanceType = ?applicablePublicationType)
-  }
-
-  # Find all publication channels
-  VALUES ?journalPublications {
-    :AcademicArticle :AcademicLiteratureReview
-  }
-  VALUES ?nonJournalPublications {
-    :AcademicMonograph :AcademicCommentary :AcademicChapter
-  }
-  OPTIONAL {
+    VALUES ?journalPublications {
+      :AcademicArticle :AcademicLiteratureReview
+    }
+    VALUES ?nonJournalPublications {
+      :AcademicMonograph :AcademicCommentary :AcademicChapter
+    }
     # In rare cases a channel can be listed as both a Journal and a Series, but only one of these
     # is relevant for a given publication type.
     # This filter should ensure that we only keep relevant channel types.
@@ -108,10 +100,19 @@ WHERE {
     OPTIONAL { ?channel :year ?channelYear }
     OPTIONAL { ?channel :onlineIssn ?onlineIssn }
     OPTIONAL { ?channel :printIssn ?printIssn }
-  }
+  } UNION {
+    # Check whether the publication is 'applicable', i.e. can be an NVI candidate
+    ?publication a :Publication ;
+    :status ?status .
 
-  # Check whether the publication is 'applicable', i.e. can be an NVI candidate
-  OPTIONAL {
+    # Find publication type (if applicable)
+    VALUES ?applicablePublicationType {
+      :AcademicMonograph :AcademicCommentary :AcademicChapter :AcademicArticle :AcademicLiteratureReview
+    }
+    ?reference a :Reference ;
+    :publicationInstance ?instance .
+    ?instance a ?instanceType .
+
     # Filter on valid status and publication type
     FILTER (?status = :PUBLISHED)
     FILTER (?instanceType = ?applicablePublicationType)
@@ -131,18 +132,18 @@ WHERE {
       ?channelForLevel :scientificValue ?scientificLevel .
       FILTER(?scientificLevel = ?applicableLevel)
     } AS ?isApplicable)
-  }
-
-  # Find all organizations
-  OPTIONAL { ?organization a :Organization }
-  OPTIONAL { ?organization :partOf ?parent }
-  OPTIONAL { ?organization :hasPart ?child }
-  OPTIONAL { ?organization :label ?label }
-  OPTIONAL { ?organization :country ?country }
-
-  # Find all contributors
-  OPTIONAL {
+  } UNION {
+    # Find all organizations
+    ?organization a :Organization .
+    OPTIONAL { ?organization :partOf ?parent }
+    OPTIONAL { ?organization :hasPart ?child }
+    OPTIONAL { ?organization :label ?label }
+    OPTIONAL { ?organization :country ?country }
+  } UNION {
+    # Find all contributors
+    ?publication :entityDescription ?entityDescription .
     ?entityDescription :contributor ?contributor .
+
     ?contributor :identity ?personId ;
     :role ?role .
     ?role a ?roleType .
@@ -171,16 +172,16 @@ WHERE {
         FILTER NOT EXISTS { ?topLevelOrganization :partOf ?parent }
       }
     }
-  }
 
-  # Check if any contributor is a Creator with a non-Norwegian affiliation.
-  # If so, the publication counts as an international collaboration.
-  OPTIONAL {
-    BIND(EXISTS {
-      ?contributor :role [ a :Creator ] ;
-      :affiliation [ :country ?countryCode ] .
-      FILTER (?countryCode != "NO")
-    } AS ?isInternationalCollaboration
-    )
+    # Check if any contributor is a Creator with a non-Norwegian affiliation.
+    # If so, the publication counts as an international collaboration.
+    OPTIONAL {
+      BIND(EXISTS {
+        ?contributor :role [ a :Creator ] ;
+        :affiliation [ :country ?countryCode ] .
+        FILTER (?countryCode != "NO")
+      } AS ?isInternationalCollaboration
+      )
+    }
   }
 }
