@@ -33,7 +33,7 @@ public class PublicationLoaderService {
   private static final String CONTEXT_NODE = "@context";
   private static final String JSON_PTR_BODY = "/body";
   private static final String INPUT_CONTEXT_FILE = "nva_context.json";
-  private static final JsonNode INPUT_CONTEXT = readAsJsonNode();
+  private static final JsonNode INPUT_CONTEXT = getInputContext();
   private static final String OUTPUT_FRAMING_CONTEXT_FILE = "publication_frame.json";
   private static final JsonDocument OUTPUT_FRAMING_CONTEXT = getOutputFramingContext();
   private static final String SPARQL_QUERY =
@@ -96,19 +96,19 @@ public class PublicationLoaderService {
     return new StringReader(outputStream.toString());
   }
 
-  private static JsonDocument getOutputFramingContext() {
-    try {
-      return JsonDocument.of(inputStreamFromResources(OUTPUT_FRAMING_CONTEXT_FILE));
-    } catch (JsonLdError e) {
-      throw new RuntimeException("Unexpected error when parsing static input context", e);
-    }
-  }
-
-  private static JsonNode readAsJsonNode() {
+  private static JsonNode getInputContext() {
     var inputStream = stringFromResources(Path.of(INPUT_CONTEXT_FILE));
     try {
       return dtoObjectMapper.readTree(inputStream);
     } catch (JsonProcessingException e) {
+      throw new RuntimeException("Unexpected error when parsing static input context", e);
+    }
+  }
+
+  private static JsonDocument getOutputFramingContext() {
+    try {
+      return JsonDocument.of(inputStreamFromResources(OUTPUT_FRAMING_CONTEXT_FILE));
+    } catch (JsonLdError e) {
       throw new RuntimeException("Unexpected error when parsing static framing context", e);
     }
   }
