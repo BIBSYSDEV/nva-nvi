@@ -4,10 +4,13 @@ import static no.sikt.nva.nvi.common.utils.GraphUtils.createModel;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.ioutils.IoUtils.inputStreamFromResources;
 import static nva.commons.core.ioutils.IoUtils.stringFromResources;
+import static org.apache.jena.riot.RDFFormat.JSONLD11;
+import static org.apache.jena.sparql.resultset.ResultsFormat.FMT_RDF_JSONLD;
 
 import com.apicatalog.jsonld.JsonLd;
 import com.apicatalog.jsonld.JsonLdError;
 import com.apicatalog.jsonld.document.JsonDocument;
+import com.apicatalog.jsonld.document.RdfDocument;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -17,10 +20,15 @@ import java.net.URI;
 import java.nio.file.Path;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.dto.PublicationDto;
+import org.apache.jena.query.DatasetFactory;
 import org.apache.jena.query.QueryExecutionFactory;
 import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFDataMgr;
+import org.apache.jena.riot.system.JenaTitanium;
+import org.apache.jena.riot.writer.JsonLD11Writer;
+import org.apache.jena.sparql.util.Context;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,8 +63,13 @@ public class PublicationLoaderService {
     try (var queryExecution = QueryExecutionFactory.create(SPARQL_QUERY, inputModel)) {
       var resultModel = queryExecution.execConstruct();
       var publication = transformToPublication(resultModel);
+      var publicationFromRdf = transformToPublicationViaRdf(resultModel);
+      var publicationWithDirectFraming = transformToPublicationWithDirectFraming(resultModel);
+      var publication4 =
+          transformToPublication(
+              resultModel); // Dupe to compare methods now that the cache is warm etc
       logger.info("Successfully parsed publication with ID: {}", publication.id());
-      return publication;
+      return publicationFromRdf;
     }
   }
 
@@ -88,6 +101,49 @@ public class PublicationLoaderService {
     } catch (JsonLdError | JsonProcessingException e) {
       throw new RuntimeException("Unexpected error when framing output JSON", e);
     }
+  }
+
+  private PublicationDto transformToPublicationViaRdf(Model model) {
+    logger.info("Transforming RDF model to simplified Publication object");
+    try {
+      var dataset = DatasetFactory.create(model);
+      var rdfDataset = JenaTitanium.convert(dataset.asDatasetGraph());
+      var rdfDocument = RdfDocument.of(rdfDataset);
+      var jsonContent = JsonLd.fromRdf(rdfDocument).get();
+      var jsonDocument = JsonDocument.of(jsonContent);
+      var jsonObject = JsonLd.frame(jsonDocument, OUTPUT_FRAMING_CONTEXT).get();
+
+      return PublicationDto.from(jsonObject.toString());
+    } catch (JsonLdError | JsonProcessingException e) {
+      throw new RuntimeException("Unexpected error when framing output JSON", e);
+    }
+  }
+
+  private PublicationDto transformToPublicationWithDirectFraming(Model model) {
+    logger.info("Transforming RDF model to simplified Publication object");
+    try {
+      var dataset = DatasetFactory.create(model);
+      String frame = stringFromResources(Path.of(OUTPUT_FRAMING_CONTEXT_FILE));
+      var context = new Context();
+      context.set(FMT_RDF_JSONLD, frame);
+      var writer = new JsonLD11Writer(JSONLD11);
+      var outputStream = new ByteArrayOutputStream();
+      writer.write(outputStream, dataset.asDatasetGraph(), null, null, context);
+      var stuff = JsonDocument.of(new StringReader(outputStream.toString()));
+
+      return PublicationDto.from(JsonLd.frame(stuff, OUTPUT_FRAMING_CONTEXT).get().toString());
+    } catch (JsonLdError | JsonProcessingException e) {
+      throw new RuntimeException("Unexpected error when framing output JSON", e);
+    }
+  }
+
+  private static Context getFramingContextAsContextType() {
+    var model = ModelFactory.createDefaultModel();
+    var inputStream = inputStreamFromResources(OUTPUT_FRAMING_CONTEXT_FILE);
+    RDFDataMgr.read(model, inputStream, Lang.JSONLD);
+    var dataset = DatasetFactory.create(model);
+    var context = Context.fromDataset(dataset.asDatasetGraph());
+    return context;
   }
 
   private static StringReader toJsonReader(Model resultModel) {
