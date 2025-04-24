@@ -32,11 +32,13 @@ import org.slf4j.LoggerFactory;
 public class PublicationLoaderService {
   private static final String CONTEXT_NODE = "@context";
   private static final String JSON_PTR_BODY = "/body";
-  private static final String NVA_CONTEXT_JSONLD = "nva_context.json";
-  private static final String PUBLICATION_FRAME_JSONLD = "publication_frame.json";
-  private static final String PUBLICATION_SPARQL =
+  private static final String INPUT_CONTEXT_FILE = "nva_context.json";
+  private static final JsonNode INPUT_CONTEXT = getInputContext();
+  private static final String OUTPUT_FRAMING_CONTEXT_FILE = "publication_frame.json";
+  private static final JsonDocument OUTPUT_FRAMING_CONTEXT = getOutputFramingContext();
+  private static final String SPARQL_QUERY =
       stringFromResources(Path.of("publication_query.sparql"));
-  private static final String STATIC_CONTEXT = stringFromResources(Path.of(NVA_CONTEXT_JSONLD));
+
   private final Logger logger = LoggerFactory.getLogger(PublicationLoaderService.class);
   private final StorageReader<URI> storageReader;
 
@@ -45,60 +47,46 @@ public class PublicationLoaderService {
   }
 
   public PublicationDto extractAndTransform(URI publicationBucketUri) {
-    logger.info("Extracting and transforming publication from S3: {}", publicationBucketUri);
+    logger.info("Parsing expanded publication from S3: {}", publicationBucketUri);
     var content = extractContentFromStorage(publicationBucketUri);
-    var model = loadModelFromJson(content);
-    var publication = transformToPublication(model);
-    logger.info("Successfully transformed publication with ID: {}", publication.id());
-    return publication;
+    var inputModel = createModel(content);
+
+    logger.info("Transforming model with SPARQL query...");
+    try (var queryExecution = QueryExecutionFactory.create(SPARQL_QUERY, inputModel)) {
+      var resultModel = queryExecution.execConstruct();
+      var publication = transformToPublication(resultModel);
+      logger.info("Successfully parsed publication with ID: {}", publication.id());
+      return publication;
+    }
   }
 
+  /**
+   * Extracts the body node from a JSON-LD document stored in S3. Note that this replaces the
+   * context node in the JSON-LD document with a static copy to avoid network calls. This static
+   * context should be kept in sync with the <a
+   * href="https://api.nva.unit.no/publication/context">source</a>.
+   */
   private JsonNode extractContentFromStorage(URI publicationBucketUri) {
-    logger.info("Extracting publication from S3: {}", publicationBucketUri);
+    logger.info("Extracting document from S3: {}", publicationBucketUri);
     try {
       var jsonString = storageReader.read(publicationBucketUri);
       var jsonDocument = dtoObjectMapper.readTree(jsonString);
       var body = (ObjectNode) jsonDocument.at(JSON_PTR_BODY);
-      return withReplacementContext(body);
+      body.set(CONTEXT_NODE, INPUT_CONTEXT);
+      return body;
     } catch (JsonProcessingException e) {
-      throw new RuntimeException(e);
+      throw new RuntimeException("Unexpected error when processing input JSON", e);
     }
-  }
-
-  private Model loadModelFromJson(JsonNode body) {
-    logger.info("Querying JSON-LD document to generate RDF model");
-    var model = createModel(body);
-    var queryExecution = QueryExecutionFactory.create(PUBLICATION_SPARQL, model);
-    return queryExecution.execConstruct();
   }
 
   private PublicationDto transformToPublication(Model model) {
     logger.info("Transforming RDF model to simplified Publication object");
     try {
       var document = JsonDocument.of(toJsonReader(model));
-      var context = JsonDocument.of(inputStreamFromResources(PUBLICATION_FRAME_JSONLD));
-      var jsonString = JsonLd.frame(document, context).get().toString();
+      var jsonString = JsonLd.frame(document, OUTPUT_FRAMING_CONTEXT).get().toString();
       return PublicationDto.from(jsonString);
-    } catch (JsonProcessingException | JsonLdError e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  /**
-   * Replaces the context node in the JSON-LD document with a static copy to avoid network calls.
-   * This static context should be kept in sync with the source
-   * (https://api.nva.unit.no/publication/context).
-   *
-   * @param body Content of the JSON-LD document to be transformed
-   * @return JsonNode with the context node replaced
-   */
-  private JsonNode withReplacementContext(ObjectNode body) {
-    try {
-      var replacementContext = dtoObjectMapper.readTree(STATIC_CONTEXT);
-      body.set(CONTEXT_NODE, replacementContext);
-      return body;
-    } catch (JsonProcessingException e) {
-      throw new RuntimeException(e);
+    } catch (JsonLdError | JsonProcessingException e) {
+      throw new RuntimeException("Unexpected error when framing output JSON", e);
     }
   }
 
@@ -106,5 +94,22 @@ public class PublicationLoaderService {
     var outputStream = new ByteArrayOutputStream();
     RDFDataMgr.write(outputStream, resultModel, Lang.JSONLD);
     return new StringReader(outputStream.toString());
+  }
+
+  private static JsonNode getInputContext() {
+    var inputStream = stringFromResources(Path.of(INPUT_CONTEXT_FILE));
+    try {
+      return dtoObjectMapper.readTree(inputStream);
+    } catch (JsonProcessingException e) {
+      throw new RuntimeException("Unexpected error when parsing static input context", e);
+    }
+  }
+
+  private static JsonDocument getOutputFramingContext() {
+    try {
+      return JsonDocument.of(inputStreamFromResources(OUTPUT_FRAMING_CONTEXT_FILE));
+    } catch (JsonLdError e) {
+      throw new RuntimeException("Unexpected error when parsing static framing context", e);
+    }
   }
 }
