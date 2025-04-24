@@ -128,6 +128,9 @@ public class PublicationLoaderService {
       context.set(FMT_RDF_JSONLD, frame);
       var writer = new JsonLD11Writer(JSONLD11);
       var outputStream = new ByteArrayOutputStream();
+
+      // This step is probably supposed to produce a framed JSON-LD document directly,
+      // but it doesn't get it in the format we need.
       writer.write(outputStream, dataset.asDatasetGraph(), null, null, context);
       var stuff = JsonDocument.of(new StringReader(outputStream.toString()));
 
