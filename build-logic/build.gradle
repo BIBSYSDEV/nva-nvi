@@ -7,5 +7,7 @@ repositories {
 }
 
 dependencies {
-    implementation libs.bundles.buildtools
+    implementation libs.errorprone.plugin
+    implementation libs.gradle.versions.plugin
+    implementation libs.spotless
 }

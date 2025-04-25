@@ -1,6 +1,7 @@
 plugins {
     id 'nva.nvi.common-conventions'
     id 'jacoco'
+    id 'com.github.ben-manes.versions'
 }
 
 tasks.register('testCodeCoverageReport', JacocoReport) {
