@@ -1,34 +1,34 @@
 [versions]
-apache-poi = { strictly = '5.4.0' }
+apache-poi = { strictly = '5.4.1' }
 assertj = { strictly = '3.27.3' }
 awsLambdaEvents = { strictly = '3.15.0' }
 awsLambdaJavaCore = { strictly = '1.2.3' }
 awsSdk = { strictly = '1.12.782' }
 awsSdk2 = { strictly = '2.31.28' }
 com-auth0-jwt = { strictly = '4.4.0' }
-cucumber = { strictly = '7.21.1' }
-dynamoDbLocal = { strictly = '2.5.4' }
-errorprone = { strictly = '2.37.0' }
+cucumber = { strictly = '7.22.1' }
+dynamoDbLocal = { strictly = '2.6.0' }
+errorprone = { strictly = '2.38.0' }
 errorpronePlugin = { strictly = '4.1.0' }
-guava = { strictly = '33.4.0-jre' }
+guava = { strictly = '33.4.8-jre' }
 hamcrest = { strictly = '3.0' }
 jackson = { strictly = '2.18.3' }
 jena = { strictly = '5.3.0' }
 junit = { strictly = '5.12.2' }
 junitPlatform = { strictly = '1.12.2' } # May need to sync minor&patch version with 'junit' version
 log4j = { strictly = '2.24.3' }
-mockito = { strictly = '5.15.2' }
+mockito = { strictly = '5.17.0' }
 nva = { strictly = '2.2.4' }
 nvaLanguage = { strictly = '1.2.1' }
 openCsv = { strictly = '5.10' }
-openSearchJava = { strictly = '2.19.0' }
+openSearchJava = { strictly = '2.23.0' }
 openSearchRestClient = { strictly = '2.18.0' }
-openSearchTestContainer = { strictly = '2.1.2' }
+openSearchTestContainer = { strictly = '2.1.3' }
 slf4j = { require = '2.0.16' }
 spotless = { strictly = '7.0.2' }
-testContainers = { strictly = '1.20.4' }
+testContainers = { strictly = '1.21.0' }
 versions = { strictly = '0.52.0' }
-wiremock = { strictly = '3.12.1' }
+wiremock = { strictly = '3.13.0' }
 zalando = { strictly = '0.27.1' }
 
 [libraries]
