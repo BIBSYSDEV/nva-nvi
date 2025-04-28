@@ -49,6 +49,7 @@ import no.sikt.nva.nvi.common.db.PeriodStatus;
 import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
 import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
+import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.model.InvalidNviCandidateException;
@@ -63,7 +64,6 @@ import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException;
-import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.CreateNoteRequest;
 import no.sikt.nva.nvi.common.service.requests.DeleteNoteRequest;
 import no.sikt.nva.nvi.common.service.requests.FetchByPublicationRequest;
@@ -749,7 +749,7 @@ public final class Candidate {
     return points.stream().map(DbInstitutionPoints::from).toList();
   }
 
-  private static DbPublicationDate mapToPublicationDate(PublicationDate publicationDate) {
+  private static DbPublicationDate mapToPublicationDate(PublicationDateDto publicationDate) {
     return DbPublicationDate.builder()
         .year(publicationDate.year())
         .month(publicationDate.month())

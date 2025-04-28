@@ -30,8 +30,8 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.db.model.Username;
+import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.service.model.InstanceType;
-import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.events.cristin.InstitutionPoints.CreatorPoints;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
@@ -405,7 +405,7 @@ public final class CristinMapper {
     }
   }
 
-  private static DbPublicationDate constructPublicationDate(PublicationDate publicationDate) {
+  private static DbPublicationDate constructPublicationDate(PublicationDateDto publicationDate) {
     return DbPublicationDate.builder()
         .day(publicationDate.day())
         .month(publicationDate.month())

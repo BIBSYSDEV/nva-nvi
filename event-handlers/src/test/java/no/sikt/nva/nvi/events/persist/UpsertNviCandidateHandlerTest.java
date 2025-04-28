@@ -374,7 +374,7 @@ class UpsertNviCandidateHandlerTest {
   }
 
   private DbCandidate getExpectedCandidate(UpsertNviCandidateRequest evaluatedNviCandidate) {
-    var date = evaluatedNviCandidate.date();
+    var date = evaluatedNviCandidate.publicationDate();
     return DbCandidate.builder()
         .applicable(true)
         .publicationId(evaluatedNviCandidate.publicationId())
