@@ -20,9 +20,7 @@ import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
-import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 
-@SuppressWarnings("PMD.TooManyFields")
 public class UpsertRequestBuilder {
 
   private URI publicationBucketUri;
@@ -69,7 +67,7 @@ public class UpsertRequestBuilder {
         .withTotalPoints(BigDecimal.ONE);
   }
 
-  public static UpsertRequestBuilder fromRequest(UpsertCandidateRequest request) {
+  public static UpsertRequestBuilder fromRequest(NviCandidate request) {
     var publicationDateDto =
         new PublicationDateDto(
             request.publicationDate().year(),
@@ -229,7 +227,7 @@ public class UpsertRequestBuilder {
         .toList();
   }
 
-  public UpsertCandidateRequest build() {
+  public NviCandidate build() {
     return NviCandidate.builder()
         .withPublicationId(publicationId)
         .withPublicationBucketUri(publicationBucketUri)

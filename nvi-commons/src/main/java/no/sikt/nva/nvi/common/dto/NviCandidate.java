@@ -14,7 +14,6 @@ import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails;
-import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 
 // FIXME: Suppressing temporarily.
 // Many fields of this class can be replaced with a single PublicationDto
@@ -39,9 +38,8 @@ public record NviCandidate(
     int creatorShareCount,
     List<InstitutionPoints> institutionPoints,
     BigDecimal totalPoints)
-    implements CandidateType, UpsertCandidateRequest {
+    implements CandidateType {
 
-  @Override
   public boolean isApplicable() {
     return true;
   }
@@ -49,14 +47,12 @@ public record NviCandidate(
   // FIXME: This only includes verified creators (as a map of id and affiliation) and does not
   // include unverified creators.
   // It should include both, but we would need to rewrite all usages to avoid this map first.
-  @Override
   @Deprecated
   public Map<URI, List<URI>> creators() {
     return verifiedCreators().stream()
         .collect(Collectors.toMap(VerifiedNviCreatorDto::id, VerifiedNviCreatorDto::affiliations));
   }
 
-  @Override
   public PublicationDetails.PublicationDate publicationDate() {
     return new PublicationDetails.PublicationDate(date.year(), date.month(), date.day());
   }

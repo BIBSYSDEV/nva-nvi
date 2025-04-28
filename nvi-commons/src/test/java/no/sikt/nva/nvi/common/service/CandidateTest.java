@@ -48,6 +48,7 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
 import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
+import no.sikt.nva.nvi.common.dto.NviCandidate;
 import no.sikt.nva.nvi.common.service.dto.ApprovalDto;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatusDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
@@ -62,7 +63,6 @@ import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
-import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -496,7 +496,7 @@ class CandidateTest extends CandidateTestSetup {
         .toList();
   }
 
-  private Candidate upsert(UpsertCandidateRequest request) {
+  private Candidate upsert(NviCandidate request) {
     Candidate.upsert(request, candidateRepository, periodRepository);
     return Candidate.fetchByPublicationId(
         request::publicationId, candidateRepository, periodRepository);
@@ -510,7 +510,7 @@ class CandidateTest extends CandidateTestSetup {
     return Candidate.fetch(candidateBO::getIdentifier, candidateRepository, periodRepository);
   }
 
-  private UpsertCandidateRequest getUpdateRequestForExistingCandidate() {
+  private NviCandidate getUpdateRequestForExistingCandidate() {
     var insertRequest = randomUpsertRequestBuilder().build();
     Candidate.upsert(insertRequest, candidateRepository, periodRepository);
     return UpsertRequestBuilder.fromRequest(insertRequest).build();
@@ -535,8 +535,7 @@ class CandidateTest extends CandidateTestSetup {
     return points.stream().map(DbInstitutionPoints::from).toList();
   }
 
-  private DbCandidate generateExpectedCandidate(
-      Candidate candidate, UpsertCandidateRequest request) {
+  private DbCandidate generateExpectedCandidate(Candidate candidate, NviCandidate request) {
     var dbCreators = mapToDbCreators(request.verifiedCreators(), request.unverifiedCreators());
     var dbCandidate =
         DbCandidate.builder()
