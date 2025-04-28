@@ -63,7 +63,6 @@ import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
-import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import nva.commons.core.Environment;
 import nva.commons.logutils.LogUtils;
@@ -358,8 +357,7 @@ class UpsertNviCandidateHandlerTest {
         .toList();
   }
 
-  private UpsertCandidateRequest createNewUpsertRequestNotAffectingApprovals(
-      UpsertCandidateRequest request) {
+  private NviCandidate createNewUpsertRequestNotAffectingApprovals(NviCandidate request) {
     var creator = request.verifiedCreators().getFirst();
     return getBuilder(request.publicationId(), request.publicationBucketUri(), creator)
         .withInstanceType(request.instanceType())

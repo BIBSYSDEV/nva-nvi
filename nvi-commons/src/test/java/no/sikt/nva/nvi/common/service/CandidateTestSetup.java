@@ -14,11 +14,11 @@ import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.dto.NviCandidate;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
-import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
@@ -39,8 +39,7 @@ public class CandidateTestSetup {
   protected UriRetriever mockUriRetriever;
   protected OrganizationRetriever mockOrganizationRetriever;
 
-  protected static UpsertCandidateRequest createUpsertRequestWithDecimalScale(
-      int scale, URI institutionId) {
+  protected static NviCandidate createUpsertRequestWithDecimalScale(int scale, URI institutionId) {
     var creatorId = randomUri();
     var verifiedCreator = new VerifiedNviCreatorDto(creatorId, List.of(institutionId));
     var points =

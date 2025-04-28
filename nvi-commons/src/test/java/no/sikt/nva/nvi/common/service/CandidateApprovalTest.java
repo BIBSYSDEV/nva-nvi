@@ -39,6 +39,7 @@ import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.UpsertRequestBuilder;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
+import no.sikt.nva.nvi.common.dto.NviCandidate;
 import no.sikt.nva.nvi.common.model.InvalidNviCandidateException;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
@@ -54,7 +55,6 @@ import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.service.model.PublicationChannel;
-import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Named;
@@ -629,7 +629,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
     return candidate.updateApprovalStatus(updateRequest, mockOrganizationRetriever);
   }
 
-  private UpsertCandidateRequest getUpsertCandidateRequestWithHardcodedValues() {
+  private NviCandidate getUpsertCandidateRequestWithHardcodedValues() {
     var verifiedCreator =
         new VerifiedNviCreatorDto(HARDCODED_CREATOR_ID, List.of(HARDCODED_SUBUNIT_ID));
     return randomUpsertRequestBuilder()
@@ -648,8 +648,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
         .build();
   }
 
-  private UpsertCandidateRequest createNewUpsertRequestNotAffectingApprovals(
-      UpsertCandidateRequest request) {
+  private NviCandidate createNewUpsertRequestNotAffectingApprovals(NviCandidate request) {
     return fromRequest(request).withIsInternationalCollaboration(false).build();
   }
 
