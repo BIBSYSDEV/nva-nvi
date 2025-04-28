@@ -7,10 +7,11 @@ import java.net.URI;
 
 @JsonSerialize
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = NonNviCandidate.class, name = "NonNviCandidate"),
-  @JsonSubTypes.Type(value = NviCandidate.class, name = "NviCandidate")
+  @JsonSubTypes.Type(value = UpsertNonNviCandidateRequest.class, name = "NonNviCandidate"),
+  @JsonSubTypes.Type(value = UpsertNviCandidateRequest.class, name = "NviCandidate")
 })
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
-public sealed interface CandidateType permits NonNviCandidate, NviCandidate {
+public sealed interface CandidateType
+    permits UpsertNonNviCandidateRequest, UpsertNviCandidateRequest {
   URI publicationId();
 }

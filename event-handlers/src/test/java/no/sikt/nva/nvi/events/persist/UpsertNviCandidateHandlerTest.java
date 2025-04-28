@@ -50,10 +50,10 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
-import no.sikt.nva.nvi.common.dto.NonNviCandidate;
-import no.sikt.nva.nvi.common.dto.NviCandidate;
-import no.sikt.nva.nvi.common.dto.NviCandidate.Builder;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
+import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
+import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
+import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest.Builder;
 import no.sikt.nva.nvi.common.model.CandidateFixtures;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.queue.QueueClient;
@@ -273,7 +273,7 @@ class UpsertNviCandidateHandlerTest {
     return createEvalMessage(randomEvaluatedNviCandidate().build());
   }
 
-  private static NviCandidate.Builder randomEvaluatedNviCandidate() {
+  private static UpsertNviCandidateRequest.Builder randomEvaluatedNviCandidate() {
     var identifier = UUID.randomUUID();
     var publicationId = generatePublicationId(identifier);
     var publicationBucketUri = generateS3BucketUri(identifier);
@@ -283,7 +283,7 @@ class UpsertNviCandidateHandlerTest {
 
   private static Builder getBuilder(
       URI publicationId, URI publicationBucketUri, VerifiedNviCreatorDto creator) {
-    return NviCandidate.builder()
+    return UpsertNviCandidateRequest.builder()
         .withPublicationId(publicationId)
         .withPublicationBucketUri(publicationBucketUri)
         .withInstanceType(randomInstanceType())
@@ -308,7 +308,8 @@ class UpsertNviCandidateHandlerTest {
   }
 
   private static Stream<CandidateEvaluatedMessage> invalidCandidateEvaluatedMessages() {
-    return Stream.of(createEvalMessage(NviCandidate.builder().withPublicationId(null).build()));
+    return Stream.of(
+        createEvalMessage(UpsertNviCandidateRequest.builder().withPublicationId(null).build()));
   }
 
   private static PublicationDateDto randomPublicationDate() {
@@ -331,7 +332,8 @@ class UpsertNviCandidateHandlerTest {
     return new VerifiedNviCreatorDto(randomUri(), List.of(randomUri()));
   }
 
-  private static CandidateEvaluatedMessage createEvalMessage(NviCandidate nviCandidate) {
+  private static CandidateEvaluatedMessage createEvalMessage(
+      UpsertNviCandidateRequest nviCandidate) {
     return CandidateEvaluatedMessage.builder().withCandidateType(nviCandidate).build();
   }
 
@@ -346,7 +348,8 @@ class UpsertNviCandidateHandlerTest {
         .toList();
   }
 
-  private List<DbApprovalStatus> getExpectedApprovals(NviCandidate evaluatedNviCandidate) {
+  private List<DbApprovalStatus> getExpectedApprovals(
+      UpsertNviCandidateRequest evaluatedNviCandidate) {
     return evaluatedNviCandidate.institutionPoints().stream()
         .map(
             institution ->
@@ -357,7 +360,8 @@ class UpsertNviCandidateHandlerTest {
         .toList();
   }
 
-  private NviCandidate createNewUpsertRequestNotAffectingApprovals(NviCandidate request) {
+  private UpsertNviCandidateRequest createNewUpsertRequestNotAffectingApprovals(
+      UpsertNviCandidateRequest request) {
     var creator = request.verifiedCreators().getFirst();
     return getBuilder(request.publicationId(), request.publicationBucketUri(), creator)
         .withInstanceType(request.instanceType())
@@ -369,7 +373,7 @@ class UpsertNviCandidateHandlerTest {
         .build();
   }
 
-  private DbCandidate getExpectedCandidate(NviCandidate evaluatedNviCandidate) {
+  private DbCandidate getExpectedCandidate(UpsertNviCandidateRequest evaluatedNviCandidate) {
     var date = evaluatedNviCandidate.date();
     return DbCandidate.builder()
         .applicable(true)
@@ -390,7 +394,8 @@ class UpsertNviCandidateHandlerTest {
         .build();
   }
 
-  private static List<DbCreatorType> getExpectedCreators(NviCandidate evaluatedNviCandidate) {
+  private static List<DbCreatorType> getExpectedCreators(
+      UpsertNviCandidateRequest evaluatedNviCandidate) {
     Stream<DbCreatorType> verifiedCreators =
         evaluatedNviCandidate.verifiedCreators().stream().map(VerifiedNviCreatorDto::toDao);
     Stream<DbCreatorType> unverifiedCreators =
@@ -400,7 +405,7 @@ class UpsertNviCandidateHandlerTest {
 
   private CandidateEvaluatedMessage nonCandidateMessageForExistingCandidate(Candidate candidate) {
     return CandidateEvaluatedMessage.builder()
-        .withCandidateType(new NonNviCandidate(candidate.getPublicationId()))
+        .withCandidateType(new UpsertNonNviCandidateRequest(candidate.getPublicationId()))
         .build();
   }
 

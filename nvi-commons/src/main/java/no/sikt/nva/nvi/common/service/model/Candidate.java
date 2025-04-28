@@ -49,8 +49,8 @@ import no.sikt.nva.nvi.common.db.PeriodStatus;
 import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
 import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
-import no.sikt.nva.nvi.common.dto.NonNviCandidate;
-import no.sikt.nva.nvi.common.dto.NviCandidate;
+import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
+import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.model.InvalidNviCandidateException;
 import no.sikt.nva.nvi.common.model.UpdateApprovalRequest;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
@@ -192,7 +192,7 @@ public final class Candidate {
   }
 
   public static void upsert(
-      NviCandidate request,
+      UpsertNviCandidateRequest request,
       CandidateRepository candidateRepository,
       PeriodRepository periodRepository) {
     var optionalCandidate = fetchOptionalCandidate(request, candidateRepository, periodRepository);
@@ -202,7 +202,7 @@ public final class Candidate {
   }
 
   public static Optional<Candidate> updateNonCandidate(
-      NonNviCandidate request, CandidateRepository repository) {
+      UpsertNonNviCandidateRequest request, CandidateRepository repository) {
     if (isExistingCandidate(request.publicationId(), repository)) {
       return Optional.of(updateToNotApplicable(request, repository));
     }
@@ -493,7 +493,7 @@ public final class Candidate {
   }
 
   private static Optional<Candidate> fetchOptionalCandidate(
-      NviCandidate request,
+      UpsertNviCandidateRequest request,
       CandidateRepository candidateRepository,
       PeriodRepository periodRepository) {
     return attempt(
@@ -503,7 +503,9 @@ public final class Candidate {
   }
 
   private static void updateExistingCandidate(
-      NviCandidate request, CandidateRepository repository, Candidate existingCandidate) {
+      UpsertNviCandidateRequest request,
+      CandidateRepository repository,
+      Candidate existingCandidate) {
     if (existingCandidate.isReported()) {
       throw new IllegalCandidateUpdateException("Can not update reported candidate");
     } else {
@@ -512,7 +514,7 @@ public final class Candidate {
   }
 
   private static Candidate updateToNotApplicable(
-      NonNviCandidate request, CandidateRepository repository) {
+      UpsertNonNviCandidateRequest request, CandidateRepository repository) {
     var existingCandidateDao =
         repository
             .findByPublicationId(request.publicationId())
@@ -530,7 +532,7 @@ public final class Candidate {
   }
 
   private static void updateCandidate(
-      NviCandidate request, CandidateRepository repository, Candidate candidate) {
+      UpsertNviCandidateRequest request, CandidateRepository repository, Candidate candidate) {
     validateCandidate(request);
     var updatedCandidate = candidate.apply(request);
     if (shouldResetCandidate(request, candidate) || isNotApplicable(candidate)) {
@@ -559,7 +561,8 @@ public final class Candidate {
     return !candidate.isApplicable();
   }
 
-  private static boolean shouldResetCandidate(NviCandidate request, Candidate candidate) {
+  private static boolean shouldResetCandidate(
+      UpsertNviCandidateRequest request, Candidate candidate) {
     return levelIsUpdated(request, candidate)
         || publicationChannelIsUpdated(request, candidate)
         || instanceTypeIsUpdated(request, candidate)
@@ -568,11 +571,13 @@ public final class Candidate {
         || publicationYearIsUpdated(request, candidate);
   }
 
-  private static boolean publicationChannelIsUpdated(NviCandidate request, Candidate candidate) {
+  private static boolean publicationChannelIsUpdated(
+      UpsertNviCandidateRequest request, Candidate candidate) {
     return !request.publicationChannelId().equals(candidate.getPublicationChannelId());
   }
 
-  private static boolean publicationYearIsUpdated(NviCandidate request, Candidate candidate) {
+  private static boolean publicationYearIsUpdated(
+      UpsertNviCandidateRequest request, Candidate candidate) {
     return !request
         .publicationDate()
         .year()
@@ -580,7 +585,7 @@ public final class Candidate {
   }
 
   private static boolean hasChangeInTopLevelOrganizations(
-      NviCandidate request, Candidate candidate) {
+      UpsertNviCandidateRequest request, Candidate candidate) {
     var oldTopLevelOrganizations =
         candidate.getInstitutionPoints().stream()
             .map(InstitutionPoints::institutionId)
@@ -612,7 +617,8 @@ public final class Candidate {
    * This allows for unverified creators to be converted to verified creators by assuming that
    * a removed creator is replaced by a new creator with the same affiliations.
    */
-  private static boolean creatorsAreUpdated(NviCandidate request, Candidate candidate) {
+  private static boolean creatorsAreUpdated(
+      UpsertNviCandidateRequest request, Candidate candidate) {
     var oldCreatorCount = candidate.getPublicationDetails().creators().size();
     var newCreatorCount = getAllCreators(request).size();
     var hasSameCount = oldCreatorCount == newCreatorCount;
@@ -620,7 +626,7 @@ public final class Candidate {
     return !(hasSameCount && hasSameCreators);
   }
 
-  private static boolean hasSameCreators(NviCandidate request, Candidate candidate) {
+  private static boolean hasSameCreators(UpsertNviCandidateRequest request, Candidate candidate) {
     var affiliationsOfRemovedUnverifiedCreators =
         candidate.getPublicationDetails().getUnverifiedCreators().stream()
             .filter(not(creator -> request.unverifiedCreators().contains(creator)))
@@ -643,28 +649,29 @@ public final class Candidate {
     return removedInNew && newInRemoved;
   }
 
-  private static boolean instanceTypeIsUpdated(NviCandidate request, Candidate candidate) {
+  private static boolean instanceTypeIsUpdated(
+      UpsertNviCandidateRequest request, Candidate candidate) {
     return !Objects.equals(
         request.instanceType().getValue(), candidate.getPublicationDetails().type());
   }
 
-  private static boolean levelIsUpdated(NviCandidate request, Candidate candidate) {
+  private static boolean levelIsUpdated(UpsertNviCandidateRequest request, Candidate candidate) {
     return !Objects.equals(request.level(), candidate.getScientificLevel());
   }
 
-  private static void createCandidate(NviCandidate request, CandidateRepository repository) {
+  private static void createCandidate(
+      UpsertNviCandidateRequest request, CandidateRepository repository) {
     validateCandidate(request);
     repository.create(mapToCandidate(request), mapToApprovals(request.institutionPoints()));
   }
 
-  private static void validateCandidate(NviCandidate candidate) {
+  private static void validateCandidate(UpsertNviCandidateRequest candidate) {
     attempt(
             () -> {
               Objects.requireNonNull(candidate.instanceType());
               Objects.requireNonNull(candidate.publicationBucketUri());
               Objects.requireNonNull(candidate.institutionPoints());
               Objects.requireNonNull(candidate.publicationId());
-              Objects.requireNonNull(candidate.creators());
               Objects.requireNonNull(candidate.verifiedCreators());
               Objects.requireNonNull(candidate.unverifiedCreators());
               Objects.requireNonNull(candidate.level());
@@ -715,7 +722,7 @@ public final class Candidate {
     return DbApprovalStatus.builder().institutionId(institutionId).status(DbStatus.PENDING).build();
   }
 
-  private static DbCandidate mapToCandidate(NviCandidate request) {
+  private static DbCandidate mapToCandidate(UpsertNviCandidateRequest request) {
     var allCreators = mapToDbCreators(request.verifiedCreators(), request.unverifiedCreators());
     return DbCandidate.builder()
         .publicationId(request.publicationId())
@@ -828,7 +835,7 @@ public final class Candidate {
         .build();
   }
 
-  private Candidate apply(NviCandidate request) {
+  private Candidate apply(UpsertNviCandidateRequest request) {
     return this.copy()
         .withApplicable(request.isApplicable())
         .withBasePoints(adjustScaleAndRoundingMode(request.basePoints()))
@@ -842,7 +849,7 @@ public final class Candidate {
         .build();
   }
 
-  private PublicationDetails mapToPublicationDetails(NviCandidate request) {
+  private PublicationDetails mapToPublicationDetails(UpsertNviCandidateRequest request) {
     return new PublicationDetails(
         request.publicationId(),
         request.publicationBucketUri(),

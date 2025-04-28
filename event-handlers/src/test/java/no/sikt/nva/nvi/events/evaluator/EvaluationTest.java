@@ -15,7 +15,7 @@ import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.common.dto.NviCandidate;
+import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil;
@@ -54,7 +54,8 @@ public class EvaluationTest {
   protected PeriodRepository periodRepository;
   protected EvaluatorService evaluatorService;
 
-  protected BigDecimal getPointsForInstitution(NviCandidate candidate, URI institutionId) {
+  protected BigDecimal getPointsForInstitution(
+      UpsertNviCandidateRequest candidate, URI institutionId) {
     return candidate.institutionPoints().stream()
         .filter(institutionPoints -> institutionPoints.institutionId().equals(institutionId))
         .map(InstitutionPoints::institutionPoints)

@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.SampleExpandedPublicationFactory;
 import no.sikt.nva.nvi.common.client.model.Organization;
-import no.sikt.nva.nvi.common.dto.NviCandidate;
+import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
@@ -209,7 +209,7 @@ class PointCalculationTest extends EvaluationTest {
     assertThat(candidate)
         .hasFieldOrPropertyWithValue("totalPoints", expectedPoints)
         .hasFieldOrPropertyWithValue("creatorShareCount", 1)
-        .extracting(NviCandidate::institutionPoints)
+        .extracting(UpsertNviCandidateRequest::institutionPoints)
         .extracting(List::getFirst)
         .hasFieldOrPropertyWithValue("institutionPoints", expectedPoints);
   }
@@ -231,7 +231,7 @@ class PointCalculationTest extends EvaluationTest {
     assertThat(candidate)
         .hasFieldOrPropertyWithValue("totalPoints", asBigDecimal("0.7071"))
         .hasFieldOrPropertyWithValue("creatorShareCount", 2)
-        .extracting(NviCandidate::institutionPoints)
+        .extracting(UpsertNviCandidateRequest::institutionPoints)
         .extracting(List::getFirst)
         .hasFieldOrPropertyWithValue("institutionPoints", asBigDecimal("0.7071"));
   }
@@ -603,14 +603,15 @@ class PointCalculationTest extends EvaluationTest {
     }
   }
 
-  private NviCandidate getEvaluatedCandidate(SampleExpandedPublication publication) {
+  private UpsertNviCandidateRequest getEvaluatedCandidate(SampleExpandedPublication publication) {
     var fileUri = addPublicationToS3(publication);
     var event = createEvent(new PersistedResourceMessage(fileUri));
     handler.handleRequest(event, CONTEXT);
-    return (NviCandidate) getMessageBody().candidate();
+    return (UpsertNviCandidateRequest) getMessageBody().candidate();
   }
 
-  private void assertThatPointValuesMatch(PointParameters parameters, NviCandidate candidate) {
+  private void assertThatPointValuesMatch(
+      PointParameters parameters, UpsertNviCandidateRequest candidate) {
     assertEquals(parameters.totalPoints(), candidate.totalPoints());
     if (nonNull(parameters.institution2Points())) {
       assertThat(candidate.institutionPoints())

@@ -18,8 +18,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.SampleExpandedPublicationFactory;
 import no.sikt.nva.nvi.common.client.model.Organization;
-import no.sikt.nva.nvi.common.dto.NviCandidate;
 import no.sikt.nva.nvi.common.dto.PageCountDto;
+import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
@@ -148,11 +148,11 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
     }
   }
 
-  private NviCandidate getEvaluatedCandidate(SampleExpandedPublication publication) {
+  private UpsertNviCandidateRequest getEvaluatedCandidate(SampleExpandedPublication publication) {
     var fileUri = addPublicationToS3(publication);
     var event = createEvent(new PersistedResourceMessage(fileUri));
     handler.handleRequest(event, CONTEXT);
-    return (NviCandidate) getMessageBody().candidate();
+    return (UpsertNviCandidateRequest) getMessageBody().candidate();
   }
 
   /**

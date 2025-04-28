@@ -48,7 +48,7 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
 import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
-import no.sikt.nva.nvi.common.dto.NviCandidate;
+import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.service.dto.ApprovalDto;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatusDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
@@ -107,7 +107,7 @@ class CandidateTest extends CandidateTestSetup {
     var upsertCandidateRequest =
         randomUpsertRequestBuilder().withUnverifiedCreators(List.of(unverifiedCreator)).build();
     var expectedUnverifiedCreatorCount = upsertCandidateRequest.unverifiedCreators().size();
-    var expectedVerifiedCreatorCount = upsertCandidateRequest.creators().size();
+    var expectedVerifiedCreatorCount = upsertCandidateRequest.verifiedCreators().size();
 
     var fetchedCandidate = upsert(upsertCandidateRequest);
 
@@ -496,7 +496,7 @@ class CandidateTest extends CandidateTestSetup {
         .toList();
   }
 
-  private Candidate upsert(NviCandidate request) {
+  private Candidate upsert(UpsertNviCandidateRequest request) {
     Candidate.upsert(request, candidateRepository, periodRepository);
     return Candidate.fetchByPublicationId(
         request::publicationId, candidateRepository, periodRepository);
@@ -510,7 +510,7 @@ class CandidateTest extends CandidateTestSetup {
     return Candidate.fetch(candidateBO::getIdentifier, candidateRepository, periodRepository);
   }
 
-  private NviCandidate getUpdateRequestForExistingCandidate() {
+  private UpsertNviCandidateRequest getUpdateRequestForExistingCandidate() {
     var insertRequest = randomUpsertRequestBuilder().build();
     Candidate.upsert(insertRequest, candidateRepository, periodRepository);
     return UpsertRequestBuilder.fromRequest(insertRequest).build();
@@ -535,7 +535,8 @@ class CandidateTest extends CandidateTestSetup {
     return points.stream().map(DbInstitutionPoints::from).toList();
   }
 
-  private DbCandidate generateExpectedCandidate(Candidate candidate, NviCandidate request) {
+  private DbCandidate generateExpectedCandidate(
+      Candidate candidate, UpsertNviCandidateRequest request) {
     var dbCreators = mapToDbCreators(request.verifiedCreators(), request.unverifiedCreators());
     var dbCandidate =
         DbCandidate.builder()

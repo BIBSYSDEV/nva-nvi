@@ -15,9 +15,9 @@ import java.util.Optional;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.common.dto.NonNviCandidate;
-import no.sikt.nva.nvi.common.dto.NviCandidate;
 import no.sikt.nva.nvi.common.dto.PublicationDto;
+import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
+import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.exceptions.ValidationException;
 import no.sikt.nva.nvi.common.service.PublicationLoaderService;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
@@ -149,7 +149,7 @@ public class EvaluatorService {
     return candidate.isApplicable() && hasSamePeriod;
   }
 
-  private NviCandidate constructNviCandidate(
+  private UpsertNviCandidateRequest constructNviCandidate(
       PublicationDto publicationDto, URI publicationBucketUri, Collection<NviCreator> creators) {
     var verifiedCreatorsWithNviInstitutions = getVerifiedCreators(creators);
     var unverifiedCreatorsWithNviInstitutions = getUnverifiedCreators(creators);
@@ -159,7 +159,7 @@ public class EvaluatorService {
             verifiedCreatorsWithNviInstitutions,
             unverifiedCreatorsWithNviInstitutions);
 
-    return NviCandidate.builder()
+    return UpsertNviCandidateRequest.builder()
         .withPublicationId(publicationDto.id())
         .withPublicationBucketUri(publicationBucketUri)
         .withDate(publicationDto.publicationDate())
@@ -218,11 +218,12 @@ public class EvaluatorService {
 
   private Optional<CandidateEvaluatedMessage> createNonNviCandidateMessage(URI publicationId) {
     logger.info(NON_NVI_CANDIDATE_MESSAGE, publicationId);
-    var nonCandidate = new NonNviCandidate(publicationId);
+    var nonCandidate = new UpsertNonNviCandidateRequest(publicationId);
     return Optional.of(CandidateEvaluatedMessage.builder().withCandidateType(nonCandidate).build());
   }
 
-  private Optional<CandidateEvaluatedMessage> createNviCandidateMessage(NviCandidate nviCandidate) {
+  private Optional<CandidateEvaluatedMessage> createNviCandidateMessage(
+      UpsertNviCandidateRequest nviCandidate) {
     logger.info(NVI_CANDIDATE_MESSAGE, nviCandidate.publicationId());
     return Optional.of(CandidateEvaluatedMessage.builder().withCandidateType(nviCandidate).build());
   }

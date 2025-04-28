@@ -16,8 +16,8 @@ import java.util.Objects;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.common.dto.NonNviCandidate;
-import no.sikt.nva.nvi.common.dto.NviCandidate;
+import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
+import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.common.service.model.Candidate;
@@ -110,10 +110,10 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
   private void upsertNviCandidate(CandidateEvaluatedMessage evaluatedCandidate) {
     try {
       validateMessage(evaluatedCandidate);
-      if (evaluatedCandidate.candidate() instanceof NviCandidate candidate) {
+      if (evaluatedCandidate.candidate() instanceof UpsertNviCandidateRequest candidate) {
         Candidate.upsert(candidate, candidateRepository, periodRepository);
       } else {
-        var nonNviCandidate = (NonNviCandidate) evaluatedCandidate.candidate();
+        var nonNviCandidate = (UpsertNonNviCandidateRequest) evaluatedCandidate.candidate();
         Candidate.updateNonCandidate(nonNviCandidate, candidateRepository);
       }
       logPersistence(evaluatedCandidate);
