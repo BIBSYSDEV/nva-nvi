@@ -49,6 +49,7 @@ import no.sikt.nva.nvi.common.db.PeriodStatus;
 import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
 import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
+import no.sikt.nva.nvi.common.dto.NonNviCandidate;
 import no.sikt.nva.nvi.common.dto.NviCandidate;
 import no.sikt.nva.nvi.common.model.InvalidNviCandidateException;
 import no.sikt.nva.nvi.common.model.UpdateApprovalRequest;
@@ -67,7 +68,6 @@ import no.sikt.nva.nvi.common.service.requests.CreateNoteRequest;
 import no.sikt.nva.nvi.common.service.requests.DeleteNoteRequest;
 import no.sikt.nva.nvi.common.service.requests.FetchByPublicationRequest;
 import no.sikt.nva.nvi.common.service.requests.FetchCandidateRequest;
-import no.sikt.nva.nvi.common.service.requests.UpdateNonCandidateRequest;
 import no.sikt.nva.nvi.common.validator.CandidateUpdateValidator;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
@@ -202,7 +202,7 @@ public final class Candidate {
   }
 
   public static Optional<Candidate> updateNonCandidate(
-      UpdateNonCandidateRequest request, CandidateRepository repository) {
+      NonNviCandidate request, CandidateRepository repository) {
     if (isExistingCandidate(request.publicationId(), repository)) {
       return Optional.of(updateToNotApplicable(request, repository));
     }
@@ -512,7 +512,7 @@ public final class Candidate {
   }
 
   private static Candidate updateToNotApplicable(
-      UpdateNonCandidateRequest request, CandidateRepository repository) {
+      NonNviCandidate request, CandidateRepository repository) {
     var existingCandidateDao =
         repository
             .findByPublicationId(request.publicationId())

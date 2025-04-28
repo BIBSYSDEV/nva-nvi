@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.rest.fetch;
 
 import static no.sikt.nva.nvi.common.LocalDynamoTestSetup.initializeTestDatabase;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequest;
+import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertNonCandidateRequest;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.setupReportedCandidate;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.periodRepositoryReturningClosedPeriod;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.periodRepositoryReturningOpenedPeriod;
@@ -221,7 +222,8 @@ class FetchReportStatusByPublicationIdHandlerTest {
   @Test
   void shouldReturnNotCandidateWhenPublicationIsNotApplicableCandidate() throws IOException {
     var pendingCandidate = setupCandidateWithPublicationYear(CURRENT_YEAR);
-    Candidate.updateNonCandidate(pendingCandidate::getPublicationId, candidateRepository);
+    var upsertRequest = createUpsertNonCandidateRequest(pendingCandidate.getPublicationId());
+    Candidate.updateNonCandidate(upsertRequest, candidateRepository);
     periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
     var handler =
         new FetchReportStatusByPublicationIdHandler(
