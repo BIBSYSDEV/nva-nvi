@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import no.sikt.nva.nvi.common.dto.CandidateType;
 
 @JsonAutoDetect(fieldVisibility = Visibility.ANY)
 @JsonSerialize
