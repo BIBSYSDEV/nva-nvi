@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreatorType;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
+import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
@@ -17,7 +18,7 @@ public record PublicationDetails(
     URI publicationId,
     URI publicationBucketUri,
     String type,
-    PublicationDate publicationDate,
+    PublicationDateDto publicationDate,
     List<NviCreatorDto> creators,
     PublicationChannel publicationChannel) {
 
@@ -27,7 +28,7 @@ public record PublicationDetails(
         dbCandidate.publicationId(),
         dbCandidate.publicationBucketUri(),
         dbCandidate.instanceType(),
-        PublicationDate.from(dbCandidate.publicationDate()),
+        dateFromDbDate(dbCandidate.publicationDate()),
         dbCandidate.creators().stream().map(DbCreatorType::toNviCreator).toList(),
         new PublicationChannel(
             dbCandidate.channelType(), dbCandidate.channelId(), dbCandidate.level().getValue()));
@@ -59,11 +60,8 @@ public record PublicationDetails(
         .collect(Collectors.toSet());
   }
 
-  public record PublicationDate(String year, String month, String day) {
-
-    public static PublicationDate from(DbPublicationDate dbPublicationDate) {
-      return new PublicationDate(
-          dbPublicationDate.year(), dbPublicationDate.month(), dbPublicationDate.day());
-    }
+  private static PublicationDateDto dateFromDbDate(DbPublicationDate dbPublicationDate) {
+    return new PublicationDateDto(
+        dbPublicationDate.year(), dbPublicationDate.month(), dbPublicationDate.day());
   }
 }

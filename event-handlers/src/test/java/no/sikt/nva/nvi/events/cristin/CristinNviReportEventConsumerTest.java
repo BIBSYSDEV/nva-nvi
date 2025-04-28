@@ -26,11 +26,11 @@ import java.util.List;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.events.cristin.CristinNviReport.Builder;
 import no.unit.nva.events.models.EventReference;
 import no.unit.nva.s3.S3Driver;
@@ -243,8 +243,8 @@ class CristinNviReportEventConsumerTest {
         .build();
   }
 
-  private static PublicationDate randomPublicationDate() {
-    return new PublicationDate(randomString(), randomString(), randomString());
+  private static PublicationDateDto randomPublicationDate() {
+    return new PublicationDateDto(randomString(), randomString(), randomString());
   }
 
   private CristinLocale randomCristinLocale(String institutionIdentifier) {

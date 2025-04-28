@@ -35,9 +35,9 @@ import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.IntStream;
+import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.common.utils.JsonUtils;
 
 public final class ExpandedResourceGenerator {
@@ -250,7 +250,7 @@ public final class ExpandedResourceGenerator {
     return organization;
   }
 
-  private static ObjectNode createAndPopulatePublicationDate(PublicationDate date) {
+  private static ObjectNode createAndPopulatePublicationDate(PublicationDateDto date) {
     var publicationDate = objectMapper.createObjectNode();
     publicationDate.put(TYPE_FIELD, "PublicationDate");
     if (nonNull(date.day())) {

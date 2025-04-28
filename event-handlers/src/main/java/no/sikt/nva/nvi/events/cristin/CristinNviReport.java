@@ -8,7 +8,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.util.List;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
-import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
+import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.unit.nva.commons.json.JsonSerializable;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
@@ -19,7 +19,7 @@ public record CristinNviReport(
     List<ScientificResource> scientificResources,
     List<CristinLocale> cristinLocales,
     String yearReported,
-    PublicationDate publicationDate,
+    PublicationDateDto publicationDate,
     String instanceType,
     JsonNode reference)
     implements JsonSerializable {
@@ -57,7 +57,7 @@ public record CristinNviReport(
     private String cristinIdentifier;
     private List<CristinLocale> cristinLocales;
     private String yearReported;
-    private PublicationDate publicationDate;
+    private PublicationDateDto publicationDate;
     private List<ScientificResource> scientificResources;
     private String instanceType;
     private JsonNode reference;
@@ -89,7 +89,7 @@ public record CristinNviReport(
       return this;
     }
 
-    public Builder withPublicationDate(PublicationDate publicationDate) {
+    public Builder withPublicationDate(PublicationDateDto publicationDate) {
       this.publicationDate = publicationDate;
       return this;
     }

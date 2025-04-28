@@ -30,6 +30,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
+import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.model.ScientificValue;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.Approval;
@@ -369,8 +370,7 @@ public final class IndexDocumentTestUtils {
         && isNull(approval.getAssigneeUsername());
   }
 
-  private static PublicationDate mapToPublicationDate(
-      no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate publicationDate) {
+  private static PublicationDate mapToPublicationDate(PublicationDateDto publicationDate) {
     return new PublicationDate(
         publicationDate.year(), publicationDate.month(), publicationDate.day());
   }

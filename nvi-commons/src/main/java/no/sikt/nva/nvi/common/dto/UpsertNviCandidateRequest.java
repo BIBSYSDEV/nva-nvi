@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.common.dto;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.math.BigDecimal;
@@ -11,7 +10,6 @@ import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
-import no.sikt.nva.nvi.common.service.model.PublicationDetails;
 
 // FIXME: Suppressing temporarily.
 // Many fields of this class can be replaced with a single PublicationDto
@@ -24,7 +22,7 @@ public record UpsertNviCandidateRequest(
     InstanceType instanceType,
     String abstractText,
     PageCountDto pageCount,
-    @JsonProperty("publicationDate") PublicationDateDto date,
+    PublicationDateDto publicationDate,
     List<VerifiedNviCreatorDto> verifiedCreators,
     List<UnverifiedNviCreatorDto> unverifiedCreators,
     String channelType,
@@ -40,10 +38,6 @@ public record UpsertNviCandidateRequest(
 
   public boolean isApplicable() {
     return true;
-  }
-
-  public PublicationDetails.PublicationDate publicationDate() {
-    return new PublicationDetails.PublicationDate(date.year(), date.month(), date.day());
   }
 
   public static Builder builder() {
