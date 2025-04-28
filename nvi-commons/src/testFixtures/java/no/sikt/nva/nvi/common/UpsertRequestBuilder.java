@@ -12,13 +12,14 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
+import no.sikt.nva.nvi.common.dto.NviCandidate;
+import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
-import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 
 @SuppressWarnings("PMD.TooManyFields")
@@ -26,16 +27,14 @@ public class UpsertRequestBuilder {
 
   private URI publicationBucketUri;
   private URI publicationId;
-  private boolean isApplicable;
   private boolean isInternationalCollaboration;
-  private Map<URI, List<URI>> creators;
   private Collection<UnverifiedNviCreatorDto> unverifiedCreators;
   private Collection<VerifiedNviCreatorDto> verifiedCreators;
   private String channelType;
   private URI channelId;
   private String level;
   private InstanceType instanceType;
-  private PublicationDate publicationDate;
+  private PublicationDateDto publicationDate;
   private int creatorShareCount;
   private BigDecimal collaborationFactor;
   private BigDecimal basePoints;
@@ -48,16 +47,14 @@ public class UpsertRequestBuilder {
     return new UpsertRequestBuilder()
         .withPublicationBucketUri(randomUri())
         .withPublicationId(randomUri())
-        .withIsApplicable(true)
         .withIsInternationalCollaboration(true)
-        .withCreators(Map.of(creatorId, List.of(affiliationId)))
         .withVerifiedCreators(List.of(new VerifiedNviCreatorDto(creatorId, List.of(affiliationId))))
         .withUnverifiedCreators(emptyList())
         .withChannelType(ChannelType.JOURNAL.getValue())
         .withChannelId(randomUri())
         .withLevel("LevelOne")
         .withInstanceType(InstanceType.ACADEMIC_ARTICLE)
-        .withPublicationDate(new PublicationDate(String.valueOf(CURRENT_YEAR), "01", "01"))
+        .withPublicationDate(new PublicationDateDto(String.valueOf(CURRENT_YEAR), "01", "01"))
         .withCreatorShareCount(1)
         .withCollaborationFactor(BigDecimal.ONE)
         .withBasePoints(BigDecimal.ONE)
@@ -73,19 +70,22 @@ public class UpsertRequestBuilder {
   }
 
   public static UpsertRequestBuilder fromRequest(UpsertCandidateRequest request) {
+    var publicationDateDto =
+        new PublicationDateDto(
+            request.publicationDate().year(),
+            request.publicationDate().month(),
+            request.publicationDate().day());
     return new UpsertRequestBuilder()
         .withPublicationBucketUri(request.publicationBucketUri())
         .withPublicationId(request.publicationId())
-        .withIsApplicable(request.isApplicable())
         .withIsInternationalCollaboration(request.isInternationalCollaboration())
-        .withCreators(request.creators())
         .withVerifiedCreators(request.verifiedCreators())
         .withUnverifiedCreators(request.unverifiedCreators())
         .withChannelType(request.channelType())
         .withChannelId(request.publicationChannelId())
         .withLevel(request.level())
         .withInstanceType(request.instanceType())
-        .withPublicationDate(request.publicationDate())
+        .withPublicationDate(publicationDateDto)
         .withCreatorShareCount(request.creatorShareCount())
         .withCollaborationFactor(request.collaborationFactor())
         .withBasePoints(request.basePoints())
@@ -103,19 +103,9 @@ public class UpsertRequestBuilder {
     return this;
   }
 
-  public UpsertRequestBuilder withIsApplicable(boolean isApplicable) {
-    this.isApplicable = isApplicable;
-    return this;
-  }
-
   public UpsertRequestBuilder withIsInternationalCollaboration(
       boolean isInternationalCollaboration) {
     this.isInternationalCollaboration = isInternationalCollaboration;
-    return this;
-  }
-
-  public UpsertRequestBuilder withCreators(Map<URI, List<URI>> creators) {
-    this.creators = creators;
     return this;
   }
 
@@ -151,7 +141,7 @@ public class UpsertRequestBuilder {
     return this;
   }
 
-  public UpsertRequestBuilder withPublicationDate(PublicationDate publicationDate) {
+  public UpsertRequestBuilder withPublicationDate(PublicationDateDto publicationDate) {
     this.publicationDate = publicationDate;
     return this;
   }
@@ -240,93 +230,22 @@ public class UpsertRequestBuilder {
   }
 
   public UpsertCandidateRequest build() {
-
-    return new UpsertCandidateRequest() {
-
-      @Override
-      public URI publicationBucketUri() {
-        return publicationBucketUri;
-      }
-
-      @Override
-      public URI publicationId() {
-        return publicationId;
-      }
-
-      @Override
-      public boolean isApplicable() {
-        return isApplicable;
-      }
-
-      @Override
-      public boolean isInternationalCollaboration() {
-        return isInternationalCollaboration;
-      }
-
-      @Override
-      public Map<URI, List<URI>> creators() {
-        return creators;
-      }
-
-      @Override
-      public List<VerifiedNviCreatorDto> verifiedCreators() {
-        return List.copyOf(verifiedCreators);
-      }
-
-      @Override
-      public List<UnverifiedNviCreatorDto> unverifiedCreators() {
-        return List.copyOf(unverifiedCreators);
-      }
-
-      @Override
-      public String channelType() {
-        return channelType;
-      }
-
-      @Override
-      public URI publicationChannelId() {
-        return channelId;
-      }
-
-      @Override
-      public String level() {
-        return level;
-      }
-
-      @Override
-      public InstanceType instanceType() {
-        return instanceType;
-      }
-
-      @Override
-      public PublicationDate publicationDate() {
-        return publicationDate;
-      }
-
-      @Override
-      public int creatorShareCount() {
-        return creatorShareCount;
-      }
-
-      @Override
-      public BigDecimal collaborationFactor() {
-        return collaborationFactor;
-      }
-
-      @Override
-      public BigDecimal basePoints() {
-        return basePoints;
-      }
-
-      @Override
-      public List<InstitutionPoints> institutionPoints() {
-        return points;
-      }
-
-      @Override
-      public BigDecimal totalPoints() {
-        return totalPoints;
-      }
-    };
+    return NviCandidate.builder()
+        .withPublicationId(publicationId)
+        .withPublicationBucketUri(publicationBucketUri)
+        .withIsInternationalCollaboration(isInternationalCollaboration)
+        .withCollaborationFactor(collaborationFactor)
+        .withVerifiedNviCreators(List.copyOf(verifiedCreators))
+        .withUnverifiedNviCreators(List.copyOf(unverifiedCreators))
+        .withChannelType(channelType)
+        .withPublicationChannelId(channelId)
+        .withLevel(level)
+        .withInstanceType(instanceType)
+        .withDate(publicationDate)
+        .withCreatorShareCount(creatorShareCount)
+        .withBasePoints(basePoints)
+        .withInstitutionPoints(List.copyOf(points))
+        .withTotalPoints(totalPoints)
+        .build();
   }
 }

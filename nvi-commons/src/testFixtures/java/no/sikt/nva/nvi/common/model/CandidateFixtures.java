@@ -9,9 +9,9 @@ import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.UpsertRequestBuilder;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 
 public class CandidateFixtures {
 
@@ -37,7 +37,7 @@ public class CandidateFixtures {
 
   public static Candidate setupRandomApplicableCandidate(
       TestScenario scenario, int publicationYear) {
-    var publicationDate = new PublicationDate(String.valueOf(publicationYear), null, null);
+    var publicationDate = new PublicationDateDto(String.valueOf(publicationYear), null, null);
     var candidateRequest =
         randomUpsertRequestBuilder().withPublicationDate(publicationDate).build();
     return scenario.upsertCandidate(candidateRequest);

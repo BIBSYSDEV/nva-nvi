@@ -22,10 +22,10 @@ import java.util.Map;
 import no.sikt.nva.nvi.common.UpsertRequestBuilder;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.rest.fetch.ReportStatusDto.StatusDto;
 import no.unit.nva.stubs.FakeContext;
@@ -270,7 +270,7 @@ class FetchReportStatusByPublicationIdHandlerTest {
   private Candidate setupCandidateWithPublicationYear(int year) {
     var request =
         UpsertRequestBuilder.randomUpsertRequestBuilder()
-            .withPublicationDate(new PublicationDate(String.valueOf(year), null, null))
+            .withPublicationDate(new PublicationDateDto(String.valueOf(year), null, null))
             .build();
     return upsert(request);
   }
