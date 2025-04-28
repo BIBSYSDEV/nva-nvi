@@ -35,7 +35,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.UpsertRequestBuilder;
 import no.sikt.nva.nvi.common.client.model.Organization;
@@ -494,14 +493,8 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var candidate = scenario.upsertCandidate(upsertCandidateRequest);
     updateApprovalStatus(candidate, ApprovalStatus.APPROVED);
 
-    var creators =
-        arguments.creators().stream()
-            .collect(
-                Collectors.toMap(VerifiedNviCreatorDto::id, VerifiedNviCreatorDto::affiliations));
-
     var newUpsertRequest =
         fromRequest(upsertCandidateRequest)
-            .withCreators(creators)
             .withVerifiedCreators(arguments.creators())
             .withInstanceType(arguments.type())
             .withChannelId(arguments.channel().id())
@@ -640,7 +633,6 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var verifiedCreator =
         new VerifiedNviCreatorDto(HARDCODED_CREATOR_ID, List.of(HARDCODED_SUBUNIT_ID));
     return randomUpsertRequestBuilder()
-        .withCreators(Map.of(HARDCODED_CREATOR_ID, List.of(HARDCODED_SUBUNIT_ID)))
         .withVerifiedCreators(List.of(verifiedCreator))
         .withInstanceType(HARDCODED_INSTANCE_TYPE)
         .withChannelId(HARDCODED_CHANNEL_ID)
@@ -658,10 +650,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
 
   private UpsertCandidateRequest createNewUpsertRequestNotAffectingApprovals(
       UpsertCandidateRequest request) {
-    return fromRequest(request)
-        .withIsApplicable(true)
-        .withIsInternationalCollaboration(false)
-        .build();
+    return fromRequest(request).withIsInternationalCollaboration(false).build();
   }
 
   private record CandidateResetCauseArgument(

@@ -7,7 +7,6 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -65,14 +64,12 @@ public class UpsertRequestFixtures {
 
     return randomUpsertRequestBuilder()
         .withVerifiedCreators(verifiedCreatorsAsDto)
-        .withCreators(creators)
         .withPoints(points);
   }
 
   public static UpsertCandidateRequest createUpsertCandidateRequest(
       URI topLevelOrg, URI affiliation) {
     var creatorId = randomUri();
-    var creators = Map.of(creatorId, List.of(affiliation));
     var verifiedCreators = List.of(new VerifiedNviCreatorDto(creatorId, List.of(affiliation)));
     var points = TestUtils.randomBigDecimal();
     var institutionPoints =
@@ -83,7 +80,6 @@ public class UpsertRequestFixtures {
                 List.of(new CreatorAffiliationPoints(creatorId, affiliation, points))));
 
     return randomUpsertRequestBuilder()
-        .withCreators(creators)
         .withVerifiedCreators(verifiedCreators)
         .withPoints(institutionPoints)
         .build();

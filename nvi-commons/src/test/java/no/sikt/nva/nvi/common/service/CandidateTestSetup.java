@@ -10,7 +10,6 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
 import java.util.List;
-import java.util.Map;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
@@ -43,14 +42,12 @@ public class CandidateTestSetup {
   protected static UpsertCandidateRequest createUpsertRequestWithDecimalScale(
       int scale, URI institutionId) {
     var creatorId = randomUri();
-    var creators = Map.of(creatorId, List.of(institutionId));
     var verifiedCreator = new VerifiedNviCreatorDto(creatorId, List.of(institutionId));
     var points =
         List.of(createInstitutionPoints(institutionId, randomBigDecimal(scale), creatorId));
 
     return randomUpsertRequestBuilder()
         .withPoints(points)
-        .withCreators(creators)
         .withVerifiedCreators(List.of(verifiedCreator))
         .withCollaborationFactor(randomBigDecimal(scale))
         .withBasePoints(randomBigDecimal(scale))

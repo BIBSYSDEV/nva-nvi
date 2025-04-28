@@ -1,7 +1,6 @@
 package no.sikt.nva.nvi.index;
 
 import static java.util.Collections.emptyList;
-import static java.util.Collections.emptyMap;
 import static no.sikt.nva.nvi.common.QueueServiceTestUtils.createEvent;
 import static no.sikt.nva.nvi.common.QueueServiceTestUtils.createEventWithOneInvalidRecord;
 import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
@@ -212,7 +211,6 @@ class IndexDocumentHandlerTest {
         randomUpsertRequestBuilder()
             .withVerifiedCreators(emptyList())
             .withUnverifiedCreators(List.of(unverifiedCreator))
-            .withCreators(emptyMap())
             .build();
     Candidate.upsert(request, candidateRepository, periodRepository);
     var candidate =

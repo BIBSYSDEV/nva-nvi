@@ -64,7 +64,6 @@ import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
-import no.sikt.nva.nvi.common.service.model.PublicationDetails;
 import no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil;
 import no.sikt.nva.nvi.events.evaluator.model.PublicationChannel;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
@@ -615,8 +614,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
   private URI setupCandidate(int year) throws IOException {
     var upsertCandidateRequest =
         randomUpsertRequestBuilder()
-            .withPublicationDate(
-                new PublicationDetails.PublicationDate(String.valueOf(year), null, null))
+            .withPublicationDate(new PublicationDateDto(String.valueOf(year), null, null))
             .build();
     Candidate.upsert(upsertCandidateRequest, candidateRepository, periodRepository);
     var candidateInClosedPeriod =
@@ -1145,7 +1143,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       var year = sampleExpandedPublication.publicationDate().year();
       var upsertCandidateRequest =
           randomUpsertRequestBuilder()
-              .withPublicationDate(new PublicationDetails.PublicationDate(year, null, null))
+              .withPublicationDate(new PublicationDateDto(year, null, null))
               .withPublicationId(sampleExpandedPublication.id())
               .build();
       Candidate.upsert(upsertCandidateRequest, candidateRepository, periodRepository);
