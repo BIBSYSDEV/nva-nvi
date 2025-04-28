@@ -6,4 +6,4 @@ import java.net.URI;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSerialize
-public record NonNviCandidate(URI publicationId) implements CandidateType {}
+public record UpsertNonNviCandidateRequest(URI publicationId) implements CandidateType {}

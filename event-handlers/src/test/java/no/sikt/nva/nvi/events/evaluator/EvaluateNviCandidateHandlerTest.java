@@ -53,10 +53,10 @@ import java.util.Optional;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures;
-import no.sikt.nva.nvi.common.dto.NonNviCandidate;
-import no.sikt.nva.nvi.common.dto.NviCandidate;
 import no.sikt.nva.nvi.common.dto.PageCountDto;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
+import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
+import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.model.ScientificValue;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
@@ -129,7 +129,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
     var event = createEvent(new PersistedResourceMessage(fileUri));
     handler.handleRequest(event, CONTEXT);
-    var candidate = (NviCandidate) getMessageBody().candidate();
+    var candidate = (UpsertNviCandidateRequest) getMessageBody().candidate();
     assertEquals(candidate.publicationBucketUri(), fileUri);
   }
 
@@ -168,7 +168,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     handler = new EvaluateNviCandidateHandler(evaluatorService, queueClient, ENVIRONMENT);
     var event = createEvent(new PersistedResourceMessage(resourceFileUri));
     handler.handleRequest(event, CONTEXT);
-    var candidate = (NviCandidate) getMessageBody().candidate();
+    var candidate = (UpsertNviCandidateRequest) getMessageBody().candidate();
     assertEquals(candidate.publicationBucketUri(), resourceFileUri);
   }
 
@@ -182,7 +182,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
     var event = createEvent(new PersistedResourceMessage(fileUri));
     handler.handleRequest(event, CONTEXT);
-    var candidate = (NviCandidate) getMessageBody().candidate();
+    var candidate = (UpsertNviCandidateRequest) getMessageBody().candidate();
     assertEquals(candidate.publicationBucketUri(), fileUri);
   }
 
@@ -200,7 +200,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     var event = createEvent(new PersistedResourceMessage(fileUri));
     handler.handleRequest(event, CONTEXT);
     var messageBody = getMessageBody();
-    var candidate = (NviCandidate) messageBody.candidate();
+    var candidate = (UpsertNviCandidateRequest) messageBody.candidate();
     assertEquals(1, candidate.institutionPoints().size());
     assertNotNull(getPointsForInstitution(candidate, CRISTIN_NVI_ORG_TOP_LEVEL_ID));
   }
@@ -297,7 +297,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     var event = createEvent(new PersistedResourceMessage(fileUri));
     handler.handleRequest(event, CONTEXT);
     var messageBody = getMessageBody();
-    var candidate = (NviCandidate) messageBody.candidate();
+    var candidate = (UpsertNviCandidateRequest) messageBody.candidate();
     assertNotNull(candidate.institutionPoints());
     assertEquals(
         getPointsForInstitution(candidate, CRISTIN_NVI_ORG_TOP_LEVEL_ID),
@@ -311,7 +311,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     var event = createEvent(new PersistedResourceMessage(fileUri));
     handler.handleRequest(event, CONTEXT);
     var messageBody = getMessageBody();
-    var candidate = (NviCandidate) messageBody.candidate();
+    var candidate = (UpsertNviCandidateRequest) messageBody.candidate();
     assertNotNull(candidate.institutionPoints());
     assertNotNull(getPointsForInstitution(candidate, CRISTIN_NVI_ORG_TOP_LEVEL_ID));
   }
@@ -326,7 +326,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
     var event = createEvent(new PersistedResourceMessage(fileUri));
     handler.handleRequest(event, CONTEXT);
-    var candidate = (NviCandidate) getMessageBody().candidate();
+    var candidate = (UpsertNviCandidateRequest) getMessageBody().candidate();
     assertEquals(candidate.publicationBucketUri(), fileUri);
   }
 
@@ -340,7 +340,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
     var event = createEvent(new PersistedResourceMessage(fileUri));
     handler.handleRequest(event, CONTEXT);
-    var candidate = (NviCandidate) getMessageBody().candidate();
+    var candidate = (UpsertNviCandidateRequest) getMessageBody().candidate();
     assertEquals(candidate.publicationBucketUri(), fileUri);
   }
 
@@ -353,7 +353,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
     var event = createEvent(new PersistedResourceMessage(fileUri));
     handler.handleRequest(event, CONTEXT);
-    var candidate = (NviCandidate) getMessageBody().candidate();
+    var candidate = (UpsertNviCandidateRequest) getMessageBody().candidate();
     assertEquals(candidate.publicationBucketUri(), fileUri);
   }
 
@@ -364,7 +364,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_MONOGRAPH_JSON_PATH), content);
     var event = createEvent(new PersistedResourceMessage(fileUri));
     handler.handleRequest(event, CONTEXT);
-    var candidate = (NviCandidate) getMessageBody().candidate();
+    var candidate = (UpsertNviCandidateRequest) getMessageBody().candidate();
     assertEquals(candidate.publicationBucketUri(), fileUri);
   }
 
@@ -375,7 +375,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_LITERATURE_REVIEW_JSON_PATH), content);
     var event = createEvent(new PersistedResourceMessage(fileUri));
     handler.handleRequest(event, CONTEXT);
-    var candidate = (NviCandidate) getMessageBody().candidate();
+    var candidate = (UpsertNviCandidateRequest) getMessageBody().candidate();
     assertEquals(candidate.publicationBucketUri(), fileUri);
   }
 
@@ -386,7 +386,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
     var event = createEvent(new PersistedResourceMessage(fileUri));
     handler.handleRequest(event, CONTEXT);
-    var nonCandidate = (NonNviCandidate) getMessageBody().candidate();
+    var nonCandidate = (UpsertNonNviCandidateRequest) getMessageBody().candidate();
     assertEquals(nonCandidate.publicationId(), HARDCODED_PUBLICATION_ID);
   }
 
@@ -397,7 +397,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
     var event = createEvent(new PersistedResourceMessage(fileUri));
     handler.handleRequest(event, CONTEXT);
-    var nonCandidate = (NonNviCandidate) getMessageBody().candidate();
+    var nonCandidate = (UpsertNonNviCandidateRequest) getMessageBody().candidate();
     assertEquals(nonCandidate.publicationId(), HARDCODED_PUBLICATION_ID);
   }
 
@@ -408,7 +408,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
     var event = createEvent(new PersistedResourceMessage(fileUri));
     handler.handleRequest(event, CONTEXT);
-    var nonCandidate = (NonNviCandidate) getMessageBody().candidate();
+    var nonCandidate = (UpsertNonNviCandidateRequest) getMessageBody().candidate();
     assertEquals(nonCandidate.publicationId(), HARDCODED_PUBLICATION_ID);
   }
 
@@ -419,7 +419,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
     var event = createEvent(new PersistedResourceMessage(fileUri));
     handler.handleRequest(event, CONTEXT);
-    var nonCandidate = (NonNviCandidate) getMessageBody().candidate();
+    var nonCandidate = (UpsertNonNviCandidateRequest) getMessageBody().candidate();
     assertEquals(nonCandidate.publicationId(), HARDCODED_PUBLICATION_ID);
   }
 
@@ -430,7 +430,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
     var event = createEvent(new PersistedResourceMessage(fileUri));
     handler.handleRequest(event, CONTEXT);
-    var nonCandidate = (NonNviCandidate) getMessageBody().candidate();
+    var nonCandidate = (UpsertNonNviCandidateRequest) getMessageBody().candidate();
     assertEquals(nonCandidate.publicationId(), HARDCODED_PUBLICATION_ID);
   }
 
@@ -441,7 +441,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
     var event = createEvent(new PersistedResourceMessage(fileUri));
     handler.handleRequest(event, CONTEXT);
-    var nonCandidate = (NonNviCandidate) getMessageBody().candidate();
+    var nonCandidate = (UpsertNonNviCandidateRequest) getMessageBody().candidate();
     assertEquals(nonCandidate.publicationId(), HARDCODED_PUBLICATION_ID);
   }
 
@@ -458,7 +458,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH), ACADEMIC_ARTICLE);
     var event = createEvent(new PersistedResourceMessage(fileUri));
     handler.handleRequest(event, CONTEXT);
-    var nonCandidate = (NonNviCandidate) getMessageBody().candidate();
+    var nonCandidate = (UpsertNonNviCandidateRequest) getMessageBody().candidate();
     assertEquals(nonCandidate.publicationId(), HARDCODED_PUBLICATION_ID);
   }
 
@@ -487,7 +487,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH), ACADEMIC_ARTICLE);
     var event = createEvent(new PersistedResourceMessage(fileUri));
     handler.handleRequest(event, CONTEXT);
-    var candidate = (NviCandidate) getMessageBody().candidate();
+    var candidate = (UpsertNviCandidateRequest) getMessageBody().candidate();
     assertEquals(candidate.publicationBucketUri(), fileUri);
   }
 
@@ -560,7 +560,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
         .build();
   }
 
-  private static NviCandidate createExpectedCandidate(
+  private static UpsertNviCandidateRequest createExpectedCandidate(
       InstanceType instanceType,
       Map<URI, BigDecimal> institutionPoints,
       PublicationChannel channelType,
@@ -571,7 +571,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     var verifiedCreators =
         List.of(
             new VerifiedNviCreatorDto(HARDCODED_CREATOR_ID, List.of(CRISTIN_NVI_ORG_SUB_UNIT_ID)));
-    return NviCandidate.builder()
+    return UpsertNviCandidateRequest.builder()
         .withPublicationId(HARDCODED_PUBLICATION_ID)
         .withPublicationBucketUri(publicationBucketUri)
         .withDate(HARDCODED_PUBLICATION_DATE)
@@ -693,7 +693,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
 
     BigDecimal expectedTotalPoints;
     List<InstitutionPoints> expectedPointsPerInstitution;
-    NviCandidate.Builder expectedCandidateBuilder;
+    UpsertNviCandidateRequest.Builder expectedCandidateBuilder;
 
     @BeforeEach
     void setup() {
@@ -736,7 +736,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
                           expectedTotalPoints))));
 
       expectedCandidateBuilder =
-          NviCandidate.builder()
+          UpsertNviCandidateRequest.builder()
               .withIsInternationalCollaboration(false)
               .withCollaborationFactor(ONE.setScale(1, ROUNDING_MODE))
               .withBasePoints(ONE);
@@ -1104,7 +1104,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
 
     private CandidateEvaluatedMessage getNonCandidateResponse(
         SampleExpandedPublication publication) {
-      var rejectedCandidate = new NonNviCandidate(publication.id());
+      var rejectedCandidate = new UpsertNonNviCandidateRequest(publication.id());
       return CandidateEvaluatedMessage.builder().withCandidateType(rejectedCandidate).build();
     }
 

@@ -12,8 +12,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
-import no.sikt.nva.nvi.common.dto.NviCandidate;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
+import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
@@ -67,7 +67,7 @@ public class UpsertRequestBuilder {
         .withTotalPoints(BigDecimal.ONE);
   }
 
-  public static UpsertRequestBuilder fromRequest(NviCandidate request) {
+  public static UpsertRequestBuilder fromRequest(UpsertNviCandidateRequest request) {
     var publicationDateDto =
         new PublicationDateDto(
             request.publicationDate().year(),
@@ -227,8 +227,8 @@ public class UpsertRequestBuilder {
         .toList();
   }
 
-  public NviCandidate build() {
-    return NviCandidate.builder()
+  public UpsertNviCandidateRequest build() {
+    return UpsertNviCandidateRequest.builder()
         .withPublicationId(publicationId)
         .withPublicationBucketUri(publicationBucketUri)
         .withIsInternationalCollaboration(isInternationalCollaboration)

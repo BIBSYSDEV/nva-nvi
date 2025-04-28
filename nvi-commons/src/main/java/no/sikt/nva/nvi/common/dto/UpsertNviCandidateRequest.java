@@ -7,8 +7,6 @@ import java.math.BigDecimal;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.InstanceType;
@@ -20,7 +18,7 @@ import no.sikt.nva.nvi.common.service.model.PublicationDetails;
 @SuppressWarnings("PMD.TooManyFields")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSerialize
-public record NviCandidate(
+public record UpsertNviCandidateRequest(
     URI publicationId,
     URI publicationBucketUri,
     InstanceType instanceType,
@@ -42,15 +40,6 @@ public record NviCandidate(
 
   public boolean isApplicable() {
     return true;
-  }
-
-  // FIXME: This only includes verified creators (as a map of id and affiliation) and does not
-  // include unverified creators.
-  // It should include both, but we would need to rewrite all usages to avoid this map first.
-  @Deprecated
-  public Map<URI, List<URI>> creators() {
-    return verifiedCreators().stream()
-        .collect(Collectors.toMap(VerifiedNviCreatorDto::id, VerifiedNviCreatorDto::affiliations));
   }
 
   public PublicationDetails.PublicationDate publicationDate() {
@@ -168,8 +157,8 @@ public record NviCandidate(
       return this;
     }
 
-    public NviCandidate build() {
-      return new NviCandidate(
+    public UpsertNviCandidateRequest build() {
+      return new UpsertNviCandidateRequest(
           publicationId,
           publicationBucketUri,
           instanceType,
