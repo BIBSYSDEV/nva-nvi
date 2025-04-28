@@ -11,17 +11,9 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.math.BigDecimal;
-import java.net.URI;
 import java.util.List;
-import java.util.Map;
-import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
-import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.InstanceType;
-import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
-import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
-import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
@@ -51,109 +43,20 @@ class CandidateRepositoryTest {
 
   @Test
   void shouldOverwriteExistingCandidateWhenUpdating() {
-    var originalRequest = createUpsertCandidateRequest(randomUri()).build();
+    var requestBuilder =
+        createUpsertCandidateRequest(randomUri()).withInstanceType(InstanceType.ACADEMIC_ARTICLE);
+    var originalRequest = requestBuilder.build();
     Candidate.upsert(originalRequest, candidateRepository, periodRepository);
     var candidateDao =
         candidateRepository.findByPublicationId(originalRequest.publicationId()).get();
     var originalDbCandidate = candidateDao.candidate();
 
-    var newUpsertRequest = copyRequestWithNewInstanceType(originalRequest, randomUri());
+    var newUpsertRequest = requestBuilder.withInstanceType(InstanceType.ACADEMIC_MONOGRAPH).build();
     Candidate.upsert(newUpsertRequest, candidateRepository, periodRepository);
     var updatedDbCandidate =
         candidateRepository.findCandidateById(candidateDao.identifier()).get().candidate();
 
     assertThat(scanDB(localDynamo).count(), is(equalTo(3)));
     assertThat(updatedDbCandidate, is(not(equalTo(originalDbCandidate))));
-  }
-
-  // FIXME: This is duplicated and probably not needed
-  private UpsertCandidateRequest copyRequestWithNewInstanceType(
-      UpsertCandidateRequest request, URI publicationChannelId) {
-    return new UpsertCandidateRequest() {
-      @Override
-      public URI publicationBucketUri() {
-        return request.publicationBucketUri();
-      }
-
-      @Override
-      public URI publicationId() {
-        return request.publicationId();
-      }
-
-      @Override
-      public boolean isApplicable() {
-        return request.isApplicable();
-      }
-
-      @Override
-      public boolean isInternationalCollaboration() {
-        return request.isInternationalCollaboration();
-      }
-
-      @Override
-      public Map<URI, List<URI>> creators() {
-        return request.creators();
-      }
-
-      @Override
-      public List<VerifiedNviCreatorDto> verifiedCreators() {
-        return request.verifiedCreators();
-      }
-
-      @Override
-      public List<UnverifiedNviCreatorDto> unverifiedCreators() {
-        return request.unverifiedCreators();
-      }
-
-      @Override
-      public String channelType() {
-        return request.channelType();
-      }
-
-      @Override
-      public URI publicationChannelId() {
-        return publicationChannelId;
-      }
-
-      @Override
-      public String level() {
-        return request.level();
-      }
-
-      @Override
-      public InstanceType instanceType() {
-        return request.instanceType();
-      }
-
-      @Override
-      public PublicationDate publicationDate() {
-        return request.publicationDate();
-      }
-
-      @Override
-      public int creatorShareCount() {
-        return request.creatorShareCount();
-      }
-
-      @Override
-      public BigDecimal collaborationFactor() {
-        return request.collaborationFactor();
-      }
-
-      @Override
-      public BigDecimal basePoints() {
-        return request.basePoints();
-      }
-
-      @Override
-      public List<InstitutionPoints> institutionPoints() {
-        return request.institutionPoints();
-      }
-
-      @Override
-      public BigDecimal totalPoints() {
-        return request.totalPoints();
-      }
-    };
   }
 }
