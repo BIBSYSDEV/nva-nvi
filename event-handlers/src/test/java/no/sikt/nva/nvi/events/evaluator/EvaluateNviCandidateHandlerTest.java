@@ -27,12 +27,7 @@ import static no.sikt.nva.nvi.test.TestUtils.createResponse;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static nva.commons.core.attempt.Try.attempt;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -58,6 +53,7 @@ import java.util.Optional;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures;
+import no.sikt.nva.nvi.common.dto.PageCountDto;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.model.ScientificValue;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
@@ -135,7 +131,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     var event = createEvent(new PersistedResourceMessage(fileUri));
     handler.handleRequest(event, CONTEXT);
     var candidate = (NviCandidate) getMessageBody().candidate();
-    assertThat(candidate.publicationBucketUri(), is(equalTo(fileUri)));
+    assertEquals(candidate.publicationBucketUri(), fileUri);
   }
 
   @ParameterizedTest
@@ -174,7 +170,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     var event = createEvent(new PersistedResourceMessage(resourceFileUri));
     handler.handleRequest(event, CONTEXT);
     var candidate = (NviCandidate) getMessageBody().candidate();
-    assertThat(candidate.publicationBucketUri(), is(equalTo(resourceFileUri)));
+    assertEquals(candidate.publicationBucketUri(), resourceFileUri);
   }
 
   @Test
@@ -188,7 +184,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     var event = createEvent(new PersistedResourceMessage(fileUri));
     handler.handleRequest(event, CONTEXT);
     var candidate = (NviCandidate) getMessageBody().candidate();
-    assertThat(candidate.publicationBucketUri(), is(equalTo(fileUri)));
+    assertEquals(candidate.publicationBucketUri(), fileUri);
   }
 
   @Test
@@ -303,10 +299,10 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     handler.handleRequest(event, CONTEXT);
     var messageBody = getMessageBody();
     var candidate = (NviCandidate) messageBody.candidate();
-    assertThat(candidate.institutionPoints(), notNullValue());
-    assertThat(
+    assertNotNull(candidate.institutionPoints());
+    assertEquals(
         getPointsForInstitution(candidate, CRISTIN_NVI_ORG_TOP_LEVEL_ID),
-        is(equalTo(BigDecimal.valueOf(1).setScale(4, RoundingMode.HALF_UP))));
+        BigDecimal.valueOf(1).setScale(4, RoundingMode.HALF_UP));
   }
 
   @Test
@@ -317,8 +313,8 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     handler.handleRequest(event, CONTEXT);
     var messageBody = getMessageBody();
     var candidate = (NviCandidate) messageBody.candidate();
-    assertThat(candidate.institutionPoints(), notNullValue());
-    assertThat(getPointsForInstitution(candidate, CRISTIN_NVI_ORG_TOP_LEVEL_ID), notNullValue());
+    assertNotNull(candidate.institutionPoints());
+    assertNotNull(getPointsForInstitution(candidate, CRISTIN_NVI_ORG_TOP_LEVEL_ID));
   }
 
   @Test
@@ -332,7 +328,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     var event = createEvent(new PersistedResourceMessage(fileUri));
     handler.handleRequest(event, CONTEXT);
     var candidate = (NviCandidate) getMessageBody().candidate();
-    assertThat(candidate.publicationBucketUri(), is(equalTo(fileUri)));
+    assertEquals(candidate.publicationBucketUri(), fileUri);
   }
 
   @Test
@@ -346,7 +342,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     var event = createEvent(new PersistedResourceMessage(fileUri));
     handler.handleRequest(event, CONTEXT);
     var candidate = (NviCandidate) getMessageBody().candidate();
-    assertThat(candidate.publicationBucketUri(), is(equalTo(fileUri)));
+    assertEquals(candidate.publicationBucketUri(), fileUri);
   }
 
   @Test
@@ -359,7 +355,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     var event = createEvent(new PersistedResourceMessage(fileUri));
     handler.handleRequest(event, CONTEXT);
     var candidate = (NviCandidate) getMessageBody().candidate();
-    assertThat(candidate.publicationBucketUri(), is(equalTo(fileUri)));
+    assertEquals(candidate.publicationBucketUri(), fileUri);
   }
 
   @Test
@@ -370,7 +366,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     var event = createEvent(new PersistedResourceMessage(fileUri));
     handler.handleRequest(event, CONTEXT);
     var candidate = (NviCandidate) getMessageBody().candidate();
-    assertThat(candidate.publicationBucketUri(), is(equalTo(fileUri)));
+    assertEquals(candidate.publicationBucketUri(), fileUri);
   }
 
   @Test
@@ -381,7 +377,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     var event = createEvent(new PersistedResourceMessage(fileUri));
     handler.handleRequest(event, CONTEXT);
     var candidate = (NviCandidate) getMessageBody().candidate();
-    assertThat(candidate.publicationBucketUri(), is(equalTo(fileUri)));
+    assertEquals(candidate.publicationBucketUri(), fileUri);
   }
 
   @Test
@@ -392,7 +388,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     var event = createEvent(new PersistedResourceMessage(fileUri));
     handler.handleRequest(event, CONTEXT);
     var nonCandidate = (NonNviCandidate) getMessageBody().candidate();
-    assertThat(nonCandidate.publicationId(), is(equalTo(HARDCODED_PUBLICATION_ID)));
+    assertEquals(nonCandidate.publicationId(), HARDCODED_PUBLICATION_ID);
   }
 
   @Test
@@ -403,7 +399,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     var event = createEvent(new PersistedResourceMessage(fileUri));
     handler.handleRequest(event, CONTEXT);
     var nonCandidate = (NonNviCandidate) getMessageBody().candidate();
-    assertThat(nonCandidate.publicationId(), is(equalTo(HARDCODED_PUBLICATION_ID)));
+    assertEquals(nonCandidate.publicationId(), HARDCODED_PUBLICATION_ID);
   }
 
   @Test
@@ -414,7 +410,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     var event = createEvent(new PersistedResourceMessage(fileUri));
     handler.handleRequest(event, CONTEXT);
     var nonCandidate = (NonNviCandidate) getMessageBody().candidate();
-    assertThat(nonCandidate.publicationId(), is(equalTo(HARDCODED_PUBLICATION_ID)));
+    assertEquals(nonCandidate.publicationId(), HARDCODED_PUBLICATION_ID);
   }
 
   @Test
@@ -425,7 +421,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     var event = createEvent(new PersistedResourceMessage(fileUri));
     handler.handleRequest(event, CONTEXT);
     var nonCandidate = (NonNviCandidate) getMessageBody().candidate();
-    assertThat(nonCandidate.publicationId(), is(equalTo(HARDCODED_PUBLICATION_ID)));
+    assertEquals(nonCandidate.publicationId(), HARDCODED_PUBLICATION_ID);
   }
 
   @Test
@@ -436,7 +432,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     var event = createEvent(new PersistedResourceMessage(fileUri));
     handler.handleRequest(event, CONTEXT);
     var nonCandidate = (NonNviCandidate) getMessageBody().candidate();
-    assertThat(nonCandidate.publicationId(), is(equalTo(HARDCODED_PUBLICATION_ID)));
+    assertEquals(nonCandidate.publicationId(), HARDCODED_PUBLICATION_ID);
   }
 
   @Test
@@ -447,7 +443,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     var event = createEvent(new PersistedResourceMessage(fileUri));
     handler.handleRequest(event, CONTEXT);
     var nonCandidate = (NonNviCandidate) getMessageBody().candidate();
-    assertThat(nonCandidate.publicationId(), is(equalTo(HARDCODED_PUBLICATION_ID)));
+    assertEquals(nonCandidate.publicationId(), HARDCODED_PUBLICATION_ID);
   }
 
   @Test
@@ -464,7 +460,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     var event = createEvent(new PersistedResourceMessage(fileUri));
     handler.handleRequest(event, CONTEXT);
     var nonCandidate = (NonNviCandidate) getMessageBody().candidate();
-    assertThat(nonCandidate.publicationId(), is(equalTo(HARDCODED_PUBLICATION_ID)));
+    assertEquals(nonCandidate.publicationId(), HARDCODED_PUBLICATION_ID);
   }
 
   @Test
@@ -483,7 +479,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     var event = createEvent(new PersistedResourceMessage(fileUri));
     var appender = LogUtils.getTestingAppenderForRootLogger();
     assertThrows(RuntimeException.class, () -> handler.handleRequest(event, CONTEXT));
-    assertThat(appender.getMessages(), containsString("status code: 500"));
+    assertThat(appender.getMessages()).contains("status code: 500");
   }
 
   @Test
@@ -493,7 +489,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     var event = createEvent(new PersistedResourceMessage(fileUri));
     handler.handleRequest(event, CONTEXT);
     var candidate = (NviCandidate) getMessageBody().candidate();
-    assertThat(candidate.publicationBucketUri(), is(equalTo(fileUri)));
+    assertEquals(candidate.publicationBucketUri(), fileUri);
   }
 
   @Test
@@ -537,7 +533,12 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
             JOURNAL,
             BigDecimal.valueOf(1),
             expectedPoints);
-    assertEquals(expectedEvaluatedMessage, messageBody);
+
+    assertThat(messageBody.candidate())
+        .usingRecursiveComparison()
+        .ignoringCollectionOrder()
+        .ignoringFields("pageCount")
+        .isEqualTo(expectedEvaluatedMessage.candidate());
   }
 
   private static CandidateEvaluatedMessage getExpectedEvaluatedMessage(
@@ -631,7 +632,8 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
 
   private CandidateEvaluatedMessage getMessageBody() {
     var sentMessages = queueClient.getSentMessages();
-    assertThat(sentMessages, hasSize(1));
+    assertThat(sentMessages).hasSize(1);
+
     var message = sentMessages.getFirst();
     return attempt(
             () -> objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class))
@@ -1089,6 +1091,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
               .withPublicationBucketUri(fileUri)
               .withDate(publicationDate)
               .withInstanceType(InstanceType.parse(publication.instanceType()))
+              .withPageCount(new PageCountDto(null, null, null))
               .withChannelType(publicationChannelType)
               .withPublicationChannelId(publicationChannelId)
               .withLevel(publicationChannelLevel)

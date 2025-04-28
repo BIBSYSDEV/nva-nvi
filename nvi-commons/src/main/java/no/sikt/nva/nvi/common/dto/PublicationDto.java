@@ -23,6 +23,8 @@ public record PublicationDto(
     String title,
     String status,
     String language,
+    String abstractText,
+    PageCountDto pageCount,
     PublicationDateDto publicationDate,
     InstanceType publicationType,
     boolean isApplicable,
@@ -63,6 +65,8 @@ public record PublicationDto(
     private String title;
     private String status;
     private String language;
+    private String abstractText;
+    private PageCountDto pageCount;
     private PublicationDateDto publicationDate;
     private InstanceType publicationType;
     private boolean isApplicable;
@@ -86,6 +90,16 @@ public record PublicationDto(
 
     public Builder withTitle(String title) {
       this.title = title;
+      return this;
+    }
+
+    public Builder withAbstract(String abstractText) {
+      this.abstractText = abstractText;
+      return this;
+    }
+
+    public Builder withPageCount(PageCountDto pageCount) {
+      this.pageCount = pageCount;
       return this;
     }
 
@@ -146,6 +160,8 @@ public record PublicationDto(
           title,
           status,
           language,
+          abstractText,
+          pageCount,
           publicationDate,
           publicationType,
           isApplicable,

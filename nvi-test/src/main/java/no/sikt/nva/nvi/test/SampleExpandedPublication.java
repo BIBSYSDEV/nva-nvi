@@ -52,6 +52,7 @@ public record SampleExpandedPublication(
     String mainTitle,
     String issn,
     String publicationContextType,
+    SampleExpandedPageCount pageCount,
     List<SampleExpandedPublicationChannel> publicationChannels,
     SampleExpandedPublicationDate publicationDate,
     String instanceType,
@@ -69,10 +70,6 @@ public record SampleExpandedPublication(
     return new Builder();
   }
 
-  public static Builder from(SampleExpandedPublication other) {
-    return new Builder(other);
-  }
-
   public String toJsonString() {
     return toJsonNode().toString();
   }
@@ -83,20 +80,17 @@ public record SampleExpandedPublication(
     return root;
   }
 
-  private static ObjectNode createAndPopulatePublicationInstance(String type) {
+  private ObjectNode createAndPopulatePublicationInstance(String type) {
     var publicationInstance = objectMapper.createObjectNode();
     publicationInstance.put(TYPE_FIELD, type);
 
     switch (type) {
       case ACADEMIC_ARTICLE, ACADEMIC_LITERATURE_REVIEW, ACADEMIC_CHAPTER -> {
-        var pages = objectMapper.createObjectNode();
-        pages.put("begin", "pageBegin");
-        pages.put("end", "pageEnd");
+        var pages = pageCount.asPageRange();
         publicationInstance.set(PAGES_FIELD, pages);
       }
       case ACADEMIC_MONOGRAPH -> {
-        var pages = objectMapper.createObjectNode();
-        pages.put(PAGES_FIELD, "numberOfPages");
+        var pages = pageCount.asMonographPages();
         publicationInstance.set(PAGES_FIELD, pages);
       }
       default -> {
@@ -203,43 +197,73 @@ public record SampleExpandedPublication(
 
     private URI id;
     private UUID identifier = UUID.randomUUID();
-    private String mainTitle = randomString();
-    private List<SampleExpandedContributor> contributors;
+    private String title = randomString();
     private String status = "PUBLISHED";
     private String language;
     private String abstractText;
-    private String publicationContextType = "Book";
-    private String instanceType = ACADEMIC_ARTICLE;
-    private List<SampleExpandedPublicationChannel> publicationChannels;
-    private SampleExpandedPublicationDate publicationDate;
     private String issn;
+    private SampleExpandedPageCount pageCount = new SampleExpandedPageCount(null, null, null);
+    private SampleExpandedPublicationDate publicationDate;
+    private String instanceType = ACADEMIC_ARTICLE;
+    private String publicationContextType = "Book";
+    private List<SampleExpandedPublicationChannel> publicationChannels;
+    private List<SampleExpandedContributor> contributors;
     private List<SampleExpandedOrganization> topLevelOrganizations;
 
     private Builder() {}
-
-    private Builder(SampleExpandedPublication other) {
-      this.id = other.id;
-      this.identifier = other.identifier;
-      this.mainTitle = other.mainTitle;
-      this.contributors = other.contributors;
-      this.status = other.status;
-      this.language = other.language;
-      this.abstractText = other.abstractText;
-      this.publicationContextType = other.publicationContextType;
-      this.instanceType = other.instanceType;
-      this.publicationChannels = other.publicationChannels;
-      this.publicationDate = other.publicationDate;
-      this.issn = other.issn;
-      this.topLevelOrganizations = other.topLevelOrganizations;
-    }
 
     public Builder withId(URI id) {
       this.id = id;
       return this;
     }
 
-    public Builder withContributors(List<SampleExpandedContributor> contributors) {
-      this.contributors = contributors;
+    public Builder withIdentifier(UUID identifier) {
+      this.identifier = identifier;
+      return this;
+    }
+
+    public Builder withTitle(String title) {
+      this.title = title;
+      return this;
+    }
+
+    public Builder withStatus(String status) {
+      this.status = status;
+      return this;
+    }
+
+    public Builder withLanguage(String language) {
+      this.language = language;
+      return this;
+    }
+
+    public Builder withAbstract(String abstractText) {
+      this.abstractText = abstractText;
+      return this;
+    }
+
+    public Builder withIssn(String issn) {
+      this.issn = issn;
+      return this;
+    }
+
+    public Builder withPageCount(String begin, String end, String numberOfPages) {
+      this.pageCount = new SampleExpandedPageCount(begin, end, numberOfPages);
+      return this;
+    }
+
+    public Builder withPublicationDate(SampleExpandedPublicationDate publicationDate) {
+      this.publicationDate = publicationDate;
+      return this;
+    }
+
+    public Builder withInstanceType(String instanceType) {
+      this.instanceType = instanceType;
+      return this;
+    }
+
+    public Builder withPublicationContextType(String publicationContextType) {
+      this.publicationContextType = publicationContextType;
       return this;
     }
 
@@ -249,13 +273,8 @@ public record SampleExpandedPublication(
       return this;
     }
 
-    public Builder withInstanceType(String instanceType) {
-      this.instanceType = instanceType;
-      return this;
-    }
-
-    public Builder withPublicationDate(SampleExpandedPublicationDate publicationDate) {
-      this.publicationDate = publicationDate;
+    public Builder withContributors(List<SampleExpandedContributor> contributors) {
+      this.contributors = contributors;
       return this;
     }
 
@@ -271,9 +290,10 @@ public record SampleExpandedPublication(
       return new SampleExpandedPublication(
           id,
           identifier,
-          mainTitle,
+          title,
           issn,
           publicationContextType,
+          pageCount,
           publicationChannels,
           publicationDate,
           instanceType,

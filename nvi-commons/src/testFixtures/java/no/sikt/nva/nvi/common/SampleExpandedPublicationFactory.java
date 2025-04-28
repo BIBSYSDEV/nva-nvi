@@ -199,14 +199,15 @@ public class SampleExpandedPublicationFactory {
   }
 
   public SampleExpandedPublication getExpandedPublication() {
-    // Add default publication channel if none is set
-    if (publicationChannels.isEmpty()) {
-      addPublicationChannel("Journal", "LevelOne");
-    }
     return getExpandedPublicationBuilder().build();
   }
 
   public SampleExpandedPublication.Builder getExpandedPublicationBuilder() {
+    // Add default publication channel if none is set
+    if (publicationChannels.isEmpty()) {
+      addPublicationChannel("Journal", "LevelOne");
+    }
+
     return SampleExpandedPublication.builder()
         .withInstanceType(publicationType)
         .withPublicationDate(HARDCODED_JSON_PUBLICATION_DATE)

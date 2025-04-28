@@ -18,6 +18,7 @@ import static no.sikt.nva.nvi.common.examples.ExamplePublicationChannels.SERIES_
 import java.net.URI;
 import java.time.Instant;
 import java.util.List;
+import no.sikt.nva.nvi.common.dto.PageCountDto;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.dto.PublicationDto;
 import no.sikt.nva.nvi.common.service.model.InstanceType;
@@ -44,6 +45,8 @@ public class ExamplePublications {
                   "https://api.sandbox.nva.aws.unit.no/publication/0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5"))
           .withIdentifier("0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5")
           .withTitle("Example NVI candidate #1")
+          .withAbstract("Lorem ipsum")
+          .withPageCount(new PageCountDto(null, null, null))
           .withPublicationDate(new PublicationDateDto("2025", null, null))
           .withStatus("PUBLISHED")
           .withPublicationType(InstanceType.ACADEMIC_ARTICLE)
@@ -64,6 +67,8 @@ public class ExamplePublications {
                   "https://api.sandbox.nva.aws.unit.no/publication/0195c6f37392-68057afa-9b9f-4e7a-8c9a-f5aef6b657be"))
           .withIdentifier("0195c6f37392-68057afa-9b9f-4e7a-8c9a-f5aef6b657be")
           .withTitle("Example NVI candidate #2")
+          .withAbstract("Lorem ipsum dolor sit amet")
+          .withPageCount(new PageCountDto(null, null, "42"))
           .withPublicationDate(new PublicationDateDto("2025", "3", "24"))
           .withStatus("PUBLISHED")
           .withPublicationType(InstanceType.ACADEMIC_MONOGRAPH)
@@ -93,6 +98,7 @@ public class ExamplePublications {
                   "https://api.sandbox.nva.aws.unit.no/publication/01961fbe4a94-6eb30f7c-836d-49ef-9acf-dc5d62fe9092"))
           .withIdentifier("01961fbe4a94-6eb30f7c-836d-49ef-9acf-dc5d62fe9092")
           .withTitle("2025-04-10 - Test av NVI")
+          .withPageCount(new PageCountDto("474", "482", null))
           .withPublicationDate(new PublicationDateDto("2025", null, null))
           .withStatus("PUBLISHED")
           .withPublicationType(InstanceType.ACADEMIC_CHAPTER)

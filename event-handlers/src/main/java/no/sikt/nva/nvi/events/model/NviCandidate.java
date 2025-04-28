@@ -9,6 +9,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import no.sikt.nva.nvi.common.dto.PageCountDto;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
@@ -17,12 +18,17 @@ import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 
+// FIXME: Suppressing temporarily.
+// Many fields of this class can be replaced with a single PublicationDto
+@SuppressWarnings("PMD.TooManyFields")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSerialize
 public record NviCandidate(
     URI publicationId,
     URI publicationBucketUri,
     InstanceType instanceType,
+    String abstractText,
+    PageCountDto pageCount,
     @JsonProperty("publicationDate") PublicationDateDto date,
     List<VerifiedNviCreatorDto> verifiedCreators,
     List<UnverifiedNviCreatorDto> unverifiedCreators,
@@ -66,6 +72,8 @@ public record NviCandidate(
     private URI publicationId;
     private URI publicationBucketUri;
     private InstanceType instanceType;
+    private String abstractText;
+    private PageCountDto pageCount;
     private PublicationDateDto date;
     private List<VerifiedNviCreatorDto> verifiedNviCreators = Collections.emptyList();
     private List<UnverifiedNviCreatorDto> unverifiedNviCreators = Collections.emptyList();
@@ -93,6 +101,16 @@ public record NviCandidate(
 
     public Builder withInstanceType(InstanceType instanceType) {
       this.instanceType = instanceType;
+      return this;
+    }
+
+    public Builder withAbstract(String abstractText) {
+      this.abstractText = abstractText;
+      return this;
+    }
+
+    public Builder withPageCount(PageCountDto pageCount) {
+      this.pageCount = pageCount;
       return this;
     }
 
@@ -161,6 +179,8 @@ public record NviCandidate(
           publicationId,
           publicationBucketUri,
           instanceType,
+          abstractText,
+          pageCount,
           date,
           verifiedNviCreators,
           unverifiedNviCreators,
