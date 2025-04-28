@@ -10,19 +10,19 @@ import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import no.sikt.nva.nvi.common.dto.NonNviCandidate;
 import no.sikt.nva.nvi.common.dto.NviCandidate;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
-import no.sikt.nva.nvi.common.service.requests.UpdateNonCandidateRequest;
 import no.sikt.nva.nvi.test.TestUtils;
 
 public class UpsertRequestFixtures {
 
-  public static UpdateNonCandidateRequest createUpsertNonCandidateRequest(URI publicationId) {
-    return () -> publicationId;
+  public static NonNviCandidate createUpsertNonCandidateRequest(URI publicationId) {
+    return new NonNviCandidate(publicationId);
   }
 
   public static UpdateStatusRequest createUpdateStatusRequest(
