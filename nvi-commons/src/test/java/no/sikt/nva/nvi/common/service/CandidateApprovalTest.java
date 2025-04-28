@@ -55,7 +55,6 @@ import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.service.model.PublicationChannel;
-import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -657,95 +656,12 @@ class CandidateApprovalTest extends CandidateTestSetup {
         .build();
   }
 
-  // FIXME: This is duplicated and probably not needed
   private UpsertCandidateRequest createNewUpsertRequestNotAffectingApprovals(
       UpsertCandidateRequest request) {
-    return new UpsertCandidateRequest() {
-      @Override
-      public URI publicationBucketUri() {
-        return request.publicationBucketUri();
-      }
-
-      @Override
-      public URI publicationId() {
-        return request.publicationId();
-      }
-
-      @Override
-      public boolean isApplicable() {
-        return true;
-      }
-
-      @Override
-      public boolean isInternationalCollaboration() {
-        return false;
-      }
-
-      @Override
-      public Map<URI, List<URI>> creators() {
-        return request.creators();
-      }
-
-      @Override
-      public List<VerifiedNviCreatorDto> verifiedCreators() {
-        return request.verifiedCreators();
-      }
-
-      @Override
-      public List<UnverifiedNviCreatorDto> unverifiedCreators() {
-        return List.of();
-      }
-
-      @Override
-      public String channelType() {
-        return null;
-      }
-
-      @Override
-      public URI publicationChannelId() {
-        return request.publicationChannelId();
-      }
-
-      @Override
-      public String level() {
-        return request.level();
-      }
-
-      @Override
-      public InstanceType instanceType() {
-        return request.instanceType();
-      }
-
-      @Override
-      public PublicationDate publicationDate() {
-        return request.publicationDate();
-      }
-
-      @Override
-      public int creatorShareCount() {
-        return 0;
-      }
-
-      @Override
-      public BigDecimal collaborationFactor() {
-        return null;
-      }
-
-      @Override
-      public BigDecimal basePoints() {
-        return null;
-      }
-
-      @Override
-      public List<InstitutionPoints> institutionPoints() {
-        return request.institutionPoints();
-      }
-
-      @Override
-      public BigDecimal totalPoints() {
-        return request.totalPoints();
-      }
-    };
+    return fromRequest(request)
+        .withIsApplicable(true)
+        .withIsInternationalCollaboration(false)
+        .build();
   }
 
   private record CandidateResetCauseArgument(
