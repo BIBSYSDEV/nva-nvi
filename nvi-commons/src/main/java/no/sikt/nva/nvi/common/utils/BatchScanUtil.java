@@ -27,8 +27,40 @@ public class BatchScanUtil {
   public ListingResult<Dao> migrateAndUpdateVersion(
       int pageSize, Map<String, String> startMarker, List<KeyField> types) {
     var scanResult = candidateRepository.scanEntries(pageSize, startMarker, types);
-    candidateRepository.writeEntries(scanResult.getDatabaseEntries());
+    // DO **MAGIC** STUFF HERE
+    var entries = migrate(scanResult.getDatabaseEntries());
+    candidateRepository.writeEntries(entries);
     return scanResult;
+  }
+
+  // ONLY IDEMPOTENT STUFF HERE
+  // TODO: Write test for this
+  // TODO: Keep this and add a comment
+  private List<Dao> migrate(List<Dao> databaseEntries) {
+    // FOR EACH:
+    return databaseEntries.stream().map(this::migrate).toList();
+  }
+
+  private Dao migrate(Dao databaseEntry) {
+    if (databaseEntry instanceof CandidateDao storedCandidate) {
+      return migratePublicationField(storedCandidate);
+    }
+    return databaseEntry;
+  }
+
+  /** // TODO: Add deprecated annotation to this method */
+  @Deprecated
+  private CandidateDao migratePublicationField(CandidateDao entry) {
+    var data = entry.candidate();
+    //    if (isNull(data.publicationDetails())) {
+    //      // TODO: Parse from S3 and add publication data as entity
+    //      // TODO: Add entire publication details as new field
+    //      // TODO: Add publication identifier as top-level field
+    //      // TODO: Add @Deprecated annotation to the fields we can remove
+    //      var updatedData = data.copy().build();
+    //      return entry.copy().candidate(updatedData).build();
+    //    }
+    return entry;
   }
 
   public ListingResult<CandidateDao> fetchCandidatesByYear(

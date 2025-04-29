@@ -33,6 +33,8 @@ import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateDao.Builder;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.db.model.DbCreatorTypeListConverter;
+import no.sikt.nva.nvi.common.db.model.DbPublication;
+import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
@@ -330,6 +332,8 @@ public final class CandidateDao extends Dao {
   public record DbCandidate(
       URI publicationId,
       URI publicationBucketUri,
+      String publicationIdentifier,
+      DbPublication publicationDetails,
       boolean applicable,
       String instanceType,
       ChannelType channelType,
@@ -357,6 +361,8 @@ public final class CandidateDao extends Dao {
       return builder()
           .publicationId(publicationId)
           .publicationBucketUri(publicationBucketUri)
+          .publicationIdentifier(publicationIdentifier)
+          .publicationDetails(publicationDetails)
           .applicable(applicable)
           .instanceType(instanceType)
           .channelType(channelType)
@@ -436,6 +442,8 @@ public final class CandidateDao extends Dao {
 
       private URI builderPublicationId;
       private URI builderPublicationBucketUri;
+      private String builderPublicationIdentifier;
+      private DbPublication builderPublicationDetails;
       private boolean builderApplicable;
       private String builderInstanceType;
       private ChannelType builderChannelType;
@@ -456,6 +464,7 @@ public final class CandidateDao extends Dao {
 
       private Builder() {}
 
+      @Deprecated(since = "2025-04-29", forRemoval = true)
       public Builder publicationId(URI publicationId) {
         this.builderPublicationId = publicationId;
         return this;
@@ -466,11 +475,23 @@ public final class CandidateDao extends Dao {
         return this;
       }
 
+      public Builder publicationIdentifier(String publicationIdentifier) {
+        this.builderPublicationIdentifier = publicationIdentifier;
+        return this;
+      }
+
+      public Builder publicationDetails(DbPublication publicationDetails) {
+        this.builderPublicationDetails = publicationDetails;
+        return this;
+      }
+
+      @Deprecated(since = "2025-04-29", forRemoval = true)
       public Builder applicable(boolean applicable) {
         this.builderApplicable = applicable;
         return this;
       }
 
+      @Deprecated(since = "2025-04-29", forRemoval = true)
       public Builder instanceType(String instanceType) {
         this.builderInstanceType = instanceType;
         return this;
@@ -491,11 +512,13 @@ public final class CandidateDao extends Dao {
         return this;
       }
 
+      @Deprecated(since = "2025-04-29", forRemoval = true)
       public Builder publicationDate(DbPublicationDate publicationDate) {
         this.builderPublicationDate = publicationDate;
         return this;
       }
 
+      @Deprecated(since = "2025-04-29", forRemoval = true)
       public Builder internationalCollaboration(boolean internationalCollaboration) {
         this.builderInternationalCollaboration = internationalCollaboration;
         return this;
@@ -541,6 +564,7 @@ public final class CandidateDao extends Dao {
         return this;
       }
 
+      @Deprecated(since = "2025-04-29", forRemoval = true)
       public Builder modifiedDate(Instant modifiedDate) {
         this.builderModifiedDate = modifiedDate;
         return this;
@@ -555,6 +579,8 @@ public final class CandidateDao extends Dao {
         return new DbCandidate(
             builderPublicationId,
             builderPublicationBucketUri,
+            builderPublicationIdentifier,
+            builderPublicationDetails,
             builderApplicable,
             builderInstanceType,
             builderChannelType,
@@ -572,47 +598,6 @@ public final class CandidateDao extends Dao {
             builderCreatedDate,
             builderModifiedDate,
             builderReportStatus);
-      }
-    }
-  }
-
-  @DynamoDbImmutable(builder = DbPublicationDate.Builder.class)
-  public record DbPublicationDate(String year, String month, String day) {
-
-    public static Builder builder() {
-      return new Builder();
-    }
-
-    @DynamoDbIgnore
-    public DbPublicationDate copy() {
-      return new DbPublicationDate(year, month, day);
-    }
-
-    public static final class Builder {
-
-      private String builderYear;
-      private String builderMonth;
-      private String builderDay;
-
-      private Builder() {}
-
-      public Builder year(String year) {
-        this.builderYear = year;
-        return this;
-      }
-
-      public Builder month(String month) {
-        this.builderMonth = month;
-        return this;
-      }
-
-      public Builder day(String day) {
-        this.builderDay = day;
-        return this;
-      }
-
-      public DbPublicationDate build() {
-        return new DbPublicationDate(builderYear, builderMonth, builderDay);
       }
     }
   }
