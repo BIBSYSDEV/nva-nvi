@@ -216,7 +216,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     var expectedEvaluatedMessage =
         getExpectedEvaluatedMessage(
             InstanceType.ACADEMIC_ARTICLE, expectedPoints, fileUri, JOURNAL, ONE, expectedPoints);
-    assertEquals(expectedEvaluatedMessage, messageBody);
+    assertThatEvaluatedMessageEqualsExpectedMessage(expectedEvaluatedMessage, messageBody);
   }
 
   @Test
@@ -231,7 +231,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     var expectedEvaluatedMessage =
         getExpectedEvaluatedMessage(
             InstanceType.ACADEMIC_CHAPTER, expectedPoints, fileUri, SERIES, ONE, expectedPoints);
-    assertEquals(expectedEvaluatedMessage, messageBody);
+    assertThatEvaluatedMessageEqualsExpectedMessage(expectedEvaluatedMessage, messageBody);
   }
 
   @Test
@@ -251,7 +251,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
             SERIES,
             BigDecimal.valueOf(5),
             expectedPoints);
-    assertEquals(expectedEvaluatedMessage, messageBody);
+    assertThatEvaluatedMessageEqualsExpectedMessage(expectedEvaluatedMessage, messageBody);
   }
 
   @Test
@@ -271,7 +271,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
             SERIES,
             BigDecimal.valueOf(5),
             expectedPoints);
-    assertEquals(expectedEvaluatedMessage, messageBody);
+    assertThatEvaluatedMessageEqualsExpectedMessage(expectedEvaluatedMessage, messageBody);
   }
 
   @Test
@@ -287,7 +287,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     var expectedEvaluatedMessage =
         getExpectedEvaluatedMessage(
             ACADEMIC_LITERATURE_REVIEW, expectedPoints, fileUri, JOURNAL, ONE, expectedPoints);
-    assertEquals(expectedEvaluatedMessage, messageBody);
+    assertThatEvaluatedMessageEqualsExpectedMessage(expectedEvaluatedMessage, messageBody);
   }
 
   @Test
@@ -510,7 +510,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
             SERIES,
             BigDecimal.valueOf(5),
             expectedPoints);
-    assertEquals(expectedEvaluatedMessage, messageBody);
+    assertThatEvaluatedMessageEqualsExpectedMessage(expectedEvaluatedMessage, messageBody);
   }
 
   @Test
@@ -536,7 +536,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     assertThat(messageBody.candidate())
         .usingRecursiveComparison()
         .ignoringCollectionOrder()
-        .ignoringFields("pageCount")
+        .ignoringFields("pageCount", "publicationDetails")
         .isEqualTo(expectedEvaluatedMessage.candidate());
   }
 
@@ -671,6 +671,15 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
         .thenReturn(Optional.of(httpResponse));
   }
 
+  private static void assertThatEvaluatedMessageEqualsExpectedMessage(
+      CandidateEvaluatedMessage expectedEvaluatedMessage, CandidateEvaluatedMessage messageBody) {
+    assertThat(messageBody)
+        .usingRecursiveComparison()
+        .ignoringFields("candidate.publicationDetails")
+        .ignoringCollectionOrder()
+        .isEqualTo(expectedEvaluatedMessage);
+  }
+
   @Nested
   @DisplayName("Test cases with dynamic test data")
   class evaluateNviCandidatesWithDynamicTestData {
@@ -749,7 +758,8 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       handler.handleRequest(testScenario.event(), CONTEXT);
       var messageBody = getMessageBody();
 
-      assertEquals(testScenario.expectedEvaluatedMessage(), messageBody);
+      assertThatEvaluatedMessageEqualsExpectedMessage(
+          testScenario.expectedEvaluatedMessage(), messageBody);
     }
 
     @Test
@@ -766,7 +776,8 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       handler.handleRequest(testScenario.event(), CONTEXT);
       var messageBody = getMessageBody();
 
-      assertEquals(testScenario.expectedEvaluatedMessage(), messageBody);
+      assertThatEvaluatedMessageEqualsExpectedMessage(
+          testScenario.expectedEvaluatedMessage(), messageBody);
     }
 
     @Test
@@ -778,7 +789,8 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       handler.handleRequest(testScenario.event(), CONTEXT);
       var messageBody = getMessageBody();
 
-      assertEquals(testScenario.expectedEvaluatedMessage(), messageBody);
+      assertThatEvaluatedMessageEqualsExpectedMessage(
+          testScenario.expectedEvaluatedMessage(), messageBody);
     }
 
     @Test
@@ -791,7 +803,8 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       handler.handleRequest(testScenario.event(), CONTEXT);
       var messageBody = getMessageBody();
 
-      assertEquals(testScenario.expectedEvaluatedMessage(), messageBody);
+      assertThatEvaluatedMessageEqualsExpectedMessage(
+          testScenario.expectedEvaluatedMessage(), messageBody);
     }
 
     @Test
@@ -810,7 +823,8 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       handler.handleRequest(testScenario.event(), CONTEXT);
       var messageBody = getMessageBody();
 
-      assertEquals(testScenario.expectedEvaluatedMessage(), messageBody);
+      assertThatEvaluatedMessageEqualsExpectedMessage(
+          testScenario.expectedEvaluatedMessage(), messageBody);
     }
 
     @Test
@@ -833,7 +847,8 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       handler.handleRequest(testScenario.event(), CONTEXT);
       var messageBody = getMessageBody();
 
-      assertEquals(testScenario.expectedEvaluatedMessage(), messageBody);
+      assertThatEvaluatedMessageEqualsExpectedMessage(
+          testScenario.expectedEvaluatedMessage(), messageBody);
     }
 
     @Test
@@ -851,7 +866,8 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       handler.handleRequest(testScenario.event(), CONTEXT);
       var messageBody = getMessageBody();
 
-      assertEquals(testScenario.expectedEvaluatedMessage(), messageBody);
+      assertThatEvaluatedMessageEqualsExpectedMessage(
+          testScenario.expectedEvaluatedMessage(), messageBody);
     }
 
     @Test
@@ -865,7 +881,8 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       handler.handleRequest(testScenario.event(), CONTEXT);
       var messageBody = getMessageBody();
 
-      assertEquals(testScenario.expectedEvaluatedMessage(), messageBody);
+      assertThatEvaluatedMessageEqualsExpectedMessage(
+          testScenario.expectedEvaluatedMessage(), messageBody);
     }
 
     @Test
@@ -881,7 +898,8 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       handler.handleRequest(testScenario.event(), CONTEXT);
       var messageBody = getMessageBody();
 
-      assertEquals(testScenario.expectedEvaluatedMessage(), messageBody);
+      assertThatEvaluatedMessageEqualsExpectedMessage(
+          testScenario.expectedEvaluatedMessage(), messageBody);
     }
 
     @Test
@@ -898,7 +916,8 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       handler.handleRequest(testScenario.event(), CONTEXT);
       var messageBody = getMessageBody();
 
-      assertEquals(testScenario.expectedEvaluatedMessage(), messageBody);
+      assertThatEvaluatedMessageEqualsExpectedMessage(
+          testScenario.expectedEvaluatedMessage(), messageBody);
     }
 
     @Test
@@ -917,7 +936,8 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       handler.handleRequest(testScenario.event(), CONTEXT);
       var messageBody = getMessageBody();
 
-      assertEquals(testScenario.expectedEvaluatedMessage(), messageBody);
+      assertThatEvaluatedMessageEqualsExpectedMessage(
+          testScenario.expectedEvaluatedMessage(), messageBody);
     }
 
     @Test
@@ -935,7 +955,8 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       handler.handleRequest(testScenario.event(), CONTEXT);
       var messageBody = getMessageBody();
 
-      assertEquals(testScenario.expectedEvaluatedMessage(), messageBody);
+      assertThatEvaluatedMessageEqualsExpectedMessage(
+          testScenario.expectedEvaluatedMessage(), messageBody);
     }
 
     @Test
@@ -955,7 +976,8 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       var nviPeriod = periodRepository.findByPublishingYear(year);
 
       assertTrue(nviPeriod.isEmpty());
-      assertEquals(testScenario.expectedEvaluatedMessage(), messageBody);
+      assertThatEvaluatedMessageEqualsExpectedMessage(
+          testScenario.expectedEvaluatedMessage(), messageBody);
     }
 
     @Test
@@ -999,7 +1021,8 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       handler.handleRequest(testScenario.event(), CONTEXT);
       var messageBody = getMessageBody();
 
-      assertEquals(testScenario.expectedEvaluatedMessage(), messageBody);
+      assertThatEvaluatedMessageEqualsExpectedMessage(
+          testScenario.expectedEvaluatedMessage(), messageBody);
     }
 
     @Test
@@ -1027,7 +1050,8 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       handler.handleRequest(testScenario.event(), CONTEXT);
       var messageBody = getMessageBody();
 
-      assertEquals(testScenario.expectedEvaluatedMessage(), messageBody);
+      assertThatEvaluatedMessageEqualsExpectedMessage(
+          testScenario.expectedEvaluatedMessage(), messageBody);
     }
 
     private static PublicationDateDto getPublicationDate(

@@ -19,6 +19,7 @@ import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 public record UpsertNviCandidateRequest(
     URI publicationId,
     URI publicationBucketUri,
+    PublicationDto publicationDetails,
     InstanceType instanceType,
     String abstractText,
     PageCountDto pageCount,
@@ -48,6 +49,7 @@ public record UpsertNviCandidateRequest(
 
     private URI publicationId;
     private URI publicationBucketUri;
+    private PublicationDto publicationDetails;
     private InstanceType instanceType;
     private String abstractText;
     private PageCountDto pageCount;
@@ -73,6 +75,11 @@ public record UpsertNviCandidateRequest(
 
     public Builder withPublicationBucketUri(URI publicationBucketUri) {
       this.publicationBucketUri = publicationBucketUri;
+      return this;
+    }
+
+    public Builder withPublicationDetails(PublicationDto publicationDetails) {
+      this.publicationDetails = publicationDetails;
       return this;
     }
 
@@ -155,6 +162,7 @@ public record UpsertNviCandidateRequest(
       return new UpsertNviCandidateRequest(
           publicationId,
           publicationBucketUri,
+          publicationDetails,
           instanceType,
           abstractText,
           pageCount,

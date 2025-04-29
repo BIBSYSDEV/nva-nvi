@@ -11,9 +11,15 @@ import java.net.URI;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
+import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
+import no.sikt.nva.nvi.common.dto.ContributorDto;
+import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
+import no.sikt.nva.nvi.common.dto.PublicationDto;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
+import no.sikt.nva.nvi.common.model.ScientificValue;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
@@ -68,11 +74,6 @@ public class UpsertRequestBuilder {
   }
 
   public static UpsertRequestBuilder fromRequest(UpsertNviCandidateRequest request) {
-    var publicationDateDto =
-        new PublicationDateDto(
-            request.publicationDate().year(),
-            request.publicationDate().month(),
-            request.publicationDate().day());
     return new UpsertRequestBuilder()
         .withPublicationBucketUri(request.publicationBucketUri())
         .withPublicationId(request.publicationId())
@@ -83,7 +84,7 @@ public class UpsertRequestBuilder {
         .withChannelId(request.publicationChannelId())
         .withLevel(request.level())
         .withInstanceType(request.instanceType())
-        .withPublicationDate(publicationDateDto)
+        .withPublicationDate(request.publicationDate())
         .withCreatorShareCount(request.creatorShareCount())
         .withCollaborationFactor(request.collaborationFactor())
         .withBasePoints(request.basePoints())
@@ -228,7 +229,9 @@ public class UpsertRequestBuilder {
   }
 
   public UpsertNviCandidateRequest build() {
+    var publicationDetails = getPublicationDetails();
     return UpsertNviCandidateRequest.builder()
+        .withPublicationDetails(publicationDetails)
         .withPublicationId(publicationId)
         .withPublicationBucketUri(publicationBucketUri)
         .withIsInternationalCollaboration(isInternationalCollaboration)
@@ -244,6 +247,60 @@ public class UpsertRequestBuilder {
         .withBasePoints(basePoints)
         .withInstitutionPoints(List.copyOf(points))
         .withTotalPoints(totalPoints)
+        .build();
+  }
+
+  private PublicationDto getPublicationDetails() {
+    var unverifiedContributors =
+        unverifiedCreators.stream()
+            .map(
+                creator ->
+                    ContributorDto.builder()
+                        .withName(creator.name())
+                        .withAffiliations(
+                            creator.affiliations().stream()
+                                .map(id -> Organization.builder().withId(id).build())
+                                .toList())
+                        .build())
+            .toList();
+
+    var verifiedContributors =
+        verifiedCreators.stream()
+            .map(
+                creator ->
+                    ContributorDto.builder()
+                        .withId(creator.id())
+                        .withAffiliations(
+                            creator.affiliations().stream()
+                                .map(id -> Organization.builder().withId(id).build())
+                                .toList())
+                        .build())
+            .toList();
+    var nviContributors =
+        Stream.concat(verifiedContributors.stream(), unverifiedContributors.stream()).toList();
+
+    var channel =
+        PublicationChannelDto.builder()
+            .withChannelType(channelType)
+            .withId(channelId)
+            .withScientificValue(ScientificValue.parse(level))
+            .build();
+
+    var topLevelOrganizations =
+        nviContributors.stream()
+            .map(ContributorDto::affiliations)
+            .flatMap(Collection::stream)
+            .toList();
+
+    return PublicationDto.builder()
+        .withContributors(nviContributors)
+        .withId(publicationId)
+        .withIsInternationalCollaboration(isInternationalCollaboration)
+        .withPublicationChannels(List.of(channel))
+        .withPublicationDate(publicationDate)
+        .withPublicationType(instanceType)
+        .withStatus("PUBLISHED")
+        .withTopLevelOrganizations(topLevelOrganizations)
         .build();
   }
 }

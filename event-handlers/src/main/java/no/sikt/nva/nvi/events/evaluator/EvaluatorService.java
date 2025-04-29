@@ -162,6 +162,7 @@ public class EvaluatorService {
     return UpsertNviCandidateRequest.builder()
         .withPublicationId(publicationDto.id())
         .withPublicationBucketUri(publicationBucketUri)
+        .withPublicationDetails(publicationDto)
         .withDate(publicationDto.publicationDate())
         .withInstanceType(publicationDto.publicationType())
         .withAbstract(publicationDto.abstractText())
