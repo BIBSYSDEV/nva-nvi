@@ -1,7 +1,6 @@
 package no.sikt.nva.nvi.common;
 
 import static java.util.Collections.emptyList;
-import static no.sikt.nva.nvi.common.LocalDynamoTestSetup.initializeTestDatabase;
 import static no.sikt.nva.nvi.common.RequestFixtures.createNoteRequest;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpdateStatusRequest;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidate;
@@ -37,19 +36,19 @@ class MigrationTests {
   private CandidateRepository candidateRepository;
   private PeriodRepository periodRepository;
   private BatchScanUtil batchScanUtil;
+  private TestScenario scenario;
 
   @BeforeEach
-  public void setUp() {
-    var dynamodb = initializeTestDatabase();
-    candidateRepository = new CandidateRepository(dynamodb);
-    periodRepository = new PeriodRepository(dynamodb);
-    batchScanUtil = new BatchScanUtil(candidateRepository);
+  void setUp() {
+    scenario = new TestScenario();
+    candidateRepository = scenario.getCandidateRepository();
+    periodRepository = scenario.getPeriodRepository();
+    batchScanUtil = new BatchScanUtil(candidateRepository, scenario.getS3StorageReader());
   }
 
   @Test
   void shouldWriteCandidateWithNotesAndApprovalsAsIsWhenMigrating() {
     periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
-    batchScanUtil = new BatchScanUtil(candidateRepository);
     var candidate = setupCandidateWithApprovalAndNotes();
     batchScanUtil.migrateAndUpdateVersion(DEFAULT_PAGE_SIZE, null, emptyList());
     var migratedCandidate =

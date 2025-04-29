@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Arrays;
 
 public enum ScientificValue {
+  NON_CANDIDATE("NonCandidateLevel"),
   UNASSIGNED("Unassigned"),
   LEVEL_ZERO("LevelZero"),
   LEVEL_ONE("LevelOne"),

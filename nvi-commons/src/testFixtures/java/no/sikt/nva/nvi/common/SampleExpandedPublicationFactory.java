@@ -7,6 +7,7 @@ import static no.sikt.nva.nvi.common.model.OrganizationFixtures.setupRandomOrgan
 import static no.sikt.nva.nvi.test.TestConstants.CHANNEL_PUBLISHER;
 import static no.sikt.nva.nvi.test.TestConstants.CHANNEL_SERIES;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_NORWAY;
+import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_SWEDEN;
 import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_JSON_PUBLICATION_DATE;
 import static no.sikt.nva.nvi.test.TestUtils.createResponse;
 import static no.sikt.nva.nvi.test.TestUtils.randomUriWithSuffix;
@@ -48,6 +49,22 @@ public class SampleExpandedPublicationFactory {
       AuthorizedBackendUriRetriever authorizedBackendUriRetriever, UriRetriever uriRetriever) {
     this.authorizedBackendUriRetriever = authorizedBackendUriRetriever;
     this.uriRetriever = uriRetriever;
+  }
+
+  public static SampleExpandedPublicationFactory defaultExpandedPublicationFactory(
+      AuthorizedBackendUriRetriever authorizedBackendUriRetriever, UriRetriever uriRetriever) {
+    var factory = new SampleExpandedPublicationFactory(authorizedBackendUriRetriever, uriRetriever);
+    var nviOrganization1 = factory.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, true);
+    var nviOrganization2 = factory.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, true);
+    var nonNviOrganization = factory.setupTopLevelOrganization(COUNTRY_CODE_SWEDEN, false);
+
+    return factory
+        .withTopLevelOrganizations(nviOrganization1, nviOrganization2, nonNviOrganization)
+        .withNorwegianCreatorAffiliatedWith(nviOrganization1)
+        .withNorwegianCreatorAffiliatedWith(nviOrganization2.hasPart())
+        .withRandomNonCreatorsAffiliatedWith(1, COUNTRY_CODE_NORWAY, nviOrganization1)
+        .withRandomNonCreatorsAffiliatedWith(1, COUNTRY_CODE_SWEDEN, nonNviOrganization)
+        .withRandomCreatorsAffiliatedWith(1, COUNTRY_CODE_SWEDEN, nonNviOrganization);
   }
 
   public SampleExpandedPublicationFactory withPublicationType(String publicationType) {

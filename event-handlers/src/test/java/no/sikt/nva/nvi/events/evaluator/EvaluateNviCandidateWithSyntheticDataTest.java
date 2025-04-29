@@ -11,8 +11,6 @@ import static org.junit.jupiter.params.provider.Arguments.argumentSet;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import java.io.IOException;
-import java.net.URI;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
@@ -26,7 +24,6 @@ import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.sikt.nva.nvi.events.persist.UpsertNviCandidateHandler;
 import no.sikt.nva.nvi.test.SampleExpandedPublication;
-import nva.commons.core.paths.UnixPath;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -129,15 +126,6 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
             "Journal"));
   }
 
-  private URI addPublicationToS3(SampleExpandedPublication publication) {
-    try {
-      return s3Driver.insertFile(
-          UnixPath.of(publication.identifier().toString()), publication.toJsonString());
-    } catch (IOException e) {
-      throw new RuntimeException("Failed to add publication to S3", e);
-    }
-  }
-
   private CandidateEvaluatedMessage getMessageBody() {
     try {
       var sentMessages = queueClient.getSentMessages();
@@ -149,7 +137,7 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
   }
 
   private UpsertNviCandidateRequest getEvaluatedCandidate(SampleExpandedPublication publication) {
-    var fileUri = addPublicationToS3(publication);
+    var fileUri = scenario.addPublicationToS3(publication);
     var event = createEvent(new PersistedResourceMessage(fileUri));
     handler.handleRequest(event, CONTEXT);
     return (UpsertNviCandidateRequest) getMessageBody().candidate();
@@ -161,7 +149,7 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
    * parsing, evaluation, and upsert.
    */
   private Candidate evaluatePublication(SampleExpandedPublication publication) {
-    var fileUri = addPublicationToS3(publication);
+    var fileUri = scenario.addPublicationToS3(publication);
     var evaluationEvent = createEvent(new PersistedResourceMessage(fileUri));
     handler.handleRequest(evaluationEvent, CONTEXT);
 

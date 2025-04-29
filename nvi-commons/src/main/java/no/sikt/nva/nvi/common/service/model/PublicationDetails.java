@@ -13,10 +13,12 @@ import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 
+// TODO: Can we remove this JsonSerialize annotation?
 @JsonSerialize
 public record PublicationDetails(
     URI publicationId,
     URI publicationBucketUri,
+    String publicationIdentifier,
     String type,
     PublicationDateDto publicationDate,
     List<NviCreatorDto> creators,
@@ -27,6 +29,7 @@ public record PublicationDetails(
     return new PublicationDetails(
         dbCandidate.publicationId(),
         dbCandidate.publicationBucketUri(),
+        dbCandidate.publicationIdentifier(),
         dbCandidate.instanceType(),
         dateFromDbDate(dbCandidate.publicationDate()),
         dbCandidate.creators().stream().map(DbCreatorType::toNviCreator).toList(),

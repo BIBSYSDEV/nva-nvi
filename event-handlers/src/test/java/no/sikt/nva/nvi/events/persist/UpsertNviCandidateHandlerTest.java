@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.events.persist;
 
 import static java.util.Collections.emptyList;
 import static no.sikt.nva.nvi.common.LocalDynamoTestSetup.initializeTestDatabase;
+import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.common.model.InstanceTypeFixtures.randomInstanceType;
 import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
@@ -37,6 +38,7 @@ import java.time.Year;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
+import no.sikt.nva.nvi.common.UpsertRequestBuilder;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
@@ -53,7 +55,6 @@ import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
-import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest.Builder;
 import no.sikt.nva.nvi.common.model.CandidateFixtures;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.queue.QueueClient;
@@ -205,8 +206,8 @@ class UpsertNviCandidateHandlerTest {
         List.of(new UnverifiedNviCreatorDto(randomString(), List.of(randomUri())));
     var evaluatedNviCandidate =
         randomEvaluatedNviCandidate()
-            .withVerifiedNviCreators(emptyList())
-            .withUnverifiedNviCreators(unverifiedCreators)
+            .withVerifiedCreators(emptyList())
+            .withUnverifiedCreators(unverifiedCreators)
             .build();
     var expectedCreatorCount = unverifiedCreators.size();
 
@@ -227,7 +228,7 @@ class UpsertNviCandidateHandlerTest {
     var unverifiedCreators =
         List.of(new UnverifiedNviCreatorDto(randomString(), List.of(randomUri())));
     var evaluatedNviCandidate =
-        randomEvaluatedNviCandidate().withUnverifiedNviCreators(unverifiedCreators).build();
+        randomEvaluatedNviCandidate().withUnverifiedCreators(unverifiedCreators).build();
     var expectedCreatorCount =
         evaluatedNviCandidate.verifiedCreators().size() + unverifiedCreators.size();
 
@@ -252,7 +253,7 @@ class UpsertNviCandidateHandlerTest {
     var unverifiedCreators =
         List.of(new UnverifiedNviCreatorDto(randomString(), List.of(randomUri())));
     var updatedEvaluatedNviCandidate =
-        evaluatedNviCandidate.withUnverifiedNviCreators(unverifiedCreators).build();
+        evaluatedNviCandidate.withUnverifiedCreators(unverifiedCreators).build();
     var expectedCreatorCount =
         updatedEvaluatedNviCandidate.verifiedCreators().size() + unverifiedCreators.size();
 
@@ -273,7 +274,7 @@ class UpsertNviCandidateHandlerTest {
     return createEvalMessage(randomEvaluatedNviCandidate().build());
   }
 
-  private static UpsertNviCandidateRequest.Builder randomEvaluatedNviCandidate() {
+  private static UpsertRequestBuilder randomEvaluatedNviCandidate() {
     var identifier = UUID.randomUUID();
     var publicationId = generatePublicationId(identifier);
     var publicationBucketUri = generateS3BucketUri(identifier);
@@ -281,9 +282,9 @@ class UpsertNviCandidateHandlerTest {
     return getBuilder(publicationId, publicationBucketUri, creator);
   }
 
-  private static Builder getBuilder(
+  private static UpsertRequestBuilder getBuilder(
       URI publicationId, URI publicationBucketUri, VerifiedNviCreatorDto creator) {
-    return UpsertNviCandidateRequest.builder()
+    return randomUpsertRequestBuilder()
         .withPublicationId(publicationId)
         .withPublicationBucketUri(publicationBucketUri)
         .withInstanceType(randomInstanceType())
@@ -292,10 +293,10 @@ class UpsertNviCandidateHandlerTest {
         .withBasePoints(randomBigDecimal(4))
         .withCreatorShareCount(randomInteger())
         .withCollaborationFactor(randomBigDecimal(4))
-        .withPublicationChannelId(randomUri())
+        .withChannelId(randomUri())
         .withChannelType(randomElement(ChannelType.values()).getValue())
         .withIsInternationalCollaboration(randomBoolean())
-        .withInstitutionPoints(
+        .withPoints(
             List.of(
                 new InstitutionPoints(
                     randomUri(),
@@ -303,8 +304,8 @@ class UpsertNviCandidateHandlerTest {
                     List.of(
                         new CreatorAffiliationPoints(
                             creator.id(), randomUri(), randomBigDecimal())))))
-        .withDate(randomPublicationDate())
-        .withVerifiedNviCreators(List.of(creator));
+        .withPublicationDate(randomPublicationDate())
+        .withVerifiedCreators(List.of(creator));
   }
 
   private static Stream<CandidateEvaluatedMessage> invalidCandidateEvaluatedMessages() {
@@ -366,10 +367,10 @@ class UpsertNviCandidateHandlerTest {
     return getBuilder(request.publicationId(), request.publicationBucketUri(), creator)
         .withInstanceType(request.instanceType())
         .withLevel(request.level())
-        .withPublicationChannelId(request.publicationChannelId())
-        .withDate(new PublicationDateDto(Year.now().toString(), "3", null))
-        .withVerifiedNviCreators(List.of(creator))
-        .withInstitutionPoints(request.institutionPoints())
+        .withChannelId(request.publicationChannelId())
+        .withPublicationDate(new PublicationDateDto(Year.now().toString(), "3", null))
+        .withVerifiedCreators(List.of(creator))
+        .withPoints(request.institutionPoints())
         .build();
   }
 
@@ -439,7 +440,7 @@ class UpsertNviCandidateHandlerTest {
     return createEvent(
         createEvalMessage(
             getBuilder(publicationId, publicationBucketUri, creator)
-                .withInstitutionPoints(institutionPoints)
+                .withPoints(institutionPoints)
                 .build()));
   }
 }

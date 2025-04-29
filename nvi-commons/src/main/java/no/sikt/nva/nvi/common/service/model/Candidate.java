@@ -727,6 +727,7 @@ public final class Candidate {
     return DbCandidate.builder()
         .publicationId(request.publicationId())
         .publicationBucketUri(request.publicationBucketUri())
+        .publicationIdentifier(request.publicationDetails().identifier())
         .applicable(request.isApplicable())
         .creators(allCreators)
         .creatorShareCount(request.creatorShareCount())
@@ -826,6 +827,7 @@ public final class Candidate {
             .reportStatus(reportStatus)
             .publicationBucketUri(publicationDetails.publicationBucketUri())
             .publicationId(publicationDetails.publicationId())
+            .publicationIdentifier(publicationDetails.publicationIdentifier())
             .build();
     return CandidateDao.builder()
         .identifier(identifier)
@@ -853,6 +855,7 @@ public final class Candidate {
     return new PublicationDetails(
         request.publicationId(),
         request.publicationBucketUri(),
+        request.publicationDetails().identifier(),
         request.instanceType().getValue(),
         request.publicationDate(),
         getAllCreators(request),

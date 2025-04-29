@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.common;
 
 import static java.math.BigDecimal.ZERO;
 import static java.util.Collections.emptyList;
+import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -31,6 +32,7 @@ public class UpsertRequestBuilder {
 
   private URI publicationBucketUri;
   private URI publicationId;
+  private String publicationIdentifier;
   private boolean isInternationalCollaboration;
   private Collection<UnverifiedNviCreatorDto> unverifiedCreators;
   private Collection<VerifiedNviCreatorDto> verifiedCreators;
@@ -51,6 +53,7 @@ public class UpsertRequestBuilder {
     return new UpsertRequestBuilder()
         .withPublicationBucketUri(randomUri())
         .withPublicationId(randomUri())
+        .withPublicationIdentifier(randomUUID().toString())
         .withIsInternationalCollaboration(true)
         .withVerifiedCreators(List.of(new VerifiedNviCreatorDto(creatorId, List.of(affiliationId))))
         .withUnverifiedCreators(emptyList())
@@ -73,6 +76,7 @@ public class UpsertRequestBuilder {
         .withTotalPoints(BigDecimal.ONE);
   }
 
+  // TODO: Update this
   public static UpsertRequestBuilder fromRequest(UpsertNviCandidateRequest request) {
     return new UpsertRequestBuilder()
         .withPublicationBucketUri(request.publicationBucketUri())
@@ -99,6 +103,11 @@ public class UpsertRequestBuilder {
 
   public UpsertRequestBuilder withPublicationId(URI publicationId) {
     this.publicationId = publicationId;
+    return this;
+  }
+
+  public UpsertRequestBuilder withPublicationIdentifier(String publicationIdentifier) {
+    this.publicationIdentifier = publicationIdentifier;
     return this;
   }
 
@@ -295,6 +304,7 @@ public class UpsertRequestBuilder {
     return PublicationDto.builder()
         .withContributors(nviContributors)
         .withId(publicationId)
+        .withIdentifier(publicationIdentifier)
         .withIsInternationalCollaboration(isInternationalCollaboration)
         .withPublicationChannels(List.of(channel))
         .withPublicationDate(publicationDate)

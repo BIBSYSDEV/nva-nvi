@@ -23,7 +23,6 @@ import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.auth.uriretriever.BackendClientCredentials;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import no.unit.nva.s3.S3Driver;
-import no.unit.nva.stubs.FakeS3Client;
 import no.unit.nva.stubs.FakeSecretsManagerClient;
 import nva.commons.core.Environment;
 import nva.commons.core.StringUtils;
@@ -79,11 +78,10 @@ public class EvaluationTest {
 
     setupHttpResponses();
     mockSecretManager();
-    var s3Client = new FakeS3Client();
     authorizedBackendUriRetriever = mock(AuthorizedBackendUriRetriever.class);
     queueClient = new FakeSqsClient();
-    s3Driver = new S3Driver(s3Client, BUCKET_NAME);
-    storageReader = new S3StorageReader(s3Client, BUCKET_NAME);
+    s3Driver = scenario.getS3Driver();
+    storageReader = new S3StorageReader(scenario.getS3Client(), BUCKET_NAME);
     var creatorVerificationUtil = new CreatorVerificationUtil(authorizedBackendUriRetriever);
     evaluatorService =
         new EvaluatorService(

@@ -1,7 +1,9 @@
 package no.sikt.nva.nvi.common.db;
 
+import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.model.InstanceTypeFixtures.randomInstanceType;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
+import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
 import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
@@ -34,9 +36,12 @@ public class DbCandidateFixtures {
     var institutionPoints = TestUtils.randomBigDecimal();
     var instanceType = randomInstanceType().getValue();
     var publicationDate = new DbPublicationDate(String.valueOf(CURRENT_YEAR), "10", "10");
+    var publicationIdentifier = randomUUID();
+    var publicationId = generatePublicationId(publicationIdentifier);
     return DbCandidate.builder()
-        .publicationId(randomUri())
+        .publicationId(publicationId)
         .publicationBucketUri(randomUri())
+        .publicationIdentifier(publicationIdentifier.toString())
         .applicable(applicable)
         .instanceType(instanceType)
         .points(

@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.events.batch;
 
-import static no.sikt.nva.nvi.common.LocalDynamoTestSetup.initializeTestDatabase;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -30,6 +29,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
 import no.sikt.nva.nvi.common.db.CandidateDao;
@@ -84,17 +84,18 @@ class EventBasedBatchScanHandlerTest {
   private FakeEventBridgeClient eventBridgeClient;
   private NviCandidateRepositoryHelper candidateRepository;
   private NviPeriodRepositoryHelper periodRepository;
+  private TestScenario scenario;
 
   @BeforeEach
-  public void init() {
-    this.output = new ByteArrayOutputStream();
+  void init() {
+    scenario = new TestScenario();
+    output = new ByteArrayOutputStream();
     when(CONTEXT.getInvokedFunctionArn()).thenReturn(randomString());
-    this.eventBridgeClient = new FakeEventBridgeClient();
-    var db = initializeTestDatabase();
-    candidateRepository = new NviCandidateRepositoryHelper(db);
-    periodRepository = new NviPeriodRepositoryHelper(db);
-    var batchScanUtil = new BatchScanUtil(candidateRepository);
-    this.handler = new EventBasedBatchScanHandler(batchScanUtil, eventBridgeClient);
+    eventBridgeClient = new FakeEventBridgeClient();
+    candidateRepository = new NviCandidateRepositoryHelper(scenario.getLocalDynamo());
+    periodRepository = new NviPeriodRepositoryHelper(scenario.getLocalDynamo());
+    var batchScanUtil = new BatchScanUtil(candidateRepository, scenario.getS3StorageReader());
+    handler = new EventBasedBatchScanHandler(batchScanUtil, eventBridgeClient);
   }
 
   @Test
@@ -252,6 +253,7 @@ class EventBasedBatchScanHandlerTest {
   private static DbCandidate randomDbCandidate() {
     return DbCandidate.builder()
         .publicationId(randomUri())
+        .publicationIdentifier(randomString())
         .reportStatus(ReportStatus.REPORTED)
         .level(DbLevel.LEVEL_ONE)
         .channelType(ChannelType.JOURNAL)

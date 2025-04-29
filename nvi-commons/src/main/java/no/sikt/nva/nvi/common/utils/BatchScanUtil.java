@@ -1,33 +1,42 @@
 package no.sikt.nva.nvi.common.utils;
 
+import static java.util.Objects.isNull;
 import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
 
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import no.sikt.nva.nvi.common.S3StorageReader;
+import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.Dao;
 import no.sikt.nva.nvi.common.db.model.KeyField;
 import no.sikt.nva.nvi.common.model.ListingResult;
+import no.sikt.nva.nvi.common.service.PublicationLoaderService;
+import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 
 public class BatchScanUtil {
 
   private final CandidateRepository candidateRepository;
+  private final PublicationLoaderService publicationLoader;
 
-  public BatchScanUtil(CandidateRepository candidateRepository) {
+  public BatchScanUtil(CandidateRepository candidateRepository, StorageReader<URI> storageReader) {
     this.candidateRepository = candidateRepository;
+    this.publicationLoader = new PublicationLoaderService(storageReader);
   }
 
   @JacocoGenerated
   public static BatchScanUtil defaultNviService() {
-    return new BatchScanUtil(new CandidateRepository(defaultDynamoClient()));
+    return new BatchScanUtil(
+        new CandidateRepository(defaultDynamoClient()),
+        new S3StorageReader(new Environment().readEnv("EXPANDED_RESOURCES_BUCKET")));
   }
 
   public ListingResult<Dao> migrateAndUpdateVersion(
       int pageSize, Map<String, String> startMarker, List<KeyField> types) {
     var scanResult = candidateRepository.scanEntries(pageSize, startMarker, types);
-    // DO **MAGIC** STUFF HERE
     var entries = migrate(scanResult.getDatabaseEntries());
     candidateRepository.writeEntries(entries);
     return scanResult;
@@ -37,7 +46,6 @@ public class BatchScanUtil {
   // TODO: Write test for this
   // TODO: Keep this and add a comment
   private List<Dao> migrate(List<Dao> databaseEntries) {
-    // FOR EACH:
     return databaseEntries.stream().map(this::migrate).toList();
   }
 
@@ -48,8 +56,10 @@ public class BatchScanUtil {
     return databaseEntry;
   }
 
-  /** // TODO: Add deprecated annotation to this method */
-  @Deprecated
+  /**
+   * @deprecated Temporary migration code. To be removed when all candidates have been migrated.
+   */
+  @Deprecated(forRemoval = true, since = "2025-04-29")
   private CandidateDao migratePublicationField(CandidateDao entry) {
     var data = entry.candidate();
     //    if (isNull(data.publicationDetails())) {
@@ -60,6 +70,12 @@ public class BatchScanUtil {
     //      var updatedData = data.copy().build();
     //      return entry.copy().candidate(updatedData).build();
     //    }
+    if (isNull(data.publicationIdentifier())) {
+      var publicationBucketUri = data.publicationBucketUri();
+      var publication = publicationLoader.extractAndTransform(publicationBucketUri);
+      var updatedData = data.copy().publicationIdentifier(publication.identifier()).build();
+      return entry.copy().candidate(updatedData).build();
+    }
     return entry;
   }
 
