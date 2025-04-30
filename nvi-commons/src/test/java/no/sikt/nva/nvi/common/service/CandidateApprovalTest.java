@@ -546,7 +546,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
 
     var actualProblems = candidateDto.problems();
     var expectedProblems = emptySet();
-    assertEquals(actualProblems, expectedProblems);
+    assertEquals(expectedProblems, actualProblems);
   }
 
   @Test
@@ -566,7 +566,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
             new UnverifiedCreatorProblem(),
             new UnverifiedCreatorFromOrganizationProblem(List.of(unverifiedCreator.name())));
     var actualProblems = candidateDto.problems();
-    assertEquals(actualProblems, expectedProblems);
+    assertEquals(expectedProblems, actualProblems);
   }
 
   private static UpdateStatusRequest createRejectionRequestWithoutReason(String username) {

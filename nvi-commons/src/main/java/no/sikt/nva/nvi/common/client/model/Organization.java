@@ -1,5 +1,7 @@
 package no.sikt.nva.nvi.common.client.model;
 
+import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
 import static java.util.Objects.nonNull;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 
@@ -9,6 +11,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import no.sikt.nva.nvi.common.db.model.DbOrganization;
 import no.unit.nva.commons.json.JsonSerializable;
 import nva.commons.core.SingletonCollector;
 
@@ -24,6 +27,32 @@ public record Organization(
 
   public static Organization from(String json) throws JsonProcessingException {
     return dtoObjectMapper.readValue(json, Organization.class);
+  }
+
+  public static Organization from(DbOrganization dbOrganization) {
+    return builder()
+        .withId(dbOrganization.id())
+        .withCountryCode(dbOrganization.countryCode())
+        .withPartOf(dbOrganization.partOf().stream().map(Organization::from).toList())
+        .withHasPart(dbOrganization.hasPart().stream().map(Organization::from).toList())
+        .withLabels(dbOrganization.labels())
+        .build();
+  }
+
+  public static DbOrganization toDbOrganization(Organization organization) {
+    return DbOrganization.builder()
+        .id(organization.id())
+        .countryCode(organization.countryCode())
+        .partOf(
+            nonNull(organization.partOf())
+                ? organization.partOf().stream().map(Organization::toDbOrganization).toList()
+                : emptyList())
+        .hasPart(
+            nonNull(organization.hasPart())
+                ? organization.hasPart().stream().map(Organization::toDbOrganization).toList()
+                : emptyList())
+        .labels(nonNull(organization.labels()) ? organization.labels() : emptyMap())
+        .build();
   }
 
   public static Builder builder() {

@@ -43,7 +43,7 @@ tasks.register('verifyCoverage', JacocoCoverageVerification) {
             limit {
                 counter = 'METHOD'
                 value = 'COVEREDRATIO'
-                minimum = 1.000
+                minimum = 1.00
             }
         }
 

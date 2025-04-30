@@ -248,7 +248,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
   }
 
   private static Set<String> getUnverifiedNviCreatorNames(Candidate candidate) {
-    return candidate.getPublicationDetails().getUnverifiedCreators().stream()
+    return candidate.getPublicationDetails().unverifiedCreators().stream()
         .map(UnverifiedNviCreatorDto::name)
         .collect(Collectors.toSet());
   }

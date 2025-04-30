@@ -1,7 +1,8 @@
 package no.sikt.nva.nvi.common.service.model;
 
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import java.util.Arrays;
+import java.util.function.Predicate;
 
 public enum InstanceType {
   ACADEMIC_COMMENTARY("AcademicCommentary"),
@@ -16,19 +17,18 @@ public enum InstanceType {
     this.value = value;
   }
 
-  public static InstanceType parse(String value) {
-    return Arrays.stream(values())
-        .filter(instanceType -> instanceType.getValue().equalsIgnoreCase(value))
-        .findFirst()
-        .orElseThrow();
-  }
-
-  @JsonValue
-  public String getInstanceType() {
-    return value;
+  @JsonCreator
+  public static InstanceType parse(String stringValue) {
+    return Arrays.stream(values()).filter(matchesEnumValue(stringValue)).findFirst().orElseThrow();
   }
 
   public String getValue() {
     return value;
+  }
+
+  private static Predicate<InstanceType> matchesEnumValue(String stringValue) {
+    return value ->
+        value.name().equalsIgnoreCase(stringValue)
+            || value.getValue().equalsIgnoreCase(stringValue);
   }
 }

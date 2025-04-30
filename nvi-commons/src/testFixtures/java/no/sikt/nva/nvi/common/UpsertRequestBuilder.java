@@ -2,13 +2,12 @@ package no.sikt.nva.nvi.common;
 
 import static java.math.BigDecimal.ZERO;
 import static java.util.Collections.emptyList;
-import static java.util.UUID.randomUUID;
-import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 
 import java.math.BigDecimal;
 import java.net.URI;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -19,7 +18,9 @@ import no.sikt.nva.nvi.common.dto.ContributorDto;
 import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.dto.PublicationDto;
+import no.sikt.nva.nvi.common.dto.PublicationDtoBuilder;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
+import no.sikt.nva.nvi.common.dto.VerificationStatus;
 import no.sikt.nva.nvi.common.model.ScientificValue;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
@@ -30,6 +31,7 @@ import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliation
 
 public class UpsertRequestBuilder {
 
+  private PublicationDtoBuilder publicationBuilder = new PublicationDtoBuilder();
   private URI publicationBucketUri;
   private URI publicationId;
   private String publicationIdentifier;
@@ -48,20 +50,23 @@ public class UpsertRequestBuilder {
   private BigDecimal totalPoints;
 
   public static UpsertRequestBuilder randomUpsertRequestBuilder() {
-    final URI creatorId = randomUri();
-    final URI affiliationId = randomUri();
+    var publicationBuilder = PublicationDtoBuilder.randomPublicationDtoBuilder();
+    var publicationDetails = publicationBuilder.build();
+    var creatorId = randomUri();
+    var affiliationId = randomUri();
     return new UpsertRequestBuilder()
+        .withPublicationDetails(publicationBuilder)
         .withPublicationBucketUri(randomUri())
-        .withPublicationId(randomUri())
-        .withPublicationIdentifier(randomUUID().toString())
-        .withIsInternationalCollaboration(true)
+        .withPublicationId(publicationDetails.id())
+        .withPublicationIdentifier(publicationDetails.identifier())
+        .withIsInternationalCollaboration(publicationDetails.isInternationalCollaboration())
         .withVerifiedCreators(List.of(new VerifiedNviCreatorDto(creatorId, List.of(affiliationId))))
         .withUnverifiedCreators(emptyList())
         .withChannelType(ChannelType.JOURNAL.getValue())
         .withChannelId(randomUri())
         .withLevel("LevelOne")
-        .withInstanceType(InstanceType.ACADEMIC_ARTICLE)
-        .withPublicationDate(new PublicationDateDto(String.valueOf(CURRENT_YEAR), "01", "01"))
+        .withInstanceType(publicationDetails.publicationType())
+        .withPublicationDate(publicationDetails.publicationDate())
         .withCreatorShareCount(1)
         .withCollaborationFactor(BigDecimal.ONE)
         .withBasePoints(BigDecimal.ONE)
@@ -78,22 +83,30 @@ public class UpsertRequestBuilder {
 
   // TODO: Update this
   public static UpsertRequestBuilder fromRequest(UpsertNviCandidateRequest request) {
+    var publicationBuilder = PublicationDtoBuilder.fromRequest(request);
+    var publicationDetails = publicationBuilder.build();
     return new UpsertRequestBuilder()
         .withPublicationBucketUri(request.publicationBucketUri())
-        .withPublicationId(request.publicationId())
-        .withIsInternationalCollaboration(request.isInternationalCollaboration())
+        .withPublicationId(publicationDetails.id())
+        .withPublicationDetails(publicationBuilder)
+        .withIsInternationalCollaboration(publicationDetails.isInternationalCollaboration())
         .withVerifiedCreators(request.verifiedCreators())
         .withUnverifiedCreators(request.unverifiedCreators())
         .withChannelType(request.channelType())
         .withChannelId(request.publicationChannelId())
         .withLevel(request.level())
-        .withInstanceType(request.instanceType())
-        .withPublicationDate(request.publicationDate())
+        .withInstanceType(publicationDetails.publicationType())
+        .withPublicationDate(publicationDetails.publicationDate())
         .withCreatorShareCount(request.creatorShareCount())
         .withCollaborationFactor(request.collaborationFactor())
         .withBasePoints(request.basePoints())
         .withPoints(request.institutionPoints())
         .withTotalPoints(request.totalPoints());
+  }
+
+  public UpsertRequestBuilder withPublicationDetails(PublicationDtoBuilder publicationBuilder) {
+    this.publicationBuilder = publicationBuilder;
+    return this;
   }
 
   public UpsertRequestBuilder withPublicationBucketUri(URI publicationBucketUri) {
@@ -103,17 +116,21 @@ public class UpsertRequestBuilder {
 
   public UpsertRequestBuilder withPublicationId(URI publicationId) {
     this.publicationId = publicationId;
+    this.publicationBuilder = publicationBuilder.withId(publicationId);
     return this;
   }
 
   public UpsertRequestBuilder withPublicationIdentifier(String publicationIdentifier) {
     this.publicationIdentifier = publicationIdentifier;
+    this.publicationBuilder = publicationBuilder.withIdentifier(publicationIdentifier);
     return this;
   }
 
   public UpsertRequestBuilder withIsInternationalCollaboration(
       boolean isInternationalCollaboration) {
     this.isInternationalCollaboration = isInternationalCollaboration;
+    this.publicationBuilder =
+        publicationBuilder.withIsInternationalCollaboration(isInternationalCollaboration);
     return this;
   }
 
@@ -146,11 +163,13 @@ public class UpsertRequestBuilder {
 
   public UpsertRequestBuilder withInstanceType(InstanceType instanceType) {
     this.instanceType = instanceType;
+    this.publicationBuilder = publicationBuilder.withPublicationType(instanceType);
     return this;
   }
 
   public UpsertRequestBuilder withPublicationDate(PublicationDateDto publicationDate) {
     this.publicationDate = publicationDate;
+    this.publicationBuilder = publicationBuilder.withPublicationDate(publicationDate);
     return this;
   }
 
@@ -238,9 +257,8 @@ public class UpsertRequestBuilder {
   }
 
   public UpsertNviCandidateRequest build() {
-    var publicationDetails = getPublicationDetails();
     return UpsertNviCandidateRequest.builder()
-        .withPublicationDetails(publicationDetails)
+        .withPublicationDetails(publicationBuilder.build())
         .withPublicationId(publicationId)
         .withPublicationBucketUri(publicationBucketUri)
         .withIsInternationalCollaboration(isInternationalCollaboration)
@@ -279,6 +297,7 @@ public class UpsertRequestBuilder {
                 creator ->
                     ContributorDto.builder()
                         .withId(creator.id())
+                        .withVerificationStatus(new VerificationStatus("Verified"))
                         .withAffiliations(
                             creator.affiliations().stream()
                                 .map(id -> Organization.builder().withId(id).build())
@@ -311,6 +330,7 @@ public class UpsertRequestBuilder {
         .withPublicationType(instanceType)
         .withStatus("PUBLISHED")
         .withTopLevelOrganizations(topLevelOrganizations)
+        .withModifiedDate(Instant.now())
         .build();
   }
 }

@@ -22,7 +22,7 @@ public record UpsertNviCandidateRequest(
     PublicationDto publicationDetails,
     InstanceType instanceType,
     String abstractText,
-    PageCountDto pageCount,
+    PageCountDto pageCount, // FIXME: Remove duplicates
     PublicationDateDto publicationDate,
     List<VerifiedNviCreatorDto> verifiedCreators,
     List<UnverifiedNviCreatorDto> unverifiedCreators,

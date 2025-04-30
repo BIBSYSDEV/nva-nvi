@@ -464,7 +464,6 @@ public final class CandidateDao extends Dao {
 
       private Builder() {}
 
-      @Deprecated(since = "2025-04-29", forRemoval = true)
       public Builder publicationId(URI publicationId) {
         this.builderPublicationId = publicationId;
         return this;
@@ -485,13 +484,11 @@ public final class CandidateDao extends Dao {
         return this;
       }
 
-      @Deprecated(since = "2025-04-29", forRemoval = true)
       public Builder applicable(boolean applicable) {
         this.builderApplicable = applicable;
         return this;
       }
 
-      @Deprecated(since = "2025-04-29", forRemoval = true)
       public Builder instanceType(String instanceType) {
         this.builderInstanceType = instanceType;
         return this;
@@ -512,13 +509,11 @@ public final class CandidateDao extends Dao {
         return this;
       }
 
-      @Deprecated(since = "2025-04-29", forRemoval = true)
       public Builder publicationDate(DbPublicationDate publicationDate) {
         this.builderPublicationDate = publicationDate;
         return this;
       }
 
-      @Deprecated(since = "2025-04-29", forRemoval = true)
       public Builder internationalCollaboration(boolean internationalCollaboration) {
         this.builderInternationalCollaboration = internationalCollaboration;
         return this;
@@ -564,7 +559,6 @@ public final class CandidateDao extends Dao {
         return this;
       }
 
-      @Deprecated(since = "2025-04-29", forRemoval = true)
       public Builder modifiedDate(Instant modifiedDate) {
         this.builderModifiedDate = modifiedDate;
         return this;

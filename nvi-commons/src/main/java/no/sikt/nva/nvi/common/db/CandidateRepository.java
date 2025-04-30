@@ -52,7 +52,7 @@ import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
 @SuppressWarnings("PMD.CouplingBetweenObjects")
 public class CandidateRepository extends DynamoRepository {
 
-  public static final int DEFAULT_PAGE_SIZE = 700;
+  public static final int DEFAULT_PAGE_SIZE = 100;
   private static final int BATCH_SIZE = 25;
   private static final long INITIAL_RETRY_WAIT_TIME_MS = 1000;
   protected final DynamoDbTable<CandidateDao> candidateTable;
@@ -111,7 +111,8 @@ public class CandidateRepository extends DynamoRepository {
   }
 
   public CandidateDao create(DbCandidate dbCandidate, List<DbApprovalStatus> approvalStatuses) {
-    return create(dbCandidate, approvalStatuses, dbCandidate.publicationDate().year());
+    return create(
+        dbCandidate, approvalStatuses, dbCandidate.publicationDetails().publicationDate().year());
   }
 
   public CandidateDao create(

@@ -48,8 +48,6 @@ import no.sikt.nva.nvi.common.db.PeriodStatus;
 import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
 import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
-import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
-import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.model.InvalidNviCandidateException;
@@ -146,8 +144,9 @@ public final class Candidate {
       List<ApprovalStatusDao> approvals,
       List<NoteDao> notes,
       PeriodStatus period) {
+    var details = candidateDao.candidate().publicationDetails();
     this.identifier = candidateDao.identifier();
-    this.applicable = candidateDao.candidate().applicable();
+    this.applicable = details.isApplicable();
     this.approvals = mapToApprovalsMap(repository, approvals);
     this.notes = mapToNotesMap(repository, notes);
     this.institutionPoints = mapToInstitutionPoints(candidateDao);
@@ -155,7 +154,7 @@ public final class Candidate {
     this.period = period;
     this.publicationDetails = PublicationDetails.from(candidateDao);
     this.basePoints = candidateDao.candidate().basePoints();
-    this.internationalCollaboration = candidateDao.candidate().internationalCollaboration();
+    this.internationalCollaboration = details.isInternationalCollaboration();
     this.collaborationFactor = candidateDao.candidate().collaborationFactor();
     this.creatorShareCount = candidateDao.candidate().creatorShareCount();
     this.createdDate = candidateDao.candidate().createdDate();
@@ -619,7 +618,7 @@ public final class Candidate {
    */
   private static boolean creatorsAreUpdated(
       UpsertNviCandidateRequest request, Candidate candidate) {
-    var oldCreatorCount = candidate.getPublicationDetails().creators().size();
+    var oldCreatorCount = candidate.getPublicationDetails().getNviCreators().size();
     var newCreatorCount = getAllCreators(request).size();
     var hasSameCount = oldCreatorCount == newCreatorCount;
     var hasSameCreators = hasSameCreators(request, candidate);
@@ -628,7 +627,7 @@ public final class Candidate {
 
   private static boolean hasSameCreators(UpsertNviCandidateRequest request, Candidate candidate) {
     var affiliationsOfRemovedUnverifiedCreators =
-        candidate.getPublicationDetails().getUnverifiedCreators().stream()
+        candidate.getPublicationDetails().unverifiedCreators().stream()
             .filter(not(creator -> request.unverifiedCreators().contains(creator)))
             .map(UnverifiedNviCreatorDto::affiliations)
             .map(HashSet::new)
@@ -651,8 +650,9 @@ public final class Candidate {
 
   private static boolean instanceTypeIsUpdated(
       UpsertNviCandidateRequest request, Candidate candidate) {
-    return !Objects.equals(
-        request.instanceType().getValue(), candidate.getPublicationDetails().type());
+    var newType = request.publicationDetails().publicationType();
+    var currentType = candidate.getPublicationDetails().publicationType();
+    return !Objects.equals(newType, currentType);
   }
 
   private static boolean levelIsUpdated(UpsertNviCandidateRequest request, Candidate candidate) {
@@ -724,19 +724,21 @@ public final class Candidate {
 
   private static DbCandidate mapToCandidate(UpsertNviCandidateRequest request) {
     var allCreators = mapToDbCreators(request.verifiedCreators(), request.unverifiedCreators());
+    var publicationDetails = PublicationDetails.from(request).toDbPublication();
     return DbCandidate.builder()
-        .publicationId(request.publicationId())
+        .publicationId(publicationDetails.id())
+        .publicationDetails(publicationDetails)
         .publicationBucketUri(request.publicationBucketUri())
-        .publicationIdentifier(request.publicationDetails().identifier())
-        .applicable(request.isApplicable())
+        .publicationIdentifier(publicationDetails.identifier())
+        .applicable(publicationDetails.isApplicable())
         .creators(allCreators)
         .creatorShareCount(request.creatorShareCount())
         .channelType(ChannelType.parse(request.channelType()))
         .channelId(request.publicationChannelId())
         .level(DbLevel.parse(request.level()))
-        .instanceType(request.instanceType().getValue())
-        .publicationDate(mapToPublicationDate(request.publicationDate()))
-        .internationalCollaboration(request.isInternationalCollaboration())
+        .instanceType(publicationDetails.publicationType().getValue())
+        .publicationDate(publicationDetails.publicationDate())
+        .internationalCollaboration(publicationDetails.isInternationalCollaboration())
         .collaborationFactor(adjustScaleAndRoundingMode(request.collaborationFactor()))
         .basePoints(adjustScaleAndRoundingMode(request.basePoints()))
         .points(mapToPoints(request.institutionPoints()))
@@ -748,14 +750,6 @@ public final class Candidate {
 
   private static List<DbInstitutionPoints> mapToPoints(List<InstitutionPoints> points) {
     return points.stream().map(DbInstitutionPoints::from).toList();
-  }
-
-  private static DbPublicationDate mapToPublicationDate(PublicationDateDto publicationDate) {
-    return DbPublicationDate.builder()
-        .year(publicationDate.year())
-        .month(publicationDate.month())
-        .day(publicationDate.day())
-        .build();
   }
 
   private static List<DbCreatorType> mapToDbCreators(
@@ -772,6 +766,7 @@ public final class Candidate {
     return repository.findByPublicationId(publicationId).isPresent();
   }
 
+  // TODO: Verify this
   private static CandidateDao updateCandidateToNonApplicable(CandidateDao candidateDao) {
     return candidateDao
         .copy()
@@ -804,20 +799,19 @@ public final class Candidate {
   }
 
   private CandidateDao toDao() {
-    var dbCreators =
-        mapToDbCreators(
-            publicationDetails.getVerifiedCreators(), publicationDetails.getUnverifiedCreators());
+    var dbPublication = publicationDetails.toDbPublication();
     var dbCandidate =
         DbCandidate.builder()
-            .applicable(applicable)
-            .creators(dbCreators)
+            .publicationDetails(dbPublication)
+            .applicable(dbPublication.isApplicable())
+            .creators(dbPublication.creators())
             .creatorShareCount(creatorShareCount)
             .channelType(getPublicationChannelType())
             .channelId(getPublicationChannelId())
             .level(DbLevel.parse(getScientificLevel()))
-            .instanceType(publicationDetails.type())
-            .publicationDate(mapToPublicationDate(publicationDetails.publicationDate()))
-            .internationalCollaboration(internationalCollaboration)
+            .instanceType(dbPublication.publicationType().getValue())
+            .publicationDate(dbPublication.publicationDate())
+            .internationalCollaboration(dbPublication.isInternationalCollaboration())
             .collaborationFactor(adjustScaleAndRoundingMode(collaborationFactor))
             .basePoints(adjustScaleAndRoundingMode(basePoints))
             .points(mapToPoints(institutionPoints))
@@ -825,18 +819,19 @@ public final class Candidate {
             .createdDate(createdDate)
             .modifiedDate(Instant.now())
             .reportStatus(reportStatus)
-            .publicationBucketUri(publicationDetails.publicationBucketUri())
-            .publicationId(publicationDetails.publicationId())
-            .publicationIdentifier(publicationDetails.publicationIdentifier())
+            .publicationBucketUri(dbPublication.publicationBucketUri())
+            .publicationId(dbPublication.id())
+            .publicationIdentifier(dbPublication.identifier())
             .build();
     return CandidateDao.builder()
         .identifier(identifier)
         .candidate(dbCandidate)
         .version(randomUUID().toString())
-        .periodYear(publicationDetails.publicationDate().year())
+        .periodYear(dbPublication.publicationDate().year())
         .build();
   }
 
+  // FIXME: Does this "copy" actually copy, or are we mutating the original object?
   private Candidate apply(UpsertNviCandidateRequest request) {
     return this.copy()
         .withApplicable(request.isApplicable())
@@ -845,24 +840,10 @@ public final class Candidate {
         .withCreatorShareCount(request.creatorShareCount())
         .withInternationalCollaboration(request.isInternationalCollaboration())
         .withTotalPoints(adjustScaleAndRoundingMode(request.totalPoints()))
-        .withPublicationDetails(mapToPublicationDetails(request))
+        .withPublicationDetails(PublicationDetails.from(request))
         .withInstitutionPoints(request.institutionPoints())
         .withModifiedDate(Instant.now())
         .build();
-  }
-
-  private PublicationDetails mapToPublicationDetails(UpsertNviCandidateRequest request) {
-    return new PublicationDetails(
-        request.publicationId(),
-        request.publicationBucketUri(),
-        request.publicationDetails().identifier(),
-        request.instanceType().getValue(),
-        request.publicationDate(),
-        getAllCreators(request),
-        new PublicationChannel(
-            ChannelType.parse(request.channelType()),
-            request.publicationChannelId(),
-            request.level()));
   }
 
   private void setUserAsAssigneeIfApprovalIsUnassigned(String username, URI institutionId) {

@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.common.service;
 
 import static java.util.Collections.emptySet;
+import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpdateStatusRequest;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequest;
@@ -38,6 +39,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.UpsertRequestBuilder;
+import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
@@ -47,9 +49,14 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
 import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
+import no.sikt.nva.nvi.common.db.model.DbContributor;
+import no.sikt.nva.nvi.common.db.model.DbPublication;
+import no.sikt.nva.nvi.common.db.model.DbPublicationChannel;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
+import no.sikt.nva.nvi.common.dto.ContributorDto;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
+import no.sikt.nva.nvi.common.model.ScientificValue;
 import no.sikt.nva.nvi.common.service.dto.ApprovalDto;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatusDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
@@ -63,6 +70,7 @@ import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -112,9 +120,9 @@ class CandidateTest extends CandidateTestSetup {
     var fetchedCandidate = upsert(upsertCandidateRequest);
 
     var actualUnverifiedCreatorCount =
-        fetchedCandidate.getPublicationDetails().getUnverifiedCreators().size();
+        fetchedCandidate.getPublicationDetails().unverifiedCreators().size();
     var actualVerifiedCreatorCount =
-        fetchedCandidate.getPublicationDetails().getVerifiedCreators().size();
+        fetchedCandidate.getPublicationDetails().verifiedCreators().size();
     assertEquals(expectedUnverifiedCreatorCount, actualUnverifiedCreatorCount);
     assertEquals(expectedVerifiedCreatorCount, actualVerifiedCreatorCount);
   }
@@ -200,7 +208,11 @@ class CandidateTest extends CandidateTestSetup {
     var expectedCandidate = generateExpectedCandidate(candidate, updateRequest);
     var actualPersistedCandidate =
         candidateRepository.findCandidateById(candidate.getIdentifier()).orElseThrow().candidate();
-    assertEquals(expectedCandidate, actualPersistedCandidate);
+    Assertions.assertThat(actualPersistedCandidate)
+        .usingRecursiveComparison()
+        .ignoringFields("modifiedDate")
+        .ignoringCollectionOrder()
+        .isEqualTo(expectedCandidate);
   }
 
   @Test
@@ -537,13 +549,39 @@ class CandidateTest extends CandidateTestSetup {
 
   private DbCandidate generateExpectedCandidate(
       Candidate candidate, UpsertNviCandidateRequest request) {
+    var dtoPublicationDetails = request.publicationDetails();
     var dbCreators = mapToDbCreators(request.verifiedCreators(), request.unverifiedCreators());
+    var dbPublicationChannel =
+        DbPublicationChannel.builder()
+            .id(request.publicationChannelId())
+            .channelType(ChannelType.parse(request.channelType()))
+            .scientificValue(ScientificValue.parse(request.level()))
+            .build();
+    var dbPublicationDetails =
+        DbPublication.builder()
+            .id(request.publicationId())
+            .identifier(dtoPublicationDetails.identifier())
+            .status(dtoPublicationDetails.status())
+            .publicationType(dtoPublicationDetails.publicationType())
+            .publicationChannels(List.of(dbPublicationChannel))
+            .publicationDate(mapToDbPublicationDate(request.publicationDate()))
+            .applicable(dtoPublicationDetails.isApplicable())
+            .applicable(dtoPublicationDetails.isApplicable())
+            .internationalCollaboration(dtoPublicationDetails.isInternationalCollaboration())
+            .modifiedDate(dtoPublicationDetails.modifiedDate())
+            .creators(dbCreators)
+            .contributors(
+                dtoPublicationDetails.contributors().stream()
+                    .map(CandidateTest::dbContributorFromContributor)
+                    .toList())
+            .build();
     var dbCandidate =
         DbCandidate.builder()
             .publicationId(request.publicationId())
             .publicationBucketUri(request.publicationBucketUri())
+            .publicationDetails(dbPublicationDetails)
             .publicationDate(mapToDbPublicationDate(request.publicationDate()))
-            .applicable(request.isApplicable())
+            .applicable(dtoPublicationDetails.isApplicable())
             .instanceType(request.instanceType().getValue())
             .channelType(ChannelType.parse(request.channelType()))
             .channelId(request.publicationChannelId())
@@ -559,5 +597,23 @@ class CandidateTest extends CandidateTestSetup {
             .build();
     return new CandidateDao(candidate.getIdentifier(), dbCandidate, randomString(), randomString())
         .candidate();
+  }
+
+  // FIXME: Duplicate util method
+  private static DbContributor dbContributorFromContributor(ContributorDto contributor) {
+    return DbContributor.builder()
+        .id(contributor.id())
+        .name(contributor.name())
+        .verificationStatus(
+            nonNull(contributor.verificationStatus())
+                ? contributor.verificationStatus().getValue()
+                : "Unverified") // TODO: Handle null verification status
+        .role(
+            nonNull(contributor.role())
+                ? contributor.role().getValue()
+                : "Unknown") // TODO: Handle null role
+        .affiliations(
+            contributor.affiliations().stream().map(Organization::toDbOrganization).toList())
+        .build();
   }
 }

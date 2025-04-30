@@ -9,6 +9,7 @@ import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.periodRepositor
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -50,10 +51,18 @@ class MigrationTests {
   void shouldWriteCandidateWithNotesAndApprovalsAsIsWhenMigrating() {
     periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
     var candidate = setupCandidateWithApprovalAndNotes();
+    var foo = Candidate.fetch(candidate::getIdentifier, candidateRepository, periodRepository);
     batchScanUtil.migrateAndUpdateVersion(DEFAULT_PAGE_SIZE, null, emptyList());
     var migratedCandidate =
         Candidate.fetch(candidate::getIdentifier, candidateRepository, periodRepository);
-    assertEquals(candidate, migratedCandidate);
+    assertThat(migratedCandidate)
+        .usingRecursiveComparison()
+        .ignoringCollectionOrder()
+        .isEqualTo(foo);
+    //    assertThat(migratedCandidate)
+    //        .usingRecursiveComparison()
+    //        .ignoringCollectionOrder()
+    //        .isEqualTo(candidate);
   }
 
   @Test

@@ -42,9 +42,10 @@ public class BatchScanUtil {
     return scanResult;
   }
 
-  // ONLY IDEMPOTENT STUFF HERE
-  // TODO: Write test for this
-  // TODO: Keep this and add a comment
+  /**
+   * This is a wrapper method for any temporary migration code that needs to be added. Ensure that
+   * all methods are idempotent and have deprecation annotations.
+   */
   private List<Dao> migrate(List<Dao> databaseEntries) {
     return databaseEntries.stream().map(this::migrate).toList();
   }

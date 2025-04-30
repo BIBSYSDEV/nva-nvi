@@ -156,8 +156,9 @@ public final class ExpandedResourceGenerator {
 
   private static ObjectNode createAndPopulatePublicationInstance(Candidate candidate) {
     var publicationInstance = objectMapper.createObjectNode();
-    publicationInstance.put(TYPE_FIELD, candidate.getPublicationDetails().type());
-    switch (candidate.getPublicationDetails().type()) {
+    var publicationType = candidate.getPublicationDetails().publicationType().getValue();
+    publicationInstance.put(TYPE_FIELD, publicationType);
+    switch (publicationType) {
       case "AcademicArticle", "AcademicLiteratureReview", "AcademicChapter" -> {
         var pages = objectMapper.createObjectNode();
         pages.put("begin", "pageBegin");
@@ -229,7 +230,7 @@ public final class ExpandedResourceGenerator {
 
   private static JsonNode createAndPopulateTopLevelOrganizations(Candidate candidate) {
     var topLevelOrganizations = objectMapper.createArrayNode();
-    candidate.getPublicationDetails().creators().stream()
+    candidate.getPublicationDetails().getNviCreators().stream()
         .map(NviCreatorDto::affiliations)
         .flatMap(List::stream)
         .distinct()
@@ -268,12 +269,12 @@ public final class ExpandedResourceGenerator {
 
     var contributors = objectMapper.createArrayNode();
 
-    var verifiedCreators = candidate.getPublicationDetails().getVerifiedCreators();
+    var verifiedCreators = candidate.getPublicationDetails().verifiedCreators();
     verifiedCreators.stream()
         .map(creator -> createContributorNode(creator.affiliations(), creator.id(), randomString()))
         .forEach(contributors::add);
 
-    var unverifiedCreators = candidate.getPublicationDetails().getUnverifiedCreators();
+    var unverifiedCreators = candidate.getPublicationDetails().unverifiedCreators();
     unverifiedCreators.stream()
         .map(
             unverifiedCreator ->

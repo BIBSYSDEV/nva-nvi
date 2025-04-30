@@ -1,14 +1,19 @@
 package no.sikt.nva.nvi.common.db.model;
 
+import static java.util.Collections.emptyList;
+
 import java.net.URI;
 import java.time.Instant;
 import java.util.List;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCreatorType;
 import no.sikt.nva.nvi.common.service.model.InstanceType;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbConvertedBy;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmutable;
 
 @DynamoDbImmutable(builder = DbPublication.Builder.class)
 public record DbPublication(
     URI id,
+    URI publicationBucketUri,
     String identifier,
     String title,
     String status,
@@ -21,6 +26,7 @@ public record DbPublication(
     boolean isInternationalCollaboration,
     List<DbPublicationChannel> publicationChannels,
     List<DbContributor> contributors,
+    @DynamoDbConvertedBy(DbCreatorTypeListConverter.class) List<DbCreatorType> creators,
     List<DbOrganization> topLevelOrganizations,
     Instant modifiedDate) {
 
@@ -31,6 +37,7 @@ public record DbPublication(
   public static final class Builder {
 
     private URI builderId;
+    private URI builderPublicationBucketUri;
     private String builderIdentifier;
     private String builderTitle;
     private String builderStatus;
@@ -41,15 +48,21 @@ public record DbPublication(
     private InstanceType builderPublicationType;
     private boolean builderIsApplicable;
     private boolean builderIsInternationalCollaboration;
-    private List<DbPublicationChannel> builderPublicationChannels;
-    private List<DbContributor> builderContributors;
-    private List<DbOrganization> builderTopLevelOrganizations;
+    private List<DbPublicationChannel> builderPublicationChannels = emptyList();
+    private List<DbContributor> builderContributors = emptyList();
+    private List<DbCreatorType> builderCreators = emptyList();
+    private List<DbOrganization> builderTopLevelOrganizations = emptyList();
     private Instant builderModifiedDate;
 
     private Builder() {}
 
     public Builder id(URI id) {
       this.builderId = id;
+      return this;
+    }
+
+    public Builder publicationBucketUri(URI publicationBucketUri) {
+      this.builderPublicationBucketUri = publicationBucketUri;
       return this;
     }
 
@@ -113,6 +126,11 @@ public record DbPublication(
       return this;
     }
 
+    public Builder creators(List<DbCreatorType> creators) {
+      this.builderCreators = List.copyOf(creators);
+      return this;
+    }
+
     public Builder topLevelOrganizations(List<DbOrganization> topLevelOrganizations) {
       this.builderTopLevelOrganizations = List.copyOf(topLevelOrganizations);
       return this;
@@ -126,6 +144,7 @@ public record DbPublication(
     public DbPublication build() {
       return new DbPublication(
           builderId,
+          builderPublicationBucketUri,
           builderIdentifier,
           builderTitle,
           builderStatus,
@@ -138,6 +157,7 @@ public record DbPublication(
           builderIsInternationalCollaboration,
           builderPublicationChannels,
           builderContributors,
+          builderCreators,
           builderTopLevelOrganizations,
           builderModifiedDate);
     }

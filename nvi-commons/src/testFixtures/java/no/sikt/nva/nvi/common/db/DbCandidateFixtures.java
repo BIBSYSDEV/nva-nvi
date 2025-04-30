@@ -18,7 +18,10 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints.DbCreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
+import no.sikt.nva.nvi.common.db.model.DbPublication;
+import no.sikt.nva.nvi.common.db.model.DbPublicationChannel;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
+import no.sikt.nva.nvi.common.model.ScientificValue;
 import no.sikt.nva.nvi.test.TestUtils;
 
 public class DbCandidateFixtures {
@@ -31,31 +34,43 @@ public class DbCandidateFixtures {
     return randomCandidateBuilder(applicable, randomUri());
   }
 
-  public static DbCandidate.Builder randomCandidateBuilder(boolean applicable, URI institutionId) {
+  public static DbCandidate.Builder randomCandidateBuilder(boolean applicable, URI organizationId) {
+    var publicationDetails = randomPublicationBuilder(applicable, organizationId).build();
+    return randomCandidateBuilder(organizationId, publicationDetails);
+  }
+
+  public static DbCandidate randomCandidateWithYear(String year) {
+    var organizationId = randomUri();
+    var publicationDetails =
+        randomPublicationBuilder(true, organizationId)
+            .publicationDate(publicationDate(year))
+            .build();
+    return randomCandidateBuilder(organizationId, publicationDetails).build();
+  }
+
+  public static DbCandidate.Builder randomCandidateBuilder(
+      URI organizationId, DbPublication publicationDetails) {
     var creatorId = randomUri();
     var institutionPoints = TestUtils.randomBigDecimal();
-    var instanceType = randomInstanceType().getValue();
-    var publicationDate = new DbPublicationDate(String.valueOf(CURRENT_YEAR), "10", "10");
-    var publicationIdentifier = randomUUID();
-    var publicationId = generatePublicationId(publicationIdentifier);
     return DbCandidate.builder()
-        .publicationId(publicationId)
-        .publicationBucketUri(randomUri())
-        .publicationIdentifier(publicationIdentifier.toString())
-        .applicable(applicable)
-        .instanceType(instanceType)
+        .publicationId(publicationDetails.id())
+        .publicationBucketUri(publicationDetails.publicationBucketUri())
+        .publicationIdentifier(publicationDetails.identifier())
+        .publicationDetails(publicationDetails)
+        .applicable(publicationDetails.isApplicable())
+        .instanceType(publicationDetails.publicationType().getValue())
         .points(
             List.of(
                 new DbInstitutionPoints(
-                    institutionId,
+                    organizationId,
                     institutionPoints,
                     List.of(
                         new DbCreatorAffiliationPoints(
-                            creatorId, institutionId, institutionPoints)))))
+                            creatorId, organizationId, institutionPoints)))))
         .level(DbLevel.LEVEL_ONE)
         .channelType(randomElement(ChannelType.values()))
         .channelId(randomUri())
-        .publicationDate(publicationDate)
+        .publicationDate(publicationDetails.publicationDate())
         .internationalCollaboration(randomBoolean())
         .creatorCount(randomInteger())
         .createdDate(Instant.now())
@@ -65,12 +80,36 @@ public class DbCandidateFixtures {
             List.of(
                 DbCreator.builder()
                     .creatorId(creatorId)
-                    .affiliations(List.of(institutionId))
+                    .affiliations(List.of(organizationId))
                     .build()));
   }
 
-  public static DbCandidate randomCandidateWithYear(String year) {
-    return randomCandidateBuilder(true).publicationDate(publicationDate(year)).build();
+  public static DbPublication.Builder randomPublicationBuilder(
+      boolean applicable, URI organizationId) {
+    var creatorId = randomUri();
+    var publicationIdentifier = randomUUID();
+    var publicationId = generatePublicationId(publicationIdentifier);
+    var channel =
+        DbPublicationChannel.builder()
+            .id(randomUri())
+            .channelType(randomElement(ChannelType.values()))
+            .scientificValue(ScientificValue.LEVEL_ONE)
+            .build();
+    return DbPublication.builder()
+        .id(publicationId)
+        .identifier(publicationIdentifier.toString())
+        .applicable(applicable)
+        .publicationType(randomInstanceType())
+        .publicationChannels(List.of(channel))
+        .publicationDate(publicationDate(String.valueOf(CURRENT_YEAR)))
+        .internationalCollaboration(randomBoolean())
+        .modifiedDate(Instant.now())
+        .creators(
+            List.of(
+                DbCreator.builder()
+                    .creatorId(creatorId)
+                    .affiliations(List.of(organizationId))
+                    .build()));
   }
 
   private static DbPublicationDate publicationDate(String year) {

@@ -1,7 +1,8 @@
 package no.sikt.nva.nvi.common.model;
 
-import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import java.util.Arrays;
+import java.util.function.Predicate;
 
 public enum ScientificValue {
   NON_CANDIDATE("NonCandidateLevel"),
@@ -10,17 +11,15 @@ public enum ScientificValue {
   LEVEL_ONE("LevelOne"),
   LEVEL_TWO("LevelTwo");
 
-  @JsonValue private final String value;
+  private final String value;
 
   ScientificValue(String value) {
     this.value = value;
   }
 
-  public static ScientificValue parse(String value) {
-    return Arrays.stream(values())
-        .filter(scientificValue -> scientificValue.getValue().equalsIgnoreCase(value))
-        .findFirst()
-        .orElseThrow();
+  @JsonCreator
+  public static ScientificValue parse(String stringValue) {
+    return Arrays.stream(values()).filter(matchesEnumValue(stringValue)).findFirst().orElseThrow();
   }
 
   public boolean isValid() {
@@ -29,5 +28,11 @@ public enum ScientificValue {
 
   public String getValue() {
     return value;
+  }
+
+  private static Predicate<ScientificValue> matchesEnumValue(String stringValue) {
+    return value ->
+        value.name().equalsIgnoreCase(stringValue)
+            || value.getValue().equalsIgnoreCase(stringValue);
   }
 }

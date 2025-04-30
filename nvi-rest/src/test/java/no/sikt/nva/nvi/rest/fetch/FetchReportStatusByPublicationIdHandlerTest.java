@@ -1,11 +1,10 @@
 package no.sikt.nva.nvi.rest.fetch;
 
-import static no.sikt.nva.nvi.common.LocalDynamoTestSetup.initializeTestDatabase;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertNonCandidateRequest;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.setupReportedCandidate;
-import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.periodRepositoryReturningClosedPeriod;
-import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.periodRepositoryReturningOpenedPeriod;
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeriod;
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -20,6 +19,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.util.Map;
+import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.UpsertRequestBuilder;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
@@ -46,23 +46,27 @@ class FetchReportStatusByPublicationIdHandlerTest {
   private ByteArrayOutputStream output;
   private CandidateRepository candidateRepository;
   private PeriodRepository periodRepository;
+  private TestScenario scenario;
+  private FetchReportStatusByPublicationIdHandler handler;
 
   @BeforeEach
-  public void setUp() {
+  void setUp() {
+    scenario = new TestScenario();
+    setupOpenPeriod(scenario, CURRENT_YEAR);
+    candidateRepository = scenario.getCandidateRepository();
+    periodRepository = scenario.getPeriodRepository();
     output = new ByteArrayOutputStream();
     context = new FakeContext();
-    candidateRepository = new CandidateRepository(initializeTestDatabase());
-    periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
+    handler =
+        new FetchReportStatusByPublicationIdHandler(
+            candidateRepository, periodRepository, ENVIRONMENT);
   }
 
   @Test
   void shouldReturnReportedYearWhenPublicationIsReportedInClosedPeriod() throws IOException {
     var dao = setupReportedCandidate(candidateRepository, String.valueOf(CURRENT_YEAR));
     var reportedCandidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
-    periodRepository = periodRepositoryReturningClosedPeriod(CURRENT_YEAR);
-    var handler =
-        new FetchReportStatusByPublicationIdHandler(
-            candidateRepository, periodRepository, ENVIRONMENT);
+    setupClosedPeriod(scenario, CURRENT_YEAR);
 
     handler.handleRequest(createRequest(reportedCandidate.getPublicationId()), output, context);
 
@@ -82,10 +86,6 @@ class FetchReportStatusByPublicationIdHandlerTest {
   void shouldReturnPendingReviewWhenPublicationIsCandidateWithOnlyPendingApprovalsInOpenPeriod()
       throws IOException {
     var pendingCandidate = setupCandidateWithPublicationYear(CURRENT_YEAR);
-    periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
-    var handler =
-        new FetchReportStatusByPublicationIdHandler(
-            candidateRepository, periodRepository, ENVIRONMENT);
 
     handler.handleRequest(createRequest(pendingCandidate.getPublicationId()), output, context);
 
@@ -115,10 +115,6 @@ class FetchReportStatusByPublicationIdHandlerTest {
     var candidate = upsert(upsertCandidateRequest);
     candidate.updateApproval(
         new UpdateStatusRequest(institution1, approvalStatus, randomString(), randomString()));
-    periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
-    var handler =
-        new FetchReportStatusByPublicationIdHandler(
-            candidateRepository, periodRepository, ENVIRONMENT);
 
     handler.handleRequest(createRequest(candidate.getPublicationId()), output, context);
 
@@ -146,10 +142,6 @@ class FetchReportStatusByPublicationIdHandlerTest {
     candidate.updateApproval(
         new UpdateStatusRequest(
             institution2, ApprovalStatus.APPROVED, randomString(), randomString()));
-    periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
-    var handler =
-        new FetchReportStatusByPublicationIdHandler(
-            candidateRepository, periodRepository, ENVIRONMENT);
 
     handler.handleRequest(createRequest(candidate.getPublicationId()), output, context);
 
@@ -177,10 +169,6 @@ class FetchReportStatusByPublicationIdHandlerTest {
     candidate.updateApproval(
         new UpdateStatusRequest(
             institution2, ApprovalStatus.REJECTED, randomString(), randomString()));
-    periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
-    var handler =
-        new FetchReportStatusByPublicationIdHandler(
-            candidateRepository, periodRepository, ENVIRONMENT);
 
     handler.handleRequest(createRequest(candidate.getPublicationId()), output, context);
 
@@ -200,10 +188,7 @@ class FetchReportStatusByPublicationIdHandlerTest {
   void shouldReturnNotReportedWhenPublicationIsCandidateIsNotReportedInClosedPeriod()
       throws IOException {
     var pendingCandidate = setupCandidateWithPublicationYear(CURRENT_YEAR);
-    periodRepository = periodRepositoryReturningClosedPeriod(CURRENT_YEAR);
-    var handler =
-        new FetchReportStatusByPublicationIdHandler(
-            candidateRepository, periodRepository, ENVIRONMENT);
+    setupClosedPeriod(scenario, CURRENT_YEAR);
 
     handler.handleRequest(createRequest(pendingCandidate.getPublicationId()), output, context);
 
@@ -224,10 +209,6 @@ class FetchReportStatusByPublicationIdHandlerTest {
     var pendingCandidate = setupCandidateWithPublicationYear(CURRENT_YEAR);
     var upsertRequest = createUpsertNonCandidateRequest(pendingCandidate.getPublicationId());
     Candidate.updateNonCandidate(upsertRequest, candidateRepository);
-    periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
-    var handler =
-        new FetchReportStatusByPublicationIdHandler(
-            candidateRepository, periodRepository, ENVIRONMENT);
 
     handler.handleRequest(createRequest(pendingCandidate.getPublicationId()), output, context);
 
@@ -245,9 +226,6 @@ class FetchReportStatusByPublicationIdHandlerTest {
   @Test
   void shouldReturnNotCandidateWhenPublicationIsNotFound() throws IOException {
     var notFoundPublicationId = randomUri();
-    var handler =
-        new FetchReportStatusByPublicationIdHandler(
-            candidateRepository, periodRepository, ENVIRONMENT);
 
     handler.handleRequest(createRequest(notFoundPublicationId), output, context);
 

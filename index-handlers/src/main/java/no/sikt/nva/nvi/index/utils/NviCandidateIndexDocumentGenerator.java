@@ -345,7 +345,7 @@ public final class NviCandidateIndexDocumentGenerator {
 
   public static Optional<UnverifiedNviCreatorDto> getUnverifiedNviCreatorIfPresent(
       JsonNode contributor, Candidate candidate) {
-    return candidate.getPublicationDetails().getUnverifiedCreators().stream()
+    return candidate.getPublicationDetails().unverifiedCreators().stream()
         .filter(creator -> creator.name().equals(extractName(contributor.at(JSON_PTR_IDENTITY))))
         .findFirst();
   }

@@ -7,7 +7,7 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmut
 @DynamoDbImmutable(builder = DbPublicationChannel.Builder.class)
 public record DbPublicationChannel(
     URI id,
-    String channelType,
+    ChannelType channelType,
     String identifier,
     String name,
     String year,
@@ -22,7 +22,7 @@ public record DbPublicationChannel(
   public static final class Builder {
 
     private URI builderId;
-    private String builderChannelType;
+    private ChannelType builderChannelType;
     private String builderIdentifier;
     private String builderName;
     private String builderYear;
@@ -32,16 +32,12 @@ public record DbPublicationChannel(
 
     private Builder() {}
 
-    public static Builder aDbPublicationChannel() {
-      return new Builder();
-    }
-
     public Builder id(URI id) {
       this.builderId = id;
       return this;
     }
 
-    public Builder channelType(String channelType) {
+    public Builder channelType(ChannelType channelType) {
       this.builderChannelType = channelType;
       return this;
     }
