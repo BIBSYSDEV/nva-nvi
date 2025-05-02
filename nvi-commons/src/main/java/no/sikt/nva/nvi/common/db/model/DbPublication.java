@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.common.db.model;
 
 import static java.util.Collections.emptyList;
+import static java.util.Objects.nonNull;
 
 import java.net.URI;
 import java.time.Instant;
@@ -8,6 +9,7 @@ import java.util.List;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreatorType;
 import no.sikt.nva.nvi.common.service.model.InstanceType;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbConvertedBy;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbIgnore;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmutable;
 
 @DynamoDbImmutable(builder = DbPublication.Builder.class)
@@ -22,9 +24,9 @@ public record DbPublication(
     DbPages pages,
     DbPublicationDate publicationDate,
     InstanceType publicationType,
-    boolean isApplicable,
-    boolean isInternationalCollaboration,
-    List<DbPublicationChannel> publicationChannels,
+    Boolean applicable,
+    Boolean internationalCollaboration,
+    DbPublicationChannel publicationChannel,
     List<DbContributor> contributors,
     @DynamoDbConvertedBy(DbCreatorTypeListConverter.class) List<DbCreatorType> creators,
     List<DbOrganization> topLevelOrganizations,
@@ -32,6 +34,28 @@ public record DbPublication(
 
   public static Builder builder() {
     return new Builder();
+  }
+
+  @DynamoDbIgnore
+  public Builder copy() {
+    return builder()
+        .id(id)
+        .publicationBucketUri(publicationBucketUri)
+        .identifier(identifier)
+        .title(title)
+        .status(status)
+        .language(language)
+        .abstractText(abstractText)
+        .pages(pages)
+        .publicationDate(publicationDate)
+        .publicationType(publicationType)
+        .applicable(applicable)
+        .internationalCollaboration(internationalCollaboration)
+        .publicationChannel(publicationChannel)
+        .contributors(contributors)
+        .creators(creators)
+        .topLevelOrganizations(topLevelOrganizations)
+        .modifiedDate(modifiedDate);
   }
 
   public static final class Builder {
@@ -46,9 +70,9 @@ public record DbPublication(
     private DbPages builderPages;
     private DbPublicationDate builderPublicationDate;
     private InstanceType builderPublicationType;
-    private boolean builderIsApplicable;
-    private boolean builderIsInternationalCollaboration;
-    private List<DbPublicationChannel> builderPublicationChannels = emptyList();
+    private Boolean builderIsApplicable;
+    private Boolean builderIsInternationalCollaboration;
+    private DbPublicationChannel builderPublicationChannel;
     private List<DbContributor> builderContributors = emptyList();
     private List<DbCreatorType> builderCreators = emptyList();
     private List<DbOrganization> builderTopLevelOrganizations = emptyList();
@@ -106,33 +130,42 @@ public record DbPublication(
       return this;
     }
 
-    public Builder applicable(boolean isApplicable) {
-      this.builderIsApplicable = isApplicable;
+    public Builder applicable(Boolean applicable) {
+      this.builderIsApplicable = applicable;
       return this;
     }
 
-    public Builder internationalCollaboration(boolean isInternationalCollaboration) {
-      this.builderIsInternationalCollaboration = isInternationalCollaboration;
+    public Builder internationalCollaboration(Boolean internationalCollaboration) {
+      this.builderIsInternationalCollaboration = internationalCollaboration;
       return this;
     }
 
+    // FIXME
+    @DynamoDbIgnore
     public Builder publicationChannels(List<DbPublicationChannel> publicationChannels) {
-      this.builderPublicationChannels = List.copyOf(publicationChannels);
+      if (nonNull(publicationChannels) && !publicationChannels.isEmpty()) {
+        this.builderPublicationChannel = publicationChannels.getFirst();
+      }
+      return this;
+    }
+
+    public Builder publicationChannel(DbPublicationChannel publicationChannel) {
+      this.builderPublicationChannel = publicationChannel;
       return this;
     }
 
     public Builder contributors(List<DbContributor> contributors) {
-      this.builderContributors = List.copyOf(contributors);
+      this.builderContributors = contributors;
       return this;
     }
 
     public Builder creators(List<DbCreatorType> creators) {
-      this.builderCreators = List.copyOf(creators);
+      this.builderCreators = creators;
       return this;
     }
 
     public Builder topLevelOrganizations(List<DbOrganization> topLevelOrganizations) {
-      this.builderTopLevelOrganizations = List.copyOf(topLevelOrganizations);
+      this.builderTopLevelOrganizations = topLevelOrganizations;
       return this;
     }
 
@@ -155,7 +188,7 @@ public record DbPublication(
           builderPublicationType,
           builderIsApplicable,
           builderIsInternationalCollaboration,
-          builderPublicationChannels,
+          builderPublicationChannel,
           builderContributors,
           builderCreators,
           builderTopLevelOrganizations,

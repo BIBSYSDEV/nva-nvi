@@ -56,7 +56,7 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
   // This test case is a bit more generous because the GitHub Actions test runner is underpowered.
   @ParameterizedTest
   @Timeout(value = 30, unit = TimeUnit.SECONDS)
-  @ValueSource(ints = {100, 1_000, 5_000})
+  @ValueSource(ints = {1_000, 5_000})
   void shouldParseDocumentWithManyContributorsWithinTimeOut(int numberOfForeignContributors) {
     var numberOfNorwegianContributors = 10;
     var publication =

@@ -51,18 +51,13 @@ class MigrationTests {
   void shouldWriteCandidateWithNotesAndApprovalsAsIsWhenMigrating() {
     periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
     var candidate = setupCandidateWithApprovalAndNotes();
-    var foo = Candidate.fetch(candidate::getIdentifier, candidateRepository, periodRepository);
     batchScanUtil.migrateAndUpdateVersion(DEFAULT_PAGE_SIZE, null, emptyList());
     var migratedCandidate =
         Candidate.fetch(candidate::getIdentifier, candidateRepository, periodRepository);
     assertThat(migratedCandidate)
         .usingRecursiveComparison()
         .ignoringCollectionOrder()
-        .isEqualTo(foo);
-    //    assertThat(migratedCandidate)
-    //        .usingRecursiveComparison()
-    //        .ignoringCollectionOrder()
-    //        .isEqualTo(candidate);
+        .isEqualTo(candidate);
   }
 
   @Test

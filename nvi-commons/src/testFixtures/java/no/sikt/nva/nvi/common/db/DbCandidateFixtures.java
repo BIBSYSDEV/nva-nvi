@@ -9,6 +9,7 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 
+import java.math.BigDecimal;
 import java.net.URI;
 import java.time.Instant;
 import java.util.List;
@@ -51,22 +52,14 @@ public class DbCandidateFixtures {
   public static DbCandidate.Builder randomCandidateBuilder(
       URI organizationId, DbPublication publicationDetails) {
     var creatorId = randomUri();
-    var institutionPoints = TestUtils.randomBigDecimal();
     return DbCandidate.builder()
         .publicationId(publicationDetails.id())
         .publicationBucketUri(publicationDetails.publicationBucketUri())
         .publicationIdentifier(publicationDetails.identifier())
         .publicationDetails(publicationDetails)
-        .applicable(publicationDetails.isApplicable())
+        .applicable(publicationDetails.applicable())
         .instanceType(publicationDetails.publicationType().getValue())
-        .points(
-            List.of(
-                new DbInstitutionPoints(
-                    organizationId,
-                    institutionPoints,
-                    List.of(
-                        new DbCreatorAffiliationPoints(
-                            creatorId, organizationId, institutionPoints)))))
+        .points(List.of(generateInstitutionPoints(organizationId, creatorId)))
         .level(DbLevel.LEVEL_ONE)
         .channelType(randomElement(ChannelType.values()))
         .channelId(randomUri())
@@ -93,11 +86,12 @@ public class DbCandidateFixtures {
         DbPublicationChannel.builder()
             .id(randomUri())
             .channelType(randomElement(ChannelType.values()))
-            .scientificValue(ScientificValue.LEVEL_ONE)
+            .scientificValue(ScientificValue.LEVEL_ONE.getValue())
             .build();
     return DbPublication.builder()
         .id(publicationId)
         .identifier(publicationIdentifier.toString())
+        .publicationBucketUri(randomUri())
         .applicable(applicable)
         .publicationType(randomInstanceType())
         .publicationChannels(List.of(channel))
@@ -114,5 +108,17 @@ public class DbCandidateFixtures {
 
   private static DbPublicationDate publicationDate(String year) {
     return new DbPublicationDate(year, null, null);
+  }
+
+  private static DbInstitutionPoints generateInstitutionPoints(URI institutionId, URI creatorId) {
+    var points = BigDecimal.ONE;
+    return DbInstitutionPoints.builder()
+        .institutionId(randomUri())
+        .points(points)
+        .institutionId(institutionId)
+        .points(points)
+        .creatorAffiliationPoints(
+            List.of(new DbCreatorAffiliationPoints(creatorId, institutionId, points)))
+        .build();
   }
 }

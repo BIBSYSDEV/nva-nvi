@@ -25,6 +25,7 @@ import no.sikt.nva.nvi.common.dto.PageCountDto;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.dto.VerificationStatus;
+import no.sikt.nva.nvi.common.model.ScientificValue;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
@@ -54,11 +55,14 @@ public record PublicationDetails(
 
   public static PublicationDetails from(UpsertNviCandidateRequest upsertRequest) {
     var publicationDto = upsertRequest.publicationDetails();
+
+    // FIXME: clean up this code
+    var channelLevel = ScientificValue.parse(upsertRequest.level()).getValue();
     var publicationChannel =
         new PublicationChannel(
             ChannelType.parse(upsertRequest.channelType()),
             upsertRequest.publicationChannelId(),
-            upsertRequest.level());
+            channelLevel);
 
     var publicationChannels =
         publicationDto.publicationChannels().stream().map(PublicationChannel::from).toList();
@@ -113,13 +117,12 @@ public record PublicationDetails(
         .withPublicationDate(dateFromDbDate(dbCandidate.publicationDate()))
         .withPublicationType(dbDetails.publicationType())
         .withPageCount(getPages(dbDetails))
-        .withIsApplicable(dbDetails.isApplicable())
-        .withIsInternationalCollaboration(dbDetails.isInternationalCollaboration())
+        .withIsApplicable(dbDetails.applicable())
+        .withIsInternationalCollaboration(dbDetails.internationalCollaboration())
         .withPublicationChannel(
             new PublicationChannel(
                 dbCandidate.channelType(), dbCandidate.channelId(), dbCandidate.level().getValue()))
-        .withPublicationChannels(
-            dbDetails.publicationChannels().stream().map(PublicationChannel::from).toList())
+        .withPublicationChannels(mapToPublicationChannels(dbDetails))
         .withContributors(
             contributorsFromDbContributors(dbDetails.contributors())) // FIXME: Add creators?
         .withVerifiedNviCreators(verifiedCreators)
@@ -130,6 +133,14 @@ public record PublicationDetails(
                 : emptyList())
         .withModifiedDate(dbDetails.modifiedDate())
         .build();
+  }
+
+  // FIXME
+  private static List<PublicationChannel> mapToPublicationChannels(DbPublication dbDetails) {
+    return dbDetails.publicationChannel() != null
+        ? List.of(PublicationChannel.from(dbDetails.publicationChannel()))
+        : emptyList();
+    //    return dbDetails.publicationChannels().stream().map(PublicationChannel::from).toList();
   }
 
   private static PageCountDto getPages(DbPublication dbDetails) {
@@ -153,6 +164,7 @@ public record PublicationDetails(
         publicationChannels.stream().map(PublicationChannel::toDbPublicationChannel).toList();
     return DbPublication.builder()
         .id(publicationId)
+        .publicationBucketUri(publicationBucketUri)
         .identifier(publicationIdentifier)
         .title(title)
         .status(status)

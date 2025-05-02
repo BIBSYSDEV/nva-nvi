@@ -1,7 +1,6 @@
 package no.sikt.nva.nvi.common.db.model;
 
 import java.net.URI;
-import no.sikt.nva.nvi.common.model.ScientificValue;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmutable;
 
 @DynamoDbImmutable(builder = DbPublicationChannel.Builder.class)
@@ -11,7 +10,7 @@ public record DbPublicationChannel(
     String identifier,
     String name,
     String year,
-    ScientificValue scientificValue,
+    String scientificValue,
     String onlineIssn,
     String printIssn) {
 
@@ -26,7 +25,7 @@ public record DbPublicationChannel(
     private String builderIdentifier;
     private String builderName;
     private String builderYear;
-    private ScientificValue builderScientificValue;
+    private String builderScientificValue;
     private String builderOnlineIssn;
     private String builderPrintIssn;
 
@@ -57,7 +56,7 @@ public record DbPublicationChannel(
       return this;
     }
 
-    public Builder scientificValue(ScientificValue scientificValue) {
+    public Builder scientificValue(String scientificValue) {
       this.builderScientificValue = scientificValue;
       return this;
     }

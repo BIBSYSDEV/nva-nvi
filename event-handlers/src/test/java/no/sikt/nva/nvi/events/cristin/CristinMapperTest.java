@@ -598,7 +598,7 @@ class CristinMapperTest {
     assertThat(nviCandidate.level(), is(equalTo(DbLevel.LEVEL_TWO)));
   }
 
-  private static CristinNviReport nviReportWithInstanceTypeAndReference(
+  protected static CristinNviReport nviReportWithInstanceTypeAndReference(
       String instanceType, String reference) {
     var institutionIdentifier = randomString();
     var creators =

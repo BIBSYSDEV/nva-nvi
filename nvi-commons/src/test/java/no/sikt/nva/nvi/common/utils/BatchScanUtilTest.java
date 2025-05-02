@@ -43,7 +43,7 @@ class BatchScanUtilTest {
   private BatchScanUtil batchScanUtil;
   private CandidateRepository candidateRepository;
   private TestScenario scenario;
-  private SampleExpandedPublicationFactory publicationFactory;
+  private SampleExpandedPublicationFactory publicationFactory; // FIXME
 
   @BeforeEach
   void setup() {

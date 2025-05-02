@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.common.db.model;
 
-import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbIgnore;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmutable;
 
 @DynamoDbImmutable(builder = DbPublicationDate.Builder.class)
@@ -8,11 +7,6 @@ public record DbPublicationDate(String year, String month, String day) {
 
   public static Builder builder() {
     return new Builder();
-  }
-
-  @DynamoDbIgnore
-  public DbPublicationDate copy() {
-    return new DbPublicationDate(year, month, day);
   }
 
   public static final class Builder {

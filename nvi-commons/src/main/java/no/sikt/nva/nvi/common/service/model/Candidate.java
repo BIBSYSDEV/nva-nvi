@@ -146,7 +146,7 @@ public final class Candidate {
       PeriodStatus period) {
     var details = candidateDao.candidate().publicationDetails();
     this.identifier = candidateDao.identifier();
-    this.applicable = details.isApplicable();
+    this.applicable = details.applicable();
     this.approvals = mapToApprovalsMap(repository, approvals);
     this.notes = mapToNotesMap(repository, notes);
     this.institutionPoints = mapToInstitutionPoints(candidateDao);
@@ -154,7 +154,7 @@ public final class Candidate {
     this.period = period;
     this.publicationDetails = PublicationDetails.from(candidateDao);
     this.basePoints = candidateDao.candidate().basePoints();
-    this.internationalCollaboration = details.isInternationalCollaboration();
+    this.internationalCollaboration = details.internationalCollaboration();
     this.collaborationFactor = candidateDao.candidate().collaborationFactor();
     this.creatorShareCount = candidateDao.candidate().creatorShareCount();
     this.createdDate = candidateDao.candidate().createdDate();
@@ -655,6 +655,7 @@ public final class Candidate {
     return !Objects.equals(newType, currentType);
   }
 
+  // FIXME: Add parsing to value class? Original level is mis-mapped to NonCandidateLevel
   private static boolean levelIsUpdated(UpsertNviCandidateRequest request, Candidate candidate) {
     return !Objects.equals(request.level(), candidate.getScientificLevel());
   }
@@ -730,15 +731,15 @@ public final class Candidate {
         .publicationDetails(publicationDetails)
         .publicationBucketUri(request.publicationBucketUri())
         .publicationIdentifier(publicationDetails.identifier())
-        .applicable(publicationDetails.isApplicable())
+        .applicable(publicationDetails.applicable())
         .creators(allCreators)
         .creatorShareCount(request.creatorShareCount())
-        .channelType(ChannelType.parse(request.channelType()))
-        .channelId(request.publicationChannelId())
-        .level(DbLevel.parse(request.level()))
+        .channelId(publicationDetails.publicationChannel().id())
+        .channelType(publicationDetails.publicationChannel().channelType())
+        .level(DbLevel.parse(publicationDetails.publicationChannel().scientificValue()))
         .instanceType(publicationDetails.publicationType().getValue())
         .publicationDate(publicationDetails.publicationDate())
-        .internationalCollaboration(publicationDetails.isInternationalCollaboration())
+        .internationalCollaboration(publicationDetails.internationalCollaboration())
         .collaborationFactor(adjustScaleAndRoundingMode(request.collaborationFactor()))
         .basePoints(adjustScaleAndRoundingMode(request.basePoints()))
         .points(mapToPoints(request.institutionPoints()))
@@ -766,11 +767,19 @@ public final class Candidate {
     return repository.findByPublicationId(publicationId).isPresent();
   }
 
-  // TODO: Verify this
+  // TODO: clean up
   private static CandidateDao updateCandidateToNonApplicable(CandidateDao candidateDao) {
+    var publicationDetails =
+        candidateDao.candidate().publicationDetails().copy().applicable(false).build();
     return candidateDao
         .copy()
-        .candidate(candidateDao.candidate().copy().applicable(false).build())
+        .candidate(
+            candidateDao
+                .candidate()
+                .copy()
+                .applicable(false)
+                .publicationDetails(publicationDetails)
+                .build())
         .periodYear(null)
         .build();
   }
@@ -803,7 +812,7 @@ public final class Candidate {
     var dbCandidate =
         DbCandidate.builder()
             .publicationDetails(dbPublication)
-            .applicable(dbPublication.isApplicable())
+            .applicable(dbPublication.applicable())
             .creators(dbPublication.creators())
             .creatorShareCount(creatorShareCount)
             .channelType(getPublicationChannelType())
@@ -811,7 +820,7 @@ public final class Candidate {
             .level(DbLevel.parse(getScientificLevel()))
             .instanceType(dbPublication.publicationType().getValue())
             .publicationDate(dbPublication.publicationDate())
-            .internationalCollaboration(dbPublication.isInternationalCollaboration())
+            .internationalCollaboration(dbPublication.internationalCollaboration())
             .collaborationFactor(adjustScaleAndRoundingMode(collaborationFactor))
             .basePoints(adjustScaleAndRoundingMode(basePoints))
             .points(mapToPoints(institutionPoints))

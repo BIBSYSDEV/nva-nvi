@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.common.service;
 
 import static java.util.Collections.emptySet;
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpdateStatusRequest;
@@ -50,13 +51,13 @@ import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
 import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.db.model.DbContributor;
+import no.sikt.nva.nvi.common.db.model.DbPages;
 import no.sikt.nva.nvi.common.db.model.DbPublication;
 import no.sikt.nva.nvi.common.db.model.DbPublicationChannel;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
 import no.sikt.nva.nvi.common.dto.ContributorDto;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
-import no.sikt.nva.nvi.common.model.ScientificValue;
 import no.sikt.nva.nvi.common.service.dto.ApprovalDto;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatusDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
@@ -547,6 +548,7 @@ class CandidateTest extends CandidateTestSetup {
     return points.stream().map(DbInstitutionPoints::from).toList();
   }
 
+  // TODO: Replace this with a mapping to Candidate, instead of checking what is in the DB
   private DbCandidate generateExpectedCandidate(
       Candidate candidate, UpsertNviCandidateRequest request) {
     var dtoPublicationDetails = request.publicationDetails();
@@ -555,17 +557,20 @@ class CandidateTest extends CandidateTestSetup {
         DbPublicationChannel.builder()
             .id(request.publicationChannelId())
             .channelType(ChannelType.parse(request.channelType()))
-            .scientificValue(ScientificValue.parse(request.level()))
+            //            .scientificValue(ScientificValue.parse(request.level()))
+            .scientificValue(request.level())
             .build();
+
     var dbPublicationDetails =
         DbPublication.builder()
             .id(request.publicationId())
             .identifier(dtoPublicationDetails.identifier())
+            .publicationBucketUri(request.publicationBucketUri())
+            .title(dtoPublicationDetails.title())
             .status(dtoPublicationDetails.status())
             .publicationType(dtoPublicationDetails.publicationType())
-            .publicationChannels(List.of(dbPublicationChannel))
+            .publicationChannel(dbPublicationChannel)
             .publicationDate(mapToDbPublicationDate(request.publicationDate()))
-            .applicable(dtoPublicationDetails.isApplicable())
             .applicable(dtoPublicationDetails.isApplicable())
             .internationalCollaboration(dtoPublicationDetails.isInternationalCollaboration())
             .modifiedDate(dtoPublicationDetails.modifiedDate())
@@ -574,10 +579,13 @@ class CandidateTest extends CandidateTestSetup {
                 dtoPublicationDetails.contributors().stream()
                     .map(CandidateTest::dbContributorFromContributor)
                     .toList())
+            .abstractText(dtoPublicationDetails.abstractText())
+            .pages(dbPagesFromRequest(request))
             .build();
     var dbCandidate =
         DbCandidate.builder()
             .publicationId(request.publicationId())
+            .publicationIdentifier(dtoPublicationDetails.identifier())
             .publicationBucketUri(request.publicationBucketUri())
             .publicationDetails(dbPublicationDetails)
             .publicationDate(mapToDbPublicationDate(request.publicationDate()))
@@ -614,6 +622,18 @@ class CandidateTest extends CandidateTestSetup {
                 : "Unknown") // TODO: Handle null role
         .affiliations(
             contributor.affiliations().stream().map(Organization::toDbOrganization).toList())
+        .build();
+  }
+
+  private static DbPages dbPagesFromRequest(UpsertNviCandidateRequest request) {
+    var dtoPages = request.publicationDetails().pageCount();
+    if (isNull(dtoPages)) {
+      return null;
+    }
+    return DbPages.builder()
+        .firstPage(dtoPages.firstPage())
+        .lastPage(dtoPages.lastPage())
+        .pageCount(dtoPages.numberOfPages())
         .build();
   }
 }

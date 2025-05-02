@@ -45,6 +45,7 @@ import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbConvertedBy;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbIgnore;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbIgnoreNulls;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmutable;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondaryPartitionKey;
@@ -166,6 +167,7 @@ public final class CandidateDao extends Dao {
     return identifier;
   }
 
+  @DynamoDbIgnoreNulls
   @DynamoDbAttribute(DATA_FIELD)
   public DbCandidate candidate() {
     return candidate;
@@ -368,7 +370,7 @@ public final class CandidateDao extends Dao {
           .channelType(channelType)
           .channelId(channelId)
           .level(level)
-          .publicationDate(publicationDate.copy())
+          .publicationDate(publicationDate)
           .internationalCollaboration(internationalCollaboration)
           .collaborationFactor(collaborationFactor)
           .creatorCount(creatorCount)

@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.client.model.Organization;
-import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.dto.ContributorDto;
 import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
@@ -54,6 +53,7 @@ public class UpsertRequestBuilder {
     var publicationDetails = publicationBuilder.build();
     var creatorId = randomUri();
     var affiliationId = randomUri();
+    var channel = List.copyOf(publicationDetails.publicationChannels()).getFirst();
     return new UpsertRequestBuilder()
         .withPublicationDetails(publicationBuilder)
         .withPublicationBucketUri(randomUri())
@@ -62,9 +62,9 @@ public class UpsertRequestBuilder {
         .withIsInternationalCollaboration(publicationDetails.isInternationalCollaboration())
         .withVerifiedCreators(List.of(new VerifiedNviCreatorDto(creatorId, List.of(affiliationId))))
         .withUnverifiedCreators(emptyList())
-        .withChannelType(ChannelType.JOURNAL.getValue())
-        .withChannelId(randomUri())
-        .withLevel("LevelOne")
+        .withChannelType(channel.channelType())
+        .withChannelId(channel.id())
+        .withLevel(channel.scientificValue().getValue())
         .withInstanceType(publicationDetails.publicationType())
         .withPublicationDate(publicationDetails.publicationDate())
         .withCreatorShareCount(1)

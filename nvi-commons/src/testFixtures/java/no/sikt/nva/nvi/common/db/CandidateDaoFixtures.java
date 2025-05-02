@@ -28,6 +28,10 @@ public class CandidateDaoFixtures {
     return repository.create(candidate, List.of());
   }
 
+  public static CandidateDao createCandidateDao(DbCandidate candidate) {
+    return CandidateDao.builder().identifier(UUID.randomUUID()).candidate(candidate).build();
+  }
+
   public static List<CandidateDao> sortByIdentifier(List<CandidateDao> candidates, Integer limit) {
     var comparator = Comparator.comparing(CandidateDaoFixtures::getCharacterValues);
     return candidates.stream()

@@ -1,10 +1,11 @@
 package no.sikt.nva.nvi.events.persist;
 
 import static java.util.Collections.emptyList;
-import static no.sikt.nva.nvi.common.LocalDynamoTestSetup.initializeTestDatabase;
 import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequest;
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.model.InstanceTypeFixtures.randomInstanceType;
+import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
 import static no.sikt.nva.nvi.test.TestUtils.generateS3BucketUri;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
@@ -38,18 +39,16 @@ import java.time.Year;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
+import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.UpsertRequestBuilder;
-import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
-import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreatorType;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
@@ -58,8 +57,10 @@ import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.model.CandidateFixtures;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.queue.QueueClient;
+import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
+import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
@@ -67,6 +68,7 @@ import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliation
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import nva.commons.core.Environment;
 import nva.commons.logutils.LogUtils;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -79,19 +81,19 @@ class UpsertNviCandidateHandlerTest {
   public static final Context CONTEXT = mock(Context.class);
   public static final String ERROR_MESSAGE_BODY_INVALID = "Message body invalid";
   private static final String DLQ_QUEUE_URL = "test_dlq_url";
+  private TestScenario scenario;
   private UpsertNviCandidateHandler handler;
   private CandidateRepository candidateRepository;
   private PeriodRepository periodRepository;
-
   private QueueClient queueClient;
-
   private Environment environment;
 
   @BeforeEach
   void setup() {
-    candidateRepository = new CandidateRepository(initializeTestDatabase());
-    periodRepository =
-        PeriodRepositoryFixtures.periodRepositoryReturningOpenedPeriod(Year.now().getValue());
+    scenario = new TestScenario();
+    candidateRepository = scenario.getCandidateRepository();
+    periodRepository = scenario.getPeriodRepository();
+    setupOpenPeriod(scenario, CURRENT_YEAR);
     queueClient = mock(QueueClient.class);
     environment = mock(Environment.class);
     when(environment.readEnv("UPSERT_CANDIDATE_DLQ_QUEUE_URL")).thenReturn(DLQ_QUEUE_URL);
@@ -132,16 +134,22 @@ class UpsertNviCandidateHandlerTest {
   @Test
   void shouldSaveNewNviCandidateWithPendingInstitutionApprovalsWhenCandidateDoesNotExist() {
     var evaluatedNviCandidate = randomEvaluatedNviCandidate().build();
+    var expectedApprovals = getExpectedApprovals(evaluatedNviCandidate);
     var sqsEvent = createEvent(createEvalMessage(evaluatedNviCandidate));
+
     handler.handleRequest(sqsEvent, CONTEXT);
-    var actualPersistedCandidateDao =
-        candidateRepository
-            .findByPublicationId(evaluatedNviCandidate.publicationId())
-            .orElseThrow();
-    var actualApprovals = fetchApprovals(actualPersistedCandidateDao);
-    assertEquals(getExpectedApprovals(evaluatedNviCandidate), actualApprovals);
-    assertEquals(
-        getExpectedCandidate(evaluatedNviCandidate), actualPersistedCandidateDao.candidate());
+
+    var actualCandidate =
+        scenario.getCandidateByPublicationId(evaluatedNviCandidate.publicationId());
+    var actualApprovals = actualCandidate.getApprovals();
+    Assertions.assertThat(actualApprovals)
+        .hasSize(expectedApprovals.size())
+        .allSatisfy(
+            (id, approval) -> {
+              Assertions.assertThat(approval)
+                  .extracting(Approval::getInstitutionId, Approval::getStatus)
+                  .contains(id, ApprovalStatus.PENDING);
+            });
   }
 
   @Test
@@ -152,7 +160,6 @@ class UpsertNviCandidateHandlerTest {
     handler.handleRequest(createEvent(eventMessage), CONTEXT);
     var updatedCandidate =
         Candidate.fetch(candidate::getIdentifier, candidateRepository, periodRepository);
-
     assertThat(updatedCandidate.isApplicable(), is(false));
   }
 
@@ -209,18 +216,17 @@ class UpsertNviCandidateHandlerTest {
             .withVerifiedCreators(emptyList())
             .withUnverifiedCreators(unverifiedCreators)
             .build();
-    var expectedCreatorCount = unverifiedCreators.size();
 
     var sqsEvent = createEvent(createEvalMessage(evaluatedNviCandidate));
     handler.handleRequest(sqsEvent, CONTEXT);
-    var actualPersistedCandidateDao =
-        candidateRepository
-            .findByPublicationId(evaluatedNviCandidate.publicationId())
-            .orElseThrow();
 
-    assertEquals(expectedCreatorCount, actualPersistedCandidateDao.candidate().creators().size());
-    assertEquals(
-        getExpectedCandidate(evaluatedNviCandidate), actualPersistedCandidateDao.candidate());
+    var actualCandidate =
+        scenario.getCandidateByPublicationId(evaluatedNviCandidate.publicationId());
+    var actualNviCreators = actualCandidate.getPublicationDetails().getNviCreators();
+    Assertions.assertThat(actualNviCreators)
+        .usingRecursiveComparison()
+        .ignoringCollectionOrder()
+        .isEqualTo(unverifiedCreators);
   }
 
   @Test
@@ -229,19 +235,23 @@ class UpsertNviCandidateHandlerTest {
         List.of(new UnverifiedNviCreatorDto(randomString(), List.of(randomUri())));
     var evaluatedNviCandidate =
         randomEvaluatedNviCandidate().withUnverifiedCreators(unverifiedCreators).build();
-    var expectedCreatorCount =
-        evaluatedNviCandidate.verifiedCreators().size() + unverifiedCreators.size();
+    var expectedNviCreators =
+        Stream.concat(
+                evaluatedNviCandidate.verifiedCreators().stream(),
+                evaluatedNviCandidate.unverifiedCreators().stream())
+            .map(NviCreatorDto.class::cast)
+            .toList();
 
     var sqsEvent = createEvent(createEvalMessage(evaluatedNviCandidate));
     handler.handleRequest(sqsEvent, CONTEXT);
-    var actualPersistedCandidateDao =
-        candidateRepository
-            .findByPublicationId(evaluatedNviCandidate.publicationId())
-            .orElseThrow();
 
-    assertEquals(expectedCreatorCount, actualPersistedCandidateDao.candidate().creators().size());
-    assertEquals(
-        getExpectedCandidate(evaluatedNviCandidate), actualPersistedCandidateDao.candidate());
+    var actualCandidate =
+        scenario.getCandidateByPublicationId(evaluatedNviCandidate.publicationId());
+    var actualNviCreators = actualCandidate.getPublicationDetails().getNviCreators();
+    Assertions.assertThat(actualNviCreators)
+        .usingRecursiveComparison()
+        .ignoringCollectionOrder()
+        .isEqualTo(expectedNviCreators);
   }
 
   @Test
@@ -341,12 +351,6 @@ class UpsertNviCandidateHandlerTest {
   private static List<DbInstitutionPoints> mapToInstitutionPoints(
       List<InstitutionPoints> institutionPoints) {
     return institutionPoints.stream().map(DbInstitutionPoints::from).toList();
-  }
-
-  private List<DbApprovalStatus> fetchApprovals(CandidateDao actualPersistedCandidateDao) {
-    return candidateRepository.fetchApprovals(actualPersistedCandidateDao.identifier()).stream()
-        .map(ApprovalStatusDao::approvalStatus)
-        .toList();
   }
 
   private List<DbApprovalStatus> getExpectedApprovals(

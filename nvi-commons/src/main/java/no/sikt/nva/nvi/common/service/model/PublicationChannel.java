@@ -1,13 +1,15 @@
 package no.sikt.nva.nvi.common.service.model;
 
+import static java.util.Objects.nonNull;
+
 import java.net.URI;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.db.model.DbPublicationChannel;
 import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
-import no.sikt.nva.nvi.common.model.ScientificValue;
 
 // FIXME: Use ScientificValue enum
 // FIXME: Move ChannelType enum to commons and update it
+// TODO: Refactor level -> scientificValue
 public record PublicationChannel(ChannelType channelType, URI id, String level) {
 
   public static PublicationChannel from(PublicationChannelDto dto) {
@@ -16,17 +18,19 @@ public record PublicationChannel(ChannelType channelType, URI id, String level) 
   }
 
   public static PublicationChannel from(DbPublicationChannel dbPublicationChannel) {
+    var scientificValue =
+        nonNull(dbPublicationChannel.scientificValue())
+            ? dbPublicationChannel.scientificValue()
+            : null;
     return new PublicationChannel(
-        dbPublicationChannel.channelType(),
-        dbPublicationChannel.id(),
-        dbPublicationChannel.scientificValue().getValue());
+        dbPublicationChannel.channelType(), dbPublicationChannel.id(), scientificValue);
   }
 
   public DbPublicationChannel toDbPublicationChannel() {
     return DbPublicationChannel.builder()
         .id(id)
         .channelType(channelType)
-        .scientificValue(ScientificValue.parse(level))
+        .scientificValue(level)
         .build();
   }
 }

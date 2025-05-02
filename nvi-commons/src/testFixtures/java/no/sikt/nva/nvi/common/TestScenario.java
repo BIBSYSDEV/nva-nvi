@@ -91,6 +91,11 @@ public class TestScenario {
     return defaultOrganization;
   }
 
+  public Candidate getCandidateByPublicationId(URI publicationId) {
+    return Candidate.fetchByPublicationId(
+        () -> publicationId, candidateRepository, periodRepository);
+  }
+
   public Candidate upsertCandidate(UpsertNviCandidateRequest request) {
     Candidate.upsert(request, candidateRepository, periodRepository);
     return Candidate.fetchByPublicationId(

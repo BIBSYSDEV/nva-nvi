@@ -28,6 +28,8 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints.DbCreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
+import no.sikt.nva.nvi.common.db.model.DbPublication;
+import no.sikt.nva.nvi.common.db.model.DbPublicationChannel;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
@@ -98,27 +100,61 @@ public final class CristinMapper {
 
   // TODO: Extract creators from dbh_forskres_kontroll, remove Jacoco annotation when implemented
   public DbCandidate toDbCandidate(CristinNviReport cristinNviReport) {
-    var now = Instant.now();
     var points = calculatePoints(cristinNviReport);
+    var publicationDetails = toDbPublication(cristinNviReport);
     return DbCandidate.builder()
-        .publicationId(constructPublicationId(cristinNviReport.publicationIdentifier()))
-        .publicationBucketUri(
-            constructPublicationBucketUri(cristinNviReport.publicationIdentifier()))
-        .publicationDate(constructPublicationDate(cristinNviReport.publicationDate()))
+        .publicationId(publicationDetails.id())
+        .publicationBucketUri(publicationDetails.publicationBucketUri())
+        .publicationDate(publicationDetails.publicationDate())
+        .publicationDetails(publicationDetails)
         .instanceType(cristinNviReport.instanceType())
         .level(cristinNviReport.getLevel())
         .reportStatus(ReportStatus.REPORTED)
-        .applicable(true)
-        .createdDate(now)
-        .modifiedDate(now)
+        .applicable(publicationDetails.applicable())
+        .createdDate(publicationDetails.modifiedDate())
+        .modifiedDate(publicationDetails.modifiedDate())
         .points(points)
         .totalPoints(sumPoints(points))
         .basePoints(extractBasePoints(cristinNviReport))
         .collaborationFactor(extractCollaborationFactor(cristinNviReport))
-        .internationalCollaboration(isInternationalCollaboration(cristinNviReport))
-        .creators(extractCreators(cristinNviReport))
+        .internationalCollaboration(publicationDetails.internationalCollaboration())
+        .creators(publicationDetails.creators())
         .channelId(extractChannelId(cristinNviReport))
         .channelType(extractChannelType(cristinNviReport))
+        .build();
+  }
+
+  public DbPublication toDbPublication(CristinNviReport cristinNviReport) {
+    var now = Instant.now();
+    var channel =
+        new DbPublicationChannel(
+            extractChannelId(cristinNviReport),
+            extractChannelType(cristinNviReport),
+            null,
+            null,
+            null,
+            null,
+            null,
+            null);
+    //    var channel =
+    //        DbPublicationChannel.builder()
+    //            //            .id(extractChannelId(cristinNviReport))
+    //            .channelType(extractChannelType(cristinNviReport))
+    //            //
+    //            // .scientificValue(ScientificValue.parse(cristinNviReport.getLevel().getValue()))
+    //            .build();
+    return DbPublication.builder()
+        .id(constructPublicationId(cristinNviReport.publicationIdentifier()))
+        .identifier(cristinNviReport.publicationIdentifier())
+        .publicationBucketUri(
+            constructPublicationBucketUri(cristinNviReport.publicationIdentifier()))
+        .publicationDate(constructPublicationDate(cristinNviReport.publicationDate()))
+        .publicationType(toInstanceType(cristinNviReport.instanceType()))
+        .applicable(true)
+        .modifiedDate(now)
+        .internationalCollaboration(isInternationalCollaboration(cristinNviReport))
+        .creators(extractCreators(cristinNviReport))
+        .publicationChannels(List.of(channel))
         .build();
   }
 
@@ -144,7 +180,7 @@ public final class CristinMapper {
   private static ChannelType extractChannelType(CristinNviReport cristinNviReport) {
     var instance = toInstanceType(cristinNviReport.instanceType());
     var referenceNode = cristinNviReport.reference();
-    if (nonNull(instance)) {
+    if (nonNull(instance) && nonNull(referenceNode)) {
       var channelType =
           switch (instance) {
             case ACADEMIC_ARTICLE, ACADEMIC_LITERATURE_REVIEW ->
