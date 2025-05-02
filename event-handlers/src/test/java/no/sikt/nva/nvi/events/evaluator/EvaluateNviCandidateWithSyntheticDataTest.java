@@ -68,6 +68,15 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
                 numberOfForeignContributors, COUNTRY_CODE_SWEDEN, nonNviOrganization)
             .getExpandedPublication();
 
+    // Cast to JSON and check file size
+    //    try {
+    //      var publicationJson = objectMapper.writeValueAsString(publication);
+    //      var publicationSize = publicationJson.length();
+    //      assertThat(publicationSize).isLessThan(100_000);
+    //    } catch (JsonProcessingException e) {
+    //      throw new RuntimeException(e);
+    //    }
+
     var expectedCreatorShares = numberOfNorwegianContributors + numberOfForeignContributors;
     var candidate = evaluatePublication(publication);
     assertThat(candidate.getCreatorShareCount()).isEqualTo(expectedCreatorShares);

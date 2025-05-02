@@ -9,10 +9,12 @@ import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_PUBLICATI
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_YEAR;
 import static no.sikt.nva.nvi.common.DatabaseConstants.VERSION_FIELD;
 import static no.sikt.nva.nvi.common.utils.ApplicationConstants.NVI_TABLE_NAME;
+import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static software.amazon.awssdk.enhanced.dynamodb.TableSchema.fromImmutableClass;
 import static software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional.keyEqualTo;
 import static software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional.sortBeginsWith;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import java.net.URI;
 import java.time.Instant;
 import java.util.Collection;
@@ -126,6 +128,16 @@ public class CandidateRepository extends DynamoRepository {
             .build();
     var uniqueness = new CandidateUniquenessEntryDao(dbCandidate.publicationId().toString());
     var transactionBuilder = buildTransaction(approvalStatuses, candidate, identifier, uniqueness);
+
+    try {
+      var publicationJson = dtoObjectMapper.writeValueAsString(candidate);
+      var publicationSize = publicationJson.length();
+      var publicationSize2 = publicationJson.length();
+      // foo
+    } catch (JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
+
 
     this.client.transactWriteItems(transactionBuilder.build());
     return candidateTable.getItem(candidate);

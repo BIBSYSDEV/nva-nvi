@@ -121,7 +121,7 @@ public class SampleExpandedPublicationFactory {
             .toList();
     var expandedContributor =
         SampleExpandedContributor.builder()
-            .withId(randomUriWithSuffix("nviCreator"))
+            .withId(randomUriWithSuffix("creator"))
             .withNames(nonNull(name) ? List.of(name) : emptyList())
             .withRole(role)
             .withOrcId(randomString())
