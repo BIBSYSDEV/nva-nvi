@@ -127,22 +127,11 @@ public final class CristinMapper {
   public DbPublication toDbPublication(CristinNviReport cristinNviReport) {
     var now = Instant.now();
     var channel =
-        new DbPublicationChannel(
-            extractChannelId(cristinNviReport),
-            extractChannelType(cristinNviReport),
-            null,
-            null,
-            null,
-            null,
-            null,
-            null);
-    //    var channel =
-    //        DbPublicationChannel.builder()
-    //            //            .id(extractChannelId(cristinNviReport))
-    //            .channelType(extractChannelType(cristinNviReport))
-    //            //
-    //            // .scientificValue(ScientificValue.parse(cristinNviReport.getLevel().getValue()))
-    //            .build();
+        DbPublicationChannel.builder()
+            .id(extractChannelId(cristinNviReport))
+            .channelType(extractChannelType(cristinNviReport))
+            .scientificValue(cristinNviReport.getLevel().getValue())
+            .build();
     return DbPublication.builder()
         .id(constructPublicationId(cristinNviReport.publicationIdentifier()))
         .identifier(cristinNviReport.publicationIdentifier())
@@ -197,7 +186,7 @@ public final class CristinMapper {
   private static URI extractChannelId(CristinNviReport cristinNviReport) {
     var instance = toInstanceType(cristinNviReport.instanceType());
     var referenceNode = cristinNviReport.reference();
-    if (nonNull(instance)) {
+    if (nonNull(instance) && nonNull(referenceNode)) {
       var channelId =
           switch (instance) {
             case ACADEMIC_ARTICLE, ACADEMIC_LITERATURE_REVIEW ->

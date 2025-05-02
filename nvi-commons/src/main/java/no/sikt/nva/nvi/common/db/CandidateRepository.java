@@ -9,12 +9,10 @@ import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_PUBLICATI
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_YEAR;
 import static no.sikt.nva.nvi.common.DatabaseConstants.VERSION_FIELD;
 import static no.sikt.nva.nvi.common.utils.ApplicationConstants.NVI_TABLE_NAME;
-import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static software.amazon.awssdk.enhanced.dynamodb.TableSchema.fromImmutableClass;
 import static software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional.keyEqualTo;
 import static software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional.sortBeginsWith;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import java.net.URI;
 import java.time.Instant;
 import java.util.Collection;

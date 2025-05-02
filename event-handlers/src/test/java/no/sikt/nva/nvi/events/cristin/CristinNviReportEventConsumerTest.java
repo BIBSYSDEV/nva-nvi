@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.events.cristin;
 
 import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.LocalDynamoTestSetup.initializeTestDatabase;
+import static no.sikt.nva.nvi.common.model.InstanceTypeFixtures.randomInstanceType;
 import static no.sikt.nva.nvi.events.cristin.CristinMapper.AFFILIATION_DELIMITER;
 import static no.sikt.nva.nvi.events.cristin.CristinMapper.API_HOST;
 import static no.sikt.nva.nvi.events.cristin.CristinMapper.PERSISTED_RESOURCES_BUCKET;
@@ -139,9 +140,9 @@ class CristinNviReportEventConsumerTest {
     assertThat(
         candidate.getPublicationDetails().getNviCreators(),
         Matchers.contains(constructExpectedCreator(cristinNviReport)));
-    //    assertThat(
-    //        candidate.getPublicationDetails().publicationType().getValue(),
-    //        is(equalTo(cristinNviReport.instanceType())));
+    assertThat(
+        candidate.getPublicationDetails().publicationType().getValue(),
+        is(equalTo(cristinNviReport.instanceType())));
     candidate.getApprovals().values().stream()
         .map(Approval::getStatus)
         .forEach(status -> assertThat(status, is(equalTo(ApprovalStatus.APPROVED))));
@@ -209,7 +210,7 @@ class CristinNviReportEventConsumerTest {
         .withPublicationDate(randomPublicationDate())
         .withCristinLocales(List.of(randomCristinLocale(institutionIdentifier)))
         .withScientificResources(List.of(scientificResource(institutionIdentifier)))
-        .withInstanceType(randomString())
+        .withInstanceType(randomInstanceType().getValue())
         .withReference(null);
   }
 
