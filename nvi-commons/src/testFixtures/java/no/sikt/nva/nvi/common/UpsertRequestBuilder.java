@@ -7,20 +7,12 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 
 import java.math.BigDecimal;
 import java.net.URI;
-import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
-import no.sikt.nva.nvi.common.client.model.Organization;
-import no.sikt.nva.nvi.common.dto.ContributorDto;
-import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
-import no.sikt.nva.nvi.common.dto.PublicationDto;
 import no.sikt.nva.nvi.common.dto.PublicationDtoBuilder;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
-import no.sikt.nva.nvi.common.dto.VerificationStatus;
-import no.sikt.nva.nvi.common.model.ScientificValue;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
@@ -307,63 +299,6 @@ public class UpsertRequestBuilder {
         .withBasePoints(basePoints)
         .withInstitutionPoints(List.copyOf(points))
         .withTotalPoints(totalPoints)
-        .build();
-  }
-
-  private PublicationDto getPublicationDetails() {
-    var unverifiedContributors =
-        unverifiedCreators.stream()
-            .map(
-                creator ->
-                    ContributorDto.builder()
-                        .withName(creator.name())
-                        .withAffiliations(
-                            creator.affiliations().stream()
-                                .map(id -> Organization.builder().withId(id).build())
-                                .toList())
-                        .build())
-            .toList();
-
-    var verifiedContributors =
-        verifiedCreators.stream()
-            .map(
-                creator ->
-                    ContributorDto.builder()
-                        .withId(creator.id())
-                        .withVerificationStatus(new VerificationStatus("Verified"))
-                        .withAffiliations(
-                            creator.affiliations().stream()
-                                .map(id -> Organization.builder().withId(id).build())
-                                .toList())
-                        .build())
-            .toList();
-    var nviContributors =
-        Stream.concat(verifiedContributors.stream(), unverifiedContributors.stream()).toList();
-
-    var channel =
-        PublicationChannelDto.builder()
-            .withChannelType(channelType)
-            .withId(channelId)
-            .withScientificValue(ScientificValue.parse(level))
-            .build();
-
-    var topLevelOrganizations =
-        nviContributors.stream()
-            .map(ContributorDto::affiliations)
-            .flatMap(Collection::stream)
-            .toList();
-
-    return PublicationDto.builder()
-        .withContributors(nviContributors)
-        .withId(publicationId)
-        .withIdentifier(publicationIdentifier)
-        .withIsInternationalCollaboration(isInternationalCollaboration)
-        .withPublicationChannels(List.of(channel))
-        .withPublicationDate(publicationDate)
-        .withPublicationType(instanceType)
-        .withStatus("PUBLISHED")
-        .withTopLevelOrganizations(topLevelOrganizations)
-        .withModifiedDate(Instant.now())
         .build();
   }
 }
