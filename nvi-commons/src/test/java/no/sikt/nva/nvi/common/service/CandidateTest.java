@@ -56,8 +56,11 @@ import no.sikt.nva.nvi.common.db.model.DbPublication;
 import no.sikt.nva.nvi.common.db.model.DbPublicationChannel;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
 import no.sikt.nva.nvi.common.dto.ContributorDto;
+import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
+import no.sikt.nva.nvi.common.dto.PublicationDtoBuilder;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
+import no.sikt.nva.nvi.common.model.ScientificValue;
 import no.sikt.nva.nvi.common.service.dto.ApprovalDto;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatusDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
@@ -103,7 +106,16 @@ class CandidateTest extends CandidateTestSetup {
   @MethodSource("levelValues")
   void shouldPersistNewCandidateWithCorrectLevelBasedOnVersionTwoLevelValues(
       DbLevel expectedLevel, String versionTwoValue) {
-    var request = randomUpsertRequestBuilder().withLevel(versionTwoValue).build();
+    var channel =
+        PublicationChannelDto.builder()
+            .withId(randomUri())
+            .withChannelType(ChannelType.JOURNAL.getValue())
+            .withScientificValue(ScientificValue.parse(versionTwoValue))
+            .build();
+    var publicationDtoBuilder =
+        PublicationDtoBuilder.randomPublicationDtoBuilder()
+            .withPublicationChannels(List.of(channel));
+    var request = randomUpsertRequestBuilder(publicationDtoBuilder).build();
     Candidate.upsert(request, candidateRepository, periodRepository);
     var persistedCandidate =
         candidateRepository.findByPublicationId(request.publicationId()).orElseThrow().candidate();

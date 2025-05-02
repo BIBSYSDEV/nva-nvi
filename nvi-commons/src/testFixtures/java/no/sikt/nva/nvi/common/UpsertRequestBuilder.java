@@ -81,6 +81,39 @@ public class UpsertRequestBuilder {
         .withTotalPoints(BigDecimal.ONE);
   }
 
+  public static UpsertRequestBuilder randomUpsertRequestBuilder(
+      PublicationDtoBuilder publicationBuilder) {
+    var publicationDetails = publicationBuilder.build();
+    var creatorId = randomUri();
+    var affiliationId = randomUri();
+    var channel = List.copyOf(publicationDetails.publicationChannels()).getFirst();
+    return new UpsertRequestBuilder()
+        .withPublicationDetails(publicationBuilder)
+        .withPublicationBucketUri(randomUri())
+        .withPublicationId(publicationDetails.id())
+        .withPublicationIdentifier(publicationDetails.identifier())
+        .withIsInternationalCollaboration(publicationDetails.isInternationalCollaboration())
+        .withVerifiedCreators(List.of(new VerifiedNviCreatorDto(creatorId, List.of(affiliationId))))
+        .withUnverifiedCreators(emptyList())
+        .withChannelType(channel.channelType())
+        .withChannelId(channel.id())
+        .withLevel(channel.scientificValue().getValue())
+        .withInstanceType(publicationDetails.publicationType())
+        .withPublicationDate(publicationDetails.publicationDate())
+        .withCreatorShareCount(1)
+        .withCollaborationFactor(BigDecimal.ONE)
+        .withBasePoints(BigDecimal.ONE)
+        .withPoints(
+            List.of(
+                new InstitutionPoints(
+                    randomUri(),
+                    randomBigDecimal(),
+                    List.of(
+                        new CreatorAffiliationPoints(
+                            creatorId, affiliationId, randomBigDecimal())))))
+        .withTotalPoints(BigDecimal.ONE);
+  }
+
   // TODO: Update this
   public static UpsertRequestBuilder fromRequest(UpsertNviCandidateRequest request) {
     var publicationBuilder = PublicationDtoBuilder.fromRequest(request);
