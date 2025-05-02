@@ -68,7 +68,6 @@ import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.sikt.nva.nvi.common.service.model.Contributor;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import org.assertj.core.api.Assertions;
@@ -584,11 +583,7 @@ class CandidateTest extends CandidateTestSetup {
             .internationalCollaboration(dtoPublicationDetails.isInternationalCollaboration())
             .modifiedDate(dtoPublicationDetails.modifiedDate())
             .creators(dbCreators)
-            .contributors(
-                dtoPublicationDetails.contributors().stream()
-                    .map(Contributor::from)
-                    .map(Contributor::toDbContributor)
-                    .toList())
+            .contributorCount(dtoPublicationDetails.contributors().size())
             .abstractText(dtoPublicationDetails.abstractText())
             .pages(dbPagesFromRequest(request))
             .build();

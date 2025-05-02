@@ -45,7 +45,7 @@ public record PublicationDetails(
     boolean isInternationalCollaboration,
     List<VerifiedNviCreatorDto> verifiedCreators,
     List<UnverifiedNviCreatorDto> unverifiedCreators,
-    List<Contributor> contributors,
+    int contributorCount,
     List<Organization> topLevelOrganizations,
     Instant modifiedDate) {
 
@@ -80,7 +80,7 @@ public record PublicationDetails(
         .withPublicationChannels(publicationChannels)
         .withVerifiedNviCreators(upsertRequest.verifiedCreators())
         .withUnverifiedNviCreators(upsertRequest.unverifiedCreators())
-        .withContributors(publicationDto.contributors().stream().map(Contributor::from).toList())
+        .withContributorCount(publicationDto.contributors().size())
         .withTopLevelOrganizations(publicationDto.topLevelOrganizations())
         .withModifiedDate(publicationDto.modifiedDate())
         .build();
@@ -121,10 +121,9 @@ public record PublicationDetails(
             new PublicationChannel(
                 dbCandidate.channelType(), dbCandidate.channelId(), dbCandidate.level().getValue()))
         .withPublicationChannels(mapToPublicationChannels(dbDetails))
-        .withContributors(
-            contributorsFromDbContributors(organizations, dbDetails)) // FIXME: Add creators?
         .withVerifiedNviCreators(verifiedCreators)
         .withUnverifiedNviCreators(unverifiedCreators)
+        .withContributorCount(dbDetails.contributorCount())
         .withTopLevelOrganizations(organizations)
         .withModifiedDate(dbDetails.modifiedDate())
         .build();
@@ -177,7 +176,6 @@ public record PublicationDetails(
         .applicable(isApplicable)
         .internationalCollaboration(isInternationalCollaboration)
         .publicationChannels(channels)
-        .contributors(contributors.stream().map(Contributor::toDbContributor).toList())
         .creators(allCreators)
         .modifiedDate(modifiedDate)
         .build();
@@ -222,14 +220,6 @@ public record PublicationDetails(
         dbPublicationDate.year(), dbPublicationDate.month(), dbPublicationDate.day());
   }
 
-  // FIXME: Move to separate class
-  private static List<Contributor> contributorsFromDbContributors(
-      List<Organization> topLevelOrganizations, DbPublication dbPublication) {
-    return dbPublication.contributors().stream()
-        .map(dbContributor -> Contributor.from(topLevelOrganizations, dbContributor))
-        .toList();
-  }
-
   private static List<DbCreatorType> mapToDbCreators(
       Collection<VerifiedNviCreatorDto> verifiedNviCreators,
       Collection<UnverifiedNviCreatorDto> unverifiedNviCreators) {
@@ -266,7 +256,7 @@ public record PublicationDetails(
     private List<PublicationChannel> publicationChannels = emptyList();
     private List<VerifiedNviCreatorDto> verifiedCreators = emptyList();
     private List<UnverifiedNviCreatorDto> unverifiedCreators = emptyList();
-    private List<Contributor> contributors = emptyList();
+    private int contributorCount;
     private List<Organization> topLevelOrganizations = emptyList();
     private Instant modifiedDate;
 
@@ -338,28 +328,28 @@ public record PublicationDetails(
     }
 
     public Builder withPublicationChannels(Collection<PublicationChannel> publicationChannels) {
-      this.publicationChannels = List.copyOf(publicationChannels);
+      this.publicationChannels = List.copyOf(publicationChannels); // FIXME: remove this copy
       return this;
     }
 
     public Builder withVerifiedNviCreators(Collection<VerifiedNviCreatorDto> verifiedCreators) {
-      this.verifiedCreators = List.copyOf(verifiedCreators);
+      this.verifiedCreators = List.copyOf(verifiedCreators); // FIXME: remove this copy
       return this;
     }
 
     public Builder withUnverifiedNviCreators(
         Collection<UnverifiedNviCreatorDto> unverifiedCreators) {
-      this.unverifiedCreators = List.copyOf(unverifiedCreators);
+      this.unverifiedCreators = List.copyOf(unverifiedCreators); // FIXME: remove this copy
       return this;
     }
 
-    public Builder withContributors(Collection<Contributor> contributors) {
-      this.contributors = List.copyOf(contributors);
+    public Builder withContributorCount(int contributorCount) {
+      this.contributorCount = contributorCount;
       return this;
     }
 
     public Builder withTopLevelOrganizations(Collection<Organization> topLevelOrganizations) {
-      this.topLevelOrganizations = List.copyOf(topLevelOrganizations);
+      this.topLevelOrganizations = List.copyOf(topLevelOrganizations); // FIXME: remove this copy
       return this;
     }
 
@@ -386,7 +376,7 @@ public record PublicationDetails(
           isInternationalCollaboration,
           verifiedCreators,
           unverifiedCreators,
-          contributors,
+          contributorCount,
           topLevelOrganizations,
           modifiedDate);
     }

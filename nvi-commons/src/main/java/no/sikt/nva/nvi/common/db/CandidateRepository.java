@@ -129,16 +129,6 @@ public class CandidateRepository extends DynamoRepository {
     var uniqueness = new CandidateUniquenessEntryDao(dbCandidate.publicationId().toString());
     var transactionBuilder = buildTransaction(approvalStatuses, candidate, identifier, uniqueness);
 
-    try {
-      var publicationJson = dtoObjectMapper.writeValueAsString(candidate);
-      var publicationSize = publicationJson.length();
-      var publicationSize2 = publicationJson.length();
-      // foo
-    } catch (JsonProcessingException e) {
-      throw new RuntimeException(e);
-    }
-
-
     this.client.transactWriteItems(transactionBuilder.build());
     return candidateTable.getItem(candidate);
   }

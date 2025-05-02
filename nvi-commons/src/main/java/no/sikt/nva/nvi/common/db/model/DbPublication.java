@@ -24,11 +24,11 @@ public record DbPublication(
     DbPages pages,
     DbPublicationDate publicationDate,
     InstanceType publicationType,
-    Boolean applicable,
+    Boolean applicable, // FIXME: Can we use boolean?
     Boolean internationalCollaboration,
     DbPublicationChannel publicationChannel,
-    List<DbContributor> contributors,
     @DynamoDbConvertedBy(DbCreatorTypeListConverter.class) List<DbCreatorType> creators,
+    int contributorCount,
     List<DbOrganization> topLevelOrganizations,
     Instant modifiedDate) {
 
@@ -52,7 +52,7 @@ public record DbPublication(
         .applicable(applicable)
         .internationalCollaboration(internationalCollaboration)
         .publicationChannel(publicationChannel)
-        .contributors(contributors)
+        .contributorCount(contributorCount)
         .creators(creators)
         .topLevelOrganizations(topLevelOrganizations)
         .modifiedDate(modifiedDate);
@@ -73,7 +73,7 @@ public record DbPublication(
     private Boolean builderIsApplicable;
     private Boolean builderIsInternationalCollaboration;
     private DbPublicationChannel builderPublicationChannel;
-    private List<DbContributor> builderContributors = emptyList();
+    private int builderContributorCount;
     private List<DbCreatorType> builderCreators = emptyList();
     private List<DbOrganization> builderTopLevelOrganizations = emptyList();
     private Instant builderModifiedDate;
@@ -154,8 +154,8 @@ public record DbPublication(
       return this;
     }
 
-    public Builder contributors(List<DbContributor> contributors) {
-      this.builderContributors = contributors;
+    public Builder contributorCount(int contributorCount) {
+      this.builderContributorCount = contributorCount;
       return this;
     }
 
@@ -189,8 +189,8 @@ public record DbPublication(
           builderIsApplicable,
           builderIsInternationalCollaboration,
           builderPublicationChannel,
-          builderContributors,
           builderCreators,
+          builderContributorCount,
           builderTopLevelOrganizations,
           builderModifiedDate);
     }

@@ -56,7 +56,7 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
   // This test case is a bit more generous because the GitHub Actions test runner is underpowered.
   @ParameterizedTest
   @Timeout(value = 30, unit = TimeUnit.SECONDS)
-  @ValueSource(ints = {100}) // FIXME
+  @ValueSource(ints = {100, 500, 5000})
   void shouldParseDocumentWithManyContributorsWithinTimeOut(int numberOfForeignContributors) {
     var numberOfNorwegianContributors = 10;
     var publication =
@@ -67,15 +67,6 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
             .withRandomCreatorsAffiliatedWith(
                 numberOfForeignContributors, COUNTRY_CODE_SWEDEN, nonNviOrganization)
             .getExpandedPublication();
-
-    // Cast to JSON and check file size
-    //    try {
-    //      var publicationJson = objectMapper.writeValueAsString(publication);
-    //      var publicationSize = publicationJson.length();
-    //      assertThat(publicationSize).isLessThan(100_000);
-    //    } catch (JsonProcessingException e) {
-    //      throw new RuntimeException(e);
-    //    }
 
     var expectedCreatorShares = numberOfNorwegianContributors + numberOfForeignContributors;
     var candidate = evaluatePublication(publication);

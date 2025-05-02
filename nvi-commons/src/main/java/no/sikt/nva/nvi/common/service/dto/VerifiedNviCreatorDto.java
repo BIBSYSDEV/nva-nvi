@@ -9,6 +9,7 @@ import java.util.Collections;
 import java.util.List;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 
+// TODO: Expand this with top-level affiliation etc
 @JsonSerialize
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 public record VerifiedNviCreatorDto(URI id, List<URI> affiliations) implements NviCreatorDto {
