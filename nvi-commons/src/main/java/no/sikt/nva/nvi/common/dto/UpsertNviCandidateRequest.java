@@ -21,8 +21,6 @@ public record UpsertNviCandidateRequest(
     URI publicationBucketUri,
     PublicationDto publicationDetails,
     InstanceType instanceType,
-    String abstractText,
-    PageCountDto pageCount, // FIXME: Remove duplicates
     PublicationDateDto publicationDate,
     List<VerifiedNviCreatorDto> verifiedCreators,
     List<UnverifiedNviCreatorDto> unverifiedCreators,
@@ -51,8 +49,6 @@ public record UpsertNviCandidateRequest(
     private URI publicationBucketUri;
     private PublicationDto publicationDetails;
     private InstanceType instanceType;
-    private String abstractText;
-    private PageCountDto pageCount;
     private PublicationDateDto date;
     private List<VerifiedNviCreatorDto> verifiedNviCreators = Collections.emptyList();
     private List<UnverifiedNviCreatorDto> unverifiedNviCreators = Collections.emptyList();
@@ -85,16 +81,6 @@ public record UpsertNviCandidateRequest(
 
     public Builder withInstanceType(InstanceType instanceType) {
       this.instanceType = instanceType;
-      return this;
-    }
-
-    public Builder withAbstract(String abstractText) {
-      this.abstractText = abstractText;
-      return this;
-    }
-
-    public Builder withPageCount(PageCountDto pageCount) {
-      this.pageCount = pageCount;
       return this;
     }
 
@@ -164,8 +150,6 @@ public record UpsertNviCandidateRequest(
           publicationBucketUri,
           publicationDetails,
           instanceType,
-          abstractText,
-          pageCount,
           date,
           verifiedNviCreators,
           unverifiedNviCreators,

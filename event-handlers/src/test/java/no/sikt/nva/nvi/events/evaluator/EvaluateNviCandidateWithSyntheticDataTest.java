@@ -86,7 +86,7 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
             .build();
 
     var candidate = getEvaluatedCandidate(publication);
-    assertThat(candidate.abstractText()).isEqualTo(expectedAbstract);
+    assertThat(candidate.publicationDetails().abstractText()).isEqualTo(expectedAbstract);
   }
 
   @ParameterizedTest
@@ -109,7 +109,7 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
             .build();
 
     var candidate = getEvaluatedCandidate(publication);
-    assertThat(candidate.pageCount()).isEqualTo(expectedPageCount);
+    assertThat(candidate.publicationDetails().pageCount()).isEqualTo(expectedPageCount);
   }
 
   private static Stream<Arguments> pageCountProvider() {

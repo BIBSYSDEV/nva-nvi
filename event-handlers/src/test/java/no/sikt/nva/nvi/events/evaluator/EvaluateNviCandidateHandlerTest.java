@@ -53,7 +53,6 @@ import java.util.Optional;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures;
-import no.sikt.nva.nvi.common.dto.PageCountDto;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
@@ -1113,7 +1112,6 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
               .withPublicationBucketUri(fileUri)
               .withDate(publicationDate)
               .withInstanceType(InstanceType.parse(publication.instanceType()))
-              .withPageCount(new PageCountDto(null, null, null))
               .withChannelType(publicationChannelType)
               .withPublicationChannelId(publicationChannelId)
               .withLevel(publicationChannelLevel)

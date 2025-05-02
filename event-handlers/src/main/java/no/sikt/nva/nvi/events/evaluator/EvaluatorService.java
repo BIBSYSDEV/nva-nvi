@@ -165,8 +165,6 @@ public class EvaluatorService {
         .withPublicationDetails(publicationDto)
         .withDate(publicationDto.publicationDate())
         .withInstanceType(publicationDto.publicationType())
-        .withAbstract(publicationDto.abstractText())
-        .withPageCount(publicationDto.pageCount())
         .withBasePoints(pointCalculation.basePoints())
         .withPublicationChannelId(pointCalculation.publicationChannelId())
         .withChannelType(pointCalculation.channelType().getValue())
