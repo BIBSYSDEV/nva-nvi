@@ -10,7 +10,8 @@ public record DbContributor(
     String name,
     String verificationStatus,
     String role,
-    List<DbOrganization> affiliations) {
+    List<URI> affiliations,
+    List<URI> topLevelOrganizations) {
 
   public static Builder builder() {
     return new Builder();
@@ -22,7 +23,8 @@ public record DbContributor(
     private String builderName;
     private String builderVerificationStatus;
     private String builderRole;
-    private List<DbOrganization> builderAffiliations;
+    private List<URI> builderAffiliations;
+    private List<URI> builderTopLevelOrganizations;
 
     private Builder() {}
 
@@ -46,14 +48,24 @@ public record DbContributor(
       return this;
     }
 
-    public Builder affiliations(List<DbOrganization> affiliations) {
-      this.builderAffiliations = List.copyOf(affiliations);
+    public Builder affiliations(List<URI> affiliations) {
+      this.builderAffiliations = affiliations;
+      return this;
+    }
+
+    public Builder topLevelOrganizations(List<URI> topLevelOrganizations) {
+      this.builderTopLevelOrganizations = topLevelOrganizations;
       return this;
     }
 
     public DbContributor build() {
       return new DbContributor(
-          builderId, builderName, builderVerificationStatus, builderRole, builderAffiliations);
+          builderId,
+          builderName,
+          builderVerificationStatus,
+          builderRole,
+          builderAffiliations,
+          builderTopLevelOrganizations);
     }
   }
 }

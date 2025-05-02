@@ -2,7 +2,6 @@ package no.sikt.nva.nvi.common.service;
 
 import static java.util.Collections.emptySet;
 import static java.util.Objects.isNull;
-import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpdateStatusRequest;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequest;
@@ -40,7 +39,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.UpsertRequestBuilder;
-import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
@@ -50,12 +48,10 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
 import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
-import no.sikt.nva.nvi.common.db.model.DbContributor;
 import no.sikt.nva.nvi.common.db.model.DbPages;
 import no.sikt.nva.nvi.common.db.model.DbPublication;
 import no.sikt.nva.nvi.common.db.model.DbPublicationChannel;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
-import no.sikt.nva.nvi.common.dto.ContributorDto;
 import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.dto.PublicationDtoBuilder;
@@ -72,6 +68,7 @@ import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.service.model.Contributor;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import org.assertj.core.api.Assertions;
@@ -589,7 +586,8 @@ class CandidateTest extends CandidateTestSetup {
             .creators(dbCreators)
             .contributors(
                 dtoPublicationDetails.contributors().stream()
-                    .map(CandidateTest::dbContributorFromContributor)
+                    .map(Contributor::from)
+                    .map(Contributor::toDbContributor)
                     .toList())
             .abstractText(dtoPublicationDetails.abstractText())
             .pages(dbPagesFromRequest(request))
@@ -617,24 +615,6 @@ class CandidateTest extends CandidateTestSetup {
             .build();
     return new CandidateDao(candidate.getIdentifier(), dbCandidate, randomString(), randomString())
         .candidate();
-  }
-
-  // FIXME: Duplicate util method
-  private static DbContributor dbContributorFromContributor(ContributorDto contributor) {
-    return DbContributor.builder()
-        .id(contributor.id())
-        .name(contributor.name())
-        .verificationStatus(
-            nonNull(contributor.verificationStatus())
-                ? contributor.verificationStatus().getValue()
-                : "Unverified") // TODO: Handle null verification status
-        .role(
-            nonNull(contributor.role())
-                ? contributor.role().getValue()
-                : "Unknown") // TODO: Handle null role
-        .affiliations(
-            contributor.affiliations().stream().map(Organization::toDbOrganization).toList())
-        .build();
   }
 
   private static DbPages dbPagesFromRequest(UpsertNviCandidateRequest request) {

@@ -15,16 +15,12 @@ import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreatorType;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
-import no.sikt.nva.nvi.common.db.model.DbContributor;
 import no.sikt.nva.nvi.common.db.model.DbPages;
 import no.sikt.nva.nvi.common.db.model.DbPublication;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
-import no.sikt.nva.nvi.common.dto.ContributorDto;
-import no.sikt.nva.nvi.common.dto.ContributorRole;
 import no.sikt.nva.nvi.common.dto.PageCountDto;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
-import no.sikt.nva.nvi.common.dto.VerificationStatus;
 import no.sikt.nva.nvi.common.model.ScientificValue;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
@@ -49,7 +45,7 @@ public record PublicationDetails(
     boolean isInternationalCollaboration,
     List<VerifiedNviCreatorDto> verifiedCreators,
     List<UnverifiedNviCreatorDto> unverifiedCreators,
-    List<ContributorDto> contributors,
+    List<Contributor> contributors,
     List<Organization> topLevelOrganizations,
     Instant modifiedDate) {
 
@@ -84,7 +80,7 @@ public record PublicationDetails(
         .withPublicationChannels(publicationChannels)
         .withVerifiedNviCreators(upsertRequest.verifiedCreators())
         .withUnverifiedNviCreators(upsertRequest.unverifiedCreators())
-        .withContributors(publicationDto.contributors())
+        .withContributors(publicationDto.contributors().stream().map(Contributor::from).toList())
         .withTopLevelOrganizations(publicationDto.topLevelOrganizations())
         .withModifiedDate(publicationDto.modifiedDate())
         .build();
@@ -106,6 +102,8 @@ public record PublicationDetails(
             .map(UnverifiedNviCreatorDto.class::cast)
             .toList();
 
+    var organizations = getTopLevelOrganizations(dbDetails);
+
     return builder()
         .withId(dbDetails.id())
         .withPublicationBucketUri(dbDetails.publicationBucketUri())
@@ -124,15 +122,18 @@ public record PublicationDetails(
                 dbCandidate.channelType(), dbCandidate.channelId(), dbCandidate.level().getValue()))
         .withPublicationChannels(mapToPublicationChannels(dbDetails))
         .withContributors(
-            contributorsFromDbContributors(dbDetails.contributors())) // FIXME: Add creators?
+            contributorsFromDbContributors(organizations, dbDetails)) // FIXME: Add creators?
         .withVerifiedNviCreators(verifiedCreators)
         .withUnverifiedNviCreators(unverifiedCreators)
-        .withTopLevelOrganizations(
-            nonNull(dbDetails.topLevelOrganizations())
-                ? dbDetails.topLevelOrganizations().stream().map(Organization::from).toList()
-                : emptyList())
+        .withTopLevelOrganizations(organizations)
         .withModifiedDate(dbDetails.modifiedDate())
         .build();
+  }
+
+  private static List<Organization> getTopLevelOrganizations(DbPublication dbDetails) {
+    return nonNull(dbDetails.topLevelOrganizations())
+        ? dbDetails.topLevelOrganizations().stream().map(Organization::from).toList()
+        : emptyList();
   }
 
   // FIXME
@@ -176,8 +177,7 @@ public record PublicationDetails(
         .applicable(isApplicable)
         .internationalCollaboration(isInternationalCollaboration)
         .publicationChannels(channels)
-        .contributors(
-            contributors.stream().map(PublicationDetails::dbContributorFromContributor).toList())
+        .contributors(contributors.stream().map(Contributor::toDbContributor).toList())
         .creators(allCreators)
         .modifiedDate(modifiedDate)
         .build();
@@ -216,43 +216,18 @@ public record PublicationDetails(
     return verifiedCreators.stream().map(VerifiedNviCreatorDto::id).collect(Collectors.toSet());
   }
 
+  // FIXME: Move to separate class
   private static PublicationDateDto dateFromDbDate(DbPublicationDate dbPublicationDate) {
     return new PublicationDateDto(
         dbPublicationDate.year(), dbPublicationDate.month(), dbPublicationDate.day());
   }
 
-  private static List<ContributorDto> contributorsFromDbContributors(
-      Collection<DbContributor> dbContributors) {
-    return dbContributors.stream()
-        .map(PublicationDetails::contributorFromDbContributor)
-        .collect(Collectors.toList());
-  }
-
-  private static ContributorDto contributorFromDbContributor(DbContributor dbContributor) {
-    return ContributorDto.builder()
-        .withId(dbContributor.id())
-        .withName(dbContributor.name())
-        .withVerificationStatus(new VerificationStatus(dbContributor.verificationStatus()))
-        .withRole(new ContributorRole(dbContributor.role()))
-        .withAffiliations(dbContributor.affiliations().stream().map(Organization::from).toList())
-        .build();
-  }
-
-  private static DbContributor dbContributorFromContributor(ContributorDto contributor) {
-    return DbContributor.builder()
-        .id(contributor.id())
-        .name(contributor.name())
-        .verificationStatus(
-            nonNull(contributor.verificationStatus())
-                ? contributor.verificationStatus().getValue()
-                : "Unverified") // TODO: Handle null verification status
-        .role(
-            nonNull(contributor.role())
-                ? contributor.role().getValue()
-                : "Unknown") // TODO: Handle null role
-        .affiliations(
-            contributor.affiliations().stream().map(Organization::toDbOrganization).toList())
-        .build();
+  // FIXME: Move to separate class
+  private static List<Contributor> contributorsFromDbContributors(
+      List<Organization> topLevelOrganizations, DbPublication dbPublication) {
+    return dbPublication.contributors().stream()
+        .map(dbContributor -> Contributor.from(topLevelOrganizations, dbContributor))
+        .toList();
   }
 
   private static List<DbCreatorType> mapToDbCreators(
@@ -291,7 +266,7 @@ public record PublicationDetails(
     private List<PublicationChannel> publicationChannels = emptyList();
     private List<VerifiedNviCreatorDto> verifiedCreators = emptyList();
     private List<UnverifiedNviCreatorDto> unverifiedCreators = emptyList();
-    private List<ContributorDto> contributors = emptyList();
+    private List<Contributor> contributors = emptyList();
     private List<Organization> topLevelOrganizations = emptyList();
     private Instant modifiedDate;
 
@@ -378,7 +353,7 @@ public record PublicationDetails(
       return this;
     }
 
-    public Builder withContributors(Collection<ContributorDto> contributors) {
+    public Builder withContributors(Collection<Contributor> contributors) {
       this.contributors = List.copyOf(contributors);
       return this;
     }
