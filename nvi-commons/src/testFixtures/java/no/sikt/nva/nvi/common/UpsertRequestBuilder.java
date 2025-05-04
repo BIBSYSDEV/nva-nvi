@@ -294,7 +294,6 @@ public class UpsertRequestBuilder {
         .withPublicationChannelId(channelId)
         .withLevel(level)
         .withInstanceType(instanceType)
-        .withDate(publicationDate)
         .withCreatorShareCount(creatorShareCount)
         .withBasePoints(basePoints)
         .withInstitutionPoints(List.copyOf(points))

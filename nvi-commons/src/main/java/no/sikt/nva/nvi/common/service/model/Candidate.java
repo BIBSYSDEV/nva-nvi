@@ -577,10 +577,9 @@ public final class Candidate {
 
   private static boolean publicationYearIsUpdated(
       UpsertNviCandidateRequest request, Candidate candidate) {
-    return !request
-        .publicationDate()
-        .year()
-        .equals(candidate.getPublicationDetails().publicationDate().year());
+    var publicationYearOfCandidate = candidate.getPublicationDetails().publicationDate().year();
+    var publicationYearFromRequest = request.publicationDetails().publicationDate().year();
+    return not(publicationYearOfCandidate::equals).test(publicationYearFromRequest);
   }
 
   private static boolean hasChangeInTopLevelOrganizations(
@@ -669,15 +668,9 @@ public final class Candidate {
   private static void validateCandidate(UpsertNviCandidateRequest candidate) {
     attempt(
             () -> {
+              candidate.validate();
               Objects.requireNonNull(candidate.instanceType());
-              Objects.requireNonNull(candidate.publicationBucketUri());
-              Objects.requireNonNull(candidate.institutionPoints());
-              Objects.requireNonNull(candidate.publicationId());
-              Objects.requireNonNull(candidate.verifiedCreators());
-              Objects.requireNonNull(candidate.unverifiedCreators());
               Objects.requireNonNull(candidate.level());
-              Objects.requireNonNull(candidate.publicationDate());
-              Objects.requireNonNull(candidate.totalPoints());
               return candidate;
             })
         .orElseThrow(failure -> new InvalidNviCandidateException(INVALID_CANDIDATE_MESSAGE));

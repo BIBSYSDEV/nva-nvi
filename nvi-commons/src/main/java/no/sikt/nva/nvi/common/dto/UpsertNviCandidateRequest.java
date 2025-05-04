@@ -1,5 +1,7 @@
 package no.sikt.nva.nvi.common.dto;
 
+import static no.sikt.nva.nvi.common.utils.Validator.shouldNotBeNull;
+
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.math.BigDecimal;
@@ -21,7 +23,6 @@ public record UpsertNviCandidateRequest(
     URI publicationBucketUri,
     PublicationDto publicationDetails,
     InstanceType instanceType,
-    PublicationDateDto publicationDate,
     List<VerifiedNviCreatorDto> verifiedCreators,
     List<UnverifiedNviCreatorDto> unverifiedCreators,
     String channelType,
@@ -34,6 +35,16 @@ public record UpsertNviCandidateRequest(
     List<InstitutionPoints> institutionPoints,
     BigDecimal totalPoints)
     implements CandidateType {
+
+  public void validate() {
+    publicationDetails.validate();
+    shouldNotBeNull(publicationBucketUri, "Required field 'publicationBucketUri' is null");
+    shouldNotBeNull(creatorShareCount, "Required field 'creatorShareCount' is null");
+    shouldNotBeNull(verifiedCreators, "Required field 'verifiedCreators' is null");
+    shouldNotBeNull(unverifiedCreators, "Required field 'unverifiedCreators' is null");
+    shouldNotBeNull(institutionPoints, "Required field 'institutionPoints' is null");
+    shouldNotBeNull(totalPoints, "Required field 'totalPoints' is null");
+  }
 
   public boolean isApplicable() {
     return true;
@@ -49,7 +60,6 @@ public record UpsertNviCandidateRequest(
     private URI publicationBucketUri;
     private PublicationDto publicationDetails;
     private InstanceType instanceType;
-    private PublicationDateDto date;
     private List<VerifiedNviCreatorDto> verifiedNviCreators = Collections.emptyList();
     private List<UnverifiedNviCreatorDto> unverifiedNviCreators = Collections.emptyList();
     private String channelType;
@@ -81,11 +91,6 @@ public record UpsertNviCandidateRequest(
 
     public Builder withInstanceType(InstanceType instanceType) {
       this.instanceType = instanceType;
-      return this;
-    }
-
-    public Builder withDate(PublicationDateDto date) {
-      this.date = date;
       return this;
     }
 
@@ -150,7 +155,6 @@ public record UpsertNviCandidateRequest(
           publicationBucketUri,
           publicationDetails,
           instanceType,
-          date,
           verifiedNviCreators,
           unverifiedNviCreators,
           channelType,
