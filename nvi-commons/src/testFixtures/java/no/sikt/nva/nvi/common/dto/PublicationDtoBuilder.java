@@ -33,6 +33,7 @@ public class PublicationDtoBuilder {
   private boolean isApplicable;
   private boolean isInternationalCollaboration;
 
+  // FIXME: CLean this up
   public static PublicationDtoBuilder randomPublicationDtoBuilder() {
     var channel =
         PublicationChannelDto.builder()

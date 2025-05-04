@@ -53,7 +53,9 @@ import java.util.Optional;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures;
+import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
+import no.sikt.nva.nvi.common.dto.PublicationDto;
 import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.model.ScientificValue;
@@ -567,12 +569,16 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       BigDecimal basePoints,
       BigDecimal totalPoints,
       URI publicationBucketUri) {
+    var publicationDetails =
+        createExpectedPublicationDetails(
+            HARDCODED_PUBLICATION_ID, HARDCODED_PUBLICATION_DATE, instanceType, channelType, level);
     var verifiedCreators =
         List.of(
             new VerifiedNviCreatorDto(HARDCODED_CREATOR_ID, List.of(CRISTIN_NVI_ORG_SUB_UNIT_ID)));
     return UpsertNviCandidateRequest.builder()
         .withPublicationId(HARDCODED_PUBLICATION_ID)
         .withPublicationBucketUri(publicationBucketUri)
+        .withPublicationDetails(publicationDetails)
         .withDate(HARDCODED_PUBLICATION_DATE)
         .withInstanceType(instanceType)
         .withChannelType(channelType.getValue())
@@ -597,6 +603,29 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
                                     entry.getValue()))))
                 .toList())
         .withTotalPoints(totalPoints)
+        .build();
+  }
+
+  private static PublicationDto createExpectedPublicationDetails(
+      URI publicationId,
+      PublicationDateDto publicationDate,
+      InstanceType instanceType,
+      PublicationChannel channelType,
+      String level) {
+    var channel =
+        PublicationChannelDto.builder()
+            .withId(HARDCODED_PUBLICATION_CHANNEL_ID)
+            .withScientificValue(ScientificValue.parse(level))
+            .withChannelType(channelType.getValue())
+            .build();
+    return PublicationDto.builder()
+        .withId(publicationId)
+        .withStatus("PUBLISHED")
+        .withIsApplicable(true)
+        .withPublicationDate(publicationDate)
+        .withPublicationType(instanceType)
+        .withPublicationChannels(List.of(channel))
+        .withIsInternationalCollaboration(false)
         .build();
   }
 
@@ -670,11 +699,23 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
         .thenReturn(Optional.of(httpResponse));
   }
 
+  /**
+   * Asserts that the evaluated message equals the expected message, ignoring certain fields. These
+   * fields are ignored because the static test data used here is outdated and the fields may be
+   * missing, so we cannot easily construct an expected message with the correct values.
+   */
   private static void assertThatEvaluatedMessageEqualsExpectedMessage(
       CandidateEvaluatedMessage expectedEvaluatedMessage, CandidateEvaluatedMessage messageBody) {
     assertThat(messageBody)
         .usingRecursiveComparison()
-        .ignoringFields("candidate.publicationDetails")
+        .ignoringFields(
+            "candidate.publicationDetails.identifier",
+            "candidate.publicationDetails.contributors",
+            "candidate.publicationDetails.modifiedDate",
+            "candidate.publicationDetails.pageCount",
+            "candidate.publicationDetails.publicationChannels",
+            "candidate.publicationDetails.title",
+            "candidate.publicationDetails.topLevelOrganizations")
         .ignoringCollectionOrder()
         .isEqualTo(expectedEvaluatedMessage);
   }
@@ -1106,10 +1147,18 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       var publicationDate = getPublicationDate(publication.publicationDate());
       var verifiedCreators = getVerifiedNviCreators();
       var unverifiedNviCreators = getUnverifiedNviCreators();
+      var publicationDetails =
+          createExpectedPublicationDetails(
+              publication.id(),
+              publicationDate,
+              InstanceType.parse(publication.instanceType()),
+              PublicationChannel.parse(publicationChannelType),
+              publicationChannelLevel);
       var expectedCandidate =
           expectedCandidateBuilder
               .withPublicationId(publication.id())
               .withPublicationBucketUri(fileUri)
+              .withPublicationDetails(publicationDetails)
               .withDate(publicationDate)
               .withInstanceType(InstanceType.parse(publication.instanceType()))
               .withChannelType(publicationChannelType)
