@@ -669,7 +669,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
       private static final VerifiedNviCreatorDto DEFAULT_CREATOR =
           new VerifiedNviCreatorDto(HARDCODED_CREATOR_ID, List.of(HARDCODED_SUBUNIT_ID));
       private PublicationChannel channel =
-          new PublicationChannel(ChannelType.JOURNAL, HARDCODED_CHANNEL_ID, HARDCODED_LEVEL);
+          new PublicationChannel(HARDCODED_CHANNEL_ID, ChannelType.JOURNAL, HARDCODED_LEVEL);
       private InstanceType type = HARDCODED_INSTANCE_TYPE;
       private List<InstitutionPoints> institutionPoints =
           List.of(
@@ -695,14 +695,14 @@ class CandidateApprovalTest extends CandidateTestSetup {
 
       private Builder withChannelId(URI publicationChannelId) {
         this.channel =
-            new PublicationChannel(ChannelType.JOURNAL, publicationChannelId, HARDCODED_LEVEL);
+            new PublicationChannel(publicationChannelId, ChannelType.JOURNAL, HARDCODED_LEVEL);
         return this;
       }
 
       private Builder withLevel(String level) {
         this.channel =
             new PublicationChannel(
-                ChannelType.JOURNAL, HARDCODED_CHANNEL_ID, ScientificValue.parse(level));
+                HARDCODED_CHANNEL_ID, ChannelType.JOURNAL, ScientificValue.parse(level));
         return this;
       }
 

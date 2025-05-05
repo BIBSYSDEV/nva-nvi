@@ -10,11 +10,11 @@ import no.sikt.nva.nvi.common.model.ChannelType;
 import no.sikt.nva.nvi.common.model.ScientificValue;
 
 // FIXME: Re-order parameters and sync with other versions
-public record PublicationChannel(ChannelType channelType, URI id, ScientificValue scientificValue) {
+public record PublicationChannel(URI id, ChannelType channelType, ScientificValue scientificValue) {
 
   public static PublicationChannel from(PublicationChannelDto dtoChannel) {
     return new PublicationChannel(
-        ChannelType.parse(dtoChannel.channelType()), dtoChannel.id(), dtoChannel.scientificValue());
+        dtoChannel.id(), ChannelType.parse(dtoChannel.channelType()), dtoChannel.scientificValue());
   }
 
   /**
@@ -30,7 +30,7 @@ public record PublicationChannel(ChannelType channelType, URI id, ScientificValu
     var scientificValue = ScientificValue.parse(candidateDao.candidate().level().getValue());
     var channelType = ChannelType.parse(candidateDao.candidate().channelType());
     return new PublicationChannel(
-        channelType, candidateDao.candidate().channelId(), scientificValue);
+        candidateDao.candidate().channelId(), channelType, scientificValue);
   }
 
   public static PublicationChannel from(DbPublicationChannel dbPublicationChannel) {
@@ -39,7 +39,7 @@ public record PublicationChannel(ChannelType channelType, URI id, ScientificValu
         nonNull(dbScientificValue) ? ScientificValue.parse(dbScientificValue) : null;
     var dbChannelType = dbPublicationChannel.channelType();
     var channelType = nonNull(dbChannelType) ? ChannelType.parse(dbChannelType) : null;
-    return new PublicationChannel(channelType, dbPublicationChannel.id(), scientificValue);
+    return new PublicationChannel(dbPublicationChannel.id(), channelType, scientificValue);
   }
 
   public DbPublicationChannel toDbPublicationChannel() {

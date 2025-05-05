@@ -55,8 +55,8 @@ public record PublicationDetails(
     var channelLevel = ScientificValue.parse(upsertRequest.level());
     var publicationChannel =
         new PublicationChannel(
-            ChannelType.parse(upsertRequest.channelType()),
             upsertRequest.publicationChannelId(),
+            ChannelType.parse(upsertRequest.channelType()),
             channelLevel);
 
     return builder()
