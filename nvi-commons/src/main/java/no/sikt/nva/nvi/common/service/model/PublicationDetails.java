@@ -38,7 +38,6 @@ public record PublicationDetails(
     String abstractText,
     PageCountDto pageCount,
     PublicationChannel publicationChannel,
-    List<PublicationChannel> publicationChannels,
     PublicationDateDto publicationDate,
     InstanceType publicationType,
     boolean isApplicable,
@@ -60,9 +59,6 @@ public record PublicationDetails(
             upsertRequest.publicationChannelId(),
             channelLevel);
 
-    var publicationChannels =
-        publicationDto.publicationChannels().stream().map(PublicationChannel::from).toList();
-
     return builder()
         .withId(upsertRequest.publicationId())
         .withIdentifier(publicationDto.identifier())
@@ -77,7 +73,6 @@ public record PublicationDetails(
         .withIsApplicable(publicationDto.isApplicable())
         .withIsInternationalCollaboration(publicationDto.isInternationalCollaboration())
         .withPublicationChannel(publicationChannel)
-        .withPublicationChannels(publicationChannels)
         .withVerifiedNviCreators(upsertRequest.verifiedCreators())
         .withUnverifiedNviCreators(upsertRequest.unverifiedCreators())
         .withContributorCount(publicationDto.contributors().size())
@@ -160,8 +155,6 @@ public record PublicationDetails(
 
   public DbPublication toDbPublication() {
     var allCreators = mapToDbCreators(verifiedCreators, unverifiedCreators);
-    var channels =
-        publicationChannels.stream().map(PublicationChannel::toDbPublicationChannel).toList();
     return DbPublication.builder()
         .id(publicationId)
         .publicationBucketUri(publicationBucketUri)
@@ -175,7 +168,7 @@ public record PublicationDetails(
         .publicationType(publicationType)
         .applicable(isApplicable)
         .internationalCollaboration(isInternationalCollaboration)
-        .publicationChannels(channels)
+        .publicationChannel(publicationChannel.toDbPublicationChannel())
         .creators(allCreators)
         .modifiedDate(modifiedDate)
         .build();
@@ -369,7 +362,6 @@ public record PublicationDetails(
           abstractText,
           pageCount,
           publicationChannel,
-          publicationChannels,
           publicationDate,
           publicationType,
           isApplicable,

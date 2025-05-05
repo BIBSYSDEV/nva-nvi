@@ -143,7 +143,7 @@ public final class CristinMapper {
         .modifiedDate(now)
         .internationalCollaboration(isInternationalCollaboration(cristinNviReport))
         .creators(extractCreators(cristinNviReport))
-        .publicationChannels(List.of(channel))
+        .publicationChannel(channel)
         .build();
   }
 

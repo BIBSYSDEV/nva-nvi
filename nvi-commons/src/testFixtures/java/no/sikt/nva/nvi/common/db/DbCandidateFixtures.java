@@ -94,7 +94,7 @@ public class DbCandidateFixtures {
         .publicationBucketUri(randomUri())
         .applicable(applicable)
         .publicationType(randomInstanceType())
-        .publicationChannels(List.of(channel))
+        .publicationChannel(channel)
         .publicationDate(publicationDate(String.valueOf(CURRENT_YEAR)))
         .internationalCollaboration(randomBoolean())
         .modifiedDate(Instant.now())

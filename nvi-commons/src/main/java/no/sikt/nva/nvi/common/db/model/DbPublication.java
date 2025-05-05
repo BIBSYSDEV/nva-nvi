@@ -1,7 +1,6 @@
 package no.sikt.nva.nvi.common.db.model;
 
 import static java.util.Collections.emptyList;
-import static java.util.Objects.nonNull;
 
 import java.net.URI;
 import java.time.Instant;
@@ -24,8 +23,8 @@ public record DbPublication(
     DbPages pages,
     DbPublicationDate publicationDate,
     InstanceType publicationType,
-    Boolean applicable, // FIXME: Can we use boolean?
-    Boolean internationalCollaboration,
+    boolean applicable,
+    boolean internationalCollaboration,
     DbPublicationChannel publicationChannel,
     @DynamoDbConvertedBy(DbCreatorTypeListConverter.class) List<DbCreatorType> creators,
     int contributorCount,
@@ -70,8 +69,8 @@ public record DbPublication(
     private DbPages builderPages;
     private DbPublicationDate builderPublicationDate;
     private InstanceType builderPublicationType;
-    private Boolean builderIsApplicable;
-    private Boolean builderIsInternationalCollaboration;
+    private boolean builderIsApplicable;
+    private boolean builderIsInternationalCollaboration;
     private DbPublicationChannel builderPublicationChannel;
     private int builderContributorCount;
     private List<DbCreatorType> builderCreators = emptyList();
@@ -130,22 +129,13 @@ public record DbPublication(
       return this;
     }
 
-    public Builder applicable(Boolean applicable) {
+    public Builder applicable(boolean applicable) {
       this.builderIsApplicable = applicable;
       return this;
     }
 
-    public Builder internationalCollaboration(Boolean internationalCollaboration) {
+    public Builder internationalCollaboration(boolean internationalCollaboration) {
       this.builderIsInternationalCollaboration = internationalCollaboration;
-      return this;
-    }
-
-    // FIXME
-    @DynamoDbIgnore
-    public Builder publicationChannels(List<DbPublicationChannel> publicationChannels) {
-      if (nonNull(publicationChannels) && !publicationChannels.isEmpty()) {
-        this.builderPublicationChannel = publicationChannels.getFirst();
-      }
       return this;
     }
 
