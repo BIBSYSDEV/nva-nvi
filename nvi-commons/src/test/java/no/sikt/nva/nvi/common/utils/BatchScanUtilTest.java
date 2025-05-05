@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.IntStream;
-import no.sikt.nva.nvi.common.SampleExpandedPublicationFactory;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
@@ -42,7 +41,6 @@ class BatchScanUtilTest {
   private BatchScanUtil batchScanUtil;
   private CandidateRepository candidateRepository;
   private TestScenario scenario;
-  private SampleExpandedPublicationFactory publicationFactory; // FIXME
 
   @BeforeEach
   void setup() {
@@ -51,9 +49,6 @@ class BatchScanUtilTest {
 
     batchScanUtil =
         new BatchScanUtil(scenario.getCandidateRepository(), scenario.getS3StorageReader());
-    publicationFactory =
-        defaultExpandedPublicationFactory(
-            mock(AuthorizedBackendUriRetriever.class), scenario.getUriRetriever());
   }
 
   @Test

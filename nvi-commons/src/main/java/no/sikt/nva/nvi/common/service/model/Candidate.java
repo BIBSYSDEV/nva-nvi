@@ -654,7 +654,6 @@ public final class Candidate {
     return !Objects.equals(newType, currentType);
   }
 
-  // FIXME: Add parsing to value class? Original level is mis-mapped to NonCandidateLevel
   private static boolean levelIsUpdated(UpsertNviCandidateRequest request, Candidate candidate) {
     return !Objects.equals(request.level(), candidate.getScientificLevel());
   }
