@@ -111,8 +111,7 @@ public class CandidateRepository extends DynamoRepository {
   }
 
   public CandidateDao create(DbCandidate dbCandidate, List<DbApprovalStatus> approvalStatuses) {
-    return create(
-        dbCandidate, approvalStatuses, dbCandidate.publicationDetails().publicationDate().year());
+    return create(dbCandidate, approvalStatuses, dbCandidate.getPublicationDate().year());
   }
 
   public CandidateDao create(

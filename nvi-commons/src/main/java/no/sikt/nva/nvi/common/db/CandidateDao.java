@@ -218,7 +218,7 @@ public final class CandidateDao extends Dao {
 
   @Deprecated
   private String migratePeriodYear() {
-    return isApplicableAndMissingPeriodYear() ? candidate.publicationDate().year() : periodYear;
+    return isApplicableAndMissingPeriodYear() ? candidate.getPublicationDate().year() : periodYear;
   }
 
   private boolean isApplicableAndMissingPeriodYear() {
@@ -401,6 +401,8 @@ public final class CandidateDao extends Dao {
           && creatorShareCount == that.creatorShareCount
           && Objects.equals(publicationId, that.publicationId)
           && Objects.equals(publicationBucketUri, that.publicationBucketUri)
+          && Objects.equals(publicationIdentifier, that.publicationIdentifier)
+          && Objects.equals(publicationDetails, that.publicationDetails)
           && Objects.equals(instanceType, that.instanceType)
           && channelType == that.channelType
           && Objects.equals(channelId, that.channelId)
@@ -421,6 +423,8 @@ public final class CandidateDao extends Dao {
       return Objects.hash(
           publicationId,
           publicationBucketUri,
+          publicationIdentifier,
+          publicationDetails,
           applicable,
           instanceType,
           channelType,
@@ -437,6 +441,14 @@ public final class CandidateDao extends Dao {
           totalPoints,
           createdDate,
           reportStatus);
+    }
+
+    @DynamoDbIgnore
+    public DbPublicationDate getPublicationDate() {
+      if (nonNull(publicationDetails) && nonNull(publicationDetails.publicationDate())) {
+        return publicationDetails.publicationDate();
+      }
+      return publicationDate;
     }
 
     @SuppressWarnings("PMD.TooManyFields")

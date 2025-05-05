@@ -68,7 +68,7 @@ class MigrationTests {
     var migratedCandidate =
         candidateRepository.findCandidateById(existingDao.identifier()).orElseThrow();
     assertNotNull(migratedCandidate.getPeriodYear());
-    assertEquals(dbCandidate.publicationDate().year(), migratedCandidate.getPeriodYear());
+    assertEquals(dbCandidate.getPublicationDate().year(), migratedCandidate.getPeriodYear());
   }
 
   @Test

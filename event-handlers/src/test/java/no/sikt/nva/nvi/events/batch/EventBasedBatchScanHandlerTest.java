@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.events.batch;
 
+import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidateBuilder;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -18,7 +19,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.Year;
 import java.time.ZonedDateTime;
 import java.util.Collection;
@@ -33,8 +33,6 @@ import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
 import no.sikt.nva.nvi.common.db.CandidateDao;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.CandidateUniquenessEntryDao;
 import no.sikt.nva.nvi.common.db.Dao;
@@ -43,8 +41,6 @@ import no.sikt.nva.nvi.common.db.NviPeriodDao;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.ReportStatus;
-import no.sikt.nva.nvi.common.db.model.ChannelType;
-import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.model.KeyField;
 import no.sikt.nva.nvi.common.model.CandidateFixtures;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
@@ -146,9 +142,10 @@ class EventBasedBatchScanHandlerTest {
   @Test
   void shouldNotUpdateInitialDbCandidate() {
     createPeriod();
+    var dbCandidate = randomCandidateBuilder(true).reportStatus(ReportStatus.REPORTED).build();
     var dao =
         Optional.ofNullable(
-                candidateRepository.create(randomDbCandidate(), List.of(), Year.now().toString()))
+                candidateRepository.create(dbCandidate, List.of(), Year.now().toString()))
             .map(CandidateDao::identifier)
             .map(candidateRepository::findDaoById)
             .orElseThrow();
@@ -248,18 +245,6 @@ class EventBasedBatchScanHandlerTest {
     var result = JsonUtils.dtoObjectMapper.readValue(output.toByteArray(), ListingResult.class);
 
     assertThat(result.getTotalItemCount(), is(0));
-  }
-
-  private static DbCandidate randomDbCandidate() {
-    return DbCandidate.builder()
-        .publicationId(randomUri())
-        .publicationIdentifier(randomString())
-        .reportStatus(ReportStatus.REPORTED)
-        .level(DbLevel.LEVEL_ONE)
-        .channelType(ChannelType.JOURNAL)
-        .publicationDate(
-            new DbPublicationDate(String.valueOf(LocalDate.now().getYear()), null, null))
-        .build();
   }
 
   private void assertExpectedDaosAreUpdated(

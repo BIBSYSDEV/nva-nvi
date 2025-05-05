@@ -150,7 +150,10 @@ class BatchScanUtilTest {
   @Test
   void shouldMigratePublicationIdentifierField() {
     var dbCandidate =
-        setupRandomCandidateBuilderWithPublicationInS3().publicationIdentifier(null).build();
+        setupRandomCandidateBuilderWithPublicationInS3()
+            .publicationIdentifier(null)
+            .publicationDetails(null)
+            .build();
     var originalCandidate = candidateRepository.create(dbCandidate, List.of());
 
     batchScanUtil.migrateAndUpdateVersion(10, null, emptyList());

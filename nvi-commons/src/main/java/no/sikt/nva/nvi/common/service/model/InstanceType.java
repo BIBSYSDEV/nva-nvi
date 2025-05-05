@@ -11,6 +11,9 @@ public enum InstanceType {
   ACADEMIC_ARTICLE("AcademicArticle"),
   ACADEMIC_LITERATURE_REVIEW("AcademicLiteratureReview");
 
+  // FIXME: Add the JsonValue annotation back, and migrate DB field to just a string?
+  // Or find some other way to deal with the fact that DDB and Jackson disagree on how to
+  // serialize enums...
   private final String value;
 
   InstanceType(String value) {

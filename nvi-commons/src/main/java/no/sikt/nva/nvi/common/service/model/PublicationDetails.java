@@ -112,7 +112,7 @@ public record PublicationDetails(
         .withStatus(dbDetails.status())
         .withLanguage(dbDetails.language())
         .withAbstract(dbDetails.abstractText())
-        .withPublicationDate(dateFromDbDate(dbCandidate.publicationDate()))
+        .withPublicationDate(dateFromDbDate(dbCandidate.getPublicationDate()))
         .withPublicationType(dbDetails.publicationType())
         .withPageCount(getPages(dbDetails))
         .withIsApplicable(dbDetails.applicable())

@@ -21,7 +21,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.StringContains.containsString;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -264,8 +263,6 @@ class UpsertNviCandidateHandlerTest {
         List.of(new UnverifiedNviCreatorDto(randomString(), List.of(randomUri())));
     var updatedEvaluatedNviCandidate =
         evaluatedNviCandidate.withUnverifiedCreators(unverifiedCreators).build();
-    var expectedCreatorCount =
-        updatedEvaluatedNviCandidate.verifiedCreators().size() + unverifiedCreators.size();
 
     sqsEvent = createEvent(createEvalMessage(updatedEvaluatedNviCandidate));
     handler.handleRequest(sqsEvent, CONTEXT);
@@ -274,10 +271,13 @@ class UpsertNviCandidateHandlerTest {
             .findByPublicationId(updatedEvaluatedNviCandidate.publicationId())
             .orElseThrow();
 
-    assertEquals(expectedCreatorCount, actualPersistedCandidateDao.candidate().creators().size());
-    assertEquals(
-        getExpectedCandidate(updatedEvaluatedNviCandidate),
-        actualPersistedCandidateDao.candidate());
+    var expectedCandidate = getExpectedCandidate(updatedEvaluatedNviCandidate);
+    var actualCandidate = actualPersistedCandidateDao.candidate();
+    Assertions.assertThat(expectedCandidate)
+        .usingRecursiveComparison()
+        .ignoringCollectionOrder()
+        .ignoringFields("createdDate", "modifiedDate", "publicationDetails")
+        .isEqualTo(actualCandidate);
   }
 
   private static CandidateEvaluatedMessage randomCandidateEvaluatedMessage() {
@@ -383,6 +383,7 @@ class UpsertNviCandidateHandlerTest {
     return DbCandidate.builder()
         .applicable(true)
         .publicationId(evaluatedNviCandidate.publicationId())
+        .publicationIdentifier(evaluatedNviCandidate.publicationDetails().identifier())
         .publicationBucketUri(evaluatedNviCandidate.publicationBucketUri())
         .instanceType(evaluatedNviCandidate.instanceType().getValue())
         .level(DbLevel.parse(evaluatedNviCandidate.level()))

@@ -565,7 +565,7 @@ class CandidateTest extends CandidateTestSetup {
         DbPublicationChannel.builder()
             .id(request.publicationChannelId())
             .channelType(ChannelType.parse(request.channelType()))
-            //            .scientificValue(ScientificValue.parse(request.level()))
+            //            .scientificValue(ScientificValue.parse(request.level())) // FIXME
             .scientificValue(request.level())
             .build();
 
@@ -612,6 +612,7 @@ class CandidateTest extends CandidateTestSetup {
         .candidate();
   }
 
+  // FIXME: Create domain class and move this there? Re-used multiple places
   private static DbPages dbPagesFromRequest(UpsertNviCandidateRequest request) {
     var dtoPages = request.publicationDetails().pageCount();
     if (isNull(dtoPages)) {
