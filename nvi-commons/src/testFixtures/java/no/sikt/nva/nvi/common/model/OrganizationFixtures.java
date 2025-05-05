@@ -26,6 +26,10 @@ import no.unit.nva.auth.uriretriever.UriRetriever;
 
 public class OrganizationFixtures {
 
+  public static Organization randomTopLevelOrganization() {
+    return randomOrganization(COUNTRY_CODE_NORWAY, 2).build();
+  }
+
   public static Organization randomOrganizationWithPartOf(Organization topLevelOrg) {
     return randomOrganization().withPartOf(List.of(topLevelOrg)).build();
   }

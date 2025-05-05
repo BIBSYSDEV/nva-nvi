@@ -2,6 +2,8 @@ package no.sikt.nva.nvi.common;
 
 import static java.math.BigDecimal.ZERO;
 import static java.util.Collections.emptyList;
+import static no.sikt.nva.nvi.common.model.ContributorFixtures.randomVerifiedNviCreatorDto;
+import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomTopLevelOrganization;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 
@@ -41,18 +43,22 @@ public class UpsertRequestBuilder {
   private BigDecimal totalPoints;
 
   public static UpsertRequestBuilder randomUpsertRequestBuilder() {
-    var publicationBuilder = PublicationDtoBuilder.randomPublicationDtoBuilder();
+    var topLevelOrganization = randomTopLevelOrganization();
+    var affiliationId = topLevelOrganization.hasPart().getFirst().id();
+    var nviCreator = randomVerifiedNviCreatorDto(affiliationId);
+    var publicationBuilder =
+        PublicationDtoBuilder.randomPublicationDtoBuilder()
+            .withTopLevelOrganizations(List.of(topLevelOrganization));
     var publicationDetails = publicationBuilder.build();
-    var creatorId = randomUri();
-    var affiliationId = randomUri();
     var channel = List.copyOf(publicationDetails.publicationChannels()).getFirst();
+
     return new UpsertRequestBuilder()
         .withPublicationDetails(publicationBuilder)
         .withPublicationBucketUri(randomUri())
         .withPublicationId(publicationDetails.id())
         .withPublicationIdentifier(publicationDetails.identifier())
         .withIsInternationalCollaboration(publicationDetails.isInternationalCollaboration())
-        .withVerifiedCreators(List.of(new VerifiedNviCreatorDto(creatorId, List.of(affiliationId))))
+        .withVerifiedCreators(List.of(nviCreator))
         .withUnverifiedCreators(emptyList())
         .withChannelType(channel.channelType().getValue())
         .withChannelId(channel.id())
@@ -69,7 +75,7 @@ public class UpsertRequestBuilder {
                     randomBigDecimal(),
                     List.of(
                         new CreatorAffiliationPoints(
-                            creatorId, affiliationId, randomBigDecimal())))))
+                            nviCreator.id(), affiliationId, randomBigDecimal())))))
         .withTotalPoints(BigDecimal.ONE);
   }
 
