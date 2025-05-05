@@ -5,6 +5,7 @@ import java.util.Optional;
 import no.sikt.nva.nvi.common.dto.ContributorDto;
 import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
 import no.sikt.nva.nvi.common.dto.PublicationDto;
+import no.sikt.nva.nvi.common.model.ChannelType;
 import no.sikt.nva.nvi.events.evaluator.calculator.PointCalculator;
 import no.sikt.nva.nvi.events.evaluator.model.Channel;
 import no.sikt.nva.nvi.events.evaluator.model.NviCreator;
@@ -44,25 +45,25 @@ public final class PointService {
           case ACADEMIC_MONOGRAPH, ACADEMIC_COMMENTARY, ACADEMIC_CHAPTER ->
               getSeriesOrPublisher(publication);
         };
-    var channelType = PublicationChannel.parse(channelDto.channelType());
+    var channelType = PublicationChannel.parse(channelDto.channelType().getValue());
     return new Channel(channelDto.id(), channelType, channelDto.scientificValue());
   }
 
   private static Optional<PublicationChannelDto> getChannel(
-      PublicationDto publication, PublicationChannel channelType) {
+      PublicationDto publication, ChannelType channelType) {
     return publication.publicationChannels().stream()
-        .filter(channel -> channelType.getValue().equals(channel.channelType()))
+        .filter(channel -> channelType.equals(channel.channelType()))
         .filter(channel -> channel.scientificValue().isValid())
         .findFirst();
   }
 
   private static PublicationChannelDto getJournal(PublicationDto publication) {
-    return getChannel(publication, PublicationChannel.JOURNAL).orElseThrow();
+    return getChannel(publication, ChannelType.JOURNAL).orElseThrow();
   }
 
   private static PublicationChannelDto getSeriesOrPublisher(PublicationDto publication) {
-    return getChannel(publication, PublicationChannel.SERIES)
-        .orElseGet(() -> getChannel(publication, PublicationChannel.PUBLISHER).orElseThrow());
+    return getChannel(publication, ChannelType.SERIES)
+        .orElseGet(() -> getChannel(publication, ChannelType.PUBLISHER).orElseThrow());
   }
 
   private static int getTotalShares(

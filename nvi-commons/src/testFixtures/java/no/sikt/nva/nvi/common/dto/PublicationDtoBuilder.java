@@ -38,14 +38,14 @@ public class PublicationDtoBuilder {
     var channel =
         PublicationChannelDto.builder()
             .withId(randomUri())
-            .withChannelType(ChannelType.JOURNAL.getValue())
+            .withChannelType(ChannelType.JOURNAL)
             .withScientificValue(ScientificValue.LEVEL_ONE)
             .build();
     return new PublicationDtoBuilder()
         .withId(randomUri())
         .withIdentifier(randomUUID().toString())
-        .withContributors(emptyList()) // TODO
-        .withTopLevelOrganizations(emptyList()) // TODO
+        .withContributors(emptyList()) // FIXME
+        .withTopLevelOrganizations(emptyList()) // FIXME
         .withPublicationChannels(List.of(channel))
         .withPublicationType(InstanceType.ACADEMIC_ARTICLE)
         .withModifiedDate(Instant.now())

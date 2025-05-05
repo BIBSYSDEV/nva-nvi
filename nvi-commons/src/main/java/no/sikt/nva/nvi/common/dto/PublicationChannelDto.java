@@ -7,6 +7,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
+import no.sikt.nva.nvi.common.model.ChannelType;
 import no.sikt.nva.nvi.common.model.ScientificValue;
 
 @JsonSerialize
@@ -14,7 +15,7 @@ import no.sikt.nva.nvi.common.model.ScientificValue;
 @JsonTypeName("PublicationChannel")
 public record PublicationChannelDto(
     URI id,
-    String channelType,
+    ChannelType channelType,
     String identifier,
     String name,
     String year,
@@ -38,7 +39,7 @@ public record PublicationChannelDto(
   public static final class Builder {
 
     private URI id;
-    private String channelType;
+    private ChannelType channelType;
     private String identifier;
     private String name;
     private String year;
@@ -53,7 +54,7 @@ public record PublicationChannelDto(
       return this;
     }
 
-    public Builder withChannelType(String channelType) {
+    public Builder withChannelType(ChannelType channelType) {
       this.channelType = channelType;
       return this;
     }

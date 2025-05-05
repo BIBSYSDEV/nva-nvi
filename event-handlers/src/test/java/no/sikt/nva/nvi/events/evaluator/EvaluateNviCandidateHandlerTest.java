@@ -58,6 +58,7 @@ import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.dto.PublicationDto;
 import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
+import no.sikt.nva.nvi.common.model.ChannelType;
 import no.sikt.nva.nvi.common.model.InstanceType;
 import no.sikt.nva.nvi.common.model.ScientificValue;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
@@ -615,7 +616,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
         PublicationChannelDto.builder()
             .withId(HARDCODED_PUBLICATION_CHANNEL_ID)
             .withScientificValue(ScientificValue.parse(level))
-            .withChannelType(channelType.getValue())
+            .withChannelType(ChannelType.parse(channelType.getValue()))
             .build();
     return PublicationDto.builder()
         .withId(publicationId)

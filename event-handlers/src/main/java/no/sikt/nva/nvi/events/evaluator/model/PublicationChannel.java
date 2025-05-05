@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.events.evaluator.model;
 
 import java.util.Arrays;
 
+// FIXME: Remove this class, it is a duplicate of ChannelType in nvi-commons
 public enum PublicationChannel {
   JOURNAL("Journal"),
   SERIES("Series"),

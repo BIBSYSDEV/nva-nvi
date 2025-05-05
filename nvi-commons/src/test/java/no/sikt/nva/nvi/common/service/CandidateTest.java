@@ -105,7 +105,7 @@ class CandidateTest extends CandidateTestSetup {
     var channel =
         PublicationChannelDto.builder()
             .withId(randomUri())
-            .withChannelType(ChannelType.JOURNAL.getValue())
+            .withChannelType(ChannelType.JOURNAL)
             .withScientificValue(ScientificValue.parse(versionTwoValue))
             .build();
     var publicationDtoBuilder =

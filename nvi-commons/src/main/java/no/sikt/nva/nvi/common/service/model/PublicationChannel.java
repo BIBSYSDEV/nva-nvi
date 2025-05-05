@@ -9,12 +9,11 @@ import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
 import no.sikt.nva.nvi.common.model.ChannelType;
 import no.sikt.nva.nvi.common.model.ScientificValue;
 
-// FIXME: Re-order parameters and sync with other versions
 public record PublicationChannel(URI id, ChannelType channelType, ScientificValue scientificValue) {
 
   public static PublicationChannel from(PublicationChannelDto dtoChannel) {
     return new PublicationChannel(
-        dtoChannel.id(), ChannelType.parse(dtoChannel.channelType()), dtoChannel.scientificValue());
+        dtoChannel.id(), dtoChannel.channelType(), dtoChannel.scientificValue());
   }
 
   /**
