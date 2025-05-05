@@ -18,6 +18,10 @@ public enum InstanceType {
     this.value = value;
   }
 
+  /**
+   * Parses a string value to an enum, ignoring case and allowing for both enum name and enum value
+   * to be used as input. This is because existing data can be in either format.
+   */
   @JsonCreator
   public static InstanceType parse(String stringValue) {
     return Arrays.stream(values()).filter(matchesEnumValue(stringValue)).findFirst().orElseThrow();

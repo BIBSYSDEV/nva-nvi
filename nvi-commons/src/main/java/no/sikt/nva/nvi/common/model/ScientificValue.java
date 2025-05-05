@@ -12,27 +12,28 @@ public enum ScientificValue {
   LEVEL_ONE("LevelOne"),
   LEVEL_TWO("LevelTwo");
 
-  @JsonValue private final String value;
+  private final String value;
 
   ScientificValue(String value) {
     this.value = value;
   }
 
   /**
-   * Parses a string value to a ScientificValue enum, ignoring case and allowing for both enum name
-   * and enum value to be used as input. This is because existing data can be in either format.
+   * Parses a string value to an enum, ignoring case and allowing for both enum name and enum value
+   * to be used as input. This is because existing data can be in either format.
    */
   @JsonCreator
   public static ScientificValue parse(String stringValue) {
     return Arrays.stream(values()).filter(matchesEnumValue(stringValue)).findFirst().orElseThrow();
   }
 
-  public boolean isValid() {
-    return this == LEVEL_ONE || this == LEVEL_TWO;
-  }
-
+  @JsonValue
   public String getValue() {
     return value;
+  }
+
+  public boolean isValid() {
+    return this == LEVEL_ONE || this == LEVEL_TWO;
   }
 
   private static Predicate<ScientificValue> matchesEnumValue(String stringValue) {
