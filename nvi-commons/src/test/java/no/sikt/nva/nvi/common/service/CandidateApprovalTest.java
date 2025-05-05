@@ -499,7 +499,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
             .withVerifiedCreators(arguments.creators())
             .withInstanceType(arguments.type())
             .withChannelId(arguments.channel().id())
-            .withLevel(arguments.channel().level().getValue())
+            .withLevel(arguments.channel().scientificValue().getValue())
             .withPoints(arguments.institutionPoints())
             .build();
 

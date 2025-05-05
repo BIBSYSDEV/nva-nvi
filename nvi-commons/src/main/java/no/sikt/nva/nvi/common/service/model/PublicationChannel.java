@@ -10,8 +10,7 @@ import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
 import no.sikt.nva.nvi.common.model.ScientificValue;
 
 // FIXME: Move ChannelType enum to commons and update it
-// TODO: Refactor level -> scientificValue
-public record PublicationChannel(ChannelType channelType, URI id, ScientificValue level) {
+public record PublicationChannel(ChannelType channelType, URI id, ScientificValue scientificValue) {
 
   public static PublicationChannel from(PublicationChannelDto dtoChannel) {
     return new PublicationChannel(
@@ -47,7 +46,7 @@ public record PublicationChannel(ChannelType channelType, URI id, ScientificValu
     return DbPublicationChannel.builder()
         .id(id)
         .channelType(channelType)
-        .scientificValue(level.getValue())
+        .scientificValue(scientificValue.getValue())
         .build();
   }
 }

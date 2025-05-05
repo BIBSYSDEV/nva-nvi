@@ -327,7 +327,7 @@ public final class Candidate {
   }
 
   public String getScientificLevel() {
-    return publicationDetails.publicationChannel().level().getValue();
+    return publicationDetails.publicationChannel().scientificValue().getValue();
   }
 
   public ChannelType getPublicationChannelType() {

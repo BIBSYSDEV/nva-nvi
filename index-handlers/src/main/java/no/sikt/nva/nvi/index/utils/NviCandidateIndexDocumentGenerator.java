@@ -237,7 +237,8 @@ public final class NviCandidateIndexDocumentGenerator {
     var publicationChannel = candidate.getPublicationDetails().publicationChannel();
     var publicationChannelBuilder =
         PublicationChannel.builder()
-            .withScientificValue(ScientificValue.parse(publicationChannel.level().getValue()));
+            .withScientificValue(
+                ScientificValue.parse(publicationChannel.scientificValue().getValue()));
 
     if (nonNull(publicationChannel.id())) { // Might be null for candidates imported via Cristin
       publicationChannelBuilder.withId(publicationChannel.id());
