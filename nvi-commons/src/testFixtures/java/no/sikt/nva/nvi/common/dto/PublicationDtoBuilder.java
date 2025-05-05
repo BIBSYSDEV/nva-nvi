@@ -11,9 +11,9 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import no.sikt.nva.nvi.common.client.model.Organization;
-import no.sikt.nva.nvi.common.db.model.ChannelType;
+import no.sikt.nva.nvi.common.model.ChannelType;
+import no.sikt.nva.nvi.common.model.InstanceType;
 import no.sikt.nva.nvi.common.model.ScientificValue;
-import no.sikt.nva.nvi.common.service.model.InstanceType;
 
 public class PublicationDtoBuilder {
 

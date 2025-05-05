@@ -1,12 +1,12 @@
 package no.sikt.nva.nvi.events.evaluator.calculator;
 
+import static no.sikt.nva.nvi.common.model.InstanceType.ACADEMIC_ARTICLE;
+import static no.sikt.nva.nvi.common.model.InstanceType.ACADEMIC_CHAPTER;
+import static no.sikt.nva.nvi.common.model.InstanceType.ACADEMIC_COMMENTARY;
+import static no.sikt.nva.nvi.common.model.InstanceType.ACADEMIC_LITERATURE_REVIEW;
+import static no.sikt.nva.nvi.common.model.InstanceType.ACADEMIC_MONOGRAPH;
 import static no.sikt.nva.nvi.common.model.ScientificValue.LEVEL_ONE;
 import static no.sikt.nva.nvi.common.model.ScientificValue.LEVEL_TWO;
-import static no.sikt.nva.nvi.common.service.model.InstanceType.ACADEMIC_ARTICLE;
-import static no.sikt.nva.nvi.common.service.model.InstanceType.ACADEMIC_CHAPTER;
-import static no.sikt.nva.nvi.common.service.model.InstanceType.ACADEMIC_COMMENTARY;
-import static no.sikt.nva.nvi.common.service.model.InstanceType.ACADEMIC_LITERATURE_REVIEW;
-import static no.sikt.nva.nvi.common.service.model.InstanceType.ACADEMIC_MONOGRAPH;
 import static no.sikt.nva.nvi.events.evaluator.model.PublicationChannel.JOURNAL;
 import static no.sikt.nva.nvi.events.evaluator.model.PublicationChannel.PUBLISHER;
 import static no.sikt.nva.nvi.events.evaluator.model.PublicationChannel.SERIES;
@@ -15,8 +15,8 @@ import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
 import java.util.Map;
+import no.sikt.nva.nvi.common.model.InstanceType;
 import no.sikt.nva.nvi.common.model.ScientificValue;
-import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.events.evaluator.model.PublicationChannel;
 
 public final class PointCalculationConstants {

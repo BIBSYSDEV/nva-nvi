@@ -12,7 +12,7 @@ import java.net.URI;
 import java.time.Instant;
 import java.util.Collection;
 import no.sikt.nva.nvi.common.client.model.Organization;
-import no.sikt.nva.nvi.common.service.model.InstanceType;
+import no.sikt.nva.nvi.common.model.InstanceType;
 
 @JsonSerialize
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")

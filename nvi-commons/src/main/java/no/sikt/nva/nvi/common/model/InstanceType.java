@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.common.service.model;
+package no.sikt.nva.nvi.common.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import java.util.Arrays;

@@ -2,7 +2,6 @@ package no.sikt.nva.nvi.common.model;
 
 import java.util.Arrays;
 import java.util.Random;
-import no.sikt.nva.nvi.common.service.model.InstanceType;
 
 public class InstanceTypeFixtures {
   private static final Random RANDOM = new Random();

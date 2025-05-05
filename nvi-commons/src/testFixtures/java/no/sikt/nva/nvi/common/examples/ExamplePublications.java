@@ -21,7 +21,7 @@ import java.util.List;
 import no.sikt.nva.nvi.common.dto.PageCountDto;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.dto.PublicationDto;
-import no.sikt.nva.nvi.common.service.model.InstanceType;
+import no.sikt.nva.nvi.common.model.InstanceType;
 
 /**
  * Example models for testing purposes, corresponding to the data in

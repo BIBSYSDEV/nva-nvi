@@ -4,9 +4,9 @@ import static java.util.Objects.nonNull;
 
 import java.net.URI;
 import no.sikt.nva.nvi.common.db.CandidateDao;
-import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.db.model.DbPublicationChannel;
 import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
+import no.sikt.nva.nvi.common.model.ChannelType;
 import no.sikt.nva.nvi.common.model.ScientificValue;
 
 // FIXME: Move ChannelType enum to commons and update it

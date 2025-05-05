@@ -17,9 +17,9 @@ import no.sikt.nva.nvi.common.db.model.DbPublication;
 import no.sikt.nva.nvi.common.db.model.DbPublicationChannel;
 import no.sikt.nva.nvi.common.db.model.KeyField;
 import no.sikt.nva.nvi.common.dto.PageCountDto;
+import no.sikt.nva.nvi.common.model.InstanceType;
 import no.sikt.nva.nvi.common.model.ListingResult;
 import no.sikt.nva.nvi.common.service.PublicationLoaderService;
-import no.sikt.nva.nvi.common.service.model.InstanceType;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 

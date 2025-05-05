@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.common.db.model;
+package no.sikt.nva.nvi.common.model;
 
 import java.util.Arrays;
 

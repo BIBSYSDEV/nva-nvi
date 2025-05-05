@@ -8,9 +8,9 @@ import java.math.BigDecimal;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
+import no.sikt.nva.nvi.common.model.InstanceType;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
-import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")

@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.common.db.model;
 
 import java.net.URI;
+import no.sikt.nva.nvi.common.model.ChannelType;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmutable;
 
 @DynamoDbImmutable(builder = DbPublicationChannel.Builder.class)
