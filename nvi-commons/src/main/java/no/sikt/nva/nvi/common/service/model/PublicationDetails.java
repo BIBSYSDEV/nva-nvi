@@ -37,7 +37,7 @@ public record PublicationDetails(
     String abstractText,
     PageCount pageCount,
     PublicationChannel publicationChannel,
-    PublicationDateDto publicationDate,
+    PublicationDate publicationDate,
     InstanceType publicationType,
     boolean isApplicable,
     boolean isInternationalCollaboration,
@@ -59,7 +59,7 @@ public record PublicationDetails(
         .withStatus(publicationDto.status())
         .withLanguage(publicationDto.language())
         .withAbstract(publicationDto.abstractText())
-        .withPublicationDate(publicationDto.publicationDate())
+        .withPublicationDate(PublicationDate.from(publicationDto.publicationDate()))
         .withPublicationType(publicationDto.publicationType())
         .withPageCount(PageCount.from(publicationDto.pageCount()))
         .withIsApplicable(publicationDto.isApplicable())
@@ -99,7 +99,7 @@ public record PublicationDetails(
         .withStatus(dbDetails.status())
         .withLanguage(dbDetails.language())
         .withAbstract(dbDetails.abstractText())
-        .withPublicationDate(mapFromDbDate(dbCandidate.getPublicationDate()))
+        .withPublicationDate(PublicationDate.from(dbCandidate.getPublicationDate()))
         .withPublicationType(InstanceType.parse(dbDetails.publicationType()))
         .withPageCount(getPages(dbDetails))
         .withIsApplicable(dbDetails.applicable())
@@ -145,7 +145,7 @@ public record PublicationDetails(
         .language(language)
         .abstractText(abstractText)
         .pages(getDbPages())
-        .publicationDate(mapToPublicationDate(publicationDate))
+        .publicationDate(publicationDate.toDbPublicationDate())
         .publicationType(publicationType.getValue())
         .applicable(isApplicable)
         .internationalCollaboration(isInternationalCollaboration)
@@ -221,7 +221,7 @@ public record PublicationDetails(
     private String language;
     private String abstractText;
     private PageCount pageCount;
-    private PublicationDateDto publicationDate;
+    private PublicationDate publicationDate;
     private InstanceType publicationType;
     private boolean isApplicable;
     private boolean isInternationalCollaboration;
@@ -264,7 +264,7 @@ public record PublicationDetails(
       return this;
     }
 
-    public Builder withPublicationDate(PublicationDateDto publicationDate) {
+    public Builder withPublicationDate(PublicationDate publicationDate) {
       this.publicationDate = publicationDate;
       return this;
     }

@@ -137,7 +137,7 @@ public final class CristinMapper {
         .identifier(cristinNviReport.publicationIdentifier())
         .publicationBucketUri(
             constructPublicationBucketUri(cristinNviReport.publicationIdentifier()))
-        .publicationDate(constructPublicationDate(cristinNviReport.publicationDate()))
+        .publicationDate(cristinNviReport.publicationDate().toDbPublicationDate())
         .publicationType(cristinNviReport.instanceType())
         .applicable(true)
         .modifiedDate(now)

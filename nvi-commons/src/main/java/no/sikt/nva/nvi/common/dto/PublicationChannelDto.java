@@ -3,16 +3,12 @@ package no.sikt.nva.nvi.common.dto;
 import static java.util.Objects.requireNonNull;
 import static no.sikt.nva.nvi.common.utils.Validator.shouldNotBeNull;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
 import no.sikt.nva.nvi.common.model.ChannelType;
 import no.sikt.nva.nvi.common.model.ScientificValue;
 
 @JsonSerialize
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
-@JsonTypeName("PublicationChannel")
 public record PublicationChannelDto(
     URI id,
     ChannelType channelType,

@@ -30,8 +30,8 @@ import java.nio.file.Path;
 import java.util.List;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
-import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.model.ChannelType;
+import no.sikt.nva.nvi.common.service.model.PublicationDate;
 import no.sikt.nva.nvi.events.cristin.CristinNviReport.Builder;
 import no.unit.nva.commons.json.JsonUtils;
 import nva.commons.core.ioutils.IoUtils;
@@ -578,7 +578,7 @@ class CristinMapperTest {
     var report =
         CristinNviReport.builder()
             .withScientificResources(List.of(scientificResourceWithQualityCode("2A")))
-            .withPublicationDate(new PublicationDateDto("2020", null, null))
+            .withPublicationDate(new PublicationDate("2020", null, null))
             .build();
     var nviCandidate = cristinMapper.toDbCandidate(report);
 
@@ -622,7 +622,7 @@ class CristinMapperTest {
         .withPublicationIdentifier(randomString())
         .withYearReported(randomString())
         .withInstanceType(randomString())
-        .withPublicationDate(new PublicationDateDto(randomString(), randomString(), randomString()))
+        .withPublicationDate(new PublicationDate(randomString(), randomString(), randomString()))
         .withCristinLocales(nonNull(cristinLocales) ? List.of(cristinLocales) : List.of())
         .withReference(attempt(() -> JsonUtils.dtoObjectMapper.readTree("{}")).orElseThrow())
         .withInstanceType(randomString())
@@ -635,7 +635,7 @@ class CristinMapperTest {
         .withPublicationIdentifier(randomString())
         .withYearReported(randomString())
         .withInstanceType(randomString())
-        .withPublicationDate(new PublicationDateDto(randomString(), randomString(), randomString()))
+        .withPublicationDate(new PublicationDate(randomString(), randomString(), randomString()))
         .withCristinLocales(cristinLocales)
         .withScientificResources(List.of(scientificResource))
         .build();
