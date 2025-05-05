@@ -129,7 +129,7 @@ public class BatchScanUtil {
     return DbPages.builder()
         .firstPage(dtoPages.firstPage())
         .lastPage(dtoPages.lastPage())
-        .pageCount(dtoPages.numberOfPages())
+        .numberOfPages(dtoPages.numberOfPages())
         .build();
   }
 

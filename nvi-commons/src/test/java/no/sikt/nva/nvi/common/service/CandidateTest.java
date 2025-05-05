@@ -621,7 +621,7 @@ class CandidateTest extends CandidateTestSetup {
     return DbPages.builder()
         .firstPage(dtoPages.firstPage())
         .lastPage(dtoPages.lastPage())
-        .pageCount(dtoPages.numberOfPages())
+        .numberOfPages(dtoPages.numberOfPages())
         .build();
   }
 }

@@ -10,7 +10,7 @@ public record PageCount(String firstPage, String lastPage, String numberOfPages)
   }
 
   public static PageCount from(DbPages dbPages) {
-    return new PageCount(dbPages.firstPage(), dbPages.lastPage(), dbPages.pageCount());
+    return new PageCount(dbPages.firstPage(), dbPages.lastPage(), dbPages.numberOfPages());
   }
 
   public PageCountDto toDto() {
@@ -21,7 +21,7 @@ public record PageCount(String firstPage, String lastPage, String numberOfPages)
     return DbPages.builder()
         .firstPage(firstPage)
         .lastPage(lastPage)
-        .pageCount(numberOfPages)
+        .numberOfPages(numberOfPages)
         .build();
   }
 }

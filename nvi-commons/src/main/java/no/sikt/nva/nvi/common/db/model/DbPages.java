@@ -3,8 +3,7 @@ package no.sikt.nva.nvi.common.db.model;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmutable;
 
 @DynamoDbImmutable(builder = DbPages.Builder.class)
-public record DbPages(String firstPage, String lastPage, String pageCount) {
-  // FIXME: Rename pagecount to numberOfPages
+public record DbPages(String firstPage, String lastPage, String numberOfPages) {
 
   public static Builder builder() {
     return new Builder();
@@ -14,7 +13,7 @@ public record DbPages(String firstPage, String lastPage, String pageCount) {
 
     private String builderFirstPage;
     private String builderLastPage;
-    private String builderPageCount;
+    private String builderNumberOfPages;
 
     private Builder() {}
 
@@ -28,13 +27,13 @@ public record DbPages(String firstPage, String lastPage, String pageCount) {
       return this;
     }
 
-    public Builder pageCount(String pageCount) {
-      this.builderPageCount = pageCount;
+    public Builder numberOfPages(String numberOfPages) {
+      this.builderNumberOfPages = numberOfPages;
       return this;
     }
 
     public DbPages build() {
-      return new DbPages(builderFirstPage, builderLastPage, builderPageCount);
+      return new DbPages(builderFirstPage, builderLastPage, builderNumberOfPages);
     }
   }
 }
