@@ -226,7 +226,6 @@ public record PublicationDetails(
     private boolean isApplicable;
     private boolean isInternationalCollaboration;
     private PublicationChannel publicationChannel;
-    private List<PublicationChannel> publicationChannels = emptyList();
     private List<VerifiedNviCreatorDto> verifiedCreators = emptyList();
     private List<UnverifiedNviCreatorDto> unverifiedCreators = emptyList();
     private int contributorCount;
@@ -297,11 +296,6 @@ public record PublicationDetails(
 
     public Builder withPublicationChannel(PublicationChannel publicationChannel) {
       this.publicationChannel = publicationChannel;
-      return this;
-    }
-
-    public Builder withPublicationChannels(Collection<PublicationChannel> publicationChannels) {
-      this.publicationChannels = List.copyOf(publicationChannels);
       return this;
     }
 
