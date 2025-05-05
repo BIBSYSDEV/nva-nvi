@@ -41,6 +41,8 @@
 
   <rule ref="category/java/codestyle.xml">
     <exclude name="ShortClassName"/>
+    <!-- Disabled because it triggers on .id() in record classes -->
+    <exclude name="ShortMethodName"/>
     <exclude name="AtLeastOneConstructor"/>
     <exclude name="LongVariable"/>
     <exclude name="ShortVariable"/>

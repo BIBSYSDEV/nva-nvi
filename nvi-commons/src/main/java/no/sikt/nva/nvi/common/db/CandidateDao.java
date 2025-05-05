@@ -403,9 +403,9 @@ public final class CandidateDao extends Dao {
           && Objects.equals(publicationIdentifier, that.publicationIdentifier)
           && Objects.equals(publicationDetails, that.publicationDetails)
           && Objects.equals(instanceType, that.instanceType)
-          && channelType == that.channelType
+          && Objects.equals(channelType, that.channelType)
           && Objects.equals(channelId, that.channelId)
-          && level == that.level
+          && Objects.equals(level, that.level)
           && Objects.equals(publicationDate, that.publicationDate)
           && Objects.equals(collaborationFactor, that.collaborationFactor)
           && Objects.equals(creators, that.creators)

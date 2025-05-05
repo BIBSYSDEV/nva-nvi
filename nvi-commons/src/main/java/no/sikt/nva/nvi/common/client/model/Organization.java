@@ -33,8 +33,8 @@ public record Organization(
     return builder()
         .withId(dbOrganization.id())
         .withCountryCode(dbOrganization.countryCode())
-        .withPartOf(dbOrganization.partOf().stream().map(Organization::from).toList())
-        .withHasPart(dbOrganization.hasPart().stream().map(Organization::from).toList())
+        .withPartOf(dbOrganization.parentOrganizations().stream().map(Organization::from).toList())
+        .withHasPart(dbOrganization.subOrganizations().stream().map(Organization::from).toList())
         .withLabels(dbOrganization.labels())
         .build();
   }
@@ -43,11 +43,11 @@ public record Organization(
     return DbOrganization.builder()
         .id(organization.id())
         .countryCode(organization.countryCode())
-        .partOf(
+        .parentOrganizations(
             nonNull(organization.partOf())
                 ? organization.partOf().stream().map(Organization::toDbOrganization).toList()
                 : emptyList())
-        .hasPart(
+        .subOrganizations(
             nonNull(organization.hasPart())
                 ? organization.hasPart().stream().map(Organization::toDbOrganization).toList()
                 : emptyList())

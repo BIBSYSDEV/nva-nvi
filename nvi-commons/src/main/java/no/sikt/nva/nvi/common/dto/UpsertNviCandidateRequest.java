@@ -41,6 +41,7 @@ public record UpsertNviCandidateRequest(
     shouldNotBeNull(totalPoints, "Required field 'totalPoints' is null");
   }
 
+  @Override
   public URI publicationId() {
     return publicationDetails.id();
   }

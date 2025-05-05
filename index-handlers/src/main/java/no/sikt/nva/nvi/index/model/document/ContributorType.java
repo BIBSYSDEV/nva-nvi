@@ -13,7 +13,6 @@ import java.util.List;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 public sealed interface ContributorType permits NviContributor, Contributor {
 
-  @SuppressWarnings("PMD.ShortMethodName")
   String id();
 
   String name();

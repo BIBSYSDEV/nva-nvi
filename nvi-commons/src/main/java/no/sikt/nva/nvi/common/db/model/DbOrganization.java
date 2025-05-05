@@ -9,8 +9,8 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmut
 public record DbOrganization(
     URI id,
     String countryCode,
-    List<DbOrganization> partOf,
-    List<DbOrganization> hasPart,
+    List<DbOrganization> parentOrganizations,
+    List<DbOrganization> subOrganizations,
     Map<String, String> labels) {
 
   public static Builder builder() {
@@ -21,8 +21,8 @@ public record DbOrganization(
 
     private URI builderId;
     private String builderCountryCode;
-    private List<DbOrganization> builderPartOf;
-    private List<DbOrganization> builderHasPart;
+    private List<DbOrganization> builderParentOrganizations;
+    private List<DbOrganization> builderSubOrganizations;
     private Map<String, String> builderLabels;
 
     private Builder() {}
@@ -37,13 +37,13 @@ public record DbOrganization(
       return this;
     }
 
-    public Builder partOf(List<DbOrganization> partOf) {
-      this.builderPartOf = List.copyOf(partOf);
+    public Builder parentOrganizations(List<DbOrganization> parentOrganizations) {
+      this.builderParentOrganizations = parentOrganizations;
       return this;
     }
 
-    public Builder hasPart(List<DbOrganization> hasPart) {
-      this.builderHasPart = List.copyOf(hasPart);
+    public Builder subOrganizations(List<DbOrganization> subOrganizations) {
+      this.builderSubOrganizations = subOrganizations;
       return this;
     }
 
@@ -54,7 +54,11 @@ public record DbOrganization(
 
     public DbOrganization build() {
       return new DbOrganization(
-          builderId, builderCountryCode, builderPartOf, builderHasPart, builderLabels);
+          builderId,
+          builderCountryCode,
+          builderParentOrganizations,
+          builderSubOrganizations,
+          builderLabels);
     }
   }
 }
