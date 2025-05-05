@@ -372,13 +372,14 @@ class UpsertNviCandidateHandlerTest {
   }
 
   private DbCandidate getExpectedCandidate(UpsertNviCandidateRequest evaluatedNviCandidate) {
-    var date = evaluatedNviCandidate.publicationDetails().publicationDate();
+    var publicationDetails = evaluatedNviCandidate.publicationDetails();
+    var date = publicationDetails.publicationDate();
     return DbCandidate.builder()
         .applicable(true)
         .publicationId(evaluatedNviCandidate.publicationId())
         .publicationIdentifier(evaluatedNviCandidate.publicationDetails().identifier())
         .publicationBucketUri(evaluatedNviCandidate.publicationBucketUri())
-        .instanceType(evaluatedNviCandidate.instanceType().getValue())
+        .instanceType(publicationDetails.publicationType().getValue())
         .level(DbLevel.parse(evaluatedNviCandidate.level()))
         .publicationDate(new DbPublicationDate(date.year(), date.month(), date.day()))
         .channelType(evaluatedNviCandidate.channelType())

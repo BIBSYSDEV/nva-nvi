@@ -27,14 +27,12 @@ public class UpsertRequestBuilder {
   private PublicationDtoBuilder publicationBuilder = new PublicationDtoBuilder();
   private URI publicationBucketUri;
   private URI publicationId;
-  private String publicationIdentifier;
   private boolean isInternationalCollaboration;
   private Collection<UnverifiedNviCreatorDto> unverifiedCreators;
   private Collection<VerifiedNviCreatorDto> verifiedCreators;
   private String channelType;
   private URI channelId;
   private String level;
-  private InstanceType instanceType;
   private int creatorShareCount;
   private BigDecimal collaborationFactor;
   private BigDecimal basePoints;
@@ -151,7 +149,6 @@ public class UpsertRequestBuilder {
   }
 
   public UpsertRequestBuilder withPublicationIdentifier(String publicationIdentifier) {
-    this.publicationIdentifier = publicationIdentifier;
     this.publicationBuilder = publicationBuilder.withIdentifier(publicationIdentifier);
     return this;
   }
@@ -192,7 +189,6 @@ public class UpsertRequestBuilder {
   }
 
   public UpsertRequestBuilder withInstanceType(InstanceType instanceType) {
-    this.instanceType = instanceType;
     this.publicationBuilder = publicationBuilder.withPublicationType(instanceType);
     return this;
   }
@@ -297,7 +293,6 @@ public class UpsertRequestBuilder {
         .withChannelType(channelType)
         .withPublicationChannelId(channelId)
         .withLevel(level)
-        .withInstanceType(instanceType)
         .withCreatorShareCount(creatorShareCount)
         .withBasePoints(basePoints)
         .withInstitutionPoints(List.copyOf(points))

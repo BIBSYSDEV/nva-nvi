@@ -8,7 +8,6 @@ import java.math.BigDecimal;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
-import no.sikt.nva.nvi.common.model.InstanceType;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
@@ -19,7 +18,6 @@ public record UpsertNviCandidateRequest(
     URI publicationId, // FIXME: Remove this
     URI publicationBucketUri,
     PublicationDto publicationDetails,
-    InstanceType instanceType, // FIXME: Remove this
     List<VerifiedNviCreatorDto> verifiedCreators,
     List<UnverifiedNviCreatorDto> unverifiedCreators,
     String channelType, // FIXME: Merge this
@@ -56,7 +54,6 @@ public record UpsertNviCandidateRequest(
     private URI publicationId;
     private URI publicationBucketUri;
     private PublicationDto publicationDetails;
-    private InstanceType instanceType;
     private List<VerifiedNviCreatorDto> verifiedNviCreators = Collections.emptyList();
     private List<UnverifiedNviCreatorDto> unverifiedNviCreators = Collections.emptyList();
     private String channelType;
@@ -83,11 +80,6 @@ public record UpsertNviCandidateRequest(
 
     public Builder withPublicationDetails(PublicationDto publicationDetails) {
       this.publicationDetails = publicationDetails;
-      return this;
-    }
-
-    public Builder withInstanceType(InstanceType instanceType) {
-      this.instanceType = instanceType;
       return this;
     }
 
@@ -151,7 +143,6 @@ public record UpsertNviCandidateRequest(
           publicationId,
           publicationBucketUri,
           publicationDetails,
-          instanceType,
           verifiedNviCreators,
           unverifiedNviCreators,
           channelType,

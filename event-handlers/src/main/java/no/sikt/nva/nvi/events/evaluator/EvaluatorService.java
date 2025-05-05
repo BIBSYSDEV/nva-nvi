@@ -163,7 +163,6 @@ public class EvaluatorService {
         .withPublicationId(publicationDto.id())
         .withPublicationBucketUri(publicationBucketUri)
         .withPublicationDetails(publicationDto)
-        .withInstanceType(publicationDto.publicationType())
         .withBasePoints(pointCalculation.basePoints())
         .withPublicationChannelId(pointCalculation.publicationChannelId())
         .withChannelType(pointCalculation.channelType().getValue())

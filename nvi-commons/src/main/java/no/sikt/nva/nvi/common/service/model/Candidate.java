@@ -668,7 +668,6 @@ public final class Candidate {
     attempt(
             () -> {
               candidate.validate();
-              Objects.requireNonNull(candidate.instanceType());
               Objects.requireNonNull(candidate.level());
               return candidate;
             })

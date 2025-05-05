@@ -607,7 +607,7 @@ class CandidateTest extends CandidateTestSetup {
             .publicationDetails(dbPublicationDetails)
             .publicationDate(mapToDbPublicationDate(dtoPublicationDetails.publicationDate()))
             .applicable(dtoPublicationDetails.isApplicable())
-            .instanceType(request.instanceType().getValue())
+            .instanceType(dtoPublicationDetails.publicationType().getValue())
             .channelType(request.channelType())
             .channelId(request.publicationChannelId())
             .level(DbLevel.parse(request.level()))
