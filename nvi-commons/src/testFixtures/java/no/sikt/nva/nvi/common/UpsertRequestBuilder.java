@@ -26,10 +26,9 @@ public class UpsertRequestBuilder {
 
   private PublicationDtoBuilder publicationBuilder = new PublicationDtoBuilder();
   private URI publicationBucketUri;
-  private URI publicationId;
   private boolean isInternationalCollaboration;
-  private Collection<UnverifiedNviCreatorDto> unverifiedCreators;
-  private Collection<VerifiedNviCreatorDto> verifiedCreators;
+  private List<UnverifiedNviCreatorDto> unverifiedCreators;
+  private List<VerifiedNviCreatorDto> verifiedCreators;
   private String channelType;
   private URI channelId;
   private String level;
@@ -109,7 +108,6 @@ public class UpsertRequestBuilder {
         .withTotalPoints(BigDecimal.ONE);
   }
 
-  // TODO: Update this
   public static UpsertRequestBuilder fromRequest(UpsertNviCandidateRequest request) {
     var publicationBuilder = PublicationDtoBuilder.fromRequest(request);
     var publicationDetails = publicationBuilder.build();
@@ -143,7 +141,6 @@ public class UpsertRequestBuilder {
   }
 
   public UpsertRequestBuilder withPublicationId(URI publicationId) {
-    this.publicationId = publicationId;
     this.publicationBuilder = publicationBuilder.withId(publicationId);
     return this;
   }
@@ -161,14 +158,13 @@ public class UpsertRequestBuilder {
     return this;
   }
 
-  public UpsertRequestBuilder withVerifiedCreators(
-      Collection<VerifiedNviCreatorDto> verifiedCreators) {
+  public UpsertRequestBuilder withVerifiedCreators(List<VerifiedNviCreatorDto> verifiedCreators) {
     this.verifiedCreators = verifiedCreators;
     return this;
   }
 
   public UpsertRequestBuilder withUnverifiedCreators(
-      Collection<UnverifiedNviCreatorDto> unverifiedCreators) {
+      List<UnverifiedNviCreatorDto> unverifiedCreators) {
     this.unverifiedCreators = unverifiedCreators;
     return this;
   }
@@ -284,18 +280,17 @@ public class UpsertRequestBuilder {
   public UpsertNviCandidateRequest build() {
     return UpsertNviCandidateRequest.builder()
         .withPublicationDetails(publicationBuilder.build())
-        .withPublicationId(publicationId)
         .withPublicationBucketUri(publicationBucketUri)
         .withIsInternationalCollaboration(isInternationalCollaboration)
         .withCollaborationFactor(collaborationFactor)
-        .withVerifiedNviCreators(List.copyOf(verifiedCreators))
-        .withUnverifiedNviCreators(List.copyOf(unverifiedCreators))
+        .withVerifiedNviCreators(verifiedCreators)
+        .withUnverifiedNviCreators(unverifiedCreators)
         .withChannelType(channelType)
         .withPublicationChannelId(channelId)
         .withLevel(level)
         .withCreatorShareCount(creatorShareCount)
         .withBasePoints(basePoints)
-        .withInstitutionPoints(List.copyOf(points))
+        .withInstitutionPoints(points)
         .withTotalPoints(totalPoints)
         .build();
   }

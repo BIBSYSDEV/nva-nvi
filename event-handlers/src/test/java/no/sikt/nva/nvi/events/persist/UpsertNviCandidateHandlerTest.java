@@ -320,8 +320,7 @@ class UpsertNviCandidateHandlerTest {
   }
 
   private static Stream<CandidateEvaluatedMessage> invalidCandidateEvaluatedMessages() {
-    return Stream.of(
-        createEvalMessage(UpsertNviCandidateRequest.builder().withPublicationId(null).build()));
+    return Stream.of(createEvalMessage(randomUpsertRequestBuilder().withPoints(null).build()));
   }
 
   private static PublicationDateDto randomPublicationDate() {

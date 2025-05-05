@@ -160,7 +160,6 @@ public class EvaluatorService {
             unverifiedCreatorsWithNviInstitutions);
 
     return UpsertNviCandidateRequest.builder()
-        .withPublicationId(publicationDto.id())
         .withPublicationBucketUri(publicationBucketUri)
         .withPublicationDetails(publicationDto)
         .withBasePoints(pointCalculation.basePoints())

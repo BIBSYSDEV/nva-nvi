@@ -15,7 +15,6 @@ import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSerialize
 public record UpsertNviCandidateRequest(
-    URI publicationId, // FIXME: Remove this
     URI publicationBucketUri,
     PublicationDto publicationDetails,
     List<VerifiedNviCreatorDto> verifiedCreators,
@@ -39,6 +38,10 @@ public record UpsertNviCandidateRequest(
     shouldNotBeNull(unverifiedCreators, "Required field 'unverifiedCreators' is null");
     shouldNotBeNull(institutionPoints, "Required field 'institutionPoints' is null");
     shouldNotBeNull(totalPoints, "Required field 'totalPoints' is null");
+  }
+
+  public URI publicationId() {
+    return publicationDetails.id();
   }
 
   public boolean isApplicable() {
@@ -140,7 +143,6 @@ public record UpsertNviCandidateRequest(
 
     public UpsertNviCandidateRequest build() {
       return new UpsertNviCandidateRequest(
-          publicationId,
           publicationBucketUri,
           publicationDetails,
           verifiedNviCreators,

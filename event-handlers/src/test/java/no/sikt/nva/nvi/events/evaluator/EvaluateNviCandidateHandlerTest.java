@@ -577,7 +577,6 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
         List.of(
             new VerifiedNviCreatorDto(HARDCODED_CREATOR_ID, List.of(CRISTIN_NVI_ORG_SUB_UNIT_ID)));
     return UpsertNviCandidateRequest.builder()
-        .withPublicationId(HARDCODED_PUBLICATION_ID)
         .withPublicationBucketUri(publicationBucketUri)
         .withPublicationDetails(publicationDetails)
         .withChannelType(channelType.getValue())
@@ -1155,7 +1154,6 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
               publicationChannelLevel);
       var expectedCandidate =
           expectedCandidateBuilder
-              .withPublicationId(publication.id())
               .withPublicationBucketUri(fileUri)
               .withPublicationDetails(publicationDetails)
               .withChannelType(publicationChannelType)
