@@ -70,6 +70,7 @@ import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
+import no.sikt.nva.nvi.common.service.model.PageCount;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -596,7 +597,7 @@ class CandidateTest extends CandidateTestSetup {
             .creators(dbCreators)
             .contributorCount(dtoPublicationDetails.contributors().size())
             .abstractText(dtoPublicationDetails.abstractText())
-            .pages(dbPagesFromRequest(request))
+            .pages(getDbPagesFromRequest(request))
             .build();
     var dbCandidate =
         DbCandidate.builder()
@@ -623,16 +624,11 @@ class CandidateTest extends CandidateTestSetup {
         .candidate();
   }
 
-  // FIXME: Create domain class and move this there? Re-used multiple places
-  private static DbPages dbPagesFromRequest(UpsertNviCandidateRequest request) {
-    var dtoPages = request.publicationDetails().pageCount();
-    if (isNull(dtoPages)) {
+  private static DbPages getDbPagesFromRequest(UpsertNviCandidateRequest request) {
+    var publicationDetails = request.publicationDetails();
+    if (isNull(publicationDetails) || isNull(publicationDetails.pageCount())) {
       return null;
     }
-    return DbPages.builder()
-        .firstPage(dtoPages.firstPage())
-        .lastPage(dtoPages.lastPage())
-        .numberOfPages(dtoPages.numberOfPages())
-        .build();
+    return PageCount.from(publicationDetails.pageCount()).toDbPages();
   }
 }

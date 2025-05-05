@@ -2,7 +2,8 @@ package no.sikt.nva.nvi.common.dto;
 
 import static java.util.Collections.emptyList;
 import static java.util.UUID.randomUUID;
-import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
+import static no.sikt.nva.nvi.common.model.PageCountFixtures.PAGE_RANGE_AS_DTO;
+import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.CURRENT_YEAR_AS_PUBLICATION_DATE_DTO;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 
@@ -33,7 +34,6 @@ public class PublicationDtoBuilder {
   private boolean isApplicable;
   private boolean isInternationalCollaboration;
 
-  // FIXME: CLean this up
   public static PublicationDtoBuilder randomPublicationDtoBuilder() {
     var channel =
         PublicationChannelDto.builder()
@@ -44,13 +44,13 @@ public class PublicationDtoBuilder {
     return new PublicationDtoBuilder()
         .withId(randomUri())
         .withIdentifier(randomUUID().toString())
-        .withContributors(emptyList()) // FIXME
+        .withContributors(emptyList())
         .withTopLevelOrganizations(emptyList()) // FIXME
         .withPublicationChannels(List.of(channel))
         .withPublicationType(InstanceType.ACADEMIC_ARTICLE)
         .withModifiedDate(Instant.now())
-        .withPageCount(new PageCountDto("4", "5", null))
-        .withPublicationDate(new PublicationDateDto(String.valueOf(CURRENT_YEAR), "01", "01"))
+        .withPageCount(PAGE_RANGE_AS_DTO)
+        .withPublicationDate(CURRENT_YEAR_AS_PUBLICATION_DATE_DTO)
         .withAbstract(randomString())
         .withLanguage(null)
         .withStatus("PUBLISHED")

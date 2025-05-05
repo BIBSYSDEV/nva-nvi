@@ -1,5 +1,7 @@
 package no.sikt.nva.nvi.events.evaluator;
 
+import static no.sikt.nva.nvi.common.model.PageCountFixtures.PAGE_NUMBER_AS_DTO;
+import static no.sikt.nva.nvi.common.model.PageCountFixtures.PAGE_RANGE_AS_DTO;
 import static no.sikt.nva.nvi.events.evaluator.TestUtils.createEvent;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_NORWAY;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_SWEDEN;
@@ -114,16 +116,8 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
 
   private static Stream<Arguments> pageCountProvider() {
     return Stream.of(
-        argumentSet(
-            "Monograph with page count",
-            new PageCountDto(null, null, "789"),
-            "AcademicMonograph",
-            "Series"),
-        argumentSet(
-            "Article with page range",
-            new PageCountDto("123", "456", null),
-            "AcademicArticle",
-            "Journal"));
+        argumentSet("Monograph with page count", PAGE_NUMBER_AS_DTO, "AcademicMonograph", "Series"),
+        argumentSet("Article with page range", PAGE_RANGE_AS_DTO, "AcademicArticle", "Journal"));
   }
 
   private CandidateEvaluatedMessage getMessageBody() {

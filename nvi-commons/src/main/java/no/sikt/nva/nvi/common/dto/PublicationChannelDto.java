@@ -16,10 +16,10 @@ import no.sikt.nva.nvi.common.model.ScientificValue;
 public record PublicationChannelDto(
     URI id,
     ChannelType channelType,
+    ScientificValue scientificValue,
     String identifier,
     String name,
     String year,
-    ScientificValue scientificValue,
     String onlineIssn,
     String printIssn) {
 
@@ -59,6 +59,11 @@ public record PublicationChannelDto(
       return this;
     }
 
+    public Builder withScientificValue(ScientificValue scientificValue) {
+      this.scientificValue = scientificValue;
+      return this;
+    }
+
     public Builder withIdentifier(String identifier) {
       this.identifier = identifier;
       return this;
@@ -74,11 +79,6 @@ public record PublicationChannelDto(
       return this;
     }
 
-    public Builder withScientificValue(ScientificValue scientificValue) {
-      this.scientificValue = scientificValue;
-      return this;
-    }
-
     public Builder withOnlineIssn(String onlineIssn) {
       this.onlineIssn = onlineIssn;
       return this;
@@ -91,7 +91,7 @@ public record PublicationChannelDto(
 
     public PublicationChannelDto build() {
       return new PublicationChannelDto(
-          id, channelType, identifier, name, year, scientificValue, onlineIssn, printIssn);
+          id, channelType, scientificValue, identifier, name, year, onlineIssn, printIssn);
     }
   }
 }
