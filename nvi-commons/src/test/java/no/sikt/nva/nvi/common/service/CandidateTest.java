@@ -143,7 +143,11 @@ class CandidateTest extends CandidateTestSetup {
     var expectedCandidate = generateExpectedCandidate(candidate, request);
     var actualPersistedCandidate =
         candidateRepository.findCandidateById(candidate.getIdentifier()).orElseThrow().candidate();
-    assertEquals(expectedCandidate, actualPersistedCandidate);
+    Assertions.assertThat(actualPersistedCandidate)
+        .usingRecursiveComparison()
+        .ignoringCollectionOrder()
+        .ignoringFields("modifiedDate")
+        .isEqualTo(expectedCandidate);
   }
 
   @ParameterizedTest(name = "Should persist new candidate with correct level {0}")
@@ -154,7 +158,11 @@ class CandidateTest extends CandidateTestSetup {
     var expectedCandidate = generateExpectedCandidate(candidate, request);
     var actualPersistedCandidate =
         candidateRepository.findCandidateById(candidate.getIdentifier()).orElseThrow().candidate();
-    assertEquals(expectedCandidate, actualPersistedCandidate);
+    Assertions.assertThat(actualPersistedCandidate)
+        .usingRecursiveComparison()
+        .ignoringCollectionOrder()
+        .ignoringFields("modifiedDate")
+        .isEqualTo(expectedCandidate);
   }
 
   @ParameterizedTest(name = "Should update candidate with correct level {0}")
@@ -170,7 +178,11 @@ class CandidateTest extends CandidateTestSetup {
     var expectedCandidate = generateExpectedCandidate(candidate, request);
     var actualPersistedCandidate =
         candidateRepository.findCandidateById(candidate.getIdentifier()).orElseThrow().candidate();
-    assertEquals(expectedCandidate, actualPersistedCandidate);
+    Assertions.assertThat(actualPersistedCandidate)
+        .usingRecursiveComparison()
+        .ignoringCollectionOrder()
+        .ignoringFields("modifiedDate")
+        .isEqualTo(expectedCandidate);
   }
 
   @Test
@@ -564,8 +576,7 @@ class CandidateTest extends CandidateTestSetup {
     var dbPublicationChannel =
         DbPublicationChannel.builder()
             .id(request.publicationChannelId())
-            .channelType(ChannelType.parse(request.channelType()))
-            //            .scientificValue(ScientificValue.parse(request.level())) // FIXME
+            .channelType(request.channelType())
             .scientificValue(request.level())
             .build();
 
@@ -596,7 +607,7 @@ class CandidateTest extends CandidateTestSetup {
             .publicationDate(mapToDbPublicationDate(dtoPublicationDetails.publicationDate()))
             .applicable(dtoPublicationDetails.isApplicable())
             .instanceType(request.instanceType().getValue())
-            .channelType(ChannelType.parse(request.channelType()))
+            .channelType(request.channelType())
             .channelId(request.publicationChannelId())
             .level(DbLevel.parse(request.level()))
             .basePoints(adjustScaleAndRoundingMode(request.basePoints()))

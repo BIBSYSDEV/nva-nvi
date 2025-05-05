@@ -28,6 +28,7 @@ import java.math.RoundingMode;
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.List;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.model.ChannelType;
@@ -216,10 +217,8 @@ class CristinMapperTest {
         URI.create(
             "https://api.dev.nva.aws.unit.no/publication-channels-v2/journal/6A227640-F250-4909-9F6B-16782393FC15"
                 + "/2015");
-    var expectedChannelType = ChannelType.JOURNAL;
 
-    assertEquals(expectedChannelId, dbCandidate.channelId());
-    assertEquals(expectedChannelType, dbCandidate.channelType());
+    assertThatChannelHasExpectedIdAndType(dbCandidate, expectedChannelId, ChannelType.JOURNAL);
   }
 
   @Test
@@ -246,10 +245,8 @@ class CristinMapperTest {
         URI.create(
             "https://api.test.nva.aws.unit.no/publication-channels-v2/journal/2D37D55B-90DF-413F-8585-85A970411E34"
                 + "/2020");
-    var expectedChannelType = ChannelType.JOURNAL;
 
-    assertEquals(expectedChannelId, dbCandidate.channelId());
-    assertEquals(expectedChannelType, dbCandidate.channelType());
+    assertThatChannelHasExpectedIdAndType(dbCandidate, expectedChannelId, ChannelType.JOURNAL);
   }
 
   @Test
@@ -285,10 +282,8 @@ class CristinMapperTest {
         URI.create(
             "https://api.test.nva.aws.unit.no/publication-channels-v2/series/69CFBB82-5064-402D-843F-B27B246FB7DE"
                 + "/2013");
-    var expectedChannelType = ChannelType.SERIES;
 
-    assertEquals(expectedChannelId, dbCandidate.channelId());
-    assertEquals(expectedChannelType, dbCandidate.channelType());
+    assertThatChannelHasExpectedIdAndType(dbCandidate, expectedChannelId, ChannelType.SERIES);
   }
 
   @Test
@@ -314,11 +309,8 @@ class CristinMapperTest {
         nviReportWithInstanceTypeAndReference("AcademicMonograph", academicArticleReference);
     var dbCandidate = cristinMapper.toDbCandidate(nviReport);
 
-    var expectedChannelId = WORLD_SCIENTIFIC_JOURNAL;
-    var expectedChannelType = ChannelType.PUBLISHER;
-
-    assertEquals(expectedChannelId, dbCandidate.channelId());
-    assertEquals(expectedChannelType, dbCandidate.channelType());
+    assertThatChannelHasExpectedIdAndType(
+        dbCandidate, WORLD_SCIENTIFIC_JOURNAL, ChannelType.PUBLISHER);
   }
 
   @Test
@@ -367,10 +359,8 @@ class CristinMapperTest {
         URI.create(
             "https://api.test.nva.aws.unit.no/publication-channels-v2/series/69CFBB82-5064-402D-843F-B27B246FB7DE"
                 + "/2013");
-    var expectedChannelType = ChannelType.SERIES;
 
-    assertEquals(expectedChannelId, dbCandidate.channelId());
-    assertEquals(expectedChannelType, dbCandidate.channelType());
+    assertThatChannelHasExpectedIdAndType(dbCandidate, expectedChannelId, ChannelType.SERIES);
   }
 
   @Test
@@ -410,11 +400,8 @@ class CristinMapperTest {
         nviReportWithInstanceTypeAndReference("AcademicChapter", academicArticleReference);
     var dbCandidate = cristinMapper.toDbCandidate(nviReport);
 
-    var expectedChannelId = WORLD_SCIENTIFIC_JOURNAL;
-    var expectedChannelType = ChannelType.PUBLISHER;
-
-    assertEquals(expectedChannelId, dbCandidate.channelId());
-    assertEquals(expectedChannelType, dbCandidate.channelType());
+    assertThatChannelHasExpectedIdAndType(
+        dbCandidate, WORLD_SCIENTIFIC_JOURNAL, ChannelType.PUBLISHER);
   }
 
   @Test
@@ -738,5 +725,11 @@ class CristinMapperTest {
 
   private ScientificResource emptyScientificResource() {
     return ScientificResource.build().build();
+  }
+
+  private static void assertThatChannelHasExpectedIdAndType(
+      DbCandidate actualCandidate, URI expectedChannelId, ChannelType expectedChannelType) {
+    assertEquals(expectedChannelId, actualCandidate.channelId());
+    assertEquals(expectedChannelType.getValue(), actualCandidate.channelType());
   }
 }

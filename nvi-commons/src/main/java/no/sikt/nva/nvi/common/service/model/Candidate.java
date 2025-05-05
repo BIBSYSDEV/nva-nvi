@@ -718,21 +718,21 @@ public final class Candidate {
 
   private static DbCandidate mapToCandidate(UpsertNviCandidateRequest request) {
     var allCreators = mapToDbCreators(request.verifiedCreators(), request.unverifiedCreators());
-    var publicationDetails = PublicationDetails.from(request).toDbPublication();
+    var dbDetails = PublicationDetails.from(request).toDbPublication();
     return DbCandidate.builder()
-        .publicationId(publicationDetails.id())
-        .publicationDetails(publicationDetails)
+        .publicationId(dbDetails.id())
+        .publicationDetails(dbDetails)
         .publicationBucketUri(request.publicationBucketUri())
-        .publicationIdentifier(publicationDetails.identifier())
-        .applicable(publicationDetails.applicable())
+        .publicationIdentifier(dbDetails.identifier())
+        .applicable(dbDetails.applicable())
         .creators(allCreators)
         .creatorShareCount(request.creatorShareCount())
-        .channelId(publicationDetails.publicationChannel().id())
-        .channelType(publicationDetails.publicationChannel().channelType())
-        .level(DbLevel.parse(publicationDetails.publicationChannel().scientificValue()))
-        .instanceType(publicationDetails.publicationType())
-        .publicationDate(publicationDetails.publicationDate())
-        .internationalCollaboration(publicationDetails.internationalCollaboration())
+        .channelId(dbDetails.publicationChannel().id())
+        .channelType(dbDetails.publicationChannel().channelType())
+        .level(DbLevel.parse(dbDetails.publicationChannel().scientificValue()))
+        .instanceType(dbDetails.publicationType())
+        .publicationDate(dbDetails.publicationDate())
+        .internationalCollaboration(dbDetails.internationalCollaboration())
         .collaborationFactor(adjustScaleAndRoundingMode(request.collaborationFactor()))
         .basePoints(adjustScaleAndRoundingMode(request.basePoints()))
         .points(mapToPoints(request.institutionPoints()))
@@ -802,15 +802,16 @@ public final class Candidate {
 
   private CandidateDao toDao() {
     var dbPublication = publicationDetails.toDbPublication();
+    var dbChannel = dbPublication.publicationChannel();
     var dbCandidate =
         DbCandidate.builder()
             .publicationDetails(dbPublication)
             .applicable(dbPublication.applicable())
             .creators(dbPublication.creators())
             .creatorShareCount(creatorShareCount)
-            .channelType(getPublicationChannelType())
-            .channelId(getPublicationChannelId())
-            .level(DbLevel.parse(getScientificLevel()))
+            .channelType(dbChannel.channelType())
+            .channelId(dbChannel.id())
+            .level(DbLevel.parse(dbChannel.scientificValue()))
             .instanceType(dbPublication.publicationType())
             .publicationDate(dbPublication.publicationDate())
             .internationalCollaboration(dbPublication.internationalCollaboration())

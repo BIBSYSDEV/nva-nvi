@@ -166,7 +166,7 @@ public final class CristinMapper {
         .reduce(BigDecimal.ZERO.setScale(4, RoundingMode.HALF_UP), BigDecimal::add);
   }
 
-  private static ChannelType extractChannelType(CristinNviReport cristinNviReport) {
+  private static String extractChannelType(CristinNviReport cristinNviReport) {
     var instance = toInstanceType(cristinNviReport.instanceType());
     var referenceNode = cristinNviReport.reference();
     if (nonNull(instance) && nonNull(referenceNode)) {
@@ -178,7 +178,10 @@ public final class CristinMapper {
                 extractChannelTypeForAcademicMonograph(referenceNode);
             case ACADEMIC_CHAPTER -> extractChannelTypeForAcademicChapter(referenceNode);
           };
-      return ChannelType.parse(channelType);
+      return Optional.ofNullable(channelType)
+          .map(ChannelType::parse)
+          .map(ChannelType::getValue)
+          .orElse(null);
     }
     return null;
   }

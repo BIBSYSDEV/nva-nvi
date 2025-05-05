@@ -1,13 +1,12 @@
 package no.sikt.nva.nvi.common.db.model;
 
 import java.net.URI;
-import no.sikt.nva.nvi.common.model.ChannelType;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmutable;
 
 @DynamoDbImmutable(builder = DbPublicationChannel.Builder.class)
 public record DbPublicationChannel(
     URI id,
-    ChannelType channelType,
+    String channelType,
     String identifier,
     String name,
     String year,
@@ -22,7 +21,7 @@ public record DbPublicationChannel(
   public static final class Builder {
 
     private URI builderId;
-    private ChannelType builderChannelType;
+    private String builderChannelType;
     private String builderIdentifier;
     private String builderName;
     private String builderYear;
@@ -37,7 +36,7 @@ public record DbPublicationChannel(
       return this;
     }
 
-    public Builder channelType(ChannelType channelType) {
+    public Builder channelType(String channelType) {
       this.builderChannelType = channelType;
       return this;
     }

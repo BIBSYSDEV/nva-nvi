@@ -61,7 +61,7 @@ public class DbCandidateFixtures {
         .instanceType(publicationDetails.publicationType())
         .points(List.of(generateInstitutionPoints(organizationId, creatorId)))
         .level(DbLevel.LEVEL_ONE)
-        .channelType(randomElement(ChannelType.values()))
+        .channelType(randomElement(ChannelType.values()).getValue())
         .channelId(randomUri())
         .publicationDate(publicationDetails.publicationDate())
         .internationalCollaboration(randomBoolean())
@@ -85,7 +85,7 @@ public class DbCandidateFixtures {
     var channel =
         DbPublicationChannel.builder()
             .id(randomUri())
-            .channelType(randomElement(ChannelType.values()))
+            .channelType(randomElement(ChannelType.values()).getValue())
             .scientificValue(ScientificValue.LEVEL_ONE.getValue())
             .build();
     return DbPublication.builder()

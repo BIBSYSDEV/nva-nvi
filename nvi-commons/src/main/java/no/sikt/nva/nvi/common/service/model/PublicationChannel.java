@@ -9,7 +9,7 @@ import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
 import no.sikt.nva.nvi.common.model.ChannelType;
 import no.sikt.nva.nvi.common.model.ScientificValue;
 
-// FIXME: Move ChannelType enum to commons and update it
+// FIXME: Re-order parameters and sync with other versions
 public record PublicationChannel(ChannelType channelType, URI id, ScientificValue scientificValue) {
 
   public static PublicationChannel from(PublicationChannelDto dtoChannel) {
@@ -26,26 +26,26 @@ public record PublicationChannel(ChannelType channelType, URI id, ScientificValu
     if (nonNull(dbPublicationDetails) && nonNull(dbPublicationDetails.publicationChannel())) {
       return from(candidateDao.candidate().publicationDetails().publicationChannel());
     }
+
     var scientificValue = ScientificValue.parse(candidateDao.candidate().level().getValue());
+    var channelType = ChannelType.parse(candidateDao.candidate().channelType());
     return new PublicationChannel(
-        candidateDao.candidate().channelType(),
-        candidateDao.candidate().channelId(),
-        scientificValue);
+        channelType, candidateDao.candidate().channelId(), scientificValue);
   }
 
   public static PublicationChannel from(DbPublicationChannel dbPublicationChannel) {
+    var dbScientificValue = dbPublicationChannel.scientificValue();
     var scientificValue =
-        nonNull(dbPublicationChannel.scientificValue())
-            ? ScientificValue.parse(dbPublicationChannel.scientificValue())
-            : null;
-    return new PublicationChannel(
-        dbPublicationChannel.channelType(), dbPublicationChannel.id(), scientificValue);
+        nonNull(dbScientificValue) ? ScientificValue.parse(dbScientificValue) : null;
+    var dbChannelType = dbPublicationChannel.channelType();
+    var channelType = nonNull(dbChannelType) ? ChannelType.parse(dbChannelType) : null;
+    return new PublicationChannel(channelType, dbPublicationChannel.id(), scientificValue);
   }
 
   public DbPublicationChannel toDbPublicationChannel() {
     return DbPublicationChannel.builder()
         .id(id)
-        .channelType(channelType)
+        .channelType(channelType.getValue())
         .scientificValue(scientificValue.getValue())
         .build();
   }

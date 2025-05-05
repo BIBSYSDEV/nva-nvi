@@ -34,7 +34,6 @@ import no.sikt.nva.nvi.common.db.CandidateDao.Builder;
 import no.sikt.nva.nvi.common.db.model.DbCreatorTypeListConverter;
 import no.sikt.nva.nvi.common.db.model.DbPublication;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
-import no.sikt.nva.nvi.common.model.ChannelType;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
@@ -338,7 +337,7 @@ public final class CandidateDao extends Dao {
       DbPublication publicationDetails,
       boolean applicable,
       String instanceType,
-      ChannelType channelType,
+      String channelType,
       URI channelId,
       DbLevel level,
       DbPublicationDate publicationDate,
@@ -460,7 +459,7 @@ public final class CandidateDao extends Dao {
       private DbPublication builderPublicationDetails;
       private boolean builderApplicable;
       private String builderInstanceType;
-      private ChannelType builderChannelType;
+      private String builderChannelType;
       private URI builderChannelId;
       private DbLevel builderLevel;
       private DbPublicationDate builderPublicationDate;
@@ -508,7 +507,7 @@ public final class CandidateDao extends Dao {
         return this;
       }
 
-      public Builder channelType(ChannelType channelType) {
+      public Builder channelType(String channelType) {
         this.builderChannelType = channelType;
         return this;
       }

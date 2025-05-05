@@ -15,7 +15,6 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 
@@ -103,8 +102,11 @@ class BatchScanUtilTest {
     var startMarker = getYearIndexStartMarker(firstCandidateInIndex);
     var results =
         batchScanUtil.fetchCandidatesByYear(year, true, null, startMarker).getDatabaseEntries();
-    assertThat(results.size(), is(equalTo(1)));
-    assertEquals(secondCandidateInIndex, results.get(0));
+    var expectedResults = List.of(secondCandidateInIndex);
+    Assertions.assertThat(results)
+        .usingRecursiveComparison()
+        .ignoringCollectionOrder()
+        .isEqualTo(expectedResults);
   }
 
   @Test
@@ -117,7 +119,10 @@ class BatchScanUtilTest {
     var results =
         batchScanUtil.fetchCandidatesByYear(searchYear, true, pageSize, null).getDatabaseEntries();
     assertThat(results.size(), is(equalTo(pageSize)));
-    assertThat(expectedCandidates, containsInAnyOrder(results.toArray()));
+    Assertions.assertThat(results)
+        .usingRecursiveComparison()
+        .ignoringCollectionOrder()
+        .isEqualTo(expectedCandidates);
   }
 
   @Test
@@ -128,7 +133,10 @@ class BatchScanUtilTest {
     var expectedCandidates = sortByIdentifier(candidates, DEFAULT_PAGE_SIZE);
     var results = batchScanUtil.fetchCandidatesByYear(year, true, null, null).getDatabaseEntries();
     assertThat(results.size(), is(equalTo(DEFAULT_PAGE_SIZE)));
-    assertThat(expectedCandidates, containsInAnyOrder(results.toArray()));
+    Assertions.assertThat(results)
+        .usingRecursiveComparison()
+        .ignoringCollectionOrder()
+        .isEqualTo(expectedCandidates);
   }
 
   @Test
@@ -139,8 +147,11 @@ class BatchScanUtilTest {
     var expectedCandidates = sortByIdentifier(candidates, null);
     var results = batchScanUtil.fetchCandidatesByYear(year, false, null, null).getDatabaseEntries();
     assertThat(results.size(), is(equalTo(2)));
-    assertThat(expectedCandidates, containsInAnyOrder(results.toArray()));
     assertThat(results, not(containsInAnyOrder(reportedCandidate)));
+    Assertions.assertThat(results)
+        .usingRecursiveComparison()
+        .ignoringCollectionOrder()
+        .isEqualTo(expectedCandidates);
   }
 
   /**

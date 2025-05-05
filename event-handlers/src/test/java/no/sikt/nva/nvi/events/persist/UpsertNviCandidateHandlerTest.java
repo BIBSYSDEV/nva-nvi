@@ -388,7 +388,7 @@ class UpsertNviCandidateHandlerTest {
         .instanceType(evaluatedNviCandidate.instanceType().getValue())
         .level(DbLevel.parse(evaluatedNviCandidate.level()))
         .publicationDate(new DbPublicationDate(date.year(), date.month(), date.day()))
-        .channelType(ChannelType.parse(evaluatedNviCandidate.channelType()))
+        .channelType(evaluatedNviCandidate.channelType())
         .channelId(evaluatedNviCandidate.publicationChannelId())
         .creators(getExpectedCreators(evaluatedNviCandidate))
         .basePoints(evaluatedNviCandidate.basePoints())

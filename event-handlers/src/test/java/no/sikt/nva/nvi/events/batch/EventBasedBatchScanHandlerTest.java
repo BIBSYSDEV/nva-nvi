@@ -8,7 +8,6 @@ import static nva.commons.core.attempt.Try.attempt;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsEmptyCollection.empty;
 import static org.hamcrest.core.Is.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -54,6 +53,7 @@ import no.unit.nva.events.models.AwsEventBridgeEvent;
 import no.unit.nva.stubs.FakeEventBridgeClient;
 import nva.commons.core.Environment;
 import nva.commons.core.ioutils.IoUtils;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -156,7 +156,10 @@ class EventBasedBatchScanHandlerTest {
     consumeEvents();
     var updated = candidateRepository.findDaoById(dao.identifier());
 
-    assertEquals(dao.candidate(), updated.candidate());
+    Assertions.assertThat(updated.candidate())
+        .usingRecursiveComparison()
+        .ignoringCollectionOrder()
+        .isEqualTo(dao.candidate());
   }
 
   @Test

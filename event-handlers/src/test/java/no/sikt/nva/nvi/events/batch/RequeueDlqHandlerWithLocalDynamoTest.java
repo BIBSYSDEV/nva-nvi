@@ -5,7 +5,7 @@ import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.createCandidateDao;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidateWithYear;
 import static no.sikt.nva.nvi.events.batch.RequeueDlqTestUtils.generateMessages;
 import static no.sikt.nva.nvi.events.batch.RequeueDlqTestUtils.setupSqsClient;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -53,7 +53,10 @@ class RequeueDlqHandlerWithLocalDynamoTest {
     handler.handleRequest(new RequeueDlqInput(1), CONTEXT);
     var actualCandidate =
         candidateRepository.findCandidateById(expectedCandidate.identifier()).orElseThrow();
-    assertEquals(expectedCandidate.identifier(), actualCandidate.identifier());
-    assertEquals(expectedCandidate.candidate(), actualCandidate.candidate());
+    assertThat(actualCandidate)
+        .usingRecursiveComparison()
+        .ignoringFields("version")
+        .ignoringCollectionOrder()
+        .isEqualTo(expectedCandidate);
   }
 }
