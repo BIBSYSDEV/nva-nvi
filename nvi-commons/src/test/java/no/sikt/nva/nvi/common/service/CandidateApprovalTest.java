@@ -41,6 +41,7 @@ import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.model.InvalidNviCandidateException;
+import no.sikt.nva.nvi.common.model.ScientificValue;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.dto.CandidateOperation;
@@ -75,7 +76,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
       URI.create("https://example.org/subUnitInstitutionId");
   private static final URI HARDCODED_CHANNEL_ID =
       URI.create("https://example.org/publication-channels-v2/journal/123/2018");
-  private static final String HARDCODED_LEVEL = "LevelOne";
+  private static final ScientificValue HARDCODED_LEVEL = ScientificValue.LEVEL_ONE;
   private static final URI HARDCODED_CREATOR_ID = URI.create("https://example.org/someCreator");
   private static final InstanceType HARDCODED_INSTANCE_TYPE = InstanceType.ACADEMIC_ARTICLE;
   private static final BigDecimal HARDCODED_POINTS =
@@ -498,7 +499,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
             .withVerifiedCreators(arguments.creators())
             .withInstanceType(arguments.type())
             .withChannelId(arguments.channel().id())
-            .withLevel(arguments.channel().level())
+            .withLevel(arguments.channel().level().getValue())
             .withPoints(arguments.institutionPoints())
             .build();
 
@@ -636,7 +637,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
         .withVerifiedCreators(List.of(verifiedCreator))
         .withInstanceType(HARDCODED_INSTANCE_TYPE)
         .withChannelId(HARDCODED_CHANNEL_ID)
-        .withLevel(HARDCODED_LEVEL)
+        .withLevel(HARDCODED_LEVEL.getValue())
         .withPoints(
             List.of(
                 new InstitutionPoints(
@@ -699,7 +700,9 @@ class CandidateApprovalTest extends CandidateTestSetup {
       }
 
       private Builder withLevel(String level) {
-        this.channel = new PublicationChannel(ChannelType.JOURNAL, HARDCODED_CHANNEL_ID, level);
+        this.channel =
+            new PublicationChannel(
+                ChannelType.JOURNAL, HARDCODED_CHANNEL_ID, ScientificValue.parse(level));
         return this;
       }
 

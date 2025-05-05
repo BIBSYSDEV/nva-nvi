@@ -51,7 +51,7 @@ public record PublicationDetails(
     var publicationDto = upsertRequest.publicationDetails();
 
     // FIXME: clean up this code
-    var channelLevel = ScientificValue.parse(upsertRequest.level()).getValue();
+    var channelLevel = ScientificValue.parse(upsertRequest.level());
     var publicationChannel =
         new PublicationChannel(
             ChannelType.parse(upsertRequest.channelType()),
@@ -111,10 +111,7 @@ public record PublicationDetails(
         .withPageCount(getPages(dbDetails))
         .withIsApplicable(dbDetails.applicable())
         .withIsInternationalCollaboration(dbDetails.internationalCollaboration())
-        .withPublicationChannel(
-            new PublicationChannel(
-                dbCandidate.channelType(), dbCandidate.channelId(), dbCandidate.level().getValue()))
-        .withPublicationChannels(mapToPublicationChannels(dbDetails))
+        .withPublicationChannel(PublicationChannel.from(candidateDao))
         .withVerifiedNviCreators(verifiedCreators)
         .withUnverifiedNviCreators(unverifiedCreators)
         .withContributorCount(dbDetails.contributorCount())
@@ -127,14 +124,6 @@ public record PublicationDetails(
     return nonNull(dbDetails.topLevelOrganizations())
         ? dbDetails.topLevelOrganizations().stream().map(Organization::from).toList()
         : emptyList();
-  }
-
-  // FIXME
-  private static List<PublicationChannel> mapToPublicationChannels(DbPublication dbDetails) {
-    return dbDetails.publicationChannel() != null
-        ? List.of(PublicationChannel.from(dbDetails.publicationChannel()))
-        : emptyList();
-    //    return dbDetails.publicationChannels().stream().map(PublicationChannel::from).toList();
   }
 
   private static PageCount getPages(DbPublication dbDetails) {
