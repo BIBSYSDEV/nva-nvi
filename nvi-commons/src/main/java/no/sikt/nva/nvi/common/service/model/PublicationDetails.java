@@ -50,14 +50,11 @@ public record PublicationDetails(
 
   public static PublicationDetails from(UpsertNviCandidateRequest upsertRequest) {
     var publicationDto = upsertRequest.publicationDetails();
-
-    // FIXME: clean up this code
-    var channelLevel = ScientificValue.parse(upsertRequest.level());
     var publicationChannel =
         new PublicationChannel(
             upsertRequest.publicationChannelId(),
             ChannelType.parse(upsertRequest.channelType()),
-            channelLevel);
+            ScientificValue.parse(upsertRequest.level()));
 
     return builder()
         .withId(upsertRequest.publicationId())
