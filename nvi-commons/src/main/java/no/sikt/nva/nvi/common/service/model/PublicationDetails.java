@@ -19,9 +19,7 @@ import no.sikt.nva.nvi.common.db.model.DbPublication;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
-import no.sikt.nva.nvi.common.model.ChannelType;
 import no.sikt.nva.nvi.common.model.InstanceType;
-import no.sikt.nva.nvi.common.model.ScientificValue;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
@@ -50,11 +48,7 @@ public record PublicationDetails(
 
   public static PublicationDetails from(UpsertNviCandidateRequest upsertRequest) {
     var publicationDto = upsertRequest.publicationDetails();
-    var publicationChannel =
-        new PublicationChannel(
-            upsertRequest.publicationChannelId(),
-            ChannelType.parse(upsertRequest.channelType()),
-            ScientificValue.parse(upsertRequest.level()));
+    var publicationChannel = PublicationChannel.from(upsertRequest.publicationChannelForLevel());
 
     return builder()
         .withId(upsertRequest.publicationId())

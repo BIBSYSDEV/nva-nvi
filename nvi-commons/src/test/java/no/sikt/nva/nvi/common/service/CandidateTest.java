@@ -572,13 +572,14 @@ class CandidateTest extends CandidateTestSetup {
   // TODO: Replace this with a mapping to Candidate, instead of checking what is in the DB
   private DbCandidate generateExpectedCandidate(
       Candidate candidate, UpsertNviCandidateRequest request) {
+    var dtoChannel = request.publicationChannelForLevel();
     var dtoPublicationDetails = request.publicationDetails();
     var dbCreators = mapToDbCreators(request.verifiedCreators(), request.unverifiedCreators());
     var dbPublicationChannel =
         DbPublicationChannel.builder()
-            .id(request.publicationChannelId())
-            .channelType(request.channelType())
-            .scientificValue(request.level())
+            .id(dtoChannel.id())
+            .channelType(dtoChannel.channelType().getValue())
+            .scientificValue(dtoChannel.scientificValue().getValue())
             .build();
 
     var dbPublicationDetails =
@@ -608,9 +609,9 @@ class CandidateTest extends CandidateTestSetup {
             .publicationDate(mapToDbPublicationDate(dtoPublicationDetails.publicationDate()))
             .applicable(dtoPublicationDetails.isApplicable())
             .instanceType(dtoPublicationDetails.publicationType().getValue())
-            .channelType(request.channelType())
-            .channelId(request.publicationChannelId())
-            .level(DbLevel.parse(request.level()))
+            .channelType(dtoChannel.channelType().getValue())
+            .channelId(dtoChannel.id())
+            .level(DbLevel.parse(dtoChannel.scientificValue().getValue()))
             .basePoints(adjustScaleAndRoundingMode(request.basePoints()))
             .internationalCollaboration(request.isInternationalCollaboration())
             .collaborationFactor(adjustScaleAndRoundingMode(request.collaborationFactor()))

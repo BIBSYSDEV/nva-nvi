@@ -61,8 +61,10 @@ import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
 import no.sikt.nva.nvi.common.model.CandidateFixtures;
 import no.sikt.nva.nvi.common.model.ChannelType;
+import no.sikt.nva.nvi.common.model.ScientificValue;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
@@ -900,7 +902,13 @@ class IndexDocumentHandlerTest {
   }
 
   private Candidate randomApplicableCandidate(ChannelType channelType) {
-    var request = randomUpsertRequestBuilder().withChannelType(channelType.getValue()).build();
+    var channel =
+        PublicationChannelDto.builder()
+            .withId(randomUri())
+            .withChannelType(channelType)
+            .withScientificValue(ScientificValue.LEVEL_ONE)
+            .build();
+    var request = randomUpsertRequestBuilder().withPublicationChannel(channel).build();
     Candidate.upsert(request, candidateRepository, periodRepository);
     return Candidate.fetchByPublicationId(
         request::publicationId, candidateRepository, periodRepository);

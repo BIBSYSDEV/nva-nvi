@@ -13,7 +13,6 @@ import static no.sikt.nva.nvi.test.TestUtils.generateS3BucketUri;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
-import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
 import static no.unit.nva.testutils.RandomDataGenerator.randomLocalDate;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -54,7 +53,6 @@ import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.model.CandidateFixtures;
-import no.sikt.nva.nvi.common.model.ChannelType;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
@@ -299,13 +297,10 @@ class UpsertNviCandidateHandlerTest {
         .withPublicationId(publicationId)
         .withPublicationBucketUri(publicationBucketUri)
         .withInstanceType(randomInstanceType())
-        .withLevel(randomElement(DbLevel.values()).getValue())
         .withTotalPoints(randomBigDecimal(4))
         .withBasePoints(randomBigDecimal(4))
         .withCreatorShareCount(randomInteger())
         .withCollaborationFactor(randomBigDecimal(4))
-        .withChannelId(randomUri())
-        .withChannelType(randomElement(ChannelType.values()).getValue())
         .withIsInternationalCollaboration(randomBoolean())
         .withPoints(
             List.of(
@@ -372,6 +367,7 @@ class UpsertNviCandidateHandlerTest {
 
   private DbCandidate getExpectedCandidate(UpsertNviCandidateRequest evaluatedNviCandidate) {
     var publicationDetails = evaluatedNviCandidate.publicationDetails();
+    var channel = evaluatedNviCandidate.publicationChannelForLevel();
     var date = publicationDetails.publicationDate();
     return DbCandidate.builder()
         .applicable(true)
@@ -379,10 +375,10 @@ class UpsertNviCandidateHandlerTest {
         .publicationIdentifier(evaluatedNviCandidate.publicationDetails().identifier())
         .publicationBucketUri(evaluatedNviCandidate.publicationBucketUri())
         .instanceType(publicationDetails.publicationType().getValue())
-        .level(DbLevel.parse(evaluatedNviCandidate.level()))
+        .level(DbLevel.parse(channel.scientificValue().getValue()))
+        .channelType(channel.channelType().getValue())
+        .channelId(channel.id())
         .publicationDate(new DbPublicationDate(date.year(), date.month(), date.day()))
-        .channelType(evaluatedNviCandidate.channelType())
-        .channelId(evaluatedNviCandidate.publicationChannelId())
         .creators(getExpectedCreators(evaluatedNviCandidate))
         .basePoints(evaluatedNviCandidate.basePoints())
         .internationalCollaboration(evaluatedNviCandidate.isInternationalCollaboration())

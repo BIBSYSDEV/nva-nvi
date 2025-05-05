@@ -12,6 +12,7 @@ import java.net.URI;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.dto.PublicationDtoBuilder;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
@@ -29,9 +30,7 @@ public class UpsertRequestBuilder {
   private boolean isInternationalCollaboration;
   private List<UnverifiedNviCreatorDto> unverifiedCreators;
   private List<VerifiedNviCreatorDto> verifiedCreators;
-  private String channelType;
-  private URI channelId;
-  private String level;
+  private PublicationChannelDto channelForLevel;
   private int creatorShareCount;
   private BigDecimal collaborationFactor;
   private BigDecimal basePoints;
@@ -56,9 +55,7 @@ public class UpsertRequestBuilder {
         .withIsInternationalCollaboration(publicationDetails.isInternationalCollaboration())
         .withVerifiedCreators(List.of(nviCreator))
         .withUnverifiedCreators(emptyList())
-        .withChannelType(channel.channelType().getValue())
-        .withChannelId(channel.id())
-        .withLevel(channel.scientificValue().getValue())
+        .withPublicationChannel(channel)
         .withInstanceType(publicationDetails.publicationType())
         .withPublicationDate(publicationDetails.publicationDate())
         .withCreatorShareCount(1)
@@ -89,9 +86,7 @@ public class UpsertRequestBuilder {
         .withIsInternationalCollaboration(publicationDetails.isInternationalCollaboration())
         .withVerifiedCreators(List.of(new VerifiedNviCreatorDto(creatorId, List.of(affiliationId))))
         .withUnverifiedCreators(emptyList())
-        .withChannelType(channel.channelType().getValue())
-        .withChannelId(channel.id())
-        .withLevel(channel.scientificValue().getValue())
+        .withPublicationChannel(channel)
         .withInstanceType(publicationDetails.publicationType())
         .withPublicationDate(publicationDetails.publicationDate())
         .withCreatorShareCount(1)
@@ -118,9 +113,7 @@ public class UpsertRequestBuilder {
         .withIsInternationalCollaboration(publicationDetails.isInternationalCollaboration())
         .withVerifiedCreators(request.verifiedCreators())
         .withUnverifiedCreators(request.unverifiedCreators())
-        .withChannelType(request.channelType())
-        .withChannelId(request.publicationChannelId())
-        .withLevel(request.level())
+        .withPublicationChannel(request.publicationChannelForLevel())
         .withInstanceType(publicationDetails.publicationType())
         .withPublicationDate(publicationDetails.publicationDate())
         .withCreatorShareCount(request.creatorShareCount())
@@ -169,18 +162,8 @@ public class UpsertRequestBuilder {
     return this;
   }
 
-  public UpsertRequestBuilder withChannelType(String channelType) {
-    this.channelType = channelType;
-    return this;
-  }
-
-  public UpsertRequestBuilder withChannelId(URI channelId) {
-    this.channelId = channelId;
-    return this;
-  }
-
-  public UpsertRequestBuilder withLevel(String level) {
-    this.level = level;
+  public UpsertRequestBuilder withPublicationChannel(PublicationChannelDto channel) {
+    this.channelForLevel = channel;
     return this;
   }
 
@@ -285,9 +268,7 @@ public class UpsertRequestBuilder {
         .withCollaborationFactor(collaborationFactor)
         .withVerifiedNviCreators(verifiedCreators)
         .withUnverifiedNviCreators(unverifiedCreators)
-        .withChannelType(channelType)
-        .withPublicationChannelId(channelId)
-        .withLevel(level)
+        .withPublicationChannel(channelForLevel)
         .withCreatorShareCount(creatorShareCount)
         .withBasePoints(basePoints)
         .withInstitutionPoints(points)

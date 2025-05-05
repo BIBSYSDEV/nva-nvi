@@ -38,6 +38,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.UpsertRequestBuilder;
 import no.sikt.nva.nvi.common.client.model.Organization;
+import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.model.ChannelType;
 import no.sikt.nva.nvi.common.model.InstanceType;
@@ -493,13 +494,18 @@ class CandidateApprovalTest extends CandidateTestSetup {
 
     var candidate = scenario.upsertCandidate(upsertCandidateRequest);
     updateApprovalStatus(candidate, ApprovalStatus.APPROVED);
+    var channel =
+        PublicationChannelDto.builder()
+            .withId(arguments.channel().id())
+            .withChannelType(arguments.channel().channelType())
+            .withScientificValue(arguments.channel().scientificValue())
+            .build();
 
     var newUpsertRequest =
         fromRequest(upsertCandidateRequest)
             .withVerifiedCreators(arguments.creators())
             .withInstanceType(arguments.type())
-            .withChannelId(arguments.channel().id())
-            .withLevel(arguments.channel().scientificValue().getValue())
+            .withPublicationChannel(channel)
             .withPoints(arguments.institutionPoints())
             .build();
 
@@ -633,11 +639,16 @@ class CandidateApprovalTest extends CandidateTestSetup {
   private UpsertNviCandidateRequest getUpsertCandidateRequestWithHardcodedValues() {
     var verifiedCreator =
         new VerifiedNviCreatorDto(HARDCODED_CREATOR_ID, List.of(HARDCODED_SUBUNIT_ID));
+    var channel =
+        PublicationChannelDto.builder()
+            .withId(HARDCODED_CHANNEL_ID)
+            .withScientificValue(HARDCODED_LEVEL)
+            .withChannelType(ChannelType.JOURNAL)
+            .build();
     return randomUpsertRequestBuilder()
         .withVerifiedCreators(List.of(verifiedCreator))
         .withInstanceType(HARDCODED_INSTANCE_TYPE)
-        .withChannelId(HARDCODED_CHANNEL_ID)
-        .withLevel(HARDCODED_LEVEL.getValue())
+        .withPublicationChannel(channel)
         .withPoints(
             List.of(
                 new InstitutionPoints(

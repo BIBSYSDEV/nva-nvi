@@ -252,7 +252,7 @@ public final class IndexDocumentTestUtils {
     var channelType = candidate.getPublicationChannelType();
     var publicationChannelBuilder =
         PublicationChannel.builder()
-            .withScientificValue(ScientificValue.parse(candidate.getScientificLevel()))
+            .withScientificValue(candidate.getScientificLevel())
             .withName(extractChannelName(expandedResource, channelType));
     if (nonNull(candidate.getPublicationChannelId())) {
       publicationChannelBuilder.withId(candidate.getPublicationChannelId());

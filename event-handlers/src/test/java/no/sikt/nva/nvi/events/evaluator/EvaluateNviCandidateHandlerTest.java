@@ -570,18 +570,22 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       BigDecimal basePoints,
       BigDecimal totalPoints,
       URI publicationBucketUri) {
+    var channelForLevel =
+        PublicationChannelDto.builder()
+            .withId(HARDCODED_PUBLICATION_CHANNEL_ID)
+            .withChannelType(ChannelType.parse(channelType.getValue()))
+            .withScientificValue(ScientificValue.parse(level))
+            .build();
     var publicationDetails =
         createExpectedPublicationDetails(
-            HARDCODED_PUBLICATION_ID, HARDCODED_PUBLICATION_DATE, instanceType, channelType, level);
+            HARDCODED_PUBLICATION_ID, HARDCODED_PUBLICATION_DATE, instanceType, channelForLevel);
     var verifiedCreators =
         List.of(
             new VerifiedNviCreatorDto(HARDCODED_CREATOR_ID, List.of(CRISTIN_NVI_ORG_SUB_UNIT_ID)));
     return UpsertNviCandidateRequest.builder()
         .withPublicationBucketUri(publicationBucketUri)
+        .withPublicationChannel(channelForLevel)
         .withPublicationDetails(publicationDetails)
-        .withChannelType(channelType.getValue())
-        .withLevel(level)
-        .withPublicationChannelId(HARDCODED_PUBLICATION_CHANNEL_ID)
         .withIsInternationalCollaboration(false)
         .withCollaborationFactor(ONE.setScale(1, ROUNDING_MODE))
         .withCreatorShareCount(countCreatorShares(verifiedCreators))
@@ -608,21 +612,14 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       URI publicationId,
       PublicationDateDto publicationDate,
       InstanceType instanceType,
-      PublicationChannel channelType,
-      String level) {
-    var channel =
-        PublicationChannelDto.builder()
-            .withId(HARDCODED_PUBLICATION_CHANNEL_ID)
-            .withScientificValue(ScientificValue.parse(level))
-            .withChannelType(ChannelType.parse(channelType.getValue()))
-            .build();
+      PublicationChannelDto publicationChannel) {
     return PublicationDto.builder()
         .withId(publicationId)
         .withStatus("PUBLISHED")
         .withIsApplicable(true)
         .withPublicationDate(publicationDate)
         .withPublicationType(instanceType)
-        .withPublicationChannels(List.of(channel))
+        .withPublicationChannels(List.of(publicationChannel))
         .withIsInternationalCollaboration(false)
         .build();
   }
@@ -1145,20 +1142,23 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       var publicationDate = getPublicationDate(publication.publicationDate());
       var verifiedCreators = getVerifiedNviCreators();
       var unverifiedNviCreators = getUnverifiedNviCreators();
+      var channelForLevel =
+          PublicationChannelDto.builder()
+              .withId(HARDCODED_PUBLICATION_CHANNEL_ID)
+              .withChannelType(ChannelType.parse(publicationChannelType))
+              .withScientificValue(ScientificValue.parse(publicationChannelLevel))
+              .build();
       var publicationDetails =
           createExpectedPublicationDetails(
               publication.id(),
               publicationDate,
               InstanceType.parse(publication.instanceType()),
-              PublicationChannel.parse(publicationChannelType),
-              publicationChannelLevel);
+              channelForLevel);
       var expectedCandidate =
           expectedCandidateBuilder
               .withPublicationBucketUri(fileUri)
+              .withPublicationChannel(channelForLevel)
               .withPublicationDetails(publicationDetails)
-              .withChannelType(publicationChannelType)
-              .withPublicationChannelId(publicationChannelId)
-              .withLevel(publicationChannelLevel)
               .withInstitutionPoints(expectedPointsPerInstitution)
               .withTotalPoints(expectedTotalPoints)
               .withVerifiedNviCreators(verifiedCreators)

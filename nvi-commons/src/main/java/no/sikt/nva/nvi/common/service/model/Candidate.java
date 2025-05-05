@@ -51,6 +51,7 @@ import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.model.ChannelType;
 import no.sikt.nva.nvi.common.model.InvalidNviCandidateException;
+import no.sikt.nva.nvi.common.model.ScientificValue;
 import no.sikt.nva.nvi.common.model.UpdateApprovalRequest;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
@@ -326,8 +327,8 @@ public final class Candidate {
     }
   }
 
-  public String getScientificLevel() {
-    return publicationDetails.publicationChannel().scientificValue().getValue();
+  public ScientificValue getScientificLevel() {
+    return publicationDetails.publicationChannel().scientificValue();
   }
 
   public ChannelType getPublicationChannelType() {
@@ -572,7 +573,8 @@ public final class Candidate {
 
   private static boolean publicationChannelIsUpdated(
       UpsertNviCandidateRequest request, Candidate candidate) {
-    return !request.publicationChannelId().equals(candidate.getPublicationChannelId());
+    var requestChannel = request.publicationChannelForLevel().id();
+    return !requestChannel.equals(candidate.getPublicationChannelId());
   }
 
   private static boolean publicationYearIsUpdated(
@@ -655,7 +657,8 @@ public final class Candidate {
   }
 
   private static boolean levelIsUpdated(UpsertNviCandidateRequest request, Candidate candidate) {
-    return !Objects.equals(request.level(), candidate.getScientificLevel());
+    var requestValue = request.publicationChannelForLevel().scientificValue();
+    return !Objects.equals(requestValue, candidate.getScientificLevel());
   }
 
   private static void createCandidate(
@@ -668,7 +671,6 @@ public final class Candidate {
     attempt(
             () -> {
               candidate.validate();
-              Objects.requireNonNull(candidate.level());
               return candidate;
             })
         .orElseThrow(failure -> new InvalidNviCandidateException(INVALID_CANDIDATE_MESSAGE));
