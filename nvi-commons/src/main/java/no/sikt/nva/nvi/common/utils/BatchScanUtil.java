@@ -17,7 +17,6 @@ import no.sikt.nva.nvi.common.db.model.DbPublication;
 import no.sikt.nva.nvi.common.db.model.DbPublicationChannel;
 import no.sikt.nva.nvi.common.db.model.KeyField;
 import no.sikt.nva.nvi.common.dto.PageCountDto;
-import no.sikt.nva.nvi.common.model.InstanceType;
 import no.sikt.nva.nvi.common.model.ListingResult;
 import no.sikt.nva.nvi.common.service.PublicationLoaderService;
 import nva.commons.core.Environment;
@@ -94,7 +93,7 @@ public class BatchScanUtil {
               // Get data we know should exist already from data stored in the database
               .id(data.publicationId())
               .publicationBucketUri(data.publicationBucketUri())
-              .publicationType(InstanceType.parse(data.instanceType())) // FIXME: Use string
+              .publicationType(data.instanceType())
               .publicationChannel(dbPublicationChannel)
               .publicationDate(data.publicationDate())
               .internationalCollaboration(data.internationalCollaboration())

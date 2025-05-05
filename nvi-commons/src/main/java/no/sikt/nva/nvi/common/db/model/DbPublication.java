@@ -6,7 +6,6 @@ import java.net.URI;
 import java.time.Instant;
 import java.util.List;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreatorType;
-import no.sikt.nva.nvi.common.model.InstanceType;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbConvertedBy;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbIgnore;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmutable;
@@ -22,7 +21,7 @@ public record DbPublication(
     String abstractText,
     DbPages pages,
     DbPublicationDate publicationDate,
-    InstanceType publicationType,
+    String publicationType,
     boolean applicable,
     boolean internationalCollaboration,
     DbPublicationChannel publicationChannel,
@@ -68,7 +67,7 @@ public record DbPublication(
     private String builderAbstractText;
     private DbPages builderPages;
     private DbPublicationDate builderPublicationDate;
-    private InstanceType builderPublicationType;
+    private String builderPublicationType;
     private boolean builderIsApplicable;
     private boolean builderIsInternationalCollaboration;
     private DbPublicationChannel builderPublicationChannel;
@@ -124,7 +123,7 @@ public record DbPublication(
       return this;
     }
 
-    public Builder publicationType(InstanceType publicationType) {
+    public Builder publicationType(String publicationType) {
       this.builderPublicationType = publicationType;
       return this;
     }

@@ -138,7 +138,7 @@ public final class CristinMapper {
         .publicationBucketUri(
             constructPublicationBucketUri(cristinNviReport.publicationIdentifier()))
         .publicationDate(constructPublicationDate(cristinNviReport.publicationDate()))
-        .publicationType(toInstanceType(cristinNviReport.instanceType()))
+        .publicationType(cristinNviReport.instanceType())
         .applicable(true)
         .modifiedDate(now)
         .internationalCollaboration(isInternationalCollaboration(cristinNviReport))

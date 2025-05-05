@@ -576,7 +576,7 @@ class CandidateTest extends CandidateTestSetup {
             .publicationBucketUri(request.publicationBucketUri())
             .title(dtoPublicationDetails.title())
             .status(dtoPublicationDetails.status())
-            .publicationType(dtoPublicationDetails.publicationType())
+            .publicationType(dtoPublicationDetails.publicationType().getValue())
             .publicationChannel(dbPublicationChannel)
             .publicationDate(mapToDbPublicationDate(dtoPublicationDetails.publicationDate()))
             .applicable(dtoPublicationDetails.isApplicable())
