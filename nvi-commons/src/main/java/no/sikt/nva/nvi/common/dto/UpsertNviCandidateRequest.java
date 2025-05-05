@@ -13,19 +13,16 @@ import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 
-// FIXME: Suppressing temporarily.
-// Many fields of this class can be replaced with a single PublicationDto
-@SuppressWarnings("PMD.TooManyFields")
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSerialize
 public record UpsertNviCandidateRequest(
-    URI publicationId,
+    URI publicationId, // FIXME: Remove this
     URI publicationBucketUri,
     PublicationDto publicationDetails,
-    InstanceType instanceType,
+    InstanceType instanceType, // FIXME: Remove this
     List<VerifiedNviCreatorDto> verifiedCreators,
     List<UnverifiedNviCreatorDto> unverifiedCreators,
-    String channelType,
+    String channelType, // FIXME: Merge this
     URI publicationChannelId,
     String level,
     BigDecimal basePoints,

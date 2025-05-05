@@ -12,9 +12,11 @@ import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
 // TODO: Refactor level -> scientificValue
 public record PublicationChannel(ChannelType channelType, URI id, String level) {
 
-  public static PublicationChannel from(PublicationChannelDto dto) {
+  public static PublicationChannel from(PublicationChannelDto dtoChannel) {
     return new PublicationChannel(
-        ChannelType.parse(dto.channelType()), dto.id(), dto.scientificValue().getValue());
+        ChannelType.parse(dtoChannel.channelType()),
+        dtoChannel.id(),
+        dtoChannel.scientificValue().getValue());
   }
 
   public static PublicationChannel from(DbPublicationChannel dbPublicationChannel) {

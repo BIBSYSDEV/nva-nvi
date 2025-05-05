@@ -833,7 +833,6 @@ public final class Candidate {
         .build();
   }
 
-  // FIXME: Does this "copy" actually copy, or are we mutating the original object?
   private Candidate apply(UpsertNviCandidateRequest request) {
     return this.copy()
         .withApplicable(request.isApplicable())

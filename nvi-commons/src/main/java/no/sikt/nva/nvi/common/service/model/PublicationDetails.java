@@ -18,7 +18,6 @@ import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.db.model.DbPages;
 import no.sikt.nva.nvi.common.db.model.DbPublication;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
-import no.sikt.nva.nvi.common.dto.PageCountDto;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.model.ScientificValue;
@@ -36,7 +35,7 @@ public record PublicationDetails(
     String status,
     String language,
     String abstractText,
-    PageCountDto pageCount,
+    PageCount pageCount,
     PublicationChannel publicationChannel,
     PublicationDateDto publicationDate,
     InstanceType publicationType,
@@ -69,7 +68,7 @@ public record PublicationDetails(
         .withAbstract(publicationDto.abstractText())
         .withPublicationDate(publicationDto.publicationDate())
         .withPublicationType(publicationDto.publicationType())
-        .withPageCount(publicationDto.pageCount())
+        .withPageCount(PageCount.from(publicationDto.pageCount()))
         .withIsApplicable(publicationDto.isApplicable())
         .withIsInternationalCollaboration(publicationDto.isInternationalCollaboration())
         .withPublicationChannel(publicationChannel)
@@ -107,7 +106,7 @@ public record PublicationDetails(
         .withStatus(dbDetails.status())
         .withLanguage(dbDetails.language())
         .withAbstract(dbDetails.abstractText())
-        .withPublicationDate(dateFromDbDate(dbCandidate.getPublicationDate()))
+        .withPublicationDate(mapFromDbDate(dbCandidate.getPublicationDate()))
         .withPublicationType(dbDetails.publicationType())
         .withPageCount(getPages(dbDetails))
         .withIsApplicable(dbDetails.applicable())
@@ -138,17 +137,17 @@ public record PublicationDetails(
     //    return dbDetails.publicationChannels().stream().map(PublicationChannel::from).toList();
   }
 
-  private static PageCountDto getPages(DbPublication dbDetails) {
+  private static PageCount getPages(DbPublication dbDetails) {
     var dbPages = dbDetails.pages();
     if (nonNull(dbPages)) {
-      return new PageCountDto(dbPages.firstPage(), dbPages.lastPage(), dbPages.pageCount());
+      return PageCount.from(dbPages);
     }
     return null;
   }
 
   private DbPages getDbPages() {
     if (nonNull(pageCount)) {
-      return new DbPages(pageCount.firstPage(), pageCount.lastPage(), pageCount.numberOfPages());
+      return pageCount.toDbPages();
     }
     return null;
   }
@@ -207,12 +206,6 @@ public record PublicationDetails(
     return verifiedCreators.stream().map(VerifiedNviCreatorDto::id).collect(Collectors.toSet());
   }
 
-  // FIXME: Move to separate class
-  private static PublicationDateDto dateFromDbDate(DbPublicationDate dbPublicationDate) {
-    return new PublicationDateDto(
-        dbPublicationDate.year(), dbPublicationDate.month(), dbPublicationDate.day());
-  }
-
   private static List<DbCreatorType> mapToDbCreators(
       Collection<VerifiedNviCreatorDto> verifiedNviCreators,
       Collection<UnverifiedNviCreatorDto> unverifiedNviCreators) {
@@ -221,6 +214,11 @@ public record PublicationDetails(
     return Stream.concat(verifiedCreators, unverifiedCreators)
         .map(DbCreatorType.class::cast)
         .toList();
+  }
+
+  private static PublicationDateDto mapFromDbDate(DbPublicationDate dbPublicationDate) {
+    return new PublicationDateDto(
+        dbPublicationDate.year(), dbPublicationDate.month(), dbPublicationDate.day());
   }
 
   private static DbPublicationDate mapToPublicationDate(PublicationDateDto publicationDate) {
@@ -240,7 +238,7 @@ public record PublicationDetails(
     private String status;
     private String language;
     private String abstractText;
-    private PageCountDto pageCount;
+    private PageCount pageCount;
     private PublicationDateDto publicationDate;
     private InstanceType publicationType;
     private boolean isApplicable;
@@ -280,7 +278,7 @@ public record PublicationDetails(
       return this;
     }
 
-    public Builder withPageCount(PageCountDto pageCount) {
+    public Builder withPageCount(PageCount pageCount) {
       this.pageCount = pageCount;
       return this;
     }
@@ -321,18 +319,18 @@ public record PublicationDetails(
     }
 
     public Builder withPublicationChannels(Collection<PublicationChannel> publicationChannels) {
-      this.publicationChannels = List.copyOf(publicationChannels); // FIXME: remove this copy
+      this.publicationChannels = List.copyOf(publicationChannels);
       return this;
     }
 
     public Builder withVerifiedNviCreators(Collection<VerifiedNviCreatorDto> verifiedCreators) {
-      this.verifiedCreators = List.copyOf(verifiedCreators); // FIXME: remove this copy
+      this.verifiedCreators = List.copyOf(verifiedCreators);
       return this;
     }
 
     public Builder withUnverifiedNviCreators(
         Collection<UnverifiedNviCreatorDto> unverifiedCreators) {
-      this.unverifiedCreators = List.copyOf(unverifiedCreators); // FIXME: remove this copy
+      this.unverifiedCreators = List.copyOf(unverifiedCreators);
       return this;
     }
 
@@ -342,7 +340,7 @@ public record PublicationDetails(
     }
 
     public Builder withTopLevelOrganizations(Collection<Organization> topLevelOrganizations) {
-      this.topLevelOrganizations = List.copyOf(topLevelOrganizations); // FIXME: remove this copy
+      this.topLevelOrganizations = List.copyOf(topLevelOrganizations);
       return this;
     }
 

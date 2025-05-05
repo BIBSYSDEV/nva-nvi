@@ -4,6 +4,7 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmut
 
 @DynamoDbImmutable(builder = DbPages.Builder.class)
 public record DbPages(String firstPage, String lastPage, String pageCount) {
+  // FIXME: Rename pagecount to numberOfPages
 
   public static Builder builder() {
     return new Builder();
