@@ -144,11 +144,7 @@ class CandidateTest extends CandidateTestSetup {
     var expectedCandidate = generateExpectedCandidate(candidate, request);
     var actualPersistedCandidate =
         candidateRepository.findCandidateById(candidate.getIdentifier()).orElseThrow().candidate();
-    Assertions.assertThat(actualPersistedCandidate)
-        .usingRecursiveComparison()
-        .ignoringCollectionOrder()
-        .ignoringFields("modifiedDate")
-        .isEqualTo(expectedCandidate);
+    assertThatCandidatesAreEqual(actualPersistedCandidate, expectedCandidate);
   }
 
   @ParameterizedTest(name = "Should persist new candidate with correct level {0}")
@@ -159,11 +155,7 @@ class CandidateTest extends CandidateTestSetup {
     var expectedCandidate = generateExpectedCandidate(candidate, request);
     var actualPersistedCandidate =
         candidateRepository.findCandidateById(candidate.getIdentifier()).orElseThrow().candidate();
-    Assertions.assertThat(actualPersistedCandidate)
-        .usingRecursiveComparison()
-        .ignoringCollectionOrder()
-        .ignoringFields("modifiedDate")
-        .isEqualTo(expectedCandidate);
+    assertThatCandidatesAreEqual(actualPersistedCandidate, expectedCandidate);
   }
 
   @ParameterizedTest(name = "Should update candidate with correct level {0}")
@@ -179,11 +171,7 @@ class CandidateTest extends CandidateTestSetup {
     var expectedCandidate = generateExpectedCandidate(candidate, request);
     var actualPersistedCandidate =
         candidateRepository.findCandidateById(candidate.getIdentifier()).orElseThrow().candidate();
-    Assertions.assertThat(actualPersistedCandidate)
-        .usingRecursiveComparison()
-        .ignoringCollectionOrder()
-        .ignoringFields("modifiedDate")
-        .isEqualTo(expectedCandidate);
+    assertThatCandidatesAreEqual(actualPersistedCandidate, expectedCandidate);
   }
 
   @Test
@@ -230,11 +218,7 @@ class CandidateTest extends CandidateTestSetup {
     var expectedCandidate = generateExpectedCandidate(candidate, updateRequest);
     var actualPersistedCandidate =
         candidateRepository.findCandidateById(candidate.getIdentifier()).orElseThrow().candidate();
-    Assertions.assertThat(actualPersistedCandidate)
-        .usingRecursiveComparison()
-        .ignoringFields("modifiedDate")
-        .ignoringCollectionOrder()
-        .isEqualTo(expectedCandidate);
+    assertThatCandidatesAreEqual(actualPersistedCandidate, expectedCandidate);
   }
 
   @Test
@@ -631,5 +615,14 @@ class CandidateTest extends CandidateTestSetup {
       return null;
     }
     return PageCount.from(publicationDetails.pageCount()).toDbPages();
+  }
+
+  private static void assertThatCandidatesAreEqual(
+      DbCandidate actualPersistedCandidate, DbCandidate expectedCandidate) {
+    Assertions.assertThat(actualPersistedCandidate)
+        .usingRecursiveComparison()
+        .ignoringCollectionOrder()
+        .ignoringFields("modifiedDate")
+        .isEqualTo(expectedCandidate);
   }
 }

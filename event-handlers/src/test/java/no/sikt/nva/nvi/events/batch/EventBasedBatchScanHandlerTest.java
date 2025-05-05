@@ -80,11 +80,10 @@ class EventBasedBatchScanHandlerTest {
   private FakeEventBridgeClient eventBridgeClient;
   private NviCandidateRepositoryHelper candidateRepository;
   private NviPeriodRepositoryHelper periodRepository;
-  private TestScenario scenario;
 
   @BeforeEach
   void init() {
-    scenario = new TestScenario();
+    var scenario = new TestScenario();
     output = new ByteArrayOutputStream();
     when(CONTEXT.getInvokedFunctionArn()).thenReturn(randomString());
     eventBridgeClient = new FakeEventBridgeClient();

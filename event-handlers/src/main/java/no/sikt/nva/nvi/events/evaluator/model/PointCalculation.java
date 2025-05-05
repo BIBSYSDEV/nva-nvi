@@ -7,6 +7,8 @@ import no.sikt.nva.nvi.common.model.InstanceType;
 import no.sikt.nva.nvi.common.model.ScientificValue;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 
+// TODO: Move this to nvi-commons
+// TODO: Make DTO and DB versions of this and persist it as a separate field
 public record PointCalculation(
     InstanceType instanceType,
     PublicationChannel channelType,

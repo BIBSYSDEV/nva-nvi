@@ -10,6 +10,7 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbConve
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbIgnore;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmutable;
 
+@SuppressWarnings("PMD.TooManyFields")
 @DynamoDbImmutable(builder = DbPublication.Builder.class)
 public record DbPublication(
     URI id,

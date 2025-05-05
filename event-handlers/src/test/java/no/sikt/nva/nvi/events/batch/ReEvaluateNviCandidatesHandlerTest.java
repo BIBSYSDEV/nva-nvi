@@ -57,11 +57,10 @@ class ReEvaluateNviCandidatesHandlerTest {
   private FakeSqsClient sqsClient;
   private CandidateRepository candidateRepository;
   private FakeEventBridgeClient eventBridgeClient;
-  private TestScenario scenario;
 
   @BeforeEach
   void setUp() {
-    scenario = new TestScenario();
+    var scenario = new TestScenario();
     outputStream = new ByteArrayOutputStream();
     sqsClient = new FakeSqsClient();
     candidateRepository = scenario.getCandidateRepository();

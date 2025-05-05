@@ -37,11 +37,10 @@ class MigrationTests {
   private CandidateRepository candidateRepository;
   private PeriodRepository periodRepository;
   private BatchScanUtil batchScanUtil;
-  private TestScenario scenario;
 
   @BeforeEach
   void setUp() {
-    scenario = new TestScenario();
+    var scenario = new TestScenario();
     candidateRepository = scenario.getCandidateRepository();
     periodRepository = scenario.getPeriodRepository();
     batchScanUtil = new BatchScanUtil(candidateRepository, scenario.getS3StorageReader());

@@ -16,8 +16,6 @@ import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreatorType;
 import no.sikt.nva.nvi.common.db.model.DbPages;
 import no.sikt.nva.nvi.common.db.model.DbPublication;
-import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
-import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.model.InstanceType;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
@@ -26,6 +24,7 @@ import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 
 // FIXME: Revert change to creators and unsplit lists
 // TODO: Can we remove this JsonSerialize annotation?
+@SuppressWarnings({"PMD.TooManyFields", "PMD.CouplingBetweenObjects"})
 @JsonSerialize
 public record PublicationDetails(
     URI publicationId,
@@ -196,19 +195,6 @@ public record PublicationDetails(
     return Stream.concat(verifiedCreators, unverifiedCreators)
         .map(DbCreatorType.class::cast)
         .toList();
-  }
-
-  private static PublicationDateDto mapFromDbDate(DbPublicationDate dbPublicationDate) {
-    return new PublicationDateDto(
-        dbPublicationDate.year(), dbPublicationDate.month(), dbPublicationDate.day());
-  }
-
-  private static DbPublicationDate mapToPublicationDate(PublicationDateDto publicationDate) {
-    return DbPublicationDate.builder()
-        .year(publicationDate.year())
-        .month(publicationDate.month())
-        .day(publicationDate.day())
-        .build();
   }
 
   public static final class Builder {
