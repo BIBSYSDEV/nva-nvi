@@ -18,6 +18,7 @@ public record UpsertNviCandidateRequest(
     URI publicationBucketUri,
     PublicationChannelDto publicationChannelForLevel,
     PublicationDto publicationDetails,
+    // TODO: Merge lists of verified and unverified creators
     List<VerifiedNviCreatorDto> verifiedCreators,
     List<UnverifiedNviCreatorDto> unverifiedCreators,
     BigDecimal basePoints,

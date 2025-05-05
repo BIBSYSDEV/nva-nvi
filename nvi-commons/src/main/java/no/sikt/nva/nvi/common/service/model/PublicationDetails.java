@@ -24,6 +24,7 @@ import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 
+// FIXME: Revert change to creators and unsplit lists
 // TODO: Can we remove this JsonSerialize annotation?
 @JsonSerialize
 public record PublicationDetails(

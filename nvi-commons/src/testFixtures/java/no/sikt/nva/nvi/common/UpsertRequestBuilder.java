@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
+import no.sikt.nva.nvi.common.dto.PublicationDto;
 import no.sikt.nva.nvi.common.dto.PublicationDtoBuilder;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.model.InstanceType;
@@ -25,7 +26,7 @@ import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliation
 
 public class UpsertRequestBuilder {
 
-  private PublicationDtoBuilder publicationBuilder = new PublicationDtoBuilder();
+  private PublicationDto.Builder publicationBuilder = PublicationDto.builder();
   private URI publicationBucketUri;
   private boolean isInternationalCollaboration;
   private List<UnverifiedNviCreatorDto> unverifiedCreators;
@@ -73,7 +74,7 @@ public class UpsertRequestBuilder {
   }
 
   public static UpsertRequestBuilder randomUpsertRequestBuilder(
-      PublicationDtoBuilder publicationBuilder) {
+      PublicationDto.Builder publicationBuilder) {
     var publicationDetails = publicationBuilder.build();
     var creatorId = randomUri();
     var affiliationId = randomUri();
@@ -123,7 +124,7 @@ public class UpsertRequestBuilder {
         .withTotalPoints(request.totalPoints());
   }
 
-  public UpsertRequestBuilder withPublicationDetails(PublicationDtoBuilder publicationBuilder) {
+  public UpsertRequestBuilder withPublicationDetails(PublicationDto.Builder publicationBuilder) {
     this.publicationBuilder = publicationBuilder;
     return this;
   }
