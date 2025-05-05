@@ -4,7 +4,7 @@ import static java.util.Collections.emptyList;
 import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganization;
 import static no.sikt.nva.nvi.common.model.PageCountFixtures.PAGE_RANGE_AS_DTO;
-import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.CURRENT_YEAR_AS_PUBLICATION_DATE_DTO;
+import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.getRandomDateInCurrentYearAsDto;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 
@@ -51,7 +51,7 @@ public class PublicationDtoBuilder {
         .withPublicationType(InstanceType.ACADEMIC_ARTICLE)
         .withModifiedDate(Instant.now())
         .withPageCount(PAGE_RANGE_AS_DTO)
-        .withPublicationDate(CURRENT_YEAR_AS_PUBLICATION_DATE_DTO)
+        .withPublicationDate(getRandomDateInCurrentYearAsDto())
         .withAbstract(randomString())
         .withLanguage(null)
         .withStatus("PUBLISHED")

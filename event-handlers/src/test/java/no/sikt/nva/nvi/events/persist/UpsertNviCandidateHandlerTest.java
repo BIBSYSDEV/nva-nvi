@@ -1,10 +1,12 @@
 package no.sikt.nva.nvi.events.persist;
 
 import static java.util.Collections.emptyList;
+import static no.sikt.nva.nvi.common.UpsertRequestBuilder.fromRequest;
 import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.model.InstanceTypeFixtures.randomInstanceType;
+import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.getRandomDateInCurrentYearAsDto;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
 import static no.sikt.nva.nvi.test.TestUtils.generateS3BucketUri;
@@ -34,7 +36,6 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.net.URI;
-import java.time.Year;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -367,15 +368,7 @@ class UpsertNviCandidateHandlerTest {
 
   private UpsertNviCandidateRequest createNewUpsertRequestNotAffectingApprovals(
       UpsertNviCandidateRequest request) {
-    var creator = request.verifiedCreators().getFirst();
-    return getBuilder(request.publicationId(), request.publicationBucketUri(), creator)
-        .withInstanceType(request.instanceType())
-        .withLevel(request.level())
-        .withChannelId(request.publicationChannelId())
-        .withPublicationDate(new PublicationDateDto(Year.now().toString(), "3", null))
-        .withVerifiedCreators(List.of(creator))
-        .withPoints(request.institutionPoints())
-        .build();
+    return fromRequest(request).withPublicationDate(getRandomDateInCurrentYearAsDto()).build();
   }
 
   private DbCandidate getExpectedCandidate(UpsertNviCandidateRequest evaluatedNviCandidate) {

@@ -35,7 +35,6 @@ public class UpsertRequestBuilder {
   private URI channelId;
   private String level;
   private InstanceType instanceType;
-  private PublicationDateDto publicationDate;
   private int creatorShareCount;
   private BigDecimal collaborationFactor;
   private BigDecimal basePoints;
@@ -199,7 +198,6 @@ public class UpsertRequestBuilder {
   }
 
   public UpsertRequestBuilder withPublicationDate(PublicationDateDto publicationDate) {
-    this.publicationDate = publicationDate;
     this.publicationBuilder = publicationBuilder.withPublicationDate(publicationDate);
     return this;
   }
