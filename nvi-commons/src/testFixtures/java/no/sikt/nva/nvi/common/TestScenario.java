@@ -116,4 +116,12 @@ public class TestScenario {
       throw new RuntimeException("Failed to add publication to S3", e);
     }
   }
+
+  public URI addPublicationToS3(String publicationIdentifier, String publicationJson) {
+    try {
+      return s3Driver.insertFile(UnixPath.of(publicationIdentifier), publicationJson);
+    } catch (IOException e) {
+      throw new RuntimeException("Failed to add publication to S3", e);
+    }
+  }
 }

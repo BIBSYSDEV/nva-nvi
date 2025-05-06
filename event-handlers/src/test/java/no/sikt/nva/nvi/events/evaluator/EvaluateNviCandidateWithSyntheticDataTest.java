@@ -9,6 +9,7 @@ import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.params.provider.Arguments.argumentSet;
+import static org.mockito.Mockito.mock;
 
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
@@ -39,7 +40,7 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
   private Organization nviOrganization1;
   private Organization nonNviOrganization;
   private UpsertNviCandidateHandler upsertNviCandidateHandler;
-  private QueueClient dlqClient;
+  private final QueueClient dlqClient = mock(QueueClient.class);
 
   @BeforeEach
   void setup() {
@@ -71,13 +72,33 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
             .getExpandedPublication();
 
     var expectedCreatorShares = numberOfNorwegianContributors + numberOfForeignContributors;
-    var candidate = evaluatePublication(publication);
+    var candidate = evaluatePublicationAndGetPersistedCandidate(publication);
     assertThat(candidate.getCreatorShareCount()).isEqualTo(expectedCreatorShares);
   }
 
   @Test
-  void shouldIncludeAbstract() {
-    // TODO: Not implemented
+  void shouldPersistTopLevelOrganizations() {
+    var nviOrganization2 = factory.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, true);
+    var publication =
+        factory
+            .withTopLevelOrganizations(nviOrganization1, nviOrganization2)
+            .withNorwegianCreatorAffiliatedWith(nviOrganization1)
+            .withNorwegianCreatorAffiliatedWith(nviOrganization2.hasPart().getFirst())
+            .getExpandedPublicationBuilder()
+            .build();
+
+    var candidate = evaluatePublicationAndGetPersistedCandidate(publication);
+    var actualTopLevelOrganizations = candidate.getPublicationDetails().topLevelOrganizations();
+    var expectedTopLevelOrganizations = List.of(nviOrganization1, nviOrganization2);
+
+    assertThat(actualTopLevelOrganizations)
+        .usingRecursiveComparison()
+        .ignoringCollectionOrder()
+        .isEqualTo(expectedTopLevelOrganizations);
+  }
+
+  @Test
+  void shouldPersistAbstractText() {
     var expectedAbstract = "Lorem ipsum";
     var publication =
         factory
@@ -93,9 +114,8 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
 
   @ParameterizedTest
   @MethodSource("pageCountProvider")
-  void shouldIncludePageCount(
+  void shouldPersistPageCount(
       PageCountDto expectedPageCount, String publicationType, String channelType) {
-    // TODO: Not implemented
     var publication =
         factory
             .withTopLevelOrganizations(nviOrganization1, nonNviOrganization)
@@ -142,7 +162,8 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
    * This wrapper is an abstraction of the whole processing chain in `event-handlers`, including
    * parsing, evaluation, and upsert.
    */
-  private Candidate evaluatePublication(SampleExpandedPublication publication) {
+  private Candidate evaluatePublicationAndGetPersistedCandidate(
+      SampleExpandedPublication publication) {
     var fileUri = scenario.addPublicationToS3(publication);
     var evaluationEvent = createEvent(new PersistedResourceMessage(fileUri));
     handler.handleRequest(evaluationEvent, CONTEXT);

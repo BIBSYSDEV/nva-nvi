@@ -69,8 +69,6 @@ import nva.commons.logutils.LogUtils;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
 
 // Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
 @SuppressWarnings("PMD.CouplingBetweenObjects")
@@ -109,10 +107,10 @@ class UpsertNviCandidateHandlerTest {
     assertThat(appender.getMessages(), containsString(ERROR_MESSAGE_BODY_INVALID));
   }
 
-  @ParameterizedTest(name = "should send message to DLQ when message invalid: {0}")
-  @MethodSource("invalidCandidateEvaluatedMessages")
-  void shouldSendMessageToDlqWhenMessageInvalid(CandidateEvaluatedMessage message) {
-    handler.handleRequest(createEvent(message), CONTEXT);
+  @Test
+  void shouldSendMessageToDlqWhenMessageInvalid() {
+    var invalidMessage = new CandidateEvaluatedMessage(new UpsertNonNviCandidateRequest(null));
+    handler.handleRequest(createEvent(invalidMessage), CONTEXT);
     verify(queueClient, times(1)).sendMessage(any(String.class), eq(DLQ_QUEUE_URL));
   }
 
@@ -312,10 +310,6 @@ class UpsertNviCandidateHandlerTest {
                             creator.id(), randomUri(), randomBigDecimal())))))
         .withPublicationDate(randomPublicationDate())
         .withVerifiedCreators(List.of(creator));
-  }
-
-  private static Stream<CandidateEvaluatedMessage> invalidCandidateEvaluatedMessages() {
-    return Stream.of(createEvalMessage(randomUpsertRequestBuilder().withPoints(null).build()));
   }
 
   private static PublicationDateDto randomPublicationDate() {

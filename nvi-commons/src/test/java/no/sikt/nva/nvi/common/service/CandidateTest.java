@@ -39,6 +39,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.UpsertRequestBuilder;
+import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
@@ -565,6 +566,10 @@ class CandidateTest extends CandidateTestSetup {
             .channelType(dtoChannel.channelType().getValue())
             .scientificValue(dtoChannel.scientificValue().getValue())
             .build();
+    var dbOrganizations =
+        dtoPublicationDetails.topLevelOrganizations().stream()
+            .map(Organization::toDbOrganization)
+            .toList();
 
     var dbPublicationDetails =
         DbPublication.builder()
@@ -583,6 +588,7 @@ class CandidateTest extends CandidateTestSetup {
             .contributorCount(dtoPublicationDetails.contributors().size())
             .abstractText(dtoPublicationDetails.abstractText())
             .pages(getDbPagesFromRequest(request))
+            .topLevelOrganizations(dbOrganizations)
             .build();
     var dbCandidate =
         DbCandidate.builder()

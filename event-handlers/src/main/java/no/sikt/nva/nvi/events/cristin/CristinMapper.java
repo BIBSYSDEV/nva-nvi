@@ -29,9 +29,7 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints.DbCreatorAffil
 import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.db.model.DbPublication;
 import no.sikt.nva.nvi.common.db.model.DbPublicationChannel;
-import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.model.Username;
-import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.model.ChannelType;
 import no.sikt.nva.nvi.common.model.InstanceType;
 import no.sikt.nva.nvi.events.cristin.InstitutionPoints.CreatorPoints;
@@ -431,14 +429,6 @@ public final class CristinMapper {
     } else {
       return StringUtils.EMPTY_STRING;
     }
-  }
-
-  private static DbPublicationDate constructPublicationDate(PublicationDateDto publicationDate) {
-    return DbPublicationDate.builder()
-        .day(publicationDate.day())
-        .month(publicationDate.month())
-        .year(publicationDate.year())
-        .build();
   }
 
   private static URI constructPublicationBucketUri(String publicationIdentifier) {

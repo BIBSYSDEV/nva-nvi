@@ -383,6 +383,7 @@ public final class CandidateDao extends Dao {
           .reportStatus(reportStatus);
     }
 
+    // FIXME: Delete these
     @Override
     @DynamoDbIgnore
     @JacocoGenerated

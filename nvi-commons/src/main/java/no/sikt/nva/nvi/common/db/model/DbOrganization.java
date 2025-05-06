@@ -48,7 +48,7 @@ public record DbOrganization(
     }
 
     public Builder labels(Map<String, String> labels) {
-      this.builderLabels = Map.copyOf(labels);
+      this.builderLabels = labels;
       return this;
     }
 

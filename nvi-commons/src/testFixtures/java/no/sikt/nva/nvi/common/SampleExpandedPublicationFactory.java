@@ -22,6 +22,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.test.SampleExpandedAffiliation;
@@ -81,17 +82,16 @@ public class SampleExpandedPublicationFactory {
   }
 
   private void addTopLevelOrganization(Organization topLevelOrganization, String countryCode) {
-    var subOrganizationIds = topLevelOrganization.hasPart().stream().map(Organization::id).toList();
     var expandedSubOrganizations = new ArrayList<SampleExpandedOrganization>();
-    for (URI subOrganizationId : subOrganizationIds) {
-      expandedSubOrganizations.add(
-          createSubOrganization(subOrganizationId, topLevelOrganization.id(), countryCode));
+    for (var subOrganization : topLevelOrganization.hasPart()) {
+      expandedSubOrganizations.add(createSubOrganization(subOrganization));
     }
     var expandedTopLevelOrganization =
         SampleExpandedOrganization.builder()
             .withId(topLevelOrganization.id())
             .withType()
             .withCountryCode(countryCode)
+            .withLabels(topLevelOrganization.labels())
             .withSubOrganizations(
                 expandedSubOrganizations.toArray(SampleExpandedOrganization[]::new))
             .build();
@@ -105,6 +105,17 @@ public class SampleExpandedPublicationFactory {
         .withType()
         .withParentOrganizations(topLevelId)
         .withCountryCode(countryCode)
+        .withLabels(Map.of(randomString(), randomString()))
+        .build();
+  }
+
+  private static SampleExpandedOrganization createSubOrganization(Organization subOrganization) {
+    return SampleExpandedOrganization.builder()
+        .withId(subOrganization.id())
+        .withType()
+        .withParentOrganizations(subOrganization.partOf().stream().map(Organization::id).toList())
+        .withCountryCode(subOrganization.countryCode())
+        .withLabels(subOrganization.labels())
         .build();
   }
 
@@ -138,11 +149,13 @@ public class SampleExpandedPublicationFactory {
       return SampleExpandedAffiliation.builder()
           .withId(organization.id())
           .withCountryCode(countryCode)
+          .withLabels(organization.labels())
           .build();
     } else {
       return SampleExpandedAffiliation.builder()
           .withId(organization.id())
           .withCountryCode(countryCode)
+          .withLabels(organization.labels())
           .withPartOf(organization.partOf().stream().map(Organization::id).toList())
           .build();
     }

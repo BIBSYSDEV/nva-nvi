@@ -17,6 +17,7 @@ import java.net.http.HttpResponse;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.IntStream;
@@ -38,14 +39,14 @@ public class OrganizationFixtures {
     return Organization.builder()
         .withId(randomUri())
         .withCountryCode(COUNTRY_CODE_NORWAY)
-        .withLabels(Map.of(randomString(), randomString()));
+        .withLabels(Map.of(COUNTRY_CODE_NORWAY.toLowerCase(Locale.ROOT), randomString()));
   }
 
   public static Builder randomOrganization(String countryCode) {
     return Organization.builder()
         .withId(randomUri())
         .withCountryCode(countryCode)
-        .withLabels(Map.of(randomString(), randomString()));
+        .withLabels(Map.of(countryCode.toLowerCase(Locale.ROOT), randomString()));
   }
 
   public static Organization setupRandomOrganization(
@@ -59,8 +60,7 @@ public class OrganizationFixtures {
 
   public static Builder randomOrganization(String countryCode, int numberOfSubOrganizations) {
     var topLevelOrganizationId = randomUriWithSuffix("topLevelOrganization");
-    var topLevelLeafNode =
-        Organization.builder().withId(topLevelOrganizationId).withCountryCode(countryCode).build();
+    var topLevelLeafNode = Organization.builder().withId(topLevelOrganizationId).build();
     var subOrganizations =
         IntStream.range(0, numberOfSubOrganizations)
             .mapToObj(
@@ -69,6 +69,10 @@ public class OrganizationFixtures {
                         .withId(randomUriWithSuffix("subOrganization"))
                         .withCountryCode(countryCode)
                         .withPartOf(List.of(topLevelLeafNode))
+                        .withLabels(
+                            i % 2 == 0
+                                ? Map.of(countryCode.toLowerCase(Locale.ROOT), randomString())
+                                : null)
                         .build())
             .toList();
 

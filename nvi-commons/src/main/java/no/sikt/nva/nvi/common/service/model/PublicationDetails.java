@@ -151,6 +151,8 @@ public record PublicationDetails(
         .publicationChannel(publicationChannel.toDbPublicationChannel())
         .creators(allCreators)
         .modifiedDate(modifiedDate)
+        .topLevelOrganizations(
+            topLevelOrganizations.stream().map(Organization::toDbOrganization).toList())
         .build();
   }
 
