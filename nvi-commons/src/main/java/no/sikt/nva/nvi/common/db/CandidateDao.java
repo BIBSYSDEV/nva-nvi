@@ -32,8 +32,8 @@ import java.util.Objects;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateDao.Builder;
 import no.sikt.nva.nvi.common.db.model.DbCreatorTypeListConverter;
-import no.sikt.nva.nvi.common.db.model.DbPublication;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
+import no.sikt.nva.nvi.common.db.model.DbPublicationDetails;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
@@ -334,7 +334,7 @@ public final class CandidateDao extends Dao {
       URI publicationId,
       URI publicationBucketUri,
       String publicationIdentifier,
-      DbPublication publicationDetails,
+      DbPublicationDetails publicationDetails,
       boolean applicable,
       String instanceType,
       String channelType,
@@ -397,7 +397,7 @@ public final class CandidateDao extends Dao {
       private URI builderPublicationId;
       private URI builderPublicationBucketUri;
       private String builderPublicationIdentifier;
-      private DbPublication builderPublicationDetails;
+      private DbPublicationDetails builderPublicationDetails;
       private boolean builderApplicable;
       private String builderInstanceType;
       private String builderChannelType;
@@ -433,7 +433,7 @@ public final class CandidateDao extends Dao {
         return this;
       }
 
-      public Builder publicationDetails(DbPublication publicationDetails) {
+      public Builder publicationDetails(DbPublicationDetails publicationDetails) {
         this.builderPublicationDetails = publicationDetails;
         return this;
       }

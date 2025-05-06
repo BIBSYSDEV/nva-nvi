@@ -49,9 +49,9 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
 import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.db.model.DbPages;
-import no.sikt.nva.nvi.common.db.model.DbPublication;
 import no.sikt.nva.nvi.common.db.model.DbPublicationChannel;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
+import no.sikt.nva.nvi.common.db.model.DbPublicationDetails;
 import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.dto.PublicationDtoBuilder;
@@ -572,7 +572,7 @@ class CandidateTest extends CandidateTestSetup {
             .toList();
 
     var dbPublicationDetails =
-        DbPublication.builder()
+        DbPublicationDetails.builder()
             .id(request.publicationId())
             .identifier(dtoPublicationDetails.identifier())
             .publicationBucketUri(request.publicationBucketUri())

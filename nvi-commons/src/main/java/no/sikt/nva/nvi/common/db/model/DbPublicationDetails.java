@@ -9,8 +9,8 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbCreatorType;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbConvertedBy;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmutable;
 
-@DynamoDbImmutable(builder = DbPublication.Builder.class)
-public record DbPublication(
+@DynamoDbImmutable(builder = DbPublicationDetails.Builder.class)
+public record DbPublicationDetails(
     URI id,
     URI publicationBucketUri,
     String identifier,
@@ -126,8 +126,8 @@ public record DbPublication(
       return this;
     }
 
-    public DbPublication build() {
-      return new DbPublication(
+    public DbPublicationDetails build() {
+      return new DbPublicationDetails(
           builderId,
           builderPublicationBucketUri,
           builderIdentifier,

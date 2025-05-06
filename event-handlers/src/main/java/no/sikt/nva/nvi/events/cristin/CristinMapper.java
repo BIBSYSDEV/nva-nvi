@@ -27,8 +27,8 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbCreatorType;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints.DbCreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.db.ReportStatus;
-import no.sikt.nva.nvi.common.db.model.DbPublication;
 import no.sikt.nva.nvi.common.db.model.DbPublicationChannel;
+import no.sikt.nva.nvi.common.db.model.DbPublicationDetails;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.model.ChannelType;
 import no.sikt.nva.nvi.common.model.InstanceType;
@@ -122,7 +122,7 @@ public final class CristinMapper {
         .build();
   }
 
-  public DbPublication toDbPublication(CristinNviReport cristinNviReport) {
+  public DbPublicationDetails toDbPublication(CristinNviReport cristinNviReport) {
     var now = Instant.now();
     var channel =
         DbPublicationChannel.builder()
@@ -130,7 +130,7 @@ public final class CristinMapper {
             .channelType(extractChannelType(cristinNviReport))
             .scientificValue(cristinNviReport.getLevel().getValue())
             .build();
-    return DbPublication.builder()
+    return DbPublicationDetails.builder()
         .id(constructPublicationId(cristinNviReport.publicationIdentifier()))
         .identifier(cristinNviReport.publicationIdentifier())
         .publicationBucketUri(

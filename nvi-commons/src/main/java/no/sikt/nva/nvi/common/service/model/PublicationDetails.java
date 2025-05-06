@@ -15,7 +15,7 @@ import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreatorType;
 import no.sikt.nva.nvi.common.db.model.DbPages;
-import no.sikt.nva.nvi.common.db.model.DbPublication;
+import no.sikt.nva.nvi.common.db.model.DbPublicationDetails;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.model.InstanceType;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
@@ -112,13 +112,13 @@ public record PublicationDetails(
         .build();
   }
 
-  private static List<Organization> getTopLevelOrganizations(DbPublication dbDetails) {
+  private static List<Organization> getTopLevelOrganizations(DbPublicationDetails dbDetails) {
     return nonNull(dbDetails.topLevelOrganizations())
         ? dbDetails.topLevelOrganizations().stream().map(Organization::from).toList()
         : emptyList();
   }
 
-  private static PageCount getPages(DbPublication dbDetails) {
+  private static PageCount getPages(DbPublicationDetails dbDetails) {
     var dbPages = dbDetails.pages();
     if (nonNull(dbPages)) {
       return PageCount.from(dbPages);
@@ -133,9 +133,9 @@ public record PublicationDetails(
     return null;
   }
 
-  public DbPublication toDbPublication() {
+  public DbPublicationDetails toDbPublication() {
     var allCreators = mapToDbCreators(verifiedCreators, unverifiedCreators);
-    return DbPublication.builder()
+    return DbPublicationDetails.builder()
         .id(publicationId)
         .publicationBucketUri(publicationBucketUri)
         .identifier(publicationIdentifier)

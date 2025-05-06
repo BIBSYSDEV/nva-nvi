@@ -18,9 +18,9 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints.DbCreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
-import no.sikt.nva.nvi.common.db.model.DbPublication;
 import no.sikt.nva.nvi.common.db.model.DbPublicationChannel;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
+import no.sikt.nva.nvi.common.db.model.DbPublicationDetails;
 import no.sikt.nva.nvi.common.model.ChannelType;
 import no.sikt.nva.nvi.common.model.ScientificValue;
 import no.sikt.nva.nvi.test.TestUtils;
@@ -48,7 +48,7 @@ public class DbCandidateFixtures {
   }
 
   public static DbCandidate.Builder randomCandidateBuilder(
-      URI organizationId, DbPublication publicationDetails) {
+      URI organizationId, DbPublicationDetails publicationDetails) {
     var creatorId = randomUri();
     return DbCandidate.builder()
         .publicationId(publicationDetails.id())
@@ -75,7 +75,7 @@ public class DbCandidateFixtures {
                     .build()));
   }
 
-  public static DbPublication.Builder randomPublicationBuilder(URI organizationId) {
+  public static DbPublicationDetails.Builder randomPublicationBuilder(URI organizationId) {
     var creatorId = randomUri();
     var publicationIdentifier = randomUUID();
     var publicationId = generatePublicationId(publicationIdentifier);
@@ -85,7 +85,7 @@ public class DbCandidateFixtures {
             .channelType(randomElement(ChannelType.values()).getValue())
             .scientificValue(ScientificValue.LEVEL_ONE.getValue())
             .build();
-    return DbPublication.builder()
+    return DbPublicationDetails.builder()
         .id(publicationId)
         .identifier(publicationIdentifier.toString())
         .publicationBucketUri(randomUri())

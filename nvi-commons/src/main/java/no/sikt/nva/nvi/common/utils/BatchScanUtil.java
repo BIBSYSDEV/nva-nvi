@@ -13,8 +13,8 @@ import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.Dao;
 import no.sikt.nva.nvi.common.db.model.DbPages;
-import no.sikt.nva.nvi.common.db.model.DbPublication;
 import no.sikt.nva.nvi.common.db.model.DbPublicationChannel;
+import no.sikt.nva.nvi.common.db.model.DbPublicationDetails;
 import no.sikt.nva.nvi.common.db.model.KeyField;
 import no.sikt.nva.nvi.common.dto.PageCountDto;
 import no.sikt.nva.nvi.common.model.ListingResult;
@@ -89,7 +89,7 @@ public class BatchScanUtil {
           publication.topLevelOrganizations().stream().map(Organization::toDbOrganization).toList();
 
       var dbPublicationDetails =
-          DbPublication.builder()
+          DbPublicationDetails.builder()
               // Get data we know should exist already from data stored in the database
               .id(data.publicationId())
               .publicationBucketUri(data.publicationBucketUri())
