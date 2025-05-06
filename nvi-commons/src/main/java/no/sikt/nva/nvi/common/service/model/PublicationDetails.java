@@ -8,13 +8,13 @@ import java.net.URI;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreatorType;
-import no.sikt.nva.nvi.common.db.model.DbPages;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDetails;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.model.InstanceType;
@@ -22,7 +22,6 @@ import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 
-// FIXME: Revert change to creators and unsplit lists
 // TODO: Can we remove this JsonSerialize annotation?
 @SuppressWarnings({"PMD.TooManyFields", "PMD.CouplingBetweenObjects"})
 @JsonSerialize
@@ -82,7 +81,7 @@ public record PublicationDetails(
 
     var nviCreators = dbCandidate.creators().stream().map(DbCreatorType::toNviCreator).toList();
     var organizations = getTopLevelOrganizations(dbDetails);
-
+    var pageCount = Optional.ofNullable(dbDetails.pages()).map(PageCount::from).orElse(null);
     return builder()
         .withId(dbDetails.id())
         .withPublicationBucketUri(dbDetails.publicationBucketUri())
@@ -93,7 +92,7 @@ public record PublicationDetails(
         .withAbstract(dbDetails.abstractText())
         .withPublicationDate(PublicationDate.from(dbCandidate.getPublicationDate()))
         .withPublicationType(InstanceType.parse(dbDetails.publicationType()))
-        .withPageCount(getPages(dbDetails))
+        .withPageCount(pageCount)
         .withIsApplicable(dbCandidate.applicable())
         .withIsInternationalCollaboration(dbCandidate.internationalCollaboration())
         .withPublicationChannel(PublicationChannel.from(candidateDao))
@@ -124,24 +123,9 @@ public record PublicationDetails(
         : emptyList();
   }
 
-  // FIXME: Move these?
-  private static PageCount getPages(DbPublicationDetails dbDetails) {
-    var dbPages = dbDetails.pages();
-    if (nonNull(dbPages)) {
-      return PageCount.from(dbPages);
-    }
-    return null;
-  }
-
-  private DbPages getDbPages() {
-    if (nonNull(pageCount)) {
-      return pageCount.toDbPages();
-    }
-    return null;
-  }
-
   public DbPublicationDetails toDbPublication() {
     var dbCreators = nviCreators.stream().map(NviCreatorDto::toDao).toList();
+    var dbPages = Optional.ofNullable(pageCount).map(PageCount::toDbPages).orElse(null);
     return DbPublicationDetails.builder()
         .id(publicationId)
         .publicationBucketUri(publicationBucketUri)
@@ -150,7 +134,7 @@ public record PublicationDetails(
         .status(status)
         .language(language)
         .abstractText(abstractText)
-        .pages(getDbPages())
+        .pages(dbPages)
         .publicationDate(publicationDate.toDbPublicationDate())
         .publicationType(publicationType.getValue())
         .publicationChannel(publicationChannel.toDbPublicationChannel())
