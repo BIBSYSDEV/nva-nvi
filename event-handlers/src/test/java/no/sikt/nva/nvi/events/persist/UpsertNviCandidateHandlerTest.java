@@ -218,7 +218,7 @@ class UpsertNviCandidateHandlerTest {
 
     var actualCandidate =
         scenario.getCandidateByPublicationId(evaluatedNviCandidate.publicationId());
-    var actualNviCreators = actualCandidate.getPublicationDetails().getNviCreators();
+    var actualNviCreators = actualCandidate.getPublicationDetails().nviCreators();
     Assertions.assertThat(actualNviCreators)
         .usingRecursiveComparison()
         .ignoringCollectionOrder()
@@ -243,7 +243,7 @@ class UpsertNviCandidateHandlerTest {
 
     var actualCandidate =
         scenario.getCandidateByPublicationId(evaluatedNviCandidate.publicationId());
-    var actualNviCreators = actualCandidate.getPublicationDetails().getNviCreators();
+    var actualNviCreators = actualCandidate.getPublicationDetails().nviCreators();
     Assertions.assertThat(actualNviCreators)
         .usingRecursiveComparison()
         .ignoringCollectionOrder()

@@ -641,7 +641,7 @@ class IndexDocumentHandlerTest {
   }
 
   private static URI extractOneAffiliation(Candidate candidateToFail) {
-    return candidateToFail.getPublicationDetails().creators().stream()
+    return candidateToFail.getPublicationDetails().nviCreators().stream()
         .flatMap(creator -> creator.affiliations().stream())
         .findFirst()
         .orElseThrow();
@@ -734,7 +734,7 @@ class IndexDocumentHandlerTest {
   }
 
   private void mockUriResponseForTopLevelAffiliation(Candidate candidate) {
-    candidate.getPublicationDetails().creators().stream()
+    candidate.getPublicationDetails().nviCreators().stream()
         .flatMap(creator -> creator.affiliations().stream())
         .forEach(this::mockTopLevelResponse);
 
@@ -818,7 +818,7 @@ class IndexDocumentHandlerTest {
   }
 
   private void mockUriRetrieverOrgResponse(Candidate candidate) {
-    candidate.getPublicationDetails().creators().stream()
+    candidate.getPublicationDetails().nviCreators().stream()
         .flatMap(creator -> creator.affiliations().stream())
         .forEach(this::mockOrganizationResponse);
 

@@ -138,7 +138,7 @@ class CristinNviReportEventConsumerTest {
         candidate.getPeriod().year(), is(equalTo(String.valueOf(cristinNviReport.yearReported()))));
     assertThat(candidate.getScientificLevel().getValue(), is(equalTo("LevelOne")));
     assertThat(
-        candidate.getPublicationDetails().getNviCreators(),
+        candidate.getPublicationDetails().nviCreators(),
         Matchers.contains(constructExpectedCreator(cristinNviReport)));
     assertThat(
         candidate.getPublicationDetails().publicationType().getValue(),

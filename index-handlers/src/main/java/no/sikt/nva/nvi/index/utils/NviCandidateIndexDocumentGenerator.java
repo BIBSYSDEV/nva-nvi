@@ -338,7 +338,7 @@ public final class NviCandidateIndexDocumentGenerator {
 
   public static Optional<VerifiedNviCreatorDto> getVerifiedNviCreatorIfPresent(
       JsonNode contributor, Candidate candidate) {
-    return candidate.getPublicationDetails().getVerifiedCreators().stream()
+    return candidate.getPublicationDetails().verifiedCreators().stream()
         .filter(
             creator -> creator.id().toString().equals(extractId(contributor.at(JSON_PTR_IDENTITY))))
         .findFirst();

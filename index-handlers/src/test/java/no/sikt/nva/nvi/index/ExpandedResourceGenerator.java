@@ -230,7 +230,7 @@ public final class ExpandedResourceGenerator {
 
   private static JsonNode createAndPopulateTopLevelOrganizations(Candidate candidate) {
     var topLevelOrganizations = objectMapper.createArrayNode();
-    candidate.getPublicationDetails().getNviCreators().stream()
+    candidate.getPublicationDetails().nviCreators().stream()
         .map(NviCreatorDto::affiliations)
         .flatMap(List::stream)
         .distinct()

@@ -40,8 +40,7 @@ public record PublicationDetails(
     InstanceType publicationType,
     boolean isApplicable,
     boolean isInternationalCollaboration,
-    List<VerifiedNviCreatorDto> verifiedCreators,
-    List<UnverifiedNviCreatorDto> unverifiedCreators,
+    List<NviCreatorDto> nviCreators,
     int contributorCount,
     List<Organization> topLevelOrganizations,
     Instant modifiedDate) {
@@ -49,6 +48,12 @@ public record PublicationDetails(
   public static PublicationDetails from(UpsertNviCandidateRequest upsertRequest) {
     var publicationDto = upsertRequest.publicationDetails();
     var publicationChannel = PublicationChannel.from(upsertRequest.publicationChannelForLevel());
+    var nviCreators =
+        Stream.concat(
+                upsertRequest.unverifiedCreators().stream(),
+                upsertRequest.verifiedCreators().stream())
+            .map(NviCreatorDto.class::cast)
+            .toList();
 
     return builder()
         .withId(upsertRequest.publicationId())
@@ -64,8 +69,7 @@ public record PublicationDetails(
         .withIsApplicable(publicationDto.isApplicable())
         .withIsInternationalCollaboration(publicationDto.isInternationalCollaboration())
         .withPublicationChannel(publicationChannel)
-        .withVerifiedNviCreators(upsertRequest.verifiedCreators())
-        .withUnverifiedNviCreators(upsertRequest.unverifiedCreators())
+        .withNviCreators(nviCreators)
         .withContributorCount(publicationDto.contributors().size())
         .withTopLevelOrganizations(publicationDto.topLevelOrganizations())
         .withModifiedDate(publicationDto.modifiedDate())
@@ -76,18 +80,7 @@ public record PublicationDetails(
     var dbCandidate = candidateDao.candidate();
     var dbDetails = dbCandidate.publicationDetails();
 
-    var creators = dbCandidate.creators().stream().map(DbCreatorType::toNviCreator).toList();
-    var verifiedCreators =
-        creators.stream()
-            .filter(VerifiedNviCreatorDto.class::isInstance)
-            .map(VerifiedNviCreatorDto.class::cast)
-            .toList();
-    var unverifiedCreators =
-        creators.stream()
-            .filter(UnverifiedNviCreatorDto.class::isInstance)
-            .map(UnverifiedNviCreatorDto.class::cast)
-            .toList();
-
+    var nviCreators = dbCandidate.creators().stream().map(DbCreatorType::toNviCreator).toList();
     var organizations = getTopLevelOrganizations(dbDetails);
 
     return builder()
@@ -104,12 +97,25 @@ public record PublicationDetails(
         .withIsApplicable(dbCandidate.applicable())
         .withIsInternationalCollaboration(dbCandidate.internationalCollaboration())
         .withPublicationChannel(PublicationChannel.from(candidateDao))
-        .withVerifiedNviCreators(verifiedCreators)
-        .withUnverifiedNviCreators(unverifiedCreators)
+        .withNviCreators(nviCreators)
         .withContributorCount(dbDetails.contributorCount())
         .withTopLevelOrganizations(organizations)
         .withModifiedDate(dbDetails.modifiedDate())
         .build();
+  }
+
+  public List<VerifiedNviCreatorDto> verifiedCreators() {
+    return nviCreators.stream()
+        .filter(VerifiedNviCreatorDto.class::isInstance)
+        .map(VerifiedNviCreatorDto.class::cast)
+        .toList();
+  }
+
+  public List<UnverifiedNviCreatorDto> unverifiedCreators() {
+    return nviCreators.stream()
+        .filter(UnverifiedNviCreatorDto.class::isInstance)
+        .map(UnverifiedNviCreatorDto.class::cast)
+        .toList();
   }
 
   private static List<Organization> getTopLevelOrganizations(DbPublicationDetails dbDetails) {
@@ -118,6 +124,7 @@ public record PublicationDetails(
         : emptyList();
   }
 
+  // FIXME: Move these?
   private static PageCount getPages(DbPublicationDetails dbDetails) {
     var dbPages = dbDetails.pages();
     if (nonNull(dbPages)) {
@@ -134,7 +141,7 @@ public record PublicationDetails(
   }
 
   public DbPublicationDetails toDbPublication() {
-    var allCreators = mapToDbCreators(verifiedCreators, unverifiedCreators);
+    var dbCreators = nviCreators.stream().map(NviCreatorDto::toDao).toList();
     return DbPublicationDetails.builder()
         .id(publicationId)
         .publicationBucketUri(publicationBucketUri)
@@ -147,7 +154,7 @@ public record PublicationDetails(
         .publicationDate(publicationDate.toDbPublicationDate())
         .publicationType(publicationType.getValue())
         .publicationChannel(publicationChannel.toDbPublicationChannel())
-        .creators(allCreators)
+        .creators(dbCreators)
         .modifiedDate(modifiedDate)
         .topLevelOrganizations(
             topLevelOrganizations.stream().map(Organization::toDbOrganization).toList())
@@ -158,43 +165,12 @@ public record PublicationDetails(
     return new Builder();
   }
 
-  public List<NviCreatorDto> getNviCreators() {
-    return Stream.concat(verifiedCreators.stream(), unverifiedCreators.stream())
-        .map(NviCreatorDto.class::cast)
-        .toList();
-  }
-
-  public List<NviCreatorDto> creators() {
-    return getNviCreators();
-  }
-
   public List<URI> getNviCreatorAffiliations() {
-    return Stream.concat(verifiedCreators.stream(), unverifiedCreators.stream())
-        .map(NviCreatorDto::affiliations)
-        .flatMap(List::stream)
-        .toList();
-  }
-
-  public List<VerifiedNviCreatorDto> getVerifiedCreators() {
-    return verifiedCreators;
-  }
-
-  public List<UnverifiedNviCreatorDto> getUnverifiedCreators() {
-    return unverifiedCreators;
+    return nviCreators.stream().map(NviCreatorDto::affiliations).flatMap(List::stream).toList();
   }
 
   public Set<URI> getVerifiedNviCreatorIds() {
-    return verifiedCreators.stream().map(VerifiedNviCreatorDto::id).collect(Collectors.toSet());
-  }
-
-  private static List<DbCreatorType> mapToDbCreators(
-      Collection<VerifiedNviCreatorDto> verifiedNviCreators,
-      Collection<UnverifiedNviCreatorDto> unverifiedNviCreators) {
-    var verifiedCreators = verifiedNviCreators.stream().map(VerifiedNviCreatorDto::toDao);
-    var unverifiedCreators = unverifiedNviCreators.stream().map(UnverifiedNviCreatorDto::toDao);
-    return Stream.concat(verifiedCreators, unverifiedCreators)
-        .map(DbCreatorType.class::cast)
-        .toList();
+    return verifiedCreators().stream().map(VerifiedNviCreatorDto::id).collect(Collectors.toSet());
   }
 
   public static final class Builder {
@@ -212,8 +188,7 @@ public record PublicationDetails(
     private boolean isApplicable;
     private boolean isInternationalCollaboration;
     private PublicationChannel publicationChannel;
-    private List<VerifiedNviCreatorDto> verifiedCreators = emptyList();
-    private List<UnverifiedNviCreatorDto> unverifiedCreators = emptyList();
+    private List<NviCreatorDto> nviCreators = emptyList();
     private int contributorCount;
     private List<Organization> topLevelOrganizations = emptyList();
     private Instant modifiedDate;
@@ -285,14 +260,8 @@ public record PublicationDetails(
       return this;
     }
 
-    public Builder withVerifiedNviCreators(Collection<VerifiedNviCreatorDto> verifiedCreators) {
-      this.verifiedCreators = List.copyOf(verifiedCreators);
-      return this;
-    }
-
-    public Builder withUnverifiedNviCreators(
-        Collection<UnverifiedNviCreatorDto> unverifiedCreators) {
-      this.unverifiedCreators = List.copyOf(unverifiedCreators);
+    public Builder withNviCreators(Collection<NviCreatorDto> nviCreators) {
+      this.nviCreators = List.copyOf(nviCreators);
       return this;
     }
 
@@ -326,8 +295,7 @@ public record PublicationDetails(
           publicationType,
           isApplicable,
           isInternationalCollaboration,
-          verifiedCreators,
-          unverifiedCreators,
+          nviCreators,
           contributorCount,
           topLevelOrganizations,
           modifiedDate);

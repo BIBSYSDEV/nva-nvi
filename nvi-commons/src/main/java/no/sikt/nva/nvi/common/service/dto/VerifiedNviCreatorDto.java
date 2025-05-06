@@ -19,6 +19,7 @@ public record VerifiedNviCreatorDto(URI id, List<URI> affiliations) implements N
   }
 
   // FIXME: Remove this?
+  @Override
   public DbCreator toDao() {
     return new DbCreator(id, affiliations);
   }

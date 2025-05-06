@@ -619,7 +619,7 @@ public final class Candidate {
    */
   private static boolean creatorsAreUpdated(
       UpsertNviCandidateRequest request, Candidate candidate) {
-    var oldCreatorCount = candidate.getPublicationDetails().getNviCreators().size();
+    var oldCreatorCount = candidate.getPublicationDetails().nviCreators().size();
     var newCreatorCount = getAllCreators(request).size();
     var hasSameCount = oldCreatorCount == newCreatorCount;
     var hasSameCreators = hasSameCreators(request, candidate);
