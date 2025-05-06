@@ -21,6 +21,7 @@ import no.sikt.nva.nvi.common.model.InstanceType;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
+import no.unit.nva.identifiers.SortableIdentifier;
 
 // TODO: Can we remove this JsonSerialize annotation?
 @SuppressWarnings({"PMD.TooManyFields", "PMD.CouplingBetweenObjects"})
@@ -28,7 +29,7 @@ import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 public record PublicationDetails(
     URI publicationId,
     URI publicationBucketUri,
-    String publicationIdentifier,
+    SortableIdentifier publicationIdentifier,
     String title,
     String status,
     String language,
@@ -129,7 +130,7 @@ public record PublicationDetails(
     return DbPublicationDetails.builder()
         .id(publicationId)
         .publicationBucketUri(publicationBucketUri)
-        .identifier(publicationIdentifier)
+        .identifier(publicationIdentifier.toString())
         .title(title)
         .status(status)
         .language(language)
@@ -161,7 +162,7 @@ public record PublicationDetails(
 
     private URI id;
     private URI publicationBucketUri;
-    private String identifier;
+    private SortableIdentifier identifier;
     private String title;
     private String status;
     private String language;
@@ -190,7 +191,7 @@ public record PublicationDetails(
     }
 
     public Builder withIdentifier(String identifier) {
-      this.identifier = identifier;
+      this.identifier = new SortableIdentifier(identifier);
       return this;
     }
 
