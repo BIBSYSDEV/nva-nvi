@@ -36,17 +36,15 @@ public class DbCandidateFixtures {
   }
 
   public static DbCandidate.Builder randomCandidateBuilder(boolean applicable, URI organizationId) {
-    var publicationDetails = randomPublicationBuilder(applicable, organizationId).build();
-    return randomCandidateBuilder(organizationId, publicationDetails);
+    var publicationDetails = randomPublicationBuilder(organizationId).build();
+    return randomCandidateBuilder(organizationId, publicationDetails).applicable(applicable);
   }
 
   public static DbCandidate randomCandidateWithYear(String year) {
     var organizationId = randomUri();
     var publicationDetails =
-        randomPublicationBuilder(true, organizationId)
-            .publicationDate(publicationDate(year))
-            .build();
-    return randomCandidateBuilder(organizationId, publicationDetails).build();
+        randomPublicationBuilder(organizationId).publicationDate(publicationDate(year)).build();
+    return randomCandidateBuilder(organizationId, publicationDetails).applicable(true).build();
   }
 
   public static DbCandidate.Builder randomCandidateBuilder(
@@ -57,7 +55,7 @@ public class DbCandidateFixtures {
         .publicationBucketUri(publicationDetails.publicationBucketUri())
         .publicationIdentifier(publicationDetails.identifier())
         .publicationDetails(publicationDetails)
-        .applicable(publicationDetails.applicable())
+        .applicable(true)
         .instanceType(publicationDetails.publicationType())
         .points(List.of(generateInstitutionPoints(organizationId, creatorId)))
         .level(DbLevel.LEVEL_ONE)
@@ -77,8 +75,7 @@ public class DbCandidateFixtures {
                     .build()));
   }
 
-  public static DbPublication.Builder randomPublicationBuilder(
-      boolean applicable, URI organizationId) {
+  public static DbPublication.Builder randomPublicationBuilder(URI organizationId) {
     var creatorId = randomUri();
     var publicationIdentifier = randomUUID();
     var publicationId = generatePublicationId(publicationIdentifier);
@@ -92,11 +89,9 @@ public class DbCandidateFixtures {
         .id(publicationId)
         .identifier(publicationIdentifier.toString())
         .publicationBucketUri(randomUri())
-        .applicable(applicable)
         .publicationType(randomInstanceType().getValue())
         .publicationChannel(channel)
         .publicationDate(publicationDate(String.valueOf(CURRENT_YEAR)))
-        .internationalCollaboration(randomBoolean())
         .modifiedDate(Instant.now())
         .creators(
             List.of(

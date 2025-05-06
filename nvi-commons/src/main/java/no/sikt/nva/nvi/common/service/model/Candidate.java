@@ -145,22 +145,22 @@ public final class Candidate {
       List<ApprovalStatusDao> approvals,
       List<NoteDao> notes,
       PeriodStatus period) {
-    var details = candidateDao.candidate().publicationDetails();
+    var dbCandidate = candidateDao.candidate();
     this.identifier = candidateDao.identifier();
-    this.applicable = details.applicable();
+    this.applicable = dbCandidate.applicable();
     this.approvals = mapToApprovalsMap(repository, approvals);
     this.notes = mapToNotesMap(repository, notes);
     this.institutionPoints = mapToInstitutionPoints(candidateDao);
-    this.totalPoints = candidateDao.candidate().totalPoints();
+    this.totalPoints = dbCandidate.totalPoints();
     this.period = period;
     this.publicationDetails = PublicationDetails.from(candidateDao);
-    this.basePoints = candidateDao.candidate().basePoints();
-    this.internationalCollaboration = details.internationalCollaboration();
-    this.collaborationFactor = candidateDao.candidate().collaborationFactor();
-    this.creatorShareCount = candidateDao.candidate().creatorShareCount();
-    this.createdDate = candidateDao.candidate().createdDate();
-    this.modifiedDate = candidateDao.candidate().modifiedDate();
-    this.reportStatus = candidateDao.candidate().reportStatus();
+    this.basePoints = dbCandidate.basePoints();
+    this.internationalCollaboration = dbCandidate.internationalCollaboration();
+    this.collaborationFactor = dbCandidate.collaborationFactor();
+    this.creatorShareCount = dbCandidate.creatorShareCount();
+    this.createdDate = dbCandidate.createdDate();
+    this.modifiedDate = dbCandidate.modifiedDate();
+    this.reportStatus = dbCandidate.reportStatus();
   }
 
   public static Candidate fetchByPublicationId(
@@ -724,7 +724,7 @@ public final class Candidate {
         .publicationDetails(dbDetails)
         .publicationBucketUri(request.publicationBucketUri())
         .publicationIdentifier(dbDetails.identifier())
-        .applicable(dbDetails.applicable())
+        .applicable(request.isApplicable())
         .creators(allCreators)
         .creatorShareCount(request.creatorShareCount())
         .channelId(dbDetails.publicationChannel().id())
@@ -732,7 +732,7 @@ public final class Candidate {
         .level(DbLevel.parse(dbDetails.publicationChannel().scientificValue()))
         .instanceType(dbDetails.publicationType())
         .publicationDate(dbDetails.publicationDate())
-        .internationalCollaboration(dbDetails.internationalCollaboration())
+        .internationalCollaboration(request.isInternationalCollaboration())
         .collaborationFactor(adjustScaleAndRoundingMode(request.collaborationFactor()))
         .basePoints(adjustScaleAndRoundingMode(request.basePoints()))
         .points(mapToPoints(request.institutionPoints()))
@@ -760,19 +760,10 @@ public final class Candidate {
     return repository.findByPublicationId(publicationId).isPresent();
   }
 
-  // TODO: clean up
   private static CandidateDao updateCandidateToNonApplicable(CandidateDao candidateDao) {
-    var publicationDetails =
-        candidateDao.candidate().publicationDetails().copy().applicable(false).build();
     return candidateDao
         .copy()
-        .candidate(
-            candidateDao
-                .candidate()
-                .copy()
-                .applicable(false)
-                .publicationDetails(publicationDetails)
-                .build())
+        .candidate(candidateDao.candidate().copy().applicable(false).build())
         .periodYear(null)
         .build();
   }
@@ -806,7 +797,7 @@ public final class Candidate {
     var dbCandidate =
         DbCandidate.builder()
             .publicationDetails(dbPublication)
-            .applicable(dbPublication.applicable())
+            .applicable(publicationDetails.isApplicable())
             .creators(dbPublication.creators())
             .creatorShareCount(creatorShareCount)
             .channelType(dbChannel.channelType())
@@ -814,7 +805,7 @@ public final class Candidate {
             .level(DbLevel.parse(dbChannel.scientificValue()))
             .instanceType(dbPublication.publicationType())
             .publicationDate(dbPublication.publicationDate())
-            .internationalCollaboration(dbPublication.internationalCollaboration())
+            .internationalCollaboration(publicationDetails.isInternationalCollaboration())
             .collaborationFactor(adjustScaleAndRoundingMode(collaborationFactor))
             .basePoints(adjustScaleAndRoundingMode(basePoints))
             .points(mapToPoints(institutionPoints))

@@ -7,10 +7,8 @@ import java.time.Instant;
 import java.util.List;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreatorType;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbConvertedBy;
-import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbIgnore;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmutable;
 
-@SuppressWarnings("PMD.TooManyFields")
 @DynamoDbImmutable(builder = DbPublication.Builder.class)
 public record DbPublication(
     URI id,
@@ -23,8 +21,6 @@ public record DbPublication(
     DbPages pages,
     DbPublicationDate publicationDate,
     String publicationType,
-    boolean applicable,
-    boolean internationalCollaboration,
     DbPublicationChannel publicationChannel,
     @DynamoDbConvertedBy(DbCreatorTypeListConverter.class) List<DbCreatorType> creators,
     int contributorCount,
@@ -33,28 +29,6 @@ public record DbPublication(
 
   public static Builder builder() {
     return new Builder();
-  }
-
-  @DynamoDbIgnore
-  public Builder copy() {
-    return builder()
-        .id(id)
-        .publicationBucketUri(publicationBucketUri)
-        .identifier(identifier)
-        .title(title)
-        .status(status)
-        .language(language)
-        .abstractText(abstractText)
-        .pages(pages)
-        .publicationDate(publicationDate)
-        .publicationType(publicationType)
-        .applicable(applicable)
-        .internationalCollaboration(internationalCollaboration)
-        .publicationChannel(publicationChannel)
-        .contributorCount(contributorCount)
-        .creators(creators)
-        .topLevelOrganizations(topLevelOrganizations)
-        .modifiedDate(modifiedDate);
   }
 
   public static final class Builder {
@@ -69,8 +43,6 @@ public record DbPublication(
     private DbPages builderPages;
     private DbPublicationDate builderPublicationDate;
     private String builderPublicationType;
-    private boolean builderIsApplicable;
-    private boolean builderIsInternationalCollaboration;
     private DbPublicationChannel builderPublicationChannel;
     private int builderContributorCount;
     private List<DbCreatorType> builderCreators = emptyList();
@@ -129,16 +101,6 @@ public record DbPublication(
       return this;
     }
 
-    public Builder applicable(boolean applicable) {
-      this.builderIsApplicable = applicable;
-      return this;
-    }
-
-    public Builder internationalCollaboration(boolean internationalCollaboration) {
-      this.builderIsInternationalCollaboration = internationalCollaboration;
-      return this;
-    }
-
     public Builder publicationChannel(DbPublicationChannel publicationChannel) {
       this.builderPublicationChannel = publicationChannel;
       return this;
@@ -176,8 +138,6 @@ public record DbPublication(
           builderPages,
           builderPublicationDate,
           builderPublicationType,
-          builderIsApplicable,
-          builderIsInternationalCollaboration,
           builderPublicationChannel,
           builderCreators,
           builderContributorCount,

@@ -96,14 +96,12 @@ public class BatchScanUtil {
               .publicationType(data.instanceType())
               .publicationChannel(dbPublicationChannel)
               .publicationDate(data.publicationDate())
-              .internationalCollaboration(data.internationalCollaboration())
               .creators(data.creators())
 
               // Get other data from the parsed S3 document
               .identifier(publication.identifier())
               .title(publication.title())
               .status(publication.status())
-              .applicable(publication.isApplicable())
               .modifiedDate(publication.modifiedDate())
               .contributorCount(publication.contributors().size())
               .abstractText(publication.abstractText())

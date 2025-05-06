@@ -581,8 +581,6 @@ class CandidateTest extends CandidateTestSetup {
             .publicationType(dtoPublicationDetails.publicationType().getValue())
             .publicationChannel(dbPublicationChannel)
             .publicationDate(mapToDbPublicationDate(dtoPublicationDetails.publicationDate()))
-            .applicable(dtoPublicationDetails.isApplicable())
-            .internationalCollaboration(dtoPublicationDetails.isInternationalCollaboration())
             .modifiedDate(dtoPublicationDetails.modifiedDate())
             .creators(dbCreators)
             .contributorCount(dtoPublicationDetails.contributors().size())

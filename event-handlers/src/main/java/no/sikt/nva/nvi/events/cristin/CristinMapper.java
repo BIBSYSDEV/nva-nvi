@@ -108,14 +108,14 @@ public final class CristinMapper {
         .instanceType(cristinNviReport.instanceType())
         .level(cristinNviReport.getLevel())
         .reportStatus(ReportStatus.REPORTED)
-        .applicable(publicationDetails.applicable())
+        .applicable(true)
         .createdDate(publicationDetails.modifiedDate())
         .modifiedDate(publicationDetails.modifiedDate())
         .points(points)
         .totalPoints(sumPoints(points))
         .basePoints(extractBasePoints(cristinNviReport))
         .collaborationFactor(extractCollaborationFactor(cristinNviReport))
-        .internationalCollaboration(publicationDetails.internationalCollaboration())
+        .internationalCollaboration(isInternationalCollaboration(cristinNviReport))
         .creators(publicationDetails.creators())
         .channelId(extractChannelId(cristinNviReport))
         .channelType(extractChannelType(cristinNviReport))
@@ -137,9 +137,7 @@ public final class CristinMapper {
             constructPublicationBucketUri(cristinNviReport.publicationIdentifier()))
         .publicationDate(cristinNviReport.publicationDate().toDbPublicationDate())
         .publicationType(cristinNviReport.instanceType())
-        .applicable(true)
         .modifiedDate(now)
-        .internationalCollaboration(isInternationalCollaboration(cristinNviReport))
         .creators(extractCreators(cristinNviReport))
         .publicationChannel(channel)
         .build();
@@ -286,7 +284,7 @@ public final class CristinMapper {
       InstitutionPoints institutionPoints) {
     return institutionPoints.creatorPoints().stream()
         .map(CristinMapper::getDbCreatorAffiliationPoints)
-        .collect(Collectors.toList());
+        .toList();
   }
 
   private static CreatorPoints toCreatorPoints(ScientificPerson person) {
@@ -459,7 +457,7 @@ public final class CristinMapper {
           .collect(collectToInstitutionOfPoints(institutions))
           .stream()
           .map(CristinMapper::toDbInstitutionPoints)
-          .collect(Collectors.toList());
+          .toList();
     }
   }
 
@@ -469,7 +467,7 @@ public final class CristinMapper {
         Collectors.groupingBy(
             scientificPerson -> getTopLevelOrganization(scientificPerson, institutions),
             Collectors.toList()),
-        map -> getInstitutionPointsStream(institutions, map).collect(Collectors.toList()));
+        map -> getInstitutionPointsStream(institutions, map).toList());
   }
 
   private Stream<InstitutionPoints> getInstitutionPointsStream(
@@ -484,7 +482,7 @@ public final class CristinMapper {
         list.stream()
             .map(CristinMapper::extractAuthorPointsForAffiliation)
             .reduce(BigDecimal.ZERO, BigDecimal::add),
-        list.stream().map(CristinMapper::toCreatorPoints).collect(Collectors.toList()));
+        list.stream().map(CristinMapper::toCreatorPoints).toList());
   }
 
   private URI getTopLevelOrganization(
