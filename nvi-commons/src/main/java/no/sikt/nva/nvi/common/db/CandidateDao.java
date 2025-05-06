@@ -383,66 +383,6 @@ public final class CandidateDao extends Dao {
           .reportStatus(reportStatus);
     }
 
-    // FIXME: Delete these
-    @Override
-    @DynamoDbIgnore
-    @JacocoGenerated
-    public boolean equals(Object o) {
-      if (this == o) {
-        return true;
-      }
-      if (o == null || getClass() != o.getClass()) {
-        return false;
-      }
-      DbCandidate that = (DbCandidate) o;
-      return applicable == that.applicable
-          && internationalCollaboration == that.internationalCollaboration
-          && creatorCount == that.creatorCount
-          && creatorShareCount == that.creatorShareCount
-          && Objects.equals(publicationId, that.publicationId)
-          && Objects.equals(publicationBucketUri, that.publicationBucketUri)
-          && Objects.equals(publicationIdentifier, that.publicationIdentifier)
-          && Objects.equals(publicationDetails, that.publicationDetails)
-          && Objects.equals(instanceType, that.instanceType)
-          && Objects.equals(channelType, that.channelType)
-          && Objects.equals(channelId, that.channelId)
-          && Objects.equals(level, that.level)
-          && Objects.equals(publicationDate, that.publicationDate)
-          && Objects.equals(collaborationFactor, that.collaborationFactor)
-          && Objects.equals(creators, that.creators)
-          && Objects.equals(basePoints, that.basePoints)
-          && Objects.equals(points, that.points)
-          && Objects.equals(totalPoints, that.totalPoints)
-          && Objects.equals(reportStatus, that.reportStatus);
-    }
-
-    @Override
-    @DynamoDbIgnore
-    @JacocoGenerated
-    public int hashCode() {
-      return Objects.hash(
-          publicationId,
-          publicationBucketUri,
-          publicationIdentifier,
-          publicationDetails,
-          applicable,
-          instanceType,
-          channelType,
-          channelId,
-          level,
-          publicationDate,
-          internationalCollaboration,
-          collaborationFactor,
-          creatorCount,
-          creatorShareCount,
-          creators,
-          basePoints,
-          points,
-          totalPoints,
-          createdDate,
-          reportStatus);
-    }
-
     @DynamoDbIgnore
     public DbPublicationDate getPublicationDate() {
       if (nonNull(publicationDetails) && nonNull(publicationDetails.publicationDate())) {
