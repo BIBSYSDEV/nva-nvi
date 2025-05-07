@@ -21,9 +21,9 @@ public record PublicationChannel(URI id, ChannelType channelType, ScientificValu
    */
   @Deprecated(since = "2025-05-05", forRemoval = true)
   public static PublicationChannel from(CandidateDao candidateDao) {
-    var dbPublicationDetails = candidateDao.candidate().publicationDetails();
-    if (nonNull(dbPublicationDetails) && nonNull(dbPublicationDetails.publicationChannel())) {
-      return from(candidateDao.candidate().publicationDetails().publicationChannel());
+    var dbPointCalculation = candidateDao.candidate().pointCalculation();
+    if (nonNull(dbPointCalculation) && nonNull(dbPointCalculation.publicationChannel())) {
+      return from(dbPointCalculation.publicationChannel());
     }
 
     var scientificValue = ScientificValue.parse(candidateDao.candidate().level().getValue());

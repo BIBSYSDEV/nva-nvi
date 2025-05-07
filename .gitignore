@@ -291,3 +291,6 @@ gradle-app.setting
 
 # Ignore Gradle build output directory
 build
+
+# Ignore generated debug/profiling files
+*.hprof

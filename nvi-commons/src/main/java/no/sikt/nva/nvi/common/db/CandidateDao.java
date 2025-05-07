@@ -32,6 +32,7 @@ import java.util.Objects;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateDao.Builder;
 import no.sikt.nva.nvi.common.db.model.DbCreatorTypeListConverter;
+import no.sikt.nva.nvi.common.db.model.DbPointCalculation;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDetails;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
@@ -334,6 +335,7 @@ public final class CandidateDao extends Dao {
       URI publicationId,
       URI publicationBucketUri,
       String publicationIdentifier,
+      DbPointCalculation pointCalculation,
       DbPublicationDetails publicationDetails,
       boolean applicable,
       String instanceType,
@@ -363,6 +365,7 @@ public final class CandidateDao extends Dao {
           .publicationId(publicationId)
           .publicationBucketUri(publicationBucketUri)
           .publicationIdentifier(publicationIdentifier)
+          .pointCalculation(pointCalculation)
           .publicationDetails(publicationDetails)
           .applicable(applicable)
           .instanceType(instanceType)
@@ -397,6 +400,7 @@ public final class CandidateDao extends Dao {
       private URI builderPublicationId;
       private URI builderPublicationBucketUri;
       private String builderPublicationIdentifier;
+      private DbPointCalculation builderPointCalculation;
       private DbPublicationDetails builderPublicationDetails;
       private boolean builderApplicable;
       private String builderInstanceType;
@@ -430,6 +434,11 @@ public final class CandidateDao extends Dao {
 
       public Builder publicationIdentifier(String publicationIdentifier) {
         this.builderPublicationIdentifier = publicationIdentifier;
+        return this;
+      }
+
+      public Builder pointCalculation(DbPointCalculation pointCalculation) {
+        this.builderPointCalculation = pointCalculation;
         return this;
       }
 
@@ -528,6 +537,7 @@ public final class CandidateDao extends Dao {
             builderPublicationId,
             builderPublicationBucketUri,
             builderPublicationIdentifier,
+            builderPointCalculation,
             builderPublicationDetails,
             builderApplicable,
             builderInstanceType,

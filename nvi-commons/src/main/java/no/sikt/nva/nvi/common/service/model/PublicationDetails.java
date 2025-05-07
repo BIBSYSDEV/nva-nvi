@@ -118,7 +118,6 @@ public record PublicationDetails(
         .abstractText(abstractText)
         .pages(dbPages)
         .publicationDate(publicationDate.toDbPublicationDate())
-        .publicationChannel(publicationChannel.toDbPublicationChannel())
         .creators(dbCreators)
         .modifiedDate(modifiedDate)
         .topLevelOrganizations(

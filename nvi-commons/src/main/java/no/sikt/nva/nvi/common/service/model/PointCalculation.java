@@ -1,11 +1,15 @@
 package no.sikt.nva.nvi.common.service.model;
 
 import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 
 import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import no.sikt.nva.nvi.common.db.CandidateDao;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
+import no.sikt.nva.nvi.common.db.model.DbPointCalculation;
 import no.sikt.nva.nvi.common.dto.PointCalculationDto;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.model.InstanceType;
@@ -47,8 +51,16 @@ public record PointCalculation(
         request.totalPoints());
   }
 
+  /**
+   * @deprecated Temporary method while migrating data.
+   */
+  @Deprecated(since = "2025-05-05", forRemoval = true)
   public static PointCalculation from(CandidateDao candidateDao) {
     var dbCandidate = candidateDao.candidate();
+    var dbPointCalculation = dbCandidate.pointCalculation();
+    if (nonNull(dbPointCalculation)) {
+      return from(dbPointCalculation);
+    }
     return new PointCalculation(
         InstanceType.parse(dbCandidate.instanceType()),
         PublicationChannel.from(candidateDao),
@@ -56,15 +68,45 @@ public record PointCalculation(
         dbCandidate.collaborationFactor(),
         dbCandidate.basePoints(),
         dbCandidate.creatorShareCount(),
-        mapToInstitutionPoints(candidateDao),
+        mapToInstitutionPoints(dbCandidate.points()),
         dbCandidate.totalPoints());
   }
 
-  private static List<InstitutionPoints> mapToInstitutionPoints(CandidateDao candidateDao) {
-    if (isNull(candidateDao.candidate().points()) || candidateDao.candidate().points().isEmpty()) {
+  public static PointCalculation from(DbPointCalculation dbPointCalculation) {
+    return new PointCalculation(
+        InstanceType.parse(dbPointCalculation.instanceType()),
+        PublicationChannel.from(dbPointCalculation.publicationChannel()),
+        dbPointCalculation.internationalCollaboration(),
+        dbPointCalculation.collaborationFactor(),
+        dbPointCalculation.basePoints(),
+        dbPointCalculation.creatorShareCount(),
+        mapToInstitutionPoints(dbPointCalculation.institutionPoints()),
+        dbPointCalculation.totalPoints());
+  }
+
+  public DbPointCalculation toDbPointCalculation() {
+    return new DbPointCalculation(
+        basePoints,
+        collaborationFactor,
+        totalPoints,
+        channel.toDbPublicationChannel(),
+        mapToDbInstitutionPoints(institutionPoints),
+        isInternationalCollaboration,
+        creatorShareCount,
+        instanceType.getValue());
+  }
+
+  private static List<InstitutionPoints> mapToInstitutionPoints(
+      Collection<DbInstitutionPoints> dbPoints) {
+    if (isNull(dbPoints) || dbPoints.isEmpty()) {
       return Collections.emptyList();
     } else {
-      return candidateDao.candidate().points().stream().map(InstitutionPoints::from).toList();
+      return dbPoints.stream().map(InstitutionPoints::from).toList();
     }
+  }
+
+  private static List<DbInstitutionPoints> mapToDbInstitutionPoints(
+      List<InstitutionPoints> points) {
+    return points.stream().map(DbInstitutionPoints::from).toList();
   }
 }

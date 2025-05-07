@@ -20,7 +20,6 @@ public record DbPublicationDetails(
     String abstractText,
     DbPages pages,
     DbPublicationDate publicationDate,
-    DbPublicationChannel publicationChannel,
     @DynamoDbConvertedBy(DbCreatorTypeListConverter.class) List<DbCreatorType> creators,
     int contributorCount,
     List<DbOrganization> topLevelOrganizations,
@@ -41,7 +40,6 @@ public record DbPublicationDetails(
     private String builderAbstractText;
     private DbPages builderPages;
     private DbPublicationDate builderPublicationDate;
-    private DbPublicationChannel builderPublicationChannel;
     private int builderContributorCount;
     private List<DbCreatorType> builderCreators = emptyList();
     private List<DbOrganization> builderTopLevelOrganizations = emptyList();
@@ -94,11 +92,6 @@ public record DbPublicationDetails(
       return this;
     }
 
-    public Builder publicationChannel(DbPublicationChannel publicationChannel) {
-      this.builderPublicationChannel = publicationChannel;
-      return this;
-    }
-
     public Builder contributorCount(int contributorCount) {
       this.builderContributorCount = contributorCount;
       return this;
@@ -130,7 +123,6 @@ public record DbPublicationDetails(
           builderAbstractText,
           builderPages,
           builderPublicationDate,
-          builderPublicationChannel,
           builderCreators,
           builderContributorCount,
           builderTopLevelOrganizations,

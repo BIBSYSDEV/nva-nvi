@@ -13,6 +13,7 @@ import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.Dao;
 import no.sikt.nva.nvi.common.db.model.DbPages;
+import no.sikt.nva.nvi.common.db.model.DbPointCalculation;
 import no.sikt.nva.nvi.common.db.model.DbPublicationChannel;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDetails;
 import no.sikt.nva.nvi.common.db.model.KeyField;
@@ -69,33 +70,40 @@ public class BatchScanUtil {
    *     move to the new object).
    */
   @Deprecated(forRemoval = true, since = "2025-04-29")
-  private CandidateDao migratePublicationField(CandidateDao entry) {
-    var data = entry.candidate();
+  private CandidateDao migratePublicationField(CandidateDao candidateDao) {
+    var dbCandidate = candidateDao.candidate();
     //      // TODO: Add publication identifier as top-level field
     //      // TODO: Add @Deprecated annotation to the fields we can remove
-    if (isNull(data.publicationDetails())) {
-      var publicationBucketUri = data.publicationBucketUri();
+    if (isNull(dbCandidate.publicationDetails())) {
+      var publicationBucketUri = dbCandidate.publicationBucketUri();
       var publication = publicationLoader.extractAndTransform(publicationBucketUri);
 
       // Build the new structure for persisted publication metadata from new and old data
       var dbPublicationChannel =
-          DbPublicationChannel.builder()
-              .id(data.channelId())
-              .channelType(data.channelType())
-              .scientificValue(data.level().getValue())
-              .build();
-
+          new DbPublicationChannel(
+              dbCandidate.channelId(), dbCandidate.channelType(), dbCandidate.level().getValue());
       var dbTopLevelOrganizations =
           publication.topLevelOrganizations().stream().map(Organization::toDbOrganization).toList();
 
+      var dbPointCalculation =
+          new DbPointCalculation(
+              dbCandidate.basePoints(),
+              dbCandidate.collaborationFactor(),
+              dbCandidate.totalPoints(),
+              dbPublicationChannel,
+              dbCandidate.points(),
+              dbCandidate.internationalCollaboration(),
+              dbCandidate.creatorShareCount(),
+              dbCandidate.instanceType());
+
+      // TODO: Replace builder with constructor so we know all fields are set
       var dbPublicationDetails =
           DbPublicationDetails.builder()
               // Get data we know should exist already from data stored in the database
-              .id(data.publicationId())
-              .publicationBucketUri(data.publicationBucketUri())
-              .publicationChannel(dbPublicationChannel)
-              .publicationDate(data.publicationDate())
-              .creators(data.creators())
+              .id(dbCandidate.publicationId())
+              .publicationBucketUri(dbCandidate.publicationBucketUri())
+              .publicationDate(dbCandidate.publicationDate())
+              .creators(dbCandidate.creators())
 
               // Get other data from the parsed S3 document
               .identifier(publication.identifier())
@@ -109,13 +117,15 @@ public class BatchScanUtil {
               .build();
 
       var updatedData =
-          data.copy()
+          dbCandidate
+              .copy()
               .publicationIdentifier(publication.identifier())
+              .pointCalculation(dbPointCalculation)
               .publicationDetails(dbPublicationDetails)
               .build();
-      return entry.copy().candidate(updatedData).build();
+      return candidateDao.copy().candidate(updatedData).build();
     }
-    return entry;
+    return candidateDao;
   }
 
   private static DbPages dbPagesFromDto(PageCountDto dtoPages) {

@@ -685,17 +685,19 @@ public final class Candidate {
   private static DbCandidate mapToCandidate(UpsertNviCandidateRequest request) {
     var allCreators = mapToDbCreators(request.verifiedCreators(), request.unverifiedCreators());
     var dbDetails = PublicationDetails.from(request).toDbPublication();
+    var dbPointCalculation = PointCalculation.from(request).toDbPointCalculation();
     return DbCandidate.builder()
         .publicationId(dbDetails.id())
+        .pointCalculation(dbPointCalculation)
         .publicationDetails(dbDetails)
         .publicationBucketUri(request.publicationBucketUri())
         .publicationIdentifier(dbDetails.identifier())
         .applicable(request.isApplicable())
         .creators(allCreators)
         .creatorShareCount(request.creatorShareCount())
-        .channelId(dbDetails.publicationChannel().id())
-        .channelType(dbDetails.publicationChannel().channelType())
-        .level(DbLevel.parse(dbDetails.publicationChannel().scientificValue()))
+        .channelId(dbPointCalculation.publicationChannel().id())
+        .channelType(dbPointCalculation.publicationChannel().channelType())
+        .level(DbLevel.parse(dbPointCalculation.publicationChannel().scientificValue()))
         .instanceType(request.publicationDetails().publicationType().getValue())
         .publicationDate(dbDetails.publicationDate())
         .internationalCollaboration(request.isInternationalCollaboration())
@@ -754,7 +756,7 @@ public final class Candidate {
 
   private CandidateDao toDao() {
     var dbPublication = publicationDetails.toDbPublication();
-    var dbChannel = dbPublication.publicationChannel();
+    var dbChannel = pointCalculation.channel().toDbPublicationChannel();
     var dbCandidate =
         DbCandidate.builder()
             .publicationDetails(dbPublication)

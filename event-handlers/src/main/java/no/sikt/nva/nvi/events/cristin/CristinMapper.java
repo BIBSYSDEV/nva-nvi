@@ -27,6 +27,7 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbCreatorType;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints.DbCreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.db.ReportStatus;
+import no.sikt.nva.nvi.common.db.model.DbPointCalculation;
 import no.sikt.nva.nvi.common.db.model.DbPublicationChannel;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDetails;
 import no.sikt.nva.nvi.common.db.model.Username;
@@ -98,12 +99,29 @@ public final class CristinMapper {
 
   // TODO: Extract creators from dbh_forskres_kontroll, remove Jacoco annotation when implemented
   public DbCandidate toDbCandidate(CristinNviReport cristinNviReport) {
+    var channel =
+        DbPublicationChannel.builder()
+            .id(extractChannelId(cristinNviReport))
+            .channelType(extractChannelType(cristinNviReport))
+            .scientificValue(cristinNviReport.getLevel().getValue())
+            .build();
     var points = calculatePoints(cristinNviReport);
+    var pointCalculation =
+        new DbPointCalculation(
+            extractBasePoints(cristinNviReport),
+            extractCollaborationFactor(cristinNviReport),
+            sumPoints(points),
+            channel,
+            points,
+            isInternationalCollaboration(cristinNviReport),
+            0,
+            cristinNviReport.instanceType());
     var publicationDetails = toDbPublication(cristinNviReport);
     return DbCandidate.builder()
         .publicationId(publicationDetails.id())
         .publicationBucketUri(publicationDetails.publicationBucketUri())
         .publicationDate(publicationDetails.publicationDate())
+        .pointCalculation(pointCalculation)
         .publicationDetails(publicationDetails)
         .instanceType(cristinNviReport.instanceType())
         .level(cristinNviReport.getLevel())

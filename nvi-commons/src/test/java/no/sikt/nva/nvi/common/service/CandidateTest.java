@@ -49,6 +49,7 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
 import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.db.model.DbPages;
+import no.sikt.nva.nvi.common.db.model.DbPointCalculation;
 import no.sikt.nva.nvi.common.db.model.DbPublicationChannel;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDetails;
@@ -571,6 +572,18 @@ class CandidateTest extends CandidateTestSetup {
             .map(Organization::toDbOrganization)
             .toList();
 
+    var dbPointCalculation =
+        DbPointCalculation.builder()
+            .basePoints(adjustScaleAndRoundingMode(request.basePoints()))
+            .collaborationFactor(adjustScaleAndRoundingMode(request.collaborationFactor()))
+            .totalPoints(adjustScaleAndRoundingMode(request.totalPoints()))
+            .publicationChannel(dbPublicationChannel)
+            .institutionPoints(mapToDbInstitutionPoints(request.institutionPoints()))
+            .internationalCollaboration(request.isInternationalCollaboration())
+            .creatorShareCount(request.creatorShareCount())
+            .instanceType(dtoPublicationDetails.publicationType().getValue())
+            .build();
+
     var dbPublicationDetails =
         DbPublicationDetails.builder()
             .id(request.publicationId())
@@ -578,7 +591,6 @@ class CandidateTest extends CandidateTestSetup {
             .publicationBucketUri(request.publicationBucketUri())
             .title(dtoPublicationDetails.title())
             .status(dtoPublicationDetails.status())
-            .publicationChannel(dbPublicationChannel)
             .publicationDate(mapToDbPublicationDate(dtoPublicationDetails.publicationDate()))
             .modifiedDate(dtoPublicationDetails.modifiedDate())
             .creators(dbCreators)
@@ -592,6 +604,7 @@ class CandidateTest extends CandidateTestSetup {
             .publicationId(request.publicationId())
             .publicationIdentifier(dtoPublicationDetails.identifier())
             .publicationBucketUri(request.publicationBucketUri())
+            .pointCalculation(dbPointCalculation)
             .publicationDetails(dbPublicationDetails)
             .publicationDate(mapToDbPublicationDate(dtoPublicationDetails.publicationDate()))
             .applicable(dtoPublicationDetails.isApplicable())
