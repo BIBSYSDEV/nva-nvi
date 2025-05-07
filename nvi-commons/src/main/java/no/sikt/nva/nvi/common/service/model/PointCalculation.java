@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.common.service.model;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static no.sikt.nva.nvi.common.utils.DecimalUtils.adjustScaleAndRoundingMode;
 
 import java.math.BigDecimal;
 import java.util.Collection;
@@ -44,11 +45,11 @@ public record PointCalculation(
         request.publicationDetails().publicationType(),
         PublicationChannel.from(request.publicationChannelForLevel()),
         request.isInternationalCollaboration(),
-        request.collaborationFactor(),
-        request.basePoints(),
+        adjustScaleAndRoundingMode(request.collaborationFactor()),
+        adjustScaleAndRoundingMode(request.basePoints()),
         request.creatorShareCount(),
         request.institutionPoints(),
-        request.totalPoints());
+        adjustScaleAndRoundingMode(request.totalPoints()));
   }
 
   /**

@@ -1,29 +1,26 @@
 package no.sikt.nva.nvi.common.db;
 
 import static java.util.UUID.randomUUID;
-import static no.sikt.nva.nvi.common.model.InstanceTypeFixtures.randomInstanceType;
-import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
-import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
-import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
-import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
-import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
+import static no.sikt.nva.nvi.common.db.DbPointCalculationFixtures.getExpectedPointCalculation;
+import static no.sikt.nva.nvi.common.db.DbPointCalculationFixtures.randomPointCalculationBuilder;
+import static no.sikt.nva.nvi.common.db.DbPublicationDetailsFixtures.getExpectedPublicationDetails;
+import static no.sikt.nva.nvi.common.db.DbPublicationDetailsFixtures.randomPublicationBuilder;
+import static no.sikt.nva.nvi.common.model.NviCreatorFixtures.mapToDbCreators;
+import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 
-import java.math.BigDecimal;
 import java.net.URI;
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints.DbCreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
-import no.sikt.nva.nvi.common.db.model.DbPublicationChannel;
+import no.sikt.nva.nvi.common.db.model.DbPointCalculation;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDetails;
-import no.sikt.nva.nvi.common.model.ChannelType;
-import no.sikt.nva.nvi.common.model.ScientificValue;
-import no.sikt.nva.nvi.test.TestUtils;
+import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
+import no.sikt.nva.nvi.common.service.model.Candidate;
 
 public class DbCandidateFixtures {
 
@@ -43,30 +40,42 @@ public class DbCandidateFixtures {
   public static DbCandidate randomCandidateWithYear(String year) {
     var organizationId = randomUri();
     var publicationDetails =
-        randomPublicationBuilder(organizationId).publicationDate(publicationDate(year)).build();
+        randomPublicationBuilder(organizationId)
+            .publicationDate(new DbPublicationDate(year, null, null))
+            .build();
     return randomCandidateBuilder(organizationId, publicationDetails).applicable(true).build();
   }
 
   public static DbCandidate.Builder randomCandidateBuilder(
       URI organizationId, DbPublicationDetails publicationDetails) {
     var creatorId = randomUri();
+    var pointCalculation = randomPointCalculationBuilder(creatorId, organizationId).build();
+    return randomCandidateBuilder(organizationId, publicationDetails, pointCalculation);
+  }
+
+  public static DbCandidate.Builder randomCandidateBuilder(
+      URI organizationId,
+      DbPublicationDetails publicationDetails,
+      DbPointCalculation pointCalculation) {
+    var creatorId = randomUri();
     return DbCandidate.builder()
         .publicationId(publicationDetails.id())
         .publicationBucketUri(publicationDetails.publicationBucketUri())
         .publicationIdentifier(publicationDetails.identifier())
+        .pointCalculation(pointCalculation)
         .publicationDetails(publicationDetails)
         .applicable(true)
-        .instanceType(randomInstanceType().getValue())
-        .points(List.of(generateInstitutionPoints(organizationId, creatorId)))
+        .instanceType(pointCalculation.instanceType())
+        .points(pointCalculation.institutionPoints())
         .level(DbLevel.LEVEL_ONE)
-        .channelType(randomElement(ChannelType.values()).getValue())
-        .channelId(randomUri())
+        .channelType(pointCalculation.publicationChannel().channelType())
+        .channelId(pointCalculation.publicationChannel().id())
         .publicationDate(publicationDetails.publicationDate())
-        .internationalCollaboration(randomBoolean())
-        .creatorCount(randomInteger())
+        .internationalCollaboration(pointCalculation.internationalCollaboration())
+        .creatorCount(pointCalculation.creatorShareCount())
         .createdDate(Instant.now())
         .modifiedDate(Instant.now())
-        .totalPoints(TestUtils.randomBigDecimal())
+        .totalPoints(pointCalculation.totalPoints())
         .creators(
             List.of(
                 DbCreator.builder()
@@ -75,44 +84,45 @@ public class DbCandidateFixtures {
                     .build()));
   }
 
-  public static DbPublicationDetails.Builder randomPublicationBuilder(URI organizationId) {
-    var creatorId = randomUri();
-    var publicationIdentifier = randomUUID();
-    var publicationId = generatePublicationId(publicationIdentifier);
-    var channel =
-        DbPublicationChannel.builder()
-            .id(randomUri())
-            .channelType(randomElement(ChannelType.values()).getValue())
-            .scientificValue(ScientificValue.LEVEL_ONE.getValue())
+  public static DbCandidate getExpectedNewDbCandidate(UpsertNviCandidateRequest request) {
+    return getExpectedDbCandidate(randomUUID(), Instant.now(), request);
+  }
+
+  public static DbCandidate getExpectedUpdatedDbCandidate(
+      Candidate candidate, UpsertNviCandidateRequest request) {
+    return getExpectedDbCandidate(candidate.getIdentifier(), candidate.getCreatedDate(), request);
+  }
+
+  public static DbCandidate getExpectedDbCandidate(
+      UUID candidateIdentifier, Instant createdDate, UpsertNviCandidateRequest request) {
+    var dtoPublicationDetails = request.publicationDetails();
+    var dbCreators = mapToDbCreators(request.verifiedCreators(), request.unverifiedCreators());
+    var dbPointCalculation = getExpectedPointCalculation(request);
+    var dbPublicationDetails = getExpectedPublicationDetails(request);
+    var dbChannel = dbPointCalculation.publicationChannel();
+    var dbCandidate =
+        DbCandidate.builder()
+            .publicationId(request.publicationId())
+            .publicationIdentifier(dbPublicationDetails.identifier())
+            .publicationBucketUri(request.publicationBucketUri())
+            .pointCalculation(dbPointCalculation)
+            .publicationDetails(dbPublicationDetails)
+            .publicationDate(dbPublicationDetails.publicationDate())
+            .applicable(dtoPublicationDetails.isApplicable())
+            .instanceType(dbPointCalculation.instanceType())
+            .channelType(dbChannel.channelType())
+            .channelId(dbChannel.id())
+            .level(DbLevel.parse(dbChannel.scientificValue()))
+            .basePoints(dbPointCalculation.basePoints())
+            .internationalCollaboration(dbPointCalculation.internationalCollaboration())
+            .collaborationFactor(dbPointCalculation.collaborationFactor())
+            .creators(dbCreators)
+            .creatorShareCount(dbPointCalculation.creatorShareCount())
+            .points(dbPointCalculation.institutionPoints())
+            .totalPoints(dbPointCalculation.totalPoints())
+            .createdDate(createdDate)
             .build();
-    return DbPublicationDetails.builder()
-        .id(publicationId)
-        .identifier(publicationIdentifier.toString())
-        .publicationBucketUri(randomUri())
-        .publicationChannel(channel)
-        .publicationDate(publicationDate(String.valueOf(CURRENT_YEAR)))
-        .modifiedDate(Instant.now())
-        .creators(
-            List.of(
-                DbCreator.builder()
-                    .creatorId(creatorId)
-                    .affiliations(List.of(organizationId))
-                    .build()));
-  }
-
-  private static DbPublicationDate publicationDate(String year) {
-    return new DbPublicationDate(year, null, null);
-  }
-
-  private static DbInstitutionPoints generateInstitutionPoints(URI institutionId, URI creatorId) {
-    var points = BigDecimal.ONE;
-    return DbInstitutionPoints.builder()
-        .institutionId(randomUri())
-        .points(points)
-        .institutionId(institutionId)
-        .points(points)
-        .creatorAffiliationPoints(
-            List.of(new DbCreatorAffiliationPoints(creatorId, institutionId, points)))
-        .build();
+    return new CandidateDao(candidateIdentifier, dbCandidate, randomString(), randomString())
+        .candidate();
   }
 }

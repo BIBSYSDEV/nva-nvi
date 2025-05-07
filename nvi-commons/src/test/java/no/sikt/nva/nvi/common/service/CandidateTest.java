@@ -1,13 +1,13 @@
 package no.sikt.nva.nvi.common.service;
 
 import static java.util.Collections.emptySet;
-import static java.util.Objects.isNull;
 import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpdateStatusRequest;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertNonCandidateRequest;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.setupReportedCandidate;
 import static no.sikt.nva.nvi.common.db.DbApprovalStatusFixtures.randomApproval;
+import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.getExpectedUpdatedDbCandidate;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidate;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeriod;
 import static no.sikt.nva.nvi.common.model.CandidateFixtures.setupRandomApplicableCandidate;
@@ -39,22 +39,12 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.UpsertRequestBuilder;
-import no.sikt.nva.nvi.common.client.model.Organization;
-import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbCreatorType;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
 import no.sikt.nva.nvi.common.db.ReportStatus;
-import no.sikt.nva.nvi.common.db.model.DbPages;
-import no.sikt.nva.nvi.common.db.model.DbPointCalculation;
-import no.sikt.nva.nvi.common.db.model.DbPublicationChannel;
-import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
-import no.sikt.nva.nvi.common.db.model.DbPublicationDetails;
 import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
-import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.dto.PublicationDtoBuilder;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.model.ChannelType;
@@ -65,14 +55,11 @@ import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateOperation;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
-import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
-import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
-import no.sikt.nva.nvi.common.service.model.PageCount;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -143,7 +130,7 @@ class CandidateTest extends CandidateTestSetup {
   void shouldPersistNewCandidateWithCorrectDataFromUpsertRequest() {
     var request = randomUpsertRequestBuilder().build();
     var candidate = upsert(request);
-    var expectedCandidate = generateExpectedCandidate(candidate, request);
+    var expectedCandidate = getExpectedUpdatedDbCandidate(candidate, request);
     var actualPersistedCandidate =
         candidateRepository.findCandidateById(candidate.getIdentifier()).orElseThrow().candidate();
     assertThatCandidatesAreEqual(actualPersistedCandidate, expectedCandidate);
@@ -154,7 +141,7 @@ class CandidateTest extends CandidateTestSetup {
   void shouldPersistNewCandidateWithCorrectScaleForAllDecimals(int scale) {
     var request = createUpsertRequestWithDecimalScale(scale, randomUri());
     var candidate = upsert(request);
-    var expectedCandidate = generateExpectedCandidate(candidate, request);
+    var expectedCandidate = getExpectedUpdatedDbCandidate(candidate, request);
     var actualPersistedCandidate =
         candidateRepository.findCandidateById(candidate.getIdentifier()).orElseThrow().candidate();
     assertThatCandidatesAreEqual(actualPersistedCandidate, expectedCandidate);
@@ -170,7 +157,7 @@ class CandidateTest extends CandidateTestSetup {
             .withTotalPoints(randomBigDecimal(scale))
             .build();
     var candidate = upsert(request);
-    var expectedCandidate = generateExpectedCandidate(candidate, request);
+    var expectedCandidate = getExpectedUpdatedDbCandidate(candidate, request);
     var actualPersistedCandidate =
         candidateRepository.findCandidateById(candidate.getIdentifier()).orElseThrow().candidate();
     assertThatCandidatesAreEqual(actualPersistedCandidate, expectedCandidate);
@@ -217,7 +204,7 @@ class CandidateTest extends CandidateTestSetup {
   void shouldPersistUpdatedCandidateWithCorrectDataFromUpsertRequest() {
     var updateRequest = getUpdateRequestForExistingCandidate();
     var candidate = upsert(updateRequest);
-    var expectedCandidate = generateExpectedCandidate(candidate, updateRequest);
+    var expectedCandidate = getExpectedUpdatedDbCandidate(candidate, updateRequest);
     var actualPersistedCandidate =
         candidateRepository.findCandidateById(candidate.getIdentifier()).orElseThrow().candidate();
     assertThatCandidatesAreEqual(actualPersistedCandidate, expectedCandidate);
@@ -534,103 +521,6 @@ class CandidateTest extends CandidateTestSetup {
     var insertRequest = randomUpsertRequestBuilder().build();
     Candidate.upsert(insertRequest, candidateRepository, periodRepository);
     return UpsertRequestBuilder.fromRequest(insertRequest).build();
-  }
-
-  private static List<DbCreatorType> mapToDbCreators(
-      List<VerifiedNviCreatorDto> verifiedNviCreators,
-      List<UnverifiedNviCreatorDto> unverifiedNviCreators) {
-    Stream<DbCreatorType> verifiedCreators =
-        verifiedNviCreators.stream().map(VerifiedNviCreatorDto::toDao);
-    Stream<DbCreatorType> unverifiedCreators =
-        unverifiedNviCreators.stream().map(UnverifiedNviCreatorDto::toDao);
-    return Stream.concat(verifiedCreators, unverifiedCreators).toList();
-  }
-
-  private DbPublicationDate mapToDbPublicationDate(PublicationDateDto publicationDate) {
-    return new DbPublicationDate(
-        publicationDate.year(), publicationDate.month(), publicationDate.day());
-  }
-
-  private List<DbInstitutionPoints> mapToDbInstitutionPoints(List<InstitutionPoints> points) {
-    return points.stream().map(DbInstitutionPoints::from).toList();
-  }
-
-  // TODO: Replace this with a mapping to Candidate, instead of checking what is in the DB
-  private DbCandidate generateExpectedCandidate(
-      Candidate candidate, UpsertNviCandidateRequest request) {
-    var dtoChannel = request.publicationChannelForLevel();
-    var dtoPublicationDetails = request.publicationDetails();
-    var dbCreators = mapToDbCreators(request.verifiedCreators(), request.unverifiedCreators());
-    var dbPublicationChannel =
-        DbPublicationChannel.builder()
-            .id(dtoChannel.id())
-            .channelType(dtoChannel.channelType().getValue())
-            .scientificValue(dtoChannel.scientificValue().getValue())
-            .build();
-    var dbOrganizations =
-        dtoPublicationDetails.topLevelOrganizations().stream()
-            .map(Organization::toDbOrganization)
-            .toList();
-
-    var dbPointCalculation =
-        DbPointCalculation.builder()
-            .basePoints(adjustScaleAndRoundingMode(request.basePoints()))
-            .collaborationFactor(adjustScaleAndRoundingMode(request.collaborationFactor()))
-            .totalPoints(adjustScaleAndRoundingMode(request.totalPoints()))
-            .publicationChannel(dbPublicationChannel)
-            .institutionPoints(mapToDbInstitutionPoints(request.institutionPoints()))
-            .internationalCollaboration(request.isInternationalCollaboration())
-            .creatorShareCount(request.creatorShareCount())
-            .instanceType(dtoPublicationDetails.publicationType().getValue())
-            .build();
-
-    var dbPublicationDetails =
-        DbPublicationDetails.builder()
-            .id(request.publicationId())
-            .identifier(dtoPublicationDetails.identifier())
-            .publicationBucketUri(request.publicationBucketUri())
-            .title(dtoPublicationDetails.title())
-            .status(dtoPublicationDetails.status())
-            .publicationDate(mapToDbPublicationDate(dtoPublicationDetails.publicationDate()))
-            .modifiedDate(dtoPublicationDetails.modifiedDate())
-            .creators(dbCreators)
-            .contributorCount(dtoPublicationDetails.contributors().size())
-            .abstractText(dtoPublicationDetails.abstractText())
-            .pages(getDbPagesFromRequest(request))
-            .topLevelOrganizations(dbOrganizations)
-            .build();
-    var dbCandidate =
-        DbCandidate.builder()
-            .publicationId(request.publicationId())
-            .publicationIdentifier(dtoPublicationDetails.identifier())
-            .publicationBucketUri(request.publicationBucketUri())
-            .pointCalculation(dbPointCalculation)
-            .publicationDetails(dbPublicationDetails)
-            .publicationDate(mapToDbPublicationDate(dtoPublicationDetails.publicationDate()))
-            .applicable(dtoPublicationDetails.isApplicable())
-            .instanceType(dtoPublicationDetails.publicationType().getValue())
-            .channelType(dtoChannel.channelType().getValue())
-            .channelId(dtoChannel.id())
-            .level(DbLevel.parse(dtoChannel.scientificValue().getValue()))
-            .basePoints(adjustScaleAndRoundingMode(request.basePoints()))
-            .internationalCollaboration(request.isInternationalCollaboration())
-            .collaborationFactor(adjustScaleAndRoundingMode(request.collaborationFactor()))
-            .creators(dbCreators)
-            .creatorShareCount(request.creatorShareCount())
-            .points(mapToDbInstitutionPoints(request.institutionPoints()))
-            .totalPoints(adjustScaleAndRoundingMode(request.totalPoints()))
-            .createdDate(candidate.getCreatedDate())
-            .build();
-    return new CandidateDao(candidate.getIdentifier(), dbCandidate, randomString(), randomString())
-        .candidate();
-  }
-
-  private static DbPages getDbPagesFromRequest(UpsertNviCandidateRequest request) {
-    var publicationDetails = request.publicationDetails();
-    if (isNull(publicationDetails) || isNull(publicationDetails.pageCount())) {
-      return null;
-    }
-    return PageCount.from(publicationDetails.pageCount()).toDbPages();
   }
 
   private static void assertThatCandidatesAreEqual(

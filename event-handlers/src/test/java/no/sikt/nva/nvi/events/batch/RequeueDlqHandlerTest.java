@@ -2,8 +2,11 @@ package no.sikt.nva.nvi.events.batch;
 
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.createCandidateDao;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidateBuilder;
+import static no.sikt.nva.nvi.common.db.DbPointCalculationFixtures.randomPointCalculationBuilder;
+import static no.sikt.nva.nvi.common.db.DbPublicationDetailsFixtures.randomPublicationBuilder;
 import static no.sikt.nva.nvi.events.batch.RequeueDlqTestUtils.generateMessages;
 import static no.sikt.nva.nvi.events.batch.RequeueDlqTestUtils.setupSqsClient;
+import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -21,6 +24,8 @@ import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.db.model.DbPublicationChannel;
+import no.sikt.nva.nvi.common.model.ScientificValue;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.unit.nva.commons.json.JsonUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -251,7 +256,17 @@ class RequeueDlqHandlerTest {
   }
 
   private static CandidateDao candidateMissingChannelType() {
-    var candidate = randomCandidateBuilder(true).channelType(null).build();
+    var organizationId = randomUri();
+    var channel = new DbPublicationChannel(randomUri(), null, ScientificValue.LEVEL_ONE.getValue());
+    var publicationDetails = randomPublicationBuilder(organizationId).build();
+    var pointCalculation =
+        randomPointCalculationBuilder(randomUri(), organizationId)
+            .publicationChannel(channel)
+            .build();
+    var candidate =
+        randomCandidateBuilder(organizationId, publicationDetails, pointCalculation)
+            .applicable(true)
+            .build();
     return createCandidateDao(candidate);
   }
 

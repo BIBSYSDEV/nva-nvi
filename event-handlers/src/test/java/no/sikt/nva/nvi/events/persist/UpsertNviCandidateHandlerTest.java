@@ -4,9 +4,11 @@ import static java.util.Collections.emptyList;
 import static no.sikt.nva.nvi.common.UpsertRequestBuilder.fromRequest;
 import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequest;
+import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.getExpectedUpdatedDbCandidate;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.model.InstanceTypeFixtures.randomInstanceType;
 import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.getRandomDateInCurrentYearAsDto;
+import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublicationDate;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
 import static no.sikt.nva.nvi.test.TestUtils.generateS3BucketUri;
@@ -14,7 +16,6 @@ import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
-import static no.unit.nva.testutils.RandomDataGenerator.randomLocalDate;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.core.attempt.Try.attempt;
@@ -42,14 +43,8 @@ import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.UpsertRequestBuilder;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbCreatorType;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
-import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.model.CandidateFixtures;
@@ -252,29 +247,27 @@ class UpsertNviCandidateHandlerTest {
 
   @Test
   void shouldUpdateExistingNviCandidateWhenUnverifiedCreatorIsAdded() {
-    var evaluatedNviCandidate = randomEvaluatedNviCandidate();
-    var sqsEvent = createEvent(createEvalMessage(evaluatedNviCandidate.build()));
-    handler.handleRequest(sqsEvent, CONTEXT);
+    var requestBuilder = randomEvaluatedNviCandidate();
+    var originalCandidate = scenario.upsertCandidate(requestBuilder.build());
 
     var unverifiedCreators =
         List.of(new UnverifiedNviCreatorDto(randomString(), List.of(randomUri())));
-    var updatedEvaluatedNviCandidate =
-        evaluatedNviCandidate.withUnverifiedCreators(unverifiedCreators).build();
+    var updateRequest = requestBuilder.withUnverifiedCreators(unverifiedCreators).build();
 
-    sqsEvent = createEvent(createEvalMessage(updatedEvaluatedNviCandidate));
+    var sqsEvent = createEvent(createEvalMessage(updateRequest));
     handler.handleRequest(sqsEvent, CONTEXT);
-    var actualPersistedCandidateDao =
+    var updatedCandidate =
         candidateRepository
-            .findByPublicationId(updatedEvaluatedNviCandidate.publicationId())
-            .orElseThrow();
+            .findByPublicationId(updateRequest.publicationId())
+            .orElseThrow()
+            .candidate();
 
-    var expectedCandidate = getExpectedCandidate(updatedEvaluatedNviCandidate);
-    var actualCandidate = actualPersistedCandidateDao.candidate();
+    var expectedCandidate = getExpectedUpdatedDbCandidate(originalCandidate, updateRequest);
     Assertions.assertThat(expectedCandidate)
         .usingRecursiveComparison()
         .ignoringCollectionOrder()
-        .ignoringFields("createdDate", "modifiedDate", "publicationDetails")
-        .isEqualTo(actualCandidate);
+        .ignoringFields("modifiedDate")
+        .isEqualTo(updatedCandidate);
   }
 
   private static CandidateEvaluatedMessage randomCandidateEvaluatedMessage() {
@@ -308,16 +301,8 @@ class UpsertNviCandidateHandlerTest {
                     List.of(
                         new CreatorAffiliationPoints(
                             creator.id(), randomUri(), randomBigDecimal())))))
-        .withPublicationDate(randomPublicationDate())
+        .withPublicationDate(randomPublicationDate().toDtoPublicationDate())
         .withVerifiedCreators(List.of(creator));
-  }
-
-  private static PublicationDateDto randomPublicationDate() {
-    var randomDate = randomLocalDate();
-    return new PublicationDateDto(
-        String.valueOf(randomDate.getDayOfMonth()),
-        String.valueOf(randomDate.getMonthValue()),
-        String.valueOf(randomDate.getYear()));
   }
 
   private static SQSEvent createEventWithInvalidBody() {
@@ -337,11 +322,6 @@ class UpsertNviCandidateHandlerTest {
     return CandidateEvaluatedMessage.builder().withCandidateType(nviCandidate).build();
   }
 
-  private static List<DbInstitutionPoints> mapToInstitutionPoints(
-      List<InstitutionPoints> institutionPoints) {
-    return institutionPoints.stream().map(DbInstitutionPoints::from).toList();
-  }
-
   private List<DbApprovalStatus> getExpectedApprovals(
       UpsertNviCandidateRequest evaluatedNviCandidate) {
     return evaluatedNviCandidate.institutionPoints().stream()
@@ -357,39 +337,6 @@ class UpsertNviCandidateHandlerTest {
   private UpsertNviCandidateRequest createNewUpsertRequestNotAffectingApprovals(
       UpsertNviCandidateRequest request) {
     return fromRequest(request).withPublicationDate(getRandomDateInCurrentYearAsDto()).build();
-  }
-
-  private DbCandidate getExpectedCandidate(UpsertNviCandidateRequest evaluatedNviCandidate) {
-    var publicationDetails = evaluatedNviCandidate.publicationDetails();
-    var channel = evaluatedNviCandidate.publicationChannelForLevel();
-    var date = publicationDetails.publicationDate();
-    return DbCandidate.builder()
-        .applicable(true)
-        .publicationId(evaluatedNviCandidate.publicationId())
-        .publicationIdentifier(evaluatedNviCandidate.publicationDetails().identifier())
-        .publicationBucketUri(evaluatedNviCandidate.publicationBucketUri())
-        .instanceType(publicationDetails.publicationType().getValue())
-        .level(DbLevel.parse(channel.scientificValue().getValue()))
-        .channelType(channel.channelType().getValue())
-        .channelId(channel.id())
-        .publicationDate(new DbPublicationDate(date.year(), date.month(), date.day()))
-        .creators(getExpectedCreators(evaluatedNviCandidate))
-        .basePoints(evaluatedNviCandidate.basePoints())
-        .internationalCollaboration(evaluatedNviCandidate.isInternationalCollaboration())
-        .collaborationFactor(evaluatedNviCandidate.collaborationFactor())
-        .creatorShareCount(evaluatedNviCandidate.creatorShareCount())
-        .points(mapToInstitutionPoints(evaluatedNviCandidate.institutionPoints()))
-        .totalPoints(evaluatedNviCandidate.totalPoints())
-        .build();
-  }
-
-  private static List<DbCreatorType> getExpectedCreators(
-      UpsertNviCandidateRequest evaluatedNviCandidate) {
-    Stream<DbCreatorType> verifiedCreators =
-        evaluatedNviCandidate.verifiedCreators().stream().map(VerifiedNviCreatorDto::toDao);
-    Stream<DbCreatorType> unverifiedCreators =
-        evaluatedNviCandidate.unverifiedCreators().stream().map(UnverifiedNviCreatorDto::toDao);
-    return Stream.concat(verifiedCreators, unverifiedCreators).toList();
   }
 
   private CandidateEvaluatedMessage nonCandidateMessageForExistingCandidate(Candidate candidate) {

@@ -142,12 +142,6 @@ public final class CristinMapper {
 
   public DbPublicationDetails toDbPublication(CristinNviReport cristinNviReport) {
     var now = Instant.now();
-    var channel =
-        DbPublicationChannel.builder()
-            .id(extractChannelId(cristinNviReport))
-            .channelType(extractChannelType(cristinNviReport))
-            .scientificValue(cristinNviReport.getLevel().getValue())
-            .build();
     return DbPublicationDetails.builder()
         .id(constructPublicationId(cristinNviReport.publicationIdentifier()))
         .identifier(cristinNviReport.publicationIdentifier())
@@ -156,7 +150,6 @@ public final class CristinMapper {
         .publicationDate(cristinNviReport.publicationDate().toDbPublicationDate())
         .modifiedDate(now)
         .creators(extractCreators(cristinNviReport))
-        .publicationChannel(channel)
         .build();
   }
 

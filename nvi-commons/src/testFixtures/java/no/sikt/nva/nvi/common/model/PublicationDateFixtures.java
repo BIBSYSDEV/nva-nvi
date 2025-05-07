@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.common.model;
 
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
-import static no.sikt.nva.nvi.test.TestUtils.randomIntBetween;
+import static no.unit.nva.testutils.RandomDataGenerator.randomLocalDate;
 
 import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
@@ -9,17 +9,28 @@ import no.sikt.nva.nvi.common.service.model.PublicationDate;
 
 public class PublicationDateFixtures {
 
-  public static final PublicationDate getRandomDateInCurrentYear() {
-    var month = String.valueOf(randomIntBetween(1, 12));
-    var day = String.valueOf(randomIntBetween(1, 28));
-    return new PublicationDate(String.valueOf(CURRENT_YEAR), month, day);
+  public static PublicationDate randomPublicationDateInCurrentYear() {
+    var randomDate = randomLocalDate();
+    return new PublicationDate(
+        String.valueOf(CURRENT_YEAR),
+        String.valueOf(randomDate.getMonthValue()),
+        String.valueOf(randomDate.getDayOfMonth()));
   }
 
-  public static final PublicationDateDto getRandomDateInCurrentYearAsDto() {
-    return getRandomDateInCurrentYear().toDtoPublicationDate();
+  public static PublicationDate randomPublicationDate() {
+    var randomDate = randomLocalDate();
+    return new PublicationDate(
+        String.valueOf(randomDate.getYear()),
+        String.valueOf(randomDate.getMonthValue()),
+        String.valueOf(randomDate.getDayOfMonth()));
   }
 
-  public static final DbPublicationDate getRandomDateInCurrentYearAsDbDate() {
-    return getRandomDateInCurrentYear().toDbPublicationDate();
+  public static PublicationDateDto getRandomDateInCurrentYearAsDto() {
+    return randomPublicationDateInCurrentYear().toDtoPublicationDate();
+  }
+
+  public static DbPublicationDate mapToDbPublicationDate(PublicationDateDto publicationDate) {
+    return new DbPublicationDate(
+        publicationDate.year(), publicationDate.month(), publicationDate.day());
   }
 }

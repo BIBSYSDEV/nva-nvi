@@ -9,6 +9,8 @@ import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertNonCandid
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.setupReportedCandidate;
 import static no.sikt.nva.nvi.common.db.DbApprovalStatusFixtures.randomApproval;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidateBuilder;
+import static no.sikt.nva.nvi.common.db.DbPointCalculationFixtures.randomPointCalculationBuilder;
+import static no.sikt.nva.nvi.common.db.DbPublicationDetailsFixtures.randomPublicationBuilder;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_AFFILIATIONS;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_BODY;
@@ -59,8 +61,10 @@ import java.util.UUID;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.TestScenario;
+import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.db.model.DbPublicationChannel;
 import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
 import no.sikt.nva.nvi.common.model.CandidateFixtures;
 import no.sikt.nva.nvi.common.model.ChannelType;
@@ -190,7 +194,7 @@ class IndexDocumentHandlerTest {
     var institutionId = randomUri();
     var dao =
         candidateRepository.create(
-            randomCandidateBuilder(true, institutionId).channelType(null).channelId(null).build(),
+            createDbCandidateWithoutChannelIdOrType(institutionId),
             List.of(randomApproval(institutionId)));
     var candidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
     var expectedIndexDocument =
@@ -199,6 +203,17 @@ class IndexDocumentHandlerTest {
     handler.handleRequest(createEvent(candidate.getIdentifier()), CONTEXT);
     var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
     assertEquals(expectedIndexDocument, actualIndexDocument);
+  }
+
+  private static CandidateDao.DbCandidate createDbCandidateWithoutChannelIdOrType(
+      URI organizationId) {
+    var channel = new DbPublicationChannel(null, null, ScientificValue.LEVEL_ONE.getValue());
+    var publicationDetails = randomPublicationBuilder(organizationId).build();
+    var pointCalculation =
+        randomPointCalculationBuilder(randomUri(), organizationId)
+            .publicationChannel(channel)
+            .build();
+    return randomCandidateBuilder(organizationId, publicationDetails, pointCalculation).build();
   }
 
   @Test

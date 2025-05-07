@@ -759,6 +759,7 @@ public final class Candidate {
     var dbChannel = pointCalculation.channel().toDbPublicationChannel();
     var dbCandidate =
         DbCandidate.builder()
+            .pointCalculation(pointCalculation.toDbPointCalculation())
             .publicationDetails(dbPublication)
             .applicable(publicationDetails.isApplicable())
             .creators(dbPublication.creators())
