@@ -2,31 +2,23 @@ package no.sikt.nva.nvi.events.evaluator;
 
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
-import static no.sikt.nva.nvi.events.evaluator.TestUtils.createEvent;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_NORWAY;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_SWEDEN;
 import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_JSON_PUBLICATION_DATE;
-import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.net.URI;
 import java.util.List;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.SampleExpandedPublicationFactory;
 import no.sikt.nva.nvi.common.client.model.Organization;
+import no.sikt.nva.nvi.common.dto.PointCalculationDto;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
-import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
-import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
-import no.sikt.nva.nvi.test.SampleExpandedPublication;
-import nva.commons.core.paths.UnixPath;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -131,7 +123,7 @@ class PointCalculationTest extends EvaluationTest {
             .withNorwegianCreatorAffiliatedWith(nviOrganization1.hasPart())
             .getExpandedPublication();
 
-    var candidate = getEvaluatedCandidate(publication);
+    var candidate = getEvaluatedCandidate(publication).pointCalculation();
     var expectedPoints = asBigDecimal("1");
     assertEquals(expectedPoints, candidate.totalPoints());
     assertThat(candidate.institutionPoints())
@@ -148,7 +140,7 @@ class PointCalculationTest extends EvaluationTest {
             .withRandomNonCreatorsAffiliatedWith(1, COUNTRY_CODE_SWEDEN, nonNviOrganization)
             .getExpandedPublication();
 
-    var candidate = getEvaluatedCandidate(publication);
+    var candidate = getEvaluatedCandidate(publication).pointCalculation();
     var expectedPoints = asBigDecimal("1");
     assertEquals(expectedPoints, candidate.totalPoints());
     assertThat(candidate.institutionPoints())
@@ -165,7 +157,7 @@ class PointCalculationTest extends EvaluationTest {
             .withNonCreatorAffiliatedWith(COUNTRY_CODE_NORWAY, nviOrganization2)
             .getExpandedPublication();
 
-    var candidate = getEvaluatedCandidate(publication);
+    var candidate = getEvaluatedCandidate(publication).pointCalculation();
     var expectedPoints = asBigDecimal("1");
     assertEquals(expectedPoints, candidate.totalPoints());
     assertThat(candidate.institutionPoints())
@@ -182,7 +174,7 @@ class PointCalculationTest extends EvaluationTest {
             .withCreatorAffiliatedWith(COUNTRY_CODE_NORWAY)
             .getExpandedPublication();
 
-    var candidate = getEvaluatedCandidate(publication);
+    var candidate = getEvaluatedCandidate(publication).pointCalculation();
     var expectedPoints = asBigDecimal("0.7071");
     assertEquals(expectedPoints, candidate.totalPoints());
     assertThat(candidate.institutionPoints())
@@ -203,13 +195,13 @@ class PointCalculationTest extends EvaluationTest {
                 nviOrganization1, organizationWithoutId1, organizationWithoutId2)
             .getExpandedPublication();
 
-    var candidate = getEvaluatedCandidate(publication);
+    var candidate = getEvaluatedCandidate(publication).pointCalculation();
 
     var expectedPoints = asBigDecimal("1");
     assertThat(candidate)
         .hasFieldOrPropertyWithValue("totalPoints", expectedPoints)
         .hasFieldOrPropertyWithValue("creatorShareCount", 1)
-        .extracting(UpsertNviCandidateRequest::institutionPoints)
+        .extracting(PointCalculationDto::institutionPoints)
         .extracting(List::getFirst)
         .hasFieldOrPropertyWithValue("institutionPoints", expectedPoints);
   }
@@ -227,11 +219,11 @@ class PointCalculationTest extends EvaluationTest {
             .withNorwegianCreatorAffiliatedWith(organizationWithoutId1, organizationWithoutId2)
             .getExpandedPublication();
 
-    var candidate = getEvaluatedCandidate(publication);
+    var candidate = getEvaluatedCandidate(publication).pointCalculation();
     assertThat(candidate)
         .hasFieldOrPropertyWithValue("totalPoints", asBigDecimal("0.7071"))
         .hasFieldOrPropertyWithValue("creatorShareCount", 2)
-        .extracting(UpsertNviCandidateRequest::institutionPoints)
+        .extracting(PointCalculationDto::institutionPoints)
         .extracting(List::getFirst)
         .hasFieldOrPropertyWithValue("institutionPoints", asBigDecimal("0.7071"));
   }
@@ -245,7 +237,7 @@ class PointCalculationTest extends EvaluationTest {
             .withNorwegianCreatorAffiliatedWith(nviOrganization1.hasPart())
             .getExpandedPublication();
 
-    var candidate = getEvaluatedCandidate(publication);
+    var candidate = getEvaluatedCandidate(publication).pointCalculation();
     var actualContributorPoints =
         candidate.institutionPoints().getFirst().creatorAffiliationPoints();
     assertThat(actualContributorPoints)
@@ -274,7 +266,7 @@ class PointCalculationTest extends EvaluationTest {
             .withNorwegianCreatorAffiliatedWith(nviOrganization1.hasPart().getFirst())
             .getExpandedPublication();
 
-    var candidate = getEvaluatedCandidate(publication);
+    var candidate = getEvaluatedCandidate(publication).pointCalculation();
     var actualPoints = candidate.institutionPoints().getFirst().creatorAffiliationPoints();
     assertThat(actualPoints)
         .usingRecursiveFieldByFieldElementComparatorIgnoringFields("nviCreator")
@@ -584,43 +576,18 @@ class PointCalculationTest extends EvaluationTest {
       BigDecimal institution2Points,
       BigDecimal totalPoints) {}
 
-  private URI addPublicationToS3(SampleExpandedPublication publication) {
-    try {
-      return s3Driver.insertFile(
-          UnixPath.of(publication.identifier().toString()), publication.toJsonString());
-    } catch (IOException e) {
-      throw new RuntimeException("Failed to add publication to S3", e);
-    }
-  }
-
-  private CandidateEvaluatedMessage getMessageBody() {
-    try {
-      var sentMessages = queueClient.getSentMessages();
-      var message = sentMessages.getFirst();
-      return objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class);
-    } catch (JsonProcessingException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  private UpsertNviCandidateRequest getEvaluatedCandidate(SampleExpandedPublication publication) {
-    var fileUri = addPublicationToS3(publication);
-    var event = createEvent(new PersistedResourceMessage(fileUri));
-    handler.handleRequest(event, CONTEXT);
-    return (UpsertNviCandidateRequest) getMessageBody().candidate();
-  }
-
   private void assertThatPointValuesMatch(
       PointParameters parameters, UpsertNviCandidateRequest candidate) {
-    assertEquals(parameters.totalPoints(), candidate.totalPoints());
+    var actualPointCalculation = candidate.pointCalculation();
+    assertEquals(parameters.totalPoints(), actualPointCalculation.totalPoints());
     if (nonNull(parameters.institution2Points())) {
-      assertThat(candidate.institutionPoints())
+      assertThat(actualPointCalculation.institutionPoints())
           .extracting(InstitutionPoints::institutionId, InstitutionPoints::institutionPoints)
           .containsExactlyInAnyOrder(
               tuple(nviOrganization1.id(), parameters.institution1Points()),
               tuple(nviOrganization2.id(), parameters.institution2Points()));
     } else {
-      assertThat(candidate.institutionPoints())
+      assertThat(actualPointCalculation.institutionPoints())
           .extracting(InstitutionPoints::institutionId, InstitutionPoints::institutionPoints)
           .containsExactlyInAnyOrder(tuple(nviOrganization1.id(), parameters.institution1Points()));
     }

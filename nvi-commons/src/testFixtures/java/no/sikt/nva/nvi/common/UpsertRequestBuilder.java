@@ -12,6 +12,7 @@ import java.net.URI;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import no.sikt.nva.nvi.common.dto.PointCalculationDto;
 import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.dto.PublicationDto;
@@ -28,6 +29,7 @@ public class UpsertRequestBuilder {
 
   private PublicationDto.Builder publicationBuilder = PublicationDto.builder();
   private URI publicationBucketUri;
+  private InstanceType instanceType;
   private boolean isInternationalCollaboration;
   private List<UnverifiedNviCreatorDto> unverifiedCreators;
   private List<VerifiedNviCreatorDto> verifiedCreators;
@@ -107,21 +109,22 @@ public class UpsertRequestBuilder {
   public static UpsertRequestBuilder fromRequest(UpsertNviCandidateRequest request) {
     var publicationBuilder = PublicationDtoBuilder.fromRequest(request);
     var publicationDetails = publicationBuilder.build();
+    var pointCalculation = request.pointCalculation();
     return new UpsertRequestBuilder()
         .withPublicationBucketUri(request.publicationBucketUri())
         .withPublicationId(publicationDetails.id())
         .withPublicationDetails(publicationBuilder)
-        .withIsInternationalCollaboration(publicationDetails.isInternationalCollaboration())
+        .withIsInternationalCollaboration(pointCalculation.isInternationalCollaboration())
         .withVerifiedCreators(request.verifiedCreators())
         .withUnverifiedCreators(request.unverifiedCreators())
-        .withPublicationChannel(request.publicationChannelForLevel())
-        .withInstanceType(publicationDetails.publicationType())
+        .withPublicationChannel(pointCalculation.channel())
+        .withInstanceType(pointCalculation.instanceType())
         .withPublicationDate(publicationDetails.publicationDate())
-        .withCreatorShareCount(request.creatorShareCount())
-        .withCollaborationFactor(request.collaborationFactor())
-        .withBasePoints(request.basePoints())
-        .withPoints(request.institutionPoints())
-        .withTotalPoints(request.totalPoints());
+        .withCreatorShareCount(pointCalculation.creatorShareCount())
+        .withCollaborationFactor(pointCalculation.collaborationFactor())
+        .withBasePoints(pointCalculation.basePoints())
+        .withPoints(pointCalculation.institutionPoints())
+        .withTotalPoints(pointCalculation.totalPoints());
   }
 
   public UpsertRequestBuilder withPublicationDetails(PublicationDto.Builder publicationBuilder) {
@@ -169,6 +172,7 @@ public class UpsertRequestBuilder {
   }
 
   public UpsertRequestBuilder withInstanceType(InstanceType instanceType) {
+    this.instanceType = instanceType;
     this.publicationBuilder = publicationBuilder.withPublicationType(instanceType);
     return this;
   }
@@ -262,18 +266,22 @@ public class UpsertRequestBuilder {
   }
 
   public UpsertNviCandidateRequest build() {
+    var pointCalculation =
+        new PointCalculationDto(
+            instanceType,
+            channelForLevel,
+            isInternationalCollaboration,
+            collaborationFactor,
+            basePoints,
+            creatorShareCount,
+            points,
+            totalPoints);
     return UpsertNviCandidateRequest.builder()
+        .withPointCalculation(pointCalculation)
         .withPublicationDetails(publicationBuilder.build())
         .withPublicationBucketUri(publicationBucketUri)
-        .withIsInternationalCollaboration(isInternationalCollaboration)
-        .withCollaborationFactor(collaborationFactor)
         .withVerifiedNviCreators(verifiedCreators)
         .withUnverifiedNviCreators(unverifiedCreators)
-        .withPublicationChannel(channelForLevel)
-        .withCreatorShareCount(creatorShareCount)
-        .withBasePoints(basePoints)
-        .withInstitutionPoints(points)
-        .withTotalPoints(totalPoints)
         .build();
   }
 }

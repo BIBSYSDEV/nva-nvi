@@ -206,7 +206,7 @@ class BatchScanUtilTest {
         defaultExpandedPublicationFactory(
             mock(AuthorizedBackendUriRetriever.class), scenario.getUriRetriever());
     var publication = publicationFactory.getExpandedPublication();
-    var publicationBucketUri = scenario.addPublicationToS3(publication);
+    var publicationBucketUri = scenario.setupExpandedPublicationInS3(publication);
     return randomCandidateBuilder(true)
         .publicationId(publication.id())
         .publicationBucketUri(publicationBucketUri);

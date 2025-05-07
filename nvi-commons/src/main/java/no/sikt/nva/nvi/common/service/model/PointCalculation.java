@@ -33,23 +33,15 @@ public record PointCalculation(
         dto.instanceType(),
         PublicationChannel.from(dto.channel()),
         dto.isInternationalCollaboration(),
-        dto.collaborationFactor(),
-        dto.basePoints(),
+        adjustScaleAndRoundingMode(dto.collaborationFactor()),
+        adjustScaleAndRoundingMode(dto.basePoints()),
         dto.creatorShareCount(),
         dto.institutionPoints(),
-        dto.totalPoints());
+        adjustScaleAndRoundingMode(dto.totalPoints()));
   }
 
   public static PointCalculation from(UpsertNviCandidateRequest request) {
-    return new PointCalculation(
-        request.publicationDetails().publicationType(),
-        PublicationChannel.from(request.publicationChannelForLevel()),
-        request.isInternationalCollaboration(),
-        adjustScaleAndRoundingMode(request.collaborationFactor()),
-        adjustScaleAndRoundingMode(request.basePoints()),
-        request.creatorShareCount(),
-        request.institutionPoints(),
-        adjustScaleAndRoundingMode(request.totalPoints()));
+    return from(request.pointCalculation());
   }
 
   /**

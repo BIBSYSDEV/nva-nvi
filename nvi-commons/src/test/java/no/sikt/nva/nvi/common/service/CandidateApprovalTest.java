@@ -452,7 +452,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
         mockOrganizationRetriever);
     var approval = candidate.getApprovals().get(HARDCODED_INSTITUTION_ID);
     var samePointsWithDifferentScale =
-        upsertCandidateRequest.institutionPoints().stream()
+        upsertCandidateRequest.pointCalculation().institutionPoints().stream()
             .map(
                 institutionPoints ->
                     new InstitutionPoints(

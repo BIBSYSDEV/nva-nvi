@@ -299,13 +299,14 @@ class CandidateTest extends CandidateTestSetup {
   void shouldReturnCandidateWithExpectedData() {
     var createRequest = randomUpsertRequestBuilder().build();
     var candidate = upsert(createRequest);
+    var requestPoints = createRequest.pointCalculation();
     assertEquals(
-        adjustScaleAndRoundingMode(createRequest.totalPoints()), candidate.getTotalPoints());
-    assertEquals(adjustScaleAndRoundingMode(createRequest.basePoints()), candidate.getBasePoints());
+        adjustScaleAndRoundingMode(requestPoints.totalPoints()), candidate.getTotalPoints());
+    assertEquals(adjustScaleAndRoundingMode(requestPoints.basePoints()), candidate.getBasePoints());
     assertEquals(
-        adjustScaleAndRoundingMode(createRequest.collaborationFactor()),
+        adjustScaleAndRoundingMode(requestPoints.collaborationFactor()),
         candidate.getCollaborationFactor());
-    assertEquals(createRequest.creatorShareCount(), candidate.getCreatorShareCount());
+    assertEquals(requestPoints.creatorShareCount(), candidate.getCreatorShareCount());
   }
 
   @Test

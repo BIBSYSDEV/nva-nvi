@@ -19,7 +19,7 @@ public class DbPublicationChannelFixtures {
 
   public static DbPublicationChannel getExpectedDbPublicationChannel(
       UpsertNviCandidateRequest request) {
-    var channelDto = request.publicationChannelForLevel();
+    var channelDto = request.pointCalculation().channel();
     return DbPublicationChannel.builder()
         .id(channelDto.id())
         .channelType(channelDto.channelType().getValue())

@@ -35,16 +35,17 @@ public class DbPointCalculationFixtures {
 
   public static DbPointCalculation getExpectedPointCalculation(UpsertNviCandidateRequest request) {
     var channel = getExpectedDbPublicationChannel(request);
+    var pointCalculation = request.pointCalculation();
     return DbPointCalculation.builder()
-        .basePoints(adjustScaleAndRoundingMode(request.basePoints()))
-        .collaborationFactor(adjustScaleAndRoundingMode(request.collaborationFactor()))
-        .totalPoints(adjustScaleAndRoundingMode(request.totalPoints()))
+        .basePoints(adjustScaleAndRoundingMode(pointCalculation.basePoints()))
+        .collaborationFactor(adjustScaleAndRoundingMode(pointCalculation.collaborationFactor()))
+        .totalPoints(adjustScaleAndRoundingMode(pointCalculation.totalPoints()))
         .publicationChannel(channel)
         .institutionPoints(
-            request.institutionPoints().stream().map(DbInstitutionPoints::from).toList())
-        .internationalCollaboration(request.isInternationalCollaboration())
-        .creatorShareCount(request.creatorShareCount())
-        .instanceType(request.publicationDetails().publicationType().getValue())
+            pointCalculation.institutionPoints().stream().map(DbInstitutionPoints::from).toList())
+        .internationalCollaboration(pointCalculation.isInternationalCollaboration())
+        .creatorShareCount(pointCalculation.creatorShareCount())
+        .instanceType(request.pointCalculation().instanceType().getValue())
         .build();
   }
 

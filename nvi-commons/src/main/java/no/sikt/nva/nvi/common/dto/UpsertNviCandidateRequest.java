@@ -4,41 +4,29 @@ import static no.sikt.nva.nvi.common.utils.Validator.shouldNotBeNull;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import java.math.BigDecimal;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
-import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSerialize
 public record UpsertNviCandidateRequest(
     URI publicationBucketUri,
-    PublicationChannelDto publicationChannelForLevel,
+    PointCalculationDto pointCalculation,
     PublicationDto publicationDetails,
     // TODO: Merge lists of verified and unverified creators
     List<VerifiedNviCreatorDto> verifiedCreators,
-    List<UnverifiedNviCreatorDto> unverifiedCreators,
-    BigDecimal basePoints,
-    boolean isInternationalCollaboration,
-    BigDecimal collaborationFactor,
-    int creatorShareCount,
-    List<InstitutionPoints> institutionPoints,
-    BigDecimal totalPoints)
+    List<UnverifiedNviCreatorDto> unverifiedCreators)
     implements CandidateType {
 
   public void validate() {
     publicationDetails.validate();
+    pointCalculation.validate();
     shouldNotBeNull(publicationBucketUri, "Required field 'publicationBucketUri' is null");
-    shouldNotBeNull(
-        publicationChannelForLevel, "Required field 'publicationChannelForLevel' is null");
-    shouldNotBeNull(creatorShareCount, "Required field 'creatorShareCount' is null");
     shouldNotBeNull(verifiedCreators, "Required field 'verifiedCreators' is null");
     shouldNotBeNull(unverifiedCreators, "Required field 'unverifiedCreators' is null");
-    shouldNotBeNull(institutionPoints, "Required field 'institutionPoints' is null");
-    shouldNotBeNull(totalPoints, "Required field 'totalPoints' is null");
   }
 
   @Override
@@ -57,16 +45,10 @@ public record UpsertNviCandidateRequest(
   public static final class Builder {
 
     private URI publicationBucketUri;
-    private PublicationChannelDto channelForLevel;
+    private PointCalculationDto pointCalculation;
     private PublicationDto publicationDetails;
     private List<VerifiedNviCreatorDto> verifiedNviCreators = Collections.emptyList();
     private List<UnverifiedNviCreatorDto> unverifiedNviCreators = Collections.emptyList();
-    private BigDecimal basePoints;
-    private boolean isInternationalCollaboration;
-    private BigDecimal collaborationFactor;
-    private int creatorShareCount;
-    private List<InstitutionPoints> institutionPoints;
-    private BigDecimal totalPoints;
 
     private Builder() {}
 
@@ -75,8 +57,8 @@ public record UpsertNviCandidateRequest(
       return this;
     }
 
-    public Builder withPublicationChannel(PublicationChannelDto channel) {
-      this.channelForLevel = channel;
+    public Builder withPointCalculation(PointCalculationDto pointCalculation) {
+      this.pointCalculation = pointCalculation;
       return this;
     }
 
@@ -95,49 +77,13 @@ public record UpsertNviCandidateRequest(
       return this;
     }
 
-    public Builder withBasePoints(BigDecimal basePoints) {
-      this.basePoints = basePoints;
-      return this;
-    }
-
-    public Builder withIsInternationalCollaboration(boolean isInternationalCollaboration) {
-      this.isInternationalCollaboration = isInternationalCollaboration;
-      return this;
-    }
-
-    public Builder withCollaborationFactor(BigDecimal collaborationFactor) {
-      this.collaborationFactor = collaborationFactor;
-      return this;
-    }
-
-    public Builder withCreatorShareCount(int creatorShareCount) {
-      this.creatorShareCount = creatorShareCount;
-      return this;
-    }
-
-    public Builder withInstitutionPoints(List<InstitutionPoints> institutionPoints) {
-      this.institutionPoints = institutionPoints;
-      return this;
-    }
-
-    public Builder withTotalPoints(BigDecimal totalPoints) {
-      this.totalPoints = totalPoints;
-      return this;
-    }
-
     public UpsertNviCandidateRequest build() {
       return new UpsertNviCandidateRequest(
           publicationBucketUri,
-          channelForLevel,
+          pointCalculation,
           publicationDetails,
           verifiedNviCreators,
-          unverifiedNviCreators,
-          basePoints,
-          isInternationalCollaboration,
-          collaborationFactor,
-          creatorShareCount,
-          institutionPoints,
-          totalPoints);
+          unverifiedNviCreators);
     }
   }
 }

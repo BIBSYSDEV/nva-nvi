@@ -161,17 +161,11 @@ public class EvaluatorService {
 
     return UpsertNviCandidateRequest.builder()
         .withPublicationBucketUri(publicationBucketUri)
-        .withPublicationChannel(pointCalculation.channel())
+        .withPointCalculation(pointCalculation)
         .withPublicationDetails(publicationDto)
-        .withBasePoints(pointCalculation.basePoints())
-        .withIsInternationalCollaboration(publicationDto.isInternationalCollaboration())
-        .withCollaborationFactor(pointCalculation.collaborationFactor())
-        .withCreatorShareCount(pointCalculation.creatorShareCount())
-        .withInstitutionPoints(pointCalculation.institutionPoints())
         .withVerifiedNviCreators(mapVerifiedCreatorsToDto(verifiedCreatorsWithNviInstitutions))
         .withUnverifiedNviCreators(
             mapUnverifiedCreatorsToDto(unverifiedCreatorsWithNviInstitutions))
-        .withTotalPoints(pointCalculation.totalPoints())
         .build();
   }
 

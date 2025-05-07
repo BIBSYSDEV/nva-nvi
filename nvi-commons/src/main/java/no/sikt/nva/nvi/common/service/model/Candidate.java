@@ -547,7 +547,7 @@ public final class Candidate {
 
   private static boolean publicationChannelIsUpdated(
       UpsertNviCandidateRequest request, Candidate candidate) {
-    var requestChannel = request.publicationChannelForLevel().id();
+    var requestChannel = request.pointCalculation().channel().id();
     return !requestChannel.equals(candidate.getPublicationChannelId());
   }
 
@@ -565,7 +565,7 @@ public final class Candidate {
             .map(InstitutionPoints::institutionId)
             .collect(Collectors.toSet());
     var newTopLevelOrganizations =
-        request.institutionPoints().stream()
+        request.pointCalculation().institutionPoints().stream()
             .map(InstitutionPoints::institutionId)
             .collect(Collectors.toSet());
     return !oldTopLevelOrganizations.equals(newTopLevelOrganizations);
@@ -631,14 +631,15 @@ public final class Candidate {
   }
 
   private static boolean levelIsUpdated(UpsertNviCandidateRequest request, Candidate candidate) {
-    var requestValue = request.publicationChannelForLevel().scientificValue();
+    var requestValue = request.pointCalculation().channel().scientificValue();
     return !Objects.equals(requestValue, candidate.getScientificLevel());
   }
 
   private static void createCandidate(
       UpsertNviCandidateRequest request, CandidateRepository repository) {
     validateCandidate(request);
-    repository.create(mapToCandidate(request), mapToApprovals(request.institutionPoints()));
+    repository.create(
+        mapToCandidate(request), mapToApprovals(request.pointCalculation().institutionPoints()));
   }
 
   private static void validateCandidate(UpsertNviCandidateRequest candidate) {
@@ -694,17 +695,17 @@ public final class Candidate {
         .publicationIdentifier(dbDetails.identifier())
         .applicable(request.isApplicable())
         .creators(allCreators)
-        .creatorShareCount(request.creatorShareCount())
+        .creatorShareCount(dbPointCalculation.creatorShareCount())
         .channelId(dbPointCalculation.publicationChannel().id())
         .channelType(dbPointCalculation.publicationChannel().channelType())
         .level(DbLevel.parse(dbPointCalculation.publicationChannel().scientificValue()))
         .instanceType(request.publicationDetails().publicationType().getValue())
         .publicationDate(dbDetails.publicationDate())
-        .internationalCollaboration(request.isInternationalCollaboration())
-        .collaborationFactor(adjustScaleAndRoundingMode(request.collaborationFactor()))
-        .basePoints(adjustScaleAndRoundingMode(request.basePoints()))
-        .points(mapToPoints(request.institutionPoints()))
-        .totalPoints(adjustScaleAndRoundingMode(request.totalPoints()))
+        .internationalCollaboration(dbPointCalculation.internationalCollaboration())
+        .collaborationFactor(dbPointCalculation.collaborationFactor())
+        .basePoints(dbPointCalculation.basePoints())
+        .points(dbPointCalculation.institutionPoints())
+        .totalPoints(dbPointCalculation.totalPoints())
         .createdDate(Instant.now())
         .modifiedDate(Instant.now())
         .build();

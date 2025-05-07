@@ -41,7 +41,7 @@ public record PublicationDetails(
 
   public static PublicationDetails from(UpsertNviCandidateRequest upsertRequest) {
     var publicationDto = upsertRequest.publicationDetails();
-    var publicationChannel = PublicationChannel.from(upsertRequest.publicationChannelForLevel());
+    var publicationChannel = PublicationChannel.from(upsertRequest.pointCalculation().channel());
     var nviCreators =
         Stream.concat(
                 upsertRequest.unverifiedCreators().stream(),

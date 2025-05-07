@@ -108,7 +108,7 @@ public class TestScenario {
     return candidate.updateApprovalStatus(updateRequest, mockOrganizationRetriever);
   }
 
-  public URI addPublicationToS3(SampleExpandedPublication publication) {
+  public URI setupExpandedPublicationInS3(SampleExpandedPublication publication) {
     try {
       return s3Driver.insertFile(
           UnixPath.of(publication.identifier().toString()), publication.toJsonString());
@@ -117,9 +117,9 @@ public class TestScenario {
     }
   }
 
-  public URI addPublicationToS3(String publicationIdentifier, String publicationJson) {
+  public URI setupExpandedPublicationInS3(String publicationJson) {
     try {
-      return s3Driver.insertFile(UnixPath.of(publicationIdentifier), publicationJson);
+      return s3Driver.insertFile(UnixPath.of(randomString()), publicationJson);
     } catch (IOException e) {
       throw new RuntimeException("Failed to add publication to S3", e);
     }

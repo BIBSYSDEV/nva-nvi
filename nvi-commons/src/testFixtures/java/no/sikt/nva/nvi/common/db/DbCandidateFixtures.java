@@ -95,6 +95,11 @@ public class DbCandidateFixtures {
 
   public static DbCandidate getExpectedDbCandidate(
       UUID candidateIdentifier, Instant createdDate, UpsertNviCandidateRequest request) {
+    return getExpectedCandidateDao(candidateIdentifier, createdDate, request).candidate();
+  }
+
+  public static CandidateDao getExpectedCandidateDao(
+      UUID candidateIdentifier, Instant createdDate, UpsertNviCandidateRequest request) {
     var dtoPublicationDetails = request.publicationDetails();
     var dbCreators = mapToDbCreators(request.verifiedCreators(), request.unverifiedCreators());
     var dbPointCalculation = getExpectedPointCalculation(request);
@@ -122,7 +127,6 @@ public class DbCandidateFixtures {
             .totalPoints(dbPointCalculation.totalPoints())
             .createdDate(createdDate)
             .build();
-    return new CandidateDao(candidateIdentifier, dbCandidate, randomString(), randomString())
-        .candidate();
+    return new CandidateDao(candidateIdentifier, dbCandidate, randomString(), randomString());
   }
 }

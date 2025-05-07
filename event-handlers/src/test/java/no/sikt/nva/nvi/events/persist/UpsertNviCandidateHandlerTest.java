@@ -324,7 +324,7 @@ class UpsertNviCandidateHandlerTest {
 
   private List<DbApprovalStatus> getExpectedApprovals(
       UpsertNviCandidateRequest evaluatedNviCandidate) {
-    return evaluatedNviCandidate.institutionPoints().stream()
+    return evaluatedNviCandidate.pointCalculation().institutionPoints().stream()
         .map(
             institution ->
                 DbApprovalStatus.builder()
