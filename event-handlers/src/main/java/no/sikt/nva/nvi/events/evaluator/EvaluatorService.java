@@ -15,12 +15,10 @@ import java.util.Optional;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
 import no.sikt.nva.nvi.common.dto.PublicationDto;
 import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.exceptions.ValidationException;
-import no.sikt.nva.nvi.common.model.ChannelType;
 import no.sikt.nva.nvi.common.service.PublicationLoaderService;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
@@ -161,16 +159,9 @@ public class EvaluatorService {
             verifiedCreatorsWithNviInstitutions,
             unverifiedCreatorsWithNviInstitutions);
 
-    var channelForLevel =
-        PublicationChannelDto.builder()
-            .withId(pointCalculation.publicationChannelId())
-            .withChannelType(ChannelType.parse(pointCalculation.channelType().getValue()))
-            .withScientificValue(pointCalculation.scientificValue())
-            .build();
-
     return UpsertNviCandidateRequest.builder()
         .withPublicationBucketUri(publicationBucketUri)
-        .withPublicationChannel(channelForLevel)
+        .withPublicationChannel(pointCalculation.channel())
         .withPublicationDetails(publicationDto)
         .withBasePoints(pointCalculation.basePoints())
         .withIsInternationalCollaboration(publicationDto.isInternationalCollaboration())

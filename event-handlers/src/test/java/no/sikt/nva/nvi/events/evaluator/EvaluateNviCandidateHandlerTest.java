@@ -7,13 +7,13 @@ import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBui
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.setupReportedCandidate;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeriod;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
+import static no.sikt.nva.nvi.common.model.ChannelType.JOURNAL;
+import static no.sikt.nva.nvi.common.model.ChannelType.SERIES;
 import static no.sikt.nva.nvi.common.model.InstanceType.ACADEMIC_COMMENTARY;
 import static no.sikt.nva.nvi.common.model.InstanceType.ACADEMIC_LITERATURE_REVIEW;
 import static no.sikt.nva.nvi.common.model.InstanceType.ACADEMIC_MONOGRAPH;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.mockOrganizationResponseForAffiliation;
 import static no.sikt.nva.nvi.events.evaluator.TestUtils.createEvent;
-import static no.sikt.nva.nvi.events.evaluator.model.PublicationChannel.JOURNAL;
-import static no.sikt.nva.nvi.events.evaluator.model.PublicationChannel.SERIES;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_SWEDEN;
 import static no.sikt.nva.nvi.test.TestConstants.CRISTIN_NVI_ORG_FACULTY_ID;
 import static no.sikt.nva.nvi.test.TestConstants.CRISTIN_NVI_ORG_SUB_UNIT_ID;
@@ -67,7 +67,6 @@ import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil;
-import no.sikt.nva.nvi.events.evaluator.model.PublicationChannel;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.sikt.nva.nvi.test.SampleExpandedAffiliation;
@@ -535,18 +534,28 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
             BigDecimal.valueOf(1),
             expectedPoints);
 
-    assertThat(messageBody.candidate())
+    var expectedRequest = (UpsertNviCandidateRequest) expectedEvaluatedMessage.candidate();
+    var actualRequest = (UpsertNviCandidateRequest) messageBody.candidate();
+    assertThat(actualRequest)
         .usingRecursiveComparison()
         .ignoringCollectionOrder()
-        .ignoringFields("pageCount", "publicationDetails")
-        .isEqualTo(expectedEvaluatedMessage.candidate());
+        .ignoringFields("pageCount", "publicationDetails", "publicationChannelForLevel")
+        .isEqualTo(expectedRequest);
+
+    var expectedChannel = expectedRequest.publicationChannelForLevel();
+    var actualChannel = actualRequest.publicationChannelForLevel();
+    assertThat(actualChannel)
+        .usingRecursiveComparison()
+        .ignoringCollectionOrder()
+        .ignoringFields("identifier", "name", "onlineIssn", "printIssn", "year")
+        .isEqualTo(expectedChannel);
   }
 
   private static CandidateEvaluatedMessage getExpectedEvaluatedMessage(
       InstanceType instanceType,
       BigDecimal points,
       URI bucketUri,
-      PublicationChannel publicationChannel,
+      ChannelType publicationChannel,
       BigDecimal basePoints,
       BigDecimal totalPoints) {
     return CandidateEvaluatedMessage.builder()
@@ -565,7 +574,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
   private static UpsertNviCandidateRequest createExpectedCandidate(
       InstanceType instanceType,
       Map<URI, BigDecimal> institutionPoints,
-      PublicationChannel channelType,
+      ChannelType channelType,
       String level,
       BigDecimal basePoints,
       BigDecimal totalPoints,
@@ -573,7 +582,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     var channelForLevel =
         PublicationChannelDto.builder()
             .withId(HARDCODED_PUBLICATION_CHANNEL_ID)
-            .withChannelType(ChannelType.parse(channelType.getValue()))
+            .withChannelType(channelType)
             .withScientificValue(ScientificValue.parse(level))
             .build();
     var publicationDetails =
@@ -704,6 +713,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     assertThat(messageBody)
         .usingRecursiveComparison()
         .ignoringFields(
+            "candidate.publicationChannelForLevel.name",
             "candidate.publicationDetails.identifier",
             "candidate.publicationDetails.contributors",
             "candidate.publicationDetails.modifiedDate",

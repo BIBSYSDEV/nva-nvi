@@ -1,19 +1,16 @@
 package no.sikt.nva.nvi.events.evaluator.model;
 
 import java.math.BigDecimal;
-import java.net.URI;
 import java.util.List;
+import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
 import no.sikt.nva.nvi.common.model.InstanceType;
-import no.sikt.nva.nvi.common.model.ScientificValue;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 
 // TODO: Move this to nvi-commons
 // TODO: Make DTO and DB versions of this and persist it as a separate field
 public record PointCalculation(
     InstanceType instanceType,
-    PublicationChannel channelType,
-    URI publicationChannelId,
-    ScientificValue scientificValue,
+    PublicationChannelDto channel,
     boolean isInternationalCollaboration,
     BigDecimal collaborationFactor,
     BigDecimal basePoints,
