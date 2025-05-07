@@ -93,7 +93,6 @@ public class BatchScanUtil {
               // Get data we know should exist already from data stored in the database
               .id(data.publicationId())
               .publicationBucketUri(data.publicationBucketUri())
-              .publicationType(data.instanceType())
               .publicationChannel(dbPublicationChannel)
               .publicationDate(data.publicationDate())
               .creators(data.creators())

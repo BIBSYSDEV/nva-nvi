@@ -136,7 +136,6 @@ public final class CristinMapper {
         .publicationBucketUri(
             constructPublicationBucketUri(cristinNviReport.publicationIdentifier()))
         .publicationDate(cristinNviReport.publicationDate().toDbPublicationDate())
-        .publicationType(cristinNviReport.instanceType())
         .modifiedDate(now)
         .creators(extractCreators(cristinNviReport))
         .publicationChannel(channel)

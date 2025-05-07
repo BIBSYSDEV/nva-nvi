@@ -3,7 +3,6 @@ package no.sikt.nva.nvi.common.service.model;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.nonNull;
 
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
 import java.time.Instant;
 import java.util.Collection;
@@ -17,15 +16,12 @@ import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreatorType;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDetails;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
-import no.sikt.nva.nvi.common.model.InstanceType;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.unit.nva.identifiers.SortableIdentifier;
 
-// TODO: Can we remove this JsonSerialize annotation?
 @SuppressWarnings({"PMD.TooManyFields", "PMD.CouplingBetweenObjects"})
-@JsonSerialize
 public record PublicationDetails(
     URI publicationId,
     URI publicationBucketUri,
@@ -37,9 +33,7 @@ public record PublicationDetails(
     PageCount pageCount,
     PublicationChannel publicationChannel,
     PublicationDate publicationDate,
-    InstanceType publicationType,
     boolean isApplicable,
-    boolean isInternationalCollaboration,
     List<NviCreatorDto> nviCreators,
     int contributorCount,
     List<Organization> topLevelOrganizations,
@@ -64,16 +58,18 @@ public record PublicationDetails(
         .withLanguage(publicationDto.language())
         .withAbstract(publicationDto.abstractText())
         .withPublicationDate(PublicationDate.from(publicationDto.publicationDate()))
-        .withPublicationType(publicationDto.publicationType())
         .withPageCount(PageCount.from(publicationDto.pageCount()))
         .withIsApplicable(publicationDto.isApplicable())
-        .withIsInternationalCollaboration(publicationDto.isInternationalCollaboration())
         .withPublicationChannel(publicationChannel)
         .withNviCreators(nviCreators)
         .withContributorCount(publicationDto.contributors().size())
         .withTopLevelOrganizations(publicationDto.topLevelOrganizations())
         .withModifiedDate(publicationDto.modifiedDate())
         .build();
+  }
+
+  public static Builder builder() {
+    return new Builder();
   }
 
   public static PublicationDetails from(CandidateDao candidateDao) {
@@ -92,10 +88,8 @@ public record PublicationDetails(
         .withLanguage(dbDetails.language())
         .withAbstract(dbDetails.abstractText())
         .withPublicationDate(PublicationDate.from(dbCandidate.getPublicationDate()))
-        .withPublicationType(InstanceType.parse(dbDetails.publicationType()))
         .withPageCount(pageCount)
         .withIsApplicable(dbCandidate.applicable())
-        .withIsInternationalCollaboration(dbCandidate.internationalCollaboration())
         .withPublicationChannel(PublicationChannel.from(candidateDao))
         .withNviCreators(nviCreators)
         .withContributorCount(dbDetails.contributorCount())
@@ -104,24 +98,11 @@ public record PublicationDetails(
         .build();
   }
 
-  public List<VerifiedNviCreatorDto> verifiedCreators() {
-    return nviCreators.stream()
-        .filter(VerifiedNviCreatorDto.class::isInstance)
-        .map(VerifiedNviCreatorDto.class::cast)
-        .toList();
-  }
-
   public List<UnverifiedNviCreatorDto> unverifiedCreators() {
     return nviCreators.stream()
         .filter(UnverifiedNviCreatorDto.class::isInstance)
         .map(UnverifiedNviCreatorDto.class::cast)
         .toList();
-  }
-
-  private static List<Organization> getTopLevelOrganizations(DbPublicationDetails dbDetails) {
-    return nonNull(dbDetails.topLevelOrganizations())
-        ? dbDetails.topLevelOrganizations().stream().map(Organization::from).toList()
-        : emptyList();
   }
 
   public DbPublicationDetails toDbPublication() {
@@ -137,7 +118,6 @@ public record PublicationDetails(
         .abstractText(abstractText)
         .pages(dbPages)
         .publicationDate(publicationDate.toDbPublicationDate())
-        .publicationType(publicationType.getValue())
         .publicationChannel(publicationChannel.toDbPublicationChannel())
         .creators(dbCreators)
         .modifiedDate(modifiedDate)
@@ -146,16 +126,25 @@ public record PublicationDetails(
         .build();
   }
 
-  public static Builder builder() {
-    return new Builder();
-  }
-
   public List<URI> getNviCreatorAffiliations() {
     return nviCreators.stream().map(NviCreatorDto::affiliations).flatMap(List::stream).toList();
   }
 
   public Set<URI> getVerifiedNviCreatorIds() {
     return verifiedCreators().stream().map(VerifiedNviCreatorDto::id).collect(Collectors.toSet());
+  }
+
+  public List<VerifiedNviCreatorDto> verifiedCreators() {
+    return nviCreators.stream()
+        .filter(VerifiedNviCreatorDto.class::isInstance)
+        .map(VerifiedNviCreatorDto.class::cast)
+        .toList();
+  }
+
+  private static List<Organization> getTopLevelOrganizations(DbPublicationDetails dbDetails) {
+    return nonNull(dbDetails.topLevelOrganizations())
+        ? dbDetails.topLevelOrganizations().stream().map(Organization::from).toList()
+        : emptyList();
   }
 
   public static final class Builder {
@@ -169,9 +158,7 @@ public record PublicationDetails(
     private String abstractText;
     private PageCount pageCount;
     private PublicationDate publicationDate;
-    private InstanceType publicationType;
     private boolean isApplicable;
-    private boolean isInternationalCollaboration;
     private PublicationChannel publicationChannel;
     private List<NviCreatorDto> nviCreators = emptyList();
     private int contributorCount;
@@ -220,11 +207,6 @@ public record PublicationDetails(
       return this;
     }
 
-    public Builder withPublicationType(InstanceType publicationType) {
-      this.publicationType = publicationType;
-      return this;
-    }
-
     public Builder withLanguage(String language) {
       this.language = language;
       return this;
@@ -232,11 +214,6 @@ public record PublicationDetails(
 
     public Builder withIsApplicable(boolean isApplicable) {
       this.isApplicable = isApplicable;
-      return this;
-    }
-
-    public Builder withIsInternationalCollaboration(boolean isInternationalCollaboration) {
-      this.isInternationalCollaboration = isInternationalCollaboration;
       return this;
     }
 
@@ -277,9 +254,7 @@ public record PublicationDetails(
           pageCount,
           publicationChannel,
           publicationDate,
-          publicationType,
           isApplicable,
-          isInternationalCollaboration,
           nviCreators,
           contributorCount,
           topLevelOrganizations,

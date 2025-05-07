@@ -3,13 +3,13 @@ package no.sikt.nva.nvi.events.evaluator;
 import java.util.Collection;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.dto.ContributorDto;
+import no.sikt.nva.nvi.common.dto.PointCalculationDto;
 import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
 import no.sikt.nva.nvi.common.dto.PublicationDto;
 import no.sikt.nva.nvi.common.model.ChannelType;
 import no.sikt.nva.nvi.events.evaluator.calculator.PointCalculator;
 import no.sikt.nva.nvi.events.evaluator.model.NviCreator;
 import no.sikt.nva.nvi.events.evaluator.model.NviOrganization;
-import no.sikt.nva.nvi.events.evaluator.model.PointCalculation;
 import no.sikt.nva.nvi.events.evaluator.model.UnverifiedNviCreator;
 import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
 
@@ -17,7 +17,7 @@ public final class PointService {
 
   private PointService() {}
 
-  public static PointCalculation calculatePoints(
+  public static PointCalculationDto calculatePoints(
       PublicationDto publication,
       Collection<VerifiedNviCreator> verifiedNviCreators,
       Collection<UnverifiedNviCreator> unverifiedNviCreators) {

@@ -141,8 +141,7 @@ class CristinNviReportEventConsumerTest {
         candidate.getPublicationDetails().nviCreators(),
         Matchers.contains(constructExpectedCreator(cristinNviReport)));
     assertThat(
-        candidate.getPublicationDetails().publicationType().getValue(),
-        is(equalTo(cristinNviReport.instanceType())));
+        candidate.getPublicationType().getValue(), is(equalTo(cristinNviReport.instanceType())));
     candidate.getApprovals().values().stream()
         .map(Approval::getStatus)
         .forEach(status -> assertThat(status, is(equalTo(ApprovalStatus.APPROVED))));

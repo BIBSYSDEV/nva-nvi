@@ -156,7 +156,7 @@ public final class ExpandedResourceGenerator {
 
   private static ObjectNode createAndPopulatePublicationInstance(Candidate candidate) {
     var publicationInstance = objectMapper.createObjectNode();
-    var publicationType = candidate.getPublicationDetails().publicationType().getValue();
+    var publicationType = candidate.getPublicationType().getValue();
     publicationInstance.put(TYPE_FIELD, publicationType);
     switch (publicationType) {
       case "AcademicArticle", "AcademicLiteratureReview", "AcademicChapter" -> {

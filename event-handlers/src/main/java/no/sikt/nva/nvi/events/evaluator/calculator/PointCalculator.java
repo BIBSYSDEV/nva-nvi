@@ -19,13 +19,13 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import no.sikt.nva.nvi.common.dto.PointCalculationDto;
 import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
 import no.sikt.nva.nvi.common.model.InstanceType;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.events.evaluator.model.NviCreator;
 import no.sikt.nva.nvi.events.evaluator.model.NviOrganization;
-import no.sikt.nva.nvi.events.evaluator.model.PointCalculation;
 import no.sikt.nva.nvi.events.evaluator.model.UnverifiedNviCreator;
 import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
 
@@ -57,10 +57,10 @@ public class PointCalculator {
     this.creatorShareCount = creatorShareCount;
   }
 
-  public PointCalculation calculatePoints() {
+  public PointCalculationDto calculatePoints() {
     var institutionPoints = calculatePointsForAllInstitutions();
     var totalPoints = sumInstitutionPoints(institutionPoints);
-    return new PointCalculation(
+    return new PointCalculationDto(
         instanceType,
         publicationChannel,
         internationalCollaborationFactor,
