@@ -68,6 +68,7 @@ import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
+import no.sikt.nva.nvi.common.service.model.PublicationChannel;
 import no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
@@ -501,17 +502,17 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     var candidate =
         evaluatePublicationAndGetPersistedCandidate(
             HARDCODED_PUBLICATION_ID, stringFromResources(Path.of(path)));
+    var expectedChannel =
+        new PublicationChannel(HARDCODED_PUBLICATION_CHANNEL_ID, SERIES, ScientificValue.LEVEL_ONE);
     assertThat(candidate)
         .extracting(
             Candidate::getPublicationType,
-            Candidate::getPublicationChannelType,
-            Candidate::getScientificLevel,
+            Candidate::getPublicationChannel,
             Candidate::isApplicable,
             Candidate::getTotalPoints)
         .containsExactly(
             ACADEMIC_MONOGRAPH,
-            SERIES,
-            ScientificValue.LEVEL_ONE,
+            expectedChannel,
             true,
             BigDecimal.valueOf(5).setScale(SCALE, ROUNDING_MODE));
   }
@@ -524,17 +525,18 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     var candidate =
         evaluatePublicationAndGetPersistedCandidate(
             HARDCODED_PUBLICATION_ID, stringFromResources(Path.of(path)));
+    var expectedChannel =
+        new PublicationChannel(
+            HARDCODED_PUBLICATION_CHANNEL_ID, JOURNAL, ScientificValue.LEVEL_ONE);
     assertThat(candidate)
         .extracting(
             Candidate::getPublicationType,
-            Candidate::getPublicationChannelType,
-            Candidate::getScientificLevel,
+            Candidate::getPublicationChannel,
             Candidate::isApplicable,
             Candidate::getTotalPoints)
         .containsExactly(
             InstanceType.ACADEMIC_ARTICLE,
-            JOURNAL,
-            ScientificValue.LEVEL_ONE,
+            expectedChannel,
             true,
             ONE.setScale(SCALE, ROUNDING_MODE));
   }

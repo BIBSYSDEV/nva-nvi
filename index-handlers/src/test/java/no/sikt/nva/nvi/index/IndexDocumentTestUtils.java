@@ -248,13 +248,14 @@ public final class IndexDocumentTestUtils {
 
   private static PublicationChannel getPublicationChannel(
       JsonNode expandedResource, Candidate candidate) {
-    var channelType = candidate.getPublicationChannelType();
+    var channel = candidate.getPublicationChannel();
+    var channelType = channel.channelType();
     var publicationChannelBuilder =
         PublicationChannel.builder()
-            .withScientificValue(candidate.getScientificLevel())
+            .withScientificValue(channel.scientificValue())
             .withName(extractChannelName(expandedResource, channelType));
-    if (nonNull(candidate.getPublicationChannelId())) {
-      publicationChannelBuilder.withId(candidate.getPublicationChannelId());
+    if (nonNull(candidate.getPublicationChannel().id())) {
+      publicationChannelBuilder.withId(channel.id());
     }
     if (nonNull(channelType)) {
       publicationChannelBuilder.withType(channelType.getValue());

@@ -179,10 +179,11 @@ public final class ExpandedResourceGenerator {
 
   private static ObjectNode createAndPopulatePublicationContext(
       Candidate candidate, boolean populateIssn) {
-    if (isNull(candidate.getPublicationChannelType())) {
+    var channel = candidate.getPublicationChannel();
+    if (isNull(channel.channelType())) {
       return objectMapper.createObjectNode();
     }
-    return switch (candidate.getPublicationChannelType()) {
+    return switch (channel.channelType()) {
       case JOURNAL -> createJournalPublicationContext(candidate, populateIssn);
       case SERIES -> createSeriesPublicationContext(candidate, populateIssn);
       case PUBLISHER -> createPublisherPublicationContext(candidate);
@@ -191,9 +192,10 @@ public final class ExpandedResourceGenerator {
 
   private static ObjectNode createPublisherPublicationContext(Candidate candidate) {
     var publisher = objectMapper.createObjectNode();
+    var channel = candidate.getPublicationChannel();
     publisher.put(TYPE_FIELD, "Publisher");
-    publisher.put(ID_FIELD, candidate.getPublicationChannelId().toString());
-    publisher.put(LEVEL_FIELD, candidate.getScientificLevel().getValue());
+    publisher.put(ID_FIELD, channel.id().toString());
+    publisher.put(LEVEL_FIELD, channel.scientificValue().getValue());
     publisher.put(NAME_FIELD, randomString());
     var publicationContext = objectMapper.createObjectNode();
     publicationContext.set("publisher", publisher);
@@ -203,9 +205,10 @@ public final class ExpandedResourceGenerator {
   private static ObjectNode createSeriesPublicationContext(
       Candidate candidate, boolean populateIssn) {
     var series = objectMapper.createObjectNode();
+    var channel = candidate.getPublicationChannel();
     series.put(TYPE_FIELD, "Series");
-    series.put(ID_FIELD, candidate.getPublicationChannelId().toString());
-    series.put(LEVEL_FIELD, candidate.getScientificLevel().getValue());
+    series.put(ID_FIELD, channel.id().toString());
+    series.put(LEVEL_FIELD, channel.scientificValue().getValue());
     series.put(NAME_FIELD, randomString());
     if (populateIssn) {
       series.put("printIssn", randomString());
@@ -218,9 +221,10 @@ public final class ExpandedResourceGenerator {
   private static ObjectNode createJournalPublicationContext(
       Candidate candidate, boolean populateIssn) {
     var journal = objectMapper.createObjectNode();
+    var channel = candidate.getPublicationChannel();
     journal.put(TYPE_FIELD, "Journal");
-    journal.put(ID_FIELD, candidate.getPublicationChannelId().toString());
-    journal.put(LEVEL_FIELD, candidate.getScientificLevel().getValue());
+    journal.put(ID_FIELD, channel.id().toString());
+    journal.put(LEVEL_FIELD, channel.scientificValue().getValue());
     journal.put(NAME_FIELD, randomString());
     if (populateIssn) {
       journal.put("printIssn", randomString());

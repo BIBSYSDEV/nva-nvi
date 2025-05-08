@@ -48,10 +48,8 @@ import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
 import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
-import no.sikt.nva.nvi.common.model.ChannelType;
 import no.sikt.nva.nvi.common.model.InstanceType;
 import no.sikt.nva.nvi.common.model.InvalidNviCandidateException;
-import no.sikt.nva.nvi.common.model.ScientificValue;
 import no.sikt.nva.nvi.common.model.UpdateApprovalRequest;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
@@ -311,16 +309,8 @@ public final class Candidate {
     }
   }
 
-  public ScientificValue getScientificLevel() {
-    return publicationDetails.publicationChannel().scientificValue();
-  }
-
-  public ChannelType getPublicationChannelType() {
-    return publicationDetails.publicationChannel().channelType();
-  }
-
-  public URI getPublicationChannelId() {
-    return publicationDetails.publicationChannel().id();
+  public PublicationChannel getPublicationChannel() {
+    return pointCalculation.channel();
   }
 
   public CandidateDto toDto(
@@ -537,8 +527,7 @@ public final class Candidate {
 
   private static boolean shouldResetCandidate(
       UpsertNviCandidateRequest request, Candidate candidate) {
-    return levelIsUpdated(request, candidate)
-        || publicationChannelIsUpdated(request, candidate)
+    return publicationChannelIsUpdated(request, candidate)
         || instanceTypeIsUpdated(request, candidate)
         || creatorsAreUpdated(request, candidate)
         || hasChangeInTopLevelOrganizations(request, candidate)
@@ -547,8 +536,8 @@ public final class Candidate {
 
   private static boolean publicationChannelIsUpdated(
       UpsertNviCandidateRequest request, Candidate candidate) {
-    var requestChannel = request.pointCalculation().channel().id();
-    return !requestChannel.equals(candidate.getPublicationChannelId());
+    var requestChannel = PublicationChannel.from(request.pointCalculation().channel());
+    return !requestChannel.equals(candidate.getPublicationChannel());
   }
 
   private static boolean publicationYearIsUpdated(
@@ -628,11 +617,6 @@ public final class Candidate {
     var newType = request.publicationDetails().publicationType();
     var currentType = candidate.getPublicationType();
     return !Objects.equals(newType, currentType);
-  }
-
-  private static boolean levelIsUpdated(UpsertNviCandidateRequest request, Candidate candidate) {
-    var requestValue = request.pointCalculation().channel().scientificValue();
-    return !Objects.equals(requestValue, candidate.getScientificLevel());
   }
 
   private static void createCandidate(

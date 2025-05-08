@@ -234,7 +234,7 @@ public final class NviCandidateIndexDocumentGenerator {
   }
 
   private PublicationChannel buildPublicationChannel() {
-    var publicationChannel = candidate.getPublicationDetails().publicationChannel();
+    var publicationChannel = candidate.getPublicationChannel();
     var publicationChannelBuilder =
         PublicationChannel.builder()
             .withScientificValue(
