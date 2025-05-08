@@ -31,7 +31,7 @@ import java.util.List;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.model.ChannelType;
-import no.sikt.nva.nvi.common.service.model.PublicationDate;
+import no.sikt.nva.nvi.common.model.PublicationDate;
 import no.sikt.nva.nvi.events.cristin.CristinNviReport.Builder;
 import no.unit.nva.commons.json.JsonUtils;
 import nva.commons.core.ioutils.IoUtils;

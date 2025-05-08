@@ -5,7 +5,6 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomLocalDate;
 
 import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
-import no.sikt.nva.nvi.common.service.model.PublicationDate;
 
 public class PublicationDateFixtures {
 

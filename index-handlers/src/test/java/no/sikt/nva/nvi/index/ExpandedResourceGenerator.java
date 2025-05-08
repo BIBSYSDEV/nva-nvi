@@ -35,9 +35,9 @@ import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.IntStream;
+import no.sikt.nva.nvi.common.model.PublicationDate;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.sikt.nva.nvi.common.service.model.PublicationDate;
 import no.sikt.nva.nvi.common.utils.JsonUtils;
 
 public final class ExpandedResourceGenerator {

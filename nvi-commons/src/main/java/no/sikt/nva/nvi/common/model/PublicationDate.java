@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.common.service.model;
+package no.sikt.nva.nvi.common.model;
 
 import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;

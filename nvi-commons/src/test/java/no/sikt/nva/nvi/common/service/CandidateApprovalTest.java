@@ -56,7 +56,7 @@ import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
-import no.sikt.nva.nvi.common.service.model.PublicationChannel;
+import no.sikt.nva.nvi.common.model.PublicationChannel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Named;

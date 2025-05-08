@@ -50,6 +50,8 @@ import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.model.InstanceType;
 import no.sikt.nva.nvi.common.model.InvalidNviCandidateException;
+import no.sikt.nva.nvi.common.model.PointCalculation;
+import no.sikt.nva.nvi.common.model.PublicationChannel;
 import no.sikt.nva.nvi.common.model.UpdateApprovalRequest;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;

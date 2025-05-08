@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.common.service.model;
+package no.sikt.nva.nvi.common.model;
 
 import static java.util.Objects.nonNull;
 
@@ -6,8 +6,6 @@ import java.net.URI;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.model.DbPublicationChannel;
 import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
-import no.sikt.nva.nvi.common.model.ChannelType;
-import no.sikt.nva.nvi.common.model.ScientificValue;
 
 public record PublicationChannel(URI id, ChannelType channelType, ScientificValue scientificValue) {
 

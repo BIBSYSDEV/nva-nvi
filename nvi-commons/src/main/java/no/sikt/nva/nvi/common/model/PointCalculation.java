@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.common.service.model;
+package no.sikt.nva.nvi.common.model;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
@@ -13,7 +13,7 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.model.DbPointCalculation;
 import no.sikt.nva.nvi.common.dto.PointCalculationDto;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
-import no.sikt.nva.nvi.common.model.InstanceType;
+import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import nva.commons.core.JacocoGenerated;
 
 public record PointCalculation(
