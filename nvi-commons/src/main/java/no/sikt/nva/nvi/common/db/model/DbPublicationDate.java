@@ -11,29 +11,29 @@ public record DbPublicationDate(String year, String month, String day) {
 
   public static final class Builder {
 
-    private String builderYear;
-    private String builderMonth;
-    private String builderDay;
+    private String year;
+    private String month;
+    private String day;
 
     private Builder() {}
 
     public Builder year(String year) {
-      this.builderYear = year;
+      this.year = year;
       return this;
     }
 
     public Builder month(String month) {
-      this.builderMonth = month;
+      this.month = month;
       return this;
     }
 
     public Builder day(String day) {
-      this.builderDay = day;
+      this.day = day;
       return this;
     }
 
     public DbPublicationDate build() {
-      return new DbPublicationDate(builderYear, builderMonth, builderDay);
+      return new DbPublicationDate(year, month, day);
     }
   }
 }

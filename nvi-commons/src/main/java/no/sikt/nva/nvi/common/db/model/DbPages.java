@@ -11,29 +11,29 @@ public record DbPages(String firstPage, String lastPage, String numberOfPages) {
 
   public static final class Builder {
 
-    private String builderFirstPage;
-    private String builderLastPage;
-    private String builderNumberOfPages;
+    private String firstPage;
+    private String lastPage;
+    private String numberOfPages;
 
     private Builder() {}
 
     public Builder firstPage(String firstPage) {
-      this.builderFirstPage = firstPage;
+      this.firstPage = firstPage;
       return this;
     }
 
     public Builder lastPage(String lastPage) {
-      this.builderLastPage = lastPage;
+      this.lastPage = lastPage;
       return this;
     }
 
     public Builder numberOfPages(String numberOfPages) {
-      this.builderNumberOfPages = numberOfPages;
+      this.numberOfPages = numberOfPages;
       return this;
     }
 
     public DbPages build() {
-      return new DbPages(builderFirstPage, builderLastPage, builderNumberOfPages);
+      return new DbPages(firstPage, lastPage, numberOfPages);
     }
   }
 }

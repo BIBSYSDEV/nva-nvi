@@ -80,23 +80,25 @@ public class BatchScanUtil {
 
       // Build the new structure for persisted publication metadata from new and old data
       var dbPublicationChannel =
-          new DbPublicationChannel(
-              dbCandidate.channelId(), dbCandidate.channelType(), dbCandidate.level().getValue());
+          DbPublicationChannel.builder()
+              .id(dbCandidate.channelId())
+              .channelType(dbCandidate.channelType())
+              .scientificValue(dbCandidate.level().getValue())
+              .build();
       var dbTopLevelOrganizations =
           publication.topLevelOrganizations().stream().map(Organization::toDbOrganization).toList();
-
       var dbPointCalculation =
-          new DbPointCalculation(
-              dbCandidate.basePoints(),
-              dbCandidate.collaborationFactor(),
-              dbCandidate.totalPoints(),
-              dbPublicationChannel,
-              dbCandidate.points(),
-              dbCandidate.internationalCollaboration(),
-              dbCandidate.creatorShareCount(),
-              dbCandidate.instanceType());
+          DbPointCalculation.builder()
+              .basePoints(dbCandidate.basePoints())
+              .collaborationFactor(dbCandidate.collaborationFactor())
+              .totalPoints(dbCandidate.totalPoints())
+              .publicationChannel(dbPublicationChannel)
+              .institutionPoints(dbCandidate.points())
+              .internationalCollaboration(dbCandidate.internationalCollaboration())
+              .creatorShareCount(dbCandidate.creatorShareCount())
+              .instanceType(dbCandidate.instanceType())
+              .build();
 
-      // TODO: Replace builder with constructor so we know all fields are set
       var dbPublicationDetails =
           DbPublicationDetails.builder()
               // Get data we know should exist already from data stored in the database

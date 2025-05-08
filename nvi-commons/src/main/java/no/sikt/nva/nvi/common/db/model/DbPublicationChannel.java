@@ -12,29 +12,29 @@ public record DbPublicationChannel(URI id, String channelType, String scientific
 
   public static final class Builder {
 
-    private URI builderId;
-    private String builderChannelType;
-    private String builderScientificValue;
+    private URI id;
+    private String channelType;
+    private String scientificValue;
 
     private Builder() {}
 
     public Builder id(URI id) {
-      this.builderId = id;
+      this.id = id;
       return this;
     }
 
     public Builder channelType(String channelType) {
-      this.builderChannelType = channelType;
+      this.channelType = channelType;
       return this;
     }
 
     public Builder scientificValue(String scientificValue) {
-      this.builderScientificValue = scientificValue;
+      this.scientificValue = scientificValue;
       return this;
     }
 
     public DbPublicationChannel build() {
-      return new DbPublicationChannel(builderId, builderChannelType, builderScientificValue);
+      return new DbPublicationChannel(id, channelType, scientificValue);
     }
   }
 }

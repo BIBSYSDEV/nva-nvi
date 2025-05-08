@@ -1,7 +1,10 @@
 package no.sikt.nva.nvi.common.db.model;
 
+import static java.util.Collections.emptyList;
+
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmutable;
 
@@ -17,7 +20,8 @@ public record DbPointCalculation(
     String instanceType) {
 
   public DbPointCalculation {
-    institutionPoints = List.copyOf(institutionPoints);
+    institutionPoints =
+        Optional.ofNullable(institutionPoints).map(List::copyOf).orElse(emptyList());
   }
 
   public static Builder builder() {
