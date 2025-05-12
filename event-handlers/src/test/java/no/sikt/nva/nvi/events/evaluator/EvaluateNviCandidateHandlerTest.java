@@ -814,8 +814,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     }
 
     private SampleExpandedContributor createUnverifiedCreatorWithTwoNames() {
-      var expandedAffiliations =
-          List.of(mapOrganizationToAffiliation(nviOrganization, nviOrganization.countryCode()));
+      var expandedAffiliations = List.of(mapOrganizationToAffiliation(nviOrganization));
       return SampleExpandedContributor.builder()
           .withId(null)
           .withNames(List.of("Ignacio N. Kognito", "I.N. Kognito"))
@@ -852,9 +851,11 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     @Test
     void shouldIdentifyCandidateWithMissingCountryCode() {
       setupOpenPeriod(scenario, publicationDate.year());
-      var nviOrganization = factory.setupTopLevelOrganization(null, true);
+      var organizationWithoutCountryCode = factory.setupTopLevelOrganization(null, true);
       var publication =
-          factory.withContributor(verifiedCreatorFrom(nviOrganization)).getExpandedPublication();
+          factory
+              .withContributor(verifiedCreatorFrom(organizationWithoutCountryCode))
+              .getExpandedPublication();
       var candidate = evaluatePublicationAndGetPersistedCandidate(publication);
 
       assertThat(candidate.getCreatorShareCount()).isEqualTo(1);

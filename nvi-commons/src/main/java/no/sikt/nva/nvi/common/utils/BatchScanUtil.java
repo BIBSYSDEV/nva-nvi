@@ -72,8 +72,6 @@ public class BatchScanUtil {
   @Deprecated(forRemoval = true, since = "2025-04-29")
   private CandidateDao migratePublicationField(CandidateDao candidateDao) {
     var dbCandidate = candidateDao.candidate();
-    //      // TODO: Add publication identifier as top-level field
-    //      // TODO: Add @Deprecated annotation to the fields we can remove
     if (isNull(dbCandidate.publicationDetails())) {
       var publicationBucketUri = dbCandidate.publicationBucketUri();
       var publication = publicationLoader.extractAndTransform(publicationBucketUri);

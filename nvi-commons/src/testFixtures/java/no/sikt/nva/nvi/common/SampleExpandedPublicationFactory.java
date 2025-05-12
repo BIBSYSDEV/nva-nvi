@@ -69,11 +69,11 @@ public class SampleExpandedPublicationFactory {
 
     return factory
         .withTopLevelOrganizations(nviOrganization1, nviOrganization2, nonNviOrganization)
-        .withNorwegianCreatorAffiliatedWith(nviOrganization1)
-        .withNorwegianCreatorAffiliatedWith(nviOrganization2.hasPart())
-        .withRandomNonCreatorsAffiliatedWith(1, COUNTRY_CODE_NORWAY, nviOrganization1)
-        .withRandomNonCreatorsAffiliatedWith(1, COUNTRY_CODE_SWEDEN, nonNviOrganization)
-        .withRandomCreatorsAffiliatedWith(1, COUNTRY_CODE_SWEDEN, nonNviOrganization);
+        .withCreatorAffiliatedWith(nviOrganization1)
+        .withCreatorAffiliatedWith(nviOrganization2.hasPart())
+        .withNonCreatorsAffiliatedWith(1, nviOrganization1)
+        .withNonCreatorsAffiliatedWith(1, nonNviOrganization)
+        .withCreatorsAffiliatedWith(1, nonNviOrganization);
   }
 
   public SampleExpandedPublicationFactory withPublicationType(String publicationType) {
@@ -127,11 +127,11 @@ public class SampleExpandedPublicationFactory {
   }
 
   private void addContributor(
-      URI id, String name, String role, String countryCode, Collection<Organization> affiliations) {
+      URI id, String name, String role, Collection<Organization> affiliations) {
     var verificationStatus = nonNull(id) ? "Verified" : "Unverified";
     var expandedAffiliations =
         affiliations.stream()
-            .map(organization -> mapOrganizationToAffiliation(organization, countryCode))
+            .map(SampleExpandedPublicationFactory::mapOrganizationToAffiliation)
             .toList();
     var expandedContributor =
         SampleExpandedContributor.builder()
@@ -145,26 +145,21 @@ public class SampleExpandedPublicationFactory {
     this.contributors.add(expandedContributor);
   }
 
-  private void addContributor(
-      String name, String role, String countryCode, Collection<Organization> affiliations) {
-    addContributor(randomUriWithSuffix("creator"), name, role, countryCode, affiliations);
+  private void addContributor(String name, String role, Collection<Organization> affiliations) {
+    addContributor(randomUriWithSuffix("creator"), name, role, affiliations);
   }
 
-  // FIXME: This shouldn't need countryCode as a parameter, should take it from the organization
-  public static SampleExpandedAffiliation mapOrganizationToAffiliation(
-      Organization organization, String countryCode) {
+  public static SampleExpandedAffiliation mapOrganizationToAffiliation(Organization organization) {
     var topLevelId = organization.getTopLevelOrg().id();
+    var builder =
+        SampleExpandedAffiliation.builder()
+            .withId(organization.id())
+            .withCountryCode(organization.countryCode())
+            .withLabels(organization.labels());
     if (isNull(organization.id()) || organization.id().equals(topLevelId)) {
-      return SampleExpandedAffiliation.builder()
-          .withId(organization.id())
-          .withCountryCode(countryCode)
-          .withLabels(organization.labels())
-          .build();
+      return builder.build();
     } else {
-      return SampleExpandedAffiliation.builder()
-          .withId(organization.id())
-          .withCountryCode(countryCode)
-          .withLabels(organization.labels())
+      return builder
           .withPartOf(organization.partOf().stream().map(Organization::id).toList())
           .build();
     }
@@ -174,9 +169,7 @@ public class SampleExpandedPublicationFactory {
       ContributorDto contributor, String... additionalNames) {
     var expandedAffiliations =
         contributor.affiliations().stream()
-            .map(
-                organization ->
-                    mapOrganizationToAffiliation(organization, organization.countryCode()))
+            .map(SampleExpandedPublicationFactory::mapOrganizationToAffiliation)
             .toList();
     var names = new ArrayList<String>();
     if (nonNull(contributor.name())) {
@@ -203,48 +196,35 @@ public class SampleExpandedPublicationFactory {
     return this;
   }
 
-  public SampleExpandedPublicationFactory withNorwegianCreator(
-      URI id, String name, Organization... affiliations) {
-    addContributor(id, name, ROLE_CREATOR, COUNTRY_CODE_NORWAY, List.of(affiliations));
-    return this;
-  }
-
-  public SampleExpandedPublicationFactory withNorwegianCreatorAffiliatedWith(
-      Collection<Organization> affiliations) {
-    addContributor(null, ROLE_CREATOR, COUNTRY_CODE_NORWAY, affiliations);
-    return this;
-  }
-
-  public SampleExpandedPublicationFactory withNorwegianCreatorAffiliatedWith(
-      Organization... affiliations) {
-    addContributor(null, ROLE_CREATOR, COUNTRY_CODE_NORWAY, List.of(affiliations));
-    return this;
-  }
-
-  public SampleExpandedPublicationFactory withNonCreatorAffiliatedWith(
-      String countryCode, Organization... affiliations) {
-    addContributor(randomString(), ROLE_OTHER, countryCode, List.of(affiliations));
-    return this;
-  }
-
   public SampleExpandedPublicationFactory withCreatorAffiliatedWith(
-      String countryCode, Organization... affiliations) {
-    addContributor(randomString(), ROLE_CREATOR, countryCode, List.of(affiliations));
+      Collection<Organization> affiliations) {
+    addContributor(null, ROLE_CREATOR, affiliations);
     return this;
   }
 
-  public SampleExpandedPublicationFactory withRandomCreatorsAffiliatedWith(
-      int count, String countryCode, Organization... affiliations) {
+  public SampleExpandedPublicationFactory withCreatorAffiliatedWith(Organization... affiliations) {
+    addContributor(null, ROLE_CREATOR, List.of(affiliations));
+    return this;
+  }
+
+  public SampleExpandedPublicationFactory withCreatorsAffiliatedWith(
+      int count, Organization... affiliations) {
     for (int i = 0; i < count; i++) {
-      addContributor(randomString(), ROLE_CREATOR, countryCode, List.of(affiliations));
+      addContributor(randomString(), ROLE_CREATOR, List.of(affiliations));
     }
     return this;
   }
 
-  public SampleExpandedPublicationFactory withRandomNonCreatorsAffiliatedWith(
-      int count, String countryCode, Organization... affiliations) {
+  public SampleExpandedPublicationFactory withNonCreatorAffiliatedWith(
+      Organization... affiliations) {
+    addContributor(null, ROLE_OTHER, List.of(affiliations));
+    return this;
+  }
+
+  public SampleExpandedPublicationFactory withNonCreatorsAffiliatedWith(
+      int count, Organization... affiliations) {
     for (int i = 0; i < count; i++) {
-      addContributor(randomString(), ROLE_OTHER, countryCode, List.of(affiliations));
+      addContributor(randomString(), ROLE_OTHER, List.of(affiliations));
     }
     return this;
   }

@@ -57,7 +57,7 @@ class PointCalculationTest extends EvaluationTest {
     var publication =
         factory
             .withTopLevelOrganizations(nviOrganization1)
-            .withNorwegianCreatorAffiliatedWith(nviOrganization1)
+            .withCreatorAffiliatedWith(nviOrganization1)
             .withPublicationType(parameters.instanceType())
             .withPublicationChannel(parameters.channelType(), parameters.level())
             .getExpandedPublication();
@@ -76,14 +76,13 @@ class PointCalculationTest extends EvaluationTest {
     var nonNviCreatorCount = parameters.creatorShareCount() - 3;
     var nonNviCreatorCountryCode =
         parameters.isInternationalCollaboration() ? COUNTRY_CODE_SWEDEN : COUNTRY_CODE_NORWAY;
-    nonNviOrganization = factory.setupTopLevelOrganization(nonNviCreatorCountryCode, false);
+    var nonNviOrganization2 = factory.setupTopLevelOrganization(nonNviCreatorCountryCode, false);
     var publication =
         factory
-            .withTopLevelOrganizations(nviOrganization1, nviOrganization2, nonNviOrganization)
-            .withNorwegianCreatorAffiliatedWith(nviOrganization1, nviOrganization2)
-            .withNorwegianCreatorAffiliatedWith(nviOrganization1)
-            .withRandomCreatorsAffiliatedWith(
-                nonNviCreatorCount, nonNviCreatorCountryCode, nonNviOrganization)
+            .withTopLevelOrganizations(nviOrganization1, nviOrganization2, nonNviOrganization2)
+            .withCreatorAffiliatedWith(nviOrganization1, nviOrganization2)
+            .withCreatorAffiliatedWith(nviOrganization1)
+            .withCreatorsAffiliatedWith(nonNviCreatorCount, nonNviOrganization2)
             .withPublicationType(parameters.instanceType())
             .withPublicationChannel(parameters.channelType(), parameters.level())
             .getExpandedPublication();
@@ -102,14 +101,13 @@ class PointCalculationTest extends EvaluationTest {
     var nonNviCreatorCount = parameters.creatorShareCount() - 2;
     var nonNviCreatorCountryCode =
         parameters.isInternationalCollaboration() ? COUNTRY_CODE_SWEDEN : COUNTRY_CODE_NORWAY;
-    nonNviOrganization = factory.setupTopLevelOrganization(nonNviCreatorCountryCode, false);
+    var nonNviOrganization2 = factory.setupTopLevelOrganization(nonNviCreatorCountryCode, false);
     var publication =
         factory
-            .withTopLevelOrganizations(nviOrganization1, nviOrganization2, nonNviOrganization)
-            .withNorwegianCreatorAffiliatedWith(nviOrganization1)
-            .withNorwegianCreatorAffiliatedWith(nviOrganization2)
-            .withRandomCreatorsAffiliatedWith(
-                nonNviCreatorCount, nonNviCreatorCountryCode, nonNviOrganization)
+            .withTopLevelOrganizations(nviOrganization1, nviOrganization2, nonNviOrganization2)
+            .withCreatorAffiliatedWith(nviOrganization1)
+            .withCreatorAffiliatedWith(nviOrganization2)
+            .withCreatorsAffiliatedWith(nonNviCreatorCount, nonNviOrganization2)
             .withPublicationType(parameters.instanceType())
             .withPublicationChannel(parameters.channelType(), parameters.level())
             .getExpandedPublication();
@@ -123,7 +121,7 @@ class PointCalculationTest extends EvaluationTest {
     var publication =
         factory
             .withTopLevelOrganizations(nviOrganization1)
-            .withNorwegianCreatorAffiliatedWith(nviOrganization1.hasPart())
+            .withCreatorAffiliatedWith(nviOrganization1.hasPart())
             .getExpandedPublication();
 
     var candidate = getEvaluatedCandidate(publication).pointCalculation();
@@ -139,8 +137,8 @@ class PointCalculationTest extends EvaluationTest {
     var publication =
         factory
             .withTopLevelOrganizations(nviOrganization1, nonNviOrganization)
-            .withNorwegianCreatorAffiliatedWith(nviOrganization1.hasPart())
-            .withRandomNonCreatorsAffiliatedWith(1, COUNTRY_CODE_SWEDEN, nonNviOrganization)
+            .withCreatorAffiliatedWith(nviOrganization1.hasPart())
+            .withNonCreatorsAffiliatedWith(1, nonNviOrganization)
             .getExpandedPublication();
 
     var candidate = getEvaluatedCandidate(publication).pointCalculation();
@@ -156,8 +154,8 @@ class PointCalculationTest extends EvaluationTest {
     var publication =
         factory
             .withTopLevelOrganizations(nviOrganization1, nviOrganization2)
-            .withNorwegianCreatorAffiliatedWith(nviOrganization1.hasPart())
-            .withNonCreatorAffiliatedWith(COUNTRY_CODE_NORWAY, nviOrganization2)
+            .withCreatorAffiliatedWith(nviOrganization1.hasPart())
+            .withNonCreatorAffiliatedWith(nviOrganization2)
             .getExpandedPublication();
 
     var candidate = getEvaluatedCandidate(publication).pointCalculation();
@@ -173,8 +171,8 @@ class PointCalculationTest extends EvaluationTest {
     var publication =
         factory
             .withTopLevelOrganizations(nviOrganization1, nviOrganization2)
-            .withNorwegianCreatorAffiliatedWith(nviOrganization1.hasPart())
-            .withCreatorAffiliatedWith(COUNTRY_CODE_NORWAY)
+            .withCreatorAffiliatedWith(nviOrganization1.hasPart())
+            .withCreatorAffiliatedWith()
             .getExpandedPublication();
 
     var candidate = getEvaluatedCandidate(publication).pointCalculation();
@@ -194,7 +192,7 @@ class PointCalculationTest extends EvaluationTest {
     var publication =
         factory
             .withTopLevelOrganizations(nviOrganization1)
-            .withNorwegianCreatorAffiliatedWith(
+            .withCreatorAffiliatedWith(
                 nviOrganization1, organizationWithoutId1, organizationWithoutId2)
             .getExpandedPublication();
 
@@ -218,8 +216,8 @@ class PointCalculationTest extends EvaluationTest {
     var publication =
         factory
             .withTopLevelOrganizations(nviOrganization1)
-            .withNorwegianCreatorAffiliatedWith(nviOrganization1)
-            .withNorwegianCreatorAffiliatedWith(organizationWithoutId1, organizationWithoutId2)
+            .withCreatorAffiliatedWith(nviOrganization1)
+            .withCreatorAffiliatedWith(organizationWithoutId1, organizationWithoutId2)
             .getExpandedPublication();
 
     var candidate = getEvaluatedCandidate(publication).pointCalculation();
@@ -237,7 +235,7 @@ class PointCalculationTest extends EvaluationTest {
     var publication =
         factory
             .withTopLevelOrganizations(nviOrganization1)
-            .withNorwegianCreatorAffiliatedWith(nviOrganization1.hasPart())
+            .withCreatorAffiliatedWith(nviOrganization1.hasPart())
             .getExpandedPublication();
 
     var candidate = getEvaluatedCandidate(publication).pointCalculation();
@@ -265,8 +263,8 @@ class PointCalculationTest extends EvaluationTest {
     var publication =
         factory
             .withTopLevelOrganizations(nviOrganization1, nviOrganization2)
-            .withNorwegianCreatorAffiliatedWith(nviOrganization1.hasPart())
-            .withNorwegianCreatorAffiliatedWith(nviOrganization1.hasPart().getFirst())
+            .withCreatorAffiliatedWith(nviOrganization1.hasPart())
+            .withCreatorAffiliatedWith(nviOrganization1.hasPart().getFirst())
             .getExpandedPublication();
 
     var candidate = getEvaluatedCandidate(publication).pointCalculation();

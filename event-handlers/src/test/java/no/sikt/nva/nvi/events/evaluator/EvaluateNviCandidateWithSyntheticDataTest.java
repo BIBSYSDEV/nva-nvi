@@ -52,10 +52,8 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
     var publication =
         factory
             .withTopLevelOrganizations(nviOrganization, nonNviOrganization)
-            .withRandomCreatorsAffiliatedWith(
-                numberOfNorwegianContributors, COUNTRY_CODE_NORWAY, nviOrganization)
-            .withRandomCreatorsAffiliatedWith(
-                numberOfForeignContributors, COUNTRY_CODE_SWEDEN, nonNviOrganization)
+            .withCreatorsAffiliatedWith(numberOfNorwegianContributors, nviOrganization)
+            .withCreatorsAffiliatedWith(numberOfForeignContributors, nonNviOrganization)
             .getExpandedPublication();
 
     var expectedCreatorShares = numberOfNorwegianContributors + numberOfForeignContributors;
