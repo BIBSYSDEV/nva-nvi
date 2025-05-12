@@ -85,37 +85,19 @@ public record PublicationDetails(
         dbCandidate.creators().stream()
             .map(creator -> NviCreator.from(creator, topLevelOrganizations))
             .toList();
+    var builder =
+        builder()
+            .withId(dbCandidate.publicationId())
+            .withPublicationBucketUri(dbCandidate.publicationBucketUri())
+            .withPublicationDate(PublicationDate.from(dbCandidate.getPublicationDate()))
+            .withIsApplicable(dbCandidate.applicable())
+            .withPublicationChannel(PublicationChannel.from(candidateDao))
+            .withNviCreators(nviCreators);
 
-    // TODO: Clean-up this when the database is migrated
-    // Null-handling of optional/migrated fields
-    var publicationIdentifier = nonNull(dbDetails) ? dbDetails.identifier() : null;
-    var title = nonNull(dbDetails) ? dbDetails.title() : null;
-    var status = nonNull(dbDetails) ? dbDetails.status() : null;
-    var language = nonNull(dbDetails) ? dbDetails.language() : null;
-    var abstractText = nonNull(dbDetails) ? dbDetails.abstractText() : null;
-    var contributorCount = nonNull(dbDetails) ? dbDetails.contributorCount() : 0;
-    var modifiedDate = nonNull(dbDetails) ? dbDetails.modifiedDate() : null;
-    var pageCount =
-        nonNull(dbDetails)
-            ? Optional.ofNullable(dbDetails.pages()).map(PageCount::from).orElse(null)
-            : null;
-    return builder()
-        .withId(dbCandidate.publicationId())
-        .withPublicationBucketUri(dbCandidate.publicationBucketUri())
-        .withIdentifier(publicationIdentifier)
-        .withTitle(title)
-        .withStatus(status)
-        .withLanguage(language)
-        .withAbstract(abstractText)
-        .withPublicationDate(PublicationDate.from(dbCandidate.getPublicationDate()))
-        .withPageCount(pageCount)
-        .withIsApplicable(dbCandidate.applicable())
-        .withPublicationChannel(PublicationChannel.from(candidateDao))
-        .withNviCreators(nviCreators)
-        .withContributorCount(contributorCount)
-        .withTopLevelOrganizations(topLevelOrganizations)
-        .withModifiedDate(modifiedDate)
-        .build();
+    if (nonNull(dbDetails)) {
+      return getPublicationDetailsWithMigratedFields(dbDetails, builder);
+    }
+    return builder().build();
   }
 
   public DbPublicationDetails toDbPublication() {
@@ -170,6 +152,25 @@ public record PublicationDetails(
         .filter(UnverifiedNviCreatorDto.class::isInstance)
         .map(UnverifiedNviCreatorDto.class::cast)
         .toList();
+  }
+
+  // TODO: Remove this when data is migrated and we no longer need the null checking
+  private static PublicationDetails getPublicationDetailsWithMigratedFields(
+      DbPublicationDetails dbDetails, Builder builder) {
+    var pageCount = Optional.ofNullable(dbDetails.pages()).map(PageCount::from).orElse(null);
+
+    return builder
+        .withId(dbDetails.id())
+        .withPageCount(pageCount)
+        .withPublicationDate(PublicationDate.from(dbDetails.publicationDate()))
+        .withModifiedDate(dbDetails.modifiedDate())
+        .withContributorCount(dbDetails.contributorCount())
+        .withAbstract(dbDetails.abstractText())
+        .withIdentifier(dbDetails.identifier())
+        .withLanguage(dbDetails.language())
+        .withStatus(dbDetails.status())
+        .withTitle(dbDetails.title())
+        .build();
   }
 
   private static List<Organization> getTopLevelOrganizations(DbPublicationDetails dbDetails) {
