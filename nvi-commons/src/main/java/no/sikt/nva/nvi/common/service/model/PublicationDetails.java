@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.common.service.model;
 
 import static java.util.Collections.emptyList;
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.function.Predicate.not;
 
@@ -172,6 +173,9 @@ public record PublicationDetails(
   }
 
   private static List<Organization> getTopLevelOrganizations(DbPublicationDetails dbDetails) {
+    if (isNull(dbDetails)) {
+      return emptyList();
+    }
     return nonNull(dbDetails.topLevelOrganizations())
         ? dbDetails.topLevelOrganizations().stream().map(Organization::from).toList()
         : emptyList();
