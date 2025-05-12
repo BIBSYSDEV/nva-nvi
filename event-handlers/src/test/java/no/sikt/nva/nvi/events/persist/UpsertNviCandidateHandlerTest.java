@@ -4,8 +4,8 @@ import static java.util.Collections.emptyList;
 import static no.sikt.nva.nvi.common.UpsertRequestBuilder.fromRequest;
 import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequest;
-import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.getExpectedUpdatedDbCandidate;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
+import static no.sikt.nva.nvi.common.dto.NviCreatorDtoFixtures.verifiedNviCreatorDtoFrom;
 import static no.sikt.nva.nvi.common.model.InstanceTypeFixtures.randomInstanceType;
 import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.getRandomDateInCurrentYearAsDto;
 import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublicationDate;
@@ -213,7 +213,7 @@ class UpsertNviCandidateHandlerTest {
 
     var actualCandidate =
         scenario.getCandidateByPublicationId(evaluatedNviCandidate.publicationId());
-    var actualNviCreators = actualCandidate.getPublicationDetails().nviCreators();
+    var actualNviCreators = actualCandidate.getPublicationDetails().allCreators();
     Assertions.assertThat(actualNviCreators)
         .usingRecursiveComparison()
         .ignoringCollectionOrder()
@@ -238,7 +238,7 @@ class UpsertNviCandidateHandlerTest {
 
     var actualCandidate =
         scenario.getCandidateByPublicationId(evaluatedNviCandidate.publicationId());
-    var actualNviCreators = actualCandidate.getPublicationDetails().nviCreators();
+    var actualNviCreators = actualCandidate.getPublicationDetails().allCreators();
     Assertions.assertThat(actualNviCreators)
         .usingRecursiveComparison()
         .ignoringCollectionOrder()
@@ -256,18 +256,20 @@ class UpsertNviCandidateHandlerTest {
 
     var sqsEvent = createEvent(createEvalMessage(updateRequest));
     handler.handleRequest(sqsEvent, CONTEXT);
-    var updatedCandidate =
-        candidateRepository
-            .findByPublicationId(updateRequest.publicationId())
-            .orElseThrow()
-            .candidate();
+    var updatedCandidate = scenario.getCandidateByPublicationId(updateRequest.publicationId());
 
-    var expectedCandidate = getExpectedUpdatedDbCandidate(originalCandidate, updateRequest);
-    Assertions.assertThat(expectedCandidate)
+    var expectedNviCreators =
+        Stream.concat(
+                originalCandidate.getPublicationDetails().verifiedCreators().stream(),
+                updateRequest.unverifiedCreators().stream())
+            .map(NviCreatorDto.class::cast)
+            .toList();
+    var actualNviCreators = updatedCandidate.getPublicationDetails().allCreators();
+
+    Assertions.assertThat(actualNviCreators)
         .usingRecursiveComparison()
         .ignoringCollectionOrder()
-        .ignoringFields("modifiedDate")
-        .isEqualTo(updatedCandidate);
+        .isEqualTo(expectedNviCreators);
   }
 
   private static CandidateEvaluatedMessage randomCandidateEvaluatedMessage() {
@@ -278,7 +280,7 @@ class UpsertNviCandidateHandlerTest {
     var identifier = UUID.randomUUID();
     var publicationId = generatePublicationId(identifier);
     var publicationBucketUri = generateS3BucketUri(identifier);
-    var creator = randomCreator();
+    var creator = verifiedNviCreatorDtoFrom(randomUri());
     return getBuilder(publicationId, publicationBucketUri, creator);
   }
 
@@ -311,10 +313,6 @@ class UpsertNviCandidateHandlerTest {
     invalidSqsMessage.setBody(randomString());
     sqsEvent.setRecords(List.of(invalidSqsMessage));
     return sqsEvent;
-  }
-
-  private static VerifiedNviCreatorDto randomCreator() {
-    return new VerifiedNviCreatorDto(randomUri(), List.of(randomUri()));
   }
 
   private static CandidateEvaluatedMessage createEvalMessage(
@@ -357,8 +355,7 @@ class UpsertNviCandidateHandlerTest {
 
   private SQSEvent createEvent(URI affiliationId, URI publicationId, URI publicationBucketUri) {
     var someOtherInstitutionId = randomUri();
-    var creator =
-        new VerifiedNviCreatorDto(randomUri(), List.of(affiliationId, someOtherInstitutionId));
+    var creator = verifiedNviCreatorDtoFrom(someOtherInstitutionId);
     var institutionPoints =
         List.of(
             new InstitutionPoints(

@@ -2,9 +2,9 @@ package no.sikt.nva.nvi.common.service;
 
 import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
+import static no.sikt.nva.nvi.common.dto.NviCreatorDtoFixtures.verifiedNviCreatorDtoFrom;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
-import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -15,7 +15,6 @@ import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
-import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
@@ -41,14 +40,13 @@ public class CandidateTestSetup {
 
   protected static UpsertNviCandidateRequest createUpsertRequestWithDecimalScale(
       int scale, URI institutionId) {
-    var creatorId = randomUri();
-    var verifiedCreator = new VerifiedNviCreatorDto(creatorId, List.of(institutionId));
+    var creator = verifiedNviCreatorDtoFrom(institutionId);
     var points =
-        List.of(createInstitutionPoints(institutionId, randomBigDecimal(scale), creatorId));
+        List.of(createInstitutionPoints(institutionId, randomBigDecimal(scale), creator.id()));
 
     return randomUpsertRequestBuilder()
         .withPoints(points)
-        .withVerifiedCreators(List.of(verifiedCreator))
+        .withVerifiedCreators(List.of(creator))
         .withCollaborationFactor(randomBigDecimal(scale))
         .withBasePoints(randomBigDecimal(scale))
         .withTotalPoints(randomBigDecimal(scale))

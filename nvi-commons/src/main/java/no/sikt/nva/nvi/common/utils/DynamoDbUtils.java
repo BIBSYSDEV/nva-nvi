@@ -72,8 +72,15 @@ public final class DynamoDbUtils {
     if (containsAttributeValueMap(value)) {
       return mapEachAttributeValueToDynamoDbValue(value);
     }
-    if (nonNull(value.getL()) && value.getL().isEmpty()) {
-      return AttributeValue.builder().l(emptyList()).build();
+    if (nonNull(value.getL())) {
+      if (value.getL().isEmpty()) {
+        return AttributeValue.builder().l(emptyList()).build();
+      }
+      var converted =
+          value.getL().stream()
+              .map(item -> attempt(() -> mapToDynamoDbValue(item)).orElseThrow())
+              .toList();
+      return AttributeValue.builder().l(converted).build();
     }
     var json = writeAsString(value);
     return dtoObjectMapper.readValue(json, AttributeValue.serializableBuilderClass()).build();

@@ -656,10 +656,7 @@ class IndexDocumentHandlerTest {
   }
 
   private static URI extractOneAffiliation(Candidate candidateToFail) {
-    return candidateToFail.getPublicationDetails().nviCreators().stream()
-        .flatMap(creator -> creator.affiliations().stream())
-        .findFirst()
-        .orElseThrow();
+    return candidateToFail.getPublicationDetails().getNviCreatorAffiliations().getFirst();
   }
 
   private static UnixPath createPath(Candidate candidate) {
@@ -749,8 +746,7 @@ class IndexDocumentHandlerTest {
   }
 
   private void mockUriResponseForTopLevelAffiliation(Candidate candidate) {
-    candidate.getPublicationDetails().nviCreators().stream()
-        .flatMap(creator -> creator.affiliations().stream())
+    candidate.getPublicationDetails().getNviCreatorAffiliations().stream()
         .forEach(this::mockTopLevelResponse);
 
     candidate.getApprovals().keySet().forEach(this::mockTopLevelResponse);
@@ -833,8 +829,7 @@ class IndexDocumentHandlerTest {
   }
 
   private void mockUriRetrieverOrgResponse(Candidate candidate) {
-    candidate.getPublicationDetails().nviCreators().stream()
-        .flatMap(creator -> creator.affiliations().stream())
+    candidate.getPublicationDetails().getNviCreatorAffiliations().stream()
         .forEach(this::mockOrganizationResponse);
 
     candidate.getApprovals().keySet().forEach(this::mockOrganizationResponse);

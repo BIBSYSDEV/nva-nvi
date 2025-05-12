@@ -17,7 +17,7 @@ class NviCreatorDtoTest {
   private static final URI CREATOR_ID = randomUri();
   private static final List<URI> CREATOR_AFFILIATIONS = List.of(randomUri(), randomUri());
   private static final VerifiedNviCreatorDto DEFAULT_VERIFIED_CREATOR =
-      new VerifiedNviCreatorDto(CREATOR_ID, CREATOR_AFFILIATIONS);
+      new VerifiedNviCreatorDto(CREATOR_ID, null, CREATOR_AFFILIATIONS);
   private static final UnverifiedNviCreatorDto DEFAULT_UNVERIFIED_CREATOR =
       new UnverifiedNviCreatorDto(CREATOR_NAME, CREATOR_AFFILIATIONS);
 

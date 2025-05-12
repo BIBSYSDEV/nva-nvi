@@ -8,8 +8,12 @@ import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.setupReportedCandid
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.sortByIdentifier;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidate;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidateBuilder;
+import static no.sikt.nva.nvi.common.model.ContributorFixtures.randomCreator;
+import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublicationDate;
 import static no.sikt.nva.nvi.test.TestUtils.randomIntBetween;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
+import static no.unit.nva.testutils.RandomDataGenerator.randomString;
+import static nva.commons.core.StringUtils.isBlank;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
@@ -23,10 +27,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.IntStream;
+import no.sikt.nva.nvi.common.SampleExpandedPublicationFactory;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
+import no.sikt.nva.nvi.test.SampleExpandedPublication;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -155,8 +162,12 @@ class BatchScanUtilTest {
   @Deprecated(forRemoval = true, since = "2025-04-29")
   @Test
   void shouldMigratePublicationIdentifierField() {
+    var publication =
+        defaultExpandedPublicationFactory(
+                mock(AuthorizedBackendUriRetriever.class), scenario.getUriRetriever())
+            .getExpandedPublication();
     var dbCandidate =
-        setupRandomCandidateBuilderWithPublicationInS3()
+        setupRandomCandidateBuilderWithPublicationInS3(publication)
             .publicationIdentifier(null)
             .publicationDetails(null)
             .build();
@@ -170,6 +181,44 @@ class BatchScanUtilTest {
     assertNull(originalCandidate.candidate().publicationIdentifier());
     Assertions.assertThat(originalCandidate.candidate().publicationId().toString())
         .contains(actualPublicationIdentifier);
+  }
+
+  /**
+   * @deprecated Temporary migration code. To be removed when all candidates have been migrated.
+   */
+  @Deprecated(forRemoval = true, since = "2025-04-29")
+  @Test
+  void shouldMigrateCreatorNames() {
+    var organization = scenario.setupTopLevelOrganizationWithSubUnits();
+    var originalCreatorDto = randomCreator(organization).withName(randomString()).build();
+    var originalCreator = new DbCreator(originalCreatorDto.id(), null, List.of(organization.id()));
+
+    var publicationBuilder =
+        new SampleExpandedPublicationFactory(
+                mock(AuthorizedBackendUriRetriever.class), scenario.getUriRetriever())
+            .withTopLevelOrganizations(organization);
+    var publication = publicationBuilder.getExpandedPublication();
+
+    var originalDbCandidate =
+        setupRandomCandidateBuilderWithPublicationInS3(publication)
+            .creators(List.of(originalCreator))
+            .build();
+    var originalCandidate = candidateRepository.create(originalDbCandidate, List.of());
+    Assertions.assertThat(originalCandidate.candidate().creators())
+        .allMatch(creator -> isBlank(creator.creatorName()));
+
+    var updatedPublication =
+        publicationBuilder.withContributor(originalCreatorDto).getExpandedPublication();
+    scenario.setupExpandedPublicationInS3(updatedPublication);
+
+    batchScanUtil.migrateAndUpdateVersion(10, null, emptyList());
+    var updatedDao =
+        candidateRepository.findCandidateById(originalCandidate.identifier()).orElseThrow();
+    var actualCreators = updatedDao.candidate().creators();
+
+    Assertions.assertThat(actualCreators)
+        .extracting("creatorName")
+        .containsOnlyOnce(originalCreator.creatorName());
   }
 
   private static Map<String, String> getStartMarker(CandidateDao dao) {
@@ -201,11 +250,19 @@ class BatchScanUtilTest {
         .toList();
   }
 
-  private DbCandidate.Builder setupRandomCandidateBuilderWithPublicationInS3() {
-    var publicationFactory =
-        defaultExpandedPublicationFactory(
-            mock(AuthorizedBackendUriRetriever.class), scenario.getUriRetriever());
-    var publication = publicationFactory.getExpandedPublication();
+  private SampleExpandedPublicationFactory getPublicationBuilder() {
+    var publicationDate = randomPublicationDate();
+    var factory =
+        new SampleExpandedPublicationFactory(
+                mock(AuthorizedBackendUriRetriever.class), scenario.getUriRetriever())
+            .withPublicationDate(publicationDate);
+
+    return defaultExpandedPublicationFactory(
+        mock(AuthorizedBackendUriRetriever.class), scenario.getUriRetriever());
+  }
+
+  private DbCandidate.Builder setupRandomCandidateBuilderWithPublicationInS3(
+      SampleExpandedPublication publication) {
     var publicationBucketUri = scenario.setupExpandedPublicationInS3(publication);
     return randomCandidateBuilder(true)
         .publicationId(publication.id())

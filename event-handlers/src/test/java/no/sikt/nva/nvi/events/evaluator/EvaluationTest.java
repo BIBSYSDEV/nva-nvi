@@ -128,13 +128,7 @@ class EvaluationTest {
    */
   protected Candidate evaluatePublicationAndGetPersistedCandidate(
       URI publicationId, String publicationJson) {
-    var fileUri = scenario.setupExpandedPublicationInS3(publicationJson);
-    var evaluationEvent = createEvent(new PersistedResourceMessage(fileUri));
-    handler.handleRequest(evaluationEvent, CONTEXT);
-
-    var upsertEvent = createUpsertEvent(getMessageBody());
-    getUpsertNviCandidateHandler().handleRequest(upsertEvent, CONTEXT);
-
+    evaluatePublicationAndPersistResult(publicationJson);
     return Candidate.fetchByPublicationId(
         () -> publicationId, candidateRepository, periodRepository);
   }
@@ -143,6 +137,15 @@ class EvaluationTest {
       SampleExpandedPublication publication) {
     return evaluatePublicationAndGetPersistedCandidate(
         publication.id(), publication.toJsonString());
+  }
+
+  protected void evaluatePublicationAndPersistResult(String publicationJson) {
+    var fileUri = scenario.setupExpandedPublicationInS3(publicationJson);
+    var evaluationEvent = createEvent(new PersistedResourceMessage(fileUri));
+    handler.handleRequest(evaluationEvent, CONTEXT);
+
+    var upsertEvent = createUpsertEvent(getMessageBody());
+    getUpsertNviCandidateHandler().handleRequest(upsertEvent, CONTEXT);
   }
 
   private static void mockSecretManager() {
@@ -161,7 +164,7 @@ class EvaluationTest {
   private CandidateEvaluatedMessage getMessageBody() {
     try {
       var sentMessages = queueClient.getSentMessages();
-      var message = sentMessages.getFirst();
+      var message = sentMessages.removeFirst();
       return objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class);
     } catch (JsonProcessingException e) {
       throw new RuntimeException(e);

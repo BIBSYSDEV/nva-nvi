@@ -2,9 +2,9 @@ package no.sikt.nva.nvi.events.evaluator;
 
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
+import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublicationDate;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_NORWAY;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_SWEDEN;
-import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_JSON_PUBLICATION_DATE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.tuple;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -35,9 +35,12 @@ class PointCalculationTest extends EvaluationTest {
 
   @BeforeEach
   void setup() {
-    var year = HARDCODED_JSON_PUBLICATION_DATE.year();
+    var publicationDate = randomPublicationDate();
+    var year = publicationDate.year();
     setupOpenPeriod(scenario, year);
-    factory = new SampleExpandedPublicationFactory(authorizedBackendUriRetriever, uriRetriever);
+    factory =
+        new SampleExpandedPublicationFactory(authorizedBackendUriRetriever, uriRetriever)
+            .withPublicationDate(publicationDate);
 
     // Set up default organizations suitable for most test cases
     nviOrganization1 = factory.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, true);

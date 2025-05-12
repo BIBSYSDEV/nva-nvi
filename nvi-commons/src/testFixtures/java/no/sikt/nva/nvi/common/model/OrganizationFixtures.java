@@ -70,7 +70,7 @@ public class OrganizationFixtures {
                         .withCountryCode(countryCode)
                         .withPartOf(List.of(topLevelLeafNode))
                         .withLabels(
-                            i % 2 == 0
+                            (i % 2 == 0 && nonNull(countryCode))
                                 ? Map.of(countryCode.toLowerCase(Locale.ROOT), randomString())
                                 : null)
                         .build())

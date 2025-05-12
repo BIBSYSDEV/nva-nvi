@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.common;
 
 import static java.math.BigDecimal.ZERO;
 import static java.util.Collections.emptyList;
+import static no.sikt.nva.nvi.common.dto.NviCreatorDtoFixtures.verifiedNviCreatorDtoFrom;
 import static no.sikt.nva.nvi.common.model.ContributorFixtures.randomVerifiedNviCreatorDto;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomTopLevelOrganization;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
@@ -12,6 +13,7 @@ import java.net.URI;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.dto.PointCalculationDto;
 import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
@@ -78,8 +80,8 @@ public class UpsertRequestBuilder {
   public static UpsertRequestBuilder randomUpsertRequestBuilder(
       PublicationDto.Builder publicationBuilder) {
     var publicationDetails = publicationBuilder.build();
-    var creatorId = randomUri();
     var affiliationId = randomUri();
+    var nviCreator = verifiedNviCreatorDtoFrom(affiliationId);
     var channel = List.copyOf(publicationDetails.publicationChannels()).getFirst();
     return new UpsertRequestBuilder()
         .withPublicationDetails(publicationBuilder)
@@ -87,7 +89,7 @@ public class UpsertRequestBuilder {
         .withPublicationId(publicationDetails.id())
         .withPublicationIdentifier(publicationDetails.identifier())
         .withIsInternationalCollaboration(publicationDetails.isInternationalCollaboration())
-        .withVerifiedCreators(List.of(new VerifiedNviCreatorDto(creatorId, List.of(affiliationId))))
+        .withVerifiedCreators(List.of(nviCreator))
         .withUnverifiedCreators(emptyList())
         .withPublicationChannel(channel)
         .withInstanceType(publicationDetails.publicationType())
@@ -102,7 +104,7 @@ public class UpsertRequestBuilder {
                     randomBigDecimal(),
                     List.of(
                         new CreatorAffiliationPoints(
-                            creatorId, affiliationId, randomBigDecimal())))))
+                            nviCreator.id(), affiliationId, randomBigDecimal())))))
         .withTotalPoints(BigDecimal.ONE);
   }
 
@@ -166,6 +168,16 @@ public class UpsertRequestBuilder {
     return this;
   }
 
+  public UpsertRequestBuilder withTopLevelOrganizations(Organization... topLevelOrganizations) {
+    return withTopLevelOrganizations(List.of(topLevelOrganizations));
+  }
+
+  public UpsertRequestBuilder withTopLevelOrganizations(
+      Collection<Organization> topLevelOrganizations) {
+    this.publicationBuilder = publicationBuilder.withTopLevelOrganizations(topLevelOrganizations);
+    return this;
+  }
+
   public UpsertRequestBuilder withPublicationChannel(PublicationChannelDto channel) {
     this.channelForLevel = channel;
     return this;
@@ -209,17 +221,18 @@ public class UpsertRequestBuilder {
 
   // Sets all creator and point fields based on the creatorsPerInstitution map
   public UpsertRequestBuilder withCreatorsAndPoints(
-      Map<URI, Collection<NviCreatorDto>> creatorsPerInstitution) {
+      Map<Organization, Collection<NviCreatorDto>> creatorsPerInstitution) {
     this.verifiedCreators = getVerifiedCreators(creatorsPerInstitution);
     this.unverifiedCreators = getUnverifiedCreators(creatorsPerInstitution);
     this.points = getAllInstitutionPoints(creatorsPerInstitution);
     this.totalPoints =
         points.stream().map(InstitutionPoints::institutionPoints).reduce(ZERO, BigDecimal::add);
-    return this;
+    var topLevelOrganizations = creatorsPerInstitution.keySet().stream().toList();
+    return this.withTopLevelOrganizations(topLevelOrganizations);
   }
 
   private static List<VerifiedNviCreatorDto> getVerifiedCreators(
-      Map<URI, Collection<NviCreatorDto>> creatorsPerInstitution) {
+      Map<Organization, Collection<NviCreatorDto>> creatorsPerInstitution) {
     return creatorsPerInstitution.values().stream()
         .flatMap(Collection::stream)
         .filter(VerifiedNviCreatorDto.class::isInstance)
@@ -228,7 +241,7 @@ public class UpsertRequestBuilder {
   }
 
   private static List<UnverifiedNviCreatorDto> getUnverifiedCreators(
-      Map<URI, Collection<NviCreatorDto>> creatorsPerInstitution) {
+      Map<Organization, Collection<NviCreatorDto>> creatorsPerInstitution) {
     return creatorsPerInstitution.values().stream()
         .flatMap(Collection::stream)
         .filter(UnverifiedNviCreatorDto.class::isInstance)
@@ -237,17 +250,18 @@ public class UpsertRequestBuilder {
   }
 
   private List<InstitutionPoints> getAllInstitutionPoints(
-      Map<URI, Collection<NviCreatorDto>> creatorsPerInstitution) {
+      Map<Organization, Collection<NviCreatorDto>> creatorsPerInstitution) {
     return creatorsPerInstitution.entrySet().stream().map(this::getInstitutionPoints).toList();
   }
 
-  private InstitutionPoints getInstitutionPoints(Map.Entry<URI, Collection<NviCreatorDto>> entry) {
+  private InstitutionPoints getInstitutionPoints(
+      Map.Entry<Organization, Collection<NviCreatorDto>> entry) {
     var institution = entry.getKey();
     var creators = entry.getValue();
     var creatorPoints = getAllCreatorPoints(creators);
     var institutionTotal =
         creatorPoints.stream().map(CreatorAffiliationPoints::points).reduce(ZERO, BigDecimal::add);
-    return new InstitutionPoints(institution, institutionTotal, creatorPoints);
+    return new InstitutionPoints(institution.id(), institutionTotal, creatorPoints);
   }
 
   private List<CreatorAffiliationPoints> getAllCreatorPoints(Collection<NviCreatorDto> creators) {

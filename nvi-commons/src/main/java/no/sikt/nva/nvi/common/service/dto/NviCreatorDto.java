@@ -7,6 +7,7 @@ import java.net.URI;
 import java.util.List;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreatorType;
 
+// TODO: Merge these two records into one and make VerificationStatus a field?
 @JsonSerialize
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSubTypes({
@@ -14,6 +15,8 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbCreatorType;
   @JsonSubTypes.Type(name = "VerifiedNviCreator", value = VerifiedNviCreatorDto.class)
 })
 public sealed interface NviCreatorDto permits VerifiedNviCreatorDto, UnverifiedNviCreatorDto {
+
+  String name();
 
   List<URI> affiliations();
 

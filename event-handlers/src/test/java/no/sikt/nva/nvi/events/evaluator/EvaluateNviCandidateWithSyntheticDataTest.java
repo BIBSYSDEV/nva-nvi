@@ -1,7 +1,10 @@
 package no.sikt.nva.nvi.events.evaluator;
 
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
+import static no.sikt.nva.nvi.common.model.ContributorFixtures.verifiedCreatorFrom;
 import static no.sikt.nva.nvi.common.model.PageCountFixtures.PAGE_NUMBER_AS_DTO;
 import static no.sikt.nva.nvi.common.model.PageCountFixtures.PAGE_RANGE_AS_DTO;
+import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublicationDate;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_NORWAY;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_SWEDEN;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -23,15 +26,19 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
   private SampleExpandedPublicationFactory factory;
-  private Organization nviOrganization1;
+  private Organization nviOrganization;
   private Organization nonNviOrganization;
 
   @BeforeEach
   void setup() {
-    factory = new SampleExpandedPublicationFactory(authorizedBackendUriRetriever, uriRetriever);
+    var publicationDate = randomPublicationDate();
+    setupOpenPeriod(scenario, publicationDate.year());
+    factory =
+        new SampleExpandedPublicationFactory(authorizedBackendUriRetriever, uriRetriever)
+            .withPublicationDate(publicationDate);
 
     // Set up default organizations suitable for most test cases
-    nviOrganization1 = factory.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, true);
+    nviOrganization = factory.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, true);
     nonNviOrganization = factory.setupTopLevelOrganization(COUNTRY_CODE_SWEDEN, false);
   }
 
@@ -44,9 +51,9 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
     var numberOfNorwegianContributors = 10;
     var publication =
         factory
-            .withTopLevelOrganizations(nviOrganization1, nonNviOrganization)
+            .withTopLevelOrganizations(nviOrganization, nonNviOrganization)
             .withRandomCreatorsAffiliatedWith(
-                numberOfNorwegianContributors, COUNTRY_CODE_NORWAY, nviOrganization1)
+                numberOfNorwegianContributors, COUNTRY_CODE_NORWAY, nviOrganization)
             .withRandomCreatorsAffiliatedWith(
                 numberOfForeignContributors, COUNTRY_CODE_SWEDEN, nonNviOrganization)
             .getExpandedPublication();
@@ -61,15 +68,15 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
     var nviOrganization2 = factory.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, true);
     var publication =
         factory
-            .withTopLevelOrganizations(nviOrganization1, nviOrganization2)
-            .withNorwegianCreatorAffiliatedWith(nviOrganization1)
-            .withNorwegianCreatorAffiliatedWith(nviOrganization2.hasPart().getFirst())
+            .withTopLevelOrganizations(nviOrganization, nviOrganization2)
+            .withContributor(verifiedCreatorFrom(nviOrganization))
+            .withContributor(verifiedCreatorFrom(nviOrganization2.hasPart().getFirst()))
             .getExpandedPublicationBuilder()
             .build();
 
     var candidate = evaluatePublicationAndGetPersistedCandidate(publication);
     var actualTopLevelOrganizations = candidate.getPublicationDetails().topLevelOrganizations();
-    var expectedTopLevelOrganizations = List.of(nviOrganization1, nviOrganization2);
+    var expectedTopLevelOrganizations = List.of(nviOrganization, nviOrganization2);
 
     assertThat(actualTopLevelOrganizations)
         .usingRecursiveComparison()
@@ -82,8 +89,8 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
     var expectedAbstract = "Lorem ipsum";
     var publication =
         factory
-            .withTopLevelOrganizations(nviOrganization1, nonNviOrganization)
-            .withNorwegianCreatorAffiliatedWith(nviOrganization1)
+            .withTopLevelOrganizations(nviOrganization)
+            .withContributor(verifiedCreatorFrom(nviOrganization))
             .getExpandedPublicationBuilder()
             .withAbstract(expectedAbstract)
             .build();
@@ -98,8 +105,8 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
       PageCountDto expectedPageCount, String publicationType, String channelType) {
     var publication =
         factory
-            .withTopLevelOrganizations(nviOrganization1, nonNviOrganization)
-            .withNorwegianCreatorAffiliatedWith(nviOrganization1)
+            .withTopLevelOrganizations(nviOrganization)
+            .withContributor(verifiedCreatorFrom(nviOrganization))
             .withPublicationChannel(channelType, "LevelOne")
             .getExpandedPublicationBuilder()
             .withAbstract("Lorem ipsum")

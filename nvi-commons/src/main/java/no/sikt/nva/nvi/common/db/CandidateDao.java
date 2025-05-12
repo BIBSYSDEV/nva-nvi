@@ -569,6 +569,8 @@ public final class CandidateDao extends Dao {
   })
   @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type", defaultImpl = DbCreator.class)
   public sealed interface DbCreatorType permits DbCreator, DbUnverifiedCreator {
+    String creatorName();
+
     List<URI> affiliations();
 
     DbCreatorType copy();
@@ -579,7 +581,8 @@ public final class CandidateDao extends Dao {
   @JsonSerialize
   @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
   @DynamoDbImmutable(builder = DbCreator.Builder.class)
-  public record DbCreator(URI creatorId, List<URI> affiliations) implements DbCreatorType {
+  public record DbCreator(URI creatorId, String creatorName, List<URI> affiliations)
+      implements DbCreatorType {
 
     public static Builder builder() {
       return new Builder();
@@ -588,34 +591,44 @@ public final class CandidateDao extends Dao {
     @Override
     @DynamoDbIgnore
     public DbCreator copy() {
-      return builder().creatorId(creatorId).affiliations(new ArrayList<>(affiliations)).build();
+      return builder()
+          .creatorId(creatorId)
+          .creatorName(creatorName)
+          .affiliations(new ArrayList<>(affiliations))
+          .build();
     }
 
     @Override
     @DynamoDbIgnore
     public NviCreatorDto toNviCreator() {
-      return new VerifiedNviCreatorDto(creatorId, affiliations);
+      return new VerifiedNviCreatorDto(creatorId, creatorName, affiliations);
     }
 
     public static final class Builder {
 
-      private URI builderCreatorId;
-      private List<URI> builderAffiliations;
+      private URI creatorId;
+      private String creatorName;
+      private List<URI> affiliations;
 
       private Builder() {}
 
       public Builder creatorId(URI creatorId) {
-        this.builderCreatorId = creatorId;
+        this.creatorId = creatorId;
+        return this;
+      }
+
+      public Builder creatorName(String creatorName) {
+        this.creatorName = creatorName;
         return this;
       }
 
       public Builder affiliations(List<URI> affiliations) {
-        this.builderAffiliations = affiliations;
+        this.affiliations = affiliations;
         return this;
       }
 
       public DbCreator build() {
-        return new DbCreator(builderCreatorId, builderAffiliations);
+        return new DbCreator(creatorId, creatorName, affiliations);
       }
     }
   }

@@ -83,7 +83,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
       mode = EnumSource.Mode.INCLUDE)
   void shouldReturnCandidateWhenUserHasNviRoleInAnyOrganization(AccessRight accessRight)
       throws IOException {
-    var candidate = setupValidCandidate(topLevelOrganizationId);
+    var candidate = setupValidCandidate();
     var randomOrganizationId = randomUri();
     var request =
         createRequest(candidate.getIdentifier().toString(), randomOrganizationId, accessRight);
@@ -99,7 +99,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
       mode = EnumSource.Mode.EXCLUDE)
   void shouldReturnUnauthorizedWhenUserDoesNotHaveRoleWithAccess(AccessRight accessRight)
       throws IOException {
-    var candidate = setupValidCandidate(topLevelOrganizationId);
+    var candidate = setupValidCandidate();
     var request = createRequest(candidate.getIdentifier().toString(), randomUri(), accessRight);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
@@ -108,7 +108,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldReturnUnauthorizedWhenUserDoesNotHaveSufficientAccessRight() throws IOException {
-    var candidate = setupValidCandidate(topLevelOrganizationId);
+    var candidate = setupValidCandidate();
     var request = createRequestWithoutAccessRight(candidate.getIdentifier().toString());
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
@@ -118,7 +118,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldReturnUnauthorizedWhenRequestDoesNotContainOrganizationId() throws IOException {
-    var candidate = setupValidCandidate(topLevelOrganizationId);
+    var candidate = setupValidCandidate();
     var request =
         new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
             .withHeaders(Map.of(HttpHeaders.ACCEPT, ContentType.APPLICATION_JSON.getMimeType()))
@@ -134,7 +134,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldReturnValidCandidateWhenCandidateExists() throws IOException {
-    var candidate = setupValidCandidate(topLevelOrganizationId);
+    var candidate = setupValidCandidate();
     var request = createRequestWithCuratorAccess(candidate.getIdentifier().toString());
 
     var responseDto = handleRequest(request);
@@ -146,7 +146,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
   @Test
   void shouldReturnCandidateDtoWithApprovalStatusNewWhenApprovalStatusIsPendingAndUnassigned()
       throws IOException {
-    var candidate = setupValidCandidate(topLevelOrganizationId);
+    var candidate = setupValidCandidate();
     var request = createRequestWithCuratorAccess(candidate.getIdentifier().toString());
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
@@ -158,7 +158,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldReturnValidCandidateWhenUserIsNviAdmin() throws IOException {
-    var candidate = setupValidCandidate(topLevelOrganizationId);
+    var candidate = setupValidCandidate();
     var request = createRequestWithAdminAccess(candidate.getIdentifier().toString());
 
     var responseDto = handleRequest(request);
@@ -169,7 +169,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldAllowFinalizingNewValidCandidate() throws IOException {
-    var candidate = setupValidCandidate(topLevelOrganizationId);
+    var candidate = setupValidCandidate();
     var request = createRequestWithCuratorAccess(candidate.getIdentifier().toString());
 
     var candidateDto = handleRequest(request);
@@ -221,14 +221,14 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldHaveNoProblemsWhenCandidateIsValid() throws IOException {
-    var candidate = setupValidCandidate(topLevelOrganizationId);
+    var candidate = setupValidCandidate();
     var request = createRequestWithCuratorAccess(candidate.getIdentifier().toString());
 
     var candidateDto = handleRequest(request);
 
     var actualProblems = candidateDto.problems();
     var expectedProblems = emptySet();
-    assertEquals(actualProblems, expectedProblems);
+    assertEquals(expectedProblems, actualProblems);
   }
 
   @Test
@@ -244,7 +244,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
             new UnverifiedCreatorProblem(),
             new UnverifiedCreatorFromOrganizationProblem(unverifiedNviCreatorNames));
     var actualProblems = candidateDto.problems();
-    assertEquals(actualProblems, expectedProblems);
+    assertEquals(expectedProblems, actualProblems);
   }
 
   private static Set<String> getUnverifiedNviCreatorNames(Candidate candidate) {
@@ -263,6 +263,6 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
 
     var expectedProblems = Set.of(new UnverifiedCreatorProblem());
     var actualProblems = candidateDto.problems();
-    assertEquals(actualProblems, expectedProblems);
+    assertEquals(expectedProblems, actualProblems);
   }
 }

@@ -1,13 +1,14 @@
 package no.sikt.nva.nvi.rest;
 
+import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertNonCandidateRequest;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
+import static no.sikt.nva.nvi.common.dto.NviCreatorDtoFixtures.verifiedNviCreatorDtoFrom;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.mockOrganizationResponseForAffiliation;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
-import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.apigateway.AccessRight.MANAGE_NVI;
 import static nva.commons.apigateway.AccessRight.MANAGE_NVI_CANDIDATES;
 import static org.mockito.Mockito.mock;
@@ -23,7 +24,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import no.sikt.nva.nvi.common.TestScenario;
+import no.sikt.nva.nvi.common.UpsertRequestBuilder;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
+import no.sikt.nva.nvi.common.client.model.Organization;
+import no.sikt.nva.nvi.common.dto.NviCreatorDtoFixtures;
 import no.sikt.nva.nvi.common.model.CandidateFixtures;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
@@ -52,6 +56,8 @@ public abstract class BaseCandidateRestHandlerTest {
   protected UriRetriever mockUriRetriever;
   protected OrganizationRetriever mockOrganizationRetriever;
   protected String resourcePathParameter;
+  protected List<Organization> topLevelOrganizations;
+  protected Organization topLevelOrganization;
   protected URI topLevelOrganizationId;
   protected URI subOrganizationId;
   protected ByteArrayOutputStream output;
@@ -62,8 +68,10 @@ public abstract class BaseCandidateRestHandlerTest {
   protected void commonSetup() {
     scenario = new TestScenario();
     setupOpenPeriod(scenario, CURRENT_YEAR);
-    topLevelOrganizationId = scenario.getDefaultOrganization().id();
-    subOrganizationId = scenario.getDefaultOrganization().hasPart().getFirst().id();
+    topLevelOrganization = scenario.getDefaultOrganization();
+    topLevelOrganizations = List.of(topLevelOrganization);
+    topLevelOrganizationId = topLevelOrganization.id();
+    subOrganizationId = topLevelOrganization.hasPart().getFirst().id();
     mockOrganizationRetriever = scenario.getOrganizationRetriever();
     mockUriRetriever = scenario.getUriRetriever();
 
@@ -74,36 +82,49 @@ public abstract class BaseCandidateRestHandlerTest {
   protected abstract ApiGatewayHandler<?, CandidateDto> createHandler();
 
   protected VerifiedNviCreatorDto setupVerifiedCreator(
-      URI id, Collection<URI> affiliations, URI topLevelInstitutionId) {
+      Collection<URI> affiliations, URI topLevelInstitutionId) {
     affiliations.forEach(
         affiliation ->
             mockOrganizationResponseForAffiliation(
                 topLevelInstitutionId, affiliation, mockUriRetriever));
-    return new VerifiedNviCreatorDto(id, List.copyOf(affiliations));
+    return verifiedNviCreatorDtoFrom(affiliations);
   }
 
   protected VerifiedNviCreatorDto setupDefaultVerifiedCreator() {
-    return setupVerifiedCreator(randomUri(), List.of(subOrganizationId), topLevelOrganizationId);
+    return setupVerifiedCreator(List.of(subOrganizationId), topLevelOrganizationId);
   }
 
   protected UnverifiedNviCreatorDto setupDefaultUnverifiedCreator() {
-    return setupUnverifiedCreator(
-        randomString(), List.of(subOrganizationId), topLevelOrganizationId);
+    return setupUnverifiedCreator(List.of(subOrganizationId), topLevelOrganizationId);
   }
 
   protected UnverifiedNviCreatorDto setupUnverifiedCreator(
-      String name, Collection<URI> affiliations, URI topLevelOrganizationId) {
+      Collection<URI> affiliations, URI topLevelOrganizationId) {
     affiliations.forEach(
         affiliation ->
             mockOrganizationResponseForAffiliation(
                 topLevelOrganizationId, affiliation, mockUriRetriever));
-    return new UnverifiedNviCreatorDto(name, List.copyOf(affiliations));
+    return NviCreatorDtoFixtures.unverifiedNviCreatorDtoFrom(affiliations);
   }
 
-  protected Candidate setupValidCandidate(URI topLevelOrganizationId) {
+  protected UpsertRequestBuilder upsertRequestWithUnverifiedCreator() {
     var verifiedCreator = setupDefaultVerifiedCreator();
-    return CandidateFixtures.setupRandomApplicableCandidate(
-        scenario, Map.of(topLevelOrganizationId, List.of(verifiedCreator)));
+    var unverifiedCreator = setupDefaultUnverifiedCreator();
+    return randomUpsertRequestBuilder()
+        .withTopLevelOrganizations(topLevelOrganizations)
+        .withCreatorsAndPoints(
+            Map.of(topLevelOrganization, List.of(verifiedCreator, unverifiedCreator)));
+  }
+
+  protected UpsertRequestBuilder upsertRequestWithOneVerifiedCreator() {
+    var verifiedCreator = setupDefaultVerifiedCreator();
+    return randomUpsertRequestBuilder()
+        .withTopLevelOrganizations(topLevelOrganizations)
+        .withCreatorsAndPoints(Map.of(topLevelOrganization, List.of(verifiedCreator)));
+  }
+
+  protected Candidate setupValidCandidate() {
+    return scenario.upsertCandidate(upsertRequestWithOneVerifiedCreator().build());
   }
 
   protected Candidate setupNonApplicableCandidate(URI institutionId) {
@@ -115,33 +136,27 @@ public abstract class BaseCandidateRestHandlerTest {
   }
 
   protected Candidate setupCandidateWithUnverifiedCreator() {
-    var verifiedCreator = setupDefaultVerifiedCreator();
-    var unverifiedCreator = setupDefaultUnverifiedCreator();
-    return CandidateFixtures.setupRandomApplicableCandidate(
-        scenario, Map.of(topLevelOrganizationId, List.of(verifiedCreator, unverifiedCreator)));
+    return scenario.upsertCandidate(upsertRequestWithUnverifiedCreator().build());
   }
 
   protected Candidate setupCandidateWithApproval() {
-    var verifiedCreator = setupDefaultVerifiedCreator();
-    var candidate =
-        CandidateFixtures.setupRandomApplicableCandidate(
-            scenario, Map.of(topLevelOrganizationId, List.of(verifiedCreator)));
+    var candidate = setupValidCandidate();
     return scenario.updateApprovalStatus(
         candidate, ApprovalStatus.APPROVED, topLevelOrganizationId);
   }
 
   protected Candidate setupCandidateWithUnverifiedCreatorFromAnotherInstitution() {
     var verifiedCreator = setupDefaultVerifiedCreator();
-    var otherInstitutionId = randomUri();
+    var otherOrganization = scenario.setupTopLevelOrganizationWithSubUnits();
     var unverifiedCreator =
-        setupUnverifiedCreator(randomString(), List.of(otherInstitutionId), otherInstitutionId);
+        setupUnverifiedCreator(List.of(otherOrganization.id()), otherOrganization.id());
 
     return CandidateFixtures.setupRandomApplicableCandidate(
         scenario,
         Map.of(
-            topLevelOrganizationId,
+            topLevelOrganization,
             List.of(verifiedCreator),
-            otherInstitutionId,
+            otherOrganization,
             List.of(unverifiedCreator)));
   }
 

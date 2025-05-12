@@ -2,11 +2,11 @@ package no.sikt.nva.nvi.common.model;
 
 import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
 
-import java.net.URI;
 import java.util.Collection;
 import java.util.Map;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.UpsertRequestBuilder;
+import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
@@ -24,12 +24,12 @@ public class CandidateFixtures {
   }
 
   public static UpsertRequestBuilder randomApplicableCandidateRequestBuilder(
-      Map<URI, Collection<NviCreatorDto>> creatorsPerOrganization) {
+      Map<Organization, Collection<NviCreatorDto>> creatorsPerOrganization) {
     return randomUpsertRequestBuilder().withCreatorsAndPoints(creatorsPerOrganization);
   }
 
   public static Candidate setupRandomApplicableCandidate(
-      TestScenario scenario, Map<URI, Collection<NviCreatorDto>> creatorsPerOrganization) {
+      TestScenario scenario, Map<Organization, Collection<NviCreatorDto>> creatorsPerOrganization) {
     var candidateRequest =
         randomUpsertRequestBuilder().withCreatorsAndPoints(creatorsPerOrganization).build();
     return scenario.upsertCandidate(candidateRequest);

@@ -102,7 +102,7 @@ class MigrationTests {
     var converter = new DbCreatorTypeListConverter();
 
     var creator = converter.transformTo(oldDataAttributeValue).getFirst();
-    var expectedCreator = new DbCreator(oldCreatorId, oldCreatorAffiliations);
+    var expectedCreator = new DbCreator(oldCreatorId, null, oldCreatorAffiliations);
 
     assertInstanceOf(DbCreator.class, creator);
     assertEquals(expectedCreator, creator);

@@ -73,7 +73,7 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldReturnUnauthorizedWhenCandidateIsNotInUsersViewingScope() throws IOException {
-    var candidate = setupValidCandidate(topLevelOrganizationId);
+    var candidate = setupValidCandidate();
     var user = randomUsername();
     var candidateWithNote = createNote(candidate, user);
     var noteId = getIdOfFirstNote(candidateWithNote);
@@ -93,7 +93,7 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldReturnUnauthorizedWhenNotTheUserThatCreatedTheNote() throws IOException {
-    var candidate = setupValidCandidate(topLevelOrganizationId);
+    var candidate = setupValidCandidate();
     var user = randomUsername();
     var candidateWithNote = createNote(candidate, user);
     var noteId = getIdOfFirstNote(candidateWithNote);
@@ -105,7 +105,7 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldBeAbleToRemoveNoteWhenTheUserThatCreatedIt() throws IOException {
-    var candidate = setupValidCandidate(topLevelOrganizationId);
+    var candidate = setupValidCandidate();
     var user = randomUsername();
     var candidateWithNote = createNote(candidate, user);
     var noteId = getIdOfFirstNote(candidateWithNote);
@@ -126,7 +126,7 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldReturnConflictWhenRemovingNoteAndReportingPeriodIsClosed() throws IOException {
-    var candidate = setupValidCandidate(topLevelOrganizationId);
+    var candidate = setupValidCandidate();
     var user = randomString();
     candidate.createNote(
         new CreateNoteRequest(randomString(), user, randomUri()),
@@ -142,7 +142,7 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldIncludeAllowedOperations() throws IOException {
-    var candidate = setupValidCandidate(topLevelOrganizationId);
+    var candidate = setupValidCandidate();
     var user = randomUsername();
     var candidateWithNote = createNote(candidate, user);
     var noteId = getIdOfFirstNote(candidateWithNote);
