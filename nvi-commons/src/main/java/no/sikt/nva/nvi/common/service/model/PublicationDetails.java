@@ -84,23 +84,36 @@ public record PublicationDetails(
         dbCandidate.creators().stream()
             .map(creator -> NviCreator.from(creator, topLevelOrganizations))
             .toList();
-    var pageCount = Optional.ofNullable(dbDetails.pages()).map(PageCount::from).orElse(null);
+
+    // TODO: Clean-up this when the database is migrated
+    // Null-handling of optional/migrated fields
+    var publicationIdentifier = nonNull(dbDetails) ? dbDetails.identifier() : null;
+    var title = nonNull(dbDetails) ? dbDetails.title() : null;
+    var status = nonNull(dbDetails) ? dbDetails.status() : null;
+    var language = nonNull(dbDetails) ? dbDetails.language() : null;
+    var abstractText = nonNull(dbDetails) ? dbDetails.abstractText() : null;
+    var contributorCount = nonNull(dbDetails) ? dbDetails.contributorCount() : 0;
+    var modifiedDate = nonNull(dbDetails) ? dbDetails.modifiedDate() : null;
+    var pageCount =
+        nonNull(dbDetails)
+            ? Optional.ofNullable(dbDetails.pages()).map(PageCount::from).orElse(null)
+            : null;
     return builder()
-        .withId(dbDetails.id())
-        .withPublicationBucketUri(dbDetails.publicationBucketUri())
-        .withIdentifier(dbDetails.identifier())
-        .withTitle(dbDetails.title())
-        .withStatus(dbDetails.status())
-        .withLanguage(dbDetails.language())
-        .withAbstract(dbDetails.abstractText())
+        .withId(dbCandidate.publicationId())
+        .withPublicationBucketUri(dbCandidate.publicationBucketUri())
+        .withIdentifier(publicationIdentifier)
+        .withTitle(title)
+        .withStatus(status)
+        .withLanguage(language)
+        .withAbstract(abstractText)
         .withPublicationDate(PublicationDate.from(dbCandidate.getPublicationDate()))
         .withPageCount(pageCount)
         .withIsApplicable(dbCandidate.applicable())
         .withPublicationChannel(PublicationChannel.from(candidateDao))
         .withNviCreators(nviCreators)
-        .withContributorCount(dbDetails.contributorCount())
+        .withContributorCount(contributorCount)
         .withTopLevelOrganizations(topLevelOrganizations)
-        .withModifiedDate(dbDetails.modifiedDate())
+        .withModifiedDate(modifiedDate)
         .build();
   }
 
