@@ -14,7 +14,6 @@ import no.sikt.nva.nvi.common.db.model.DbPointCalculation;
 import no.sikt.nva.nvi.common.dto.PointCalculationDto;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
-import nva.commons.core.JacocoGenerated;
 
 public record PointCalculation(
     InstanceType instanceType,
@@ -26,8 +25,6 @@ public record PointCalculation(
     List<InstitutionPoints> institutionPoints,
     BigDecimal totalPoints) {
 
-  // FIXME: Temporary suppression while we refactor the code to use the new PointCalculationDto
-  @JacocoGenerated
   public static PointCalculation from(PointCalculationDto dto) {
     return new PointCalculation(
         dto.instanceType(),

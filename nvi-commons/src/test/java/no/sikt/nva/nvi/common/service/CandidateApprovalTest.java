@@ -40,7 +40,6 @@ import java.util.Set;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.UpsertRequestBuilder;
 import no.sikt.nva.nvi.common.client.model.Organization;
-import no.sikt.nva.nvi.common.dto.NviCreatorDtoFixtures;
 import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.model.ChannelType;
@@ -387,7 +386,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
   @Test
   void shouldNotResetApprovalWhenOtherCreatorBecomesVerified2() {
     var organization = scenario.setupTopLevelOrganizationWithSubUnits();
-    var creator = NviCreatorDtoFixtures.verifiedNviCreatorDtoFrom(organization);
+    var creator = verifiedNviCreatorDtoFrom(organization);
     var otherOrganization = scenario.setupTopLevelOrganizationWithSubUnits();
     var otherCreator = unverifiedNviCreatorDtoFrom(otherOrganization);
 

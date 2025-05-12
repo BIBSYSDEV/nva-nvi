@@ -9,7 +9,6 @@ import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.sortByIdentifier;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidate;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidateBuilder;
 import static no.sikt.nva.nvi.common.model.ContributorFixtures.randomCreator;
-import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublicationDate;
 import static no.sikt.nva.nvi.test.TestUtils.randomIntBetween;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -248,17 +247,6 @@ class BatchScanUtilTest {
         .stream()
         .filter(attributeValueMap -> CandidateDao.TYPE.equals(attributeValueMap.get("type").s()))
         .toList();
-  }
-
-  private SampleExpandedPublicationFactory getPublicationBuilder() {
-    var publicationDate = randomPublicationDate();
-    var factory =
-        new SampleExpandedPublicationFactory(
-                mock(AuthorizedBackendUriRetriever.class), scenario.getUriRetriever())
-            .withPublicationDate(publicationDate);
-
-    return defaultExpandedPublicationFactory(
-        mock(AuthorizedBackendUriRetriever.class), scenario.getUriRetriever());
   }
 
   private DbCandidate.Builder setupRandomCandidateBuilderWithPublicationInS3(
