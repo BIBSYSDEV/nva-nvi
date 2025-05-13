@@ -1,0 +1,18 @@
+plugins {
+    id 'nva.nvi.java-conventions'
+}
+
+dependencies {
+    testImplementation libs.com.auth0.jwt
+    testImplementation libs.nva.commons.core
+    testImplementation libs.nva.testutils
+
+    testImplementation libs.bundles.cucumber
+
+    testImplementation project(':event-handlers')
+    testImplementation project(':index-handlers')
+    testImplementation project(':nvi-commons')
+    testImplementation project(':nvi-rest')
+    testImplementation project(':nvi-test')
+    testImplementation(testFixtures(project(":nvi-commons")))
+}
