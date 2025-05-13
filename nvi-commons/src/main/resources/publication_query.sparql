@@ -27,9 +27,9 @@ CONSTRUCT {
 
   # Include page count
   ?pageCount a :PageCount ;
-  :firstPage ?firstPage ;
-  :lastPage ?lastPage ;
-  :numberOfPages ?numberOfPages  .
+  :first ?firstPage ;
+  :last ?lastPage ;
+  :total ?numberOfPages  .
 
   # Include publication channels
   ?channel a :PublicationChannel ;
@@ -82,9 +82,9 @@ WHERE {
     ?reference a :Reference .
     ?reference :publicationInstance ?instance .
     ?instance :pages ?pageCount .
-    OPTIONAL { ?pageCount :pages ?numberOfPages }
     OPTIONAL { ?pageCount :begin ?firstPage }
     OPTIONAL { ?pageCount :end ?lastPage }
+    OPTIONAL { ?pageCount :pages ?numberOfPages }
   } UNION {
     # Find the publication date
     ?publication :entityDescription ?entityDescription .

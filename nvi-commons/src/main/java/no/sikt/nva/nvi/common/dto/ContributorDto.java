@@ -8,8 +8,6 @@ import static nva.commons.core.StringUtils.isBlank;
 import static nva.commons.core.StringUtils.isNotBlank;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
 import java.util.Collection;
@@ -17,8 +15,6 @@ import java.util.List;
 import no.sikt.nva.nvi.common.client.model.Organization;
 
 @JsonSerialize
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
-@JsonTypeName("Contributor")
 public record ContributorDto(
     URI id,
     String name,

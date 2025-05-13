@@ -165,7 +165,6 @@ public final class NviPeriodDao extends Dao {
 
       private Builder() {}
 
-      @SuppressWarnings("PMD.ShortMethodName")
       public Builder id(URI id) {
         this.builderId = id;
         return this;

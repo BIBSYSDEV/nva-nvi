@@ -26,12 +26,13 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreatorType;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints.DbCreatorAffiliationPoints;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.ReportStatus;
-import no.sikt.nva.nvi.common.db.model.ChannelType;
+import no.sikt.nva.nvi.common.db.model.DbPointCalculation;
+import no.sikt.nva.nvi.common.db.model.DbPublicationChannel;
+import no.sikt.nva.nvi.common.db.model.DbPublicationDetails;
 import no.sikt.nva.nvi.common.db.model.Username;
-import no.sikt.nva.nvi.common.dto.PublicationDateDto;
-import no.sikt.nva.nvi.common.service.model.InstanceType;
+import no.sikt.nva.nvi.common.model.ChannelType;
+import no.sikt.nva.nvi.common.model.InstanceType;
 import no.sikt.nva.nvi.events.cristin.InstitutionPoints.CreatorPoints;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
@@ -98,27 +99,57 @@ public final class CristinMapper {
 
   // TODO: Extract creators from dbh_forskres_kontroll, remove Jacoco annotation when implemented
   public DbCandidate toDbCandidate(CristinNviReport cristinNviReport) {
-    var now = Instant.now();
+    var channel =
+        DbPublicationChannel.builder()
+            .id(extractChannelId(cristinNviReport))
+            .channelType(extractChannelType(cristinNviReport))
+            .scientificValue(cristinNviReport.getLevel().getValue())
+            .build();
     var points = calculatePoints(cristinNviReport);
+    var pointCalculation =
+        new DbPointCalculation(
+            extractBasePoints(cristinNviReport),
+            extractCollaborationFactor(cristinNviReport),
+            sumPoints(points),
+            channel,
+            points,
+            isInternationalCollaboration(cristinNviReport),
+            0,
+            cristinNviReport.instanceType());
+    var publicationDetails = toDbPublication(cristinNviReport);
     return DbCandidate.builder()
-        .publicationId(constructPublicationId(cristinNviReport.publicationIdentifier()))
-        .publicationBucketUri(
-            constructPublicationBucketUri(cristinNviReport.publicationIdentifier()))
-        .publicationDate(constructPublicationDate(cristinNviReport.publicationDate()))
+        .publicationId(publicationDetails.id())
+        .publicationBucketUri(publicationDetails.publicationBucketUri())
+        .publicationDate(publicationDetails.publicationDate())
+        .pointCalculation(pointCalculation)
+        .publicationDetails(publicationDetails)
         .instanceType(cristinNviReport.instanceType())
         .level(cristinNviReport.getLevel())
         .reportStatus(ReportStatus.REPORTED)
         .applicable(true)
-        .createdDate(now)
-        .modifiedDate(now)
+        .createdDate(publicationDetails.modifiedDate())
+        .modifiedDate(publicationDetails.modifiedDate())
         .points(points)
         .totalPoints(sumPoints(points))
         .basePoints(extractBasePoints(cristinNviReport))
         .collaborationFactor(extractCollaborationFactor(cristinNviReport))
         .internationalCollaboration(isInternationalCollaboration(cristinNviReport))
-        .creators(extractCreators(cristinNviReport))
+        .creators(publicationDetails.creators())
         .channelId(extractChannelId(cristinNviReport))
         .channelType(extractChannelType(cristinNviReport))
+        .build();
+  }
+
+  public DbPublicationDetails toDbPublication(CristinNviReport cristinNviReport) {
+    var now = Instant.now();
+    return DbPublicationDetails.builder()
+        .id(constructPublicationId(cristinNviReport.publicationIdentifier()))
+        .identifier(cristinNviReport.publicationIdentifier())
+        .publicationBucketUri(
+            constructPublicationBucketUri(cristinNviReport.publicationIdentifier()))
+        .publicationDate(cristinNviReport.publicationDate().toDbPublicationDate())
+        .modifiedDate(now)
+        .creators(extractCreators(cristinNviReport))
         .build();
   }
 
@@ -141,10 +172,10 @@ public final class CristinMapper {
         .reduce(BigDecimal.ZERO.setScale(4, RoundingMode.HALF_UP), BigDecimal::add);
   }
 
-  private static ChannelType extractChannelType(CristinNviReport cristinNviReport) {
+  private static String extractChannelType(CristinNviReport cristinNviReport) {
     var instance = toInstanceType(cristinNviReport.instanceType());
     var referenceNode = cristinNviReport.reference();
-    if (nonNull(instance)) {
+    if (nonNull(instance) && nonNull(referenceNode)) {
       var channelType =
           switch (instance) {
             case ACADEMIC_ARTICLE, ACADEMIC_LITERATURE_REVIEW ->
@@ -153,7 +184,10 @@ public final class CristinMapper {
                 extractChannelTypeForAcademicMonograph(referenceNode);
             case ACADEMIC_CHAPTER -> extractChannelTypeForAcademicChapter(referenceNode);
           };
-      return ChannelType.parse(channelType);
+      return Optional.ofNullable(channelType)
+          .map(ChannelType::parse)
+          .map(ChannelType::getValue)
+          .orElse(null);
     }
     return null;
   }
@@ -161,7 +195,7 @@ public final class CristinMapper {
   private static URI extractChannelId(CristinNviReport cristinNviReport) {
     var instance = toInstanceType(cristinNviReport.instanceType());
     var referenceNode = cristinNviReport.reference();
-    if (nonNull(instance)) {
+    if (nonNull(instance) && nonNull(referenceNode)) {
       var channelId =
           switch (instance) {
             case ACADEMIC_ARTICLE, ACADEMIC_LITERATURE_REVIEW ->
@@ -260,7 +294,7 @@ public final class CristinMapper {
       InstitutionPoints institutionPoints) {
     return institutionPoints.creatorPoints().stream()
         .map(CristinMapper::getDbCreatorAffiliationPoints)
-        .collect(Collectors.toList());
+        .toList();
   }
 
   private static CreatorPoints toCreatorPoints(ScientificPerson person) {
@@ -405,14 +439,6 @@ public final class CristinMapper {
     }
   }
 
-  private static DbPublicationDate constructPublicationDate(PublicationDateDto publicationDate) {
-    return DbPublicationDate.builder()
-        .day(publicationDate.day())
-        .month(publicationDate.month())
-        .year(publicationDate.year())
-        .build();
-  }
-
   private static URI constructPublicationBucketUri(String publicationIdentifier) {
     return UriWrapper.fromHost(PERSISTED_RESOURCES_BUCKET)
         .addChild(RESOURCES)
@@ -441,7 +467,7 @@ public final class CristinMapper {
           .collect(collectToInstitutionOfPoints(institutions))
           .stream()
           .map(CristinMapper::toDbInstitutionPoints)
-          .collect(Collectors.toList());
+          .toList();
     }
   }
 
@@ -451,7 +477,7 @@ public final class CristinMapper {
         Collectors.groupingBy(
             scientificPerson -> getTopLevelOrganization(scientificPerson, institutions),
             Collectors.toList()),
-        map -> getInstitutionPointsStream(institutions, map).collect(Collectors.toList()));
+        map -> getInstitutionPointsStream(institutions, map).toList());
   }
 
   private Stream<InstitutionPoints> getInstitutionPointsStream(
@@ -466,7 +492,7 @@ public final class CristinMapper {
         list.stream()
             .map(CristinMapper::extractAuthorPointsForAffiliation)
             .reduce(BigDecimal.ZERO, BigDecimal::add),
-        list.stream().map(CristinMapper::toCreatorPoints).collect(Collectors.toList()));
+        list.stream().map(CristinMapper::toCreatorPoints).toList());
   }
 
   private URI getTopLevelOrganization(

@@ -64,7 +64,7 @@ class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldReturnUnauthorizedWhenCandidateIsNotInUsersViewingScope() throws IOException {
-    var candidate = setupValidCandidate(topLevelOrganizationId);
+    var candidate = setupValidCandidate();
     var request =
         createRequest(candidate.getIdentifier(), new NviNoteRequest("The note"), randomString());
     var viewingScopeValidatorReturningFalse = new FakeViewingScopeValidator(false);
@@ -95,7 +95,7 @@ class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldAddNoteToCandidateWhenNoteIsValid() throws IOException {
-    var candidate = setupValidCandidate(topLevelOrganizationId);
+    var candidate = setupValidCandidate();
     var theNote = "The note";
     var userName = randomString();
 
@@ -110,7 +110,7 @@ class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldReturnConflictWhenCreatingNoteAndReportingPeriodIsClosed() throws IOException {
-    var candidate = setupValidCandidate(topLevelOrganizationId);
+    var candidate = setupValidCandidate();
     var request =
         createRequest(
             candidate.getIdentifier(), new NviNoteRequest(randomString()), randomString());
@@ -134,7 +134,7 @@ class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldSetUserAsAssigneeWhenUsersInstitutionApprovalIsUnassigned() throws IOException {
-    var candidate = setupValidCandidate(topLevelOrganizationId);
+    var candidate = setupValidCandidate();
     assertNull(candidate.getApprovals().get(topLevelOrganizationId).getAssigneeUsername());
     var userName = randomString();
     var request =
@@ -149,7 +149,7 @@ class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldNotSetUserAsAssigneeWhenUsersInstitutionApprovalHasAssignee() throws IOException {
-    var candidate = setupValidCandidate(topLevelOrganizationId);
+    var candidate = setupValidCandidate();
     var existingApprovalAssignee = randomString();
     candidate.updateApprovalAssignee(
         new UpdateAssigneeRequest(topLevelOrganizationId, existingApprovalAssignee));
@@ -167,7 +167,7 @@ class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldIncludeAllowedOperations() throws IOException {
-    var candidate = setupValidCandidate(topLevelOrganizationId);
+    var candidate = setupValidCandidate();
 
     var request =
         createRequest(

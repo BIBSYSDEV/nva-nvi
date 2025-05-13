@@ -3,14 +3,13 @@ package no.sikt.nva.nvi.events.evaluator;
 import java.util.Collection;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.dto.ContributorDto;
+import no.sikt.nva.nvi.common.dto.PointCalculationDto;
 import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
 import no.sikt.nva.nvi.common.dto.PublicationDto;
+import no.sikt.nva.nvi.common.model.ChannelType;
 import no.sikt.nva.nvi.events.evaluator.calculator.PointCalculator;
-import no.sikt.nva.nvi.events.evaluator.model.Channel;
 import no.sikt.nva.nvi.events.evaluator.model.NviCreator;
 import no.sikt.nva.nvi.events.evaluator.model.NviOrganization;
-import no.sikt.nva.nvi.events.evaluator.model.PointCalculation;
-import no.sikt.nva.nvi.events.evaluator.model.PublicationChannel;
 import no.sikt.nva.nvi.events.evaluator.model.UnverifiedNviCreator;
 import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
 
@@ -18,7 +17,7 @@ public final class PointService {
 
   private PointService() {}
 
-  public static PointCalculation calculatePoints(
+  public static PointCalculationDto calculatePoints(
       PublicationDto publication,
       Collection<VerifiedNviCreator> verifiedNviCreators,
       Collection<UnverifiedNviCreator> unverifiedNviCreators) {
@@ -37,32 +36,31 @@ public final class PointService {
         .calculatePoints();
   }
 
-  private static Channel getNviChannel(PublicationDto publication) {
+  private static PublicationChannelDto getNviChannel(PublicationDto publication) {
     var channelDto =
         switch (publication.publicationType()) {
           case ACADEMIC_ARTICLE, ACADEMIC_LITERATURE_REVIEW -> getJournal(publication);
           case ACADEMIC_MONOGRAPH, ACADEMIC_COMMENTARY, ACADEMIC_CHAPTER ->
               getSeriesOrPublisher(publication);
         };
-    var channelType = PublicationChannel.parse(channelDto.channelType());
-    return new Channel(channelDto.id(), channelType, channelDto.scientificValue());
+    return channelDto;
   }
 
   private static Optional<PublicationChannelDto> getChannel(
-      PublicationDto publication, PublicationChannel channelType) {
+      PublicationDto publication, ChannelType channelType) {
     return publication.publicationChannels().stream()
-        .filter(channel -> channelType.getValue().equals(channel.channelType()))
+        .filter(channel -> channelType.equals(channel.channelType()))
         .filter(channel -> channel.scientificValue().isValid())
         .findFirst();
   }
 
   private static PublicationChannelDto getJournal(PublicationDto publication) {
-    return getChannel(publication, PublicationChannel.JOURNAL).orElseThrow();
+    return getChannel(publication, ChannelType.JOURNAL).orElseThrow();
   }
 
   private static PublicationChannelDto getSeriesOrPublisher(PublicationDto publication) {
-    return getChannel(publication, PublicationChannel.SERIES)
-        .orElseGet(() -> getChannel(publication, PublicationChannel.PUBLISHER).orElseThrow());
+    return getChannel(publication, ChannelType.SERIES)
+        .orElseGet(() -> getChannel(publication, ChannelType.PUBLISHER).orElseThrow());
   }
 
   private static int getTotalShares(

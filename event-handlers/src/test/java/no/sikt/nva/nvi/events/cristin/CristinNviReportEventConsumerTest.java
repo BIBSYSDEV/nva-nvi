@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.events.cristin;
 
 import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.LocalDynamoTestSetup.initializeTestDatabase;
+import static no.sikt.nva.nvi.common.model.InstanceTypeFixtures.randomInstanceType;
 import static no.sikt.nva.nvi.events.cristin.CristinMapper.AFFILIATION_DELIMITER;
 import static no.sikt.nva.nvi.events.cristin.CristinMapper.API_HOST;
 import static no.sikt.nva.nvi.events.cristin.CristinMapper.PERSISTED_RESOURCES_BUCKET;
@@ -9,10 +10,7 @@ import static no.sikt.nva.nvi.events.cristin.CristinNviReportEventConsumer.NVI_E
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
 import static org.mockito.Mockito.mock;
 
 import com.amazonaws.services.lambda.runtime.Context;
@@ -26,18 +24,19 @@ import java.util.List;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.common.dto.PublicationDateDto;
+import no.sikt.nva.nvi.common.model.PublicationDate;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.service.model.PublicationDetails;
 import no.sikt.nva.nvi.events.cristin.CristinNviReport.Builder;
 import no.unit.nva.events.models.EventReference;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
-import org.hamcrest.Matchers;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -120,30 +119,36 @@ class CristinNviReportEventConsumerTest {
 
   private void assertThatNviCandidateHasExpectedValues(
       Candidate candidate, CristinNviReport cristinNviReport) {
-    assertThat(
-        candidate.getApprovals().keySet().stream().toList(),
-        containsInAnyOrder(generateExpectedApprovalsIds(cristinNviReport).toArray()));
-    assertThat(
-        candidate.getPublicationDetails().publicationDate(),
-        is(equalTo(cristinNviReport.publicationDate())));
-    assertThat(
-        candidate.getPublicationDetails().publicationId(),
-        is(equalTo(expectedPublicationId(cristinNviReport.publicationIdentifier()))));
-    assertThat(
-        candidate.getPublicationDetails().publicationBucketUri(),
-        is(equalTo(expectedPublicationBucketUri(cristinNviReport.publicationIdentifier()))));
-    assertThat(candidate.isApplicable(), is(true));
-    assertThat(
-        candidate.getPeriod().year(), is(equalTo(String.valueOf(cristinNviReport.yearReported()))));
-    assertThat(candidate.getScientificLevel(), is(equalTo("LevelOne")));
-    assertThat(
-        candidate.getPublicationDetails().creators(),
-        Matchers.contains(constructExpectedCreator(cristinNviReport)));
-    assertThat(
-        candidate.getPublicationDetails().type(), is(equalTo(cristinNviReport.instanceType())));
-    candidate.getApprovals().values().stream()
-        .map(Approval::getStatus)
-        .forEach(status -> assertThat(status, is(equalTo(ApprovalStatus.APPROVED))));
+
+    Assertions.assertThat(candidate)
+        .extracting(
+            Candidate::getPublicationId,
+            Candidate::isApplicable,
+            actual -> actual.getPeriod().year(),
+            actual -> actual.getApprovals().keySet().stream().toList(),
+            actual -> actual.getPublicationType().getValue(),
+            actual -> actual.getPublicationChannel().scientificValue().getValue())
+        .containsExactly(
+            expectedPublicationId(cristinNviReport.publicationIdentifier()),
+            true,
+            cristinNviReport.yearReported(),
+            generateExpectedApprovalsIds(cristinNviReport),
+            cristinNviReport.instanceType(),
+            "LevelOne");
+
+    Assertions.assertThat(candidate.getPublicationDetails())
+        .extracting(
+            PublicationDetails::publicationDate,
+            PublicationDetails::publicationBucketUri,
+            PublicationDetails::allCreators)
+        .containsExactly(
+            cristinNviReport.publicationDate(),
+            expectedPublicationBucketUri(cristinNviReport.publicationIdentifier()),
+            List.of(constructExpectedCreator(cristinNviReport)));
+
+    Assertions.assertThat(candidate.getApprovals().values())
+        .extracting(Approval::getStatus)
+        .containsOnly(ApprovalStatus.APPROVED);
   }
 
   private VerifiedNviCreatorDto constructExpectedCreator(CristinNviReport cristinNviReport) {
@@ -160,7 +165,7 @@ class CristinNviReportEventConsumerTest {
             .map(this::toOrganizationId)
             .distinct()
             .toList();
-    return new VerifiedNviCreatorDto(creatorId, affiliations);
+    return new VerifiedNviCreatorDto(creatorId, null, affiliations);
   }
 
   private URI expectedPublicationBucketUri(String value) {
@@ -208,7 +213,7 @@ class CristinNviReportEventConsumerTest {
         .withPublicationDate(randomPublicationDate())
         .withCristinLocales(List.of(randomCristinLocale(institutionIdentifier)))
         .withScientificResources(List.of(scientificResource(institutionIdentifier)))
-        .withInstanceType(randomString())
+        .withInstanceType(randomInstanceType().getValue())
         .withReference(null);
   }
 
@@ -243,8 +248,8 @@ class CristinNviReportEventConsumerTest {
         .build();
   }
 
-  private static PublicationDateDto randomPublicationDate() {
-    return new PublicationDateDto(randomString(), randomString(), randomString());
+  private static PublicationDate randomPublicationDate() {
+    return new PublicationDate(randomString(), randomString(), randomString());
   }
 
   private CristinLocale randomCristinLocale(String institutionIdentifier) {

@@ -31,8 +31,10 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateDao.Builder;
-import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.db.model.DbCreatorTypeListConverter;
+import no.sikt.nva.nvi.common.db.model.DbPointCalculation;
+import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
+import no.sikt.nva.nvi.common.db.model.DbPublicationDetails;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
@@ -43,6 +45,7 @@ import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbConvertedBy;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbIgnore;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbIgnoreNulls;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmutable;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondaryPartitionKey;
@@ -164,6 +167,7 @@ public final class CandidateDao extends Dao {
     return identifier;
   }
 
+  @DynamoDbIgnoreNulls
   @DynamoDbAttribute(DATA_FIELD)
   public DbCandidate candidate() {
     return candidate;
@@ -214,7 +218,7 @@ public final class CandidateDao extends Dao {
 
   @Deprecated
   private String migratePeriodYear() {
-    return isApplicableAndMissingPeriodYear() ? candidate.publicationDate().year() : periodYear;
+    return isApplicableAndMissingPeriodYear() ? candidate.getPublicationDate().year() : periodYear;
   }
 
   private boolean isApplicableAndMissingPeriodYear() {
@@ -330,9 +334,12 @@ public final class CandidateDao extends Dao {
   public record DbCandidate(
       URI publicationId,
       URI publicationBucketUri,
+      String publicationIdentifier,
+      DbPointCalculation pointCalculation,
+      DbPublicationDetails publicationDetails,
       boolean applicable,
       String instanceType,
-      ChannelType channelType,
+      String channelType,
       URI channelId,
       DbLevel level,
       DbPublicationDate publicationDate,
@@ -357,12 +364,15 @@ public final class CandidateDao extends Dao {
       return builder()
           .publicationId(publicationId)
           .publicationBucketUri(publicationBucketUri)
+          .publicationIdentifier(publicationIdentifier)
+          .pointCalculation(pointCalculation)
+          .publicationDetails(publicationDetails)
           .applicable(applicable)
           .instanceType(instanceType)
           .channelType(channelType)
           .channelId(channelId)
           .level(level)
-          .publicationDate(publicationDate.copy())
+          .publicationDate(publicationDate)
           .internationalCollaboration(internationalCollaboration)
           .collaborationFactor(collaborationFactor)
           .creatorCount(creatorCount)
@@ -376,59 +386,12 @@ public final class CandidateDao extends Dao {
           .reportStatus(reportStatus);
     }
 
-    @Override
     @DynamoDbIgnore
-    @JacocoGenerated
-    public boolean equals(Object o) {
-      if (this == o) {
-        return true;
+    public DbPublicationDate getPublicationDate() {
+      if (nonNull(publicationDetails) && nonNull(publicationDetails.publicationDate())) {
+        return publicationDetails.publicationDate();
       }
-      if (o == null || getClass() != o.getClass()) {
-        return false;
-      }
-      DbCandidate that = (DbCandidate) o;
-      return applicable == that.applicable
-          && internationalCollaboration == that.internationalCollaboration
-          && creatorCount == that.creatorCount
-          && creatorShareCount == that.creatorShareCount
-          && Objects.equals(publicationId, that.publicationId)
-          && Objects.equals(publicationBucketUri, that.publicationBucketUri)
-          && Objects.equals(instanceType, that.instanceType)
-          && channelType == that.channelType
-          && Objects.equals(channelId, that.channelId)
-          && level == that.level
-          && Objects.equals(publicationDate, that.publicationDate)
-          && Objects.equals(collaborationFactor, that.collaborationFactor)
-          && Objects.equals(creators, that.creators)
-          && Objects.equals(basePoints, that.basePoints)
-          && Objects.equals(points, that.points)
-          && Objects.equals(totalPoints, that.totalPoints)
-          && Objects.equals(reportStatus, that.reportStatus);
-    }
-
-    @Override
-    @DynamoDbIgnore
-    @JacocoGenerated
-    public int hashCode() {
-      return Objects.hash(
-          publicationId,
-          publicationBucketUri,
-          applicable,
-          instanceType,
-          channelType,
-          channelId,
-          level,
-          publicationDate,
-          internationalCollaboration,
-          collaborationFactor,
-          creatorCount,
-          creatorShareCount,
-          creators,
-          basePoints,
-          points,
-          totalPoints,
-          createdDate,
-          reportStatus);
+      return publicationDate;
     }
 
     @SuppressWarnings("PMD.TooManyFields")
@@ -436,9 +399,12 @@ public final class CandidateDao extends Dao {
 
       private URI builderPublicationId;
       private URI builderPublicationBucketUri;
+      private String builderPublicationIdentifier;
+      private DbPointCalculation builderPointCalculation;
+      private DbPublicationDetails builderPublicationDetails;
       private boolean builderApplicable;
       private String builderInstanceType;
-      private ChannelType builderChannelType;
+      private String builderChannelType;
       private URI builderChannelId;
       private DbLevel builderLevel;
       private DbPublicationDate builderPublicationDate;
@@ -466,6 +432,21 @@ public final class CandidateDao extends Dao {
         return this;
       }
 
+      public Builder publicationIdentifier(String publicationIdentifier) {
+        this.builderPublicationIdentifier = publicationIdentifier;
+        return this;
+      }
+
+      public Builder pointCalculation(DbPointCalculation pointCalculation) {
+        this.builderPointCalculation = pointCalculation;
+        return this;
+      }
+
+      public Builder publicationDetails(DbPublicationDetails publicationDetails) {
+        this.builderPublicationDetails = publicationDetails;
+        return this;
+      }
+
       public Builder applicable(boolean applicable) {
         this.builderApplicable = applicable;
         return this;
@@ -476,7 +457,7 @@ public final class CandidateDao extends Dao {
         return this;
       }
 
-      public Builder channelType(ChannelType channelType) {
+      public Builder channelType(String channelType) {
         this.builderChannelType = channelType;
         return this;
       }
@@ -555,6 +536,9 @@ public final class CandidateDao extends Dao {
         return new DbCandidate(
             builderPublicationId,
             builderPublicationBucketUri,
+            builderPublicationIdentifier,
+            builderPointCalculation,
+            builderPublicationDetails,
             builderApplicable,
             builderInstanceType,
             builderChannelType,
@@ -576,47 +560,6 @@ public final class CandidateDao extends Dao {
     }
   }
 
-  @DynamoDbImmutable(builder = DbPublicationDate.Builder.class)
-  public record DbPublicationDate(String year, String month, String day) {
-
-    public static Builder builder() {
-      return new Builder();
-    }
-
-    @DynamoDbIgnore
-    public DbPublicationDate copy() {
-      return new DbPublicationDate(year, month, day);
-    }
-
-    public static final class Builder {
-
-      private String builderYear;
-      private String builderMonth;
-      private String builderDay;
-
-      private Builder() {}
-
-      public Builder year(String year) {
-        this.builderYear = year;
-        return this;
-      }
-
-      public Builder month(String month) {
-        this.builderMonth = month;
-        return this;
-      }
-
-      public Builder day(String day) {
-        this.builderDay = day;
-        return this;
-      }
-
-      public DbPublicationDate build() {
-        return new DbPublicationDate(builderYear, builderMonth, builderDay);
-      }
-    }
-  }
-
   // FIXME: `defaultImpl = DbCreator.class´ can be removed when all existing data has been migrated
   // to use the type field
   @JsonSerialize
@@ -626,6 +569,8 @@ public final class CandidateDao extends Dao {
   })
   @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type", defaultImpl = DbCreator.class)
   public sealed interface DbCreatorType permits DbCreator, DbUnverifiedCreator {
+    String creatorName();
+
     List<URI> affiliations();
 
     DbCreatorType copy();
@@ -636,7 +581,8 @@ public final class CandidateDao extends Dao {
   @JsonSerialize
   @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
   @DynamoDbImmutable(builder = DbCreator.Builder.class)
-  public record DbCreator(URI creatorId, List<URI> affiliations) implements DbCreatorType {
+  public record DbCreator(URI creatorId, String creatorName, List<URI> affiliations)
+      implements DbCreatorType {
 
     public static Builder builder() {
       return new Builder();
@@ -645,34 +591,44 @@ public final class CandidateDao extends Dao {
     @Override
     @DynamoDbIgnore
     public DbCreator copy() {
-      return builder().creatorId(creatorId).affiliations(new ArrayList<>(affiliations)).build();
+      return builder()
+          .creatorId(creatorId)
+          .creatorName(creatorName)
+          .affiliations(new ArrayList<>(affiliations))
+          .build();
     }
 
     @Override
     @DynamoDbIgnore
     public NviCreatorDto toNviCreator() {
-      return new VerifiedNviCreatorDto(creatorId, affiliations);
+      return new VerifiedNviCreatorDto(creatorId, creatorName, affiliations);
     }
 
     public static final class Builder {
 
-      private URI builderCreatorId;
-      private List<URI> builderAffiliations;
+      private URI creatorId;
+      private String creatorName;
+      private List<URI> affiliations;
 
       private Builder() {}
 
       public Builder creatorId(URI creatorId) {
-        this.builderCreatorId = creatorId;
+        this.creatorId = creatorId;
+        return this;
+      }
+
+      public Builder creatorName(String creatorName) {
+        this.creatorName = creatorName;
         return this;
       }
 
       public Builder affiliations(List<URI> affiliations) {
-        this.builderAffiliations = affiliations;
+        this.affiliations = affiliations;
         return this;
       }
 
       public DbCreator build() {
-        return new DbCreator(builderCreatorId, builderAffiliations);
+        return new DbCreator(creatorId, creatorName, affiliations);
       }
     }
   }

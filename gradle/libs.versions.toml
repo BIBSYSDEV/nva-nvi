@@ -84,6 +84,7 @@ nva-commons-pagination = { group = 'com.github.bibsysdev', name = 'pagination', 
 nva-commons-secrets = { group = 'com.github.bibsysdev', name = 'secrets', version.ref = 'nva' }
 nva-core = { group = 'com.github.bibsysdev', name = 'core', version.ref = 'nva' }
 nva-eventhandlers = { group = 'com.github.bibsysdev', name = 'eventhandlers', version.ref = 'nva' }
+nva-identifiers = { group = 'com.github.bibsysdev', name = 'identifiers', version.ref = 'nva' }
 nva-json = { group = 'com.github.bibsysdev', name = 'json', version.ref = 'nva' }
 nva-language = { group = 'com.github.bibsysdev', name = 'nva-language', version.ref = 'nvaLanguage' }
 nva-logutils = { group = 'com.github.bibsysdev', name = 'logutils', version.ref = 'nva' }

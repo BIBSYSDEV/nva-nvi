@@ -9,6 +9,7 @@ import static no.sikt.nva.nvi.test.TestConstants.LABELS_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.PART_OF_FIELD;
 import static no.sikt.nva.nvi.test.TestUtils.createNodeWithType;
 import static no.sikt.nva.nvi.test.TestUtils.putIfNotBlank;
+import static no.sikt.nva.nvi.test.TestUtils.putIfNotNull;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 
@@ -28,13 +29,13 @@ public record SampleExpandedAffiliation(
 
   private static ObjectNode createAffiliationLeafNode(URI id) {
     var affiliationNode = objectMapper.createObjectNode();
-    TestUtils.putIfNotNull(affiliationNode, ID_FIELD, id);
+    putIfNotNull(affiliationNode, ID_FIELD, id);
     return affiliationNode;
   }
 
   public ObjectNode asObjectNode() {
     var affiliationNode = createNodeWithType(AFFILIATION_NODE_TYPE);
-    TestUtils.putIfNotNull(affiliationNode, ID_FIELD, id);
+    putIfNotNull(affiliationNode, ID_FIELD, id);
     putIfNotBlank(affiliationNode, COUNTRY_CODE_FIELD, countryCode);
 
     if (nonNull(partOf) && !partOf.isEmpty()) {
@@ -59,7 +60,7 @@ public record SampleExpandedAffiliation(
     private URI id = randomUri();
     private List<URI> partOf = emptyList();
     private String countryCode = COUNTRY_CODE_NORWAY;
-    private final Map<String, String> labels = Map.of();
+    private Map<String, String> labels;
 
     private Builder() {}
 
@@ -75,6 +76,11 @@ public record SampleExpandedAffiliation(
 
     public Builder withCountryCode(String countryCode) {
       this.countryCode = countryCode;
+      return this;
+    }
+
+    public Builder withLabels(Map<String, String> labels) {
+      this.labels = labels;
       return this;
     }
 

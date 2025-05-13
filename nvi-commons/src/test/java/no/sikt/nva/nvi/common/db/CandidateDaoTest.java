@@ -2,7 +2,7 @@ package no.sikt.nva.nvi.common.db;
 
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidate;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.util.UUID;
@@ -24,6 +24,6 @@ class CandidateDaoTest {
     var json = dao.toString();
     var roundTrippedDao = JsonUtils.dtoObjectMapper.readValue(json, CandidateDao.class);
 
-    assertEquals(dao, roundTrippedDao);
+    assertThat(roundTrippedDao).usingRecursiveComparison().ignoringCollectionOrder().isEqualTo(dao);
   }
 }

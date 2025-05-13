@@ -3,22 +3,19 @@ package no.sikt.nva.nvi.common.dto;
 import static java.util.Objects.requireNonNull;
 import static no.sikt.nva.nvi.common.utils.Validator.shouldNotBeNull;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
+import no.sikt.nva.nvi.common.model.ChannelType;
 import no.sikt.nva.nvi.common.model.ScientificValue;
 
 @JsonSerialize
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
-@JsonTypeName("PublicationChannel")
 public record PublicationChannelDto(
     URI id,
-    String channelType,
+    ChannelType channelType,
+    ScientificValue scientificValue,
     String identifier,
     String name,
     String year,
-    ScientificValue scientificValue,
     String onlineIssn,
     String printIssn) {
 
@@ -38,7 +35,7 @@ public record PublicationChannelDto(
   public static final class Builder {
 
     private URI id;
-    private String channelType;
+    private ChannelType channelType;
     private String identifier;
     private String name;
     private String year;
@@ -53,8 +50,13 @@ public record PublicationChannelDto(
       return this;
     }
 
-    public Builder withChannelType(String channelType) {
+    public Builder withChannelType(ChannelType channelType) {
       this.channelType = channelType;
+      return this;
+    }
+
+    public Builder withScientificValue(ScientificValue scientificValue) {
+      this.scientificValue = scientificValue;
       return this;
     }
 
@@ -73,11 +75,6 @@ public record PublicationChannelDto(
       return this;
     }
 
-    public Builder withScientificValue(ScientificValue scientificValue) {
-      this.scientificValue = scientificValue;
-      return this;
-    }
-
     public Builder withOnlineIssn(String onlineIssn) {
       this.onlineIssn = onlineIssn;
       return this;
@@ -90,7 +87,7 @@ public record PublicationChannelDto(
 
     public PublicationChannelDto build() {
       return new PublicationChannelDto(
-          id, channelType, identifier, name, year, scientificValue, onlineIssn, printIssn);
+          id, channelType, scientificValue, identifier, name, year, onlineIssn, printIssn);
     }
   }
 }

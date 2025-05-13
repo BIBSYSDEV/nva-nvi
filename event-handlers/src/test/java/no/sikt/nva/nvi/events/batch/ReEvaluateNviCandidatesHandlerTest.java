@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.events.batch;
 
-import static no.sikt.nva.nvi.common.LocalDynamoTestSetup.initializeTestDatabase;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.createNumberOfCandidatesForYear;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.getYearIndexStartMarker;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.setupReportedCandidate;
@@ -26,6 +25,7 @@ import com.amazonaws.services.lambda.runtime.Context;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.util.List;
+import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
@@ -60,10 +60,12 @@ class ReEvaluateNviCandidatesHandlerTest {
 
   @BeforeEach
   void setUp() {
+    var scenario = new TestScenario();
     outputStream = new ByteArrayOutputStream();
     sqsClient = new FakeSqsClient();
-    candidateRepository = new CandidateRepository(initializeTestDatabase());
-    var nviService = new BatchScanUtil(candidateRepository);
+    candidateRepository = scenario.getCandidateRepository();
+    var nviService =
+        new BatchScanUtil(scenario.getCandidateRepository(), scenario.getS3StorageReader());
     this.eventBridgeClient = new FakeEventBridgeClient();
     handler =
         new ReEvaluateNviCandidatesHandler(nviService, sqsClient, environment, eventBridgeClient);

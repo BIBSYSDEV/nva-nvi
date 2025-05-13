@@ -7,7 +7,9 @@ import java.net.URI;
 
 @JsonSerialize
 @JsonSubTypes({
-  @JsonSubTypes.Type(value = UpsertNonNviCandidateRequest.class, name = "UpsertNonNviCandidateRequest"),
+  @JsonSubTypes.Type(
+      value = UpsertNonNviCandidateRequest.class,
+      name = "UpsertNonNviCandidateRequest"),
   @JsonSubTypes.Type(value = UpsertNviCandidateRequest.class, name = "UpsertNviCandidateRequest")
 })
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")

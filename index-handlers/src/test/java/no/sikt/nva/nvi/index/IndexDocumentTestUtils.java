@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.index;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.getRandomDateInCurrentYearAsDto;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PUBLICATION_CONTEXT;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.extractJsonNodeTextValue;
 import static no.sikt.nva.nvi.index.ExpandedResourceGenerator.extractAffiliations;
@@ -29,8 +30,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import no.sikt.nva.nvi.common.db.model.ChannelType;
-import no.sikt.nva.nvi.common.dto.PublicationDateDto;
+import no.sikt.nva.nvi.common.model.ChannelType;
 import no.sikt.nva.nvi.common.model.ScientificValue;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.Approval;
@@ -50,7 +50,6 @@ import no.sikt.nva.nvi.index.model.document.Organization;
 import no.sikt.nva.nvi.index.model.document.OrganizationType;
 import no.sikt.nva.nvi.index.model.document.Pages;
 import no.sikt.nva.nvi.index.model.document.PublicationChannel;
-import no.sikt.nva.nvi.index.model.document.PublicationDate;
 import no.sikt.nva.nvi.index.model.document.PublicationDetails;
 import no.sikt.nva.nvi.index.model.document.ReportingPeriod;
 import nva.commons.core.paths.UnixPath;
@@ -92,7 +91,7 @@ public final class IndexDocumentTestUtils {
         .withTitle(ExpandedResourceGenerator.extractTitle(expandedResource))
         .withAbstract(ExpandedResourceGenerator.extractOptionalAbstract(expandedResource))
         .withPublicationDate(
-            mapToPublicationDate(candidate.getPublicationDetails().publicationDate()))
+            candidate.getPublicationDetails().publicationDate().toDtoPublicationDate())
         .withContributors(
             mapToContributors(
                 ExpandedResourceGenerator.extractContributors(expandedResource), candidate))
@@ -249,13 +248,14 @@ public final class IndexDocumentTestUtils {
 
   private static PublicationChannel getPublicationChannel(
       JsonNode expandedResource, Candidate candidate) {
-    var channelType = candidate.getPublicationChannelType();
+    var channel = candidate.getPublicationChannel();
+    var channelType = channel.channelType();
     var publicationChannelBuilder =
         PublicationChannel.builder()
-            .withScientificValue(ScientificValue.parse(candidate.getScientificLevel()))
+            .withScientificValue(channel.scientificValue())
             .withName(extractChannelName(expandedResource, channelType));
-    if (nonNull(candidate.getPublicationChannelId())) {
-      publicationChannelBuilder.withId(candidate.getPublicationChannelId());
+    if (nonNull(candidate.getPublicationChannel().id())) {
+      publicationChannelBuilder.withId(channel.id());
     }
     if (nonNull(channelType)) {
       publicationChannelBuilder.withType(channelType.getValue());
@@ -370,11 +370,6 @@ public final class IndexDocumentTestUtils {
         && isNull(approval.getAssigneeUsername());
   }
 
-  private static PublicationDate mapToPublicationDate(PublicationDateDto publicationDate) {
-    return new PublicationDate(
-        publicationDate.year(), publicationDate.month(), publicationDate.day());
-  }
-
   private static List<ContributorType> mapToContributors(
       ArrayNode contributorNodes, Candidate candidate) {
     return JsonUtils.streamNode(contributorNodes)
@@ -458,7 +453,7 @@ public final class IndexDocumentTestUtils {
         .withType(randomString())
         .withId(randomUri().toString())
         .withTitle(randomString())
-        .withPublicationDate(randomPublicationDate())
+        .withPublicationDate(getRandomDateInCurrentYearAsDto())
         .withContributors(
             List.of(randomNviContributor(institutionId), randomNviContributor(institutionId)))
         .withPublicationChannel(randomPublicationChannel())
@@ -478,10 +473,6 @@ public final class IndexDocumentTestUtils {
         UriWrapper.fromUri(institutionId).getLastPathElement().split(DELIMITER)[0];
     var id = cristinOrgUriWithTopLevel(topLevelIdentifier);
     return NviOrganization.builder().withId(id).withPartOf(List.of(institutionId)).build();
-  }
-
-  private static PublicationDate randomPublicationDate() {
-    return new PublicationDate(randomString(), randomString(), randomString());
   }
 
   private static List<no.sikt.nva.nvi.index.model.document.Approval> createApprovals(

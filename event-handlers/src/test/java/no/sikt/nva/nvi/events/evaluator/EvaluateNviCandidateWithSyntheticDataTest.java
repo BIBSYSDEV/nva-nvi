@@ -1,32 +1,21 @@
 package no.sikt.nva.nvi.events.evaluator;
 
-import static no.sikt.nva.nvi.events.evaluator.TestUtils.createEvent;
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
+import static no.sikt.nva.nvi.common.model.ContributorFixtures.verifiedCreatorFrom;
+import static no.sikt.nva.nvi.common.model.PageCountFixtures.PAGE_NUMBER_AS_DTO;
+import static no.sikt.nva.nvi.common.model.PageCountFixtures.PAGE_RANGE_AS_DTO;
+import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublicationDate;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_NORWAY;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_SWEDEN;
-import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
-import static nva.commons.core.attempt.Try.attempt;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.params.provider.Arguments.argumentSet;
 
-import com.amazonaws.services.lambda.runtime.events.SQSEvent;
-import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import java.io.IOException;
-import java.net.URI;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.SampleExpandedPublicationFactory;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.dto.PageCountDto;
-import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
-import no.sikt.nva.nvi.common.queue.QueueClient;
-import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
-import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
-import no.sikt.nva.nvi.events.persist.UpsertNviCandidateHandler;
-import no.sikt.nva.nvi.test.SampleExpandedPublication;
-import nva.commons.core.paths.UnixPath;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -37,21 +26,19 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
   private SampleExpandedPublicationFactory factory;
-  private Organization nviOrganization1;
+  private Organization nviOrganization;
   private Organization nonNviOrganization;
-  private UpsertNviCandidateHandler upsertNviCandidateHandler;
-  private QueueClient dlqClient;
 
   @BeforeEach
   void setup() {
-    upsertNviCandidateHandler =
-        new UpsertNviCandidateHandler(
-            candidateRepository, periodRepository, dlqClient, ENVIRONMENT);
-
-    factory = new SampleExpandedPublicationFactory(authorizedBackendUriRetriever, uriRetriever);
+    var publicationDate = randomPublicationDate();
+    setupOpenPeriod(scenario, publicationDate.year());
+    factory =
+        new SampleExpandedPublicationFactory(authorizedBackendUriRetriever, uriRetriever)
+            .withPublicationDate(publicationDate);
 
     // Set up default organizations suitable for most test cases
-    nviOrganization1 = factory.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, true);
+    nviOrganization = factory.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, true);
     nonNviOrganization = factory.setupTopLevelOrganization(COUNTRY_CODE_SWEDEN, false);
   }
 
@@ -64,120 +51,75 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
     var numberOfNorwegianContributors = 10;
     var publication =
         factory
-            .withTopLevelOrganizations(nviOrganization1, nonNviOrganization)
-            .withRandomCreatorsAffiliatedWith(
-                numberOfNorwegianContributors, COUNTRY_CODE_NORWAY, nviOrganization1)
-            .withRandomCreatorsAffiliatedWith(
-                numberOfForeignContributors, COUNTRY_CODE_SWEDEN, nonNviOrganization)
+            .withTopLevelOrganizations(nviOrganization, nonNviOrganization)
+            .withCreatorsAffiliatedWith(numberOfNorwegianContributors, nviOrganization)
+            .withCreatorsAffiliatedWith(numberOfForeignContributors, nonNviOrganization)
             .getExpandedPublication();
 
     var expectedCreatorShares = numberOfNorwegianContributors + numberOfForeignContributors;
-    var candidate = evaluatePublication(publication);
+    var candidate = evaluatePublicationAndGetPersistedCandidate(publication);
     assertThat(candidate.getCreatorShareCount()).isEqualTo(expectedCreatorShares);
   }
 
   @Test
-  void shouldIncludeAbstract() {
-    // TODO: Not implemented
+  void shouldPersistTopLevelOrganizations() {
+    var nviOrganization2 = factory.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, true);
+    var publication =
+        factory
+            .withTopLevelOrganizations(nviOrganization, nviOrganization2)
+            .withContributor(verifiedCreatorFrom(nviOrganization))
+            .withContributor(verifiedCreatorFrom(nviOrganization2.hasPart().getFirst()))
+            .getExpandedPublicationBuilder()
+            .build();
+
+    var candidate = evaluatePublicationAndGetPersistedCandidate(publication);
+    var actualTopLevelOrganizations = candidate.getPublicationDetails().topLevelOrganizations();
+    var expectedTopLevelOrganizations = List.of(nviOrganization, nviOrganization2);
+
+    assertThat(actualTopLevelOrganizations)
+        .usingRecursiveComparison()
+        .ignoringCollectionOrder()
+        .isEqualTo(expectedTopLevelOrganizations);
+  }
+
+  @Test
+  void shouldPersistAbstractText() {
     var expectedAbstract = "Lorem ipsum";
     var publication =
         factory
-            .withTopLevelOrganizations(nviOrganization1, nonNviOrganization)
-            .withNorwegianCreatorAffiliatedWith(nviOrganization1)
+            .withTopLevelOrganizations(nviOrganization)
+            .withContributor(verifiedCreatorFrom(nviOrganization))
             .getExpandedPublicationBuilder()
             .withAbstract(expectedAbstract)
             .build();
 
     var candidate = getEvaluatedCandidate(publication);
-    assertThat(candidate.abstractText()).isEqualTo(expectedAbstract);
+    assertThat(candidate.publicationDetails().abstractText()).isEqualTo(expectedAbstract);
   }
 
   @ParameterizedTest
   @MethodSource("pageCountProvider")
-  void shouldIncludePageCount(
+  void shouldPersistPageCount(
       PageCountDto expectedPageCount, String publicationType, String channelType) {
-    // TODO: Not implemented
     var publication =
         factory
-            .withTopLevelOrganizations(nviOrganization1, nonNviOrganization)
-            .withNorwegianCreatorAffiliatedWith(nviOrganization1)
+            .withTopLevelOrganizations(nviOrganization)
+            .withContributor(verifiedCreatorFrom(nviOrganization))
             .withPublicationChannel(channelType, "LevelOne")
             .getExpandedPublicationBuilder()
             .withAbstract("Lorem ipsum")
             .withInstanceType(publicationType)
             .withPageCount(
-                expectedPageCount.firstPage(),
-                expectedPageCount.lastPage(),
-                expectedPageCount.numberOfPages())
+                expectedPageCount.first(), expectedPageCount.last(), expectedPageCount.total())
             .build();
 
     var candidate = getEvaluatedCandidate(publication);
-    assertThat(candidate.pageCount()).isEqualTo(expectedPageCount);
+    assertThat(candidate.publicationDetails().pageCount()).isEqualTo(expectedPageCount);
   }
 
   private static Stream<Arguments> pageCountProvider() {
     return Stream.of(
-        argumentSet(
-            "Monograph with page count",
-            new PageCountDto(null, null, "789"),
-            "AcademicMonograph",
-            "Series"),
-        argumentSet(
-            "Article with page range",
-            new PageCountDto("123", "456", null),
-            "AcademicArticle",
-            "Journal"));
-  }
-
-  private URI addPublicationToS3(SampleExpandedPublication publication) {
-    try {
-      return s3Driver.insertFile(
-          UnixPath.of(publication.identifier().toString()), publication.toJsonString());
-    } catch (IOException e) {
-      throw new RuntimeException("Failed to add publication to S3", e);
-    }
-  }
-
-  private CandidateEvaluatedMessage getMessageBody() {
-    try {
-      var sentMessages = queueClient.getSentMessages();
-      var message = sentMessages.getFirst();
-      return objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class);
-    } catch (JsonProcessingException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  private UpsertNviCandidateRequest getEvaluatedCandidate(SampleExpandedPublication publication) {
-    var fileUri = addPublicationToS3(publication);
-    var event = createEvent(new PersistedResourceMessage(fileUri));
-    handler.handleRequest(event, CONTEXT);
-    return (UpsertNviCandidateRequest) getMessageBody().candidate();
-  }
-
-  /**
-   * Evaluates a publication as if it was stored in S3 and returns the candidate from the database.
-   * This wrapper is an abstraction of the whole processing chain in `event-handlers`, including
-   * parsing, evaluation, and upsert.
-   */
-  private Candidate evaluatePublication(SampleExpandedPublication publication) {
-    var fileUri = addPublicationToS3(publication);
-    var evaluationEvent = createEvent(new PersistedResourceMessage(fileUri));
-    handler.handleRequest(evaluationEvent, CONTEXT);
-
-    var upsertEvent = createUpsertEvent(getMessageBody());
-    upsertNviCandidateHandler.handleRequest(upsertEvent, CONTEXT);
-
-    return Candidate.fetchByPublicationId(publication::id, candidateRepository, periodRepository);
-  }
-
-  private SQSEvent createUpsertEvent(CandidateEvaluatedMessage candidateEvaluatedMessage) {
-    var sqsEvent = new SQSEvent();
-    var message = new SQSMessage();
-    var body =
-        attempt(() -> objectMapper.writeValueAsString(candidateEvaluatedMessage)).orElseThrow();
-    message.setBody(body);
-    sqsEvent.setRecords(List.of(message));
-    return sqsEvent;
+        argumentSet("Monograph with page count", PAGE_NUMBER_AS_DTO, "AcademicMonograph", "Series"),
+        argumentSet("Article with page range", PAGE_RANGE_AS_DTO, "AcademicArticle", "Journal"));
   }
 }

@@ -11,26 +11,34 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 
 @JsonSerialize
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
-public record VerifiedNviCreatorDto(URI id, List<URI> affiliations) implements NviCreatorDto {
+public record VerifiedNviCreatorDto(URI id, String name, List<URI> affiliations)
+    implements NviCreatorDto {
 
   public static Builder builder() {
     return new Builder();
   }
 
   // FIXME: Remove this?
+  @Override
   public DbCreator toDao() {
-    return new DbCreator(id, affiliations);
+    return new DbCreator(id, name, affiliations);
   }
 
   public static final class Builder {
 
     private URI id;
+    private String name;
     private List<URI> affiliations = Collections.emptyList();
 
     private Builder() {}
 
     public Builder withId(URI id) {
       this.id = id;
+      return this;
+    }
+
+    public Builder withName(String name) {
+      this.name = name;
       return this;
     }
 
@@ -43,7 +51,7 @@ public record VerifiedNviCreatorDto(URI id, List<URI> affiliations) implements N
       if (isBlank(id.toString())) {
         throw new IllegalStateException("ID cannot be null or blank");
       }
-      return new VerifiedNviCreatorDto(id, affiliations);
+      return new VerifiedNviCreatorDto(id, name, affiliations);
     }
   }
 }

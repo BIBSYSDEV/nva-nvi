@@ -2,7 +2,9 @@ package no.sikt.nva.nvi.common;
 
 import static java.math.BigDecimal.ZERO;
 import static java.util.Collections.emptyList;
-import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
+import static no.sikt.nva.nvi.common.dto.NviCreatorDtoFixtures.verifiedNviCreatorDtoFrom;
+import static no.sikt.nva.nvi.common.model.ContributorFixtures.randomVerifiedNviCreatorDto;
+import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomTopLevelOrganization;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 
@@ -11,28 +13,29 @@ import java.net.URI;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import no.sikt.nva.nvi.common.db.model.ChannelType;
+import no.sikt.nva.nvi.common.client.model.Organization;
+import no.sikt.nva.nvi.common.dto.PointCalculationDto;
+import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
+import no.sikt.nva.nvi.common.dto.PublicationDto;
+import no.sikt.nva.nvi.common.dto.PublicationDtoBuilder;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
+import no.sikt.nva.nvi.common.model.InstanceType;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
-import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
 
 public class UpsertRequestBuilder {
 
+  private PublicationDto.Builder publicationBuilder = PublicationDto.builder();
   private URI publicationBucketUri;
-  private URI publicationId;
-  private boolean isInternationalCollaboration;
-  private Collection<UnverifiedNviCreatorDto> unverifiedCreators;
-  private Collection<VerifiedNviCreatorDto> verifiedCreators;
-  private String channelType;
-  private URI channelId;
-  private String level;
   private InstanceType instanceType;
-  private PublicationDateDto publicationDate;
+  private boolean isInternationalCollaboration;
+  private List<UnverifiedNviCreatorDto> unverifiedCreators;
+  private List<VerifiedNviCreatorDto> verifiedCreators;
+  private PublicationChannelDto channelForLevel;
   private int creatorShareCount;
   private BigDecimal collaborationFactor;
   private BigDecimal basePoints;
@@ -40,19 +43,26 @@ public class UpsertRequestBuilder {
   private BigDecimal totalPoints;
 
   public static UpsertRequestBuilder randomUpsertRequestBuilder() {
-    final URI creatorId = randomUri();
-    final URI affiliationId = randomUri();
+    var topLevelOrganization = randomTopLevelOrganization();
+    var affiliationId = topLevelOrganization.hasPart().getFirst().id();
+    var nviCreator = randomVerifiedNviCreatorDto(affiliationId);
+    var publicationBuilder =
+        PublicationDtoBuilder.randomPublicationDtoBuilder()
+            .withTopLevelOrganizations(List.of(topLevelOrganization));
+    var publicationDetails = publicationBuilder.build();
+    var channel = List.copyOf(publicationDetails.publicationChannels()).getFirst();
+
     return new UpsertRequestBuilder()
+        .withPublicationDetails(publicationBuilder)
         .withPublicationBucketUri(randomUri())
-        .withPublicationId(randomUri())
-        .withIsInternationalCollaboration(true)
-        .withVerifiedCreators(List.of(new VerifiedNviCreatorDto(creatorId, List.of(affiliationId))))
+        .withPublicationId(publicationDetails.id())
+        .withPublicationIdentifier(publicationDetails.identifier())
+        .withIsInternationalCollaboration(publicationDetails.isInternationalCollaboration())
+        .withVerifiedCreators(List.of(nviCreator))
         .withUnverifiedCreators(emptyList())
-        .withChannelType(ChannelType.JOURNAL.getValue())
-        .withChannelId(randomUri())
-        .withLevel("LevelOne")
-        .withInstanceType(InstanceType.ACADEMIC_ARTICLE)
-        .withPublicationDate(new PublicationDateDto(String.valueOf(CURRENT_YEAR), "01", "01"))
+        .withPublicationChannel(channel)
+        .withInstanceType(publicationDetails.publicationType())
+        .withPublicationDate(publicationDetails.publicationDate())
         .withCreatorShareCount(1)
         .withCollaborationFactor(BigDecimal.ONE)
         .withBasePoints(BigDecimal.ONE)
@@ -63,32 +73,65 @@ public class UpsertRequestBuilder {
                     randomBigDecimal(),
                     List.of(
                         new CreatorAffiliationPoints(
-                            creatorId, affiliationId, randomBigDecimal())))))
+                            nviCreator.id(), affiliationId, randomBigDecimal())))))
+        .withTotalPoints(BigDecimal.ONE);
+  }
+
+  public static UpsertRequestBuilder randomUpsertRequestBuilder(
+      PublicationDto.Builder publicationBuilder) {
+    var publicationDetails = publicationBuilder.build();
+    var affiliationId = randomUri();
+    var nviCreator = verifiedNviCreatorDtoFrom(affiliationId);
+    var channel = List.copyOf(publicationDetails.publicationChannels()).getFirst();
+    return new UpsertRequestBuilder()
+        .withPublicationDetails(publicationBuilder)
+        .withPublicationBucketUri(randomUri())
+        .withPublicationId(publicationDetails.id())
+        .withPublicationIdentifier(publicationDetails.identifier())
+        .withIsInternationalCollaboration(publicationDetails.isInternationalCollaboration())
+        .withVerifiedCreators(List.of(nviCreator))
+        .withUnverifiedCreators(emptyList())
+        .withPublicationChannel(channel)
+        .withInstanceType(publicationDetails.publicationType())
+        .withPublicationDate(publicationDetails.publicationDate())
+        .withCreatorShareCount(1)
+        .withCollaborationFactor(BigDecimal.ONE)
+        .withBasePoints(BigDecimal.ONE)
+        .withPoints(
+            List.of(
+                new InstitutionPoints(
+                    randomUri(),
+                    randomBigDecimal(),
+                    List.of(
+                        new CreatorAffiliationPoints(
+                            nviCreator.id(), affiliationId, randomBigDecimal())))))
         .withTotalPoints(BigDecimal.ONE);
   }
 
   public static UpsertRequestBuilder fromRequest(UpsertNviCandidateRequest request) {
-    var publicationDateDto =
-        new PublicationDateDto(
-            request.publicationDate().year(),
-            request.publicationDate().month(),
-            request.publicationDate().day());
+    var publicationBuilder = PublicationDtoBuilder.fromRequest(request);
+    var publicationDetails = publicationBuilder.build();
+    var pointCalculation = request.pointCalculation();
     return new UpsertRequestBuilder()
         .withPublicationBucketUri(request.publicationBucketUri())
-        .withPublicationId(request.publicationId())
-        .withIsInternationalCollaboration(request.isInternationalCollaboration())
+        .withPublicationId(publicationDetails.id())
+        .withPublicationDetails(publicationBuilder)
+        .withIsInternationalCollaboration(pointCalculation.isInternationalCollaboration())
         .withVerifiedCreators(request.verifiedCreators())
         .withUnverifiedCreators(request.unverifiedCreators())
-        .withChannelType(request.channelType())
-        .withChannelId(request.publicationChannelId())
-        .withLevel(request.level())
-        .withInstanceType(request.instanceType())
-        .withPublicationDate(publicationDateDto)
-        .withCreatorShareCount(request.creatorShareCount())
-        .withCollaborationFactor(request.collaborationFactor())
-        .withBasePoints(request.basePoints())
-        .withPoints(request.institutionPoints())
-        .withTotalPoints(request.totalPoints());
+        .withPublicationChannel(pointCalculation.channel())
+        .withInstanceType(pointCalculation.instanceType())
+        .withPublicationDate(publicationDetails.publicationDate())
+        .withCreatorShareCount(pointCalculation.creatorShareCount())
+        .withCollaborationFactor(pointCalculation.collaborationFactor())
+        .withBasePoints(pointCalculation.basePoints())
+        .withPoints(pointCalculation.institutionPoints())
+        .withTotalPoints(pointCalculation.totalPoints());
+  }
+
+  public UpsertRequestBuilder withPublicationDetails(PublicationDto.Builder publicationBuilder) {
+    this.publicationBuilder = publicationBuilder;
+    return this;
   }
 
   public UpsertRequestBuilder withPublicationBucketUri(URI publicationBucketUri) {
@@ -97,50 +140,57 @@ public class UpsertRequestBuilder {
   }
 
   public UpsertRequestBuilder withPublicationId(URI publicationId) {
-    this.publicationId = publicationId;
+    this.publicationBuilder = publicationBuilder.withId(publicationId);
+    return this;
+  }
+
+  public UpsertRequestBuilder withPublicationIdentifier(String publicationIdentifier) {
+    this.publicationBuilder = publicationBuilder.withIdentifier(publicationIdentifier);
     return this;
   }
 
   public UpsertRequestBuilder withIsInternationalCollaboration(
       boolean isInternationalCollaboration) {
     this.isInternationalCollaboration = isInternationalCollaboration;
+    this.publicationBuilder =
+        publicationBuilder.withIsInternationalCollaboration(isInternationalCollaboration);
     return this;
   }
 
-  public UpsertRequestBuilder withVerifiedCreators(
-      Collection<VerifiedNviCreatorDto> verifiedCreators) {
+  public UpsertRequestBuilder withVerifiedCreators(List<VerifiedNviCreatorDto> verifiedCreators) {
     this.verifiedCreators = verifiedCreators;
     return this;
   }
 
   public UpsertRequestBuilder withUnverifiedCreators(
-      Collection<UnverifiedNviCreatorDto> unverifiedCreators) {
+      List<UnverifiedNviCreatorDto> unverifiedCreators) {
     this.unverifiedCreators = unverifiedCreators;
     return this;
   }
 
-  public UpsertRequestBuilder withChannelType(String channelType) {
-    this.channelType = channelType;
+  public UpsertRequestBuilder withTopLevelOrganizations(Organization... topLevelOrganizations) {
+    return withTopLevelOrganizations(List.of(topLevelOrganizations));
+  }
+
+  public UpsertRequestBuilder withTopLevelOrganizations(
+      Collection<Organization> topLevelOrganizations) {
+    this.publicationBuilder = publicationBuilder.withTopLevelOrganizations(topLevelOrganizations);
     return this;
   }
 
-  public UpsertRequestBuilder withChannelId(URI channelId) {
-    this.channelId = channelId;
-    return this;
-  }
-
-  public UpsertRequestBuilder withLevel(String level) {
-    this.level = level;
+  public UpsertRequestBuilder withPublicationChannel(PublicationChannelDto channel) {
+    this.channelForLevel = channel;
     return this;
   }
 
   public UpsertRequestBuilder withInstanceType(InstanceType instanceType) {
     this.instanceType = instanceType;
+    this.publicationBuilder = publicationBuilder.withPublicationType(instanceType);
     return this;
   }
 
   public UpsertRequestBuilder withPublicationDate(PublicationDateDto publicationDate) {
-    this.publicationDate = publicationDate;
+    this.publicationBuilder = publicationBuilder.withPublicationDate(publicationDate);
     return this;
   }
 
@@ -171,17 +221,18 @@ public class UpsertRequestBuilder {
 
   // Sets all creator and point fields based on the creatorsPerInstitution map
   public UpsertRequestBuilder withCreatorsAndPoints(
-      Map<URI, Collection<NviCreatorDto>> creatorsPerInstitution) {
+      Map<Organization, Collection<NviCreatorDto>> creatorsPerInstitution) {
     this.verifiedCreators = getVerifiedCreators(creatorsPerInstitution);
     this.unverifiedCreators = getUnverifiedCreators(creatorsPerInstitution);
     this.points = getAllInstitutionPoints(creatorsPerInstitution);
     this.totalPoints =
         points.stream().map(InstitutionPoints::institutionPoints).reduce(ZERO, BigDecimal::add);
-    return this;
+    var topLevelOrganizations = creatorsPerInstitution.keySet().stream().toList();
+    return this.withTopLevelOrganizations(topLevelOrganizations);
   }
 
   private static List<VerifiedNviCreatorDto> getVerifiedCreators(
-      Map<URI, Collection<NviCreatorDto>> creatorsPerInstitution) {
+      Map<Organization, Collection<NviCreatorDto>> creatorsPerInstitution) {
     return creatorsPerInstitution.values().stream()
         .flatMap(Collection::stream)
         .filter(VerifiedNviCreatorDto.class::isInstance)
@@ -190,7 +241,7 @@ public class UpsertRequestBuilder {
   }
 
   private static List<UnverifiedNviCreatorDto> getUnverifiedCreators(
-      Map<URI, Collection<NviCreatorDto>> creatorsPerInstitution) {
+      Map<Organization, Collection<NviCreatorDto>> creatorsPerInstitution) {
     return creatorsPerInstitution.values().stream()
         .flatMap(Collection::stream)
         .filter(UnverifiedNviCreatorDto.class::isInstance)
@@ -199,17 +250,18 @@ public class UpsertRequestBuilder {
   }
 
   private List<InstitutionPoints> getAllInstitutionPoints(
-      Map<URI, Collection<NviCreatorDto>> creatorsPerInstitution) {
+      Map<Organization, Collection<NviCreatorDto>> creatorsPerInstitution) {
     return creatorsPerInstitution.entrySet().stream().map(this::getInstitutionPoints).toList();
   }
 
-  private InstitutionPoints getInstitutionPoints(Map.Entry<URI, Collection<NviCreatorDto>> entry) {
+  private InstitutionPoints getInstitutionPoints(
+      Map.Entry<Organization, Collection<NviCreatorDto>> entry) {
     var institution = entry.getKey();
     var creators = entry.getValue();
     var creatorPoints = getAllCreatorPoints(creators);
     var institutionTotal =
         creatorPoints.stream().map(CreatorAffiliationPoints::points).reduce(ZERO, BigDecimal::add);
-    return new InstitutionPoints(institution, institutionTotal, creatorPoints);
+    return new InstitutionPoints(institution.id(), institutionTotal, creatorPoints);
   }
 
   private List<CreatorAffiliationPoints> getAllCreatorPoints(Collection<NviCreatorDto> creators) {
@@ -228,22 +280,22 @@ public class UpsertRequestBuilder {
   }
 
   public UpsertNviCandidateRequest build() {
+    var pointCalculation =
+        new PointCalculationDto(
+            instanceType,
+            channelForLevel,
+            isInternationalCollaboration,
+            collaborationFactor,
+            basePoints,
+            creatorShareCount,
+            points,
+            totalPoints);
     return UpsertNviCandidateRequest.builder()
-        .withPublicationId(publicationId)
+        .withPointCalculation(pointCalculation)
+        .withPublicationDetails(publicationBuilder.build())
         .withPublicationBucketUri(publicationBucketUri)
-        .withIsInternationalCollaboration(isInternationalCollaboration)
-        .withCollaborationFactor(collaborationFactor)
-        .withVerifiedNviCreators(List.copyOf(verifiedCreators))
-        .withUnverifiedNviCreators(List.copyOf(unverifiedCreators))
-        .withChannelType(channelType)
-        .withPublicationChannelId(channelId)
-        .withLevel(level)
-        .withInstanceType(instanceType)
-        .withDate(publicationDate)
-        .withCreatorShareCount(creatorShareCount)
-        .withBasePoints(basePoints)
-        .withInstitutionPoints(List.copyOf(points))
-        .withTotalPoints(totalPoints)
+        .withVerifiedNviCreators(verifiedCreators)
+        .withUnverifiedNviCreators(unverifiedCreators)
         .build();
   }
 }

@@ -160,24 +160,12 @@ public class EvaluatorService {
             unverifiedCreatorsWithNviInstitutions);
 
     return UpsertNviCandidateRequest.builder()
-        .withPublicationId(publicationDto.id())
         .withPublicationBucketUri(publicationBucketUri)
-        .withDate(publicationDto.publicationDate())
-        .withInstanceType(publicationDto.publicationType())
-        .withAbstract(publicationDto.abstractText())
-        .withPageCount(publicationDto.pageCount())
-        .withBasePoints(pointCalculation.basePoints())
-        .withPublicationChannelId(pointCalculation.publicationChannelId())
-        .withChannelType(pointCalculation.channelType().getValue())
-        .withLevel(pointCalculation.scientificValue().getValue())
-        .withIsInternationalCollaboration(publicationDto.isInternationalCollaboration())
-        .withCollaborationFactor(pointCalculation.collaborationFactor())
-        .withCreatorShareCount(pointCalculation.creatorShareCount())
-        .withInstitutionPoints(pointCalculation.institutionPoints())
+        .withPointCalculation(pointCalculation)
+        .withPublicationDetails(publicationDto)
         .withVerifiedNviCreators(mapVerifiedCreatorsToDto(verifiedCreatorsWithNviInstitutions))
         .withUnverifiedNviCreators(
             mapUnverifiedCreatorsToDto(unverifiedCreatorsWithNviInstitutions))
-        .withTotalPoints(pointCalculation.totalPoints())
         .build();
   }
 

@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.IntStream;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
+import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
 
 public class CandidateDaoFixtures {
   private static final String UUID_SEPARATOR = "-";
@@ -26,6 +26,10 @@ public class CandidateDaoFixtures {
   public static CandidateDao createCandidateDao(
       CandidateRepository repository, DbCandidate candidate) {
     return repository.create(candidate, List.of());
+  }
+
+  public static CandidateDao createCandidateDao(DbCandidate candidate) {
+    return CandidateDao.builder().identifier(UUID.randomUUID()).candidate(candidate).build();
   }
 
   public static List<CandidateDao> sortByIdentifier(List<CandidateDao> candidates, Integer limit) {

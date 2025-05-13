@@ -19,6 +19,7 @@ dependencies {
     implementation libs.nva.commons.auth
     implementation libs.nva.commons.clients
     implementation libs.nva.core
+    implementation libs.nva.identifiers
     implementation libs.nva.json
     implementation libs.nva.s3
 

@@ -49,7 +49,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
-import no.sikt.nva.nvi.common.db.model.ChannelType;
+import no.sikt.nva.nvi.common.dto.PublicationDateDto;
+import no.sikt.nva.nvi.common.model.ChannelType;
 import no.sikt.nva.nvi.common.model.ScientificValue;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
@@ -68,7 +69,6 @@ import no.sikt.nva.nvi.index.model.document.OrganizationType;
 import no.sikt.nva.nvi.index.model.document.Pages;
 import no.sikt.nva.nvi.index.model.document.Pages.Builder;
 import no.sikt.nva.nvi.index.model.document.PublicationChannel;
-import no.sikt.nva.nvi.index.model.document.PublicationDate;
 import no.sikt.nva.nvi.index.model.document.PublicationDetails;
 import no.sikt.nva.nvi.index.model.document.ReportingPeriod;
 import no.unit.nva.auth.uriretriever.UriRetriever;
@@ -234,10 +234,11 @@ public final class NviCandidateIndexDocumentGenerator {
   }
 
   private PublicationChannel buildPublicationChannel() {
-    var publicationChannel = candidate.getPublicationDetails().publicationChannel();
+    var publicationChannel = candidate.getPublicationChannel();
     var publicationChannelBuilder =
         PublicationChannel.builder()
-            .withScientificValue(ScientificValue.parse(publicationChannel.level()));
+            .withScientificValue(
+                ScientificValue.parse(publicationChannel.scientificValue().getValue()));
 
     if (nonNull(publicationChannel.id())) { // Might be null for candidates imported via Cristin
       publicationChannelBuilder.withId(publicationChannel.id());
@@ -337,7 +338,7 @@ public final class NviCandidateIndexDocumentGenerator {
 
   public static Optional<VerifiedNviCreatorDto> getVerifiedNviCreatorIfPresent(
       JsonNode contributor, Candidate candidate) {
-    return candidate.getPublicationDetails().getVerifiedCreators().stream()
+    return candidate.getPublicationDetails().verifiedCreators().stream()
         .filter(
             creator -> creator.id().toString().equals(extractId(contributor.at(JSON_PTR_IDENTITY))))
         .findFirst();
@@ -345,7 +346,7 @@ public final class NviCandidateIndexDocumentGenerator {
 
   public static Optional<UnverifiedNviCreatorDto> getUnverifiedNviCreatorIfPresent(
       JsonNode contributor, Candidate candidate) {
-    return candidate.getPublicationDetails().getUnverifiedCreators().stream()
+    return candidate.getPublicationDetails().unverifiedCreators().stream()
         .filter(creator -> creator.name().equals(extractName(contributor.at(JSON_PTR_IDENTITY))))
         .findFirst();
   }
@@ -468,7 +469,7 @@ public final class NviCandidateIndexDocumentGenerator {
     return extractJsonNodeTextValue(contributorNode, JSON_PTR_ROLE_TYPE);
   }
 
-  private PublicationDate extractPublicationDate() {
+  private PublicationDateDto extractPublicationDate() {
     return formatPublicationDate(expandedResource.at(JSON_PTR_PUBLICATION_DATE));
   }
 
@@ -480,11 +481,10 @@ public final class NviCandidateIndexDocumentGenerator {
     return extractJsonNodeTextValue(expandedResource, JSON_PTR_INSTANCE_TYPE);
   }
 
-  private PublicationDate formatPublicationDate(JsonNode publicationDateNode) {
-    return PublicationDate.builder()
-        .withYear(extractJsonNodeTextValue(publicationDateNode, JSON_PTR_YEAR))
-        .withMonth(extractJsonNodeTextValue(publicationDateNode, JSON_PTR_MONTH))
-        .withDay(extractJsonNodeTextValue(publicationDateNode, JSON_PTR_DAY))
-        .build();
+  private PublicationDateDto formatPublicationDate(JsonNode publicationDateNode) {
+    var year = extractJsonNodeTextValue(publicationDateNode, JSON_PTR_YEAR);
+    var month = extractJsonNodeTextValue(publicationDateNode, JSON_PTR_MONTH);
+    var day = extractJsonNodeTextValue(publicationDateNode, JSON_PTR_DAY);
+    return new PublicationDateDto(year, month, day);
   }
 }

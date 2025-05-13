@@ -12,7 +12,7 @@ import java.net.URI;
 import java.time.Instant;
 import java.util.Collection;
 import no.sikt.nva.nvi.common.client.model.Organization;
-import no.sikt.nva.nvi.common.service.model.InstanceType;
+import no.sikt.nva.nvi.common.model.InstanceType;
 
 @JsonSerialize
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
@@ -29,6 +29,7 @@ public record PublicationDto(
     InstanceType publicationType,
     boolean isApplicable,
     boolean isInternationalCollaboration,
+    // TODO: Flatten this to just the applicable channel, we don't need all channels
     Collection<PublicationChannelDto> publicationChannels,
     Collection<ContributorDto> contributors,
     Collection<Organization> topLevelOrganizations,

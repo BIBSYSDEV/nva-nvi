@@ -63,7 +63,7 @@ public class CandidateUpdateValidator {
   }
 
   private void checkForUnverifiedCreators() {
-    var unverifiedCreators = candidate.getPublicationDetails().getUnverifiedCreators();
+    var unverifiedCreators = candidate.getPublicationDetails().unverifiedCreators();
     if (!unverifiedCreators.isEmpty()) {
       problems.add(new UnverifiedCreatorProblem());
     }
@@ -94,7 +94,7 @@ public class CandidateUpdateValidator {
   }
 
   private List<String> getUnverifiedCreatorsFromUserOrganization() {
-    var unverifiedCreators = candidate.getPublicationDetails().getUnverifiedCreators();
+    var unverifiedCreators = candidate.getPublicationDetails().unverifiedCreators();
     return unverifiedCreators.stream()
         .filter(
             contributor ->

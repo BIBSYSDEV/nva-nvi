@@ -1,48 +1,60 @@
 package no.sikt.nva.nvi.common.utils;
 
 import static java.util.Collections.emptyList;
-import static no.sikt.nva.nvi.common.LocalDynamoTestSetup.initializeTestDatabase;
+import static no.sikt.nva.nvi.common.SampleExpandedPublicationFactory.defaultExpandedPublicationFactory;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.createNumberOfCandidatesForYear;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.getYearIndexStartMarker;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.setupReportedCandidate;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.sortByIdentifier;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidate;
+import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidateBuilder;
+import static no.sikt.nva.nvi.common.model.ContributorFixtures.randomCreator;
 import static no.sikt.nva.nvi.test.TestUtils.randomIntBetween;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
+import static no.unit.nva.testutils.RandomDataGenerator.randomString;
+import static nva.commons.core.StringUtils.isBlank;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.Mockito.mock;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.IntStream;
+import no.sikt.nva.nvi.common.SampleExpandedPublicationFactory;
+import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.db.CandidateDao;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
+import no.sikt.nva.nvi.test.SampleExpandedPublication;
+import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
 
 class BatchScanUtilTest {
 
-  private static final int DEFAULT_PAGE_SIZE = 700;
+  private static final int DEFAULT_PAGE_SIZE = 100;
   private static final int SECOND_ROW = 1;
-  private DynamoDbClient localDynamo;
   private BatchScanUtil batchScanUtil;
-  private CandidateRepositoryHelper candidateRepository;
+  private CandidateRepository candidateRepository;
+  private TestScenario scenario;
 
   @BeforeEach
   void setup() {
-    localDynamo = initializeTestDatabase();
-    candidateRepository = new CandidateRepositoryHelper(localDynamo);
-    batchScanUtil = new BatchScanUtil(candidateRepository);
+    scenario = new TestScenario();
+    candidateRepository = scenario.getCandidateRepository();
+
+    batchScanUtil =
+        new BatchScanUtil(scenario.getCandidateRepository(), scenario.getS3StorageReader());
   }
 
   @Test
@@ -91,8 +103,11 @@ class BatchScanUtilTest {
     var startMarker = getYearIndexStartMarker(firstCandidateInIndex);
     var results =
         batchScanUtil.fetchCandidatesByYear(year, true, null, startMarker).getDatabaseEntries();
-    assertThat(results.size(), is(equalTo(1)));
-    assertEquals(secondCandidateInIndex, results.get(0));
+    var expectedResults = List.of(secondCandidateInIndex);
+    Assertions.assertThat(results)
+        .usingRecursiveComparison()
+        .ignoringCollectionOrder()
+        .isEqualTo(expectedResults);
   }
 
   @Test
@@ -105,7 +120,10 @@ class BatchScanUtilTest {
     var results =
         batchScanUtil.fetchCandidatesByYear(searchYear, true, pageSize, null).getDatabaseEntries();
     assertThat(results.size(), is(equalTo(pageSize)));
-    assertThat(expectedCandidates, containsInAnyOrder(results.toArray()));
+    Assertions.assertThat(results)
+        .usingRecursiveComparison()
+        .ignoringCollectionOrder()
+        .isEqualTo(expectedCandidates);
   }
 
   @Test
@@ -116,7 +134,10 @@ class BatchScanUtilTest {
     var expectedCandidates = sortByIdentifier(candidates, DEFAULT_PAGE_SIZE);
     var results = batchScanUtil.fetchCandidatesByYear(year, true, null, null).getDatabaseEntries();
     assertThat(results.size(), is(equalTo(DEFAULT_PAGE_SIZE)));
-    assertThat(expectedCandidates, containsInAnyOrder(results.toArray()));
+    Assertions.assertThat(results)
+        .usingRecursiveComparison()
+        .ignoringCollectionOrder()
+        .isEqualTo(expectedCandidates);
   }
 
   @Test
@@ -127,8 +148,79 @@ class BatchScanUtilTest {
     var expectedCandidates = sortByIdentifier(candidates, null);
     var results = batchScanUtil.fetchCandidatesByYear(year, false, null, null).getDatabaseEntries();
     assertThat(results.size(), is(equalTo(2)));
-    assertThat(expectedCandidates, containsInAnyOrder(results.toArray()));
     assertThat(results, not(containsInAnyOrder(reportedCandidate)));
+    Assertions.assertThat(results)
+        .usingRecursiveComparison()
+        .ignoringCollectionOrder()
+        .isEqualTo(expectedCandidates);
+  }
+
+  /**
+   * @deprecated Temporary migration code. To be removed when all candidates have been migrated.
+   */
+  @Deprecated(forRemoval = true, since = "2025-04-29")
+  @Test
+  void shouldMigratePublicationIdentifierField() {
+    var publication =
+        defaultExpandedPublicationFactory(
+                mock(AuthorizedBackendUriRetriever.class), scenario.getUriRetriever())
+            .getExpandedPublication();
+    var dbCandidate =
+        setupRandomCandidateBuilderWithPublicationInS3(publication)
+            .publicationIdentifier(null)
+            .publicationDetails(null)
+            .pointCalculation(null)
+            .build();
+    var originalCandidate = candidateRepository.create(dbCandidate, List.of());
+
+    batchScanUtil.migrateAndUpdateVersion(10, null, emptyList());
+    var updatedDao =
+        candidateRepository.findCandidateById(originalCandidate.identifier()).orElseThrow();
+    var actualPublicationIdentifier = updatedDao.candidate().publicationIdentifier();
+
+    assertNull(originalCandidate.candidate().publicationIdentifier());
+    Assertions.assertThat(originalCandidate.candidate().publicationId().toString())
+        .contains(actualPublicationIdentifier);
+  }
+
+  /**
+   * @deprecated Temporary migration code. To be removed when all candidates have been migrated.
+   */
+  @Deprecated(forRemoval = true, since = "2025-04-29")
+  @Test
+  void shouldMigrateCreatorNames() {
+    var organization = scenario.setupTopLevelOrganizationWithSubUnits();
+    var originalCreatorDto = randomCreator(organization).withName(randomString()).build();
+    var originalCreator = new DbCreator(originalCreatorDto.id(), null, List.of(organization.id()));
+
+    var publicationBuilder =
+        new SampleExpandedPublicationFactory(
+                mock(AuthorizedBackendUriRetriever.class), scenario.getUriRetriever())
+            .withTopLevelOrganizations(organization);
+    var publication = publicationBuilder.getExpandedPublication();
+
+    var originalDbCandidate =
+        setupRandomCandidateBuilderWithPublicationInS3(publication)
+            .publicationDetails(null)
+            .pointCalculation(null)
+            .creators(List.of(originalCreator))
+            .build();
+    var originalCandidate = candidateRepository.create(originalDbCandidate, List.of());
+    Assertions.assertThat(originalCandidate.candidate().creators())
+        .allMatch(creator -> isBlank(creator.creatorName()));
+
+    var updatedPublication =
+        publicationBuilder.withContributor(originalCreatorDto).getExpandedPublication();
+    scenario.setupExpandedPublicationInS3(updatedPublication);
+
+    batchScanUtil.migrateAndUpdateVersion(10, null, emptyList());
+    var updatedDao =
+        candidateRepository.findCandidateById(originalCandidate.identifier()).orElseThrow();
+    var actualCreators = updatedDao.candidate().creators();
+
+    Assertions.assertThat(actualCreators)
+        .extracting("creatorName")
+        .containsOnlyOnce(originalCreatorDto.name());
   }
 
   private static Map<String, String> getStartMarker(CandidateDao dao) {
@@ -146,12 +238,13 @@ class BatchScanUtilTest {
 
   private List<CandidateDao> getCandidates(List<Map<String, AttributeValue>> candidates) {
     return Arrays.asList(
-        candidateRepository.findDaoById(getIdentifier(candidates, 0)),
-        candidateRepository.findDaoById(getIdentifier(candidates, 1)));
+        candidateRepository.findCandidateById(getIdentifier(candidates, 0)).orElseThrow(),
+        candidateRepository.findCandidateById(getIdentifier(candidates, 1)).orElseThrow());
   }
 
   private List<Map<String, AttributeValue>> getCandidatesInOrder() {
-    return localDynamo
+    return scenario
+        .getLocalDynamo()
         .scan(ScanRequest.builder().tableName(ApplicationConstants.NVI_TABLE_NAME).build())
         .items()
         .stream()
@@ -159,16 +252,11 @@ class BatchScanUtilTest {
         .toList();
   }
 
-  public static class CandidateRepositoryHelper extends CandidateRepository {
-
-    public CandidateRepositoryHelper(DynamoDbClient client) {
-      super(client);
-    }
-
-    public CandidateDao findDaoById(UUID id) {
-      return Optional.of(CandidateDao.builder().identifier(id).build())
-          .map(candidateTable::getItem)
-          .orElseThrow();
-    }
+  private DbCandidate.Builder setupRandomCandidateBuilderWithPublicationInS3(
+      SampleExpandedPublication publication) {
+    var publicationBucketUri = scenario.setupExpandedPublicationInS3(publication);
+    return randomCandidateBuilder(true)
+        .publicationId(publication.id())
+        .publicationBucketUri(publicationBucketUri);
   }
 }
