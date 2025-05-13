@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.common.client.model;
 
 import static java.util.Objects.nonNull;
+import static java.util.function.Predicate.not;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -72,7 +73,7 @@ public record Organization(
 
   private static <T, R> List<R> mapIfNotEmpty(Collection<T> src, Function<T, R> mapper) {
     return Optional.ofNullable(src)
-        .filter(list -> !list.isEmpty())
+        .filter(not(Collection::isEmpty))
         .map(list -> list.stream().map(mapper).toList())
         .orElse(null);
   }
