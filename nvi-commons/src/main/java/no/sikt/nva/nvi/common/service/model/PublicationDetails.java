@@ -92,7 +92,8 @@ public record PublicationDetails(
             .withPublicationDate(PublicationDate.from(dbCandidate.getPublicationDate()))
             .withIsApplicable(dbCandidate.applicable())
             .withPublicationChannel(PublicationChannel.from(candidateDao))
-            .withNviCreators(nviCreators);
+            .withNviCreators(nviCreators)
+            .withTopLevelOrganizations(topLevelOrganizations);
 
     if (nonNull(dbDetails)) {
       return getPublicationDetailsWithMigratedFields(dbDetails, builder);
