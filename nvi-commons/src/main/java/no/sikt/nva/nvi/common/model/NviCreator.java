@@ -49,27 +49,37 @@ public record NviCreator(
     }
   }
 
+  /**
+   * Creates a NviCreator domain model from its DTO representation and a collection of
+   * organizations. The complete organization hierarchy for a Candidate is stored as a separate
+   * field and not duplicated to each creator, and must therefore be reconstructed separately here.
+   *
+   * @param creator A simplified DTO representation of a verified or unverified NVI Creator
+   * @param organizations A collection of organizations that should include all organizations the
+   *     creator is affiliated with.
+   * @return A NviCreator domain model including the full organization hierarchy for all
+   *     affiliations.
+   */
   public static NviCreator from(NviCreatorDto creator, Collection<Organization> organizations) {
     var creatorOrganizations = getCreatorOrganizations(creator.affiliations(), organizations);
     var verificationStatus =
         new VerificationStatus(
             creator instanceof VerifiedNviCreatorDto ? "Verified" : "Unverified");
     var creatorId =
-        creator instanceof VerifiedNviCreatorDto verifiedCreatorDto
-            ? verifiedCreatorDto.id()
-            : null;
+        creator instanceof VerifiedNviCreatorDto verifiedCreator ? verifiedCreator.id() : null;
 
     return new NviCreator(creatorId, creator.name(), verificationStatus, creatorOrganizations);
   }
 
   /**
-   * Creates a NviCreator from persisted data. Because we only persist direct affiliations as URIs
-   * on each creator object, we need to reconstruct the Organization tree using a collection of all
-   * relevant organizations.
+   * Creates a NviCreator domain model from its database representation. The complete organization
+   * hierarchy for a Candidate is stored as a separate field and not duplicated to each creator, and
+   * must therefore be reconstructed separately here.
    *
-   * @param creator A verified or unverified NVI Creator.
-   * @param organizations A collection of organizations that includes all relevant organizations for
-   *     this creator.
+   * @param creator A simplified database representation of a verified or unverified NVI Creator
+   * @param organizations A collection of organizations that should include all organizations the
+   *     creator is affiliated with.
+   * @return A NviCreator domain model including the full organization hierarchy for all
    */
   public static NviCreator from(DbCreatorType creator, Collection<Organization> organizations) {
     var creatorOrganizations = getCreatorOrganizations(creator.affiliations(), organizations);
@@ -77,7 +87,8 @@ public record NviCreator(
         (creator instanceof DbCreator)
             ? new VerificationStatus("Verified")
             : new VerificationStatus("Unverified");
-    var creatorId = (creator instanceof DbCreator) ? ((DbCreator) creator).creatorId() : null;
+    var creatorId =
+        (creator instanceof DbCreator verifiedCreator) ? verifiedCreator.creatorId() : null;
 
     return new NviCreator(
         creatorId, creator.creatorName(), verificationStatus, creatorOrganizations);
@@ -95,14 +106,14 @@ public record NviCreator(
   private static Organization findOrganization(
       URI affiliationId, Collection<Organization> topLevelOrganizations) {
     // Try to find a matching organization in the persisted data
-    var stack = new ArrayDeque<>(topLevelOrganizations);
-    while (!stack.isEmpty()) {
-      var organization = stack.pop();
+    var candidateOrganizations = new ArrayDeque<>(topLevelOrganizations);
+    while (!candidateOrganizations.isEmpty()) {
+      var organization = candidateOrganizations.pop();
       if (organization.id().equals(affiliationId)) {
         return organization;
       }
       if (nonNull(organization.hasPart()) && !organization.hasPart().isEmpty()) {
-        stack.addAll(organization.hasPart());
+        candidateOrganizations.addAll(organization.hasPart());
       }
     }
 
