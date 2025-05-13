@@ -13,7 +13,7 @@ import java.time.Instant;
 import java.util.List;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
-import no.sikt.nva.nvi.common.db.model.DbPages;
+import no.sikt.nva.nvi.common.db.model.DbPageCount;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDetails;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
@@ -57,7 +57,7 @@ public class DbPublicationDetailsFixtures {
         .creators(dbCreators)
         .contributorCount(dtoPublicationDetails.contributors().size())
         .abstractText(dtoPublicationDetails.abstractText())
-        .pages(getDbPagesFromRequest(request))
+        .pages(getDbPageCountFromRequest(request))
         .topLevelOrganizations(dbOrganizations)
         .build();
   }
@@ -66,11 +66,11 @@ public class DbPublicationDetailsFixtures {
     return new DbPublicationDate(year, null, null);
   }
 
-  private static DbPages getDbPagesFromRequest(UpsertNviCandidateRequest request) {
+  private static DbPageCount getDbPageCountFromRequest(UpsertNviCandidateRequest request) {
     var publicationDetails = request.publicationDetails();
     if (isNull(publicationDetails) || isNull(publicationDetails.pageCount())) {
       return null;
     }
-    return PageCount.from(publicationDetails.pageCount()).toDbPages();
+    return PageCount.from(publicationDetails.pageCount()).toDbPageCount();
   }
 }

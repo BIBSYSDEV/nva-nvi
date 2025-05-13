@@ -2,27 +2,23 @@ package no.sikt.nva.nvi.common.service.model;
 
 import static java.util.Objects.isNull;
 
-import no.sikt.nva.nvi.common.db.model.DbPages;
+import no.sikt.nva.nvi.common.db.model.DbPageCount;
 import no.sikt.nva.nvi.common.dto.PageCountDto;
 
-public record PageCount(String firstPage, String lastPage, String numberOfPages) {
+public record PageCount(String first, String last, String total) {
 
-  public static PageCount from(PageCountDto dtoPages) {
-    if (isNull(dtoPages)) {
+  public static PageCount from(PageCountDto pageCount) {
+    if (isNull(pageCount)) {
       return new PageCount(null, null, null);
     }
-    return new PageCount(dtoPages.firstPage(), dtoPages.lastPage(), dtoPages.numberOfPages());
+    return new PageCount(pageCount.first(), pageCount.last(), pageCount.total());
   }
 
-  public static PageCount from(DbPages dbPages) {
-    return new PageCount(dbPages.firstPage(), dbPages.lastPage(), dbPages.numberOfPages());
+  public static PageCount from(DbPageCount pageCount) {
+    return new PageCount(pageCount.first(), pageCount.last(), pageCount.total());
   }
 
-  public DbPages toDbPages() {
-    return DbPages.builder()
-        .firstPage(firstPage)
-        .lastPage(lastPage)
-        .numberOfPages(numberOfPages)
-        .build();
+  public DbPageCount toDbPageCount() {
+    return DbPageCount.builder().first(first).last(last).total(total).build();
   }
 }

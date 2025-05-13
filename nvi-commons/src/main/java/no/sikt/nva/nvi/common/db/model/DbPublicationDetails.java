@@ -14,7 +14,7 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmut
 public record DbPublicationDetails(
     URI id,
     URI publicationBucketUri,
-    DbPages pages,
+    DbPageCount pages,
     DbPublicationDate publicationDate,
     @DynamoDbConvertedBy(DbCreatorTypeListConverter.class) List<DbCreatorType> creators,
     List<DbOrganization> topLevelOrganizations,
@@ -40,7 +40,7 @@ public record DbPublicationDetails(
 
     private URI id;
     private URI publicationBucketUri;
-    private DbPages pages;
+    private DbPageCount pages;
     private DbPublicationDate publicationDate;
     private List<DbCreatorType> creators;
     private List<DbOrganization> topLevelOrganizations;
@@ -64,7 +64,7 @@ public record DbPublicationDetails(
       return this;
     }
 
-    public Builder pages(DbPages pages) {
+    public Builder pages(DbPageCount pages) {
       this.pages = pages;
       return this;
     }

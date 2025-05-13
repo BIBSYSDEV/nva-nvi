@@ -110,9 +110,7 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
             .withAbstract("Lorem ipsum")
             .withInstanceType(publicationType)
             .withPageCount(
-                expectedPageCount.firstPage(),
-                expectedPageCount.lastPage(),
-                expectedPageCount.numberOfPages())
+                expectedPageCount.first(), expectedPageCount.last(), expectedPageCount.total())
             .build();
 
     var candidate = getEvaluatedCandidate(publication);

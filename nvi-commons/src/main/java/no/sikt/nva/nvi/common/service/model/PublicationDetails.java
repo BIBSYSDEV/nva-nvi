@@ -103,7 +103,7 @@ public record PublicationDetails(
 
   public DbPublicationDetails toDbPublication() {
     var dbCreators = nviCreators.stream().map(NviCreator::toDbCreatorType).toList();
-    var dbPages = Optional.ofNullable(pageCount).map(PageCount::toDbPages).orElse(null);
+    var dbPageCount = Optional.ofNullable(pageCount).map(PageCount::toDbPageCount).orElse(null);
     return DbPublicationDetails.builder()
         .id(publicationId)
         .publicationBucketUri(publicationBucketUri)
@@ -112,7 +112,7 @@ public record PublicationDetails(
         .status(status)
         .language(language)
         .abstractText(abstractText)
-        .pages(dbPages)
+        .pages(dbPageCount)
         .publicationDate(publicationDate.toDbPublicationDate())
         .creators(dbCreators)
         .modifiedDate(modifiedDate)

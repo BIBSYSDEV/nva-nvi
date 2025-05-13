@@ -19,7 +19,7 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreatorType;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.Dao;
-import no.sikt.nva.nvi.common.db.model.DbPages;
+import no.sikt.nva.nvi.common.db.model.DbPageCount;
 import no.sikt.nva.nvi.common.db.model.DbPointCalculation;
 import no.sikt.nva.nvi.common.db.model.DbPublicationChannel;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDetails;
@@ -107,7 +107,7 @@ public class BatchScanUtil {
               .modifiedDate(publication.modifiedDate())
               .contributorCount(publication.contributors().size())
               .abstractText(publication.abstractText())
-              .pages(dbPagesFromDto(publication.pageCount()))
+              .pages(dbPageCountFromDto(publication.pageCount()))
               .topLevelOrganizations(dbTopLevelOrganizations)
               .build();
 
@@ -180,14 +180,14 @@ public class BatchScanUtil {
     return dbCreator;
   }
 
-  private static DbPages dbPagesFromDto(PageCountDto dtoPages) {
+  private static DbPageCount dbPageCountFromDto(PageCountDto dtoPages) {
     if (isNull(dtoPages)) {
       return null;
     }
-    return DbPages.builder()
-        .firstPage(dtoPages.firstPage())
-        .lastPage(dtoPages.lastPage())
-        .numberOfPages(dtoPages.numberOfPages())
+    return DbPageCount.builder()
+        .first(dtoPages.first())
+        .last(dtoPages.last())
+        .total(dtoPages.total())
         .build();
   }
 
