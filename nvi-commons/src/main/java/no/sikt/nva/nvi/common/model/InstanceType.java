@@ -1,9 +1,9 @@
-package no.sikt.nva.nvi.common.service.model;
+package no.sikt.nva.nvi.common.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
-import java.util.Arrays;
 
-public enum InstanceType {
+public enum InstanceType implements ParsableEnum {
   ACADEMIC_COMMENTARY("AcademicCommentary"),
   ACADEMIC_MONOGRAPH("AcademicMonograph"),
   ACADEMIC_CHAPTER("AcademicChapter"),
@@ -16,19 +16,14 @@ public enum InstanceType {
     this.value = value;
   }
 
-  public static InstanceType parse(String value) {
-    return Arrays.stream(values())
-        .filter(instanceType -> instanceType.getValue().equalsIgnoreCase(value))
-        .findFirst()
-        .orElseThrow();
-  }
-
   @JsonValue
-  public String getInstanceType() {
-    return value;
-  }
-
+  @Override
   public String getValue() {
     return value;
+  }
+
+  @JsonCreator
+  public static InstanceType parse(String stringValue) {
+    return ParsableEnum.parse(InstanceType.class, stringValue);
   }
 }

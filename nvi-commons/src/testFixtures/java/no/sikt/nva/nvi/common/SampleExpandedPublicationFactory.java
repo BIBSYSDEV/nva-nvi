@@ -3,12 +3,15 @@ package no.sikt.nva.nvi.common;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.setupRandomOrganization;
+import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublicationDateInCurrentYear;
 import static no.sikt.nva.nvi.test.TestConstants.CHANNEL_PUBLISHER;
 import static no.sikt.nva.nvi.test.TestConstants.CHANNEL_SERIES;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_NORWAY;
-import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_JSON_PUBLICATION_DATE;
+import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_SWEDEN;
 import static no.sikt.nva.nvi.test.TestUtils.createResponse;
+import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
 import static no.sikt.nva.nvi.test.TestUtils.randomUriWithSuffix;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.mockito.ArgumentMatchers.any;
@@ -22,12 +25,16 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import no.sikt.nva.nvi.common.client.model.Organization;
+import no.sikt.nva.nvi.common.dto.ContributorDto;
+import no.sikt.nva.nvi.common.model.PublicationDate;
 import no.sikt.nva.nvi.test.SampleExpandedAffiliation;
 import no.sikt.nva.nvi.test.SampleExpandedContributor;
 import no.sikt.nva.nvi.test.SampleExpandedOrganization;
 import no.sikt.nva.nvi.test.SampleExpandedPublication;
 import no.sikt.nva.nvi.test.SampleExpandedPublicationChannel;
+import no.sikt.nva.nvi.test.SampleExpandedPublicationDate;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 
@@ -42,7 +49,10 @@ public class SampleExpandedPublicationFactory {
   private final List<SampleExpandedContributor> contributors = new ArrayList<>();
   private final List<SampleExpandedOrganization> topLevelOrganizations = new ArrayList<>();
   private final List<SampleExpandedPublicationChannel> publicationChannels = new ArrayList<>();
+  private final UUID publicationIdentifier = randomUUID();
+  private final URI publicationId = generatePublicationId(publicationIdentifier);
   private String publicationType = "AcademicArticle";
+  private PublicationDate publicationDate = randomPublicationDateInCurrentYear();
 
   public SampleExpandedPublicationFactory(
       AuthorizedBackendUriRetriever authorizedBackendUriRetriever, UriRetriever uriRetriever) {
@@ -50,8 +60,29 @@ public class SampleExpandedPublicationFactory {
     this.uriRetriever = uriRetriever;
   }
 
+  public static SampleExpandedPublicationFactory defaultExpandedPublicationFactory(
+      AuthorizedBackendUriRetriever authorizedBackendUriRetriever, UriRetriever uriRetriever) {
+    var factory = new SampleExpandedPublicationFactory(authorizedBackendUriRetriever, uriRetriever);
+    var nviOrganization1 = factory.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, true);
+    var nviOrganization2 = factory.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, true);
+    var nonNviOrganization = factory.setupTopLevelOrganization(COUNTRY_CODE_SWEDEN, false);
+
+    return factory
+        .withTopLevelOrganizations(nviOrganization1, nviOrganization2, nonNviOrganization)
+        .withCreatorAffiliatedWith(nviOrganization1)
+        .withCreatorAffiliatedWith(nviOrganization2.hasPart())
+        .withNonCreatorsAffiliatedWith(1, nviOrganization1)
+        .withNonCreatorsAffiliatedWith(1, nonNviOrganization)
+        .withCreatorsAffiliatedWith(1, nonNviOrganization);
+  }
+
   public SampleExpandedPublicationFactory withPublicationType(String publicationType) {
     this.publicationType = publicationType;
+    return this;
+  }
+
+  public SampleExpandedPublicationFactory withPublicationDate(PublicationDate publicationDate) {
+    this.publicationDate = publicationDate;
     return this;
   }
 
@@ -64,30 +95,29 @@ public class SampleExpandedPublicationFactory {
   }
 
   private void addTopLevelOrganization(Organization topLevelOrganization, String countryCode) {
-    var subOrganizationIds = topLevelOrganization.hasPart().stream().map(Organization::id).toList();
     var expandedSubOrganizations = new ArrayList<SampleExpandedOrganization>();
-    for (URI subOrganizationId : subOrganizationIds) {
-      expandedSubOrganizations.add(
-          createSubOrganization(subOrganizationId, topLevelOrganization.id(), countryCode));
+    for (var subOrganization : topLevelOrganization.hasPart()) {
+      expandedSubOrganizations.add(createSubOrganization(subOrganization));
     }
     var expandedTopLevelOrganization =
         SampleExpandedOrganization.builder()
             .withId(topLevelOrganization.id())
             .withType()
             .withCountryCode(countryCode)
+            .withLabels(topLevelOrganization.labels())
             .withSubOrganizations(
                 expandedSubOrganizations.toArray(SampleExpandedOrganization[]::new))
             .build();
     this.topLevelOrganizations.add(expandedTopLevelOrganization);
   }
 
-  private static SampleExpandedOrganization createSubOrganization(
-      URI organizationId, URI topLevelId, String countryCode) {
+  private static SampleExpandedOrganization createSubOrganization(Organization subOrganization) {
     return SampleExpandedOrganization.builder()
-        .withId(organizationId)
+        .withId(subOrganization.id())
         .withType()
-        .withParentOrganizations(topLevelId)
-        .withCountryCode(countryCode)
+        .withParentOrganizations(subOrganization.partOf().stream().map(Organization::id).toList())
+        .withCountryCode(subOrganization.countryCode())
+        .withLabels(subOrganization.labels())
         .build();
   }
 
@@ -97,76 +127,104 @@ public class SampleExpandedPublicationFactory {
   }
 
   private void addContributor(
-      String name, String role, String countryCode, Collection<Organization> affiliations) {
+      URI id, String name, String role, Collection<Organization> affiliations) {
+    var verificationStatus = nonNull(id) ? "Verified" : "Unverified";
     var expandedAffiliations =
         affiliations.stream()
-            .map(organization -> mapOrganizationToAffiliation(organization, countryCode))
+            .map(SampleExpandedPublicationFactory::mapOrganizationToAffiliation)
             .toList();
     var expandedContributor =
         SampleExpandedContributor.builder()
-            .withId(randomUriWithSuffix("nviCreator"))
+            .withId(id)
             .withNames(nonNull(name) ? List.of(name) : emptyList())
             .withRole(role)
             .withOrcId(randomString())
-            .withVerificationStatus("Verified")
+            .withVerificationStatus(verificationStatus)
             .withAffiliations(expandedAffiliations)
             .build();
     this.contributors.add(expandedContributor);
   }
 
-  private SampleExpandedAffiliation mapOrganizationToAffiliation(
-      Organization organization, String countryCode) {
+  private void addContributor(String name, String role, Collection<Organization> affiliations) {
+    addContributor(randomUriWithSuffix("creator"), name, role, affiliations);
+  }
+
+  public static SampleExpandedAffiliation mapOrganizationToAffiliation(Organization organization) {
     var topLevelId = organization.getTopLevelOrg().id();
+    var builder =
+        SampleExpandedAffiliation.builder()
+            .withId(organization.id())
+            .withCountryCode(organization.countryCode())
+            .withLabels(organization.labels());
     if (isNull(organization.id()) || organization.id().equals(topLevelId)) {
-      return SampleExpandedAffiliation.builder()
-          .withId(organization.id())
-          .withCountryCode(countryCode)
-          .build();
+      return builder.build();
     } else {
-      return SampleExpandedAffiliation.builder()
-          .withId(organization.id())
-          .withCountryCode(countryCode)
+      return builder
           .withPartOf(organization.partOf().stream().map(Organization::id).toList())
           .build();
     }
   }
 
-  public SampleExpandedPublicationFactory withNorwegianCreatorAffiliatedWith(
-      Collection<Organization> affiliations) {
-    addContributor(null, ROLE_CREATOR, COUNTRY_CODE_NORWAY, affiliations);
+  public SampleExpandedPublicationFactory withContributor(
+      ContributorDto contributor, String... additionalNames) {
+    var expandedAffiliations =
+        contributor.affiliations().stream()
+            .map(SampleExpandedPublicationFactory::mapOrganizationToAffiliation)
+            .toList();
+    var names = new ArrayList<String>();
+    if (nonNull(contributor.name())) {
+      names.add(contributor.name());
+    }
+    if (nonNull(additionalNames)) {
+      names.addAll(List.of(additionalNames));
+    }
+    var expandedContributor =
+        SampleExpandedContributor.builder()
+            .withId(contributor.id())
+            .withNames(names)
+            .withRole(contributor.role().getValue())
+            .withOrcId(randomString())
+            .withVerificationStatus(contributor.verificationStatus().getValue())
+            .withAffiliations(expandedAffiliations)
+            .build();
+    this.contributors.add(expandedContributor);
     return this;
   }
 
-  public SampleExpandedPublicationFactory withNorwegianCreatorAffiliatedWith(
-      Organization... affiliations) {
-    addContributor(null, ROLE_CREATOR, COUNTRY_CODE_NORWAY, List.of(affiliations));
-    return this;
-  }
-
-  public SampleExpandedPublicationFactory withNonCreatorAffiliatedWith(
-      String countryCode, Organization... affiliations) {
-    addContributor(randomString(), ROLE_OTHER, countryCode, List.of(affiliations));
+  public SampleExpandedPublicationFactory withContributor(SampleExpandedContributor contributor) {
+    this.contributors.add(contributor);
     return this;
   }
 
   public SampleExpandedPublicationFactory withCreatorAffiliatedWith(
-      String countryCode, Organization... affiliations) {
-    addContributor(randomString(), ROLE_CREATOR, countryCode, List.of(affiliations));
+      Collection<Organization> affiliations) {
+    addContributor(null, ROLE_CREATOR, affiliations);
     return this;
   }
 
-  public SampleExpandedPublicationFactory withRandomCreatorsAffiliatedWith(
-      int count, String countryCode, Organization... affiliations) {
+  public SampleExpandedPublicationFactory withCreatorAffiliatedWith(Organization... affiliations) {
+    addContributor(null, ROLE_CREATOR, List.of(affiliations));
+    return this;
+  }
+
+  public SampleExpandedPublicationFactory withCreatorsAffiliatedWith(
+      int count, Organization... affiliations) {
     for (int i = 0; i < count; i++) {
-      addContributor(randomString(), ROLE_CREATOR, countryCode, List.of(affiliations));
+      addContributor(randomString(), ROLE_CREATOR, List.of(affiliations));
     }
     return this;
   }
 
-  public SampleExpandedPublicationFactory withRandomNonCreatorsAffiliatedWith(
-      int count, String countryCode, Organization... affiliations) {
+  public SampleExpandedPublicationFactory withNonCreatorAffiliatedWith(
+      Organization... affiliations) {
+    addContributor(null, ROLE_OTHER, List.of(affiliations));
+    return this;
+  }
+
+  public SampleExpandedPublicationFactory withNonCreatorsAffiliatedWith(
+      int count, Organization... affiliations) {
     for (int i = 0; i < count; i++) {
-      addContributor(randomString(), ROLE_OTHER, countryCode, List.of(affiliations));
+      addContributor(randomString(), ROLE_OTHER, List.of(affiliations));
     }
     return this;
   }
@@ -192,6 +250,7 @@ public class SampleExpandedPublicationFactory {
   private void addPublicationChannel(String channelType, String scientificLevel) {
     var channel =
         SampleExpandedPublicationChannel.builder()
+            .withId(randomUriWithSuffix("channel"))
             .withType(channelType)
             .withLevel(scientificLevel)
             .build();
@@ -199,17 +258,23 @@ public class SampleExpandedPublicationFactory {
   }
 
   public SampleExpandedPublication getExpandedPublication() {
-    // Add default publication channel if none is set
-    if (publicationChannels.isEmpty()) {
-      addPublicationChannel("Journal", "LevelOne");
-    }
     return getExpandedPublicationBuilder().build();
   }
 
   public SampleExpandedPublication.Builder getExpandedPublicationBuilder() {
+    // Add default publication channel if none is set
+    if (publicationChannels.isEmpty()) {
+      addPublicationChannel("Journal", "LevelOne");
+    }
+    var expandedDate =
+        new SampleExpandedPublicationDate(
+            publicationDate.year(), publicationDate.month(), publicationDate.day());
+
     return SampleExpandedPublication.builder()
+        .withId(publicationId)
+        .withIdentifier(publicationIdentifier)
         .withInstanceType(publicationType)
-        .withPublicationDate(HARDCODED_JSON_PUBLICATION_DATE)
+        .withPublicationDate(expandedDate)
         .withPublicationChannels(publicationChannels)
         .withContributors(contributors)
         .withTopLevelOrganizations(topLevelOrganizations);

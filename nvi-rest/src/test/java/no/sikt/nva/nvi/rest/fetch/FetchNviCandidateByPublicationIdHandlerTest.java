@@ -70,7 +70,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends BaseCandidateRestHandl
       mode = EnumSource.Mode.INCLUDE)
   void shouldReturnCandidateWhenUserHasNviRoleInAnyOrganization(AccessRight accessRight)
       throws IOException {
-    var candidate = setupValidCandidate(topLevelOrganizationId);
+    var candidate = setupValidCandidate();
     var randomOrganizationId = randomUri();
     var request =
         createRequest(candidate.getPublicationId().toString(), randomOrganizationId, accessRight);
@@ -86,7 +86,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends BaseCandidateRestHandl
       mode = EnumSource.Mode.EXCLUDE)
   void shouldReturnUnauthorizedWhenUserDoesNotHaveRoleWithAccess(AccessRight accessRight)
       throws IOException {
-    var candidate = setupValidCandidate(topLevelOrganizationId);
+    var candidate = setupValidCandidate();
     var request = createRequest(candidate.getIdentifier().toString(), randomUri(), accessRight);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
@@ -95,7 +95,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends BaseCandidateRestHandl
 
   @Test
   void shouldReturnValidCandidateWhenCandidateExists() throws IOException {
-    var candidate = setupValidCandidate(topLevelOrganizationId);
+    var candidate = setupValidCandidate();
     var request = createRequestWithCuratorAccess(candidate.getPublicationId().toString());
 
     handler.handleRequest(request, output, CONTEXT);
@@ -124,7 +124,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends BaseCandidateRestHandl
   @Test
   void shouldReturnCandidateDtoWithApprovalStatusNewWhenApprovalStatusIsPendingAndUnassigned()
       throws IOException {
-    var candidate = setupValidCandidate(topLevelOrganizationId);
+    var candidate = setupValidCandidate();
     var request = createRequestWithCuratorAccess(candidate.getPublicationId().toString());
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
@@ -136,7 +136,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends BaseCandidateRestHandl
 
   @Test
   void shouldIncludeAllowedOperations() throws IOException {
-    var candidate = setupValidCandidate(topLevelOrganizationId);
+    var candidate = setupValidCandidate();
     var request = createRequestWithCuratorAccess(candidate.getPublicationId().toString());
 
     var candidateDto = handleRequest(request);

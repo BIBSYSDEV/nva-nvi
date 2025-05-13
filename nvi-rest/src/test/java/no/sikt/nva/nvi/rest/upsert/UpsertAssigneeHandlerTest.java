@@ -63,7 +63,7 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
   @BeforeEach
   void setUp() {
     resourcePathParameter = "candidateIdentifier";
-    candidate = setupValidCandidate(topLevelOrganizationId);
+    candidate = setupValidCandidate();
   }
 
   @Test

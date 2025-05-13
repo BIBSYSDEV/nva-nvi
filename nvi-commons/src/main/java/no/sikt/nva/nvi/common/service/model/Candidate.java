@@ -1,6 +1,6 @@
 package no.sikt.nva.nvi.common.service.model;
 
-import static java.util.Objects.isNull;
+import static java.util.Collections.emptyList;
 import static java.util.Objects.nonNull;
 import static java.util.UUID.randomUUID;
 import static java.util.function.Predicate.not;
@@ -20,7 +20,6 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -41,15 +40,18 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreatorType;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.NoteDao;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.PeriodStatus;
 import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
 import no.sikt.nva.nvi.common.db.ReportStatus;
-import no.sikt.nva.nvi.common.db.model.ChannelType;
+import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
+import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
+import no.sikt.nva.nvi.common.model.InstanceType;
 import no.sikt.nva.nvi.common.model.InvalidNviCandidateException;
+import no.sikt.nva.nvi.common.model.PointCalculation;
+import no.sikt.nva.nvi.common.model.PublicationChannel;
 import no.sikt.nva.nvi.common.model.UpdateApprovalRequest;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
@@ -61,13 +63,10 @@ import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException;
-import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.common.service.requests.CreateNoteRequest;
 import no.sikt.nva.nvi.common.service.requests.DeleteNoteRequest;
 import no.sikt.nva.nvi.common.service.requests.FetchByPublicationRequest;
 import no.sikt.nva.nvi.common.service.requests.FetchCandidateRequest;
-import no.sikt.nva.nvi.common.service.requests.UpdateNonCandidateRequest;
-import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.sikt.nva.nvi.common.validator.CandidateUpdateValidator;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
@@ -95,14 +94,9 @@ public final class Candidate {
   private final boolean applicable;
   private final Map<URI, Approval> approvals;
   private final Map<UUID, Note> notes;
-  private final List<InstitutionPoints> institutionPoints;
-  private final BigDecimal totalPoints;
   private final PeriodStatus period;
+  private final PointCalculation pointCalculation;
   private final PublicationDetails publicationDetails;
-  private final BigDecimal basePoints;
-  private final boolean internationalCollaboration;
-  private final BigDecimal collaborationFactor;
-  private final int creatorShareCount;
   private final Instant createdDate;
   private final Instant modifiedDate;
   private final ReportStatus reportStatus;
@@ -112,14 +106,9 @@ public final class Candidate {
       boolean applicable,
       Map<URI, Approval> approvals,
       Map<UUID, Note> notes,
-      List<InstitutionPoints> institutionPoints,
-      BigDecimal totalPoints,
       PeriodStatus period,
+      PointCalculation pointCalculation,
       PublicationDetails publicationDetails,
-      BigDecimal basePoints,
-      boolean internationalCollaboration,
-      BigDecimal collaborationFactor,
-      int creatorShareCount,
       Instant createdDate,
       Instant modifiedDate,
       ReportStatus reportStatus) {
@@ -127,14 +116,9 @@ public final class Candidate {
     this.applicable = applicable;
     this.approvals = approvals;
     this.notes = notes;
-    this.institutionPoints = institutionPoints;
-    this.totalPoints = totalPoints;
     this.period = period;
+    this.pointCalculation = pointCalculation;
     this.publicationDetails = publicationDetails;
-    this.basePoints = basePoints;
-    this.internationalCollaboration = internationalCollaboration;
-    this.collaborationFactor = collaborationFactor;
-    this.creatorShareCount = creatorShareCount;
     this.createdDate = createdDate;
     this.modifiedDate = modifiedDate;
     this.reportStatus = reportStatus;
@@ -146,21 +130,17 @@ public final class Candidate {
       List<ApprovalStatusDao> approvals,
       List<NoteDao> notes,
       PeriodStatus period) {
+    var dbCandidate = candidateDao.candidate();
     this.identifier = candidateDao.identifier();
-    this.applicable = candidateDao.candidate().applicable();
+    this.applicable = dbCandidate.applicable();
     this.approvals = mapToApprovalsMap(repository, approvals);
     this.notes = mapToNotesMap(repository, notes);
-    this.institutionPoints = mapToInstitutionPoints(candidateDao);
-    this.totalPoints = candidateDao.candidate().totalPoints();
     this.period = period;
+    this.pointCalculation = PointCalculation.from(candidateDao);
     this.publicationDetails = PublicationDetails.from(candidateDao);
-    this.basePoints = candidateDao.candidate().basePoints();
-    this.internationalCollaboration = candidateDao.candidate().internationalCollaboration();
-    this.collaborationFactor = candidateDao.candidate().collaborationFactor();
-    this.creatorShareCount = candidateDao.candidate().creatorShareCount();
-    this.createdDate = candidateDao.candidate().createdDate();
-    this.modifiedDate = candidateDao.candidate().modifiedDate();
-    this.reportStatus = candidateDao.candidate().reportStatus();
+    this.createdDate = dbCandidate.createdDate();
+    this.modifiedDate = dbCandidate.modifiedDate();
+    this.reportStatus = dbCandidate.reportStatus();
   }
 
   public static Candidate fetchByPublicationId(
@@ -192,7 +172,7 @@ public final class Candidate {
   }
 
   public static void upsert(
-      UpsertCandidateRequest request,
+      UpsertNviCandidateRequest request,
       CandidateRepository candidateRepository,
       PeriodRepository periodRepository) {
     var optionalCandidate = fetchOptionalCandidate(request, candidateRepository, periodRepository);
@@ -202,7 +182,7 @@ public final class Candidate {
   }
 
   public static Optional<Candidate> updateNonCandidate(
-      UpdateNonCandidateRequest request, CandidateRepository repository) {
+      UpsertNonNviCandidateRequest request, CandidateRepository repository) {
     if (isExistingCandidate(request.publicationId(), repository)) {
       return Optional.of(updateToNotApplicable(request, repository));
     }
@@ -263,13 +243,17 @@ public final class Candidate {
         .orElse(null);
   }
 
+  public InstanceType getPublicationType() {
+    return pointCalculation.instanceType();
+  }
+
   public List<InstitutionPoints> getInstitutionPoints() {
-    return nonNull(institutionPoints) ? institutionPoints : List.of();
+    return Optional.ofNullable(pointCalculation.institutionPoints()).orElse(emptyList());
   }
 
   // TODO: Make method return InstitutionPoints once we have migrated candidates from Cristin
   public Optional<InstitutionPoints> getInstitutionPoints(URI institutionId) {
-    return institutionPoints.stream()
+    return getInstitutionPoints().stream()
         .filter(points -> points.institutionId().equals(institutionId))
         .findFirst();
   }
@@ -284,19 +268,19 @@ public final class Candidate {
   }
 
   public BigDecimal getBasePoints() {
-    return basePoints;
+    return pointCalculation.basePoints();
   }
 
   public BigDecimal getCollaborationFactor() {
-    return collaborationFactor;
+    return pointCalculation.collaborationFactor();
   }
 
   public int getCreatorShareCount() {
-    return creatorShareCount;
+    return pointCalculation.creatorShareCount();
   }
 
   public BigDecimal getTotalPoints() {
-    return totalPoints;
+    return pointCalculation.totalPoints();
   }
 
   public boolean isReported() {
@@ -327,16 +311,8 @@ public final class Candidate {
     }
   }
 
-  public String getScientificLevel() {
-    return publicationDetails.publicationChannel().level();
-  }
-
-  public ChannelType getPublicationChannelType() {
-    return publicationDetails.publicationChannel().channelType();
-  }
-
-  public URI getPublicationChannelId() {
-    return publicationDetails.publicationChannel().id();
+  public PublicationChannel getPublicationChannel() {
+    return pointCalculation.channel();
   }
 
   public CandidateDto toDto(
@@ -432,14 +408,9 @@ public final class Candidate {
         applicable,
         approvals,
         notes,
-        institutionPoints,
-        totalPoints,
         period,
+        pointCalculation,
         publicationDetails,
-        basePoints,
-        internationalCollaboration,
-        collaborationFactor,
-        creatorShareCount,
         createdDate,
         reportStatus);
   }
@@ -455,17 +426,12 @@ public final class Candidate {
     }
     Candidate candidate = (Candidate) o;
     return applicable == candidate.applicable
-        && internationalCollaboration == candidate.internationalCollaboration
-        && creatorShareCount == candidate.creatorShareCount
         && Objects.equals(identifier, candidate.identifier)
         && Objects.equals(approvals, candidate.approvals)
         && Objects.equals(notes, candidate.notes)
-        && Objects.equals(institutionPoints, candidate.institutionPoints)
-        && Objects.equals(totalPoints, candidate.totalPoints)
         && Objects.equals(period, candidate.period)
+        && Objects.equals(pointCalculation, candidate.pointCalculation)
         && Objects.equals(publicationDetails, candidate.publicationDetails)
-        && Objects.equals(basePoints, candidate.basePoints)
-        && Objects.equals(collaborationFactor, candidate.collaborationFactor)
         && Objects.equals(createdDate, candidate.createdDate)
         && Objects.equals(reportStatus, candidate.reportStatus);
   }
@@ -493,7 +459,7 @@ public final class Candidate {
   }
 
   private static Optional<Candidate> fetchOptionalCandidate(
-      UpsertCandidateRequest request,
+      UpsertNviCandidateRequest request,
       CandidateRepository candidateRepository,
       PeriodRepository periodRepository) {
     return attempt(
@@ -503,7 +469,9 @@ public final class Candidate {
   }
 
   private static void updateExistingCandidate(
-      UpsertCandidateRequest request, CandidateRepository repository, Candidate existingCandidate) {
+      UpsertNviCandidateRequest request,
+      CandidateRepository repository,
+      Candidate existingCandidate) {
     if (existingCandidate.isReported()) {
       throw new IllegalCandidateUpdateException("Can not update reported candidate");
     } else {
@@ -512,7 +480,7 @@ public final class Candidate {
   }
 
   private static Candidate updateToNotApplicable(
-      UpdateNonCandidateRequest request, CandidateRepository repository) {
+      UpsertNonNviCandidateRequest request, CandidateRepository repository) {
     var existingCandidateDao =
         repository
             .findByPublicationId(request.publicationId())
@@ -524,13 +492,13 @@ public final class Candidate {
     return new Candidate(
         repository,
         nonApplicableCandidate,
-        Collections.emptyList(),
-        Collections.emptyList(),
+        emptyList(),
+        emptyList(),
         PeriodStatus.builder().withStatus(Status.NO_PERIOD).build());
   }
 
   private static void updateCandidate(
-      UpsertCandidateRequest request, CandidateRepository repository, Candidate candidate) {
+      UpsertNviCandidateRequest request, CandidateRepository repository, Candidate candidate) {
     validateCandidate(request);
     var updatedCandidate = candidate.apply(request);
     if (shouldResetCandidate(request, candidate) || isNotApplicable(candidate)) {
@@ -559,9 +527,9 @@ public final class Candidate {
     return !candidate.isApplicable();
   }
 
-  private static boolean shouldResetCandidate(UpsertCandidateRequest request, Candidate candidate) {
-    return levelIsUpdated(request, candidate)
-        || publicationChannelIsUpdated(request, candidate)
+  private static boolean shouldResetCandidate(
+      UpsertNviCandidateRequest request, Candidate candidate) {
+    return publicationChannelIsUpdated(request, candidate)
         || instanceTypeIsUpdated(request, candidate)
         || creatorsAreUpdated(request, candidate)
         || hasChangeInTopLevelOrganizations(request, candidate)
@@ -569,26 +537,26 @@ public final class Candidate {
   }
 
   private static boolean publicationChannelIsUpdated(
-      UpsertCandidateRequest request, Candidate candidate) {
-    return !request.publicationChannelId().equals(candidate.getPublicationChannelId());
+      UpsertNviCandidateRequest request, Candidate candidate) {
+    var requestChannel = PublicationChannel.from(request.pointCalculation().channel());
+    return !requestChannel.equals(candidate.getPublicationChannel());
   }
 
   private static boolean publicationYearIsUpdated(
-      UpsertCandidateRequest request, Candidate candidate) {
-    return !request
-        .publicationDate()
-        .year()
-        .equals(candidate.getPublicationDetails().publicationDate().year());
+      UpsertNviCandidateRequest request, Candidate candidate) {
+    var publicationYearOfCandidate = candidate.getPublicationDetails().publicationDate().year();
+    var publicationYearFromRequest = request.publicationDetails().publicationDate().year();
+    return not(publicationYearOfCandidate::equals).test(publicationYearFromRequest);
   }
 
   private static boolean hasChangeInTopLevelOrganizations(
-      UpsertCandidateRequest request, Candidate candidate) {
+      UpsertNviCandidateRequest request, Candidate candidate) {
     var oldTopLevelOrganizations =
         candidate.getInstitutionPoints().stream()
             .map(InstitutionPoints::institutionId)
             .collect(Collectors.toSet());
     var newTopLevelOrganizations =
-        request.institutionPoints().stream()
+        request.pointCalculation().institutionPoints().stream()
             .map(InstitutionPoints::institutionId)
             .collect(Collectors.toSet());
     return !oldTopLevelOrganizations.equals(newTopLevelOrganizations);
@@ -614,17 +582,18 @@ public final class Candidate {
    * This allows for unverified creators to be converted to verified creators by assuming that
    * a removed creator is replaced by a new creator with the same affiliations.
    */
-  private static boolean creatorsAreUpdated(UpsertCandidateRequest request, Candidate candidate) {
-    var oldCreatorCount = candidate.getPublicationDetails().creators().size();
+  private static boolean creatorsAreUpdated(
+      UpsertNviCandidateRequest request, Candidate candidate) {
+    var oldCreatorCount = candidate.getPublicationDetails().nviCreators().size();
     var newCreatorCount = getAllCreators(request).size();
     var hasSameCount = oldCreatorCount == newCreatorCount;
     var hasSameCreators = hasSameCreators(request, candidate);
     return !(hasSameCount && hasSameCreators);
   }
 
-  private static boolean hasSameCreators(UpsertCandidateRequest request, Candidate candidate) {
+  private static boolean hasSameCreators(UpsertNviCandidateRequest request, Candidate candidate) {
     var affiliationsOfRemovedUnverifiedCreators =
-        candidate.getPublicationDetails().getUnverifiedCreators().stream()
+        candidate.getPublicationDetails().unverifiedCreators().stream()
             .filter(not(creator -> request.unverifiedCreators().contains(creator)))
             .map(UnverifiedNviCreatorDto::affiliations)
             .map(HashSet::new)
@@ -646,45 +615,26 @@ public final class Candidate {
   }
 
   private static boolean instanceTypeIsUpdated(
-      UpsertCandidateRequest request, Candidate candidate) {
-    return !Objects.equals(
-        request.instanceType().getValue(), candidate.getPublicationDetails().type());
-  }
-
-  private static boolean levelIsUpdated(UpsertCandidateRequest request, Candidate candidate) {
-    return !Objects.equals(request.level(), candidate.getScientificLevel());
+      UpsertNviCandidateRequest request, Candidate candidate) {
+    var newType = request.publicationDetails().publicationType();
+    var currentType = candidate.getPublicationType();
+    return !Objects.equals(newType, currentType);
   }
 
   private static void createCandidate(
-      UpsertCandidateRequest request, CandidateRepository repository) {
+      UpsertNviCandidateRequest request, CandidateRepository repository) {
     validateCandidate(request);
-    repository.create(mapToCandidate(request), mapToApprovals(request.institutionPoints()));
+    repository.create(
+        mapToCandidate(request), mapToApprovals(request.pointCalculation().institutionPoints()));
   }
 
-  private static void validateCandidate(UpsertCandidateRequest candidate) {
+  private static void validateCandidate(UpsertNviCandidateRequest candidate) {
     attempt(
             () -> {
-              Objects.requireNonNull(candidate.instanceType());
-              Objects.requireNonNull(candidate.publicationBucketUri());
-              Objects.requireNonNull(candidate.institutionPoints());
-              Objects.requireNonNull(candidate.publicationId());
-              Objects.requireNonNull(candidate.creators());
-              Objects.requireNonNull(candidate.verifiedCreators());
-              Objects.requireNonNull(candidate.unverifiedCreators());
-              Objects.requireNonNull(candidate.level());
-              Objects.requireNonNull(candidate.publicationDate());
-              Objects.requireNonNull(candidate.totalPoints());
+              candidate.validate();
               return candidate;
             })
         .orElseThrow(failure -> new InvalidNviCandidateException(INVALID_CANDIDATE_MESSAGE));
-  }
-
-  private static List<InstitutionPoints> mapToInstitutionPoints(CandidateDao candidateDao) {
-    if (isNull(candidateDao.candidate().points()) || candidateDao.candidate().points().isEmpty()) {
-      return Collections.emptyList();
-    } else {
-      return candidateDao.candidate().points().stream().map(InstitutionPoints::from).toList();
-    }
   }
 
   private static Map<UUID, Note> mapToNotesMap(
@@ -719,24 +669,29 @@ public final class Candidate {
     return DbApprovalStatus.builder().institutionId(institutionId).status(DbStatus.PENDING).build();
   }
 
-  private static DbCandidate mapToCandidate(UpsertCandidateRequest request) {
+  private static DbCandidate mapToCandidate(UpsertNviCandidateRequest request) {
     var allCreators = mapToDbCreators(request.verifiedCreators(), request.unverifiedCreators());
+    var dbDetails = PublicationDetails.from(request).toDbPublication();
+    var dbPointCalculation = PointCalculation.from(request).toDbPointCalculation();
     return DbCandidate.builder()
-        .publicationId(request.publicationId())
+        .publicationId(dbDetails.id())
+        .pointCalculation(dbPointCalculation)
+        .publicationDetails(dbDetails)
         .publicationBucketUri(request.publicationBucketUri())
+        .publicationIdentifier(dbDetails.identifier())
         .applicable(request.isApplicable())
         .creators(allCreators)
-        .creatorShareCount(request.creatorShareCount())
-        .channelType(ChannelType.parse(request.channelType()))
-        .channelId(request.publicationChannelId())
-        .level(DbLevel.parse(request.level()))
-        .instanceType(request.instanceType().getValue())
-        .publicationDate(mapToPublicationDate(request.publicationDate()))
-        .internationalCollaboration(request.isInternationalCollaboration())
-        .collaborationFactor(adjustScaleAndRoundingMode(request.collaborationFactor()))
-        .basePoints(adjustScaleAndRoundingMode(request.basePoints()))
-        .points(mapToPoints(request.institutionPoints()))
-        .totalPoints(adjustScaleAndRoundingMode(request.totalPoints()))
+        .creatorShareCount(dbPointCalculation.creatorShareCount())
+        .channelId(dbPointCalculation.publicationChannel().id())
+        .channelType(dbPointCalculation.publicationChannel().channelType())
+        .level(DbLevel.parse(dbPointCalculation.publicationChannel().scientificValue()))
+        .instanceType(request.publicationDetails().publicationType().getValue())
+        .publicationDate(dbDetails.publicationDate())
+        .internationalCollaboration(dbPointCalculation.internationalCollaboration())
+        .collaborationFactor(dbPointCalculation.collaborationFactor())
+        .basePoints(dbPointCalculation.basePoints())
+        .points(dbPointCalculation.institutionPoints())
+        .totalPoints(dbPointCalculation.totalPoints())
         .createdDate(Instant.now())
         .modifiedDate(Instant.now())
         .build();
@@ -744,14 +699,6 @@ public final class Candidate {
 
   private static List<DbInstitutionPoints> mapToPoints(List<InstitutionPoints> points) {
     return points.stream().map(DbInstitutionPoints::from).toList();
-  }
-
-  private static DbPublicationDate mapToPublicationDate(PublicationDate publicationDate) {
-    return DbPublicationDate.builder()
-        .year(publicationDate.year())
-        .month(publicationDate.month())
-        .day(publicationDate.day())
-        .build();
   }
 
   private static List<DbCreatorType> mapToDbCreators(
@@ -786,77 +733,56 @@ public final class Candidate {
         .withApplicable(applicable)
         .withApprovals(approvals)
         .withNotes(notes)
-        .withInstitutionPoints(institutionPoints)
-        .withTotalPoints(totalPoints)
         .withPeriod(period)
-        .withBasePoints(basePoints)
-        .withInternationalCollaboration(internationalCollaboration)
-        .withCollaborationFactor(collaborationFactor)
-        .withCreatorShareCount(creatorShareCount)
         .withReportStatus(reportStatus)
         .withModifiedDate(modifiedDate)
         .withCreatedDate(createdDate)
+        .withPointCalculation(pointCalculation)
         .withPublicationDetails(publicationDetails);
   }
 
   private CandidateDao toDao() {
-    var dbCreators =
-        mapToDbCreators(
-            publicationDetails.getVerifiedCreators(), publicationDetails.getUnverifiedCreators());
+    var dbPublication = publicationDetails.toDbPublication();
+    var dbChannel = pointCalculation.channel().toDbPublicationChannel();
     var dbCandidate =
         DbCandidate.builder()
-            .applicable(applicable)
-            .creators(dbCreators)
-            .creatorShareCount(creatorShareCount)
-            .channelType(getPublicationChannelType())
-            .channelId(getPublicationChannelId())
-            .level(DbLevel.parse(getScientificLevel()))
-            .instanceType(publicationDetails.type())
-            .publicationDate(mapToPublicationDate(publicationDetails.publicationDate()))
-            .internationalCollaboration(internationalCollaboration)
-            .collaborationFactor(adjustScaleAndRoundingMode(collaborationFactor))
-            .basePoints(adjustScaleAndRoundingMode(basePoints))
-            .points(mapToPoints(institutionPoints))
-            .totalPoints(adjustScaleAndRoundingMode(totalPoints))
+            .pointCalculation(pointCalculation.toDbPointCalculation())
+            .publicationDetails(dbPublication)
+            .applicable(publicationDetails.isApplicable())
+            .creators(dbPublication.creators())
+            .creatorShareCount(getCreatorShareCount())
+            .channelType(dbChannel.channelType())
+            .channelId(dbChannel.id())
+            .level(DbLevel.parse(dbChannel.scientificValue()))
+            .instanceType(pointCalculation.instanceType().getValue())
+            .publicationDate(dbPublication.publicationDate())
+            .internationalCollaboration(pointCalculation.isInternationalCollaboration())
+            .collaborationFactor(adjustScaleAndRoundingMode(getCollaborationFactor()))
+            .basePoints(adjustScaleAndRoundingMode(getBasePoints()))
+            .points(mapToPoints(getInstitutionPoints()))
+            .totalPoints(adjustScaleAndRoundingMode(getTotalPoints()))
             .createdDate(createdDate)
             .modifiedDate(Instant.now())
             .reportStatus(reportStatus)
-            .publicationBucketUri(publicationDetails.publicationBucketUri())
-            .publicationId(publicationDetails.publicationId())
+            .publicationBucketUri(dbPublication.publicationBucketUri())
+            .publicationId(dbPublication.id())
+            .publicationIdentifier(dbPublication.identifier())
             .build();
     return CandidateDao.builder()
         .identifier(identifier)
         .candidate(dbCandidate)
         .version(randomUUID().toString())
-        .periodYear(publicationDetails.publicationDate().year())
+        .periodYear(dbPublication.publicationDate().year())
         .build();
   }
 
-  private Candidate apply(UpsertCandidateRequest request) {
+  private Candidate apply(UpsertNviCandidateRequest request) {
     return this.copy()
         .withApplicable(request.isApplicable())
-        .withBasePoints(adjustScaleAndRoundingMode(request.basePoints()))
-        .withCollaborationFactor(adjustScaleAndRoundingMode(request.collaborationFactor()))
-        .withCreatorShareCount(request.creatorShareCount())
-        .withInternationalCollaboration(request.isInternationalCollaboration())
-        .withTotalPoints(adjustScaleAndRoundingMode(request.totalPoints()))
-        .withPublicationDetails(mapToPublicationDetails(request))
-        .withInstitutionPoints(request.institutionPoints())
+        .withPointCalculation(PointCalculation.from(request))
+        .withPublicationDetails(PublicationDetails.from(request))
         .withModifiedDate(Instant.now())
         .build();
-  }
-
-  private PublicationDetails mapToPublicationDetails(UpsertCandidateRequest request) {
-    return new PublicationDetails(
-        request.publicationId(),
-        request.publicationBucketUri(),
-        request.instanceType().getValue(),
-        request.publicationDate(),
-        getAllCreators(request),
-        new PublicationChannel(
-            ChannelType.parse(request.channelType()),
-            request.publicationChannelId(),
-            request.level()));
   }
 
   private void setUserAsAssigneeIfApprovalIsUnassigned(String username, URI institutionId) {
@@ -925,14 +851,9 @@ public final class Candidate {
     private boolean applicable;
     private Map<URI, Approval> approvals;
     private Map<UUID, Note> notes;
-    private List<InstitutionPoints> institutionPoints;
-    private BigDecimal totalPoints;
     private PeriodStatus period;
+    private PointCalculation pointCalculation;
     private PublicationDetails publicationDetails;
-    private BigDecimal basePoints;
-    private boolean internationalCollaboration;
-    private BigDecimal collaborationFactor;
-    private int creatorShareCount;
     private Instant createdDate;
     private Instant modifiedDate;
     private ReportStatus reportStatus;
@@ -959,43 +880,18 @@ public final class Candidate {
       return this;
     }
 
-    public Builder withInstitutionPoints(List<InstitutionPoints> institutionPoints) {
-      this.institutionPoints = institutionPoints;
-      return this;
-    }
-
-    public Builder withTotalPoints(BigDecimal totalPoints) {
-      this.totalPoints = totalPoints;
-      return this;
-    }
-
     public Builder withPeriod(PeriodStatus period) {
       this.period = period;
       return this;
     }
 
+    public Builder withPointCalculation(PointCalculation pointCalculation) {
+      this.pointCalculation = pointCalculation;
+      return this;
+    }
+
     public Builder withPublicationDetails(PublicationDetails publicationDetails) {
       this.publicationDetails = publicationDetails;
-      return this;
-    }
-
-    public Builder withBasePoints(BigDecimal basePoints) {
-      this.basePoints = basePoints;
-      return this;
-    }
-
-    public Builder withInternationalCollaboration(boolean internationalCollaboration) {
-      this.internationalCollaboration = internationalCollaboration;
-      return this;
-    }
-
-    public Builder withCollaborationFactor(BigDecimal collaborationFactor) {
-      this.collaborationFactor = collaborationFactor;
-      return this;
-    }
-
-    public Builder withCreatorShareCount(int creatorShareCount) {
-      this.creatorShareCount = creatorShareCount;
       return this;
     }
 
@@ -1020,14 +916,9 @@ public final class Candidate {
           applicable,
           approvals,
           notes,
-          institutionPoints,
-          totalPoints,
           period,
+          pointCalculation,
           publicationDetails,
-          basePoints,
-          internationalCollaboration,
-          collaborationFactor,
-          creatorShareCount,
           createdDate,
           modifiedDate,
           reportStatus);

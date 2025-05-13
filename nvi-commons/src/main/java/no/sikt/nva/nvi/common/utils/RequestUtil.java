@@ -2,9 +2,9 @@ package no.sikt.nva.nvi.common.utils;
 
 import java.util.List;
 import java.util.stream.Stream;
+import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.Username;
-import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.UnauthorizedException;
@@ -32,7 +32,7 @@ public final class RequestUtil {
     return requestInfo.userIsAuthorized(AccessRight.MANAGE_NVI_CANDIDATES);
   }
 
-  public static List<NviCreatorDto> getAllCreators(UpsertCandidateRequest request) {
+  public static List<NviCreatorDto> getAllCreators(UpsertNviCandidateRequest request) {
     var verifiedCreators = request.verifiedCreators().stream();
     var unverifiedCreators = request.unverifiedCreators().stream();
     return Stream.concat(verifiedCreators, unverifiedCreators)

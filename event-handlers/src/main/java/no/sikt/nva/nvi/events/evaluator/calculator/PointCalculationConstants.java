@@ -1,23 +1,23 @@
 package no.sikt.nva.nvi.events.evaluator.calculator;
 
+import static no.sikt.nva.nvi.common.model.ChannelType.JOURNAL;
+import static no.sikt.nva.nvi.common.model.ChannelType.PUBLISHER;
+import static no.sikt.nva.nvi.common.model.ChannelType.SERIES;
+import static no.sikt.nva.nvi.common.model.InstanceType.ACADEMIC_ARTICLE;
+import static no.sikt.nva.nvi.common.model.InstanceType.ACADEMIC_CHAPTER;
+import static no.sikt.nva.nvi.common.model.InstanceType.ACADEMIC_COMMENTARY;
+import static no.sikt.nva.nvi.common.model.InstanceType.ACADEMIC_LITERATURE_REVIEW;
+import static no.sikt.nva.nvi.common.model.InstanceType.ACADEMIC_MONOGRAPH;
 import static no.sikt.nva.nvi.common.model.ScientificValue.LEVEL_ONE;
 import static no.sikt.nva.nvi.common.model.ScientificValue.LEVEL_TWO;
-import static no.sikt.nva.nvi.common.service.model.InstanceType.ACADEMIC_ARTICLE;
-import static no.sikt.nva.nvi.common.service.model.InstanceType.ACADEMIC_CHAPTER;
-import static no.sikt.nva.nvi.common.service.model.InstanceType.ACADEMIC_COMMENTARY;
-import static no.sikt.nva.nvi.common.service.model.InstanceType.ACADEMIC_LITERATURE_REVIEW;
-import static no.sikt.nva.nvi.common.service.model.InstanceType.ACADEMIC_MONOGRAPH;
-import static no.sikt.nva.nvi.events.evaluator.model.PublicationChannel.JOURNAL;
-import static no.sikt.nva.nvi.events.evaluator.model.PublicationChannel.PUBLISHER;
-import static no.sikt.nva.nvi.events.evaluator.model.PublicationChannel.SERIES;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
 import java.util.Map;
+import no.sikt.nva.nvi.common.model.ChannelType;
+import no.sikt.nva.nvi.common.model.InstanceType;
 import no.sikt.nva.nvi.common.model.ScientificValue;
-import no.sikt.nva.nvi.common.service.model.InstanceType;
-import no.sikt.nva.nvi.events.evaluator.model.PublicationChannel;
 
 public final class PointCalculationConstants {
 
@@ -29,7 +29,7 @@ public final class PointCalculationConstants {
       new BigDecimal("1.3").setScale(1, ROUNDING_MODE);
   public static final BigDecimal NOT_INTERNATIONAL_COLLABORATION_FACTOR =
       BigDecimal.ONE.setScale(1, ROUNDING_MODE);
-  public static final Map<InstanceType, Map<PublicationChannel, Map<ScientificValue, BigDecimal>>>
+  public static final Map<InstanceType, Map<ChannelType, Map<ScientificValue, BigDecimal>>>
       INSTANCE_TYPE_AND_LEVEL_POINT_MAP =
           Map.of(
               ACADEMIC_MONOGRAPH,

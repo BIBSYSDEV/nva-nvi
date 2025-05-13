@@ -4,9 +4,9 @@ import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.net.URI;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
 
 public record SampleExpandedOrganization(
     URI id,
@@ -56,8 +56,12 @@ public record SampleExpandedOrganization(
     }
 
     public Builder withParentOrganizations(URI... parentIds) {
+      return withParentOrganizations(List.of(parentIds));
+    }
+
+    public Builder withParentOrganizations(Collection<URI> parentIds) {
       this.parentOrganizations =
-          Stream.of(parentIds).map(parentId -> builder().withId(parentId).build()).toList();
+          parentIds.stream().map(parentId -> builder().withId(parentId).build()).toList();
       return this;
     }
 

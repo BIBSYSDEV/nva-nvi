@@ -21,8 +21,8 @@ import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
+import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
-import no.sikt.nva.nvi.events.model.NviCandidate;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import nva.commons.core.Environment;
 import nva.commons.core.ioutils.IoUtils;
@@ -183,7 +183,7 @@ class EvaluateNviCandidateWithCristinDataTest extends EvaluationTest {
         .thenReturn(Optional.of(customerApiResponse));
   }
 
-  private NviCandidate getMessageBody() {
+  private UpsertNviCandidateRequest getMessageBody() {
     var sentMessages = queueClient.getSentMessages();
     assertThat(sentMessages, hasSize(1));
     var message = sentMessages.getFirst();
@@ -192,6 +192,6 @@ class EvaluateNviCandidateWithCristinDataTest extends EvaluationTest {
                 () ->
                     objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class))
             .orElseThrow();
-    return (NviCandidate) candidateEvaluatedMessage.candidate();
+    return (UpsertNviCandidateRequest) candidateEvaluatedMessage.candidate();
   }
 }

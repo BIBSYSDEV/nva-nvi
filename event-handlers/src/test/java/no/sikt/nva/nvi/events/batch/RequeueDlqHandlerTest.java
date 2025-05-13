@@ -1,5 +1,9 @@
 package no.sikt.nva.nvi.events.batch;
 
+import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.createCandidateDao;
+import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidateBuilder;
+import static no.sikt.nva.nvi.common.db.DbPointCalculationFixtures.randomPointCalculationBuilder;
+import static no.sikt.nva.nvi.common.db.DbPublicationDetailsFixtures.randomPublicationBuilder;
 import static no.sikt.nva.nvi.events.batch.RequeueDlqTestUtils.generateMessages;
 import static no.sikt.nva.nvi.events.batch.RequeueDlqTestUtils.setupSqsClient;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -13,25 +17,16 @@ import static org.mockito.Mockito.when;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import java.math.BigDecimal;
-import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateDao;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate.Builder;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints.DbCreatorAffiliationPoints;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.common.db.model.ChannelType;
+import no.sikt.nva.nvi.common.db.model.DbPublicationChannel;
+import no.sikt.nva.nvi.common.model.ScientificValue;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
-import no.sikt.nva.nvi.common.service.model.InstanceType;
 import no.unit.nva.commons.json.JsonUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -243,7 +238,7 @@ class RequeueDlqHandlerTest {
   private static CandidateRepository setupCandidateRepository() {
     var repo = mock(CandidateRepository.class);
 
-    var candidate = createCandidateDao();
+    var candidate = createDefaultCandidateDao();
 
     when(repo.findByPublicationId(any())).thenReturn(Optional.of(candidate));
 
@@ -260,49 +255,24 @@ class RequeueDlqHandlerTest {
     return response.messages().stream().filter(a -> !a.success()).count();
   }
 
-  private static CandidateDao createCandidateDao(DbCandidate candidate) {
-    return CandidateDao.builder().identifier(UUID.randomUUID()).candidate(candidate).build();
-  }
-
   private static CandidateDao candidateMissingChannelType() {
-    var candidate = randomCandidateBuilder().channelType(null).build();
+    var organizationId = randomUri();
+    var channel = new DbPublicationChannel(randomUri(), null, ScientificValue.LEVEL_ONE.getValue());
+    var publicationDetails = randomPublicationBuilder(organizationId).build();
+    var pointCalculation =
+        randomPointCalculationBuilder(randomUri(), organizationId)
+            .publicationChannel(channel)
+            .build();
+    var candidate =
+        randomCandidateBuilder(organizationId, publicationDetails, pointCalculation)
+            .applicable(true)
+            .build();
     return createCandidateDao(candidate);
   }
 
-  private static CandidateDao createCandidateDao() {
-    var candidate = randomCandidateBuilder().build();
+  private static CandidateDao createDefaultCandidateDao() {
+    var candidate = randomCandidateBuilder(true).build();
     return createCandidateDao(candidate);
-  }
-
-  private static Builder randomCandidateBuilder() {
-    return DbCandidate.builder()
-        .publicationDate(DbPublicationDate.builder().day("1").month("1").year("2000").build())
-        .points(List.of(generateInstitutionPoints(randomUri(), randomUri())))
-        .instanceType(InstanceType.ACADEMIC_ARTICLE.getValue())
-        .creators(
-            List.of(
-                DbCreator.builder()
-                    .creatorId(randomUri())
-                    .affiliations(List.of(randomUri()))
-                    .build()))
-        .level(DbLevel.LEVEL_ONE)
-        .channelType(ChannelType.JOURNAL)
-        .totalPoints(BigDecimal.valueOf(1))
-        .publicationId(randomUri())
-        .applicable(true)
-        .publicationBucketUri(randomUri());
-  }
-
-  private static DbInstitutionPoints generateInstitutionPoints(URI institutionId, URI creatorId) {
-    var points = BigDecimal.ONE;
-    return DbInstitutionPoints.builder()
-        .institutionId(randomUri())
-        .points(points)
-        .institutionId(institutionId)
-        .points(points)
-        .creatorAffiliationPoints(
-            List.of(new DbCreatorAffiliationPoints(creatorId, institutionId, points)))
-        .build();
   }
 
   private RequeueDlqHandler setupHandlerReceivingCandidateWithoutChannelType() {

@@ -63,13 +63,13 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.Approval;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.InstitutionPoints;
 import no.sikt.nva.nvi.index.model.document.InstitutionPoints.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
-import no.sikt.nva.nvi.index.model.document.PublicationDate;
 import no.sikt.nva.nvi.index.model.document.PublicationDetails;
 import no.sikt.nva.nvi.index.model.document.ReportingPeriod;
 import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
@@ -1006,7 +1006,7 @@ class OpenSearchClientTest {
 
   private static NviCandidateIndexDocument indexDocumentWithYear(
       String publicationYear, String reportedYear) {
-    var publicationDate = PublicationDate.builder().withYear(publicationYear).build();
+    var publicationDate = new PublicationDateDto(publicationYear, null, null);
     var publicationDetails =
         randomPublicationDetailsBuilder().withPublicationDate(publicationDate).build();
     var reportingPeriod = new ReportingPeriod(reportedYear);
@@ -1020,8 +1020,8 @@ class OpenSearchClientTest {
       URI affiliation, String contributorName, String year, String title) {
     var publicationDate =
         year != null
-            ? PublicationDate.builder().withYear(year).build()
-            : PublicationDate.builder().withYear(YEAR).build();
+            ? new PublicationDateDto(year, null, null)
+            : new PublicationDateDto(YEAR, null, null);
     var contributor =
         randomNviContributorBuilder(affiliation)
             .withRole("Creator")
@@ -1091,7 +1091,7 @@ class OpenSearchClientTest {
         .withId(UriWrapper.fromUri(randomUri()).addChild(UUID.randomUUID().toString()).toString())
         .withTitle(randomString())
         .withAbstract(randomString())
-        .withPublicationDate(PublicationDate.builder().withYear(YEAR).build())
+        .withPublicationDate(new PublicationDateDto(YEAR, null, null))
         .withPublicationChannel(randomPublicationChannel())
         .withPages(randomPages())
         .withContributors(List.of(randomNviContributor(randomUri())));

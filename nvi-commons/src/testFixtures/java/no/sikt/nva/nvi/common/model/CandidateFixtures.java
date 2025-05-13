@@ -2,16 +2,16 @@ package no.sikt.nva.nvi.common.model;
 
 import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
 
-import java.net.URI;
 import java.util.Collection;
 import java.util.Map;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.UpsertRequestBuilder;
+import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 
 public class CandidateFixtures {
 
@@ -24,12 +24,12 @@ public class CandidateFixtures {
   }
 
   public static UpsertRequestBuilder randomApplicableCandidateRequestBuilder(
-      Map<URI, Collection<NviCreatorDto>> creatorsPerOrganization) {
+      Map<Organization, Collection<NviCreatorDto>> creatorsPerOrganization) {
     return randomUpsertRequestBuilder().withCreatorsAndPoints(creatorsPerOrganization);
   }
 
   public static Candidate setupRandomApplicableCandidate(
-      TestScenario scenario, Map<URI, Collection<NviCreatorDto>> creatorsPerOrganization) {
+      TestScenario scenario, Map<Organization, Collection<NviCreatorDto>> creatorsPerOrganization) {
     var candidateRequest =
         randomUpsertRequestBuilder().withCreatorsAndPoints(creatorsPerOrganization).build();
     return scenario.upsertCandidate(candidateRequest);
@@ -37,7 +37,7 @@ public class CandidateFixtures {
 
   public static Candidate setupRandomApplicableCandidate(
       TestScenario scenario, int publicationYear) {
-    var publicationDate = new PublicationDate(String.valueOf(publicationYear), null, null);
+    var publicationDate = new PublicationDateDto(String.valueOf(publicationYear), null, null);
     var candidateRequest =
         randomUpsertRequestBuilder().withPublicationDate(publicationDate).build();
     return scenario.upsertCandidate(candidateRequest);

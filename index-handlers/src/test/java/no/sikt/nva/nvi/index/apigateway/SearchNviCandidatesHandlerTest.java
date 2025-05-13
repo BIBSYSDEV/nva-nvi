@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.index.apigateway;
 
+import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.getRandomDateInCurrentYearAsDto;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomPages;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomPublicationChannel;
 import static no.sikt.nva.nvi.index.apigateway.utils.AggregateResponseTestUtil.filterAggregate;
@@ -41,7 +42,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
-import java.time.Year;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,7 +52,6 @@ import no.sikt.nva.nvi.common.validator.FakeViewingScopeValidator;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
-import no.sikt.nva.nvi.index.model.document.PublicationDate;
 import no.sikt.nva.nvi.index.model.document.PublicationDetails;
 import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
 import no.sikt.nva.nvi.index.model.search.OrderByFields;
@@ -526,7 +525,7 @@ class SearchNviCandidatesHandlerTest {
   private static PublicationDetails randomPublicationDetails() {
     return PublicationDetails.builder()
         .withTitle(randomString())
-        .withPublicationDate(PublicationDate.builder().withYear(Year.now().toString()).build())
+        .withPublicationDate(getRandomDateInCurrentYearAsDto())
         .withPublicationChannel(randomPublicationChannel())
         .withPages(randomPages())
         .build();

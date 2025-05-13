@@ -1,32 +1,33 @@
 package no.sikt.nva.nvi.common.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
-import java.util.Arrays;
 
-public enum ScientificValue {
+public enum ScientificValue implements ParsableEnum {
+  NON_CANDIDATE("NonCandidateLevel"),
   UNASSIGNED("Unassigned"),
   LEVEL_ZERO("LevelZero"),
   LEVEL_ONE("LevelOne"),
   LEVEL_TWO("LevelTwo");
 
-  @JsonValue private final String value;
+  private final String value;
 
   ScientificValue(String value) {
     this.value = value;
   }
 
-  public static ScientificValue parse(String value) {
-    return Arrays.stream(values())
-        .filter(scientificValue -> scientificValue.getValue().equalsIgnoreCase(value))
-        .findFirst()
-        .orElseThrow();
+  @JsonValue
+  @Override
+  public String getValue() {
+    return value;
+  }
+
+  @JsonCreator
+  public static ScientificValue parse(String stringValue) {
+    return ParsableEnum.parse(ScientificValue.class, stringValue);
   }
 
   public boolean isValid() {
     return this == LEVEL_ONE || this == LEVEL_TWO;
-  }
-
-  public String getValue() {
-    return value;
   }
 }

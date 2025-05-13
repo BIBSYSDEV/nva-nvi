@@ -14,6 +14,8 @@ CONSTRUCT {
   :title ?title ;
   :status ?status ;
   :language ?language ;
+  :abstractText ?abstract ;
+  :pageCount ?pageCount ;
   :publicationDate ?date ;
   :publicationType ?instanceType ;
   :isApplicable ?isApplicable ;
@@ -22,6 +24,12 @@ CONSTRUCT {
   :contributor ?personId ;
   :topLevelOrganization ?topLevelOrganization ;
   :modifiedDate ?modifiedDate .
+
+  # Include page count
+  ?pageCount a :PageCount ;
+  :first ?firstPage ;
+  :last ?lastPage ;
+  :total ?numberOfPages  .
 
   # Include publication channels
   ?channel a :PublicationChannel ;
@@ -64,8 +72,19 @@ WHERE {
   } UNION {
     # Find basic values under the entityDescription node
     ?publication :entityDescription ?entityDescription .
+    OPTIONAL { ?entityDescription :abstract ?abstract }
     OPTIONAL { ?entityDescription :mainTitle ?title }
     OPTIONAL { ?entityDescription :language ?language }
+  } UNION {
+    # Find page count
+    ?publication :entityDescription ?entityDescription .
+    ?entityDescription :reference ?reference .
+    ?reference a :Reference .
+    ?reference :publicationInstance ?instance .
+    ?instance :pages ?pageCount .
+    OPTIONAL { ?pageCount :begin ?firstPage }
+    OPTIONAL { ?pageCount :end ?lastPage }
+    OPTIONAL { ?pageCount :pages ?numberOfPages }
   } UNION {
     # Find the publication date
     ?publication :entityDescription ?entityDescription .

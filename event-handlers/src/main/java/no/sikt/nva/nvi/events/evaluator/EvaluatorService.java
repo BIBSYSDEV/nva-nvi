@@ -16,6 +16,8 @@ import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.dto.PublicationDto;
+import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
+import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.exceptions.ValidationException;
 import no.sikt.nva.nvi.common.service.PublicationLoaderService;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
@@ -29,8 +31,6 @@ import no.sikt.nva.nvi.events.evaluator.model.NviCreator;
 import no.sikt.nva.nvi.events.evaluator.model.UnverifiedNviCreator;
 import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
-import no.sikt.nva.nvi.events.model.NonNviCandidate;
-import no.sikt.nva.nvi.events.model.NviCandidate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -149,7 +149,7 @@ public class EvaluatorService {
     return candidate.isApplicable() && hasSamePeriod;
   }
 
-  private NviCandidate constructNviCandidate(
+  private UpsertNviCandidateRequest constructNviCandidate(
       PublicationDto publicationDto, URI publicationBucketUri, Collection<NviCreator> creators) {
     var verifiedCreatorsWithNviInstitutions = getVerifiedCreators(creators);
     var unverifiedCreatorsWithNviInstitutions = getUnverifiedCreators(creators);
@@ -159,23 +159,13 @@ public class EvaluatorService {
             verifiedCreatorsWithNviInstitutions,
             unverifiedCreatorsWithNviInstitutions);
 
-    return NviCandidate.builder()
-        .withPublicationId(publicationDto.id())
+    return UpsertNviCandidateRequest.builder()
         .withPublicationBucketUri(publicationBucketUri)
-        .withDate(publicationDto.publicationDate())
-        .withInstanceType(publicationDto.publicationType())
-        .withBasePoints(pointCalculation.basePoints())
-        .withPublicationChannelId(pointCalculation.publicationChannelId())
-        .withChannelType(pointCalculation.channelType().getValue())
-        .withLevel(pointCalculation.scientificValue().getValue())
-        .withIsInternationalCollaboration(publicationDto.isInternationalCollaboration())
-        .withCollaborationFactor(pointCalculation.collaborationFactor())
-        .withCreatorShareCount(pointCalculation.creatorShareCount())
-        .withInstitutionPoints(pointCalculation.institutionPoints())
+        .withPointCalculation(pointCalculation)
+        .withPublicationDetails(publicationDto)
         .withVerifiedNviCreators(mapVerifiedCreatorsToDto(verifiedCreatorsWithNviInstitutions))
         .withUnverifiedNviCreators(
             mapUnverifiedCreatorsToDto(unverifiedCreatorsWithNviInstitutions))
-        .withTotalPoints(pointCalculation.totalPoints())
         .build();
   }
 
@@ -216,11 +206,12 @@ public class EvaluatorService {
 
   private Optional<CandidateEvaluatedMessage> createNonNviCandidateMessage(URI publicationId) {
     logger.info(NON_NVI_CANDIDATE_MESSAGE, publicationId);
-    var nonCandidate = new NonNviCandidate(publicationId);
+    var nonCandidate = new UpsertNonNviCandidateRequest(publicationId);
     return Optional.of(CandidateEvaluatedMessage.builder().withCandidateType(nonCandidate).build());
   }
 
-  private Optional<CandidateEvaluatedMessage> createNviCandidateMessage(NviCandidate nviCandidate) {
+  private Optional<CandidateEvaluatedMessage> createNviCandidateMessage(
+      UpsertNviCandidateRequest nviCandidate) {
     logger.info(NVI_CANDIDATE_MESSAGE, nviCandidate.publicationId());
     return Optional.of(CandidateEvaluatedMessage.builder().withCandidateType(nviCandidate).build());
   }

@@ -1,7 +1,6 @@
 package no.sikt.nva.nvi.index;
 
 import static java.util.Collections.emptyList;
-import static java.util.Collections.emptyMap;
 import static no.sikt.nva.nvi.common.QueueServiceTestUtils.createEvent;
 import static no.sikt.nva.nvi.common.QueueServiceTestUtils.createEventWithOneInvalidRecord;
 import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
@@ -10,6 +9,8 @@ import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertNonCandid
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.setupReportedCandidate;
 import static no.sikt.nva.nvi.common.db.DbApprovalStatusFixtures.randomApproval;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidateBuilder;
+import static no.sikt.nva.nvi.common.db.DbPointCalculationFixtures.randomPointCalculationBuilder;
+import static no.sikt.nva.nvi.common.db.DbPublicationDetailsFixtures.randomPublicationBuilder;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_AFFILIATIONS;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_BODY;
@@ -60,10 +61,14 @@ import java.util.UUID;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.TestScenario;
+import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.common.db.model.ChannelType;
+import no.sikt.nva.nvi.common.db.model.DbPublicationChannel;
+import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
 import no.sikt.nva.nvi.common.model.CandidateFixtures;
+import no.sikt.nva.nvi.common.model.ChannelType;
+import no.sikt.nva.nvi.common.model.ScientificValue;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
@@ -189,7 +194,7 @@ class IndexDocumentHandlerTest {
     var institutionId = randomUri();
     var dao =
         candidateRepository.create(
-            randomCandidateBuilder(true, institutionId).channelType(null).channelId(null).build(),
+            createDbCandidateWithoutChannelIdOrType(institutionId),
             List.of(randomApproval(institutionId)));
     var candidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
     var expectedIndexDocument =
@@ -198,6 +203,17 @@ class IndexDocumentHandlerTest {
     handler.handleRequest(createEvent(candidate.getIdentifier()), CONTEXT);
     var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
     assertEquals(expectedIndexDocument, actualIndexDocument);
+  }
+
+  private static CandidateDao.DbCandidate createDbCandidateWithoutChannelIdOrType(
+      URI organizationId) {
+    var channel = new DbPublicationChannel(null, null, ScientificValue.LEVEL_ONE.getValue());
+    var publicationDetails = randomPublicationBuilder(organizationId).build();
+    var pointCalculation =
+        randomPointCalculationBuilder(randomUri(), organizationId)
+            .publicationChannel(channel)
+            .build();
+    return randomCandidateBuilder(organizationId, publicationDetails, pointCalculation).build();
   }
 
   @Test
@@ -212,7 +228,6 @@ class IndexDocumentHandlerTest {
         randomUpsertRequestBuilder()
             .withVerifiedCreators(emptyList())
             .withUnverifiedCreators(List.of(unverifiedCreator))
-            .withCreators(emptyMap())
             .build();
     Candidate.upsert(request, candidateRepository, periodRepository);
     var candidate =
@@ -641,10 +656,7 @@ class IndexDocumentHandlerTest {
   }
 
   private static URI extractOneAffiliation(Candidate candidateToFail) {
-    return candidateToFail.getPublicationDetails().creators().stream()
-        .flatMap(creator -> creator.affiliations().stream())
-        .findFirst()
-        .orElseThrow();
+    return candidateToFail.getPublicationDetails().getNviCreatorAffiliations().getFirst();
   }
 
   private static UnixPath createPath(Candidate candidate) {
@@ -734,8 +746,7 @@ class IndexDocumentHandlerTest {
   }
 
   private void mockUriResponseForTopLevelAffiliation(Candidate candidate) {
-    candidate.getPublicationDetails().creators().stream()
-        .flatMap(creator -> creator.affiliations().stream())
+    candidate.getPublicationDetails().getNviCreatorAffiliations().stream()
         .forEach(this::mockTopLevelResponse);
 
     candidate.getApprovals().keySet().forEach(this::mockTopLevelResponse);
@@ -818,8 +829,7 @@ class IndexDocumentHandlerTest {
   }
 
   private void mockUriRetrieverOrgResponse(Candidate candidate) {
-    candidate.getPublicationDetails().creators().stream()
-        .flatMap(creator -> creator.affiliations().stream())
+    candidate.getPublicationDetails().getNviCreatorAffiliations().stream()
         .forEach(this::mockOrganizationResponse);
 
     candidate.getApprovals().keySet().forEach(this::mockOrganizationResponse);
@@ -902,7 +912,13 @@ class IndexDocumentHandlerTest {
   }
 
   private Candidate randomApplicableCandidate(ChannelType channelType) {
-    var request = randomUpsertRequestBuilder().withChannelType(channelType.getValue()).build();
+    var channel =
+        PublicationChannelDto.builder()
+            .withId(randomUri())
+            .withChannelType(channelType)
+            .withScientificValue(ScientificValue.LEVEL_ONE)
+            .build();
+    var request = randomUpsertRequestBuilder().withPublicationChannel(channel).build();
     Candidate.upsert(request, candidateRepository, periodRepository);
     return Candidate.fetchByPublicationId(
         request::publicationId, candidateRepository, periodRepository);

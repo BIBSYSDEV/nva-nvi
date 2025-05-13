@@ -1,23 +1,26 @@
 package no.sikt.nva.nvi.common.db;
 
-import static no.sikt.nva.nvi.common.model.InstanceTypeFixtures.randomInstanceType;
-import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
-import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
-import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
-import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
+import static java.util.UUID.randomUUID;
+import static no.sikt.nva.nvi.common.db.DbPointCalculationFixtures.getExpectedPointCalculation;
+import static no.sikt.nva.nvi.common.db.DbPointCalculationFixtures.randomPointCalculationBuilder;
+import static no.sikt.nva.nvi.common.db.DbPublicationDetailsFixtures.getExpectedPublicationDetails;
+import static no.sikt.nva.nvi.common.db.DbPublicationDetailsFixtures.randomPublicationBuilder;
+import static no.sikt.nva.nvi.common.model.NviCreatorFixtures.mapToDbCreators;
+import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 
 import java.net.URI;
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints.DbCreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
-import no.sikt.nva.nvi.common.db.model.ChannelType;
-import no.sikt.nva.nvi.test.TestUtils;
+import no.sikt.nva.nvi.common.db.model.DbPointCalculation;
+import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
+import no.sikt.nva.nvi.common.db.model.DbPublicationDetails;
+import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
+import no.sikt.nva.nvi.common.service.model.Candidate;
 
 public class DbCandidateFixtures {
 
@@ -29,46 +32,101 @@ public class DbCandidateFixtures {
     return randomCandidateBuilder(applicable, randomUri());
   }
 
-  public static DbCandidate.Builder randomCandidateBuilder(boolean applicable, URI institutionId) {
+  public static DbCandidate.Builder randomCandidateBuilder(boolean applicable, URI organizationId) {
+    var publicationDetails = randomPublicationBuilder(organizationId).build();
+    return randomCandidateBuilder(organizationId, publicationDetails).applicable(applicable);
+  }
+
+  public static DbCandidate randomCandidateWithYear(String year) {
+    var organizationId = randomUri();
+    var publicationDetails =
+        randomPublicationBuilder(organizationId)
+            .publicationDate(new DbPublicationDate(year, null, null))
+            .build();
+    return randomCandidateBuilder(organizationId, publicationDetails).applicable(true).build();
+  }
+
+  public static DbCandidate.Builder randomCandidateBuilder(
+      URI organizationId, DbPublicationDetails publicationDetails) {
     var creatorId = randomUri();
-    var institutionPoints = TestUtils.randomBigDecimal();
-    var instanceType = randomInstanceType().getValue();
-    var publicationDate = new DbPublicationDate(String.valueOf(CURRENT_YEAR), "10", "10");
+    var pointCalculation = randomPointCalculationBuilder(creatorId, organizationId).build();
+    return randomCandidateBuilder(organizationId, publicationDetails, pointCalculation);
+  }
+
+  public static DbCandidate.Builder randomCandidateBuilder(
+      URI organizationId,
+      DbPublicationDetails publicationDetails,
+      DbPointCalculation pointCalculation) {
+    var creatorId = randomUri();
     return DbCandidate.builder()
-        .publicationId(randomUri())
-        .publicationBucketUri(randomUri())
-        .applicable(applicable)
-        .instanceType(instanceType)
-        .points(
-            List.of(
-                new DbInstitutionPoints(
-                    institutionId,
-                    institutionPoints,
-                    List.of(
-                        new DbCreatorAffiliationPoints(
-                            creatorId, institutionId, institutionPoints)))))
+        .publicationId(publicationDetails.id())
+        .publicationBucketUri(publicationDetails.publicationBucketUri())
+        .publicationIdentifier(publicationDetails.identifier())
+        .pointCalculation(pointCalculation)
+        .publicationDetails(publicationDetails)
+        .applicable(true)
+        .instanceType(pointCalculation.instanceType())
+        .points(pointCalculation.institutionPoints())
         .level(DbLevel.LEVEL_ONE)
-        .channelType(randomElement(ChannelType.values()))
-        .channelId(randomUri())
-        .publicationDate(publicationDate)
-        .internationalCollaboration(randomBoolean())
-        .creatorCount(randomInteger())
+        .channelType(pointCalculation.publicationChannel().channelType())
+        .channelId(pointCalculation.publicationChannel().id())
+        .publicationDate(publicationDetails.publicationDate())
+        .internationalCollaboration(pointCalculation.internationalCollaboration())
+        .creatorCount(pointCalculation.creatorShareCount())
         .createdDate(Instant.now())
         .modifiedDate(Instant.now())
-        .totalPoints(TestUtils.randomBigDecimal())
+        .totalPoints(pointCalculation.totalPoints())
         .creators(
             List.of(
                 DbCreator.builder()
                     .creatorId(creatorId)
-                    .affiliations(List.of(institutionId))
+                    .affiliations(List.of(organizationId))
                     .build()));
   }
 
-  public static DbCandidate randomCandidateWithYear(String year) {
-    return randomCandidateBuilder(true).publicationDate(publicationDate(year)).build();
+  public static DbCandidate getExpectedNewDbCandidate(UpsertNviCandidateRequest request) {
+    return getExpectedDbCandidate(randomUUID(), Instant.now(), request);
   }
 
-  private static DbPublicationDate publicationDate(String year) {
-    return new DbPublicationDate(year, null, null);
+  public static DbCandidate getExpectedUpdatedDbCandidate(
+      Candidate candidate, UpsertNviCandidateRequest request) {
+    return getExpectedDbCandidate(candidate.getIdentifier(), candidate.getCreatedDate(), request);
+  }
+
+  public static DbCandidate getExpectedDbCandidate(
+      UUID candidateIdentifier, Instant createdDate, UpsertNviCandidateRequest request) {
+    return getExpectedCandidateDao(candidateIdentifier, createdDate, request).candidate();
+  }
+
+  public static CandidateDao getExpectedCandidateDao(
+      UUID candidateIdentifier, Instant createdDate, UpsertNviCandidateRequest request) {
+    var dtoPublicationDetails = request.publicationDetails();
+    var dbCreators = mapToDbCreators(request.verifiedCreators(), request.unverifiedCreators());
+    var dbPointCalculation = getExpectedPointCalculation(request);
+    var dbPublicationDetails = getExpectedPublicationDetails(request);
+    var dbChannel = dbPointCalculation.publicationChannel();
+    var dbCandidate =
+        DbCandidate.builder()
+            .publicationId(request.publicationId())
+            .publicationIdentifier(dbPublicationDetails.identifier())
+            .publicationBucketUri(request.publicationBucketUri())
+            .pointCalculation(dbPointCalculation)
+            .publicationDetails(dbPublicationDetails)
+            .publicationDate(dbPublicationDetails.publicationDate())
+            .applicable(dtoPublicationDetails.isApplicable())
+            .instanceType(dbPointCalculation.instanceType())
+            .channelType(dbChannel.channelType())
+            .channelId(dbChannel.id())
+            .level(DbLevel.parse(dbChannel.scientificValue()))
+            .basePoints(dbPointCalculation.basePoints())
+            .internationalCollaboration(dbPointCalculation.internationalCollaboration())
+            .collaborationFactor(dbPointCalculation.collaborationFactor())
+            .creators(dbCreators)
+            .creatorShareCount(dbPointCalculation.creatorShareCount())
+            .points(dbPointCalculation.institutionPoints())
+            .totalPoints(dbPointCalculation.totalPoints())
+            .createdDate(createdDate)
+            .build();
+    return new CandidateDao(candidateIdentifier, dbCandidate, randomString(), randomString());
   }
 }

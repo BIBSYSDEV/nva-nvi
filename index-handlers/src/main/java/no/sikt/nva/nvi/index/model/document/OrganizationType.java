@@ -14,7 +14,6 @@ import java.util.List;
 })
 public sealed interface OrganizationType permits Organization, NviOrganization {
 
-  @SuppressWarnings("PMD.ShortMethodName")
   URI id();
 
   List<URI> partOf();

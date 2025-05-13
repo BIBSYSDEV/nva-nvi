@@ -1,6 +1,6 @@
 package no.sikt.nva.nvi.events.batch;
 
-import static no.sikt.nva.nvi.common.LocalDynamoTestSetup.initializeTestDatabase;
+import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidateBuilder;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -8,7 +8,6 @@ import static nva.commons.core.attempt.Try.attempt;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsEmptyCollection.empty;
 import static org.hamcrest.core.Is.is;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -19,7 +18,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.Year;
 import java.time.ZonedDateTime;
 import java.util.Collection;
@@ -30,12 +28,10 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
 import no.sikt.nva.nvi.common.db.CandidateDao;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.CandidateUniquenessEntryDao;
 import no.sikt.nva.nvi.common.db.Dao;
@@ -44,7 +40,6 @@ import no.sikt.nva.nvi.common.db.NviPeriodDao;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.ReportStatus;
-import no.sikt.nva.nvi.common.db.model.ChannelType;
 import no.sikt.nva.nvi.common.db.model.KeyField;
 import no.sikt.nva.nvi.common.model.CandidateFixtures;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
@@ -58,6 +53,7 @@ import no.unit.nva.events.models.AwsEventBridgeEvent;
 import no.unit.nva.stubs.FakeEventBridgeClient;
 import nva.commons.core.Environment;
 import nva.commons.core.ioutils.IoUtils;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -86,15 +82,15 @@ class EventBasedBatchScanHandlerTest {
   private NviPeriodRepositoryHelper periodRepository;
 
   @BeforeEach
-  public void init() {
-    this.output = new ByteArrayOutputStream();
+  void init() {
+    var scenario = new TestScenario();
+    output = new ByteArrayOutputStream();
     when(CONTEXT.getInvokedFunctionArn()).thenReturn(randomString());
-    this.eventBridgeClient = new FakeEventBridgeClient();
-    var db = initializeTestDatabase();
-    candidateRepository = new NviCandidateRepositoryHelper(db);
-    periodRepository = new NviPeriodRepositoryHelper(db);
-    var batchScanUtil = new BatchScanUtil(candidateRepository);
-    this.handler = new EventBasedBatchScanHandler(batchScanUtil, eventBridgeClient);
+    eventBridgeClient = new FakeEventBridgeClient();
+    candidateRepository = new NviCandidateRepositoryHelper(scenario.getLocalDynamo());
+    periodRepository = new NviPeriodRepositoryHelper(scenario.getLocalDynamo());
+    var batchScanUtil = new BatchScanUtil(candidateRepository, scenario.getS3StorageReader());
+    handler = new EventBasedBatchScanHandler(batchScanUtil, eventBridgeClient);
   }
 
   @Test
@@ -145,9 +141,10 @@ class EventBasedBatchScanHandlerTest {
   @Test
   void shouldNotUpdateInitialDbCandidate() {
     createPeriod();
+    var dbCandidate = randomCandidateBuilder(true).reportStatus(ReportStatus.REPORTED).build();
     var dao =
         Optional.ofNullable(
-                candidateRepository.create(randomDbCandidate(), List.of(), Year.now().toString()))
+                candidateRepository.create(dbCandidate, List.of(), Year.now().toString()))
             .map(CandidateDao::identifier)
             .map(candidateRepository::findDaoById)
             .orElseThrow();
@@ -158,7 +155,10 @@ class EventBasedBatchScanHandlerTest {
     consumeEvents();
     var updated = candidateRepository.findDaoById(dao.identifier());
 
-    assertEquals(dao.candidate(), updated.candidate());
+    Assertions.assertThat(updated.candidate())
+        .usingRecursiveComparison()
+        .ignoringCollectionOrder()
+        .isEqualTo(dao.candidate());
   }
 
   @Test
@@ -247,17 +247,6 @@ class EventBasedBatchScanHandlerTest {
     var result = JsonUtils.dtoObjectMapper.readValue(output.toByteArray(), ListingResult.class);
 
     assertThat(result.getTotalItemCount(), is(0));
-  }
-
-  private static DbCandidate randomDbCandidate() {
-    return DbCandidate.builder()
-        .publicationId(randomUri())
-        .reportStatus(ReportStatus.REPORTED)
-        .level(DbLevel.LEVEL_ONE)
-        .channelType(ChannelType.JOURNAL)
-        .publicationDate(
-            new DbPublicationDate(String.valueOf(LocalDate.now().getYear()), null, null))
-        .build();
   }
 
   private void assertExpectedDaosAreUpdated(

@@ -64,10 +64,6 @@ public record SampleExpandedContributor(
     return contributorNode;
   }
 
-  public List<URI> affiliationIds() {
-    return affiliations.stream().map(SampleExpandedAffiliation::id).toList();
-  }
-
   private ArrayNode createAndPopulateAffiliationsNode() {
     var affiliationsRootNode = objectMapper.createArrayNode();
 

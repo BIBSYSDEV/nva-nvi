@@ -81,8 +81,10 @@
         },
         "publicationInstance" : {
           "type" : "AcademicChapter",
-          "pages" : {
-            "type" : "Range"
+          "pages": {
+            "type": "Range",
+            "begin": "474",
+            "end": "482"
           }
         }
       },

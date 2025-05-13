@@ -1,7 +1,6 @@
 package no.sikt.nva.nvi.common;
 
 import static java.util.Collections.emptyList;
-import static no.sikt.nva.nvi.common.LocalDynamoTestSetup.initializeTestDatabase;
 import static no.sikt.nva.nvi.common.RequestFixtures.createNoteRequest;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpdateStatusRequest;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidate;
@@ -10,6 +9,7 @@ import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.periodRepositor
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -39,22 +39,24 @@ class MigrationTests {
   private BatchScanUtil batchScanUtil;
 
   @BeforeEach
-  public void setUp() {
-    var dynamodb = initializeTestDatabase();
-    candidateRepository = new CandidateRepository(dynamodb);
-    periodRepository = new PeriodRepository(dynamodb);
-    batchScanUtil = new BatchScanUtil(candidateRepository);
+  void setUp() {
+    var scenario = new TestScenario();
+    candidateRepository = scenario.getCandidateRepository();
+    periodRepository = scenario.getPeriodRepository();
+    batchScanUtil = new BatchScanUtil(candidateRepository, scenario.getS3StorageReader());
   }
 
   @Test
   void shouldWriteCandidateWithNotesAndApprovalsAsIsWhenMigrating() {
     periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
-    batchScanUtil = new BatchScanUtil(candidateRepository);
     var candidate = setupCandidateWithApprovalAndNotes();
     batchScanUtil.migrateAndUpdateVersion(DEFAULT_PAGE_SIZE, null, emptyList());
     var migratedCandidate =
         Candidate.fetch(candidate::getIdentifier, candidateRepository, periodRepository);
-    assertEquals(candidate, migratedCandidate);
+    assertThat(migratedCandidate)
+        .usingRecursiveComparison()
+        .ignoringCollectionOrder()
+        .isEqualTo(candidate);
   }
 
   @Test
@@ -65,7 +67,7 @@ class MigrationTests {
     var migratedCandidate =
         candidateRepository.findCandidateById(existingDao.identifier()).orElseThrow();
     assertNotNull(migratedCandidate.getPeriodYear());
-    assertEquals(dbCandidate.publicationDate().year(), migratedCandidate.getPeriodYear());
+    assertEquals(dbCandidate.getPublicationDate().year(), migratedCandidate.getPeriodYear());
   }
 
   @Test
@@ -100,7 +102,7 @@ class MigrationTests {
     var converter = new DbCreatorTypeListConverter();
 
     var creator = converter.transformTo(oldDataAttributeValue).getFirst();
-    var expectedCreator = new DbCreator(oldCreatorId, oldCreatorAffiliations);
+    var expectedCreator = new DbCreator(oldCreatorId, null, oldCreatorAffiliations);
 
     assertInstanceOf(DbCreator.class, creator);
     assertEquals(expectedCreator, creator);

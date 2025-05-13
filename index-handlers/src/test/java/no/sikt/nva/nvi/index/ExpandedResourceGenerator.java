@@ -35,9 +35,9 @@ import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.IntStream;
-import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
+import no.sikt.nva.nvi.common.model.NviCreator;
+import no.sikt.nva.nvi.common.model.PublicationDate;
 import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.sikt.nva.nvi.common.service.model.PublicationDetails.PublicationDate;
 import no.sikt.nva.nvi.common.utils.JsonUtils;
 
 public final class ExpandedResourceGenerator {
@@ -156,8 +156,9 @@ public final class ExpandedResourceGenerator {
 
   private static ObjectNode createAndPopulatePublicationInstance(Candidate candidate) {
     var publicationInstance = objectMapper.createObjectNode();
-    publicationInstance.put(TYPE_FIELD, candidate.getPublicationDetails().type());
-    switch (candidate.getPublicationDetails().type()) {
+    var publicationType = candidate.getPublicationType().getValue();
+    publicationInstance.put(TYPE_FIELD, publicationType);
+    switch (publicationType) {
       case "AcademicArticle", "AcademicLiteratureReview", "AcademicChapter" -> {
         var pages = objectMapper.createObjectNode();
         pages.put("begin", "pageBegin");
@@ -178,10 +179,11 @@ public final class ExpandedResourceGenerator {
 
   private static ObjectNode createAndPopulatePublicationContext(
       Candidate candidate, boolean populateIssn) {
-    if (isNull(candidate.getPublicationChannelType())) {
+    var channel = candidate.getPublicationChannel();
+    if (isNull(channel.channelType())) {
       return objectMapper.createObjectNode();
     }
-    return switch (candidate.getPublicationChannelType()) {
+    return switch (channel.channelType()) {
       case JOURNAL -> createJournalPublicationContext(candidate, populateIssn);
       case SERIES -> createSeriesPublicationContext(candidate, populateIssn);
       case PUBLISHER -> createPublisherPublicationContext(candidate);
@@ -190,9 +192,10 @@ public final class ExpandedResourceGenerator {
 
   private static ObjectNode createPublisherPublicationContext(Candidate candidate) {
     var publisher = objectMapper.createObjectNode();
+    var channel = candidate.getPublicationChannel();
     publisher.put(TYPE_FIELD, "Publisher");
-    publisher.put(ID_FIELD, candidate.getPublicationChannelId().toString());
-    publisher.put(LEVEL_FIELD, candidate.getScientificLevel());
+    publisher.put(ID_FIELD, channel.id().toString());
+    publisher.put(LEVEL_FIELD, channel.scientificValue().getValue());
     publisher.put(NAME_FIELD, randomString());
     var publicationContext = objectMapper.createObjectNode();
     publicationContext.set("publisher", publisher);
@@ -202,9 +205,10 @@ public final class ExpandedResourceGenerator {
   private static ObjectNode createSeriesPublicationContext(
       Candidate candidate, boolean populateIssn) {
     var series = objectMapper.createObjectNode();
+    var channel = candidate.getPublicationChannel();
     series.put(TYPE_FIELD, "Series");
-    series.put(ID_FIELD, candidate.getPublicationChannelId().toString());
-    series.put(LEVEL_FIELD, candidate.getScientificLevel());
+    series.put(ID_FIELD, channel.id().toString());
+    series.put(LEVEL_FIELD, channel.scientificValue().getValue());
     series.put(NAME_FIELD, randomString());
     if (populateIssn) {
       series.put("printIssn", randomString());
@@ -217,9 +221,10 @@ public final class ExpandedResourceGenerator {
   private static ObjectNode createJournalPublicationContext(
       Candidate candidate, boolean populateIssn) {
     var journal = objectMapper.createObjectNode();
+    var channel = candidate.getPublicationChannel();
     journal.put(TYPE_FIELD, "Journal");
-    journal.put(ID_FIELD, candidate.getPublicationChannelId().toString());
-    journal.put(LEVEL_FIELD, candidate.getScientificLevel());
+    journal.put(ID_FIELD, channel.id().toString());
+    journal.put(LEVEL_FIELD, channel.scientificValue().getValue());
     journal.put(NAME_FIELD, randomString());
     if (populateIssn) {
       journal.put("printIssn", randomString());
@@ -229,8 +234,8 @@ public final class ExpandedResourceGenerator {
 
   private static JsonNode createAndPopulateTopLevelOrganizations(Candidate candidate) {
     var topLevelOrganizations = objectMapper.createArrayNode();
-    candidate.getPublicationDetails().creators().stream()
-        .map(NviCreatorDto::affiliations)
+    candidate.getPublicationDetails().nviCreators().stream()
+        .map(NviCreator::getAffiliationIds)
         .flatMap(List::stream)
         .distinct()
         .map(URI::toString)
@@ -268,12 +273,12 @@ public final class ExpandedResourceGenerator {
 
     var contributors = objectMapper.createArrayNode();
 
-    var verifiedCreators = candidate.getPublicationDetails().getVerifiedCreators();
+    var verifiedCreators = candidate.getPublicationDetails().verifiedCreators();
     verifiedCreators.stream()
         .map(creator -> createContributorNode(creator.affiliations(), creator.id(), randomString()))
         .forEach(contributors::add);
 
-    var unverifiedCreators = candidate.getPublicationDetails().getUnverifiedCreators();
+    var unverifiedCreators = candidate.getPublicationDetails().unverifiedCreators();
     unverifiedCreators.stream()
         .map(
             unverifiedCreator ->

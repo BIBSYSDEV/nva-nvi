@@ -2,24 +2,22 @@ package no.sikt.nva.nvi.common.service;
 
 import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
+import static no.sikt.nva.nvi.common.dto.NviCreatorDtoFixtures.verifiedNviCreatorDtoFrom;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
-import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
 import java.util.List;
-import java.util.Map;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
+import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
-import no.sikt.nva.nvi.common.service.requests.UpsertCandidateRequest;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
@@ -40,18 +38,15 @@ public class CandidateTestSetup {
   protected UriRetriever mockUriRetriever;
   protected OrganizationRetriever mockOrganizationRetriever;
 
-  protected static UpsertCandidateRequest createUpsertRequestWithDecimalScale(
+  protected static UpsertNviCandidateRequest createUpsertRequestWithDecimalScale(
       int scale, URI institutionId) {
-    var creatorId = randomUri();
-    var creators = Map.of(creatorId, List.of(institutionId));
-    var verifiedCreator = new VerifiedNviCreatorDto(creatorId, List.of(institutionId));
+    var creator = verifiedNviCreatorDtoFrom(institutionId);
     var points =
-        List.of(createInstitutionPoints(institutionId, randomBigDecimal(scale), creatorId));
+        List.of(createInstitutionPoints(institutionId, randomBigDecimal(scale), creator.id()));
 
     return randomUpsertRequestBuilder()
         .withPoints(points)
-        .withCreators(creators)
-        .withVerifiedCreators(List.of(verifiedCreator))
+        .withVerifiedCreators(List.of(creator))
         .withCollaborationFactor(randomBigDecimal(scale))
         .withBasePoints(randomBigDecimal(scale))
         .withTotalPoints(randomBigDecimal(scale))

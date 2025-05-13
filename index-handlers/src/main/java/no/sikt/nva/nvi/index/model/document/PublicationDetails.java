@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.util.List;
+import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import nva.commons.core.paths.UriWrapper;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
@@ -14,7 +15,7 @@ public record PublicationDetails(
     String type,
     String title,
     @JsonProperty("abstract") String abstractText,
-    PublicationDate publicationDate,
+    PublicationDateDto publicationDate,
     List<NviContributor> nviContributors,
     List<ContributorType> contributors,
     int contributorsCount,
@@ -33,7 +34,7 @@ public record PublicationDetails(
     private String type;
     private String title;
     private String abstractText;
-    private PublicationDate publicationDate;
+    private PublicationDateDto publicationDate;
     private List<NviContributor> nviContributors;
     private List<ContributorType> contributors;
     private int contributorsCount;
@@ -64,7 +65,7 @@ public record PublicationDetails(
       return this;
     }
 
-    public Builder withPublicationDate(PublicationDate publicationDate) {
+    public Builder withPublicationDate(PublicationDateDto publicationDate) {
       this.publicationDate = publicationDate;
       return this;
     }
