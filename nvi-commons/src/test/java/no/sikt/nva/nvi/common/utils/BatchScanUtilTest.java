@@ -169,6 +169,7 @@ class BatchScanUtilTest {
         setupRandomCandidateBuilderWithPublicationInS3(publication)
             .publicationIdentifier(null)
             .publicationDetails(null)
+            .pointCalculation(null)
             .build();
     var originalCandidate = candidateRepository.create(dbCandidate, List.of());
 
@@ -200,6 +201,8 @@ class BatchScanUtilTest {
 
     var originalDbCandidate =
         setupRandomCandidateBuilderWithPublicationInS3(publication)
+            .publicationDetails(null)
+            .pointCalculation(null)
             .creators(List.of(originalCreator))
             .build();
     var originalCandidate = candidateRepository.create(originalDbCandidate, List.of());
@@ -217,7 +220,7 @@ class BatchScanUtilTest {
 
     Assertions.assertThat(actualCreators)
         .extracting("creatorName")
-        .containsOnlyOnce(originalCreator.creatorName());
+        .containsOnlyOnce(originalCreatorDto.name());
   }
 
   private static Map<String, String> getStartMarker(CandidateDao dao) {

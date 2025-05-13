@@ -1,15 +1,22 @@
 package no.sikt.nva.nvi.common.utils;
 
 import static java.util.Objects.isNull;
+import static java.util.function.Predicate.not;
 import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
+import static nva.commons.core.StringUtils.isBlank;
 
 import java.net.URI;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.db.CandidateDao;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbCreatorType;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.Dao;
 import no.sikt.nva.nvi.common.db.model.DbPages;
@@ -17,7 +24,9 @@ import no.sikt.nva.nvi.common.db.model.DbPointCalculation;
 import no.sikt.nva.nvi.common.db.model.DbPublicationChannel;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDetails;
 import no.sikt.nva.nvi.common.db.model.KeyField;
+import no.sikt.nva.nvi.common.dto.ContributorDto;
 import no.sikt.nva.nvi.common.dto.PageCountDto;
+import no.sikt.nva.nvi.common.dto.PublicationDto;
 import no.sikt.nva.nvi.common.model.ListingResult;
 import no.sikt.nva.nvi.common.service.PublicationLoaderService;
 import nva.commons.core.Environment;
@@ -77,25 +86,11 @@ public class BatchScanUtil {
       var publication = publicationLoader.extractAndTransform(publicationBucketUri);
 
       // Build the new structure for persisted publication metadata from new and old data
-      var dbPublicationChannel =
-          DbPublicationChannel.builder()
-              .id(dbCandidate.channelId())
-              .channelType(dbCandidate.channelType())
-              .scientificValue(dbCandidate.level().getValue())
-              .build();
+      var dbPointCalculation = getMigratedPointCalculation(dbCandidate);
+
       var dbTopLevelOrganizations =
           publication.topLevelOrganizations().stream().map(Organization::toDbOrganization).toList();
-      var dbPointCalculation =
-          DbPointCalculation.builder()
-              .basePoints(dbCandidate.basePoints())
-              .collaborationFactor(dbCandidate.collaborationFactor())
-              .totalPoints(dbCandidate.totalPoints())
-              .publicationChannel(dbPublicationChannel)
-              .institutionPoints(dbCandidate.points())
-              .internationalCollaboration(dbCandidate.internationalCollaboration())
-              .creatorShareCount(dbCandidate.creatorShareCount())
-              .instanceType(dbCandidate.instanceType())
-              .build();
+      var updatedDbCreators = getMigratedCreators(dbCandidate.creators(), publication);
 
       var dbPublicationDetails =
           DbPublicationDetails.builder()
@@ -103,9 +98,9 @@ public class BatchScanUtil {
               .id(dbCandidate.publicationId())
               .publicationBucketUri(dbCandidate.publicationBucketUri())
               .publicationDate(dbCandidate.publicationDate())
-              .creators(dbCandidate.creators())
 
               // Get other data from the parsed S3 document
+              .creators(updatedDbCreators)
               .identifier(publication.identifier())
               .title(publication.title())
               .status(publication.status())
@@ -122,10 +117,67 @@ public class BatchScanUtil {
               .publicationIdentifier(publication.identifier())
               .pointCalculation(dbPointCalculation)
               .publicationDetails(dbPublicationDetails)
+              .creators(updatedDbCreators)
               .build();
       return candidateDao.copy().candidate(updatedData).build();
     }
     return candidateDao;
+  }
+
+  /**
+   * Migrates existing point calculation data to a new structure.
+   *
+   * @param dbCandidate the DbCandidate object containing the existing point calculation data.
+   * @return a new DbPointCalculation object with existing data restructured.
+   */
+  private static DbPointCalculation getMigratedPointCalculation(DbCandidate dbCandidate) {
+    var dbPublicationChannel =
+        DbPublicationChannel.builder()
+            .id(dbCandidate.channelId())
+            .channelType(dbCandidate.channelType())
+            .scientificValue(dbCandidate.level().getValue())
+            .build();
+    var dbPointCalculation =
+        DbPointCalculation.builder()
+            .basePoints(dbCandidate.basePoints())
+            .collaborationFactor(dbCandidate.collaborationFactor())
+            .totalPoints(dbCandidate.totalPoints())
+            .publicationChannel(dbPublicationChannel)
+            .institutionPoints(dbCandidate.points())
+            .internationalCollaboration(dbCandidate.internationalCollaboration())
+            .creatorShareCount(dbCandidate.creatorShareCount())
+            .instanceType(dbCandidate.instanceType())
+            .build();
+    return dbPointCalculation;
+  }
+
+  /**
+   * Migrates existing creator data and adds names to verified creators.
+   *
+   * @param dbCreators Verified and unverified creators from the database.
+   * @param publication Parsed publication data from S3 with all contributor data.
+   * @return List of DbCreatorType objects with updated names for verified creators.
+   */
+  private List<DbCreatorType> getMigratedCreators(
+      Collection<DbCreatorType> dbCreators, PublicationDto publication) {
+    var creatorNames =
+        publication.contributors().stream()
+            .filter(ContributorDto::isCreator)
+            .filter(ContributorDto::isVerified)
+            .filter(not(contributor -> isBlank(contributor.name())))
+            .map(creator -> Map.entry(creator.id(), creator.name()))
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+    return dbCreators.stream().map(dbCreator -> migrateDbCreator(dbCreator, creatorNames)).toList();
+  }
+
+  private DbCreatorType migrateDbCreator(DbCreatorType dbCreator, Map<URI, String> creatorNames) {
+    if (dbCreator instanceof DbCreator verifiedDbCreator) {
+      var creatorName = creatorNames.get(verifiedDbCreator.creatorId());
+      return new DbCreator(
+          verifiedDbCreator.creatorId(), creatorName, verifiedDbCreator.affiliations());
+    }
+    return dbCreator;
   }
 
   private static DbPages dbPagesFromDto(PageCountDto dtoPages) {
