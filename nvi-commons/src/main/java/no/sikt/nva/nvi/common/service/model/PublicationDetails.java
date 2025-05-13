@@ -174,13 +174,19 @@ public record PublicationDetails(
         .build();
   }
 
+  /**
+   * @deprecated This handling of null dbDetails is a temporary check while we migrate data. When
+   *     all data is migrated, we can replace this and throw an exception instead.
+   * @param dbDetails persisted publication details
+   * @return a list of top level organizations associated with the publication (or empty list, if
+   *     the candidate has not been migrated yet)
+   */
+  @Deprecated
   private static List<Organization> getTopLevelOrganizations(DbPublicationDetails dbDetails) {
     if (isNull(dbDetails)) {
       return emptyList();
     }
-    return nonNull(dbDetails.topLevelOrganizations())
-        ? dbDetails.topLevelOrganizations().stream().map(Organization::from).toList()
-        : emptyList();
+    return dbDetails.topLevelOrganizations().stream().map(Organization::from).toList();
   }
 
   public static final class Builder {
