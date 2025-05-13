@@ -19,14 +19,31 @@ import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 
+/**
+ * An NviCreator is a person registered as a 'Creator' (i.e. author or equivalent) on a publication,
+ * where the publication is evaluated as a candidate for NVI reporting. The evaluation process
+ * verifies that the creator is affiliated with an organization that is registered in the NVI
+ * system.
+ *
+ * <p>An NviCreator can be either verified or unverified. A verified NviCreator has a unique ID and
+ * may have a name. Creators without a confirmed identity are registered as unverified NviCreators.
+ *
+ * @param id Unique ID of the person as a URI, which can be used to look up additional information
+ *     about them.
+ * @param name The name of the person, which is used for display purposes.
+ * @param verificationStatus The verification status of the person, which indicates whether their
+ *     identity is confirmed.
+ * @param nviAffiliations A collection of organizations that the person is directly affiliated with.
+ *     These may be part of a larger organization hierarchy.
+ */
 public record NviCreator(
     URI id,
     String name,
     VerificationStatus verificationStatus,
-    Collection<Organization> affiliations) {
+    Collection<Organization> nviAffiliations) {
 
   public NviCreator {
-    affiliations = Optional.ofNullable(affiliations).orElse(emptyList());
+    nviAffiliations = Optional.ofNullable(nviAffiliations).orElse(emptyList());
     if (isBlank(name)) {
       shouldNotBeNull(id, "Both 'id' and 'name' is null, one of these fields must be set");
     }
@@ -67,7 +84,7 @@ public record NviCreator(
   }
 
   public List<URI> getAffiliationIds() {
-    return affiliations.stream().map(Organization::id).toList();
+    return nviAffiliations.stream().map(Organization::id).toList();
   }
 
   private static List<Organization> getCreatorOrganizations(
@@ -94,7 +111,7 @@ public record NviCreator(
   }
 
   public NviCreatorDto toDto() {
-    var affiliationUris = affiliations.stream().map(Organization::id).toList();
+    var affiliationUris = nviAffiliations.stream().map(Organization::id).toList();
     if (isVerified()) {
       return new VerifiedNviCreatorDto(id, name, affiliationUris);
     }
@@ -106,7 +123,7 @@ public record NviCreator(
   }
 
   public DbCreatorType toDbCreatorType() {
-    var affiliationUris = affiliations.stream().map(Organization::id).toList();
+    var affiliationUris = nviAffiliations.stream().map(Organization::id).toList();
     if (isVerified()) {
       return new DbCreator(id, name, affiliationUris);
     }
