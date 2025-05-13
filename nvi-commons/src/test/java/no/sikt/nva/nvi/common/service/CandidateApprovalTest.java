@@ -364,27 +364,6 @@ class CandidateApprovalTest extends CandidateTestSetup {
 
   @Test
   void shouldNotResetApprovalWhenOtherCreatorBecomesVerified() {
-    var organization = scenario.getDefaultOrganization();
-    var creator = createVerifiedCreator(organization);
-    var otherOrganization = scenario.setupTopLevelOrganizationWithSubUnits();
-    var otherCreator = createUnverifiedCreator(otherOrganization);
-
-    Map<Organization, Collection<NviCreatorDto>> creatorMap =
-        Map.of(organization, List.of(creator), otherOrganization, List.of(otherCreator));
-    var requestBuilder =
-        setupApprovedCandidateAndReturnRequestBuilder(organization.id(), creatorMap);
-
-    var updatedRequest = requestBuilder.withCreatorsAndPoints(creatorMap).build();
-    var updatedCandidate = scenario.upsertCandidate(updatedRequest);
-
-    var updatedApprovals = updatedCandidate.getApprovals();
-    var updatedApproval = updatedApprovals.get(organization.id());
-    assertThat(ApprovalStatus.APPROVED, is(equalTo(updatedApproval.getStatus())));
-    assertThat(2, is(equalTo(updatedApprovals.size())));
-  }
-
-  @Test
-  void shouldNotResetApprovalWhenOtherCreatorBecomesVerified2() {
     var organization = scenario.setupTopLevelOrganizationWithSubUnits();
     var creator = verifiedNviCreatorDtoFrom(organization);
     var otherOrganization = scenario.setupTopLevelOrganizationWithSubUnits();
