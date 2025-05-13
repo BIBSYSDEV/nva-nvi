@@ -73,14 +73,7 @@ public final class DynamoDbUtils {
       return mapEachAttributeValueToDynamoDbValue(value);
     }
     if (nonNull(value.getL())) {
-      if (value.getL().isEmpty()) {
-        return AttributeValue.builder().l(emptyList()).build();
-      }
-      var converted =
-          value.getL().stream()
-              .map(item -> attempt(() -> mapToDynamoDbValue(item)).orElseThrow())
-              .toList();
-      return AttributeValue.builder().l(converted).build();
+      return mapListAttributeToDynamoDbValue(value);
     }
     var json = writeAsString(value);
     return dtoObjectMapper.readValue(json, AttributeValue.serializableBuilderClass()).build();
@@ -95,6 +88,18 @@ public final class DynamoDbUtils {
                     Entry::getKey,
                     entry -> attempt(() -> mapToDynamoDbValue(entry.getValue())).orElseThrow()));
     return AttributeValue.builder().m(attributeValueMap).build();
+  }
+
+  private static AttributeValue mapListAttributeToDynamoDbValue(
+      com.amazonaws.services.lambda.runtime.events.models.dynamodb.AttributeValue value) {
+    if (value.getL().isEmpty()) {
+      return AttributeValue.builder().l(emptyList()).build();
+    }
+    var converted =
+        value.getL().stream()
+            .map(item -> attempt(() -> mapToDynamoDbValue(item)).orElseThrow())
+            .toList();
+    return AttributeValue.builder().l(converted).build();
   }
 
   private static boolean containsAttributeValueMap(
