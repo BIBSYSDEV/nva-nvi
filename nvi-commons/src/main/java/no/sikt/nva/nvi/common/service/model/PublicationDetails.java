@@ -37,9 +37,9 @@ public record PublicationDetails(
     PublicationChannel publicationChannel,
     PublicationDate publicationDate,
     boolean isApplicable,
-    List<NviCreator> nviCreators,
+    Collection<NviCreator> nviCreators,
     int contributorCount,
-    List<Organization> topLevelOrganizations,
+    Collection<Organization> topLevelOrganizations,
     Instant modifiedDate) {
 
   public static PublicationDetails from(UpsertNviCandidateRequest upsertRequest) {
