@@ -28,8 +28,7 @@ import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
  * <p>An NviCreator can be either verified or unverified. A verified NviCreator has a unique ID and
  * may have a name. Creators without a confirmed identity are registered as unverified NviCreators.
  *
- * @param id Unique ID of the person as a URI, which can be used to look up additional information
- *     about them.
+ * @param id Unique ID as a URI, which can be dereferenced for more information.
  * @param name The name of the person, which is used for display purposes.
  * @param verificationStatus The verification status of the person, which indicates whether their
  *     identity is confirmed.
