@@ -56,7 +56,6 @@ class PointCalculationTest extends EvaluationTest {
   void shouldCalculateNviPointsForSingleInstitution(PointParameters parameters) {
     var publication =
         factory
-            .withTopLevelOrganizations(nviOrganization1)
             .withCreatorAffiliatedWith(nviOrganization1)
             .withPublicationType(parameters.instanceType())
             .withPublicationChannel(parameters.channelType(), parameters.level())
@@ -79,7 +78,6 @@ class PointCalculationTest extends EvaluationTest {
     var nonNviOrganization2 = factory.setupTopLevelOrganization(nonNviCreatorCountryCode, false);
     var publication =
         factory
-            .withTopLevelOrganizations(nviOrganization1, nviOrganization2, nonNviOrganization2)
             .withCreatorAffiliatedWith(nviOrganization1, nviOrganization2)
             .withCreatorAffiliatedWith(nviOrganization1)
             .withCreatorsAffiliatedWith(nonNviCreatorCount, nonNviOrganization2)
@@ -104,7 +102,6 @@ class PointCalculationTest extends EvaluationTest {
     var nonNviOrganization2 = factory.setupTopLevelOrganization(nonNviCreatorCountryCode, false);
     var publication =
         factory
-            .withTopLevelOrganizations(nviOrganization1, nviOrganization2, nonNviOrganization2)
             .withCreatorAffiliatedWith(nviOrganization1)
             .withCreatorAffiliatedWith(nviOrganization2)
             .withCreatorsAffiliatedWith(nonNviCreatorCount, nonNviOrganization2)
@@ -119,10 +116,7 @@ class PointCalculationTest extends EvaluationTest {
   @Test
   void shouldCountTotalCreatorSharesForTopLevelAffiliations() {
     var publication =
-        factory
-            .withTopLevelOrganizations(nviOrganization1)
-            .withCreatorAffiliatedWith(nviOrganization1.hasPart())
-            .getExpandedPublication();
+        factory.withCreatorAffiliatedWith(nviOrganization1.hasPart()).getExpandedPublication();
 
     var candidate = getEvaluatedCandidate(publication).pointCalculation();
     var expectedPoints = asBigDecimal("1");
@@ -136,7 +130,6 @@ class PointCalculationTest extends EvaluationTest {
   void shouldNotGiveInternationalPointsIfNonCreatorAffiliatedWithInternationalInstitution() {
     var publication =
         factory
-            .withTopLevelOrganizations(nviOrganization1, nonNviOrganization)
             .withCreatorAffiliatedWith(nviOrganization1.hasPart())
             .withNonCreatorsAffiliatedWith(1, nonNviOrganization)
             .getExpandedPublication();
@@ -153,7 +146,6 @@ class PointCalculationTest extends EvaluationTest {
   void shouldNotCountCreatorSharesForNonCreators() {
     var publication =
         factory
-            .withTopLevelOrganizations(nviOrganization1, nviOrganization2)
             .withCreatorAffiliatedWith(nviOrganization1.hasPart())
             .withNonCreatorAffiliatedWith(nviOrganization2)
             .getExpandedPublication();
@@ -170,7 +162,6 @@ class PointCalculationTest extends EvaluationTest {
   void shouldCountOneCreatorShareForCreatorsWithoutAffiliations() {
     var publication =
         factory
-            .withTopLevelOrganizations(nviOrganization1, nviOrganization2)
             .withCreatorAffiliatedWith(nviOrganization1.hasPart())
             .withCreatorAffiliatedWith()
             .getExpandedPublication();
@@ -191,7 +182,6 @@ class PointCalculationTest extends EvaluationTest {
         Organization.builder().withCountryCode(COUNTRY_CODE_NORWAY).build();
     var publication =
         factory
-            .withTopLevelOrganizations(nviOrganization1)
             .withCreatorAffiliatedWith(
                 nviOrganization1, organizationWithoutId1, organizationWithoutId2)
             .getExpandedPublication();
@@ -215,7 +205,6 @@ class PointCalculationTest extends EvaluationTest {
         Organization.builder().withCountryCode(COUNTRY_CODE_NORWAY).build();
     var publication =
         factory
-            .withTopLevelOrganizations(nviOrganization1)
             .withCreatorAffiliatedWith(nviOrganization1)
             .withCreatorAffiliatedWith(organizationWithoutId1, organizationWithoutId2)
             .getExpandedPublication();
@@ -233,10 +222,7 @@ class PointCalculationTest extends EvaluationTest {
   void shouldCountOneInstitutionShareForCreatorsWithSeveralAffiliationsInSameInstitution() {
     var expectedPoints = getExpectedPointsForSingleContributorWithTwoAffiliations();
     var publication =
-        factory
-            .withTopLevelOrganizations(nviOrganization1)
-            .withCreatorAffiliatedWith(nviOrganization1.hasPart())
-            .getExpandedPublication();
+        factory.withCreatorAffiliatedWith(nviOrganization1.hasPart()).getExpandedPublication();
 
     var candidate = getEvaluatedCandidate(publication).pointCalculation();
     var actualContributorPoints =
@@ -262,7 +248,6 @@ class PointCalculationTest extends EvaluationTest {
     var expectedPoints = getExpectedPointsForTwoContributorsWithThreeAffiliations();
     var publication =
         factory
-            .withTopLevelOrganizations(nviOrganization1, nviOrganization2)
             .withCreatorAffiliatedWith(nviOrganization1.hasPart())
             .withCreatorAffiliatedWith(nviOrganization1.hasPart().getFirst())
             .getExpandedPublication();

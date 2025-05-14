@@ -89,12 +89,12 @@ public class SampleExpandedPublicationFactory {
   public SampleExpandedPublicationFactory withTopLevelOrganizations(
       Organization... topLevelOrganizations) {
     for (Organization organization : topLevelOrganizations) {
-      addTopLevelOrganization(organization, organization.countryCode());
+      addTopLevelOrganization(organization);
     }
     return this;
   }
 
-  private void addTopLevelOrganization(Organization topLevelOrganization, String countryCode) {
+  private void addTopLevelOrganization(Organization topLevelOrganization) {
     var expandedSubOrganizations = new ArrayList<SampleExpandedOrganization>();
     for (var subOrganization : topLevelOrganization.hasPart()) {
       expandedSubOrganizations.add(createSubOrganization(subOrganization));
@@ -103,7 +103,7 @@ public class SampleExpandedPublicationFactory {
         SampleExpandedOrganization.builder()
             .withId(topLevelOrganization.id())
             .withType()
-            .withCountryCode(countryCode)
+            .withCountryCode(topLevelOrganization.countryCode())
             .withLabels(topLevelOrganization.labels())
             .withSubOrganizations(
                 expandedSubOrganizations.toArray(SampleExpandedOrganization[]::new))
@@ -283,6 +283,7 @@ public class SampleExpandedPublicationFactory {
   public Organization setupTopLevelOrganization(String countryCode, boolean isNviOrganization) {
     var topLevelOrganization = setupRandomOrganization(countryCode, 2, uriRetriever);
     mockCustomerApiResponse(topLevelOrganization.id(), isNviOrganization);
+    addTopLevelOrganization(topLevelOrganization);
     return topLevelOrganization;
   }
 
