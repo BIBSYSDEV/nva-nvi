@@ -8,7 +8,6 @@ import static no.sikt.nva.nvi.test.TestUtils.createResponse;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
@@ -40,7 +39,6 @@ import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeSecretsManagerClient;
 import nva.commons.core.Environment;
 import nva.commons.core.StringUtils;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 
 @SuppressWarnings("PMD.CouplingBetweenObjects")
@@ -76,12 +74,6 @@ class EvaluationTest {
         .map(InstitutionPoints::institutionPoints)
         .findFirst()
         .orElseThrow();
-  }
-
-  @BeforeAll
-  static void init() {
-    when(ENVIRONMENT.readEnv("CANDIDATE_QUEUE_URL")).thenReturn("My test candidate queue url");
-    when(ENVIRONMENT.readEnv("CANDIDATE_DLQ_URL")).thenReturn("My test candidate dlq url");
   }
 
   @BeforeEach

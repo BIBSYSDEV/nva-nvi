@@ -25,6 +25,8 @@ dependencies {
 test {
     environment("ALLOWED_ORIGIN", "*")
     environment("API_HOST", "api.fake.nva.aws.unit.no")
+    environment("CANDIDATE_DLQ_URL", "http://localhost:3000/candidate-DLQ")
+    environment("CANDIDATE_QUEUE_URL", "http://localhost:3000/candidate-queue")
     environment("CUSTOM_DOMAIN_BASE_PATH", "scientific-index")
     environment("SEARCH_INFRASTRUCTURE_API_HOST", "localhost")
     environment("SEARCH_INFRASTRUCTURE_AUTH_URI", "localhost")
@@ -34,4 +36,5 @@ test {
     environment("EXPANDED_RESOURCES_BUCKET", "testBucket")
     environment("NVI_TABLE_NAME", "some-table")
     environment("COGNITO_AUTHORIZER_URLS", "http://localhost:3000")
+    environment("UPSERT_CANDIDATE_DLQ_QUEUE_URL", "http://localhost:3000/upsert-candidate-DLQ")
 }
