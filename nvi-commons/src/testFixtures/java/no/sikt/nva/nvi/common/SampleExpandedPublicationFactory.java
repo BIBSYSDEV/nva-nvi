@@ -37,13 +37,14 @@ import no.sikt.nva.nvi.test.SampleExpandedPublicationChannel;
 import no.sikt.nva.nvi.test.SampleExpandedPublicationDate;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.auth.uriretriever.UriRetriever;
+import nva.commons.core.Environment;
+import nva.commons.core.paths.UriWrapper;
 
 public class SampleExpandedPublicationFactory {
   private static final String ROLE_CREATOR = "Creator";
   private static final String ROLE_OTHER = "SomeOtherRole";
 
-  private static final URI CUSTOMER_API =
-      URI.create("https://api.dev.nva.aws.unit.no/customer/cristinId");
+  private final Environment environment;
   private final AuthorizedBackendUriRetriever authorizedBackendUriRetriever;
   private final UriRetriever uriRetriever;
   private final List<SampleExpandedContributor> contributors = new ArrayList<>();
@@ -56,8 +57,15 @@ public class SampleExpandedPublicationFactory {
 
   public SampleExpandedPublicationFactory(
       AuthorizedBackendUriRetriever authorizedBackendUriRetriever, UriRetriever uriRetriever) {
+    this.environment = new Environment();
     this.authorizedBackendUriRetriever = authorizedBackendUriRetriever;
     this.uriRetriever = uriRetriever;
+  }
+
+  public SampleExpandedPublicationFactory(TestScenario scenario) {
+    this.environment = scenario.getEnvironment();
+    this.authorizedBackendUriRetriever = scenario.getAuthorizedBackendUriRetriever();
+    this.uriRetriever = scenario.getUriRetriever();
   }
 
   public static SampleExpandedPublicationFactory defaultExpandedPublicationFactory(
@@ -68,7 +76,6 @@ public class SampleExpandedPublicationFactory {
     var nonNviOrganization = factory.setupTopLevelOrganization(COUNTRY_CODE_SWEDEN, false);
 
     return factory
-        .withTopLevelOrganizations(nviOrganization1, nviOrganization2, nonNviOrganization)
         .withCreatorAffiliatedWith(nviOrganization1)
         .withCreatorAffiliatedWith(nviOrganization2.hasPart())
         .withNonCreatorsAffiliatedWith(1, nviOrganization1)
@@ -122,8 +129,13 @@ public class SampleExpandedPublicationFactory {
   }
 
   private URI getCustomerApiUri(URI organizationId) {
+    var getCustomerEndpoint =
+        UriWrapper.fromHost(environment.readEnv("API_HOST"))
+            .addChild("customer")
+            .addChild("cristinId")
+            .getUri();
     var parameterId = URLEncoder.encode(organizationId.toString(), StandardCharsets.UTF_8);
-    return URI.create(CUSTOMER_API + "/" + parameterId);
+    return URI.create(getCustomerEndpoint + "/" + parameterId);
   }
 
   private void addContributor(

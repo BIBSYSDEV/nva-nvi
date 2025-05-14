@@ -22,10 +22,6 @@ public class ScenarioContext implements Startable {
     return scenario.getPeriodRepository();
   }
 
-  public FakeS3Client getS3Client() {
-    return s3Client;
-  }
-
   @Override
   public void start() {
     this.scenario = new TestScenario();
