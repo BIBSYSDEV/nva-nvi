@@ -58,7 +58,7 @@ public class CandidateTestSetup {
     scenario = new TestScenario();
     candidateRepository = scenario.getCandidateRepository();
     periodRepository = scenario.getPeriodRepository();
-    mockUriRetriever = scenario.getUriRetriever();
+    mockUriRetriever = scenario.getMockedUriRetriever();
     mockOrganizationRetriever = scenario.getOrganizationRetriever();
     setupOpenPeriod(scenario, CURRENT_YEAR);
   }

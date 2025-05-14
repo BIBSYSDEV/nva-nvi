@@ -729,9 +729,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     @BeforeEach
     void setup() {
       publicationDate = randomPublicationDate();
-      factory =
-          new SampleExpandedPublicationFactory(authorizedBackendUriRetriever, uriRetriever)
-              .withPublicationDate(publicationDate);
+      factory = new SampleExpandedPublicationFactory(scenario).withPublicationDate(publicationDate);
       nviOrganization = factory.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, true);
     }
 

@@ -70,17 +70,12 @@ public class EvaluationSteps {
   @Then("the Publication is a Candidate")
   public void thenThePublicationIsACandidate() {
     var publication = publicationBuilder.getExpandedPublication();
-    var candidate = getCandidateFromPublicationId(publication);
+    var candidate = getCandidateByPublicationId(publication);
     assertThat(candidate)
         .extracting(Candidate::getPublicationId, Candidate::isApplicable)
         .containsExactly(publication.id(), true);
 
     assertThat(candidate.getApprovals()).isNotEmpty();
-  }
-
-  private Candidate getCandidateFromPublicationId(SampleExpandedPublication publication) {
-    return Candidate.fetchByPublicationId(
-        publication::id, scenario.getCandidateRepository(), scenario.getPeriodRepository());
   }
 
   @Given("the Publication type is changed so that the Publication is no longer applicable")
@@ -92,10 +87,15 @@ public class EvaluationSteps {
   @Then("the Publication is a NonCandidate")
   public void thenThePublicationIsANonCandidate() {
     var publication = publicationBuilder.getExpandedPublication();
-    var candidate = getCandidateFromPublicationId(publication);
+    var candidate = getCandidateByPublicationId(publication);
     assertThat(candidate)
         .extracting(Candidate::getPublicationId, Candidate::isApplicable)
         .containsExactly(publication.id(), false);
     assertThat(candidate.getApprovals()).isEmpty();
+  }
+
+  private Candidate getCandidateByPublicationId(SampleExpandedPublication publication) {
+    return Candidate.fetchByPublicationId(
+        publication::id, scenario.getCandidateRepository(), scenario.getPeriodRepository());
   }
 }

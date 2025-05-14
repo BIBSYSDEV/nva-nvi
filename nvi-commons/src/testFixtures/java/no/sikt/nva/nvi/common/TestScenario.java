@@ -30,11 +30,9 @@ import software.amazon.awssdk.services.s3.S3Client;
 
 public class TestScenario {
   private static final Environment ENVIRONMENT = new Environment();
-  private static final AuthorizedBackendUriRetriever authorizedBackendUriRetriever =
-      mock(AuthorizedBackendUriRetriever.class);
-  private static final UriRetriever mockUriRetriever = mock(UriRetriever.class);
-  private static final OrganizationRetriever mockOrganizationRetriever =
-      new OrganizationRetriever(mockUriRetriever);
+  private final AuthorizedBackendUriRetriever authorizedBackendUriRetriever;
+  private final UriRetriever mockUriRetriever;
+  private final OrganizationRetriever mockOrganizationRetriever;
   private final DynamoDbClient localDynamo;
   private final CandidateRepository candidateRepository;
   private final PeriodRepository periodRepository;
@@ -46,6 +44,9 @@ public class TestScenario {
     this.localDynamo = initializeTestDatabase();
     this.candidateRepository = new CandidateRepository(localDynamo);
     this.periodRepository = new PeriodRepository(localDynamo);
+    this.authorizedBackendUriRetriever = mock(AuthorizedBackendUriRetriever.class);
+    this.mockUriRetriever = mock(UriRetriever.class);
+    this.mockOrganizationRetriever = new OrganizationRetriever(mockUriRetriever);
     this.defaultOrganization = setupTopLevelOrganizationWithSubUnits();
 
     s3Client = new FakeS3Client();
@@ -80,11 +81,11 @@ public class TestScenario {
     return mockOrganizationRetriever;
   }
 
-  public UriRetriever getUriRetriever() {
+  public UriRetriever getMockedUriRetriever() {
     return mockUriRetriever;
   }
 
-  public AuthorizedBackendUriRetriever getAuthorizedBackendUriRetriever() {
+  public AuthorizedBackendUriRetriever getMockedAuthorizedBackendUriRetriever() {
     return authorizedBackendUriRetriever;
   }
 

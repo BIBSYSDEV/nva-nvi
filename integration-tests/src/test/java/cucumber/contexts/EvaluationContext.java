@@ -40,7 +40,7 @@ public class EvaluationContext {
 
   private EvaluateNviCandidateHandler createEvaluateNviCandidateHandler() {
     var creatorVerificationUtil =
-        new CreatorVerificationUtil(scenario.getAuthorizedBackendUriRetriever());
+        new CreatorVerificationUtil(scenario.getMockedAuthorizedBackendUriRetriever());
     var resourceBucket = scenario.getEnvironment().readEnv(PERSISTED_RESOURCES_BUCKET);
     var storageReader = new S3StorageReader(scenario.getS3Client(), resourceBucket);
     var evaluatorService =

@@ -55,22 +55,15 @@ public class SampleExpandedPublicationFactory {
   private String publicationType = "AcademicArticle";
   private PublicationDate publicationDate = randomPublicationDateInCurrentYear();
 
-  public SampleExpandedPublicationFactory(
-      AuthorizedBackendUriRetriever authorizedBackendUriRetriever, UriRetriever uriRetriever) {
-    this.environment = new Environment();
-    this.authorizedBackendUriRetriever = authorizedBackendUriRetriever;
-    this.uriRetriever = uriRetriever;
-  }
-
   public SampleExpandedPublicationFactory(TestScenario scenario) {
     this.environment = scenario.getEnvironment();
-    this.authorizedBackendUriRetriever = scenario.getAuthorizedBackendUriRetriever();
-    this.uriRetriever = scenario.getUriRetriever();
+    this.authorizedBackendUriRetriever = scenario.getMockedAuthorizedBackendUriRetriever();
+    this.uriRetriever = scenario.getMockedUriRetriever();
   }
 
   public static SampleExpandedPublicationFactory defaultExpandedPublicationFactory(
-      AuthorizedBackendUriRetriever authorizedBackendUriRetriever, UriRetriever uriRetriever) {
-    var factory = new SampleExpandedPublicationFactory(authorizedBackendUriRetriever, uriRetriever);
+      TestScenario scenario) {
+    var factory = new SampleExpandedPublicationFactory(scenario);
     var nviOrganization1 = factory.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, true);
     var nviOrganization2 = factory.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, true);
     var nonNviOrganization = factory.setupTopLevelOrganization(COUNTRY_CODE_SWEDEN, false);

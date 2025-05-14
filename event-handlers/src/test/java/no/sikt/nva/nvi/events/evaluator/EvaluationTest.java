@@ -87,14 +87,14 @@ class EvaluationTest {
   @BeforeEach
   void commonSetup() {
     scenario = new TestScenario();
-    uriRetriever = scenario.getUriRetriever();
+    uriRetriever = scenario.getMockedUriRetriever();
     candidateRepository = scenario.getCandidateRepository();
     periodRepository = scenario.getPeriodRepository();
     setupOpenPeriod(scenario, HARDCODED_JSON_PUBLICATION_DATE.year());
 
     setupHttpResponses();
     mockSecretManager();
-    authorizedBackendUriRetriever = mock(AuthorizedBackendUriRetriever.class);
+    authorizedBackendUriRetriever = scenario.getMockedAuthorizedBackendUriRetriever();
     queueClient = new FakeSqsClient();
     s3Driver = scenario.getS3Driver();
     storageReader = new S3StorageReader(scenario.getS3Client(), BUCKET_NAME);
