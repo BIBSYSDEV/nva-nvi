@@ -73,7 +73,7 @@ public abstract class BaseCandidateRestHandlerTest {
     topLevelOrganizationId = topLevelOrganization.id();
     subOrganizationId = topLevelOrganization.hasPart().getFirst().id();
     mockOrganizationRetriever = scenario.getOrganizationRetriever();
-    mockUriRetriever = scenario.getUriRetriever();
+    mockUriRetriever = scenario.getMockedUriRetriever();
 
     output = new ByteArrayOutputStream();
     handler = createHandler();

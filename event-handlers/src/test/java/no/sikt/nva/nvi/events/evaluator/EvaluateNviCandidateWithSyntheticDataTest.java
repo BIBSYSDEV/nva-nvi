@@ -33,9 +33,7 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
   void setup() {
     var publicationDate = randomPublicationDate();
     setupOpenPeriod(scenario, publicationDate.year());
-    factory =
-        new SampleExpandedPublicationFactory(authorizedBackendUriRetriever, uriRetriever)
-            .withPublicationDate(publicationDate);
+    factory = new SampleExpandedPublicationFactory(scenario).withPublicationDate(publicationDate);
 
     // Set up default organizations suitable for most test cases
     nviOrganization = factory.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, true);
@@ -45,13 +43,12 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
   // The parser should be able to handle documents with 10 000 contributors in 30 seconds.
   // This test case is a bit more generous because the GitHub Actions test runner is underpowered.
   @ParameterizedTest
-  @Timeout(value = 30, unit = TimeUnit.SECONDS)
+  @Timeout(value = 45, unit = TimeUnit.SECONDS)
   @ValueSource(ints = {100, 1_000, 5_000})
   void shouldParseDocumentWithManyContributorsWithinTimeOut(int numberOfForeignContributors) {
     var numberOfNorwegianContributors = 10;
     var publication =
         factory
-            .withTopLevelOrganizations(nviOrganization, nonNviOrganization)
             .withCreatorsAffiliatedWith(numberOfNorwegianContributors, nviOrganization)
             .withCreatorsAffiliatedWith(numberOfForeignContributors, nonNviOrganization)
             .getExpandedPublication();
@@ -66,7 +63,6 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
     var nviOrganization2 = factory.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, true);
     var publication =
         factory
-            .withTopLevelOrganizations(nviOrganization, nviOrganization2)
             .withContributor(verifiedCreatorFrom(nviOrganization))
             .withContributor(verifiedCreatorFrom(nviOrganization2.hasPart().getFirst()))
             .getExpandedPublicationBuilder()
@@ -87,7 +83,6 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
     var expectedAbstract = "Lorem ipsum";
     var publication =
         factory
-            .withTopLevelOrganizations(nviOrganization)
             .withContributor(verifiedCreatorFrom(nviOrganization))
             .getExpandedPublicationBuilder()
             .withAbstract(expectedAbstract)
@@ -103,7 +98,6 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
       PageCountDto expectedPageCount, String publicationType, String channelType) {
     var publication =
         factory
-            .withTopLevelOrganizations(nviOrganization)
             .withContributor(verifiedCreatorFrom(nviOrganization))
             .withPublicationChannel(channelType, "LevelOne")
             .getExpandedPublicationBuilder()

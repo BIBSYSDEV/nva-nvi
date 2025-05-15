@@ -1,6 +1,8 @@
 package no.sikt.nva.nvi.events.evaluator;
 
 import static java.util.Objects.isNull;
+import static no.sikt.nva.nvi.common.EnvironmentFixtures.getEvaluateNviCandidateHandlerEnvironment;
+import static no.sikt.nva.nvi.common.EnvironmentFixtures.getUpsertNviCandidateHandlerEnvironment;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.events.evaluator.TestUtils.createEvent;
 import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_JSON_PUBLICATION_DATE;
@@ -8,7 +10,6 @@ import static no.sikt.nva.nvi.test.TestUtils.createResponse;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
@@ -38,16 +39,13 @@ import no.unit.nva.auth.uriretriever.BackendClientCredentials;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeSecretsManagerClient;
-import nva.commons.core.Environment;
 import nva.commons.core.StringUtils;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 
 @SuppressWarnings("PMD.CouplingBetweenObjects")
 class EvaluationTest {
 
   protected static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
-  protected static final Environment ENVIRONMENT = mock(Environment.class);
   protected static final Context CONTEXT = mock(Context.class);
   protected static final int SCALE = 4;
 
@@ -78,38 +76,37 @@ class EvaluationTest {
         .orElseThrow();
   }
 
-  @BeforeAll
-  static void init() {
-    when(ENVIRONMENT.readEnv("CANDIDATE_QUEUE_URL")).thenReturn("My test candidate queue url");
-    when(ENVIRONMENT.readEnv("CANDIDATE_DLQ_URL")).thenReturn("My test candidate dlq url");
-  }
-
   @BeforeEach
   void commonSetup() {
+    var evaluationEnvironment = getEvaluateNviCandidateHandlerEnvironment();
     scenario = new TestScenario();
-    uriRetriever = scenario.getUriRetriever();
+    uriRetriever = scenario.getMockedUriRetriever();
     candidateRepository = scenario.getCandidateRepository();
     periodRepository = scenario.getPeriodRepository();
     setupOpenPeriod(scenario, HARDCODED_JSON_PUBLICATION_DATE.year());
 
     setupHttpResponses();
     mockSecretManager();
-    authorizedBackendUriRetriever = mock(AuthorizedBackendUriRetriever.class);
+    authorizedBackendUriRetriever = scenario.getMockedAuthorizedBackendUriRetriever();
     queueClient = new FakeSqsClient();
-    s3Driver = scenario.getS3Driver();
-    storageReader = new S3StorageReader(scenario.getS3Client(), BUCKET_NAME);
-    var creatorVerificationUtil = new CreatorVerificationUtil(authorizedBackendUriRetriever);
+    s3Driver = scenario.getS3DriverForExpandedResourcesBucket();
+    storageReader = scenario.getS3StorageReaderForExpandedResourcesBucket();
+    var creatorVerificationUtil =
+        new CreatorVerificationUtil(authorizedBackendUriRetriever, evaluationEnvironment);
     evaluatorService =
         new EvaluatorService(
             storageReader, creatorVerificationUtil, candidateRepository, periodRepository);
-    handler = new EvaluateNviCandidateHandler(evaluatorService, queueClient, ENVIRONMENT);
+    handler = new EvaluateNviCandidateHandler(evaluatorService, queueClient, evaluationEnvironment);
   }
 
   protected UpsertNviCandidateHandler getUpsertNviCandidateHandler() {
     if (isNull(upsertNviCandidateHandler)) {
       upsertNviCandidateHandler =
           new UpsertNviCandidateHandler(
-              candidateRepository, periodRepository, mock(QueueClient.class), ENVIRONMENT);
+              candidateRepository,
+              periodRepository,
+              mock(QueueClient.class),
+              getUpsertNviCandidateHandlerEnvironment());
     }
     return upsertNviCandidateHandler;
   }

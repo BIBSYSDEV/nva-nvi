@@ -65,7 +65,9 @@ class ReEvaluateNviCandidatesHandlerTest {
     sqsClient = new FakeSqsClient();
     candidateRepository = scenario.getCandidateRepository();
     var nviService =
-        new BatchScanUtil(scenario.getCandidateRepository(), scenario.getS3StorageReader());
+        new BatchScanUtil(
+            scenario.getCandidateRepository(),
+            scenario.getS3StorageReaderForExpandedResourcesBucket());
     this.eventBridgeClient = new FakeEventBridgeClient();
     handler =
         new ReEvaluateNviCandidatesHandler(nviService, sqsClient, environment, eventBridgeClient);
