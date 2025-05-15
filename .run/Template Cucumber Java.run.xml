@@ -1,12 +1,17 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="true" type="CucumberJavaRunConfigurationType" factoryName="Cucumber java">
     <envs>
-      <env name="API_HOST" value="example.org" />
-      <env name="NVI_TABLE_NAME" value="some-table" />
+      <env name="API_HOST" value="api.fake.nva.aws.unit.no" />
+      <env name="BACKEND_CLIENT_AUTH_URL" value="api.fake.nva.aws.unit.no/auth" />
+      <env name="CANDIDATE_DLQ_URL" value="http://localhost:3000/candidate-DLQ" />
+      <env name="CANDIDATE_QUEUE_URL" value="http://localhost:3000/candidate-queue" />
+      <env name="COGNITO_AUTHORIZER_URLS" value="api.fake.nva.aws.unit.no/auth" />
       <env name="CUSTOM_DOMAIN_BASE_PATH" value="scientific-index" />
+      <env name="EXPANDED_RESOURCES_BUCKET" value="testBucket" />
+      <env name="NVI_TABLE_NAME" value="some-table" />
       <env name="SEARCH_INFRASTRUCTURE_AUTH_URI" value="localhost" />
       <env name="SEARCH_INFRASTRUCTURE_API_HOST" value="localhost" />
-      <env name="BACKEND_CLIENT_AUTH_URL" value="example.org/auth" />
+      <env name="UPSERT_CANDIDATE_DLQ_QUEUE_URL" value="http://localhost:3000/upsert-candidate-DLQ" />
     </envs>
     <option name="GLUE" value="cucumber/steps" />
     <shortenClasspath name="NONE" />

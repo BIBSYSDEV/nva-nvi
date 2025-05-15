@@ -34,12 +34,14 @@ public class CreatorVerificationUtil {
       "Failed to fetch customer for %s (status code: %d)";
   private static final String CUSTOMER = "customer";
   private static final String CRISTIN_ID = "cristinId";
-  private static final String API_HOST = new Environment().readEnv("API_HOST");
   private static final String COUNTRY_CODE_NORWAY = "NO";
+  private final String baseApiHostName;
   private final AuthorizedBackendUriRetriever authorizedBackendUriRetriever;
 
-  public CreatorVerificationUtil(AuthorizedBackendUriRetriever authorizedBackendUriRetriever) {
+  public CreatorVerificationUtil(
+      AuthorizedBackendUriRetriever authorizedBackendUriRetriever, Environment environment) {
     this.authorizedBackendUriRetriever = authorizedBackendUriRetriever;
+    this.baseApiHostName = environment.readEnv("API_HOST");
   }
 
   public static List<VerifiedNviCreator> getVerifiedCreators(Collection<NviCreator> creators) {
@@ -65,9 +67,9 @@ public class CreatorVerificationUtil {
         .toList();
   }
 
-  private static URI createCustomerApiUri(String institutionId) {
+  private URI createCustomerApiUri(String institutionId) {
     var getCustomerEndpoint =
-        UriWrapper.fromHost(API_HOST).addChild(CUSTOMER).addChild(CRISTIN_ID).getUri();
+        UriWrapper.fromHost(baseApiHostName).addChild(CUSTOMER).addChild(CRISTIN_ID).getUri();
     // Note: This is an odd way to encode the URI, but it may be necessary because of how this is
     // parsed
     // by the GetCustomerByCristinIdHandler in nva-identity-service. Check that it still works in

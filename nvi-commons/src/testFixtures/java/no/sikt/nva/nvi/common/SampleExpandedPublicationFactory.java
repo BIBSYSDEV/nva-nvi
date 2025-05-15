@@ -4,6 +4,7 @@ import static java.util.Collections.emptyList;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.UUID.randomUUID;
+import static no.sikt.nva.nvi.common.EnvironmentFixtures.getEvaluateNviCandidateHandlerEnvironment;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.setupRandomOrganization;
 import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublicationDateInCurrentYear;
 import static no.sikt.nva.nvi.test.TestConstants.CHANNEL_PUBLISHER;
@@ -37,13 +38,14 @@ import no.sikt.nva.nvi.test.SampleExpandedPublicationChannel;
 import no.sikt.nva.nvi.test.SampleExpandedPublicationDate;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.auth.uriretriever.UriRetriever;
+import nva.commons.core.Environment;
+import nva.commons.core.paths.UriWrapper;
 
 public class SampleExpandedPublicationFactory {
   private static final String ROLE_CREATOR = "Creator";
   private static final String ROLE_OTHER = "SomeOtherRole";
 
-  private static final URI CUSTOMER_API =
-      URI.create("https://api.dev.nva.aws.unit.no/customer/cristinId");
+  private final Environment environment;
   private final AuthorizedBackendUriRetriever authorizedBackendUriRetriever;
   private final UriRetriever uriRetriever;
   private final List<SampleExpandedContributor> contributors = new ArrayList<>();
@@ -54,21 +56,20 @@ public class SampleExpandedPublicationFactory {
   private String publicationType = "AcademicArticle";
   private PublicationDate publicationDate = randomPublicationDateInCurrentYear();
 
-  public SampleExpandedPublicationFactory(
-      AuthorizedBackendUriRetriever authorizedBackendUriRetriever, UriRetriever uriRetriever) {
-    this.authorizedBackendUriRetriever = authorizedBackendUriRetriever;
-    this.uriRetriever = uriRetriever;
+  public SampleExpandedPublicationFactory(TestScenario scenario) {
+    this.environment = getEvaluateNviCandidateHandlerEnvironment();
+    this.authorizedBackendUriRetriever = scenario.getMockedAuthorizedBackendUriRetriever();
+    this.uriRetriever = scenario.getMockedUriRetriever();
   }
 
   public static SampleExpandedPublicationFactory defaultExpandedPublicationFactory(
-      AuthorizedBackendUriRetriever authorizedBackendUriRetriever, UriRetriever uriRetriever) {
-    var factory = new SampleExpandedPublicationFactory(authorizedBackendUriRetriever, uriRetriever);
+      TestScenario scenario) {
+    var factory = new SampleExpandedPublicationFactory(scenario);
     var nviOrganization1 = factory.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, true);
     var nviOrganization2 = factory.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, true);
     var nonNviOrganization = factory.setupTopLevelOrganization(COUNTRY_CODE_SWEDEN, false);
 
     return factory
-        .withTopLevelOrganizations(nviOrganization1, nviOrganization2, nonNviOrganization)
         .withCreatorAffiliatedWith(nviOrganization1)
         .withCreatorAffiliatedWith(nviOrganization2.hasPart())
         .withNonCreatorsAffiliatedWith(1, nviOrganization1)
@@ -89,12 +90,12 @@ public class SampleExpandedPublicationFactory {
   public SampleExpandedPublicationFactory withTopLevelOrganizations(
       Organization... topLevelOrganizations) {
     for (Organization organization : topLevelOrganizations) {
-      addTopLevelOrganization(organization, organization.countryCode());
+      addTopLevelOrganization(organization);
     }
     return this;
   }
 
-  private void addTopLevelOrganization(Organization topLevelOrganization, String countryCode) {
+  private void addTopLevelOrganization(Organization topLevelOrganization) {
     var expandedSubOrganizations = new ArrayList<SampleExpandedOrganization>();
     for (var subOrganization : topLevelOrganization.hasPart()) {
       expandedSubOrganizations.add(createSubOrganization(subOrganization));
@@ -103,7 +104,7 @@ public class SampleExpandedPublicationFactory {
         SampleExpandedOrganization.builder()
             .withId(topLevelOrganization.id())
             .withType()
-            .withCountryCode(countryCode)
+            .withCountryCode(topLevelOrganization.countryCode())
             .withLabels(topLevelOrganization.labels())
             .withSubOrganizations(
                 expandedSubOrganizations.toArray(SampleExpandedOrganization[]::new))
@@ -122,8 +123,13 @@ public class SampleExpandedPublicationFactory {
   }
 
   private URI getCustomerApiUri(URI organizationId) {
+    var getCustomerEndpoint =
+        UriWrapper.fromHost(environment.readEnv("API_HOST"))
+            .addChild("customer")
+            .addChild("cristinId")
+            .getUri();
     var parameterId = URLEncoder.encode(organizationId.toString(), StandardCharsets.UTF_8);
-    return URI.create(CUSTOMER_API + "/" + parameterId);
+    return URI.create(getCustomerEndpoint + "/" + parameterId);
   }
 
   private void addContributor(
@@ -283,6 +289,7 @@ public class SampleExpandedPublicationFactory {
   public Organization setupTopLevelOrganization(String countryCode, boolean isNviOrganization) {
     var topLevelOrganization = setupRandomOrganization(countryCode, 2, uriRetriever);
     mockCustomerApiResponse(topLevelOrganization.id(), isNviOrganization);
+    addTopLevelOrganization(topLevelOrganization);
     return topLevelOrganization;
   }
 
