@@ -13,6 +13,7 @@ import java.net.URI;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.dto.PointCalculationDto;
 import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
@@ -290,12 +291,15 @@ public class UpsertRequestBuilder {
             creatorShareCount,
             points,
             totalPoints);
+    var nviCreators =
+        Stream.concat(verifiedCreators.stream(), unverifiedCreators.stream())
+            .map(NviCreatorDto.class::cast)
+            .toList();
     return UpsertNviCandidateRequest.builder()
         .withPointCalculation(pointCalculation)
         .withPublicationDetails(publicationBuilder.build())
         .withPublicationBucketUri(publicationBucketUri)
-        .withVerifiedNviCreators(verifiedCreators)
-        .withUnverifiedNviCreators(unverifiedCreators)
+        .withNviCreators(nviCreators)
         .build();
   }
 }

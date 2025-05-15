@@ -434,10 +434,6 @@ class CandidateApprovalTest extends CandidateTestSetup {
     return verifiedNviCreatorDtoFrom(topLevelOrg.hasPart().getFirst());
   }
 
-  private UnverifiedNviCreatorDto createUnverifiedCreator(Organization topLevelOrg) {
-    return unverifiedNviCreatorDtoFrom(topLevelOrg.hasPart().getFirst());
-  }
-
   private UpsertRequestBuilder setupApprovedCandidateAndReturnRequestBuilder(
       URI approvedByOrg, Map<Organization, Collection<NviCreatorDto>> creatorsPerOrganization) {
     var requestBuilder = randomApplicableCandidateRequestBuilder(creatorsPerOrganization);
