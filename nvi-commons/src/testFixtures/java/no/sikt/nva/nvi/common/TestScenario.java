@@ -18,33 +18,38 @@ import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.test.SampleExpandedPublication;
+import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.paths.UnixPath;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
-import software.amazon.awssdk.services.s3.S3Client;
 
 public class TestScenario {
-  private static final String BUCKET_NAME = "testBucket";
+  private final AuthorizedBackendUriRetriever authorizedBackendUriRetriever;
+  private final UriRetriever mockUriRetriever;
+  private final OrganizationRetriever mockOrganizationRetriever;
   private final DynamoDbClient localDynamo;
   private final CandidateRepository candidateRepository;
   private final PeriodRepository periodRepository;
-  private final UriRetriever mockUriRetriever = mock(UriRetriever.class);
-  private final OrganizationRetriever mockOrganizationRetriever =
-      new OrganizationRetriever(mockUriRetriever);
   private final Organization defaultOrganization;
-  private final S3Client s3Client;
   private final S3Driver s3Driver;
+  private final S3StorageReader s3StorageReader;
 
   public TestScenario() {
-    this.localDynamo = initializeTestDatabase();
-    this.candidateRepository = new CandidateRepository(localDynamo);
-    this.periodRepository = new PeriodRepository(localDynamo);
-    this.defaultOrganization = setupTopLevelOrganizationWithSubUnits();
+    localDynamo = initializeTestDatabase();
+    candidateRepository = new CandidateRepository(localDynamo);
+    periodRepository = new PeriodRepository(localDynamo);
 
-    s3Client = new FakeS3Client();
-    s3Driver = new S3Driver(s3Client, BUCKET_NAME);
+    authorizedBackendUriRetriever = mock(AuthorizedBackendUriRetriever.class);
+    mockUriRetriever = mock(UriRetriever.class);
+    mockOrganizationRetriever = new OrganizationRetriever(mockUriRetriever);
+    defaultOrganization = setupTopLevelOrganizationWithSubUnits();
+
+    var s3Client = new FakeS3Client();
+    s3Driver = new S3Driver(s3Client, EnvironmentFixtures.EXPANDED_RESOURCES_BUCKET.getValue());
+    s3StorageReader =
+        new S3StorageReader(s3Client, EnvironmentFixtures.EXPANDED_RESOURCES_BUCKET.getValue());
   }
 
   public final Organization setupTopLevelOrganizationWithSubUnits() {
@@ -71,20 +76,20 @@ public class TestScenario {
     return mockOrganizationRetriever;
   }
 
-  public UriRetriever getUriRetriever() {
+  public UriRetriever getMockedUriRetriever() {
     return mockUriRetriever;
   }
 
-  public S3Client getS3Client() {
-    return s3Client;
+  public AuthorizedBackendUriRetriever getMockedAuthorizedBackendUriRetriever() {
+    return authorizedBackendUriRetriever;
   }
 
-  public S3Driver getS3Driver() {
+  public S3Driver getS3DriverForExpandedResourcesBucket() {
     return s3Driver;
   }
 
-  public S3StorageReader getS3StorageReader() {
-    return new S3StorageReader(s3Client, BUCKET_NAME);
+  public S3StorageReader getS3StorageReaderForExpandedResourcesBucket() {
+    return s3StorageReader;
   }
 
   public Organization getDefaultOrganization() {

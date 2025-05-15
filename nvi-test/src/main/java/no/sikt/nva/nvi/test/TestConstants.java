@@ -90,5 +90,7 @@ public final class TestConstants {
   public static final String CHANNEL_PUBLISHER = "publisher";
   public static final String CHANNEL_SERIES = "series";
 
+  public static final String PERSISTED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
+
   private TestConstants() {}
 }

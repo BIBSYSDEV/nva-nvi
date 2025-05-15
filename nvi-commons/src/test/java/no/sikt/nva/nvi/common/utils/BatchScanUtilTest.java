@@ -19,7 +19,6 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.Mockito.mock;
 
 import java.util.Arrays;
 import java.util.List;
@@ -33,7 +32,6 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.test.SampleExpandedPublication;
-import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,7 +52,9 @@ class BatchScanUtilTest {
     candidateRepository = scenario.getCandidateRepository();
 
     batchScanUtil =
-        new BatchScanUtil(scenario.getCandidateRepository(), scenario.getS3StorageReader());
+        new BatchScanUtil(
+            scenario.getCandidateRepository(),
+            scenario.getS3StorageReaderForExpandedResourcesBucket());
   }
 
   @Test
@@ -161,10 +161,7 @@ class BatchScanUtilTest {
   @Deprecated(forRemoval = true, since = "2025-04-29")
   @Test
   void shouldMigratePublicationIdentifierField() {
-    var publication =
-        defaultExpandedPublicationFactory(
-                mock(AuthorizedBackendUriRetriever.class), scenario.getUriRetriever())
-            .getExpandedPublication();
+    var publication = defaultExpandedPublicationFactory(scenario).getExpandedPublication();
     var dbCandidate =
         setupRandomCandidateBuilderWithPublicationInS3(publication)
             .publicationIdentifier(null)
@@ -194,9 +191,7 @@ class BatchScanUtilTest {
     var originalCreator = new DbCreator(originalCreatorDto.id(), null, List.of(organization.id()));
 
     var publicationBuilder =
-        new SampleExpandedPublicationFactory(
-                mock(AuthorizedBackendUriRetriever.class), scenario.getUriRetriever())
-            .withTopLevelOrganizations(organization);
+        new SampleExpandedPublicationFactory(scenario).withTopLevelOrganizations(organization);
     var publication = publicationBuilder.getExpandedPublication();
 
     var originalDbCandidate =

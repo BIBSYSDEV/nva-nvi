@@ -21,10 +21,10 @@ import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Optional;
+import no.sikt.nva.nvi.common.EnvironmentFixtures;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
-import nva.commons.core.Environment;
 import nva.commons.core.ioutils.IoUtils;
 import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
@@ -45,7 +45,6 @@ class EvaluateNviCandidateWithCristinDataTest extends EvaluationTest {
       UriWrapper.fromUri(BASE_PATH).addChild("7401.0.0.0").getUri();
 
   private static final String CUSTOMER = "customer";
-  private static final String API_HOST = new Environment().readEnv("API_HOST");
   private static final String CRISTIN_ID = "cristinId";
 
   @BeforeEach
@@ -125,7 +124,10 @@ class EvaluateNviCandidateWithCristinDataTest extends EvaluationTest {
 
   private static URI createCustomerApiUri(String institutionId) {
     var getCustomerEndpoint =
-        UriWrapper.fromHost(API_HOST).addChild(CUSTOMER).addChild(CRISTIN_ID).getUri();
+        UriWrapper.fromHost(EnvironmentFixtures.API_HOST.getValue())
+            .addChild(CUSTOMER)
+            .addChild(CRISTIN_ID)
+            .getUri();
     return URI.create(
         getCustomerEndpoint + "/" + URLEncoder.encode(institutionId, StandardCharsets.UTF_8));
   }
