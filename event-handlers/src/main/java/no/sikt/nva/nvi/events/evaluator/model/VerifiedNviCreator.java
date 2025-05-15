@@ -34,6 +34,7 @@ public record VerifiedNviCreator(URI id, List<NviOrganization> nviAffiliations)
     return affiliation -> affiliation.isPartOf(institutionId);
   }
 
+  @Override
   public VerifiedNviCreatorDto toDto() {
     return VerifiedNviCreatorDto.builder()
         .withId(id)

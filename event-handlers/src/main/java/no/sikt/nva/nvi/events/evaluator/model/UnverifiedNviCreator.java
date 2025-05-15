@@ -26,6 +26,7 @@ public record UnverifiedNviCreator(String name, List<NviOrganization> nviAffilia
     return affiliation -> affiliation.isPartOf(institutionId);
   }
 
+  @Override
   public UnverifiedNviCreatorDto toDto() {
     return UnverifiedNviCreatorDto.builder()
         .withName(name)

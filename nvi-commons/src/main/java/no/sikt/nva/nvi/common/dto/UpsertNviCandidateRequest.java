@@ -5,8 +5,10 @@ import static no.sikt.nva.nvi.common.utils.Validator.shouldNotBeNull;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 
@@ -16,17 +18,16 @@ public record UpsertNviCandidateRequest(
     URI publicationBucketUri,
     PointCalculationDto pointCalculation,
     PublicationDto publicationDetails,
-    // TODO: Merge lists of verified and unverified creators
-    List<VerifiedNviCreatorDto> verifiedCreators,
-    List<UnverifiedNviCreatorDto> unverifiedCreators)
+    Collection<NviCreatorDto> nviCreators)
     implements CandidateType {
+
+  private static final boolean ALWAYS_APPLICABLE = true;
 
   public void validate() {
     publicationDetails.validate();
     pointCalculation.validate();
     shouldNotBeNull(publicationBucketUri, "Required field 'publicationBucketUri' is null");
-    shouldNotBeNull(verifiedCreators, "Required field 'verifiedCreators' is null");
-    shouldNotBeNull(unverifiedCreators, "Required field 'unverifiedCreators' is null");
+    shouldNotBeNull(nviCreators, "Required field 'nviCreators' is null");
   }
 
   @Override
@@ -35,7 +36,21 @@ public record UpsertNviCandidateRequest(
   }
 
   public boolean isApplicable() {
-    return true;
+    return ALWAYS_APPLICABLE;
+  }
+
+  public List<VerifiedNviCreatorDto> verifiedCreators() {
+    return nviCreators.stream()
+        .filter(VerifiedNviCreatorDto.class::isInstance)
+        .map(VerifiedNviCreatorDto.class::cast)
+        .toList();
+  }
+
+  public List<UnverifiedNviCreatorDto> unverifiedCreators() {
+    return nviCreators.stream()
+        .filter(UnverifiedNviCreatorDto.class::isInstance)
+        .map(UnverifiedNviCreatorDto.class::cast)
+        .toList();
   }
 
   public static Builder builder() {
@@ -47,8 +62,7 @@ public record UpsertNviCandidateRequest(
     private URI publicationBucketUri;
     private PointCalculationDto pointCalculation;
     private PublicationDto publicationDetails;
-    private List<VerifiedNviCreatorDto> verifiedNviCreators = Collections.emptyList();
-    private List<UnverifiedNviCreatorDto> unverifiedNviCreators = Collections.emptyList();
+    private final List<NviCreatorDto> nviCreators = new ArrayList<>();
 
     private Builder() {}
 
@@ -67,23 +81,25 @@ public record UpsertNviCandidateRequest(
       return this;
     }
 
-    public Builder withVerifiedNviCreators(List<VerifiedNviCreatorDto> verifiedNviCreators) {
-      this.verifiedNviCreators = verifiedNviCreators;
+    public Builder withNviCreators(Collection<NviCreatorDto> nviCreators) {
+      this.nviCreators.addAll(nviCreators);
       return this;
     }
 
-    public Builder withUnverifiedNviCreators(List<UnverifiedNviCreatorDto> unverifiedNviCreators) {
-      this.unverifiedNviCreators = unverifiedNviCreators;
+    public Builder withVerifiedNviCreators(Collection<VerifiedNviCreatorDto> verifiedNviCreators) {
+      this.nviCreators.addAll(verifiedNviCreators);
+      return this;
+    }
+
+    public Builder withUnverifiedNviCreators(
+        Collection<UnverifiedNviCreatorDto> unverifiedNviCreators) {
+      this.nviCreators.addAll(unverifiedNviCreators);
       return this;
     }
 
     public UpsertNviCandidateRequest build() {
       return new UpsertNviCandidateRequest(
-          publicationBucketUri,
-          pointCalculation,
-          publicationDetails,
-          verifiedNviCreators,
-          unverifiedNviCreators);
+          publicationBucketUri, pointCalculation, publicationDetails, nviCreators);
     }
   }
 }
