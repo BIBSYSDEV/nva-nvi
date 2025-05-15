@@ -52,7 +52,9 @@ class BatchScanUtilTest {
     candidateRepository = scenario.getCandidateRepository();
 
     batchScanUtil =
-        new BatchScanUtil(scenario.getCandidateRepository(), scenario.getS3StorageReader());
+        new BatchScanUtil(
+            scenario.getCandidateRepository(),
+            scenario.getS3StorageReaderForExpandedResourcesBucket());
   }
 
   @Test

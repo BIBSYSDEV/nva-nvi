@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.events.evaluator;
 
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
+import static no.sikt.nva.nvi.common.EnvironmentFixtures.getEvaluateNviCandidateHandlerEnvironment;
 import static no.sikt.nva.nvi.common.SampleExpandedPublicationFactory.mapOrganizationToAffiliation;
 import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.setupReportedCandidate;
@@ -117,7 +118,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
           .replace("__REPLACE_WITH_PUBLICATION_ID__", HARDCODED_PUBLICATION_ID.toString());
   private static final URI CUSTOMER_API_CRISTIN_NVI_ORG_TOP_LEVEL =
       URI.create(
-          "https://api.dev.nva.aws.unit.no/customer/cristinId/https%3A%2F%2Fapi"
+          "https://api.fake.nva.aws.unit.no/customer/cristinId/https%3A%2F%2Fapi"
               + ".dev.nva.aws.unit.no%2Fcristin%2Forganization%2F194.0.0.0");
   private static final String NON_NVI_CUSTOMER_PATH = "nonNviCustomerResponse.json";
 
@@ -166,7 +167,10 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     var resourceFileUri = setupCandidate(year);
     periodRepository = PeriodRepositoryFixtures.periodRepositoryReturningOpenedPeriod(year);
     setupEvaluatorService(periodRepository);
-    handler = new EvaluateNviCandidateHandler(evaluatorService, queueClient, ENVIRONMENT);
+
+    handler =
+        new EvaluateNviCandidateHandler(
+            evaluatorService, queueClient, getEvaluateNviCandidateHandlerEnvironment());
     var event = createEvent(new PersistedResourceMessage(resourceFileUri));
     handler.handleRequest(event, CONTEXT);
     var candidate = (UpsertNviCandidateRequest) getMessageBody().candidate();
@@ -632,9 +636,14 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
   }
 
   private void setupEvaluatorService(PeriodRepository periodRepository) {
-    var calculator = new CreatorVerificationUtil(authorizedBackendUriRetriever);
+    var environment = getEvaluateNviCandidateHandlerEnvironment();
+    var calculator = new CreatorVerificationUtil(authorizedBackendUriRetriever, environment);
     evaluatorService =
-        new EvaluatorService(storageReader, calculator, candidateRepository, periodRepository);
+        new EvaluatorService(
+            scenario.getS3StorageReaderForExpandedResourcesBucket(),
+            calculator,
+            candidateRepository,
+            periodRepository);
   }
 
   private URI setupCandidate(int year) throws IOException {

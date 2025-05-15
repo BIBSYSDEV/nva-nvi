@@ -1,6 +1,7 @@
 package cucumber.contexts;
 
-import static no.sikt.nva.nvi.test.TestConstants.PERSISTED_RESOURCES_BUCKET;
+import static no.sikt.nva.nvi.common.EnvironmentFixtures.getEvaluateNviCandidateHandlerEnvironment;
+import static no.sikt.nva.nvi.common.EnvironmentFixtures.getUpsertNviCandidateHandlerEnvironment;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static org.mockito.Mockito.mock;
 
@@ -9,7 +10,6 @@ import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.util.List;
-import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import no.sikt.nva.nvi.events.evaluator.EvaluateNviCandidateHandler;
@@ -39,19 +39,17 @@ public class EvaluationContext {
   }
 
   private EvaluateNviCandidateHandler createEvaluateNviCandidateHandler() {
+    var environment = getEvaluateNviCandidateHandlerEnvironment();
     var creatorVerificationUtil =
-        new CreatorVerificationUtil(scenario.getMockedAuthorizedBackendUriRetriever());
-    var resourceBucket = scenario.getEnvironment().readEnv(PERSISTED_RESOURCES_BUCKET);
-    var storageReader = new S3StorageReader(scenario.getS3Client(), resourceBucket);
+        new CreatorVerificationUtil(scenario.getMockedAuthorizedBackendUriRetriever(), environment);
     var evaluatorService =
         new EvaluatorService(
-            storageReader,
+            scenario.getS3StorageReaderForExpandedResourcesBucket(),
             creatorVerificationUtil,
             scenario.getCandidateRepository(),
             scenario.getPeriodRepository());
 
-    return new EvaluateNviCandidateHandler(
-        evaluatorService, evaluationOutputQueue, scenario.getEnvironment());
+    return new EvaluateNviCandidateHandler(evaluatorService, evaluationOutputQueue, environment);
   }
 
   private UpsertNviCandidateHandler createUpsertNviCandidateHandler() {
@@ -59,7 +57,7 @@ public class EvaluationContext {
         scenario.getCandidateRepository(),
         scenario.getPeriodRepository(),
         upsertErrorQueue,
-        scenario.getEnvironment());
+        getUpsertNviCandidateHandlerEnvironment());
   }
 
   public void evaluatePublicationAndPersistResult(SampleExpandedPublication publication) {

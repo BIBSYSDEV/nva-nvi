@@ -4,6 +4,7 @@ import static java.util.Collections.emptyList;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.UUID.randomUUID;
+import static no.sikt.nva.nvi.common.EnvironmentFixtures.getEvaluateNviCandidateHandlerEnvironment;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.setupRandomOrganization;
 import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublicationDateInCurrentYear;
 import static no.sikt.nva.nvi.test.TestConstants.CHANNEL_PUBLISHER;
@@ -56,7 +57,7 @@ public class SampleExpandedPublicationFactory {
   private PublicationDate publicationDate = randomPublicationDateInCurrentYear();
 
   public SampleExpandedPublicationFactory(TestScenario scenario) {
-    this.environment = scenario.getEnvironment();
+    this.environment = getEvaluateNviCandidateHandlerEnvironment();
     this.authorizedBackendUriRetriever = scenario.getMockedAuthorizedBackendUriRetriever();
     this.uriRetriever = scenario.getMockedUriRetriever();
   }

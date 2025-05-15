@@ -43,7 +43,9 @@ class MigrationTests {
     var scenario = new TestScenario();
     candidateRepository = scenario.getCandidateRepository();
     periodRepository = scenario.getPeriodRepository();
-    batchScanUtil = new BatchScanUtil(candidateRepository, scenario.getS3StorageReader());
+    batchScanUtil =
+        new BatchScanUtil(
+            candidateRepository, scenario.getS3StorageReaderForExpandedResourcesBucket());
   }
 
   @Test

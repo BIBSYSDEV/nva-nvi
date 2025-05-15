@@ -1,6 +1,8 @@
 package no.sikt.nva.nvi.events.evaluator;
 
 import static java.util.Objects.isNull;
+import static no.sikt.nva.nvi.common.EnvironmentFixtures.getEvaluateNviCandidateHandlerEnvironment;
+import static no.sikt.nva.nvi.common.EnvironmentFixtures.getUpsertNviCandidateHandlerEnvironment;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.events.evaluator.TestUtils.createEvent;
 import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_JSON_PUBLICATION_DATE;
@@ -37,7 +39,6 @@ import no.unit.nva.auth.uriretriever.BackendClientCredentials;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeSecretsManagerClient;
-import nva.commons.core.Environment;
 import nva.commons.core.StringUtils;
 import org.junit.jupiter.api.BeforeEach;
 
@@ -45,7 +46,6 @@ import org.junit.jupiter.api.BeforeEach;
 class EvaluationTest {
 
   protected static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
-  protected static final Environment ENVIRONMENT = mock(Environment.class);
   protected static final Context CONTEXT = mock(Context.class);
   protected static final int SCALE = 4;
 
@@ -78,6 +78,7 @@ class EvaluationTest {
 
   @BeforeEach
   void commonSetup() {
+    var evaluationEnvironment = getEvaluateNviCandidateHandlerEnvironment();
     scenario = new TestScenario();
     uriRetriever = scenario.getMockedUriRetriever();
     candidateRepository = scenario.getCandidateRepository();
@@ -88,20 +89,24 @@ class EvaluationTest {
     mockSecretManager();
     authorizedBackendUriRetriever = scenario.getMockedAuthorizedBackendUriRetriever();
     queueClient = new FakeSqsClient();
-    s3Driver = scenario.getS3Driver();
-    storageReader = new S3StorageReader(scenario.getS3Client(), BUCKET_NAME);
-    var creatorVerificationUtil = new CreatorVerificationUtil(authorizedBackendUriRetriever);
+    s3Driver = scenario.getS3DriverForExpandedResourcesBucket();
+    storageReader = scenario.getS3StorageReaderForExpandedResourcesBucket();
+    var creatorVerificationUtil =
+        new CreatorVerificationUtil(authorizedBackendUriRetriever, evaluationEnvironment);
     evaluatorService =
         new EvaluatorService(
             storageReader, creatorVerificationUtil, candidateRepository, periodRepository);
-    handler = new EvaluateNviCandidateHandler(evaluatorService, queueClient, ENVIRONMENT);
+    handler = new EvaluateNviCandidateHandler(evaluatorService, queueClient, evaluationEnvironment);
   }
 
   protected UpsertNviCandidateHandler getUpsertNviCandidateHandler() {
     if (isNull(upsertNviCandidateHandler)) {
       upsertNviCandidateHandler =
           new UpsertNviCandidateHandler(
-              candidateRepository, periodRepository, mock(QueueClient.class), ENVIRONMENT);
+              candidateRepository,
+              periodRepository,
+              mock(QueueClient.class),
+              getUpsertNviCandidateHandlerEnvironment());
     }
     return upsertNviCandidateHandler;
   }

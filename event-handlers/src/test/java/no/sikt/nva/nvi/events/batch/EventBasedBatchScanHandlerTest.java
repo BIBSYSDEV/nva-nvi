@@ -89,7 +89,9 @@ class EventBasedBatchScanHandlerTest {
     eventBridgeClient = new FakeEventBridgeClient();
     candidateRepository = new NviCandidateRepositoryHelper(scenario.getLocalDynamo());
     periodRepository = new NviPeriodRepositoryHelper(scenario.getLocalDynamo());
-    var batchScanUtil = new BatchScanUtil(candidateRepository, scenario.getS3StorageReader());
+    var batchScanUtil =
+        new BatchScanUtil(
+            candidateRepository, scenario.getS3StorageReaderForExpandedResourcesBucket());
     handler = new EventBasedBatchScanHandler(batchScanUtil, eventBridgeClient);
   }
 
