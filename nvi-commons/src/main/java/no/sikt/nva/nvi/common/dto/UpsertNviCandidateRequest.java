@@ -89,17 +89,6 @@ public record UpsertNviCandidateRequest(
       return this;
     }
 
-    public Builder withVerifiedNviCreators(Collection<VerifiedNviCreatorDto> verifiedNviCreators) {
-      this.nviCreators.addAll(verifiedNviCreators);
-      return this;
-    }
-
-    public Builder withUnverifiedNviCreators(
-        Collection<UnverifiedNviCreatorDto> unverifiedNviCreators) {
-      this.nviCreators.addAll(unverifiedNviCreators);
-      return this;
-    }
-
     public Builder withTopLevelNviOrganizations(Collection<Organization> topLevelNviOrganizations) {
       this.topLevelNviOrganizations.addAll(topLevelNviOrganizations);
       return this;
