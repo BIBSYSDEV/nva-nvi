@@ -3,14 +3,11 @@ package no.sikt.nva.nvi.events.evaluator;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.service.model.NviPeriod.fetchByPublishingYear;
-import static no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil.getUnverifiedCreators;
-import static no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil.getVerifiedCreators;
 import static nva.commons.core.attempt.Try.attempt;
 
 import java.net.URI;
 import java.time.Year;
 import java.util.Collection;
-import java.util.List;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
@@ -20,16 +17,12 @@ import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.exceptions.ValidationException;
 import no.sikt.nva.nvi.common.service.PublicationLoaderService;
-import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
-import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.exception.PeriodNotFoundException;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil;
 import no.sikt.nva.nvi.events.evaluator.model.NviCreator;
-import no.sikt.nva.nvi.events.evaluator.model.UnverifiedNviCreator;
-import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -151,32 +144,15 @@ public class EvaluatorService {
 
   private UpsertNviCandidateRequest constructNviCandidate(
       PublicationDto publicationDto, URI publicationBucketUri, Collection<NviCreator> creators) {
-    var verifiedCreatorsWithNviInstitutions = getVerifiedCreators(creators);
-    var unverifiedCreatorsWithNviInstitutions = getUnverifiedCreators(creators);
-    var pointCalculation =
-        PointService.calculatePoints(
-            publicationDto,
-            verifiedCreatorsWithNviInstitutions,
-            unverifiedCreatorsWithNviInstitutions);
+    var nviCreatorsAsDto = creators.stream().map(NviCreator::toDto).toList();
+    var pointCalculation = PointService.calculatePoints(publicationDto, creators);
 
     return UpsertNviCandidateRequest.builder()
         .withPublicationBucketUri(publicationBucketUri)
         .withPointCalculation(pointCalculation)
         .withPublicationDetails(publicationDto)
-        .withVerifiedNviCreators(mapVerifiedCreatorsToDto(verifiedCreatorsWithNviInstitutions))
-        .withUnverifiedNviCreators(
-            mapUnverifiedCreatorsToDto(unverifiedCreatorsWithNviInstitutions))
+        .withNviCreators(nviCreatorsAsDto)
         .build();
-  }
-
-  private static List<VerifiedNviCreatorDto> mapVerifiedCreatorsToDto(
-      List<VerifiedNviCreator> nviCreators) {
-    return nviCreators.stream().map(VerifiedNviCreator::toDto).toList();
-  }
-
-  private static List<UnverifiedNviCreatorDto> mapUnverifiedCreatorsToDto(
-      List<UnverifiedNviCreator> nviCreators) {
-    return nviCreators.stream().map(UnverifiedNviCreator::toDto).toList();
   }
 
   private boolean hasInvalidPublicationYear(PublicationDto publication) {

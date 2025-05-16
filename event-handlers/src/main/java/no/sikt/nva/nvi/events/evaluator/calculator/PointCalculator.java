@@ -2,6 +2,8 @@ package no.sikt.nva.nvi.events.evaluator.calculator;
 
 import static java.math.BigDecimal.ZERO;
 import static java.util.Objects.isNull;
+import static no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil.getUnverifiedCreators;
+import static no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil.getVerifiedCreators;
 import static no.sikt.nva.nvi.events.evaluator.calculator.PointCalculationConstants.INSTANCE_TYPE_AND_LEVEL_POINT_MAP;
 import static no.sikt.nva.nvi.events.evaluator.calculator.PointCalculationConstants.INTERNATIONAL_COLLABORATION_FACTOR;
 import static no.sikt.nva.nvi.events.evaluator.calculator.PointCalculationConstants.MATH_CONTEXT;
@@ -43,14 +45,13 @@ public class PointCalculator {
   public PointCalculator(
       PublicationChannelDto publicationChannel,
       InstanceType instanceType,
-      Collection<VerifiedNviCreator> verifiedNviCreators,
-      Collection<UnverifiedNviCreator> unverifiedNviCreators,
+      Collection<NviCreator> nviCreators,
       boolean isInternationalCollaboration,
       int creatorShareCount) {
     this.publicationChannel = publicationChannel;
     this.instanceType = instanceType;
-    this.verifiedNviCreators = verifiedNviCreators;
-    this.unverifiedNviCreators = unverifiedNviCreators;
+    this.verifiedNviCreators = getVerifiedCreators(nviCreators);
+    this.unverifiedNviCreators = getUnverifiedCreators(nviCreators);
     this.internationalCollaborationFactor = isInternationalCollaboration;
     this.collaborationFactor = getInternationalCollaborationFactor(isInternationalCollaboration);
     this.basePoints = getInstanceTypeAndLevelPoints(instanceType, publicationChannel);

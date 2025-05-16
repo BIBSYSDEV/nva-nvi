@@ -10,29 +10,20 @@ import no.sikt.nva.nvi.common.model.ChannelType;
 import no.sikt.nva.nvi.events.evaluator.calculator.PointCalculator;
 import no.sikt.nva.nvi.events.evaluator.model.NviCreator;
 import no.sikt.nva.nvi.events.evaluator.model.NviOrganization;
-import no.sikt.nva.nvi.events.evaluator.model.UnverifiedNviCreator;
-import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
 
 public final class PointService {
 
   private PointService() {}
 
   public static PointCalculationDto calculatePoints(
-      PublicationDto publication,
-      Collection<VerifiedNviCreator> verifiedNviCreators,
-      Collection<UnverifiedNviCreator> unverifiedNviCreators) {
+      PublicationDto publication, Collection<NviCreator> nviCreators) {
     var instanceType = publication.publicationType();
     var channel = getNviChannel(publication);
     var isInternationalCollaboration = publication.isInternationalCollaboration();
-    var totalShares = getTotalShares(publication, verifiedNviCreators, unverifiedNviCreators);
+    var totalShares = getTotalShares(publication, nviCreators);
 
     return new PointCalculator(
-            channel,
-            instanceType,
-            verifiedNviCreators,
-            unverifiedNviCreators,
-            isInternationalCollaboration,
-            totalShares)
+            channel, instanceType, nviCreators, isInternationalCollaboration, totalShares)
         .calculatePoints();
   }
 
@@ -64,20 +55,15 @@ public final class PointService {
   }
 
   private static int getTotalShares(
-      PublicationDto publication,
-      Collection<VerifiedNviCreator> verifiedNviCreators,
-      Collection<UnverifiedNviCreator> unverifiedNviCreators) {
+      PublicationDto publication, Collection<NviCreator> nviCreators) {
 
     var totalCreatorCount =
         (int) publication.contributors().stream().filter(ContributorDto::isCreator).count();
 
-    var verifiedShares =
-        verifiedNviCreators.stream().mapToInt(PointService::countOfExtraCreatorShares).sum();
+    var extraCreatorShares =
+        nviCreators.stream().mapToInt(PointService::countOfExtraCreatorShares).sum();
 
-    var unverifiedShares =
-        unverifiedNviCreators.stream().mapToInt(PointService::countOfExtraCreatorShares).sum();
-
-    return totalCreatorCount + verifiedShares + unverifiedShares;
+    return totalCreatorCount + extraCreatorShares;
   }
 
   /**
