@@ -8,10 +8,15 @@ import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.setupReportedCandid
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.sortByIdentifier;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidate;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidateBuilder;
+import static no.sikt.nva.nvi.common.db.DbPublicationDetailsFixtures.randomPublicationBuilder;
 import static no.sikt.nva.nvi.common.model.ContributorFixtures.randomCreator;
+import static no.sikt.nva.nvi.common.model.NviCreatorFixtures.unverifiedNviCreatorFrom;
+import static no.sikt.nva.nvi.common.model.NviCreatorFixtures.verifiedNviCreatorFrom;
+import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_NORWAY;
 import static no.sikt.nva.nvi.test.TestUtils.randomIntBetween;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
+import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.core.StringUtils.isBlank;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -31,6 +36,7 @@ import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
+import no.sikt.nva.nvi.test.SampleExpandedAffiliation;
 import no.sikt.nva.nvi.test.SampleExpandedPublication;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -216,6 +222,77 @@ class BatchScanUtilTest {
     Assertions.assertThat(actualCreators)
         .extracting("creatorName")
         .containsOnlyOnce(originalCreatorDto.name());
+  }
+
+  /**
+   * @deprecated Temporary migration code. To be removed when all candidates have been migrated.
+   */
+  @Deprecated(forRemoval = true, since = "2025-05-15")
+  @Test
+  void shouldMigrateTopLevelNviOrganizations() {
+    // Given an applicable Candidate with an expanded publication in S3
+    // And the Candidate does not have the field topLevelNviOrganizations persisted in the database
+    // When the migration is run
+    // Then the persisted Candidate should have the topLevelNviOrganizations field populated
+    // And the topLevelNviOrganizations field should only contain top-level organizations
+    // And the topLevelNviOrganizations field should only contain organizations affiliated with
+    // creators
+    var publicationBuilder = new SampleExpandedPublicationFactory(scenario);
+    var nviOrganization1 = publicationBuilder.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, true);
+    var nviOrganization2 = publicationBuilder.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, true);
+
+    var verifiedCreator = verifiedNviCreatorFrom(nviOrganization1);
+    var unverifiedCreator = unverifiedNviCreatorFrom(nviOrganization2.hasPart().getFirst());
+
+    var nviOrganization = scenario.setupTopLevelOrganizationWithSubUnits();
+    var originalCreatorDto = randomCreator(nviOrganization).withName(randomString()).build();
+    var originalCreator =
+        new DbCreator(originalCreatorDto.id(), null, List.of(nviOrganization.id()));
+
+    var publication =
+        publicationBuilder
+            .withContributor(verifiedCreator.toDto())
+            .withCreatorAffiliatedWith(nviOrganization2.hasPart().getFirst())
+            .getExpandedPublication();
+
+    var foo =
+        publication.contributors().stream()
+            .map(
+                contributor ->
+                    DbCreator.builder()
+                        .creatorId(contributor.id())
+                        .affiliations(
+                            contributor.affiliations().stream().flatMap(List::stream).map(SampleExpandedAffiliation::id))
+                        .build())
+            .toList();
+
+    var originalDbDetails =
+        randomPublicationBuilder(randomUri())
+            .topLevelNviOrganizations(null)
+            .creators(List.of(originalCreator));
+    var originalDbCandidate =
+        setupRandomCandidateBuilderWithPublicationInS3(publication)
+            .publicationDetails(originalDbDetails.build())
+            .creators(List.of(originalCreator))
+            .build();
+    var originalCandidate = candidateRepository.create(originalDbCandidate, List.of());
+    Assertions.assertThat(
+            originalCandidate.candidate().publicationDetails().topLevelNviOrganizations())
+        .isEmpty();
+
+    batchScanUtil.migrateAndUpdateVersion(10, null, emptyList());
+    var updatedDao =
+        candidateRepository.findCandidateById(originalCandidate.identifier()).orElseThrow();
+    var actualTopLevelOrganizations =
+        updatedDao.candidate().publicationDetails().topLevelNviOrganizations();
+    var expectedTopLevelOrganizations =
+        publication.topLevelOrganizations().stream()
+            .filter(organization -> COUNTRY_CODE_NORWAY.equals(organization.countryCode()))
+            .toList();
+
+    Assertions.assertThat(actualTopLevelOrganizations)
+        .isNotEmpty()
+        .hasSameSizeAs(expectedTopLevelOrganizations);
   }
 
   private static Map<String, String> getStartMarker(CandidateDao dao) {

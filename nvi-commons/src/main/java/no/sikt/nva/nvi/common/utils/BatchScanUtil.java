@@ -1,14 +1,17 @@
 package no.sikt.nva.nvi.common.utils;
 
 import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import static java.util.function.Predicate.not;
 import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
 import static nva.commons.core.StringUtils.isBlank;
 
 import java.net.URI;
+import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.StorageReader;
@@ -67,9 +70,40 @@ public class BatchScanUtil {
 
   private Dao migrate(Dao databaseEntry) {
     if (databaseEntry instanceof CandidateDao storedCandidate) {
-      return migratePublicationField(storedCandidate);
+      return migrateCandidateDao(storedCandidate);
     }
     return databaseEntry;
+  }
+
+  private CandidateDao migrateCandidateDao(CandidateDao candidateDao) {
+    // Check which migrations we need to run
+    var dbCandidate = candidateDao.candidate();
+    var shouldMigratePublicationDetails =
+        Optional.ofNullable(dbCandidate.publicationDetails()).isEmpty();
+    var shouldMigrateTopLevelOrganizations =
+        Optional.ofNullable(dbCandidate.publicationDetails())
+            .map(DbPublicationDetails::topLevelNviOrganizations)
+            .filter(not(List::isEmpty))
+            .isEmpty();
+
+    // Skip migration if both fields are already populated
+    if (!shouldMigratePublicationDetails && !shouldMigrateTopLevelOrganizations) {
+      return candidateDao;
+    }
+
+    // Get the parsed publication metadata
+    var publicationBucketUri = dbCandidate.publicationBucketUri();
+    var publication = publicationLoader.extractAndTransform(publicationBucketUri);
+
+    if (shouldMigratePublicationDetails) {
+      dbCandidate = migratePublicationField(dbCandidate, publication);
+    }
+
+    if (shouldMigrateTopLevelOrganizations) {
+      dbCandidate = migrateTopLevelNviOrganizations(dbCandidate, publication);
+    }
+
+    return candidateDao.copy().candidate(dbCandidate).build();
   }
 
   /**
@@ -79,49 +113,102 @@ public class BatchScanUtil {
    *     move to the new object).
    */
   @Deprecated(forRemoval = true, since = "2025-04-29")
-  private CandidateDao migratePublicationField(CandidateDao candidateDao) {
-    var dbCandidate = candidateDao.candidate();
-    if (isNull(dbCandidate.publicationDetails())) {
-      var publicationBucketUri = dbCandidate.publicationBucketUri();
-      var publication = publicationLoader.extractAndTransform(publicationBucketUri);
+  private DbCandidate migratePublicationField(DbCandidate dbCandidate, PublicationDto publication) {
+    // Build the new structure for persisted publication metadata from new and old data
+    var dbPointCalculation = getMigratedPointCalculation(dbCandidate);
+    var updatedDbCreators = getMigratedCreators(dbCandidate.creators(), publication);
 
-      // Build the new structure for persisted publication metadata from new and old data
-      var dbPointCalculation = getMigratedPointCalculation(dbCandidate);
+    var dbPublicationDetails =
+        DbPublicationDetails.builder()
+            // Get data we know should exist already from data stored in the database
+            .id(dbCandidate.publicationId())
+            .publicationBucketUri(dbCandidate.publicationBucketUri())
+            .publicationDate(dbCandidate.publicationDate())
 
-      var dbTopLevelOrganizations =
-          publication.topLevelOrganizations().stream().map(Organization::toDbOrganization).toList();
-      var updatedDbCreators = getMigratedCreators(dbCandidate.creators(), publication);
+            // Get other data from the parsed S3 document
+            .creators(updatedDbCreators)
+            .identifier(publication.identifier())
+            .title(publication.title())
+            .status(publication.status())
+            .modifiedDate(publication.modifiedDate())
+            .contributorCount(publication.contributors().size())
+            .abstractText(publication.abstractText())
+            .pages(dbPageCountFromDto(publication.pageCount()))
+            .build();
 
-      var dbPublicationDetails =
-          DbPublicationDetails.builder()
-              // Get data we know should exist already from data stored in the database
-              .id(dbCandidate.publicationId())
-              .publicationBucketUri(dbCandidate.publicationBucketUri())
-              .publicationDate(dbCandidate.publicationDate())
+    return dbCandidate
+        .copy()
+        .publicationIdentifier(publication.identifier())
+        .pointCalculation(dbPointCalculation)
+        .publicationDetails(dbPublicationDetails)
+        .creators(updatedDbCreators)
+        .build();
+  }
 
-              // Get other data from the parsed S3 document
-              .creators(updatedDbCreators)
-              .identifier(publication.identifier())
-              .title(publication.title())
-              .status(publication.status())
-              .modifiedDate(publication.modifiedDate())
-              .contributorCount(publication.contributors().size())
-              .abstractText(publication.abstractText())
-              .pages(dbPageCountFromDto(publication.pageCount()))
-              .topLevelOrganizations(dbTopLevelOrganizations)
-              .build();
+  /**
+   * @deprecated Temporary migration code. To be removed when all candidates have been migrated.
+   *     This migration populates the "topLevelOrganizations" field based on:
+   *     <ul>
+   *       <li>The organization hierarchy from parsing the original expanded publication in S3
+   *       <li>The existing affiliations of persisted creators
+   *     </ul>
+   *     It also populates the 'language! field, which was missed in the previous migration.
+   */
+  @Deprecated(forRemoval = true, since = "2025-05-15")
+  private DbCandidate migrateTopLevelNviOrganizations(
+      DbCandidate dbCandidate, PublicationDto publication) {
 
-      var updatedData =
-          dbCandidate
-              .copy()
-              .publicationIdentifier(publication.identifier())
-              .pointCalculation(dbPointCalculation)
-              .publicationDetails(dbPublicationDetails)
-              .creators(updatedDbCreators)
-              .build();
-      return candidateDao.copy().candidate(updatedData).build();
+    var topLevelNviOrganizations =
+        dbCandidate.creators().stream()
+            .map(DbCreatorType::affiliations)
+            .flatMap(List::stream)
+            .distinct()
+            .map(id -> findOrganizationForAffiliation(id, publication.topLevelOrganizations()))
+            .map(Organization::getTopLevelOrg)
+            .map(Organization::toDbOrganization)
+            .distinct()
+            .toList();
+
+    var originalDetails = dbCandidate.publicationDetails();
+    var updatedDetails =
+        DbPublicationDetails.builder()
+            // Copy existing data
+            .id(originalDetails.id())
+            .publicationBucketUri(originalDetails.publicationBucketUri())
+            .pages(originalDetails.pages())
+            .publicationDate(originalDetails.publicationDate())
+            .creators(originalDetails.creators())
+            .modifiedDate(originalDetails.modifiedDate())
+            .contributorCount(originalDetails.contributorCount())
+            .abstractText(originalDetails.abstractText())
+            .identifier(originalDetails.identifier())
+            .status(originalDetails.status())
+            .title(originalDetails.title())
+
+            // Add new data from the parsed S3 document
+            .topLevelNviOrganizations(topLevelNviOrganizations)
+            .language(publication.language())
+            .build();
+
+    return dbCandidate.copy().publicationDetails(updatedDetails).build();
+  }
+
+  private static Organization findOrganizationForAffiliation(
+      URI affiliationId, Collection<Organization> topLevelOrganizations) {
+    // Try to find a matching organization
+    var candidateOrganizations = new ArrayDeque<>(topLevelOrganizations);
+    while (!candidateOrganizations.isEmpty()) {
+      var organization = candidateOrganizations.pop();
+      if (organization.id().equals(affiliationId)) {
+        return organization;
+      }
+      if (nonNull(organization.hasPart()) && !organization.hasPart().isEmpty()) {
+        candidateOrganizations.addAll(organization.hasPart());
+      }
     }
-    return candidateDao;
+
+    // Fall back to creating a new organization if not found, using just the ID
+    return Organization.builder().withId(affiliationId).build();
   }
 
   /**

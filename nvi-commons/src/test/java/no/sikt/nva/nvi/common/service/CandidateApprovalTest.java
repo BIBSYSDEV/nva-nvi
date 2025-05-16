@@ -639,8 +639,10 @@ class CandidateApprovalTest extends CandidateTestSetup {
             .withScientificValue(HARDCODED_LEVEL)
             .withChannelType(ChannelType.JOURNAL)
             .build();
+    var topLevelNviOrganization = Organization.builder().withId(HARDCODED_INSTITUTION_ID).build();
     return randomUpsertRequestBuilder()
         .withVerifiedCreators(List.of(verifiedCreator))
+        .withTopLevelOrganizations(List.of(topLevelNviOrganization))
         .withInstanceType(HARDCODED_INSTANCE_TYPE)
         .withPublicationChannel(channel)
         .withPoints(
