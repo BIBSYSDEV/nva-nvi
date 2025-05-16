@@ -8,10 +8,19 @@ import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.setupReportedCandid
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.sortByIdentifier;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidate;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidateBuilder;
+import static no.sikt.nva.nvi.common.db.DbPublicationDetailsFixtures.randomPublicationBuilder;
+import static no.sikt.nva.nvi.common.model.ContributorFixtures.mapToContributorDto;
 import static no.sikt.nva.nvi.common.model.ContributorFixtures.randomCreator;
+import static no.sikt.nva.nvi.common.model.NviCreatorFixtures.mapToDbCreators;
+import static no.sikt.nva.nvi.common.model.NviCreatorFixtures.unverifiedNviCreatorFrom;
+import static no.sikt.nva.nvi.common.model.NviCreatorFixtures.verifiedNviCreatorFrom;
+import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_NORWAY;
+import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_SWEDEN;
 import static no.sikt.nva.nvi.test.TestUtils.randomIntBetween;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
+import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
+import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.core.StringUtils.isBlank;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -20,6 +29,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +41,8 @@ import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
+import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.service.model.PublicationDetails;
 import no.sikt.nva.nvi.test.SampleExpandedPublication;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -216,6 +228,131 @@ class BatchScanUtilTest {
     Assertions.assertThat(actualCreators)
         .extracting("creatorName")
         .containsOnlyOnce(originalCreatorDto.name());
+  }
+
+  /**
+   * @deprecated Temporary migration code. To be removed when all candidates have been migrated.
+   */
+  @Deprecated(forRemoval = true, since = "2025-05-15")
+  @Test
+  void shouldMigrateTopLevelNviOrganizations() {
+    // Given an applicable Candidate with an expanded publication in S3
+    // And the Candidate does not have the field topLevelNviOrganizations persisted in the database
+    // When the migration is run
+    // Then the persisted Candidate should have the topLevelNviOrganizations field populated
+    // And the topLevelNviOrganizations field only includes NVI organizations with affiliated
+    // Creators
+
+    // Create a publication with a mix of different organizations and creators
+    var publicationBuilder = new SampleExpandedPublicationFactory(scenario);
+    var nviOrganization1 = publicationBuilder.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, true);
+    var nviOrganization2 = publicationBuilder.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, true);
+    var nviOrganization3 = publicationBuilder.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, true);
+    var nonNviOrganization =
+        publicationBuilder.setupTopLevelOrganization(COUNTRY_CODE_SWEDEN, false);
+
+    var verifiedCreator = verifiedNviCreatorFrom(nviOrganization1);
+    var unverifiedCreator = unverifiedNviCreatorFrom(nviOrganization2.hasPart().getFirst());
+    var expectedNviCreators = List.of(verifiedCreator, unverifiedCreator);
+    var expectedTopLevelOrganizations = List.of(nviOrganization1, nviOrganization2);
+    var expectedLanguage = "http://lexvo.org/id/iso639-3/nob";
+    var publication =
+        publicationBuilder
+            .withContributor(mapToContributorDto(verifiedCreator))
+            .withContributor(mapToContributorDto(unverifiedCreator))
+            .withNonCreatorAffiliatedWith(nviOrganization3)
+            .withCreatorAffiliatedWith(nonNviOrganization)
+            .getExpandedPublicationBuilder()
+            .withLanguage(expectedLanguage)
+            .build();
+
+    // Set up an existing Candidate in the database with identifiers matching the publication
+    var dbCreators = mapToDbCreators(expectedNviCreators);
+    var dbPublicationDetails =
+        randomPublicationBuilder(randomUri())
+            .topLevelNviOrganizations(null)
+            .creators(dbCreators)
+            .build();
+    var originalDbCandidate =
+        setupRandomCandidateBuilderWithPublicationInS3(publication)
+            .publicationDetails(dbPublicationDetails)
+            .creators(dbCreators)
+            .build();
+    var originalCandidate = candidateRepository.create(originalDbCandidate, emptyList());
+    Assertions.assertThat(
+            originalCandidate.candidate().publicationDetails().topLevelNviOrganizations())
+        .isEmpty();
+
+    // Run the migration and check that the topLevelNviOrganizations field is populated as expected
+    batchScanUtil.migrateAndUpdateVersion(10, null, emptyList());
+    var actualCandidate =
+        Candidate.fetchByPublicationId(
+            publication::id, candidateRepository, scenario.getPeriodRepository());
+
+    Assertions.assertThat(actualCandidate.getPublicationDetails())
+        .extracting(
+            PublicationDetails::language,
+            PublicationDetails::topLevelOrganizations,
+            PublicationDetails::nviCreators)
+        .containsExactly(expectedLanguage, expectedTopLevelOrganizations, expectedNviCreators);
+  }
+
+  /**
+   * @deprecated Temporary migration code. To be removed when all candidates have been migrated.
+   */
+  @Deprecated(forRemoval = true, since = "2025-05-15")
+  @Test
+  void shouldNotDeleteUnrelatedDataWhenMigratingTopLevelOrganizations() {
+    // Create an expanded publication document
+    var publicationBuilder = new SampleExpandedPublicationFactory(scenario);
+    var nviOrganization1 = publicationBuilder.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, true);
+    var verifiedCreator = verifiedNviCreatorFrom(nviOrganization1);
+    var expectedNviCreators = List.of(verifiedCreator);
+    var expectedTopLevelOrganizations = List.of(nviOrganization1);
+    var publication =
+        publicationBuilder
+            .withContributor(mapToContributorDto(verifiedCreator))
+            .getExpandedPublication();
+
+    // Set up an existing Candidate in the database with identifiers matching the publication
+    var dbCreators = mapToDbCreators(expectedNviCreators);
+    var dbPublicationDetails =
+        randomPublicationBuilder(randomUri())
+            .topLevelNviOrganizations(null)
+            .abstractText(randomString())
+            .contributorCount(randomInteger())
+            .modifiedDate(Instant.now())
+            .creators(dbCreators)
+            .build();
+    var originalDbCandidate =
+        setupRandomCandidateBuilderWithPublicationInS3(publication)
+            .publicationDetails(dbPublicationDetails)
+            .creators(dbCreators)
+            .build();
+    var originalCandidate = candidateRepository.create(originalDbCandidate, emptyList());
+    Assertions.assertThat(
+            originalCandidate.candidate().publicationDetails().topLevelNviOrganizations())
+        .isEmpty();
+
+    // Run the migration and check that persisted data is updated correctly
+    batchScanUtil.migrateAndUpdateVersion(10, null, emptyList());
+    var actualCandidate =
+        Candidate.fetchByPublicationId(
+            publication::id, candidateRepository, scenario.getPeriodRepository());
+
+    Assertions.assertThat(actualCandidate.getPublicationDetails())
+        .extracting(
+            PublicationDetails::topLevelOrganizations,
+            PublicationDetails::nviCreators,
+            PublicationDetails::abstractText,
+            PublicationDetails::contributorCount,
+            PublicationDetails::modifiedDate)
+        .containsExactly(
+            expectedTopLevelOrganizations,
+            expectedNviCreators,
+            dbPublicationDetails.abstractText(),
+            dbPublicationDetails.contributorCount(),
+            dbPublicationDetails.modifiedDate());
   }
 
   private static Map<String, String> getStartMarker(CandidateDao dao) {

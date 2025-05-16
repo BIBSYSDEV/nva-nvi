@@ -60,6 +60,15 @@ public class ContributorFixtures {
         null, randomString(), STATUS_UNVERIFIED, ROLE_CREATOR, List.of(affiliations));
   }
 
+  public static ContributorDto mapToContributorDto(NviCreator nviCreator) {
+    return new ContributorDto(
+        nviCreator.id(),
+        nviCreator.name(),
+        nviCreator.verificationStatus(),
+        ROLE_CREATOR,
+        nviCreator.nviAffiliations());
+  }
+
   public static ContributorDtoBuilder builder() {
     return new ContributorDtoBuilder();
   }

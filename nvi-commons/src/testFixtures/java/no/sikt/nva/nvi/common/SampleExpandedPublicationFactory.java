@@ -134,7 +134,7 @@ public class SampleExpandedPublicationFactory {
 
   private void addContributor(
       URI id, String name, String role, Collection<Organization> affiliations) {
-    var verificationStatus = nonNull(id) ? "Verified" : "Unverified";
+    var verificationStatus = nonNull(id) ? "Verified" : "NotVerified";
     var expandedAffiliations =
         affiliations.stream()
             .map(SampleExpandedPublicationFactory::mapOrganizationToAffiliation)

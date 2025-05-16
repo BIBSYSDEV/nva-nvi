@@ -580,10 +580,8 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     var publicationDetails =
         createExpectedPublicationDetails(
             HARDCODED_PUBLICATION_ID, HARDCODED_PUBLICATION_DATE, instanceType, channelForLevel);
-    var verifiedCreators =
-        List.of(
-            new VerifiedNviCreatorDto(
-                HARDCODED_CREATOR_ID, null, List.of(CRISTIN_NVI_ORG_SUB_UNIT_ID)));
+    var verifiedCreator =
+        new VerifiedNviCreatorDto(HARDCODED_CREATOR_ID, null, List.of(CRISTIN_NVI_ORG_SUB_UNIT_ID));
     var expectedInstitutionPoints =
         institutionPoints.entrySet().stream()
             .map(
@@ -604,14 +602,14 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
             false,
             ONE.setScale(1, ROUNDING_MODE),
             basePoints,
-            countCreatorShares(verifiedCreators),
+            countCreatorShares(List.of(verifiedCreator)),
             expectedInstitutionPoints,
             totalPoints);
     return UpsertNviCandidateRequest.builder()
         .withPublicationBucketUri(publicationBucketUri)
         .withPointCalculation(pointCalculation)
         .withPublicationDetails(publicationDetails)
-        .withVerifiedNviCreators(verifiedCreators)
+        .withNviCreators(List.of(verifiedCreator))
         .build();
   }
 

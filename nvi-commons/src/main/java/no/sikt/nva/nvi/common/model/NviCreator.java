@@ -63,7 +63,7 @@ public record NviCreator(
     var creatorOrganizations = getCreatorOrganizations(creator.affiliations(), organizations);
     var verificationStatus =
         new VerificationStatus(
-            creator instanceof VerifiedNviCreatorDto ? "Verified" : "Unverified");
+            creator instanceof VerifiedNviCreatorDto ? "Verified" : "NotVerified");
     var creatorId =
         creator instanceof VerifiedNviCreatorDto verifiedCreator ? verifiedCreator.id() : null;
 
@@ -85,7 +85,7 @@ public record NviCreator(
     var verificationStatus =
         (creator instanceof DbCreator)
             ? new VerificationStatus("Verified")
-            : new VerificationStatus("Unverified");
+            : new VerificationStatus("NotVerified");
     var creatorId =
         (creator instanceof DbCreator verifiedCreator) ? verifiedCreator.creatorId() : null;
 

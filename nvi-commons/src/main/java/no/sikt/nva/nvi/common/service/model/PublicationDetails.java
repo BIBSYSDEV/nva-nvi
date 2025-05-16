@@ -1,7 +1,6 @@
 package no.sikt.nva.nvi.common.service.model;
 
 import static java.util.Collections.emptyList;
-import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.function.Predicate.not;
 
@@ -116,7 +115,7 @@ public record PublicationDetails(
         .publicationDate(publicationDate.toDbPublicationDate())
         .creators(dbCreators)
         .modifiedDate(modifiedDate)
-        .topLevelOrganizations(
+        .topLevelNviOrganizations(
             topLevelOrganizations.stream().map(Organization::toDbOrganization).toList())
         .build();
   }
@@ -183,10 +182,12 @@ public record PublicationDetails(
    */
   @Deprecated
   private static List<Organization> getTopLevelOrganizations(DbPublicationDetails dbDetails) {
-    if (isNull(dbDetails)) {
-      return emptyList();
-    }
-    return dbDetails.topLevelOrganizations().stream().map(Organization::from).toList();
+    return Optional.ofNullable(dbDetails)
+        .map(DbPublicationDetails::topLevelNviOrganizations)
+        .orElse(emptyList())
+        .stream()
+        .map(Organization::from)
+        .toList();
   }
 
   public static final class Builder {

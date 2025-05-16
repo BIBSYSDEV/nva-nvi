@@ -8,6 +8,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
@@ -18,7 +19,8 @@ public record UpsertNviCandidateRequest(
     URI publicationBucketUri,
     PointCalculationDto pointCalculation,
     PublicationDto publicationDetails,
-    Collection<NviCreatorDto> nviCreators)
+    Collection<NviCreatorDto> nviCreators,
+    Collection<Organization> topLevelNviOrganizations)
     implements CandidateType {
 
   private static final boolean ALWAYS_APPLICABLE = true;
@@ -63,6 +65,7 @@ public record UpsertNviCandidateRequest(
     private PointCalculationDto pointCalculation;
     private PublicationDto publicationDetails;
     private final List<NviCreatorDto> nviCreators = new ArrayList<>();
+    private final List<Organization> topLevelNviOrganizations = new ArrayList<>();
 
     private Builder() {}
 
@@ -86,20 +89,18 @@ public record UpsertNviCandidateRequest(
       return this;
     }
 
-    public Builder withVerifiedNviCreators(Collection<VerifiedNviCreatorDto> verifiedNviCreators) {
-      this.nviCreators.addAll(verifiedNviCreators);
-      return this;
-    }
-
-    public Builder withUnverifiedNviCreators(
-        Collection<UnverifiedNviCreatorDto> unverifiedNviCreators) {
-      this.nviCreators.addAll(unverifiedNviCreators);
+    public Builder withTopLevelNviOrganizations(Collection<Organization> topLevelNviOrganizations) {
+      this.topLevelNviOrganizations.addAll(topLevelNviOrganizations);
       return this;
     }
 
     public UpsertNviCandidateRequest build() {
       return new UpsertNviCandidateRequest(
-          publicationBucketUri, pointCalculation, publicationDetails, nviCreators);
+          publicationBucketUri,
+          pointCalculation,
+          publicationDetails,
+          nviCreators,
+          topLevelNviOrganizations);
     }
   }
 }

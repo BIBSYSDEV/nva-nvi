@@ -16,8 +16,9 @@ public record DbPublicationDetails(
     URI publicationBucketUri,
     DbPageCount pages,
     DbPublicationDate publicationDate,
+    // FIXME: This field should be called "nviCreators", as other creators are not included
     @DynamoDbConvertedBy(DbCreatorTypeListConverter.class) List<DbCreatorType> creators,
-    List<DbOrganization> topLevelOrganizations,
+    List<DbOrganization> topLevelNviOrganizations,
     Instant modifiedDate,
     int contributorCount,
     String abstractText,
@@ -28,8 +29,8 @@ public record DbPublicationDetails(
 
   public DbPublicationDetails {
     creators = Optional.ofNullable(creators).map(List::copyOf).orElse(emptyList());
-    topLevelOrganizations =
-        Optional.ofNullable(topLevelOrganizations).map(List::copyOf).orElse(emptyList());
+    topLevelNviOrganizations =
+        Optional.ofNullable(topLevelNviOrganizations).map(List::copyOf).orElse(emptyList());
   }
 
   public static Builder builder() {
@@ -43,7 +44,7 @@ public record DbPublicationDetails(
     private DbPageCount pages;
     private DbPublicationDate publicationDate;
     private List<DbCreatorType> creators;
-    private List<DbOrganization> topLevelOrganizations;
+    private List<DbOrganization> topLevelNviOrganizations;
     private Instant modifiedDate;
     private int contributorCount;
     private String abstractText;
@@ -79,8 +80,8 @@ public record DbPublicationDetails(
       return this;
     }
 
-    public Builder topLevelOrganizations(List<DbOrganization> topLevelOrganizations) {
-      this.topLevelOrganizations = topLevelOrganizations;
+    public Builder topLevelNviOrganizations(List<DbOrganization> topLevelNviOrganizations) {
+      this.topLevelNviOrganizations = topLevelNviOrganizations;
       return this;
     }
 
@@ -126,7 +127,7 @@ public record DbPublicationDetails(
           pages,
           publicationDate,
           creators,
-          topLevelOrganizations,
+          topLevelNviOrganizations,
           modifiedDate,
           contributorCount,
           abstractText,

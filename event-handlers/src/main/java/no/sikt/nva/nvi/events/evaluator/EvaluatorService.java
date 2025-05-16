@@ -8,8 +8,11 @@ import static nva.commons.core.attempt.Try.attempt;
 import java.net.URI;
 import java.time.Year;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.StorageReader;
+import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.dto.PublicationDto;
@@ -23,6 +26,7 @@ import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil;
 import no.sikt.nva.nvi.events.evaluator.model.NviCreator;
+import no.sikt.nva.nvi.events.evaluator.model.NviOrganization;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -146,13 +150,28 @@ public class EvaluatorService {
       PublicationDto publicationDto, URI publicationBucketUri, Collection<NviCreator> creators) {
     var nviCreatorsAsDto = creators.stream().map(NviCreator::toDto).toList();
     var pointCalculation = PointService.calculatePoints(publicationDto, creators);
+    var topLevelNviOrganizations = getTopLevelNviOrganizations(publicationDto, creators);
 
     return UpsertNviCandidateRequest.builder()
         .withPublicationBucketUri(publicationBucketUri)
         .withPointCalculation(pointCalculation)
         .withPublicationDetails(publicationDto)
         .withNviCreators(nviCreatorsAsDto)
+        .withTopLevelNviOrganizations(topLevelNviOrganizations)
         .build();
+  }
+
+  private static List<Organization> getTopLevelNviOrganizations(
+      PublicationDto publicationDto, Collection<NviCreator> creators) {
+    var topLevelNviAffiliations =
+        creators.stream()
+            .map(NviCreator::nviAffiliations)
+            .flatMap(List::stream)
+            .map(NviOrganization::topLevelOrganization)
+            .collect(Collectors.toSet());
+    return publicationDto.topLevelOrganizations().stream()
+        .filter(topLevelNviAffiliations::contains)
+        .toList();
   }
 
   private boolean hasInvalidPublicationYear(PublicationDto publication) {

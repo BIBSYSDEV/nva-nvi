@@ -434,10 +434,6 @@ class CandidateApprovalTest extends CandidateTestSetup {
     return verifiedNviCreatorDtoFrom(topLevelOrg.hasPart().getFirst());
   }
 
-  private UnverifiedNviCreatorDto createUnverifiedCreator(Organization topLevelOrg) {
-    return unverifiedNviCreatorDtoFrom(topLevelOrg.hasPart().getFirst());
-  }
-
   private UpsertRequestBuilder setupApprovedCandidateAndReturnRequestBuilder(
       URI approvedByOrg, Map<Organization, Collection<NviCreatorDto>> creatorsPerOrganization) {
     var requestBuilder = randomApplicableCandidateRequestBuilder(creatorsPerOrganization);
@@ -643,8 +639,10 @@ class CandidateApprovalTest extends CandidateTestSetup {
             .withScientificValue(HARDCODED_LEVEL)
             .withChannelType(ChannelType.JOURNAL)
             .build();
+    var topLevelNviOrganization = Organization.builder().withId(HARDCODED_INSTITUTION_ID).build();
     return randomUpsertRequestBuilder()
         .withVerifiedCreators(List.of(verifiedCreator))
+        .withTopLevelOrganizations(List.of(topLevelNviOrganization))
         .withInstanceType(HARDCODED_INSTANCE_TYPE)
         .withPublicationChannel(channel)
         .withPoints(

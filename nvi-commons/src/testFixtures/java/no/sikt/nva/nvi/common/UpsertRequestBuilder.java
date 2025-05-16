@@ -13,6 +13,7 @@ import java.net.URI;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.dto.PointCalculationDto;
 import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
@@ -33,8 +34,9 @@ public class UpsertRequestBuilder {
   private URI publicationBucketUri;
   private InstanceType instanceType;
   private boolean isInternationalCollaboration;
-  private List<UnverifiedNviCreatorDto> unverifiedCreators;
-  private List<VerifiedNviCreatorDto> verifiedCreators;
+  private List<UnverifiedNviCreatorDto> unverifiedCreators = emptyList();
+  private List<VerifiedNviCreatorDto> verifiedCreators = emptyList();
+  private List<Organization> topLevelNviOrganizations = emptyList();
   private PublicationChannelDto channelForLevel;
   private int creatorShareCount;
   private BigDecimal collaborationFactor;
@@ -60,6 +62,7 @@ public class UpsertRequestBuilder {
         .withIsInternationalCollaboration(publicationDetails.isInternationalCollaboration())
         .withVerifiedCreators(List.of(nviCreator))
         .withUnverifiedCreators(emptyList())
+        .withTopLevelOrganizations(List.of(topLevelOrganization))
         .withPublicationChannel(channel)
         .withInstanceType(publicationDetails.publicationType())
         .withPublicationDate(publicationDetails.publicationDate())
@@ -91,6 +94,7 @@ public class UpsertRequestBuilder {
         .withIsInternationalCollaboration(publicationDetails.isInternationalCollaboration())
         .withVerifiedCreators(List.of(nviCreator))
         .withUnverifiedCreators(emptyList())
+        .withTopLevelOrganizations(publicationDetails.topLevelOrganizations())
         .withPublicationChannel(channel)
         .withInstanceType(publicationDetails.publicationType())
         .withPublicationDate(publicationDetails.publicationDate())
@@ -119,6 +123,7 @@ public class UpsertRequestBuilder {
         .withIsInternationalCollaboration(pointCalculation.isInternationalCollaboration())
         .withVerifiedCreators(request.verifiedCreators())
         .withUnverifiedCreators(request.unverifiedCreators())
+        .withTopLevelOrganizations(request.topLevelNviOrganizations())
         .withPublicationChannel(pointCalculation.channel())
         .withInstanceType(pointCalculation.instanceType())
         .withPublicationDate(publicationDetails.publicationDate())
@@ -175,6 +180,7 @@ public class UpsertRequestBuilder {
   public UpsertRequestBuilder withTopLevelOrganizations(
       Collection<Organization> topLevelOrganizations) {
     this.publicationBuilder = publicationBuilder.withTopLevelOrganizations(topLevelOrganizations);
+    this.topLevelNviOrganizations = List.copyOf(topLevelOrganizations);
     return this;
   }
 
@@ -290,12 +296,16 @@ public class UpsertRequestBuilder {
             creatorShareCount,
             points,
             totalPoints);
+    var nviCreators =
+        Stream.concat(verifiedCreators.stream(), unverifiedCreators.stream())
+            .map(NviCreatorDto.class::cast)
+            .toList();
     return UpsertNviCandidateRequest.builder()
         .withPointCalculation(pointCalculation)
         .withPublicationDetails(publicationBuilder.build())
         .withPublicationBucketUri(publicationBucketUri)
-        .withVerifiedNviCreators(verifiedCreators)
-        .withUnverifiedNviCreators(unverifiedCreators)
+        .withNviCreators(nviCreators)
+        .withTopLevelNviOrganizations(topLevelNviOrganizations)
         .build();
   }
 }
