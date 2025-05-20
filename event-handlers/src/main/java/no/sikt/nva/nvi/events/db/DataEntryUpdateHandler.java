@@ -11,6 +11,7 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent.DynamodbStreamRecord;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import java.util.Objects;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
 import no.sikt.nva.nvi.common.db.CandidateDao;
@@ -81,31 +82,50 @@ public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
         .map(attempt(NviCandidateUpdatedMessage::from))
         .filter(Objects::nonNull)
         .forEach(this::publishToTopic);
-    return null;
+    try {
+      return null;
+    } catch (JsonProcessingException e) {
+      if (e.getCause() instanceof JsonProcessingException) {
+        LOGGER.error("Failed to process SQS event: {}", e.getCause().getMessage(), e.getCause());
+      } else {
+        throw e;
+      }
+    }
+    //
+    //    attempt( () -> {
+    //      input.getRecords().stream()
+    //          .map(SQSMessage::getBody)
+    //          .map(NviCandidateUpdatedMessage::from)
+    //          .filter(Objects::nonNull)
+    //          .forEach(this::publishToTopic);
+    //      return null;
+    //    });
+    //    try {
+    //
+    //    } catch (JsonProcessingException e) {
+    //      LOGGER.error("Failed to process SQS event: {}", e.getMessage());
+    //      LOGGER.error(ERROR_MESSAGE, getStackTrace(e));
+    //    }
   }
 
   private void publishToTopic(NviCandidateUpdatedMessage updateMessage) {
-    attempt(() -> publishMessage(updateMessage))
-        .orElse(
-            failure -> {
-              handleFailure(failure, updateMessage);
-              return null;
-            });
-  }
-
-  private NviPublishMessageResponse publishMessage(NviCandidateUpdatedMessage message)
-      throws Exception {
-    var operationType = message.operationType();
-    var dao = message.entryType();
+    var operationType = updateMessage.operationType();
+    var dao = updateMessage.entryType();
     // FIXME
-//    if (isNotCandidateOrApproval(dao) || isUnknownOperationType(operationType)) {
-//      LOGGER.info(SKIPPING_EVENT_MESSAGE, operationType, dao.getClass());
-//      return null;
-//    }
-    var topic = new DataEntryUpdateTopicProvider(environment).getTopic(message);
-    var response = snsClient.publish(writeAsString(message), topic);
-    LOGGER.info(PUBLISHED_MESSAGE, response.messageId(), topic);
-    return response;
+    //    if (isNotCandidateOrApproval(dao) || isUnknownOperationType(operationType)) {
+    //      LOGGER.info(SKIPPING_EVENT_MESSAGE, operationType, dao.getClass());
+    //      return null;
+    //    }
+    var topic = new DataEntryUpdateTopicProvider(environment).getTopic(updateMessage);
+    try {
+
+      var response = snsClient.publish(updateMessage.toJsonString(), topic);
+      LOGGER.info(PUBLISHED_MESSAGE, response.messageId(), topic);
+    } catch (JsonProcessingException e) {
+      LOGGER.error("Failed to process SQS event: {}", e.getMessage());
+      LOGGER.error(ERROR_MESSAGE, getStackTrace(e));
+      sendToDlq(updateMessage, e);
+    }
   }
 
   private NviPublishMessageResponse extractDaoAndPublish(DynamodbStreamRecord streamRecord)
@@ -145,11 +165,11 @@ public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
 
   private NviCandidateUpdatedMessage mapToUpdateMessage(String body) {
     return attempt(() -> dtoObjectMapper.readValue(body, NviCandidateUpdatedMessage.class))
-               .orElse(
-                   failure -> {
-                     handleFailure(failure, body);
-                     return null;
-                   });
+        .orElse(
+            failure -> {
+              handleFailure(failure, body);
+              return null;
+            });
   }
 
   private void handleFailure(Failure<?> failure, String body) {

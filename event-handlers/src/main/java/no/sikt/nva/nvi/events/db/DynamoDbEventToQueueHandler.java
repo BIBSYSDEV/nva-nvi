@@ -101,13 +101,13 @@ public class DynamoDbEventToQueueHandler implements RequestHandler<DynamodbEvent
     LOGGER.error(FAILURE_MESSAGE, failure.getException());
     LOGGER.error(
         FAILED_RECORDS_MESSAGE, records.stream().map(DynamodbStreamRecord::toString).toList());
-    records.forEach(record -> sendToDlq(record, failure.getException()));
+    records.forEach(streamRecord -> sendToDlq(streamRecord, failure.getException()));
     return new RuntimeException(failure.getException());
   }
 
-  private void sendToDlq(DynamodbStreamRecord record, Exception exception) {
-    var message = String.format(DLQ_MESSAGE, record.toString(), getStackTrace(exception));
-    extractIdFromRecord(record)
+  private void sendToDlq(DynamodbStreamRecord streamRecord, Exception exception) {
+    var message = String.format(DLQ_MESSAGE, streamRecord.toString(), getStackTrace(exception));
+    extractIdFromRecord(streamRecord)
         .ifPresentOrElse(
             id -> queueClient.sendMessage(message, dlqUrl, id),
             () -> queueClient.sendMessage(message, dlqUrl));
