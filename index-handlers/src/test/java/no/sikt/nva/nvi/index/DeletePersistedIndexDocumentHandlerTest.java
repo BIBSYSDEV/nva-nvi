@@ -118,7 +118,7 @@ class DeletePersistedIndexDocumentHandlerTest {
     var daoToSucceed = randomCandidateDao();
     setUpExistingDocumentInS3(daoToSucceed);
     var streamRecord =
-        DynamoDbTestUtils.eventWithCandidate(daoToSucceed, daoToSucceed, OperationType.REMOVE)
+        DynamoDbTestUtils.eventWithDao(daoToSucceed, daoToSucceed, OperationType.REMOVE)
             .getRecords()
             .getFirst();
     var event =

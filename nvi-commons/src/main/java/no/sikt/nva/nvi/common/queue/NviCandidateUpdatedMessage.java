@@ -13,8 +13,7 @@ public record NviCandidateUpdatedMessage(
     return dtoObjectMapper.readValue(json, NviCandidateUpdatedMessage.class);
   }
 
-  public String toJsonString()
-      throws JsonProcessingException {
+  public String toJsonString() throws JsonProcessingException {
     return dtoObjectMapper.writeValueAsString(this);
   }
 }

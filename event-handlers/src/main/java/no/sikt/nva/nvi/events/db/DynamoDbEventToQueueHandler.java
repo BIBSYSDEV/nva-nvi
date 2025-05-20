@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.events.db;
 
 import static no.sikt.nva.nvi.common.utils.DynamoDbUtils.extractIdFromRecord;
+import static no.sikt.nva.nvi.common.utils.DynamoDbUtils.getImage;
 import static no.sikt.nva.nvi.common.utils.ExceptionUtils.getStackTrace;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
@@ -11,10 +12,14 @@ import com.amazonaws.services.lambda.runtime.events.DynamodbEvent;
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent.DynamodbStreamRecord;
 import com.amazonaws.services.lambda.runtime.events.models.dynamodb.AttributeValue;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import no.sikt.nva.nvi.common.db.CandidateDao;
+import no.sikt.nva.nvi.common.db.Dao;
+import no.sikt.nva.nvi.common.db.DynamoEntryWithRangeKey;
 import no.sikt.nva.nvi.common.queue.DataEntryType;
 import no.sikt.nva.nvi.common.queue.NviCandidateUpdatedMessage;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
@@ -35,6 +40,8 @@ public class DynamoDbEventToQueueHandler implements RequestHandler<DynamodbEvent
   private static final String DLQ_MESSAGE = "Failed to process record %s. Exception: %s ";
   private static final String FAILURE_MESSAGE = "Failure while sending database events to queue";
   private static final String FAILED_RECORDS_MESSAGE = "Failed records: {}";
+  private static final String SKIPPING_EVENT_MESSAGE =
+      "Skipping event with operation type {} for dao type {}";
   private static final String INFO_MESSAGE = "Sent {} messages to queue. Failures: {}";
   private static final String IDENTIFIER_FIELD = "identifier";
   private static final String TYPE_FIELD = "type";
@@ -67,15 +74,32 @@ public class DynamoDbEventToQueueHandler implements RequestHandler<DynamodbEvent
   private static List<String> mapToUpdateMessages(List<DynamodbStreamRecord> records) {
     return records.stream()
         .map(DynamoDbEventToQueueHandler::mapToUpdateMessage)
+        .filter(Objects::nonNull)
         .map(DynamoDbEventToQueueHandler::writeAsJsonString)
         .toList();
   }
 
   private static NviCandidateUpdatedMessage mapToUpdateMessage(DynamodbStreamRecord streamRecord) {
-    var recordIdentifier = UUID.fromString(extractField(streamRecord, IDENTIFIER_FIELD));
-    var recordType = DataEntryType.parse(extractField(streamRecord, TYPE_FIELD));
     var operationType = OperationType.fromValue(streamRecord.getEventName());
-    return new NviCandidateUpdatedMessage(recordIdentifier, recordType, operationType);
+    var entryType = getEntryType(streamRecord);
+    if (entryType.shouldBeProcessedForIndexing()) {
+      var recordIdentifier = UUID.fromString(extractField(streamRecord, IDENTIFIER_FIELD));
+      return new NviCandidateUpdatedMessage(recordIdentifier, entryType, operationType);
+    }
+    LOGGER.info(SKIPPING_EVENT_MESSAGE, operationType, entryType);
+    return null;
+  }
+
+  private static DataEntryType getEntryType(DynamodbStreamRecord streamRecord) {
+    var image = getImage(streamRecord);
+    var dao = DynamoEntryWithRangeKey.parseAttributeValuesMap(image, Dao.class);
+
+    if (dao instanceof CandidateDao candidateDao) {
+      var isApplicable = candidateDao.candidate().applicable();
+      return isApplicable ? DataEntryType.CANDIDATE : DataEntryType.NON_CANDIDATE;
+    }
+
+    return DataEntryType.parse(extractField(streamRecord, TYPE_FIELD));
   }
 
   private static String extractField(DynamodbStreamRecord streamRecord, String field) {
@@ -83,11 +107,10 @@ public class DynamoDbEventToQueueHandler implements RequestHandler<DynamodbEvent
         Optional.ofNullable(streamRecord.getDynamodb().getOldImage())
             .orElse(streamRecord.getDynamodb().getNewImage());
     return Optional.ofNullable(image.get(field)).map(AttributeValue::getS).orElse(null);
-    // TODO: Handle non-applicable candidate
   }
 
-  private static String writeAsJsonString(NviCandidateUpdatedMessage streamRecord) {
-    return attempt(() -> dtoObjectMapper.writeValueAsString(streamRecord)).orElseThrow();
+  private static String writeAsJsonString(NviCandidateUpdatedMessage updateMessage) {
+    return attempt(() -> dtoObjectMapper.writeValueAsString(updateMessage)).orElseThrow();
   }
 
   private void splitIntoBatchesAndSend(DynamodbEvent input) {

@@ -1,8 +1,9 @@
 package no.sikt.nva.nvi.common;
 
 import static no.sikt.nva.nvi.common.DynamoDbTestUtils.dynamoDbEventWithEmptyPayload;
-import static no.sikt.nva.nvi.common.DynamoDbTestUtils.eventWithCandidate;
 import static no.sikt.nva.nvi.common.DynamoDbTestUtils.eventWithCandidateIdentifier;
+import static no.sikt.nva.nvi.common.DynamoDbTestUtils.eventWithDao;
+import static no.sikt.nva.nvi.common.DynamoDbTestUtils.mapFirstRecordToString;
 import static no.sikt.nva.nvi.common.DynamoDbTestUtils.mapToString;
 
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent.DynamodbStreamRecord;
@@ -54,12 +55,6 @@ public final class QueueServiceTestUtils {
     return sqsEvent;
   }
 
-  public static SQSEvent createEventWithMessages(List<SQSMessage> messages) {
-    var sqsEvent = new SQSEvent();
-    sqsEvent.setRecords(messages);
-    return sqsEvent;
-  }
-
   public static SQSEvent createEventWithOneInvalidRecord(UUID candidateIdentifier) {
     var sqsEvent = new SQSEvent();
     var message = createMessage(candidateIdentifier);
@@ -95,14 +90,14 @@ public final class QueueServiceTestUtils {
 
   public static SQSMessage createMessage(Dao oldImage, Dao newImage, OperationType operationType) {
     var message = new SQSMessage();
-    message.setBody(
-        generateSingleDynamoDbEventRecordWithEmptyPayload(oldImage, newImage, operationType));
+    var dynamoDbEvent = eventWithDao(oldImage, newImage, operationType);
+    message.setBody(mapFirstRecordToString(dynamoDbEvent));
     return message;
   }
 
-  private static SQSMessage createMessage(DynamodbStreamRecord record) {
+  private static SQSMessage createMessage(DynamodbStreamRecord streamRecord) {
     var message = new SQSMessage();
-    message.setBody(mapToString(record));
+    message.setBody(mapToString(streamRecord));
     return message;
   }
 
@@ -113,15 +108,10 @@ public final class QueueServiceTestUtils {
   }
 
   private static String generateSingleDynamoDbEventRecord(UUID candidateIdentifier) {
-    return mapToString(eventWithCandidateIdentifier(candidateIdentifier).getRecords().get(0));
+    return mapToString(eventWithCandidateIdentifier(candidateIdentifier).getRecords().getFirst());
   }
 
   private static String generateSingleDynamoDbEventRecordWithEmptyPayload() {
-    return mapToString(dynamoDbEventWithEmptyPayload().getRecords().get(0));
-  }
-
-  private static String generateSingleDynamoDbEventRecordWithEmptyPayload(
-      Dao oldImage, Dao newImage, OperationType operationType) {
-    return mapToString(eventWithCandidate(oldImage, newImage, operationType).getRecords().get(0));
+    return mapToString(dynamoDbEventWithEmptyPayload().getRecords().getFirst());
   }
 }

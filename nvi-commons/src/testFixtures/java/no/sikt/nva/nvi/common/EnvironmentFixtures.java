@@ -15,7 +15,16 @@ public enum EnvironmentFixtures {
   SEARCH_INFRASTRUCTURE_API_HOST("https://api.fake.sws.aws.sikt.no"),
   SEARCH_INFRASTRUCTURE_AUTH_URI("https://sws-auth.fake.auth.eu-west-1.amazoncognito.com"),
 
-  // Handler-specific environment variables
+  // SNS topics for indexing
+  TOPIC_CANDIDATE_INSERT("CANDIDATE_INSERT_TOPIC"),
+  TOPIC_CANDIDATE_APPLICABLE_UPDATE("CANDIDATE_APPLICABLE_UPDATE_TOPIC"),
+  TOPIC_CANDIDATE_NOT_APPLICABLE_UPDATE("CANDIDATE_NOT_APPLICABLE_UPDATE_TOPIC"),
+  TOPIC_CANDIDATE_REMOVE("CANDIDATE_REMOVE_TOPIC"),
+  TOPIC_APPROVAL_INSERT("APPROVAL_INSERT_TOPIC"),
+  TOPIC_APPROVAL_UPDATE("APPROVAL_UPDATE_TOPIC"),
+  TOPIC_APPROVAL_REMOVE("APPROVAL_REMOVE_TOPIC"),
+
+  // Other handler-specific environment variables
   CANDIDATE_QUEUE_URL("http://localhost:3000/candidate-queue"),
   DB_EVENTS_QUEUE_URL("http://localhost:3000/db-events-queue"),
   EXPANDED_RESOURCES_BUCKET("persisted-resources-bucket"),
@@ -64,6 +73,16 @@ public enum EnvironmentFixtures {
   }
 
   public static FakeEnvironment getDataEntryUpdateHandlerEnvironment() {
-    return getDefaultEnvironmentBuilder().with(DB_EVENTS_QUEUE_URL).with(INDEX_DLQ).build();
+    return getDefaultEnvironmentBuilder()
+        .with(DB_EVENTS_QUEUE_URL)
+        .with(INDEX_DLQ)
+        .with(TOPIC_CANDIDATE_INSERT)
+        .with(TOPIC_CANDIDATE_APPLICABLE_UPDATE)
+        .with(TOPIC_CANDIDATE_NOT_APPLICABLE_UPDATE)
+        .with(TOPIC_CANDIDATE_REMOVE)
+        .with(TOPIC_APPROVAL_INSERT)
+        .with(TOPIC_APPROVAL_UPDATE)
+        .with(TOPIC_APPROVAL_REMOVE)
+        .build();
   }
 }
