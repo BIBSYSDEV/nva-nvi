@@ -53,6 +53,15 @@ import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequestEntry;
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 import software.amazon.awssdk.services.sqs.model.SqsException;
 
+/**
+ * This class contains integration tests for first stage of the automatic indexing process. It tests
+ * that (faked) DynamoDB events are correctly processed and sent to the appropriate SQS queues and
+ * SNS topics. Ideally, the recipients of these messages should be included in the test suite too,
+ * but this is not done yet.
+ *
+ * <p>Each handler is wrapped with a managing class to make it easier to expand this test suite in
+ * the future.
+ */
 class DynamoUpdateEventTest {
   private FakeSqsClient sharedQueueClient;
   private FakeNotificationClient snsClient;
