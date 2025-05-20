@@ -37,6 +37,14 @@ public interface ParsableEnum {
         .orElseThrow(getNoSuchElementExceptionSupplier(enumClass, candidate));
   }
 
+  static <E extends Enum<E> & ParsableEnum> E parseOrDefault(
+      Class<E> enumClass, String candidate, E defaultValue) {
+    return Arrays.stream(enumClass.getEnumConstants())
+        .filter(e -> e.matches(candidate))
+        .findFirst()
+        .orElse(defaultValue);
+  }
+
   private static <E extends Enum<E> & ParsableEnum>
       Supplier<NoSuchElementException> getNoSuchElementExceptionSupplier(
           Class<E> enumClass, String candidate) {

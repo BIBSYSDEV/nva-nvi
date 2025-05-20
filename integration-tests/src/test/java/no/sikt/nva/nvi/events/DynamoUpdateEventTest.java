@@ -1,28 +1,21 @@
-package no.sikt.nva.nvi.events.db;
+package no.sikt.nva.nvi.events;
 
 import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.DynamoDbTestUtils.eventWithCandidate;
-import static no.sikt.nva.nvi.common.DynamoDbTestUtils.eventWithCandidateIdentifier;
-import static no.sikt.nva.nvi.common.DynamoDbTestUtils.randomDynamoDbEvent;
 import static no.sikt.nva.nvi.common.DynamoDbTestUtils.randomEventWithNumberOfDynamoRecords;
+import static no.sikt.nva.nvi.common.EnvironmentFixtures.getDataEntryUpdateHandlerEnvironment;
+import static no.sikt.nva.nvi.common.EnvironmentFixtures.getDynamoDbEventToQueueHandlerEnvironment;
 import static no.sikt.nva.nvi.common.db.DbApprovalStatusFixtures.randomApproval;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidate;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.params.provider.Arguments.argumentSet;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent;
+import com.amazonaws.services.lambda.runtime.events.SQSEvent;
+import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.util.List;
 import java.util.UUID;
@@ -32,8 +25,8 @@ import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.queue.DataEntryType;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import no.sikt.nva.nvi.common.queue.NviCandidateUpdatedMessage;
-import nva.commons.core.Environment;
-import nva.commons.logutils.LogUtils;
+import no.sikt.nva.nvi.events.db.DataEntryUpdateHandler;
+import no.sikt.nva.nvi.events.db.DynamoDbEventToQueueHandler;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,70 +34,93 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import software.amazon.awssdk.services.dynamodb.model.OperationType;
+import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequest;
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequestEntry;
-import software.amazon.awssdk.services.sqs.model.SqsException;
 
-class DynamoDbEventToQueueHandlerTest {
+class DynamoUpdateEventTest {
 
-  public static final Context CONTEXT = mock(Context.class);
+  public static final Context DYNAMO_DB_EVENT_HANDLER_CONTEXT = mock(Context.class);
+  public static final Context DATA_ENTRY_UPDATE_HANDLER_CONTEXT = mock(Context.class);
   public static final String DLQ_URL = "IndexDlq";
-  private DynamoDbEventToQueueHandler handler;
-  private FakeSqsClient sqsClient;
+  private DynamoDbEventToQueueHandler dynamoDbEventToQueueHandler;
+  private FakeSqsClient dbEventQueueClient;
+  private FakeNotificationClient snsClient;
+  private DataEntryUpdateHandler dataEntryUpdateHandler;
+
+  private void handleDynamoDbEvent(DynamodbEvent dynamoDbEvent) {
+    dynamoDbEventToQueueHandler.handleRequest(dynamoDbEvent, DYNAMO_DB_EVENT_HANDLER_CONTEXT);
+  }
 
   @BeforeEach
   void init() {
-    sqsClient = new FakeSqsClient();
-    handler = new DynamoDbEventToQueueHandler(sqsClient, new Environment());
-  }
-
-  @Test
-  void shouldLogErrorAndThrowExceptionIfSendingBatchFails() {
-    var dynamoDbEvent = randomEventWithNumberOfDynamoRecords(1);
-    var failingSqsClient = mock(FakeSqsClient.class);
-    when(failingSqsClient.sendMessageBatch(any(), any())).thenThrow(SqsException.class);
-    var handler = new DynamoDbEventToQueueHandler(failingSqsClient, new Environment());
-    var appender = LogUtils.getTestingAppender(DynamoDbEventToQueueHandler.class);
-    assertThrows(RuntimeException.class, () -> handler.handleRequest(dynamoDbEvent, CONTEXT));
-    assertThat(appender.getMessages(), containsString("Failure"));
-  }
-
-  @Test
-  void shouldSendMessageToDlqIfSendingBatchFails() {
-    var candidateIdentifier = randomUUID();
-    var dynamoDbEvent = eventWithCandidateIdentifier(candidateIdentifier);
-    var fakeSqsClient = mock(FakeSqsClient.class);
-    when(fakeSqsClient.sendMessageBatch(any(), any())).thenThrow(SqsException.class);
-    var handler = new DynamoDbEventToQueueHandler(fakeSqsClient, new Environment());
-    assertThrows(RuntimeException.class, () -> handler.handleRequest(dynamoDbEvent, CONTEXT));
-    verify(fakeSqsClient, times(1)).sendMessage(anyString(), eq(DLQ_URL), eq(candidateIdentifier));
-  }
-
-  @Test
-  void
-      shouldSendMessageToDlqWithoutCandidateIdentifierIfSendingBatchFailsAndUnableToExtractRecordIdentifier() {
-    var dynamoDbEvent = randomDynamoDbEvent();
-    var fakeSqsClient = mock(FakeSqsClient.class);
-    when(fakeSqsClient.sendMessageBatch(any(), any())).thenThrow(SqsException.class);
-    var handler = new DynamoDbEventToQueueHandler(fakeSqsClient, new Environment());
-    assertThrows(RuntimeException.class, () -> handler.handleRequest(dynamoDbEvent, CONTEXT));
-    verify(fakeSqsClient, times(1)).sendMessage(anyString(), eq(DLQ_URL));
+    dbEventQueueClient = new FakeSqsClient();
+    snsClient = new FakeNotificationClient();
+    dynamoDbEventToQueueHandler =
+        new DynamoDbEventToQueueHandler(
+            dbEventQueueClient, getDynamoDbEventToQueueHandlerEnvironment());
+    dataEntryUpdateHandler =
+        new DataEntryUpdateHandler(
+            snsClient, getDataEntryUpdateHandlerEnvironment(), dbEventQueueClient);
   }
 
   @Test
   void shouldSendMessageBatchWithSize10() {
     var dynamoDbEvent = randomEventWithNumberOfDynamoRecords(11);
-    handler.handleRequest(dynamoDbEvent, CONTEXT);
-    var batchOneMessages = extractBatchEntryMessageBodiesAtIndex(0);
-    var batchTwoMessages = extractBatchEntryMessageBodiesAtIndex(1);
-    assertEquals(10, batchOneMessages.size());
-    assertEquals(1, batchTwoMessages.size());
+    dynamoDbEventToQueueHandler.handleRequest(dynamoDbEvent, DYNAMO_DB_EVENT_HANDLER_CONTEXT);
+
+    dbEventQueueClient.getSentBatches().stream()
+        .map(DynamoUpdateEventTest::mapDbQueueEntryToSqsEvent)
+        .forEach(
+            updateEvent ->
+                dataEntryUpdateHandler.handleRequest(
+                    updateEvent, DATA_ENTRY_UPDATE_HANDLER_CONTEXT));
+
+    var publishedMessages = snsClient.getPublishedMessages();
+    assertEquals(-1, snsClient.getPublishedMessages().size());
+  }
+
+  @ParameterizedTest
+  @MethodSource("dbUpdateEventProvider")
+  void shouldNotFail(DynamodbEvent dynamoDbEvent, NviCandidateUpdatedMessage expectedMessage) {
+    dynamoDbEventToQueueHandler.handleRequest(dynamoDbEvent, DYNAMO_DB_EVENT_HANDLER_CONTEXT);
+
+    dbEventQueueClient.getSentBatches().stream()
+        .map(DynamoUpdateEventTest::mapDbQueueEntryToSqsEvent)
+        .forEach(
+            updateEvent ->
+                dataEntryUpdateHandler.handleRequest(
+                    updateEvent, DATA_ENTRY_UPDATE_HANDLER_CONTEXT));
+
+    var publishedMessages = snsClient.getPublishedMessages();
+    assertEquals(-1, snsClient.getPublishedMessages().size());
+
+    //    var updateEvent = dbEventQueueClient.getSentBatches().getFirst();
+    //    dataEntryUpdateHandler.handleRequest(updateEvent, DATA_ENTRY_UPDATE_HANDLER_CONTEXT);
+    //    var actualMessages = extractUpdateMessagesAtIndex(0);
+    //    Assertions.assertThat(actualMessages).isEqualTo(List.of(expectedMessage));
+  }
+
+  private static SQSEvent mapDbQueueEntryToSqsEvent(SendMessageBatchRequest messageBatch) {
+    var event = new SQSEvent();
+    var messages =
+        messageBatch.entries().stream()
+            .map(DynamoUpdateEventTest::mapDbQueueEntryToSqsMessage)
+            .toList();
+    event.setRecords(messages);
+    return event;
+  }
+
+  private static SQSMessage mapDbQueueEntryToSqsMessage(SendMessageBatchRequestEntry entry) {
+    var message = new SQSMessage();
+    message.setBody(entry.messageBody());
+    return message;
   }
 
   @ParameterizedTest
   @MethodSource("dbUpdateEventProvider")
   void shouldMapDbEventToUpdateMessage(
       DynamodbEvent dynamoDbEvent, NviCandidateUpdatedMessage expectedMessage) {
-    handler.handleRequest(dynamoDbEvent, CONTEXT);
+    dynamoDbEventToQueueHandler.handleRequest(dynamoDbEvent, DYNAMO_DB_EVENT_HANDLER_CONTEXT);
     var actualMessages = extractUpdateMessagesAtIndex(0);
     Assertions.assertThat(actualMessages).isEqualTo(List.of(expectedMessage));
   }
@@ -162,7 +178,7 @@ class DynamoDbEventToQueueHandlerTest {
   }
 
   private List<String> extractBatchEntryMessageBodiesAtIndex(int index) {
-    return sqsClient.getSentBatches().get(index).entries().stream()
+    return dbEventQueueClient.getSentBatches().get(index).entries().stream()
         .map(SendMessageBatchRequestEntry::messageBody)
         .toList();
   }

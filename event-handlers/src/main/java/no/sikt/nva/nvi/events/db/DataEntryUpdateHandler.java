@@ -19,6 +19,7 @@ import no.sikt.nva.nvi.common.db.DynamoEntryWithRangeKey;
 import no.sikt.nva.nvi.common.notification.NotificationClient;
 import no.sikt.nva.nvi.common.notification.NviNotificationClient;
 import no.sikt.nva.nvi.common.notification.NviPublishMessageResponse;
+import no.sikt.nva.nvi.common.queue.NviCandidateUpdatedMessage;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import nva.commons.core.Environment;
@@ -77,19 +78,34 @@ public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
   public Void handleRequest(SQSEvent input, Context context) {
     input.getRecords().stream()
         .map(SQSMessage::getBody)
-        .map(this::mapToDynamoDbRecord)
+        .map(attempt(NviCandidateUpdatedMessage::from))
         .filter(Objects::nonNull)
         .forEach(this::publishToTopic);
     return null;
   }
 
-  private void publishToTopic(DynamodbStreamRecord streamRecord) {
-    attempt(() -> extractDaoAndPublish(streamRecord))
+  private void publishToTopic(NviCandidateUpdatedMessage updateMessage) {
+    attempt(() -> publishMessage(updateMessage))
         .orElse(
             failure -> {
-              handleFailure(failure, streamRecord);
+              handleFailure(failure, updateMessage);
               return null;
             });
+  }
+
+  private NviPublishMessageResponse publishMessage(NviCandidateUpdatedMessage message)
+      throws Exception {
+    var operationType = message.operationType();
+    var dao = message.entryType();
+    // FIXME
+//    if (isNotCandidateOrApproval(dao) || isUnknownOperationType(operationType)) {
+//      LOGGER.info(SKIPPING_EVENT_MESSAGE, operationType, dao.getClass());
+//      return null;
+//    }
+    var topic = new DataEntryUpdateTopicProvider(environment).getTopic(message);
+    var response = snsClient.publish(writeAsString(message), topic);
+    LOGGER.info(PUBLISHED_MESSAGE, response.messageId(), topic);
+    return response;
   }
 
   private NviPublishMessageResponse extractDaoAndPublish(DynamodbStreamRecord streamRecord)
@@ -123,17 +139,17 @@ public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
             });
   }
 
-  private String writeAsString(DynamodbStreamRecord streamRecord) {
-    return attempt(() -> dtoObjectMapper.writeValueAsString(streamRecord)).orElseThrow();
+  private String writeAsString(NviCandidateUpdatedMessage message) {
+    return attempt(() -> dtoObjectMapper.writeValueAsString(message)).orElseThrow();
   }
 
-  private DynamodbStreamRecord mapToDynamoDbRecord(String body) {
-    return attempt(() -> dtoObjectMapper.readValue(body, DynamodbStreamRecord.class))
-        .orElse(
-            failure -> {
-              handleFailure(failure, body);
-              return null;
-            });
+  private NviCandidateUpdatedMessage mapToUpdateMessage(String body) {
+    return attempt(() -> dtoObjectMapper.readValue(body, NviCandidateUpdatedMessage.class))
+               .orElse(
+                   failure -> {
+                     handleFailure(failure, body);
+                     return null;
+                   });
   }
 
   private void handleFailure(Failure<?> failure, String body) {

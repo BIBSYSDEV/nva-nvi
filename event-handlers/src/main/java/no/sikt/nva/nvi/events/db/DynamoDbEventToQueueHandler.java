@@ -9,9 +9,14 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent;
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent.DynamodbStreamRecord;
+import com.amazonaws.services.lambda.runtime.events.models.dynamodb.AttributeValue;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import no.sikt.nva.nvi.common.queue.DataEntryType;
+import no.sikt.nva.nvi.common.queue.NviCandidateUpdatedMessage;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import nva.commons.core.Environment;
@@ -19,6 +24,7 @@ import nva.commons.core.JacocoGenerated;
 import nva.commons.core.attempt.Failure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import software.amazon.awssdk.services.dynamodb.model.OperationType;
 
 public class DynamoDbEventToQueueHandler implements RequestHandler<DynamodbEvent, Void> {
 
@@ -30,6 +36,8 @@ public class DynamoDbEventToQueueHandler implements RequestHandler<DynamodbEvent
   private static final String FAILURE_MESSAGE = "Failure while sending database events to queue";
   private static final String FAILED_RECORDS_MESSAGE = "Failed records: {}";
   private static final String INFO_MESSAGE = "Sent {} messages to queue. Failures: {}";
+  private static final String IDENTIFIER_FIELD = "identifier";
+  private static final String TYPE_FIELD = "type";
   public final String dlqUrl;
   private final QueueClient queueClient;
   private final String queueUrl;
@@ -56,17 +64,35 @@ public class DynamoDbEventToQueueHandler implements RequestHandler<DynamodbEvent
     return null;
   }
 
-  private static List<String> mapToJsonStrings(List<DynamodbStreamRecord> records) {
-    return records.stream().map(DynamoDbEventToQueueHandler::writeAsJsonString).toList();
+  private static List<String> mapToUpdateMessages(List<DynamodbStreamRecord> records) {
+    return records.stream()
+        .map(DynamoDbEventToQueueHandler::mapToUpdateMessage)
+        .map(DynamoDbEventToQueueHandler::writeAsJsonString)
+        .toList();
   }
 
-  private static String writeAsJsonString(DynamodbStreamRecord record) {
-    return attempt(() -> dtoObjectMapper.writeValueAsString(record)).orElseThrow();
+  private static NviCandidateUpdatedMessage mapToUpdateMessage(DynamodbStreamRecord streamRecord) {
+    var recordIdentifier = UUID.fromString(extractField(streamRecord, IDENTIFIER_FIELD));
+    var recordType = DataEntryType.parse(extractField(streamRecord, TYPE_FIELD));
+    var operationType = OperationType.fromValue(streamRecord.getEventName());
+    return new NviCandidateUpdatedMessage(recordIdentifier, recordType, operationType);
+  }
+
+  private static String extractField(DynamodbStreamRecord streamRecord, String field) {
+    var image =
+        Optional.ofNullable(streamRecord.getDynamodb().getOldImage())
+            .orElse(streamRecord.getDynamodb().getNewImage());
+    return Optional.ofNullable(image.get(field)).map(AttributeValue::getS).orElse(null);
+    // TODO: Handle non-applicable candidate
+  }
+
+  private static String writeAsJsonString(NviCandidateUpdatedMessage streamRecord) {
+    return attempt(() -> dtoObjectMapper.writeValueAsString(streamRecord)).orElseThrow();
   }
 
   private void splitIntoBatchesAndSend(DynamodbEvent input) {
     splitIntoBatches(input.getRecords())
-        .map(DynamoDbEventToQueueHandler::mapToJsonStrings)
+        .map(DynamoDbEventToQueueHandler::mapToUpdateMessages)
         .forEach(this::sendBatch);
   }
 

@@ -58,4 +58,12 @@ public enum EnvironmentFixtures {
   public static FakeEnvironment getUpsertNviCandidateHandlerEnvironment() {
     return getDefaultEnvironmentBuilder().with(UPSERT_CANDIDATE_DLQ_QUEUE_URL).build();
   }
+
+  public static FakeEnvironment getDynamoDbEventToQueueHandlerEnvironment() {
+    return getDefaultEnvironmentBuilder().with(DB_EVENTS_QUEUE_URL).with(INDEX_DLQ).build();
+  }
+
+  public static FakeEnvironment getDataEntryUpdateHandlerEnvironment() {
+    return getDefaultEnvironmentBuilder().with(DB_EVENTS_QUEUE_URL).with(INDEX_DLQ).build();
+  }
 }

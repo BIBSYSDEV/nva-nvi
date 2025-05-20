@@ -7,7 +7,9 @@ dependencies {
     testImplementation libs.aws.lambda.events
     testImplementation libs.aws.lambda.java.core
     testImplementation libs.aws.sdk2.core
+    testImplementation libs.aws.sdk2.dynamodb
     testImplementation libs.aws.sdk2.s3
+    testImplementation libs.aws.sdk2.sns
     testImplementation libs.aws.sdk2.sqs
     testImplementation libs.com.auth0.jwt
     testImplementation libs.nva.commons.auth
@@ -23,6 +25,7 @@ dependencies {
     testImplementation project(":nvi-commons")
     testImplementation project(":nvi-rest")
     testImplementation project(":nvi-test")
+    testImplementation(testFixtures(project(":event-handlers")))
     testImplementation(testFixtures(project(":nvi-commons")))
 }
 
@@ -33,7 +36,9 @@ test {
     environment("CANDIDATE_QUEUE_URL", "http://localhost:3000/candidate-queue")
     environment("COGNITO_AUTHORIZER_URLS", "http://localhost:3000")
     environment("CUSTOM_DOMAIN_BASE_PATH", "scientific-index")
+    environment("DB_EVENTS_QUEUE_URL", "DbEventsQueue")
     environment("EXPANDED_RESOURCES_BUCKET", "testBucket")
+    environment("INDEX_DLQ", "IndexDlq")
     environment("NVI_TABLE_NAME", "some-table")
     environment("UPSERT_CANDIDATE_DLQ_QUEUE_URL", "http://localhost:3000/upsert-candidate-DLQ")
 }
