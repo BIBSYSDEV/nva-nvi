@@ -62,7 +62,7 @@ import software.amazon.awssdk.services.sqs.model.SqsException;
  * <p>Each handler is wrapped with a managing class to make it easier to expand this test suite in
  * the future.
  */
-class DynamoUpdateEventTest {
+class DynamoDbUpdateEventTest {
   private FakeSqsClient sharedQueueClient;
   private FakeNotificationClient snsClient;
   private DynamoDbToEventQueueHandlerContext dynamoDbEventHandlerContext;
@@ -206,7 +206,7 @@ class DynamoUpdateEventTest {
     dynamoDbEventHandlerContext.handleEvent(dynamoDbEvent);
     var queuedEvents =
         dynamoDbEventHandlerContext.getQueueClient().getSentBatches().stream()
-            .map(DynamoUpdateEventTest::mapBatchMessageToSqsEvent)
+            .map(DynamoDbUpdateEventTest::mapBatchMessageToSqsEvent)
             .toList();
 
     for (var event : queuedEvents) {
@@ -217,14 +217,14 @@ class DynamoUpdateEventTest {
   private List<SQSEvent> getMessageBatchesFromQueue(String queueUrl) {
     return sharedQueueClient.getSentBatches().stream()
         .filter(hasBatchDestination(queueUrl))
-        .map(DynamoUpdateEventTest::mapBatchMessageToSqsEvent)
+        .map(DynamoDbUpdateEventTest::mapBatchMessageToSqsEvent)
         .toList();
   }
 
   private List<SQSEvent> getMessagesFromQueue(String queueUrl) {
     return sharedQueueClient.getSentMessages().stream()
         .filter(hasDestination(queueUrl))
-        .map(DynamoUpdateEventTest::mapMessageRequestToSqsEvent)
+        .map(DynamoDbUpdateEventTest::mapMessageRequestToSqsEvent)
         .toList();
   }
 
@@ -258,7 +258,7 @@ class DynamoUpdateEventTest {
     var event = new SQSEvent();
     var messages =
         messageBatch.entries().stream()
-            .map(DynamoUpdateEventTest::mapBatchMessageEntrytoSqsMessage)
+            .map(DynamoDbUpdateEventTest::mapBatchMessageEntrytoSqsMessage)
             .toList();
     event.setRecords(messages);
     return event;

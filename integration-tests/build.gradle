@@ -36,9 +36,7 @@ test {
     environment("CANDIDATE_QUEUE_URL", "http://localhost:3000/candidate-queue")
     environment("COGNITO_AUTHORIZER_URLS", "http://localhost:3000")
     environment("CUSTOM_DOMAIN_BASE_PATH", "scientific-index")
-    environment("DB_EVENTS_QUEUE_URL", "DbEventsQueue")
     environment("EXPANDED_RESOURCES_BUCKET", "testBucket")
-    environment("INDEX_DLQ", "IndexDlq")
     environment("NVI_TABLE_NAME", "some-table")
     environment("UPSERT_CANDIDATE_DLQ_QUEUE_URL", "http://localhost:3000/upsert-candidate-DLQ")
 }
