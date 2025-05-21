@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.events.db;
 
 import no.sikt.nva.nvi.common.queue.DataEntryType;
-import no.sikt.nva.nvi.common.queue.NviCandidateUpdatedMessage;
+import no.sikt.nva.nvi.common.queue.DynamoDbChangeMessage;
 import nva.commons.core.Environment;
 
 public class DataEntryUpdateTopicProvider {
@@ -22,7 +22,7 @@ public class DataEntryUpdateTopicProvider {
     this.environment = environment;
   }
 
-  public String getTopic(NviCandidateUpdatedMessage message) {
+  public String getTopic(DynamoDbChangeMessage message) {
     return switch (message.operationType()) {
       case INSERT -> getInsertTopic(message.entryType());
       case MODIFY -> getUpdateTopic(message.entryType());

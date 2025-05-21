@@ -21,7 +21,7 @@ import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.Dao;
 import no.sikt.nva.nvi.common.db.DynamoEntryWithRangeKey;
 import no.sikt.nva.nvi.common.queue.DataEntryType;
-import no.sikt.nva.nvi.common.queue.NviCandidateUpdatedMessage;
+import no.sikt.nva.nvi.common.queue.DynamoDbChangeMessage;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import nva.commons.core.Environment;
@@ -79,12 +79,12 @@ public class DynamoDbEventToQueueHandler implements RequestHandler<DynamodbEvent
         .toList();
   }
 
-  private static NviCandidateUpdatedMessage mapToUpdateMessage(DynamodbStreamRecord streamRecord) {
+  private static DynamoDbChangeMessage mapToUpdateMessage(DynamodbStreamRecord streamRecord) {
     var operationType = OperationType.fromValue(streamRecord.getEventName());
     var entryType = getEntryType(streamRecord);
     if (entryType.shouldBeProcessedForIndexing()) {
       var recordIdentifier = UUID.fromString(extractField(streamRecord, IDENTIFIER_FIELD));
-      return new NviCandidateUpdatedMessage(recordIdentifier, entryType, operationType);
+      return new DynamoDbChangeMessage(recordIdentifier, entryType, operationType);
     }
     LOGGER.info(SKIPPING_EVENT_MESSAGE, operationType, entryType);
     return null;
@@ -109,7 +109,7 @@ public class DynamoDbEventToQueueHandler implements RequestHandler<DynamodbEvent
     return Optional.ofNullable(image.get(field)).map(AttributeValue::getS).orElse(null);
   }
 
-  private static String writeAsJsonString(NviCandidateUpdatedMessage updateMessage) {
+  private static String writeAsJsonString(DynamoDbChangeMessage updateMessage) {
     return attempt(() -> dtoObjectMapper.writeValueAsString(updateMessage)).orElseThrow();
   }
 

@@ -32,19 +32,10 @@ import software.amazon.awssdk.services.dynamodb.model.OperationType;
 
 public final class DynamoDbTestUtils {
 
-  public static final String IDENTIFIER = "identifier";
   public static final ObjectMapper OBJECT_MAPPER =
       new ObjectMapper().registerModule(new JavaTimeModule());
 
   private DynamoDbTestUtils() {}
-
-  public static DynamodbEvent eventWithCandidateIdentifier(UUID candidateIdentifier) {
-    var dynamoDbEvent = new DynamodbEvent();
-    var dynamoDbRecord =
-        dynamoRecord(payloadWithRandomCandidate(candidateIdentifier), randomOperationType());
-    dynamoDbEvent.setRecords(List.of(dynamoDbRecord));
-    return dynamoDbEvent;
-  }
 
   public static DynamodbStreamRecord streamRecordFromDao(
       Dao oldImage, Dao newImage, OperationType operationType) {
@@ -55,13 +46,6 @@ public final class DynamoDbTestUtils {
       Dao oldImage, Dao newImage, OperationType operationType) {
     var dynamoDbEvent = new DynamodbEvent();
     var dynamoDbRecord = streamRecordFromDao(oldImage, newImage, operationType);
-    dynamoDbEvent.setRecords(List.of(dynamoDbRecord));
-    return dynamoDbEvent;
-  }
-
-  public static DynamodbEvent randomDynamoDbEvent() {
-    var dynamoDbEvent = new DynamodbEvent();
-    var dynamoDbRecord = dynamoRecord(randomPayload(), randomOperationType());
     dynamoDbEvent.setRecords(List.of(dynamoDbRecord));
     return dynamoDbEvent;
   }
@@ -105,10 +89,6 @@ public final class DynamoDbTestUtils {
     return event;
   }
 
-  public static DynamodbEvent toDynamoDbEvent(DynamodbStreamRecord... streamRecords) {
-    return toDynamoDbEvent(List.of(streamRecords));
-  }
-
   public static DynamodbEvent randomEventWithNumberOfDynamoRecords(int numberOfRecords) {
     var records =
         IntStream.range(0, numberOfRecords)
@@ -121,11 +101,6 @@ public final class DynamoDbTestUtils {
   }
 
   public static String mapToString(DynamodbStreamRecord streamRecord) {
-    return attempt(() -> dtoObjectMapper.writeValueAsString(streamRecord)).orElseThrow();
-  }
-
-  public static String mapFirstRecordToString(DynamodbEvent dynamoDbEvent) {
-    var streamRecord = dynamoDbEvent.getRecords().getFirst();
     return attempt(() -> dtoObjectMapper.writeValueAsString(streamRecord)).orElseThrow();
   }
 
@@ -225,11 +200,5 @@ public final class DynamoDbTestUtils {
       case BOOL -> new AttributeValue().withBOOL(value.bool());
       default -> throw new IllegalArgumentException("Unknown type: " + value.type());
     };
-  }
-
-  private static StreamRecord randomPayload() {
-    var streamRecord = new StreamRecord();
-    streamRecord.setOldImage(Map.of(IDENTIFIER, new AttributeValue(randomString())));
-    return streamRecord;
   }
 }

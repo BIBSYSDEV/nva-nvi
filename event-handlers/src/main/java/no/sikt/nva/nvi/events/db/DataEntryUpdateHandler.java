@@ -10,7 +10,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import no.sikt.nva.nvi.common.notification.NotificationClient;
 import no.sikt.nva.nvi.common.notification.NviNotificationClient;
 import no.sikt.nva.nvi.common.notification.NviPublishMessageResponse;
-import no.sikt.nva.nvi.common.queue.NviCandidateUpdatedMessage;
+import no.sikt.nva.nvi.common.queue.DynamoDbChangeMessage;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import nva.commons.core.Environment;
@@ -49,20 +49,21 @@ public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
 
   @Override
   public Void handleRequest(SQSEvent input, Context context) {
-    input.getRecords().stream().map(SQSMessage::getBody).forEach(this::processSqsMessage);
+    input.getRecords().stream().forEach(this::processSqsMessage);
     return null;
   }
 
-  private void processSqsMessage(String body) {
+  private void processSqsMessage(SQSMessage message) {
+    var body = message.getBody();
     try {
-      var updateMessage = NviCandidateUpdatedMessage.from(body);
-      publishUpdateMessage(updateMessage);
+      var dbChangeMessage = DynamoDbChangeMessage.from(body);
+      publishUpdateMessage(dbChangeMessage);
     } catch (Exception e) {
       sendToDlq(body, e);
     }
   }
 
-  private void publishUpdateMessage(NviCandidateUpdatedMessage updateMessage)
+  private void publishUpdateMessage(DynamoDbChangeMessage updateMessage)
       throws JsonProcessingException {
     var operationType = updateMessage.operationType();
     var entryType = updateMessage.entryType();

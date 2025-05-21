@@ -1,7 +1,6 @@
 package no.sikt.nva.nvi.index;
 
 import static no.sikt.nva.nvi.common.QueueServiceTestUtils.createEvent;
-import static no.sikt.nva.nvi.common.QueueServiceTestUtils.createEventWithDynamoEventMissingIdentifier;
 import static no.sikt.nva.nvi.common.QueueServiceTestUtils.createEventWithOneInvalidRecord;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidate;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -12,6 +11,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.UUID;
+import no.sikt.nva.nvi.common.QueueServiceTestUtils;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
 import org.junit.jupiter.api.BeforeEach;
@@ -58,7 +58,8 @@ class RemoveIndexDocumentHandlerTest {
   @Test
   void shouldNotFailForWholeBatchWhenFailingToExtractOneIdentifier() {
     var candidate = randomCandidateDao();
-    var eventWithOneInvalidRecord = createEventWithDynamoEventMissingIdentifier(candidate);
+    var eventWithOneInvalidRecord =
+        QueueServiceTestUtils.createEventWithOneRecordMissingIdentifier(candidate);
     handler.handleRequest(eventWithOneInvalidRecord, null);
     verify(openSearchClient, times(1)).removeDocumentFromIndex(candidate.identifier());
   }

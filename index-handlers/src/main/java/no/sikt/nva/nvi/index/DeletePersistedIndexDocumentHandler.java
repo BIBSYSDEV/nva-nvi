@@ -1,21 +1,19 @@
 package no.sikt.nva.nvi.index;
 
-import static no.sikt.nva.nvi.common.utils.DynamoDbUtils.extractIdFromRecord;
 import static no.sikt.nva.nvi.common.utils.ExceptionUtils.getStackTrace;
 import static nva.commons.core.attempt.Try.attempt;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
-import com.amazonaws.services.lambda.runtime.events.DynamodbEvent.DynamodbStreamRecord;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.StorageWriter;
+import no.sikt.nva.nvi.common.queue.DynamoDbChangeMessage;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
-import no.sikt.nva.nvi.common.utils.DynamoDbUtils;
 import no.sikt.nva.nvi.index.aws.S3StorageWriter;
 import no.sikt.nva.nvi.index.model.document.IndexDocumentWithConsumptionAttributes;
 import nva.commons.core.Environment;
@@ -33,8 +31,6 @@ public class DeletePersistedIndexDocumentHandler implements RequestHandler<SQSEv
   private static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
   private static final String ERROR_MESSAGE = "Error message: {}";
   private static final String SUCCESS_INFO_MESSAGE = "Successfully deleted file with identifier {}";
-  private static final String FAILED_TO_EXTRACT_IDENTIFIER_MESSAGE =
-      "Failed to extract identifier from record %s";
   private static final String FAILED_TO_DELETE_MESSAGE = "Failed to delete file with identifier {}";
   private static final String FAILED_TO_PARSE_EVENT_MESSAGE =
       "Failed to map body to DynamodbStreamRecord: {}";
@@ -63,9 +59,9 @@ public class DeletePersistedIndexDocumentHandler implements RequestHandler<SQSEv
   public Void handleRequest(SQSEvent input, Context context) {
     input.getRecords().stream()
         .map(SQSMessage::getBody)
-        .map(this::mapToDynamodbStreamRecord)
+        .map(this::mapToDbChangeMessage)
         .filter(Objects::nonNull)
-        .map(this::extractIdentifier)
+        .map(DynamoDbChangeMessage::candidateIdentifier)
         .filter(Objects::nonNull)
         .forEach(this::deletePersistedIndexDocument);
     return null;
@@ -85,21 +81,8 @@ public class DeletePersistedIndexDocumentHandler implements RequestHandler<SQSEv
     }
   }
 
-  private UUID extractIdentifier(DynamodbStreamRecord dynamodbStreamRecord) {
-    return extractIdFromRecord(dynamodbStreamRecord)
-        .orElseGet(
-            () -> {
-              var message =
-                  String.format(
-                      FAILED_TO_EXTRACT_IDENTIFIER_MESSAGE, dynamodbStreamRecord.toString());
-              LOGGER.error(message);
-              queueClient.sendMessage(message, dlqUrl);
-              return null;
-            });
-  }
-
-  private DynamodbStreamRecord mapToDynamodbStreamRecord(String body) {
-    return attempt(() -> DynamoDbUtils.toDynamodbStreamRecord(body))
+  private DynamoDbChangeMessage mapToDbChangeMessage(String body) {
+    return attempt(() -> DynamoDbChangeMessage.from(body))
         .orElse(
             failure -> {
               handleFailure(failure, body);

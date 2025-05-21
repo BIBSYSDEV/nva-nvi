@@ -38,8 +38,8 @@ import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.EnvironmentFixtures;
 import no.sikt.nva.nvi.common.db.CandidateUniquenessEntryDao;
 import no.sikt.nva.nvi.common.queue.DataEntryType;
+import no.sikt.nva.nvi.common.queue.DynamoDbChangeMessage;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
-import no.sikt.nva.nvi.common.queue.NviCandidateUpdatedMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -91,9 +91,7 @@ class DynamoDbUpdateEventTest {
   @ParameterizedTest
   @MethodSource("candidateEventProvider")
   void shouldPassCandidateEventsToCorrectSnsTopic(
-      DynamodbEvent dynamoDbEvent,
-      NviCandidateUpdatedMessage expectedMessage,
-      String expectedTopic) {
+      DynamodbEvent dynamoDbEvent, DynamoDbChangeMessage expectedMessage, String expectedTopic) {
     processDynamoEvent(dynamoDbEvent);
     var publishedMessages = snsClient.getPublishedMessages();
     assertThat(publishedMessages)
@@ -105,9 +103,7 @@ class DynamoDbUpdateEventTest {
   @ParameterizedTest
   @MethodSource("approvalEventProvider")
   void shouldPassApprovalEventsToCorrectSnsTopic(
-      DynamodbEvent dynamoDbEvent,
-      NviCandidateUpdatedMessage expectedMessage,
-      String expectedTopic) {
+      DynamodbEvent dynamoDbEvent, DynamoDbChangeMessage expectedMessage, String expectedTopic) {
     processDynamoEvent(dynamoDbEvent);
     var publishedMessages = snsClient.getPublishedMessages();
     assertThat(publishedMessages)
@@ -244,8 +240,7 @@ class DynamoDbUpdateEventTest {
     return actualMessage -> expectedTopic.equals(actualMessage.topicArn());
   }
 
-  private static Predicate<PublishRequest> hasMessageBody(
-      NviCandidateUpdatedMessage expectedMessage) {
+  private static Predicate<PublishRequest> hasMessageBody(DynamoDbChangeMessage expectedMessage) {
     try {
       var expectedJsonBody = expectedMessage.toJsonString();
       return actualMessage -> expectedJsonBody.equals(actualMessage.message());
@@ -290,26 +285,23 @@ class DynamoDbUpdateEventTest {
         argumentSet(
             "Create candidate",
             createCandidateEvent(identifier, OperationType.INSERT, true),
-            new NviCandidateUpdatedMessage(
-                identifier, DataEntryType.CANDIDATE, OperationType.INSERT),
+            new DynamoDbChangeMessage(identifier, DataEntryType.CANDIDATE, OperationType.INSERT),
             EnvironmentFixtures.TOPIC_CANDIDATE_INSERT.getValue()),
         argumentSet(
             "Update applicable candidate",
             createCandidateEvent(identifier, OperationType.MODIFY, true),
-            new NviCandidateUpdatedMessage(
-                identifier, DataEntryType.CANDIDATE, OperationType.MODIFY),
+            new DynamoDbChangeMessage(identifier, DataEntryType.CANDIDATE, OperationType.MODIFY),
             EnvironmentFixtures.TOPIC_CANDIDATE_APPLICABLE_UPDATE.getValue()),
         argumentSet(
             "Update candidate to non-applicable",
             createCandidateEvent(identifier, OperationType.MODIFY, false),
-            new NviCandidateUpdatedMessage(
+            new DynamoDbChangeMessage(
                 identifier, DataEntryType.NON_CANDIDATE, OperationType.MODIFY),
             EnvironmentFixtures.TOPIC_CANDIDATE_NOT_APPLICABLE_UPDATE.getValue()),
         argumentSet(
             "Delete candidate",
             createCandidateEvent(identifier, OperationType.REMOVE, true),
-            new NviCandidateUpdatedMessage(
-                identifier, DataEntryType.CANDIDATE, OperationType.REMOVE),
+            new DynamoDbChangeMessage(identifier, DataEntryType.CANDIDATE, OperationType.REMOVE),
             EnvironmentFixtures.TOPIC_CANDIDATE_REMOVE.getValue()));
   }
 
@@ -319,19 +311,19 @@ class DynamoDbUpdateEventTest {
         argumentSet(
             "Create approval",
             createApprovalStatusEvent(identifier, OperationType.INSERT),
-            new NviCandidateUpdatedMessage(
+            new DynamoDbChangeMessage(
                 identifier, DataEntryType.APPROVAL_STATUS, OperationType.INSERT),
             EnvironmentFixtures.TOPIC_APPROVAL_INSERT.getValue()),
         argumentSet(
             "Update approval",
             createApprovalStatusEvent(identifier, OperationType.MODIFY),
-            new NviCandidateUpdatedMessage(
+            new DynamoDbChangeMessage(
                 identifier, DataEntryType.APPROVAL_STATUS, OperationType.MODIFY),
             EnvironmentFixtures.TOPIC_APPROVAL_UPDATE.getValue()),
         argumentSet(
             "Delete approval",
             createApprovalStatusEvent(identifier, OperationType.REMOVE),
-            new NviCandidateUpdatedMessage(
+            new DynamoDbChangeMessage(
                 identifier, DataEntryType.APPROVAL_STATUS, OperationType.REMOVE),
             EnvironmentFixtures.TOPIC_APPROVAL_REMOVE.getValue()));
   }
