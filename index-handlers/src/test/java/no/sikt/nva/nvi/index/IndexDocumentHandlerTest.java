@@ -516,7 +516,7 @@ class IndexDocumentHandlerTest {
             periodRepository,
             uriRetriever,
             ENVIRONMENT);
-    var event = createEvent(List.of(candidate.getIdentifier()));
+    var event = createEvent(candidate.getIdentifier());
     handler.handleRequest(event, CONTEXT);
     verify(mockedSqsClient, times(1))
         .sendMessage(any(), eq(INDEX_DLQ_URL), eq(candidate.getIdentifier()));
@@ -540,8 +540,7 @@ class IndexDocumentHandlerTest {
             periodRepository,
             uriRetriever,
             ENVIRONMENT);
-    var event =
-        createEvent(List.of(candidateToFail.getIdentifier(), candidateToSucceed.getIdentifier()));
+    var event = createEvent(candidateToFail.getIdentifier(), candidateToSucceed.getIdentifier());
     assertDoesNotThrow(() -> handler.handleRequest(event, CONTEXT));
   }
 
@@ -551,8 +550,7 @@ class IndexDocumentHandlerTest {
     var candidateToSucceed = randomApplicableCandidate();
     var expectedIndexDocument =
         setupExistingResourceInS3AndGenerateExpectedDocument(candidateToSucceed);
-    var event =
-        createEvent(List.of(candidateToFail.getIdentifier(), candidateToSucceed.getIdentifier()));
+    var event = createEvent(candidateToFail.getIdentifier(), candidateToSucceed.getIdentifier());
     mockUriRetrieverOrgResponse(candidateToSucceed);
     handler.handleRequest(event, CONTEXT);
     var actualIndexDocument = parseJson(s3Reader.getFile(createPath(candidateToSucceed)));
@@ -566,8 +564,7 @@ class IndexDocumentHandlerTest {
     setupExistingResourceInS3AndGenerateExpectedDocument(candidateToFail);
     mockUriRetrieverFailure(candidateToFail);
     mockUriRetrieverOrgResponse(candidateToSucceed);
-    var event =
-        createEvent(List.of(candidateToFail.getIdentifier(), candidateToSucceed.getIdentifier()));
+    var event = createEvent(candidateToFail.getIdentifier(), candidateToSucceed.getIdentifier());
     var expectedIndexDocument =
         setupExistingResourceInS3AndGenerateExpectedDocument(candidateToSucceed);
     handler.handleRequest(event, CONTEXT);
@@ -579,8 +576,7 @@ class IndexDocumentHandlerTest {
   void shouldNotFailForWholeBatchWhenFailingToPersistDocumentForOneCandidate() throws IOException {
     var candidateToFail = randomApplicableCandidate();
     var candidateToSucceed = randomApplicableCandidate();
-    var event =
-        createEvent(List.of(candidateToFail.getIdentifier(), candidateToSucceed.getIdentifier()));
+    var event = createEvent(candidateToFail.getIdentifier(), candidateToSucceed.getIdentifier());
     mockUriRetrieverOrgResponse(candidateToSucceed);
     mockUriRetrieverOrgResponse(candidateToFail);
     var s3Writer = mockS3WriterFailingForOneCandidate(candidateToSucceed, candidateToFail);
@@ -601,7 +597,7 @@ class IndexDocumentHandlerTest {
     var candidateToSucceed = randomApplicableCandidate(HARD_CODED_TOP_LEVEL_ORG, randomUri());
     var expectedIndexDocument =
         setupExistingResourceInS3AndGenerateExpectedDocument(candidateToSucceed);
-    var event = createEvent(List.of(UUID.randomUUID(), candidateToSucceed.getIdentifier()));
+    var event = createEvent(UUID.randomUUID(), candidateToSucceed.getIdentifier());
     mockUriRetrieverOrgResponse(candidateToSucceed);
     handler.handleRequest(event, CONTEXT);
     var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidateToSucceed)));

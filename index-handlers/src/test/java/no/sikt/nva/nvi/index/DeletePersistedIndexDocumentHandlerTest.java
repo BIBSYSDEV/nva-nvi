@@ -14,7 +14,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.util.List;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
@@ -78,7 +77,7 @@ class DeletePersistedIndexDocumentHandlerTest {
   @Test
   void shouldNotFailForWholeBatchWhenFailingToDeletePersistedIndexDocument() {
     var daoToFail = randomCandidateDao();
-    var event = createEvent(List.of(randomCandidateDao().identifier(), daoToFail.identifier()));
+    var event = createEvent(randomCandidateDao().identifier(), daoToFail.identifier());
     handler =
         new DeletePersistedIndexDocumentHandler(
             new S3StorageWriter(setupFailingS3Client(daoToFail.identifier()), BUCKET_NAME),

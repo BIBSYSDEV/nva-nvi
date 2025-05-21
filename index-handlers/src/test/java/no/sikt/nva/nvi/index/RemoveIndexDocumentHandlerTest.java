@@ -9,7 +9,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.util.List;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.QueueServiceTestUtils;
 import no.sikt.nva.nvi.common.db.CandidateDao;
@@ -41,7 +40,7 @@ class RemoveIndexDocumentHandlerTest {
   void shouldNotFailForWholeBatchWhenFailingToRemoveOneIndexDocument() {
     var candidateToSucceed = randomCandidateDao();
     var candidateToFail = randomCandidateDao();
-    var event = createEvent(List.of(candidateToSucceed.identifier(), candidateToFail.identifier()));
+    var event = createEvent(candidateToSucceed.identifier(), candidateToFail.identifier());
     mockOpenSearchFailure(candidateToFail);
     handler.handleRequest(event, null);
     verify(openSearchClient, times(1)).removeDocumentFromIndex(candidateToSucceed.identifier());

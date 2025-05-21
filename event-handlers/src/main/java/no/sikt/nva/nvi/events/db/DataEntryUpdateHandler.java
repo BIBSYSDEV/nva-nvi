@@ -66,9 +66,8 @@ public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
   private void publishUpdateMessage(DynamoDbChangeMessage updateMessage)
       throws JsonProcessingException {
     var operationType = updateMessage.operationType();
-    var entryType = updateMessage.entryType();
     if (isUnknownOperationType(operationType)) {
-      LOGGER.info(SKIPPING_EVENT_MESSAGE, operationType, entryType);
+      LOGGER.info(SKIPPING_EVENT_MESSAGE, operationType, updateMessage.entryType());
     } else {
       var topic = new DataEntryUpdateTopicProvider(environment).getTopic(updateMessage);
       var messageString = updateMessage.toJsonString();

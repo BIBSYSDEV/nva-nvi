@@ -10,6 +10,7 @@ import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.Dao;
 import no.sikt.nva.nvi.common.queue.DataEntryType;
@@ -39,14 +40,9 @@ public final class QueueServiceTestUtils {
     return createEvent(List.of(updateMessages));
   }
 
-  public static SQSEvent createEvent(UUID candidateIdentifier) {
-    var dbMessage = createDbChangeMessage(candidateIdentifier);
-    return createEvent(dbMessage);
-  }
-
-  public static SQSEvent createEvent(List<UUID> candidateIdentifiers) {
+  public static SQSEvent createEvent(UUID... candidateIdentifiers) {
     var dbMessages =
-        candidateIdentifiers.stream().map(QueueServiceTestUtils::createDbChangeMessage).toList();
+        Stream.of(candidateIdentifiers).map(QueueServiceTestUtils::createDbChangeMessage).toList();
     return createEvent(dbMessages);
   }
 
