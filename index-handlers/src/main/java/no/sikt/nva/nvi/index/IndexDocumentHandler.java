@@ -3,24 +3,22 @@ package no.sikt.nva.nvi.index;
 import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
 import static no.sikt.nva.nvi.common.utils.ExceptionUtils.getStackTrace;
 import static no.sikt.nva.nvi.index.aws.S3StorageWriter.GZIP_ENDING;
-import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.StringUtils.isBlank;
 import static nva.commons.core.attempt.Try.attempt;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
-import com.amazonaws.services.lambda.runtime.events.DynamodbEvent.DynamodbStreamRecord;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.net.URI;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.StorageWriter;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.queue.DynamoDbChangeMessage;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.common.service.model.Candidate;
@@ -42,7 +40,6 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
   private static final String INDEX_DLQ = "INDEX_DLQ";
   private static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
   private static final String QUEUE_URL = "PERSISTED_INDEX_DOCUMENT_QUEUE_URL";
-  private static final String IDENTIFIER = "identifier";
   private static final String ERROR_MESSAGE = "Error message: {}";
   private static final String FAILED_SENDING_EVENT_MESSAGE = "Failed to send message to queue: {}";
   private static final String FAILED_TO_PERSIST_MESSAGE = "Failed to save {} in bucket";
@@ -98,7 +95,7 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
     LOGGER.info("Received event with {} records", input.getRecords().size());
     input.getRecords().stream()
         .map(SQSMessage::getBody)
-        .map(this::mapToDynamoDbRecord)
+        .map(this::mapToDbChangeMessage)
         .filter(Objects::nonNull)
         .map(this::generateIndexDocument)
         .filter(Objects::nonNull)
@@ -107,17 +104,6 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
         .forEach(this::sendEvent);
     LOGGER.info("Finished processing all records");
     return null;
-  }
-
-  private static Optional<UUID> extractIdFromRecord(DynamodbStreamRecord record) {
-    return attempt(() -> UUID.fromString(extractIdentifier(record))).toOptional();
-  }
-
-  private static String extractIdentifier(DynamodbStreamRecord record) {
-    return Optional.ofNullable(record.getDynamodb().getOldImage())
-        .orElse(record.getDynamodb().getNewImage())
-        .get(IDENTIFIER)
-        .getS();
   }
 
   private static UUID extractCandidateIdentifier(URI docuemntUri) {
@@ -160,17 +146,13 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
             });
   }
 
-  private DynamodbStreamRecord mapToDynamoDbRecord(String body) {
-    return attempt(() -> dtoObjectMapper.readValue(body, DynamodbStreamRecord.class))
+  private DynamoDbChangeMessage mapToDbChangeMessage(String body) {
+    return attempt(() -> DynamoDbChangeMessage.from(body))
         .orElse(
             failure -> {
               handleFailure(failure, body);
               return null;
             });
-  }
-
-  private Candidate fetchCandidate(DynamodbStreamRecord record) {
-    return extractIdFromRecord(record).map(this::fetchCandidate).orElse(null);
   }
 
   private Candidate fetchCandidate(UUID candidateIdentifier) {
@@ -193,23 +175,23 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
   }
 
   private IndexDocumentWithConsumptionAttributes generateIndexDocument(
-      DynamodbStreamRecord record) {
-    return attempt(() -> generateIndexDocumentWithConsumptionAttributes(record))
+      DynamoDbChangeMessage message) {
+    var identifier = message.candidateIdentifier();
+    return attempt(() -> generateIndexDocumentWithConsumptionAttributes(identifier))
         .orElse(
             failure -> {
-              var identifier = extractIdFromRecord(record);
               handleFailure(
                   failure,
                   FAILED_TO_GENERATE_INDEX_DOCUMENT_MESSAGE,
-                  identifier.map(UUID::toString).orElse(null),
-                  identifier.orElse(null));
+                  message.toString(),
+                  identifier);
               return null;
             });
   }
 
   private IndexDocumentWithConsumptionAttributes generateIndexDocumentWithConsumptionAttributes(
-      DynamodbStreamRecord streamRecord) {
-    var candidate = fetchCandidate(streamRecord);
+      UUID candidateIdentifier) {
+    var candidate = fetchCandidate(candidateIdentifier);
     if (candidate == null) {
       LOGGER.info("Candidate is null, skipping index document generation");
       return null;

@@ -1,6 +1,10 @@
 package no.sikt.nva.nvi.common.db;
 
 import static java.util.Objects.nonNull;
+import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidate;
+import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidateBuilder;
+import static no.sikt.nva.nvi.test.TestUtils.randomYear;
+import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 
 import java.net.URI;
@@ -14,6 +18,17 @@ import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
 
 public class CandidateDaoFixtures {
   private static final String UUID_SEPARATOR = "-";
+
+  public static CandidateDao randomApplicableCandidateDao() {
+    return new CandidateDao(
+        UUID.randomUUID(), randomCandidate(), UUID.randomUUID().toString(), randomYear());
+  }
+
+  public static CandidateDao randomNonApplicableCandidateDao() {
+    return new CandidateDao(
+        UUID.randomUUID(), randomCandidateBuilder(false).build(),
+        UUID.randomUUID().toString(), randomString());
+  }
 
   public static List<CandidateDao> createNumberOfCandidatesForYear(
       String year, int number, CandidateRepository repository) {
@@ -51,7 +66,7 @@ public class CandidateDaoFixtures {
   public static CandidateDao setupReportedCandidate(CandidateRepository repository, String year) {
     var institutionId = randomUri();
     return repository.create(
-        DbCandidateFixtures.randomCandidateBuilder(true, institutionId)
+        randomCandidateBuilder(true, institutionId)
             .publicationDate(DbPublicationDate.builder().year(year).build())
             .reportStatus(ReportStatus.REPORTED)
             .build(),
@@ -65,7 +80,7 @@ public class CandidateDaoFixtures {
   public static CandidateDao setupReportedCandidate(
       CandidateRepository repository, String year, URI organizationId) {
     return repository.create(
-        DbCandidateFixtures.randomCandidateBuilder(true, organizationId)
+        randomCandidateBuilder(true, organizationId)
             .publicationDate(DbPublicationDate.builder().year(year).build())
             .reportStatus(ReportStatus.REPORTED)
             .build(),

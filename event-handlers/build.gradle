@@ -1,5 +1,6 @@
 plugins {
     id 'nva.nvi.java-conventions'
+    id 'java-test-fixtures'
 }
 
 dependencies {
@@ -29,6 +30,18 @@ dependencies {
     implementation libs.nva.json
     implementation libs.nva.s3
     implementation project(':nvi-commons')
+
+    testFixturesAnnotationProcessor libs.errorprone
+    testFixturesImplementation libs.aws.lambda.events
+    testFixturesImplementation libs.aws.lambda.java.core
+    testFixturesImplementation libs.aws.sdk2.sns
+    testFixturesImplementation libs.bundles.cucumber
+    testFixturesImplementation libs.bundles.testing
+    testFixturesImplementation libs.com.auth0.jwt
+    testFixturesImplementation libs.nva.commons.core
+    testFixturesImplementation libs.nva.testutils
+    testFixturesImplementation project(':nvi-test')
+    testFixturesImplementation(testFixtures(project(":nvi-commons")))
 
     testImplementation libs.bundles.cucumber
     testImplementation libs.dynamodDbLocal

@@ -1,84 +1,104 @@
 package no.sikt.nva.nvi.common;
 
 import static no.sikt.nva.nvi.common.DynamoDbTestUtils.dynamoDbEventWithEmptyPayload;
-import static no.sikt.nva.nvi.common.DynamoDbTestUtils.eventWithCandidate;
-import static no.sikt.nva.nvi.common.DynamoDbTestUtils.eventWithCandidateIdentifier;
 import static no.sikt.nva.nvi.common.DynamoDbTestUtils.mapToString;
+import static no.sikt.nva.nvi.common.utils.DynamoDbUtils.extractField;
 
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent.DynamodbStreamRecord;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.Dao;
+import no.sikt.nva.nvi.common.queue.DataEntryType;
+import no.sikt.nva.nvi.common.queue.DynamoDbChangeMessage;
 import software.amazon.awssdk.services.dynamodb.model.OperationType;
+import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequest;
+import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 
 public final class QueueServiceTestUtils {
+  private static final String IDENTIFIER_FIELD = "identifier";
+  private static final String TYPE_FIELD = "type";
 
   private QueueServiceTestUtils() {}
 
-  public static SQSEvent createEvent(UUID candidateIdentifier) {
+  public static SQSEvent from(SendMessageBatchRequest messageBatch) {
     var sqsEvent = new SQSEvent();
-    var message = createMessage(candidateIdentifier);
-    sqsEvent.setRecords(List.of(message));
+    var messages =
+        messageBatch.entries().stream()
+            .map(
+                entry -> {
+                  var message = new SQSMessage();
+                  message.setBody(entry.messageBody());
+                  return message;
+                })
+            .toList();
+    sqsEvent.setRecords(messages);
     return sqsEvent;
   }
 
-  public static SQSEvent createEvent(List<UUID> candidateIdentifiers) {
+  public static SQSEvent from(SendMessageRequest request) {
+    var event = new SQSEvent();
+    var message = new SQSMessage();
+    message.setBody(request.messageBody());
+    event.setRecords(List.of(message));
+    return event;
+  }
+
+  public static SQSEvent createEvent(SQSMessage... sqsMessages) {
     var sqsEvent = new SQSEvent();
-    var records = candidateIdentifiers.stream().map(QueueServiceTestUtils::createMessage).toList();
-    sqsEvent.setRecords(records);
+    sqsEvent.setRecords(List.of(sqsMessages));
     return sqsEvent;
+  }
+
+  public static SQSEvent createEvent(Collection<DynamoDbChangeMessage> updateMessages) {
+    var sqsEvent = new SQSEvent();
+    var messages = updateMessages.stream().map(QueueServiceTestUtils::createMessage).toList();
+    sqsEvent.setRecords(messages);
+    return sqsEvent;
+  }
+
+  public static SQSEvent createEvent(DynamoDbChangeMessage... updateMessages) {
+    return createEvent(List.of(updateMessages));
+  }
+
+  public static SQSEvent createEvent(UUID... candidateIdentifiers) {
+    var dbMessages =
+        Stream.of(candidateIdentifiers).map(QueueServiceTestUtils::createDbChangeMessage).toList();
+    return createEvent(dbMessages);
   }
 
   public static SQSEvent createEvent(Dao oldImage, Dao newImage, OperationType operationType) {
-    var sqsEvent = new SQSEvent();
-    var message = createMessage(oldImage, newImage, operationType);
-    sqsEvent.setRecords(List.of(message));
-    return sqsEvent;
+    var dbMessage = createDbChangeMessage(oldImage, newImage, operationType);
+    return createEvent(List.of(dbMessage));
   }
 
   public static SQSEvent createEvent(DynamodbStreamRecord streamRecord) {
-    var sqsEvent = new SQSEvent();
-    var message = new SQSMessage();
-    message.setBody(mapToString(streamRecord));
-    sqsEvent.setRecords(List.of(message));
-    return sqsEvent;
-  }
-
-  public static SQSEvent createEventWithDynamodbRecords(List<DynamodbStreamRecord> streamRecords) {
-    var sqsEvent = new SQSEvent();
-    var messages = streamRecords.stream().map(QueueServiceTestUtils::createMessage).toList();
-    sqsEvent.setRecords(messages);
-    return sqsEvent;
-  }
-
-  public static SQSEvent createEventWithMessages(List<SQSMessage> messages) {
-    var sqsEvent = new SQSEvent();
-    sqsEvent.setRecords(messages);
-    return sqsEvent;
+    var dbMessage = createDbChangeMessage(streamRecord);
+    return createEvent(dbMessage);
   }
 
   public static SQSEvent createEventWithOneInvalidRecord(UUID candidateIdentifier) {
-    var sqsEvent = new SQSEvent();
-    var message = createMessage(candidateIdentifier);
-    sqsEvent.setRecords(List.of(message, invalidSqsMessage()));
-    return sqsEvent;
+    var validSqsMessage = createMessage(createDbChangeMessage(candidateIdentifier));
+    return createEvent(validSqsMessage, invalidSqsMessage());
   }
 
   public static SQSEvent createEventWithOneInvalidRecord(CandidateDao dao) {
-    var sqsEvent = new SQSEvent();
-    var message = createMessage(null, dao, OperationType.INSERT);
-    sqsEvent.setRecords(List.of(message, invalidSqsMessage()));
-    return sqsEvent;
+    var validSqsMessage = createMessage(createDbChangeMessage(null, dao, OperationType.INSERT));
+    return createEvent(validSqsMessage, invalidSqsMessage());
   }
 
-  public static SQSEvent createEventWithDynamoEventMissingIdentifier(CandidateDao candidate) {
-    var sqsEvent = new SQSEvent();
-    var message = createMessage(null, candidate, OperationType.INSERT);
-    sqsEvent.setRecords(List.of(message, messageWithoutIdentifier()));
-    return sqsEvent;
+  public static SQSEvent createEventWithOneRecordMissingIdentifier(CandidateDao candidate) {
+    var validSqsMessage =
+        createMessage(createDbChangeMessage(null, candidate, OperationType.INSERT));
+    return createEvent(validSqsMessage, messageWithoutIdentifier());
+  }
+
+  public static SQSEvent createEventWithOnlyOneRecordMissingIdentifier() {
+    return createEvent(messageWithoutIdentifier());
   }
 
   public static SQSMessage invalidSqsMessage() {
@@ -87,22 +107,13 @@ public final class QueueServiceTestUtils {
     return message;
   }
 
-  public static SQSMessage createMessage(UUID candidateIdentifier) {
+  private static SQSMessage createMessage(DynamoDbChangeMessage body) {
     var message = new SQSMessage();
-    message.setBody(generateSingleDynamoDbEventRecord(candidateIdentifier));
-    return message;
-  }
-
-  public static SQSMessage createMessage(Dao oldImage, Dao newImage, OperationType operationType) {
-    var message = new SQSMessage();
-    message.setBody(
-        generateSingleDynamoDbEventRecordWithEmptyPayload(oldImage, newImage, operationType));
-    return message;
-  }
-
-  private static SQSMessage createMessage(DynamodbStreamRecord record) {
-    var message = new SQSMessage();
-    message.setBody(mapToString(record));
+    try {
+      message.setBody(body.toJsonString());
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
     return message;
   }
 
@@ -112,16 +123,27 @@ public final class QueueServiceTestUtils {
     return message;
   }
 
-  private static String generateSingleDynamoDbEventRecord(UUID candidateIdentifier) {
-    return mapToString(eventWithCandidateIdentifier(candidateIdentifier).getRecords().get(0));
-  }
-
   private static String generateSingleDynamoDbEventRecordWithEmptyPayload() {
-    return mapToString(dynamoDbEventWithEmptyPayload().getRecords().get(0));
+    return mapToString(dynamoDbEventWithEmptyPayload().getRecords().getFirst());
   }
 
-  private static String generateSingleDynamoDbEventRecordWithEmptyPayload(
+  private static DynamoDbChangeMessage createDbChangeMessage(UUID candidateIdentifier) {
+    return new DynamoDbChangeMessage(
+        candidateIdentifier, DataEntryType.CANDIDATE, OperationType.MODIFY);
+  }
+
+  private static DynamoDbChangeMessage createDbChangeMessage(
       Dao oldImage, Dao newImage, OperationType operationType) {
-    return mapToString(eventWithCandidate(oldImage, newImage, operationType).getRecords().get(0));
+    var entryType = extractField(oldImage, newImage, TYPE_FIELD);
+    var identifier = extractField(oldImage, newImage, IDENTIFIER_FIELD);
+    return new DynamoDbChangeMessage(
+        UUID.fromString(identifier), DataEntryType.parse(entryType), operationType);
+  }
+
+  private static DynamoDbChangeMessage createDbChangeMessage(DynamodbStreamRecord streamRecord) {
+    var entryType = extractField(streamRecord, TYPE_FIELD);
+    var identifier = extractField(streamRecord, IDENTIFIER_FIELD);
+    return new DynamoDbChangeMessage(
+        UUID.fromString(identifier), DataEntryType.parse(entryType), OperationType.MODIFY);
   }
 }

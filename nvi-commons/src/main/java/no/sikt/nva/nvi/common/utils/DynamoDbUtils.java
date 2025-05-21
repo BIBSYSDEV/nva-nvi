@@ -13,16 +13,18 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
+import no.sikt.nva.nvi.common.db.Dao;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 public final class DynamoDbUtils {
 
-  private static final String IDENTIFIER = "identifier";
+  private static final String IDENTIFIER_FIELD = "identifier";
 
   private DynamoDbUtils() {}
 
-  public static Optional<UUID> extractIdFromRecord(DynamodbStreamRecord record) {
-    return attempt(() -> UUID.fromString(extractIdentifier(record))).toOptional();
+  public static Optional<UUID> extractIdFromRecord(DynamodbStreamRecord streamRecord) {
+    return attempt(() -> UUID.fromString(extractField(streamRecord, IDENTIFIER_FIELD)))
+        .toOptional();
   }
 
   public static Map<String, AttributeValue> getImage(DynamodbStreamRecord streamRecord) {
@@ -38,11 +40,15 @@ public final class DynamoDbUtils {
     return dtoObjectMapper.readValue(body, DynamodbStreamRecord.class);
   }
 
-  private static String extractIdentifier(DynamodbStreamRecord record) {
-    return Optional.ofNullable(record.getDynamodb().getNewImage())
-        .orElse(record.getDynamodb().getOldImage())
-        .get(IDENTIFIER)
+  public static String extractField(DynamodbStreamRecord streamRecord, String field) {
+    return Optional.ofNullable(streamRecord.getDynamodb().getNewImage())
+        .orElse(streamRecord.getDynamodb().getOldImage())
+        .get(field)
         .getS();
+  }
+
+  public static String extractField(Dao oldImage, Dao newImage, String field) {
+    return Optional.ofNullable(newImage).orElse(oldImage).toDynamoFormat().get(field).s();
   }
 
   private static Map<String, AttributeValue> mapToDynamoDbAttributeValue(

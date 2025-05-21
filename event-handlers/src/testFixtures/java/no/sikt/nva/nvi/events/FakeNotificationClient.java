@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.events.db;
+package no.sikt.nva.nvi.events;
 
 import java.util.ArrayList;
 import java.util.List;

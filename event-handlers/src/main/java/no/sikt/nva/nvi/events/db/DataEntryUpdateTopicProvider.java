@@ -1,10 +1,8 @@
 package no.sikt.nva.nvi.events.db;
 
-import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
-import no.sikt.nva.nvi.common.db.CandidateDao;
-import no.sikt.nva.nvi.common.db.Dao;
+import no.sikt.nva.nvi.common.queue.DataEntryType;
+import no.sikt.nva.nvi.common.queue.DynamoDbChangeMessage;
 import nva.commons.core.Environment;
-import software.amazon.awssdk.services.dynamodb.model.OperationType;
 
 public class DataEntryUpdateTopicProvider {
 
@@ -17,50 +15,59 @@ public class DataEntryUpdateTopicProvider {
       "TOPIC_CANDIDATE_APPLICABLE_UPDATE";
   private static final String CANDIDATE_NOT_APPLICABLE_UPDATE_TOPIC =
       "TOPIC_CANDIDATE_NOT_APPLICABLE_UPDATE";
-  private static final String ILLEGAL_DAO_TYPE_MESSAGE = "Illegal dao type: ";
+  private static final String ILLEGAL_ARGUMENT_MESSAGE = "Illegal entry type: ";
   private final Environment environment;
 
   public DataEntryUpdateTopicProvider(Environment environment) {
     this.environment = environment;
   }
 
-  public String getTopic(OperationType operationType, Dao dao) {
-    return switch (operationType) {
-      case INSERT -> readEnvironmentVariable(dao, CANDIDATE_INSERT_TOPIC, APPROVAL_INSERT_TOPIC);
-      case MODIFY -> getUpdateTopic(dao);
-      case REMOVE -> readEnvironmentVariable(dao, CANDIDATE_REMOVE_TOPIC, APPROVAL_REMOVE_TOPIC);
-      default -> throw new IllegalArgumentException(ILLEGAL_DAO_TYPE_MESSAGE + operationType);
+  public String getTopic(DynamoDbChangeMessage message) {
+    return switch (message.operationType()) {
+      case INSERT -> getInsertTopic(message.entryType());
+      case MODIFY -> getUpdateTopic(message.entryType());
+      case REMOVE -> getRemoveTopic(message.entryType());
+      default ->
+          throw new IllegalArgumentException(ILLEGAL_ARGUMENT_MESSAGE + message.operationType());
     };
   }
 
-  private String readEnvironmentVariable(Dao dao, String candidateTopic, String approvalTopic) {
-    switch (dao.type()) {
-      case CandidateDao.TYPE -> {
-        return environment.readEnv(candidateTopic);
+  private String getInsertTopic(DataEntryType entryType) {
+    switch (entryType) {
+      case DataEntryType.CANDIDATE -> {
+        return environment.readEnv(CANDIDATE_INSERT_TOPIC);
       }
-      case ApprovalStatusDao.TYPE -> {
-        return environment.readEnv(approvalTopic);
+      case DataEntryType.APPROVAL_STATUS -> {
+        return environment.readEnv(APPROVAL_INSERT_TOPIC);
       }
-      default -> throw new IllegalArgumentException(ILLEGAL_DAO_TYPE_MESSAGE + dao.type());
+      default -> throw new IllegalArgumentException(ILLEGAL_ARGUMENT_MESSAGE + entryType);
     }
   }
 
-  private String getUpdateTopic(Dao dao) {
-    switch (dao.type()) {
-      case CandidateDao.TYPE -> {
-        return getCandidateUpdateTopic(dao);
+  private String getUpdateTopic(DataEntryType entryType) {
+    switch (entryType) {
+      case DataEntryType.CANDIDATE -> {
+        return environment.readEnv(CANDIDATE_APPLICABLE_UPDATE_TOPIC);
       }
-      case ApprovalStatusDao.TYPE -> {
+      case DataEntryType.NON_CANDIDATE -> {
+        return environment.readEnv(CANDIDATE_NOT_APPLICABLE_UPDATE_TOPIC);
+      }
+      case DataEntryType.APPROVAL_STATUS -> {
         return environment.readEnv(APPROVAL_UPDATE_TOPIC);
       }
-      default -> throw new IllegalArgumentException("Illegal dao type: " + dao.type());
+      default -> throw new IllegalArgumentException(ILLEGAL_ARGUMENT_MESSAGE + entryType);
     }
   }
 
-  private String getCandidateUpdateTopic(Dao dao) {
-    var candidateDao = (CandidateDao) dao;
-    return candidateDao.candidate().applicable()
-        ? environment.readEnv(CANDIDATE_APPLICABLE_UPDATE_TOPIC)
-        : environment.readEnv(CANDIDATE_NOT_APPLICABLE_UPDATE_TOPIC);
+  private String getRemoveTopic(DataEntryType entryType) {
+    switch (entryType) {
+      case DataEntryType.CANDIDATE, DataEntryType.NON_CANDIDATE -> {
+        return environment.readEnv(CANDIDATE_REMOVE_TOPIC);
+      }
+      case DataEntryType.APPROVAL_STATUS -> {
+        return environment.readEnv(APPROVAL_REMOVE_TOPIC);
+      }
+      default -> throw new IllegalArgumentException(ILLEGAL_ARGUMENT_MESSAGE + entryType);
+    }
   }
 }

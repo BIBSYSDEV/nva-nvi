@@ -7,7 +7,9 @@ dependencies {
     testImplementation libs.aws.lambda.events
     testImplementation libs.aws.lambda.java.core
     testImplementation libs.aws.sdk2.core
+    testImplementation libs.aws.sdk2.dynamodb
     testImplementation libs.aws.sdk2.s3
+    testImplementation libs.aws.sdk2.sns
     testImplementation libs.aws.sdk2.sqs
     testImplementation libs.com.auth0.jwt
     testImplementation libs.nva.commons.auth
@@ -23,6 +25,7 @@ dependencies {
     testImplementation project(":nvi-commons")
     testImplementation project(":nvi-rest")
     testImplementation project(":nvi-test")
+    testImplementation(testFixtures(project(":event-handlers")))
     testImplementation(testFixtures(project(":nvi-commons")))
 }
 

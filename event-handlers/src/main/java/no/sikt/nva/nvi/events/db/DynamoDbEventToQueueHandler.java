@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.events.db;
 
 import static no.sikt.nva.nvi.common.utils.DynamoDbUtils.extractIdFromRecord;
+import static no.sikt.nva.nvi.common.utils.DynamoDbUtils.getImage;
 import static no.sikt.nva.nvi.common.utils.ExceptionUtils.getStackTrace;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
@@ -9,9 +10,18 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent;
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent.DynamodbStreamRecord;
+import com.amazonaws.services.lambda.runtime.events.models.dynamodb.AttributeValue;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import no.sikt.nva.nvi.common.db.CandidateDao;
+import no.sikt.nva.nvi.common.db.Dao;
+import no.sikt.nva.nvi.common.db.DynamoEntryWithRangeKey;
+import no.sikt.nva.nvi.common.queue.DataEntryType;
+import no.sikt.nva.nvi.common.queue.DynamoDbChangeMessage;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import nva.commons.core.Environment;
@@ -19,6 +29,7 @@ import nva.commons.core.JacocoGenerated;
 import nva.commons.core.attempt.Failure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import software.amazon.awssdk.services.dynamodb.model.OperationType;
 
 public class DynamoDbEventToQueueHandler implements RequestHandler<DynamodbEvent, Void> {
 
@@ -29,7 +40,11 @@ public class DynamoDbEventToQueueHandler implements RequestHandler<DynamodbEvent
   private static final String DLQ_MESSAGE = "Failed to process record %s. Exception: %s ";
   private static final String FAILURE_MESSAGE = "Failure while sending database events to queue";
   private static final String FAILED_RECORDS_MESSAGE = "Failed records: {}";
+  private static final String SKIPPING_EVENT_MESSAGE =
+      "Skipping event with operation type {} for dao type {}";
   private static final String INFO_MESSAGE = "Sent {} messages to queue. Failures: {}";
+  private static final String IDENTIFIER_FIELD = "identifier";
+  private static final String TYPE_FIELD = "type";
   public final String dlqUrl;
   private final QueueClient queueClient;
   private final String queueUrl;
@@ -56,17 +71,53 @@ public class DynamoDbEventToQueueHandler implements RequestHandler<DynamodbEvent
     return null;
   }
 
-  private static List<String> mapToJsonStrings(List<DynamodbStreamRecord> records) {
-    return records.stream().map(DynamoDbEventToQueueHandler::writeAsJsonString).toList();
+  private static List<String> mapToUpdateMessages(List<DynamodbStreamRecord> records) {
+    return records.stream()
+        .map(DynamoDbEventToQueueHandler::mapToUpdateMessage)
+        .filter(Objects::nonNull)
+        .map(DynamoDbEventToQueueHandler::writeAsJsonString)
+        .toList();
   }
 
-  private static String writeAsJsonString(DynamodbStreamRecord record) {
-    return attempt(() -> dtoObjectMapper.writeValueAsString(record)).orElseThrow();
+  private static DynamoDbChangeMessage mapToUpdateMessage(DynamodbStreamRecord streamRecord) {
+    var operationType = OperationType.fromValue(streamRecord.getEventName());
+    var entryType = getEntryType(streamRecord);
+    if (entryType.shouldBeProcessedForIndexing()) {
+      var recordIdentifier = UUID.fromString(extractField(streamRecord, IDENTIFIER_FIELD));
+      var dbChangeMessage = new DynamoDbChangeMessage(recordIdentifier, entryType, operationType);
+      dbChangeMessage.validate();
+      return dbChangeMessage;
+    }
+    LOGGER.info(SKIPPING_EVENT_MESSAGE, operationType, entryType);
+    return null;
+  }
+
+  private static DataEntryType getEntryType(DynamodbStreamRecord streamRecord) {
+    var image = getImage(streamRecord);
+    var dao = DynamoEntryWithRangeKey.parseAttributeValuesMap(image, Dao.class);
+
+    if (dao instanceof CandidateDao candidateDao) {
+      var isApplicable = candidateDao.candidate().applicable();
+      return isApplicable ? DataEntryType.CANDIDATE : DataEntryType.NON_CANDIDATE;
+    }
+
+    return DataEntryType.parse(extractField(streamRecord, TYPE_FIELD));
+  }
+
+  private static String extractField(DynamodbStreamRecord streamRecord, String field) {
+    var image =
+        Optional.ofNullable(streamRecord.getDynamodb().getOldImage())
+            .orElse(streamRecord.getDynamodb().getNewImage());
+    return Optional.ofNullable(image.get(field)).map(AttributeValue::getS).orElse(null);
+  }
+
+  private static String writeAsJsonString(DynamoDbChangeMessage updateMessage) {
+    return attempt(() -> dtoObjectMapper.writeValueAsString(updateMessage)).orElseThrow();
   }
 
   private void splitIntoBatchesAndSend(DynamodbEvent input) {
     splitIntoBatches(input.getRecords())
-        .map(DynamoDbEventToQueueHandler::mapToJsonStrings)
+        .map(DynamoDbEventToQueueHandler::mapToUpdateMessages)
         .forEach(this::sendBatch);
   }
 
@@ -75,13 +126,13 @@ public class DynamoDbEventToQueueHandler implements RequestHandler<DynamodbEvent
     LOGGER.error(FAILURE_MESSAGE, failure.getException());
     LOGGER.error(
         FAILED_RECORDS_MESSAGE, records.stream().map(DynamodbStreamRecord::toString).toList());
-    records.forEach(record -> sendToDlq(record, failure.getException()));
+    records.forEach(streamRecord -> sendToDlq(streamRecord, failure.getException()));
     return new RuntimeException(failure.getException());
   }
 
-  private void sendToDlq(DynamodbStreamRecord record, Exception exception) {
-    var message = String.format(DLQ_MESSAGE, record.toString(), getStackTrace(exception));
-    extractIdFromRecord(record)
+  private void sendToDlq(DynamodbStreamRecord streamRecord, Exception exception) {
+    var message = String.format(DLQ_MESSAGE, streamRecord.toString(), getStackTrace(exception));
+    extractIdFromRecord(streamRecord)
         .ifPresentOrElse(
             id -> queueClient.sendMessage(message, dlqUrl, id),
             () -> queueClient.sendMessage(message, dlqUrl));
