@@ -84,7 +84,9 @@ public class DynamoDbEventToQueueHandler implements RequestHandler<DynamodbEvent
     var entryType = getEntryType(streamRecord);
     if (entryType.shouldBeProcessedForIndexing()) {
       var recordIdentifier = UUID.fromString(extractField(streamRecord, IDENTIFIER_FIELD));
-      return new DynamoDbChangeMessage(recordIdentifier, entryType, operationType);
+      var dbChangeMessage = new DynamoDbChangeMessage(recordIdentifier, entryType, operationType);
+      dbChangeMessage.validate();
+      return dbChangeMessage;
     }
     LOGGER.info(SKIPPING_EVENT_MESSAGE, operationType, entryType);
     return null;
