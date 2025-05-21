@@ -17,13 +17,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.params.provider.Arguments.argumentSet;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
@@ -51,7 +44,6 @@ import software.amazon.awssdk.services.sns.model.PublishRequest;
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequest;
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequestEntry;
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
-import software.amazon.awssdk.services.sqs.model.SqsException;
 
 /**
  * This class contains integration tests for first stage of the automatic indexing process. It tests
@@ -136,18 +128,14 @@ class DynamoDbUpdateEventTest {
   void shouldSendMessageToDlqIfSendingBatchFails() {
     var candidateIdentifier = randomUUID();
     var dynamoDbEvent = createCandidateEvent(candidateIdentifier, OperationType.MODIFY, true);
-
-    // Rig the sharedQueueClient to throw an exception when sending a message to the queue
-    sharedQueueClient = spy(FakeSqsClient.class);
-    doThrow(SqsException.class).when(sharedQueueClient).sendMessageBatch(any(), any());
-    dynamoDbEventHandlerContext = new DynamoDbToEventQueueHandlerContext(sharedQueueClient);
-    dataEntryUpdateHandlerContext = new DataEntryUpdateHandlerContext(sharedQueueClient, snsClient);
+    sharedQueueClient.disableDestinationQueue(EnvironmentFixtures.DB_EVENTS_QUEUE_URL.getValue());
 
     assertThrows(RuntimeException.class, () -> processDynamoEvent(dynamoDbEvent));
-    assertThat(getDlqMessages()).hasSize(1);
-    verify(sharedQueueClient, times(1))
-        .sendMessage(
-            anyString(), eq(EnvironmentFixtures.INDEX_DLQ.getValue()), eq(candidateIdentifier));
+
+    assertThat(getDlqMessages())
+        .hasSize(1)
+        .flatExtracting(event -> event.getRecords().stream().map(SQSMessage::getBody).toList())
+        .allMatch(message -> message.contains(candidateIdentifier.toString()));
   }
 
   @Test
