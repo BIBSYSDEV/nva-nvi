@@ -41,9 +41,6 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import software.amazon.awssdk.services.dynamodb.model.OperationType;
 import software.amazon.awssdk.services.sns.model.PublishRequest;
-import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequest;
-import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequestEntry;
-import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 
 /**
  * This class contains integration tests for first stage of the automatic indexing process. It tests
@@ -74,10 +71,11 @@ class DynamoDbUpdateEventTest {
 
     dynamoDbEventHandlerContext.handleEvent(dynamoDbEvent);
 
-    var batchOneMessages = extractBatchEntryMessageBodiesAtIndex(0);
-    var batchTwoMessages = extractBatchEntryMessageBodiesAtIndex(1);
-    assertEquals(10, batchOneMessages.size());
-    assertEquals(5, batchTwoMessages.size());
+    var sqsEvents = getDbEventMessages();
+    assertThat(sqsEvents)
+        .hasSize(2)
+        .extracting(event -> event.getRecords().size())
+        .containsSequence(10, 5);
   }
 
   @ParameterizedTest
@@ -188,40 +186,19 @@ class DynamoDbUpdateEventTest {
    */
   private void processDynamoEvent(DynamodbEvent dynamoDbEvent) {
     dynamoDbEventHandlerContext.handleEvent(dynamoDbEvent);
-    var queuedEvents =
-        dynamoDbEventHandlerContext.getQueueClient().getSentBatches().stream()
-            .map(DynamoDbUpdateEventTest::mapBatchMessageToSqsEvent)
-            .toList();
-
+    var queuedEvents = getDbEventMessages();
     for (var event : queuedEvents) {
       dataEntryUpdateHandlerContext.handleEvent(event);
     }
   }
 
-  private List<SQSEvent> getMessageBatchesFromQueue(String queueUrl) {
-    return sharedQueueClient.getSentBatches().stream()
-        .filter(hasBatchDestination(queueUrl))
-        .map(DynamoDbUpdateEventTest::mapBatchMessageToSqsEvent)
-        .toList();
-  }
-
-  private List<SQSEvent> getMessagesFromQueue(String queueUrl) {
-    return sharedQueueClient.getSentMessages().stream()
-        .filter(hasDestination(queueUrl))
-        .map(DynamoDbUpdateEventTest::mapMessageRequestToSqsEvent)
-        .toList();
-  }
-
   private List<SQSEvent> getDlqMessages() {
-    return getMessagesFromQueue(EnvironmentFixtures.INDEX_DLQ.getValue());
+    return sharedQueueClient.getAllSentSqsEvents(EnvironmentFixtures.INDEX_DLQ.getValue());
   }
 
-  private static Predicate<SendMessageRequest> hasDestination(String expectedQueue) {
-    return actualMessage -> expectedQueue.equals(actualMessage.queueUrl());
-  }
-
-  private static Predicate<SendMessageBatchRequest> hasBatchDestination(String expectedQueue) {
-    return actualMessage -> expectedQueue.equals(actualMessage.queueUrl());
+  private List<SQSEvent> getDbEventMessages() {
+    return sharedQueueClient.getAllSentSqsEvents(
+        EnvironmentFixtures.DB_EVENTS_QUEUE_URL.getValue());
   }
 
   private static Predicate<PublishRequest> hasTopic(String expectedTopic) {
@@ -235,36 +212,6 @@ class DynamoDbUpdateEventTest {
     } catch (JsonProcessingException e) {
       throw new RuntimeException(e);
     }
-  }
-
-  private static SQSEvent mapBatchMessageToSqsEvent(SendMessageBatchRequest messageBatch) {
-    var event = new SQSEvent();
-    var messages =
-        messageBatch.entries().stream()
-            .map(DynamoDbUpdateEventTest::mapBatchMessageEntrytoSqsMessage)
-            .toList();
-    event.setRecords(messages);
-    return event;
-  }
-
-  private static SQSMessage mapBatchMessageEntrytoSqsMessage(SendMessageBatchRequestEntry entry) {
-    var message = new SQSMessage();
-    message.setBody(entry.messageBody());
-    return message;
-  }
-
-  private static SQSEvent mapMessageRequestToSqsEvent(SendMessageRequest request) {
-    var event = new SQSEvent();
-    var message = new SQSMessage();
-    message.setBody(request.messageBody());
-    event.setRecords(List.of(message));
-    return event;
-  }
-
-  private List<String> extractBatchEntryMessageBodiesAtIndex(int index) {
-    return sharedQueueClient.getSentBatches().get(index).entries().stream()
-        .map(SendMessageBatchRequestEntry::messageBody)
-        .toList();
   }
 
   private static Stream<Arguments> candidateEventProvider() {
@@ -331,8 +278,7 @@ class DynamoDbUpdateEventTest {
     var dynamoDbEvent = createCandidateEvent(candidateIdentifier, OperationType.INSERT, true);
     dynamoDbEventHandlerContext.handleEvent(dynamoDbEvent);
 
-    var processedEvents =
-        getMessageBatchesFromQueue(EnvironmentFixtures.DB_EVENTS_QUEUE_URL.getValue()).getFirst();
+    var processedEvents = getDbEventMessages().getFirst();
     return processedEvents.getRecords().getFirst();
   }
 

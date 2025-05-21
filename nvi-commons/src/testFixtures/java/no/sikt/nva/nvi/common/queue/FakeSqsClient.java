@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.common.queue;
 
+import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -7,6 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Stream;
+import no.sikt.nva.nvi.common.QueueServiceTestUtils;
 import software.amazon.awssdk.services.sqs.model.BatchResultErrorEntry;
 import software.amazon.awssdk.services.sqs.model.DeleteMessageRequest;
 import software.amazon.awssdk.services.sqs.model.Message;
@@ -21,6 +24,7 @@ import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 import software.amazon.awssdk.services.sqs.model.SqsException;
 
+@SuppressWarnings("PMD.CouplingBetweenObjects")
 public class FakeSqsClient implements QueueClient {
 
   public static final String MESSAGE_ATTRIBUTE_CANDIDATE_IDENTIFIER_QUEUE = "candidateIdentifier";
@@ -35,6 +39,18 @@ public class FakeSqsClient implements QueueClient {
   private final List<ReceiveMessageRequest> receivedMessages = new ArrayList<>();
 
   private final List<DeleteMessageRequest> deleteMessages = new ArrayList<>();
+
+  public List<SQSEvent> getAllSentSqsEvents(String queueUrl) {
+    var singleMessages =
+        sentMessages.stream()
+            .filter(request -> request.queueUrl().equals(queueUrl))
+            .map(QueueServiceTestUtils::from);
+    var batchedMessages =
+        sentBatches.stream()
+            .filter(request -> request.queueUrl().equals(queueUrl))
+            .map(QueueServiceTestUtils::from);
+    return Stream.concat(singleMessages, batchedMessages).toList();
+  }
 
   public List<SendMessageRequest> getSentMessages() {
     return sentMessages;

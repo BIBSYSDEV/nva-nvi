@@ -16,12 +16,37 @@ import no.sikt.nva.nvi.common.db.Dao;
 import no.sikt.nva.nvi.common.queue.DataEntryType;
 import no.sikt.nva.nvi.common.queue.DynamoDbChangeMessage;
 import software.amazon.awssdk.services.dynamodb.model.OperationType;
+import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequest;
+import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 
 public final class QueueServiceTestUtils {
   private static final String IDENTIFIER_FIELD = "identifier";
   private static final String TYPE_FIELD = "type";
 
   private QueueServiceTestUtils() {}
+
+  public static SQSEvent from(SendMessageBatchRequest messageBatch) {
+    var sqsEvent = new SQSEvent();
+    var messages =
+        messageBatch.entries().stream()
+            .map(
+                entry -> {
+                  var message = new SQSMessage();
+                  message.setBody(entry.messageBody());
+                  return message;
+                })
+            .toList();
+    sqsEvent.setRecords(messages);
+    return sqsEvent;
+  }
+
+  public static SQSEvent from(SendMessageRequest request) {
+    var event = new SQSEvent();
+    var message = new SQSMessage();
+    message.setBody(request.messageBody());
+    event.setRecords(List.of(message));
+    return event;
+  }
 
   public static SQSEvent createEvent(SQSMessage... sqsMessages) {
     var sqsEvent = new SQSEvent();
