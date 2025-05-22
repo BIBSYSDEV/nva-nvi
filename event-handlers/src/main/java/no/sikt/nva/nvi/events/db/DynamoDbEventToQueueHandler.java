@@ -71,14 +71,6 @@ public class DynamoDbEventToQueueHandler implements RequestHandler<DynamodbEvent
     return null;
   }
 
-  private static List<String> mapToUpdateMessages(List<DynamodbStreamRecord> records) {
-    return records.stream()
-        .map(DynamoDbEventToQueueHandler::mapToUpdateMessage)
-        .filter(Objects::nonNull)
-        .map(DynamoDbEventToQueueHandler::writeAsJsonString)
-        .toList();
-  }
-
   private static DynamoDbChangeMessage mapToUpdateMessage(DynamodbStreamRecord streamRecord) {
     var operationType = OperationType.fromValue(streamRecord.getEventName());
     var entryType = getEntryType(streamRecord);
@@ -116,9 +108,13 @@ public class DynamoDbEventToQueueHandler implements RequestHandler<DynamodbEvent
   }
 
   private void splitIntoBatchesAndSend(DynamodbEvent input) {
-    splitIntoBatches(input.getRecords())
-        .map(DynamoDbEventToQueueHandler::mapToUpdateMessages)
-        .forEach(this::sendBatch);
+    var messages =
+        input.getRecords().stream()
+            .map(DynamoDbEventToQueueHandler::mapToUpdateMessage)
+            .filter(Objects::nonNull)
+            .map(DynamoDbEventToQueueHandler::writeAsJsonString)
+            .toList();
+    splitIntoBatches(messages).forEach(this::sendBatch);
   }
 
   private RuntimeException handleFailure(
@@ -143,7 +139,7 @@ public class DynamoDbEventToQueueHandler implements RequestHandler<DynamodbEvent
     LOGGER.info(INFO_MESSAGE, messages.size(), response.failed().size());
   }
 
-  private Stream<List<DynamodbStreamRecord>> splitIntoBatches(List<DynamodbStreamRecord> records) {
+  private Stream<List<String>> splitIntoBatches(List<String> records) {
     var count = records.size();
     return IntStream.range(0, (count + BATCH_SIZE - 1) / BATCH_SIZE)
         .mapToObj(i -> records.subList(i * BATCH_SIZE, Math.min((i + 1) * BATCH_SIZE, count)));
