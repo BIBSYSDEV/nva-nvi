@@ -109,6 +109,7 @@ class DynamoDbUpdateEventTest {
 
     assertThat(snsClient.getPublishedMessages()).isEmpty();
     assertThat(getDlqMessages()).isEmpty();
+    assertThat(getDbEventMessages()).isEmpty();
   }
 
   @ParameterizedTest
@@ -268,6 +269,8 @@ class DynamoDbUpdateEventTest {
     return Stream.of(
         argumentSet("Create period", eventWithDao(null, randomPeriodDao(), OperationType.INSERT)),
         argumentSet("Create note", eventWithDao(null, randomNoteDao(), OperationType.INSERT)),
+        argumentSet(
+            "Update note", eventWithDao(randomNoteDao(), randomNoteDao(), OperationType.MODIFY)),
         argumentSet(
             "Create uniqueness entry",
             eventWithDao(null, randomUniquenessEntry, OperationType.INSERT)));
