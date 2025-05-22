@@ -1,12 +1,16 @@
 package no.sikt.nva.nvi.events.evaluator;
 
+import static no.sikt.nva.nvi.common.SampleExpandedPublicationFactory.mapOrganizationToAffiliation;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
+import static no.sikt.nva.nvi.common.model.ContributorFixtures.ROLE_CREATOR;
+import static no.sikt.nva.nvi.common.model.ContributorFixtures.unverifiedCreatorFrom;
 import static no.sikt.nva.nvi.common.model.ContributorFixtures.verifiedCreatorFrom;
 import static no.sikt.nva.nvi.common.model.PageCountFixtures.PAGE_NUMBER_AS_DTO;
 import static no.sikt.nva.nvi.common.model.PageCountFixtures.PAGE_RANGE_AS_DTO;
 import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublicationDate;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_NORWAY;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_SWEDEN;
+import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.params.provider.Arguments.argumentSet;
 
@@ -16,6 +20,9 @@ import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.SampleExpandedPublicationFactory;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.dto.PageCountDto;
+import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
+import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
+import no.sikt.nva.nvi.test.SampleExpandedContributor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -109,6 +116,33 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
 
     var candidate = getEvaluatedCandidate(publication);
     assertThat(candidate.publicationDetails().pageCount()).isEqualTo(expectedPageCount);
+  }
+
+  @Test
+  void shouldHandleContributorsWithMissingVerificationStatus() {
+    var unverifiedCreator = unverifiedCreatorFrom(nviOrganization);
+    var invalidCreator = createContributorWithoutVerificationStatus();
+    var publication =
+        factory
+            .withContributor(unverifiedCreator)
+            .withContributor(invalidCreator)
+            .getExpandedPublication();
+
+    var candidate = getEvaluatedCandidate(publication);
+    assertThat(candidate.nviCreators())
+        .hasSize(2)
+        .allMatch(creator -> creator instanceof UnverifiedNviCreatorDto)
+        .extracting(NviCreatorDto::name)
+        .containsExactlyInAnyOrder(unverifiedCreator.name(), invalidCreator.names().getFirst());
+  }
+
+  private SampleExpandedContributor createContributorWithoutVerificationStatus() {
+    var expandedAffiliations = List.of(mapOrganizationToAffiliation(nviOrganization));
+    return SampleExpandedContributor.builder()
+        .withId(randomUri())
+        .withRole(ROLE_CREATOR.getValue())
+        .withAffiliations(expandedAffiliations)
+        .build();
   }
 
   private static Stream<Arguments> pageCountProvider() {

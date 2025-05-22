@@ -26,6 +26,9 @@ public record ContributorDto(
     if (isNull(affiliations)) {
       affiliations = emptyList();
     }
+    if (isNull(verificationStatus)) {
+      verificationStatus = new VerificationStatus("Unknown");
+    }
   }
 
   public void validate() {
