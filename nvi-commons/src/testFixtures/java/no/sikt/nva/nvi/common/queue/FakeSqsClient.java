@@ -83,6 +83,9 @@ public class FakeSqsClient implements QueueClient {
   public NviSendMessageBatchResponse sendMessageBatch(
       Collection<String> messages, String queueUrl) {
     validateQueueUrl(queueUrl);
+    if (messages.isEmpty()) {
+      throw SqsException.builder().message("Empty batch of messages sent to queue").build();
+    }
     var request = createBatchRequest(messages, queueUrl);
     sentBatches.add(request);
     return createResponse(SendMessageBatchResponse.builder().build());
