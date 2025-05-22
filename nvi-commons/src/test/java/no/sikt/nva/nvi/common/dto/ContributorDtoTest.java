@@ -4,7 +4,6 @@ import static no.sikt.nva.nvi.common.examples.ExampleContributors.EXAMPLE_1_CONT
 import static no.sikt.nva.nvi.common.examples.ExampleContributors.EXAMPLE_2_CONTRIBUTOR_1;
 import static no.sikt.nva.nvi.common.examples.ExampleContributors.EXAMPLE_2_CONTRIBUTOR_2;
 import static no.sikt.nva.nvi.common.examples.ExampleContributors.EXAMPLE_2_CONTRIBUTOR_3;
-import static no.sikt.nva.nvi.common.examples.ExampleContributors.EXAMPLE_2_CONTRIBUTOR_4;
 import static no.sikt.nva.nvi.common.examples.ExampleContributors.EXAMPLE_2_CONTRIBUTOR_5;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -42,7 +41,6 @@ class ContributorDtoTest {
         argumentSet("EXAMPLE_2_CONTRIBUTOR_1", EXAMPLE_2_CONTRIBUTOR_1),
         argumentSet("EXAMPLE_2_CONTRIBUTOR_2", EXAMPLE_2_CONTRIBUTOR_2),
         argumentSet("EXAMPLE_2_CONTRIBUTOR_3", EXAMPLE_2_CONTRIBUTOR_3),
-        argumentSet("EXAMPLE_2_CONTRIBUTOR_4", EXAMPLE_2_CONTRIBUTOR_4),
         argumentSet("EXAMPLE_2_CONTRIBUTOR_5", EXAMPLE_2_CONTRIBUTOR_5));
   }
 }

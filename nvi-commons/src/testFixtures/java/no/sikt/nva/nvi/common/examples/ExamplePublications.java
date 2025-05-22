@@ -5,7 +5,6 @@ import static no.sikt.nva.nvi.common.examples.ExampleContributors.EXAMPLE_1_CONT
 import static no.sikt.nva.nvi.common.examples.ExampleContributors.EXAMPLE_2_CONTRIBUTOR_1;
 import static no.sikt.nva.nvi.common.examples.ExampleContributors.EXAMPLE_2_CONTRIBUTOR_2;
 import static no.sikt.nva.nvi.common.examples.ExampleContributors.EXAMPLE_2_CONTRIBUTOR_3;
-import static no.sikt.nva.nvi.common.examples.ExampleContributors.EXAMPLE_2_CONTRIBUTOR_4;
 import static no.sikt.nva.nvi.common.examples.ExampleContributors.EXAMPLE_2_CONTRIBUTOR_5;
 import static no.sikt.nva.nvi.common.examples.ExampleOrganizations.EXAMPLE_TOP_LEVEL_ORGANIZATION_3;
 import static no.sikt.nva.nvi.common.examples.ExampleOrganizations.TOP_LEVEL_ORGANIZATION_NTNU;
@@ -82,7 +81,6 @@ public class ExamplePublications {
                   EXAMPLE_2_CONTRIBUTOR_1,
                   EXAMPLE_2_CONTRIBUTOR_2,
                   EXAMPLE_2_CONTRIBUTOR_3,
-                  EXAMPLE_2_CONTRIBUTOR_4,
                   EXAMPLE_2_CONTRIBUTOR_5))
           .withTopLevelOrganizations(
               List.of(
