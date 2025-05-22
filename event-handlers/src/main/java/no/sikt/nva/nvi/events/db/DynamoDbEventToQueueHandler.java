@@ -112,6 +112,7 @@ public class DynamoDbEventToQueueHandler implements RequestHandler<DynamodbEvent
         input.getRecords().stream()
             .map(DynamoDbEventToQueueHandler::mapToUpdateMessage)
             .filter(Objects::nonNull)
+            .distinct()
             .map(DynamoDbEventToQueueHandler::writeAsJsonString)
             .toList();
     splitIntoBatches(messages).forEach(this::sendBatch);
