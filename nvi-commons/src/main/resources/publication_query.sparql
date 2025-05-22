@@ -159,13 +159,15 @@ WHERE {
     OPTIONAL { ?organization :label ?label }
     OPTIONAL { ?organization :country ?country }
   } UNION {
-    # Find all contributors
+    # Find all contributors with the role of Creator
     ?publication :entityDescription ?entityDescription .
     ?entityDescription :contributor ?contributor .
 
     ?contributor :identity ?personId ;
     :role ?role .
     ?role a ?roleType .
+    FILTER (?roleType = :Creator)
+
     OPTIONAL { ?personId :verificationStatus ?verificationStatus }
     OPTIONAL {
       ?personId :name ?contributorName

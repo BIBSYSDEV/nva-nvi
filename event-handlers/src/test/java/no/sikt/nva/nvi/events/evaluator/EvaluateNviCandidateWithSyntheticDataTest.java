@@ -145,6 +145,27 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
         .build();
   }
 
+  @Test
+  void shouldHandleDuplicateContributorWithMultipleRoles() {
+    var expandedAffiliations = List.of(mapOrganizationToAffiliation(nviOrganization));
+    var contributorBuilder =
+        SampleExpandedContributor.builder()
+            .withId(randomUri())
+            .withVerificationStatus("Verified")
+            .withAffiliations(expandedAffiliations);
+    var creator = contributorBuilder.withRole("Creator").build();
+    var nonCreator = contributorBuilder.withRole("NonCreator").build();
+
+    var publication =
+        factory.withContributor(creator).withContributor(nonCreator).getExpandedPublication();
+
+    var candidate = getEvaluatedCandidate(publication);
+    assertThat(candidate.publicationDetails().contributors()).hasSize(1);
+    assertThat(candidate.nviCreators()).hasSize(1).extracting("id").containsExactly(creator.id());
+  }
+
+  // TODO: Add test case for single creator object with multiple roles in array
+
   private static Stream<Arguments> pageCountProvider() {
     return Stream.of(
         argumentSet("Monograph with page count", PAGE_NUMBER_AS_DTO, "AcademicMonograph", "Series"),
