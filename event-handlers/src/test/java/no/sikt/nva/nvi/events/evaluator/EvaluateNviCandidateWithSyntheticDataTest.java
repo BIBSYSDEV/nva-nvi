@@ -164,8 +164,6 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
     assertThat(candidate.nviCreators()).hasSize(1).extracting("id").containsExactly(creator.id());
   }
 
-  // TODO: Add test case for single creator object with multiple roles in array
-
   private static Stream<Arguments> pageCountProvider() {
     return Stream.of(
         argumentSet("Monograph with page count", PAGE_NUMBER_AS_DTO, "AcademicMonograph", "Series"),
