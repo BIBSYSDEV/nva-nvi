@@ -10,6 +10,7 @@ import java.time.Year;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.client.model.Organization;
@@ -168,10 +169,15 @@ public class EvaluatorService {
             .map(NviCreator::nviAffiliations)
             .flatMap(List::stream)
             .map(NviOrganization::topLevelOrganization)
+            .map(NviOrganization::id)
             .collect(Collectors.toSet());
     return publicationDto.topLevelOrganizations().stream()
-        .filter(topLevelNviAffiliations::contains)
+        .filter(isOneOf(topLevelNviAffiliations))
         .toList();
+  }
+
+  private static Predicate<Organization> isOneOf(Collection<URI> organizationIds) {
+    return organization -> organizationIds.contains(organization.id());
   }
 
   private boolean hasInvalidPublicationYear(PublicationDto publication) {
