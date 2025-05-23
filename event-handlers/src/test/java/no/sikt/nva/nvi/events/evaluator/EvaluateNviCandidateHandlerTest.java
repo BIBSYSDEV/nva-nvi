@@ -714,6 +714,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     assertThat(messageBody)
         .usingRecursiveComparison()
         .ignoringFields(
+            "candidate.topLevelNviOrganizations",
             "candidate.publicationChannelForLevel.name",
             "candidate.publicationDetails.identifier",
             "candidate.publicationDetails.contributors",

@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDetails;
@@ -35,7 +34,7 @@ public record PublicationDetails(
     PageCount pageCount,
     PublicationChannel publicationChannel,
     PublicationDate publicationDate,
-    boolean isApplicable,
+    boolean isApplicable, // FIXME: Remove when migrated
     Collection<NviCreator> nviCreators,
     int contributorCount,
     Collection<Organization> topLevelOrganizations,
@@ -44,12 +43,10 @@ public record PublicationDetails(
   public static PublicationDetails from(UpsertNviCandidateRequest upsertRequest) {
     var publicationDto = upsertRequest.publicationDetails();
     var publicationChannel = PublicationChannel.from(upsertRequest.pointCalculation().channel());
-    var topLevelOrganizations = publicationDto.topLevelOrganizations();
+    var topLevelNviOrganizations = upsertRequest.topLevelNviOrganizations();
     var nviCreators =
-        Stream.concat(
-                upsertRequest.unverifiedCreators().stream(),
-                upsertRequest.verifiedCreators().stream())
-            .map(creator -> NviCreator.from(creator, topLevelOrganizations))
+        upsertRequest.nviCreators().stream()
+            .map(creator -> NviCreator.from(creator, topLevelNviOrganizations))
             .toList();
 
     return builder()
@@ -65,8 +62,8 @@ public record PublicationDetails(
         .withIsApplicable(publicationDto.isApplicable())
         .withPublicationChannel(publicationChannel)
         .withNviCreators(nviCreators)
-        .withContributorCount(publicationDto.contributors().size())
-        .withTopLevelOrganizations(publicationDto.topLevelOrganizations())
+        .withContributorCount(publicationDto.contributors().size()) // FIXME
+        .withTopLevelOrganizations(topLevelNviOrganizations)
         .withModifiedDate(publicationDto.modifiedDate())
         .build();
   }

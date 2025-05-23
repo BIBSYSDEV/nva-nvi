@@ -29,7 +29,6 @@ public record PublicationDto(
     InstanceType publicationType,
     boolean isApplicable,
     boolean isInternationalCollaboration,
-    // TODO: Flatten this to just the applicable channel, we don't need all channels
     Collection<PublicationChannelDto> publicationChannels,
     Collection<ContributorDto> contributors,
     Collection<Organization> topLevelOrganizations,
