@@ -500,10 +500,10 @@ class CandidateApprovalTest extends CandidateTestSetup {
             .withChannelType(arguments.channel().channelType())
             .withScientificValue(arguments.channel().scientificValue())
             .build();
-
+    var creators = arguments.creators().stream().map(NviCreatorDto.class::cast).toList();
     var newUpsertRequest =
         fromRequest(upsertCandidateRequest)
-            .withVerifiedCreators(arguments.creators())
+            .withNviCreators(creators)
             .withInstanceType(arguments.type())
             .withPublicationChannel(channel)
             .withPoints(arguments.institutionPoints())
@@ -641,7 +641,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
             .build();
     var topLevelNviOrganization = Organization.builder().withId(HARDCODED_INSTITUTION_ID).build();
     return randomUpsertRequestBuilder()
-        .withVerifiedCreators(List.of(verifiedCreator))
+        .withNviCreators(verifiedCreator)
         .withTopLevelOrganizations(List.of(topLevelNviOrganization))
         .withInstanceType(HARDCODED_INSTANCE_TYPE)
         .withPublicationChannel(channel)

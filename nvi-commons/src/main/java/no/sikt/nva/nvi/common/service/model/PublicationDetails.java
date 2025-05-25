@@ -36,7 +36,7 @@ public record PublicationDetails(
     PublicationDate publicationDate,
     boolean isApplicable, // FIXME: Remove when migrated
     Collection<NviCreator> nviCreators,
-    int contributorCount,
+    int contributorCount, // FIXME: Rename to creatorCount?
     Collection<Organization> topLevelOrganizations,
     Instant modifiedDate) {
 
@@ -62,7 +62,7 @@ public record PublicationDetails(
         .withIsApplicable(publicationDto.isApplicable())
         .withPublicationChannel(publicationChannel)
         .withNviCreators(nviCreators)
-        .withContributorCount(publicationDto.contributors().size()) // FIXME
+        .withContributorCount(publicationDto.creatorCount())
         .withTopLevelOrganizations(topLevelNviOrganizations)
         .withModifiedDate(publicationDto.modifiedDate())
         .build();
@@ -85,11 +85,18 @@ public record PublicationDetails(
         builder()
             .withId(dbCandidate.publicationId())
             .withPublicationBucketUri(dbCandidate.publicationBucketUri())
+            .withTitle(dbDetails.title())
+            .withStatus(dbDetails.status())
+            .withLanguage(dbDetails.language())
+            .withAbstract(dbDetails.abstractText())
             .withPublicationDate(PublicationDate.from(dbCandidate.getPublicationDate()))
+            .withPageCount(PageCount.from(dbDetails.pages()))
             .withIsApplicable(dbCandidate.applicable())
             .withPublicationChannel(PublicationChannel.from(candidateDao))
             .withNviCreators(nviCreators)
-            .withTopLevelOrganizations(topLevelOrganizations);
+            .withContributorCount(dbDetails.contributorCount())
+            .withTopLevelOrganizations(topLevelOrganizations)
+            .withModifiedDate(dbDetails.modifiedDate());
 
     if (nonNull(dbDetails)) {
       return getPublicationDetailsWithMigratedFields(dbDetails, builder);
@@ -111,6 +118,7 @@ public record PublicationDetails(
         .pages(dbPageCount)
         .publicationDate(publicationDate.toDbPublicationDate())
         .creators(dbCreators)
+        .contributorCount(contributorCount)
         .modifiedDate(modifiedDate)
         .topLevelNviOrganizations(
             topLevelOrganizations.stream().map(Organization::toDbOrganization).toList())

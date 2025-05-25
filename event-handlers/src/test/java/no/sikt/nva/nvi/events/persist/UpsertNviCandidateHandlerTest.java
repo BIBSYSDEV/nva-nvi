@@ -1,21 +1,20 @@
 package no.sikt.nva.nvi.events.persist;
 
-import static java.util.Collections.emptyList;
 import static no.sikt.nva.nvi.common.UpsertRequestBuilder.fromRequest;
 import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
+import static no.sikt.nva.nvi.common.dto.NviCreatorDtoFixtures.unverifiedNviCreatorDtoFrom;
 import static no.sikt.nva.nvi.common.dto.NviCreatorDtoFixtures.verifiedNviCreatorDtoFrom;
-import static no.sikt.nva.nvi.common.model.InstanceTypeFixtures.randomInstanceType;
+import static no.sikt.nva.nvi.common.dto.PointCalculationDtoBuilder.randomPointCalculationDtoBuilder;
+import static no.sikt.nva.nvi.common.dto.PublicationDetailsDtoBuilder.randomPublicationDetailsDtoBuilder;
+import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomTopLevelOrganization;
 import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.getRandomDateInCurrentYearAsDto;
-import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublicationDate;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
 import static no.sikt.nva.nvi.test.TestUtils.generateS3BucketUri;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
-import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
-import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.core.attempt.Try.attempt;
@@ -36,9 +35,9 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.UpsertRequestBuilder;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
@@ -50,7 +49,6 @@ import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.model.CandidateFixtures;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.queue.QueueClient;
-import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.Approval;
@@ -200,13 +198,9 @@ class UpsertNviCandidateHandlerTest {
 
   @Test
   void shouldSaveNewNviCandidateWithOnlyUnverifiedCreators() {
-    var unverifiedCreators =
-        List.of(new UnverifiedNviCreatorDto(randomString(), List.of(randomUri())));
+    var unverifiedCreator = new UnverifiedNviCreatorDto(randomString(), List.of(randomUri()));
     var evaluatedNviCandidate =
-        randomEvaluatedNviCandidate()
-            .withVerifiedCreators(emptyList())
-            .withUnverifiedCreators(unverifiedCreators)
-            .build();
+        randomEvaluatedNviCandidate().withNviCreators(unverifiedCreator).build();
 
     var sqsEvent = createEvent(createEvalMessage(evaluatedNviCandidate));
     handler.handleRequest(sqsEvent, CONTEXT);
@@ -217,21 +211,16 @@ class UpsertNviCandidateHandlerTest {
     Assertions.assertThat(actualNviCreators)
         .usingRecursiveComparison()
         .ignoringCollectionOrder()
-        .isEqualTo(unverifiedCreators);
+        .isEqualTo(List.of(unverifiedCreator));
   }
 
   @Test
   void shouldSaveNewNviCandidateWithBothVerifiedAndUnverifiedCreators() {
-    var unverifiedCreators =
-        List.of(new UnverifiedNviCreatorDto(randomString(), List.of(randomUri())));
+    var verifiedCreator = verifiedNviCreatorDtoFrom(randomUri());
+    var unverifiedCreator = unverifiedNviCreatorDtoFrom(randomUri());
     var evaluatedNviCandidate =
-        randomEvaluatedNviCandidate().withUnverifiedCreators(unverifiedCreators).build();
-    var expectedNviCreators =
-        Stream.concat(
-                evaluatedNviCandidate.verifiedCreators().stream(),
-                evaluatedNviCandidate.unverifiedCreators().stream())
-            .map(NviCreatorDto.class::cast)
-            .toList();
+        randomEvaluatedNviCandidate().withNviCreators(verifiedCreator, unverifiedCreator).build();
+    var expectedNviCreators = List.of(verifiedCreator, unverifiedCreator);
 
     var sqsEvent = createEvent(createEvalMessage(evaluatedNviCandidate));
     handler.handleRequest(sqsEvent, CONTEXT);
@@ -250,26 +239,20 @@ class UpsertNviCandidateHandlerTest {
     var requestBuilder = randomEvaluatedNviCandidate();
     var originalCandidate = scenario.upsertCandidate(requestBuilder.build());
 
-    var unverifiedCreators =
-        List.of(new UnverifiedNviCreatorDto(randomString(), List.of(randomUri())));
-    var updateRequest = requestBuilder.withUnverifiedCreators(unverifiedCreators).build();
+    var updatedCreators = new ArrayList<>(originalCandidate.getPublicationDetails().allCreators());
+    updatedCreators.add(unverifiedNviCreatorDtoFrom(randomUri()));
+    var updateRequest = requestBuilder.withNviCreators(updatedCreators).build();
 
     var sqsEvent = createEvent(createEvalMessage(updateRequest));
     handler.handleRequest(sqsEvent, CONTEXT);
+
     var updatedCandidate = scenario.getCandidateByPublicationId(updateRequest.publicationId());
-
-    var expectedNviCreators =
-        Stream.concat(
-                originalCandidate.getPublicationDetails().verifiedCreators().stream(),
-                updateRequest.unverifiedCreators().stream())
-            .map(NviCreatorDto.class::cast)
-            .toList();
     var actualNviCreators = updatedCandidate.getPublicationDetails().allCreators();
-
     Assertions.assertThat(actualNviCreators)
+        .hasSize(2)
         .usingRecursiveComparison()
         .ignoringCollectionOrder()
-        .isEqualTo(expectedNviCreators);
+        .isEqualTo(updatedCreators);
   }
 
   private static CandidateEvaluatedMessage randomCandidateEvaluatedMessage() {
@@ -277,34 +260,24 @@ class UpsertNviCandidateHandlerTest {
   }
 
   private static UpsertRequestBuilder randomEvaluatedNviCandidate() {
-    var identifier = UUID.randomUUID();
-    var publicationId = generatePublicationId(identifier);
-    var publicationBucketUri = generateS3BucketUri(identifier);
-    var creator = verifiedNviCreatorDtoFrom(randomUri());
-    return getBuilder(publicationId, publicationBucketUri, creator);
+    return randomUpsertRequestBuilder();
   }
 
   private static UpsertRequestBuilder getBuilder(
       URI publicationId, URI publicationBucketUri, VerifiedNviCreatorDto creator) {
+    var publicationDetails = randomPublicationDetailsDtoBuilder().withId(publicationId).build();
+    var topLevelOrganization = randomTopLevelOrganization();
+    var subOrganization = topLevelOrganization.hasPart().getFirst();
+    var pointCalculation =
+        randomPointCalculationDtoBuilder()
+            .withInstitutionPointFor(topLevelOrganization.id(), subOrganization.id(), creator.id())
+            .build();
     return randomUpsertRequestBuilder()
-        .withPublicationId(publicationId)
         .withPublicationBucketUri(publicationBucketUri)
-        .withInstanceType(randomInstanceType())
-        .withTotalPoints(randomBigDecimal(4))
-        .withBasePoints(randomBigDecimal(4))
-        .withCreatorShareCount(randomInteger())
-        .withCollaborationFactor(randomBigDecimal(4))
-        .withIsInternationalCollaboration(randomBoolean())
-        .withPoints(
-            List.of(
-                new InstitutionPoints(
-                    randomUri(),
-                    randomBigDecimal(4),
-                    List.of(
-                        new CreatorAffiliationPoints(
-                            creator.id(), randomUri(), randomBigDecimal())))))
-        .withPublicationDate(randomPublicationDate().toDtoPublicationDate())
-        .withVerifiedCreators(List.of(creator));
+        .withPointCalculation(pointCalculation)
+        .withPublicationDetails(publicationDetails)
+        .withNviCreators(creator)
+        .withTopLevelOrganizations(topLevelOrganization);
   }
 
   private static SQSEvent createEventWithInvalidBody() {

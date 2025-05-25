@@ -1,11 +1,10 @@
 package no.sikt.nva.nvi.common;
 
 import static java.math.BigDecimal.ZERO;
-import static java.util.Collections.emptyList;
-import static no.sikt.nva.nvi.common.dto.NviCreatorDtoFixtures.verifiedNviCreatorDtoFrom;
+import static no.sikt.nva.nvi.common.dto.PointCalculationDtoBuilder.randomPointCalculationDto;
+import static no.sikt.nva.nvi.common.dto.PublicationDetailsDtoBuilder.randomPublicationDetailsDto;
 import static no.sikt.nva.nvi.common.model.ContributorFixtures.randomVerifiedNviCreatorDto;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomTopLevelOrganization;
-import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 
 import java.math.BigDecimal;
@@ -13,130 +12,49 @@ import java.net.URI;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.dto.PointCalculationDto;
+import no.sikt.nva.nvi.common.dto.PointCalculationDtoBuilder;
 import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
-import no.sikt.nva.nvi.common.dto.PublicationDto;
-import no.sikt.nva.nvi.common.dto.PublicationDtoBuilder;
+import no.sikt.nva.nvi.common.dto.PublicationDetailsDto;
+import no.sikt.nva.nvi.common.dto.PublicationDetailsDtoBuilder;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.model.InstanceType;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
-import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
 
 public class UpsertRequestBuilder {
 
-  private PublicationDto.Builder publicationBuilder = PublicationDto.builder();
   private URI publicationBucketUri;
-  private InstanceType instanceType;
-  private boolean isInternationalCollaboration;
-  private List<UnverifiedNviCreatorDto> unverifiedCreators = emptyList();
-  private List<VerifiedNviCreatorDto> verifiedCreators = emptyList();
-  private List<Organization> topLevelNviOrganizations = emptyList();
-  private PublicationChannelDto channelForLevel;
-  private int creatorShareCount;
-  private BigDecimal collaborationFactor;
-  private BigDecimal basePoints;
-  private List<InstitutionPoints> points;
-  private BigDecimal totalPoints;
+  private PublicationDetailsDto publicationDetails;
+  private PointCalculationDto pointCalculation;
+  private List<NviCreatorDto> nviCreators;
+  private List<Organization> topLevelNviOrganizations;
 
   public static UpsertRequestBuilder randomUpsertRequestBuilder() {
     var topLevelOrganization = randomTopLevelOrganization();
     var affiliationId = topLevelOrganization.hasPart().getFirst().id();
     var nviCreator = randomVerifiedNviCreatorDto(affiliationId);
-    var publicationBuilder =
-        PublicationDtoBuilder.randomPublicationDtoBuilder()
-            .withTopLevelOrganizations(List.of(topLevelOrganization));
-    var publicationDetails = publicationBuilder.build();
-    var channel = List.copyOf(publicationDetails.publicationChannels()).getFirst();
 
     return new UpsertRequestBuilder()
-        .withPublicationDetails(publicationBuilder)
         .withPublicationBucketUri(randomUri())
-        .withPublicationId(publicationDetails.id())
-        .withPublicationIdentifier(publicationDetails.identifier())
-        .withIsInternationalCollaboration(publicationDetails.isInternationalCollaboration())
-        .withVerifiedCreators(List.of(nviCreator))
-        .withUnverifiedCreators(emptyList())
-        .withTopLevelOrganizations(List.of(topLevelOrganization))
-        .withPublicationChannel(channel)
-        .withInstanceType(publicationDetails.publicationType())
-        .withPublicationDate(publicationDetails.publicationDate())
-        .withCreatorShareCount(1)
-        .withCollaborationFactor(BigDecimal.ONE)
-        .withBasePoints(BigDecimal.ONE)
-        .withPoints(
-            List.of(
-                new InstitutionPoints(
-                    randomUri(),
-                    randomBigDecimal(),
-                    List.of(
-                        new CreatorAffiliationPoints(
-                            nviCreator.id(), affiliationId, randomBigDecimal())))))
-        .withTotalPoints(BigDecimal.ONE);
-  }
-
-  public static UpsertRequestBuilder randomUpsertRequestBuilder(
-      PublicationDto.Builder publicationBuilder) {
-    var publicationDetails = publicationBuilder.build();
-    var affiliationId = randomUri();
-    var nviCreator = verifiedNviCreatorDtoFrom(affiliationId);
-    var channel = List.copyOf(publicationDetails.publicationChannels()).getFirst();
-    return new UpsertRequestBuilder()
-        .withPublicationDetails(publicationBuilder)
-        .withPublicationBucketUri(randomUri())
-        .withPublicationId(publicationDetails.id())
-        .withPublicationIdentifier(publicationDetails.identifier())
-        .withIsInternationalCollaboration(publicationDetails.isInternationalCollaboration())
-        .withVerifiedCreators(List.of(nviCreator))
-        .withUnverifiedCreators(emptyList())
-        .withTopLevelOrganizations(publicationDetails.topLevelOrganizations())
-        .withPublicationChannel(channel)
-        .withInstanceType(publicationDetails.publicationType())
-        .withPublicationDate(publicationDetails.publicationDate())
-        .withCreatorShareCount(1)
-        .withCollaborationFactor(BigDecimal.ONE)
-        .withBasePoints(BigDecimal.ONE)
-        .withPoints(
-            List.of(
-                new InstitutionPoints(
-                    randomUri(),
-                    randomBigDecimal(),
-                    List.of(
-                        new CreatorAffiliationPoints(
-                            nviCreator.id(), affiliationId, randomBigDecimal())))))
-        .withTotalPoints(BigDecimal.ONE);
+        .withPointCalculation(randomPointCalculationDto())
+        .withPublicationDetails(randomPublicationDetailsDto())
+        .withNviCreators(nviCreator)
+        .withTopLevelOrganizations(List.of(topLevelOrganization));
   }
 
   public static UpsertRequestBuilder fromRequest(UpsertNviCandidateRequest request) {
-    var publicationBuilder = PublicationDtoBuilder.fromRequest(request);
-    var publicationDetails = publicationBuilder.build();
     var pointCalculation = request.pointCalculation();
     return new UpsertRequestBuilder()
         .withPublicationBucketUri(request.publicationBucketUri())
-        .withPublicationId(publicationDetails.id())
-        .withPublicationDetails(publicationBuilder)
-        .withIsInternationalCollaboration(pointCalculation.isInternationalCollaboration())
-        .withVerifiedCreators(request.verifiedCreators())
-        .withUnverifiedCreators(request.unverifiedCreators())
-        .withTopLevelOrganizations(request.topLevelNviOrganizations())
-        .withPublicationChannel(pointCalculation.channel())
-        .withInstanceType(pointCalculation.instanceType())
-        .withPublicationDate(publicationDetails.publicationDate())
-        .withCreatorShareCount(pointCalculation.creatorShareCount())
-        .withCollaborationFactor(pointCalculation.collaborationFactor())
-        .withBasePoints(pointCalculation.basePoints())
-        .withPoints(pointCalculation.institutionPoints())
-        .withTotalPoints(pointCalculation.totalPoints());
-  }
-
-  public UpsertRequestBuilder withPublicationDetails(PublicationDto.Builder publicationBuilder) {
-    this.publicationBuilder = publicationBuilder;
-    return this;
+        .withPointCalculation(pointCalculation)
+        .withPublicationDetails(request.publicationDetails())
+        .withNviCreators(request.nviCreators())
+        .withTopLevelOrganizations(request.topLevelNviOrganizations());
   }
 
   public UpsertRequestBuilder withPublicationBucketUri(URI publicationBucketUri) {
@@ -144,32 +62,38 @@ public class UpsertRequestBuilder {
     return this;
   }
 
-  public UpsertRequestBuilder withPublicationId(URI publicationId) {
-    this.publicationBuilder = publicationBuilder.withId(publicationId);
+  public UpsertRequestBuilder withPublicationDetails(PublicationDetailsDto publicationDetails) {
+    this.publicationDetails = publicationDetails;
     return this;
   }
 
-  public UpsertRequestBuilder withPublicationIdentifier(String publicationIdentifier) {
-    this.publicationBuilder = publicationBuilder.withIdentifier(publicationIdentifier);
+  public UpsertRequestBuilder withPointCalculation(PointCalculationDto pointCalculation) {
+    this.pointCalculation = pointCalculation;
+    return this;
+  }
+
+  public UpsertRequestBuilder withPublicationId(URI publicationId) {
+    this.publicationDetails =
+        new PublicationDetailsDtoBuilder(publicationDetails).withId(publicationId).build();
     return this;
   }
 
   public UpsertRequestBuilder withIsInternationalCollaboration(
       boolean isInternationalCollaboration) {
-    this.isInternationalCollaboration = isInternationalCollaboration;
-    this.publicationBuilder =
-        publicationBuilder.withIsInternationalCollaboration(isInternationalCollaboration);
+    this.pointCalculation =
+        new PointCalculationDtoBuilder(pointCalculation)
+            .withIsInternationalCollaboration(isInternationalCollaboration)
+            .build();
     return this;
   }
 
-  public UpsertRequestBuilder withVerifiedCreators(List<VerifiedNviCreatorDto> verifiedCreators) {
-    this.verifiedCreators = verifiedCreators;
+  public UpsertRequestBuilder withNviCreators(NviCreatorDto... nviCreators) {
+    this.nviCreators = List.of(nviCreators);
     return this;
   }
 
-  public UpsertRequestBuilder withUnverifiedCreators(
-      List<UnverifiedNviCreatorDto> unverifiedCreators) {
-    this.unverifiedCreators = unverifiedCreators;
+  public UpsertRequestBuilder withNviCreators(Collection<NviCreatorDto> nviCreators) {
+    this.nviCreators = List.copyOf(nviCreators);
     return this;
   }
 
@@ -179,80 +103,77 @@ public class UpsertRequestBuilder {
 
   public UpsertRequestBuilder withTopLevelOrganizations(
       Collection<Organization> topLevelOrganizations) {
-    this.publicationBuilder = publicationBuilder.withTopLevelOrganizations(topLevelOrganizations);
     this.topLevelNviOrganizations = List.copyOf(topLevelOrganizations);
     return this;
   }
 
   public UpsertRequestBuilder withPublicationChannel(PublicationChannelDto channel) {
-    this.channelForLevel = channel;
+    this.pointCalculation =
+        new PointCalculationDtoBuilder(pointCalculation).withChannel(channel).build();
     return this;
   }
 
   public UpsertRequestBuilder withInstanceType(InstanceType instanceType) {
-    this.instanceType = instanceType;
-    this.publicationBuilder = publicationBuilder.withPublicationType(instanceType);
+    this.pointCalculation =
+        new PointCalculationDtoBuilder(pointCalculation).withInstanceType(instanceType).build();
     return this;
   }
 
   public UpsertRequestBuilder withPublicationDate(PublicationDateDto publicationDate) {
-    this.publicationBuilder = publicationBuilder.withPublicationDate(publicationDate);
-    return this;
-  }
-
-  public UpsertRequestBuilder withCreatorShareCount(int creatorShareCount) {
-    this.creatorShareCount = creatorShareCount;
+    this.publicationDetails =
+        new PublicationDetailsDtoBuilder(publicationDetails)
+            .withPublicationDate(publicationDate)
+            .build();
     return this;
   }
 
   public UpsertRequestBuilder withCollaborationFactor(BigDecimal collaborationFactor) {
-    this.collaborationFactor = collaborationFactor;
+    this.pointCalculation =
+        new PointCalculationDtoBuilder(pointCalculation)
+            .withCollaborationFactor(collaborationFactor)
+            .build();
     return this;
   }
 
   public UpsertRequestBuilder withBasePoints(BigDecimal basePoints) {
-    this.basePoints = basePoints;
+    this.pointCalculation =
+        new PointCalculationDtoBuilder(pointCalculation).withBasePoints(basePoints).build();
     return this;
   }
 
   public UpsertRequestBuilder withPoints(List<InstitutionPoints> points) {
-    this.points = points;
+    this.pointCalculation =
+        new PointCalculationDtoBuilder(pointCalculation).withInstitutionPoints(points).build();
     return this;
   }
 
   public UpsertRequestBuilder withTotalPoints(BigDecimal totalPoints) {
-    this.totalPoints = totalPoints;
+    this.pointCalculation =
+        new PointCalculationDtoBuilder(pointCalculation).withTotalPoints(totalPoints).build();
     return this;
   }
 
   // Sets all creator and point fields based on the creatorsPerInstitution map
   public UpsertRequestBuilder withCreatorsAndPoints(
       Map<Organization, Collection<NviCreatorDto>> creatorsPerInstitution) {
-    this.verifiedCreators = getVerifiedCreators(creatorsPerInstitution);
-    this.unverifiedCreators = getUnverifiedCreators(creatorsPerInstitution);
-    this.points = getAllInstitutionPoints(creatorsPerInstitution);
-    this.totalPoints =
+    var creators = getNviCreators(creatorsPerInstitution);
+    var points = getAllInstitutionPoints(creatorsPerInstitution);
+    var totalPoints =
         points.stream().map(InstitutionPoints::institutionPoints).reduce(ZERO, BigDecimal::add);
     var topLevelOrganizations = creatorsPerInstitution.keySet().stream().toList();
-    return this.withTopLevelOrganizations(topLevelOrganizations);
+    var updatedPointCalculation =
+        new PointCalculationDtoBuilder(pointCalculation)
+            .withInstitutionPoints(points)
+            .withTotalPoints(totalPoints)
+            .build();
+    return this.withNviCreators(creators)
+        .withTopLevelOrganizations(topLevelOrganizations)
+        .withPointCalculation(updatedPointCalculation);
   }
 
-  private static List<VerifiedNviCreatorDto> getVerifiedCreators(
+  private static List<NviCreatorDto> getNviCreators(
       Map<Organization, Collection<NviCreatorDto>> creatorsPerInstitution) {
-    return creatorsPerInstitution.values().stream()
-        .flatMap(Collection::stream)
-        .filter(VerifiedNviCreatorDto.class::isInstance)
-        .map(VerifiedNviCreatorDto.class::cast)
-        .toList();
-  }
-
-  private static List<UnverifiedNviCreatorDto> getUnverifiedCreators(
-      Map<Organization, Collection<NviCreatorDto>> creatorsPerInstitution) {
-    return creatorsPerInstitution.values().stream()
-        .flatMap(Collection::stream)
-        .filter(UnverifiedNviCreatorDto.class::isInstance)
-        .map(UnverifiedNviCreatorDto.class::cast)
-        .toList();
+    return creatorsPerInstitution.values().stream().flatMap(Collection::stream).toList();
   }
 
   private List<InstitutionPoints> getAllInstitutionPoints(
@@ -281,28 +202,17 @@ public class UpsertRequestBuilder {
 
   private List<CreatorAffiliationPoints> getCreatorPoints(VerifiedNviCreatorDto creator) {
     return creator.affiliations().stream()
-        .map(affiliation -> new CreatorAffiliationPoints(creator.id(), affiliation, basePoints))
+        .map(
+            affiliation ->
+                new CreatorAffiliationPoints(
+                    creator.id(), affiliation, pointCalculation.basePoints()))
         .toList();
   }
 
   public UpsertNviCandidateRequest build() {
-    var pointCalculation =
-        new PointCalculationDto(
-            instanceType,
-            channelForLevel,
-            isInternationalCollaboration,
-            collaborationFactor,
-            basePoints,
-            creatorShareCount,
-            points,
-            totalPoints);
-    var nviCreators =
-        Stream.concat(verifiedCreators.stream(), unverifiedCreators.stream())
-            .map(NviCreatorDto.class::cast)
-            .toList();
     return UpsertNviCandidateRequest.builder()
         .withPointCalculation(pointCalculation)
-        .withPublicationDetails(publicationBuilder.build())
+        .withPublicationDetails(publicationDetails)
         .withPublicationBucketUri(publicationBucketUri)
         .withNviCreators(nviCreators)
         .withTopLevelNviOrganizations(topLevelNviOrganizations)

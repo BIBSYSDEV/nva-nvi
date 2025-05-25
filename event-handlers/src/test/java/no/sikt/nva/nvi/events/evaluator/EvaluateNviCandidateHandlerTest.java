@@ -63,7 +63,7 @@ import no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures;
 import no.sikt.nva.nvi.common.dto.PointCalculationDto;
 import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
-import no.sikt.nva.nvi.common.dto.PublicationDto;
+import no.sikt.nva.nvi.common.dto.PublicationDetailsDto;
 import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.model.ChannelType;
@@ -578,8 +578,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
             .withScientificValue(ScientificValue.parse(level))
             .build();
     var publicationDetails =
-        createExpectedPublicationDetails(
-            HARDCODED_PUBLICATION_ID, HARDCODED_PUBLICATION_DATE, instanceType, channelForLevel);
+        createExpectedPublicationDetails(HARDCODED_PUBLICATION_ID, HARDCODED_PUBLICATION_DATE);
     var verifiedCreator =
         new VerifiedNviCreatorDto(HARDCODED_CREATOR_ID, null, List.of(CRISTIN_NVI_ORG_SUB_UNIT_ID));
     var expectedInstitutionPoints =
@@ -613,20 +612,10 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
         .build();
   }
 
-  private static PublicationDto createExpectedPublicationDetails(
-      URI publicationId,
-      PublicationDateDto publicationDate,
-      InstanceType instanceType,
-      PublicationChannelDto publicationChannel) {
-    return PublicationDto.builder()
-        .withId(publicationId)
-        .withStatus("PUBLISHED")
-        .withIsApplicable(true)
-        .withPublicationDate(publicationDate)
-        .withPublicationType(instanceType)
-        .withPublicationChannels(List.of(publicationChannel))
-        .withIsInternationalCollaboration(false)
-        .build();
+  private static PublicationDetailsDto createExpectedPublicationDetails(
+      URI publicationId, PublicationDateDto publicationDate) {
+    return new PublicationDetailsDto(
+        publicationId, null, null, "PUBLISHED", null, null, null, publicationDate, true, 1, null);
   }
 
   private static int countCreatorShares(List<VerifiedNviCreatorDto> nviCreators) {

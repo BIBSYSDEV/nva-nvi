@@ -40,24 +40,4 @@ public class PublicationDtoBuilder {
         .withIsApplicable(true)
         .withIsInternationalCollaboration(false);
   }
-
-  public static PublicationDto.Builder fromRequest(UpsertNviCandidateRequest request) {
-    var original = request.publicationDetails();
-    return PublicationDto.builder()
-        .withId(original.id())
-        .withIdentifier(original.identifier())
-        .withContributors(List.copyOf(original.contributors()))
-        .withTopLevelOrganizations(List.copyOf(original.topLevelOrganizations()))
-        .withPublicationChannels(List.copyOf(original.publicationChannels()))
-        .withPublicationType(original.publicationType())
-        .withModifiedDate(original.modifiedDate())
-        .withPageCount(original.pageCount())
-        .withPublicationDate(original.publicationDate())
-        .withAbstract(original.abstractText())
-        .withLanguage(original.language())
-        .withStatus(original.status())
-        .withTitle(original.title())
-        .withIsApplicable(original.isApplicable())
-        .withIsInternationalCollaboration(original.isInternationalCollaboration());
-  }
 }

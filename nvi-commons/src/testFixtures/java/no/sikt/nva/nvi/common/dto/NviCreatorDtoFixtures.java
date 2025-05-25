@@ -43,6 +43,10 @@ public class NviCreatorDtoFixtures {
     return new UnverifiedNviCreatorDto(randomString(), List.copyOf(affiliations));
   }
 
+  public static UnverifiedNviCreatorDto unverifiedNviCreatorDtoFrom(URI... affiliations) {
+    return unverifiedNviCreatorDtoFrom(List.of(affiliations));
+  }
+
   public static UnverifiedNviCreatorDto unverifiedNviCreatorDtoFrom(Organization... affiliations) {
     var affiliationIds = List.of(affiliations).stream().map(Organization::id).toList();
     return unverifiedNviCreatorDtoFrom(affiliationIds);

@@ -160,7 +160,7 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
         factory.withContributor(creator).withContributor(nonCreator).getExpandedPublication();
 
     var candidate = getEvaluatedCandidate(publication);
-    assertThat(candidate.publicationDetails().contributors()).hasSize(1);
+    assertThat(candidate.publicationDetails().creatorCount()).isEqualTo(1);
     assertThat(candidate.nviCreators()).hasSize(1).extracting("id").containsExactly(creator.id());
   }
 

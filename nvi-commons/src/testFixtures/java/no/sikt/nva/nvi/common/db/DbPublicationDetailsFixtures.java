@@ -55,7 +55,7 @@ public class DbPublicationDetailsFixtures {
         .publicationDate(mapToDbPublicationDate(dtoPublicationDetails.publicationDate()))
         .modifiedDate(dtoPublicationDetails.modifiedDate())
         .creators(dbCreators)
-        .contributorCount(dtoPublicationDetails.contributors().size())
+        .contributorCount(dtoPublicationDetails.creatorCount())
         .abstractText(dtoPublicationDetails.abstractText())
         .pages(getDbPageCountFromRequest(request))
         .topLevelNviOrganizations(dbOrganizations);

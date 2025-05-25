@@ -59,6 +59,7 @@ import java.util.UUID;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.TestScenario;
+import no.sikt.nva.nvi.common.UpsertRequestFixtures;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
@@ -225,11 +226,7 @@ class IndexDocumentHandlerTest {
             .withName(randomString())
             .withAffiliations(List.of(institutionId))
             .build();
-    var request =
-        randomUpsertRequestBuilder()
-            .withVerifiedCreators(emptyList())
-            .withUnverifiedCreators(List.of(unverifiedCreator))
-            .build();
+    var request = randomUpsertRequestBuilder().withNviCreators(unverifiedCreator).build();
     Candidate.upsert(request, candidateRepository, periodRepository);
     var candidate =
         Candidate.fetchByPublicationId(
@@ -895,7 +892,9 @@ class IndexDocumentHandlerTest {
   }
 
   private Candidate randomApplicableCandidate(URI topLevelOrg, URI affiliation) {
-    var request = createUpsertCandidateRequest(topLevelOrg, affiliation);
+    var request =
+        UpsertRequestFixtures.createUpsertCandidateRequestWithSingleAffiliation(
+            topLevelOrg, affiliation);
     Candidate.upsert(request, candidateRepository, periodRepository);
     return Candidate.fetchByPublicationId(
         request::publicationId, candidateRepository, periodRepository);

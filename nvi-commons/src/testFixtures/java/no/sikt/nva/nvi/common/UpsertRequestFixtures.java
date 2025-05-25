@@ -1,20 +1,22 @@
 package no.sikt.nva.nvi.common;
 
+import static java.util.Collections.emptyList;
 import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
 import static no.sikt.nva.nvi.common.dto.NviCreatorDtoFixtures.verifiedNviCreatorDtoFrom;
+import static no.sikt.nva.nvi.common.dto.PointCalculationDtoBuilder.randomPointCalculationDtoBuilder;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
+import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
-import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
+import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
-import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
-import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
-import no.sikt.nva.nvi.test.TestUtils;
 
 public class UpsertRequestFixtures {
 
@@ -32,38 +34,49 @@ public class UpsertRequestFixtures {
         .build();
   }
 
-  public static UpsertRequestBuilder createUpsertCandidateRequest(URI... organizations) {
-    var verifiedNviCreators = new ArrayList<VerifiedNviCreatorDto>();
-    var institutionPoints = new ArrayList<InstitutionPoints>();
-    for (var organizationId : organizations) {
-      var pointValue = TestUtils.randomBigDecimal();
-      var creator = verifiedNviCreatorDtoFrom(organizationId);
-      var creatorPoint = new CreatorAffiliationPoints(creator.id(), organizationId, pointValue);
-      var institutionPoint =
-          new InstitutionPoints(organizationId, pointValue, List.of(creatorPoint));
-      verifiedNviCreators.add(creator);
-      institutionPoints.add(institutionPoint);
+  public static UpsertRequestBuilder createUpsertCandidateRequest(
+      Collection<Organization> topLevelOrganizations) {
+    var creators = new ArrayList<NviCreatorDto>();
+    var pointCalculation = randomPointCalculationDtoBuilder().withInstitutionPoints(emptyList());
+
+    for (var organization : topLevelOrganizations) {
+      var creator = verifiedNviCreatorDtoFrom(organization);
+      creators.add(creator);
+      pointCalculation =
+          pointCalculation.withInstitutionPointFor(organization.id(), randomUri(), creator.id());
     }
 
     return randomUpsertRequestBuilder()
-        .withVerifiedCreators(verifiedNviCreators)
-        .withPoints(institutionPoints);
+        .withPointCalculation(pointCalculation.build())
+        .withNviCreators(creators)
+        .withTopLevelOrganizations(topLevelOrganizations);
   }
 
-  public static UpsertNviCandidateRequest createUpsertCandidateRequest(
+  public static UpsertRequestBuilder createUpsertCandidateRequest(Organization... organizations) {
+    var topLevelOrganizations = List.of(organizations);
+    return createUpsertCandidateRequest(topLevelOrganizations);
+  }
+
+  public static UpsertRequestBuilder createUpsertCandidateRequest(URI... organizations) {
+    var topLevelOrganizations =
+        List.of(organizations).stream()
+            .map(Organization.builder()::withId)
+            .map(Organization.Builder::build)
+            .toList();
+    return createUpsertCandidateRequest(topLevelOrganizations);
+  }
+
+  public static UpsertNviCandidateRequest createUpsertCandidateRequestWithSingleAffiliation(
       URI topLevelOrg, URI affiliation) {
     var creator = verifiedNviCreatorDtoFrom(affiliation);
-    var points = TestUtils.randomBigDecimal();
-    var institutionPoints =
-        List.of(
-            new InstitutionPoints(
-                topLevelOrg,
-                points,
-                List.of(new CreatorAffiliationPoints(creator.id(), affiliation, points))));
+    var pointCalculation =
+        randomPointCalculationDtoBuilder()
+            .withInstitutionPointFor(topLevelOrg, affiliation, creator.id())
+            .build();
 
     return randomUpsertRequestBuilder()
-        .withVerifiedCreators(List.of(creator))
-        .withPoints(institutionPoints)
+        .withPointCalculation(pointCalculation)
+        .withNviCreators(creator)
         .build();
   }
 }

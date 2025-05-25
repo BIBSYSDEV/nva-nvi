@@ -46,7 +46,7 @@ public class CandidateTestSetup {
 
     return randomUpsertRequestBuilder()
         .withPoints(points)
-        .withVerifiedCreators(List.of(creator))
+        .withNviCreators(creator)
         .withCollaborationFactor(randomBigDecimal(scale))
         .withBasePoints(randomBigDecimal(scale))
         .withTotalPoints(randomBigDecimal(scale))

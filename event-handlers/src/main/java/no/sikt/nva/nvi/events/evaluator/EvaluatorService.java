@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.events.evaluator;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static no.sikt.nva.nvi.common.dto.PublicationDetailsDto.fromPublicationDto;
 import static no.sikt.nva.nvi.common.service.model.NviPeriod.fetchByPublishingYear;
 import static nva.commons.core.attempt.Try.attempt;
 
@@ -151,12 +152,13 @@ public class EvaluatorService {
       PublicationDto publicationDto, URI publicationBucketUri, Collection<NviCreator> creators) {
     var nviCreatorsAsDto = creators.stream().map(NviCreator::toDto).toList();
     var pointCalculation = PointService.calculatePoints(publicationDto, creators);
+    var publicationDetails = fromPublicationDto(publicationDto);
     var topLevelNviOrganizations = getTopLevelNviOrganizations(publicationDto, creators);
 
     return UpsertNviCandidateRequest.builder()
         .withPublicationBucketUri(publicationBucketUri)
         .withPointCalculation(pointCalculation)
-        .withPublicationDetails(publicationDto)
+        .withPublicationDetails(publicationDetails)
         .withNviCreators(nviCreatorsAsDto)
         .withTopLevelNviOrganizations(topLevelNviOrganizations)
         .build();
