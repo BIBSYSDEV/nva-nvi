@@ -36,7 +36,7 @@ public record PublicationDetails(
     PublicationDate publicationDate,
     boolean isApplicable, // FIXME: Remove when migrated
     Collection<NviCreator> nviCreators,
-    int contributorCount, // FIXME: Rename to creatorCount?
+    int creatorCount,
     Collection<Organization> topLevelOrganizations,
     Instant modifiedDate) {
 
@@ -62,7 +62,7 @@ public record PublicationDetails(
         .withIsApplicable(publicationDto.isApplicable())
         .withPublicationChannel(publicationChannel)
         .withNviCreators(nviCreators)
-        .withContributorCount(publicationDto.creatorCount())
+        .withCreatorCount(publicationDto.creatorCount())
         .withTopLevelOrganizations(topLevelNviOrganizations)
         .withModifiedDate(publicationDto.modifiedDate())
         .build();
@@ -94,7 +94,7 @@ public record PublicationDetails(
             .withIsApplicable(dbCandidate.applicable())
             .withPublicationChannel(PublicationChannel.from(candidateDao))
             .withNviCreators(nviCreators)
-            .withContributorCount(dbDetails.contributorCount())
+            .withCreatorCount(dbDetails.contributorCount())
             .withTopLevelOrganizations(topLevelOrganizations)
             .withModifiedDate(dbDetails.modifiedDate());
 
@@ -118,7 +118,7 @@ public record PublicationDetails(
         .pages(dbPageCount)
         .publicationDate(publicationDate.toDbPublicationDate())
         .creators(dbCreators)
-        .contributorCount(contributorCount)
+        .contributorCount(creatorCount)
         .modifiedDate(modifiedDate)
         .topLevelNviOrganizations(
             topLevelOrganizations.stream().map(Organization::toDbOrganization).toList())
@@ -169,7 +169,7 @@ public record PublicationDetails(
         .withPageCount(pageCount)
         .withPublicationDate(PublicationDate.from(dbDetails.publicationDate()))
         .withModifiedDate(dbDetails.modifiedDate())
-        .withContributorCount(dbDetails.contributorCount())
+        .withCreatorCount(dbDetails.contributorCount())
         .withAbstract(dbDetails.abstractText())
         .withIdentifier(dbDetails.identifier())
         .withLanguage(dbDetails.language())
@@ -209,7 +209,7 @@ public record PublicationDetails(
     private boolean isApplicable;
     private PublicationChannel publicationChannel;
     private List<NviCreator> nviCreators = emptyList();
-    private int contributorCount;
+    private int creatorCount;
     private List<Organization> topLevelOrganizations = emptyList();
     private Instant modifiedDate;
 
@@ -275,8 +275,8 @@ public record PublicationDetails(
       return this;
     }
 
-    public Builder withContributorCount(int contributorCount) {
-      this.contributorCount = contributorCount;
+    public Builder withCreatorCount(int creatorCount) {
+      this.creatorCount = creatorCount;
       return this;
     }
 
@@ -304,7 +304,7 @@ public record PublicationDetails(
           publicationDate,
           isApplicable,
           nviCreators,
-          contributorCount,
+          creatorCount,
           topLevelOrganizations,
           modifiedDate);
     }

@@ -345,7 +345,7 @@ class BatchScanUtilTest {
             PublicationDetails::topLevelOrganizations,
             PublicationDetails::nviCreators,
             PublicationDetails::abstractText,
-            PublicationDetails::contributorCount,
+            PublicationDetails::creatorCount,
             PublicationDetails::modifiedDate)
         .containsExactly(
             expectedTopLevelOrganizations,
