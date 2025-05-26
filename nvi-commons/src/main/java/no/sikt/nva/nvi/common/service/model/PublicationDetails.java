@@ -85,18 +85,11 @@ public record PublicationDetails(
         builder()
             .withId(dbCandidate.publicationId())
             .withPublicationBucketUri(dbCandidate.publicationBucketUri())
-            .withTitle(dbDetails.title())
-            .withStatus(dbDetails.status())
-            .withLanguage(dbDetails.language())
-            .withAbstract(dbDetails.abstractText())
             .withPublicationDate(PublicationDate.from(dbCandidate.getPublicationDate()))
-            .withPageCount(PageCount.from(dbDetails.pages()))
             .withIsApplicable(dbCandidate.applicable())
             .withPublicationChannel(PublicationChannel.from(candidateDao))
             .withNviCreators(nviCreators)
-            .withCreatorCount(dbDetails.contributorCount())
-            .withTopLevelOrganizations(topLevelOrganizations)
-            .withModifiedDate(dbDetails.modifiedDate());
+            .withTopLevelOrganizations(topLevelOrganizations);
 
     if (nonNull(dbDetails)) {
       return getPublicationDetailsWithMigratedFields(dbDetails, builder);
