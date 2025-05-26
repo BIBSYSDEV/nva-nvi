@@ -44,7 +44,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.UpsertRequestBuilder;
-import no.sikt.nva.nvi.common.UpsertRequestFixtures;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
@@ -240,8 +239,7 @@ class CandidateTest extends CandidateTestSetup {
   void shouldReturnGlobalApprovalStatus(ApprovalStatus approvalStatus) {
     var organization1 = randomTopLevelOrganization();
     var organization2 = randomTopLevelOrganization();
-    var request =
-        UpsertRequestFixtures.createUpsertCandidateRequest(organization1, organization2).build();
+    var request = createUpsertCandidateRequest(organization1, organization2).build();
     var candidate = scenario.upsertCandidate(request);
 
     candidate.updateApproval(
