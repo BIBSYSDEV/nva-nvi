@@ -15,6 +15,9 @@ public record PageCount(String first, String last, String total) {
   }
 
   public static PageCount from(DbPageCount pageCount) {
+    if (isNull(pageCount)) {
+      return new PageCount(null, null, null);
+    }
     return new PageCount(pageCount.first(), pageCount.last(), pageCount.total());
   }
 

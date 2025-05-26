@@ -5,6 +5,7 @@ import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertNonCandid
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.setupReportedCandidate;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeriod;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
+import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomTopLevelOrganization;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -132,16 +133,16 @@ class FetchReportStatusByPublicationIdHandlerTest {
 
   @Test
   void shouldReturnApprovedWhenPublicationIsCandidateWithAllApprovalsApproved() throws IOException {
-    var institution1 = randomUri();
-    var institution2 = randomUri();
-    var upsertCandidateRequest = createUpsertCandidateRequest(institution1, institution2);
-    var candidate = upsert(upsertCandidateRequest);
+    var organization1 = randomTopLevelOrganization();
+    var organization2 = randomTopLevelOrganization();
+    var request = createUpsertCandidateRequest(organization1, organization2).build();
+    var candidate = scenario.upsertCandidate(request);
     candidate.updateApproval(
         new UpdateStatusRequest(
-            institution1, ApprovalStatus.APPROVED, randomString(), randomString()));
+            organization1.id(), ApprovalStatus.APPROVED, randomString(), randomString()));
     candidate.updateApproval(
         new UpdateStatusRequest(
-            institution2, ApprovalStatus.APPROVED, randomString(), randomString()));
+            organization2.id(), ApprovalStatus.APPROVED, randomString(), randomString()));
 
     handler.handleRequest(createRequest(candidate.getPublicationId()), output, context);
 
@@ -159,16 +160,17 @@ class FetchReportStatusByPublicationIdHandlerTest {
 
   @Test
   void shouldReturnRejectedWhenPublicationIsCandidateWithAllApprovalsRejected() throws IOException {
-    var institution1 = randomUri();
-    var institution2 = randomUri();
-    var upsertCandidateRequest = createUpsertCandidateRequest(institution1, institution2);
-    var candidate = upsert(upsertCandidateRequest);
+    var organization1 = randomTopLevelOrganization();
+    var organization2 = randomTopLevelOrganization();
+    var request = createUpsertCandidateRequest(organization1, organization2).build();
+    var candidate = scenario.upsertCandidate(request);
+
     candidate.updateApproval(
         new UpdateStatusRequest(
-            institution1, ApprovalStatus.REJECTED, randomString(), randomString()));
+            organization1.id(), ApprovalStatus.REJECTED, randomString(), randomString()));
     candidate.updateApproval(
         new UpdateStatusRequest(
-            institution2, ApprovalStatus.REJECTED, randomString(), randomString()));
+            organization2.id(), ApprovalStatus.REJECTED, randomString(), randomString()));
 
     handler.handleRequest(createRequest(candidate.getPublicationId()), output, context);
 

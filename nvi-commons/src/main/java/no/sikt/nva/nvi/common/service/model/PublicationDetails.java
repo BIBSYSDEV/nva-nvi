@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDetails;
@@ -35,21 +34,19 @@ public record PublicationDetails(
     PageCount pageCount,
     PublicationChannel publicationChannel,
     PublicationDate publicationDate,
-    boolean isApplicable,
+    boolean isApplicable, // FIXME: Remove when migrated
     Collection<NviCreator> nviCreators,
-    int contributorCount,
+    int creatorCount,
     Collection<Organization> topLevelOrganizations,
     Instant modifiedDate) {
 
   public static PublicationDetails from(UpsertNviCandidateRequest upsertRequest) {
     var publicationDto = upsertRequest.publicationDetails();
     var publicationChannel = PublicationChannel.from(upsertRequest.pointCalculation().channel());
-    var topLevelOrganizations = publicationDto.topLevelOrganizations();
+    var topLevelNviOrganizations = upsertRequest.topLevelNviOrganizations();
     var nviCreators =
-        Stream.concat(
-                upsertRequest.unverifiedCreators().stream(),
-                upsertRequest.verifiedCreators().stream())
-            .map(creator -> NviCreator.from(creator, topLevelOrganizations))
+        upsertRequest.nviCreators().stream()
+            .map(creator -> NviCreator.from(creator, topLevelNviOrganizations))
             .toList();
 
     return builder()
@@ -65,8 +62,8 @@ public record PublicationDetails(
         .withIsApplicable(publicationDto.isApplicable())
         .withPublicationChannel(publicationChannel)
         .withNviCreators(nviCreators)
-        .withContributorCount(publicationDto.contributors().size())
-        .withTopLevelOrganizations(publicationDto.topLevelOrganizations())
+        .withCreatorCount(publicationDto.creatorCount())
+        .withTopLevelOrganizations(topLevelNviOrganizations)
         .withModifiedDate(publicationDto.modifiedDate())
         .build();
   }
@@ -88,11 +85,18 @@ public record PublicationDetails(
         builder()
             .withId(dbCandidate.publicationId())
             .withPublicationBucketUri(dbCandidate.publicationBucketUri())
+            .withTitle(dbDetails.title())
+            .withStatus(dbDetails.status())
+            .withLanguage(dbDetails.language())
+            .withAbstract(dbDetails.abstractText())
             .withPublicationDate(PublicationDate.from(dbCandidate.getPublicationDate()))
+            .withPageCount(PageCount.from(dbDetails.pages()))
             .withIsApplicable(dbCandidate.applicable())
             .withPublicationChannel(PublicationChannel.from(candidateDao))
             .withNviCreators(nviCreators)
-            .withTopLevelOrganizations(topLevelOrganizations);
+            .withCreatorCount(dbDetails.contributorCount())
+            .withTopLevelOrganizations(topLevelOrganizations)
+            .withModifiedDate(dbDetails.modifiedDate());
 
     if (nonNull(dbDetails)) {
       return getPublicationDetailsWithMigratedFields(dbDetails, builder);
@@ -114,6 +118,7 @@ public record PublicationDetails(
         .pages(dbPageCount)
         .publicationDate(publicationDate.toDbPublicationDate())
         .creators(dbCreators)
+        .contributorCount(creatorCount)
         .modifiedDate(modifiedDate)
         .topLevelNviOrganizations(
             topLevelOrganizations.stream().map(Organization::toDbOrganization).toList())
@@ -164,7 +169,7 @@ public record PublicationDetails(
         .withPageCount(pageCount)
         .withPublicationDate(PublicationDate.from(dbDetails.publicationDate()))
         .withModifiedDate(dbDetails.modifiedDate())
-        .withContributorCount(dbDetails.contributorCount())
+        .withCreatorCount(dbDetails.contributorCount())
         .withAbstract(dbDetails.abstractText())
         .withIdentifier(dbDetails.identifier())
         .withLanguage(dbDetails.language())
@@ -204,7 +209,7 @@ public record PublicationDetails(
     private boolean isApplicable;
     private PublicationChannel publicationChannel;
     private List<NviCreator> nviCreators = emptyList();
-    private int contributorCount;
+    private int creatorCount;
     private List<Organization> topLevelOrganizations = emptyList();
     private Instant modifiedDate;
 
@@ -270,8 +275,8 @@ public record PublicationDetails(
       return this;
     }
 
-    public Builder withContributorCount(int contributorCount) {
-      this.contributorCount = contributorCount;
+    public Builder withCreatorCount(int creatorCount) {
+      this.creatorCount = creatorCount;
       return this;
     }
 
@@ -299,7 +304,7 @@ public record PublicationDetails(
           publicationDate,
           isApplicable,
           nviCreators,
-          contributorCount,
+          creatorCount,
           topLevelOrganizations,
           modifiedDate);
     }

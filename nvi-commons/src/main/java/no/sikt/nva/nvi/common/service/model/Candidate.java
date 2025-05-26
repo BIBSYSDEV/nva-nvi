@@ -616,7 +616,7 @@ public final class Candidate {
 
   private static boolean instanceTypeIsUpdated(
       UpsertNviCandidateRequest request, Candidate candidate) {
-    var newType = request.publicationDetails().publicationType();
+    var newType = request.pointCalculation().instanceType();
     var currentType = candidate.getPublicationType();
     return !Objects.equals(newType, currentType);
   }
@@ -685,7 +685,7 @@ public final class Candidate {
         .channelId(dbPointCalculation.publicationChannel().id())
         .channelType(dbPointCalculation.publicationChannel().channelType())
         .level(DbLevel.parse(dbPointCalculation.publicationChannel().scientificValue()))
-        .instanceType(request.publicationDetails().publicationType().getValue())
+        .instanceType(request.pointCalculation().instanceType().getValue())
         .publicationDate(dbDetails.publicationDate())
         .internationalCollaboration(dbPointCalculation.internationalCollaboration())
         .collaborationFactor(dbPointCalculation.collaborationFactor())

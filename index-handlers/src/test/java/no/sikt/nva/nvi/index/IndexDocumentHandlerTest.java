@@ -5,6 +5,7 @@ import static no.sikt.nva.nvi.common.QueueServiceTestUtils.createEvent;
 import static no.sikt.nva.nvi.common.QueueServiceTestUtils.createEventWithOneInvalidRecord;
 import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequest;
+import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequestWithSingleAffiliation;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertNonCandidateRequest;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.setupReportedCandidate;
 import static no.sikt.nva.nvi.common.db.DbApprovalStatusFixtures.randomApproval;
@@ -225,11 +226,7 @@ class IndexDocumentHandlerTest {
             .withName(randomString())
             .withAffiliations(List.of(institutionId))
             .build();
-    var request =
-        randomUpsertRequestBuilder()
-            .withVerifiedCreators(emptyList())
-            .withUnverifiedCreators(List.of(unverifiedCreator))
-            .build();
+    var request = randomUpsertRequestBuilder().withNviCreators(unverifiedCreator).build();
     Candidate.upsert(request, candidateRepository, periodRepository);
     var candidate =
         Candidate.fetchByPublicationId(
@@ -895,7 +892,7 @@ class IndexDocumentHandlerTest {
   }
 
   private Candidate randomApplicableCandidate(URI topLevelOrg, URI affiliation) {
-    var request = createUpsertCandidateRequest(topLevelOrg, affiliation);
+    var request = createUpsertCandidateRequestWithSingleAffiliation(topLevelOrg, affiliation);
     Candidate.upsert(request, candidateRepository, periodRepository);
     return Candidate.fetchByPublicationId(
         request::publicationId, candidateRepository, periodRepository);

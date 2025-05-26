@@ -40,6 +40,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.UpsertRequestBuilder;
 import no.sikt.nva.nvi.common.client.model.Organization;
+import no.sikt.nva.nvi.common.dto.PointCalculationDtoBuilder;
 import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.model.ChannelType;
@@ -460,12 +461,17 @@ class CandidateApprovalTest extends CandidateTestSetup {
                         institutionPoints.institutionPoints().setScale(1, EXPECTED_ROUNDING_MODE),
                         institutionPoints.creatorAffiliationPoints()))
             .toList();
+
+    var updatedPointCalculation =
+        new PointCalculationDtoBuilder(upsertCandidateRequest.pointCalculation())
+            .withInstitutionPoints(samePointsWithDifferentScale)
+            .build();
     var newUpsertRequest =
-        fromRequest(upsertCandidateRequest).withPoints(samePointsWithDifferentScale).build();
+        fromRequest(upsertCandidateRequest).withPointCalculation(updatedPointCalculation).build();
     var updatedCandidate = scenario.upsertCandidate(newUpsertRequest);
     var updatedApproval = updatedCandidate.getApprovals().get(HARDCODED_INSTITUTION_ID);
 
-    assertThat(updatedApproval, is(equalTo(approval)));
+    assertEquals(approval, updatedApproval);
   }
 
   @Test
@@ -500,10 +506,10 @@ class CandidateApprovalTest extends CandidateTestSetup {
             .withChannelType(arguments.channel().channelType())
             .withScientificValue(arguments.channel().scientificValue())
             .build();
-
+    var creators = arguments.creators().stream().map(NviCreatorDto.class::cast).toList();
     var newUpsertRequest =
         fromRequest(upsertCandidateRequest)
-            .withVerifiedCreators(arguments.creators())
+            .withNviCreators(creators)
             .withInstanceType(arguments.type())
             .withPublicationChannel(channel)
             .withPoints(arguments.institutionPoints())
@@ -641,7 +647,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
             .build();
     var topLevelNviOrganization = Organization.builder().withId(HARDCODED_INSTITUTION_ID).build();
     return randomUpsertRequestBuilder()
-        .withVerifiedCreators(List.of(verifiedCreator))
+        .withNviCreators(verifiedCreator)
         .withTopLevelOrganizations(List.of(topLevelNviOrganization))
         .withInstanceType(HARDCODED_INSTANCE_TYPE)
         .withPublicationChannel(channel)
@@ -658,7 +664,11 @@ class CandidateApprovalTest extends CandidateTestSetup {
 
   private UpsertNviCandidateRequest createNewUpsertRequestNotAffectingApprovals(
       UpsertNviCandidateRequest request) {
-    return fromRequest(request).withIsInternationalCollaboration(false).build();
+    var pointCalculation =
+        new PointCalculationDtoBuilder(request.pointCalculation())
+            .withIsInternationalCollaboration(false)
+            .build();
+    return fromRequest(request).withPointCalculation(pointCalculation).build();
   }
 
   private record CandidateResetCauseArgument(

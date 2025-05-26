@@ -18,7 +18,7 @@ import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 public record UpsertNviCandidateRequest(
     URI publicationBucketUri,
     PointCalculationDto pointCalculation,
-    PublicationDto publicationDetails,
+    PublicationDetailsDto publicationDetails,
     Collection<NviCreatorDto> nviCreators,
     Collection<Organization> topLevelNviOrganizations)
     implements CandidateType {
@@ -63,7 +63,7 @@ public record UpsertNviCandidateRequest(
 
     private URI publicationBucketUri;
     private PointCalculationDto pointCalculation;
-    private PublicationDto publicationDetails;
+    private PublicationDetailsDto publicationDetails;
     private final List<NviCreatorDto> nviCreators = new ArrayList<>();
     private final List<Organization> topLevelNviOrganizations = new ArrayList<>();
 
@@ -79,7 +79,7 @@ public record UpsertNviCandidateRequest(
       return this;
     }
 
-    public Builder withPublicationDetails(PublicationDto publicationDetails) {
+    public Builder withPublicationDetails(PublicationDetailsDto publicationDetails) {
       this.publicationDetails = publicationDetails;
       return this;
     }
