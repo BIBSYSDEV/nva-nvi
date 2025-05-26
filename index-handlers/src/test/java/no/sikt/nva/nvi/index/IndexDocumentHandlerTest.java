@@ -5,6 +5,7 @@ import static no.sikt.nva.nvi.common.QueueServiceTestUtils.createEvent;
 import static no.sikt.nva.nvi.common.QueueServiceTestUtils.createEventWithOneInvalidRecord;
 import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequest;
+import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequestWithSingleAffiliation;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertNonCandidateRequest;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.setupReportedCandidate;
 import static no.sikt.nva.nvi.common.db.DbApprovalStatusFixtures.randomApproval;
@@ -59,7 +60,6 @@ import java.util.UUID;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.TestScenario;
-import no.sikt.nva.nvi.common.UpsertRequestFixtures;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
@@ -892,9 +892,7 @@ class IndexDocumentHandlerTest {
   }
 
   private Candidate randomApplicableCandidate(URI topLevelOrg, URI affiliation) {
-    var request =
-        UpsertRequestFixtures.createUpsertCandidateRequestWithSingleAffiliation(
-            topLevelOrg, affiliation);
+    var request = createUpsertCandidateRequestWithSingleAffiliation(topLevelOrg, affiliation);
     Candidate.upsert(request, candidateRepository, periodRepository);
     return Candidate.fetchByPublicationId(
         request::publicationId, candidateRepository, periodRepository);

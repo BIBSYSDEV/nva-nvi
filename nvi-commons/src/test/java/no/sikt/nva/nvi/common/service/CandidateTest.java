@@ -5,6 +5,7 @@ import static java.util.Collections.emptySet;
 import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpdateStatusRequest;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequest;
+import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequestWithSingleAffiliation;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertNonCandidateRequest;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.setupReportedCandidate;
 import static no.sikt.nva.nvi.common.db.DbApprovalStatusFixtures.randomApproval;
@@ -449,8 +450,7 @@ class CandidateTest extends CandidateTestSetup {
   @Test
   void shouldReturnTrueWhenAllApprovalsArePending() {
     UpsertNviCandidateRequest request =
-        UpsertRequestFixtures.createUpsertCandidateRequestWithSingleAffiliation(
-            randomUri(), randomUri());
+        createUpsertCandidateRequestWithSingleAffiliation(randomUri(), randomUri());
     var candidate = scenario.upsertCandidate(request);
     assertTrue(candidate.isPendingReview());
   }
@@ -462,8 +462,7 @@ class CandidateTest extends CandidateTestSetup {
   void shouldReturnFalseWhenAtLeastOneApprovalIsApprovedOrRejected(ApprovalStatus approvalStatus) {
     var reviewingInstitution = randomUri();
     UpsertNviCandidateRequest request =
-        UpsertRequestFixtures.createUpsertCandidateRequestWithSingleAffiliation(
-            reviewingInstitution, randomUri());
+        createUpsertCandidateRequestWithSingleAffiliation(reviewingInstitution, randomUri());
     var candidate = scenario.upsertCandidate(request);
     candidate.updateApproval(
         createUpdateStatusRequest(approvalStatus, reviewingInstitution, randomString()));
@@ -477,8 +476,7 @@ class CandidateTest extends CandidateTestSetup {
   void shouldReturnTrueWhenAtLeastOneApprovalIsApprovedOrRejected(ApprovalStatus approvalStatus) {
     var reviewingInstitution = randomUri();
     UpsertNviCandidateRequest request =
-        UpsertRequestFixtures.createUpsertCandidateRequestWithSingleAffiliation(
-            reviewingInstitution, randomUri());
+        createUpsertCandidateRequestWithSingleAffiliation(reviewingInstitution, randomUri());
     var candidate = scenario.upsertCandidate(request);
     candidate.updateApproval(
         createUpdateStatusRequest(approvalStatus, reviewingInstitution, randomString()));
