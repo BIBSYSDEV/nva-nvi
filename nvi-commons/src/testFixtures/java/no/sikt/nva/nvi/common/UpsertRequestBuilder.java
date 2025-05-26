@@ -78,15 +78,6 @@ public class UpsertRequestBuilder {
     return this;
   }
 
-  public UpsertRequestBuilder withIsInternationalCollaboration(
-      boolean isInternationalCollaboration) {
-    this.pointCalculation =
-        new PointCalculationDtoBuilder(pointCalculation)
-            .withIsInternationalCollaboration(isInternationalCollaboration)
-            .build();
-    return this;
-  }
-
   public UpsertRequestBuilder withNviCreators(NviCreatorDto... nviCreators) {
     this.nviCreators = List.of(nviCreators);
     return this;
@@ -127,29 +118,9 @@ public class UpsertRequestBuilder {
     return this;
   }
 
-  public UpsertRequestBuilder withCollaborationFactor(BigDecimal collaborationFactor) {
-    this.pointCalculation =
-        new PointCalculationDtoBuilder(pointCalculation)
-            .withCollaborationFactor(collaborationFactor)
-            .build();
-    return this;
-  }
-
-  public UpsertRequestBuilder withBasePoints(BigDecimal basePoints) {
-    this.pointCalculation =
-        new PointCalculationDtoBuilder(pointCalculation).withBasePoints(basePoints).build();
-    return this;
-  }
-
   public UpsertRequestBuilder withPoints(List<InstitutionPoints> points) {
     this.pointCalculation =
         new PointCalculationDtoBuilder(pointCalculation).withInstitutionPoints(points).build();
-    return this;
-  }
-
-  public UpsertRequestBuilder withTotalPoints(BigDecimal totalPoints) {
-    this.pointCalculation =
-        new PointCalculationDtoBuilder(pointCalculation).withTotalPoints(totalPoints).build();
     return this;
   }
 

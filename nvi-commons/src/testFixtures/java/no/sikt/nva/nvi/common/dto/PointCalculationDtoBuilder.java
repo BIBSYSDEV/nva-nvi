@@ -98,8 +98,7 @@ public class PointCalculationDtoBuilder {
   }
 
   public PointCalculationDtoBuilder withInstitutionPointFor(
-      URI topLeveOrganizationId, URI affiliationId, URI... creatorIds) {
-    var pointValue = randomBigDecimal();
+      URI topLeveOrganizationId, URI affiliationId, BigDecimal pointValue, URI... creatorIds) {
     var creatorPoints =
         List.of(creatorIds).stream()
             .map(creatorId -> new CreatorAffiliationPoints(creatorId, affiliationId, pointValue))
@@ -108,6 +107,13 @@ public class PointCalculationDtoBuilder {
     var updatedList = new ArrayList<>(institutionPoints);
     updatedList.add(institutionPoint);
     return this.withInstitutionPoints(updatedList);
+  }
+
+  public PointCalculationDtoBuilder withInstitutionPointFor(
+      URI topLeveOrganizationId, URI affiliationId, URI... creatorIds) {
+    var pointValue = randomBigDecimal();
+    return this.withInstitutionPointFor(
+        topLeveOrganizationId, affiliationId, pointValue, creatorIds);
   }
 
   public PointCalculationDtoBuilder withTotalPoints(BigDecimal totalPoints) {

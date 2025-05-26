@@ -153,12 +153,13 @@ class CandidateTest extends CandidateTestSetup {
   @ParameterizedTest(name = "Should update candidate with correct level {0}")
   @ValueSource(ints = {0, 1, 4})
   void shouldUpdateCandidateWithCorrectScaleForAllDecimals(int scale) {
-    var request =
-        randomUpsertRequestBuilder()
+    var pointCalculation =
+        randomPointCalculationDtoBuilder()
             .withCollaborationFactor(randomBigDecimal(scale))
             .withBasePoints(randomBigDecimal(scale))
             .withTotalPoints(randomBigDecimal(scale))
             .build();
+    var request = randomUpsertRequestBuilder().withPointCalculation(pointCalculation).build();
     var candidate = scenario.upsertCandidate(request);
     var expectedCandidate = getExpectedUpdatedDbCandidate(candidate, request);
     var actualPersistedCandidate =
