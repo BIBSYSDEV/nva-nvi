@@ -270,7 +270,7 @@ class UpsertNviCandidateHandlerTest {
     var subOrganization = topLevelOrganization.hasPart().getFirst();
     var pointCalculation =
         randomPointCalculationDtoBuilder()
-            .withInstitutionPointFor(topLevelOrganization.id(), subOrganization.id(), creator.id())
+            .withAdditionalPointFor(topLevelOrganization.id(), subOrganization.id(), creator.id())
             .build();
     return randomUpsertRequestBuilder()
         .withPublicationBucketUri(publicationBucketUri)

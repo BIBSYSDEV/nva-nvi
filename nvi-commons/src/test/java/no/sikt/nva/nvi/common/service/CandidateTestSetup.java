@@ -44,7 +44,7 @@ public class CandidateTestSetup {
             .withCollaborationFactor(randomBigDecimal(scale))
             .withBasePoints(pointValue)
             .withTotalPoints(pointValue)
-            .withInstitutionPointFor(institutionId, institutionId, pointValue, creator.id())
+            .withAdditionalPointFor(institutionId, institutionId, pointValue, creator.id())
             .build();
 
     return randomUpsertRequestBuilder()

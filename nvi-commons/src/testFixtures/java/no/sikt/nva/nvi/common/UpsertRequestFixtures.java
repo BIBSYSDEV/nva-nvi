@@ -43,7 +43,7 @@ public class UpsertRequestFixtures {
       var creator = verifiedNviCreatorDtoFrom(organization);
       creators.add(creator);
       pointCalculation =
-          pointCalculation.withInstitutionPointFor(organization.id(), randomUri(), creator.id());
+          pointCalculation.withAdditionalPointFor(organization.id(), randomUri(), creator.id());
     }
 
     return randomUpsertRequestBuilder()
@@ -71,7 +71,7 @@ public class UpsertRequestFixtures {
     var creator = verifiedNviCreatorDtoFrom(affiliation);
     var pointCalculation =
         randomPointCalculationDtoBuilder()
-            .withInstitutionPointFor(topLevelOrg, affiliation, creator.id())
+            .withAdditionalPointFor(topLevelOrg, affiliation, creator.id())
             .build();
 
     return randomUpsertRequestBuilder()

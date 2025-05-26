@@ -97,7 +97,7 @@ public class PointCalculationDtoBuilder {
     return this;
   }
 
-  public PointCalculationDtoBuilder withInstitutionPointFor(
+  public PointCalculationDtoBuilder withAdditionalPointFor(
       URI topLeveOrganizationId, URI affiliationId, BigDecimal pointValue, URI... creatorIds) {
     var creatorPoints =
         List.of(creatorIds).stream()
@@ -109,10 +109,10 @@ public class PointCalculationDtoBuilder {
     return this.withInstitutionPoints(updatedList);
   }
 
-  public PointCalculationDtoBuilder withInstitutionPointFor(
+  public PointCalculationDtoBuilder withAdditionalPointFor(
       URI topLeveOrganizationId, URI affiliationId, URI... creatorIds) {
     var pointValue = randomBigDecimal();
-    return this.withInstitutionPointFor(
+    return this.withAdditionalPointFor(
         topLeveOrganizationId, affiliationId, pointValue, creatorIds);
   }
 
