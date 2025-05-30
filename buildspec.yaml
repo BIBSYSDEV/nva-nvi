@@ -30,7 +30,7 @@ phases:
 
   build:
     commands:
-      - sam build --cached
+      - sam build --cached --base-dir .
 
   post_build:
     commands:
@@ -40,6 +40,8 @@ phases:
       - envsubst '${BUILD_TIMESTAMP}' < packaged_raw.yaml > packaged.yaml
 
 artifacts:
+  type: zip
+  base-directory: ./
   files:
     - packaged.yaml
 
