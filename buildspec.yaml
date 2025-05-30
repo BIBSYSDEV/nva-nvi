@@ -45,6 +45,7 @@ artifacts:
 
 cache:
   paths:
-    - '.aws-sam/build.toml' # Cache key information
-    - '.aws-sam/cache/**/*' # Build artifacts
-    - '.aws-sam/deps/**/*'  # Dependencies
+    - '.aws-sam/build.toml'     # Cache key information
+    - '.aws-sam/cache/**/*'     # Build artifacts
+    - '.aws-sam/deps/**/*'      # Dependencies for build artifacts
+    - '/root/.gradle/caches/**' # Gradle dependency cache
