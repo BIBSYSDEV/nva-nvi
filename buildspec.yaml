@@ -29,7 +29,7 @@ phases:
 
   build:
     commands:
-      - sam build --cached
+      - sam build --cached --parallel
 
   post_build:
     commands:
@@ -41,3 +41,9 @@ phases:
 artifacts:
   files:
     - packaged.yaml
+
+cache:
+  paths:
+    - '/root/.gradle/caches/**/*'
+    - '.aws-sam/cache/**/*'
+    - '.aws-sam/build.toml'
