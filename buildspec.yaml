@@ -44,6 +44,4 @@ artifacts:
 
 cache:
   paths:
-    - '/root/.gradle/caches/**/*'
     - '.aws-sam/cache/**/*'
-    - '.aws-sam/build.toml'
