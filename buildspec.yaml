@@ -29,7 +29,7 @@ phases:
 
   build:
     commands:
-      - sam build
+      - sam build --cached
 
   post_build:
     commands:
