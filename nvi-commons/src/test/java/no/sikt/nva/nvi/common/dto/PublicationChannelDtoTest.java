@@ -1,16 +1,17 @@
 package no.sikt.nva.nvi.common.dto;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.NoSuchElementException;
 import no.sikt.nva.nvi.common.model.ScientificValue;
 import org.junit.jupiter.api.Test;
 
 class PublicationChannelDtoTest {
 
   @Test
-  void shouldThrowIllegalArgumentExceptionWhenParsingUnknownValue() {
+  void shouldParseUnknownValueAsInvalid() {
     var unknownValue = "UnknownValue";
-    assertThrows(NoSuchElementException.class, () -> ScientificValue.parse(unknownValue));
+    var parsedValue = ScientificValue.parse(unknownValue);
+    assertThat(parsedValue).isEqualTo(ScientificValue.INVALID);
+    assertThat(parsedValue.isValid()).isFalse();
   }
 }

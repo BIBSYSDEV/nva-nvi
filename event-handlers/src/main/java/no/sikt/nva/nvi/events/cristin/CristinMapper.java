@@ -175,7 +175,7 @@ public final class CristinMapper {
   private static String extractChannelType(CristinNviReport cristinNviReport) {
     var instance = toInstanceType(cristinNviReport.instanceType());
     var referenceNode = cristinNviReport.reference();
-    if (nonNull(instance) && nonNull(referenceNode)) {
+    if (instance.isValid() && nonNull(referenceNode)) {
       var channelType =
           switch (instance) {
             case ACADEMIC_ARTICLE, ACADEMIC_LITERATURE_REVIEW ->
@@ -183,6 +183,7 @@ public final class CristinMapper {
             case ACADEMIC_MONOGRAPH, ACADEMIC_COMMENTARY ->
                 extractChannelTypeForAcademicMonograph(referenceNode);
             case ACADEMIC_CHAPTER -> extractChannelTypeForAcademicChapter(referenceNode);
+            case INVALID -> throw new IllegalArgumentException("Publication type is invalid");
           };
       return Optional.ofNullable(channelType)
           .map(ChannelType::parse)
@@ -195,7 +196,7 @@ public final class CristinMapper {
   private static URI extractChannelId(CristinNviReport cristinNviReport) {
     var instance = toInstanceType(cristinNviReport.instanceType());
     var referenceNode = cristinNviReport.reference();
-    if (nonNull(instance) && nonNull(referenceNode)) {
+    if (instance.isValid() && nonNull(referenceNode)) {
       var channelId =
           switch (instance) {
             case ACADEMIC_ARTICLE, ACADEMIC_LITERATURE_REVIEW ->
@@ -203,6 +204,7 @@ public final class CristinMapper {
             case ACADEMIC_MONOGRAPH, ACADEMIC_COMMENTARY ->
                 extractChannelIdForAcademicMonograph(referenceNode);
             case ACADEMIC_CHAPTER -> extractChannelIdForAcademicChapter(referenceNode);
+            case INVALID -> throw new IllegalArgumentException("Publication type is invalid");
           };
       return attempt(() -> UriWrapper.fromUri(channelId).getUri()).orElse(failure -> null);
     }
@@ -210,7 +212,7 @@ public final class CristinMapper {
   }
 
   private static InstanceType toInstanceType(String instanceType) {
-    return attempt(() -> InstanceType.parse(instanceType)).orElse(failure -> null);
+    return InstanceType.parse(instanceType);
   }
 
   private static String extractChannelIdForAcademicChapter(JsonNode referenceNode) {

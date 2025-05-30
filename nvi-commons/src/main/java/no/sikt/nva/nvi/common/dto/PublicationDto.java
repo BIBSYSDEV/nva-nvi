@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.common.dto;
 
 import static java.util.Objects.requireNonNull;
+import static no.sikt.nva.nvi.common.utils.Validator.shouldBeTrue;
 import static no.sikt.nva.nvi.common.utils.Validator.shouldNotBeNull;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 
@@ -46,6 +47,9 @@ public record PublicationDto(
     shouldNotBeNull(contributors, "Required field 'contributors' is null");
     shouldNotBeNull(topLevelOrganizations, "Required field 'topLevelOrganizations' is null");
 
+    shouldBeTrue(publicationType().isValid(), "Required field 'publicationType' is invalid");
+
+    publicationChannels.stream().map(PublicationChannelDto::isValid);
     publicationChannels.forEach(PublicationChannelDto::validate);
     contributors.forEach(ContributorDto::validate);
   }

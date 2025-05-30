@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.index;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static no.sikt.nva.nvi.common.model.EnumFixtures.randomValidScientificValue;
 import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.getRandomDateInCurrentYearAsDto;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PUBLICATION_CONTEXT;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.extractJsonNodeTextValue;
@@ -31,7 +32,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.model.ChannelType;
-import no.sikt.nva.nvi.common.model.ScientificValue;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.Candidate;
@@ -165,9 +165,7 @@ public final class IndexDocumentTestUtils {
     // imported via
     // Cristin.
     var publicationChannel =
-        PublicationChannel.builder()
-            .withScientificValue(randomElement(ScientificValue.values()))
-            .build();
+        PublicationChannel.builder().withScientificValue(randomValidScientificValue()).build();
     var publicationDetails =
         publicationDetailsWithNviContributorsAffiliatedWith(institutionId)
             .withPublicationChannel(publicationChannel)
@@ -203,7 +201,7 @@ public final class IndexDocumentTestUtils {
     return PublicationChannel.builder()
         .withId(randomUri())
         .withType(randomString())
-        .withScientificValue(randomElement(ScientificValue.values()))
+        .withScientificValue(randomValidScientificValue())
         .withName(randomString());
   }
 
@@ -268,7 +266,7 @@ public final class IndexDocumentTestUtils {
     return switch (channelType) {
       case JOURNAL -> extractJournalIssn(expandedResource);
       case SERIES -> extractSeriesIssn(expandedResource);
-      case PUBLISHER -> null;
+      case PUBLISHER, INVALID -> null;
     };
   }
 
@@ -289,6 +287,7 @@ public final class IndexDocumentTestUtils {
       case JOURNAL -> extractJournalName(expandedResource);
       case PUBLISHER -> extractPublisherName(expandedResource);
       case SERIES -> extractSeriesName(expandedResource);
+      case INVALID -> throw new IllegalArgumentException("Publication channel type is invalid");
     };
   }
 

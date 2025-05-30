@@ -92,6 +92,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.EnumSource.Mode;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -425,7 +426,10 @@ class IndexDocumentHandlerTest {
   }
 
   @ParameterizedTest(name = "shouldGenerateIndexDocumentForAllPublicationChannelTypes: {0}")
-  @EnumSource(ChannelType.class)
+  @EnumSource(
+      value = ChannelType.class,
+      names = {"INVALID"},
+      mode = Mode.EXCLUDE)
   void shouldGenerateIndexDocumentForAllPublicationChannelTypes(ChannelType channelType) {
     var candidate = randomApplicableCandidate(channelType);
     var expandedResource =

@@ -256,7 +256,7 @@ public final class NviCandidateIndexDocumentGenerator {
     return switch (channelType) {
       case JOURNAL -> extractJournalPrintIssn();
       case SERIES -> extractSeriesPrintIssn();
-      case PUBLISHER -> null;
+      case PUBLISHER, INVALID -> null;
     };
   }
 
@@ -273,6 +273,7 @@ public final class NviCandidateIndexDocumentGenerator {
       case JOURNAL -> extractJournalName();
       case PUBLISHER -> extractPublisherName();
       case SERIES -> extractSeriesName();
+      case INVALID -> null;
     };
   }
 

@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.common.dto;
 
 import static java.util.Objects.requireNonNull;
+import static no.sikt.nva.nvi.common.utils.Validator.shouldBeTrue;
 import static no.sikt.nva.nvi.common.utils.Validator.shouldNotBeNull;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -26,6 +27,9 @@ public record PublicationChannelDto(
   public void validate() {
     shouldNotBeNull(channelType, "Required field 'channelType' is null");
     shouldNotBeNull(scientificValue, "Required field 'scientificValue' is null");
+
+    shouldBeTrue(channelType().isValid(), "Required field 'channelType' is invalid");
+    shouldBeTrue(scientificValue().isValid(), "Required field 'scientificValue' is invalid");
   }
 
   public static Builder builder() {

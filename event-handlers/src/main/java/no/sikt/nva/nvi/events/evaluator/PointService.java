@@ -33,6 +33,7 @@ public final class PointService {
           case ACADEMIC_ARTICLE, ACADEMIC_LITERATURE_REVIEW -> getJournal(publication);
           case ACADEMIC_MONOGRAPH, ACADEMIC_COMMENTARY, ACADEMIC_CHAPTER ->
               getSeriesOrPublisher(publication);
+          case INVALID -> throw new IllegalArgumentException("Publication type is invalid");
         };
     return channelDto;
   }
