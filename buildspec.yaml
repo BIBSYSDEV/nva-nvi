@@ -1,6 +1,7 @@
 version: 0.2
 
 env:
+  SAM_CLI_TELEMETRY: 0
   secrets-manager:
     DOCKER_HUB_USERNAME: DockerHubCredentials:DockerHubUsername
     DOCKER_HUB_SECRET: DockerHubCredentials:DockerHubSecret
@@ -45,3 +46,4 @@ artifacts:
 cache:
   paths:
     - '.aws-sam/cache/**/*'
+    - '.aws-sam/build.toml'
