@@ -1,9 +1,17 @@
 version: 0.2
 
 env:
+  variables:
+    GRADLE_USER_HOME: '/root/.gradle'
+    SAM_CLI_TELEMETRY: "0" # Disable telemetry for AWS SAM CLI
   secrets-manager:
     DOCKER_HUB_USERNAME: DockerHubCredentials:DockerHubUsername
     DOCKER_HUB_SECRET: DockerHubCredentials:DockerHubSecret
+
+cache:
+  paths:
+    - '/root/.gradle/wrapper/**/*'
+    - '/root/.gradle/caches/**/*'
 
 phases:
   install:
@@ -11,7 +19,6 @@ phases:
       java: corretto21
 
     commands:
-      - export SAM_CLI_TELEMETRY=0
       - echo "Checking if AWS SAM CLI is installed"
       - | 
         if command -v sam >/dev/null 2>&1; then
@@ -30,7 +37,7 @@ phases:
 
   build:
     commands:
-      - sam build --cached --base-dir .
+      - sam build
 
   post_build:
     commands:
@@ -40,14 +47,5 @@ phases:
       - envsubst '${BUILD_TIMESTAMP}' < packaged_raw.yaml > packaged.yaml
 
 artifacts:
-  type: zip
-  base-directory: ./
   files:
     - packaged.yaml
-
-cache:
-  paths:
-    - '.aws-sam/build.toml'     # Cache key information
-    - '.aws-sam/cache/**/*'     # Build artifacts
-    - '.aws-sam/deps/**/*'      # Dependencies for build artifacts
-    - '/root/.gradle/caches/**' # Gradle dependency cache
