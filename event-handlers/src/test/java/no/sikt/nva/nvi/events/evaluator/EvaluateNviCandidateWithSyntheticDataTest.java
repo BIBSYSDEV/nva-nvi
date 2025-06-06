@@ -180,7 +180,10 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
 
     var candidate = getEvaluatedCandidate(publication);
     assertThat(candidate.publicationDetails().creatorCount()).isEqualTo(1);
-    assertThat(candidate.verifiedCreators()).hasSize(1).extracting("id").containsExactly(creator.id());
+    assertThat(candidate.verifiedCreators())
+        .hasSize(1)
+        .extracting("id")
+        .containsExactly(creator.id());
   }
 
   private static Stream<Arguments> pageCountProvider() {
