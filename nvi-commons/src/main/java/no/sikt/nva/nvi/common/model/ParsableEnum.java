@@ -1,12 +1,8 @@
 package no.sikt.nva.nvi.common.model;
 
 import java.util.Arrays;
-import java.util.NoSuchElementException;
-import java.util.function.Supplier;
 
 public interface ParsableEnum {
-  String NO_MATCH_MESSAGE = "No constant in '%s' matching input '%s'";
-
   String getValue();
 
   /**
@@ -27,29 +23,14 @@ public interface ParsableEnum {
    * may have been stored as enum names and others as enum values.
    *
    * @param candidate A candidate string to be converted to matching enum value
-   * @return Matching enum value
-   * @throws java.util.NoSuchElementException if no matching enum value is found
+   * @param defaultValue Default value to return if no match is found
+   * @return Matching enum value or default value
    */
-  static <E extends Enum<E> & ParsableEnum> E parse(Class<E> enumClass, String candidate) {
-    return Arrays.stream(enumClass.getEnumConstants())
-        .filter(e -> e.matches(candidate))
-        .findFirst()
-        .orElseThrow(getNoSuchElementExceptionSupplier(enumClass, candidate));
-  }
-
-  static <E extends Enum<E> & ParsableEnum> E parseOrDefault(
+  static <E extends Enum<E> & ParsableEnum> E parse(
       Class<E> enumClass, String candidate, E defaultValue) {
     return Arrays.stream(enumClass.getEnumConstants())
         .filter(e -> e.matches(candidate))
         .findFirst()
         .orElse(defaultValue);
-  }
-
-  private static <E extends Enum<E> & ParsableEnum>
-      Supplier<NoSuchElementException> getNoSuchElementExceptionSupplier(
-          Class<E> enumClass, String candidate) {
-    return () ->
-        new NoSuchElementException(
-            String.format(NO_MATCH_MESSAGE, enumClass.getSimpleName(), candidate));
   }
 }

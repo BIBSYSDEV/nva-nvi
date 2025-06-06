@@ -48,12 +48,6 @@ public record PublicationDto(
     shouldNotBeNull(topLevelOrganizations, "Required field 'topLevelOrganizations' is null");
 
     shouldBeTrue(publicationType().isValid(), "Required field 'publicationType' is invalid");
-
-    publicationChannels.stream()
-        .filter(PublicationChannelDto::isValid)
-        .findAny()
-        .orElseThrow(
-            () -> new IllegalArgumentException("At least one publication channel must be valid"));
     contributors.forEach(ContributorDto::validate);
   }
 

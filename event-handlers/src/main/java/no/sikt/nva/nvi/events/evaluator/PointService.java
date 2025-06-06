@@ -42,7 +42,7 @@ public final class PointService {
       PublicationDto publication, ChannelType channelType) {
     return publication.publicationChannels().stream()
         .filter(channel -> channelType.equals(channel.channelType()))
-        .filter(channel -> channel.scientificValue().isValid())
+        .filter(PublicationChannelDto::isValid)
         .findFirst();
   }
 

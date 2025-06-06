@@ -23,7 +23,7 @@ public enum ChannelType implements ParsableEnum {
 
   @JsonCreator
   public static ChannelType parse(String stringValue) {
-    return ParsableEnum.parseOrDefault(ChannelType.class, stringValue, NON_CANDIDATE);
+    return ParsableEnum.parse(ChannelType.class, stringValue, NON_CANDIDATE);
   }
 
   public boolean isValid() {

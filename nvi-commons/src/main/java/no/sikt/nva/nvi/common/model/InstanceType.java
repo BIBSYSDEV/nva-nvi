@@ -25,7 +25,7 @@ public enum InstanceType implements ParsableEnum {
 
   @JsonCreator
   public static InstanceType parse(String stringValue) {
-    return ParsableEnum.parseOrDefault(InstanceType.class, stringValue, NON_CANDIDATE);
+    return ParsableEnum.parse(InstanceType.class, stringValue, NON_CANDIDATE);
   }
 
   public boolean isValid() {
