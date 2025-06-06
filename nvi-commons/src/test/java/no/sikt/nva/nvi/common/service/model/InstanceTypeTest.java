@@ -2,10 +2,9 @@ package no.sikt.nva.nvi.common.service.model;
 
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static nva.commons.core.attempt.Try.attempt;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.util.NoSuchElementException;
 import no.sikt.nva.nvi.common.model.InstanceType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -37,7 +36,10 @@ class InstanceTypeTest {
   }
 
   @Test
-  void shouldThrowExceptionForInvalidString() {
-    assertThrows(NoSuchElementException.class, () -> InstanceType.parse("InvalidString"));
+  void shouldParseUnknownValueAsInvalid() {
+    var unknownValue = "UnknownValue";
+    var parsedValue = InstanceType.parse(unknownValue);
+    assertThat(parsedValue).isEqualTo(InstanceType.NON_CANDIDATE);
+    assertThat(parsedValue.isValid()).isFalse();
   }
 }

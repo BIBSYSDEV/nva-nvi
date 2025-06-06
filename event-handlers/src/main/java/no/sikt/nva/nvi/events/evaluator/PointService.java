@@ -33,6 +33,7 @@ public final class PointService {
           case ACADEMIC_ARTICLE, ACADEMIC_LITERATURE_REVIEW -> getJournal(publication);
           case ACADEMIC_MONOGRAPH, ACADEMIC_COMMENTARY, ACADEMIC_CHAPTER ->
               getSeriesOrPublisher(publication);
+          case NON_CANDIDATE -> throw new IllegalArgumentException("Publication type is invalid");
         };
     return channelDto;
   }
@@ -41,7 +42,7 @@ public final class PointService {
       PublicationDto publication, ChannelType channelType) {
     return publication.publicationChannels().stream()
         .filter(channel -> channelType.equals(channel.channelType()))
-        .filter(channel -> channel.scientificValue().isValid())
+        .filter(PublicationChannelDto::isValid)
         .findFirst();
   }
 

@@ -1,6 +1,6 @@
 package no.sikt.nva.nvi.common.db;
 
-import static no.sikt.nva.nvi.common.model.InstanceTypeFixtures.randomInstanceType;
+import static no.sikt.nva.nvi.common.model.EnumFixtures.randomValidInstanceType;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -58,7 +58,7 @@ class CandidateTest {
     return DbCandidate.builder()
         .publicationId(randomUri())
         .creatorCount(randomInteger())
-        .instanceType(randomInstanceType().getValue())
+        .instanceType(randomValidInstanceType().getValue())
         .level(DbLevel.LEVEL_ONE)
         .applicable(true)
         .internationalCollaboration(true)

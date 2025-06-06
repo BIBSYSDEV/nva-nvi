@@ -187,6 +187,7 @@ public final class ExpandedResourceGenerator {
       case JOURNAL -> createJournalPublicationContext(candidate, populateIssn);
       case SERIES -> createSeriesPublicationContext(candidate, populateIssn);
       case PUBLISHER -> createPublisherPublicationContext(candidate);
+      default -> objectMapper.createObjectNode();
     };
   }
 

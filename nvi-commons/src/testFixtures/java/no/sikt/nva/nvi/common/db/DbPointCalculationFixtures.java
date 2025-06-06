@@ -1,8 +1,8 @@
 package no.sikt.nva.nvi.common.db;
 
 import static no.sikt.nva.nvi.common.db.DbPublicationChannelFixtures.getExpectedDbPublicationChannel;
-import static no.sikt.nva.nvi.common.db.DbPublicationChannelFixtures.randomPublicationChannelBuilder;
-import static no.sikt.nva.nvi.common.model.InstanceTypeFixtures.randomInstanceType;
+import static no.sikt.nva.nvi.common.db.DbPublicationChannelFixtures.randomDbPublicationChannelBuilder;
+import static no.sikt.nva.nvi.common.model.EnumFixtures.randomValidInstanceType;
 import static no.sikt.nva.nvi.common.utils.DecimalUtils.adjustScaleAndRoundingMode;
 import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
@@ -21,7 +21,7 @@ public class DbPointCalculationFixtures {
 
   public static DbPointCalculation.Builder randomPointCalculationBuilder(
       URI organizationId, URI creatorId) {
-    var channel = randomPublicationChannelBuilder().build();
+    var channel = randomDbPublicationChannelBuilder().build();
     return DbPointCalculation.builder()
         .basePoints(TestUtils.randomBigDecimal())
         .collaborationFactor(null)
@@ -30,7 +30,7 @@ public class DbPointCalculationFixtures {
         .institutionPoints(List.of(generateInstitutionPoints(organizationId, creatorId)))
         .internationalCollaboration(randomBoolean())
         .creatorShareCount(randomInteger(100))
-        .instanceType(randomInstanceType().getValue());
+        .instanceType(randomValidInstanceType().getValue());
   }
 
   public static DbPointCalculation getExpectedPointCalculation(UpsertNviCandidateRequest request) {

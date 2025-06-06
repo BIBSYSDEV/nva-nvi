@@ -31,6 +31,12 @@ public final class Validator {
     }
   }
 
+  public static void shouldBeTrue(boolean isValid, String errorMessage) {
+    if (!isValid) {
+      throw new ValidationException(errorMessage);
+    }
+  }
+
   public static void doesNotHaveNullValues(UpsertPeriodRequest upsertPeriodRequest) {
     if (isNull(upsertPeriodRequest.publishingYear())) {
       throw new IllegalArgumentException("Publishing year can not be null!");
