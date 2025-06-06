@@ -182,7 +182,7 @@ public final class CristinMapper {
   private static String extractChannelType(CristinNviReport cristinNviReport) {
     var instance = toInstanceType(cristinNviReport.instanceType());
     var referenceNode = cristinNviReport.reference();
-    if (instance.isValid() && nonNull(referenceNode)) {
+    if (nonNull(instance) && nonNull(referenceNode)) {
       var channelType =
           switch (instance) {
             case ACADEMIC_ARTICLE, ACADEMIC_LITERATURE_REVIEW ->
@@ -190,7 +190,7 @@ public final class CristinMapper {
             case ACADEMIC_MONOGRAPH, ACADEMIC_COMMENTARY ->
                 extractChannelTypeForAcademicMonograph(referenceNode);
             case ACADEMIC_CHAPTER -> extractChannelTypeForAcademicChapter(referenceNode);
-            case NON_CANDIDATE -> throw new IllegalArgumentException("Publication type is invalid");
+            case NON_CANDIDATE -> null;
           };
       return Optional.ofNullable(channelType)
           .map(ChannelType::parse)
@@ -203,7 +203,7 @@ public final class CristinMapper {
   private static URI extractChannelId(CristinNviReport cristinNviReport) {
     var instance = toInstanceType(cristinNviReport.instanceType());
     var referenceNode = cristinNviReport.reference();
-    if (instance.isValid() && nonNull(referenceNode)) {
+    if (nonNull(instance) && nonNull(referenceNode)) {
       var channelId =
           switch (instance) {
             case ACADEMIC_ARTICLE, ACADEMIC_LITERATURE_REVIEW ->
@@ -211,7 +211,7 @@ public final class CristinMapper {
             case ACADEMIC_MONOGRAPH, ACADEMIC_COMMENTARY ->
                 extractChannelIdForAcademicMonograph(referenceNode);
             case ACADEMIC_CHAPTER -> extractChannelIdForAcademicChapter(referenceNode);
-            case NON_CANDIDATE -> throw new IllegalArgumentException("Publication type is invalid");
+            case NON_CANDIDATE -> null;
           };
       return attempt(() -> UriWrapper.fromUri(channelId).getUri()).orElse(failure -> null);
     }
