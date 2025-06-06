@@ -190,7 +190,7 @@ public final class CristinMapper {
             case ACADEMIC_MONOGRAPH, ACADEMIC_COMMENTARY ->
                 extractChannelTypeForAcademicMonograph(referenceNode);
             case ACADEMIC_CHAPTER -> extractChannelTypeForAcademicChapter(referenceNode);
-            case INVALID -> throw new IllegalArgumentException("Publication type is invalid");
+            case NON_CANDIDATE -> throw new IllegalArgumentException("Publication type is invalid");
           };
       return Optional.ofNullable(channelType)
           .map(ChannelType::parse)
@@ -211,7 +211,7 @@ public final class CristinMapper {
             case ACADEMIC_MONOGRAPH, ACADEMIC_COMMENTARY ->
                 extractChannelIdForAcademicMonograph(referenceNode);
             case ACADEMIC_CHAPTER -> extractChannelIdForAcademicChapter(referenceNode);
-            case INVALID -> throw new IllegalArgumentException("Publication type is invalid");
+            case NON_CANDIDATE -> throw new IllegalArgumentException("Publication type is invalid");
           };
       return attempt(() -> UriWrapper.fromUri(channelId).getUri()).orElse(failure -> null);
     }

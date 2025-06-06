@@ -39,7 +39,7 @@ class InstanceTypeTest {
   void shouldParseUnknownValueAsInvalid() {
     var unknownValue = "UnknownValue";
     var parsedValue = InstanceType.parse(unknownValue);
-    assertThat(parsedValue).isEqualTo(InstanceType.INVALID);
+    assertThat(parsedValue).isEqualTo(InstanceType.NON_CANDIDATE);
     assertThat(parsedValue.isValid()).isFalse();
   }
 }

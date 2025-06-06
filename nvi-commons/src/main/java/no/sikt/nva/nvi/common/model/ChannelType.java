@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum ChannelType implements ParsableEnum {
-  INVALID("Invalid"),
+  NON_CANDIDATE("NonCandidateChannelType"),
   JOURNAL("Journal"),
   SERIES("Series"),
   PUBLISHER("Publisher");
@@ -23,10 +23,10 @@ public enum ChannelType implements ParsableEnum {
 
   @JsonCreator
   public static ChannelType parse(String stringValue) {
-    return ParsableEnum.parseOrDefault(ChannelType.class, stringValue, INVALID);
+    return ParsableEnum.parseOrDefault(ChannelType.class, stringValue, NON_CANDIDATE);
   }
 
   public boolean isValid() {
-    return this != INVALID;
+    return this != NON_CANDIDATE;
   }
 }

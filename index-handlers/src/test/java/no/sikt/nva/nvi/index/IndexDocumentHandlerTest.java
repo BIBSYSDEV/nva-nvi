@@ -428,7 +428,7 @@ class IndexDocumentHandlerTest {
   @ParameterizedTest(name = "shouldGenerateIndexDocumentForAllPublicationChannelTypes: {0}")
   @EnumSource(
       value = ChannelType.class,
-      names = {"INVALID"},
+      names = {"NON_CANDIDATE"},
       mode = Mode.EXCLUDE)
   void shouldGenerateIndexDocumentForAllPublicationChannelTypes(ChannelType channelType) {
     var candidate = randomApplicableCandidate(channelType);

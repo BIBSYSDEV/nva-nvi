@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum ScientificValue implements ParsableEnum {
-  INVALID("Invalid"),
   NON_CANDIDATE("NonCandidateLevel"),
   UNASSIGNED("Unassigned"),
   LEVEL_ZERO("LevelZero"),
@@ -25,7 +24,7 @@ public enum ScientificValue implements ParsableEnum {
 
   @JsonCreator
   public static ScientificValue parse(String stringValue) {
-    return ParsableEnum.parseOrDefault(ScientificValue.class, stringValue, INVALID);
+    return ParsableEnum.parseOrDefault(ScientificValue.class, stringValue, NON_CANDIDATE);
   }
 
   public boolean isValid() {

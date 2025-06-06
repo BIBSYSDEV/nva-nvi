@@ -266,7 +266,7 @@ public final class IndexDocumentTestUtils {
     return switch (channelType) {
       case JOURNAL -> extractJournalIssn(expandedResource);
       case SERIES -> extractSeriesIssn(expandedResource);
-      case PUBLISHER, INVALID -> null;
+      case PUBLISHER, NON_CANDIDATE -> null;
     };
   }
 
@@ -287,7 +287,7 @@ public final class IndexDocumentTestUtils {
       case JOURNAL -> extractJournalName(expandedResource);
       case PUBLISHER -> extractPublisherName(expandedResource);
       case SERIES -> extractSeriesName(expandedResource);
-      case INVALID -> throw new IllegalArgumentException("Publication channel type is invalid");
+      case NON_CANDIDATE -> throw new IllegalArgumentException("Publication channel type is invalid");
     };
   }
 
