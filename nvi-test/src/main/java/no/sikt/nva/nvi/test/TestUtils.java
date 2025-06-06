@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.test;
 
 import static java.util.Objects.nonNull;
+import static no.sikt.nva.nvi.test.TestConstants.ONE;
 import static no.sikt.nva.nvi.test.TestConstants.TYPE_FIELD;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -15,6 +16,7 @@ import java.net.URI;
 import java.net.http.HttpResponse;
 import java.time.LocalDate;
 import java.time.Year;
+import java.util.Collection;
 import java.util.Random;
 import java.util.UUID;
 import nva.commons.core.paths.UriWrapper;
@@ -95,6 +97,19 @@ public final class TestUtils {
   public static void putIfNotNull(ObjectNode node, String field, URI value) {
     if (nonNull(value)) {
       node.put(field, value.toString());
+    }
+  }
+
+  public static void putAsArrayIfMultipleValues(
+      ObjectNode node, String field, Collection<String> values) {
+    if (nonNull(values) && !values.isEmpty()) {
+      if (values.size() > ONE) {
+        var arrayNode = objectMapper.createArrayNode();
+        values.forEach(arrayNode::add);
+        node.set(field, arrayNode);
+      } else {
+        putIfNotBlank(node, field, values.iterator().next());
+      }
     }
   }
 }
