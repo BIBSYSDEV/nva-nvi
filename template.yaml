@@ -562,7 +562,7 @@ Resources:
                   - dynamodb:ListStreams
                   - dynamodb:GetRecords
                 Resource:
-                  - !GetAtt NvaNviTable.StreamArn
+                  - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${NvaNviTable}/stream/*'
 
   GenerateIndexDocumentQueuePolicy:
     Type: AWS::SQS::QueuePolicy

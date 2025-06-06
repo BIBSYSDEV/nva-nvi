@@ -159,6 +159,13 @@ public final class CristinMapper {
             cristinLocale ->
                 nonNull(cristinLocale.getInstitutionIdentifier()) || isKreftReg(cristinLocale))
         .map(CristinMapper::toApproval)
+        .collect(
+            Collectors.toMap(
+                DbApprovalStatus::institutionId,
+                approval -> approval,
+                (existing, replacement) -> existing))
+        .values()
+        .stream()
         .toList();
   }
 

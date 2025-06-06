@@ -585,6 +585,21 @@ class CristinMapperTest {
     assertThat(nviCandidate.level(), is(equalTo(DbLevel.LEVEL_TWO)));
   }
 
+  @Test
+  void
+      shouldFilterOutDuplicatedApprovalsBasedOnInstitutionIdWhenMappingCristinLocalesToApprovals() {
+    var institutionIdentifier = randomString();
+    var cristinLocale =
+        cristinLocaleWithInstitutionIdentifierAndOwnerCode(institutionIdentifier, randomString());
+    var report =
+        CristinNviReport.builder()
+            .withCristinLocales(List.of(cristinLocale, cristinLocale))
+            .build();
+    var approvals = cristinMapper.toApprovals(report);
+
+    assertThat(approvals.size(), is(1));
+  }
+
   private static CristinNviReport nviReportWithInstanceTypeAndReference(
       String instanceType, String reference) {
     var institutionIdentifier = randomString();

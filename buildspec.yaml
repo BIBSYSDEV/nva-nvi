@@ -1,9 +1,16 @@
 version: 0.2
 
 env:
+  variables:
+    GRADLE_USER_HOME: '/root/.gradle'
+    SAM_CLI_TELEMETRY: "0"
   secrets-manager:
     DOCKER_HUB_USERNAME: DockerHubCredentials:DockerHubUsername
     DOCKER_HUB_SECRET: DockerHubCredentials:DockerHubSecret
+
+cache:
+  paths:
+    - '/root/.gradle/caches/**/*'
 
 phases:
   install:
