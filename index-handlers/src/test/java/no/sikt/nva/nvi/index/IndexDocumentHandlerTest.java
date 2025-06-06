@@ -617,11 +617,23 @@ class IndexDocumentHandlerTest {
   @Test
   void shouldBuildIndexDocumentForReportedCandidateWithInvalidProperties() {
     // Given an already reported Candidate with non-applicable values
-    // When an index document is created from the Candidate
-    // Then no exception should be thrown
-    // And the document should be created
+    // When the candidate is processed for indexing
+    // Then an index document is created successfully
+    var candidateDao = setupReportedCandidateWithInvalidProperties();
+    var candidate =
+        Candidate.fetch(candidateDao::identifier, candidateRepository, periodRepository);
+    var expectedIndexDocument =
+        setupExistingResourceInS3AndGenerateExpectedDocument(candidate).indexDocument();
 
-    // Given
+    var event = createEvent(candidate.getIdentifier());
+    mockUriRetrieverOrgResponse(candidate);
+    handler.handleRequest(event, CONTEXT);
+
+    var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
+    assertEquals(expectedIndexDocument, actualIndexDocument);
+  }
+
+  private CandidateDao setupReportedCandidateWithInvalidProperties() {
     var organizationId = randomUri();
     var publicationChannel =
         randomDbPublicationChannelBuilder()
@@ -639,20 +651,7 @@ class IndexDocumentHandlerTest {
             .reportStatus(ReportStatus.REPORTED)
             .build();
     var candidateDao = createCandidateDao(candidateRepository, dbCandidate);
-
-    // When
-    var candidate =
-        Candidate.fetch(candidateDao::identifier, candidateRepository, periodRepository);
-    var expectedIndexDocument =
-        setupExistingResourceInS3AndGenerateExpectedDocument(candidate).indexDocument();
-    var event = createEvent(candidate.getIdentifier());
-    mockUriRetrieverOrgResponse(candidate);
-    handler.handleRequest(event, CONTEXT);
-
-    // Then
-
-    var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
-    assertEquals(expectedIndexDocument, actualIndexDocument);
+    return candidateDao;
   }
 
   private static List<URI> extractPartOfAffiliation(
