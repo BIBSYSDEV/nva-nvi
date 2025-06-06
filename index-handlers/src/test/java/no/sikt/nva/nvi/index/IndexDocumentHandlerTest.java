@@ -7,10 +7,12 @@ import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBui
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequestWithSingleAffiliation;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertNonCandidateRequest;
+import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.createCandidateDao;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.setupReportedCandidate;
 import static no.sikt.nva.nvi.common.db.DbApprovalStatusFixtures.randomApproval;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidateBuilder;
 import static no.sikt.nva.nvi.common.db.DbPointCalculationFixtures.randomPointCalculationBuilder;
+import static no.sikt.nva.nvi.common.db.DbPublicationChannelFixtures.randomDbPublicationChannelBuilder;
 import static no.sikt.nva.nvi.common.db.DbPublicationDetailsFixtures.randomPublicationBuilder;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_AFFILIATIONS;
@@ -63,6 +65,7 @@ import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.db.model.DbPublicationChannel;
 import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
 import no.sikt.nva.nvi.common.model.CandidateFixtures;
@@ -608,6 +611,47 @@ class IndexDocumentHandlerTest {
     mockUriRetrieverOrgResponse(candidateToSucceed);
     handler.handleRequest(event, CONTEXT);
     var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidateToSucceed)));
+    assertEquals(expectedIndexDocument, actualIndexDocument);
+  }
+
+  @Test
+  void shouldBuildIndexDocumentForReportedCandidateWithInvalidProperties() {
+    // Given an already reported Candidate with non-applicable values
+    // When an index document is created from the Candidate
+    // Then no exception should be thrown
+    // And the document should be created
+
+    // Given
+    var organizationId = randomUri();
+    var publicationChannel =
+        randomDbPublicationChannelBuilder()
+            .channelType("Shallow")
+            .scientificValue("Amazing")
+            .build();
+    var pointCalculation =
+        randomPointCalculationBuilder(organizationId, randomUri())
+            .instanceType("ComicBook")
+            .publicationChannel(publicationChannel)
+            .build();
+    var dbCandidate =
+        randomCandidateBuilder(true)
+            .pointCalculation(pointCalculation)
+            .reportStatus(ReportStatus.REPORTED)
+            .build();
+    var candidateDao = createCandidateDao(candidateRepository, dbCandidate);
+
+    // When
+    var candidate =
+        Candidate.fetch(candidateDao::identifier, candidateRepository, periodRepository);
+    var expectedIndexDocument =
+        setupExistingResourceInS3AndGenerateExpectedDocument(candidate).indexDocument();
+    var event = createEvent(candidate.getIdentifier());
+    mockUriRetrieverOrgResponse(candidate);
+    handler.handleRequest(event, CONTEXT);
+
+    // Then
+
+    var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
     assertEquals(expectedIndexDocument, actualIndexDocument);
   }
 

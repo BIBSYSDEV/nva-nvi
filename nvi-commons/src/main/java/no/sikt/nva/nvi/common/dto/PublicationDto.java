@@ -49,8 +49,11 @@ public record PublicationDto(
 
     shouldBeTrue(publicationType().isValid(), "Required field 'publicationType' is invalid");
 
-    publicationChannels.stream().map(PublicationChannelDto::isValid);
-    publicationChannels.forEach(PublicationChannelDto::validate);
+    publicationChannels.stream()
+        .filter(PublicationChannelDto::isValid)
+        .findAny()
+        .orElseThrow(
+            () -> new IllegalArgumentException("At least one publication channel must be valid"));
     contributors.forEach(ContributorDto::validate);
   }
 

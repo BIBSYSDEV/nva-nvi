@@ -11,7 +11,7 @@ class PublicationChannelDtoTest {
   void shouldParseUnknownValueAsInvalid() {
     var unknownValue = "UnknownValue";
     var parsedValue = ScientificValue.parse(unknownValue);
-    assertThat(parsedValue).isEqualTo(ScientificValue.INVALID);
+    assertThat(parsedValue).isEqualTo(ScientificValue.NON_CANDIDATE);
     assertThat(parsedValue.isValid()).isFalse();
   }
 }

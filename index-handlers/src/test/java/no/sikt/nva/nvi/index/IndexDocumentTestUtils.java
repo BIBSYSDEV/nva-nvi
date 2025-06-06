@@ -287,7 +287,7 @@ public final class IndexDocumentTestUtils {
       case JOURNAL -> extractJournalName(expandedResource);
       case PUBLISHER -> extractPublisherName(expandedResource);
       case SERIES -> extractSeriesName(expandedResource);
-      case NON_CANDIDATE -> throw new IllegalArgumentException("Publication channel type is invalid");
+      default -> null;
     };
   }
 

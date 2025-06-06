@@ -9,7 +9,7 @@ import no.sikt.nva.nvi.common.model.ScientificValue;
 
 public class DbPublicationChannelFixtures {
 
-  public static DbPublicationChannel.Builder randomPublicationChannelBuilder() {
+  public static DbPublicationChannel.Builder randomDbPublicationChannelBuilder() {
     return DbPublicationChannel.builder()
         .id(randomUri())
         .channelType(randomValidChannelType().getValue())

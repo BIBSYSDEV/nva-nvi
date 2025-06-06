@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.common.db;
 
 import static no.sikt.nva.nvi.common.db.DbPublicationChannelFixtures.getExpectedDbPublicationChannel;
-import static no.sikt.nva.nvi.common.db.DbPublicationChannelFixtures.randomPublicationChannelBuilder;
+import static no.sikt.nva.nvi.common.db.DbPublicationChannelFixtures.randomDbPublicationChannelBuilder;
 import static no.sikt.nva.nvi.common.model.EnumFixtures.randomValidInstanceType;
 import static no.sikt.nva.nvi.common.utils.DecimalUtils.adjustScaleAndRoundingMode;
 import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
@@ -21,7 +21,7 @@ public class DbPointCalculationFixtures {
 
   public static DbPointCalculation.Builder randomPointCalculationBuilder(
       URI organizationId, URI creatorId) {
-    var channel = randomPublicationChannelBuilder().build();
+    var channel = randomDbPublicationChannelBuilder().build();
     return DbPointCalculation.builder()
         .basePoints(TestUtils.randomBigDecimal())
         .collaborationFactor(null)

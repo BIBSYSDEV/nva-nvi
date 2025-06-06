@@ -187,10 +187,7 @@ public final class ExpandedResourceGenerator {
       case JOURNAL -> createJournalPublicationContext(candidate, populateIssn);
       case SERIES -> createSeriesPublicationContext(candidate, populateIssn);
       case PUBLISHER -> createPublisherPublicationContext(candidate);
-      case NON_CANDIDATE ->
-          throw new IllegalArgumentException(
-              "Publication channel type is invalid"); // FIXME: Should
-        // accept it and not throw
+      default -> objectMapper.createObjectNode();
     };
   }
 
