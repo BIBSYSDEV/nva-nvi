@@ -23,11 +23,12 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.net.URI;
+import java.util.Collection;
 import java.util.List;
 
 public record SampleExpandedContributor(
     URI id,
-    String verificationStatus,
+    List<String> verificationStatus,
     List<String> names,
     String role,
     List<SampleExpandedAffiliation> affiliations,
@@ -51,7 +52,7 @@ public record SampleExpandedContributor(
     putIfNotNull(identityNode, ID_FIELD, id);
     putAsArrayIfMultipleValues(identityNode, NAME_FIELD, names);
     putIfNotBlank(identityNode, ORCID_FIELD, orcId);
-    putIfNotBlank(identityNode, VERIFICATION_STATUS_FIELD, verificationStatus);
+    putAsArrayIfMultipleValues(identityNode, VERIFICATION_STATUS_FIELD, verificationStatus);
 
     contributorNode.set(IDENTITY_FIELD, identityNode);
     return contributorNode;
@@ -71,7 +72,7 @@ public record SampleExpandedContributor(
     private URI id = randomUri();
     private List<String> names = List.of(randomString());
     private String role = CREATOR;
-    private String verificationStatus;
+    private List<String> verificationStatus;
     private String orcId;
     private List<SampleExpandedAffiliation> affiliations;
 
@@ -83,7 +84,12 @@ public record SampleExpandedContributor(
     }
 
     public Builder withVerificationStatus(String verificationStatus) {
-      this.verificationStatus = verificationStatus;
+      this.verificationStatus = List.of(verificationStatus);
+      return this;
+    }
+
+    public Builder withVerificationStatus(Collection<String> verificationStatus) {
+      this.verificationStatus = List.copyOf(verificationStatus);
       return this;
     }
 

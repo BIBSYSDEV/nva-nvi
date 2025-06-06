@@ -164,6 +164,25 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
     assertThat(candidate.nviCreators()).hasSize(1).extracting("id").containsExactly(creator.id());
   }
 
+  @Test
+  void shouldHandleDuplicateContributorWithMultipleVerificationStatuses() {
+    var expandedAffiliations = List.of(mapOrganizationToAffiliation(nviOrganization));
+    var contributorBuilder =
+        SampleExpandedContributor.builder()
+            .withId(randomUri())
+            .withVerificationStatus(List.of("Verified", "NotVerified"))
+            .withAffiliations(expandedAffiliations);
+    var creator = contributorBuilder.withRole("Creator").build();
+    var nonCreator = contributorBuilder.withRole("NonCreator").build();
+
+    var publication =
+        factory.withContributor(creator).withContributor(nonCreator).getExpandedPublication();
+
+    var candidate = getEvaluatedCandidate(publication);
+    assertThat(candidate.publicationDetails().creatorCount()).isEqualTo(1);
+    assertThat(candidate.verifiedCreators()).hasSize(1).extracting("id").containsExactly(creator.id());
+  }
+
   private static Stream<Arguments> pageCountProvider() {
     return Stream.of(
         argumentSet("Monograph with page count", PAGE_NUMBER_AS_DTO, "AcademicMonograph", "Series"),
