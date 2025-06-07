@@ -11,6 +11,9 @@ import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 
 import com.amazonaws.services.lambda.runtime.Context;
@@ -39,6 +42,7 @@ import nva.commons.core.paths.UriWrapper;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 
 class CristinNviReportEventConsumerTest {
 
@@ -72,6 +76,29 @@ class CristinNviReportEventConsumerTest {
         Candidate.fetchByPublicationId(() -> publicationId, candidateRepository, periodRepository);
 
     assertThatNviCandidateHasExpectedValues(nviCandidate, cristinNviReport);
+  }
+
+  @Test
+  void shouldNotFailAnNotPersistErrorReportWhenAttemptingToImportAlreadyExistingNviCandidate()
+      throws IOException {
+    var cristinNviReport = randomCristinNviReport().build();
+    periodRepository.save(periodForYear(cristinNviReport.yearReported()));
+    handler.handleRequest(createEvent(cristinNviReport), CONTEXT);
+
+    var existingCandidate =
+        Candidate.fetchByPublicationId(
+            () -> toPublicationId(cristinNviReport), candidateRepository, periodRepository);
+    assertThat(existingCandidate, is(notNullValue()));
+
+    handler.handleRequest(createEvent(cristinNviReport), CONTEXT);
+
+    var s3ReportPath =
+        UriWrapper.fromHost(BUCKET_NAME)
+            .addChild(NVI_ERRORS)
+            .addChild(cristinNviReport.publicationIdentifier())
+            .toS3bucketPath();
+
+    assertThrows(NoSuchKeyException.class, () -> s3Driver.getFile(s3ReportPath));
   }
 
   @Test
