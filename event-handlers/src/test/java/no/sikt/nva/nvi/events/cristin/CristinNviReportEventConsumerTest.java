@@ -302,16 +302,4 @@ class CristinNviReportEventConsumerTest {
     sqsEvent.setRecords(List.of(message));
     return sqsEvent;
   }
-
-  private SQSEvent createEvent(String value) throws IOException {
-    var fullPath = UnixPath.of(randomString(), randomString());
-    var fileUri = s3Driver.insertFile(fullPath, value);
-    var eventReference = new EventReference(randomString(), randomString(), fileUri, Instant.now());
-    s3Driver.insertFile(fullPath, value);
-    var sqsEvent = new SQSEvent();
-    var message = new SQSMessage();
-    message.setBody(eventReference.toJsonString());
-    sqsEvent.setRecords(List.of(message));
-    return sqsEvent;
-  }
 }

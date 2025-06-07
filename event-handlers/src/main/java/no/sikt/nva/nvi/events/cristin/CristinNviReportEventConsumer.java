@@ -35,6 +35,7 @@ public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, V
   public static final String CRISTIN_DEPARTMENT_TRANSFERS = "cristin_transfer_departments.csv";
   public static final String CRISTIN_DEPARTMENT_TRANSFERS_STRING =
       IoUtils.stringFromResources(Path.of(CRISTIN_DEPARTMENT_TRANSFERS));
+  protected static final String PUBLICATION = "publication";
   private final CandidateRepository repository;
   private final S3Client s3Client;
   private final CristinMapper cristinMapper;
@@ -136,7 +137,7 @@ public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, V
     }
   }
 
-  public static URI createPublicationId(String identifier) {
-    return UriWrapper.fromHost(API_HOST).addChild("publication").addChild(identifier).getUri();
+  public static URI createPublicationId(String publicationIdentifier) {
+    return UriWrapper.fromHost(API_HOST).addChild(PUBLICATION).addChild(publicationIdentifier).getUri();
   }
 }
