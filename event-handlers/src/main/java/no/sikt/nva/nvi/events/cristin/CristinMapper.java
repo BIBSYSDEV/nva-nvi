@@ -190,6 +190,7 @@ public final class CristinMapper {
             case ACADEMIC_MONOGRAPH, ACADEMIC_COMMENTARY ->
                 extractChannelTypeForAcademicMonograph(referenceNode);
             case ACADEMIC_CHAPTER -> extractChannelTypeForAcademicChapter(referenceNode);
+            case NON_CANDIDATE -> null;
           };
       return Optional.ofNullable(channelType)
           .map(ChannelType::parse)
@@ -210,6 +211,7 @@ public final class CristinMapper {
             case ACADEMIC_MONOGRAPH, ACADEMIC_COMMENTARY ->
                 extractChannelIdForAcademicMonograph(referenceNode);
             case ACADEMIC_CHAPTER -> extractChannelIdForAcademicChapter(referenceNode);
+            case NON_CANDIDATE -> null;
           };
       return attempt(() -> UriWrapper.fromUri(channelId).getUri()).orElse(failure -> null);
     }
@@ -217,7 +219,7 @@ public final class CristinMapper {
   }
 
   private static InstanceType toInstanceType(String instanceType) {
-    return attempt(() -> InstanceType.parse(instanceType)).orElse(failure -> null);
+    return InstanceType.parse(instanceType);
   }
 
   private static String extractChannelIdForAcademicChapter(JsonNode referenceNode) {
