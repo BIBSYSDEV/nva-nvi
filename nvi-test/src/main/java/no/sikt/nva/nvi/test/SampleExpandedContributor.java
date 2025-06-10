@@ -28,7 +28,7 @@ import java.util.List;
 
 public record SampleExpandedContributor(
     URI id,
-    List<String> verificationStatus,
+    Collection<String> verificationStatus,
     List<String> names,
     String role,
     List<SampleExpandedAffiliation> affiliations,
@@ -72,7 +72,7 @@ public record SampleExpandedContributor(
     private URI id = randomUri();
     private List<String> names = List.of(randomString());
     private String role = CREATOR;
-    private List<String> verificationStatus;
+    private Collection<String> verificationStatus = List.of("NotVerified");
     private String orcId;
     private List<SampleExpandedAffiliation> affiliations;
 
