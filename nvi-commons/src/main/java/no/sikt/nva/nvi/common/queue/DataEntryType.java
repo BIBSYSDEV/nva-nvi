@@ -26,7 +26,7 @@ public enum DataEntryType implements ParsableEnum {
 
   @JsonCreator
   public static DataEntryType parse(String stringValue) {
-    return ParsableEnum.parseOrDefault(DataEntryType.class, stringValue, UNKNOWN);
+    return ParsableEnum.parse(DataEntryType.class, stringValue, UNKNOWN);
   }
 
   @JsonIgnore

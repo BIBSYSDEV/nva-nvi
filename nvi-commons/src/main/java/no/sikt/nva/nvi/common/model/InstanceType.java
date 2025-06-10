@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum InstanceType implements ParsableEnum {
+  NON_CANDIDATE("NonCandidateInstanceType"),
   ACADEMIC_COMMENTARY("AcademicCommentary"),
   ACADEMIC_MONOGRAPH("AcademicMonograph"),
   ACADEMIC_CHAPTER("AcademicChapter"),
@@ -24,6 +25,10 @@ public enum InstanceType implements ParsableEnum {
 
   @JsonCreator
   public static InstanceType parse(String stringValue) {
-    return ParsableEnum.parse(InstanceType.class, stringValue);
+    return ParsableEnum.parse(InstanceType.class, stringValue, NON_CANDIDATE);
+  }
+
+  public boolean isValid() {
+    return this != NON_CANDIDATE;
   }
 }
