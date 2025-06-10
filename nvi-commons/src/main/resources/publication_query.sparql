@@ -168,7 +168,10 @@ WHERE {
     ?role a ?roleType .
     FILTER (?roleType = :Creator)
 
-    OPTIONAL { ?personId :verificationStatus ?verificationStatus }
+    OPTIONAL {
+      BIND(IF(EXISTS { ?personId :verificationStatus "Verified" }, "Verified", "NotVerified")
+      AS ?verificationStatus)
+    }
     OPTIONAL {
       ?personId :name ?contributorName
       # In rare cases, multiple names are given for the same contributor, but we need at most one.
