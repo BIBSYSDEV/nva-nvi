@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.events.cristin;
 
 import static java.util.Objects.isNull;
 import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
+import static no.sikt.nva.nvi.events.cristin.CristinMapper.API_HOST;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 
@@ -13,6 +14,7 @@ import com.fasterxml.jackson.databind.MappingIterator;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import java.io.StringReader;
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.List;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
@@ -23,6 +25,7 @@ import no.unit.nva.events.models.EventReference;
 import no.unit.nva.s3.S3Driver;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.ioutils.IoUtils;
+import nva.commons.core.paths.UriWrapper;
 import software.amazon.awssdk.services.s3.S3Client;
 
 public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, Void> {
@@ -32,6 +35,7 @@ public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, V
   public static final String CRISTIN_DEPARTMENT_TRANSFERS = "cristin_transfer_departments.csv";
   public static final String CRISTIN_DEPARTMENT_TRANSFERS_STRING =
       IoUtils.stringFromResources(Path.of(CRISTIN_DEPARTMENT_TRANSFERS));
+  protected static final String PUBLICATION = "publication";
   private final CandidateRepository repository;
   private final S3Client s3Client;
   private final CristinMapper cristinMapper;
@@ -81,7 +85,9 @@ public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, V
     var eventReference = EventReference.fromJson(value);
     var cristinNviReport = createNviReport(eventReference);
     try {
-      return createAndPersist(cristinNviReport);
+      return repository
+          .findByPublicationId(createPublicationId(cristinNviReport.publicationIdentifier()))
+          .orElseGet(() -> createAndPersist(cristinNviReport));
     } catch (Exception e) {
       ErrorReport.withMessage(e.getMessage())
           .bucket(eventReference.extractBucketName())
@@ -129,5 +135,9 @@ public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, V
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
+  }
+
+  public static URI createPublicationId(String publicationIdentifier) {
+    return UriWrapper.fromHost(API_HOST).addChild(PUBLICATION).addChild(publicationIdentifier).getUri();
   }
 }
