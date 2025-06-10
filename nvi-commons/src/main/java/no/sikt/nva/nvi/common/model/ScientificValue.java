@@ -24,7 +24,7 @@ public enum ScientificValue implements ParsableEnum {
 
   @JsonCreator
   public static ScientificValue parse(String stringValue) {
-    return ParsableEnum.parse(ScientificValue.class, stringValue);
+    return ParsableEnum.parse(ScientificValue.class, stringValue, NON_CANDIDATE);
   }
 
   public boolean isValid() {
