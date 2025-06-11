@@ -40,7 +40,6 @@ import java.math.BigDecimal;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.UpsertRequestBuilder;
@@ -56,7 +55,6 @@ import no.sikt.nva.nvi.common.model.ScientificValue;
 import no.sikt.nva.nvi.common.service.dto.ApprovalDto;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatusDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
-import no.sikt.nva.nvi.common.service.dto.CandidateOperation;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException;
@@ -272,8 +270,7 @@ class CandidateTest extends CandidateTestSetup {
     var expectedDto =
         CandidateDto.builder()
             .withApprovals(mapToApprovalDtos(candidate))
-            .withAllowedOperations(
-                Set.of(CandidateOperation.APPROVAL_APPROVE, CandidateOperation.APPROVAL_REJECT))
+            .withAllowedOperations(emptySet())
             .withProblems(emptySet())
             .withId(candidate.getId())
             .withPublicationId(candidate.getPublicationId())

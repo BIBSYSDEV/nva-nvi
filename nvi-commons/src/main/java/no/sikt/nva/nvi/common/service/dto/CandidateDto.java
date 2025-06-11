@@ -37,6 +37,21 @@ public record CandidateDto(
     return new Builder();
   }
 
+  public Builder copy() {
+    return new Builder()
+        .withId(this.id)
+        .withContext(this.context)
+        .withIdentifier(this.identifier)
+        .withPublicationId(this.publicationId)
+        .withApprovals(this.approvals)
+        .withTotalPoints(this.totalPoints)
+        .withNotes(this.notes)
+        .withPeriod(this.period)
+        .withReportStatus(this.status)
+        .withAllowedOperations(this.allowedOperations)
+        .withProblems(this.problems);
+  }
+
   public static final class Builder {
 
     private URI id;

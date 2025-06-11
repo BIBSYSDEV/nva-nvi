@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.common.service.model;
 
 import static java.util.Collections.emptyList;
+import static java.util.Collections.emptySet;
 import static java.util.Objects.nonNull;
 import static java.util.UUID.randomUUID;
 import static java.util.function.Predicate.not;
@@ -315,6 +316,23 @@ public final class Candidate {
     return pointCalculation.channel();
   }
 
+  public CandidateDto toDto() {
+    return CandidateDto.builder()
+        .withId(getId())
+        .withContext(CONTEXT_URI)
+        .withIdentifier(getIdentifier())
+        .withPublicationId(getPublicationId())
+        .withApprovals(mapToApprovalDtos())
+        .withAllowedOperations(emptySet())
+        .withProblems(emptySet())
+        .withNotes(mapToNoteDtos())
+        .withPeriod(mapToPeriodStatusDto())
+        .withTotalPoints(getTotalPoints())
+        .withReportStatus(
+            Optional.ofNullable(getReportStatus()).map(ReportStatus::getValue).orElse(null))
+        .build();
+  }
+
   public CandidateDto toDto(
       URI userTopLevelOrganizationId, OrganizationRetriever organizationRetriever) {
     var validator =
@@ -325,8 +343,8 @@ public final class Candidate {
         .withIdentifier(getIdentifier())
         .withPublicationId(getPublicationId())
         .withApprovals(mapToApprovalDtos())
-        .withAllowedOperations(validator.getAllowedOperations())
-        .withProblems(validator.getProblems())
+        .withAllowedOperations(emptySet())
+        .withProblems(emptySet())
         .withNotes(mapToNoteDtos())
         .withPeriod(mapToPeriodStatusDto())
         .withTotalPoints(getTotalPoints())

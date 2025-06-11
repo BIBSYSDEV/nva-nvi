@@ -40,6 +40,7 @@ import java.util.Set;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.UpsertRequestBuilder;
 import no.sikt.nva.nvi.common.client.model.Organization;
+import no.sikt.nva.nvi.common.dto.AllowedOperationFixtures;
 import no.sikt.nva.nvi.common.dto.PointCalculationDtoBuilder;
 import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
@@ -50,7 +51,6 @@ import no.sikt.nva.nvi.common.model.PublicationChannel;
 import no.sikt.nva.nvi.common.model.ScientificValue;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
-import no.sikt.nva.nvi.common.service.dto.CandidateOperation;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
@@ -528,8 +528,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var candidateDto = candidate.toDto(topLevelOrganizationId, mockOrganizationRetriever);
 
     var actualAllowedOperations = candidateDto.allowedOperations();
-    var expectedAllowedOperations =
-        List.of(CandidateOperation.APPROVAL_APPROVE, CandidateOperation.APPROVAL_REJECT);
+    var expectedAllowedOperations = AllowedOperationFixtures.CAN_FINALIZE_APPROVAL;
     assertThat(actualAllowedOperations, containsInAnyOrder(expectedAllowedOperations.toArray()));
   }
 
@@ -545,7 +544,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var candidateDto = candidate.toDto(topLevelOrganizationId, mockOrganizationRetriever);
 
     var actualAllowedOperations = candidateDto.allowedOperations();
-    var expectedAllowedOperations = emptyList();
+    var expectedAllowedOperations = AllowedOperationFixtures.CANNOT_UPDATE_APPROVAL;
     assertThat(actualAllowedOperations, containsInAnyOrder(expectedAllowedOperations.toArray()));
   }
 

@@ -17,13 +17,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import no.sikt.nva.nvi.common.dto.AllowedOperationFixtures;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.service.dto.ApprovalDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
-import no.sikt.nva.nvi.common.service.dto.CandidateOperation;
 import no.sikt.nva.nvi.common.validator.FakeViewingScopeValidator;
 import no.sikt.nva.nvi.rest.BaseCandidateRestHandlerTest;
 import no.unit.nva.commons.json.JsonUtils;
@@ -175,8 +174,7 @@ class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
     var candidateDto = handleRequest(request);
 
     var actualAllowedOperations = candidateDto.allowedOperations();
-    var expectedAllowedOperations =
-        List.of(CandidateOperation.APPROVAL_APPROVE, CandidateOperation.APPROVAL_REJECT);
+    var expectedAllowedOperations = AllowedOperationFixtures.CAN_FINALIZE_APPROVAL;
     assertThat(actualAllowedOperations, containsInAnyOrder(expectedAllowedOperations.toArray()));
   }
 

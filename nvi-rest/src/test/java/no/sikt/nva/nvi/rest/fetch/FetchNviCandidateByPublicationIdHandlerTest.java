@@ -12,11 +12,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
-import java.util.List;
 import no.sikt.nva.nvi.common.db.ReportStatus;
+import no.sikt.nva.nvi.common.dto.AllowedOperationFixtures;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatusDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
-import no.sikt.nva.nvi.common.service.dto.CandidateOperation;
 import no.sikt.nva.nvi.rest.BaseCandidateRestHandlerTest;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
@@ -36,6 +35,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends BaseCandidateRestHandl
         scenario.getCandidateRepository(),
         scenario.getPeriodRepository(),
         mockOrganizationRetriever,
+        mockViewingScopeValidator,
         ENVIRONMENT);
   }
 
@@ -142,8 +142,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends BaseCandidateRestHandl
     var candidateDto = handleRequest(request);
 
     var actualAllowedOperations = candidateDto.allowedOperations();
-    var expectedAllowedOperations =
-        List.of(CandidateOperation.APPROVAL_APPROVE, CandidateOperation.APPROVAL_REJECT);
+    var expectedAllowedOperations = AllowedOperationFixtures.CAN_FINALIZE_APPROVAL;
     assertThat(actualAllowedOperations, containsInAnyOrder(expectedAllowedOperations.toArray()));
   }
 }

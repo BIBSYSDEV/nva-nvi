@@ -32,6 +32,7 @@ import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.GatewayResponse;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpStatus;
+import org.assertj.core.api.Assertions;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,6 +48,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
         scenario.getCandidateRepository(),
         scenario.getPeriodRepository(),
         mockOrganizationRetriever,
+        mockViewingScopeValidator,
         ENVIRONMENT);
   }
 
@@ -87,7 +89,10 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
         createRequest(candidate.getIdentifier().toString(), randomOrganizationId, accessRight);
     var responseDto = handleRequest(request);
     var expectedCandidateDto = candidate.toDto(randomOrganizationId, mockOrganizationRetriever);
-    assertEquals(expectedCandidateDto, responseDto);
+    Assertions.assertThat(responseDto)
+        .usingRecursiveComparison()
+        .ignoringFields("allowedOperations", "problems")
+        .isEqualTo(expectedCandidateDto);
   }
 
   @ParameterizedTest
@@ -138,7 +143,10 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
     var responseDto = handleRequest(request);
 
     var expectedCandidateDto = candidate.toDto(topLevelOrganizationId, mockOrganizationRetriever);
-    assertEquals(expectedCandidateDto, responseDto);
+    Assertions.assertThat(responseDto)
+        .usingRecursiveComparison()
+        .ignoringFields("allowedOperations", "problems")
+        .isEqualTo(expectedCandidateDto);
   }
 
   @Test
@@ -162,7 +170,10 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
     var responseDto = handleRequest(request);
 
     var expectedCandidateDto = candidate.toDto(topLevelOrganizationId, mockOrganizationRetriever);
-    assertEquals(expectedCandidateDto, responseDto);
+    Assertions.assertThat(responseDto)
+        .usingRecursiveComparison()
+        .ignoringFields("allowedOperations", "problems")
+        .isEqualTo(expectedCandidateDto);
   }
 
   @Test

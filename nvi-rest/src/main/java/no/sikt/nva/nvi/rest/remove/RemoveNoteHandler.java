@@ -15,6 +15,7 @@ import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.requests.DeleteNoteRequest;
 import no.sikt.nva.nvi.common.utils.ExceptionMapper;
 import no.sikt.nva.nvi.common.utils.RequestUtil;
+import no.sikt.nva.nvi.common.validator.CandidateUpdateValidator;
 import no.sikt.nva.nvi.common.validator.ViewingScopeValidator;
 import no.sikt.nva.nvi.rest.ViewingScopeHandler;
 import no.unit.nva.auth.uriretriever.UriRetriever;
@@ -22,6 +23,7 @@ import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
+import nva.commons.apigateway.exceptions.UnauthorizedException;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 
@@ -84,8 +86,11 @@ public class RemoveNoteHandler extends ApiGatewayHandler<Void, CandidateDto>
     return HttpURLConnection.HTTP_OK;
   }
 
-  private CandidateDto toCandidateDto(RequestInfo requestInfo, Candidate candidate) {
-    return candidate.toDto(
-        requestInfo.getTopLevelOrgCristinId().orElseThrow(), organizationRetriever);
+  private CandidateDto toCandidateDto(RequestInfo requestInfo, Candidate candidate)
+      throws UnauthorizedException {
+    var topLevelOrganization = requestInfo.getTopLevelOrgCristinId().orElseThrow();
+    var updateValidator =
+        new CandidateUpdateValidator(candidate, organizationRetriever, topLevelOrganization);
+    return updateValidator.getCandidateDto(requestInfo, viewingScopeValidator);
   }
 }

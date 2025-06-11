@@ -15,6 +15,8 @@ import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.utils.ExceptionMapper;
+import no.sikt.nva.nvi.common.validator.CandidateUpdateValidator;
+import no.sikt.nva.nvi.common.validator.ViewingScopeValidator;
 import no.sikt.nva.nvi.rest.ViewingScopeHandler;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import nva.commons.apigateway.ApiGatewayHandler;
@@ -31,6 +33,7 @@ public class FetchNviCandidateHandler extends ApiGatewayHandler<Void, CandidateD
   private final CandidateRepository candidateRepository;
   private final PeriodRepository periodRepository;
   private final OrganizationRetriever organizationRetriever;
+  private final ViewingScopeValidator viewingScopeValidator;
 
   @JacocoGenerated
   public FetchNviCandidateHandler() {
@@ -38,6 +41,7 @@ public class FetchNviCandidateHandler extends ApiGatewayHandler<Void, CandidateD
         new CandidateRepository(defaultDynamoClient()),
         new PeriodRepository(defaultDynamoClient()),
         new OrganizationRetriever(new UriRetriever()),
+        ViewingScopeHandler.defaultViewingScopeValidator(),
         new Environment());
   }
 
@@ -45,11 +49,13 @@ public class FetchNviCandidateHandler extends ApiGatewayHandler<Void, CandidateD
       CandidateRepository candidateRepository,
       PeriodRepository periodRepository,
       OrganizationRetriever organizationRetriever,
+      ViewingScopeValidator viewingScopeValidator,
       Environment environment) {
     super(Void.class, environment);
     this.candidateRepository = candidateRepository;
     this.periodRepository = periodRepository;
     this.organizationRetriever = organizationRetriever;
+    this.viewingScopeValidator = viewingScopeValidator;
   }
 
   @Override
@@ -69,9 +75,12 @@ public class FetchNviCandidateHandler extends ApiGatewayHandler<Void, CandidateD
         .orElseThrow(ExceptionMapper::map);
   }
 
-  private CandidateDto toCandidateDto(RequestInfo requestInfo, Candidate candidate) {
-    return candidate.toDto(
-        requestInfo.getTopLevelOrgCristinId().orElseThrow(), organizationRetriever);
+  private CandidateDto toCandidateDto(RequestInfo requestInfo, Candidate candidate)
+      throws UnauthorizedException {
+    var topLevelOrganization = requestInfo.getTopLevelOrgCristinId().orElseThrow();
+    var updateValidator =
+        new CandidateUpdateValidator(candidate, organizationRetriever, topLevelOrganization);
+    return updateValidator.getCandidateDto(requestInfo, viewingScopeValidator);
   }
 
   @Override

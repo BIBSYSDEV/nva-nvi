@@ -1,8 +1,10 @@
 package no.sikt.nva.nvi.common.validator;
 
+import static java.util.stream.Collectors.toSet;
 import static no.sikt.nva.nvi.common.service.model.ApprovalStatus.APPROVED;
 import static no.sikt.nva.nvi.common.service.model.ApprovalStatus.PENDING;
 import static no.sikt.nva.nvi.common.service.model.ApprovalStatus.REJECTED;
+import static no.sikt.nva.nvi.common.utils.RequestUtil.isNviCurator;
 
 import java.net.URI;
 import java.util.EnumSet;
@@ -10,9 +12,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
+import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateOperation;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
@@ -20,6 +24,8 @@ import no.sikt.nva.nvi.common.service.dto.problem.CandidateProblem;
 import no.sikt.nva.nvi.common.service.dto.problem.UnverifiedCreatorFromOrganizationProblem;
 import no.sikt.nva.nvi.common.service.dto.problem.UnverifiedCreatorProblem;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import nva.commons.apigateway.RequestInfo;
+import nva.commons.apigateway.exceptions.UnauthorizedException;
 
 /**
  * This validates a candidate in the context of an organization, based on the top-level organization
@@ -29,7 +35,7 @@ import no.sikt.nva.nvi.common.service.model.Candidate;
 public class CandidateUpdateValidator {
   private final Candidate candidate;
   private final Set<CandidateProblem> problems = new HashSet<>();
-  private Set<CandidateOperation> allowedOperations;
+  private Set<CandidateOperation> allowedApprovalOperations;
   private final OrganizationRetriever organizationRetriever;
   private final URI userTopLevelOrganizationId;
 
@@ -43,23 +49,33 @@ public class CandidateUpdateValidator {
     validate();
   }
 
-  public Set<CandidateProblem> getProblems() {
-    return problems;
+  public CandidateDto getCandidateDto(
+      RequestInfo requestInfo, ViewingScopeValidator viewingScopeValidator)
+      throws UnauthorizedException {
+    var allowedNoteOperations = getAllowedNoteOperations(requestInfo, viewingScopeValidator);
+    var allAllowedOperations =
+        Stream.of(allowedApprovalOperations, allowedNoteOperations)
+            .flatMap(Set::stream)
+            .collect(toSet());
+    return candidate
+        .toDto()
+        .copy()
+        .withAllowedOperations(allAllowedOperations)
+        .withProblems(problems)
+        .build();
   }
 
-  public Set<CandidateOperation> getAllowedOperations() {
-    return allowedOperations;
-  }
+
 
   public boolean isValidStatusChange(UpdateStatusRequest updateRequest) {
     var attemptedOperation = CandidateOperation.fromApprovalStatus(updateRequest.approvalStatus());
-    return allowedOperations.contains(attemptedOperation);
+    return allowedApprovalOperations.contains(attemptedOperation);
   }
 
   private void validate() {
     checkForUnverifiedCreators();
     checkForUnverifiedCreatorsFromOrganization();
-    checkAllowedOperations();
+    checkAllowedApprovalOperations();
   }
 
   private void checkForUnverifiedCreators() {
@@ -76,7 +92,7 @@ public class CandidateUpdateValidator {
     }
   }
 
-  private void checkAllowedOperations() {
+  private void checkAllowedApprovalOperations() {
     var hasUnverifiedCreator =
         problems.stream().anyMatch(UnverifiedCreatorFromOrganizationProblem.class::isInstance);
 
@@ -87,7 +103,7 @@ public class CandidateUpdateValidator {
 
     // Find the intersection of valid approvals for this organization and valid transitions
     validStatesForOrganization.retainAll(validTransitions);
-    allowedOperations =
+    allowedApprovalOperations =
         validStatesForOrganization.stream()
             .map(CandidateOperation::fromApprovalStatus)
             .collect(Collectors.toUnmodifiableSet());
@@ -117,6 +133,18 @@ public class CandidateUpdateValidator {
         .map(organizationRetriever::fetchOrganization)
         .map(Organization::getTopLevelOrg)
         .map(Organization::id)
-        .collect(Collectors.toSet());
+        .collect(toSet());
+  }
+
+  private Set<CandidateOperation> getAllowedNoteOperations(
+      RequestInfo requestInfo, ViewingScopeValidator viewingScopeValidator)
+      throws UnauthorizedException {
+    var isAllowedToAccessCandidate =
+        viewingScopeValidator.userIsAllowedToAccessOneOf(
+            requestInfo.getUserName(), candidate.getNviCreatorAffiliations());
+    if (isAllowedToAccessCandidate && isNviCurator(requestInfo)) {
+      return EnumSet.of(CandidateOperation.NOTE_CREATE);
+    }
+    return EnumSet.noneOf(CandidateOperation.class);
   }
 }

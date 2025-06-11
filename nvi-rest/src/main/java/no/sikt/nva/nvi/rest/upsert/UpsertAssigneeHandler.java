@@ -16,6 +16,7 @@ import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.utils.ExceptionMapper;
 import no.sikt.nva.nvi.common.utils.RequestUtil;
+import no.sikt.nva.nvi.common.validator.CandidateUpdateValidator;
 import no.sikt.nva.nvi.common.validator.ViewingScopeValidator;
 import no.sikt.nva.nvi.rest.ViewingScopeHandler;
 import no.sikt.nva.nvi.rest.model.UpsertAssigneeRequest;
@@ -100,9 +101,12 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<UpsertAssigneeReque
     return HttpURLConnection.HTTP_OK;
   }
 
-  private CandidateDto toCandidateDto(RequestInfo requestInfo, Candidate candidate) {
-    return candidate.toDto(
-        requestInfo.getTopLevelOrgCristinId().orElseThrow(), organizationRetriever);
+  private CandidateDto toCandidateDto(RequestInfo requestInfo, Candidate candidate)
+      throws UnauthorizedException {
+    var topLevelOrganization = requestInfo.getTopLevelOrgCristinId().orElseThrow();
+    var updateValidator =
+        new CandidateUpdateValidator(candidate, organizationRetriever, topLevelOrganization);
+    return updateValidator.getCandidateDto(requestInfo, viewingScopeValidator);
   }
 
   private static void hasSameCustomer(UpsertAssigneeRequest input, RequestInfo requestInfo)
