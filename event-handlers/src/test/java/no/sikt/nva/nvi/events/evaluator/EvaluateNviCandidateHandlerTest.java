@@ -20,6 +20,7 @@ import static no.sikt.nva.nvi.common.model.InstanceType.ACADEMIC_LITERATURE_REVI
 import static no.sikt.nva.nvi.common.model.InstanceType.ACADEMIC_MONOGRAPH;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.mockOrganizationResponseForAffiliation;
 import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublicationDate;
+import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublicationDateInYear;
 import static no.sikt.nva.nvi.events.evaluator.TestUtils.createEvent;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_NORWAY;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_SWEDEN;
@@ -27,6 +28,7 @@ import static no.sikt.nva.nvi.test.TestConstants.CRISTIN_NVI_ORG_SUB_UNIT_ID;
 import static no.sikt.nva.nvi.test.TestConstants.CRISTIN_NVI_ORG_TOP_LEVEL_ID;
 import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_CREATOR_ID;
 import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_PUBLICATION_ID;
+import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.createResponse;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -997,8 +999,8 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       // And the publication is published in an open period
       // When the publication date is updated to a year with no registered NVI period
       // Then the publication should be re-evaluated as a NonCandidate
-      var openPeriod = randomPublicationDate();
-      var nonPeriod = randomPublicationDate();
+      var openPeriod = randomPublicationDateInYear(CURRENT_YEAR);
+      var nonPeriod = randomPublicationDateInYear(CURRENT_YEAR + 1);
       setupOpenPeriod(scenario, openPeriod.year());
       var publicationFactory =
           factory
@@ -1021,9 +1023,9 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       // When the publication date is updated to a year with no registered NVI period
       // And the publication date is updated to a year with an open NVI period
       // Then the publication should be re-evaluated as a Candidate
-      var openPeriod = randomPublicationDate();
-      var nonPeriod = randomPublicationDate();
-      var newPeriod = randomPublicationDate();
+      var openPeriod = randomPublicationDateInYear(CURRENT_YEAR);
+      var nonPeriod = randomPublicationDateInYear(CURRENT_YEAR + 2);
+      var newPeriod = randomPublicationDateInYear(CURRENT_YEAR + 1);
       setupOpenPeriod(scenario, openPeriod.year());
       setupOpenPeriod(scenario, newPeriod.year());
       var publicationFactory = factory.withContributor(verifiedCreatorFrom(nviOrganization));
