@@ -295,19 +295,6 @@ class CandidateApprovalTest extends CandidateTestSetup {
     assertThat(assignee, is(equalTo(newUsername)));
   }
 
-  /*
-  This is deprecated because the method being tested is deprecated, remove both.
-  */
-  @Deprecated(since = "2025-01-31", forRemoval = true)
-  @Test
-  void shouldNotAllowUpdateApprovalStatusWhenTryingToPassAnonymousImplementations() {
-    var upsertCandidateRequest = createUpsertCandidateRequest(HARDCODED_INSTITUTION_ID).build();
-    var candidate = scenario.upsertCandidate(upsertCandidateRequest);
-    assertThrows(
-        IllegalArgumentException.class,
-        () -> candidate.updateApproval(() -> HARDCODED_INSTITUTION_ID));
-  }
-
   @Test
   void shouldNotAllowUpdatingApprovalAssigneeWhenCandidateIsInClosedPeriod() {
     setupClosedPeriod(scenario, CURRENT_YEAR);
