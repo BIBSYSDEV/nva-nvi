@@ -119,7 +119,7 @@ class MigrationTests {
         CandidateFixtures.setupRandomApplicableCandidate(candidateRepository, periodRepository)
             .createNote(createNoteRequest(randomString(), randomString()), candidateRepository);
 
-    return candidate.updateApproval(
+    return candidate.updateApprovalStatus(
         createUpdateStatusRequest(
             ApprovalStatus.REJECTED, getInstitutionId(candidate), randomString()));
   }

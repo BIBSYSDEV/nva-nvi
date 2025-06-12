@@ -51,7 +51,6 @@ import no.sikt.nva.nvi.common.model.InstanceType;
 import no.sikt.nva.nvi.common.model.InvalidNviCandidateException;
 import no.sikt.nva.nvi.common.model.PointCalculation;
 import no.sikt.nva.nvi.common.model.PublicationChannel;
-import no.sikt.nva.nvi.common.model.UpdateApprovalRequest;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.dto.ApprovalDto;
@@ -330,18 +329,6 @@ public final class Candidate {
         .withReportStatus(
             Optional.ofNullable(getReportStatus()).map(ReportStatus::getValue).orElse(null))
         .build();
-  }
-
-  /**
-   * @deprecated Use either
-   * {@link #updateApprovalAssignee(UpdateAssigneeRequest input) or
-   * {@link #updateApprovalStatus(UpdateStatusRequest input)} instead.
-   */
-  @Deprecated(since = "2025-01-31", forRemoval = true)
-  public Candidate updateApproval(UpdateApprovalRequest input) {
-    validateCandidateState();
-    approvals.computeIfPresent(input.institutionId(), (uri, approval) -> approval.update(input));
-    return this;
   }
 
   public Candidate updateApprovalAssignee(UpdateAssigneeRequest input) {

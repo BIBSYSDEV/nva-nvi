@@ -182,7 +182,7 @@ class UpsertNviCandidateHandlerTest {
     var candidate =
         Candidate.fetchByPublicationId(
             upsertCandidateRequest::publicationId, candidateRepository, periodRepository);
-    candidate.updateApproval(
+    candidate.updateApprovalStatus(
         new UpdateStatusRequest(
             institutionId, ApprovalStatus.APPROVED, randomString(), randomString()));
     var approval = candidate.getApprovals().get(institutionId);

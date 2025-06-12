@@ -114,7 +114,7 @@ class FetchReportStatusByPublicationIdHandlerTest {
     var involvedInstitutions = new URI[] {institution1, randomUri()};
     var upsertCandidateRequest = createUpsertCandidateRequest(involvedInstitutions).build();
     var candidate = upsert(upsertCandidateRequest);
-    candidate.updateApproval(
+    candidate.updateApprovalStatus(
         new UpdateStatusRequest(institution1, approvalStatus, randomString(), randomString()));
 
     handler.handleRequest(createRequest(candidate.getPublicationId()), output, context);
@@ -137,10 +137,10 @@ class FetchReportStatusByPublicationIdHandlerTest {
     var organization2 = randomTopLevelOrganization();
     var request = createUpsertCandidateRequest(organization1, organization2).build();
     var candidate = scenario.upsertCandidate(request);
-    candidate.updateApproval(
+    candidate.updateApprovalStatus(
         new UpdateStatusRequest(
             organization1.id(), ApprovalStatus.APPROVED, randomString(), randomString()));
-    candidate.updateApproval(
+    candidate.updateApprovalStatus(
         new UpdateStatusRequest(
             organization2.id(), ApprovalStatus.APPROVED, randomString(), randomString()));
 
@@ -165,10 +165,10 @@ class FetchReportStatusByPublicationIdHandlerTest {
     var request = createUpsertCandidateRequest(organization1, organization2).build();
     var candidate = scenario.upsertCandidate(request);
 
-    candidate.updateApproval(
+    candidate.updateApprovalStatus(
         new UpdateStatusRequest(
             organization1.id(), ApprovalStatus.REJECTED, randomString(), randomString()));
-    candidate.updateApproval(
+    candidate.updateApprovalStatus(
         new UpdateStatusRequest(
             organization2.id(), ApprovalStatus.REJECTED, randomString(), randomString()));
 
