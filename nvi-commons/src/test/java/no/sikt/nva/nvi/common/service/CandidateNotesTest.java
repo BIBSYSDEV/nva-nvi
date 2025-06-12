@@ -33,7 +33,7 @@ class CandidateNotesTest extends CandidateTestSetup {
 
     var actualNote =
         Candidate.fetch(candidate::getIdentifier, candidateRepository, periodRepository)
-            .toDto(userOrganizationId, mockOrganizationRetriever)
+            .toDto(userOrganizationId)
             .notes()
             .getFirst();
 
@@ -73,12 +73,12 @@ class CandidateNotesTest extends CandidateTestSetup {
     var userOrganizationId = getAnyOrganizationId(candidateWithNote);
     mockOrganizationResponseForAffiliation(userOrganizationId, null, mockUriRetriever);
 
-    var candidateDto = candidateWithNote.toDto(userOrganizationId, mockOrganizationRetriever);
+    var candidateDto = candidateWithNote.toDto(userOrganizationId);
     var noteToDelete = candidateDto.notes().getFirst();
     var updatedCandidate =
         candidate.deleteNote(new DeleteNoteRequest(noteToDelete.identifier(), username));
 
-    var updatedCandidateDto = updatedCandidate.toDto(userOrganizationId, mockOrganizationRetriever);
+    var updatedCandidateDto = updatedCandidate.toDto(userOrganizationId);
     assertThat(updatedCandidateDto.notes(), is(emptyIterable()));
   }
 
@@ -92,7 +92,7 @@ class CandidateNotesTest extends CandidateTestSetup {
     var userOrganizationId = getAnyOrganizationId(candidateWithNote);
     mockOrganizationResponseForAffiliation(userOrganizationId, null, mockUriRetriever);
 
-    var candidateDto = candidateWithNote.toDto(userOrganizationId, mockOrganizationRetriever);
+    var candidateDto = candidateWithNote.toDto(userOrganizationId);
     var noteToDelete = candidateDto.notes().getFirst();
 
     assertThrows(

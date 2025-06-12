@@ -6,7 +6,6 @@ import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.net.HttpURLConnection;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.DynamoRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
@@ -17,7 +16,6 @@ import no.sikt.nva.nvi.common.utils.ExceptionMapper;
 import no.sikt.nva.nvi.common.utils.RequestUtil;
 import no.sikt.nva.nvi.common.validator.ViewingScopeValidator;
 import no.sikt.nva.nvi.rest.ViewingScopeHandler;
-import no.unit.nva.auth.uriretriever.UriRetriever;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
@@ -32,7 +30,6 @@ public class RemoveNoteHandler extends ApiGatewayHandler<Void, CandidateDto>
   private final CandidateRepository candidateRepository;
   private final PeriodRepository periodRepository;
   private final ViewingScopeValidator viewingScopeValidator;
-  private final OrganizationRetriever organizationRetriever;
 
   @JacocoGenerated
   public RemoveNoteHandler() {
@@ -40,7 +37,6 @@ public class RemoveNoteHandler extends ApiGatewayHandler<Void, CandidateDto>
         new CandidateRepository(DynamoRepository.defaultDynamoClient()),
         new PeriodRepository(DynamoRepository.defaultDynamoClient()),
         ViewingScopeHandler.defaultViewingScopeValidator(),
-        new OrganizationRetriever(new UriRetriever()),
         new Environment());
   }
 
@@ -48,13 +44,11 @@ public class RemoveNoteHandler extends ApiGatewayHandler<Void, CandidateDto>
       CandidateRepository candidateRepository,
       PeriodRepository periodRepository,
       ViewingScopeValidator viewingScopeValidator,
-      OrganizationRetriever organizationRetriever,
       Environment environment) {
     super(Void.class, environment);
     this.candidateRepository = candidateRepository;
     this.periodRepository = periodRepository;
     this.viewingScopeValidator = viewingScopeValidator;
-    this.organizationRetriever = organizationRetriever;
   }
 
   @Override
@@ -85,7 +79,6 @@ public class RemoveNoteHandler extends ApiGatewayHandler<Void, CandidateDto>
   }
 
   private CandidateDto toCandidateDto(RequestInfo requestInfo, Candidate candidate) {
-    return candidate.toDto(
-        requestInfo.getTopLevelOrgCristinId().orElseThrow(), organizationRetriever);
+    return candidate.toDto(requestInfo.getTopLevelOrgCristinId().orElseThrow());
   }
 }

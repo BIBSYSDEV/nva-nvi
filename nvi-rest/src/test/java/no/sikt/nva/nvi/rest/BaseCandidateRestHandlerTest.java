@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.UpsertRequestBuilder;
-import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.dto.NviCreatorDtoFixtures;
 import no.sikt.nva.nvi.common.model.CandidateFixtures;
@@ -54,7 +53,6 @@ public abstract class BaseCandidateRestHandlerTest {
   protected static final Context CONTEXT = mock(Context.class);
   protected static final Environment ENVIRONMENT = new Environment();
   protected UriRetriever mockUriRetriever;
-  protected OrganizationRetriever mockOrganizationRetriever;
   protected String resourcePathParameter;
   protected List<Organization> topLevelOrganizations;
   protected Organization topLevelOrganization;
@@ -72,7 +70,6 @@ public abstract class BaseCandidateRestHandlerTest {
     topLevelOrganizations = List.of(topLevelOrganization);
     topLevelOrganizationId = topLevelOrganization.id();
     subOrganizationId = topLevelOrganization.hasPart().getFirst().id();
-    mockOrganizationRetriever = scenario.getOrganizationRetriever();
     mockUriRetriever = scenario.getMockedUriRetriever();
 
     output = new ByteArrayOutputStream();

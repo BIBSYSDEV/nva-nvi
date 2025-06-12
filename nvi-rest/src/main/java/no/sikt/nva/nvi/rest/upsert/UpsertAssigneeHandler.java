@@ -7,7 +7,6 @@ import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.net.HttpURLConnection;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.DynamoRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
@@ -19,7 +18,6 @@ import no.sikt.nva.nvi.common.utils.RequestUtil;
 import no.sikt.nva.nvi.common.validator.ViewingScopeValidator;
 import no.sikt.nva.nvi.rest.ViewingScopeHandler;
 import no.sikt.nva.nvi.rest.model.UpsertAssigneeRequest;
-import no.unit.nva.auth.uriretriever.UriRetriever;
 import no.unit.nva.clients.IdentityServiceClient;
 import no.unit.nva.clients.UserDto;
 import nva.commons.apigateway.AccessRight;
@@ -39,7 +37,6 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<UpsertAssigneeReque
   private final PeriodRepository periodRepository;
   private final IdentityServiceClient identityServiceClient;
   private final ViewingScopeValidator viewingScopeValidator;
-  private final OrganizationRetriever organizationRetriever;
 
   @JacocoGenerated
   public UpsertAssigneeHandler() {
@@ -48,7 +45,6 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<UpsertAssigneeReque
         new PeriodRepository(DynamoRepository.defaultDynamoClient()),
         IdentityServiceClient.prepare(),
         ViewingScopeHandler.defaultViewingScopeValidator(),
-        new OrganizationRetriever(new UriRetriever()),
         new Environment());
   }
 
@@ -57,14 +53,12 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<UpsertAssigneeReque
       PeriodRepository periodRepository,
       IdentityServiceClient identityServiceClient,
       ViewingScopeValidator viewingScopeValidator,
-      OrganizationRetriever organizationRetriever,
       Environment environment) {
     super(UpsertAssigneeRequest.class, environment);
     this.candidateRepository = candidateRepository;
     this.periodRepository = periodRepository;
     this.identityServiceClient = identityServiceClient;
     this.viewingScopeValidator = viewingScopeValidator;
-    this.organizationRetriever = organizationRetriever;
   }
 
   @Override
@@ -101,8 +95,7 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<UpsertAssigneeReque
   }
 
   private CandidateDto toCandidateDto(RequestInfo requestInfo, Candidate candidate) {
-    return candidate.toDto(
-        requestInfo.getTopLevelOrgCristinId().orElseThrow(), organizationRetriever);
+    return candidate.toDto(requestInfo.getTopLevelOrgCristinId().orElseThrow());
   }
 
   private static void hasSameCustomer(UpsertAssigneeRequest input, RequestInfo requestInfo)

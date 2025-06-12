@@ -72,10 +72,6 @@ public class TestScenario {
     return periodRepository;
   }
 
-  public OrganizationRetriever getOrganizationRetriever() {
-    return mockOrganizationRetriever;
-  }
-
   public UriRetriever getMockedUriRetriever() {
     return mockUriRetriever;
   }
@@ -110,7 +106,7 @@ public class TestScenario {
   public Candidate updateApprovalStatus(
       Candidate candidate, ApprovalStatus status, URI topLevelOrganizationId) {
     var updateRequest = createUpdateStatusRequest(status, topLevelOrganizationId, randomString());
-    return candidate.updateApprovalStatus(updateRequest, mockOrganizationRetriever);
+    return candidate.updateApprovalStatus(updateRequest);
   }
 
   public URI setupExpandedPublicationInS3(SampleExpandedPublication publication) {

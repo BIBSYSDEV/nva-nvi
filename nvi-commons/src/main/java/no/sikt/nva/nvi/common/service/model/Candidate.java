@@ -31,7 +31,6 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
@@ -315,10 +314,8 @@ public final class Candidate {
     return pointCalculation.channel();
   }
 
-  public CandidateDto toDto(
-      URI userTopLevelOrganizationId, OrganizationRetriever organizationRetriever) {
-    var validator =
-        new CandidateUpdateValidator(this, organizationRetriever, userTopLevelOrganizationId);
+  public CandidateDto toDto(URI userTopLevelOrganizationId) {
+    var validator = new CandidateUpdateValidator(this, userTopLevelOrganizationId);
     return CandidateDto.builder()
         .withId(getId())
         .withContext(CONTEXT_URI)
@@ -338,10 +335,7 @@ public final class Candidate {
   /**
    * @deprecated Use either
    * {@link #updateApprovalAssignee(UpdateAssigneeRequest input) or
-   * {@link #updateApprovalStatus(
-   *  UpdateStatusRequest input,
-   *  OrganizationRetriever organizationRetriever
-   *  )} instead.
+   * {@link #updateApprovalStatus(UpdateStatusRequest input)} instead.
    */
   @Deprecated(since = "2025-01-31", forRemoval = true)
   public Candidate updateApproval(UpdateApprovalRequest input) {
@@ -356,12 +350,10 @@ public final class Candidate {
     return this;
   }
 
-  public Candidate updateApprovalStatus(
-      UpdateStatusRequest input, OrganizationRetriever organizationRetriever) {
+  public Candidate updateApprovalStatus(UpdateStatusRequest input) {
     validateUpdateStatusRequest(input);
     validateCandidateState();
-    var validator =
-        new CandidateUpdateValidator(this, organizationRetriever, input.institutionId());
+    var validator = new CandidateUpdateValidator(this, input.institutionId());
 
     var currentState = getApprovalStatus(input.institutionId());
     var newState = input.approvalStatus();

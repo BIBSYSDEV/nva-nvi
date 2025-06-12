@@ -44,7 +44,6 @@ class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
         scenario.getCandidateRepository(),
         scenario.getPeriodRepository(),
         mockViewingScopeValidator,
-        mockOrganizationRetriever,
         ENVIRONMENT);
   }
 
@@ -73,7 +72,6 @@ class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
             scenario.getCandidateRepository(),
             scenario.getPeriodRepository(),
             viewingScopeValidatorReturningFalse,
-            mockOrganizationRetriever,
             ENVIRONMENT);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);

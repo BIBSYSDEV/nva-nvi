@@ -165,7 +165,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var updateRequest = createRejectionRequestWithoutReason(randomString());
     assertThrows(
         UnsupportedOperationException.class,
-        () -> updatedCandidate.updateApprovalStatus(updateRequest, mockOrganizationRetriever));
+        () -> updatedCandidate.updateApprovalStatus(updateRequest));
   }
 
   @ParameterizedTest(name = "Should remove reason when updating from rejection status to {0}")
@@ -180,8 +180,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
                 createRequest::publicationId, candidateRepository, periodRepository)
             .updateApprovalStatus(
                 createUpdateStatusRequest(
-                    ApprovalStatus.REJECTED, HARDCODED_INSTITUTION_ID, randomString()),
-                mockOrganizationRetriever);
+                    ApprovalStatus.REJECTED, HARDCODED_INSTITUTION_ID, randomString()));
 
     var updatedCandidate = updateApprovalStatus(rejectedCandidate, newStatus);
     assertThat(updatedCandidate.getApprovals().size(), is(equalTo(1)));
@@ -203,8 +202,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var candidate = scenario.upsertCandidate(createRequest);
     var invalidRequest = createUpdateStatusRequest(newStatus, HARDCODED_INSTITUTION_ID, null);
     assertThrows(
-        IllegalArgumentException.class,
-        () -> candidate.updateApprovalStatus(invalidRequest, mockOrganizationRetriever));
+        IllegalArgumentException.class, () -> candidate.updateApprovalStatus(invalidRequest));
   }
 
   @Test
@@ -274,7 +272,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
             .updateApprovalAssignee(new UpdateAssigneeRequest(HARDCODED_INSTITUTION_ID, assignee));
     candidate = updateApprovalStatus(candidate, ApprovalStatus.APPROVED);
     candidate = updateApprovalStatus(candidate, ApprovalStatus.REJECTED);
-    var candidateDto = candidate.toDto(HARDCODED_INSTITUTION_ID, mockOrganizationRetriever);
+    var candidateDto = candidate.toDto(HARDCODED_INSTITUTION_ID);
     assertThat(candidateDto.approvals().getFirst().assignee(), is(equalTo(assignee)));
     assertThat(candidateDto.approvals().getFirst().finalizedBy(), is(not(equalTo(assignee))));
   }
@@ -289,7 +287,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
 
     var assignee =
         Candidate.fetch(candidate::getIdentifier, candidateRepository, periodRepository)
-            .toDto(HARDCODED_INSTITUTION_ID, mockOrganizationRetriever)
+            .toDto(HARDCODED_INSTITUTION_ID)
             .approvals()
             .getFirst()
             .assignee();
@@ -449,8 +447,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var candidate = scenario.upsertCandidate(upsertCandidateRequest);
     candidate.updateApprovalStatus(
         new UpdateStatusRequest(
-            HARDCODED_INSTITUTION_ID, ApprovalStatus.APPROVED, randomString(), randomString()),
-        mockOrganizationRetriever);
+            HARDCODED_INSTITUTION_ID, ApprovalStatus.APPROVED, randomString(), randomString()));
     var approval = candidate.getApprovals().get(HARDCODED_INSTITUTION_ID);
     var samePointsWithDifferentScale =
         upsertCandidateRequest.pointCalculation().institutionPoints().stream()
@@ -525,7 +522,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var request = createUpsertCandidateRequest(topLevelOrganizationId).build();
     var candidate = scenario.upsertCandidate(request);
 
-    var candidateDto = candidate.toDto(topLevelOrganizationId, mockOrganizationRetriever);
+    var candidateDto = candidate.toDto(topLevelOrganizationId);
 
     var actualAllowedOperations = candidateDto.allowedOperations();
     var expectedAllowedOperations =
@@ -542,7 +539,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
             .build();
     var candidate = scenario.upsertCandidate(request);
 
-    var candidateDto = candidate.toDto(topLevelOrganizationId, mockOrganizationRetriever);
+    var candidateDto = candidate.toDto(topLevelOrganizationId);
 
     var actualAllowedOperations = candidateDto.allowedOperations();
     var expectedAllowedOperations = emptyList();
@@ -554,7 +551,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var request = createUpsertCandidateRequest(topLevelOrganizationId).build();
     var candidate = scenario.upsertCandidate(request);
 
-    var candidateDto = candidate.toDto(topLevelOrganizationId, mockOrganizationRetriever);
+    var candidateDto = candidate.toDto(topLevelOrganizationId);
 
     var actualProblems = candidateDto.problems();
     var expectedProblems = emptySet();
@@ -570,7 +567,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
             .build();
     var candidate = scenario.upsertCandidate(request);
 
-    var candidateDto = candidate.toDto(topLevelOrganizationId, mockOrganizationRetriever);
+    var candidateDto = candidate.toDto(topLevelOrganizationId);
 
     var expectedProblems =
         Set.of(
@@ -633,7 +630,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
 
   private Candidate updateApprovalStatus(Candidate candidate, ApprovalStatus status) {
     var updateRequest = createUpdateStatusRequest(status, HARDCODED_INSTITUTION_ID, randomString());
-    return candidate.updateApprovalStatus(updateRequest, mockOrganizationRetriever);
+    return candidate.updateApprovalStatus(updateRequest);
   }
 
   private UpsertNviCandidateRequest getUpsertCandidateRequestWithHardcodedValues() {

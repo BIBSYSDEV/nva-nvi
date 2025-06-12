@@ -8,7 +8,6 @@ import static nva.commons.core.attempt.Try.attempt;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
@@ -17,7 +16,6 @@ import no.sikt.nva.nvi.common.utils.ExceptionMapper;
 import no.sikt.nva.nvi.common.utils.RequestUtil;
 import no.sikt.nva.nvi.common.validator.ViewingScopeValidator;
 import no.sikt.nva.nvi.rest.ViewingScopeHandler;
-import no.unit.nva.auth.uriretriever.UriRetriever;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
@@ -33,7 +31,6 @@ public class UpdateNviCandidateStatusHandler
   private final CandidateRepository candidateRepository;
   private final PeriodRepository periodRepository;
   private final ViewingScopeValidator viewingScopeValidator;
-  private final OrganizationRetriever organizationRetriever;
 
   @JacocoGenerated
   public UpdateNviCandidateStatusHandler() {
@@ -41,7 +38,6 @@ public class UpdateNviCandidateStatusHandler
         new CandidateRepository(defaultDynamoClient()),
         new PeriodRepository(defaultDynamoClient()),
         ViewingScopeHandler.defaultViewingScopeValidator(),
-        new OrganizationRetriever(new UriRetriever()),
         new Environment());
   }
 
@@ -49,13 +45,11 @@ public class UpdateNviCandidateStatusHandler
       CandidateRepository candidateRepository,
       PeriodRepository periodRepository,
       ViewingScopeValidator viewingScopeValidator,
-      OrganizationRetriever organizationRetriever,
       Environment environment) {
     super(NviStatusRequest.class, environment);
     this.candidateRepository = candidateRepository;
     this.periodRepository = periodRepository;
     this.viewingScopeValidator = viewingScopeValidator;
-    this.organizationRetriever = organizationRetriever;
   }
 
   @Override
@@ -75,7 +69,7 @@ public class UpdateNviCandidateStatusHandler
     return attempt(
             () -> Candidate.fetch(() -> candidateIdentifier, candidateRepository, periodRepository))
         .map(candidate -> validateViewingScope(viewingScopeValidator, username, candidate))
-        .map(candidate -> candidate.updateApprovalStatus(updateRequest, organizationRetriever))
+        .map(candidate -> candidate.updateApprovalStatus(updateRequest))
         .map(candidate -> toCandidateDto(requestInfo, candidate))
         .orElseThrow(ExceptionMapper::map);
   }
@@ -86,8 +80,7 @@ public class UpdateNviCandidateStatusHandler
   }
 
   private CandidateDto toCandidateDto(RequestInfo requestInfo, Candidate candidate) {
-    return candidate.toDto(
-        requestInfo.getTopLevelOrgCristinId().orElseThrow(), organizationRetriever);
+    return candidate.toDto(requestInfo.getTopLevelOrgCristinId().orElseThrow());
   }
 
   private static void validateCustomerAndAccessRight(

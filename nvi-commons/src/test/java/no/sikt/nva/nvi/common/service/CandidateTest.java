@@ -283,7 +283,7 @@ class CandidateTest extends CandidateTestSetup {
             .withTotalPoints(candidate.getTotalPoints())
             .withNotes(emptyList())
             .build();
-    assertEquals(expectedDto, candidate.toDto(userOrganizationId, mockOrganizationRetriever));
+    assertEquals(expectedDto, candidate.toDto(userOrganizationId));
   }
 
   @Test()
@@ -365,8 +365,7 @@ class CandidateTest extends CandidateTestSetup {
     var candidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
     var currentUserOrganizationId = getAnyOrganizationId(candidate);
 
-    var actualStatus =
-        candidate.toDto(currentUserOrganizationId, mockOrganizationRetriever).status();
+    var actualStatus = candidate.toDto(currentUserOrganizationId).status();
     var expectedStatus = ReportStatus.REPORTED.getValue();
     assertEquals(expectedStatus, actualStatus);
   }
