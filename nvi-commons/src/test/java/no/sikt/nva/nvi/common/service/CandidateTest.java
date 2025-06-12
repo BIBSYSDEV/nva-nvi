@@ -242,9 +242,9 @@ class CandidateTest extends CandidateTestSetup {
     var request = createUpsertCandidateRequest(organization1, organization2).build();
     var candidate = scenario.upsertCandidate(request);
 
-    candidate.updateApproval(
+    candidate.updateApprovalStatus(
         createUpdateStatusRequest(approvalStatus, organization1.id(), randomString()));
-    candidate.updateApproval(
+    candidate.updateApprovalStatus(
         createUpdateStatusRequest(approvalStatus, organization2.id(), randomString()));
 
     var updatedCandidate =
@@ -283,7 +283,7 @@ class CandidateTest extends CandidateTestSetup {
             .withTotalPoints(candidate.getTotalPoints())
             .withNotes(emptyList())
             .build();
-    assertEquals(expectedDto, candidate.toDto(userOrganizationId, mockOrganizationRetriever));
+    assertEquals(expectedDto, candidate.toDto(userOrganizationId));
   }
 
   @Test()
@@ -297,9 +297,9 @@ class CandidateTest extends CandidateTestSetup {
     var createRequest =
         createUpsertCandidateRequest(institution1, institution2, institution3).build();
     var candidate = scenario.upsertCandidate(createRequest);
-    candidate.updateApproval(
+    candidate.updateApprovalStatus(
         createUpdateStatusRequest(ApprovalStatus.APPROVED, institution1, randomString()));
-    candidate.updateApproval(
+    candidate.updateApprovalStatus(
         createUpdateStatusRequest(ApprovalStatus.REJECTED, institution2, randomString()));
     assertEquals(ApprovalStatus.PENDING, candidate.getApprovals().get(institution3).getStatus());
     assertEquals(GlobalApprovalStatus.DISPUTE, candidate.getGlobalApprovalStatus());
@@ -365,8 +365,7 @@ class CandidateTest extends CandidateTestSetup {
     var candidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
     var currentUserOrganizationId = getAnyOrganizationId(candidate);
 
-    var actualStatus =
-        candidate.toDto(currentUserOrganizationId, mockOrganizationRetriever).status();
+    var actualStatus = candidate.toDto(currentUserOrganizationId).status();
     var expectedStatus = ReportStatus.REPORTED.getValue();
     assertEquals(expectedStatus, actualStatus);
   }
@@ -462,7 +461,7 @@ class CandidateTest extends CandidateTestSetup {
     UpsertNviCandidateRequest request =
         createUpsertCandidateRequestWithSingleAffiliation(reviewingInstitution, randomUri());
     var candidate = scenario.upsertCandidate(request);
-    candidate.updateApproval(
+    candidate.updateApprovalStatus(
         createUpdateStatusRequest(approvalStatus, reviewingInstitution, randomString()));
     assertFalse(candidate.isPendingReview());
   }
@@ -476,7 +475,7 @@ class CandidateTest extends CandidateTestSetup {
     UpsertNviCandidateRequest request =
         createUpsertCandidateRequestWithSingleAffiliation(reviewingInstitution, randomUri());
     var candidate = scenario.upsertCandidate(request);
-    candidate.updateApproval(
+    candidate.updateApprovalStatus(
         createUpdateStatusRequest(approvalStatus, reviewingInstitution, randomString()));
     assertTrue(candidate.isUnderReview());
   }

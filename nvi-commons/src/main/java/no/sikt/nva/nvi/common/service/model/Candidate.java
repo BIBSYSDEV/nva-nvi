@@ -31,7 +31,6 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
@@ -52,7 +51,6 @@ import no.sikt.nva.nvi.common.model.InstanceType;
 import no.sikt.nva.nvi.common.model.InvalidNviCandidateException;
 import no.sikt.nva.nvi.common.model.PointCalculation;
 import no.sikt.nva.nvi.common.model.PublicationChannel;
-import no.sikt.nva.nvi.common.model.UpdateApprovalRequest;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.dto.ApprovalDto;
@@ -315,10 +313,8 @@ public final class Candidate {
     return pointCalculation.channel();
   }
 
-  public CandidateDto toDto(
-      URI userTopLevelOrganizationId, OrganizationRetriever organizationRetriever) {
-    var validator =
-        new CandidateUpdateValidator(this, organizationRetriever, userTopLevelOrganizationId);
+  public CandidateDto toDto(URI userTopLevelOrganizationId) {
+    var validator = new CandidateUpdateValidator(this, userTopLevelOrganizationId);
     return CandidateDto.builder()
         .withId(getId())
         .withContext(CONTEXT_URI)
@@ -335,33 +331,16 @@ public final class Candidate {
         .build();
   }
 
-  /**
-   * @deprecated Use either
-   * {@link #updateApprovalAssignee(UpdateAssigneeRequest input) or
-   * {@link #updateApprovalStatus(
-   *  UpdateStatusRequest input,
-   *  OrganizationRetriever organizationRetriever
-   *  )} instead.
-   */
-  @Deprecated(since = "2025-01-31", forRemoval = true)
-  public Candidate updateApproval(UpdateApprovalRequest input) {
-    validateCandidateState();
-    approvals.computeIfPresent(input.institutionId(), (uri, approval) -> approval.update(input));
-    return this;
-  }
-
   public Candidate updateApprovalAssignee(UpdateAssigneeRequest input) {
     validateCandidateState();
     approvals.computeIfPresent(input.institutionId(), (uri, approval) -> approval.update(input));
     return this;
   }
 
-  public Candidate updateApprovalStatus(
-      UpdateStatusRequest input, OrganizationRetriever organizationRetriever) {
+  public Candidate updateApprovalStatus(UpdateStatusRequest input) {
     validateUpdateStatusRequest(input);
     validateCandidateState();
-    var validator =
-        new CandidateUpdateValidator(this, organizationRetriever, input.institutionId());
+    var validator = new CandidateUpdateValidator(this, input.institutionId());
 
     var currentState = getApprovalStatus(input.institutionId());
     var newState = input.approvalStatus();

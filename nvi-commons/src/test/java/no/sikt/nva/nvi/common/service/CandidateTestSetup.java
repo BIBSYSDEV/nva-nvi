@@ -10,7 +10,6 @@ import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
 import no.sikt.nva.nvi.common.TestScenario;
-import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
@@ -33,7 +32,6 @@ public class CandidateTestSetup {
   protected CandidateRepository candidateRepository;
   protected PeriodRepository periodRepository;
   protected UriRetriever mockUriRetriever;
-  protected OrganizationRetriever mockOrganizationRetriever;
 
   protected static UpsertNviCandidateRequest createUpsertRequestWithDecimalScale(
       int scale, URI institutionId) {
@@ -59,7 +57,6 @@ public class CandidateTestSetup {
     candidateRepository = scenario.getCandidateRepository();
     periodRepository = scenario.getPeriodRepository();
     mockUriRetriever = scenario.getMockedUriRetriever();
-    mockOrganizationRetriever = scenario.getOrganizationRetriever();
     setupOpenPeriod(scenario, CURRENT_YEAR);
   }
 

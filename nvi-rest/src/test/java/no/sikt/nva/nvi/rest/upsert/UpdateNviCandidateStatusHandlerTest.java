@@ -67,7 +67,6 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
         scenario.getCandidateRepository(),
         scenario.getPeriodRepository(),
         mockViewingScopeValidator,
-        mockOrganizationRetriever,
         ENVIRONMENT);
   }
 
@@ -106,7 +105,6 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
             scenario.getCandidateRepository(),
             scenario.getPeriodRepository(),
             new FakeViewingScopeValidator(false),
-            mockOrganizationRetriever,
             ENVIRONMENT);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
@@ -208,7 +206,7 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
   void shouldUpdateApprovalStatus(ApprovalStatus oldStatus, ApprovalStatus newStatus)
       throws IOException {
     var candidate = setupValidCandidate();
-    candidate.updateApprovalStatus(createStatusRequest(oldStatus), mockOrganizationRetriever);
+    candidate.updateApprovalStatus(createStatusRequest(oldStatus));
     var request = createRequest(candidate.getIdentifier(), topLevelOrganizationId, newStatus);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
@@ -235,7 +233,7 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
   void shouldResetFinalizedValuesWhenUpdatingStatusToPending(ApprovalStatus oldStatus)
       throws IOException {
     var candidate = setupValidCandidate();
-    candidate.updateApprovalStatus(createStatusRequest(oldStatus), mockOrganizationRetriever);
+    candidate.updateApprovalStatus(createStatusRequest(oldStatus));
     var newStatus = ApprovalStatus.PENDING;
     var request = createRequest(candidate.getIdentifier(), topLevelOrganizationId, newStatus);
     handler.handleRequest(request, output, CONTEXT);
@@ -253,7 +251,7 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
       names = {STATUS_PENDING, STATUS_APPROVED})
   void shouldUpdateApprovalStatusToRejectedWithReason(ApprovalStatus oldStatus) throws IOException {
     var candidate = setupValidCandidate();
-    candidate.updateApprovalStatus(createStatusRequest(oldStatus), mockOrganizationRetriever);
+    candidate.updateApprovalStatus(createStatusRequest(oldStatus));
     var rejectionReason = randomString();
     var requestBody =
         new NviStatusRequest(topLevelOrganizationId, ApprovalStatus.REJECTED, rejectionReason);
@@ -288,8 +286,7 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
   void shouldRemoveReasonWhenUpdatingStatusFromRejected(ApprovalStatus newStatus)
       throws IOException {
     var candidate = setupValidCandidate();
-    candidate.updateApprovalStatus(
-        createStatusRequest(ApprovalStatus.REJECTED), mockOrganizationRetriever);
+    candidate.updateApprovalStatus(createStatusRequest(ApprovalStatus.REJECTED));
     var request =
         createRequest(
             candidate.getIdentifier(),

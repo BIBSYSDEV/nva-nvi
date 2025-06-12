@@ -97,6 +97,13 @@ public record NviCreator(
     return nviAffiliations.stream().map(Organization::id).toList();
   }
 
+  public boolean isAffiliatedWithTopLevelOrganization(URI topLevelOrganizationId) {
+    return nviAffiliations.stream()
+        .map(Organization::getTopLevelOrg)
+        .map(Organization::id)
+        .anyMatch(id -> id.equals(topLevelOrganizationId));
+  }
+
   private static List<Organization> getCreatorOrganizations(
       Collection<URI> affiliations, Collection<Organization> topLevelOrganizations) {
     return affiliations.stream().map(id -> findOrganization(id, topLevelOrganizations)).toList();

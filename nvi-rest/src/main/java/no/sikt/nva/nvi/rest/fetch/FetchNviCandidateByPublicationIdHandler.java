@@ -10,7 +10,6 @@ import com.amazonaws.services.lambda.runtime.Context;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
@@ -18,7 +17,6 @@ import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.utils.ExceptionMapper;
 import no.sikt.nva.nvi.rest.ViewingScopeHandler;
-import no.unit.nva.auth.uriretriever.UriRetriever;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
@@ -32,26 +30,22 @@ public class FetchNviCandidateByPublicationIdHandler extends ApiGatewayHandler<V
   public static final String CANDIDATE_PUBLICATION_ID = "candidatePublicationId";
   private final CandidateRepository candidateRepository;
   private final PeriodRepository periodRepository;
-  private final OrganizationRetriever organizationRetriever;
 
   @JacocoGenerated
   public FetchNviCandidateByPublicationIdHandler() {
     this(
         new CandidateRepository(defaultDynamoClient()),
         new PeriodRepository(defaultDynamoClient()),
-        new OrganizationRetriever(new UriRetriever()),
         new Environment());
   }
 
   public FetchNviCandidateByPublicationIdHandler(
       CandidateRepository candidateRepository,
       PeriodRepository periodRepository,
-      OrganizationRetriever organizationRetriever,
       Environment environment) {
     super(Void.class, environment);
     this.candidateRepository = candidateRepository;
     this.periodRepository = periodRepository;
-    this.organizationRetriever = organizationRetriever;
   }
 
   @Override
@@ -74,8 +68,7 @@ public class FetchNviCandidateByPublicationIdHandler extends ApiGatewayHandler<V
   }
 
   private CandidateDto toCandidateDto(RequestInfo requestInfo, Candidate candidate) {
-    return candidate.toDto(
-        requestInfo.getTopLevelOrgCristinId().orElseThrow(), organizationRetriever);
+    return candidate.toDto(requestInfo.getTopLevelOrgCristinId().orElseThrow());
   }
 
   @Override

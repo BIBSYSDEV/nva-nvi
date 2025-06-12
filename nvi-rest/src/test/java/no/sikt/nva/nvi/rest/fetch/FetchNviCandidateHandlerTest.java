@@ -46,10 +46,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
   @Override
   protected ApiGatewayHandler<Void, CandidateDto> createHandler() {
     return new FetchNviCandidateHandler(
-        scenario.getCandidateRepository(),
-        scenario.getPeriodRepository(),
-        mockOrganizationRetriever,
-        ENVIRONMENT);
+        scenario.getCandidateRepository(), scenario.getPeriodRepository(), ENVIRONMENT);
   }
 
   @BeforeEach
@@ -88,7 +85,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
     var request =
         createRequest(candidate.getIdentifier().toString(), randomOrganizationId, accessRight);
     var responseDto = handleRequest(request);
-    var expectedCandidateDto = candidate.toDto(randomOrganizationId, mockOrganizationRetriever);
+    var expectedCandidateDto = candidate.toDto(randomOrganizationId);
     assertEquals(expectedCandidateDto, responseDto);
   }
 
@@ -139,7 +136,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
 
     var responseDto = handleRequest(request);
 
-    var expectedCandidateDto = candidate.toDto(topLevelOrganizationId, mockOrganizationRetriever);
+    var expectedCandidateDto = candidate.toDto(topLevelOrganizationId);
     assertEquals(expectedCandidateDto, responseDto);
   }
 
@@ -163,7 +160,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
 
     var responseDto = handleRequest(request);
 
-    var expectedCandidateDto = candidate.toDto(topLevelOrganizationId, mockOrganizationRetriever);
+    var expectedCandidateDto = candidate.toDto(topLevelOrganizationId);
     assertEquals(expectedCandidateDto, responseDto);
   }
 

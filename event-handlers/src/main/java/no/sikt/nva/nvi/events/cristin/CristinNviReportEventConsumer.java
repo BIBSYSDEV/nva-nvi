@@ -138,6 +138,9 @@ public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, V
   }
 
   public static URI createPublicationId(String publicationIdentifier) {
-    return UriWrapper.fromHost(API_HOST).addChild(PUBLICATION).addChild(publicationIdentifier).getUri();
+    return UriWrapper.fromHost(API_HOST)
+        .addChild(PUBLICATION)
+        .addChild(publicationIdentifier)
+        .getUri();
   }
 }

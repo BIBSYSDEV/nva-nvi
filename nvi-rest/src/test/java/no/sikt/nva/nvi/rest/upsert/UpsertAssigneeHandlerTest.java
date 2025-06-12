@@ -56,7 +56,6 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
         scenario.getPeriodRepository(),
         mockIdentityServiceClient,
         mockViewingScopeValidator,
-        mockOrganizationRetriever,
         ENVIRONMENT);
   }
 
@@ -102,7 +101,6 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
             scenario.getPeriodRepository(),
             mockIdentityServiceClient,
             viewingScopeValidatorReturningFalse,
-            mockOrganizationRetriever,
             ENVIRONMENT);
     handler.handleRequest(createRequest(candidate, assignee), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
@@ -198,15 +196,13 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
         new UpdateAssigneeRequest(topLevelOrganizationId, newAssignee));
     candidate.updateApprovalStatus(
         new UpdateStatusRequest(
-            topLevelOrganizationId, ApprovalStatus.APPROVED, randomString(), randomString()),
-        mockOrganizationRetriever);
+            topLevelOrganizationId, ApprovalStatus.APPROVED, randomString(), randomString()));
     return candidate;
   }
 
   private InputStream createRequest(Candidate candidate, String newAssignee)
       throws JsonProcessingException {
-    var approvalToUpdate =
-        candidate.toDto(topLevelOrganizationId, mockOrganizationRetriever).approvals().getFirst();
+    var approvalToUpdate = candidate.toDto(topLevelOrganizationId).approvals().getFirst();
     var requestBody = new UpsertAssigneeRequest(newAssignee, approvalToUpdate.institutionId());
     return new HandlerRequestBuilder<UpsertAssigneeRequest>(JsonUtils.dtoObjectMapper)
         .withBody(randomAssigneeRequest())

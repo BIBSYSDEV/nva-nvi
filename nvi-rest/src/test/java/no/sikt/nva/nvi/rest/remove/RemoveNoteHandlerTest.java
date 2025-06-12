@@ -51,7 +51,6 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
         scenario.getCandidateRepository(),
         scenario.getPeriodRepository(),
         mockViewingScopeValidator,
-        mockOrganizationRetriever,
         ENVIRONMENT);
   }
 
@@ -84,7 +83,6 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
             scenario.getCandidateRepository(),
             scenario.getPeriodRepository(),
             viewingScopeValidatorReturningFalse,
-            mockOrganizationRetriever,
             ENVIRONMENT);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
@@ -171,10 +169,6 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
   }
 
   private UUID getIdOfFirstNote(Candidate candidateWithNote) {
-    return candidateWithNote
-        .toDto(topLevelOrganizationId, mockOrganizationRetriever)
-        .notes()
-        .getFirst()
-        .identifier();
+    return candidateWithNote.toDto(topLevelOrganizationId).notes().getFirst().identifier();
   }
 }

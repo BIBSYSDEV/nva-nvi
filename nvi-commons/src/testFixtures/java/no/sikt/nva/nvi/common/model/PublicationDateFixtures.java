@@ -7,13 +7,16 @@ import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 
 public class PublicationDateFixtures {
-
-  public static PublicationDate randomPublicationDateInCurrentYear() {
+  public static PublicationDate randomPublicationDateInYear(int year) {
     var randomDate = randomLocalDate();
     return new PublicationDate(
-        String.valueOf(CURRENT_YEAR),
+        String.valueOf(year),
         String.valueOf(randomDate.getMonthValue()),
         String.valueOf(randomDate.getDayOfMonth()));
+  }
+
+  public static PublicationDate randomPublicationDateInCurrentYear() {
+    return randomPublicationDateInYear(CURRENT_YEAR);
   }
 
   public static PublicationDate randomPublicationDate() {

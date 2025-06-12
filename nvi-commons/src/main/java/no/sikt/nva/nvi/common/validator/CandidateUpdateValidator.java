@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.common.validator;
 
+import static java.util.function.Predicate.not;
 import static no.sikt.nva.nvi.common.service.model.ApprovalStatus.APPROVED;
 import static no.sikt.nva.nvi.common.service.model.ApprovalStatus.PENDING;
 import static no.sikt.nva.nvi.common.service.model.ApprovalStatus.REJECTED;
@@ -10,12 +11,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import no.sikt.nva.nvi.common.client.OrganizationRetriever;
-import no.sikt.nva.nvi.common.client.model.Organization;
+import no.sikt.nva.nvi.common.model.NviCreator;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.dto.CandidateOperation;
-import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
-import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.problem.CandidateProblem;
 import no.sikt.nva.nvi.common.service.dto.problem.UnverifiedCreatorFromOrganizationProblem;
 import no.sikt.nva.nvi.common.service.dto.problem.UnverifiedCreatorProblem;
@@ -30,15 +28,10 @@ public class CandidateUpdateValidator {
   private final Candidate candidate;
   private final Set<CandidateProblem> problems = new HashSet<>();
   private Set<CandidateOperation> allowedOperations;
-  private final OrganizationRetriever organizationRetriever;
   private final URI userTopLevelOrganizationId;
 
-  public CandidateUpdateValidator(
-      Candidate candidate,
-      OrganizationRetriever organizationRetriever,
-      URI userTopLevelOrganizationId) {
+  public CandidateUpdateValidator(Candidate candidate, URI userTopLevelOrganizationId) {
     this.candidate = candidate;
-    this.organizationRetriever = organizationRetriever;
     this.userTopLevelOrganizationId = userTopLevelOrganizationId;
     validate();
   }
@@ -63,14 +56,13 @@ public class CandidateUpdateValidator {
   }
 
   private void checkForUnverifiedCreators() {
-    var unverifiedCreators = candidate.getPublicationDetails().unverifiedCreators();
-    if (!unverifiedCreators.isEmpty()) {
+    if (hasUnverifiedCreators(candidate)) {
       problems.add(new UnverifiedCreatorProblem());
     }
   }
 
   private void checkForUnverifiedCreatorsFromOrganization() {
-    var creators = getUnverifiedCreatorsFromUserOrganization();
+    var creators = getUnverifiedCreatorNames(candidate, userTopLevelOrganizationId);
     if (!creators.isEmpty()) {
       problems.add(new UnverifiedCreatorFromOrganizationProblem(creators));
     }
@@ -93,30 +85,16 @@ public class CandidateUpdateValidator {
             .collect(Collectors.toUnmodifiableSet());
   }
 
-  private List<String> getUnverifiedCreatorsFromUserOrganization() {
-    var unverifiedCreators = candidate.getPublicationDetails().unverifiedCreators();
-    return unverifiedCreators.stream()
-        .filter(
-            contributor ->
-                getTopLevelAffiliations(contributor, organizationRetriever)
-                    .contains(userTopLevelOrganizationId))
-        .map(UnverifiedNviCreatorDto::name)
-        .toList();
+  private static boolean hasUnverifiedCreators(Candidate candidate) {
+    return candidate.getPublicationDetails().nviCreators().stream()
+        .anyMatch(not(NviCreator::isVerified));
   }
 
-  /**
-   * This finds the top-level affiliations of a creator, which is not currently persisted. Once we
-   * persist the necessary metadata, we can simplify this check and avoid the lookup.
-   *
-   * <p>TODO: Persist full organization hierarchy for creators and simplify this validation.
-   */
-  private static Set<URI> getTopLevelAffiliations(
-      NviCreatorDto contributor, OrganizationRetriever organizationRetriever) {
-    return contributor.affiliations().stream()
-        .distinct()
-        .map(organizationRetriever::fetchOrganization)
-        .map(Organization::getTopLevelOrg)
-        .map(Organization::id)
-        .collect(Collectors.toSet());
+  private static List<String> getUnverifiedCreatorNames(Candidate candidate, URI organizationId) {
+    return candidate.getPublicationDetails().nviCreators().stream()
+        .filter(not(NviCreator::isVerified))
+        .filter(creator -> creator.isAffiliatedWithTopLevelOrganization(organizationId))
+        .map(NviCreator::name)
+        .toList();
   }
 }

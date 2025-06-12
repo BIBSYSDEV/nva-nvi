@@ -29,7 +29,6 @@ import java.util.UUID;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.TestScenario;
-import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
@@ -47,7 +46,6 @@ import no.sikt.nva.nvi.common.model.ListingResult;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.utils.BatchScanUtil;
 import no.sikt.nva.nvi.events.model.ScanDatabaseRequest;
-import no.unit.nva.auth.uriretriever.UriRetriever;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.events.models.AwsEventBridgeEvent;
 import no.unit.nva.stubs.FakeEventBridgeClient;
@@ -361,14 +359,12 @@ class EventBasedBatchScanHandlerTest {
 
   private boolean isSameBodyAsRepositoryCopy(Candidate candidate) {
     // TODO: should replace this comparison with the actual data field (equals in CandidateBO?)
-    var mockUriRetriever = mock(UriRetriever.class);
-    var mockOrganizationRetriever = new OrganizationRetriever(mockUriRetriever);
     var userOrganizationId = candidate.getInstitutionPoints().getFirst().institutionId();
 
-    var originalDto = candidate.toDto(userOrganizationId, mockOrganizationRetriever);
+    var originalDto = candidate.toDto(userOrganizationId);
     var repositoryCopy =
         Candidate.fetch(candidate::getIdentifier, candidateRepository, periodRepository);
-    var repositoryDto = repositoryCopy.toDto(userOrganizationId, mockOrganizationRetriever);
+    var repositoryDto = repositoryCopy.toDto(userOrganizationId);
     return originalDto.equals(repositoryDto);
   }
 
