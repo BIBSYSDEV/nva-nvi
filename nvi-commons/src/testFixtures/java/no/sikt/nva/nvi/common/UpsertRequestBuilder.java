@@ -42,9 +42,8 @@ public class UpsertRequestBuilder {
     return new UpsertRequestBuilder()
         .withPublicationBucketUri(randomUri())
         .withPointCalculation(randomPointCalculationDto())
-        .withPublicationDetails(randomPublicationDetailsDto())
-        .withNviCreators(nviCreator)
-        .withTopLevelOrganizations(List.of(topLevelOrganization));
+        .withCreatorsAndPoints(Map.of(topLevelOrganization, List.of(nviCreator)))
+        .withPublicationDetails(randomPublicationDetailsDto());
   }
 
   public static UpsertRequestBuilder fromRequest(UpsertNviCandidateRequest request) {

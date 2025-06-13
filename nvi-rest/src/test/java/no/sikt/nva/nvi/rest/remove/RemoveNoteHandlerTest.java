@@ -169,6 +169,9 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
   }
 
   private UUID getIdOfFirstNote(Candidate candidateWithNote) {
-    return candidateWithNote.toDto(topLevelOrganizationId).notes().getFirst().identifier();
+    return candidateWithNote.getNotes().values().stream()
+        .findFirst()
+        .orElseThrow(() -> new IllegalStateException("Candidate has no notes"))
+        .getNoteId();
   }
 }

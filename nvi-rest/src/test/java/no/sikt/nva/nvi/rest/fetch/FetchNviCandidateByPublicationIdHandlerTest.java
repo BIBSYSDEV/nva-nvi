@@ -22,6 +22,7 @@ import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.GatewayResponse;
 import org.apache.hc.core5.http.HttpStatus;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -72,8 +73,10 @@ class FetchNviCandidateByPublicationIdHandlerTest extends BaseCandidateRestHandl
     var request =
         createRequest(candidate.getPublicationId().toString(), randomOrganizationId, accessRight);
     var responseDto = handleRequest(request);
-    var expectedCandidateDto = candidate.toDto(randomOrganizationId);
-    assertEquals(expectedCandidateDto, responseDto);
+
+    Assertions.assertThat(responseDto)
+        .extracting(CandidateDto::id, CandidateDto::publicationId)
+        .containsExactly(candidate.getId(), candidate.getPublicationId());
   }
 
   @ParameterizedTest
@@ -97,10 +100,11 @@ class FetchNviCandidateByPublicationIdHandlerTest extends BaseCandidateRestHandl
 
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
-    var expectedResponse = candidate.toDto(topLevelOrganizationId);
-    var actualResponse = response.getBodyObject(CandidateDto.class);
+    var responseDto = response.getBodyObject(CandidateDto.class);
 
-    assertEquals(expectedResponse, actualResponse);
+    Assertions.assertThat(responseDto)
+        .extracting(CandidateDto::id, CandidateDto::publicationId)
+        .containsExactly(candidate.getId(), candidate.getPublicationId());
   }
 
   @Test

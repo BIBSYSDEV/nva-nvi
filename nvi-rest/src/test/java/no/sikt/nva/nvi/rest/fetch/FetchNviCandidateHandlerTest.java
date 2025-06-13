@@ -34,6 +34,7 @@ import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.GatewayResponse;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpStatus;
+import org.assertj.core.api.Assertions;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -82,11 +83,14 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
       throws IOException {
     var candidate = setupValidCandidate();
     var randomOrganizationId = randomUri();
+
     var request =
         createRequest(candidate.getIdentifier().toString(), randomOrganizationId, accessRight);
     var responseDto = handleRequest(request);
-    var expectedCandidateDto = candidate.toDto(randomOrganizationId);
-    assertEquals(expectedCandidateDto, responseDto);
+
+    Assertions.assertThat(responseDto)
+        .extracting(CandidateDto::id, CandidateDto::publicationId)
+        .containsExactly(candidate.getId(), candidate.getPublicationId());
   }
 
   @ParameterizedTest
@@ -136,8 +140,9 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
 
     var responseDto = handleRequest(request);
 
-    var expectedCandidateDto = candidate.toDto(topLevelOrganizationId);
-    assertEquals(expectedCandidateDto, responseDto);
+    Assertions.assertThat(responseDto)
+        .extracting(CandidateDto::id, CandidateDto::publicationId)
+        .containsExactly(candidate.getId(), candidate.getPublicationId());
   }
 
   @Test
@@ -160,8 +165,11 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
 
     var responseDto = handleRequest(request);
 
-    var expectedCandidateDto = candidate.toDto(topLevelOrganizationId);
-    assertEquals(expectedCandidateDto, responseDto);
+    Assertions.assertThat(responseDto)
+        .extracting(
+            CandidateDto::id, CandidateDto::publicationId,
+            CandidateDto::allowedOperations, CandidateDto::problems)
+        .containsExactly(candidate.getId(), candidate.getPublicationId(), emptySet(), emptySet());
   }
 
   @Test

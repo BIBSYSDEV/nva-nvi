@@ -12,6 +12,8 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.model.UserInstance;
+import no.sikt.nva.nvi.common.service.CandidateResponseFactory;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.model.Candidate;
@@ -57,18 +59,15 @@ public class FetchNviCandidateByPublicationIdHandler extends ApiGatewayHandler<V
   @Override
   protected CandidateDto processInput(Void input, RequestInfo requestInfo, Context context)
       throws ApiGatewayException {
+    var userInstance = UserInstance.fromRequestInfo(requestInfo);
     return attempt(() -> getPublicationId(requestInfo))
         .map(
             identifier ->
                 Candidate.fetchByPublicationId(
                     () -> identifier, candidateRepository, periodRepository))
         .map(this::checkIfApplicable)
-        .map(candidate -> toCandidateDto(requestInfo, candidate))
+        .map(candidate -> CandidateResponseFactory.create(candidate, userInstance))
         .orElseThrow(ExceptionMapper::map);
-  }
-
-  private CandidateDto toCandidateDto(RequestInfo requestInfo, Candidate candidate) {
-    return candidate.toDto(requestInfo.getTopLevelOrgCristinId().orElseThrow());
   }
 
   @Override

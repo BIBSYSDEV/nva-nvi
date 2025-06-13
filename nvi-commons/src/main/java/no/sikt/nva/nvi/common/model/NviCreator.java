@@ -10,6 +10,7 @@ import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Predicate;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreatorType;
@@ -97,11 +98,13 @@ public record NviCreator(
     return nviAffiliations.stream().map(Organization::id).toList();
   }
 
-  public boolean isAffiliatedWithTopLevelOrganization(URI topLevelOrganizationId) {
-    return nviAffiliations.stream()
-        .map(Organization::getTopLevelOrg)
-        .map(Organization::id)
-        .anyMatch(id -> id.equals(topLevelOrganizationId));
+  public static Predicate<NviCreator> isAffiliatedWithTopLevelOrganization(
+      URI topLevelOrganizationId) {
+    return creator ->
+        creator.nviAffiliations().stream()
+            .map(Organization::getTopLevelOrg)
+            .map(Organization::id)
+            .anyMatch(id -> id.equals(topLevelOrganizationId));
   }
 
   private static List<Organization> getCreatorOrganizations(

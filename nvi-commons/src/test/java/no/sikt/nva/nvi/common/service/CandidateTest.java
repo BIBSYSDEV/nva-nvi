@@ -3,7 +3,6 @@ package no.sikt.nva.nvi.common.service;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
 import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
-import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpdateStatusRequest;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequestWithSingleAffiliation;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertNonCandidateRequest;
@@ -18,10 +17,10 @@ import static no.sikt.nva.nvi.common.dto.PointCalculationDtoBuilder.randomPointC
 import static no.sikt.nva.nvi.common.model.CandidateFixtures.setupRandomApplicableCandidate;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.mockOrganizationResponseForAffiliation;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomTopLevelOrganization;
+import static no.sikt.nva.nvi.common.model.UserInstanceFixtures.createCuratorUserInstance;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
-import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.core.ioutils.IoUtils.stringFromResources;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -242,10 +241,8 @@ class CandidateTest extends CandidateTestSetup {
     var request = createUpsertCandidateRequest(organization1, organization2).build();
     var candidate = scenario.upsertCandidate(request);
 
-    candidate.updateApprovalStatus(
-        createUpdateStatusRequest(approvalStatus, organization1.id(), randomString()));
-    candidate.updateApprovalStatus(
-        createUpdateStatusRequest(approvalStatus, organization2.id(), randomString()));
+    scenario.updateApprovalStatus(candidate, approvalStatus, organization1.id());
+    scenario.updateApprovalStatus(candidate, approvalStatus, organization2.id());
 
     var updatedCandidate =
         Candidate.fetchByPublicationId(
@@ -283,7 +280,10 @@ class CandidateTest extends CandidateTestSetup {
             .withTotalPoints(candidate.getTotalPoints())
             .withNotes(emptyList())
             .build();
-    assertEquals(expectedDto, candidate.toDto(userOrganizationId));
+
+    var userInstance = createCuratorUserInstance(userOrganizationId);
+    var actualDto = CandidateResponseFactory.create(candidate, userInstance);
+    assertEquals(expectedDto, actualDto);
   }
 
   @Test()
@@ -297,10 +297,9 @@ class CandidateTest extends CandidateTestSetup {
     var createRequest =
         createUpsertCandidateRequest(institution1, institution2, institution3).build();
     var candidate = scenario.upsertCandidate(createRequest);
-    candidate.updateApprovalStatus(
-        createUpdateStatusRequest(ApprovalStatus.APPROVED, institution1, randomString()));
-    candidate.updateApprovalStatus(
-        createUpdateStatusRequest(ApprovalStatus.REJECTED, institution2, randomString()));
+    scenario.updateApprovalStatus(candidate, ApprovalStatus.APPROVED, institution1);
+    scenario.updateApprovalStatus(candidate, ApprovalStatus.REJECTED, institution2);
+
     assertEquals(ApprovalStatus.PENDING, candidate.getApprovals().get(institution3).getStatus());
     assertEquals(GlobalApprovalStatus.DISPUTE, candidate.getGlobalApprovalStatus());
   }
@@ -363,9 +362,8 @@ class CandidateTest extends CandidateTestSetup {
   void shouldReturnCandidateWithReportStatus() {
     var dao = setupReportedCandidate(candidateRepository, randomYear());
     var candidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
-    var currentUserOrganizationId = getAnyOrganizationId(candidate);
 
-    var actualStatus = candidate.toDto(currentUserOrganizationId).status();
+    var actualStatus = candidate.getReportStatus().getValue();
     var expectedStatus = ReportStatus.REPORTED.getValue();
     assertEquals(expectedStatus, actualStatus);
   }
@@ -446,8 +444,7 @@ class CandidateTest extends CandidateTestSetup {
 
   @Test
   void shouldReturnTrueWhenAllApprovalsArePending() {
-    UpsertNviCandidateRequest request =
-        createUpsertCandidateRequestWithSingleAffiliation(randomUri(), randomUri());
+    var request = createUpsertCandidateRequestWithSingleAffiliation(randomUri(), randomUri());
     var candidate = scenario.upsertCandidate(request);
     assertTrue(candidate.isPendingReview());
   }
@@ -458,11 +455,10 @@ class CandidateTest extends CandidateTestSetup {
       names = {"APPROVED", "REJECTED"})
   void shouldReturnFalseWhenAtLeastOneApprovalIsApprovedOrRejected(ApprovalStatus approvalStatus) {
     var reviewingInstitution = randomUri();
-    UpsertNviCandidateRequest request =
+    var request =
         createUpsertCandidateRequestWithSingleAffiliation(reviewingInstitution, randomUri());
     var candidate = scenario.upsertCandidate(request);
-    candidate.updateApprovalStatus(
-        createUpdateStatusRequest(approvalStatus, reviewingInstitution, randomString()));
+    scenario.updateApprovalStatus(candidate, approvalStatus, reviewingInstitution);
     assertFalse(candidate.isPendingReview());
   }
 
@@ -472,11 +468,10 @@ class CandidateTest extends CandidateTestSetup {
       names = {"APPROVED", "REJECTED"})
   void shouldReturnTrueWhenAtLeastOneApprovalIsApprovedOrRejected(ApprovalStatus approvalStatus) {
     var reviewingInstitution = randomUri();
-    UpsertNviCandidateRequest request =
+    var request =
         createUpsertCandidateRequestWithSingleAffiliation(reviewingInstitution, randomUri());
     var candidate = scenario.upsertCandidate(request);
-    candidate.updateApprovalStatus(
-        createUpdateStatusRequest(approvalStatus, reviewingInstitution, randomString()));
+    scenario.updateApprovalStatus(candidate, approvalStatus, reviewingInstitution);
     assertTrue(candidate.isUnderReview());
   }
 

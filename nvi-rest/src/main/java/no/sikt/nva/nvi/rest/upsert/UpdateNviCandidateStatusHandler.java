@@ -10,6 +10,8 @@ import com.amazonaws.services.lambda.runtime.Context;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.model.UserInstance;
+import no.sikt.nva.nvi.common.service.CandidateResponseFactory;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.utils.ExceptionMapper;
@@ -65,22 +67,19 @@ public class UpdateNviCandidateStatusHandler
     var candidateIdentifier = UUID.fromString(requestInfo.getPathParameter(CANDIDATE_IDENTIFIER));
     var username = RequestUtil.getUsername(requestInfo);
     var updateRequest = input.toUpdateRequest(username.value());
+    var userInstance = UserInstance.fromRequestInfo(requestInfo);
 
     return attempt(
             () -> Candidate.fetch(() -> candidateIdentifier, candidateRepository, periodRepository))
         .map(candidate -> validateViewingScope(viewingScopeValidator, username, candidate))
-        .map(candidate -> candidate.updateApprovalStatus(updateRequest))
-        .map(candidate -> toCandidateDto(requestInfo, candidate))
+        .map(candidate -> candidate.updateApprovalStatus(updateRequest, userInstance))
+        .map(candidate -> CandidateResponseFactory.create(candidate, userInstance))
         .orElseThrow(ExceptionMapper::map);
   }
 
   @Override
   protected Integer getSuccessStatusCode(NviStatusRequest input, CandidateDto output) {
     return HTTP_OK;
-  }
-
-  private CandidateDto toCandidateDto(RequestInfo requestInfo, Candidate candidate) {
-    return candidate.toDto(requestInfo.getTopLevelOrgCristinId().orElseThrow());
   }
 
   private static void validateCustomerAndAccessRight(

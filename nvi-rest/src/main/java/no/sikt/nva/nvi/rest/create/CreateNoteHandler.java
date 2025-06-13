@@ -14,6 +14,8 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.exceptions.NotApplicableException;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
+import no.sikt.nva.nvi.common.model.UserInstance;
+import no.sikt.nva.nvi.common.service.CandidateResponseFactory;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.Username;
@@ -70,17 +72,14 @@ public class CreateNoteHandler extends ApiGatewayHandler<NviNoteRequest, Candida
     var username = RequestUtil.getUsername(requestInfo);
     var candidateIdentifier = UUID.fromString(requestInfo.getPathParameter(CANDIDATE_IDENTIFIER));
     var institutionId = requestInfo.getTopLevelOrgCristinId().orElseThrow();
+    var userInstance = UserInstance.fromRequestInfo(requestInfo);
     return attempt(
             () -> Candidate.fetch(() -> candidateIdentifier, candidateRepository, periodRepository))
         .map(this::checkIfApplicable)
         .map(candidate -> validateViewingScope(viewingScopeValidator, username, candidate))
         .map(candidate -> createNote(input, candidate, username, institutionId))
-        .map(candidate -> toCandidateDto(requestInfo, candidate))
+        .map(candidate -> CandidateResponseFactory.create(candidate, userInstance))
         .orElseThrow(ExceptionMapper::map);
-  }
-
-  private CandidateDto toCandidateDto(RequestInfo requestInfo, Candidate candidate) {
-    return candidate.toDto(requestInfo.getTopLevelOrgCristinId().orElseThrow());
   }
 
   @Override

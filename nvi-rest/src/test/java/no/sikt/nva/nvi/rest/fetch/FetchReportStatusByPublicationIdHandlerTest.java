@@ -8,7 +8,6 @@ import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomTopLevelOrganization;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
-import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -26,7 +25,6 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
-import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.rest.fetch.ReportStatusDto.StatusDto;
@@ -114,8 +112,7 @@ class FetchReportStatusByPublicationIdHandlerTest {
     var involvedInstitutions = new URI[] {institution1, randomUri()};
     var upsertCandidateRequest = createUpsertCandidateRequest(involvedInstitutions).build();
     var candidate = upsert(upsertCandidateRequest);
-    candidate.updateApprovalStatus(
-        new UpdateStatusRequest(institution1, approvalStatus, randomString(), randomString()));
+    scenario.updateApprovalStatus(candidate, ApprovalStatus.REJECTED, institution1);
 
     handler.handleRequest(createRequest(candidate.getPublicationId()), output, context);
 
@@ -137,12 +134,8 @@ class FetchReportStatusByPublicationIdHandlerTest {
     var organization2 = randomTopLevelOrganization();
     var request = createUpsertCandidateRequest(organization1, organization2).build();
     var candidate = scenario.upsertCandidate(request);
-    candidate.updateApprovalStatus(
-        new UpdateStatusRequest(
-            organization1.id(), ApprovalStatus.APPROVED, randomString(), randomString()));
-    candidate.updateApprovalStatus(
-        new UpdateStatusRequest(
-            organization2.id(), ApprovalStatus.APPROVED, randomString(), randomString()));
+    scenario.updateApprovalStatus(candidate, ApprovalStatus.APPROVED, organization1.id());
+    scenario.updateApprovalStatus(candidate, ApprovalStatus.APPROVED, organization2.id());
 
     handler.handleRequest(createRequest(candidate.getPublicationId()), output, context);
 
@@ -164,13 +157,8 @@ class FetchReportStatusByPublicationIdHandlerTest {
     var organization2 = randomTopLevelOrganization();
     var request = createUpsertCandidateRequest(organization1, organization2).build();
     var candidate = scenario.upsertCandidate(request);
-
-    candidate.updateApprovalStatus(
-        new UpdateStatusRequest(
-            organization1.id(), ApprovalStatus.REJECTED, randomString(), randomString()));
-    candidate.updateApprovalStatus(
-        new UpdateStatusRequest(
-            organization2.id(), ApprovalStatus.REJECTED, randomString(), randomString()));
+    scenario.updateApprovalStatus(candidate, ApprovalStatus.REJECTED, organization1.id());
+    scenario.updateApprovalStatus(candidate, ApprovalStatus.REJECTED, organization2.id());
 
     handler.handleRequest(createRequest(candidate.getPublicationId()), output, context);
 
