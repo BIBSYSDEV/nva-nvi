@@ -11,6 +11,8 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.DynamoRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
+import no.sikt.nva.nvi.common.model.UserInstance;
+import no.sikt.nva.nvi.common.service.CandidateResponseFactory;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.utils.ExceptionMapper;
@@ -75,6 +77,7 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<UpsertAssigneeReque
     var candidateIdentifier = UUID.fromString(requestInfo.getPathParameter(CANDIDATE_IDENTIFIER));
     var institutionId = input.institutionId();
     var assignee = input.assignee();
+    var userInstance = UserInstance.fromRequestInfo(requestInfo);
     return attempt(
             () -> Candidate.fetch(() -> candidateIdentifier, candidateRepository, periodRepository))
         .map(
@@ -85,17 +88,13 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<UpsertAssigneeReque
             candidate ->
                 candidate.updateApprovalAssignee(
                     new UpdateAssigneeRequest(institutionId, assignee)))
-        .map(candidate -> toCandidateDto(requestInfo, candidate))
+        .map(candidate -> CandidateResponseFactory.create(candidate, userInstance))
         .orElseThrow(ExceptionMapper::map);
   }
 
   @Override
   protected Integer getSuccessStatusCode(UpsertAssigneeRequest input, CandidateDto output) {
     return HttpURLConnection.HTTP_OK;
-  }
-
-  private CandidateDto toCandidateDto(RequestInfo requestInfo, Candidate candidate) {
-    return candidate.toDto(requestInfo.getTopLevelOrgCristinId().orElseThrow());
   }
 
   private static void hasSameCustomer(UpsertAssigneeRequest input, RequestInfo requestInfo)

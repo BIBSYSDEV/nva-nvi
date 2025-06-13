@@ -53,10 +53,9 @@ import no.sikt.nva.nvi.common.model.PointCalculation;
 import no.sikt.nva.nvi.common.model.PublicationChannel;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
-import no.sikt.nva.nvi.common.service.dto.ApprovalDto;
-import no.sikt.nva.nvi.common.service.dto.CandidateDto;
-import no.sikt.nva.nvi.common.service.dto.NoteDto;
-import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
+import no.sikt.nva.nvi.common.model.UserInstance;
+import no.sikt.nva.nvi.common.permissions.CandidatePermissions;
+import no.sikt.nva.nvi.common.service.dto.CandidateOperation;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
@@ -65,7 +64,7 @@ import no.sikt.nva.nvi.common.service.requests.CreateNoteRequest;
 import no.sikt.nva.nvi.common.service.requests.DeleteNoteRequest;
 import no.sikt.nva.nvi.common.service.requests.FetchByPublicationRequest;
 import no.sikt.nva.nvi.common.service.requests.FetchCandidateRequest;
-import no.sikt.nva.nvi.common.validator.CandidateUpdateValidator;
+import nva.commons.apigateway.exceptions.UnauthorizedException;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.paths.UriWrapper;
@@ -277,6 +276,10 @@ public final class Candidate {
     return pointCalculation.creatorShareCount();
   }
 
+  public Map<UUID, Note> getNotes() {
+    return new HashMap<>(notes);
+  }
+
   public BigDecimal getTotalPoints() {
     return pointCalculation.totalPoints();
   }
@@ -313,34 +316,15 @@ public final class Candidate {
     return pointCalculation.channel();
   }
 
-  public CandidateDto toDto(URI userTopLevelOrganizationId) {
-    var validator = new CandidateUpdateValidator(this, userTopLevelOrganizationId);
-    return CandidateDto.builder()
-        .withId(getId())
-        .withContext(CONTEXT_URI)
-        .withIdentifier(getIdentifier())
-        .withPublicationId(getPublicationId())
-        .withApprovals(mapToApprovalDtos())
-        .withAllowedOperations(validator.getAllowedOperations())
-        .withProblems(validator.getProblems())
-        .withNotes(mapToNoteDtos())
-        .withPeriod(mapToPeriodStatusDto())
-        .withTotalPoints(getTotalPoints())
-        .withReportStatus(
-            Optional.ofNullable(getReportStatus()).map(ReportStatus::getValue).orElse(null))
-        .build();
-  }
-
   public Candidate updateApprovalAssignee(UpdateAssigneeRequest input) {
     validateCandidateState();
     approvals.computeIfPresent(input.institutionId(), (uri, approval) -> approval.update(input));
     return this;
   }
 
-  public Candidate updateApprovalStatus(UpdateStatusRequest input) {
+  public Candidate updateApprovalStatus(UpdateStatusRequest input, UserInstance userInstance) {
     validateUpdateStatusRequest(input);
     validateCandidateState();
-    var validator = new CandidateUpdateValidator(this, input.institutionId());
 
     var currentState = getApprovalStatus(input.institutionId());
     var newState = input.approvalStatus();
@@ -350,7 +334,11 @@ public final class Candidate {
       return this;
     }
 
-    if (!validator.isValidStatusChange(input)) {
+    var permissions = new CandidatePermissions(this, userInstance);
+    var attemptedOperation = CandidateOperation.fromApprovalStatus(input.approvalStatus());
+    try {
+      permissions.validateAuthorization(attemptedOperation);
+    } catch (UnauthorizedException e) {
       throw new IllegalStateException("Cannot update approval status");
     }
 
@@ -805,23 +793,6 @@ public final class Candidate {
         || Status.UNOPENED_PERIOD.equals(period.status())) {
       throw new IllegalStateException(PERIOD_NOT_OPENED_MESSAGE);
     }
-  }
-
-  private PeriodStatusDto mapToPeriodStatusDto() {
-    return PeriodStatusDto.fromPeriodStatus(period);
-  }
-
-  private List<NoteDto> mapToNoteDtos() {
-    return this.notes.values().stream().map(Note::toDto).toList();
-  }
-
-  private List<ApprovalDto> mapToApprovalDtos() {
-    return streamApprovals().map(this::toApprovalDto).toList();
-  }
-
-  private ApprovalDto toApprovalDto(Approval approval) {
-    var points = getPointValueForInstitution(approval.getInstitutionId());
-    return ApprovalDto.fromApprovalAndInstitutionPoints(approval, points);
   }
 
   public static final class Builder {
