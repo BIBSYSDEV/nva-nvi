@@ -47,7 +47,6 @@ import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.model.CandidateFixtures;
-import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
@@ -182,9 +181,8 @@ class UpsertNviCandidateHandlerTest {
     var candidate =
         Candidate.fetchByPublicationId(
             upsertCandidateRequest::publicationId, candidateRepository, periodRepository);
-    candidate.updateApprovalStatus(
-        new UpdateStatusRequest(
-            institutionId, ApprovalStatus.APPROVED, randomString(), randomString()));
+    scenario.updateApprovalStatus(candidate, ApprovalStatus.APPROVED, institutionId);
+
     var approval = candidate.getApprovals().get(institutionId);
     var newUpsertRequest = createNewUpsertRequestNotAffectingApprovals(upsertCandidateRequest);
     Candidate.upsert(newUpsertRequest, candidateRepository, periodRepository);

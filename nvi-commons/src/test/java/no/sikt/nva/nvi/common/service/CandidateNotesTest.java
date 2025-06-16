@@ -6,7 +6,6 @@ import static no.sikt.nva.nvi.common.model.OrganizationFixtures.mockOrganization
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.emptyIterable;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
@@ -16,9 +15,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.net.URI;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
+import no.sikt.nva.nvi.common.service.dto.NoteDto;
 import no.sikt.nva.nvi.common.service.exception.UnauthorizedOperationException;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.requests.DeleteNoteRequest;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class CandidateNotesTest extends CandidateTestSetup {
@@ -31,11 +32,9 @@ class CandidateNotesTest extends CandidateTestSetup {
     var userOrganizationId = getAnyOrganizationId(candidate);
     mockOrganizationResponseForAffiliation(userOrganizationId, null, mockUriRetriever);
 
-    var actualNote =
-        Candidate.fetch(candidate::getIdentifier, candidateRepository, periodRepository)
-            .toDto(userOrganizationId)
-            .notes()
-            .getFirst();
+    var updatedCandidate =
+        Candidate.fetch(candidate::getIdentifier, candidateRepository, periodRepository);
+    var actualNote = getAnyNote(updatedCandidate);
 
     assertThat(noteRequest.username(), is(equalTo(actualNote.user())));
     assertThat(noteRequest.text(), is(equalTo(actualNote.text())));
@@ -73,13 +72,12 @@ class CandidateNotesTest extends CandidateTestSetup {
     var userOrganizationId = getAnyOrganizationId(candidateWithNote);
     mockOrganizationResponseForAffiliation(userOrganizationId, null, mockUriRetriever);
 
-    var candidateDto = candidateWithNote.toDto(userOrganizationId);
-    var noteToDelete = candidateDto.notes().getFirst();
-    var updatedCandidate =
-        candidate.deleteNote(new DeleteNoteRequest(noteToDelete.identifier(), username));
+    var noteToDelete = getAnyNote(candidate);
+    candidate.deleteNote(new DeleteNoteRequest(noteToDelete.identifier(), username));
 
-    var updatedCandidateDto = updatedCandidate.toDto(userOrganizationId);
-    assertThat(updatedCandidateDto.notes(), is(emptyIterable()));
+    var updatedCandidate =
+        Candidate.fetch(candidate::getIdentifier, candidateRepository, periodRepository);
+    Assertions.assertThat(updatedCandidate.getNotes()).isEmpty();
   }
 
   @Test
@@ -92,8 +90,7 @@ class CandidateNotesTest extends CandidateTestSetup {
     var userOrganizationId = getAnyOrganizationId(candidateWithNote);
     mockOrganizationResponseForAffiliation(userOrganizationId, null, mockUriRetriever);
 
-    var candidateDto = candidateWithNote.toDto(userOrganizationId);
-    var noteToDelete = candidateDto.notes().getFirst();
+    var noteToDelete = getAnyNote(candidate);
 
     assertThrows(
         UnauthorizedOperationException.class,
@@ -133,5 +130,12 @@ class CandidateNotesTest extends CandidateTestSetup {
 
   private Candidate createCandidate() {
     return createCandidate(randomUri());
+  }
+
+  private NoteDto getAnyNote(Candidate candidate) {
+    return candidate.getNotes().values().stream()
+        .findFirst()
+        .orElseThrow(() -> new IllegalStateException("No notes found for candidate"))
+        .toDto();
   }
 }
