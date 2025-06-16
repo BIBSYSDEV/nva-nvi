@@ -39,7 +39,7 @@ public class CandidatePermissions {
   }
 
   public boolean allowsAction(CandidateOperation operation) {
-    return isGrantedPermission(operation) && !isDeniedPermission(operation);
+    return isNotDeniedPermission(operation) && isGrantedPermission(operation);
   }
 
   public Set<CandidateOperation> getAllAllowedActions() {
@@ -57,8 +57,8 @@ public class CandidatePermissions {
     return grantStrategies.stream().anyMatch(strategy -> strategy.allowsAction(operation));
   }
 
-  private boolean isDeniedPermission(CandidateOperation operation) {
-    return denyStrategies.stream().anyMatch(strategy -> strategy.deniesAction(operation));
+  private boolean isNotDeniedPermission(CandidateOperation operation) {
+    return denyStrategies.stream().noneMatch(strategy -> strategy.deniesAction(operation));
   }
 
   private List<GrantStrategy> findAllowances(CandidateOperation operation) {
