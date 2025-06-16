@@ -69,7 +69,8 @@ class CristinNviReportEventConsumerTest {
   @Test
   void shouldCreateNviCandidateFromNviReport() throws IOException {
     var cristinNviReport = randomCristinNviReport().build();
-    periodRepository.save(periodForYear(cristinNviReport.yearReported()));
+    periodRepository.save(
+        periodForYear(cristinNviReport.getYearReportedFromHistoricalData().orElseThrow()));
     handler.handleRequest(createEvent(cristinNviReport), CONTEXT);
     var publicationId = toPublicationId(cristinNviReport);
     var nviCandidate =
@@ -116,8 +117,13 @@ class CristinNviReportEventConsumerTest {
   }
 
   @Test
-  void shouldStoreErrorReportWhenYearReportedIsMissing() throws IOException {
-    var cristinNviReport = randomCristinNviReport().withYearReported(null).build();
+  void shouldStoreErrorReportWhenYearReportedFromHistoricalDataIsMissing() throws IOException {
+    var institutionIdentifier = randomString();
+    var cristinNviReport =
+        randomCristinNviReport()
+            .withCristinLocales(List.of(randomCristinLocale(institutionIdentifier)))
+            .withScientificResources(List.of(scientificResource(institutionIdentifier, null)))
+            .build();
     handler.handleRequest(createEvent(cristinNviReport), CONTEXT);
     var s3ReportPath =
         UriWrapper.fromHost(BUCKET_NAME)
@@ -158,7 +164,7 @@ class CristinNviReportEventConsumerTest {
         .containsExactly(
             expectedPublicationId(cristinNviReport.publicationIdentifier()),
             true,
-            cristinNviReport.yearReported(),
+            cristinNviReport.getYearReportedFromHistoricalData().orElseThrow(),
             generateExpectedApprovalsIds(cristinNviReport),
             cristinNviReport.instanceType(),
             "LevelOne");
@@ -239,7 +245,7 @@ class CristinNviReportEventConsumerTest {
         .withYearReported(randomYear())
         .withPublicationDate(randomPublicationDate())
         .withCristinLocales(List.of(randomCristinLocale(institutionIdentifier)))
-        .withScientificResources(List.of(scientificResource(institutionIdentifier)))
+        .withScientificResources(List.of(scientificResource(institutionIdentifier, randomYear())))
         .withInstanceType(randomValidInstanceType().getValue())
         .withReference(null);
   }
@@ -248,11 +254,11 @@ class CristinNviReportEventConsumerTest {
     return CristinNviReport.builder().withPublicationIdentifier(randomString()).build();
   }
 
-  private ScientificResource scientificResource(String institutionIdentifier) {
+  private ScientificResource scientificResource(String institutionIdentifier, String reportedYear) {
     var cristinIdentifier = randomString();
     return ScientificResource.build()
         .withQualityCode("1")
-        .withReportedYear(randomYear())
+        .withReportedYear(reportedYear)
         .withScientificPeople(
             List.of(
                 scientificPersonWithCristinIdentifier(cristinIdentifier, institutionIdentifier),
