@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.events.cristin;
 
-import static java.util.Objects.isNull;
 import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
 import static no.sikt.nva.nvi.events.cristin.CristinMapper.API_HOST;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
@@ -115,12 +114,11 @@ public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, V
   private CandidateDao createAndPersist(CristinNviReport cristinNviReport) {
     var approvals = createApprovals(cristinNviReport);
     var candidate = createDbCandidate(cristinNviReport);
-    var yearReported = cristinNviReport.yearReported();
-
-    if (isNull(yearReported)) {
+    var yearReported = cristinNviReport.getYearReportedFromHistoricalData();
+    if (yearReported.isEmpty()) {
       throw new IllegalArgumentException(MISSING_REPORTED_YEAR_MESSAGE);
     } else {
-      return repository.create(candidate, approvals, yearReported);
+      return repository.create(candidate, approvals, yearReported.get());
     }
   }
 
