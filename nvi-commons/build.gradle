@@ -29,6 +29,7 @@ dependencies {
     testFixturesImplementation libs.bundles.cucumber
     testFixturesImplementation libs.bundles.testing
     testFixturesImplementation libs.dynamodDbLocal
+    testFixturesImplementation libs.nva.commons.apigateway
     testFixturesImplementation libs.nva.commons.auth
     testFixturesImplementation libs.nva.core
     testFixturesImplementation libs.nva.json
