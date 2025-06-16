@@ -714,7 +714,8 @@ class CristinMapperTest {
               .with(CsvSchema.emptySchema().withHeader())
               .readValues(
                   new StringReader(
-                      IoUtils.stringFromResources(Path.of("cristin_transfer_departments.csv"))));
+                      IoUtils.stringFromFile(
+                          Path.of("src/main/resources/cristin_transfer_departments.csv"))));
 
       return iterator.readAll();
     } catch (Exception e) {

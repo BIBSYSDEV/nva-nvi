@@ -140,7 +140,7 @@ public final class CristinMapper {
         .build();
   }
 
-  public DbPublicationDetails toDbPublication(CristinNviReport cristinNviReport) {
+  private DbPublicationDetails toDbPublication(CristinNviReport cristinNviReport) {
     var now = Instant.now();
     return DbPublicationDetails.builder()
         .id(constructPublicationId(cristinNviReport.publicationIdentifier()))
