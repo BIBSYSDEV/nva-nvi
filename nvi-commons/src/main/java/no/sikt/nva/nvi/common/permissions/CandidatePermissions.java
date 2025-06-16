@@ -58,7 +58,7 @@ public class CandidatePermissions {
   }
 
   private boolean isNotDeniedPermission(CandidateOperation operation) {
-    return denyStrategies.stream().anyMatch(strategy -> strategy.deniesAction(operation));
+    return denyStrategies.stream().noneMatch(strategy -> strategy.deniesAction(operation));
   }
 
   private List<GrantStrategy> findAllowances(CandidateOperation operation) {
