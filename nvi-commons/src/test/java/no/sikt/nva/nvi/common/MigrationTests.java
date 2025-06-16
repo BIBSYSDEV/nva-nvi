@@ -6,6 +6,7 @@ import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpdateStatusReq
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidate;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidateBuilder;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.periodRepositoryReturningOpenedPeriod;
+import static no.sikt.nva.nvi.common.model.UserInstanceFixtures.createCuratorUserInstance;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -118,9 +119,11 @@ class MigrationTests {
     var candidate =
         CandidateFixtures.setupRandomApplicableCandidate(candidateRepository, periodRepository)
             .createNote(createNoteRequest(randomString(), randomString()), candidateRepository);
+    var curatorOrganization = getInstitutionId(candidate);
+    var userInstance = createCuratorUserInstance(curatorOrganization);
 
     return candidate.updateApprovalStatus(
-        createUpdateStatusRequest(
-            ApprovalStatus.REJECTED, getInstitutionId(candidate), randomString()));
+        createUpdateStatusRequest(ApprovalStatus.REJECTED, curatorOrganization, randomString()),
+        userInstance);
   }
 }
