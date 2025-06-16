@@ -124,6 +124,13 @@ public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, V
     }
   }
 
+  /**
+   * Reads the CSV file containing mappings of transferred department identifiers.
+   * The CSV file is used to map creators' affiliations to their corresponding
+   * institutions in cases where the department has been transferred from one
+   * institution to another. This ensures that institution points are correctly
+   * calculated based on the updated affiliations.
+   */
   private List<CristinDepartmentTransfer> readCristinDepartments() {
     try (StringReader reader = new StringReader(CRISTIN_DEPARTMENT_TRANSFERS_STRING)) {
       MappingIterator<CristinDepartmentTransfer> iterator =
