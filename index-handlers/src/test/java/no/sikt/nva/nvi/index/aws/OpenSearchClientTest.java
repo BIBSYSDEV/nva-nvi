@@ -82,6 +82,7 @@ import no.unit.nva.auth.CognitoAuthenticator;
 import nva.commons.core.ioutils.IoUtils;
 import nva.commons.core.paths.UriWrapper;
 import org.apache.http.HttpHost;
+import org.assertj.core.api.Assertions;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -821,6 +822,23 @@ class OpenSearchClientTest {
     assertThat(searchResponse.hits().hits(), hasSize(1));
     var actualDocument = getFirstHit(searchResponse);
     assertEquals(expectedDocument, actualDocument);
+  }
+
+  @Test
+  void shouldIncludeIndexDocumentTimestamp() throws IOException {
+    var testStartedAt = Instant.now();
+    var expectedDocument = randomIndexDocumentBuilder().build();
+    addDocumentsToIndex(expectedDocument);
+
+    var expectedTitle = expectedDocument.publicationDetails().title();
+    var searchParameters = defaultSearchParameters().withTitle(expectedTitle).build();
+    var searchResponse = openSearchClient.search(searchParameters);
+
+    var actualDocument = getFirstHit(searchResponse);
+    var actualTimestamp = Instant.parse(actualDocument.indexDocumentCreatedAt());
+    Assertions.assertThat(actualTimestamp)
+        .isAfterOrEqualTo(testStartedAt)
+        .isBeforeOrEqualTo(Instant.now());
   }
 
   private static void assertExpectedPointWithoutRejectedPoints(
