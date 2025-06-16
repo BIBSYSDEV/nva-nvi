@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.common;
 import static no.sikt.nva.nvi.common.LocalDynamoTestSetup.initializeTestDatabase;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpdateStatusRequest;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.mockOrganizationResponseForAffiliations;
+import static no.sikt.nva.nvi.common.model.UserInstanceFixtures.createCuratorUserInstance;
 import static no.sikt.nva.nvi.test.TestUtils.randomUriWithSuffix;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.mockito.Mockito.mock;
@@ -106,7 +107,8 @@ public class TestScenario {
   public Candidate updateApprovalStatus(
       Candidate candidate, ApprovalStatus status, URI topLevelOrganizationId) {
     var updateRequest = createUpdateStatusRequest(status, topLevelOrganizationId, randomString());
-    return candidate.updateApprovalStatus(updateRequest);
+    var userInstance = createCuratorUserInstance(topLevelOrganizationId);
+    return candidate.updateApprovalStatus(updateRequest, userInstance);
   }
 
   public URI setupExpandedPublicationInS3(SampleExpandedPublication publication) {
