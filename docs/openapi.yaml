@@ -923,6 +923,7 @@ components:
               - "approval/reject-candidate"
               - "approval/approve-candidate"
               - "approval/reset-approval"
+              - "note/create-note"
         problems:
           type: array
           description: >

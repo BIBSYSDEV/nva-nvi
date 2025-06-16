@@ -20,7 +20,7 @@ public class NviCuratorGrantStrategy extends BaseStrategy implements GrantStrate
 
   @Override
   public boolean allowsAction(CandidateOperation operation) {
-    if (!userInstance.isNviCurator()) {
+    if (isNotCuratorForCandidate()) {
       return false;
     }
 
@@ -28,7 +28,12 @@ public class NviCuratorGrantStrategy extends BaseStrategy implements GrantStrate
       case APPROVAL_APPROVE -> canSetApprovalStatus(APPROVED);
       case APPROVAL_REJECT -> canSetApprovalStatus(REJECTED);
       case APPROVAL_PENDING -> canSetApprovalStatus(PENDING);
+      case NOTE_CREATE -> true;
     };
+  }
+
+  private boolean isNotCuratorForCandidate() {
+    return !(userInstance.isNviCurator() && hasCreatorFromUserOrganization());
   }
 
   private Set<ApprovalStatus> getValidApprovalStates() {

@@ -4,6 +4,7 @@ import static java.util.Collections.emptyList;
 import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
 import static no.sikt.nva.nvi.common.dto.NviCreatorDtoFixtures.verifiedNviCreatorDtoFrom;
 import static no.sikt.nva.nvi.common.dto.PointCalculationDtoBuilder.randomPointCalculationDtoBuilder;
+import static no.sikt.nva.nvi.common.model.OrganizationFixtures.createOrganizationWithSubUnit;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 
@@ -11,6 +12,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
@@ -68,15 +70,10 @@ public class UpsertRequestFixtures {
 
   public static UpsertNviCandidateRequest createUpsertCandidateRequestWithSingleAffiliation(
       URI topLevelOrg, URI affiliation) {
-    var creator = verifiedNviCreatorDtoFrom(affiliation);
-    var pointCalculation =
-        randomPointCalculationDtoBuilder()
-            .withAdditionalPointFor(topLevelOrg, affiliation, creator.id())
-            .build();
-
+    var verifiedCreator = verifiedNviCreatorDtoFrom(affiliation);
+    var topLevelOrganization = createOrganizationWithSubUnit(topLevelOrg, affiliation);
     return randomUpsertRequestBuilder()
-        .withPointCalculation(pointCalculation)
-        .withNviCreators(creator)
+        .withCreatorsAndPoints(Map.of(topLevelOrganization, List.of(verifiedCreator)))
         .build();
   }
 }
