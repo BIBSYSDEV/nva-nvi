@@ -80,7 +80,7 @@ public class CandidatePermissions {
     if (!strategies.isEmpty()) {
       logger.info(
           "User {} was denied access {} on candidate {} from strategies {}",
-          userInstance.userName().value(),
+          userInstance.userName(),
           operation,
           candidate.getIdentifier(),
           String.join(COMMA_DELIMITER, strategies));
@@ -102,7 +102,7 @@ public class CandidatePermissions {
 
     logger.info(
         "User {} was allowed {} on candidate {} from strategies {}",
-        userInstance.userName().value(),
+        userInstance.userName(),
         operation,
         candidate.getIdentifier(),
         String.join(COMMA_DELIMITER, strategies));
@@ -111,6 +111,6 @@ public class CandidatePermissions {
   private String formatUnauthorizedMessage(CandidateOperation operation) {
     return String.format(
         "Unauthorized: %s is not allowed to perform %s on %s",
-        userInstance.userName().value(), operation, candidate.getIdentifier());
+        userInstance.userName(), operation, candidate.getIdentifier());
   }
 }
