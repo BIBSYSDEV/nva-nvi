@@ -9,11 +9,14 @@ import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidate
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertNonCandidateRequest;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeriod;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupFuturePeriod;
+import static no.sikt.nva.nvi.common.dto.AllowedOperationFixtures.CURATOR_CANNOT_UPDATE_APPROVAL;
+import static no.sikt.nva.nvi.common.dto.AllowedOperationFixtures.CURATOR_CAN_FINALIZE_APPROVAL;
 import static no.sikt.nva.nvi.common.dto.NviCreatorDtoFixtures.unverifiedNviCreatorDtoFrom;
 import static no.sikt.nva.nvi.common.dto.NviCreatorDtoFixtures.verifiedNviCreatorDtoCopiedFrom;
 import static no.sikt.nva.nvi.common.dto.NviCreatorDtoFixtures.verifiedNviCreatorDtoFrom;
 import static no.sikt.nva.nvi.common.model.CandidateFixtures.randomApplicableCandidateRequestBuilder;
 import static no.sikt.nva.nvi.common.model.CandidateFixtures.setupRandomApplicableCandidate;
+import static no.sikt.nva.nvi.common.model.OrganizationFixtures.createOrganizationWithSubUnit;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.mockOrganizationResponseForAffiliation;
 import static no.sikt.nva.nvi.common.model.UserInstanceFixtures.createCuratorUserInstance;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
@@ -52,7 +55,6 @@ import no.sikt.nva.nvi.common.model.ScientificValue;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.model.UserInstance;
-import no.sikt.nva.nvi.common.service.dto.CandidateOperation;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
@@ -363,11 +365,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var requestBuilder =
         setupApprovedCandidateAndReturnRequestBuilder(organization.id(), creatorMap);
 
-    var updatedRequest =
-        requestBuilder
-            .withCreatorsAndPoints(creatorMap)
-            .withTopLevelOrganizations(organization, otherOrganization)
-            .build();
+    var updatedRequest = requestBuilder.withCreatorsAndPoints(creatorMap).build();
     var updatedCandidate = scenario.upsertCandidate(updatedRequest);
 
     var updatedApprovals = updatedCandidate.getApprovals();
@@ -485,6 +483,8 @@ class CandidateApprovalTest extends CandidateTestSetup {
   void shouldResetApprovalsWhenUpdatingFieldsEffectingApprovals(
       CandidateResetCauseArgument arguments) {
     var upsertCandidateRequest = getUpsertCandidateRequestWithHardcodedValues();
+    var topLevelOrganization =
+        upsertCandidateRequest.topLevelNviOrganizations().stream().findFirst().orElseThrow();
 
     var candidate = scenario.upsertCandidate(upsertCandidateRequest);
     updateApprovalStatus(candidate, ApprovalStatus.APPROVED);
@@ -504,7 +504,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
             .build();
 
     var updatedCandidate = scenario.upsertCandidate(newUpsertRequest);
-    var updatedApproval = updatedCandidate.getApprovals().get(HARDCODED_INSTITUTION_ID);
+    var updatedApproval = updatedCandidate.getApprovals().get(topLevelOrganization.id());
     assertThat(updatedApproval.getStatus(), is(equalTo(ApprovalStatus.PENDING)));
   }
 
@@ -517,9 +517,8 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var candidateDto = CandidateResponseFactory.create(candidate, userInstance);
 
     var actualAllowedOperations = candidateDto.allowedOperations();
-    var expectedAllowedOperations =
-        List.of(CandidateOperation.APPROVAL_APPROVE, CandidateOperation.APPROVAL_REJECT);
-    assertThat(actualAllowedOperations, containsInAnyOrder(expectedAllowedOperations.toArray()));
+    assertThat(
+        actualAllowedOperations, containsInAnyOrder(CURATOR_CAN_FINALIZE_APPROVAL.toArray()));
   }
 
   @Test
@@ -535,8 +534,8 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var candidateDto = CandidateResponseFactory.create(candidate, userInstance);
 
     var actualAllowedOperations = candidateDto.allowedOperations();
-    var expectedAllowedOperations = emptyList();
-    assertThat(actualAllowedOperations, containsInAnyOrder(expectedAllowedOperations.toArray()));
+    assertThat(
+        actualAllowedOperations, containsInAnyOrder(CURATOR_CANNOT_UPDATE_APPROVAL.toArray()));
   }
 
   @Test
@@ -637,7 +636,8 @@ class CandidateApprovalTest extends CandidateTestSetup {
             .withScientificValue(HARDCODED_LEVEL)
             .withChannelType(ChannelType.JOURNAL)
             .build();
-    var topLevelNviOrganization = Organization.builder().withId(HARDCODED_INSTITUTION_ID).build();
+    var topLevelNviOrganization =
+        createOrganizationWithSubUnit(HARDCODED_INSTITUTION_ID, HARDCODED_SUBUNIT_ID);
     return randomUpsertRequestBuilder()
         .withNviCreators(verifiedCreator)
         .withTopLevelOrganizations(List.of(topLevelNviOrganization))

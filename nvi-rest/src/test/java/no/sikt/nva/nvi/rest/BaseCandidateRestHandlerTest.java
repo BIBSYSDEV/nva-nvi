@@ -108,7 +108,6 @@ public abstract class BaseCandidateRestHandlerTest {
     var verifiedCreator = setupDefaultVerifiedCreator();
     var unverifiedCreator = setupDefaultUnverifiedCreator();
     return randomUpsertRequestBuilder()
-        .withTopLevelOrganizations(topLevelOrganizations)
         .withCreatorsAndPoints(
             Map.of(topLevelOrganization, List.of(verifiedCreator, unverifiedCreator)));
   }
@@ -116,7 +115,6 @@ public abstract class BaseCandidateRestHandlerTest {
   protected UpsertRequestBuilder upsertRequestWithOneVerifiedCreator() {
     var verifiedCreator = setupDefaultVerifiedCreator();
     return randomUpsertRequestBuilder()
-        .withTopLevelOrganizations(topLevelOrganizations)
         .withCreatorsAndPoints(Map.of(topLevelOrganization, List.of(verifiedCreator)));
   }
 
