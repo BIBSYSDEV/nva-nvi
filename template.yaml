@@ -652,7 +652,6 @@ Resources:
       StageName: Prod
       EndpointConfiguration:
         Type: REGIONAL
-        ipAddressType: 'dualstack'
       DefinitionBody:
         'Fn::Transform':
           Name: AWS::Include
