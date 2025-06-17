@@ -75,7 +75,8 @@ public record NviCandidateIndexDocument(
     ReportingPeriod reportingPeriod,
     boolean reported,
     String createdDate,
-    String modifiedDate)
+    String modifiedDate,
+    String indexDocumentCreatedAt)
     implements JsonSerializable {
 
   private static final Logger logger = LoggerFactory.getLogger(NviCandidateIndexDocument.class);
@@ -368,7 +369,8 @@ public record NviCandidateIndexDocument(
           reportingPeriod,
           reported,
           createdDate,
-          modifiedDate);
+          modifiedDate,
+          Instant.now().toString());
     }
   }
 }

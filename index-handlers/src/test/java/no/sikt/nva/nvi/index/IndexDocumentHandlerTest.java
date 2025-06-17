@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.index;
 
 import static java.util.Collections.emptyList;
+import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.QueueServiceTestUtils.createEvent;
 import static no.sikt.nva.nvi.common.QueueServiceTestUtils.createEventWithOneInvalidRecord;
 import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
@@ -45,6 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -98,6 +100,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentMatcher;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.sqs.model.SqsException;
@@ -169,7 +172,7 @@ class IndexDocumentHandlerTest {
     mockUriRetrieverOrgResponse(candidate);
     handler.handleRequest(event, CONTEXT);
     var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
-    assertEquals(expectedIndexDocument, actualIndexDocument);
+    assertContentIsEqual(expectedIndexDocument, actualIndexDocument);
   }
 
   @Test
@@ -208,7 +211,7 @@ class IndexDocumentHandlerTest {
     mockUriRetrieverOrgResponse(candidate);
     handler.handleRequest(createEvent(candidate.getIdentifier()), CONTEXT);
     var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
-    assertEquals(expectedIndexDocument, actualIndexDocument);
+    assertContentIsEqual(expectedIndexDocument, actualIndexDocument);
   }
 
   private static CandidateDao.DbCandidate createDbCandidateWithoutChannelIdOrType(
@@ -241,7 +244,7 @@ class IndexDocumentHandlerTest {
     mockUriRetrieverOrgResponse(candidate);
     handler.handleRequest(createEvent(candidate.getIdentifier()), CONTEXT);
     var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
-    assertEquals(expectedIndexDocument, actualIndexDocument);
+    assertContentIsEqual(expectedIndexDocument, actualIndexDocument);
   }
 
   @Test
@@ -253,7 +256,7 @@ class IndexDocumentHandlerTest {
     mockUriResponseForTopLevelAffiliation(candidate);
     handler.handleRequest(event, CONTEXT);
     var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
-    assertEquals(expectedIndexDocument, actualIndexDocument);
+    assertContentIsEqual(expectedIndexDocument, actualIndexDocument);
   }
 
   @Test
@@ -296,7 +299,7 @@ class IndexDocumentHandlerTest {
     mockUriRetrieverOrgResponse(candidate);
     handler.handleRequest(event, CONTEXT);
     var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
-    assertEquals(expectedIndexDocument, actualIndexDocument);
+    assertContentIsEqual(expectedIndexDocument, actualIndexDocument);
   }
 
   @Test
@@ -317,7 +320,7 @@ class IndexDocumentHandlerTest {
     mockUriRetrieverOrgResponse(candidate);
     handler.handleRequest(event, CONTEXT);
     var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
-    assertEquals(expectedIndexDocument, actualIndexDocument);
+    assertContentIsEqual(expectedIndexDocument, actualIndexDocument);
   }
 
   @Test
@@ -337,7 +340,7 @@ class IndexDocumentHandlerTest {
     mockUriRetrieverOrgResponse(candidate);
     handler.handleRequest(event, CONTEXT);
     var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
-    assertEquals(expectedIndexDocument, actualIndexDocument);
+    assertContentIsEqual(expectedIndexDocument, actualIndexDocument);
   }
 
   @Test
@@ -405,7 +408,7 @@ class IndexDocumentHandlerTest {
     mockUriRetrieverOrgResponse(candidate);
     handler.handleRequest(event, CONTEXT);
     var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
-    assertEquals(expectedIndexDocument, actualIndexDocument);
+    assertContentIsEqual(expectedIndexDocument, actualIndexDocument);
   }
 
   @ParameterizedTest(name = "shouldExtractOptionalPrintIssnFromExpandedResource: {0}")
@@ -425,7 +428,7 @@ class IndexDocumentHandlerTest {
     mockUriRetrieverOrgResponse(candidate);
     handler.handleRequest(event, CONTEXT);
     var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
-    assertEquals(expectedIndexDocument, actualIndexDocument);
+    assertContentIsEqual(expectedIndexDocument, actualIndexDocument);
   }
 
   @ParameterizedTest(name = "shouldGenerateIndexDocumentForAllPublicationChannelTypes: {0}")
@@ -446,7 +449,7 @@ class IndexDocumentHandlerTest {
     mockUriRetrieverOrgResponse(candidate);
     handler.handleRequest(event, CONTEXT);
     var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
-    assertEquals(expectedIndexDocument, actualIndexDocument);
+    assertContentIsEqual(expectedIndexDocument, actualIndexDocument);
   }
 
   @ParameterizedTest(name = "shouldExtractOptionalAbstractFromExpandedResource: {0}")
@@ -465,7 +468,7 @@ class IndexDocumentHandlerTest {
     mockUriRetrieverOrgResponse(candidate);
     handler.handleRequest(event, CONTEXT);
     var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
-    assertEquals(expectedIndexDocument, actualIndexDocument);
+    assertContentIsEqual(expectedIndexDocument, actualIndexDocument);
   }
 
   @Test
@@ -552,7 +555,7 @@ class IndexDocumentHandlerTest {
     mockUriRetrieverOrgResponse(candidateToSucceed);
     handler.handleRequest(event, CONTEXT);
     var actualIndexDocument = parseJson(s3Reader.getFile(createPath(candidateToSucceed)));
-    assertEquals(expectedIndexDocument, actualIndexDocument);
+    assertContentIsEqual(expectedIndexDocument, actualIndexDocument);
   }
 
   @Test
@@ -567,7 +570,7 @@ class IndexDocumentHandlerTest {
         setupExistingResourceInS3AndGenerateExpectedDocument(candidateToSucceed);
     handler.handleRequest(event, CONTEXT);
     var actualIndexDocument = parseJson(s3Reader.getFile(createPath(candidateToSucceed)));
-    assertEquals(expectedIndexDocument, actualIndexDocument);
+    assertContentIsEqual(expectedIndexDocument, actualIndexDocument);
   }
 
   @Test
@@ -599,7 +602,7 @@ class IndexDocumentHandlerTest {
     mockUriRetrieverOrgResponse(candidateToSucceed);
     handler.handleRequest(event, CONTEXT);
     var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidateToSucceed)));
-    assertEquals(expectedIndexDocument, actualIndexDocument);
+    assertContentIsEqual(expectedIndexDocument, actualIndexDocument);
   }
 
   @Test
@@ -611,7 +614,7 @@ class IndexDocumentHandlerTest {
     mockUriRetrieverOrgResponse(candidateToSucceed);
     handler.handleRequest(event, CONTEXT);
     var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidateToSucceed)));
-    assertEquals(expectedIndexDocument, actualIndexDocument);
+    assertContentIsEqual(expectedIndexDocument, actualIndexDocument);
   }
 
   @Test
@@ -630,7 +633,7 @@ class IndexDocumentHandlerTest {
     handler.handleRequest(event, CONTEXT);
 
     var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
-    assertEquals(expectedIndexDocument, actualIndexDocument);
+    assertContentIsEqual(expectedIndexDocument, actualIndexDocument);
   }
 
   private CandidateDao setupReportedCandidateWithInvalidProperties() {
@@ -850,12 +853,18 @@ class IndexDocumentHandlerTest {
         setupExistingResourceInS3AndGenerateExpectedDocument(candidateToFail);
     var expectedIndexDocument =
         setupExistingResourceInS3AndGenerateExpectedDocument(candidateToSucceed);
-    var s3Writer = mock(S3StorageWriter.class);
-    when(s3Writer.write(eq(expectedIndexDocumentToFail)))
+    var mockedS3Writer = mock(S3StorageWriter.class);
+    when(mockedS3Writer.write(argThat(matchesDocumentIdOf(expectedIndexDocumentToFail))))
         .thenThrow(new IOException("Some exception message"));
-    when(s3Writer.write(eq(expectedIndexDocument)))
+    when(mockedS3Writer.write(argThat(matchesDocumentIdOf(expectedIndexDocument))))
         .thenReturn(s3BucketUri().addChild(candidateToSucceed.getIdentifier().toString()).getUri());
-    return s3Writer;
+    return mockedS3Writer;
+  }
+
+  private static ArgumentMatcher<IndexDocumentWithConsumptionAttributes> matchesDocumentIdOf(
+      IndexDocumentWithConsumptionAttributes expectedDocument) {
+    var expectedId = expectedDocument.indexDocument().id();
+    return doc -> nonNull(doc) && doc.indexDocument().id().equals(expectedId);
   }
 
   private UriWrapper s3BucketUri() {
@@ -956,5 +965,22 @@ class IndexDocumentHandlerTest {
     Candidate.upsert(request, candidateRepository, periodRepository);
     return Candidate.fetchByPublicationId(
         request::publicationId, candidateRepository, periodRepository);
+  }
+
+  private void assertContentIsEqual(
+      IndexDocumentWithConsumptionAttributes expected,
+      IndexDocumentWithConsumptionAttributes actual) {
+    Assertions.assertThat(actual)
+        .usingRecursiveComparison()
+        .ignoringFields("indexDocument.indexDocumentCreatedAt")
+        .isEqualTo(expected);
+  }
+
+  private void assertContentIsEqual(
+      NviCandidateIndexDocument expected, NviCandidateIndexDocument actual) {
+    Assertions.assertThat(actual)
+        .usingRecursiveComparison()
+        .ignoringFields("indexDocumentCreatedAt")
+        .isEqualTo(expected);
   }
 }
