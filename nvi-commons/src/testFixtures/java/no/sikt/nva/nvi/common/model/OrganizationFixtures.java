@@ -35,6 +35,19 @@ public class OrganizationFixtures {
     return randomOrganization().withPartOf(List.of(topLevelOrg)).build();
   }
 
+  public static Organization createOrganizationWithSubUnit(URI topLevelOrgId, URI subUnitId) {
+    var subOrganization =
+        Organization.builder()
+            .withId(subUnitId)
+            .withPartOf(List.of(Organization.builder().withId(topLevelOrgId).build()))
+            .build();
+    return Organization.builder()
+        .withId(topLevelOrgId)
+        .withHasPart(List.of(subOrganization))
+        .withCountryCode(COUNTRY_CODE_NORWAY)
+        .build();
+  }
+
   public static Builder randomOrganization() {
     return Organization.builder()
         .withId(randomUri())

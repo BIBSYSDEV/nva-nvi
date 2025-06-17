@@ -4,6 +4,7 @@ import static java.util.Collections.emptyList;
 import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeriod;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupFuturePeriod;
+import static no.sikt.nva.nvi.common.dto.AllowedOperationFixtures.CURATOR_CAN_FINALIZE_APPROVAL;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -22,9 +23,7 @@ import java.net.HttpURLConnection;
 import java.util.List;
 import java.util.Map;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
-import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
-import no.sikt.nva.nvi.common.service.dto.CandidateOperation;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.validator.FakeViewingScopeValidator;
@@ -186,24 +185,20 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
     var candidateDto = handleRequest(request);
 
     var actualAllowedOperations = candidateDto.allowedOperations();
-    var expectedAllowedOperations =
-        List.of(CandidateOperation.APPROVAL_APPROVE, CandidateOperation.APPROVAL_REJECT);
-    assertThat(actualAllowedOperations, containsInAnyOrder(expectedAllowedOperations.toArray()));
+    assertThat(
+        actualAllowedOperations, containsInAnyOrder(CURATOR_CAN_FINALIZE_APPROVAL.toArray()));
   }
 
   private Candidate candidateWithFinalizedApproval(String newAssignee) {
     candidate.updateApprovalAssignee(
         new UpdateAssigneeRequest(topLevelOrganizationId, newAssignee));
-    candidate.updateApprovalStatus(
-        new UpdateStatusRequest(
-            topLevelOrganizationId, ApprovalStatus.APPROVED, randomString(), randomString()));
+    scenario.updateApprovalStatus(candidate, ApprovalStatus.APPROVED, topLevelOrganizationId);
     return candidate;
   }
 
   private InputStream createRequest(Candidate candidate, String newAssignee)
       throws JsonProcessingException {
-    var approvalToUpdate = candidate.toDto(topLevelOrganizationId).approvals().getFirst();
-    var requestBody = new UpsertAssigneeRequest(newAssignee, approvalToUpdate.institutionId());
+    var requestBody = new UpsertAssigneeRequest(newAssignee, topLevelOrganizationId);
     return new HandlerRequestBuilder<UpsertAssigneeRequest>(JsonUtils.dtoObjectMapper)
         .withBody(randomAssigneeRequest())
         .withTopLevelCristinOrgId(requestBody.institutionId())

@@ -232,10 +232,12 @@ class EventBasedBatchScanHandlerTest {
 
     consumeEvents();
 
-    var noEntitiesUpdated =
-        candidates.stream().allMatch(this::isSameBodyAsRepositoryCopy) && !candidates.isEmpty();
-
-    assertTrue(noEntitiesUpdated, "No values should have been updated with new version");
+    var updatedCandidates = getPersistedCandidates(candidates);
+    Assertions.assertThat(updatedCandidates)
+        .isNotEmpty()
+        .usingRecursiveComparison()
+        .ignoringCollectionOrder()
+        .isEqualTo(candidates);
   }
 
   @Test
@@ -357,15 +359,12 @@ class EventBasedBatchScanHandlerTest {
         .toList();
   }
 
-  private boolean isSameBodyAsRepositoryCopy(Candidate candidate) {
-    // TODO: should replace this comparison with the actual data field (equals in CandidateBO?)
-    var userOrganizationId = candidate.getInstitutionPoints().getFirst().institutionId();
-
-    var originalDto = candidate.toDto(userOrganizationId);
-    var repositoryCopy =
-        Candidate.fetch(candidate::getIdentifier, candidateRepository, periodRepository);
-    var repositoryDto = repositoryCopy.toDto(userOrganizationId);
-    return originalDto.equals(repositoryDto);
+  private List<Candidate> getPersistedCandidates(Collection<Candidate> candidates) {
+    return candidates.stream()
+        .map(
+            candidate ->
+                Candidate.fetch(candidate::getIdentifier, candidateRepository, periodRepository))
+        .toList();
   }
 
   private boolean isSameVersionAsRepositoryCopy(Dao dao) {

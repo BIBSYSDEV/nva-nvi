@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.rest.remove;
 
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeriod;
 import static no.sikt.nva.nvi.common.db.UsernameFixtures.randomUsername;
+import static no.sikt.nva.nvi.common.dto.AllowedOperationFixtures.CURATOR_CAN_FINALIZE_APPROVAL;
 import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateHandler.CANDIDATE_IDENTIFIER;
 import static no.sikt.nva.nvi.rest.remove.RemoveNoteHandler.PARAM_NOTE_IDENTIFIER;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
@@ -16,13 +17,11 @@ import static org.hamcrest.Matchers.is;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
-import no.sikt.nva.nvi.common.service.dto.CandidateOperation;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.validator.FakeViewingScopeValidator;
 import no.sikt.nva.nvi.rest.BaseCandidateRestHandlerTest;
@@ -149,9 +148,8 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
     var candidateDto = handleRequest(request);
 
     var actualAllowedOperations = candidateDto.allowedOperations();
-    var expectedAllowedOperations =
-        List.of(CandidateOperation.APPROVAL_APPROVE, CandidateOperation.APPROVAL_REJECT);
-    assertThat(actualAllowedOperations, containsInAnyOrder(expectedAllowedOperations.toArray()));
+    assertThat(
+        actualAllowedOperations, containsInAnyOrder(CURATOR_CAN_FINALIZE_APPROVAL.toArray()));
   }
 
   private Candidate createNote(Candidate candidate, Username user) {
@@ -169,6 +167,9 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
   }
 
   private UUID getIdOfFirstNote(Candidate candidateWithNote) {
-    return candidateWithNote.toDto(topLevelOrganizationId).notes().getFirst().identifier();
+    return candidateWithNote.getNotes().values().stream()
+        .findFirst()
+        .orElseThrow(() -> new IllegalStateException("Candidate has no notes"))
+        .getNoteId();
   }
 }

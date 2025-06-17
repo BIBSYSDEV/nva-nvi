@@ -7,6 +7,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.model.PublicationDate;
 import no.unit.nva.commons.json.JsonSerializable;
@@ -39,6 +41,14 @@ public record CristinNviReport(
 
   public List<ScientificResource> scientificResources() {
     return nonNull(scientificResources) ? scientificResources : List.of();
+  }
+
+  @JsonIgnore
+  public Optional<String> getYearReportedFromHistoricalData() {
+    return scientificResources().stream()
+        .map(ScientificResource::getReportedYear)
+        .filter(Objects::nonNull)
+        .findFirst();
   }
 
   public List<ScientificPerson> getCreators() {

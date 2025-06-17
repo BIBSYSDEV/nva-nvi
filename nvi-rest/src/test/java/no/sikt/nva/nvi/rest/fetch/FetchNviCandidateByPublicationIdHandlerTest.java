@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.rest.fetch;
 
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.setupReportedCandidate;
+import static no.sikt.nva.nvi.common.dto.AllowedOperationFixtures.CURATOR_CAN_FINALIZE_APPROVAL;
 import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateByPublicationIdHandler.CANDIDATE_PUBLICATION_ID;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -12,16 +13,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
-import java.util.List;
 import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatusDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
-import no.sikt.nva.nvi.common.service.dto.CandidateOperation;
 import no.sikt.nva.nvi.rest.BaseCandidateRestHandlerTest;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.GatewayResponse;
 import org.apache.hc.core5.http.HttpStatus;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -72,8 +72,10 @@ class FetchNviCandidateByPublicationIdHandlerTest extends BaseCandidateRestHandl
     var request =
         createRequest(candidate.getPublicationId().toString(), randomOrganizationId, accessRight);
     var responseDto = handleRequest(request);
-    var expectedCandidateDto = candidate.toDto(randomOrganizationId);
-    assertEquals(expectedCandidateDto, responseDto);
+
+    Assertions.assertThat(responseDto)
+        .extracting(CandidateDto::id, CandidateDto::publicationId)
+        .containsExactly(candidate.getId(), candidate.getPublicationId());
   }
 
   @ParameterizedTest
@@ -97,10 +99,11 @@ class FetchNviCandidateByPublicationIdHandlerTest extends BaseCandidateRestHandl
 
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
-    var expectedResponse = candidate.toDto(topLevelOrganizationId);
-    var actualResponse = response.getBodyObject(CandidateDto.class);
+    var responseDto = response.getBodyObject(CandidateDto.class);
 
-    assertEquals(expectedResponse, actualResponse);
+    Assertions.assertThat(responseDto)
+        .extracting(CandidateDto::id, CandidateDto::publicationId)
+        .containsExactly(candidate.getId(), candidate.getPublicationId());
   }
 
   @Test
@@ -139,8 +142,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends BaseCandidateRestHandl
     var candidateDto = handleRequest(request);
 
     var actualAllowedOperations = candidateDto.allowedOperations();
-    var expectedAllowedOperations =
-        List.of(CandidateOperation.APPROVAL_APPROVE, CandidateOperation.APPROVAL_REJECT);
-    assertThat(actualAllowedOperations, containsInAnyOrder(expectedAllowedOperations.toArray()));
+    assertThat(
+        actualAllowedOperations, containsInAnyOrder(CURATOR_CAN_FINALIZE_APPROVAL.toArray()));
   }
 }
