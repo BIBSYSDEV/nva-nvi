@@ -7,7 +7,8 @@ import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 public enum CandidateOperation {
   APPROVAL_REJECT("approval/reject-candidate"),
   APPROVAL_APPROVE("approval/approve-candidate"),
-  APPROVAL_PENDING("approval/reset-approval");
+  APPROVAL_PENDING("approval/reset-approval"),
+  NOTE_CREATE("note/create-note");
 
   private final String value;
 

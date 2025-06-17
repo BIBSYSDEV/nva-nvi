@@ -16,6 +16,11 @@ public class BaseStrategy {
     this.userInstance = userInstance;
   }
 
+  protected boolean hasCreatorFromUserOrganization() {
+    return candidate.getPublicationDetails().nviCreators().stream()
+        .anyMatch(isAffiliatedWithTopLevelOrganization(userInstance.topLevelOrganizationId()));
+  }
+
   protected boolean hasUnverifiedCreatorFromUserOrganization() {
     return candidate.getPublicationDetails().nviCreators().stream()
         .filter(not(NviCreator::isVerified))

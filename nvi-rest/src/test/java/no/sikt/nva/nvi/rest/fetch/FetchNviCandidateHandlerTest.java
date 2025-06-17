@@ -1,7 +1,9 @@
 package no.sikt.nva.nvi.rest.fetch;
 
-import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
+import static no.sikt.nva.nvi.common.dto.AllowedOperationFixtures.CURATOR_CANNOT_UPDATE_APPROVAL;
+import static no.sikt.nva.nvi.common.dto.AllowedOperationFixtures.CURATOR_CAN_FINALIZE_APPROVAL;
+import static no.sikt.nva.nvi.common.dto.AllowedOperationFixtures.CURATOR_CAN_RESET_APPROVAL;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -15,14 +17,12 @@ import com.google.common.net.HttpHeaders;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatusDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
-import no.sikt.nva.nvi.common.service.dto.CandidateOperation;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.problem.UnverifiedCreatorFromOrganizationProblem;
 import no.sikt.nva.nvi.common.service.dto.problem.UnverifiedCreatorProblem;
@@ -180,9 +180,8 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
     var candidateDto = handleRequest(request);
 
     var actualAllowedOperations = candidateDto.allowedOperations();
-    var expectedAllowedOperations =
-        List.of(CandidateOperation.APPROVAL_APPROVE, CandidateOperation.APPROVAL_REJECT);
-    assertThat(actualAllowedOperations, containsInAnyOrder(expectedAllowedOperations.toArray()));
+    assertThat(
+        actualAllowedOperations, containsInAnyOrder(CURATOR_CAN_FINALIZE_APPROVAL.toArray()));
   }
 
   @Test
@@ -193,8 +192,8 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
     var candidateDto = handleRequest(request);
 
     var actualAllowedOperations = candidateDto.allowedOperations();
-    var expectedAllowedOperations = emptyList();
-    assertThat(actualAllowedOperations, containsInAnyOrder(expectedAllowedOperations.toArray()));
+    assertThat(
+        actualAllowedOperations, containsInAnyOrder(CURATOR_CANNOT_UPDATE_APPROVAL.toArray()));
   }
 
   @Test
@@ -206,9 +205,8 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
     var candidateDto = handleRequest(request);
 
     var actualAllowedOperations = candidateDto.allowedOperations();
-    var expectedAllowedOperations =
-        List.of(CandidateOperation.APPROVAL_APPROVE, CandidateOperation.APPROVAL_REJECT);
-    assertThat(actualAllowedOperations, containsInAnyOrder(expectedAllowedOperations.toArray()));
+    assertThat(
+        actualAllowedOperations, containsInAnyOrder(CURATOR_CAN_FINALIZE_APPROVAL.toArray()));
   }
 
   @Test
@@ -219,9 +217,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
     var candidateDto = handleRequest(request);
 
     var actualAllowedOperations = candidateDto.allowedOperations();
-    var expectedAllowedOperations =
-        List.of(CandidateOperation.APPROVAL_PENDING, CandidateOperation.APPROVAL_REJECT);
-    assertThat(actualAllowedOperations, containsInAnyOrder(expectedAllowedOperations.toArray()));
+    assertThat(actualAllowedOperations, containsInAnyOrder(CURATOR_CAN_RESET_APPROVAL.toArray()));
   }
 
   @Test
