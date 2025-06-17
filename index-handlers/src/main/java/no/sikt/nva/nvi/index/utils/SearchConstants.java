@@ -7,6 +7,7 @@ import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
 import no.sikt.nva.nvi.index.query.CandidateQuery;
 import no.sikt.nva.nvi.index.query.CandidateQuery.QueryFilterType;
 import nva.commons.core.Environment;
+import org.opensearch.client.opensearch._types.mapping.DateProperty;
 import org.opensearch.client.opensearch._types.mapping.DoubleNumberProperty;
 import org.opensearch.client.opensearch._types.mapping.KeywordProperty;
 import org.opensearch.client.opensearch._types.mapping.NestedProperty;
@@ -56,6 +57,7 @@ public final class SearchConstants {
   public static final String CREATED_DATE = "createdDate";
   public static final String IDENTIFIER = "identifier";
   public static final String PART_OF_IDENTIFIERS = "partOfIdentifiers";
+  public static final String INDEXED_AT = "indexDocumentCreatedAt";
 
   private SearchConstants() {}
 
@@ -83,6 +85,7 @@ public final class SearchConstants {
     return Map.of(
         GLOBAL_APPROVAL_STATUS, keywordProperty(),
         CREATED_DATE, keywordProperty(),
+        INDEXED_AT, dateProperty(),
         JSON_PATH_CONTRIBUTORS_NAME, keywordProperty(),
         JSON_PATH_NVI_CONTRIBUTORS, nestedProperty(nviContributorsProperties()),
         APPROVALS, nestedProperty(approvalProperties()));
@@ -142,5 +145,9 @@ public final class SearchConstants {
         .fields(Map.of(KEYWORD, keywordProperty()))
         .build()
         ._toProperty();
+  }
+
+  private static Property dateProperty() {
+    return new DateProperty.Builder().format("strict_date_optional_time").build()._toProperty();
   }
 }
