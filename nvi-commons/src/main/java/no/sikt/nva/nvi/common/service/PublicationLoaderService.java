@@ -17,6 +17,7 @@ import java.net.URI;
 import java.nio.file.Path;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.dto.PublicationDto;
+import no.sikt.nva.nvi.common.exceptions.ParsingException;
 import org.apache.jena.query.QueryExecutionFactory;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.riot.Lang;
@@ -47,16 +48,23 @@ public class PublicationLoaderService {
   }
 
   public PublicationDto extractAndTransform(URI publicationBucketUri) {
-    logger.info("Parsing expanded publication from S3: {}", publicationBucketUri);
+    logger.info("Parsing expanded publication from S3 ({})", publicationBucketUri);
+
+    logger.info("Extracting publication from S3 ({})", publicationBucketUri);
     var content = extractContentFromStorage(publicationBucketUri);
     var inputModel = createModel(content);
 
-    logger.info("Transforming model with SPARQL query...");
-    try (var queryExecution = QueryExecutionFactory.create(SPARQL_QUERY, inputModel)) {
-      var resultModel = queryExecution.execConstruct();
-      var publication = transformToPublication(resultModel);
-      logger.info("Successfully parsed publication with ID: {}", publication.id());
-      return publication;
+    logger.info("Parsing publication with SPARQL query ({})", publicationBucketUri);
+    var resultJson = parseInputModelToJsonLd(inputModel);
+
+    try {
+      logger.info("Transforming JSON-LD to PublicationDto ({})", publicationBucketUri);
+      return PublicationDto.from(resultJson);
+    } catch (JsonProcessingException e) {
+      logger.error("Failed to transform JSON-LD to PublicationDto ({})", publicationBucketUri);
+      logger.error("Unexpected error when framing output JSON: {}", e.getMessage());
+      logger.error(resultJson);
+      throw new ParsingException(e.getMessage());
     }
   }
 
@@ -67,7 +75,6 @@ public class PublicationLoaderService {
    * href="https://api.nva.unit.no/publication/context">source</a>.
    */
   private JsonNode extractContentFromStorage(URI publicationBucketUri) {
-    logger.info("Extracting document from S3: {}", publicationBucketUri);
     try {
       var jsonString = storageReader.read(publicationBucketUri);
       var jsonDocument = dtoObjectMapper.readTree(jsonString);
@@ -75,18 +82,17 @@ public class PublicationLoaderService {
       body.set(CONTEXT_NODE, INPUT_CONTEXT);
       return body;
     } catch (JsonProcessingException e) {
-      throw new RuntimeException("Unexpected error when processing input JSON", e);
+      throw new ParsingException(e.getMessage());
     }
   }
 
-  private PublicationDto transformToPublication(Model model) {
-    logger.info("Transforming RDF model to simplified Publication object");
-    try {
-      var document = JsonDocument.of(toJsonReader(model));
-      var jsonString = JsonLd.frame(document, OUTPUT_FRAMING_CONTEXT).get().toString();
-      return PublicationDto.from(jsonString);
-    } catch (JsonLdError | JsonProcessingException e) {
-      throw new RuntimeException("Unexpected error when framing output JSON", e);
+  private String parseInputModelToJsonLd(Model inputModel) {
+    try (var queryExecution = QueryExecutionFactory.create(SPARQL_QUERY, inputModel)) {
+      var resultModel = queryExecution.execConstruct();
+      var document = JsonDocument.of(toJsonReader(resultModel));
+      return JsonLd.frame(document, OUTPUT_FRAMING_CONTEXT).get().toString();
+    } catch (JsonLdError e) {
+      throw new ParsingException(e.getMessage());
     }
   }
 
@@ -101,7 +107,7 @@ public class PublicationLoaderService {
     try {
       return dtoObjectMapper.readTree(inputStream);
     } catch (JsonProcessingException e) {
-      throw new RuntimeException("Unexpected error when parsing static input context", e);
+      throw new ParsingException(e.getMessage());
     }
   }
 
@@ -109,7 +115,7 @@ public class PublicationLoaderService {
     try {
       return JsonDocument.of(inputStreamFromResources(OUTPUT_FRAMING_CONTEXT_FILE));
     } catch (JsonLdError e) {
-      throw new RuntimeException("Unexpected error when parsing static framing context", e);
+      throw new ParsingException(e.getMessage());
     }
   }
 }

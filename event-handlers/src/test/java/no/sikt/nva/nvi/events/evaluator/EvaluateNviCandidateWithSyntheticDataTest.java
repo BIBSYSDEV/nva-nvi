@@ -12,6 +12,7 @@ import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_NORWAY;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_SWEDEN;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.params.provider.Arguments.argumentSet;
 
 import java.util.List;
@@ -23,6 +24,7 @@ import no.sikt.nva.nvi.common.dto.PageCountDto;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.test.SampleExpandedContributor;
+import no.sikt.nva.nvi.test.SampleExpandedPublicationChannel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -184,6 +186,28 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
         .hasSize(1)
         .extracting("id")
         .containsExactly(creator.id());
+  }
+
+  @Test
+  void shouldThrowParsingExceptionWhenChannelIsMalformed() {
+    var validChannel =
+        SampleExpandedPublicationChannel.builder()
+            .withType("Journal")
+            .withLevel("LevelOne")
+            .build();
+    var malformedChannel =
+        SampleExpandedPublicationChannel.builder().withType("Journal").withLevel(null).build();
+
+    var publication =
+        factory
+            .getExpandedPublicationBuilder()
+            .withPublicationChannels(List.of(validChannel, malformedChannel))
+            .build();
+
+    var exception = assertThrows(RuntimeException.class, () -> getEvaluatedCandidate(publication));
+    assertThat(exception.getMessage())
+        .contains("ParsingException")
+        .contains("Required field 'scientificValue' is null");
   }
 
   private static Stream<Arguments> pageCountProvider() {
