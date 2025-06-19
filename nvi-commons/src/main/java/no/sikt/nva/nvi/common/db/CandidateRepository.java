@@ -122,6 +122,7 @@ public class CandidateRepository extends DynamoRepository {
             .identifier(identifier)
             .candidate(dbCandidate)
             .periodYear(year)
+            .version(randomUUID().toString())
             .build();
     var uniqueness = new CandidateUniquenessEntryDao(dbCandidate.publicationId().toString());
     var transactionBuilder = buildTransaction(approvalStatuses, candidate, identifier, uniqueness);
