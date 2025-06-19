@@ -64,7 +64,7 @@ public class PublicationLoaderService {
       logger.error("Failed to transform JSON-LD to PublicationDto ({})", publicationBucketUri);
       logger.error("Unexpected error when framing output JSON: {}", e.getMessage());
       logger.error(resultJson);
-      throw new ParsingException("Unexpected error when framing output JSON");
+      throw new ParsingException(e.getMessage());
     }
   }
 
@@ -82,7 +82,7 @@ public class PublicationLoaderService {
       body.set(CONTEXT_NODE, INPUT_CONTEXT);
       return body;
     } catch (JsonProcessingException e) {
-      throw new ParsingException("Unexpected error when processing input JSON");
+      throw new ParsingException(e.getMessage());
     }
   }
 
