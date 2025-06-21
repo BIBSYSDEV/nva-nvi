@@ -36,6 +36,8 @@ public class ExamplePublications {
   public static final String EXAMPLE_INVALID_DRAFT = "expandedPublications/invalidDraft.json";
   public static final String EXAMPLE_WITH_DUPLICATE_DATE =
       "expandedPublications/nonCandidateWithDuplicateDate.json";
+  public static final String EXAMPLE_WITH_TWO_TITLES =
+      "expandedPublications/applicableAcademicChapterWithTwoTitles.json";
 
   public static final PublicationDto EXAMPLE_PUBLICATION_1 =
       PublicationDto.builder()
