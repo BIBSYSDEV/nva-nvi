@@ -1,0 +1,207 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix : <https://nva.sikt.no/ontology/publication#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+:PublicationShape a sh:NodeShape ;
+  sh:targetClass :Publication ;
+  sh:property [
+    sh:path :contributor ;
+    sh:minCount 1 ;
+    sh:nodeKind sh:IRI
+  ] ;
+  sh:property [
+    sh:path :identifier ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:datatype xsd:string
+  ] ;
+  sh:property [
+    sh:path :modifiedDate ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:datatype xsd:dateTime
+  ] ;
+  sh:property [
+    sh:path :abstractText ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:datatype xsd:string
+  ] ;
+  sh:property [
+    sh:path :isApplicable ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:datatype xsd:boolean ;
+    sh:in ( "true"^^xsd:boolean )
+  ] ;
+  sh:property [
+    sh:path :isInternationalCollaboration ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:datatype xsd:boolean
+  ] ;
+  sh:property [
+    sh:path :language ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:nodeKind sh:IRI
+  ] ;
+  sh:property [
+    sh:path :pageCount ;
+    sh:minCount 1 ;
+    sh:maxCount 1
+  ] ;
+  sh:property [
+    sh:path :publicationChannel ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:nodeKind sh:IRI
+  ] ;
+  sh:property [
+    sh:path :publicationDate ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:nodeKind sh:BlankNode
+  ] ;
+  sh:property [
+    sh:path :publicationType ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:nodeKind sh:IRI ;
+    sh:in ( :AcademicArticle )
+  ] ;
+  sh:property [
+    sh:path :status ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:nodeKind sh:IRI ;
+    sh:in ( :PUBLISHED )
+  ] ;
+  sh:property [
+    sh:path :title ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:datatype xsd:string
+  ] ;
+  sh:property [
+    sh:path :topLevelOrganization ;
+    sh:minCount 1 ;
+    sh:nodeKind sh:IRI
+  ] .
+
+:PublicationDateShape a sh:NodeShape ;
+  sh:targetClass :PublicationDate ;
+  sh:property [
+    sh:path :year ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:datatype xsd:string ;
+    sh:pattern "^[0-9]{4}"
+  ] .
+
+
+:ContributorShape a sh:NodeShape ;
+  sh:targetClass :Contributor ;
+  sh:property [
+    sh:path :affiliation ;
+    sh:minCount 1 ;
+    sh:nodeKind sh:IRI
+  ] ;
+  sh:property [
+    sh:path :name ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:datatype xsd:string
+  ] ;
+  sh:property [
+    sh:path :role ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:in (:Creator)
+  ] ;
+  sh:property [
+    sh:path :verificationStatus ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:datatype xsd:string ;
+    sh:in ("Verified")
+  ] .
+
+:OrganizationShape a sh:NodeShape ;
+  sh:targetClass :Organization ;
+  # Validate the country if and only if it is present
+  sh:property [
+    sh:path :country ;
+    sh:or (
+      [ sh:exists false ]
+      [
+      sh:minCount 1 ;
+      sh:maxCount 1 ;
+      sh:datatype xsd:string ;
+      sh:in ( "NO" )
+      ]
+    )
+
+  ] ;
+  sh:property [
+    sh:path :hasPart ;
+    sh:nodeKind sh:IRI
+  ] ;
+  sh:property [
+    sh:path :partOf ;
+    sh:nodeKind sh:IRI
+  ] ;
+  sh:property [
+    sh:path :label ;
+    sh:or (
+      [sh:exists true]
+      [
+      sh:minCount 1 ;
+      sh:datatype rdf:langString ;
+      sh:languageIn ( "en" "nb" "nn" ) ;
+      sh:uniqueLang true
+      ]
+    )
+  ] .
+
+:PublicationChannelShape a sh:NodeShape ;
+  sh:targetClass :PublicationChannel ;
+  sh:property [
+    sh:path :channelType ;
+    sh:nodeKind sh:IRI ;
+    sh:in (:Journal :Series :Publisher)
+  ] ;
+  sh:property [
+    sh:path :identifier ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:datatype xsd:string
+  ] ;
+  sh:property [
+    sh:path :name ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:datatype xsd:string
+  ] ;
+  sh:property [
+    sh:path :printIssn ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:datatype xsd:string ;
+    sh:pattern "^[0-9]{4}-[0-9]{3}[0-9X]$"
+  ] ;
+  sh:property [
+    sh:path :scientificValue ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:datatype xsd:string ;
+    sh:in ( "LevelOne" "LevelTwo" )
+  ] ;
+  sh:property [
+    sh:path :year ;
+    sh:minCount 1 ;
+    sh:maxCount 1 ;
+    sh:datatype xsd:string ;
+    sh:pattern "^[0-9]{4}$"
+  ] .

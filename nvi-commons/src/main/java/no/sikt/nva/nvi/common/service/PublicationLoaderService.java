@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.ByteArrayOutputStream;
 import java.io.StringReader;
 import java.net.URI;
+import java.nio.charset.Charset;
 import java.nio.file.Path;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.dto.PublicationDto;
@@ -22,6 +23,10 @@ import org.apache.jena.query.QueryExecutionFactory;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFDataMgr;
+import org.apache.jena.shacl.ShaclValidator;
+import org.apache.jena.shacl.Shapes;
+import org.apache.jena.shacl.ValidationReport;
+import org.apache.jena.shacl.lib.ShLib;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -89,6 +94,7 @@ public class PublicationLoaderService {
   private String parseInputModelToJsonLd(Model inputModel) {
     try (var queryExecution = QueryExecutionFactory.create(SPARQL_QUERY, inputModel)) {
       var resultModel = queryExecution.execConstruct();
+      validateResulModel(resultModel);
       var document = JsonDocument.of(toJsonReader(resultModel));
       return JsonLd.frame(document, OUTPUT_FRAMING_CONTEXT).get().toString();
     } catch (JsonLdError e) {
@@ -96,10 +102,24 @@ public class PublicationLoaderService {
     }
   }
 
+  private void validateResulModel(Model resultModel) {
+    var shape = Shapes.parse(RDFDataMgr.loadGraph("shape.ttl"));
+    var validation = ShaclValidator.get().validate(shape, resultModel.getGraph());
+    if (!validation.conforms() && logger.isWarnEnabled()) {
+      logger.warn("Model validation failed: {}", generateReportString(validation));
+    }
+  }
+
+  private static String generateReportString(ValidationReport validation) {
+    var outputStream = new ByteArrayOutputStream();
+    ShLib.printReport(outputStream, validation);
+    return outputStream.toString(Charset.defaultCharset());
+  }
+
   private static StringReader toJsonReader(Model resultModel) {
     var outputStream = new ByteArrayOutputStream();
     RDFDataMgr.write(outputStream, resultModel, Lang.JSONLD);
-    return new StringReader(outputStream.toString());
+    return new StringReader(outputStream.toString(Charset.defaultCharset()));
   }
 
   private static JsonNode getInputContext() {
