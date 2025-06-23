@@ -69,7 +69,7 @@
     sh:minCount 1 ;
     sh:maxCount 1 ;
     sh:nodeKind sh:IRI ;
-    sh:in ( :AcademicArticle )
+    sh:in ( :AcademicMonograph :AcademicCommentary :AcademicChapter :AcademicArticle :AcademicLiteratureReview )
   ] ;
   sh:property [
     sh:path :status ;
