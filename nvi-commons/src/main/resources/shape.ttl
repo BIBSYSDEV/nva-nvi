@@ -125,7 +125,7 @@
     sh:minCount 1 ;
     sh:maxCount 1 ;
     sh:datatype xsd:string ;
-    sh:in ("Verified")
+    sh:in ( "Verified" "NotVerified" )
   ] .
 
 :OrganizationShape a sh:NodeShape ;
