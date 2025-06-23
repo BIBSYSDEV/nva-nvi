@@ -186,7 +186,7 @@
   ] ;
   sh:property [
     sh:path :printIssn ;
-    sh:minCount 1 ;
+    sh:minCount 0 ;
     sh:maxCount 1 ;
     sh:datatype xsd:string ;
     sh:pattern "^[0-9]{4}-[0-9]{3}[0-9X]$"
