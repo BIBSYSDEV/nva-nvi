@@ -106,7 +106,7 @@
   sh:property [
     sh:path :affiliation ;
     sh:minCount 1 ;
-    sh:nodeKind sh:IRI
+    sh:nodeKind sh:BlankNodeOrIRI
   ] ;
   sh:property [
     sh:path :name ;
