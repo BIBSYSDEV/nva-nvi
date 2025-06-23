@@ -55,7 +55,7 @@
   sh:property [
     sh:path :publicationChannel ;
     sh:minCount 1 ;
-    sh:maxCount 1 ;
+    sh:maxCount 2 ;
     sh:nodeKind sh:IRI
   ] ;
   sh:property [
