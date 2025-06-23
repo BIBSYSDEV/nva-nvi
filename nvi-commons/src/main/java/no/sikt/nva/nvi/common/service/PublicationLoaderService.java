@@ -94,7 +94,7 @@ public class PublicationLoaderService {
   private String parseInputModelToJsonLd(Model inputModel) {
     try (var queryExecution = QueryExecutionFactory.create(SPARQL_QUERY, inputModel)) {
       var resultModel = queryExecution.execConstruct();
-      validateResulModel(resultModel);
+      validateResultModel(resultModel);
       var document = JsonDocument.of(toJsonReader(resultModel));
       return JsonLd.frame(document, OUTPUT_FRAMING_CONTEXT).get().toString();
     } catch (JsonLdError e) {
