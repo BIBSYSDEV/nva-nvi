@@ -102,7 +102,7 @@ public class PublicationLoaderService {
     }
   }
 
-  private void validateResulModel(Model resultModel) {
+  private void validateResultModel(Model resultModel) {
     var shape = Shapes.parse(RDFDataMgr.loadGraph("shape.ttl"));
     var validation = ShaclValidator.get().validate(shape, resultModel.getGraph());
     if (!validation.conforms() && logger.isWarnEnabled()) {
