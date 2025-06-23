@@ -12,6 +12,7 @@ import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_WITH_T
 import static nva.commons.core.ioutils.IoUtils.stringFromResources;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.params.provider.Arguments.argumentSet;
 
@@ -71,6 +72,21 @@ class PublicationLoaderServiceTest {
     var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
     assertThrows(ParsingException.class, () -> parseExampleDocument(EXAMPLE_WITH_TWO_TITLES));
     assertThat(logAppender.getMessages()).containsSequence("Invalid cardinality");
+  }
+
+  @Test
+  void shouldNotLogUnverifiedContributorAsError() {
+    var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
+    assertDoesNotThrow(() -> parseExampleDocument(EXAMPLE_PUBLICATION_2_PATH));
+
+    var messages = logAppender.getMessages();
+    var pattern =
+        """
+         +Path=<https://nva.sikt.no/ontology/publication#contributor>
+         +Value: _:.*
+         +Message: Should match verified and unverified contributors
+        """;
+    assertThat(messages).doesNotContainPattern(pattern);
   }
 
   private PublicationDto parseExampleDocument(String filename) {

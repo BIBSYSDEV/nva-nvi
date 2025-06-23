@@ -6,9 +6,10 @@
 :PublicationShape a sh:NodeShape ;
   sh:targetClass :Publication ;
   sh:property [
+    sh:message "Should match verified and unverified contributors" ;
     sh:path :contributor ;
     sh:minCount 1 ;
-    sh:nodeKind sh:IRI
+    sh:nodeKind sh:BlankNodeOrIRI
   ] ;
   sh:property [
     sh:path :identifier ;
