@@ -76,9 +76,9 @@ public enum EnvironmentFixtures {
 
   public static FakeEnvironment getBatchScanRecoveryHandlerEnvironment() {
     return getDefaultEnvironmentBuilder()
-               .with(EXPANDED_RESOURCES_BUCKET)
-               .with(BATCH_SCAN_RECOVERY_QUEUE)
-               .build();
+        .with(EXPANDED_RESOURCES_BUCKET)
+        .with(BATCH_SCAN_RECOVERY_QUEUE)
+        .build();
   }
 
   public static FakeEnvironment getUpsertNviCandidateHandlerEnvironment() {

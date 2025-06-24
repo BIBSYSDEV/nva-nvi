@@ -75,10 +75,12 @@ public class BatchScanUtil {
   }
 
   public void migrateAndUpdateVersion(Collection<UUID> candidateIdentifiers) {
-    var migratedCandidates = candidateIdentifiers.stream().map(candidateRepository::findCandidateById)
-                         .flatMap(Optional::stream)
-                         .map(this::migrate)
-                         .toList();
+    var migratedCandidates =
+        candidateIdentifiers.stream()
+            .map(candidateRepository::findCandidateById)
+            .flatMap(Optional::stream)
+            .map(this::migrate)
+            .toList();
     candidateRepository.writeEntries(migratedCandidates);
   }
 
@@ -102,9 +104,7 @@ public class BatchScanUtil {
       return migrateCandidateDao(candidateDao);
     } catch (Exception e) {
       queueClient.sendMessage(
-          e.toString(),
-          environment.readEnv(BATCH_SCAN_RECOVERY_QUEUE),
-          candidateDao.identifier());
+          e.toString(), environment.readEnv(BATCH_SCAN_RECOVERY_QUEUE), candidateDao.identifier());
       return candidateDao;
     }
   }

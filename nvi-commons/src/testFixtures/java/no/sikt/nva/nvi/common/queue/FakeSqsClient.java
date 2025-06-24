@@ -101,15 +101,22 @@ public class FakeSqsClient implements QueueClient {
   public NviReceiveMessageResponse receiveMessage(String queueUrl, int maxNumberOfMessages) {
     validateQueueUrl(queueUrl);
     var numberOfMessages = Math.min(maxNumberOfMessages, sentMessages.size());
-    return new NviReceiveMessageResponse(sentMessages.subList(0, numberOfMessages).stream()
-                                      .map(sendMessageRequest -> new NviReceiveMessage(sendMessageRequest.messageBody(), null, sendMessageRequest.messageAttributes().entrySet().stream()
-                                                                                                                                   .collect(
-                                                                                                                                       Collectors.toMap(
-                                                                                                                                           Entry::getKey, entry -> entry.getValue().stringValue())), null))
-                                      .toList());
+    return new NviReceiveMessageResponse(
+        sentMessages.subList(0, numberOfMessages).stream()
+            .map(
+                sendMessageRequest ->
+                    new NviReceiveMessage(
+                        sendMessageRequest.messageBody(),
+                        null,
+                        sendMessageRequest.messageAttributes().entrySet().stream()
+                            .collect(
+                                Collectors.toMap(
+                                    Entry::getKey, entry -> entry.getValue().stringValue())),
+                        null))
+            .toList());
   }
 
-  //TODO: Fix-me Should delete by receiptHandle
+  // TODO: Fix-me Should delete by receiptHandle
   @Override
   public void deleteMessage(String queueUrl, String receiptHandle) {
     validateQueueUrl(queueUrl);

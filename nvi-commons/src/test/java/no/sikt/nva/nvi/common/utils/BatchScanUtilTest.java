@@ -32,6 +32,7 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
@@ -399,7 +400,8 @@ class BatchScanUtilTest {
 
     batchScanUtil.migrateAndUpdateVersion(10, null, emptyList());
 
-    var sqsMessage = queueClient.getAllSentSqsEvents(BATCH_SCAN_RECOVERY_QUEUE.getValue()).getFirst();
+    var sqsMessage =
+        queueClient.getAllSentSqsEvents(BATCH_SCAN_RECOVERY_QUEUE.getValue()).getFirst();
 
     assertEquals(
         candidate.identifier().toString(),

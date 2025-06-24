@@ -6,7 +6,7 @@ import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.createNumberOfCandi
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
@@ -30,7 +30,6 @@ class BatchScanRecoveryHandlerTest {
 
   protected static final FakeContext CONTEXT = new FakeContext();
   private CandidateRepository candidateRepository;
-  private TestScenario scenario;
   private FakeSqsClient queueClient;
   private BatchScanRecoveryHandler handler;
   private OutputStream output;
@@ -38,7 +37,7 @@ class BatchScanRecoveryHandlerTest {
 
   @BeforeEach
   public void setup() {
-    scenario = new TestScenario();
+    TestScenario scenario = new TestScenario();
     candidateRepository = scenario.getCandidateRepository();
     output = new ByteArrayOutputStream();
     queueClient = new FakeSqsClient();
@@ -68,7 +67,7 @@ class BatchScanRecoveryHandlerTest {
 
     candidates.forEach(
         candidate ->
-            assertFalse(getMigratedCandidate(candidate).version().equals(candidate.version())));
+            assertNotEquals(getMigratedCandidate(candidate).version(), candidate.version()));
   }
 
   @Test
