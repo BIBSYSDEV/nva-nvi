@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.events.batch;
 
-import static no.sikt.nva.nvi.common.queue.NviQueueClient.defaultSqsClient;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
 import java.io.IOException;
@@ -25,7 +24,7 @@ public class BatchScanRecoveryHandler implements RequestStreamHandler {
 
   @JacocoGenerated
   private BatchScanRecoveryHandler() {
-    this(new NviQueueClient(), BatchScanUtil.defaultNviService(), new Environment())M
+    this(new NviQueueClient(), BatchScanUtil.defaultNviService(), new Environment());
   }
   public BatchScanRecoveryHandler(
       QueueClient queueClient, BatchScanUtil batchScanUtil, Environment environment) {
