@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.common.queue;
 
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
+import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -40,7 +41,7 @@ public class FakeSqsClient implements QueueClient {
 
   private final List<DeleteMessageRequest> deleteMessages = new ArrayList<>();
 
-  public List<SQSEvent> getAllSentSqsEvents(String queueUrl) {
+  public List<SQSMessage> getAllSentSqsEvents(String queueUrl) {
     var singleMessages =
         sentMessages.stream()
             .filter(request -> request.queueUrl().equals(queueUrl))
@@ -49,7 +50,10 @@ public class FakeSqsClient implements QueueClient {
         sentBatches.stream()
             .filter(request -> request.queueUrl().equals(queueUrl))
             .map(QueueServiceTestUtils::from);
-    return Stream.concat(singleMessages, batchedMessages).toList();
+    return Stream.concat(singleMessages, batchedMessages)
+        .map(SQSEvent::getRecords)
+        .flatMap(List::stream)
+        .toList();
   }
 
   public List<SendMessageRequest> getSentMessages() {

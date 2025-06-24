@@ -264,6 +264,10 @@ Resources:
     Type: AWS::SQS::Queue
     Properties:
       MessageRetentionPeriod: 1209600 #14 days
+  BatchScanRecoveryQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      MessageRetentionPeriod: 1209600 #14 days
 
   #=============================== For database events ============================================
   DbEventQueue:
@@ -923,6 +927,7 @@ Resources:
         Variables:
           EVENT_BUS_NAME: !GetAtt InternalBus.Name
           EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
+          BATCH_SCAN_RECOVERY_QUEUE: !Ref BatchScanRecoveryQueue
       Events:
         EventBridgeEvent:
           Type: EventBridgeRule

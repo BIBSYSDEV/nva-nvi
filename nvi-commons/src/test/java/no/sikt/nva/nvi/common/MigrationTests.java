@@ -25,6 +25,7 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.model.DbCreatorTypeListConverter;
 import no.sikt.nva.nvi.common.model.CandidateFixtures;
+import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.utils.BatchScanUtil;
@@ -46,7 +47,10 @@ class MigrationTests {
     periodRepository = scenario.getPeriodRepository();
     batchScanUtil =
         new BatchScanUtil(
-            candidateRepository, scenario.getS3StorageReaderForExpandedResourcesBucket());
+            candidateRepository,
+            scenario.getS3StorageReaderForExpandedResourcesBucket(),
+            new FakeSqsClient(),
+            FakeEnvironment.builder().build());
   }
 
   @Test
