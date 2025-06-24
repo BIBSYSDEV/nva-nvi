@@ -23,7 +23,7 @@ public class BatchScanRecoveryHandler implements RequestStreamHandler {
   private final BatchScanUtil batchScanUtil;
 
   @JacocoGenerated
-  private BatchScanRecoveryHandler() {
+  public BatchScanRecoveryHandler() {
     this(new NviQueueClient(), BatchScanUtil.defaultNviService(), new Environment());
   }
 
