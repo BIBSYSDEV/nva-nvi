@@ -29,7 +29,9 @@ public enum EnvironmentFixtures {
   DB_EVENTS_QUEUE_URL("http://localhost:3000/db-events-queue"),
   EXPANDED_RESOURCES_BUCKET("persisted-resources-bucket"),
   INDEX_DLQ("http://localhost:3000/index-dlq"),
-  UPSERT_CANDIDATE_DLQ_QUEUE_URL("http://localhost:3000/upsert-candidate-dlq");
+  UPSERT_CANDIDATE_DLQ_QUEUE_URL("http://localhost:3000/upsert-candidate-dlq"),
+  EVENT_BUS_NAME("bus-name"),
+  BATCH_SCAN_RECOVERY_QUEUE("recover-queue");
 
   private final String value;
 
@@ -61,6 +63,14 @@ public enum EnvironmentFixtures {
     return getDefaultEnvironmentBuilder()
         .with(EXPANDED_RESOURCES_BUCKET)
         .with(CANDIDATE_QUEUE_URL)
+        .build();
+  }
+
+  public static FakeEnvironment getEventBasedBatchScanHandlerEnvironment() {
+    return getDefaultEnvironmentBuilder()
+        .with(EXPANDED_RESOURCES_BUCKET)
+        .with(BATCH_SCAN_RECOVERY_QUEUE)
+        .with(EVENT_BUS_NAME)
         .build();
   }
 

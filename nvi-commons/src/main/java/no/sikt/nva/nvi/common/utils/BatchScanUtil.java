@@ -29,26 +29,40 @@ import no.sikt.nva.nvi.common.db.model.KeyField;
 import no.sikt.nva.nvi.common.dto.ContributorDto;
 import no.sikt.nva.nvi.common.dto.PublicationDto;
 import no.sikt.nva.nvi.common.model.ListingResult;
+import no.sikt.nva.nvi.common.queue.NviQueueClient;
+import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.common.service.PublicationLoaderService;
 import no.sikt.nva.nvi.common.service.model.PageCount;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 
+@SuppressWarnings("PMD.CouplingBetweenObjects")
 public class BatchScanUtil {
 
+  private static final String BATCH_SCAN_RECOVERY_QUEUE = "BATCH_SCAN_RECOVERY_QUEUE";
   private final CandidateRepository candidateRepository;
   private final PublicationLoaderService publicationLoader;
+  private final QueueClient dlqClient;
+  private final Environment environment;
 
-  public BatchScanUtil(CandidateRepository candidateRepository, StorageReader<URI> storageReader) {
+  public BatchScanUtil(
+      CandidateRepository candidateRepository,
+      StorageReader<URI> storageReader,
+      QueueClient dlqClient,
+      Environment environment) {
     this.candidateRepository = candidateRepository;
     this.publicationLoader = new PublicationLoaderService(storageReader);
+    this.dlqClient = dlqClient;
+    this.environment = environment;
   }
 
   @JacocoGenerated
   public static BatchScanUtil defaultNviService() {
     return new BatchScanUtil(
         new CandidateRepository(defaultDynamoClient()),
-        new S3StorageReader(new Environment().readEnv("EXPANDED_RESOURCES_BUCKET")));
+        new S3StorageReader(new Environment().readEnv("EXPANDED_RESOURCES_BUCKET")),
+        new NviQueueClient(),
+        new Environment());
   }
 
   public ListingResult<Dao> migrateAndUpdateVersion(
@@ -69,9 +83,21 @@ public class BatchScanUtil {
 
   private Dao migrate(Dao databaseEntry) {
     if (databaseEntry instanceof CandidateDao storedCandidate) {
-      return migrateCandidateDao(storedCandidate);
+      return attemptToMigrateCandidate(databaseEntry, storedCandidate);
     }
     return databaseEntry;
+  }
+
+  private Dao attemptToMigrateCandidate(Dao databaseEntry, CandidateDao storedCandidate) {
+    try {
+      return migrateCandidateDao(storedCandidate);
+    } catch (Exception e) {
+      dlqClient.sendMessage(
+          e.toString(),
+          environment.readEnv(BATCH_SCAN_RECOVERY_QUEUE),
+          storedCandidate.identifier());
+      return databaseEntry;
+    }
   }
 
   private CandidateDao migrateCandidateDao(CandidateDao candidateDao) {
