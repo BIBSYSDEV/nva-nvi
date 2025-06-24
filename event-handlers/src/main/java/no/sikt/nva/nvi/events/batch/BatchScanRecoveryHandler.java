@@ -26,6 +26,7 @@ public class BatchScanRecoveryHandler implements RequestStreamHandler {
   private BatchScanRecoveryHandler() {
     this(new NviQueueClient(), BatchScanUtil.defaultNviService(), new Environment());
   }
+
   public BatchScanRecoveryHandler(
       QueueClient queueClient, BatchScanUtil batchScanUtil, Environment environment) {
     this.queueClient = queueClient;

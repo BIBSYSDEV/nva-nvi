@@ -1,13 +1,14 @@
 package no.sikt.nva.nvi.events.batch;
 
+import static java.util.stream.Collectors.toSet;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.BATCH_SCAN_RECOVERY_QUEUE;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.getBatchScanRecoveryHandlerEnvironment;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.createNumberOfCandidatesForYear;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.io.ByteArrayOutputStream;
@@ -15,6 +16,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
+import java.util.UUID;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
@@ -36,7 +38,7 @@ class BatchScanRecoveryHandlerTest {
   private Environment environment;
 
   @BeforeEach
-  public void setup() {
+  void setup() {
     TestScenario scenario = new TestScenario();
     candidateRepository = scenario.getCandidateRepository();
     output = new ByteArrayOutputStream();
@@ -93,17 +95,12 @@ class BatchScanRecoveryHandlerTest {
 
   private static void assertMessagesExistOnQueue(
       List<CandidateDao> candidates, List<SQSMessage> messagesOnQueue) {
-    candidates.forEach(
-        candidate ->
-            assertTrue(
-                messagesOnQueue.stream()
-                    .anyMatch(
-                        message ->
-                            message
-                                .getMessageAttributes()
-                                .get("candidateIdentifier")
-                                .getStringValue()
-                                .equals(candidate.identifier().toString()))));
+    var expectedCandidates =
+        candidates.stream().map(CandidateDao::identifier).map(UUID::toString).collect(toSet());
+    assertThat(messagesOnQueue)
+        .extracting(
+            message -> message.getMessageAttributes().get("candidateIdentifier").getStringValue())
+        .containsAll(expectedCandidates);
   }
 
   private CandidateDao getMigratedCandidate(CandidateDao candidate) {
