@@ -37,7 +37,7 @@ class BatchScanRecoveryHandlerTest {
 
   @BeforeEach
   void setup() {
-    TestScenario scenario = new TestScenario();
+    var scenario = new TestScenario();
     candidateRepository = scenario.getCandidateRepository();
     output = new ByteArrayOutputStream();
     queueClient = new FakeSqsClient();
