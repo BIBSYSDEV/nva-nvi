@@ -39,7 +39,7 @@ import nva.commons.core.JacocoGenerated;
 @SuppressWarnings("PMD.CouplingBetweenObjects")
 public class BatchScanUtil {
 
-  protected static final String BATCH_SCAN_RECOVERY_QUEUE = "BATCH_SCAN_RECOVERY_QUEUE";
+  private static final String BATCH_SCAN_RECOVERY_QUEUE = "BATCH_SCAN_RECOVERY_QUEUE";
   private final CandidateRepository candidateRepository;
   private final PublicationLoaderService publicationLoader;
   private final QueueClient dlqClient;
