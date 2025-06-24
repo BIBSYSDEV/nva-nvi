@@ -11,6 +11,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.S3StorageReader;
@@ -42,17 +43,17 @@ public class BatchScanUtil {
   private static final String BATCH_SCAN_RECOVERY_QUEUE = "BATCH_SCAN_RECOVERY_QUEUE";
   private final CandidateRepository candidateRepository;
   private final PublicationLoaderService publicationLoader;
-  private final QueueClient dlqClient;
+  private final QueueClient queueClient;
   private final Environment environment;
 
   public BatchScanUtil(
       CandidateRepository candidateRepository,
       StorageReader<URI> storageReader,
-      QueueClient dlqClient,
+      QueueClient queueClient,
       Environment environment) {
     this.candidateRepository = candidateRepository;
     this.publicationLoader = new PublicationLoaderService(storageReader);
-    this.dlqClient = dlqClient;
+    this.queueClient = queueClient;
     this.environment = environment;
   }
 
@@ -73,6 +74,14 @@ public class BatchScanUtil {
     return scanResult;
   }
 
+  public void migrateAndUpdateVersion(Collection<UUID> candidateIdentifiers) {
+    var migratedCandidates = candidateIdentifiers.stream().map(candidateRepository::findCandidateById)
+                         .flatMap(Optional::stream)
+                         .map(this::migrate)
+                         .toList();
+    candidateRepository.writeEntries(migratedCandidates);
+  }
+
   /**
    * This is a wrapper method for any temporary migration code that needs to be added. Ensure that
    * all methods are idempotent and have deprecation annotations.
@@ -83,20 +92,20 @@ public class BatchScanUtil {
 
   private Dao migrate(Dao databaseEntry) {
     if (databaseEntry instanceof CandidateDao storedCandidate) {
-      return attemptToMigrateCandidate(databaseEntry, storedCandidate);
+      return attemptToMigrateCandidate(storedCandidate);
     }
     return databaseEntry;
   }
 
-  private Dao attemptToMigrateCandidate(Dao databaseEntry, CandidateDao storedCandidate) {
+  private Dao attemptToMigrateCandidate(CandidateDao candidateDao) {
     try {
-      return migrateCandidateDao(storedCandidate);
+      return migrateCandidateDao(candidateDao);
     } catch (Exception e) {
-      dlqClient.sendMessage(
+      queueClient.sendMessage(
           e.toString(),
           environment.readEnv(BATCH_SCAN_RECOVERY_QUEUE),
-          storedCandidate.identifier());
-      return databaseEntry;
+          candidateDao.identifier());
+      return candidateDao;
     }
   }
 

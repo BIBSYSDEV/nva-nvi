@@ -678,6 +678,23 @@ Resources:
       RestApiId: !Ref ScientificIndexApi
       Stage: !Ref ScientificIndexApi.Stage
 
+  #============================= Button Handlers ======================================================
+  BatchScanRecoveryHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: event-handlers
+      Handler: no.sikt.nva.nvi.events.batch.BatchScanRecoveryHandler::handleRequest
+      Role: !GetAtt NvaNviRole.Arn
+      Timeout: 900
+      MemorySize: 1536
+      AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
+      Environment:
+        Variables:
+          EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
+          BATCH_SCAN_RECOVERY_QUEUE: !Ref BatchScanRecoveryQueue
+
   #============================= Event Handlers ======================================================
   QueuePersistedResourceHandler:
     Type: AWS::Serverless::Function
