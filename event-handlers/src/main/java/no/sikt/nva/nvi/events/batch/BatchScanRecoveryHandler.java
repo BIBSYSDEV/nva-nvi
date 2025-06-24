@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.events.batch;
 
+import static no.sikt.nva.nvi.common.queue.NviQueueClient.defaultSqsClient;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
 import java.io.IOException;
@@ -7,10 +8,12 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.List;
 import java.util.UUID;
+import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.NviReceiveMessage;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.common.utils.BatchScanUtil;
 import nva.commons.core.Environment;
+import nva.commons.core.JacocoGenerated;
 
 public class BatchScanRecoveryHandler implements RequestStreamHandler {
 
@@ -20,6 +23,10 @@ public class BatchScanRecoveryHandler implements RequestStreamHandler {
   private final Environment environment;
   private final BatchScanUtil batchScanUtil;
 
+  @JacocoGenerated
+  private BatchScanRecoveryHandler() {
+    this(new NviQueueClient(), BatchScanUtil.defaultNviService(), new Environment())M
+  }
   public BatchScanRecoveryHandler(
       QueueClient queueClient, BatchScanUtil batchScanUtil, Environment environment) {
     this.queueClient = queueClient;
