@@ -65,7 +65,9 @@ public class BatchScanRecoveryHandler implements RequestStreamHandler {
       var candidateIdentifiers = getCandidateIdentifiers(messages);
       batchScanUtil.migrateAndUpdateVersion(candidateIdentifiers);
       messages.forEach(
-          message -> queueClient.deleteMessage(RECOVERY_BATCH_SCAN_QUEUE, message.receiptHandle()));
+          message ->
+              queueClient.deleteMessage(
+                  environment.readEnv(RECOVERY_BATCH_SCAN_QUEUE), message.receiptHandle()));
       counter += messages.size();
     }
   }
