@@ -7,8 +7,6 @@ import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.createNumberOfCandi
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.io.ByteArrayOutputStream;
@@ -54,43 +52,48 @@ class BatchScanRecoveryHandlerTest {
   }
 
   @Test
-  void shouldRerunEntriesOnRecoveryQueue() throws IOException {
-    var candidates =
-        createNumberOfCandidatesForYear(randomYear(), 2, candidateRepository).stream()
-            .map(this::placeOnQueue)
-            .toList();
+  void shouldRerunEntriesOnRecoveryQueue() {
+    var candidates = createCandidatesOnDlq(2);
+    var originalVersions = candidates.stream().map(CandidateDao::version).toList();
 
-    var messagesOnQueue =
-        queueClient.getAllSentSqsEvents(environment.readEnv(BATCH_SCAN_RECOVERY_QUEUE.getKey()));
+    processHandlerRequest(new RecoveryEvent(10));
 
-    assertMessagesExistOnQueue(candidates, messagesOnQueue);
-
-    handler.handleRequest(createEvent(new RecoveryEvent(10)), output, CONTEXT);
-
-    candidates.forEach(
-        candidate ->
-            assertNotEquals(getMigratedCandidate(candidate).version(), candidate.version()));
+    assertThat(candidates)
+        .extracting(this::getMigratedCandidate)
+        .extracting(CandidateDao::version)
+        .doesNotContainAnyElementsOf(originalVersions);
   }
 
   @Test
-  void shouldKeepNotProcessedMessagesOnQueue() throws IOException {
+  void shouldDeleteProcessedEventsFromQueue() {
+    createCandidatesOnDlq(5);
+
+    processHandlerRequest(new RecoveryEvent(2));
+
+    assertThat(getAllMessagesFromDlq()).hasSize(3);
+  }
+
+  private void processHandlerRequest(RecoveryEvent request) {
+    try {
+      handler.handleRequest(createEvent(request), output, CONTEXT);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private List<CandidateDao> createCandidatesOnDlq(int count) {
     var candidates =
-        createNumberOfCandidatesForYear(randomYear(), 5, candidateRepository).stream()
+        createNumberOfCandidatesForYear(randomYear(), count, candidateRepository).stream()
             .map(this::placeOnQueue)
             .toList();
-
-    var messagesOnQueue =
-        queueClient.getAllSentSqsEvents(environment.readEnv(BATCH_SCAN_RECOVERY_QUEUE.getKey()));
+    var messagesOnQueue = getAllMessagesFromDlq();
 
     assertMessagesExistOnQueue(candidates, messagesOnQueue);
+    return candidates;
+  }
 
-    handler.handleRequest(createEvent(new RecoveryEvent(2)), output, CONTEXT);
-
-    assertEquals(
-        3,
-        queueClient
-            .getAllSentSqsEvents(environment.readEnv(BATCH_SCAN_RECOVERY_QUEUE.getKey()))
-            .size());
+  private List<SQSMessage> getAllMessagesFromDlq() {
+    return queueClient.getAllSentSqsEvents(environment.readEnv(BATCH_SCAN_RECOVERY_QUEUE.getKey()));
   }
 
   private static void assertMessagesExistOnQueue(
