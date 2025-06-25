@@ -62,20 +62,20 @@ class BatchScanUtilTest {
   private BatchScanUtil batchScanUtil;
   private CandidateRepository candidateRepository;
   private TestScenario scenario;
-  private FakeSqsClient dlqClient;
+  private FakeSqsClient queueClient;
 
   @BeforeEach
   void setup() {
     scenario = new TestScenario();
     candidateRepository = scenario.getCandidateRepository();
 
-    dlqClient = new FakeSqsClient();
+    queueClient = new FakeSqsClient();
     var environment = getEventBasedBatchScanHandlerEnvironment();
     batchScanUtil =
         new BatchScanUtil(
             scenario.getCandidateRepository(),
             scenario.getS3StorageReaderForExpandedResourcesBucket(),
-            dlqClient,
+            queueClient,
             environment);
   }
 
@@ -400,7 +400,8 @@ class BatchScanUtilTest {
 
     batchScanUtil.migrateAndUpdateVersion(10, null, emptyList());
 
-    var sqsMessage = dlqClient.getAllSentSqsEvents(BATCH_SCAN_RECOVERY_QUEUE.getValue()).getFirst();
+    var sqsMessage =
+        queueClient.getAllSentSqsEvents(BATCH_SCAN_RECOVERY_QUEUE.getValue()).getFirst();
 
     assertEquals(
         candidate.identifier().toString(),

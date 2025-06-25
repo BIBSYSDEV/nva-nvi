@@ -7,8 +7,10 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.QueueServiceTestUtils;
 import software.amazon.awssdk.services.sqs.model.BatchResultErrorEntry;
@@ -98,15 +100,29 @@ public class FakeSqsClient implements QueueClient {
   @Override
   public NviReceiveMessageResponse receiveMessage(String queueUrl, int maxNumberOfMessages) {
     validateQueueUrl(queueUrl);
-    receivedMessages.add(createReceiveRequest(queueUrl, maxNumberOfMessages));
-    return createResponse(ReceiveMessageResponse.builder().build());
+    var numberOfMessages = Math.min(maxNumberOfMessages, sentMessages.size());
+    return new NviReceiveMessageResponse(
+        sentMessages.subList(0, numberOfMessages).stream()
+            .map(
+                sendMessageRequest ->
+                    new NviReceiveMessage(
+                        sendMessageRequest.messageBody(),
+                        null,
+                        sendMessageRequest.messageAttributes().entrySet().stream()
+                            .collect(
+                                Collectors.toMap(
+                                    Entry::getKey, entry -> entry.getValue().stringValue())),
+                        null))
+            .toList());
   }
 
+  // TODO: Fix-me Should delete by receiptHandle
   @Override
   public void deleteMessage(String queueUrl, String receiptHandle) {
     validateQueueUrl(queueUrl);
     var request =
         DeleteMessageRequest.builder().queueUrl(queueUrl).receiptHandle(receiptHandle).build();
+    sentMessages.remove(0);
     deleteMessages.add(request);
   }
 
