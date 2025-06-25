@@ -264,6 +264,10 @@ Resources:
     Type: AWS::SQS::Queue
     Properties:
       MessageRetentionPeriod: 1209600 #14 days
+  BatchScanRecoveryQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      MessageRetentionPeriod: 1209600 #14 days
 
   #=============================== For database events ============================================
   DbEventQueue:
@@ -477,6 +481,7 @@ Resources:
                   - !GetAtt DeletePersistedIndexDocumentDLQ.Arn
                   - !GetAtt DeletePersistedIndexDocumentQueue.Arn
                   - !GetAtt QueuePersistedResourceDLQ.Arn
+                  - !GetAtt BatchScanRecoveryQueue.Arn
                   - !Ref CristinImportNviQueueArn
         - PolicyName: publishToSnsTopic
           PolicyDocument:
@@ -672,6 +677,23 @@ Resources:
       DomainName: !Ref ApiDomain
       RestApiId: !Ref ScientificIndexApi
       Stage: !Ref ScientificIndexApi.Stage
+
+  #============================= Button Handlers ======================================================
+  BatchScanRecoveryHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: event-handlers
+      Handler: no.sikt.nva.nvi.events.batch.BatchScanRecoveryHandler::handleRequest
+      Role: !GetAtt NvaNviRole.Arn
+      Timeout: 900
+      MemorySize: 1536
+      AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
+      Environment:
+        Variables:
+          EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
+          BATCH_SCAN_RECOVERY_QUEUE: !Ref BatchScanRecoveryQueue
 
   #============================= Event Handlers ======================================================
   QueuePersistedResourceHandler:
@@ -923,6 +945,7 @@ Resources:
         Variables:
           EVENT_BUS_NAME: !GetAtt InternalBus.Name
           EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
+          BATCH_SCAN_RECOVERY_QUEUE: !Ref BatchScanRecoveryQueue
       Events:
         EventBridgeEvent:
           Type: EventBridgeRule

@@ -71,10 +71,10 @@ class DynamoDbUpdateEventTest {
 
     dynamoDbEventHandlerContext.handleEvent(dynamoDbEvent);
 
-    var sqsEvents = getDbEventMessages();
+    var sqsEvents = sharedQueueClient.getSentBatches();
     assertThat(sqsEvents)
         .hasSize(2)
-        .extracting(event -> event.getRecords().size())
+        .extracting(batch -> batch.entries().size())
         .containsSequence(10, 5);
   }
 
@@ -133,7 +133,7 @@ class DynamoDbUpdateEventTest {
 
     assertThat(getDlqMessages())
         .hasSize(1)
-        .flatExtracting(event -> event.getRecords().stream().map(SQSMessage::getBody).toList())
+        .extracting(SQSMessage::getBody)
         .allMatch(message -> message.contains(candidateIdentifier.toString()));
   }
 
@@ -188,16 +188,16 @@ class DynamoDbUpdateEventTest {
   private void processDynamoEvent(DynamodbEvent dynamoDbEvent) {
     dynamoDbEventHandlerContext.handleEvent(dynamoDbEvent);
     var queuedEvents = getDbEventMessages();
-    for (var event : queuedEvents) {
-      dataEntryUpdateHandlerContext.handleEvent(event);
-    }
+    var sqsMessage = new SQSEvent();
+    sqsMessage.setRecords(queuedEvents);
+    dataEntryUpdateHandlerContext.handleEvent(sqsMessage);
   }
 
-  private List<SQSEvent> getDlqMessages() {
+  private List<SQSMessage> getDlqMessages() {
     return sharedQueueClient.getAllSentSqsEvents(EnvironmentFixtures.INDEX_DLQ.getValue());
   }
 
-  private List<SQSEvent> getDbEventMessages() {
+  private List<SQSMessage> getDbEventMessages() {
     return sharedQueueClient.getAllSentSqsEvents(
         EnvironmentFixtures.DB_EVENTS_QUEUE_URL.getValue());
   }
@@ -281,8 +281,7 @@ class DynamoDbUpdateEventTest {
     var dynamoDbEvent = createCandidateEvent(candidateIdentifier, OperationType.INSERT, true);
     dynamoDbEventHandlerContext.handleEvent(dynamoDbEvent);
 
-    var processedEvents = getDbEventMessages().getFirst();
-    return processedEvents.getRecords().getFirst();
+    return getDbEventMessages().getFirst();
   }
 
   public static DynamodbEvent createCandidateEventWithEmptyPointsList() {

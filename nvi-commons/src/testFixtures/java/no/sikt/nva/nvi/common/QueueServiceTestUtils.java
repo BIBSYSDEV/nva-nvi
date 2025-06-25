@@ -6,10 +6,14 @@ import static no.sikt.nva.nvi.common.utils.DynamoDbUtils.extractField;
 
 import com.amazonaws.services.lambda.runtime.events.DynamodbEvent.DynamodbStreamRecord;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
+import com.amazonaws.services.lambda.runtime.events.SQSEvent.MessageAttribute;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.Dao;
@@ -43,9 +47,23 @@ public final class QueueServiceTestUtils {
   public static SQSEvent from(SendMessageRequest request) {
     var event = new SQSEvent();
     var message = new SQSMessage();
+    message.setMessageAttributes(getMessageAttributes(request));
     message.setBody(request.messageBody());
     event.setRecords(List.of(message));
     return event;
+  }
+
+  private static Map<String, MessageAttribute> getMessageAttributes(SendMessageRequest request) {
+    return request.messageAttributes().entrySet().stream()
+        .collect(
+            Collectors.toMap(
+                Entry::getKey,
+                entry -> {
+                  var attribute = new MessageAttribute();
+                  attribute.setDataType("String");
+                  attribute.setStringValue(entry.getValue().stringValue());
+                  return attribute;
+                }));
   }
 
   public static SQSEvent createEvent(SQSMessage... sqsMessages) {

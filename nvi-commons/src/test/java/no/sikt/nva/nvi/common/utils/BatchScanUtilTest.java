@@ -1,6 +1,8 @@
 package no.sikt.nva.nvi.common.utils;
 
 import static java.util.Collections.emptyList;
+import static no.sikt.nva.nvi.common.EnvironmentFixtures.BATCH_SCAN_RECOVERY_QUEUE;
+import static no.sikt.nva.nvi.common.EnvironmentFixtures.getEventBasedBatchScanHandlerEnvironment;
 import static no.sikt.nva.nvi.common.SampleExpandedPublicationFactory.defaultExpandedPublicationFactory;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.createNumberOfCandidatesForYear;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.getYearIndexStartMarker;
@@ -27,6 +29,8 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.time.Instant;
@@ -41,6 +45,7 @@ import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
+import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails;
 import no.sikt.nva.nvi.test.SampleExpandedPublication;
@@ -57,16 +62,21 @@ class BatchScanUtilTest {
   private BatchScanUtil batchScanUtil;
   private CandidateRepository candidateRepository;
   private TestScenario scenario;
+  private FakeSqsClient queueClient;
 
   @BeforeEach
   void setup() {
     scenario = new TestScenario();
     candidateRepository = scenario.getCandidateRepository();
 
+    queueClient = new FakeSqsClient();
+    var environment = getEventBasedBatchScanHandlerEnvironment();
     batchScanUtil =
         new BatchScanUtil(
             scenario.getCandidateRepository(),
-            scenario.getS3StorageReaderForExpandedResourcesBucket());
+            scenario.getS3StorageReaderForExpandedResourcesBucket(),
+            queueClient,
+            environment);
   }
 
   @Test
@@ -354,6 +364,49 @@ class BatchScanUtilTest {
             dbPublicationDetails.abstractText(),
             dbPublicationDetails.contributorCount(),
             dbPublicationDetails.modifiedDate());
+  }
+
+  @Test
+  void shouldNotFailForWholeBatchWhenSingleRecordFails() {
+    createNumberOfCandidatesForYear(randomYear(), 2, candidateRepository);
+
+    var details =
+        randomPublicationBuilder(randomUri())
+            .topLevelNviOrganizations(null)
+            .abstractText(randomString())
+            .contributorCount(randomInteger())
+            .modifiedDate(Instant.now())
+            .creators(List.of())
+            .build();
+    var candidate = randomCandidateBuilder(randomUri(), details).build();
+    candidateRepository.create(candidate, emptyList());
+
+    assertDoesNotThrow(() -> batchScanUtil.migrateAndUpdateVersion(3, null, emptyList()));
+  }
+
+  @Test
+  void shouldSendFailingRecordToRecoveryQueue() {
+    createNumberOfCandidatesForYear(randomYear(), 2, candidateRepository);
+
+    var details =
+        randomPublicationBuilder(randomUri())
+            .topLevelNviOrganizations(null)
+            .abstractText(randomString())
+            .contributorCount(randomInteger())
+            .modifiedDate(Instant.now())
+            .creators(List.of())
+            .build();
+    var candidateFailingUnderBatchScan = randomCandidateBuilder(randomUri(), details).build();
+    var candidate = candidateRepository.create(candidateFailingUnderBatchScan, emptyList());
+
+    batchScanUtil.migrateAndUpdateVersion(10, null, emptyList());
+
+    var sqsMessage =
+        queueClient.getAllSentSqsEvents(BATCH_SCAN_RECOVERY_QUEUE.getValue()).getFirst();
+
+    assertEquals(
+        candidate.identifier().toString(),
+        sqsMessage.getMessageAttributes().get("candidateIdentifier").getStringValue());
   }
 
   private static Map<String, String> getStartMarker(CandidateDao dao) {
