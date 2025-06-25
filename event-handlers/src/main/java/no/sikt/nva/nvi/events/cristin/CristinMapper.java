@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.events.cristin;
 
+import static java.util.Collections.emptyList;
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.extractJsonNodeTextValue;
 import static nva.commons.core.attempt.Try.attempt;
@@ -151,6 +152,7 @@ public final class CristinMapper {
         .publicationDate(cristinNviReport.publicationDate().toDbPublicationDate())
         .modifiedDate(now)
         .creators(extractCreators(cristinNviReport))
+        .topLevelNviOrganizations(emptyList())
         .build();
   }
 
