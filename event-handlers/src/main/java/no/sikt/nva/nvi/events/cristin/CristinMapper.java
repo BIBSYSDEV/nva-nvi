@@ -144,6 +144,7 @@ public final class CristinMapper {
 
   private DbPublicationDetails toDbPublication(CristinNviReport cristinNviReport) {
     var now = Instant.now();
+    var creators = extractCreators(cristinNviReport);
     return DbPublicationDetails.builder()
         .id(constructPublicationId(cristinNviReport))
         .identifier(cristinNviReport.publicationIdentifier())
@@ -151,7 +152,8 @@ public final class CristinMapper {
             constructPublicationBucketUri(cristinNviReport.publicationIdentifier()))
         .publicationDate(cristinNviReport.publicationDate().toDbPublicationDate())
         .modifiedDate(now)
-        .creators(extractCreators(cristinNviReport))
+        .contributorCount(creators.size())
+        .creators(creators)
         .topLevelNviOrganizations(emptyList())
         .build();
   }
