@@ -25,6 +25,7 @@ import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.paths.UnixPath;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.s3.S3Client;
 
 public class TestScenario {
   private final AuthorizedBackendUriRetriever authorizedBackendUriRetriever;
@@ -34,6 +35,7 @@ public class TestScenario {
   private final CandidateRepository candidateRepository;
   private final PeriodRepository periodRepository;
   private final Organization defaultOrganization;
+  private final FakeS3Client s3Client;
   private final S3Driver s3Driver;
   private final S3StorageReader s3StorageReader;
 
@@ -47,7 +49,7 @@ public class TestScenario {
     mockOrganizationRetriever = new OrganizationRetriever(mockUriRetriever);
     defaultOrganization = setupTopLevelOrganizationWithSubUnits();
 
-    var s3Client = new FakeS3Client();
+    s3Client = new FakeS3Client();
     s3Driver = new S3Driver(s3Client, EnvironmentFixtures.EXPANDED_RESOURCES_BUCKET.getValue());
     s3StorageReader =
         new S3StorageReader(s3Client, EnvironmentFixtures.EXPANDED_RESOURCES_BUCKET.getValue());
@@ -79,6 +81,10 @@ public class TestScenario {
 
   public AuthorizedBackendUriRetriever getMockedAuthorizedBackendUriRetriever() {
     return authorizedBackendUriRetriever;
+  }
+
+  public S3Client getS3Client() {
+    return s3Client;
   }
 
   public S3Driver getS3DriverForExpandedResourcesBucket() {
@@ -114,7 +120,8 @@ public class TestScenario {
   public URI setupExpandedPublicationInS3(SampleExpandedPublication publication) {
     try {
       return s3Driver.insertFile(
-          UnixPath.of(publication.identifier().toString()), publication.toJsonString());
+          constructPublicationBucketUri(publication.identifier().toString()),
+          publication.toJsonString());
     } catch (IOException e) {
       throw new RuntimeException("Failed to add publication to S3", e);
     }
@@ -122,9 +129,13 @@ public class TestScenario {
 
   public URI setupExpandedPublicationInS3(String publicationJson) {
     try {
-      return s3Driver.insertFile(UnixPath.of(randomString()), publicationJson);
+      return s3Driver.insertFile(constructPublicationBucketUri(randomString()), publicationJson);
     } catch (IOException e) {
       throw new RuntimeException("Failed to add publication to S3", e);
     }
+  }
+
+  private static UnixPath constructPublicationBucketUri(String publicationIdentifier) {
+    return UnixPath.of("resources", publicationIdentifier + ".gz");
   }
 }

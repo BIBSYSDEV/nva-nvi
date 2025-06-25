@@ -27,7 +27,7 @@ public enum EnvironmentFixtures {
   // Other handler-specific environment variables
   CANDIDATE_QUEUE_URL("http://localhost:3000/candidate-queue"),
   DB_EVENTS_QUEUE_URL("http://localhost:3000/db-events-queue"),
-  EXPANDED_RESOURCES_BUCKET("persisted-resources-bucket"),
+  EXPANDED_RESOURCES_BUCKET("persisted-resources"),
   INDEX_DLQ("http://localhost:3000/index-dlq"),
   UPSERT_CANDIDATE_DLQ_QUEUE_URL("http://localhost:3000/upsert-candidate-dlq");
 
@@ -62,6 +62,10 @@ public enum EnvironmentFixtures {
         .with(EXPANDED_RESOURCES_BUCKET)
         .with(CANDIDATE_QUEUE_URL)
         .build();
+  }
+
+  public static FakeEnvironment getCristinNviReportEventConsumerEnvironment() {
+    return getDefaultEnvironmentBuilder().with(EXPANDED_RESOURCES_BUCKET).build();
   }
 
   public static FakeEnvironment getUpsertNviCandidateHandlerEnvironment() {

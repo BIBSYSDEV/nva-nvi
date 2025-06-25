@@ -1,18 +1,22 @@
 package no.sikt.nva.nvi.events.cristin;
 
+import static java.util.Collections.emptyList;
 import static java.util.UUID.randomUUID;
-import static no.sikt.nva.nvi.common.LocalDynamoTestSetup.initializeTestDatabase;
+import static no.sikt.nva.nvi.common.EnvironmentFixtures.API_HOST;
+import static no.sikt.nva.nvi.common.EnvironmentFixtures.EXPANDED_RESOURCES_BUCKET;
+import static no.sikt.nva.nvi.common.EnvironmentFixtures.getCristinNviReportEventConsumerEnvironment;
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeriod;
 import static no.sikt.nva.nvi.common.model.EnumFixtures.randomValidInstanceType;
-import static no.sikt.nva.nvi.events.cristin.CristinMapper.AFFILIATION_DELIMITER;
-import static no.sikt.nva.nvi.events.cristin.CristinMapper.API_HOST;
-import static no.sikt.nva.nvi.events.cristin.CristinMapper.PERSISTED_RESOURCES_BUCKET;
+import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomTopLevelOrganization;
+import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublicationDateInYear;
 import static no.sikt.nva.nvi.events.cristin.CristinNviReportEventConsumer.NVI_ERRORS;
+import static no.sikt.nva.nvi.events.cristin.CristinTestUtils.createPublicationFactory;
+import static no.sikt.nva.nvi.events.cristin.CristinTestUtils.getTopLevelOrganizations;
+import static no.sikt.nva.nvi.events.cristin.CristinTestUtils.randomCristinLocale;
+import static no.sikt.nva.nvi.test.TestUtils.generateUniqueIdAsString;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 
@@ -20,14 +24,18 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.URI;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.util.List;
+import java.util.UUID;
+import no.sikt.nva.nvi.common.SampleExpandedPublicationFactory;
+import no.sikt.nva.nvi.common.TestScenario;
+import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.common.model.PublicationDate;
+import no.sikt.nva.nvi.common.model.NviCreator;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
@@ -36,21 +44,17 @@ import no.sikt.nva.nvi.common.service.model.PublicationDetails;
 import no.sikt.nva.nvi.events.cristin.CristinNviReport.Builder;
 import no.unit.nva.events.models.EventReference;
 import no.unit.nva.s3.S3Driver;
-import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
-import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 
 class CristinNviReportEventConsumerTest {
 
-  public static final LocalDate DATE_CONTROLLED = LocalDate.now();
-  public static final String STATUS_CONTROLLED = "J";
-  public static final String PUBLICATION = "publication";
-  private static final String BUCKET_NAME = "not-important";
+  private static final String CRISTIN_IMPORT_BUCKET = "not-important";
   private static final Context CONTEXT = mock(Context.class);
+  private TestScenario scenario;
   private CristinNviReportEventConsumer handler;
   private CandidateRepository candidateRepository;
   private PeriodRepository periodRepository;
@@ -58,102 +62,151 @@ class CristinNviReportEventConsumerTest {
 
   @BeforeEach
   void setup() {
-    var localDynamo = initializeTestDatabase();
-    candidateRepository = new CandidateRepository(localDynamo);
-    periodRepository = new PeriodRepository(localDynamo);
-    var s3Client = new FakeS3Client();
-    s3Driver = new S3Driver(s3Client, BUCKET_NAME);
-    handler = new CristinNviReportEventConsumer(candidateRepository, s3Client);
+    scenario = new TestScenario();
+    candidateRepository = scenario.getCandidateRepository();
+    periodRepository = scenario.getPeriodRepository();
+    var s3Client = scenario.getS3Client();
+    s3Driver = new S3Driver(s3Client, CRISTIN_IMPORT_BUCKET);
+    var environment = getCristinNviReportEventConsumerEnvironment();
+    handler = new CristinNviReportEventConsumer(candidateRepository, s3Client, environment);
   }
 
   @Test
-  void shouldCreateNviCandidateFromNviReport() throws IOException {
-    var cristinNviReport = randomCristinNviReport().build();
-    periodRepository.save(
-        periodForYear(cristinNviReport.getYearReportedFromHistoricalData().orElseThrow()));
+  void shouldCreateNviCandidateFromNviReport() {
+    var cristinNviReport = createRandomCristinNviReport().build();
+    setupPublicationInS3(cristinNviReport, createPublicationFactory(cristinNviReport, scenario));
+
     handler.handleRequest(createEvent(cristinNviReport), CONTEXT);
-    var publicationId = toPublicationId(cristinNviReport);
-    var nviCandidate =
-        Candidate.fetchByPublicationId(() -> publicationId, candidateRepository, periodRepository);
+
+    var nviCandidate = getByPublicationIdOf(cristinNviReport);
 
     assertThatNviCandidateHasExpectedValues(nviCandidate, cristinNviReport);
   }
 
   @Test
-  void shouldNotFailAnNotPersistErrorReportWhenAttemptingToImportAlreadyExistingNviCandidate()
-      throws IOException {
-    var cristinNviReport = randomCristinNviReport().build();
-    periodRepository.save(periodForYear(cristinNviReport.yearReported()));
-    handler.handleRequest(createEvent(cristinNviReport), CONTEXT);
+  void shouldNotFailAndNotPersistErrorReportWhenAttemptingToImportAlreadyExistingNviCandidate() {
+    var cristinNviReport = createRandomCristinNviReport().build();
+    setupPublicationInS3(cristinNviReport, createPublicationFactory(cristinNviReport, scenario));
 
-    var existingCandidate =
-        Candidate.fetchByPublicationId(
-            () -> toPublicationId(cristinNviReport), candidateRepository, periodRepository);
-    assertThat(existingCandidate, is(notNullValue()));
+    handler.handleRequest(createEvent(cristinNviReport), CONTEXT);
+    var existingCandidate = getByPublicationIdOf(cristinNviReport);
+    assertThat(existingCandidate).isNotNull();
 
     handler.handleRequest(createEvent(cristinNviReport), CONTEXT);
 
-    var s3ReportPath =
-        UriWrapper.fromHost(BUCKET_NAME)
-            .addChild(NVI_ERRORS)
-            .addChild(cristinNviReport.publicationIdentifier())
-            .toS3bucketPath();
-
+    var s3ReportPath = expectedImportErrorBucketPath(cristinNviReport);
     assertThrows(NoSuchKeyException.class, () -> s3Driver.getFile(s3ReportPath));
   }
 
   @Test
-  void shouldStoreErrorReportWhenFailInCristinMapper() throws IOException {
-    var cristinNviReport = nviReportWithIdentifier();
-    handler.handleRequest(createEvent(cristinNviReport), CONTEXT);
-    var s3ReportPath =
-        UriWrapper.fromHost(BUCKET_NAME)
-            .addChild(NVI_ERRORS)
-            .addChild(cristinNviReport.publicationIdentifier())
-            .toS3bucketPath();
-    var expectedReport = s3Driver.getFile(s3ReportPath);
+  void shouldStoreErrorReportWhenFailInCristinMapper() {
+    var cristinNviReport =
+        createRandomCristinNviReport()
+            .withScientificResources(emptyList())
+            .withCristinLocales(emptyList())
+            .build();
+    setupPublicationInS3(cristinNviReport, createPublicationFactory(cristinNviReport, scenario));
 
-    assertThat(expectedReport, containsString("Could not create nvi candidate"));
+    handler.handleRequest(createEvent(cristinNviReport), CONTEXT);
+
+    var s3ReportPath = expectedImportErrorBucketPath(cristinNviReport);
+    var expectedReport = s3Driver.getFile(s3ReportPath);
+    assertThat(expectedReport).contains("Could not create nvi candidate");
   }
 
   @Test
-  void shouldStoreErrorReportWhenYearReportedFromHistoricalDataIsMissing() throws IOException {
-    var institutionIdentifier = randomString();
+  void shouldStoreErrorReportWhenYearReportedFromHistoricalDataIsMissing() {
+    var institutionIdentifier = generateUniqueIdAsString();
     var cristinNviReport =
-        randomCristinNviReport()
+        createRandomCristinNviReport()
             .withCristinLocales(List.of(randomCristinLocale(institutionIdentifier)))
             .withScientificResources(List.of(scientificResource(institutionIdentifier, null)))
             .build();
+    setupPublicationInS3(cristinNviReport, createPublicationFactory(cristinNviReport, scenario));
+
     handler.handleRequest(createEvent(cristinNviReport), CONTEXT);
-    var s3ReportPath =
-        UriWrapper.fromHost(BUCKET_NAME)
-            .addChild(NVI_ERRORS)
-            .addChild(cristinNviReport.publicationIdentifier())
-            .toS3bucketPath();
+
+    var s3ReportPath = expectedImportErrorBucketPath(cristinNviReport);
     var expectedReport = s3Driver.getFile(s3ReportPath);
-
-    assertThat(expectedReport, containsString("Reported year is missing!"));
+    assertThat(expectedReport).contains("Reported year is missing!");
   }
 
-  private static DbNviPeriod periodForYear(String cristinNviReport) {
-    return DbNviPeriod.builder()
-        .publishingYear(cristinNviReport)
-        .startDate(Instant.now().plusSeconds(10_000))
-        .reportingDate(Instant.now().plusSeconds(10_000_000))
-        .build();
+  @Test
+  void shouldIncludeTopLevelOrganizationHierarchy() {
+    var cristinNviReport = createRandomCristinNviReport().build();
+    setupPublicationInS3(cristinNviReport, createPublicationFactory(cristinNviReport, scenario));
+
+    handler.handleRequest(createEvent(cristinNviReport), CONTEXT);
+    var nviCandidate = getByPublicationIdOf(cristinNviReport);
+
+    var expectedTopLevelOrganizationIds =
+        cristinNviReport.cristinLocales().stream()
+            .map(CristinIdWrapper::from)
+            .map(CristinIdWrapper::getInstitutionId)
+            .toList();
+    assertThat(nviCandidate.getPublicationDetails().topLevelOrganizations())
+        .extracting(Organization::id)
+        .containsExactlyInAnyOrderElementsOf(expectedTopLevelOrganizationIds);
   }
 
-  private static URI toPublicationId(CristinNviReport cristinNviReport) {
-    return UriWrapper.fromHost(API_HOST)
-        .addChild(PUBLICATION)
-        .addChild(cristinNviReport.publicationIdentifier())
-        .getUri();
+  @Test
+  void shouldNotIncludeCreatorsMissingFromCristinReport() {
+    var cristinNviReport = createRandomCristinNviReport().build();
+    var topLevelOrganization = getTopLevelOrganizations(cristinNviReport).getFirst();
+    var publicationFactoryWithExtraCreator =
+        createPublicationFactory(cristinNviReport, scenario)
+            .withCreatorAffiliatedWith(topLevelOrganization);
+    setupPublicationInS3(cristinNviReport, publicationFactoryWithExtraCreator);
+
+    handler.handleRequest(createEvent(cristinNviReport), CONTEXT);
+    var nviCandidate = getByPublicationIdOf(cristinNviReport);
+
+    var actualCreatorIds =
+        nviCandidate.getPublicationDetails().nviCreators().stream().map(NviCreator::id).toList();
+    var expectedCreatorIds =
+        cristinNviReport.getCreators().stream().map(CristinTestUtils::expectedCreatorId).toList();
+    assertThat(actualCreatorIds).containsExactlyInAnyOrderElementsOf(expectedCreatorIds);
+  }
+
+  @Test
+  void shouldNotAddPointsForCreatorsMissingFromCristinReport() {
+    var cristinNviReport = createRandomCristinNviReport().build();
+    var topLevelOrganization = randomTopLevelOrganization();
+    var publicationFactoryWithExtraCreator =
+        createPublicationFactory(cristinNviReport, scenario)
+            .withTopLevelOrganizations(List.of(topLevelOrganization))
+            .withCreatorAffiliatedWith(topLevelOrganization);
+    setupPublicationInS3(cristinNviReport, publicationFactoryWithExtraCreator);
+
+    handler.handleRequest(createEvent(cristinNviReport), CONTEXT);
+    var nviCandidate = getByPublicationIdOf(cristinNviReport);
+
+    var expectedTotalPoints =
+        cristinNviReport.scientificResources().stream()
+            .map(ScientificResource::getCreators)
+            .flatMap(List::stream)
+            .map(ScientificPerson::getAuthorPointsForAffiliation)
+            .map(BigDecimal::new)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+    assertThat(nviCandidate.getTotalPoints().setScale(4, RoundingMode.HALF_UP))
+        .isEqualTo(expectedTotalPoints.setScale(4, RoundingMode.HALF_UP));
+  }
+
+  private Candidate getByPublicationIdOf(CristinNviReport cristinNviReport) {
+    var publicationId = expectedPublicationId(cristinNviReport);
+    return Candidate.fetchByPublicationId(
+        () -> publicationId, candidateRepository, periodRepository);
   }
 
   private void assertThatNviCandidateHasExpectedValues(
       Candidate candidate, CristinNviReport cristinNviReport) {
 
-    Assertions.assertThat(candidate)
+    var expectedApprovalIds =
+        cristinNviReport.cristinLocales().stream()
+            .map(CristinIdWrapper::from)
+            .map(CristinIdWrapper::getInstitutionId)
+            .toList();
+    assertThat(candidate)
         .extracting(
             Candidate::getPublicationId,
             Candidate::isApplicable,
@@ -162,146 +215,123 @@ class CristinNviReportEventConsumerTest {
             actual -> actual.getPublicationType().getValue(),
             actual -> actual.getPublicationChannel().scientificValue().getValue())
         .containsExactly(
-            expectedPublicationId(cristinNviReport.publicationIdentifier()),
+            expectedPublicationId(cristinNviReport),
             true,
             cristinNviReport.getYearReportedFromHistoricalData().orElseThrow(),
-            generateExpectedApprovalsIds(cristinNviReport),
+            expectedApprovalIds,
             cristinNviReport.instanceType(),
             "LevelOne");
 
-    Assertions.assertThat(candidate.getPublicationDetails())
-        .extracting(
-            PublicationDetails::publicationDate,
-            PublicationDetails::publicationBucketUri,
-            PublicationDetails::allCreators)
-        .containsExactly(
-            cristinNviReport.publicationDate(),
-            expectedPublicationBucketUri(cristinNviReport.publicationIdentifier()),
-            List.of(constructExpectedCreator(cristinNviReport)));
+    var expectedPublicationBucketUri =
+        UriWrapper.fromUri("s3://" + EXPANDED_RESOURCES_BUCKET.getValue())
+            .addChild("resources")
+            .addChild(cristinNviReport.publicationIdentifier() + ".gz")
+            .getUri();
+    assertThat(candidate.getPublicationDetails())
+        .extracting(PublicationDetails::publicationDate, PublicationDetails::publicationBucketUri)
+        .containsExactlyInAnyOrder(
+            cristinNviReport.publicationDate(), expectedPublicationBucketUri);
 
-    Assertions.assertThat(candidate.getApprovals().values())
+    assertThat(candidate.getPublicationDetails().allCreators())
+        .usingRecursiveComparison()
+        .ignoringCollectionOrder()
+        .isEqualTo(expectedCreators(cristinNviReport));
+
+    assertThat(candidate.getApprovals().values())
         .extracting(Approval::getStatus)
         .containsOnly(ApprovalStatus.APPROVED);
   }
 
-  private VerifiedNviCreatorDto constructExpectedCreator(CristinNviReport cristinNviReport) {
-    var creatorIdentifier = cristinNviReport.getCreators().getFirst().getCristinPersonIdentifier();
-    var creatorId =
-        UriWrapper.fromHost(API_HOST)
-            .addChild("cristin")
-            .addChild("person")
-            .addChild(creatorIdentifier)
-            .getUri();
-    var affiliations =
-        cristinNviReport.getCreators().stream()
-            .map(ScientificPerson::getOrganization)
-            .map(this::toOrganizationId)
-            .distinct()
+  private List<VerifiedNviCreatorDto> expectedCreators(CristinNviReport cristinNviReport) {
+    return cristinNviReport.getCreators().stream().map(CristinTestUtils::expectedCreator).toList();
+  }
+
+  private static UnixPath expectedImportErrorBucketPath(CristinNviReport cristinNviReport) {
+    return UriWrapper.fromHost(CRISTIN_IMPORT_BUCKET)
+        .addChild(NVI_ERRORS)
+        .addChild(cristinNviReport.publicationIdentifier())
+        .toS3bucketPath();
+  }
+
+  private static URI expectedPublicationId(CristinNviReport cristinNviReport) {
+    return UriWrapper.fromHost(API_HOST.getValue())
+        .addChild("publication")
+        .addChild(cristinNviReport.publicationIdentifier())
+        .getUri();
+  }
+
+  private Builder createRandomCristinNviReport() {
+    var year = randomYear();
+    setupClosedPeriod(scenario, year);
+
+    var topLevelCristinLocales =
+        List.of(
+            randomCristinLocale(generateUniqueIdAsString()),
+            randomCristinLocale(generateUniqueIdAsString()));
+    var scientificResources =
+        topLevelCristinLocales.stream()
+            .map(locale -> scientificResource(locale.getInstitutionIdentifier(), year))
             .toList();
-    return new VerifiedNviCreatorDto(creatorId, null, affiliations);
-  }
-
-  private URI expectedPublicationBucketUri(String value) {
-    return UriWrapper.fromHost(PERSISTED_RESOURCES_BUCKET)
-        .addChild("resources")
-        .addChild(value + ".gz")
-        .getUri();
-  }
-
-  private URI expectedPublicationId(String value) {
-    return UriWrapper.fromHost(API_HOST).addChild("publication").addChild(value).getUri();
-  }
-
-  private List<URI> generateExpectedApprovalsIds(CristinNviReport cristinNviReport) {
-    return cristinNviReport.cristinLocales().stream()
-        .map(this::toOrganizationIdentifier)
-        .map(this::toOrganizationId)
-        .toList();
-  }
-
-  private URI toOrganizationId(String id) {
-    return UriWrapper.fromHost(API_HOST)
-        .addChild("cristin")
-        .addChild("organization")
-        .addChild(id)
-        .getUri();
-  }
-
-  private String toOrganizationIdentifier(CristinLocale locale) {
-    return locale.getInstitutionIdentifier()
-        + AFFILIATION_DELIMITER
-        + locale.getDepartmentIdentifier()
-        + AFFILIATION_DELIMITER
-        + locale.getSubDepartmentIdentifier()
-        + AFFILIATION_DELIMITER
-        + locale.getGroupIdentifier();
-  }
-
-  private Builder randomCristinNviReport() {
-    var institutionIdentifier = randomString();
     return CristinNviReport.builder()
-        .withCristinIdentifier(randomString())
+        .withCristinIdentifier(generateUniqueIdAsString())
         .withPublicationIdentifier(randomUUID().toString())
-        .withYearReported(randomYear())
-        .withPublicationDate(randomPublicationDate())
-        .withCristinLocales(List.of(randomCristinLocale(institutionIdentifier)))
-        .withScientificResources(List.of(scientificResource(institutionIdentifier, randomYear())))
+        .withYearReported(year)
+        .withPublicationDate(randomPublicationDateInYear(Integer.parseInt(year)))
+        .withCristinLocales(topLevelCristinLocales)
+        .withScientificResources(scientificResources)
         .withInstanceType(randomValidInstanceType().getValue())
         .withReference(null);
   }
 
-  private CristinNviReport nviReportWithIdentifier() {
-    return CristinNviReport.builder().withPublicationIdentifier(randomString()).build();
+  private void setupPublicationInS3(
+      CristinNviReport cristinNviReport, SampleExpandedPublicationFactory factory) {
+    var publicationIdentifier = UUID.fromString(cristinNviReport.publicationIdentifier());
+    var expandedPublication =
+        factory
+            .getExpandedPublicationBuilder()
+            .withId(expectedPublicationId(cristinNviReport))
+            .withIdentifier(publicationIdentifier)
+            .build();
+
+    scenario.setupExpandedPublicationInS3(expandedPublication);
   }
 
   private ScientificResource scientificResource(String institutionIdentifier, String reportedYear) {
-    var cristinIdentifier = randomString();
     return ScientificResource.build()
         .withQualityCode("1")
         .withReportedYear(reportedYear)
         .withScientificPeople(
             List.of(
-                scientificPersonWithCristinIdentifier(cristinIdentifier, institutionIdentifier),
-                scientificPersonWithCristinIdentifier(cristinIdentifier, institutionIdentifier)))
+                scientificPersonWithCristinIdentifier(institutionIdentifier),
+                scientificPersonWithCristinIdentifier(institutionIdentifier)))
         .build();
   }
 
-  private ScientificPerson scientificPersonWithCristinIdentifier(
-      String personIdentifier, String institutionIdentifier) {
+  private ScientificPerson scientificPersonWithCristinIdentifier(String institutionIdentifier) {
     return ScientificPerson.builder()
-        .withCristinPersonIdentifier(personIdentifier)
+        .withCristinPersonIdentifier(generateUniqueIdAsString())
         .withInstitutionIdentifier(institutionIdentifier)
-        .withDepartmentIdentifier(randomString())
-        .withSubDepartmentIdentifier(randomString())
-        .withGroupIdentifier(randomString())
-        .withGroupIdentifier(randomString())
+        .withDepartmentIdentifier(generateUniqueIdAsString())
+        .withSubDepartmentIdentifier(generateUniqueIdAsString())
+        .withGroupIdentifier(generateUniqueIdAsString())
         .withAuthorPointsForAffiliation("1.6")
         .withCollaborationFactor("1.0")
         .withPublicationTypeLevelPoints("1.5")
         .build();
   }
 
-  private static PublicationDate randomPublicationDate() {
-    return new PublicationDate(randomString(), randomString(), randomString());
-  }
-
-  private CristinLocale randomCristinLocale(String institutionIdentifier) {
-    return CristinLocale.builder()
-        .withDateControlled(DATE_CONTROLLED)
-        .withControlStatus(STATUS_CONTROLLED)
-        .withInstitutionIdentifier(institutionIdentifier)
-        .withDepartmentIdentifier(randomString())
-        .withOwnerCode(randomString())
-        .withGroupIdentifier(randomString())
-        .withControlledByUser(CristinUser.builder().withIdentifier(randomString()).build())
-        .build();
-  }
-
-  private SQSEvent createEvent(CristinNviReport cristinNviReport) throws IOException {
+  public URI setupCristinNviReportInS3(CristinNviReport cristinNviReport) {
     var fullPath = UnixPath.of(randomString(), randomString());
-    var fileUri = s3Driver.insertFile(fullPath, cristinNviReport.toJsonString());
+    try {
+      return s3Driver.insertFile(fullPath, cristinNviReport.toJsonString());
+    } catch (IOException e) {
+      throw new RuntimeException("Failed to add file to S3", e);
+    }
+  }
+
+  private SQSEvent createEvent(CristinNviReport cristinNviReport) {
+    var fileUri = setupCristinNviReportInS3(cristinNviReport);
     var eventReference = new EventReference(randomString(), randomString(), fileUri, Instant.now());
-    s3Driver.insertFile(fullPath, cristinNviReport.toJsonString());
     var sqsEvent = new SQSEvent();
     var message = new SQSMessage();
     message.setBody(eventReference.toJsonString());

@@ -1,11 +1,12 @@
 package no.sikt.nva.nvi.events.cristin;
 
 import static java.util.Objects.nonNull;
-import static no.sikt.nva.nvi.events.cristin.CristinMapper.AFFILIATION_DELIMITER;
-import static no.sikt.nva.nvi.events.cristin.CristinMapper.API_HOST;
+import static no.sikt.nva.nvi.common.EnvironmentFixtures.getCristinNviReportEventConsumerEnvironment;
 import static no.sikt.nva.nvi.events.cristin.CristinMapper.FHI_CRISTIN_IDENTIFIER;
+import static no.sikt.nva.nvi.events.cristin.CristinTestUtils.expectedCreatorId;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static nva.commons.core.attempt.Try.attempt;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.emptyIterable;
@@ -29,13 +30,14 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.util.List;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints.DbCreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.model.ChannelType;
 import no.sikt.nva.nvi.common.model.PublicationDate;
 import no.sikt.nva.nvi.events.cristin.CristinNviReport.Builder;
 import no.unit.nva.commons.json.JsonUtils;
 import nva.commons.core.ioutils.IoUtils;
-import nva.commons.core.paths.UriWrapper;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class CristinMapperTest {
@@ -49,7 +51,8 @@ class CristinMapperTest {
   private static final int SCALE = 4;
   private static final String CRISTIN_PERSON_IDENTIFIER = randomString();
   private static final CristinMapper cristinMapper =
-      CristinMapper.withDepartmentTransfers(readCristinDepartments());
+      CristinMapper.withDepartmentTransfers(
+          readCristinDepartments(), getCristinNviReportEventConsumerEnvironment());
   private static final String VALID_QUALITY_CODE = "1";
   private static final URI WORLD_SCIENTIFIC_JOURNAL =
       URI.create(
@@ -91,7 +94,7 @@ class CristinMapperTest {
     var dbCandidate = cristinMapper.toDbCandidate(report.build());
 
     var institutionId = dbCandidate.points().getFirst().institutionId();
-    var expectedInstitutionId = constructExpectedInstitutionId(cristinLocale);
+    var expectedInstitutionId = CristinIdWrapper.from(cristinLocale).getGroupId();
     var expectedPointsForInstitution =
         POINTS_PER_CONTRIBUTOR
             .add(
@@ -471,7 +474,6 @@ class CristinMapperTest {
   }
 
   @Test
-  @SuppressWarnings("PMD.UnitTestShouldIncludeAssert")
   void shouldMapCreatorAffiliationPointsWhenMultipleCreatorsAtInstitution() {
     var firstCreator =
         scientificPersonAtInstitutionWithPoints(INSTITUTION_IDENTIFIER, POINTS_PER_CONTRIBUTOR);
@@ -485,15 +487,11 @@ class CristinMapperTest {
 
     var institutionPoints = dbCandidate.points().getFirst();
     var expectedSingleCreatorPoints = POINTS_PER_CONTRIBUTOR.setScale(SCALE, RoundingMode.HALF_UP);
+    var expectedCreator = expectedCreatorId(firstCreator);
 
-    institutionPoints
-        .creatorAffiliationPoints()
-        .forEach(
-            creatorPoints -> {
-              assertEquals(creatorPoints.points(), expectedSingleCreatorPoints);
-              assertThat(
-                  creatorPoints.creatorId().toString(), containsString(CRISTIN_PERSON_IDENTIFIER));
-            });
+    Assertions.assertThat(institutionPoints.creatorAffiliationPoints())
+        .extracting(DbCreatorAffiliationPoints::creatorId, DbCreatorAffiliationPoints::points)
+        .containsOnly(tuple(expectedCreator, expectedSingleCreatorPoints));
   }
 
   @Test
@@ -721,22 +719,6 @@ class CristinMapperTest {
     } catch (Exception e) {
       throw new RuntimeException();
     }
-  }
-
-  private URI constructExpectedInstitutionId(CristinLocale locale) {
-    var identifier =
-        locale.getInstitutionIdentifier()
-            + AFFILIATION_DELIMITER
-            + locale.getDepartmentIdentifier()
-            + AFFILIATION_DELIMITER
-            + locale.getSubDepartmentIdentifier()
-            + AFFILIATION_DELIMITER
-            + locale.getGroupIdentifier();
-    return UriWrapper.fromHost(API_HOST)
-        .addChild("cristin")
-        .addChild("organization")
-        .addChild(identifier)
-        .getUri();
   }
 
   private ScientificResource emptyScientificResource() {

@@ -203,7 +203,8 @@ class BatchScanUtilTest {
     var originalCreator = new DbCreator(originalCreatorDto.id(), null, List.of(organization.id()));
 
     var publicationBuilder =
-        new SampleExpandedPublicationFactory(scenario).withTopLevelOrganizations(organization);
+        new SampleExpandedPublicationFactory(scenario)
+            .withTopLevelOrganizations(List.of(organization));
     var publication = publicationBuilder.getExpandedPublication();
 
     var originalDbCandidate =

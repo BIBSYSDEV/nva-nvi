@@ -19,6 +19,7 @@ import java.time.Year;
 import java.util.Collection;
 import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import nva.commons.core.paths.UriWrapper;
 
 // Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
@@ -30,6 +31,7 @@ public final class TestUtils {
   public static final BigDecimal MAX_BIG_DECIMAL = BigDecimal.TEN;
   public static final int CURRENT_YEAR = Year.now().getValue();
   public static final Random RANDOM = new Random();
+  public static final AtomicInteger ID_COUNTER = new AtomicInteger(100);
 
   private static final String BUCKET_HOST = "example.org";
   private static final LocalDate START_DATE = LocalDate.of(1970, 1, 1);
@@ -40,6 +42,14 @@ public final class TestUtils {
 
   public static int randomIntBetween(int min, int max) {
     return RANDOM.nextInt(min, max);
+  }
+
+  public static int generateUniqueId() {
+    return ID_COUNTER.getAndIncrement();
+  }
+
+  public static String generateUniqueIdAsString() {
+    return String.valueOf(generateUniqueId());
   }
 
   public static URI generateS3BucketUri(UUID identifier) {

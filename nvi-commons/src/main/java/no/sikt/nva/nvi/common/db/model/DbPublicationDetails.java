@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreatorType;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbConvertedBy;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbIgnore;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmutable;
 
 @DynamoDbImmutable(builder = DbPublicationDetails.Builder.class)
@@ -35,6 +36,24 @@ public record DbPublicationDetails(
 
   public static Builder builder() {
     return new Builder();
+  }
+
+  @DynamoDbIgnore
+  public Builder copy() {
+    return new Builder()
+        .id(this.id)
+        .publicationBucketUri(this.publicationBucketUri)
+        .pages(this.pages)
+        .publicationDate(this.publicationDate)
+        .creators(this.creators)
+        .topLevelNviOrganizations(this.topLevelNviOrganizations)
+        .modifiedDate(this.modifiedDate)
+        .contributorCount(this.contributorCount)
+        .abstractText(this.abstractText)
+        .identifier(this.identifier)
+        .language(this.language)
+        .status(this.status)
+        .title(this.title);
   }
 
   public static final class Builder {

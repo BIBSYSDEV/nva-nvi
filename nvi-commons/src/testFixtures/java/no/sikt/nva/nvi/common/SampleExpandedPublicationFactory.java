@@ -88,7 +88,7 @@ public class SampleExpandedPublicationFactory {
   }
 
   public SampleExpandedPublicationFactory withTopLevelOrganizations(
-      Organization... topLevelOrganizations) {
+      Collection<Organization> topLevelOrganizations) {
     for (Organization organization : topLevelOrganizations) {
       addTopLevelOrganization(organization);
     }
@@ -113,12 +113,24 @@ public class SampleExpandedPublicationFactory {
   }
 
   private static SampleExpandedOrganization createSubOrganization(Organization subOrganization) {
-    return SampleExpandedOrganization.builder()
-        .withId(subOrganization.id())
-        .withType()
-        .withParentOrganizations(subOrganization.partOf().stream().map(Organization::id).toList())
-        .withCountryCode(subOrganization.countryCode())
-        .withLabels(subOrganization.labels())
+    var builder =
+        SampleExpandedOrganization.builder()
+            .withId(subOrganization.id())
+            .withType()
+            .withParentOrganizations(
+                subOrganization.partOf().stream().map(Organization::id).toList())
+            .withCountryCode(subOrganization.countryCode())
+            .withLabels(subOrganization.labels());
+
+    if (isNull(subOrganization.hasPart()) || subOrganization.hasPart().isEmpty()) {
+      return builder.build();
+    }
+    var expandedSubOrganizations = new ArrayList<SampleExpandedOrganization>();
+    for (var subOrganization2 : subOrganization.hasPart()) {
+      expandedSubOrganizations.add(createSubOrganization(subOrganization2));
+    }
+    return builder
+        .withSubOrganizations(expandedSubOrganizations.toArray(SampleExpandedOrganization[]::new))
         .build();
   }
 
@@ -171,8 +183,7 @@ public class SampleExpandedPublicationFactory {
     }
   }
 
-  public SampleExpandedPublicationFactory withContributor(
-      ContributorDto contributor, String... additionalNames) {
+  private void addContributor(ContributorDto contributor, String... additionalNames) {
     var expandedAffiliations =
         contributor.affiliations().stream()
             .map(SampleExpandedPublicationFactory::mapOrganizationToAffiliation)
@@ -194,6 +205,19 @@ public class SampleExpandedPublicationFactory {
             .withAffiliations(expandedAffiliations)
             .build();
     this.contributors.add(expandedContributor);
+  }
+
+  public SampleExpandedPublicationFactory withContributor(
+      ContributorDto contributor, String... additionalNames) {
+    this.addContributor(contributor, additionalNames);
+    return this;
+  }
+
+  public SampleExpandedPublicationFactory withContributors(
+      Collection<ContributorDto> contributors) {
+    for (var contributor : contributors) {
+      this.addContributor(contributor);
+    }
     return this;
   }
 
