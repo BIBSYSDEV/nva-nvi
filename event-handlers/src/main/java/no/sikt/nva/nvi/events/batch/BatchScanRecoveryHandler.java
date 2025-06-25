@@ -51,11 +51,10 @@ public class BatchScanRecoveryHandler implements RequestStreamHandler {
   private void processRequest(RecoveryEvent request) {
     int counter = 0;
     while (counter < request.numberOfMessageToProcess()) {
+      int batchSize = Math.min(request.numberOfMessageToProcess(), 10);
       var messages =
           queueClient
-              .receiveMessage(
-                  environment.readEnv(RECOVERY_BATCH_SCAN_QUEUE),
-                  request.numberOfMessageToProcess())
+              .receiveMessage(environment.readEnv(RECOVERY_BATCH_SCAN_QUEUE), batchSize)
               .messages();
 
       if (messages.isEmpty()) {
