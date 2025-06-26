@@ -320,6 +320,7 @@ paths:
           name: year
           schema:
             type: string
+            pattern: '^[0-9]{4}$'
           description: Filters by publication year
         - in: query
           name: category
