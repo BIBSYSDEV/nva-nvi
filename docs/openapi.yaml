@@ -337,9 +337,16 @@ paths:
           schema:
             type: string
           description: |
-            Filters by ID of the assigned curator for an organization.
+            Filters by ID of the assigned curator for an organization. By default, candidates with
+            no assigned curator are also included.
             Expected format is `<user_id>@<organization_id>`.
           example: "12345@20754.0.0.0"
+        - in: query
+          name: excludeUnassigned
+          description: Exclude candidates that have no assigned curator
+          required: false
+          schema:
+            type: boolean
         - in: query
           name: orderBy
           schema:
