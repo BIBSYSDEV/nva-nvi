@@ -189,7 +189,7 @@ paths:
       parameters:
         - in: path
           name: periodIdentifier
-          description: The identifier of the candidate
+          description: The identifier of the reporting period
           required: true
           schema:
             type: string
