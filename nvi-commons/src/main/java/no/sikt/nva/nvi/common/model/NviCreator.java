@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.common.model;
 
 import static java.util.Collections.emptyList;
 import static java.util.Objects.nonNull;
+import static no.sikt.nva.nvi.common.utils.Validator.hasElements;
 import static no.sikt.nva.nvi.common.utils.Validator.shouldNotBeNull;
 import static nva.commons.core.StringUtils.isBlank;
 
@@ -121,7 +122,7 @@ public record NviCreator(
       if (organization.id().equals(affiliationId)) {
         return organization;
       }
-      if (nonNull(organization.hasPart()) && !organization.hasPart().isEmpty()) {
+      if (hasElements(organization.hasPart())) {
         candidateOrganizations.addAll(organization.hasPart());
       }
     }

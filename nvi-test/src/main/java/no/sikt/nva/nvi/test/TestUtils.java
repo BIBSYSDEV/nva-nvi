@@ -17,6 +17,7 @@ import java.net.http.HttpResponse;
 import java.time.LocalDate;
 import java.time.Year;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -98,6 +99,14 @@ public final class TestUtils {
     return node;
   }
 
+  public static <T> boolean hasElements(Collection<T> collection) {
+    return nonNull(collection) && !collection.isEmpty();
+  }
+
+  public static <K, V> boolean hasElements(Map<K, V> collection) {
+    return nonNull(collection) && !collection.isEmpty();
+  }
+
   public static void putIfNotBlank(ObjectNode node, String field, String value) {
     if (isNotBlank(value)) {
       node.put(field, value);
@@ -112,7 +121,7 @@ public final class TestUtils {
 
   public static void putAsArrayIfMultipleValues(
       ObjectNode node, String field, Collection<String> values) {
-    if (nonNull(values) && !values.isEmpty()) {
+    if (hasElements(values)) {
       if (values.size() > ONE) {
         var arrayNode = objectMapper.createArrayNode();
         values.forEach(arrayNode::add);

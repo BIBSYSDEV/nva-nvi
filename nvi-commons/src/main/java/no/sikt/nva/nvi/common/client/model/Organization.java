@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.common.client.model;
 
-import static java.util.Objects.nonNull;
 import static java.util.function.Predicate.not;
+import static no.sikt.nva.nvi.common.utils.Validator.hasElements;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -57,11 +57,11 @@ public record Organization(
 
   @JsonIgnore
   public Organization getTopLevelOrg() {
-    if (nonNull(partOf()) && !partOf().isEmpty()) {
+    if (hasElements(partOf())) {
 
       var organization = partOf().stream().collect(SingletonCollector.collect());
 
-      while (hasPartOf(organization)) {
+      while (hasElements(organization.partOf())) {
         organization = organization.partOf().stream().collect(SingletonCollector.collect());
       }
 
@@ -76,10 +76,6 @@ public record Organization(
         .filter(not(Collection::isEmpty))
         .map(list -> list.stream().map(mapper).toList())
         .orElse(null);
-  }
-
-  private static boolean hasPartOf(Organization org) {
-    return nonNull(org.partOf()) && !org.partOf().isEmpty();
   }
 
   public static final class Builder {

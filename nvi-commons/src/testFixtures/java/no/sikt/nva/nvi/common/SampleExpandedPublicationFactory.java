@@ -7,6 +7,7 @@ import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.getEvaluateNviCandidateHandlerEnvironment;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.setupRandomOrganization;
 import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublicationDateInCurrentYear;
+import static no.sikt.nva.nvi.common.utils.Validator.hasElements;
 import static no.sikt.nva.nvi.test.TestConstants.CHANNEL_PUBLISHER;
 import static no.sikt.nva.nvi.test.TestConstants.CHANNEL_SERIES;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_NORWAY;
@@ -90,48 +91,34 @@ public class SampleExpandedPublicationFactory {
   public SampleExpandedPublicationFactory withTopLevelOrganizations(
       Collection<Organization> topLevelOrganizations) {
     for (Organization organization : topLevelOrganizations) {
-      addTopLevelOrganization(organization);
+      this.topLevelOrganizations.add(createExpandedOrganization(organization, true));
     }
     return this;
   }
 
-  private void addTopLevelOrganization(Organization topLevelOrganization) {
-    var expandedSubOrganizations = new ArrayList<SampleExpandedOrganization>();
-    for (var subOrganization : topLevelOrganization.hasPart()) {
-      expandedSubOrganizations.add(createSubOrganization(subOrganization));
-    }
-    var expandedTopLevelOrganization =
-        SampleExpandedOrganization.builder()
-            .withId(topLevelOrganization.id())
-            .withType()
-            .withCountryCode(topLevelOrganization.countryCode())
-            .withLabels(topLevelOrganization.labels())
-            .withSubOrganizations(
-                expandedSubOrganizations.toArray(SampleExpandedOrganization[]::new))
-            .build();
-    this.topLevelOrganizations.add(expandedTopLevelOrganization);
-  }
-
-  private static SampleExpandedOrganization createSubOrganization(Organization subOrganization) {
+  private static SampleExpandedOrganization createExpandedOrganization(
+      Organization organization, boolean isTopLevel) {
     var builder =
         SampleExpandedOrganization.builder()
-            .withId(subOrganization.id())
+            .withId(organization.id())
             .withType()
-            .withParentOrganizations(
-                subOrganization.partOf().stream().map(Organization::id).toList())
-            .withCountryCode(subOrganization.countryCode())
-            .withLabels(subOrganization.labels());
+            .withCountryCode(organization.countryCode())
+            .withLabels(organization.labels());
 
-    if (isNull(subOrganization.hasPart()) || subOrganization.hasPart().isEmpty()) {
-      return builder.build();
+    if (!isTopLevel) {
+      builder.withParentOrganizations(
+          organization.partOf().stream().map(Organization::id).toList());
     }
-    var expandedSubOrganizations = new ArrayList<SampleExpandedOrganization>();
-    for (var subOrganization2 : subOrganization.hasPart()) {
-      expandedSubOrganizations.add(createSubOrganization(subOrganization2));
+
+    if (hasElements(organization.hasPart())) {
+      var subOrganizations =
+          organization.hasPart().stream()
+              .map(sub -> createExpandedOrganization(sub, false))
+              .toArray(SampleExpandedOrganization[]::new);
+      builder.withSubOrganizations(subOrganizations);
     }
-    return builder
-        .withSubOrganizations(expandedSubOrganizations.toArray(SampleExpandedOrganization[]::new))
-        .build();
+
+    return builder.build();
   }
 
   private URI getCustomerApiUri(URI organizationId) {
@@ -313,7 +300,7 @@ public class SampleExpandedPublicationFactory {
   public Organization setupTopLevelOrganization(String countryCode, boolean isNviOrganization) {
     var topLevelOrganization = setupRandomOrganization(countryCode, 2, uriRetriever);
     mockCustomerApiResponse(topLevelOrganization.id(), isNviOrganization);
-    addTopLevelOrganization(topLevelOrganization);
+    this.topLevelOrganizations.add(createExpandedOrganization(topLevelOrganization, true));
     return topLevelOrganization;
   }
 

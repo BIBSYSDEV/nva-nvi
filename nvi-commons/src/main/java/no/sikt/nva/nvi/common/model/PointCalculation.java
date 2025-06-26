@@ -1,12 +1,12 @@
 package no.sikt.nva.nvi.common.model;
 
-import static java.util.Objects.isNull;
+import static java.util.Collections.emptyList;
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.utils.DecimalUtils.adjustScaleAndRoundingMode;
+import static no.sikt.nva.nvi.common.utils.Validator.hasElements;
 
 import java.math.BigDecimal;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
@@ -88,11 +88,10 @@ public record PointCalculation(
 
   private static List<InstitutionPoints> mapToInstitutionPoints(
       Collection<DbInstitutionPoints> dbPoints) {
-    if (isNull(dbPoints) || dbPoints.isEmpty()) {
-      return Collections.emptyList();
-    } else {
+    if (hasElements(dbPoints)) {
       return dbPoints.stream().map(InstitutionPoints::from).toList();
     }
+    return emptyList();
   }
 
   private static List<DbInstitutionPoints> mapToDbInstitutionPoints(
