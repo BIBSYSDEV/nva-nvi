@@ -233,13 +233,27 @@ paths:
           description: Term to search for in NVI candidates
         - in: query
           name: affiliations
-          description: 'Only return candidates in given affiliations. Including their sub-units. Formated as a comma separated list of affiliations ids.'
+          description: |
+            Filters by affiliation to one of the given organization IDs. By default, this includes 
+            candidates where a creator is affiliated with a sub-unit of the organization specified.
           required: false
+          explode: false
           schema:
-            type: string
+            type: array
+            items:
+              type: string
+          examples:
+            single:
+              summary: Single affiliation
+              value: [ "20754.1.0.0" ]
+            multiple:
+              summary: One of multiple affiliations
+              value: [ "20754.1.0.0", "20754.2.2.0" ]
         - in: query
           name: excludeSubUnits
-          description: 'Exclude sub-units of the given affiliations.'
+          description: |
+            Excludes sub-units when checking affiliations. Must be combined with the `affiliations`
+            parameter.
           required: false
           schema:
             type: boolean
@@ -248,6 +262,7 @@ paths:
           schema:
             type: integer
             default: 0
+            minimum: 0
           description: The offset of the search for use in pagination. Must be divisible by the size.
         - in: query
           name: size
@@ -256,45 +271,87 @@ paths:
             default: 10
           description: The size of each page of the search for use in pagination. Default is 10.
         - in: query
-          name: filter
+          name: status
+          description: Filter by approval status for the user's organization that matches one of the given values.
+          required: false
+          explode: false
           schema:
-            $ref: "#/components/schemas/Filter"
-          description: Filter values to use
+            type: array
+            items:
+              type: string
+              enum: [ pending, approved, rejected ]
+          examples:
+            single:
+              summary: Single approval status
+              value: [ "pending" ]
+            multiple:
+              summary: One of multiple statuses
+              value: [ "pending", "approved" ]
+        - in: query
+          name: globalStatus
+          description: Filter by global approval status that matches one of the given values.
+          required: false
+          explode: false
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [ pending, approved, rejected, disputed ]
+          examples:
+            single:
+              summary: Single global status
+              value: [ "disputed" ]
+            multiple:
+              summary: One of multiple global statuses
+              value: [ "disputed", "rejected" ]
+        - in: query
+          name: filter
+          description: |
+            Apply a custom filter:
+            * `rejectedByOthers` - Show candidates rejected by other organizations
+            * `approvedByOthers` - Show candidates approved by other organizations
+            * `collaboration` - Show candidates with multiple NVI organizations involved
+          required: false
+          schema:
+            type: string
+            enum: [ rejectedByOthers, approvedByOthers, collaboration ]
+          example: "rejectedByOthers"
         - in: query
           name: year
           schema:
             type: string
-          description: Filters values based on year
+          description: Filters by publication year
         - in: query
           name: category
           schema:
             type: string
-          description: Filters values based on category
+          description: No longer in use and will be removed.
+          deprecated: true
         - in: query
           name: title
           schema:
             type: string
-          description: Filters values based on title
+          description: Filters by publication title
         - in: query
           name: assignee
           schema:
             type: string
-          description: Filters values based on assignee
+          description: |
+            Filters by ID of the assigned curator for an organization.
+            Expected format is `<user_id>@<organization_id>`.
+          example: "12345@20754.0.0.0"
         - in: query
           name: orderBy
           schema:
             type: string
             description: Order by field
-            enum:
-              - createdDate
+            enum: [ "createdDate" ]
         - in: query
           name: sortOrder
           schema:
             type: string
             description: Order direction
-            enum:
-              - asc
-              - desc
+            enum: [ "asc", "desc" ]
       security:
         - CognitoUserPool: [
           'https://api.nva.unit.no/scopes/backend',
@@ -761,18 +818,6 @@ paths:
 
 components:
   schemas:
-    Filter:
-      type: string
-      enum:
-        - pending
-        - pendingCollaboration
-        - assigned
-        - assignedCollaboration
-        - approved
-        - approvedCollaboration
-        - rejected
-        - rejectedCollaboration
-        - assignments
     NviPeriod:
       type: object
       properties:
