@@ -63,4 +63,8 @@ public final class Validator {
   public static <K, V> boolean hasElements(Map<K, V> collection) {
     return nonNull(collection) && !collection.isEmpty();
   }
+
+  public static boolean isMissing(Object object) {
+    return isNull(object) || (object instanceof Collection<?> collection && collection.isEmpty());
+  }
 }

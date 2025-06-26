@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.common;
 
 import static java.util.Collections.emptyList;
+import static no.sikt.nva.nvi.common.EnvironmentFixtures.getEventBasedBatchScanHandlerEnvironment;
 import static no.sikt.nva.nvi.common.RequestFixtures.createNoteRequest;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpdateStatusRequest;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidate;
@@ -50,7 +51,7 @@ class MigrationTests {
             candidateRepository,
             scenario.getS3StorageReaderForExpandedResourcesBucket(),
             new FakeSqsClient(),
-            FakeEnvironment.builder().build());
+            getEventBasedBatchScanHandlerEnvironment());
   }
 
   @Test
