@@ -155,7 +155,6 @@ public class BatchScanUtil {
             .publicationBucketUri(dbCandidate.publicationBucketUri())
             .publicationDate(dbCandidate.publicationDate())
             .contributorCount(updatedDbCreators.size())
-            .modifiedDate(dbCandidate.modifiedDate())
 
             // Always update these
             .topLevelNviOrganizations(updatedOrganizations) // Used for access control
@@ -200,14 +199,8 @@ public class BatchScanUtil {
         .build();
   }
 
-  private <T> T getFieldOrDefault(
-      DbPublicationDetails publicationDetails,
-      Function<DbPublicationDetails, T> getter,
-      T defaultValue) {
-    return Optional.ofNullable(publicationDetails)
-        .map(getter)
-        .filter(Objects::nonNull)
-        .orElse(defaultValue);
+  private <T, R> T getFieldOrDefault(R object, Function<R, T> getter, T defaultValue) {
+    return Optional.ofNullable(object).map(getter).filter(Objects::nonNull).orElse(defaultValue);
   }
 
   private List<DbOrganization> getRelevantTopLevelOrganizations(

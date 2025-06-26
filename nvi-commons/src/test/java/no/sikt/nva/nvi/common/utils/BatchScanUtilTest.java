@@ -318,10 +318,13 @@ class BatchScanUtilTest {
     var verifiedCreator = verifiedNviCreatorFrom(nviOrganization1);
     var expectedNviCreators = List.of(verifiedCreator);
     var expectedTopLevelOrganizations = List.of(nviOrganization1);
+    var expectedModifiedDate = Instant.now();
     var publication =
         publicationBuilder
             .withContributor(mapToContributorDto(verifiedCreator))
-            .getExpandedPublication();
+            .getExpandedPublicationBuilder()
+            .withModifiedDate(expectedModifiedDate.toString())
+            .build();
 
     // Set up an existing Candidate in the database with identifiers matching the publication
     var dbCreators = mapToDbCreators(expectedNviCreators);
@@ -330,7 +333,7 @@ class BatchScanUtilTest {
             .topLevelNviOrganizations(null)
             .abstractText(randomString())
             .contributorCount(randomInteger())
-            .modifiedDate(Instant.now())
+            .modifiedDate(expectedModifiedDate)
             .creators(dbCreators)
             .build();
     var originalDbCandidate =
