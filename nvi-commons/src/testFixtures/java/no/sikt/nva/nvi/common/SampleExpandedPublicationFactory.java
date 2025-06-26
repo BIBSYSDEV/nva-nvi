@@ -7,6 +7,7 @@ import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.getEvaluateNviCandidateHandlerEnvironment;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.setupRandomOrganization;
 import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublicationDateInCurrentYear;
+import static no.sikt.nva.nvi.common.utils.Validator.hasElements;
 import static no.sikt.nva.nvi.test.TestConstants.CHANNEL_PUBLISHER;
 import static no.sikt.nva.nvi.test.TestConstants.CHANNEL_SERIES;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_NORWAY;
@@ -88,38 +89,36 @@ public class SampleExpandedPublicationFactory {
   }
 
   public SampleExpandedPublicationFactory withTopLevelOrganizations(
-      Organization... topLevelOrganizations) {
+      Collection<Organization> topLevelOrganizations) {
     for (Organization organization : topLevelOrganizations) {
-      addTopLevelOrganization(organization);
+      this.topLevelOrganizations.add(createExpandedOrganization(organization, true));
     }
     return this;
   }
 
-  private void addTopLevelOrganization(Organization topLevelOrganization) {
-    var expandedSubOrganizations = new ArrayList<SampleExpandedOrganization>();
-    for (var subOrganization : topLevelOrganization.hasPart()) {
-      expandedSubOrganizations.add(createSubOrganization(subOrganization));
-    }
-    var expandedTopLevelOrganization =
+  private static SampleExpandedOrganization createExpandedOrganization(
+      Organization organization, boolean isTopLevel) {
+    var builder =
         SampleExpandedOrganization.builder()
-            .withId(topLevelOrganization.id())
+            .withId(organization.id())
             .withType()
-            .withCountryCode(topLevelOrganization.countryCode())
-            .withLabels(topLevelOrganization.labels())
-            .withSubOrganizations(
-                expandedSubOrganizations.toArray(SampleExpandedOrganization[]::new))
-            .build();
-    this.topLevelOrganizations.add(expandedTopLevelOrganization);
-  }
+            .withCountryCode(organization.countryCode())
+            .withLabels(organization.labels());
 
-  private static SampleExpandedOrganization createSubOrganization(Organization subOrganization) {
-    return SampleExpandedOrganization.builder()
-        .withId(subOrganization.id())
-        .withType()
-        .withParentOrganizations(subOrganization.partOf().stream().map(Organization::id).toList())
-        .withCountryCode(subOrganization.countryCode())
-        .withLabels(subOrganization.labels())
-        .build();
+    if (!isTopLevel) {
+      builder.withParentOrganizations(
+          organization.partOf().stream().map(Organization::id).toList());
+    }
+
+    if (hasElements(organization.hasPart())) {
+      var subOrganizations =
+          organization.hasPart().stream()
+              .map(sub -> createExpandedOrganization(sub, false))
+              .toArray(SampleExpandedOrganization[]::new);
+      builder.withSubOrganizations(subOrganizations);
+    }
+
+    return builder.build();
   }
 
   private URI getCustomerApiUri(URI organizationId) {
@@ -171,8 +170,7 @@ public class SampleExpandedPublicationFactory {
     }
   }
 
-  public SampleExpandedPublicationFactory withContributor(
-      ContributorDto contributor, String... additionalNames) {
+  private void addContributor(ContributorDto contributor, String... additionalNames) {
     var expandedAffiliations =
         contributor.affiliations().stream()
             .map(SampleExpandedPublicationFactory::mapOrganizationToAffiliation)
@@ -194,6 +192,19 @@ public class SampleExpandedPublicationFactory {
             .withAffiliations(expandedAffiliations)
             .build();
     this.contributors.add(expandedContributor);
+  }
+
+  public SampleExpandedPublicationFactory withContributor(
+      ContributorDto contributor, String... additionalNames) {
+    this.addContributor(contributor, additionalNames);
+    return this;
+  }
+
+  public SampleExpandedPublicationFactory withContributors(
+      Collection<ContributorDto> contributors) {
+    for (var contributor : contributors) {
+      this.addContributor(contributor);
+    }
     return this;
   }
 
@@ -289,7 +300,7 @@ public class SampleExpandedPublicationFactory {
   public Organization setupTopLevelOrganization(String countryCode, boolean isNviOrganization) {
     var topLevelOrganization = setupRandomOrganization(countryCode, 2, uriRetriever);
     mockCustomerApiResponse(topLevelOrganization.id(), isNviOrganization);
-    addTopLevelOrganization(topLevelOrganization);
+    this.topLevelOrganizations.add(createExpandedOrganization(topLevelOrganization, true));
     return topLevelOrganization;
   }
 

@@ -1,11 +1,12 @@
 package no.sikt.nva.nvi.common.model;
 
 import static java.util.Objects.nonNull;
+import static no.sikt.nva.nvi.common.EnvironmentFixtures.API_HOST;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_NORWAY;
+import static no.sikt.nva.nvi.test.TestUtils.generateUniqueIdAsString;
 import static no.sikt.nva.nvi.test.TestUtils.randomUriWithSuffix;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
-import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -24,8 +25,28 @@ import java.util.stream.IntStream;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.client.model.Organization.Builder;
 import no.unit.nva.auth.uriretriever.UriRetriever;
+import nva.commons.core.paths.UriWrapper;
 
 public class OrganizationFixtures {
+
+  public static URI randomOrganizationId() {
+    var identifier =
+        String.format(
+            "%s.%s.%s.%s",
+            generateUniqueIdAsString(),
+            generateUniqueIdAsString(),
+            generateUniqueIdAsString(),
+            generateUniqueIdAsString());
+    return organizationIdFromIdentifier(identifier);
+  }
+
+  public static URI organizationIdFromIdentifier(String identifier) {
+    return UriWrapper.fromHost(API_HOST.getValue())
+        .addChild("cristin")
+        .addChild("organization")
+        .addChild(identifier)
+        .getUri();
+  }
 
   public static Organization randomTopLevelOrganization() {
     return randomOrganization(COUNTRY_CODE_NORWAY, 2).build();
@@ -50,16 +71,16 @@ public class OrganizationFixtures {
 
   public static Builder randomOrganization() {
     return Organization.builder()
-        .withId(randomUri())
+        .withId(randomOrganizationId())
         .withCountryCode(COUNTRY_CODE_NORWAY)
-        .withLabels(Map.of(COUNTRY_CODE_NORWAY.toLowerCase(Locale.ROOT), randomString()));
+        .withLabels(Map.of("nb", randomString(), "en", randomString()));
   }
 
   public static Builder randomOrganization(String countryCode) {
     return Organization.builder()
-        .withId(randomUri())
+        .withId(randomOrganizationId())
         .withCountryCode(countryCode)
-        .withLabels(Map.of(countryCode.toLowerCase(Locale.ROOT), randomString()));
+        .withLabels(Map.of("nb", randomString(), "en", randomString()));
   }
 
   public static Organization setupRandomOrganization(
@@ -93,6 +114,10 @@ public class OrganizationFixtures {
         .withId(topLevelOrganizationId)
         .withCountryCode(countryCode)
         .withHasPart(subOrganizations);
+  }
+
+  public static Organization getAsOrganizationLeafNode(URI organizationId) {
+    return Organization.builder().withId(organizationId).build();
   }
 
   public static void mockOrganizationResponseForAffiliation(

@@ -27,7 +27,8 @@ public enum EnvironmentFixtures {
   // Other handler-specific environment variables
   CANDIDATE_QUEUE_URL("http://localhost:3000/candidate-queue"),
   DB_EVENTS_QUEUE_URL("http://localhost:3000/db-events-queue"),
-  EXPANDED_RESOURCES_BUCKET("persisted-resources-bucket"),
+  PERSISTED_INDEX_DOCUMENT_QUEUE_URL("http://localhost:3000/index-document-queue"),
+  EXPANDED_RESOURCES_BUCKET("persisted-resources"),
   INDEX_DLQ("http://localhost:3000/index-dlq"),
   UPSERT_CANDIDATE_DLQ_QUEUE_URL("http://localhost:3000/upsert-candidate-dlq"),
   EVENT_BUS_NAME("bus-name"),
@@ -81,6 +82,10 @@ public enum EnvironmentFixtures {
         .build();
   }
 
+  public static FakeEnvironment getCristinNviReportEventConsumerEnvironment() {
+    return getDefaultEnvironmentBuilder().with(EXPANDED_RESOURCES_BUCKET).build();
+  }
+
   public static FakeEnvironment getUpsertNviCandidateHandlerEnvironment() {
     return getDefaultEnvironmentBuilder().with(UPSERT_CANDIDATE_DLQ_QUEUE_URL).build();
   }
@@ -100,6 +105,14 @@ public enum EnvironmentFixtures {
         .with(TOPIC_APPROVAL_INSERT)
         .with(TOPIC_APPROVAL_UPDATE)
         .with(TOPIC_APPROVAL_REMOVE)
+        .build();
+  }
+
+  public static FakeEnvironment getIndexDocumentHandlerEnvironment() {
+    return getDefaultEnvironmentBuilder()
+        .with(EXPANDED_RESOURCES_BUCKET)
+        .with(PERSISTED_INDEX_DOCUMENT_QUEUE_URL)
+        .with(INDEX_DLQ)
         .build();
   }
 }

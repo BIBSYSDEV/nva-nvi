@@ -2,8 +2,10 @@ package no.sikt.nva.nvi.index;
 
 import static java.util.Collections.emptyList;
 import static java.util.Objects.nonNull;
+import static no.sikt.nva.nvi.common.EnvironmentFixtures.getIndexDocumentHandlerEnvironment;
 import static no.sikt.nva.nvi.common.QueueServiceTestUtils.createEvent;
 import static no.sikt.nva.nvi.common.QueueServiceTestUtils.createEventWithOneInvalidRecord;
+import static no.sikt.nva.nvi.common.TestScenario.constructPublicationBucketPath;
 import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequestWithSingleAffiliation;
@@ -111,7 +113,7 @@ class IndexDocumentHandlerTest {
 
   private static final String JSON_PTR_CONTRIBUTOR = "/publicationDetails/contributors";
   private static final String JSON_PTR_APPROVALS = "/approvals";
-  private static final Environment ENVIRONMENT = new Environment();
+  private static final Environment ENVIRONMENT = getIndexDocumentHandlerEnvironment();
   private static final String BODY = "body";
   private static final String ORGANIZATION_CONTEXT =
       "https://bibsysdev.github.io/src/organization-context.json";
@@ -752,9 +754,7 @@ class IndexDocumentHandlerTest {
   }
 
   private static String extractResourceIdentifier(Candidate persistedCandidate) {
-    return UriWrapper.fromUri(persistedCandidate.getPublicationDetails().publicationBucketUri())
-        .getPath()
-        .getLastPathElement();
+    return persistedCandidate.getPublicationDetails().publicationIdentifier().toString();
   }
 
   private static ObjectNode orgWithThreeLevels(URI affiliationId) {
@@ -820,7 +820,7 @@ class IndexDocumentHandlerTest {
         removeTopLevelOrganization((ObjectNode) expandedResource);
     insertResourceInS3(
         createResourceIndexDocument(expandedResourceWithoutTopLevelOrganization),
-        UnixPath.of(extractResourceIdentifier(candidate)));
+        constructPublicationBucketPath(extractResourceIdentifier(candidate)));
   }
 
   private void setupResourceWithInvalidObjectInS3(JsonNode expandedResource, Candidate candidate) {
@@ -830,7 +830,7 @@ class IndexDocumentHandlerTest {
     ((ObjectNode) expandedResource).set("topLevelOrganizations", invalidObject);
     insertResourceInS3(
         createResourceIndexDocument(expandedResource),
-        UnixPath.of(extractResourceIdentifier(candidate)));
+        constructPublicationBucketPath(extractResourceIdentifier(candidate)));
   }
 
   private JsonNode removeTopLevelOrganization(ObjectNode expandedResource) {
@@ -907,7 +907,7 @@ class IndexDocumentHandlerTest {
 
   private void insertInS3(JsonNode expandedResource, String resourceIdentifier) {
     var resourceIndexDocument = createResourceIndexDocument(expandedResource);
-    insertResourceInS3(resourceIndexDocument, UnixPath.of(resourceIdentifier));
+    insertResourceInS3(resourceIndexDocument, constructPublicationBucketPath(resourceIdentifier));
   }
 
   private JsonNode createResourceIndexDocument(JsonNode expandedResource) {

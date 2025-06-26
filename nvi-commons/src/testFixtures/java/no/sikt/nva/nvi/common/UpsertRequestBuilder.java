@@ -1,11 +1,11 @@
 package no.sikt.nva.nvi.common;
 
 import static java.math.BigDecimal.ZERO;
+import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.getExpectedPublicationBucketUri;
 import static no.sikt.nva.nvi.common.dto.PointCalculationDtoBuilder.randomPointCalculationDto;
 import static no.sikt.nva.nvi.common.dto.PublicationDetailsDtoBuilder.randomPublicationDetailsDto;
 import static no.sikt.nva.nvi.common.model.ContributorFixtures.randomVerifiedNviCreatorDto;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomTopLevelOrganization;
-import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 
 import java.math.BigDecimal;
 import java.net.URI;
@@ -38,12 +38,13 @@ public class UpsertRequestBuilder {
     var topLevelOrganization = randomTopLevelOrganization();
     var affiliationId = topLevelOrganization.hasPart().getFirst().id();
     var nviCreator = randomVerifiedNviCreatorDto(affiliationId);
+    var publicationDetails = randomPublicationDetailsDto();
 
     return new UpsertRequestBuilder()
-        .withPublicationBucketUri(randomUri())
+        .withPublicationBucketUri(getExpectedPublicationBucketUri(publicationDetails.identifier()))
         .withPointCalculation(randomPointCalculationDto())
         .withCreatorsAndPoints(Map.of(topLevelOrganization, List.of(nviCreator)))
-        .withPublicationDetails(randomPublicationDetailsDto());
+        .withPublicationDetails(publicationDetails);
   }
 
   public static UpsertRequestBuilder fromRequest(UpsertNviCandidateRequest request) {

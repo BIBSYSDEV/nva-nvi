@@ -1,10 +1,11 @@
 package no.sikt.nva.nvi.common.db;
 
 import static java.util.Objects.nonNull;
+import static no.sikt.nva.nvi.common.EnvironmentFixtures.EXPANDED_RESOURCES_BUCKET;
+import static no.sikt.nva.nvi.common.SampleExpandedPublicationFactory.defaultExpandedPublicationFactory;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidate;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidateBuilder;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
-import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 
 import java.net.URI;
@@ -13,8 +14,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.IntStream;
+import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
+import nva.commons.core.paths.UriWrapper;
 
 public class CandidateDaoFixtures {
   private static final String UUID_SEPARATOR = "-";
@@ -24,18 +27,28 @@ public class CandidateDaoFixtures {
         UUID.randomUUID(), randomCandidate(), UUID.randomUUID().toString(), randomYear());
   }
 
-  public static CandidateDao randomNonApplicableCandidateDao() {
-    return new CandidateDao(
-        UUID.randomUUID(), randomCandidateBuilder(false).build(),
-        UUID.randomUUID().toString(), randomString());
+  public static List<CandidateDao> createNumberOfCandidatesForYear(
+      String year, int number, TestScenario scenario) {
+    var candidates =
+        IntStream.range(0, number)
+            .mapToObj(i -> DbCandidateFixtures.randomCandidateWithYear(year))
+            .map(candidate -> createCandidateDao(scenario.getCandidateRepository(), candidate))
+            .toList();
+    for (var candidate : candidates) {
+      createMatchingPublicationInS3(candidate, scenario);
+    }
+    return candidates;
   }
 
-  public static List<CandidateDao> createNumberOfCandidatesForYear(
-      String year, int number, CandidateRepository repository) {
-    return IntStream.range(0, number)
-        .mapToObj(i -> DbCandidateFixtures.randomCandidateWithYear(year))
-        .map(candidate -> createCandidateDao(repository, candidate))
-        .toList();
+  private static void createMatchingPublicationInS3(
+      CandidateDao candidateDao, TestScenario scenario) {
+    var publication =
+        defaultExpandedPublicationFactory(scenario)
+            .getExpandedPublicationBuilder()
+            .withId(candidateDao.candidate().publicationId())
+            .withIdentifier(UUID.fromString(candidateDao.candidate().publicationIdentifier()))
+            .build();
+    scenario.setupExpandedPublicationInS3(publication);
   }
 
   public static CandidateDao createCandidateDao(
@@ -93,5 +106,12 @@ public class CandidateDaoFixtures {
         "PrimaryKeyHashKey", dao.primaryKeyHashKey(),
         "SearchByYearHashKey", String.valueOf(dao.searchByYearHashKey()),
         "SearchByYearRangeKey", String.valueOf(dao.searchByYearSortKey()));
+  }
+
+  public static URI getExpectedPublicationBucketUri(String identifier) {
+    return UriWrapper.fromUri("s3://" + EXPANDED_RESOURCES_BUCKET.getValue())
+        .addChild("resources")
+        .addChild(identifier + ".gz")
+        .getUri();
   }
 }
