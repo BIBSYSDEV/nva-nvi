@@ -9,6 +9,7 @@ import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_PUBLICATI
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_YEAR;
 import static no.sikt.nva.nvi.common.DatabaseConstants.VERSION_FIELD;
 import static no.sikt.nva.nvi.common.utils.ApplicationConstants.NVI_TABLE_NAME;
+import static no.sikt.nva.nvi.common.utils.Validator.hasElements;
 import static software.amazon.awssdk.enhanced.dynamodb.TableSchema.fromImmutableClass;
 import static software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional.keyEqualTo;
 import static software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional.sortBeginsWith;
@@ -363,11 +364,11 @@ public class CandidateRepository extends DynamoRepository {
   }
 
   private boolean thereAreMorePagesToScan(Page<CandidateDao> page) {
-    return nonNull(page) && nonNull(page.lastEvaluatedKey()) && !page.lastEvaluatedKey().isEmpty();
+    return nonNull(page) && hasElements(page.lastEvaluatedKey());
   }
 
   private boolean thereAreMorePagesToScan(ScanResponse scanResult) {
-    return nonNull(scanResult.lastEvaluatedKey()) && !scanResult.lastEvaluatedKey().isEmpty();
+    return hasElements(scanResult.lastEvaluatedKey());
   }
 
   private BatchWriteItemRequest toBatchRequest(Collection<WriteRequest> writeRequests) {

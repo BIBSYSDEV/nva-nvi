@@ -3,8 +3,8 @@ package no.sikt.nva.nvi.events.cristin;
 import static java.util.Collections.emptyList;
 import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.API_HOST;
-import static no.sikt.nva.nvi.common.EnvironmentFixtures.EXPANDED_RESOURCES_BUCKET;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.getCristinNviReportEventConsumerEnvironment;
+import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.getExpectedPublicationBucketUri;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeriod;
 import static no.sikt.nva.nvi.common.model.EnumFixtures.randomValidInstanceType;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomTopLevelOrganization;
@@ -206,27 +206,25 @@ class CristinNviReportEventConsumerTest {
             .map(CristinIdWrapper::from)
             .map(CristinIdWrapper::getInstitutionId)
             .toList();
+    assertThat(candidate.getApprovals().keySet().stream().toList())
+        .containsExactlyInAnyOrderElementsOf(expectedApprovalIds);
+
     assertThat(candidate)
         .extracting(
             Candidate::getPublicationId,
             Candidate::isApplicable,
             actual -> actual.getPeriod().year(),
-            actual -> actual.getApprovals().keySet().stream().toList(),
             actual -> actual.getPublicationType().getValue(),
             actual -> actual.getPublicationChannel().scientificValue().getValue())
         .containsExactly(
             expectedPublicationId(cristinNviReport),
             true,
             cristinNviReport.getYearReportedFromHistoricalData().orElseThrow(),
-            expectedApprovalIds,
             cristinNviReport.instanceType(),
             "LevelOne");
 
     var expectedPublicationBucketUri =
-        UriWrapper.fromUri("s3://" + EXPANDED_RESOURCES_BUCKET.getValue())
-            .addChild("resources")
-            .addChild(cristinNviReport.publicationIdentifier() + ".gz")
-            .getUri();
+        getExpectedPublicationBucketUri(cristinNviReport.publicationIdentifier());
     assertThat(candidate.getPublicationDetails())
         .extracting(PublicationDetails::publicationDate, PublicationDetails::publicationBucketUri)
         .containsExactlyInAnyOrder(

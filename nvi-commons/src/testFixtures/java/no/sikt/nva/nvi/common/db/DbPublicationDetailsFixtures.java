@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.common.db;
 
 import static java.util.Objects.isNull;
 import static java.util.UUID.randomUUID;
+import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.getExpectedPublicationBucketUri;
 import static no.sikt.nva.nvi.common.model.NviCreatorFixtures.mapToDbCreators;
 import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.mapToDbPublicationDate;
 import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublicationDateInCurrentYear;
@@ -28,7 +29,7 @@ public class DbPublicationDetailsFixtures {
     return DbPublicationDetails.builder()
         .id(publicationId)
         .identifier(publicationIdentifier.toString())
-        .publicationBucketUri(randomUri())
+        .publicationBucketUri(getExpectedPublicationBucketUri(publicationIdentifier.toString()))
         .publicationDate(randomPublicationDateInCurrentYear().toDbPublicationDate())
         .modifiedDate(Instant.now())
         .topLevelNviOrganizations(List.of(topLevelNviOrganization))
@@ -49,7 +50,7 @@ public class DbPublicationDetailsFixtures {
     return DbPublicationDetails.builder()
         .id(request.publicationId())
         .identifier(dtoPublicationDetails.identifier())
-        .publicationBucketUri(request.publicationBucketUri())
+        .publicationBucketUri(getExpectedPublicationBucketUri(dtoPublicationDetails.identifier()))
         .title(dtoPublicationDetails.title())
         .status(dtoPublicationDetails.status())
         .publicationDate(mapToDbPublicationDate(dtoPublicationDetails.publicationDate()))

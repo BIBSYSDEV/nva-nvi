@@ -1,13 +1,13 @@
 package no.sikt.nva.nvi.test;
 
 import static java.util.Collections.emptyList;
-import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_NORWAY;
 import static no.sikt.nva.nvi.test.TestConstants.ID_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.LABELS_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.PART_OF_FIELD;
 import static no.sikt.nva.nvi.test.TestUtils.createNodeWithType;
+import static no.sikt.nva.nvi.test.TestUtils.hasElements;
 import static no.sikt.nva.nvi.test.TestUtils.putIfNotBlank;
 import static no.sikt.nva.nvi.test.TestUtils.putIfNotNull;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
@@ -38,7 +38,7 @@ public record SampleExpandedAffiliation(
     putIfNotNull(affiliationNode, ID_FIELD, id);
     putIfNotBlank(affiliationNode, COUNTRY_CODE_FIELD, countryCode);
 
-    if (nonNull(partOf) && !partOf.isEmpty()) {
+    if (hasElements(partOf)) {
       var partOfNode = objectMapper.createArrayNode();
       partOf.stream()
           .map(SampleExpandedAffiliation::createAffiliationLeafNode)
@@ -46,7 +46,7 @@ public record SampleExpandedAffiliation(
       affiliationNode.set(PART_OF_FIELD, partOfNode);
     }
 
-    if (nonNull(labels) && !labels.isEmpty()) {
+    if (hasElements(labels)) {
       var labelsNode = objectMapper.createObjectNode();
       labels.forEach(labelsNode::put);
       affiliationNode.set(LABELS_FIELD, labelsNode);

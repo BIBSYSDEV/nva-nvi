@@ -1,8 +1,11 @@
 package no.sikt.nva.nvi.common.utils;
 
 import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 
 import java.time.Instant;
+import java.util.Collection;
+import java.util.Map;
 import no.sikt.nva.nvi.common.exceptions.ValidationException;
 import no.sikt.nva.nvi.common.service.model.UpdatePeriodRequest;
 import no.sikt.nva.nvi.common.service.requests.CreatePeriodRequest;
@@ -51,5 +54,17 @@ public final class Validator {
         && isNull(createRequest.createdBy())) {
       throw new IllegalArgumentException("Created by can not be null!");
     }
+  }
+
+  public static <T> boolean hasElements(Collection<T> collection) {
+    return nonNull(collection) && !collection.isEmpty();
+  }
+
+  public static <K, V> boolean hasElements(Map<K, V> collection) {
+    return nonNull(collection) && !collection.isEmpty();
+  }
+
+  public static boolean isMissing(Object object) {
+    return isNull(object) || (object instanceof Collection<?> collection && collection.isEmpty());
   }
 }

@@ -59,6 +59,7 @@ public record SampleExpandedPublication(
     String abstractText,
     String language,
     String status,
+    String modifiedDate,
     List<SampleExpandedContributor> contributors,
     List<SampleExpandedOrganization> topLevelOrganizations) {
 
@@ -107,6 +108,7 @@ public record SampleExpandedPublication(
       root.put(ID_FIELD, id.toString());
       root.put(IDENTIFIER_FIELD, identifier.toString());
       root.put(STATUS_FIELD, status);
+      putIfNotBlank(root, "modifiedDate", modifiedDate);
 
       root.set(ENTITY_DESCRIPTION_FIELD, createEntityDescriptionNode());
       root.set(TOP_LEVEL_ORGANIZATIONS_FIELD, createTopLevelOrganizationsNode());
@@ -206,6 +208,7 @@ public record SampleExpandedPublication(
     private SampleExpandedPublicationDate publicationDate;
     private String instanceType = ACADEMIC_ARTICLE;
     private String publicationContextType = "Book";
+    private String modifiedDate;
     private List<SampleExpandedPublicationChannel> publicationChannels;
     private List<SampleExpandedContributor> contributors;
     private List<SampleExpandedOrganization> topLevelOrganizations;
@@ -267,6 +270,11 @@ public record SampleExpandedPublication(
       return this;
     }
 
+    public Builder withModifiedDate(String modifiedDate) {
+      this.modifiedDate = modifiedDate;
+      return this;
+    }
+
     public Builder withPublicationChannels(
         List<SampleExpandedPublicationChannel> publicationChannels) {
       this.publicationChannels = publicationChannels;
@@ -300,6 +308,7 @@ public record SampleExpandedPublication(
           abstractText,
           language,
           status,
+          modifiedDate,
           contributors,
           topLevelOrganizations);
     }
