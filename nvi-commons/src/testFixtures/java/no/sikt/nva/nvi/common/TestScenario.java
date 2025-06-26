@@ -120,7 +120,7 @@ public class TestScenario {
   public URI setupExpandedPublicationInS3(SampleExpandedPublication publication) {
     try {
       return s3Driver.insertFile(
-          constructPublicationBucketUri(publication.identifier().toString()),
+          constructPublicationBucketPath(publication.identifier().toString()),
           publication.toJsonString());
     } catch (IOException e) {
       throw new RuntimeException("Failed to add publication to S3", e);
@@ -129,13 +129,13 @@ public class TestScenario {
 
   public URI setupExpandedPublicationInS3(String publicationJson) {
     try {
-      return s3Driver.insertFile(constructPublicationBucketUri(randomString()), publicationJson);
+      return s3Driver.insertFile(constructPublicationBucketPath(randomString()), publicationJson);
     } catch (IOException e) {
       throw new RuntimeException("Failed to add publication to S3", e);
     }
   }
 
-  private static UnixPath constructPublicationBucketUri(String publicationIdentifier) {
+  public static UnixPath constructPublicationBucketPath(String publicationIdentifier) {
     return UnixPath.of("resources", publicationIdentifier + ".gz");
   }
 }

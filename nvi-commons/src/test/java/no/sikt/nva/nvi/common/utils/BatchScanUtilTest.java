@@ -38,7 +38,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.IntStream;
 import no.sikt.nva.nvi.common.SampleExpandedPublicationFactory;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.db.CandidateDao;
@@ -70,18 +69,17 @@ class BatchScanUtilTest {
     candidateRepository = scenario.getCandidateRepository();
 
     queueClient = new FakeSqsClient();
-    var environment = getEventBasedBatchScanHandlerEnvironment();
     batchScanUtil =
         new BatchScanUtil(
             scenario.getCandidateRepository(),
             scenario.getS3StorageReaderForExpandedResourcesBucket(),
             queueClient,
-            environment);
+            getEventBasedBatchScanHandlerEnvironment());
   }
 
   @Test
   void shouldReturnTrueWhenThereAreMoreItemsToScan() {
-    IntStream.range(0, 3).forEach(i -> candidateRepository.create(randomCandidate(), List.of()));
+    createNumberOfCandidatesForYear(randomYear(), 2, scenario);
 
     var result = batchScanUtil.migrateAndUpdateVersion(1, null, emptyList());
     assertThat(result.shouldContinueScan(), is(equalTo(true)));
@@ -89,7 +87,7 @@ class BatchScanUtilTest {
 
   @Test
   void shouldWriteVersionOnRefreshWithStartMarker() {
-    IntStream.range(0, 2).forEach(i -> candidateRepository.create(randomCandidate(), List.of()));
+    createNumberOfCandidatesForYear(randomYear(), 2, scenario);
     var candidates = getCandidatesInOrder();
     var originalRows = getCandidates(candidates);
     batchScanUtil.migrateAndUpdateVersion(
@@ -118,7 +116,7 @@ class BatchScanUtilTest {
   @Test
   void shouldFetchCandidatesByGivenYearAndStartMarker() {
     var year = randomYear();
-    var candidates = createNumberOfCandidatesForYear(year, 2, candidateRepository);
+    var candidates = createNumberOfCandidatesForYear(year, 2, scenario);
     var expectedCandidates = sortByIdentifier(candidates, null);
     var firstCandidateInIndex = expectedCandidates.get(0);
     var secondCandidateInIndex = expectedCandidates.get(1);
@@ -135,8 +133,8 @@ class BatchScanUtilTest {
   @Test
   void shouldFetchCandidatesByGivenYearAndPageSize() {
     var searchYear = "2023";
-    var candidates = createNumberOfCandidatesForYear(searchYear, 10, candidateRepository);
-    createNumberOfCandidatesForYear("2022", 10, candidateRepository);
+    var candidates = createNumberOfCandidatesForYear(searchYear, 10, scenario);
+    createNumberOfCandidatesForYear("2022", 10, scenario);
     int pageSize = 5;
     var expectedCandidates = sortByIdentifier(candidates, pageSize);
     var results =
@@ -152,7 +150,7 @@ class BatchScanUtilTest {
   void shouldFetchCandidatesByGivenYearWithDefaultPageSizeAndStartMarkerIfNotSet() {
     var year = randomYear();
     int numberOfCandidates = DEFAULT_PAGE_SIZE + randomIntBetween(1, 10);
-    var candidates = createNumberOfCandidatesForYear(year, numberOfCandidates, candidateRepository);
+    var candidates = createNumberOfCandidatesForYear(year, numberOfCandidates, scenario);
     var expectedCandidates = sortByIdentifier(candidates, DEFAULT_PAGE_SIZE);
     var results = batchScanUtil.fetchCandidatesByYear(year, true, null, null).getDatabaseEntries();
     assertThat(results.size(), is(equalTo(DEFAULT_PAGE_SIZE)));
@@ -165,7 +163,7 @@ class BatchScanUtilTest {
   @Test
   void shouldNotFetchReportedCandidatesWhenIncludeReportedCandidatesIsFalse() {
     var year = randomYear();
-    var candidates = createNumberOfCandidatesForYear(year, 2, candidateRepository);
+    var candidates = createNumberOfCandidatesForYear(year, 2, scenario);
     var reportedCandidate = setupReportedCandidate(candidateRepository, year);
     var expectedCandidates = sortByIdentifier(candidates, null);
     var results = batchScanUtil.fetchCandidatesByYear(year, false, null, null).getDatabaseEntries();
@@ -356,19 +354,17 @@ class BatchScanUtilTest {
             PublicationDetails::topLevelOrganizations,
             PublicationDetails::nviCreators,
             PublicationDetails::abstractText,
-            PublicationDetails::creatorCount,
             PublicationDetails::modifiedDate)
         .containsExactly(
             expectedTopLevelOrganizations,
             expectedNviCreators,
             dbPublicationDetails.abstractText(),
-            dbPublicationDetails.contributorCount(),
             dbPublicationDetails.modifiedDate());
   }
 
   @Test
   void shouldNotFailForWholeBatchWhenSingleRecordFails() {
-    createNumberOfCandidatesForYear(randomYear(), 2, candidateRepository);
+    createNumberOfCandidatesForYear(randomYear(), 2, scenario);
 
     var details =
         randomPublicationBuilder(randomUri())
@@ -386,7 +382,7 @@ class BatchScanUtilTest {
 
   @Test
   void shouldSendFailingRecordToRecoveryQueue() {
-    createNumberOfCandidatesForYear(randomYear(), 2, candidateRepository);
+    createNumberOfCandidatesForYear(randomYear(), 2, scenario);
 
     var details =
         randomPublicationBuilder(randomUri())
