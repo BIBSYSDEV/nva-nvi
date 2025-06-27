@@ -8,9 +8,12 @@ import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_PUBLIC
 import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_PUBLICATION_2;
 import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_PUBLICATION_2_PATH;
 import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_WITH_DUPLICATE_DATE;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_WITH_TWO_TITLES;
 import static nva.commons.core.ioutils.IoUtils.stringFromResources;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.params.provider.Arguments.argumentSet;
 
 import java.io.IOException;
@@ -19,10 +22,13 @@ import java.nio.file.Path;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.dto.PublicationDto;
+import no.sikt.nva.nvi.common.exceptions.ParsingException;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.paths.UnixPath;
+import nva.commons.logutils.LogUtils;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -59,6 +65,28 @@ class PublicationLoaderServiceTest {
   void shouldGetExpectedDataFromExampleDocuments(String filename, PublicationDto expected) {
     var actual = parseExampleDocument(filename);
     assertThat(actual).usingRecursiveComparison().ignoringCollectionOrder().isEqualTo(expected);
+  }
+
+  @Test
+  void shouldLogValidationReportWhenInputIsInvalid() {
+    var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
+    assertThrows(ParsingException.class, () -> parseExampleDocument(EXAMPLE_WITH_TWO_TITLES));
+    assertThat(logAppender.getMessages()).containsSequence("Invalid cardinality");
+  }
+
+  @Test
+  void shouldNotLogUnverifiedContributorAsError() {
+    var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
+    assertDoesNotThrow(() -> parseExampleDocument(EXAMPLE_PUBLICATION_2_PATH));
+
+    var messages = logAppender.getMessages();
+    var pattern =
+        """
+         +Path=<https://nva.sikt.no/ontology/publication#contributor>
+         +Value: _:.*
+         +Message: Should match verified and unverified contributors
+        """;
+    assertThat(messages).doesNotContainPattern(pattern);
   }
 
   private PublicationDto parseExampleDocument(String filename) {
