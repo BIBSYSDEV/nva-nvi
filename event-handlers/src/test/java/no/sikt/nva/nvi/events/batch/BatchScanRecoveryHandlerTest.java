@@ -3,7 +3,6 @@ package no.sikt.nva.nvi.events.batch;
 import static java.util.stream.Collectors.toSet;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.BATCH_SCAN_RECOVERY_QUEUE;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.getBatchScanRecoveryHandlerEnvironment;
-import static no.sikt.nva.nvi.common.SampleExpandedPublicationFactory.defaultExpandedPublicationFactory;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.createNumberOfCandidatesForYear;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -21,7 +20,6 @@ import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import no.sikt.nva.nvi.common.utils.BatchScanUtil;
-import no.sikt.nva.nvi.test.SampleExpandedPublication;
 import no.unit.nva.stubs.FakeContext;
 import nva.commons.core.Environment;
 import nva.commons.core.ioutils.IoUtils;
@@ -89,21 +87,10 @@ class BatchScanRecoveryHandlerTest {
         createNumberOfCandidatesForYear(randomYear(), count, scenario).stream()
             .map(this::placeOnQueue)
             .toList();
-    candidates.stream()
-        .map(this::createMatchingPublication)
-        .forEach(scenario::setupExpandedPublicationInS3);
     var messagesOnQueue = getAllMessagesFromDlq();
 
     assertMessagesExistOnQueue(candidates, messagesOnQueue);
     return candidates;
-  }
-
-  private SampleExpandedPublication createMatchingPublication(CandidateDao candidateDao) {
-    return defaultExpandedPublicationFactory(scenario)
-        .getExpandedPublicationBuilder()
-        .withId(candidateDao.candidate().publicationId())
-        .withIdentifier(UUID.fromString(candidateDao.candidate().publicationIdentifier()))
-        .build();
   }
 
   private List<SQSMessage> getAllMessagesFromDlq() {
