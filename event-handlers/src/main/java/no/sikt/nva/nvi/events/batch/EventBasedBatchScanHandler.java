@@ -42,12 +42,13 @@ public class EventBasedBatchScanHandler
   @Override
   protected ListingResult<Dao> processInput(
       ScanDatabaseRequest input, AwsEventBridgeEvent<ScanDatabaseRequest> event, Context context) {
-    logger.info("Query starting point: {}", input.startMarker());
+    logger.info("Processing request: {}", input);
 
     var batchResult =
         batchScanUtil.migrateAndUpdateVersion(input.pageSize(), input.startMarker(), input.types());
     logger.info("Batch result: {}", batchResult);
     if (batchResult.shouldContinueScan()) {
+      logger.info("Sending event to trigger scan of next batch");
       sendEventToInvokeNewRefreshRowVersionExecution(input, context, batchResult);
     }
     return batchResult;
