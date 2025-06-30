@@ -311,10 +311,35 @@ paths:
             * `rejectedByOthers` - Show candidates rejected by other organizations
             * `approvedByOthers` - Show candidates approved by other organizations
             * `collaboration` - Show candidates with multiple NVI organizations involved
+            
+            DEPRECATED - These filters are marked for deprecation and will be removed:
+            * `pending`
+            * `pendingCollaboration`
+            * `assigned`
+            * `assignedCollaboration`
+            * `approved`
+            * `approvedCollaboration`
+            * `rejected`
+            * `rejectedCollaboration`
+            * `dispute`
+            * `assignments`
           required: false
           schema:
             type: string
-            enum: [ rejectedByOthers, approvedByOthers, collaboration ]
+            enum:
+              - rejectedByOthers
+              - approvedByOthers
+              - collaboration
+              - pending
+              - pendingCollaboration
+              - assigned
+              - assignedCollaboration
+              - approved
+              - approvedCollaboration
+              - rejected
+              - rejectedCollaboration
+              - dispute
+              - assignments
           example: "rejectedByOthers"
         - in: query
           name: year
