@@ -4,6 +4,7 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.function.Predicate.not;
 import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
+import static no.sikt.nva.nvi.common.utils.ExceptionUtils.getStackTrace;
 import static nva.commons.core.StringUtils.isBlank;
 
 import java.net.URI;
@@ -114,7 +115,8 @@ public class BatchScanUtil {
           candidateDao.candidate().publicationIdentifier());
       return migrateCandidateDao(candidateDao);
     } catch (Exception e) {
-      logger.error("Unexpected failure during migration: {}", e.getMessage());
+      logger.error(
+          "Unexpected failure during migration ({}): {}", e.getMessage(), getStackTrace(e));
       logger.error("Sending candidate {} to recovery queue", candidateDao.identifier());
       queueClient.sendMessage(
           e.toString(), environment.readEnv(BATCH_SCAN_RECOVERY_QUEUE), candidateDao.identifier());
