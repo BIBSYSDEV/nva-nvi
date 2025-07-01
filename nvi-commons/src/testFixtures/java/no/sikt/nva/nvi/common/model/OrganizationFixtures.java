@@ -29,15 +29,17 @@ import nva.commons.core.paths.UriWrapper;
 
 public class OrganizationFixtures {
 
+  public static String randomOrganizationIdentifier() {
+    return String.format(
+        "%s.%s.%s.%s",
+        generateUniqueIdAsString(),
+        generateUniqueIdAsString(),
+        generateUniqueIdAsString(),
+        generateUniqueIdAsString());
+  }
+
   public static URI randomOrganizationId() {
-    var identifier =
-        String.format(
-            "%s.%s.%s.%s",
-            generateUniqueIdAsString(),
-            generateUniqueIdAsString(),
-            generateUniqueIdAsString(),
-            generateUniqueIdAsString());
-    return organizationIdFromIdentifier(identifier);
+    return organizationIdFromIdentifier(randomOrganizationIdentifier());
   }
 
   public static URI organizationIdFromIdentifier(String identifier) {
