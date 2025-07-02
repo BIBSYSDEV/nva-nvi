@@ -117,8 +117,7 @@ public class BatchScanUtil {
           candidateDao.candidate().publicationIdentifier());
       return migrateCandidateDao(candidateDao);
     } catch (Exception e) {
-      logger.error(
-          "Unexpected failure during migration ({}): {}", e.getMessage(), getStackTrace(e));
+      logger.error("Unexpected failure during migration", e);
       logger.error("Sending candidate {} to recovery queue", candidateDao.identifier());
       queueClient.sendMessage(
           e.toString(), environment.readEnv(BATCH_SCAN_RECOVERY_QUEUE), candidateDao.identifier());
