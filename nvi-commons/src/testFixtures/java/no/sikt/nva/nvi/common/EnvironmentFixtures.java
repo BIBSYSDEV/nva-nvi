@@ -25,7 +25,9 @@ public enum EnvironmentFixtures {
   TOPIC_APPROVAL_REMOVE("APPROVAL_REMOVE_TOPIC"),
 
   // Other handler-specific environment variables
+  ALLOWED_ORIGIN("*"),
   CANDIDATE_QUEUE_URL("http://localhost:3000/candidate-queue"),
+  COGNITO_HOST("not-actually-in-use-but-exists-in-template"),
   DB_EVENTS_QUEUE_URL("http://localhost:3000/db-events-queue"),
   PERSISTED_INDEX_DOCUMENT_QUEUE_URL("http://localhost:3000/index-document-queue"),
   EXPANDED_RESOURCES_BUCKET("persisted-resources"),
@@ -114,5 +116,9 @@ public enum EnvironmentFixtures {
         .with(PERSISTED_INDEX_DOCUMENT_QUEUE_URL)
         .with(INDEX_DLQ)
         .build();
+  }
+
+  public static FakeEnvironment getSearchNviCandidatesHandlerEnvironment() {
+    return getDefaultEnvironmentBuilder().with(ALLOWED_ORIGIN).with(COGNITO_HOST).build();
   }
 }

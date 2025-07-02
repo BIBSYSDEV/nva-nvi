@@ -1,17 +1,17 @@
 package no.sikt.nva.nvi.index.model.search;
 
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_AGGREGATION_TYPE;
-import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_OFFSET_PARAM;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_ASSIGNEE;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_CATEGORY;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_EXCLUDE_SUB_UNITS;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_FILTER;
+import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_OFFSET;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_ORDER_BY;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_SEARCH_TERM;
+import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_SIZE;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_SORT_ORDER;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_TITLE;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_YEAR;
-import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_SIZE_PARAM;
 import static no.sikt.nva.nvi.index.model.search.SearchResultParameters.DEFAULT_SORT_ORDER;
 
 import java.net.URI;
@@ -112,14 +112,14 @@ public record CandidateSearchParameters(
 
   private static Integer extractQueryParamSizeOrDefault(RequestInfo requestInfo) {
     return requestInfo
-        .getQueryParameterOpt(QUERY_SIZE_PARAM)
+        .getQueryParameterOpt(QUERY_PARAM_SIZE)
         .map(Integer::parseInt)
         .orElse(DEFAULT_QUERY_SIZE);
   }
 
   private static Integer extractQueryParamOffsetOrDefault(RequestInfo requestInfo) {
     return requestInfo
-        .getQueryParameterOpt(QUERY_OFFSET_PARAM)
+        .getQueryParameterOpt(QUERY_PARAM_OFFSET)
         .map(Integer::parseInt)
         .orElse(DEFAULT_OFFSET_SIZE);
   }
