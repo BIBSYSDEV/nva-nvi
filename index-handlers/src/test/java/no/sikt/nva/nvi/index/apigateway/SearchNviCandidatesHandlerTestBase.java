@@ -81,16 +81,6 @@ public class SearchNviCandidatesHandlerTestBase {
     }
   }
 
-  protected Problem handleBadRequest(InputStream request) {
-    try {
-      handler.handleRequest(request, output, CONTEXT);
-      var response = GatewayResponse.fromOutputStream(output, Problem.class);
-      return objectMapper.readValue(response.getBody(), Problem.class);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
   protected InputStream createRequest(Map<String, String> queryParams) {
     try {
       return new HandlerRequestBuilder<Void>(JsonUtils.dtoObjectMapper)

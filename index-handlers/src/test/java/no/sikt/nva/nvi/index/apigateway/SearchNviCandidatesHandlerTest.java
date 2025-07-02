@@ -35,9 +35,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.util.List;
@@ -52,8 +50,6 @@ import no.sikt.nva.nvi.index.model.document.PublicationDetails;
 import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
 import no.sikt.nva.nvi.index.model.search.OrderByFields;
 import no.sikt.nva.nvi.test.TestUtils;
-import no.unit.nva.commons.json.JsonUtils;
-import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.exceptions.NotFoundException;
 import nva.commons.core.Environment;
@@ -74,7 +70,7 @@ class SearchNviCandidatesHandlerTest extends SearchNviCandidatesHandlerTestBase 
   private static SearchClient<NviCandidateIndexDocument> openSearchClient;
 
   @BeforeEach
-  void init() {
+  void beforeEach() {
     currentUsername = "CuratorNameHere";
     currentOrganization = TOP_LEVEL_CRISTIN_ORG;
     currentAccessRight = AccessRight.MANAGE_NVI_CANDIDATES;
@@ -244,7 +240,7 @@ class SearchNviCandidatesHandlerTest extends SearchNviCandidatesHandlerTestBase 
   @Test
   void shouldThrowExceptionWhenSearchFails() throws IOException {
     when(openSearchClient.search(any())).thenThrow(RuntimeException.class);
-    var problem = handleBadRequest(requestWithoutQueryParameters(randomString()));
+    var problem = handleBadRequest(emptyMap());
 
     assertThat(problem)
         .isNotNull()
@@ -403,17 +399,6 @@ class SearchNviCandidatesHandlerTest extends SearchNviCandidatesHandlerTestBase 
             "20754.4.0.0",
             "20754.5.0.0",
             "20754.6.0.0"));
-  }
-
-  private InputStream requestWithoutQueryParameters(String userName) {
-    try {
-      return new HandlerRequestBuilder<Void>(JsonUtils.dtoObjectMapper)
-          .withTopLevelCristinOrgId(TOP_LEVEL_CRISTIN_ORG)
-          .withUserName(userName)
-          .build();
-    } catch (JsonProcessingException e) {
-      throw new RuntimeException(e);
-    }
   }
 
   private Map<String, String> requestWithInstitutionsAndFilter(

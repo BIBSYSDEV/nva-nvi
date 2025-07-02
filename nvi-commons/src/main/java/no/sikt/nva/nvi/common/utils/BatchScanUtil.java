@@ -5,7 +5,6 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.function.Predicate.not;
 import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
-import static no.sikt.nva.nvi.common.utils.ExceptionUtils.getStackTrace;
 import static no.sikt.nva.nvi.common.utils.Validator.isMissing;
 import static nva.commons.core.StringUtils.isBlank;
 
@@ -220,7 +219,9 @@ public class BatchScanUtil {
     if (isMissing(publication.topLevelOrganizations())) {
       // All NVI results should have topLevelOrganizations affiliated, but some
       // imported results are missing data.
-      logger.error("Missing top level organizations for publication with identifier {}", publication.identifier());
+      logger.error(
+          "Missing top level organizations for publication with identifier {}",
+          publication.identifier());
       return emptyList();
     }
 
