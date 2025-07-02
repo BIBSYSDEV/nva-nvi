@@ -13,6 +13,8 @@ import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.common.utils.BatchScanUtil;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class BatchScanRecoveryHandler implements RequestStreamHandler {
 
@@ -21,6 +23,7 @@ public class BatchScanRecoveryHandler implements RequestStreamHandler {
   private final QueueClient queueClient;
   private final Environment environment;
   private final BatchScanUtil batchScanUtil;
+  private final Logger logger = LoggerFactory.getLogger(BatchScanRecoveryHandler.class);
 
   @JacocoGenerated
   public BatchScanRecoveryHandler() {
@@ -49,8 +52,9 @@ public class BatchScanRecoveryHandler implements RequestStreamHandler {
   }
 
   private void processRequest(RecoveryEvent request) {
-    int counter = 0;
-    while (counter < request.numberOfMessageToProcess()) {
+    logger.info("Processing request: {}", request);
+    int messagesProcessed = 0;
+    while (messagesProcessed < request.numberOfMessageToProcess()) {
       int batchSize = Math.min(request.numberOfMessageToProcess(), 10);
       var messages =
           queueClient
@@ -67,7 +71,10 @@ public class BatchScanRecoveryHandler implements RequestStreamHandler {
           message ->
               queueClient.deleteMessage(
                   environment.readEnv(RECOVERY_BATCH_SCAN_QUEUE), message.receiptHandle()));
-      counter += messages.size();
+      messagesProcessed += messages.size();
+      logger.info(
+          "Processed {} of {} messages", messagesProcessed, request.numberOfMessageToProcess());
     }
+    logger.info("Finished processing {} messages", messagesProcessed);
   }
 }

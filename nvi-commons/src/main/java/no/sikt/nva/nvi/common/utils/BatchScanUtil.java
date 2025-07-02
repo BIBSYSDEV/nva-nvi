@@ -40,6 +40,8 @@ import no.sikt.nva.nvi.common.service.PublicationLoaderService;
 import no.sikt.nva.nvi.common.service.model.PageCount;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @SuppressWarnings("PMD.CouplingBetweenObjects")
 public class BatchScanUtil {
@@ -49,6 +51,7 @@ public class BatchScanUtil {
   private final PublicationLoaderService publicationLoader;
   private final QueueClient queueClient;
   private final Environment environment;
+  private final Logger logger = LoggerFactory.getLogger(BatchScanUtil.class);
 
   public BatchScanUtil(
       CandidateRepository candidateRepository,
@@ -105,8 +108,14 @@ public class BatchScanUtil {
 
   private Dao attemptToMigrateCandidate(CandidateDao candidateDao) {
     try {
+      logger.info(
+          "Migrating candidate {} with publication ID {}",
+          candidateDao.identifier(),
+          candidateDao.candidate().publicationIdentifier());
       return migrateCandidateDao(candidateDao);
     } catch (Exception e) {
+      logger.error("Unexpected failure during migration: {}", e.getMessage());
+      logger.error("Sending candidate {} to recovery queue", candidateDao.identifier());
       queueClient.sendMessage(
           e.toString(), environment.readEnv(BATCH_SCAN_RECOVERY_QUEUE), candidateDao.identifier());
       return candidateDao;
