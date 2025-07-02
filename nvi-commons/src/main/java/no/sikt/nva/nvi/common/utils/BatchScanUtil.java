@@ -221,7 +221,7 @@ public class BatchScanUtil {
     if (isMissing(publication.topLevelOrganizations())) {
       // All NVI results should have topLevelOrganizations affiliated, but some
       // imported results are missing data.
-      logger.error("Missing top level organizations for publication {}", publication);
+      logger.error("Missing top level organizations for publication with identifier {}", publication.identifier());
       return emptyList();
     }
 
