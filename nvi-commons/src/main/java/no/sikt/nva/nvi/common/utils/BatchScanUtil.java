@@ -1,9 +1,12 @@
 package no.sikt.nva.nvi.common.utils;
 
+import static java.util.Collections.emptyList;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.function.Predicate.not;
 import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
+import static no.sikt.nva.nvi.common.utils.ExceptionUtils.getStackTrace;
+import static no.sikt.nva.nvi.common.utils.Validator.isMissing;
 import static nva.commons.core.StringUtils.isBlank;
 
 import java.net.URI;
@@ -114,7 +117,7 @@ public class BatchScanUtil {
           candidateDao.candidate().publicationIdentifier());
       return migrateCandidateDao(candidateDao);
     } catch (Exception e) {
-      logger.error("Unexpected failure during migration: {}", e.getMessage());
+      logger.error("Unexpected failure during migration", e);
       logger.error("Sending candidate {} to recovery queue", candidateDao.identifier());
       queueClient.sendMessage(
           e.toString(), environment.readEnv(BATCH_SCAN_RECOVERY_QUEUE), candidateDao.identifier());
@@ -214,6 +217,13 @@ public class BatchScanUtil {
 
   private List<DbOrganization> getRelevantTopLevelOrganizations(
       Collection<DbCreatorType> creators, PublicationDto publication) {
+    if (isMissing(publication.topLevelOrganizations())) {
+      // All NVI results should have topLevelOrganizations affiliated, but some
+      // imported results are missing data.
+      logger.error("Missing top level organizations for publication with identifier {}", publication.identifier());
+      return emptyList();
+    }
+
     var currentAffiliations =
         creators.stream()
             .map(DbCreatorType::affiliations)
