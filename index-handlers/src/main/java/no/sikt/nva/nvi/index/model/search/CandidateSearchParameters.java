@@ -4,6 +4,7 @@ import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_AGG
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_ASSIGNEE;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_CATEGORY;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_EXCLUDE_SUB_UNITS;
+import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_EXCLUDE_UNASSIGNED;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_FILTER;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_OFFSET;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_ORDER_BY;
@@ -35,6 +36,7 @@ public record CandidateSearchParameters(
     String category,
     String title,
     String assignee,
+    boolean excludeUnassigned,
     URI topLevelCristinOrg,
     String aggregationType,
     List<String> excludeFields,
@@ -66,6 +68,7 @@ public record CandidateSearchParameters(
         .withCategory(extractQueryParamCategoryOrDefault(requestInfo))
         .withTitle(extractQueryParamTitle(requestInfo))
         .withAssignee(extractQueryParamAssignee(requestInfo))
+        .withExcludeUnassigned(extractQueryParamExcludeUnassignedOrDefault(requestInfo))
         .withAggregationType(aggregationType)
         .withSearchResultParameters(getResultParameters(requestInfo))
         .withTopLevelCristinOrg(requestInfo.getTopLevelOrgCristinId().orElse(null))
@@ -151,6 +154,13 @@ public record CandidateSearchParameters(
     return requestInfo.getQueryParameters().get(QUERY_PARAM_ASSIGNEE);
   }
 
+  private static boolean extractQueryParamExcludeUnassignedOrDefault(RequestInfo requestInfo) {
+    return requestInfo
+        .getQueryParameterOpt(QUERY_PARAM_EXCLUDE_UNASSIGNED)
+        .map(Boolean::parseBoolean)
+        .orElse(false);
+  }
+
   private static String extractQueryParamPublicationDateOrDefault(RequestInfo requestInfo) {
     return requestInfo
         .getQueryParameterOpt(QUERY_PARAM_YEAR)
@@ -168,6 +178,7 @@ public record CandidateSearchParameters(
     private String category;
     private String title;
     private String assignee;
+    private boolean excludeUnassigned;
     private URI topLevelCristinOrg;
     private String aggregationType;
     private List<String> excludeFields = new ArrayList<>();
@@ -221,6 +232,11 @@ public record CandidateSearchParameters(
       return this;
     }
 
+    public Builder withExcludeUnassigned(boolean excludeUnassigned) {
+      this.excludeUnassigned = excludeUnassigned;
+      return this;
+    }
+
     public Builder withTopLevelCristinOrg(URI topLevelCristinOrg) {
       this.topLevelCristinOrg = topLevelCristinOrg;
       return this;
@@ -252,6 +268,7 @@ public record CandidateSearchParameters(
           category,
           title,
           assignee,
+          excludeUnassigned,
           topLevelCristinOrg,
           aggregationType,
           excludeFields,

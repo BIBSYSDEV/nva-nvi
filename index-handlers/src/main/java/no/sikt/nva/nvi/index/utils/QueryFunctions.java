@@ -22,6 +22,7 @@ import org.opensearch.client.opensearch._types.query_dsl.MatchAllQuery;
 import org.opensearch.client.opensearch._types.query_dsl.MatchQuery;
 import org.opensearch.client.opensearch._types.query_dsl.NestedQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 import org.opensearch.client.opensearch._types.query_dsl.RangeQuery;
 import org.opensearch.client.opensearch._types.query_dsl.TermQuery;
 import org.opensearch.client.opensearch._types.query_dsl.TermsQuery;
@@ -40,6 +41,10 @@ public final class QueryFunctions {
 
   public static Query nestedQuery(String path, Query... queries) {
     return new NestedQuery.Builder().path(path).query(mustMatch(queries)).build().toQuery();
+  }
+
+  public static Query existsQuery(String field) {
+    return QueryBuilders.exists().field(field).build().toQuery();
   }
 
   public static Query fieldValueQuery(String field, String value) {

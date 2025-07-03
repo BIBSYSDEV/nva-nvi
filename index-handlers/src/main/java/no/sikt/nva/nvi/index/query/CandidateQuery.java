@@ -9,10 +9,12 @@ import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.REJECTED;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.assignmentsQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.containsNonFinalizedStatusQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.disputeQuery;
+import static no.sikt.nva.nvi.index.utils.QueryFunctions.existsQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.fieldValueQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.matchAtLeastOne;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.multipleApprovalsQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.mustMatch;
+import static no.sikt.nva.nvi.index.utils.QueryFunctions.mustNotMatch;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.nestedQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.statusQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.termsQuery;
@@ -32,6 +34,7 @@ import static no.sikt.nva.nvi.index.utils.SearchConstants.REPORTING_PERIOD;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.TITLE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.TYPE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.YEAR;
+import static nva.commons.core.StringUtils.isBlank;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.time.ZonedDateTime;
@@ -59,6 +62,7 @@ public class CandidateQuery {
   private final String category;
   private final String title;
   private final String assignee;
+  private final boolean excludeUnassigned;
 
   public CandidateQuery(CandidateQueryParameters params) {
     this.searchTerm = params.searchTerm;
@@ -71,6 +75,7 @@ public class CandidateQuery {
     this.category = params.category;
     this.title = params.title;
     this.assignee = params.assignee;
+    this.excludeUnassigned = params.excludeUnassigned;
   }
 
   public Query toQuery() {
@@ -150,7 +155,8 @@ public class CandidateQuery {
     var yearQuery = createYearQuery(year);
     var categoryQuery = createCategoryQuery(category);
     var titleQuery = createTitleQuery(title);
-    var assigneeQuery = createAssigneeQuery(assignee);
+    var assigneeQuery = createQueryByAssigneeIncludingUnassigned();
+    var excludeUnassignedQuery = createExcludeUnassignedQuery();
 
     return Stream.of(
             searchTermQuery,
@@ -159,7 +165,8 @@ public class CandidateQuery {
             yearQuery,
             categoryQuery,
             titleQuery,
-            assigneeQuery)
+            assigneeQuery,
+            excludeUnassignedQuery)
         .filter(Optional::isPresent)
         .map(Optional::get)
         .toList();
@@ -237,15 +244,50 @@ public class CandidateQuery {
                     .toQuery());
   }
 
-  private Optional<Query> createAssigneeQuery(String assignee) {
-    return Optional.ofNullable(assignee)
-        .map(
-            a ->
-                new MatchPhraseQuery.Builder()
-                    .field(jsonPathOf(APPROVALS, ASSIGNEE))
-                    .query(a)
-                    .build()
-                    .toQuery());
+  private Optional<Query> createQueryByAssigneeIncludingUnassigned() {
+    if (isBlank(assignee)) {
+      return Optional.empty();
+    }
+
+    return Optional.of(
+        nestedQuery(
+            APPROVALS,
+            mustMatch(
+                approvalBelongsTo(topLevelCristinOrg),
+                matchAtLeastOne(approvalIsAssignedTo(assignee), approvalIsUnassigned()))));
+  }
+
+  private Optional<Query> createExcludeUnassignedQuery() {
+    if (!excludeUnassigned) {
+      return Optional.empty();
+    }
+    return Optional.of(
+        nestedQuery(
+            APPROVALS,
+            mustMatch(approvalBelongsTo(topLevelCristinOrg)),
+            mustNotMatch(approvalIsUnassigned())));
+  }
+
+  private static Query approvalBelongsTo(String organization) {
+    return QueryBuilders.bool()
+        .must(fieldValueQuery(jsonPathOf(APPROVALS, INSTITUTION_ID), organization))
+        .build()
+        .toQuery();
+  }
+
+  private static Query approvalIsAssignedTo(String username) {
+    return QueryBuilders.matchPhrase()
+        .field(jsonPathOf(APPROVALS, ASSIGNEE))
+        .query(username)
+        .build()
+        .toQuery();
+  }
+
+  private static Query approvalIsUnassigned() {
+    return QueryBuilders.bool()
+        .mustNot(existsQuery(jsonPathOf(APPROVALS, ASSIGNEE)))
+        .build()
+        .toQuery();
   }
 
   public enum QueryFilterType {
@@ -292,6 +334,7 @@ public class CandidateQuery {
     private String category;
     private String title;
     private String assignee;
+    private boolean excludeUnassigned;
 
     public Builder() {
       // No-args constructor.
@@ -347,6 +390,11 @@ public class CandidateQuery {
       return this;
     }
 
+    public Builder withExcludeUnassigned(boolean excludeUnassigned) {
+      this.excludeUnassigned = excludeUnassigned;
+      return this;
+    }
+
     public CandidateQuery build() {
       CandidateQueryParameters params = new CandidateQueryParameters();
 
@@ -360,6 +408,7 @@ public class CandidateQuery {
       params.category = this.category;
       params.title = this.title;
       params.assignee = this.assignee;
+      params.excludeUnassigned = this.excludeUnassigned;
 
       return new CandidateQuery(params);
     }
@@ -378,5 +427,6 @@ public class CandidateQuery {
     public String title;
     public String contributor;
     public String assignee;
+    public boolean excludeUnassigned;
   }
 }

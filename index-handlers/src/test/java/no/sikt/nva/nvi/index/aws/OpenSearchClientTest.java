@@ -1,11 +1,9 @@
 package no.sikt.nva.nvi.index.aws;
 
 import static java.util.Objects.requireNonNull;
-import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomGlobalApprovalStatus;
+import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomApproval;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomIndexDocumentBuilder;
-import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomInstitutionPoints;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomPublicationDetailsBuilder;
-import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomStatus;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomNviContributor;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomNviContributorBuilder;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomPages;
@@ -53,10 +51,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -971,7 +967,7 @@ class OpenSearchClientTest {
     var publicationDetails =
         randomPublicationDetailsWithCustomer(customer, contributor, year, title);
     return randomIndexDocumentBuilder(publicationDetails)
-        .withApprovals(List.of(randomApprovalWithCustomerAndAssignee(customer, assignee)))
+        .withApprovals(List.of(randomApproval(assignee, customer, customer)))
         .withNumberOfApprovals(1)
         .build();
   }
@@ -1006,17 +1002,6 @@ class OpenSearchClientTest {
         .withPublicationChannel(randomPublicationChannel())
         .withPages(randomPages())
         .build();
-  }
-
-  private static Approval randomApprovalWithCustomerAndAssignee(URI affiliation, String assignee) {
-    return new Approval(
-        affiliation,
-        Map.of(),
-        randomStatus(),
-        randomInstitutionPoints(),
-        Set.of(),
-        assignee,
-        randomGlobalApprovalStatus());
   }
 
   private static PublicationDetails publicationDetailsWithTitle(String title) {
