@@ -511,30 +511,6 @@ class OpenSearchClientTest {
     assertThat(searchResponse.hits().hits(), hasSize(1));
   }
 
-  @Test
-  void shouldReturnSingleDocumentWhenFilteringByAssignee() throws IOException {
-    var customer = randomUri();
-    var assignee =
-        randomString().concat(" ").concat(randomString()).concat(" ").concat(randomString());
-    var document =
-        indexDocumentWithCustomer(customer, randomString(), assignee, YEAR, randomString());
-    addDocumentsToIndex(
-        document,
-        indexDocumentWithCustomer(
-            customer, randomString(), randomString(), randomString(), randomString()));
-
-    var searchParameters =
-        defaultSearchParameters()
-            .withAffiliations(List.of(getLastPathElement(customer)))
-            .withAssignee(getRandomWord(assignee))
-            .withYear(YEAR)
-            .build();
-
-    var searchResponse = openSearchClient.search(searchParameters);
-
-    assertThat(searchResponse.hits().hits(), hasSize(1));
-  }
-
   @ParameterizedTest(name = "shouldReturnSearchResultsUsingFilterAndSearchTermCombined {0}")
   @MethodSource("filterNameProvider")
   void shouldReturnSearchResultsUsingFilterAndSearchTermCombined(Entry<String, Integer> entry)
@@ -967,7 +943,7 @@ class OpenSearchClientTest {
     var publicationDetails =
         randomPublicationDetailsWithCustomer(customer, contributor, year, title);
     return randomIndexDocumentBuilder(publicationDetails)
-        .withApprovals(List.of(randomApproval(assignee, customer, customer)))
+        .withApprovals(List.of(randomApproval(assignee, customer)))
         .withNumberOfApprovals(1)
         .build();
   }

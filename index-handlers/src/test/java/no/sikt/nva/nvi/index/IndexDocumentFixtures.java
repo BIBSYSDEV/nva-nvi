@@ -156,8 +156,8 @@ public final class IndexDocumentFixtures {
         .withContributors(List.of(randomNviContributor(randomOrganizationId())));
   }
 
-  public static Approval randomApproval(
-      String assignee, URI topLevelOrganization, URI creatorAffiliation) {
+  public static Approval randomApproval(String assignee, URI topLevelOrganization) {
+    var creatorAffiliation = randomOrganizationId();
     var creatorPoint =
         new CreatorAffiliationPoints(randomUri(), creatorAffiliation, randomBigDecimal(SCALE));
     var institutionPoints =

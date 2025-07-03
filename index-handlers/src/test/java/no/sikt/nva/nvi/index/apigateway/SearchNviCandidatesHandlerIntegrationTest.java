@@ -257,14 +257,11 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
     }
 
     private static Map<String, NviCandidateIndexDocument> createDocumentsForAssigneeTests() {
-      var assignedToCurrentUser =
-          randomApproval(OUR_USER, OUR_ORGANIZATION, randomOrganizationId());
-      var assignedToOtherUser =
-          randomApproval(OUR_OTHER_USER, OUR_ORGANIZATION, randomOrganizationId());
-      var assignedToTheirUser =
-          randomApproval(THEIR_USER, THEIR_ORGANIZATION, randomOrganizationId());
-      var noAssigneeFromUs = randomApproval(null, OUR_ORGANIZATION, randomOrganizationId());
-      var noAssigneeFromThem = randomApproval(null, THEIR_ORGANIZATION, randomOrganizationId());
+      var assignedToCurrentUser = randomApproval(OUR_USER, OUR_ORGANIZATION);
+      var assignedToOtherUser = randomApproval(OUR_OTHER_USER, OUR_ORGANIZATION);
+      var assignedToTheirUser = randomApproval(THEIR_USER, THEIR_ORGANIZATION);
+      var noAssigneeFromUs = randomApproval(null, OUR_ORGANIZATION);
+      var noAssigneeFromThem = randomApproval(null, THEIR_ORGANIZATION);
 
       return Map.of(
           ASSIGNED_TO_CURRENT,
