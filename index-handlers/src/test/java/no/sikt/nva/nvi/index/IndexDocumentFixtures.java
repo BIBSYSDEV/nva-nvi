@@ -24,7 +24,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.stream.IntStream;
-import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.Approval;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
@@ -77,23 +76,6 @@ public final class IndexDocumentFixtures {
             .withContributors(List.of(contributor))
             .build();
     return randomIndexDocumentBuilder(details);
-  }
-
-  public static Builder createRandomIndexDocumentBuilder(Collection<Approval> approvals) {
-    var contributors =
-        approvals.stream()
-            .map(Approval::institutionId)
-            .map(id -> randomNviContributorBuilder(id).build())
-            .map(ContributorType.class::cast)
-            .toList();
-    var details =
-        randomPublicationDetailsBuilder()
-            .withPublicationDate(new PublicationDateDto(DEFAULT_YEAR, null, null))
-            .withContributors(contributors)
-            .build();
-    return randomIndexDocumentBuilder(details)
-        .withApprovals(List.copyOf(approvals))
-        .withNumberOfApprovals(approvals.size());
   }
 
   public static NviCandidateIndexDocument.Builder randomIndexDocumentBuilder() {

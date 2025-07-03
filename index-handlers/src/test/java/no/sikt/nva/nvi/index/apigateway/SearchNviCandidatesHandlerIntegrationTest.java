@@ -257,8 +257,8 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
     }
 
     /**
-     * This creates a map of example documents that should cover all realistic scenarios
-     * for assignee status. Each document is given a title matching the map key.
+     * This creates a map of example documents that should cover all realistic scenarios for
+     * assignee status. Each document is given a title matching the map key.
      */
     private static Map<String, NviCandidateIndexDocument> createDocumentsForAssigneeTests() {
       var assignedToCurrentUser = randomApproval(OUR_USER, OUR_ORGANIZATION);
@@ -285,10 +285,9 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
     }
 
     /**
-     * This sets up test cases for all combinations of the query parameters
-     * `assignee` and `excludeUnassigned`. It creates two values for each case:
-     * - The query parameters to use in the request
-     * - Names of the documents we expect to get in the response
+     * This sets up test cases for all combinations of the query parameters `assignee` and
+     * `excludeUnassigned`. It creates two values for each case: - The query parameters to use in
+     * the request - Names of the documents we expect to get in the response
      */
     private static Stream<Arguments> assigneeTestCaseProvider() {
       return Stream.of(
