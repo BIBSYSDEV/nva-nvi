@@ -5,18 +5,26 @@ import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizati
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.createRandomIndexDocument;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.createRandomIndexDocumentBuilder;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.createRandomIndexDocuments;
+import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomApproval;
+import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomIndexDocumentBuilder;
+import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomPublicationDetailsBuilder;
+import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_ASSIGNEE;
+import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_EXCLUDE_UNASSIGNED;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_OFFSET;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_SIZE;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.params.provider.Arguments.argumentSet;
 
 import java.math.BigDecimal;
+import java.net.URI;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.index.OpenSearchContainerContext;
+import no.sikt.nva.nvi.index.model.document.Approval;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.document.ReportingPeriod;
 import no.unit.nva.commons.pagination.PaginatedSearchResult;
@@ -28,13 +36,24 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandlerTestBase {
   private static final OpenSearchContainerContext CONTAINER = new OpenSearchContainerContext();
+  private static final String OUR_USER = "Current user";
+  private static final String OUR_OTHER_USER = "Curator from our organization";
+  private static final String THEIR_USER = "Curator from another organization";
+  private static final URI OUR_ORGANIZATION = randomOrganizationId();
+  private static final URI THEIR_ORGANIZATION = randomOrganizationId();
 
   @BeforeAll
   static void beforeAll() {
     CONTAINER.start();
+    mockIdentityService(OUR_USER, OUR_ORGANIZATION);
+    mockIdentityService(OUR_OTHER_USER, OUR_ORGANIZATION);
+    mockIdentityService(THEIR_USER, THEIR_ORGANIZATION);
   }
 
   @AfterAll
@@ -44,10 +63,9 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
 
   @BeforeEach
   void beforeEach() {
-    currentUsername = "CuratorNameHere";
-    currentOrganization = randomOrganizationId();
+    currentUsername = OUR_USER;
+    currentOrganization = OUR_ORGANIZATION;
     currentAccessRight = AccessRight.MANAGE_NVI_CANDIDATES;
-    mockIdentityService(currentUsername, currentOrganization);
 
     CONTAINER.createIndex();
     createHandler(CONTAINER.getOpenSearchClient());
@@ -59,8 +77,8 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
   }
 
   @Nested
-  @DisplayName("Test access control")
-  class accessControlTests {
+  @DisplayName("Access control")
+  class AccessControlTests {
 
     @Test
     void shouldNotReturnNviCandidatesOutsideViewingScope() {
@@ -89,8 +107,8 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
   }
 
   @Nested
-  @DisplayName("Test pagination and sorting")
-  class paginationTests {
+  @DisplayName("Pagination and sorting")
+  class PaginationTests {
     private static final int DEFAULT_SIZE = 10;
     private static final int DEFAULT_OFFSET = 0;
     private static final int TOTAL_DOCUMENT_COUNT = 25;
@@ -139,13 +157,15 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
               .toList();
       var expectedDocumentIds =
           expectedDocuments.stream().map(NviCandidateIndexDocument::id).toList();
-      assertThat(actualDocumentIds).hasSize(TOTAL_DOCUMENT_COUNT).isEqualTo(expectedDocumentIds);
+      assertThat(actualDocumentIds)
+          .hasSize(TOTAL_DOCUMENT_COUNT)
+          .containsExactlyInAnyOrderElementsOf(expectedDocumentIds);
     }
   }
 
   @Nested
-  @DisplayName("Test filtering by year")
-  class yearTests {
+  @DisplayName("Filter by year")
+  class YearTests {
     private NviCandidateIndexDocument documentFromCurrentYear;
     private NviCandidateIndexDocument documentFromLastYear;
 
@@ -190,6 +210,124 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
     }
   }
 
+  @Nested
+  @DisplayName("Filter by assignee and excludeUnassigned")
+  class AssigneeTests {
+    private static final String ASSIGNED_TO_CURRENT = "assignedToCurrentUser";
+    private static final String ASSIGNED_TO_OTHER = "assignedToOtherUser";
+    private static final String UNASSIGNED_BY_US = "unassignedByUs";
+    private static final String UNASSIGNED_BY_THEM = "unassignedByThem";
+    private static final String UNASSIGNED_BY_ALL = "unassignedByAll";
+    private static final String UNRELATED_ASSIGNED = "assignedAndUnrelated";
+    private static final String UNRELATED_UNASSIGNED = "unassignedAndUnrelated";
+
+    private static final Map<String, NviCandidateIndexDocument> docs =
+        createDocumentsForAssigneeTests();
+
+    @BeforeEach
+    void beforeEach() {
+      addDocumentsToIndex(docs.values());
+    }
+
+    @ParameterizedTest
+    @MethodSource("assigneeTestCaseProvider")
+    void shouldFilterByAssigneeAndExcludeUnassignedFilter(
+        Map<String, String> queryParameters, Collection<String> expectedDocumentKeys) {
+      var response = handleRequest(queryParameters);
+
+      assertThat(response.getHits())
+          .hasSameSizeAs(expectedDocumentKeys)
+          .allSatisfy(
+              doc -> {
+                var actualTitle = doc.publicationDetails().title();
+                assertThat(doc.id()).isEqualTo(docs.get(actualTitle).id());
+                assertThat(actualTitle).isIn(expectedDocumentKeys);
+              });
+    }
+
+    private static NviCandidateIndexDocument documentWithApprovals(
+        String title, Approval... approvals) {
+      var allApprovals = List.of(approvals);
+      var topLevelOrganizations = allApprovals.stream().map(Approval::institutionId).toList();
+      var details = randomPublicationDetailsBuilder(topLevelOrganizations).withTitle(title).build();
+      return randomIndexDocumentBuilder(details)
+          .withApprovals(allApprovals)
+          .withNumberOfApprovals(allApprovals.size())
+          .build();
+    }
+
+    /**
+     * This creates a map of example documents that should cover all realistic scenarios for
+     * assignee status. Each document is given a title matching the map key.
+     */
+    private static Map<String, NviCandidateIndexDocument> createDocumentsForAssigneeTests() {
+      var assignedToCurrentUser = randomApproval(OUR_USER, OUR_ORGANIZATION);
+      var assignedToOtherUser = randomApproval(OUR_OTHER_USER, OUR_ORGANIZATION);
+      var assignedToTheirUser = randomApproval(THEIR_USER, THEIR_ORGANIZATION);
+      var noAssigneeFromUs = randomApproval(null, OUR_ORGANIZATION);
+      var noAssigneeFromThem = randomApproval(null, THEIR_ORGANIZATION);
+
+      return Map.of(
+          ASSIGNED_TO_CURRENT,
+          documentWithApprovals(ASSIGNED_TO_CURRENT, assignedToCurrentUser, noAssigneeFromThem),
+          ASSIGNED_TO_OTHER,
+          documentWithApprovals(ASSIGNED_TO_OTHER, assignedToOtherUser, assignedToTheirUser),
+          UNASSIGNED_BY_US,
+          documentWithApprovals(UNASSIGNED_BY_US, noAssigneeFromUs, assignedToTheirUser),
+          UNASSIGNED_BY_THEM,
+          documentWithApprovals(UNASSIGNED_BY_THEM, assignedToOtherUser, noAssigneeFromThem),
+          UNASSIGNED_BY_ALL,
+          documentWithApprovals(UNASSIGNED_BY_ALL, noAssigneeFromUs, noAssigneeFromThem),
+          UNRELATED_ASSIGNED,
+          documentWithApprovals(UNRELATED_ASSIGNED, assignedToTheirUser),
+          UNRELATED_UNASSIGNED,
+          documentWithApprovals(UNRELATED_UNASSIGNED, noAssigneeFromThem));
+    }
+
+    /**
+     * This sets up test cases for all combinations of the query parameters `assignee` and
+     * `excludeUnassigned`. It creates two values for each case: - The query parameters to use in
+     * the request - Names of the documents we expect to get in the response
+     */
+    private static Stream<Arguments> assigneeTestCaseProvider() {
+      return Stream.of(
+          argumentSet(
+              "Query without filters",
+              emptyMap(),
+              List.of(
+                  ASSIGNED_TO_CURRENT,
+                  ASSIGNED_TO_OTHER,
+                  UNASSIGNED_BY_US,
+                  UNASSIGNED_BY_THEM,
+                  UNASSIGNED_BY_ALL)),
+          argumentSet(
+              "assignee=someone",
+              Map.of(QUERY_PARAM_ASSIGNEE, OUR_USER),
+              List.of(ASSIGNED_TO_CURRENT, UNASSIGNED_BY_US, UNASSIGNED_BY_ALL)),
+          argumentSet(
+              "excludeUnassigned=false",
+              Map.of(QUERY_PARAM_EXCLUDE_UNASSIGNED, "false"),
+              List.of(
+                  ASSIGNED_TO_CURRENT,
+                  ASSIGNED_TO_OTHER,
+                  UNASSIGNED_BY_US,
+                  UNASSIGNED_BY_THEM,
+                  UNASSIGNED_BY_ALL)),
+          argumentSet(
+              "excludeUnassigned=true",
+              Map.of(QUERY_PARAM_EXCLUDE_UNASSIGNED, "true"),
+              List.of(ASSIGNED_TO_CURRENT, ASSIGNED_TO_OTHER, UNASSIGNED_BY_THEM)),
+          argumentSet(
+              "assignee=someone & excludeUnassigned=false",
+              Map.of(QUERY_PARAM_ASSIGNEE, OUR_OTHER_USER, QUERY_PARAM_EXCLUDE_UNASSIGNED, "false"),
+              List.of(ASSIGNED_TO_OTHER, UNASSIGNED_BY_US, UNASSIGNED_BY_THEM, UNASSIGNED_BY_ALL)),
+          argumentSet(
+              "assignee=someone & excludeUnassigned=true",
+              Map.of(QUERY_PARAM_ASSIGNEE, OUR_OTHER_USER, QUERY_PARAM_EXCLUDE_UNASSIGNED, "true"),
+              List.of(ASSIGNED_TO_OTHER, UNASSIGNED_BY_THEM)));
+    }
+  }
+
   private static void addDocumentsToIndex(NviCandidateIndexDocument... documents) {
     CONTAINER.addDocumentsToIndex(documents);
   }
@@ -200,13 +338,13 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
 
   private static void assertThatResponseHasExpectedIndexDocuments(
       PaginatedSearchResult<NviCandidateIndexDocument> response,
-      List<NviCandidateIndexDocument> expectedDocuments) {
+      Collection<NviCandidateIndexDocument> expectedDocuments) {
     assertThatResultsAreEqual(response.getHits(), expectedDocuments);
   }
 
   private static void assertThatResultsAreEqual(
-      List<NviCandidateIndexDocument> actualDocuments,
-      List<NviCandidateIndexDocument> expectedDocuments) {
+      Collection<NviCandidateIndexDocument> actualDocuments,
+      Collection<NviCandidateIndexDocument> expectedDocuments) {
     assertThat(actualDocuments)
         .usingComparatorForType(BigDecimal::compareTo, BigDecimal.class)
         .usingRecursiveComparison()

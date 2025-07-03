@@ -12,6 +12,7 @@ public final class SearchQueryParameters {
   public static final String QUERY_PARAM_CATEGORY = "category";
   public static final String QUERY_PARAM_CONTRIBUTOR = "contributor";
   public static final String QUERY_PARAM_ASSIGNEE = "assignee";
+  public static final String QUERY_PARAM_EXCLUDE_UNASSIGNED = "excludeUnassigned";
   public static final String QUERY_PARAM_SIZE = "size";
   public static final String QUERY_PARAM_OFFSET = "offset";
   public static final String QUERY_PARAM_ORDER_BY = "orderBy";
