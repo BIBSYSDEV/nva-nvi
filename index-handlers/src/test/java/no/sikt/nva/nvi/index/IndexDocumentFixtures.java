@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.index;
 
 import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationId;
+import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublicationDateDtoInYear;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomNviContributor;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomNviContributorBuilder;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomPages;
@@ -35,7 +36,6 @@ import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument.Builder;
 import no.sikt.nva.nvi.index.model.document.PublicationDetails;
 import no.sikt.nva.nvi.index.model.document.ReportingPeriod;
 import no.unit.nva.commons.pagination.PaginatedSearchResult;
-import nva.commons.core.paths.UriWrapper;
 
 public final class IndexDocumentFixtures {
   public static final TypeReference<PaginatedSearchResult<NviCandidateIndexDocument>>
@@ -70,11 +70,10 @@ public final class IndexDocumentFixtures {
 
   public static Builder createRandomIndexDocumentBuilder(
       URI userTopLevelOrganization, String year) {
-    var publicationDate = new PublicationDateDto(year, null, null);
     var contributor = randomNviContributorBuilder(userTopLevelOrganization).build();
     var details =
-        randomPublicationDetailsBuilder(year)
-            .withPublicationDate(publicationDate)
+        randomPublicationDetailsBuilder()
+            .withPublicationDate(randomPublicationDateDtoInYear(year))
             .withContributors(List.of(contributor))
             .build();
     return randomIndexDocumentBuilder(details);
@@ -88,7 +87,7 @@ public final class IndexDocumentFixtures {
             .map(ContributorType.class::cast)
             .toList();
     var details =
-        randomPublicationDetailsBuilder(DEFAULT_YEAR)
+        randomPublicationDetailsBuilder()
             .withPublicationDate(new PublicationDateDto(DEFAULT_YEAR, null, null))
             .withContributors(contributors)
             .build();
@@ -130,30 +129,24 @@ public final class IndexDocumentFixtures {
     return randomPublicationDetailsBuilder().withContributors(contributors);
   }
 
-  // FIXME: Merge this
-  public static PublicationDetails.Builder randomPublicationDetailsBuilder(String publicationYear) {
-    var publicationDate = new PublicationDateDto(publicationYear, null, null);
-    return PublicationDetails.builder()
-        .withId(UriWrapper.fromUri(randomUri()).addChild(randomUUID().toString()).toString())
-        .withTitle(randomString())
-        .withAbstract(randomString())
-        .withPublicationDate(publicationDate)
-        .withPublicationChannel(randomPublicationChannel())
-        .withPages(randomPages())
-        .withContributors(List.of(randomNviContributor(randomOrganizationId())));
-  }
-
   public static PublicationDetails.Builder randomPublicationDetailsBuilder() {
-    var publicationDate = new PublicationDateDto(DEFAULT_YEAR, null, null);
     var publicationId = randomUriWithSuffix(randomUUID().toString());
     return PublicationDetails.builder()
         .withId(publicationId.toString())
         .withTitle(randomString())
         .withAbstract(randomString())
-        .withPublicationDate(publicationDate)
+        .withPublicationDate(randomPublicationDateDtoInYear(DEFAULT_YEAR))
         .withPublicationChannel(randomPublicationChannel())
         .withPages(randomPages())
         .withContributors(List.of(randomNviContributor(randomOrganizationId())));
+  }
+
+  private static List<Approval> randomApprovalList() {
+    return IntStream.range(0, 5).boxed().map(i -> randomApproval()).toList();
+  }
+
+  private static Approval randomApproval() {
+    return randomApproval(randomString(), randomOrganizationId());
   }
 
   public static Approval randomApproval(String assignee, URI topLevelOrganization) {
@@ -172,21 +165,6 @@ public final class IndexDocumentFixtures {
         randomGlobalApprovalStatus());
   }
 
-  private static List<Approval> randomApprovalList() {
-    return IntStream.range(0, 5).boxed().map(i -> randomApproval()).toList();
-  }
-
-  private static Approval randomApproval() {
-    return new Approval(
-        randomOrganizationId(),
-        Map.of(),
-        randomStatus(),
-        randomInstitutionPoints(),
-        Set.of(),
-        null,
-        randomGlobalApprovalStatus());
-  }
-
   public static ApprovalStatus randomStatus() {
     var values = Arrays.stream(ApprovalStatus.values()).toList();
     var size = values.size();
@@ -194,17 +172,7 @@ public final class IndexDocumentFixtures {
     return values.get(random.nextInt(size));
   }
 
-  public static InstitutionPoints randomInstitutionPoints() {
-    return new InstitutionPoints(
-        randomOrganizationId(), randomBigDecimal(SCALE), randomCreatorAffiliationPoints());
-  }
-
   public static GlobalApprovalStatus randomGlobalApprovalStatus() {
     return randomElement(GlobalApprovalStatus.values());
-  }
-
-  private static List<CreatorAffiliationPoints> randomCreatorAffiliationPoints() {
-    return List.of(
-        new CreatorAffiliationPoints(randomUri(), randomOrganizationId(), randomBigDecimal(SCALE)));
   }
 }

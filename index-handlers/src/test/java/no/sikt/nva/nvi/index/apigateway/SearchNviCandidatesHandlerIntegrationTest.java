@@ -327,15 +327,6 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
     CONTAINER.addDocumentsToIndex(documents);
   }
 
-  private static void assertThatResponseHasExpectedIndexDocumentIds(
-      PaginatedSearchResult<NviCandidateIndexDocument> response,
-      Collection<URI> expectedDocumentIds) {
-    assertThat(response.getHits())
-        .hasSize(expectedDocumentIds.size())
-        .extracting(NviCandidateIndexDocument::id)
-        .containsExactlyInAnyOrderElementsOf(expectedDocumentIds);
-  }
-
   private static void assertThatResponseHasExpectedIndexDocuments(
       PaginatedSearchResult<NviCandidateIndexDocument> response,
       Collection<NviCandidateIndexDocument> expectedDocuments) {

@@ -8,6 +8,10 @@ import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 
 public class PublicationDateFixtures {
   public static PublicationDate randomPublicationDateInYear(int year) {
+    return randomPublicationDateInYear(String.valueOf(year));
+  }
+
+  public static PublicationDate randomPublicationDateInYear(String year) {
     var randomDate = randomLocalDate();
     return new PublicationDate(
         String.valueOf(year),
@@ -25,6 +29,14 @@ public class PublicationDateFixtures {
         String.valueOf(randomDate.getYear()),
         String.valueOf(randomDate.getMonthValue()),
         String.valueOf(randomDate.getDayOfMonth()));
+  }
+
+  public static PublicationDateDto randomPublicationDateDtoInYear(int year) {
+    return randomPublicationDateInYear(String.valueOf(year)).toDtoPublicationDate();
+  }
+
+  public static PublicationDateDto randomPublicationDateDtoInYear(String year) {
+    return randomPublicationDateInYear(year).toDtoPublicationDate();
   }
 
   public static PublicationDateDto getRandomDateInCurrentYearAsDto() {
