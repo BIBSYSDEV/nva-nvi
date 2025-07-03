@@ -32,7 +32,7 @@ public class PublicationDateFixtures {
   }
 
   public static PublicationDateDto randomPublicationDateDtoInYear(int year) {
-    return randomPublicationDateInYear(String.valueOf(year)).toDtoPublicationDate();
+    return randomPublicationDateDtoInYear(String.valueOf(year));
   }
 
   public static PublicationDateDto randomPublicationDateDtoInYear(String year) {
