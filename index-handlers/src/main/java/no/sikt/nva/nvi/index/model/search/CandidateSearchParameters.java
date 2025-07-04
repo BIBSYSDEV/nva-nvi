@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.index.model.search;
 
 import static java.util.Collections.emptyList;
+import static no.sikt.nva.nvi.common.utils.RequestUtil.parseStringAsCommaSeparatedList;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_AGGREGATION_TYPE;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_ASSIGNEE;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_CATEGORY;
