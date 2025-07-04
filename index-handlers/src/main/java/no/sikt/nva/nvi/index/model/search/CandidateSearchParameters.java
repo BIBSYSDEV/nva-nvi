@@ -188,6 +188,7 @@ public record CandidateSearchParameters(
         .orElse(emptyList());
   }
 
+  @SuppressWarnings("PMD.TooManyFields")
   public static final class Builder {
 
     private String searchTerm;
