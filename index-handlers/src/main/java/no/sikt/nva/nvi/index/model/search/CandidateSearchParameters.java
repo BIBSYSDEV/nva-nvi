@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.index.model.search;
 
 import static java.util.Collections.emptyList;
+import static no.sikt.nva.nvi.common.utils.RequestUtil.parseStringAsCommaSeparatedList;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_AGGREGATION_TYPE;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_ASSIGNEE;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_CATEGORY;
@@ -23,6 +24,7 @@ import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import no.sikt.nva.nvi.common.utils.RequestUtil;
 import no.unit.nva.commons.json.JsonSerializable;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.BadRequestException;
@@ -175,12 +177,8 @@ public record CandidateSearchParameters(
   private static List<String> extractQueryParamStatus(RequestInfo requestInfo) {
     return requestInfo
         .getQueryParameterOpt(QUERY_PARAM_STATUS)
-        .map(CandidateSearchParameters::parseCommaSeparatedList)
+        .map(RequestUtil::parseStringAsCommaSeparatedList)
         .orElse(emptyList());
-  }
-
-  private static List<String> parseCommaSeparatedList(String commaSeparatedValues) {
-    return Arrays.stream(commaSeparatedValues.split(COMMA)).toList();
   }
 
   public static final class Builder {

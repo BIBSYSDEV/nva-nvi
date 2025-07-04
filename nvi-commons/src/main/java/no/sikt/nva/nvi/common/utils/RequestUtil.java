@@ -1,5 +1,8 @@
 package no.sikt.nva.nvi.common.utils;
 
+import static nva.commons.apigateway.RestRequestHandler.COMMA;
+
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
@@ -38,5 +41,9 @@ public final class RequestUtil {
     return Stream.concat(verifiedCreators, unverifiedCreators)
         .map(NviCreatorDto.class::cast)
         .toList();
+  }
+
+  public static List<String> parseStringAsCommaSeparatedList(String commaSeparatedValues) {
+    return Arrays.stream(commaSeparatedValues.split(COMMA)).toList();
   }
 }

@@ -16,6 +16,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
+import no.sikt.nva.nvi.common.utils.RequestUtil;
 import no.sikt.nva.nvi.common.validator.ViewingScopeValidator;
 import no.sikt.nva.nvi.common.validator.ViewingScopeValidatorImpl;
 import no.sikt.nva.nvi.index.aws.SearchClient;
@@ -101,12 +102,7 @@ public class SearchNviCandidatesHandler
   private static Optional<List<String>> extractQueryParamAffiliations(RequestInfo requestInfo) {
     return requestInfo
         .getQueryParameterOpt(QUERY_PARAM_AFFILIATIONS)
-        .map(SearchNviCandidatesHandler::toListOfIdentifiers);
-  }
-
-  // TODO: Use this
-  private static List<String> toListOfIdentifiers(String identifierListAsString) {
-    return Arrays.stream(identifierListAsString.split(COMMA)).collect(Collectors.toList());
+        .map(RequestUtil::parseStringAsCommaSeparatedList);
   }
 
   private static boolean userIsNotNviAdmin(RequestInfo requestInfo) {

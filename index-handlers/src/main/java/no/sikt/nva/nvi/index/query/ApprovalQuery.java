@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.index.query;
 
 import static java.util.Collections.emptyList;
+import static no.sikt.nva.nvi.common.utils.JsonUtils.jsonPathOf;
 import static no.sikt.nva.nvi.common.utils.Validator.hasElements;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.APPROVED;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.NEW;
@@ -8,7 +9,6 @@ import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.PENDING;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.REJECTED;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.existsQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.fieldValueQuery;
-import static no.sikt.nva.nvi.index.utils.QueryFunctions.jsonPathOf;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.matchAtLeastOne;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.mustMatch;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.mustNotMatch;
