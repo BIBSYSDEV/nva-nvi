@@ -296,14 +296,14 @@ paths:
             type: array
             items:
               type: string
-              enum: [ pending, approved, rejected, disputed ]
+              enum: [ pending, approved, rejected, dispute ]
           examples:
             single:
               summary: Single global status
-              value: [ "disputed" ]
+              value: [ "dispute" ]
             multiple:
               summary: One of multiple global statuses
-              value: [ "disputed", "rejected" ]
+              value: [ "dispute", "rejected" ]
         - in: query
           name: filter
           description: |

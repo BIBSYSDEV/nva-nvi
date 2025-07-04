@@ -1,8 +1,11 @@
 package no.sikt.nva.nvi.common.model;
 
 import java.util.Arrays;
+import java.util.function.Supplier;
 
 public interface ParsableEnum {
+  String NO_MATCH_MESSAGE = "No constant in '%s' matching input '%s'";
+
   String getValue();
 
   /**
@@ -32,5 +35,21 @@ public interface ParsableEnum {
         .filter(e -> e.matches(candidate))
         .findFirst()
         .orElse(defaultValue);
+  }
+
+  static <E extends Enum<E> & ParsableEnum> E parse(Class<E> enumClass, String candidate) {
+
+    return Arrays.stream(enumClass.getEnumConstants())
+        .filter(e -> e.matches(candidate))
+        .findFirst()
+        .orElseThrow(exceptionSupplier(enumClass, candidate));
+  }
+
+  private static <E extends Enum<E> & ParsableEnum>
+      Supplier<IllegalArgumentException> exceptionSupplier(Class<E> enumClass, String candidate) {
+
+    return () ->
+        new IllegalArgumentException(
+            String.format(NO_MATCH_MESSAGE, enumClass.getSimpleName(), candidate));
   }
 }

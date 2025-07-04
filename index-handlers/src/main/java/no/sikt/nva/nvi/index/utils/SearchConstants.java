@@ -79,6 +79,7 @@ public final class SearchConstants {
         .withAssignee(params.assignee())
         .withExcludeUnassigned(params.excludeUnassigned())
         .withStatuses(params.statuses())
+        .withGlobalStatuses(params.globalStatuses())
         .build()
         .toQuery();
   }

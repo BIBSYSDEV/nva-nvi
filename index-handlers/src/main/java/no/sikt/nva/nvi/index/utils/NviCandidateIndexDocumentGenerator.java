@@ -118,7 +118,7 @@ public final class NviCandidateIndexDocumentGenerator {
   private static ApprovalStatus getApprovalStatus(Approval approval) {
     return approval.isPendingAndUnassigned()
         ? ApprovalStatus.NEW
-        : ApprovalStatus.fromValue(approval.getStatus().getValue());
+        : ApprovalStatus.parse(approval.getStatus().getValue());
   }
 
   private static Set<URI> extractInvolvedOrganizations(
