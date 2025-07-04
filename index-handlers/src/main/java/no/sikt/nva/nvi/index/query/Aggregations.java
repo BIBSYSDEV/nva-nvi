@@ -131,8 +131,7 @@ public final class Aggregations {
 
   private static Aggregation filterNotRegectedPointsAggregation() {
     return filterAggregation(
-        mustNotMatch(
-            ApprovalStatus.REJECTED.getValue(), jsonPathOf(APPROVALS, APPROVAL_STATUS)),
+        mustNotMatch(ApprovalStatus.REJECTED.getValue(), jsonPathOf(APPROVALS, APPROVAL_STATUS)),
         Map.of(
             TOTAL_POINTS_SUM_AGGREGATION, sumAggregation(APPROVALS, POINTS, INSTITUTION_POINTS)));
   }
