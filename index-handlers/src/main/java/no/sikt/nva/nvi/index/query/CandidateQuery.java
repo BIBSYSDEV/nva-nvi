@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.index.query;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.jsonPathOf;
+import static no.sikt.nva.nvi.common.utils.Validator.hasElements;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.APPROVED;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.NEW;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.PENDING;
@@ -41,7 +42,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
+import no.sikt.nva.nvi.index.utils.QueryFunctions;
 import org.opensearch.client.opensearch._types.query_dsl.MatchPhraseQuery;
 import org.opensearch.client.opensearch._types.query_dsl.MultiMatchQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Operator;
@@ -63,6 +66,7 @@ public class CandidateQuery {
   private final String assignee;
   private final boolean excludeUnassigned;
   private final Set<ApprovalStatus> statuses;
+  private final Set<GlobalApprovalStatus> globalStatuses;
 
   public CandidateQuery(CandidateQueryParameters params) {
     this.searchTerm = params.searchTerm;
@@ -77,6 +81,7 @@ public class CandidateQuery {
     this.assignee = params.assignee;
     this.excludeUnassigned = params.excludeUnassigned;
     this.statuses = params.statuses;
+    this.globalStatuses = params.globalStatuses;
   }
 
   public Query toQuery() {
@@ -154,6 +159,7 @@ public class CandidateQuery {
     var titleQuery = createTitleQuery(title);
     var approvalQuery =
         new ApprovalQuery(topLevelCristinOrg, assignee, excludeUnassigned, statuses).toQuery();
+    var globalStatusQuery = createGlobalStatusQuery();
 
     return Stream.of(
             searchTermQuery,
@@ -162,7 +168,8 @@ public class CandidateQuery {
             yearQuery,
             categoryQuery,
             titleQuery,
-            approvalQuery)
+            approvalQuery,
+            globalStatusQuery)
         .filter(Optional::isPresent)
         .map(Optional::get)
         .toList();
@@ -240,6 +247,14 @@ public class CandidateQuery {
                     .toQuery());
   }
 
+  private Optional<Query> createGlobalStatusQuery() {
+    if (hasElements(globalStatuses)) {
+      var statusQueries = globalStatuses.stream().map(QueryFunctions::globalStatusQuery).toList();
+      return Optional.of(matchAtLeastOne(statusQueries.toArray(Query[]::new)));
+    }
+    return Optional.empty();
+  }
+
   public enum QueryFilterType {
     NEW_AGG("pending"),
     NEW_COLLABORATION_AGG("pendingCollaboration"),
@@ -286,6 +301,7 @@ public class CandidateQuery {
     private String assignee;
     private boolean excludeUnassigned;
     private Set<ApprovalStatus> statuses;
+    private Set<GlobalApprovalStatus> globalStatuses;
 
     public Builder() {
       // No-args constructor.
@@ -352,6 +368,12 @@ public class CandidateQuery {
       return this;
     }
 
+    public Builder withGlobalStatuses(List<String> statusValues) {
+      this.globalStatuses =
+          statusValues.stream().map(GlobalApprovalStatus::fromValue).collect(Collectors.toSet());
+      return this;
+    }
+
     public CandidateQuery build() {
       CandidateQueryParameters params = new CandidateQueryParameters();
 
@@ -367,6 +389,7 @@ public class CandidateQuery {
       params.assignee = this.assignee;
       params.excludeUnassigned = this.excludeUnassigned;
       params.statuses = this.statuses;
+      params.globalStatuses = this.globalStatuses;
 
       return new CandidateQuery(params);
     }
@@ -387,5 +410,6 @@ public class CandidateQuery {
     public String assignee;
     public boolean excludeUnassigned;
     public Set<ApprovalStatus> statuses;
+    public Set<GlobalApprovalStatus> globalStatuses;
   }
 }
