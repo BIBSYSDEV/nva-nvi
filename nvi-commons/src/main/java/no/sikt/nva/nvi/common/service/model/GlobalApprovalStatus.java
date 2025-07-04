@@ -1,10 +1,10 @@
 package no.sikt.nva.nvi.common.service.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
-import java.util.Arrays;
-import nva.commons.core.SingletonCollector;
+import no.sikt.nva.nvi.common.model.ParsableEnum;
 
-public enum GlobalApprovalStatus {
+public enum GlobalApprovalStatus implements ParsableEnum {
   APPROVED("Approved"),
   PENDING("Pending"),
   REJECTED("Rejected"),
@@ -16,15 +16,14 @@ public enum GlobalApprovalStatus {
     this.value = value;
   }
 
-  public static GlobalApprovalStatus fromValue(String candidate) {
-    return Arrays.stream(values())
-        .filter(item -> item.getValue().equalsIgnoreCase(candidate))
-        .collect(SingletonCollector.tryCollect())
-        .orElseThrow();
-  }
-
   @JsonValue
+  @Override
   public String getValue() {
     return value;
+  }
+
+  @JsonCreator
+  public static GlobalApprovalStatus parse(String stringValue) {
+    return ParsableEnum.parse(GlobalApprovalStatus.class, stringValue);
   }
 }

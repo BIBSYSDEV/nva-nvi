@@ -1,10 +1,10 @@
 package no.sikt.nva.nvi.index.model.document;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
-import java.util.Arrays;
-import nva.commons.core.SingletonCollector;
+import no.sikt.nva.nvi.common.model.ParsableEnum;
 
-public enum ApprovalStatus {
+public enum ApprovalStatus implements ParsableEnum {
   NEW("New"),
   PENDING("Pending"),
   APPROVED("Approved"),
@@ -16,15 +16,14 @@ public enum ApprovalStatus {
     this.value = value;
   }
 
-  public static ApprovalStatus fromValue(String candidate) {
-    return Arrays.stream(values())
-        .filter(item -> item.getValue().equalsIgnoreCase(candidate))
-        .collect(SingletonCollector.tryCollect())
-        .orElseThrow();
-  }
-
   @JsonValue
+  @Override
   public String getValue() {
     return value;
+  }
+
+  @JsonCreator
+  public static ApprovalStatus parse(String stringValue) {
+    return ParsableEnum.parse(ApprovalStatus.class, stringValue);
   }
 }

@@ -363,14 +363,13 @@ public class CandidateQuery {
     }
 
     public Builder withStatuses(List<String> statusValues) {
-      this.statuses =
-          statusValues.stream().map(ApprovalStatus::fromValue).collect(Collectors.toSet());
+      this.statuses = statusValues.stream().map(ApprovalStatus::parse).collect(Collectors.toSet());
       return this;
     }
 
     public Builder withGlobalStatuses(List<String> statusValues) {
       this.globalStatuses =
-          statusValues.stream().map(GlobalApprovalStatus::fromValue).collect(Collectors.toSet());
+          statusValues.stream().map(GlobalApprovalStatus::parse).collect(Collectors.toSet());
       return this;
     }
 
