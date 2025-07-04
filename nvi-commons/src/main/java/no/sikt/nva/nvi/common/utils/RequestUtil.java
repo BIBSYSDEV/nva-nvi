@@ -44,6 +44,9 @@ public final class RequestUtil {
   }
 
   public static List<String> parseStringAsCommaSeparatedList(String commaSeparatedValues) {
-    return Arrays.stream(commaSeparatedValues.split(COMMA)).toList();
+    return Arrays.stream(commaSeparatedValues.split(COMMA))
+        .map(String::trim)
+        .filter(entry -> !entry.isEmpty())
+        .toList();
   }
 }
