@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.index.utils;
 
 import static java.util.Objects.nonNull;
+import static no.sikt.nva.nvi.common.utils.JsonUtils.jsonPathOf;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.NEW;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.PENDING;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVALS;
@@ -30,7 +31,6 @@ import org.opensearch.client.opensearch._types.query_dsl.TermsQueryField;
 
 public final class QueryFunctions {
 
-  private static final CharSequence JSON_PATH_DELIMITER = ".";
   private static final int MULTIPLE = 2;
 
   private QueryFunctions() {}
@@ -143,9 +143,5 @@ public final class QueryFunctions {
 
   private static FieldValue getFieldValue(String value) {
     return new FieldValue.Builder().stringValue(value).build();
-  }
-
-  private static String jsonPathOf(String... args) {
-    return String.join(JSON_PATH_DELIMITER, args);
   }
 }

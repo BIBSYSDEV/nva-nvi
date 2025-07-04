@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.index;
 
+import static java.util.Collections.emptyMap;
 import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationId;
 import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublicationDateDtoInYear;
@@ -20,7 +21,6 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.stream.IntStream;
@@ -128,23 +128,27 @@ public final class IndexDocumentFixtures {
   }
 
   private static Approval randomApproval() {
-    return randomApproval(randomString(), randomOrganizationId());
+    return randomApprovalBuilder(randomOrganizationId()).build();
   }
 
   public static Approval randomApproval(String assignee, URI topLevelOrganization) {
+    return randomApprovalBuilder(topLevelOrganization).withAssignee(assignee).build();
+  }
+
+  public static Approval.Builder randomApprovalBuilder(URI topLevelOrganization) {
     var creatorAffiliation = randomOrganizationId();
     var creatorPoint =
         new CreatorAffiliationPoints(randomUri(), creatorAffiliation, randomBigDecimal(SCALE));
     var institutionPoints =
         new InstitutionPoints(topLevelOrganization, randomBigDecimal(SCALE), List.of(creatorPoint));
-    return new Approval(
-        topLevelOrganization,
-        Map.of(),
-        randomStatus(),
-        institutionPoints,
-        Set.of(topLevelOrganization, creatorAffiliation),
-        assignee,
-        randomGlobalApprovalStatus());
+    return Approval.builder()
+        .withInstitutionId(topLevelOrganization)
+        .withLabels(emptyMap())
+        .withAssignee(randomString())
+        .withApprovalStatus(randomStatus())
+        .withGlobalApprovalStatus(randomGlobalApprovalStatus())
+        .withInvolvedOrganizations(Set.of(topLevelOrganization, creatorAffiliation))
+        .withPoints(institutionPoints);
   }
 
   public static ApprovalStatus randomStatus() {
