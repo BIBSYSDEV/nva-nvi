@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.index.model.search;
 
+import static java.util.Collections.emptyList;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_AGGREGATION_TYPE;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_ASSIGNEE;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_CATEGORY;
@@ -11,13 +12,15 @@ import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PAR
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_SEARCH_TERM;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_SIZE;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_SORT_ORDER;
+import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_STATUS;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_TITLE;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_YEAR;
 import static no.sikt.nva.nvi.index.model.search.SearchResultParameters.DEFAULT_SORT_ORDER;
+import static nva.commons.apigateway.RestRequestHandler.COMMA;
 
 import java.net.URI;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import no.unit.nva.commons.json.JsonSerializable;
@@ -40,6 +43,7 @@ public record CandidateSearchParameters(
     URI topLevelCristinOrg,
     String aggregationType,
     List<String> excludeFields,
+    List<String> statuses,
     SearchResultParameters searchResultParameters)
     implements JsonSerializable {
 
@@ -73,6 +77,7 @@ public record CandidateSearchParameters(
         .withSearchResultParameters(getResultParameters(requestInfo))
         .withTopLevelCristinOrg(requestInfo.getTopLevelOrgCristinId().orElse(null))
         .withExcludeFields(List.of(CONTRIBUTORS_EXCLUDED_TO_REDUCE_RESPONSE_SIZE))
+        .withStatuses(extractQueryParamStatus(requestInfo))
         .build();
   }
 
@@ -167,10 +172,21 @@ public record CandidateSearchParameters(
         .orElse(String.valueOf(ZonedDateTime.now().getYear()));
   }
 
+  private static List<String> extractQueryParamStatus(RequestInfo requestInfo) {
+    return requestInfo
+        .getQueryParameterOpt(QUERY_PARAM_STATUS)
+        .map(CandidateSearchParameters::parseCommaSeparatedList)
+        .orElse(emptyList());
+  }
+
+  private static List<String> parseCommaSeparatedList(String commaSeparatedValues) {
+    return Arrays.stream(commaSeparatedValues.split(COMMA)).toList();
+  }
+
   public static final class Builder {
 
     private String searchTerm;
-    private List<String> affiliationIdentifiers;
+    private List<String> affiliationIdentifiers = emptyList();
     private boolean excludeSubUnits;
     private String filter;
     private String username;
@@ -181,7 +197,8 @@ public record CandidateSearchParameters(
     private boolean excludeUnassigned;
     private URI topLevelCristinOrg;
     private String aggregationType;
-    private List<String> excludeFields = new ArrayList<>();
+    private List<String> excludeFields = emptyList();
+    private List<String> statuses = emptyList();
     private SearchResultParameters searchResultParameters =
         SearchResultParameters.builder().build();
 
@@ -252,6 +269,11 @@ public record CandidateSearchParameters(
       return this;
     }
 
+    public Builder withStatuses(List<String> statuses) {
+      this.statuses = statuses;
+      return this;
+    }
+
     public Builder withSearchResultParameters(SearchResultParameters searchResultParameters) {
       this.searchResultParameters = searchResultParameters;
       return this;
@@ -272,6 +294,7 @@ public record CandidateSearchParameters(
           topLevelCristinOrg,
           aggregationType,
           excludeFields,
+          statuses,
           searchResultParameters);
     }
   }

@@ -6,12 +6,19 @@ import static no.sikt.nva.nvi.index.IndexDocumentFixtures.createRandomIndexDocum
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.createRandomIndexDocumentBuilder;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.createRandomIndexDocuments;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomApproval;
+import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomApprovalBuilder;
+import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomGlobalApprovalStatus;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomIndexDocumentBuilder;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomPublicationDetailsBuilder;
+import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.APPROVED;
+import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.NEW;
+import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.PENDING;
+import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.REJECTED;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_ASSIGNEE;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_EXCLUDE_UNASSIGNED;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_OFFSET;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_SIZE;
+import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_STATUS;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -19,12 +26,15 @@ import static org.junit.jupiter.params.provider.Arguments.argumentSet;
 
 import java.math.BigDecimal;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
+import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.index.OpenSearchContainerContext;
 import no.sikt.nva.nvi.index.model.document.Approval;
+import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.document.ReportingPeriod;
 import no.unit.nva.commons.pagination.PaginatedSearchResult;
@@ -245,17 +255,6 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
               });
     }
 
-    private static NviCandidateIndexDocument documentWithApprovals(
-        String title, Approval... approvals) {
-      var allApprovals = List.of(approvals);
-      var topLevelOrganizations = allApprovals.stream().map(Approval::institutionId).toList();
-      var details = randomPublicationDetailsBuilder(topLevelOrganizations).withTitle(title).build();
-      return randomIndexDocumentBuilder(details)
-          .withApprovals(allApprovals)
-          .withNumberOfApprovals(allApprovals.size())
-          .build();
-    }
-
     /**
      * This creates a map of example documents that should cover all realistic scenarios for
      * assignee status. Each document is given a title matching the map key.
@@ -328,6 +327,77 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
     }
   }
 
+  @Nested
+  @DisplayName("Filter by approval status")
+  class StatusTests {
+    private static final Collection<NviCandidateIndexDocument> docs =
+        createDocsForAllStatusCombinations();
+
+    @BeforeEach
+    void beforeEach() {
+      addDocumentsToIndex(docs);
+    }
+
+    @ParameterizedTest
+    @MethodSource("queryParameterToExpectedApprovalStatus")
+    void shouldFilterByApprovalStatus(
+        Map<String, String> queryParameters, Collection<ApprovalStatus> expectedStatuses) {
+      var response = handleRequest(queryParameters);
+
+      assertThat(response.getHits())
+          .extracting(doc -> doc.getApprovalStatusForInstitution(OUR_ORGANIZATION))
+          .hasSameElementsAs(expectedStatuses);
+    }
+
+    private static List<Approval> getAllPossibleApprovals(URI topLevelOrganization) {
+      var baseApproval = randomApprovalBuilder(topLevelOrganization);
+      return Stream.of(ApprovalStatus.values())
+          .map(status -> baseApproval.withApprovalStatus(status).build())
+          .toList();
+    }
+
+    private static List<NviCandidateIndexDocument> createDocsForAllStatusCombinations() {
+      var ourApprovals = getAllPossibleApprovals(OUR_ORGANIZATION);
+      var theirApprovals = getAllPossibleApprovals(THEIR_ORGANIZATION);
+
+      var documents = new ArrayList<NviCandidateIndexDocument>();
+      for (var theirApproval : theirApprovals) {
+        documents.add(documentWithApprovals("Unrelated document", theirApproval));
+        for (var ourApproval : ourApprovals) {
+          var title =
+              String.format(
+                  "Collaboration (%s / %s)",
+                  ourApproval.approvalStatus(), theirApproval.approvalStatus());
+          documents.add(documentWithApprovals(title, ourApproval, theirApproval));
+        }
+      }
+      return documents;
+    }
+
+    private static Stream<Arguments> queryParameterToExpectedApprovalStatus() {
+      var allStatuses = List.of(NEW, PENDING, APPROVED, REJECTED);
+      return Stream.of(
+          argumentSet("Query without filters", emptyMap(), allStatuses),
+          argumentSet("status=pending,approved,rejected", emptyMap(), allStatuses),
+          argumentSet(
+              "status=pending", Map.of(QUERY_PARAM_STATUS, "pending"), List.of(NEW, PENDING)),
+          argumentSet("status=approved", Map.of(QUERY_PARAM_STATUS, "approved"), List.of(APPROVED)),
+          argumentSet("status=rejected", Map.of(QUERY_PARAM_STATUS, "rejected"), List.of(REJECTED)),
+          argumentSet(
+              "status=pending,approved",
+              Map.of(QUERY_PARAM_STATUS, "pending,approved"),
+              List.of(NEW, PENDING, APPROVED)),
+          argumentSet(
+              "status=pending,rejected",
+              Map.of(QUERY_PARAM_STATUS, "pending,rejected"),
+              List.of(NEW, PENDING, REJECTED)),
+          argumentSet(
+              "status=approved,rejected",
+              Map.of(QUERY_PARAM_STATUS, "approved,rejected"),
+              List.of(APPROVED, REJECTED)));
+    }
+  }
+
   private static void addDocumentsToIndex(NviCandidateIndexDocument... documents) {
     CONTAINER.addDocumentsToIndex(documents);
   }
@@ -351,5 +421,22 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
         .ignoringCollectionOrder()
         .ignoringFields("publicationDetails.contributors")
         .isEqualTo(expectedDocuments);
+  }
+
+  private static NviCandidateIndexDocument documentWithApprovals(
+      String title, Approval... approvals) {
+    return documentWithApprovals(title, randomGlobalApprovalStatus(), approvals);
+  }
+
+  private static NviCandidateIndexDocument documentWithApprovals(
+      String title, GlobalApprovalStatus globalStatus, Approval... approvals) {
+    var allApprovals = List.of(approvals);
+    var topLevelOrganizations = allApprovals.stream().map(Approval::institutionId).toList();
+    var details = randomPublicationDetailsBuilder(topLevelOrganizations).withTitle(title).build();
+    return randomIndexDocumentBuilder(details)
+        .withGlobalApprovalStatus(globalStatus)
+        .withApprovals(allApprovals)
+        .withNumberOfApprovals(allApprovals.size())
+        .build();
   }
 }

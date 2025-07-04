@@ -16,6 +16,7 @@ public enum ApprovalStatusDto {
     this.value = value;
   }
 
+  // TODO: Remove "NEW" as a status, no longer relevant.
   public static ApprovalStatusDto from(Approval approval) {
     return switch (approval.getStatus()) {
       case PENDING -> approval.isAssigned() ? PENDING : NEW;

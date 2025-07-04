@@ -145,7 +145,7 @@ public final class QueryFunctions {
     return new FieldValue.Builder().stringValue(value).build();
   }
 
-  private static String jsonPathOf(String... args) {
+  public static String jsonPathOf(String... args) {
     return String.join(JSON_PATH_DELIMITER, args);
   }
 }

@@ -104,6 +104,7 @@ public class SearchNviCandidatesHandler
         .map(SearchNviCandidatesHandler::toListOfIdentifiers);
   }
 
+  // TODO: Use this
   private static List<String> toListOfIdentifiers(String identifierListAsString) {
     return Arrays.stream(identifierListAsString.split(COMMA)).collect(Collectors.toList());
   }

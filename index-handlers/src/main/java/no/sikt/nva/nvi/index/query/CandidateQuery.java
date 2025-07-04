@@ -9,19 +9,17 @@ import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.REJECTED;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.assignmentsQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.containsNonFinalizedStatusQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.disputeQuery;
-import static no.sikt.nva.nvi.index.utils.QueryFunctions.existsQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.fieldValueQuery;
+import static no.sikt.nva.nvi.index.utils.QueryFunctions.jsonPathOf;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.matchAtLeastOne;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.multipleApprovalsQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.mustMatch;
-import static no.sikt.nva.nvi.index.utils.QueryFunctions.mustNotMatch;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.nestedQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.statusQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.termsQuery;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.ABSTRACT;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.AFFILIATIONS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVALS;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.ASSIGNEE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.CONTRIBUTORS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.IDENTIFIER;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.INSTITUTION_ID;
@@ -34,14 +32,16 @@ import static no.sikt.nva.nvi.index.utils.SearchConstants.REPORTING_PERIOD;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.TITLE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.TYPE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.YEAR;
-import static nva.commons.core.StringUtils.isBlank;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import org.opensearch.client.opensearch._types.query_dsl.MatchPhraseQuery;
 import org.opensearch.client.opensearch._types.query_dsl.MultiMatchQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Operator;
@@ -51,7 +51,6 @@ import org.opensearch.client.opensearch._types.query_dsl.TextQueryType;
 
 public class CandidateQuery {
 
-  private static final CharSequence JSON_PATH_DELIMITER = ".";
   private final List<String> affiliations;
   private final boolean excludeSubUnits;
   private final QueryFilterType filter;
@@ -63,6 +62,7 @@ public class CandidateQuery {
   private final String title;
   private final String assignee;
   private final boolean excludeUnassigned;
+  private final Set<ApprovalStatus> statuses;
 
   public CandidateQuery(CandidateQueryParameters params) {
     this.searchTerm = params.searchTerm;
@@ -76,14 +76,11 @@ public class CandidateQuery {
     this.title = params.title;
     this.assignee = params.assignee;
     this.excludeUnassigned = params.excludeUnassigned;
+    this.statuses = params.statuses;
   }
 
   public Query toQuery() {
     return mustMatch(specificMatch().toArray(Query[]::new));
-  }
-
-  private static String jsonPathOf(String... args) {
-    return String.join(JSON_PATH_DELIMITER, args);
   }
 
   private static Query contributorQueryIncludingSubUnits(List<String> organizations) {
@@ -155,8 +152,8 @@ public class CandidateQuery {
     var yearQuery = createYearQuery(year);
     var categoryQuery = createCategoryQuery(category);
     var titleQuery = createTitleQuery(title);
-    var assigneeQuery = createQueryByAssigneeIncludingUnassigned();
-    var excludeUnassignedQuery = createExcludeUnassignedQuery();
+    var approvalQuery =
+        new ApprovalQuery(topLevelCristinOrg, assignee, excludeUnassigned, statuses).toQuery();
 
     return Stream.of(
             searchTermQuery,
@@ -165,8 +162,7 @@ public class CandidateQuery {
             yearQuery,
             categoryQuery,
             titleQuery,
-            assigneeQuery,
-            excludeUnassignedQuery)
+            approvalQuery)
         .filter(Optional::isPresent)
         .map(Optional::get)
         .toList();
@@ -244,52 +240,6 @@ public class CandidateQuery {
                     .toQuery());
   }
 
-  private Optional<Query> createQueryByAssigneeIncludingUnassigned() {
-    if (isBlank(assignee)) {
-      return Optional.empty();
-    }
-
-    return Optional.of(
-        nestedQuery(
-            APPROVALS,
-            mustMatch(
-                approvalBelongsTo(topLevelCristinOrg),
-                matchAtLeastOne(approvalIsAssignedTo(assignee), approvalIsUnassigned()))));
-  }
-
-  private Optional<Query> createExcludeUnassignedQuery() {
-    if (!excludeUnassigned) {
-      return Optional.empty();
-    }
-    return Optional.of(
-        nestedQuery(
-            APPROVALS,
-            mustMatch(approvalBelongsTo(topLevelCristinOrg)),
-            mustNotMatch(approvalIsUnassigned())));
-  }
-
-  private static Query approvalBelongsTo(String organization) {
-    return QueryBuilders.bool()
-        .must(fieldValueQuery(jsonPathOf(APPROVALS, INSTITUTION_ID), organization))
-        .build()
-        .toQuery();
-  }
-
-  private static Query approvalIsAssignedTo(String username) {
-    return QueryBuilders.matchPhrase()
-        .field(jsonPathOf(APPROVALS, ASSIGNEE))
-        .query(username)
-        .build()
-        .toQuery();
-  }
-
-  private static Query approvalIsUnassigned() {
-    return QueryBuilders.bool()
-        .mustNot(existsQuery(jsonPathOf(APPROVALS, ASSIGNEE)))
-        .build()
-        .toQuery();
-  }
-
   public enum QueryFilterType {
     NEW_AGG("pending"),
     NEW_COLLABORATION_AGG("pendingCollaboration"),
@@ -335,6 +285,7 @@ public class CandidateQuery {
     private String title;
     private String assignee;
     private boolean excludeUnassigned;
+    private Set<ApprovalStatus> statuses;
 
     public Builder() {
       // No-args constructor.
@@ -395,6 +346,12 @@ public class CandidateQuery {
       return this;
     }
 
+    public Builder withStatuses(List<String> statusValues) {
+      this.statuses =
+          statusValues.stream().map(ApprovalStatus::fromValue).collect(Collectors.toSet());
+      return this;
+    }
+
     public CandidateQuery build() {
       CandidateQueryParameters params = new CandidateQueryParameters();
 
@@ -409,6 +366,7 @@ public class CandidateQuery {
       params.title = this.title;
       params.assignee = this.assignee;
       params.excludeUnassigned = this.excludeUnassigned;
+      params.statuses = this.statuses;
 
       return new CandidateQuery(params);
     }
@@ -428,5 +386,6 @@ public class CandidateQuery {
     public String contributor;
     public String assignee;
     public boolean excludeUnassigned;
+    public Set<ApprovalStatus> statuses;
   }
 }
