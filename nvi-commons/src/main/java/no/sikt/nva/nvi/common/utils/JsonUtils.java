@@ -6,7 +6,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 public final class JsonUtils {
-  private static final CharSequence JSON_PATH_DELIMITER = ".";
+  private static final String JSON_PATH_DELIMITER = ".";
 
   private JsonUtils() {}
 
