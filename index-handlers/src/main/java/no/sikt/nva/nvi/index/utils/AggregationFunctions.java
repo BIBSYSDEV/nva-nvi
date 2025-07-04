@@ -1,5 +1,7 @@
 package no.sikt.nva.nvi.index.utils;
 
+import static no.sikt.nva.nvi.common.utils.JsonUtils.jsonPathOf;
+
 import java.util.Map;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.aggregations.NestedAggregation;
@@ -8,8 +10,6 @@ import org.opensearch.client.opensearch._types.aggregations.TermsAggregation;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 
 public final class AggregationFunctions {
-
-  private static final CharSequence DELIMITER = ".";
 
   private AggregationFunctions() {}
 
@@ -23,18 +23,14 @@ public final class AggregationFunctions {
   }
 
   public static TermsAggregation termsAggregation(String... paths) {
-    return new TermsAggregation.Builder().field(joinWithDelimiter(paths)).build();
-  }
-
-  public static String joinWithDelimiter(String... args) {
-    return String.join(DELIMITER, args);
+    return new TermsAggregation.Builder().field(jsonPathOf(paths)).build();
   }
 
   public static NestedAggregation nestedAggregation(String... paths) {
-    return new NestedAggregation.Builder().path(joinWithDelimiter(paths)).build();
+    return new NestedAggregation.Builder().path(jsonPathOf(paths)).build();
   }
 
   public static Aggregation sumAggregation(String... paths) {
-    return new SumAggregation.Builder().field(joinWithDelimiter(paths)).build()._toAggregation();
+    return new SumAggregation.Builder().field(jsonPathOf(paths)).build()._toAggregation();
   }
 }

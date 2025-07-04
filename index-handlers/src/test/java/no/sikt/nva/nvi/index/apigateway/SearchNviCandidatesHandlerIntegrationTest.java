@@ -378,7 +378,10 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
       var allStatuses = List.of(NEW, PENDING, APPROVED, REJECTED);
       return Stream.of(
           argumentSet("Query without filters", emptyMap(), allStatuses),
-          argumentSet("status=pending,approved,rejected", emptyMap(), allStatuses),
+          argumentSet(
+              "status=pending,approved,rejected",
+              Map.of(QUERY_PARAM_STATUS, "pending,approved,rejected"),
+              allStatuses),
           argumentSet(
               "status=pending", Map.of(QUERY_PARAM_STATUS, "pending"), List.of(NEW, PENDING)),
           argumentSet("status=approved", Map.of(QUERY_PARAM_STATUS, "approved"), List.of(APPROVED)),

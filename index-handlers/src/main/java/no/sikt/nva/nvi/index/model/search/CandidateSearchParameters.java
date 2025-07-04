@@ -1,7 +1,6 @@
 package no.sikt.nva.nvi.index.model.search;
 
 import static java.util.Collections.emptyList;
-import static no.sikt.nva.nvi.common.utils.RequestUtil.parseStringAsCommaSeparatedList;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_AGGREGATION_TYPE;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_ASSIGNEE;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_CATEGORY;
@@ -17,11 +16,9 @@ import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PAR
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_TITLE;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_YEAR;
 import static no.sikt.nva.nvi.index.model.search.SearchResultParameters.DEFAULT_SORT_ORDER;
-import static nva.commons.apigateway.RestRequestHandler.COMMA;
 
 import java.net.URI;
 import java.time.ZonedDateTime;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.utils.RequestUtil;

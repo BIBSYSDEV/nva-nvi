@@ -31,7 +31,6 @@ import org.opensearch.client.opensearch._types.query_dsl.TermsQueryField;
 
 public final class QueryFunctions {
 
-
   private static final int MULTIPLE = 2;
 
   private QueryFunctions() {}
@@ -145,6 +144,4 @@ public final class QueryFunctions {
   private static FieldValue getFieldValue(String value) {
     return new FieldValue.Builder().stringValue(value).build();
   }
-
-
 }

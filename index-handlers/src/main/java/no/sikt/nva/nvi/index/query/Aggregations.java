@@ -1,10 +1,10 @@
 package no.sikt.nva.nvi.index.query;
 
 import static java.util.Objects.isNull;
+import static no.sikt.nva.nvi.common.utils.JsonUtils.jsonPathOf;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.NEW;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.PENDING;
 import static no.sikt.nva.nvi.index.utils.AggregationFunctions.filterAggregation;
-import static no.sikt.nva.nvi.index.utils.AggregationFunctions.joinWithDelimiter;
 import static no.sikt.nva.nvi.index.utils.AggregationFunctions.nestedAggregation;
 import static no.sikt.nva.nvi.index.utils.AggregationFunctions.sumAggregation;
 import static no.sikt.nva.nvi.index.utils.AggregationFunctions.termsAggregation;
@@ -36,8 +36,8 @@ import org.opensearch.client.opensearch._types.query_dsl.Query;
 public final class Aggregations {
 
   public static final String APPROVAL_ORGANIZATIONS_AGGREGATION = "organizations";
-  private static final String APPROVAL_STATUS_PATH = joinWithDelimiter(APPROVALS, APPROVAL_STATUS);
-  private static final String INSTITUTION_ID_PATH = joinWithDelimiter(APPROVALS, INSTITUTION_ID);
+  private static final String APPROVAL_STATUS_PATH = jsonPathOf(APPROVALS, APPROVAL_STATUS);
+  private static final String INSTITUTION_ID_PATH = jsonPathOf(APPROVALS, INSTITUTION_ID);
   private static final String DISPUTE_AGGREGATION = "dispute";
   private static final String POINTS_AGGREGATION = "points";
   private static final String DISPUTE = "Dispute";
@@ -63,7 +63,7 @@ public final class Aggregations {
         new Aggregation.Builder()
             .terms(
                 new TermsAggregation.Builder()
-                    .field(joinWithDelimiter(APPROVALS, INVOLVED_ORGS))
+                    .field(jsonPathOf(APPROVALS, INVOLVED_ORGS))
                     .size(ORGANIZATION_SUB_UNITS_TERMS_AGGREGATION_SIZE)
                     .build())
             .aggregations(
@@ -132,14 +132,14 @@ public final class Aggregations {
   private static Aggregation filterNotRegectedPointsAggregation() {
     return filterAggregation(
         mustNotMatch(
-            ApprovalStatus.REJECTED.getValue(), joinWithDelimiter(APPROVALS, APPROVAL_STATUS)),
+            ApprovalStatus.REJECTED.getValue(), jsonPathOf(APPROVALS, APPROVAL_STATUS)),
         Map.of(
             TOTAL_POINTS_SUM_AGGREGATION, sumAggregation(APPROVALS, POINTS, INSTITUTION_POINTS)));
   }
 
   private static Aggregation filterStatusDisputeAggregation() {
     return filterAggregation(
-        mustMatch(fieldValueQuery(joinWithDelimiter(APPROVALS, GLOBAL_APPROVAL_STATUS), DISPUTE)));
+        mustMatch(fieldValueQuery(jsonPathOf(APPROVALS, GLOBAL_APPROVAL_STATUS), DISPUTE)));
   }
 
   private static Query approvalInstitutionIdQuery(String topLevelCristinOrg) {
