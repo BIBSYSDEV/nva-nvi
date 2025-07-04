@@ -447,8 +447,8 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
               Map.of(QUERY_PARAM_GLOBAL_STATUS, "pending,rejected"),
               List.of(GlobalApprovalStatus.PENDING, GlobalApprovalStatus.REJECTED)),
           argumentSet(
-              "globalStatus=approved",
-              Map.of(QUERY_PARAM_GLOBAL_STATUS, "approved, rejected"),
+              "globalStatus=approved,rejected",
+              Map.of(QUERY_PARAM_GLOBAL_STATUS, "approved,rejected"),
               List.of(GlobalApprovalStatus.APPROVED, GlobalApprovalStatus.REJECTED)));
     }
   }
