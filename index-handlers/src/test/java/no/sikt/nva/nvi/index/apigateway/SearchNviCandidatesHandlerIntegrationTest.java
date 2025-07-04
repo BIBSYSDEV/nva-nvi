@@ -400,19 +400,6 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
       return documents;
     }
 
-    private static List<NviCandidateIndexDocument> createDocsForAllGlobalStatusCombinations() {
-      var ourApprovals = getAllPossibleApprovals(OUR_ORGANIZATION);
-
-      var documents = new ArrayList<NviCandidateIndexDocument>();
-      for (var globalStatus : GlobalApprovalStatus.values()) {
-        for (var ourApproval : ourApprovals) {
-          var title = String.format("Status (%s / %s)", ourApproval.approvalStatus(), globalStatus);
-          documents.add(documentWithApprovals(title, globalStatus, ourApproval));
-        }
-      }
-      return documents;
-    }
-
     private static Stream<Arguments> queryParameterToExpectedApprovalStatus() {
       var allStatuses = Arrays.stream(ApprovalStatus.values()).toList();
       return Stream.of(

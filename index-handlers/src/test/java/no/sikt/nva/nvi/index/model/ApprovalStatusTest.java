@@ -8,7 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-public class ApprovalStatusTest {
+class ApprovalStatusTest {
 
   @ParameterizedTest(name = "shouldParseValidStrings {0}")
   @ValueSource(strings = {"new", "PENDING", "Approved", "rejected"})
