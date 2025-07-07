@@ -361,7 +361,7 @@ public final class IndexDocumentTestUtils {
   private static ApprovalStatus getApprovalStatus(Approval approval) {
     return isApprovalPendingAndUnassigned(approval)
         ? ApprovalStatus.NEW
-        : ApprovalStatus.fromValue(approval.getStatus().getValue());
+        : ApprovalStatus.parse(approval.getStatus().getValue());
   }
 
   private static boolean isApprovalPendingAndUnassigned(Approval approval) {
