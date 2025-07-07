@@ -383,7 +383,7 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
 
       assertThat(response.getHits())
           .extracting(NviCandidateIndexDocument::approvals)
-          .allSatisfy(app -> assertThat(app).hasSizeGreaterThanOrEqualTo(2));
+          .allSatisfy(approvals -> assertThat(approvals).hasSizeGreaterThanOrEqualTo(2));
     }
 
     @Test
