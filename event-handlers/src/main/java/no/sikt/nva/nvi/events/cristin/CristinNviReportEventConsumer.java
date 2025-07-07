@@ -112,18 +112,19 @@ public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, V
   }
 
   private List<DbOrganization> getCurrentTopLevelOrganizations(PublicationDto publication) {
-    if (isMissing(publication.topLevelOrganizations())) {
-      // All NVI results should have topLevelOrganizations affiliated, but some
-      // imported results are missing data.
+    return isMissing(publication.topLevelOrganizations()) 
+      ? createEmptyListForImportedResultsThatLackData() 
+      : publication.topLevelOrganizations().stream()
+        .map(Organization::toDbOrganization)
+        .toList();
+  }
+
+  private List<DbOrganization> createEmptyListForImportedResultsThatLackData() {
       logger.error(
           "Missing top level organizations for publication with identifier {}",
           publication.identifier());
       return emptyList();
     }
-    return publication.topLevelOrganizations().stream()
-        .map(Organization::toDbOrganization)
-        .toList();
-  }
 
   private String firstValidValue(String originalValue, String updatedValue) {
     return isNotBlank(originalValue) ? originalValue : updatedValue;
