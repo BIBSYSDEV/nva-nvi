@@ -99,6 +99,10 @@ Parameters:
     Type: String
     Description: comma separated list of external clients that are allowed to contact the HTTP APIs, "*" indicates that all origins are allowed
     Default: '*'
+  DefaultTimeoutForParsingLambdas:
+    Type: Number
+    Description: Timeout in seconds for functions that parse JSON-LD documents. These need a high timeout in order to handle unusually large documents.
+    Default: 300 # 5 minutes
 
 Conditions:
   WithSuffix: !Not [ !Equals [ !Ref Suffix, '' ] ]
@@ -733,9 +737,7 @@ Resources:
       CodeUri: event-handlers
       Handler: no.sikt.nva.nvi.events.evaluator.EvaluateNviCandidateHandler::handleRequest
       Role: !GetAtt NvaNviRole.Arn
-      #For publications with many contributors, evaluation can take more than 30 sec due to
-      #many external requests. Timeout is set to 5 minutes.
-      Timeout: 300
+      Timeout: !Ref DefaultTimeoutForParsingLambdas
       MemorySize: 1536
       AutoPublishAlias: live
       SnapStart:
@@ -966,7 +968,7 @@ Resources:
       CodeUri: event-handlers
       Handler: no.sikt.nva.nvi.events.cristin.CristinNviReportEventConsumer::handleRequest
       Role: !GetAtt NvaNviRole.Arn
-      Timeout: 30
+      Timeout: !Ref DefaultTimeoutForParsingLambdas
       MemorySize: 1536
       Environment:
         Variables:
