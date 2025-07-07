@@ -15,6 +15,7 @@ import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.PENDING;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.REJECTED;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_ASSIGNEE;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_EXCLUDE_UNASSIGNED;
+import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_FILTER;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_GLOBAL_STATUS;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_OFFSET;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_SIZE;
@@ -22,6 +23,7 @@ import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PAR
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.junit.jupiter.params.provider.Arguments.argumentSet;
 
 import java.math.BigDecimal;
@@ -337,12 +339,15 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
     private static final Collection<NviCandidateIndexDocument> docsForStatusCombinations =
         createDocsForAllApprovalStatusCombinations();
 
+    @BeforeEach
+    void beforeEach() {
+      addDocumentsToIndex(docsForStatusCombinations);
+    }
+
     @ParameterizedTest
     @MethodSource("queryParameterToExpectedApprovalStatus")
     void shouldFilterByApprovalStatus(
         Map<String, String> queryParameters, Collection<ApprovalStatus> expectedStatuses) {
-      addDocumentsToIndex(docsForStatusCombinations);
-
       var response = handleRequest(queryParameters);
 
       assertThat(response.getHits())
@@ -354,8 +359,6 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
     @MethodSource("queryParameterToExpectedGlobalStatus")
     void shouldFilterByMultipleGlobalApprovalStatus(
         Map<String, String> queryParameters, Collection<GlobalApprovalStatus> expectedStatuses) {
-      addDocumentsToIndex(docsForStatusCombinations);
-
       var response = handleRequest(queryParameters);
 
       assertThat(response.getHits())
@@ -366,13 +369,47 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
     @ParameterizedTest
     @EnumSource(GlobalApprovalStatus.class)
     void shouldFilterBySingleGlobalApprovalStatus(GlobalApprovalStatus globalStatus) {
-      addDocumentsToIndex(docsForStatusCombinations);
-
       var response = handleRequest(Map.of(QUERY_PARAM_GLOBAL_STATUS, globalStatus.toString()));
 
       assertThat(response.getHits())
           .extracting(NviCandidateIndexDocument::globalApprovalStatus)
           .containsOnly(globalStatus);
+    }
+
+    @Test
+    void shouldFilterByCollaboration() {
+      var response =
+          handleRequest(Map.of(QUERY_PARAM_STATUS, "pending", QUERY_PARAM_FILTER, "collaboration"));
+
+      assertThat(response.getHits())
+          .extracting(NviCandidateIndexDocument::approvals)
+          .allSatisfy(app -> assertThat(app).hasSizeGreaterThanOrEqualTo(2));
+    }
+
+    @Test
+    void shouldFilterByApprovedByOthers() {
+      var response =
+          handleRequest(
+              Map.of(QUERY_PARAM_GLOBAL_STATUS, "dispute", QUERY_PARAM_FILTER, "approvedByOthers"));
+
+      assertThat(response.getHits())
+          .extracting(
+              NviCandidateIndexDocument::globalApprovalStatus,
+              doc -> doc.getApprovalStatusForInstitution(THEIR_ORGANIZATION))
+          .containsExactly(tuple(GlobalApprovalStatus.DISPUTE, APPROVED));
+    }
+
+    @Test
+    void shouldFilterByRejectedByOthers() {
+      var response =
+          handleRequest(
+              Map.of(QUERY_PARAM_GLOBAL_STATUS, "dispute", QUERY_PARAM_FILTER, "rejectedByOthers"));
+
+      assertThat(response.getHits())
+          .extracting(
+              NviCandidateIndexDocument::globalApprovalStatus,
+              doc -> doc.getApprovalStatusForInstitution(THEIR_ORGANIZATION))
+          .containsExactly(tuple(GlobalApprovalStatus.DISPUTE, REJECTED));
     }
 
     private static List<Approval> getAllPossibleApprovals(URI topLevelOrganization) {
@@ -388,7 +425,6 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
 
       var documents = new ArrayList<NviCandidateIndexDocument>();
       for (var theirApproval : theirApprovals) {
-        documents.add(documentWithApprovals("Unrelated document", theirApproval));
         for (var ourApproval : ourApprovals) {
           var title =
               String.format(
@@ -396,6 +432,14 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
                   ourApproval.approvalStatus(), theirApproval.approvalStatus());
           documents.add(documentWithApprovals(title, ourApproval, theirApproval));
         }
+      }
+      for (var theirApproval : theirApprovals) {
+        var title = String.format("Unrelated document (%s)", theirApproval.approvalStatus());
+        documents.add(documentWithApprovals(title, theirApproval));
+      }
+      for (var ourApproval : ourApprovals) {
+        var title = String.format("Non-collaboration (%s)", ourApproval.approvalStatus());
+        documents.add(documentWithApprovals(title, ourApproval));
       }
       return documents;
     }

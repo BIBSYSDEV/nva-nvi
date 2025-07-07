@@ -9,6 +9,8 @@ import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.APPROVED;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.NEW;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.PENDING;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.REJECTED;
+import static no.sikt.nva.nvi.index.query.ApprovalQuery.approvalBelongsTo;
+import static no.sikt.nva.nvi.index.query.ApprovalQuery.approvalStatusIs;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.assignmentsQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.containsNonFinalizedStatusQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.disputeQuery;
@@ -16,6 +18,7 @@ import static no.sikt.nva.nvi.index.utils.QueryFunctions.fieldValueQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.matchAtLeastOne;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.multipleApprovalsQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.mustMatch;
+import static no.sikt.nva.nvi.index.utils.QueryFunctions.mustNotMatch;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.nestedQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.statusQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.termsQuery;
@@ -181,6 +184,9 @@ public class CandidateQuery {
     var aggregation =
         switch (filter) {
           case EMPTY_FILTER -> null;
+          case COLLABORATION -> multipleApprovalsQuery();
+          case OTHERS_APPROVE -> otherOrganizationStatusQuery(topLevelCristinOrg, APPROVED);
+          case OTHERS_REJECT -> otherOrganizationStatusQuery(topLevelCristinOrg, REJECTED);
           case NEW_AGG -> statusQuery(topLevelCristinOrg, NEW);
 
           case NEW_COLLABORATION_AGG ->
@@ -212,6 +218,14 @@ public class CandidateQuery {
         };
 
     return Optional.ofNullable(aggregation);
+  }
+
+  private static Query otherOrganizationStatusQuery(
+      String userOrganization, ApprovalStatus status) {
+    return nestedQuery(
+        APPROVALS,
+        mustNotMatch(approvalBelongsTo(userOrganization)),
+        mustMatch(approvalStatusIs(status)));
   }
 
   private Query institutionQuery(String topLevelCristinOrg) {
@@ -255,6 +269,9 @@ public class CandidateQuery {
   }
 
   public enum QueryFilterType {
+    COLLABORATION("collaboration"),
+    OTHERS_APPROVE("approvedByOthers"),
+    OTHERS_REJECT("rejectedByOthers"),
     NEW_AGG("pending"),
     NEW_COLLABORATION_AGG("pendingCollaboration"),
     PENDING_AGG("assigned"),
