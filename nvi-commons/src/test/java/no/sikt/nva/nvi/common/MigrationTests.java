@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.common;
 
 import static java.util.Collections.emptyList;
+import static no.sikt.nva.nvi.common.EnvironmentFixtures.getEventBasedBatchScanHandlerEnvironment;
 import static no.sikt.nva.nvi.common.RequestFixtures.createNoteRequest;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpdateStatusRequest;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidate;
@@ -25,6 +26,7 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.model.DbCreatorTypeListConverter;
 import no.sikt.nva.nvi.common.model.CandidateFixtures;
+import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.utils.BatchScanUtil;
@@ -46,7 +48,10 @@ class MigrationTests {
     periodRepository = scenario.getPeriodRepository();
     batchScanUtil =
         new BatchScanUtil(
-            candidateRepository, scenario.getS3StorageReaderForExpandedResourcesBucket());
+            candidateRepository,
+            scenario.getS3StorageReaderForExpandedResourcesBucket(),
+            new FakeSqsClient(),
+            getEventBasedBatchScanHandlerEnvironment());
   }
 
   @Test

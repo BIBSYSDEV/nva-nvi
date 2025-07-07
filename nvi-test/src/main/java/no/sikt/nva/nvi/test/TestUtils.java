@@ -17,8 +17,10 @@ import java.net.http.HttpResponse;
 import java.time.LocalDate;
 import java.time.Year;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import nva.commons.core.paths.UriWrapper;
 
 // Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
@@ -30,6 +32,7 @@ public final class TestUtils {
   public static final BigDecimal MAX_BIG_DECIMAL = BigDecimal.TEN;
   public static final int CURRENT_YEAR = Year.now().getValue();
   public static final Random RANDOM = new Random();
+  public static final AtomicInteger ID_COUNTER = new AtomicInteger(100);
 
   private static final String BUCKET_HOST = "example.org";
   private static final LocalDate START_DATE = LocalDate.of(1970, 1, 1);
@@ -40,6 +43,14 @@ public final class TestUtils {
 
   public static int randomIntBetween(int min, int max) {
     return RANDOM.nextInt(min, max);
+  }
+
+  public static int generateUniqueId() {
+    return ID_COUNTER.getAndIncrement();
+  }
+
+  public static String generateUniqueIdAsString() {
+    return String.valueOf(generateUniqueId());
   }
 
   public static URI generateS3BucketUri(UUID identifier) {
@@ -88,6 +99,14 @@ public final class TestUtils {
     return node;
   }
 
+  public static <T> boolean hasElements(Collection<T> collection) {
+    return nonNull(collection) && !collection.isEmpty();
+  }
+
+  public static <K, V> boolean hasElements(Map<K, V> collection) {
+    return nonNull(collection) && !collection.isEmpty();
+  }
+
   public static void putIfNotBlank(ObjectNode node, String field, String value) {
     if (isNotBlank(value)) {
       node.put(field, value);
@@ -102,7 +121,7 @@ public final class TestUtils {
 
   public static void putAsArrayIfMultipleValues(
       ObjectNode node, String field, Collection<String> values) {
-    if (nonNull(values) && !values.isEmpty()) {
+    if (hasElements(values)) {
       if (values.size() > ONE) {
         var arrayNode = objectMapper.createArrayNode();
         values.forEach(arrayNode::add);

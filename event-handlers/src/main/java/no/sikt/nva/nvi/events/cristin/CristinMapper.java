@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.events.cristin;
 
+import static java.util.Collections.emptyList;
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.extractJsonNodeTextValue;
 import static nva.commons.core.attempt.Try.attempt;
@@ -43,9 +44,6 @@ import nva.commons.core.paths.UriWrapper;
 @SuppressWarnings({"PMD.GodClass", "PMD.CouplingBetweenObjects"})
 public final class CristinMapper {
 
-  public static final String API_HOST = new Environment().readEnv("API_HOST");
-  public static final String PERSISTED_RESOURCES_BUCKET =
-      new Environment().readEnv("EXPANDED_RESOURCES_BUCKET");
   public static final String AFFILIATION_DELIMITER = ".";
   public static final String CRISTIN = "cristin";
   public static final String ORGANIZATION = "organization";
@@ -78,16 +76,21 @@ public final class CristinMapper {
   private static final String FHI_CRISTIN_ORG_NUMBER = "7502";
   private static final String INTERNATIONAL_COLLABORATION_FACTOR = "1.3";
   private final List<CristinDepartmentTransfer> departmentTransfers;
+  private final String apiHost;
+  private final String expandedResourcesBucket;
 
-  private CristinMapper(List<CristinDepartmentTransfer> transfers) {
+  private CristinMapper(List<CristinDepartmentTransfer> transfers, Environment environment) {
     this.departmentTransfers = transfers;
+    this.apiHost = environment.readEnv("API_HOST");
+    this.expandedResourcesBucket = environment.readEnv("EXPANDED_RESOURCES_BUCKET");
   }
 
-  public static CristinMapper withDepartmentTransfers(List<CristinDepartmentTransfer> transfers) {
-    return new CristinMapper(transfers);
+  public static CristinMapper withDepartmentTransfers(
+      List<CristinDepartmentTransfer> transfers, Environment environment) {
+    return new CristinMapper(transfers, environment);
   }
 
-  public static List<DbCreatorType> extractCreators(CristinNviReport cristinNviReport) {
+  public List<DbCreatorType> extractCreators(CristinNviReport cristinNviReport) {
     return cristinNviReport.getCreators().stream()
         .filter(CristinMapper::hasInstitutionPoints)
         .collect(groupByCristinIdentifierAndMapToAffiliationId())
@@ -97,7 +100,6 @@ public final class CristinMapper {
         .toList();
   }
 
-  // TODO: Extract creators from dbh_forskres_kontroll, remove Jacoco annotation when implemented
   public DbCandidate toDbCandidate(CristinNviReport cristinNviReport) {
     var channel =
         DbPublicationChannel.builder()
@@ -142,14 +144,17 @@ public final class CristinMapper {
 
   private DbPublicationDetails toDbPublication(CristinNviReport cristinNviReport) {
     var now = Instant.now();
+    var creators = extractCreators(cristinNviReport);
     return DbPublicationDetails.builder()
-        .id(constructPublicationId(cristinNviReport.publicationIdentifier()))
+        .id(constructPublicationId(cristinNviReport))
         .identifier(cristinNviReport.publicationIdentifier())
         .publicationBucketUri(
             constructPublicationBucketUri(cristinNviReport.publicationIdentifier()))
         .publicationDate(cristinNviReport.publicationDate().toDbPublicationDate())
         .modifiedDate(now)
-        .creators(extractCreators(cristinNviReport))
+        .contributorCount(creators.size())
+        .creators(creators)
+        .topLevelNviOrganizations(emptyList())
         .build();
   }
 
@@ -158,7 +163,7 @@ public final class CristinMapper {
         .filter(
             cristinLocale ->
                 nonNull(cristinLocale.getInstitutionIdentifier()) || isKreftReg(cristinLocale))
-        .map(CristinMapper::toApproval)
+        .map(this::toApproval)
         .collect(
             Collectors.toMap(
                 DbApprovalStatus::institutionId,
@@ -306,7 +311,7 @@ public final class CristinMapper {
         .toList();
   }
 
-  private static CreatorPoints toCreatorPoints(ScientificPerson person) {
+  private CreatorPoints toCreatorPoints(ScientificPerson person) {
     return new CreatorPoints(
         constructPersonCristinId(person),
         constructCristinOrganizationId(person),
@@ -357,16 +362,16 @@ public final class CristinMapper {
   }
 
   @JacocoGenerated
-  private static Collector<ScientificPerson, ?, Map<URI, List<URI>>>
+  private Collector<ScientificPerson, ?, Map<URI, List<URI>>>
       groupByCristinIdentifierAndMapToAffiliationId() {
     return Collectors.groupingBy(
-        CristinMapper::constructPersonCristinId,
-        Collectors.mapping(CristinMapper::constructCristinOrganizationId, Collectors.toList()));
+        this::constructPersonCristinId,
+        Collectors.mapping(this::constructCristinOrganizationId, Collectors.toList()));
   }
 
   @JacocoGenerated
-  private static URI constructPersonCristinId(ScientificPerson scientificPerson) {
-    return UriWrapper.fromHost(API_HOST)
+  private URI constructPersonCristinId(ScientificPerson scientificPerson) {
+    return UriWrapper.fromHost(apiHost)
         .addChild(CRISTIN)
         .addChild(PERSON)
         .addChild(scientificPerson.getCristinPersonIdentifier())
@@ -374,15 +379,15 @@ public final class CristinMapper {
   }
 
   @JacocoGenerated
-  private static URI constructCristinOrganizationId(ScientificPerson scientificPerson) {
-    return UriWrapper.fromHost(API_HOST)
+  private URI constructCristinOrganizationId(ScientificPerson scientificPerson) {
+    return UriWrapper.fromHost(apiHost)
         .addChild(CRISTIN)
         .addChild(ORGANIZATION)
         .addChild(scientificPerson.getOrganization())
         .getUri();
   }
 
-  private static DbApprovalStatus toApproval(CristinLocale cristinLocale) {
+  private DbApprovalStatus toApproval(CristinLocale cristinLocale) {
     var assignee = constructUsername(cristinLocale);
     return DbApprovalStatus.builder()
         .status(DbStatus.APPROVED)
@@ -423,8 +428,8 @@ public final class CristinMapper {
     return ZoneOffset.UTC.getRules().getOffset(Instant.now());
   }
 
-  private static URI constructInstitutionId(CristinLocale cristinLocale) {
-    return UriWrapper.fromHost(API_HOST)
+  private URI constructInstitutionId(CristinLocale cristinLocale) {
+    return UriWrapper.fromHost(apiHost)
         .addChild(CRISTIN)
         .addChild(ORGANIZATION)
         .addChild(constructInstitutionIdentifier(cristinLocale))
@@ -448,8 +453,8 @@ public final class CristinMapper {
     }
   }
 
-  private static URI constructPublicationBucketUri(String publicationIdentifier) {
-    return UriWrapper.fromHost(PERSISTED_RESOURCES_BUCKET)
+  private URI constructPublicationBucketUri(String publicationIdentifier) {
+    return UriWrapper.fromUri("s3://" + expandedResourcesBucket)
         .addChild(RESOURCES)
         .addChild(withGzExtension(publicationIdentifier))
         .getUri();
@@ -459,10 +464,10 @@ public final class CristinMapper {
     return publicationIdentifier + GZ_EXTENSION;
   }
 
-  private static URI constructPublicationId(String publicationIdentifier) {
-    return UriWrapper.fromHost(API_HOST)
+  public URI constructPublicationId(CristinNviReport cristinNviReport) {
+    return UriWrapper.fromHost(apiHost)
         .addChild(PUBLICATION)
-        .addChild(publicationIdentifier)
+        .addChild(cristinNviReport.publicationIdentifier())
         .getUri();
   }
 
@@ -501,14 +506,14 @@ public final class CristinMapper {
         list.stream()
             .map(CristinMapper::extractAuthorPointsForAffiliation)
             .reduce(BigDecimal.ZERO, BigDecimal::add),
-        list.stream().map(CristinMapper::toCreatorPoints).toList());
+        list.stream().map(this::toCreatorPoints).toList());
   }
 
   private URI getTopLevelOrganization(
       ScientificPerson scientificPerson, List<CristinLocale> institutions) {
     return institutions.stream()
         .filter(cristinLocale -> hasSameInstitutionIdentifier(scientificPerson, cristinLocale))
-        .map(CristinMapper::constructInstitutionId)
+        .map(this::constructInstitutionId)
         .findFirst()
         .orElseGet(
             () ->
@@ -528,7 +533,7 @@ public final class CristinMapper {
                         .equals(matchingTransferInstitutionIdentifier)
                     : KREFTREG.equals(institution.getOwnerCode()))
         .findFirst()
-        .map(CristinMapper::constructInstitutionId)
+        .map(this::constructInstitutionId)
         .orElseThrow();
   }
 

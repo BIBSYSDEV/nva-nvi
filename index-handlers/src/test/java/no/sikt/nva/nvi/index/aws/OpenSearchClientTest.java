@@ -1,6 +1,9 @@
 package no.sikt.nva.nvi.index.aws;
 
 import static java.util.Objects.requireNonNull;
+import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomApproval;
+import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomIndexDocumentBuilder;
+import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomPublicationDetailsBuilder;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomNviContributor;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomNviContributorBuilder;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomPages;
@@ -23,7 +26,6 @@ import static no.sikt.nva.nvi.index.query.SearchAggregation.REJECTED_AGG;
 import static no.sikt.nva.nvi.index.query.SearchAggregation.REJECTED_COLLABORATION_AGG;
 import static no.sikt.nva.nvi.index.query.SearchAggregation.TOTAL_COUNT_AGGREGATION_AGG;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
-import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -39,36 +41,24 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
-import com.auth0.jwt.interfaces.DecodedJWT;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Path;
-import java.time.Clock;
-import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
-import java.util.Set;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
-import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
+import no.sikt.nva.nvi.index.OpenSearchContainerContext;
 import no.sikt.nva.nvi.index.model.document.Approval;
-import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
-import no.sikt.nva.nvi.index.model.document.InstitutionPoints;
-import no.sikt.nva.nvi.index.model.document.InstitutionPoints.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.document.PublicationDetails;
 import no.sikt.nva.nvi.index.model.document.ReportingPeriod;
@@ -77,11 +67,8 @@ import no.sikt.nva.nvi.index.model.search.OrderByFields;
 import no.sikt.nva.nvi.index.model.search.SearchResultParameters;
 import no.sikt.nva.nvi.index.query.CandidateQuery.QueryFilterType;
 import no.sikt.nva.nvi.index.query.SearchAggregation;
-import no.unit.nva.auth.CachedJwtProvider;
-import no.unit.nva.auth.CognitoAuthenticator;
 import nva.commons.core.ioutils.IoUtils;
 import nva.commons.core.paths.UriWrapper;
-import org.apache.http.HttpHost;
 import org.assertj.core.api.Assertions;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterAll;
@@ -92,8 +79,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.opensearch.client.Request;
-import org.opensearch.client.RestClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate.Kind;
@@ -104,14 +89,13 @@ import org.opensearch.client.opensearch._types.aggregations.StringTermsAggregate
 import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
 import org.opensearch.client.opensearch._types.aggregations.SumAggregate;
 import org.opensearch.client.opensearch.core.SearchResponse;
-import org.opensearch.testcontainers.OpensearchContainer;
 
 // These are not IP addresses, but cristin org identifier examples
 // Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
-@SuppressWarnings({"PMD.AvoidUsingHardCodedIP", "PMD.GodClass", "PMD.CouplingBetweenObjects"})
+@SuppressWarnings("PMD.GodClass")
 class OpenSearchClientTest {
 
-  public static final String YEAR = "2023";
+  public static final String YEAR = String.valueOf(CURRENT_YEAR);
   public static final String CATEGORY = "AcademicArticle";
   public static final String UNEXISTING_FILTER = "unexisting-filter";
   public static final URI NTNU_INSTITUTION_ID =
@@ -120,55 +104,41 @@ class OpenSearchClientTest {
   public static final URI SIKT_INSTITUTION_ID =
       URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0");
   public static final String SIKT_INSTITUTION_IDENTIFIER = "20754.0.0.0";
-  public static final int SCALE = 4;
   public static final String SIKT_LEVEL_2_ID =
       "https://api.dev.nva.aws.unit.no/cristin/organization/20754.1.0.0";
   public static final String SIKT_LEVEL_3_ID =
       "https://api.dev.nva.aws.unit.no/cristin/organization/20754.1.1.0";
-  private static final String OPEN_SEARCH_IMAGE = "opensearchproject/opensearch:2.11.1";
   private static final URI ORGANIZATION =
       URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0");
   private static final String USERNAME = "user1";
-  private static final OpensearchContainer<?> container =
-      new OpensearchContainer<>(OPEN_SEARCH_IMAGE);
   private static final String DOCUMENT_NEW_JSON = "document_new.json";
   private static final String DOCUMENT_ORGANIZATION_AGGREGATION_DISPUTE_JSON =
       "document_organization_aggregation_dispute.json";
   private static final String DOCUMENT_WITH_CONTRIBUTOR_FROM_NTNU_SUBUNIT_JSON =
       "document_with_contributor_from_ntnu_subunit.json";
   private static final String UNEXPECTED_KEY = "Unexpected key: ";
-  private static RestClient restClient;
+  private static final OpenSearchContainerContext CONTAINER = new OpenSearchContainerContext();
   private static OpenSearchClient openSearchClient;
 
-  public static void setUpTestContainer() {
-    container.start();
-    restClient = RestClient.builder(HttpHost.create(container.getHttpHostAddress())).build();
-  }
-
   @BeforeAll
-  public static void init() {
-    setUpTestContainer();
-    openSearchClient = new OpenSearchClient(restClient, FakeCachedJwtProvider.setup());
-  }
-
-  @BeforeEach
-  public void beforeEach() {
-    openSearchClient.createIndex();
+  static void beforeAll() {
+    CONTAINER.start();
+    openSearchClient = CONTAINER.getOpenSearchClient();
   }
 
   @AfterAll
   static void afterAll() {
-    container.stop();
+    CONTAINER.stop();
+  }
+
+  @BeforeEach
+  void beforeEach() {
+    CONTAINER.createIndex();
   }
 
   @AfterEach
-  @SuppressWarnings("PMD.EmptyCatchBlock")
-  void afterEach() throws IOException {
-    try {
-      openSearchClient.deleteIndex();
-    } catch (OpenSearchException e) {
-      // ignore
-    }
+  void afterEach() {
+    CONTAINER.deleteIndex();
   }
 
   @Test
@@ -237,7 +207,7 @@ class OpenSearchClientTest {
     var document = randomIndexDocumentBuilder().build();
     addDocumentsToIndex(document);
     openSearchClient.removeDocumentFromIndex(document.identifier());
-    refreshIndex();
+    CONTAINER.refreshIndex();
     var searchParameters = defaultSearchParameters().build();
     var searchResponse = openSearchClient.search(searchParameters);
     var nviCandidateIndexDocument = searchResponse.hits().hits();
@@ -533,30 +503,6 @@ class OpenSearchClientTest {
         defaultSearchParameters()
             .withAffiliations(List.of(getLastPathElement(customer)))
             .withTitle(getRandomWord(title))
-            .withYear(YEAR)
-            .build();
-
-    var searchResponse = openSearchClient.search(searchParameters);
-
-    assertThat(searchResponse.hits().hits(), hasSize(1));
-  }
-
-  @Test
-  void shouldReturnSingleDocumentWhenFilteringByAssignee() throws IOException {
-    var customer = randomUri();
-    var assignee =
-        randomString().concat(" ").concat(randomString()).concat(" ").concat(randomString());
-    var document =
-        indexDocumentWithCustomer(customer, randomString(), assignee, YEAR, randomString());
-    addDocumentsToIndex(
-        document,
-        indexDocumentWithCustomer(
-            customer, randomString(), randomString(), randomString(), randomString()));
-
-    var searchParameters =
-        defaultSearchParameters()
-            .withAffiliations(List.of(getLastPathElement(customer)))
-            .withAssignee(getRandomWord(assignee))
             .withYear(YEAR)
             .build();
 
@@ -987,26 +933,6 @@ class OpenSearchClientTest {
     return dtoObjectMapper.readValue(string, NviCandidateIndexDocument.class);
   }
 
-  private static NviCandidateIndexDocument.Builder randomIndexDocumentBuilder() {
-    return randomIndexDocumentBuilder(randomPublicationDetailsBuilder().build());
-  }
-
-  private static NviCandidateIndexDocument.Builder randomIndexDocumentBuilder(
-      PublicationDetails publicationDetails) {
-    var approvals = randomApprovalList();
-    var publicationYear = publicationDetails.publicationDate().year();
-    var reportingPeriod = new ReportingPeriod(publicationYear);
-    return NviCandidateIndexDocument.builder()
-        .withIdentifier(UUID.randomUUID())
-        .withPublicationDetails(publicationDetails)
-        .withApprovals(approvals)
-        .withNumberOfApprovals(approvals.size())
-        .withPoints(randomBigDecimal())
-        .withReportingPeriod(reportingPeriod)
-        .withCreatedDate(Instant.now())
-        .withModifiedDate(Instant.now());
-  }
-
   private static NviCandidateIndexDocument indexDocumentWithTitle(String title) {
     var publicationDetails = publicationDetailsWithTitle(title);
     return randomIndexDocumentBuilder(publicationDetails).build();
@@ -1017,7 +943,7 @@ class OpenSearchClientTest {
     var publicationDetails =
         randomPublicationDetailsWithCustomer(customer, contributor, year, title);
     return randomIndexDocumentBuilder(publicationDetails)
-        .withApprovals(List.of(randomApprovalWithCustomerAndAssignee(customer, assignee)))
+        .withApprovals(List.of(randomApproval(assignee, customer)))
         .withNumberOfApprovals(1)
         .build();
   }
@@ -1054,82 +980,12 @@ class OpenSearchClientTest {
         .build();
   }
 
-  private static Approval randomApprovalWithCustomerAndAssignee(URI affiliation, String assignee) {
-    return new Approval(
-        affiliation,
-        Map.of(),
-        randomStatus(),
-        randomInstitutionPoints(),
-        Set.of(),
-        assignee,
-        randomGlobalApprovalStatus());
-  }
-
-  private static List<Approval> randomApprovalList() {
-    return IntStream.range(0, 5).boxed().map(i -> randomApproval()).toList();
-  }
-
-  private static Approval randomApproval() {
-    return new Approval(
-        ORGANIZATION,
-        Map.of(),
-        randomStatus(),
-        randomInstitutionPoints(),
-        Set.of(),
-        null,
-        randomGlobalApprovalStatus());
-  }
-
-  private static InstitutionPoints randomInstitutionPoints() {
-    return new InstitutionPoints(
-        randomUri(), randomBigDecimal(SCALE), randomCreatorAffiliationPoints());
-  }
-
-  private static List<CreatorAffiliationPoints> randomCreatorAffiliationPoints() {
-    return List.of(new CreatorAffiliationPoints(randomUri(), randomUri(), randomBigDecimal(SCALE)));
-  }
-
-  private static ApprovalStatus randomStatus() {
-    var values = Arrays.stream(ApprovalStatus.values()).toList();
-    var size = values.size();
-    var random = new Random();
-    return values.get(random.nextInt(size));
-  }
-
-  private static GlobalApprovalStatus randomGlobalApprovalStatus() {
-    return randomElement(GlobalApprovalStatus.values());
-  }
-
   private static PublicationDetails publicationDetailsWithTitle(String title) {
     return randomPublicationDetailsBuilder().withTitle(title).build();
   }
 
-  private static PublicationDetails.Builder randomPublicationDetailsBuilder() {
-    return PublicationDetails.builder()
-        .withId(UriWrapper.fromUri(randomUri()).addChild(UUID.randomUUID().toString()).toString())
-        .withTitle(randomString())
-        .withAbstract(randomString())
-        .withPublicationDate(new PublicationDateDto(YEAR, null, null))
-        .withPublicationChannel(randomPublicationChannel())
-        .withPages(randomPages())
-        .withContributors(List.of(randomNviContributor(randomUri())));
-  }
-
   private static void addDocumentsToIndex(NviCandidateIndexDocument... documents) {
-    Arrays.stream(documents).forEach(openSearchClient::addDocumentToIndex);
-    refreshIndex();
-  }
-
-  /**
-   * Refreshes all indices to make sure that new documents are searchable before tests are executed.
-   */
-  private static void refreshIndex() {
-    var refreshRequest = new Request("POST", "/_refresh");
-    try {
-      restClient.performRequest(refreshRequest);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
+    CONTAINER.addDocumentsToIndex(documents);
   }
 
   private static Stream<Entry<String, Integer>> aggregationNameAndExpectedCountProvider() {
@@ -1187,27 +1043,5 @@ class OpenSearchClientTest {
 
   private NviCandidateIndexDocument documentWithCreatedDate(Instant createdDate) {
     return randomIndexDocumentBuilder().withCreatedDate(createdDate).build();
-  }
-
-  public static final class FakeCachedJwtProvider {
-
-    private static final String TEST_TOKEN =
-        "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJPbmxpbmUgSldUIEJ1"
-            + "aWxkZXIiLCJpYXQiOjE2Njg1MTE4NTcsImV4cCI6MTcwMDA0Nzg1NywiYXVkIjoi"
-            + "d3d3LmV4YW1wbGUuY29tIiwic3ViIjoianJvY2tldEBleGFtcGxlLmNvbSIsIkdpd"
-            + "mVuTmFtZSI6IkpvaG5ueSIsIlN1cm5hbWUiOiJSb2NrZXQiLCJFbWFpbCI6Impyb2"
-            + "NrZXRAZXhhbXBsZS5jb20iLCJSb2xlIjoiTWFuYWdlciIsInNjb3BlIjoiZXhhbX"
-            + "BsZS1zY29wZSJ9.ne8Jb4f2xao1zSJFZxIBRrh4WFNjkaBRV3-Ybp6fHZU";
-
-    public static CachedJwtProvider setup() {
-      var jwt = mock(DecodedJWT.class);
-      var cognitoAuthenticatorMock = mock(CognitoAuthenticator.class);
-
-      when(jwt.getToken()).thenReturn(TEST_TOKEN);
-      when(jwt.getExpiresAt()).thenReturn(Date.from(Instant.now().plus(Duration.ofMinutes(5))));
-      when(cognitoAuthenticatorMock.fetchBearerToken()).thenReturn(jwt);
-
-      return new CachedJwtProvider(cognitoAuthenticatorMock, Clock.systemDefaultZone());
-    }
   }
 }

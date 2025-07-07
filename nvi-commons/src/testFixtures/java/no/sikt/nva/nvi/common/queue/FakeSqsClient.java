@@ -1,13 +1,16 @@
 package no.sikt.nva.nvi.common.queue;
 
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
+import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.QueueServiceTestUtils;
 import software.amazon.awssdk.services.sqs.model.BatchResultErrorEntry;
@@ -40,7 +43,7 @@ public class FakeSqsClient implements QueueClient {
 
   private final List<DeleteMessageRequest> deleteMessages = new ArrayList<>();
 
-  public List<SQSEvent> getAllSentSqsEvents(String queueUrl) {
+  public List<SQSMessage> getAllSentSqsEvents(String queueUrl) {
     var singleMessages =
         sentMessages.stream()
             .filter(request -> request.queueUrl().equals(queueUrl))
@@ -49,7 +52,10 @@ public class FakeSqsClient implements QueueClient {
         sentBatches.stream()
             .filter(request -> request.queueUrl().equals(queueUrl))
             .map(QueueServiceTestUtils::from);
-    return Stream.concat(singleMessages, batchedMessages).toList();
+    return Stream.concat(singleMessages, batchedMessages)
+        .map(SQSEvent::getRecords)
+        .flatMap(List::stream)
+        .toList();
   }
 
   public List<SendMessageRequest> getSentMessages() {
@@ -94,15 +100,29 @@ public class FakeSqsClient implements QueueClient {
   @Override
   public NviReceiveMessageResponse receiveMessage(String queueUrl, int maxNumberOfMessages) {
     validateQueueUrl(queueUrl);
-    receivedMessages.add(createReceiveRequest(queueUrl, maxNumberOfMessages));
-    return createResponse(ReceiveMessageResponse.builder().build());
+    var numberOfMessages = Math.min(maxNumberOfMessages, sentMessages.size());
+    return new NviReceiveMessageResponse(
+        sentMessages.subList(0, numberOfMessages).stream()
+            .map(
+                sendMessageRequest ->
+                    new NviReceiveMessage(
+                        sendMessageRequest.messageBody(),
+                        null,
+                        sendMessageRequest.messageAttributes().entrySet().stream()
+                            .collect(
+                                Collectors.toMap(
+                                    Entry::getKey, entry -> entry.getValue().stringValue())),
+                        null))
+            .toList());
   }
 
+  // TODO: Fix-me Should delete by receiptHandle
   @Override
   public void deleteMessage(String queueUrl, String receiptHandle) {
     validateQueueUrl(queueUrl);
     var request =
         DeleteMessageRequest.builder().queueUrl(queueUrl).receiptHandle(receiptHandle).build();
+    sentMessages.remove(0);
     deleteMessages.add(request);
   }
 

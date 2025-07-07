@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.index.utils;
 
 import static java.util.Objects.nonNull;
+import static no.sikt.nva.nvi.common.utils.JsonUtils.jsonPathOf;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.NEW;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.PENDING;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVALS;
@@ -22,6 +23,7 @@ import org.opensearch.client.opensearch._types.query_dsl.MatchAllQuery;
 import org.opensearch.client.opensearch._types.query_dsl.MatchQuery;
 import org.opensearch.client.opensearch._types.query_dsl.NestedQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
+import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 import org.opensearch.client.opensearch._types.query_dsl.RangeQuery;
 import org.opensearch.client.opensearch._types.query_dsl.TermQuery;
 import org.opensearch.client.opensearch._types.query_dsl.TermsQuery;
@@ -29,7 +31,6 @@ import org.opensearch.client.opensearch._types.query_dsl.TermsQueryField;
 
 public final class QueryFunctions {
 
-  private static final CharSequence JSON_PATH_DELIMITER = ".";
   private static final int MULTIPLE = 2;
 
   private QueryFunctions() {}
@@ -40,6 +41,10 @@ public final class QueryFunctions {
 
   public static Query nestedQuery(String path, Query... queries) {
     return new NestedQuery.Builder().path(path).query(mustMatch(queries)).build().toQuery();
+  }
+
+  public static Query existsQuery(String field) {
+    return QueryBuilders.exists().field(field).build().toQuery();
   }
 
   public static Query fieldValueQuery(String field, String value) {
@@ -138,9 +143,5 @@ public final class QueryFunctions {
 
   private static FieldValue getFieldValue(String value) {
     return new FieldValue.Builder().stringValue(value).build();
-  }
-
-  private static String jsonPathOf(String... args) {
-    return String.join(JSON_PATH_DELIMITER, args);
   }
 }

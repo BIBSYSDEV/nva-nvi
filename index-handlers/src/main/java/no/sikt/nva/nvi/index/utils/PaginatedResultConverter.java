@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.index.utils;
 
 import static java.util.Objects.nonNull;
+import static no.sikt.nva.nvi.common.utils.Validator.hasElements;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_AGGREGATION_TYPE;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_AFFILIATIONS;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_ASSIGNEE;
@@ -87,7 +88,7 @@ public final class PaginatedResultConverter {
 
   private static void putAffiliationsIfNotNullOrEmpty(
       Map<String, String> map, String key, List<String> affiliationIdentifiers) {
-    if (nonNull(affiliationIdentifiers) && !affiliationIdentifiers.isEmpty()) {
+    if (hasElements(affiliationIdentifiers)) {
       map.put(key, String.join(COMMA, affiliationIdentifiers));
     }
   }

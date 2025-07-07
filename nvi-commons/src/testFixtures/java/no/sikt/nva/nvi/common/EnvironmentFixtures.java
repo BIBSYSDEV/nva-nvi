@@ -25,11 +25,16 @@ public enum EnvironmentFixtures {
   TOPIC_APPROVAL_REMOVE("APPROVAL_REMOVE_TOPIC"),
 
   // Other handler-specific environment variables
+  ALLOWED_ORIGIN("*"),
   CANDIDATE_QUEUE_URL("http://localhost:3000/candidate-queue"),
+  COGNITO_HOST("not-actually-in-use-but-exists-in-template"),
   DB_EVENTS_QUEUE_URL("http://localhost:3000/db-events-queue"),
-  EXPANDED_RESOURCES_BUCKET("persisted-resources-bucket"),
+  PERSISTED_INDEX_DOCUMENT_QUEUE_URL("http://localhost:3000/index-document-queue"),
+  EXPANDED_RESOURCES_BUCKET("persisted-resources"),
   INDEX_DLQ("http://localhost:3000/index-dlq"),
-  UPSERT_CANDIDATE_DLQ_QUEUE_URL("http://localhost:3000/upsert-candidate-dlq");
+  UPSERT_CANDIDATE_DLQ_QUEUE_URL("http://localhost:3000/upsert-candidate-dlq"),
+  EVENT_BUS_NAME("bus-name"),
+  BATCH_SCAN_RECOVERY_QUEUE("recover-queue");
 
   private final String value;
 
@@ -64,6 +69,25 @@ public enum EnvironmentFixtures {
         .build();
   }
 
+  public static FakeEnvironment getEventBasedBatchScanHandlerEnvironment() {
+    return getDefaultEnvironmentBuilder()
+        .with(EXPANDED_RESOURCES_BUCKET)
+        .with(BATCH_SCAN_RECOVERY_QUEUE)
+        .with(EVENT_BUS_NAME)
+        .build();
+  }
+
+  public static FakeEnvironment getBatchScanRecoveryHandlerEnvironment() {
+    return getDefaultEnvironmentBuilder()
+        .with(EXPANDED_RESOURCES_BUCKET)
+        .with(BATCH_SCAN_RECOVERY_QUEUE)
+        .build();
+  }
+
+  public static FakeEnvironment getCristinNviReportEventConsumerEnvironment() {
+    return getDefaultEnvironmentBuilder().with(EXPANDED_RESOURCES_BUCKET).build();
+  }
+
   public static FakeEnvironment getUpsertNviCandidateHandlerEnvironment() {
     return getDefaultEnvironmentBuilder().with(UPSERT_CANDIDATE_DLQ_QUEUE_URL).build();
   }
@@ -84,5 +108,17 @@ public enum EnvironmentFixtures {
         .with(TOPIC_APPROVAL_UPDATE)
         .with(TOPIC_APPROVAL_REMOVE)
         .build();
+  }
+
+  public static FakeEnvironment getIndexDocumentHandlerEnvironment() {
+    return getDefaultEnvironmentBuilder()
+        .with(EXPANDED_RESOURCES_BUCKET)
+        .with(PERSISTED_INDEX_DOCUMENT_QUEUE_URL)
+        .with(INDEX_DLQ)
+        .build();
+  }
+
+  public static FakeEnvironment getSearchNviCandidatesHandlerEnvironment() {
+    return getDefaultEnvironmentBuilder().with(ALLOWED_ORIGIN).with(COGNITO_HOST).build();
   }
 }

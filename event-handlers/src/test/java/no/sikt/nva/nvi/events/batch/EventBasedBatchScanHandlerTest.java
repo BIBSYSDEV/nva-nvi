@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.events.batch;
 
+import static no.sikt.nva.nvi.common.EnvironmentFixtures.getEventBasedBatchScanHandlerEnvironment;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidateBuilder;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -43,6 +44,7 @@ import no.sikt.nva.nvi.common.db.model.KeyField;
 import no.sikt.nva.nvi.common.model.CandidateFixtures;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
 import no.sikt.nva.nvi.common.model.ListingResult;
+import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.utils.BatchScanUtil;
 import no.sikt.nva.nvi.events.model.ScanDatabaseRequest;
@@ -89,7 +91,10 @@ class EventBasedBatchScanHandlerTest {
     periodRepository = new NviPeriodRepositoryHelper(scenario.getLocalDynamo());
     var batchScanUtil =
         new BatchScanUtil(
-            candidateRepository, scenario.getS3StorageReaderForExpandedResourcesBucket());
+            candidateRepository,
+            scenario.getS3StorageReaderForExpandedResourcesBucket(),
+            new FakeSqsClient(),
+            getEventBasedBatchScanHandlerEnvironment());
     handler = new EventBasedBatchScanHandler(batchScanUtil, eventBridgeClient);
   }
 

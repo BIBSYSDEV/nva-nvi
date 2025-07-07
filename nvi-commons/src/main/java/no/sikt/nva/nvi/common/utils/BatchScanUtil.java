@@ -1,8 +1,11 @@
 package no.sikt.nva.nvi.common.utils;
 
+import static java.util.Collections.emptyList;
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.function.Predicate.not;
 import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
+import static no.sikt.nva.nvi.common.utils.Validator.isMissing;
 import static nva.commons.core.StringUtils.isBlank;
 
 import java.net.URI;
@@ -10,7 +13,10 @@ import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.UUID;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.S3StorageReader;
@@ -22,6 +28,7 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreatorType;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.Dao;
+import no.sikt.nva.nvi.common.db.model.DbOrganization;
 import no.sikt.nva.nvi.common.db.model.DbPointCalculation;
 import no.sikt.nva.nvi.common.db.model.DbPublicationChannel;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDetails;
@@ -29,26 +36,43 @@ import no.sikt.nva.nvi.common.db.model.KeyField;
 import no.sikt.nva.nvi.common.dto.ContributorDto;
 import no.sikt.nva.nvi.common.dto.PublicationDto;
 import no.sikt.nva.nvi.common.model.ListingResult;
+import no.sikt.nva.nvi.common.queue.NviQueueClient;
+import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.common.service.PublicationLoaderService;
 import no.sikt.nva.nvi.common.service.model.PageCount;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+@SuppressWarnings("PMD.CouplingBetweenObjects")
 public class BatchScanUtil {
 
+  private static final String BATCH_SCAN_RECOVERY_QUEUE = "BATCH_SCAN_RECOVERY_QUEUE";
   private final CandidateRepository candidateRepository;
   private final PublicationLoaderService publicationLoader;
+  private final QueueClient queueClient;
+  private final Environment environment;
+  private final Logger logger = LoggerFactory.getLogger(BatchScanUtil.class);
 
-  public BatchScanUtil(CandidateRepository candidateRepository, StorageReader<URI> storageReader) {
+  public BatchScanUtil(
+      CandidateRepository candidateRepository,
+      StorageReader<URI> storageReader,
+      QueueClient queueClient,
+      Environment environment) {
     this.candidateRepository = candidateRepository;
     this.publicationLoader = new PublicationLoaderService(storageReader);
+    this.queueClient = queueClient;
+    this.environment = environment;
   }
 
   @JacocoGenerated
   public static BatchScanUtil defaultNviService() {
     return new BatchScanUtil(
         new CandidateRepository(defaultDynamoClient()),
-        new S3StorageReader(new Environment().readEnv("EXPANDED_RESOURCES_BUCKET")));
+        new S3StorageReader(new Environment().readEnv("EXPANDED_RESOURCES_BUCKET")),
+        new NviQueueClient(),
+        new Environment());
   }
 
   public ListingResult<Dao> migrateAndUpdateVersion(
@@ -57,6 +81,16 @@ public class BatchScanUtil {
     var entries = migrate(scanResult.getDatabaseEntries());
     candidateRepository.writeEntries(entries);
     return scanResult;
+  }
+
+  public void migrateAndUpdateVersion(Collection<UUID> candidateIdentifiers) {
+    var migratedCandidates =
+        candidateIdentifiers.stream()
+            .map(candidateRepository::findCandidateById)
+            .flatMap(Optional::stream)
+            .map(this::migrate)
+            .toList();
+    candidateRepository.writeEntries(migratedCandidates);
   }
 
   /**
@@ -69,40 +103,45 @@ public class BatchScanUtil {
 
   private Dao migrate(Dao databaseEntry) {
     if (databaseEntry instanceof CandidateDao storedCandidate) {
-      return migrateCandidateDao(storedCandidate);
+      return attemptToMigrateCandidate(storedCandidate);
     }
     return databaseEntry;
   }
 
-  private CandidateDao migrateCandidateDao(CandidateDao candidateDao) {
-    // Check which migrations we need to run
-    var dbCandidate = candidateDao.candidate();
-    var shouldMigratePublicationDetails =
-        Optional.ofNullable(dbCandidate.publicationDetails()).isEmpty();
-    var shouldMigrateTopLevelOrganizations =
-        Optional.ofNullable(dbCandidate.publicationDetails())
-            .map(DbPublicationDetails::topLevelNviOrganizations)
-            .filter(not(List::isEmpty))
-            .isEmpty();
+  private Dao attemptToMigrateCandidate(CandidateDao candidateDao) {
+    try {
+      logger.info(
+          "Migrating candidate {} with publication ID {}",
+          candidateDao.identifier(),
+          candidateDao.candidate().publicationIdentifier());
+      return migrateCandidateDao(candidateDao);
+    } catch (Exception e) {
+      logger.error("Unexpected failure during migration", e);
+      logger.error("Sending candidate {} to recovery queue", candidateDao.identifier());
+      queueClient.sendMessage(
+          e.toString(), environment.readEnv(BATCH_SCAN_RECOVERY_QUEUE), candidateDao.identifier());
+      return candidateDao;
+    }
+  }
 
-    // Skip migration if both fields are already populated
-    if (!shouldMigratePublicationDetails && !shouldMigrateTopLevelOrganizations) {
+  private CandidateDao migrateCandidateDao(CandidateDao candidateDao) {
+    var dbCandidate = candidateDao.candidate();
+    var dbPublicationDetails = dbCandidate.publicationDetails();
+    var shouldMigratePublicationDetails = shouldMigratePublicationDetails(dbPublicationDetails);
+
+    if (!shouldMigratePublicationDetails) {
       return candidateDao;
     }
 
-    // Get the parsed publication metadata
+    // Get the parsed publication metadata and add missing data
     var publicationBucketUri = dbCandidate.publicationBucketUri();
     var publication = publicationLoader.extractAndTransform(publicationBucketUri);
+    var updatedCandidate = migratePublicationDetails(dbCandidate, publication);
+    return candidateDao.copy().candidate(updatedCandidate).build();
+  }
 
-    if (shouldMigratePublicationDetails) {
-      dbCandidate = migratePublicationField(dbCandidate, publication);
-    }
-
-    if (shouldMigrateTopLevelOrganizations) {
-      dbCandidate = migrateTopLevelNviOrganizations(dbCandidate, publication);
-    }
-
-    return candidateDao.copy().candidate(dbCandidate).build();
+  private boolean shouldMigratePublicationDetails(DbPublicationDetails publicationDetails) {
+    return isNull(publicationDetails) || publicationDetails.hasNullOrEmptyValues();
   }
 
   /**
@@ -112,10 +151,13 @@ public class BatchScanUtil {
    *     move to the new object).
    */
   @Deprecated(forRemoval = true, since = "2025-04-29")
-  private DbCandidate migratePublicationField(DbCandidate dbCandidate, PublicationDto publication) {
+  private DbCandidate migratePublicationDetails(
+      DbCandidate dbCandidate, PublicationDto publication) {
     // Build the new structure for persisted publication metadata from new and old data
+    var originalDetails = dbCandidate.publicationDetails();
     var dbPointCalculation = getMigratedPointCalculation(dbCandidate);
     var updatedDbCreators = getMigratedCreators(dbCandidate.creators(), publication);
+    var updatedOrganizations = getRelevantTopLevelOrganizations(updatedDbCreators, publication);
 
     var dbPublicationDetails =
         DbPublicationDetails.builder()
@@ -123,16 +165,40 @@ public class BatchScanUtil {
             .id(dbCandidate.publicationId())
             .publicationBucketUri(dbCandidate.publicationBucketUri())
             .publicationDate(dbCandidate.publicationDate())
+            .contributorCount(updatedDbCreators.size())
 
-            // Get other data from the parsed S3 document
-            .creators(updatedDbCreators)
-            .identifier(publication.identifier())
-            .title(publication.title())
-            .status(publication.status())
-            .modifiedDate(publication.modifiedDate())
-            .contributorCount(publication.contributors().size())
-            .abstractText(publication.abstractText())
-            .pages(PageCount.from(publication.pageCount()).toDbPageCount())
+            // Always update these
+            .topLevelNviOrganizations(updatedOrganizations) // Used for access control
+            .creators(updatedDbCreators) // Only adding missing names
+
+            // Update other fields only if missing
+            .identifier(
+                getFieldOrDefault(
+                    originalDetails, DbPublicationDetails::identifier, publication.identifier()))
+            .title(
+                getFieldOrDefault(
+                    originalDetails, DbPublicationDetails::title, publication.title()))
+            .status(
+                getFieldOrDefault(
+                    originalDetails, DbPublicationDetails::status, publication.status()))
+            .modifiedDate(
+                getFieldOrDefault(
+                    originalDetails,
+                    DbPublicationDetails::modifiedDate,
+                    publication.modifiedDate()))
+            .abstractText(
+                getFieldOrDefault(
+                    originalDetails,
+                    DbPublicationDetails::abstractText,
+                    publication.abstractText()))
+            .language(
+                getFieldOrDefault(
+                    originalDetails, DbPublicationDetails::language, publication.language()))
+            .pages(
+                getFieldOrDefault(
+                    originalDetails,
+                    DbPublicationDetails::pages,
+                    PageCount.from(publication.pageCount()).toDbPageCount()))
             .build();
 
     return dbCandidate
@@ -144,55 +210,33 @@ public class BatchScanUtil {
         .build();
   }
 
-  /**
-   * @deprecated Temporary migration code. To be removed when all candidates have been migrated.
-   *     This migration populates the "topLevelOrganizations" field based on:
-   *     <ul>
-   *       <li>The organization hierarchy from parsing the original expanded publication in S3
-   *       <li>The existing affiliations of persisted creators
-   *     </ul>
-   *     It also populates the 'language' field, which was missed in the previous migration.
-   */
-  @Deprecated(forRemoval = true, since = "2025-05-15")
-  private DbCandidate migrateTopLevelNviOrganizations(
-      DbCandidate dbCandidate, PublicationDto publication) {
+  private <T, R> T getFieldOrDefault(R object, Function<R, T> getter, T defaultValue) {
+    return Optional.ofNullable(object).map(getter).filter(Objects::nonNull).orElse(defaultValue);
+  }
+
+  private List<DbOrganization> getRelevantTopLevelOrganizations(
+      Collection<DbCreatorType> creators, PublicationDto publication) {
+    if (isMissing(publication.topLevelOrganizations())) {
+      // All NVI results should have topLevelOrganizations affiliated, but some
+      // imported results are missing data.
+      logger.error(
+          "Missing top level organizations for publication with identifier {}",
+          publication.identifier());
+      return emptyList();
+    }
 
     var currentAffiliations =
-        dbCandidate.creators().stream()
+        creators.stream()
             .map(DbCreatorType::affiliations)
             .flatMap(List::stream)
             .distinct()
             .toList();
 
-    var newTopLevelOrganizations =
-        publication.topLevelOrganizations().stream()
-            .filter(isTopLevelOrganizationOfAny(currentAffiliations))
-            .map(Organization::toDbOrganization)
-            .distinct()
-            .toList();
-
-    var originalDetails = dbCandidate.publicationDetails();
-    var updatedDetails =
-        DbPublicationDetails.builder()
-            // Copy existing data
-            .id(originalDetails.id())
-            .publicationBucketUri(originalDetails.publicationBucketUri())
-            .pages(originalDetails.pages())
-            .publicationDate(originalDetails.publicationDate())
-            .creators(originalDetails.creators())
-            .modifiedDate(originalDetails.modifiedDate())
-            .contributorCount(originalDetails.contributorCount())
-            .abstractText(originalDetails.abstractText())
-            .identifier(originalDetails.identifier())
-            .status(originalDetails.status())
-            .title(originalDetails.title())
-
-            // Add new data from the parsed S3 document
-            .topLevelNviOrganizations(newTopLevelOrganizations)
-            .language(publication.language())
-            .build();
-
-    return dbCandidate.copy().publicationDetails(updatedDetails).build();
+    return publication.topLevelOrganizations().stream()
+        .filter(isTopLevelOrganizationOfAny(currentAffiliations))
+        .map(Organization::toDbOrganization)
+        .distinct()
+        .toList();
   }
 
   private static Predicate<Organization> isTopLevelOrganizationOfAny(Collection<URI> affiliations) {
@@ -224,18 +268,16 @@ public class BatchScanUtil {
             .channelType(dbCandidate.channelType())
             .scientificValue(dbCandidate.level().getValue())
             .build();
-    var dbPointCalculation =
-        DbPointCalculation.builder()
-            .basePoints(dbCandidate.basePoints())
-            .collaborationFactor(dbCandidate.collaborationFactor())
-            .totalPoints(dbCandidate.totalPoints())
-            .publicationChannel(dbPublicationChannel)
-            .institutionPoints(dbCandidate.points())
-            .internationalCollaboration(dbCandidate.internationalCollaboration())
-            .creatorShareCount(dbCandidate.creatorShareCount())
-            .instanceType(dbCandidate.instanceType())
-            .build();
-    return dbPointCalculation;
+    return DbPointCalculation.builder()
+        .basePoints(dbCandidate.basePoints())
+        .collaborationFactor(dbCandidate.collaborationFactor())
+        .totalPoints(dbCandidate.totalPoints())
+        .publicationChannel(dbPublicationChannel)
+        .institutionPoints(dbCandidate.points())
+        .internationalCollaboration(dbCandidate.internationalCollaboration())
+        .creatorShareCount(dbCandidate.creatorShareCount())
+        .instanceType(dbCandidate.instanceType())
+        .build();
   }
 
   /**

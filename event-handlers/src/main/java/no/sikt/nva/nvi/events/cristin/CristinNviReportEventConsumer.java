@@ -1,8 +1,8 @@
 package no.sikt.nva.nvi.events.cristin;
 
 import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
-import static no.sikt.nva.nvi.events.cristin.CristinMapper.API_HOST;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
+import static nva.commons.core.StringUtils.isNotBlank;
 import static nva.commons.core.attempt.Try.attempt;
 
 import com.amazonaws.services.lambda.runtime.Context;
@@ -13,18 +13,23 @@ import com.fasterxml.jackson.databind.MappingIterator;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
 import java.io.StringReader;
-import java.net.URI;
 import java.nio.file.Path;
 import java.util.List;
+import no.sikt.nva.nvi.common.S3StorageReader;
+import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
+import no.sikt.nva.nvi.common.dto.PublicationDto;
+import no.sikt.nva.nvi.common.service.PublicationLoaderService;
 import no.unit.nva.events.models.EventReference;
 import no.unit.nva.s3.S3Driver;
+import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.ioutils.IoUtils;
-import nva.commons.core.paths.UriWrapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.s3.S3Client;
 
 public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, Void> {
@@ -34,35 +39,78 @@ public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, V
   public static final String CRISTIN_DEPARTMENT_TRANSFERS = "cristin_transfer_departments.csv";
   public static final String CRISTIN_DEPARTMENT_TRANSFERS_STRING =
       IoUtils.stringFromResources(Path.of(CRISTIN_DEPARTMENT_TRANSFERS));
-  protected static final String PUBLICATION = "publication";
+  private static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
   private final CandidateRepository repository;
   private final S3Client s3Client;
   private final CristinMapper cristinMapper;
+  private final PublicationLoaderService publicationLoader;
+  private final Logger logger = LoggerFactory.getLogger(CristinNviReportEventConsumer.class);
 
   @JacocoGenerated
   public CristinNviReportEventConsumer() {
-    this.repository = new CandidateRepository(defaultDynamoClient());
-    this.s3Client = S3Driver.defaultS3Client().build();
-    this.cristinMapper = CristinMapper.withDepartmentTransfers(readCristinDepartments());
+    this(
+        new CandidateRepository(defaultDynamoClient()),
+        S3Driver.defaultS3Client().build(),
+        new Environment());
   }
 
-  public CristinNviReportEventConsumer(CandidateRepository candidateRepository, S3Client s3Client) {
+  public CristinNviReportEventConsumer(
+      CandidateRepository candidateRepository, S3Client s3Client, Environment environment) {
     this.repository = candidateRepository;
     this.s3Client = s3Client;
-    this.cristinMapper = CristinMapper.withDepartmentTransfers(readCristinDepartments());
+    this.cristinMapper =
+        CristinMapper.withDepartmentTransfers(readCristinDepartments(), environment);
+    this.publicationLoader =
+        new PublicationLoaderService(
+            new S3StorageReader(s3Client, environment.readEnv(EXPANDED_RESOURCES_BUCKET)));
   }
 
   @Override
   public Void handleRequest(SQSEvent sqsEvent, Context context) {
-
+    logger.info("Received {} messages from SQS", sqsEvent.getRecords().size());
     sqsEvent.getRecords().stream().map(SQSMessage::getBody).forEach(this::processMessageBody);
-
+    logger.info("Finished processing messages from SQS");
     return null;
   }
 
   private DbCandidate createDbCandidate(CristinNviReport cristinNviReport) {
-    return attempt(() -> cristinMapper.toDbCandidate(cristinNviReport))
-        .orElseThrow(CristinConversionException::fromFailure);
+    var historicalCandidate =
+        attempt(() -> cristinMapper.toDbCandidate(cristinNviReport))
+            .orElseThrow(CristinConversionException::fromFailure);
+    var publication =
+        publicationLoader.extractAndTransform(historicalCandidate.publicationBucketUri());
+    return createUpdatedDbCandidate(historicalCandidate, publication);
+  }
+
+  /**
+   * This uses the current version of the publication to add data missing from the imported result.
+   *
+   * @param historicalCandidate DbCandidate object based entirely on imported data (as reported)
+   * @param publication PublicationDto based on current version of persisted publication
+   * @return A DbCandidate with all required fields set
+   */
+  private DbCandidate createUpdatedDbCandidate(
+      DbCandidate historicalCandidate, PublicationDto publication) {
+    var historicalDetails = historicalCandidate.publicationDetails();
+
+    var currentTopLevelOrganizations =
+        publication.topLevelOrganizations().stream().map(Organization::toDbOrganization).toList();
+    var updatedPublicationDetails =
+        historicalDetails
+            .copy()
+            .abstractText(
+                firstValidValue(historicalDetails.abstractText(), publication.abstractText()))
+            .title(firstValidValue(historicalDetails.title(), publication.title()))
+            .language(firstValidValue(historicalDetails.language(), publication.language()))
+            .status(firstValidValue(historicalDetails.status(), publication.status()))
+            .identifier(firstValidValue(historicalDetails.identifier(), publication.identifier()))
+            .topLevelNviOrganizations(currentTopLevelOrganizations)
+            .build();
+    return historicalCandidate.copy().publicationDetails(updatedPublicationDetails).build();
+  }
+
+  private String firstValidValue(String originalValue, String updatedValue) {
+    return isNotBlank(originalValue) ? originalValue : updatedValue;
   }
 
   private List<DbApprovalStatus> createApprovals(CristinNviReport cristinNviReport) {
@@ -83,9 +131,10 @@ public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, V
   private CandidateDao processBody(String value) {
     var eventReference = EventReference.fromJson(value);
     var cristinNviReport = createNviReport(eventReference);
+    var publicationId = cristinMapper.constructPublicationId(cristinNviReport);
     try {
       return repository
-          .findByPublicationId(createPublicationId(cristinNviReport.publicationIdentifier()))
+          .findByPublicationId(publicationId)
           .orElseGet(() -> createAndPersist(cristinNviReport));
     } catch (Exception e) {
       ErrorReport.withMessage(e.getMessage())
@@ -112,22 +161,27 @@ public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, V
   }
 
   private CandidateDao createAndPersist(CristinNviReport cristinNviReport) {
+    logger.info(
+        "Processing CristinNviReport with publication identifier: {}",
+        cristinNviReport.publicationIdentifier());
     var approvals = createApprovals(cristinNviReport);
     var candidate = createDbCandidate(cristinNviReport);
     var yearReported = cristinNviReport.getYearReportedFromHistoricalData();
     if (yearReported.isEmpty()) {
       throw new IllegalArgumentException(MISSING_REPORTED_YEAR_MESSAGE);
     } else {
+      logger.info(
+          "Persisting imported NVI result with identifier: {}",
+          cristinNviReport.publicationIdentifier());
       return repository.create(candidate, approvals, yearReported.get());
     }
   }
 
   /**
-   * Reads the CSV file containing mappings of transferred department identifiers.
-   * The CSV file is used to map creators' affiliations to their corresponding
-   * institutions in cases where the department has been transferred from one
-   * institution to another. This ensures that institution points are correctly
-   * calculated based on the updated affiliations.
+   * Reads the CSV file containing mappings of transferred department identifiers. The CSV file is
+   * used to map creators' affiliations to their corresponding institutions in cases where the
+   * department has been transferred from one institution to another. This ensures that institution
+   * points are correctly calculated based on the updated affiliations.
    */
   private List<CristinDepartmentTransfer> readCristinDepartments() {
     try (StringReader reader = new StringReader(CRISTIN_DEPARTMENT_TRANSFERS_STRING)) {
@@ -140,12 +194,5 @@ public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, V
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
-  }
-
-  public static URI createPublicationId(String publicationIdentifier) {
-    return UriWrapper.fromHost(API_HOST)
-        .addChild(PUBLICATION)
-        .addChild(publicationIdentifier)
-        .getUri();
   }
 }

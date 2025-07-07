@@ -1,6 +1,8 @@
 package no.sikt.nva.nvi.common.utils;
 
 import static java.util.Collections.emptyList;
+import static no.sikt.nva.nvi.common.EnvironmentFixtures.BATCH_SCAN_RECOVERY_QUEUE;
+import static no.sikt.nva.nvi.common.EnvironmentFixtures.getEventBasedBatchScanHandlerEnvironment;
 import static no.sikt.nva.nvi.common.SampleExpandedPublicationFactory.defaultExpandedPublicationFactory;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.createNumberOfCandidatesForYear;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.getYearIndexStartMarker;
@@ -27,6 +29,8 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.time.Instant;
@@ -34,13 +38,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.IntStream;
 import no.sikt.nva.nvi.common.SampleExpandedPublicationFactory;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
+import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails;
 import no.sikt.nva.nvi.test.SampleExpandedPublication;
@@ -57,21 +61,25 @@ class BatchScanUtilTest {
   private BatchScanUtil batchScanUtil;
   private CandidateRepository candidateRepository;
   private TestScenario scenario;
+  private FakeSqsClient queueClient;
 
   @BeforeEach
   void setup() {
     scenario = new TestScenario();
     candidateRepository = scenario.getCandidateRepository();
 
+    queueClient = new FakeSqsClient();
     batchScanUtil =
         new BatchScanUtil(
             scenario.getCandidateRepository(),
-            scenario.getS3StorageReaderForExpandedResourcesBucket());
+            scenario.getS3StorageReaderForExpandedResourcesBucket(),
+            queueClient,
+            getEventBasedBatchScanHandlerEnvironment());
   }
 
   @Test
   void shouldReturnTrueWhenThereAreMoreItemsToScan() {
-    IntStream.range(0, 3).forEach(i -> candidateRepository.create(randomCandidate(), List.of()));
+    createNumberOfCandidatesForYear(randomYear(), 2, scenario);
 
     var result = batchScanUtil.migrateAndUpdateVersion(1, null, emptyList());
     assertThat(result.shouldContinueScan(), is(equalTo(true)));
@@ -79,7 +87,7 @@ class BatchScanUtilTest {
 
   @Test
   void shouldWriteVersionOnRefreshWithStartMarker() {
-    IntStream.range(0, 2).forEach(i -> candidateRepository.create(randomCandidate(), List.of()));
+    createNumberOfCandidatesForYear(randomYear(), 2, scenario);
     var candidates = getCandidatesInOrder();
     var originalRows = getCandidates(candidates);
     batchScanUtil.migrateAndUpdateVersion(
@@ -108,7 +116,7 @@ class BatchScanUtilTest {
   @Test
   void shouldFetchCandidatesByGivenYearAndStartMarker() {
     var year = randomYear();
-    var candidates = createNumberOfCandidatesForYear(year, 2, candidateRepository);
+    var candidates = createNumberOfCandidatesForYear(year, 2, scenario);
     var expectedCandidates = sortByIdentifier(candidates, null);
     var firstCandidateInIndex = expectedCandidates.get(0);
     var secondCandidateInIndex = expectedCandidates.get(1);
@@ -125,8 +133,8 @@ class BatchScanUtilTest {
   @Test
   void shouldFetchCandidatesByGivenYearAndPageSize() {
     var searchYear = "2023";
-    var candidates = createNumberOfCandidatesForYear(searchYear, 10, candidateRepository);
-    createNumberOfCandidatesForYear("2022", 10, candidateRepository);
+    var candidates = createNumberOfCandidatesForYear(searchYear, 10, scenario);
+    createNumberOfCandidatesForYear("2022", 10, scenario);
     int pageSize = 5;
     var expectedCandidates = sortByIdentifier(candidates, pageSize);
     var results =
@@ -142,7 +150,7 @@ class BatchScanUtilTest {
   void shouldFetchCandidatesByGivenYearWithDefaultPageSizeAndStartMarkerIfNotSet() {
     var year = randomYear();
     int numberOfCandidates = DEFAULT_PAGE_SIZE + randomIntBetween(1, 10);
-    var candidates = createNumberOfCandidatesForYear(year, numberOfCandidates, candidateRepository);
+    var candidates = createNumberOfCandidatesForYear(year, numberOfCandidates, scenario);
     var expectedCandidates = sortByIdentifier(candidates, DEFAULT_PAGE_SIZE);
     var results = batchScanUtil.fetchCandidatesByYear(year, true, null, null).getDatabaseEntries();
     assertThat(results.size(), is(equalTo(DEFAULT_PAGE_SIZE)));
@@ -155,7 +163,7 @@ class BatchScanUtilTest {
   @Test
   void shouldNotFetchReportedCandidatesWhenIncludeReportedCandidatesIsFalse() {
     var year = randomYear();
-    var candidates = createNumberOfCandidatesForYear(year, 2, candidateRepository);
+    var candidates = createNumberOfCandidatesForYear(year, 2, scenario);
     var reportedCandidate = setupReportedCandidate(candidateRepository, year);
     var expectedCandidates = sortByIdentifier(candidates, null);
     var results = batchScanUtil.fetchCandidatesByYear(year, false, null, null).getDatabaseEntries();
@@ -203,7 +211,8 @@ class BatchScanUtilTest {
     var originalCreator = new DbCreator(originalCreatorDto.id(), null, List.of(organization.id()));
 
     var publicationBuilder =
-        new SampleExpandedPublicationFactory(scenario).withTopLevelOrganizations(organization);
+        new SampleExpandedPublicationFactory(scenario)
+            .withTopLevelOrganizations(List.of(organization));
     var publication = publicationBuilder.getExpandedPublication();
 
     var originalDbCandidate =
@@ -309,10 +318,13 @@ class BatchScanUtilTest {
     var verifiedCreator = verifiedNviCreatorFrom(nviOrganization1);
     var expectedNviCreators = List.of(verifiedCreator);
     var expectedTopLevelOrganizations = List.of(nviOrganization1);
+    var expectedModifiedDate = Instant.now();
     var publication =
         publicationBuilder
             .withContributor(mapToContributorDto(verifiedCreator))
-            .getExpandedPublication();
+            .getExpandedPublicationBuilder()
+            .withModifiedDate(expectedModifiedDate.toString())
+            .build();
 
     // Set up an existing Candidate in the database with identifiers matching the publication
     var dbCreators = mapToDbCreators(expectedNviCreators);
@@ -321,7 +333,7 @@ class BatchScanUtilTest {
             .topLevelNviOrganizations(null)
             .abstractText(randomString())
             .contributorCount(randomInteger())
-            .modifiedDate(Instant.now())
+            .modifiedDate(expectedModifiedDate)
             .creators(dbCreators)
             .build();
     var originalDbCandidate =
@@ -345,14 +357,55 @@ class BatchScanUtilTest {
             PublicationDetails::topLevelOrganizations,
             PublicationDetails::nviCreators,
             PublicationDetails::abstractText,
-            PublicationDetails::creatorCount,
             PublicationDetails::modifiedDate)
         .containsExactly(
             expectedTopLevelOrganizations,
             expectedNviCreators,
             dbPublicationDetails.abstractText(),
-            dbPublicationDetails.contributorCount(),
             dbPublicationDetails.modifiedDate());
+  }
+
+  @Test
+  void shouldNotFailForWholeBatchWhenSingleRecordFails() {
+    createNumberOfCandidatesForYear(randomYear(), 2, scenario);
+
+    var details =
+        randomPublicationBuilder(randomUri())
+            .topLevelNviOrganizations(null)
+            .abstractText(randomString())
+            .contributorCount(randomInteger())
+            .modifiedDate(Instant.now())
+            .creators(List.of())
+            .build();
+    var candidate = randomCandidateBuilder(randomUri(), details).build();
+    candidateRepository.create(candidate, emptyList());
+
+    assertDoesNotThrow(() -> batchScanUtil.migrateAndUpdateVersion(3, null, emptyList()));
+  }
+
+  @Test
+  void shouldSendFailingRecordToRecoveryQueue() {
+    createNumberOfCandidatesForYear(randomYear(), 2, scenario);
+
+    var details =
+        randomPublicationBuilder(randomUri())
+            .topLevelNviOrganizations(null)
+            .abstractText(randomString())
+            .contributorCount(randomInteger())
+            .modifiedDate(Instant.now())
+            .creators(List.of())
+            .build();
+    var candidateFailingUnderBatchScan = randomCandidateBuilder(randomUri(), details).build();
+    var candidate = candidateRepository.create(candidateFailingUnderBatchScan, emptyList());
+
+    batchScanUtil.migrateAndUpdateVersion(10, null, emptyList());
+
+    var sqsMessage =
+        queueClient.getAllSentSqsEvents(BATCH_SCAN_RECOVERY_QUEUE.getValue()).getFirst();
+
+    assertEquals(
+        candidate.identifier().toString(),
+        sqsMessage.getMessageAttributes().get("candidateIdentifier").getStringValue());
   }
 
   private static Map<String, String> getStartMarker(CandidateDao dao) {

@@ -28,7 +28,6 @@ import java.util.List;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
-import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.model.ListingResult;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import no.sikt.nva.nvi.common.utils.BatchScanUtil;
@@ -52,22 +51,23 @@ class ReEvaluateNviCandidatesHandlerTest {
   private static final String OUTPUT_TOPIC = environment.readEnv("TOPIC_REEVALUATE_CANDIDATES");
   private static final int BATCH_SIZE = 10;
   private final Context context = mock(Context.class);
+  private TestScenario scenario;
   private ByteArrayOutputStream outputStream;
   private ReEvaluateNviCandidatesHandler handler;
   private FakeSqsClient sqsClient;
-  private CandidateRepository candidateRepository;
   private FakeEventBridgeClient eventBridgeClient;
 
   @BeforeEach
   void setUp() {
-    var scenario = new TestScenario();
+    scenario = new TestScenario();
     outputStream = new ByteArrayOutputStream();
     sqsClient = new FakeSqsClient();
-    candidateRepository = scenario.getCandidateRepository();
     var nviService =
         new BatchScanUtil(
             scenario.getCandidateRepository(),
-            scenario.getS3StorageReaderForExpandedResourcesBucket());
+            scenario.getS3StorageReaderForExpandedResourcesBucket(),
+            new FakeSqsClient(),
+            environment);
     this.eventBridgeClient = new FakeEventBridgeClient();
     handler =
         new ReEvaluateNviCandidatesHandler(nviService, sqsClient, environment, eventBridgeClient);
@@ -98,7 +98,7 @@ class ReEvaluateNviCandidatesHandlerTest {
   @Test
   void shouldNotSendMessagesForReportedCandidates() {
     var year = randomYear();
-    setupReportedCandidate(candidateRepository, year);
+    setupReportedCandidate(scenario.getCandidateRepository(), year);
     handler.handleRequest(eventStream(createRequest(year)), outputStream, context);
     var sentBatches = sqsClient.getSentBatches();
     assertEquals(0, sentBatches.size());
@@ -108,7 +108,7 @@ class ReEvaluateNviCandidatesHandlerTest {
   void shouldSendMessageBatchWithSize10() {
     var numberOfCandidates = 11;
     var year = randomYear();
-    createNumberOfCandidatesForYear(year, numberOfCandidates, candidateRepository);
+    createNumberOfCandidatesForYear(year, numberOfCandidates, scenario);
     handler.handleRequest(eventStream(createRequest(year)), outputStream, context);
     var sentBatches = sqsClient.getSentBatches();
     var expectedBatches = 2;
@@ -122,8 +122,8 @@ class ReEvaluateNviCandidatesHandlerTest {
   @Test
   void shouldSendMessagesForCandidatesPublishedInGivenYear() {
     var year = "2023";
-    var candidates = createNumberOfCandidatesForYear(year, 10, candidateRepository);
-    createNumberOfCandidatesForYear("2022", 10, candidateRepository);
+    var candidates = createNumberOfCandidatesForYear(year, 10, scenario);
+    createNumberOfCandidatesForYear("2022", 10, scenario);
     handler.handleRequest(eventStream(createRequest(year)), outputStream, context);
     var batch = sqsClient.getSentBatches().get(0);
     var expectedCandidates =
@@ -155,7 +155,7 @@ class ReEvaluateNviCandidatesHandlerTest {
     var numberOfCandidates = 10;
     var pageSize = 5;
     var year = randomYear();
-    var candidates = createNumberOfCandidatesForYear(year, numberOfCandidates, candidateRepository);
+    var candidates = createNumberOfCandidatesForYear(year, numberOfCandidates, scenario);
     handler.handleRequest(eventStream(createRequest(year, pageSize)), outputStream, context);
     var expectedStartMarker =
         getYearIndexStartMarker(sortByIdentifier(candidates, numberOfCandidates).get(pageSize - 1));
@@ -170,7 +170,7 @@ class ReEvaluateNviCandidatesHandlerTest {
     var numberOfCandidates = 9;
     var pageSize = 10;
     var year = randomYear();
-    createNumberOfCandidatesForYear(year, numberOfCandidates, candidateRepository);
+    createNumberOfCandidatesForYear(year, numberOfCandidates, scenario);
     handler.handleRequest(eventStream(createRequest(year, pageSize)), outputStream, context);
     var emittedEvents = eventBridgeClient.getRequestEntries();
     assertEquals(0, emittedEvents.size());
