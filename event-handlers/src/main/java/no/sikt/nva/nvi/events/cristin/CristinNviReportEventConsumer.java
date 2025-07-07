@@ -1,6 +1,8 @@
 package no.sikt.nva.nvi.events.cristin;
 
+import static java.util.Collections.emptyList;
 import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
+import static no.sikt.nva.nvi.common.utils.Validator.isMissing;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.StringUtils.isNotBlank;
 import static nva.commons.core.attempt.Try.attempt;
@@ -21,6 +23,7 @@ import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
+import no.sikt.nva.nvi.common.db.model.DbOrganization;
 import no.sikt.nva.nvi.common.dto.PublicationDto;
 import no.sikt.nva.nvi.common.service.PublicationLoaderService;
 import no.unit.nva.events.models.EventReference;
@@ -93,8 +96,7 @@ public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, V
       DbCandidate historicalCandidate, PublicationDto publication) {
     var historicalDetails = historicalCandidate.publicationDetails();
 
-    var currentTopLevelOrganizations =
-        publication.topLevelOrganizations().stream().map(Organization::toDbOrganization).toList();
+    var currentTopLevelOrganizations = getCurrentTopLevelOrganizations(publication);
     var updatedPublicationDetails =
         historicalDetails
             .copy()
@@ -107,6 +109,20 @@ public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, V
             .topLevelNviOrganizations(currentTopLevelOrganizations)
             .build();
     return historicalCandidate.copy().publicationDetails(updatedPublicationDetails).build();
+  }
+
+  private List<DbOrganization> getCurrentTopLevelOrganizations(PublicationDto publication) {
+    return isMissing(publication.topLevelOrganizations())
+        ? createEmptyListForImportedResultsThatLackData(publication)
+        : publication.topLevelOrganizations().stream().map(Organization::toDbOrganization).toList();
+  }
+
+  private List<DbOrganization> createEmptyListForImportedResultsThatLackData(
+      PublicationDto publication) {
+    logger.error(
+        "Missing top level organizations for publication with identifier {}",
+        publication.identifier());
+    return emptyList();
   }
 
   private String firstValidValue(String originalValue, String updatedValue) {
