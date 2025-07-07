@@ -57,6 +57,7 @@ import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 import org.opensearch.client.opensearch._types.query_dsl.TextQueryType;
 
 public record CandidateQuery(
+    ApprovalQuery approvalQuery,
     List<String> affiliations,
     boolean excludeSubUnits,
     QueryFilterType filter,
@@ -66,9 +67,6 @@ public record CandidateQuery(
     String year,
     String category,
     String title,
-    String assignee,
-    boolean excludeUnassigned,
-    Set<ApprovalStatus> statuses,
     Set<GlobalApprovalStatus> globalStatuses) {
 
   public Query toQuery() {
@@ -144,18 +142,16 @@ public record CandidateQuery(
     var yearQuery = createYearQuery(year);
     var categoryQuery = createCategoryQuery(category);
     var titleQuery = createTitleQuery(title);
-    var approvalQuery =
-        new ApprovalQuery(topLevelCristinOrg, assignee, excludeUnassigned, statuses).toQuery();
     var globalStatusQuery = createGlobalStatusQuery();
 
     return Stream.of(
+            approvalQuery.toQuery(),
             searchTermQuery,
             institutionQuery,
             filterQuery,
             yearQuery,
             categoryQuery,
             titleQuery,
-            approvalQuery,
             globalStatusQuery)
         .filter(Optional::isPresent)
         .map(Optional::get)
@@ -373,7 +369,9 @@ public record CandidateQuery(
     }
 
     public CandidateQuery build() {
+
       return new CandidateQuery(
+          new ApprovalQuery(topLevelCristinOrg, assignee, excludeUnassigned, statuses),
           affiliationIdentifiers,
           excludeSubUnits,
           filter,
@@ -383,9 +381,6 @@ public record CandidateQuery(
           year,
           category,
           title,
-          assignee,
-          excludeUnassigned,
-          statuses,
           globalStatuses);
     }
   }
