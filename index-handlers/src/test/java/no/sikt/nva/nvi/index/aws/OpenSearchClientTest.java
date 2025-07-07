@@ -65,7 +65,7 @@ import no.sikt.nva.nvi.index.model.document.ReportingPeriod;
 import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
 import no.sikt.nva.nvi.index.model.search.OrderByFields;
 import no.sikt.nva.nvi.index.model.search.SearchResultParameters;
-import no.sikt.nva.nvi.index.query.CandidateQuery.QueryFilterType;
+import no.sikt.nva.nvi.index.query.QueryFilterType;
 import no.sikt.nva.nvi.index.query.SearchAggregation;
 import nva.commons.core.ioutils.IoUtils;
 import nva.commons.core.paths.UriWrapper;
