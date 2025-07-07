@@ -1,9 +1,10 @@
 package no.sikt.nva.nvi.index.query;
 
+import static java.util.Collections.emptyList;
+import static java.util.Collections.emptySet;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.jsonPathOf;
-import static no.sikt.nva.nvi.common.utils.Validator.hasElements;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.APPROVED;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.NEW;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.PENDING;
@@ -248,11 +249,9 @@ public class CandidateQuery {
   }
 
   private Optional<Query> createGlobalStatusQuery() {
-    if (hasElements(globalStatuses)) {
-      var statusQueries = globalStatuses.stream().map(QueryFunctions::globalStatusQuery).toList();
-      return Optional.of(matchAtLeastOne(statusQueries.toArray(Query[]::new)));
-    }
-    return Optional.empty();
+    return globalStatuses.stream()
+        .map(QueryFunctions::globalStatusQuery)
+        .reduce(QueryFunctions::matchAtLeastOne);
   }
 
   public enum QueryFilterType {
@@ -289,7 +288,7 @@ public class CandidateQuery {
 
   public static class Builder {
 
-    private List<String> affiliationIdentifiers;
+    private List<String> affiliationIdentifiers = emptyList();
     private boolean excludeSubUnits;
     private QueryFilterType filter;
     private String username;
@@ -300,8 +299,8 @@ public class CandidateQuery {
     private String title;
     private String assignee;
     private boolean excludeUnassigned;
-    private Set<ApprovalStatus> statuses;
-    private Set<GlobalApprovalStatus> globalStatuses;
+    private Set<ApprovalStatus> statuses = emptySet();
+    private Set<GlobalApprovalStatus> globalStatuses = emptySet();
 
     public Builder() {
       // No-args constructor.

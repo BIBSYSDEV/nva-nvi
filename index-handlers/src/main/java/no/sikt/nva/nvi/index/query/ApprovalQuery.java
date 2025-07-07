@@ -2,7 +2,6 @@ package no.sikt.nva.nvi.index.query;
 
 import static java.util.Collections.emptyList;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.jsonPathOf;
-import static no.sikt.nva.nvi.common.utils.Validator.hasElements;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.APPROVED;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.NEW;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.PENDING;
@@ -24,6 +23,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
+import no.sikt.nva.nvi.index.utils.QueryFunctions;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 
@@ -54,13 +54,10 @@ public record ApprovalQuery(
   }
 
   private Optional<Query> statusQuery() {
-    if (hasElements(allowedStatuses)) {
-      var statusQueries =
-          allowedStatuses.stream().flatMap(status -> toStatusQuery(status).stream()).toList();
-
-      return Optional.of(matchAtLeastOne(statusQueries.toArray(Query[]::new)));
-    }
-    return Optional.empty();
+    return allowedStatuses.stream()
+        .map(ApprovalQuery::toStatusQuery)
+        .flatMap(List::stream)
+        .reduce(QueryFunctions::matchAtLeastOne);
   }
 
   private static List<Query> toStatusQuery(ApprovalStatus status) {
