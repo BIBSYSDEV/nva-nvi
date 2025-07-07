@@ -56,37 +56,20 @@ import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 import org.opensearch.client.opensearch._types.query_dsl.TextQueryType;
 
-public class CandidateQuery {
-
-  private final List<String> affiliations;
-  private final boolean excludeSubUnits;
-  private final QueryFilterType filter;
-  private final String username;
-  private final String topLevelCristinOrg;
-  private final String searchTerm;
-  private final String year;
-  private final String category;
-  private final String title;
-  private final String assignee;
-  private final boolean excludeUnassigned;
-  private final Set<ApprovalStatus> statuses;
-  private final Set<GlobalApprovalStatus> globalStatuses;
-
-  public CandidateQuery(CandidateQueryParameters params) {
-    this.searchTerm = params.searchTerm;
-    this.affiliations = params.affiliationIdentifiers;
-    this.excludeSubUnits = params.excludeSubUnits;
-    this.filter = params.filter;
-    this.username = params.username;
-    this.topLevelCristinOrg = params.topLevelCristinOrg;
-    this.year = params.year;
-    this.category = params.category;
-    this.title = params.title;
-    this.assignee = params.assignee;
-    this.excludeUnassigned = params.excludeUnassigned;
-    this.statuses = params.statuses;
-    this.globalStatuses = params.globalStatuses;
-  }
+public record CandidateQuery(
+    List<String> affiliations,
+    boolean excludeSubUnits,
+    QueryFilterType filter,
+    String username,
+    String topLevelCristinOrg,
+    String searchTerm,
+    String year,
+    String category,
+    String title,
+    String assignee,
+    boolean excludeUnassigned,
+    Set<ApprovalStatus> statuses,
+    Set<GlobalApprovalStatus> globalStatuses) {
 
   public Query toQuery() {
     return mustMatch(specificMatch().toArray(Query[]::new));
@@ -390,41 +373,20 @@ public class CandidateQuery {
     }
 
     public CandidateQuery build() {
-      CandidateQueryParameters params = new CandidateQueryParameters();
-
-      params.searchTerm = this.searchTerm;
-      params.affiliationIdentifiers = this.affiliationIdentifiers;
-      params.excludeSubUnits = this.excludeSubUnits;
-      params.filter = this.filter;
-      params.username = this.username;
-      params.topLevelCristinOrg = this.topLevelCristinOrg;
-      params.year = this.year;
-      params.category = this.category;
-      params.title = this.title;
-      params.assignee = this.assignee;
-      params.excludeUnassigned = this.excludeUnassigned;
-      params.statuses = this.statuses;
-      params.globalStatuses = this.globalStatuses;
-
-      return new CandidateQuery(params);
+      return new CandidateQuery(
+          affiliationIdentifiers,
+          excludeSubUnits,
+          filter,
+          username,
+          topLevelCristinOrg,
+          searchTerm,
+          year,
+          category,
+          title,
+          assignee,
+          excludeUnassigned,
+          statuses,
+          globalStatuses);
     }
-  }
-
-  public static class CandidateQueryParameters {
-
-    public String searchTerm;
-    public List<String> affiliationIdentifiers;
-    public boolean excludeSubUnits;
-    public QueryFilterType filter;
-    public String username;
-    public String topLevelCristinOrg;
-    public String year;
-    public String category;
-    public String title;
-    public String contributor;
-    public String assignee;
-    public boolean excludeUnassigned;
-    public Set<ApprovalStatus> statuses;
-    public Set<GlobalApprovalStatus> globalStatuses;
   }
 }
