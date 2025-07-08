@@ -46,6 +46,14 @@ public record ApprovalQuery(
                 mustMatch(subQueries.toArray(Query[]::new)))));
   }
 
+  public static Query approvalBelongsTo(String organization) {
+    return fieldValueQuery(jsonPathOf(APPROVALS, INSTITUTION_ID), organization);
+  }
+
+  public static Query approvalStatusIs(ApprovalStatus approvalStatus) {
+    return fieldValueQuery(jsonPathOf(APPROVALS, APPROVAL_STATUS), approvalStatus.getValue());
+  }
+
   private List<Query> getSubQueries() {
     return Stream.of(assigneeQuery(), excludeUnassignedQuery(), statusQuery())
         .filter(Optional::isPresent)
@@ -84,13 +92,6 @@ public record ApprovalQuery(
     return Optional.of(mustNotMatch(approvalIsUnassigned()));
   }
 
-  private static Query approvalBelongsTo(String organization) {
-    return QueryBuilders.bool()
-        .must(fieldValueQuery(jsonPathOf(APPROVALS, INSTITUTION_ID), organization))
-        .build()
-        .toQuery();
-  }
-
   private static Query approvalIsAssignedTo(String username) {
     return QueryBuilders.matchPhrase()
         .field(jsonPathOf(APPROVALS, ASSIGNEE))
@@ -102,13 +103,6 @@ public record ApprovalQuery(
   private static Query approvalIsUnassigned() {
     return QueryBuilders.bool()
         .mustNot(existsQuery(jsonPathOf(APPROVALS, ASSIGNEE)))
-        .build()
-        .toQuery();
-  }
-
-  private static Query approvalStatusIs(ApprovalStatus approvalStatus) {
-    return QueryBuilders.bool()
-        .must(fieldValueQuery(jsonPathOf(APPROVALS, APPROVAL_STATUS), approvalStatus.getValue()))
         .build()
         .toQuery();
   }
