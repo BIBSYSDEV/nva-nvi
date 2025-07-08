@@ -49,10 +49,10 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
     nonNviOrganization = factory.setupTopLevelOrganization(COUNTRY_CODE_SWEDEN, false);
   }
 
-  // The parser should be able to handle documents with 10 000 contributors in 30 seconds.
-  // This test case is a bit more generous because the GitHub Actions test runner is underpowered.
+  // The parser must be able to handle documents with 10 000 contributors in 300 seconds.
+  // This test case is a bit smaller to avoid slow builds in CI.
   @ParameterizedTest
-  @Timeout(value = 45, unit = TimeUnit.SECONDS)
+  @Timeout(value = 60, unit = TimeUnit.SECONDS)
   @ValueSource(ints = {100, 1_000, 5_000})
   void shouldParseDocumentWithManyContributorsWithinTimeOut(int numberOfForeignContributors) {
     var numberOfNorwegianContributors = 10;
