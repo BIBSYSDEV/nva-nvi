@@ -87,7 +87,7 @@ public final class Aggregations {
   public static Aggregation totalCountAggregation(String topLevelCristinOrg) {
     final var fieldValueQuery = approvalInstitutionIdQuery(topLevelCristinOrg);
     final var query = mustMatch(fieldValueQuery);
-    return filterAggregation(mustMatch(nestedQuery(APPROVALS, query)));
+    return filterAggregation(nestedQuery(APPROVALS, query));
   }
 
   public static Aggregation statusAggregation(String topLevelCristinOrg, ApprovalStatus status) {
@@ -102,11 +102,11 @@ public final class Aggregations {
           mustNotMatch(NEW.getValue(), APPROVAL_STATUS_PATH)
         };
     var notPendingQuery = nestedQuery(APPROVALS, mustMatch(queries));
-    return filterAggregation(mustMatch(notPendingQuery));
+    return filterAggregation(notPendingQuery);
   }
 
   public static Aggregation assignmentsAggregation(String username, String topLevelCristinOrg) {
-    return filterAggregation(mustMatch(assignmentsQuery(username, topLevelCristinOrg)));
+    return filterAggregation(assignmentsQuery(username, topLevelCristinOrg));
   }
 
   public static Aggregation finalizedCollaborationAggregation(
