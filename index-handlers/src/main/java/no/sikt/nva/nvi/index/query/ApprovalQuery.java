@@ -41,9 +41,8 @@ public record ApprovalQuery(
     return Optional.of(
         nestedQuery(
             APPROVALS,
-            mustMatch(
-                approvalBelongsTo(topLevelOrganization),
-                mustMatch(subQueries.toArray(Query[]::new)))));
+            approvalBelongsTo(topLevelOrganization),
+            mustMatch(subQueries.toArray(Query[]::new))));
   }
 
   public static Query approvalBelongsTo(String organization) {
@@ -101,9 +100,6 @@ public record ApprovalQuery(
   }
 
   private static Query approvalIsUnassigned() {
-    return QueryBuilders.bool()
-        .mustNot(existsQuery(jsonPathOf(APPROVALS, ASSIGNEE)))
-        .build()
-        .toQuery();
+    return mustNotMatch(existsQuery(jsonPathOf(APPROVALS, ASSIGNEE)));
   }
 }
