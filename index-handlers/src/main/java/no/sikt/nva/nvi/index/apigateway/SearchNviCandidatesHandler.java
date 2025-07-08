@@ -13,7 +13,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.utils.RequestUtil;
 import no.sikt.nva.nvi.common.validator.ViewingScopeValidator;
@@ -123,7 +122,7 @@ public class SearchNviCandidatesHandler
     return fetchViewingScope(requestInfo.getUserName()).stream()
         .map(UriWrapper::fromUri)
         .map(UriWrapper::getLastPathElement)
-        .collect(Collectors.toList());
+        .toList();
   }
 
   private Set<URI> fetchViewingScope(String userName) {

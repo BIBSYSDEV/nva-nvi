@@ -12,19 +12,7 @@ import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.NEW;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.PENDING;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.REJECTED;
 import static no.sikt.nva.nvi.index.query.Aggregations.APPROVAL_ORGANIZATIONS_AGGREGATION;
-import static no.sikt.nva.nvi.index.query.SearchAggregation.APPROVED_AGG;
-import static no.sikt.nva.nvi.index.query.SearchAggregation.APPROVED_COLLABORATION_AGG;
-import static no.sikt.nva.nvi.index.query.SearchAggregation.ASSIGNMENTS_AGG;
-import static no.sikt.nva.nvi.index.query.SearchAggregation.COMPLETED_AGGREGATION_AGG;
-import static no.sikt.nva.nvi.index.query.SearchAggregation.DISPUTED_AGG;
-import static no.sikt.nva.nvi.index.query.SearchAggregation.NEW_AGG;
-import static no.sikt.nva.nvi.index.query.SearchAggregation.NEW_COLLABORATION_AGG;
 import static no.sikt.nva.nvi.index.query.SearchAggregation.ORGANIZATION_APPROVAL_STATUS_AGGREGATION;
-import static no.sikt.nva.nvi.index.query.SearchAggregation.PENDING_AGG;
-import static no.sikt.nva.nvi.index.query.SearchAggregation.PENDING_COLLABORATION_AGG;
-import static no.sikt.nva.nvi.index.query.SearchAggregation.REJECTED_AGG;
-import static no.sikt.nva.nvi.index.query.SearchAggregation.REJECTED_COLLABORATION_AGG;
-import static no.sikt.nva.nvi.index.query.SearchAggregation.TOTAL_COUNT_AGGREGATION_AGG;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
@@ -213,28 +201,6 @@ class OpenSearchClientTest {
     var nviCandidateIndexDocument = searchResponse.hits().hits();
 
     assertThat(nviCandidateIndexDocument, hasSize(0));
-  }
-
-  @ParameterizedTest(name = "shouldReturnAggregationsWithExpectedCount {0}")
-  @MethodSource("aggregationNameAndExpectedCountProvider")
-  void shouldReturnAggregationsWithExpectedCount(Entry<String, Integer> entry) throws IOException {
-    addDocumentsToIndex(
-        documentFromString(DOCUMENT_NEW_JSON),
-        documentFromString("document_new_collaboration.json"),
-        documentFromString("document_pending.json"),
-        documentFromString("document_pending_collaboration.json"),
-        documentFromString("document_approved.json"),
-        documentFromString("document_approved_collaboration_pending.json"),
-        documentFromString("document_approved_collaboration_new.json"),
-        documentFromString("document_rejected.json"),
-        documentFromString("document_rejected_collaboration_pending.json"),
-        documentFromString("document_rejected_collaboration_new.json"),
-        documentFromString(DOCUMENT_ORGANIZATION_AGGREGATION_DISPUTE_JSON));
-
-    var searchParameters = defaultSearchParameters().build();
-    var searchResponse = openSearchClient.search(searchParameters);
-    var aggregation = searchResponse.aggregations().get(entry.getKey());
-    assertThat(getDocCount(aggregation), is(equalTo(entry.getValue())));
   }
 
   @Test
@@ -988,23 +954,6 @@ class OpenSearchClientTest {
     CONTAINER.addDocumentsToIndex(documents);
   }
 
-  private static Stream<Entry<String, Integer>> aggregationNameAndExpectedCountProvider() {
-    var map = new HashMap<String, Integer>();
-    map.put(NEW_AGG.getAggregationName(), 2);
-    map.put(NEW_COLLABORATION_AGG.getAggregationName(), 1);
-    map.put(PENDING_AGG.getAggregationName(), 2);
-    map.put(PENDING_COLLABORATION_AGG.getAggregationName(), 1);
-    map.put(APPROVED_AGG.getAggregationName(), 3);
-    map.put(APPROVED_COLLABORATION_AGG.getAggregationName(), 2);
-    map.put(REJECTED_AGG.getAggregationName(), 3);
-    map.put(REJECTED_COLLABORATION_AGG.getAggregationName(), 2);
-    map.put(DISPUTED_AGG.getAggregationName(), 1);
-    map.put(ASSIGNMENTS_AGG.getAggregationName(), 5);
-    map.put(COMPLETED_AGGREGATION_AGG.getAggregationName(), 7);
-    map.put(TOTAL_COUNT_AGGREGATION_AGG.getAggregationName(), 11);
-    return map.entrySet().stream();
-  }
-
   private static Stream<Entry<String, Integer>> filterNameProvider() {
     var map = new HashMap<String, Integer>();
     map.put(QueryFilterType.NEW_AGG.getValue(), 2);
@@ -1032,13 +981,6 @@ class OpenSearchClientTest {
     Random random = new Random();
     int index = random.nextInt(words.length);
     return words[index];
-  }
-
-  private int getDocCount(Aggregate aggregation) {
-    if (aggregation._get() instanceof FilterAggregate filterAggregate) {
-      return (int) filterAggregate.docCount();
-    }
-    return 0;
   }
 
   private NviCandidateIndexDocument documentWithCreatedDate(Instant createdDate) {

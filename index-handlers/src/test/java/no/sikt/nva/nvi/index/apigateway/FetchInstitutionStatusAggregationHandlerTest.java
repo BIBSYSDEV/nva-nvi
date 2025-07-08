@@ -46,7 +46,7 @@ class FetchInstitutionStatusAggregationHandlerTest {
   private OpenSearchClient openSearchClient;
 
   @BeforeEach
-  public void setUp() {
+  void setUp() {
     output = new ByteArrayOutputStream();
     openSearchClient = mock(OpenSearchClient.class);
     handler = new FetchInstitutionStatusAggregationHandler(openSearchClient, ENVIRONMENT);

@@ -9,6 +9,7 @@ import static no.sikt.nva.nvi.index.query.Aggregations.completedAggregation;
 import static no.sikt.nva.nvi.index.query.Aggregations.disputeAggregation;
 import static no.sikt.nva.nvi.index.query.Aggregations.finalizedCollaborationAggregation;
 import static no.sikt.nva.nvi.index.query.Aggregations.organizationApprovalStatusAggregations;
+import static no.sikt.nva.nvi.index.query.Aggregations.pendingAggregation;
 import static no.sikt.nva.nvi.index.query.Aggregations.statusAggregation;
 import static no.sikt.nva.nvi.index.query.Aggregations.totalCountAggregation;
 
@@ -19,7 +20,7 @@ import java.util.stream.Stream;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 
 public enum SearchAggregation {
-  NEW_AGG("pending", (username, topLevelCristinOrg) -> statusAggregation(topLevelCristinOrg, NEW)),
+  NEW_AGG("pending", (username, topLevelCristinOrg) -> pendingAggregation(topLevelCristinOrg)),
   NEW_COLLABORATION_AGG(
       "pendingCollaboration",
       (username, topLevelCristinOrg) -> collaborationAggregation(topLevelCristinOrg, NEW)),
@@ -62,9 +63,9 @@ public enum SearchAggregation {
     this.aggregationFunction = aggregationFunction;
   }
 
-  public static SearchAggregation parse(String candidate) {
+  public static SearchAggregation parse(String candidateString) {
     return Arrays.stream(values())
-        .filter(type -> type.getAggregationName().equalsIgnoreCase(candidate))
+        .filter(type -> type.getAggregationName().equalsIgnoreCase(candidateString))
         .findFirst()
         .orElse(null);
   }
