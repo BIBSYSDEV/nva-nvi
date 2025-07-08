@@ -65,7 +65,7 @@ import no.sikt.nva.nvi.index.model.document.ReportingPeriod;
 import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
 import no.sikt.nva.nvi.index.model.search.OrderByFields;
 import no.sikt.nva.nvi.index.model.search.SearchResultParameters;
-import no.sikt.nva.nvi.index.query.CandidateQuery.QueryFilterType;
+import no.sikt.nva.nvi.index.query.QueryFilterType;
 import no.sikt.nva.nvi.index.query.SearchAggregation;
 import nva.commons.core.ioutils.IoUtils;
 import nva.commons.core.paths.UriWrapper;
@@ -199,7 +199,7 @@ class OpenSearchClientTest {
   @Test
   void shouldThrowWhenUsingUndefinedFilterName() {
     var searchParameters = defaultSearchParameters().withFilter(UNEXISTING_FILTER).build();
-    assertThrows(IllegalStateException.class, () -> openSearchClient.search(searchParameters));
+    assertThrows(IllegalArgumentException.class, () -> openSearchClient.search(searchParameters));
   }
 
   @Test
@@ -354,7 +354,7 @@ class OpenSearchClientTest {
         documentFromString("document_dispute_not_sikt.json"));
 
     var searchParameters =
-        defaultSearchParameters().withFilter(QueryFilterType.DISPUTED_AGG.getFilter()).build();
+        defaultSearchParameters().withFilter(QueryFilterType.DISPUTED_AGG.getValue()).build();
 
     var searchResponse = openSearchClient.search(searchParameters);
     assertThat(searchResponse.hits().hits(), hasSize(1));
@@ -1007,16 +1007,16 @@ class OpenSearchClientTest {
 
   private static Stream<Entry<String, Integer>> filterNameProvider() {
     var map = new HashMap<String, Integer>();
-    map.put(QueryFilterType.NEW_AGG.getFilter(), 2);
-    map.put(QueryFilterType.NEW_COLLABORATION_AGG.getFilter(), 1);
-    map.put(QueryFilterType.PENDING_AGG.getFilter(), 2);
-    map.put(QueryFilterType.PENDING_COLLABORATION_AGG.getFilter(), 1);
-    map.put(QueryFilterType.APPROVED_AGG.getFilter(), 3);
-    map.put(QueryFilterType.APPROVED_COLLABORATION_AGG.getFilter(), 2);
-    map.put(QueryFilterType.REJECTED_AGG.getFilter(), 3);
-    map.put(QueryFilterType.REJECTED_COLLABORATION_AGG.getFilter(), 2);
-    map.put(QueryFilterType.ASSIGNMENTS_AGG.getFilter(), 5);
-    map.put(QueryFilterType.DISPUTED_AGG.getFilter(), 1);
+    map.put(QueryFilterType.NEW_AGG.getValue(), 2);
+    map.put(QueryFilterType.NEW_COLLABORATION_AGG.getValue(), 1);
+    map.put(QueryFilterType.PENDING_AGG.getValue(), 2);
+    map.put(QueryFilterType.PENDING_COLLABORATION_AGG.getValue(), 1);
+    map.put(QueryFilterType.APPROVED_AGG.getValue(), 3);
+    map.put(QueryFilterType.APPROVED_COLLABORATION_AGG.getValue(), 2);
+    map.put(QueryFilterType.REJECTED_AGG.getValue(), 3);
+    map.put(QueryFilterType.REJECTED_COLLABORATION_AGG.getValue(), 2);
+    map.put(QueryFilterType.ASSIGNMENTS_AGG.getValue(), 5);
+    map.put(QueryFilterType.DISPUTED_AGG.getValue(), 1);
     return map.entrySet().stream();
   }
 
