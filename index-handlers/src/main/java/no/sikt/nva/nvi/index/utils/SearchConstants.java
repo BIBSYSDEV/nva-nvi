@@ -1,5 +1,7 @@
 package no.sikt.nva.nvi.index.utils;
 
+import static nva.commons.core.StringUtils.isNotBlank;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -62,15 +64,16 @@ public final class SearchConstants {
   private SearchConstants() {}
 
   public static Query constructQuery(CandidateSearchParameters params) {
-    var filterType =
-        QueryFilterType.parse(params.filter())
-            .orElseThrow(() -> new IllegalStateException("unknown filter " + params.filter()));
+    var queryFilter =
+        isNotBlank(params.filter())
+            ? QueryFilterType.parse(params.filter())
+            : QueryFilterType.EMPTY_FILTER;
     return new CandidateQuery.Builder()
         .withSearchTerm(params.searchTerm())
         .withAffiliationIdentifiers(
             Optional.ofNullable(params.affiliationIdentifiers()).orElse(List.of()))
         .withExcludeSubUnits(params.excludeSubUnits())
-        .withFilter(filterType)
+        .withFilter(queryFilter)
         .withUsername(params.username())
         .withTopLevelCristinOrg(params.topLevelOrgUriAsString())
         .withYear(params.year())

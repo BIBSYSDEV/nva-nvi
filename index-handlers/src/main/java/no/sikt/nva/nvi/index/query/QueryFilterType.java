@@ -1,12 +1,10 @@
 package no.sikt.nva.nvi.index.query;
 
-import static java.util.Objects.isNull;
-
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
-import java.util.Arrays;
-import java.util.Optional;
+import no.sikt.nva.nvi.common.model.ParsableEnum;
 
-public enum QueryFilterType {
+public enum QueryFilterType implements ParsableEnum {
   COLLABORATION("collaboration"),
   OTHERS_APPROVE("approvedByOthers"),
   OTHERS_REJECT("rejectedByOthers"),
@@ -22,21 +20,20 @@ public enum QueryFilterType {
   ASSIGNMENTS_AGG("assignments"),
   EMPTY_FILTER("");
 
-  private final String filter;
+  private final String value;
 
-  QueryFilterType(String filter) {
-    this.filter = filter;
+  QueryFilterType(String value) {
+    this.value = value;
   }
 
-  public static Optional<QueryFilterType> parse(String candidate) {
-    var testValue = isNull(candidate) ? "" : candidate;
-    return Arrays.stream(values())
-        .filter(item -> item.getFilter().equalsIgnoreCase(testValue))
-        .findAny();
+  @JsonCreator
+  public static QueryFilterType parse(String stringValue) {
+    return ParsableEnum.parse(QueryFilterType.class, stringValue);
   }
 
   @JsonValue
-  public String getFilter() {
-    return filter;
+  @Override
+  public String getValue() {
+    return value;
   }
 }
