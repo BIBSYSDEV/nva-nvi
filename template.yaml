@@ -21,6 +21,7 @@ Globals:
         SEARCH_INFRASTRUCTURE_AUTH_URI: !Ref SearchInfrastructureAuthUri
         CUSTOM_DOMAIN_BASE_PATH: !Ref CustomDomainBasePath
         API_HOST: !Ref ApiDomain
+        LOG_LEVEL: !Ref LogLevel
   Api:
     Cors:
       AllowMethods: "'PUT, GET,OPTIONS,DELETE,POST'"
@@ -49,6 +50,14 @@ Parameters:
   EventBusArn:
     Type: AWS::SSM::Parameter::Value<String>
     Default: /NVA/Events/EventsBusArn
+  LogLevel:
+    Type: String
+    Default: "debug"
+    AllowedValues:
+      - "trace"
+      - "debug"
+      - "info"
+    Description: Minimum severity for logging. Should be 'info' in production environments.
   ResourcesBucket:
     Type: AWS::SSM::Parameter::Value<String>
     Default: /NVA/Events/PersistedEntriesBucketName
