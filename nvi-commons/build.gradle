@@ -14,6 +14,7 @@ dependencies {
     implementation libs.aws.sdk2.sqs
     implementation libs.aws.sdk2.urlconnection
     implementation libs.bundles.jena
+    implementation libs.jena.shacl
     implementation libs.jackson.databind
     implementation libs.nva.commons.apigateway
     implementation libs.nva.commons.auth
