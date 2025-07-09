@@ -120,7 +120,7 @@ public final class QueryFunctions {
   }
 
   public static Query multipleApprovalsQuery() {
-    return mustMatch(rangeFromQuery(NUMBER_OF_APPROVALS, MULTIPLE));
+    return rangeFromQuery(NUMBER_OF_APPROVALS, MULTIPLE);
   }
 
   public static Query assignmentsQuery(String username, String customer) {

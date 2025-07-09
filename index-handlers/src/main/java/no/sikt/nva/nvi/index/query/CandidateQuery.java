@@ -168,12 +168,12 @@ public record CandidateQuery(
           case NEW_COLLABORATION_AGG ->
               mustMatch(statusQuery(topLevelCristinOrg, NEW), multipleApprovalsQuery());
 
-          case PENDING_AGG -> mustMatch(statusQuery(topLevelCristinOrg, PENDING));
+          case PENDING_AGG -> statusQuery(topLevelCristinOrg, PENDING);
 
           case PENDING_COLLABORATION_AGG ->
               mustMatch(statusQuery(topLevelCristinOrg, PENDING), multipleApprovalsQuery());
 
-          case APPROVED_AGG -> mustMatch(statusQuery(topLevelCristinOrg, APPROVED));
+          case APPROVED_AGG -> statusQuery(topLevelCristinOrg, APPROVED);
 
           case APPROVED_COLLABORATION_AGG ->
               mustMatch(
@@ -181,7 +181,7 @@ public record CandidateQuery(
                   containsNonFinalizedStatusQuery(),
                   multipleApprovalsQuery());
 
-          case REJECTED_AGG -> mustMatch(statusQuery(topLevelCristinOrg, REJECTED));
+          case REJECTED_AGG -> statusQuery(topLevelCristinOrg, REJECTED);
 
           case REJECTED_COLLABORATION_AGG ->
               mustMatch(
@@ -190,7 +190,7 @@ public record CandidateQuery(
                   multipleApprovalsQuery());
 
           case DISPUTED_AGG -> mustMatch(disputeQuery(), institutionQuery(topLevelCristinOrg));
-          case ASSIGNMENTS_AGG -> mustMatch(assignmentsQuery(username, topLevelCristinOrg));
+          case ASSIGNMENTS_AGG -> assignmentsQuery(username, topLevelCristinOrg);
         };
 
     return Optional.ofNullable(aggregation);
@@ -199,9 +199,7 @@ public record CandidateQuery(
   private static Query otherOrganizationStatusQuery(
       String userOrganization, ApprovalStatus status) {
     return nestedQuery(
-        APPROVALS,
-        mustNotMatch(approvalBelongsTo(userOrganization)),
-        mustMatch(approvalStatusIs(status)));
+        APPROVALS, mustNotMatch(approvalBelongsTo(userOrganization)), approvalStatusIs(status));
   }
 
   private Query institutionQuery(String topLevelCristinOrg) {

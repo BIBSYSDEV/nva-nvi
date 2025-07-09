@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.index.apigateway;
 
+import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationId;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.createRandomIndexDocument;
@@ -24,8 +25,10 @@ import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PAR
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.params.provider.Arguments.argumentSet;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.util.ArrayList;
@@ -345,25 +348,40 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
     }
 
     @ParameterizedTest
-    @MethodSource("queryParameterToExpectedApprovalStatus")
+    @MethodSource("statusQueryProvider")
     void shouldFilterByApprovalStatus(
-        Map<String, String> queryParameters, Collection<ApprovalStatus> expectedStatuses) {
-      var response = handleRequest(queryParameters);
+        Collection<ApprovalStatus> statusTypesInQuery,
+        Collection<ApprovalStatus> expectedStatusTypesInResponse) {
+      var response = handleRequest(queryByStatus(statusTypesInQuery));
 
       assertThat(response.getHits())
           .extracting(doc -> doc.getApprovalStatusForInstitution(OUR_ORGANIZATION))
-          .hasSameElementsAs(expectedStatuses);
+          .hasSameElementsAs(expectedStatusTypesInResponse);
+    }
+
+    private static Map<String, String> queryByStatus(Collection<ApprovalStatus> statuses) {
+      var queryString =
+          statuses.stream().map(ApprovalStatus::name).collect(Collectors.joining(","));
+      return Map.of(QUERY_PARAM_STATUS, queryString, QUERY_PARAM_SIZE, "50");
     }
 
     @ParameterizedTest
-    @MethodSource("queryParameterToExpectedGlobalStatus")
+    @MethodSource("globalStatusQueryProvider")
     void shouldFilterByMultipleGlobalApprovalStatus(
-        Map<String, String> queryParameters, Collection<GlobalApprovalStatus> expectedStatuses) {
-      var response = handleRequest(queryParameters);
+        Collection<GlobalApprovalStatus> statusTypesInQuery,
+        Collection<GlobalApprovalStatus> expectedStatusTypesInResponse) {
+      var response = handleRequest(queryByGlobalStatus(statusTypesInQuery));
 
       assertThat(response.getHits())
           .extracting(NviCandidateIndexDocument::globalApprovalStatus)
-          .hasSameElementsAs(expectedStatuses);
+          .hasSameElementsAs(expectedStatusTypesInResponse);
+    }
+
+    private static Map<String, String> queryByGlobalStatus(
+        Collection<GlobalApprovalStatus> statuses) {
+      var queryString =
+          statuses.stream().map(GlobalApprovalStatus::name).collect(Collectors.joining(","));
+      return Map.of(QUERY_PARAM_GLOBAL_STATUS, queryString, QUERY_PARAM_SIZE, "50");
     }
 
     @ParameterizedTest
@@ -382,6 +400,7 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
           handleRequest(Map.of(QUERY_PARAM_STATUS, "pending", QUERY_PARAM_FILTER, "collaboration"));
 
       assertThat(response.getHits())
+          .isNotEmpty()
           .extracting(NviCandidateIndexDocument::approvals)
           .allSatisfy(approvals -> assertThat(approvals).hasSizeGreaterThanOrEqualTo(2));
     }
@@ -412,87 +431,155 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
           .containsExactly(tuple(GlobalApprovalStatus.DISPUTE, REJECTED));
     }
 
-    private static List<Approval> getAllPossibleApprovals(URI topLevelOrganization) {
-      var baseApproval = randomApprovalBuilder(topLevelOrganization);
-      return Stream.of(ApprovalStatus.values())
-          .map(status -> baseApproval.withApprovalStatus(status).build())
-          .toList();
+    @ParameterizedTest
+    @MethodSource("defaultAggregationCountProvider")
+    void shouldAggregateBasedOnGlobalStatusByDefault(String aggregationField, int expectedCount) {
+      var response = handleRequest(emptyMap());
+
+      var actualCount = getAggregationCount(response, aggregationField);
+      assertEquals(expectedCount, actualCount);
     }
 
-    private static List<NviCandidateIndexDocument> createDocsForAllApprovalStatusCombinations() {
-      var ourApprovals = getAllPossibleApprovals(OUR_ORGANIZATION);
-      var theirApprovals = getAllPossibleApprovals(THEIR_ORGANIZATION);
+    @ParameterizedTest
+    @MethodSource("organizationApprovalStatusAggregationProvider")
+    void shouldAggregateByOrganizationStatusOnlyWhenSet(
+        String aggregationField, int expectedCount) {
+      var response = handleRequest(Map.of("aggregationType", "organizationApprovalStatuses"));
 
+      var ourApprovals = getOrganizationSummary(response);
+      var actualCount = ourApprovals.at(aggregationField).asInt();
+      assertEquals(expectedCount, actualCount);
+    }
+
+    private static int getAggregationCount(
+        PaginatedSearchResult<NviCandidateIndexDocument> response, String field) {
+      return response.getAggregations().get(field).get("docCount").asInt();
+    }
+
+    private static JsonNode getOrganizationSummary(
+        PaginatedSearchResult<NviCandidateIndexDocument> response) {
+      return response
+          .getAggregations()
+          .get("organizationApprovalStatuses")
+          .get(OUR_ORGANIZATION.toString())
+          .get("organizations")
+          .get(OUR_ORGANIZATION.toString());
+    }
+
+    private static Stream<Arguments> defaultAggregationCountProvider() {
+      return Stream.of(
+          Arguments.of("pending", 10),
+          Arguments.of("approved", 4),
+          Arguments.of("rejected", 4),
+          Arguments.of("dispute", 2),
+          Arguments.of("completed", 10),
+          Arguments.of("totalCount", 20));
+    }
+
+    private static Stream<Arguments> organizationApprovalStatusAggregationProvider() {
+      return Stream.of(
+          Arguments.of("/docCount", 20),
+          Arguments.of("/dispute/docCount", 2),
+          Arguments.of("/points/docCount", 15),
+          Arguments.of("/status/New/docCount", 5),
+          Arguments.of("/status/Pending/docCount", 5),
+          Arguments.of("/status/Approved/docCount", 5),
+          Arguments.of("/status/Rejected/docCount", 5));
+    }
+
+    /**
+     * Creates index documents for all valid approval combinations:
+     *
+     * <p>User's organization only
+     *
+     * <p>Other organizations only
+     *
+     * <p>Collaborations between user's and other organizations
+     *
+     * @return List of NviCandidateIndexDocument covering all approval combinations
+     */
+    private static List<NviCandidateIndexDocument> createDocsForAllApprovalStatusCombinations() {
       var documents = new ArrayList<NviCandidateIndexDocument>();
-      for (var theirApproval : theirApprovals) {
-        for (var ourApproval : ourApprovals) {
-          var title =
-              String.format(
-                  "Collaboration (%s / %s)",
-                  ourApproval.approvalStatus(), theirApproval.approvalStatus());
-          documents.add(documentWithApprovals(title, ourApproval, theirApproval));
+      for (var firstStatus : ApprovalStatus.values()) {
+        documents.add(docWithOneOrganization(OUR_ORGANIZATION, firstStatus));
+        documents.add(docWithOneOrganization(THEIR_ORGANIZATION, firstStatus));
+        for (var secondStatus : ApprovalStatus.values()) {
+          documents.add(docWithTwoOrganizations(firstStatus, secondStatus));
         }
-      }
-      for (var theirApproval : theirApprovals) {
-        var title = String.format("Unrelated document (%s)", theirApproval.approvalStatus());
-        documents.add(documentWithApprovals(title, theirApproval));
-      }
-      for (var ourApproval : ourApprovals) {
-        var title = String.format("Non-collaboration (%s)", ourApproval.approvalStatus());
-        documents.add(documentWithApprovals(title, ourApproval));
       }
       return documents;
     }
 
-    private static Stream<Arguments> queryParameterToExpectedApprovalStatus() {
+    private static NviCandidateIndexDocument docWithOneOrganization(
+        URI organizationId, ApprovalStatus status) {
+      var globalStatus = expectedGlobalApprovalStatus(List.of(status));
+      var title = String.format("%s -> %s", status, globalStatus);
+      var approval =
+          randomApprovalBuilder(organizationId)
+              .withApprovalStatus(status)
+              .withGlobalApprovalStatus(globalStatus)
+              .build();
+      return documentWithApprovals(title, globalStatus, approval);
+    }
+
+    private static NviCandidateIndexDocument docWithTwoOrganizations(
+        ApprovalStatus ourStatus, ApprovalStatus theirStatus) {
+      var globalStatus = expectedGlobalApprovalStatus(List.of(ourStatus, theirStatus));
+      var title = String.format("%s + %s -> %s", ourStatus, theirStatus, globalStatus);
+      var ourApproval =
+          randomApprovalBuilder(OUR_ORGANIZATION)
+              .withApprovalStatus(ourStatus)
+              .withGlobalApprovalStatus(globalStatus)
+              .build();
+      var theirApproval =
+          randomApprovalBuilder(THEIR_ORGANIZATION)
+              .withApprovalStatus(theirStatus)
+              .withGlobalApprovalStatus(globalStatus)
+              .build();
+      return documentWithApprovals(title, globalStatus, ourApproval, theirApproval);
+    }
+
+    private static Stream<Arguments> statusQueryProvider() {
       var allStatuses = Arrays.stream(ApprovalStatus.values()).toList();
       return Stream.of(
-          argumentSet("Query without filters", Map.of(QUERY_PARAM_SIZE, "50"), allStatuses),
+          argumentSet("Query without filters", emptyList(), allStatuses),
           argumentSet(
               "status=pending,approved,rejected",
-              Map.of(QUERY_PARAM_STATUS, "pending,approved,rejected", QUERY_PARAM_SIZE, "50"),
+              List.of(PENDING, APPROVED, REJECTED),
               allStatuses),
-          argumentSet(
-              "status=pending", Map.of(QUERY_PARAM_STATUS, "pending"), List.of(NEW, PENDING)),
-          argumentSet("status=approved", Map.of(QUERY_PARAM_STATUS, "approved"), List.of(APPROVED)),
-          argumentSet("status=rejected", Map.of(QUERY_PARAM_STATUS, "rejected"), List.of(REJECTED)),
+          argumentSet("status=pending", List.of(PENDING), List.of(NEW, PENDING)),
+          argumentSet("status=approved", List.of(APPROVED), List.of(APPROVED)),
+          argumentSet("status=rejected", List.of(REJECTED), List.of(REJECTED)),
           argumentSet(
               "status=pending,approved",
-              Map.of(QUERY_PARAM_STATUS, "pending,approved"),
+              List.of(PENDING, APPROVED),
               List.of(NEW, PENDING, APPROVED)),
           argumentSet(
               "status=pending,rejected",
-              Map.of(QUERY_PARAM_STATUS, "pending,rejected"),
+              List.of(PENDING, REJECTED),
               List.of(NEW, PENDING, REJECTED)),
           argumentSet(
               "status=approved,rejected",
-              Map.of(QUERY_PARAM_STATUS, "approved,rejected"),
+              List.of(APPROVED, REJECTED),
               List.of(APPROVED, REJECTED)));
     }
 
-    private static Stream<Arguments> queryParameterToExpectedGlobalStatus() {
+    private static Stream<Arguments> globalStatusQueryProvider() {
       var allStatuses = Arrays.stream(GlobalApprovalStatus.values()).toList();
       return Stream.of(
-          argumentSet("Query without filters", Map.of(QUERY_PARAM_SIZE, "50"), allStatuses),
-          argumentSet(
-              "globalStatus=pending,approved,rejected,dispute",
-              Map.of(
-                  QUERY_PARAM_GLOBAL_STATUS,
-                  "pending,approved,rejected,dispute",
-                  QUERY_PARAM_SIZE,
-                  "50"),
-              allStatuses),
+          argumentSet("Query without filters", emptyList(), allStatuses),
+          argumentSet("globalStatus=pending,approved,rejected,dispute", allStatuses, allStatuses),
           argumentSet(
               "globalStatus=pending,approved",
-              Map.of(QUERY_PARAM_GLOBAL_STATUS, "pending,approved"),
+              List.of(GlobalApprovalStatus.PENDING, GlobalApprovalStatus.APPROVED),
               List.of(GlobalApprovalStatus.PENDING, GlobalApprovalStatus.APPROVED)),
           argumentSet(
               "globalStatus=pending,rejected",
-              Map.of(QUERY_PARAM_GLOBAL_STATUS, "pending,rejected"),
+              List.of(GlobalApprovalStatus.PENDING, GlobalApprovalStatus.REJECTED),
               List.of(GlobalApprovalStatus.PENDING, GlobalApprovalStatus.REJECTED)),
           argumentSet(
               "globalStatus=approved,rejected",
-              Map.of(QUERY_PARAM_GLOBAL_STATUS, "approved,rejected"),
+              List.of(GlobalApprovalStatus.APPROVED, GlobalApprovalStatus.REJECTED),
               List.of(GlobalApprovalStatus.APPROVED, GlobalApprovalStatus.REJECTED)));
     }
   }
@@ -531,14 +618,15 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
   }
 
   private static GlobalApprovalStatus expectedGlobalApprovalStatus(
-      Set<ApprovalStatus> approvalStatuses) {
-    if (approvalStatuses.equals(Set.of(APPROVED))) {
+      Collection<ApprovalStatus> approvalStatuses) {
+    var statusSet = Set.copyOf(approvalStatuses);
+    if (statusSet.equals(Set.of(APPROVED))) {
       return GlobalApprovalStatus.APPROVED;
     }
-    if (approvalStatuses.equals(Set.of(REJECTED))) {
+    if (statusSet.equals(Set.of(REJECTED))) {
       return GlobalApprovalStatus.REJECTED;
     }
-    if (approvalStatuses.containsAll(Set.of(APPROVED, REJECTED))) {
+    if (statusSet.containsAll(Set.of(APPROVED, REJECTED))) {
       return GlobalApprovalStatus.DISPUTE;
     }
     return GlobalApprovalStatus.PENDING;
