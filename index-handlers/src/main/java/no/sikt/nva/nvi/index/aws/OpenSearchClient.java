@@ -139,7 +139,8 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
 
   private void logQueryDetails(SearchRequest query) {
     var queryString = query.toJsonString();
-    var querySize = Arrays.stream(queryString.split(Pattern.quote("{"))).toList().size();
+    var querySiz2e = Arrays.stream(queryString.split(Pattern.quote("{"))).toList().size();
+    var querySize = (int) queryString.chars().filter(ch -> ch == '{').count();
     if (querySize > MAX_QUERY_SIZE) {
       LOGGER.warn(
           "Query complexity ({} nested objects) exceeds recommended limit of {}. Consider"
