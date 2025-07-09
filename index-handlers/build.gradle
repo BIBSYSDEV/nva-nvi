@@ -56,4 +56,5 @@ test {
     environment("INDEX_DLQ", "IndexDlq")
     environment("INSTITUTION_REPORT_SEARCH_PAGE_SIZE", "4")
     environment("COGNITO_AUTHORIZER_URLS", "http://localhost:3000")
+    environment("LOG_LEVEL", "trace")
 }

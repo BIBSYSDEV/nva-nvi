@@ -41,16 +41,19 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.index.OpenSearchContainerContext;
+import no.sikt.nva.nvi.index.aws.OpenSearchClient;
 import no.sikt.nva.nvi.index.model.document.Approval;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.document.ReportingPeriod;
 import no.unit.nva.commons.pagination.PaginatedSearchResult;
 import nva.commons.apigateway.AccessRight;
+import nva.commons.logutils.LogUtils;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -93,6 +96,23 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
   @AfterEach
   void afterEach() {
     CONTAINER.deleteIndex();
+  }
+
+  @Nested
+  @DisplayName("Query structure")
+  class QueryStructureTests {
+
+    // FIXME: Fix excessive nesting in query builder and enable this test
+    @Test
+    @Disabled
+    void shouldNotProduceExtremelyNestedQuery() {
+      var logAppender = LogUtils.getTestingAppender(OpenSearchClient.class);
+
+      handleRequest(emptyMap());
+      var messages = logAppender.getMessages();
+
+      assertThat(messages).isNotEmpty().doesNotContain("exceeds recommended limit");
+    }
   }
 
   @Nested

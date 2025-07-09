@@ -11,4 +11,5 @@ dependencies {
 
 test {
     useJUnitPlatform()
+    environment("LOG_LEVEL", "debug")
 }

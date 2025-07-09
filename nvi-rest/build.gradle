@@ -37,4 +37,5 @@ test {
     environment("NVI_TABLE_NAME", "some-table")
     environment("COGNITO_AUTHORIZER_URLS", "http://localhost:3000")
     environment("UPSERT_CANDIDATE_DLQ_QUEUE_URL", "http://localhost:3000/upsert-candidate-DLQ")
+    environment("LOG_LEVEL", "debug")
 }
