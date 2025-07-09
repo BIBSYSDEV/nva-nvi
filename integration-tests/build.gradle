@@ -37,6 +37,7 @@ test {
     environment("COGNITO_AUTHORIZER_URLS", "http://localhost:3000")
     environment("CUSTOM_DOMAIN_BASE_PATH", "scientific-index")
     environment("EXPANDED_RESOURCES_BUCKET", "testBucket")
+    environment("LOG_LEVEL", "debug")
     environment("NVI_TABLE_NAME", "some-table")
     environment("UPSERT_CANDIDATE_DLQ_QUEUE_URL", "http://localhost:3000/upsert-candidate-DLQ")
 }
