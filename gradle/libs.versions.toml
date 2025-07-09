@@ -12,7 +12,7 @@ errorprone = { strictly = '2.38.0' }
 errorpronePlugin = { strictly = '4.1.0' }
 guava = { strictly = '33.4.8-jre' }
 hamcrest = { strictly = '3.0' }
-jackson = { strictly = '2.18.3' }
+jackson = { strictly = '2.19.0' }
 jena = { strictly = '5.3.0' }
 junit = { strictly = '5.12.2' }
 junitPlatform = { strictly = '1.12.2' } # May need to sync minor&patch version with 'junit' version
