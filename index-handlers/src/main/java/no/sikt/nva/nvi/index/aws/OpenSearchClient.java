@@ -13,11 +13,9 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.time.Clock;
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Function;
-import java.util.regex.Pattern;
 import no.sikt.nva.nvi.common.model.UsernamePasswordWrapper;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
@@ -139,16 +137,15 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
 
   private void logQueryDetails(SearchRequest query) {
     var queryString = query.toJsonString();
-    var querySiz2e = Arrays.stream(queryString.split(Pattern.quote("{"))).toList().size();
-    var querySize = (int) queryString.chars().filter(ch -> ch == '{').count();
-    if (querySize > MAX_QUERY_SIZE) {
+    var estimatedQueryComplexity = (int) queryString.chars().filter(ch -> ch == '{').count();
+    if (estimatedQueryComplexity > MAX_QUERY_SIZE) {
       LOGGER.warn(
-          "Query complexity ({} nested objects) exceeds recommended limit of {}. Consider"
-              + " simplifying query structure",
-          querySize,
+          "Query complexity ({} nested objects) exceeds recommended limit of {}."
+              + "Consider simplifying query structure",
+          estimatedQueryComplexity,
           MAX_QUERY_SIZE);
     }
-    LOGGER.debug("Executing query with {} nested objects", querySize);
+    LOGGER.debug("Executing query with {} nested objects", estimatedQueryComplexity);
     LOGGER.trace("Executing query: {}", queryString);
   }
 

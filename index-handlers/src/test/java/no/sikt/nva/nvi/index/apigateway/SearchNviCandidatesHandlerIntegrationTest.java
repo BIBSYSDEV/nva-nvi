@@ -102,8 +102,9 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
   @DisplayName("Query structure")
   class QueryStructureTests {
 
+    // FIXME: Fix excessive nesting in query builder and enable this test
     @Test
-    @Disabled // FIXME: Fix excessive nesting in query builder and enable this test
+    @Disabled
     void shouldNotProduceExtremelyNestedQuery() {
       var logAppender = LogUtils.getTestingAppender(OpenSearchClient.class);
 
