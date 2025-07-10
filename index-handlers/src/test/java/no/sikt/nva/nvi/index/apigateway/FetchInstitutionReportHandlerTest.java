@@ -101,8 +101,9 @@ import nva.commons.apigateway.AccessRight;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
 import nva.commons.logutils.LogUtils;
+import org.apache.hc.core5.http.ProtocolVersion;
+import org.apache.hc.core5.http.message.StatusLine;
 import org.apache.http.HttpVersion;
-import org.apache.http.message.BasicStatusLine;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -459,8 +460,14 @@ class FetchInstitutionReportHandlerTest {
   }
 
   private static ResponseException mockResponseException() {
+    var httpVersion = HttpVersion.HTTP_1_1;
     var statusLine =
-        new BasicStatusLine(HttpVersion.HTTP_1_1, HTTP_REQUEST_ENTITY_TOO_LARGE, "null");
+        new StatusLine(
+            new ProtocolVersion(
+                httpVersion.getProtocol(), httpVersion.getMajor(), httpVersion.getMinor()),
+            HTTP_REQUEST_ENTITY_TOO_LARGE,
+            "null");
+
     var response = mock(Response.class);
     when(response.getStatusLine()).thenReturn(statusLine);
     var responseException = mock(ResponseException.class);

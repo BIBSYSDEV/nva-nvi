@@ -102,7 +102,7 @@ public final class SearchConstants {
         .includeInParent(true)
         .properties(properties)
         .build()
-        ._toProperty();
+        .toProperty();
   }
 
   private static String readSearchInfrastructureApiHost() {
@@ -124,7 +124,7 @@ public final class SearchConstants {
   }
 
   private static Map<String, Property> pointsProperties() {
-    return Map.of(INSTITUTION_POINTS, new DoubleNumberProperty.Builder().build()._toProperty());
+    return Map.of(INSTITUTION_POINTS, new DoubleNumberProperty.Builder().build().toProperty());
   }
 
   private static Map<String, Property> nviContributorsProperties() {
@@ -143,17 +143,17 @@ public final class SearchConstants {
   }
 
   private static Property keywordProperty() {
-    return new KeywordProperty.Builder().build()._toProperty();
+    return new KeywordProperty.Builder().build().toProperty();
   }
 
   private static Property textPropertyWithNestedKeyword() {
     return new TextProperty.Builder()
         .fields(Map.of(KEYWORD, keywordProperty()))
         .build()
-        ._toProperty();
+        .toProperty();
   }
 
   private static Property dateProperty() {
-    return new DateProperty.Builder().format("strict_date_optional_time").build()._toProperty();
+    return new DateProperty.Builder().format("strict_date_optional_time").build().toProperty();
   }
 }

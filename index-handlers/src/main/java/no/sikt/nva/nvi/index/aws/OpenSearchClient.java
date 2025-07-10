@@ -11,6 +11,7 @@ import static nva.commons.core.attempt.Try.attempt;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.time.Clock;
 import java.util.List;
@@ -28,7 +29,7 @@ import no.unit.nva.auth.CognitoAuthenticator;
 import no.unit.nva.auth.CognitoCredentials;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.secrets.SecretsReader;
-import org.apache.http.HttpHost;
+import org.apache.hc.core5.http.HttpHost;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch._types.FieldSort;
@@ -69,14 +70,18 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
 
   public OpenSearchClient(CachedJwtProvider cachedJwtProvider) {
     this.cachedJwtProvider = cachedJwtProvider;
-    var httpHost = HttpHost.create(SEARCH_INFRASTRUCTURE_API_HOST);
-    var restClient = RestClient.builder(httpHost).build();
-    var options =
-        RestClientOptions.builder()
-            .addHeader(AUTHORIZATION, cachedJwtProvider.getValue().getToken())
-            .build();
-    var transport = new RestClientTransport(restClient, new JacksonJsonpMapper(), options);
-    this.client = new org.opensearch.client.opensearch.OpenSearchClient(transport);
+    try {
+      var httpHost = HttpHost.create(SEARCH_INFRASTRUCTURE_API_HOST);
+      var restClient = RestClient.builder(httpHost).build();
+      var options =
+          RestClientOptions.builder()
+              .addHeader(AUTHORIZATION, cachedJwtProvider.getValue().getToken())
+              .build();
+      var transport = new RestClientTransport(restClient, new JacksonJsonpMapper(), options);
+      this.client = new org.opensearch.client.opensearch.OpenSearchClient(transport);
+    } catch (URISyntaxException e) {
+      throw new IllegalArgumentException(e);
+    }
   }
 
   public OpenSearchClient(

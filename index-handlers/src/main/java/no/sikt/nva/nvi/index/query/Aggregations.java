@@ -60,7 +60,7 @@ public final class Aggregations {
   }
 
   public static Aggregation organizationApprovalStatusAggregations(String topLevelCristinOrg) {
-    var statusAggregation = termsAggregation(APPROVALS, APPROVAL_STATUS)._toAggregation();
+    var statusAggregation = termsAggregation(APPROVALS, APPROVAL_STATUS).toAggregation();
     var pointAggregation = filterNotRejectedPointsAggregation();
     var disputeAggregation = filterStatusDisputeAggregation();
     var organizationAggregation =
