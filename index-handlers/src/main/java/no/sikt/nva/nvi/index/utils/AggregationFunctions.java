@@ -31,6 +31,6 @@ public final class AggregationFunctions {
   }
 
   public static Aggregation sumAggregation(String... paths) {
-    return new SumAggregation.Builder().field(jsonPathOf(paths)).build()._toAggregation();
+    return new SumAggregation.Builder().field(jsonPathOf(paths)).build().toAggregation();
   }
 }

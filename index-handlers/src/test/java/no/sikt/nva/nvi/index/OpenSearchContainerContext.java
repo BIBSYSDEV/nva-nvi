@@ -1,23 +1,24 @@
 package no.sikt.nva.nvi.index;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.List;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
-import org.apache.http.HttpHost;
+import org.apache.hc.core5.http.HttpHost;
 import org.opensearch.client.Request;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
-import org.opensearch.testcontainers.OpensearchContainer;
+import org.opensearch.testcontainers.OpenSearchContainer;
 import org.picocontainer.Startable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class OpenSearchContainerContext implements Startable {
   private static final String OPEN_SEARCH_IMAGE = "opensearchproject/opensearch:2.11.1";
-  private static final OpensearchContainer<?> container =
-      new OpensearchContainer<>(OPEN_SEARCH_IMAGE);
+  private static final OpenSearchContainer<?> container =
+      new OpenSearchContainer<>(OPEN_SEARCH_IMAGE);
   private static RestClient restClient;
   private static OpenSearchClient openSearchClient;
   private final Logger logger = LoggerFactory.getLogger(OpenSearchContainerContext.class);
@@ -25,8 +26,12 @@ public class OpenSearchContainerContext implements Startable {
   @Override
   public void start() {
     container.start();
-    restClient = RestClient.builder(HttpHost.create(container.getHttpHostAddress())).build();
-    openSearchClient = new OpenSearchClient(restClient, FakeCachedJwtProvider.setup());
+      try {
+          restClient = RestClient.builder(HttpHost.create(container.getHttpHostAddress())).build();
+      } catch (URISyntaxException e) {
+          throw new IllegalArgumentException(e);
+      }
+      openSearchClient = new OpenSearchClient(restClient, FakeCachedJwtProvider.setup());
   }
 
   @Override
