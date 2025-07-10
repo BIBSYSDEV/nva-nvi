@@ -1,5 +1,24 @@
 pluginManagement {
     includeBuild('build-logic')
+    repositories {
+        mavenLocal()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+
+dependencyResolutionManagement {
+    repositories {
+        mavenLocal()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+    versionCatalogs {
+        // Version catalog imported from nva-commons
+        create("commons") {
+            from("com.github.bibsysdev:nva-commons:2.2.9")
+        }
+    }
 }
 
 rootProject.name = 'nva-nvi'

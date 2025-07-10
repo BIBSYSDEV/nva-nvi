@@ -18,7 +18,7 @@ junit = { strictly = '5.12.2' }
 junitPlatform = { strictly = '1.12.2' } # May need to sync minor&patch version with 'junit' version
 log4j = { strictly = '2.24.3' }
 mockito = { strictly = '5.17.0' }
-nva = { strictly = '2.2.8' }
+nva = { strictly = '2.2.9' }
 nvaLanguage = { strictly = '1.2.1' }
 openCsv = { strictly = '5.10' }
 openSearchJava = { strictly = '2.23.0' }

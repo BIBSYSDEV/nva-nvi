@@ -5,6 +5,7 @@ plugins {
 }
 
 repositories {
+    mavenLocal() // FIXME: DO NOT COMMIT THIS
     mavenCentral()
 }
 
