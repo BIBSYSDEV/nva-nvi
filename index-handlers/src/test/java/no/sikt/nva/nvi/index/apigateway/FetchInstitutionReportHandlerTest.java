@@ -101,7 +101,6 @@ import nva.commons.apigateway.AccessRight;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
 import nva.commons.logutils.LogUtils;
-import org.apache.hc.core5.http.ParseException;
 import org.apache.hc.core5.http.ProtocolVersion;
 import org.apache.hc.core5.http.message.StatusLine;
 import org.apache.http.HttpVersion;
@@ -461,17 +460,19 @@ class FetchInstitutionReportHandlerTest {
   }
 
   private static ResponseException mockResponseException() {
-      try {
-          var statusLine = new StatusLine(ProtocolVersion.parse("HTTP_1_1"), HTTP_REQUEST_ENTITY_TOO_LARGE, "null");
+    var httpVersion = HttpVersion.HTTP_1_1;
+    var statusLine =
+        new StatusLine(
+            new ProtocolVersion(
+                httpVersion.getProtocol(), httpVersion.getMajor(), httpVersion.getMinor()),
+            HTTP_REQUEST_ENTITY_TOO_LARGE,
+            "null");
 
-      var response = mock(Response.class);
+    var response = mock(Response.class);
     when(response.getStatusLine()).thenReturn(statusLine);
     var responseException = mock(ResponseException.class);
     when(responseException.getResponse()).thenReturn(response);
     return responseException;
-      } catch (ParseException e) {
-        throw new RuntimeException(e);
-      }
   }
 
   private static List<NviCandidateIndexDocument> mockCandidateWithoutApprovals(

@@ -25,7 +25,7 @@ openSearchJava = { strictly = '3.1.0' }
 openSearchRestClient = { strictly = '3.1.0' }
 openSearchTestContainer = { strictly = '3.0.1' }
 slf4j = { require = '2.0.17' }
-spotless = { strictly = '7.0.4' }
+spotless = { strictly = '7.1.0' }
 testContainers = { strictly = '1.21.3' }
 versions = { strictly = '0.52.0' }
 wiremock = { strictly = '3.13.1' }

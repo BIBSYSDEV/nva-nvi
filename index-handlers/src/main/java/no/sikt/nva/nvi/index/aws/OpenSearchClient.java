@@ -73,13 +73,14 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
     try {
       var httpHost = HttpHost.create(SEARCH_INFRASTRUCTURE_API_HOST);
       var restClient = RestClient.builder(httpHost).build();
-      var options = RestClientOptions.builder()
-            .addHeader(AUTHORIZATION, cachedJwtProvider.getValue().getToken())
-            .build();
+      var options =
+          RestClientOptions.builder()
+              .addHeader(AUTHORIZATION, cachedJwtProvider.getValue().getToken())
+              .build();
       var transport = new RestClientTransport(restClient, new JacksonJsonpMapper(), options);
       this.client = new org.opensearch.client.opensearch.OpenSearchClient(transport);
     } catch (URISyntaxException e) {
-        throw new IllegalArgumentException(e);
+      throw new IllegalArgumentException(e);
     }
   }
 

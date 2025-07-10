@@ -26,12 +26,12 @@ public class OpenSearchContainerContext implements Startable {
   @Override
   public void start() {
     container.start();
-      try {
-          restClient = RestClient.builder(HttpHost.create(container.getHttpHostAddress())).build();
-      } catch (URISyntaxException e) {
-          throw new IllegalArgumentException(e);
-      }
-      openSearchClient = new OpenSearchClient(restClient, FakeCachedJwtProvider.setup());
+    try {
+      restClient = RestClient.builder(HttpHost.create(container.getHttpHostAddress())).build();
+    } catch (URISyntaxException e) {
+      throw new IllegalArgumentException(e);
+    }
+    openSearchClient = new OpenSearchClient(restClient, FakeCachedJwtProvider.setup());
   }
 
   @Override
