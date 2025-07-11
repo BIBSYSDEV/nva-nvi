@@ -4,21 +4,20 @@ plugins {
 
 dependencies {
     testImplementation commons.aws.java.sdk.core
-    testImplementation commons.aws.lambda.events
     testImplementation commons.aws.lambda.core
+    testImplementation commons.aws.lambda.events
     testImplementation commons.aws.sdk2.core
     testImplementation commons.aws.sdk2.dynamo
     testImplementation commons.aws.sdk2.s3
     testImplementation libs.aws.sdk2.sns
     testImplementation libs.aws.sdk2.sqs
+    testImplementation libs.bundles.cucumber
     testImplementation libs.com.auth0.jwt
     testImplementation libs.nva.commons.auth
     testImplementation libs.nva.commons.core
     testImplementation libs.nva.json
     testImplementation libs.nva.s3
     testImplementation libs.nva.testutils
-
-    testImplementation libs.bundles.cucumber
 
     testImplementation project(":event-handlers")
     testImplementation project(":index-handlers")

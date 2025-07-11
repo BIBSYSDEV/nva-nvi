@@ -21,7 +21,6 @@ openSearchTestContainer = { strictly = '3.0.1' }
 spotless = { strictly = '7.1.0' }
 testContainers = { strictly = '1.21.3' }
 versions = { strictly = '0.52.0' }
-wiremock = { strictly = '4.0.0-beta.14' }
 
 [libraries]
 apache-poi = { group = 'org.apache.poi', name = 'poi', version.ref = 'apache-poi' }
@@ -70,13 +69,11 @@ spotless = { group = 'com.diffplug.spotless', name = 'spotless-plugin-gradle', v
 testContainers = { group = 'org.testcontainers', name = 'testcontainers', version.ref = 'testContainers' }
 testContainersJunit = { group = 'org.testcontainers', name = 'junit-jupiter', version.ref = 'testContainers' }
 testContainersOpenSearch = { group = 'org.opensearch', name = 'opensearch-testcontainers', version.ref = 'openSearchTestContainer' }
-wiremock = { group = 'org.wiremock', name = 'wiremock', version.ref = 'wiremock' }
 
 [bundles]
 apachePoi = ['apache-poi', 'apache-poi-ooxml']
 jacksonjr = ['jackson-jr-objects', 'jackson-jr-annotations']
 jena = ['jena-core', 'jena-arq']
 testContainers = ['testContainers', 'testContainersJunit', 'testContainersOpenSearch']
-testing = ['assertj-core', 'junit-jupiter-api', 'junit-jupiter-params', 'junit-jupiter-engine',
-    'junit-platform-suite', 'mockito-core', 'nva-testutils', 'nva-logutils', 'wiremock']
+testing = ['assertj-core', 'junit-jupiter-api', 'junit-jupiter-params', 'junit-jupiter-engine', 'junit-platform-suite', 'mockito-core', 'nva-testutils', 'nva-logutils']
 cucumber = ['cucumber-java', 'cucumber-junit-platform-engine', 'cucumber-picocontainer']

@@ -3,11 +3,11 @@ plugins {
 }
 dependencies {
     implementation commons.aws.sdk2.dynamo
-    implementation libs.aws.sdk2.dynamodbenhanced
     implementation commons.guava
-    implementation commons.hamcrest
+    implementation commons.httpclient5
     implementation commons.jackson.databind
     implementation commons.jackson.databind
+    implementation libs.aws.sdk2.dynamodbenhanced
     implementation libs.nva.commons.apigateway
     implementation libs.nva.commons.auth
     implementation libs.nva.commons.clients
@@ -15,6 +15,7 @@ dependencies {
     implementation libs.nva.json
     implementation project(':nvi-commons')
 
+    testImplementation commons.hamcrest
     testImplementation commons.zalando
     testImplementation libs.bundles.cucumber
     testImplementation libs.bundles.testing

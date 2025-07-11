@@ -3,8 +3,8 @@ plugins {
 }
 
 dependencies {
-    implementation libs.bundles.testing
     implementation commons.jackson.databind
+    implementation libs.bundles.testing
     implementation libs.nva.commons.core
     implementation libs.nva.testutils
 }
