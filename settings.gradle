@@ -1,15 +1,10 @@
 pluginManagement {
     includeBuild('build-logic')
-    repositories {
-        mavenCentral()
-        gradlePluginPortal()
-    }
 }
 
 dependencyResolutionManagement {
     repositories {
         mavenCentral()
-        gradlePluginPortal()
     }
     versionCatalogs {
         // Version catalog imported from nva-commons
