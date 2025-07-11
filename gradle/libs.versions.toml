@@ -18,7 +18,7 @@ junit = { strictly = '5.12.2' }
 junitPlatform = { strictly = '1.12.2' } # May need to sync minor&patch version with 'junit' version
 log4j = { strictly = '2.24.3' }
 mockito = { strictly = '5.17.0' }
-nva = { strictly = '2.2.9' }
+nva = { strictly = '2.3.0' }
 nvaLanguage = { strictly = '1.2.1' }
 openCsv = { strictly = '5.10' }
 openSearchJava = { strictly = '2.23.0' }
@@ -107,5 +107,6 @@ jacksonjr = ['jackson-jr-objects', 'jackson-jr-annotations']
 jena = ['jena-core', 'jena-arq']
 logging = ['log4j-core', 'log4j-api', 'log4j-slf4j18-impl', 'slf4j-api', 'nva-logutils']
 testContainers = ['testContainers', 'testContainersJunit', 'testContainersOpenSearch']
-testing = ['assertj-core', 'junit-jupiter-api', 'junit-jupiter-params', 'junit-jupiter-engine', 'junit-platform-suite', 'mockito-core', 'hamcrest', 'nva-testutils', 'nva-logutils', 'zalando', 'wiremock']
+testing = ['assertj-core', 'junit-jupiter-api', 'junit-jupiter-params', 'junit-jupiter-engine',
+    'junit-platform-suite', 'mockito-core', 'hamcrest', 'nva-testutils', 'nva-logutils', 'zalando', 'wiremock']
 cucumber = ['cucumber-java', 'cucumber-junit-platform-engine', 'cucumber-picocontainer']

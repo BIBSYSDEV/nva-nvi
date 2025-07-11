@@ -4,7 +4,7 @@ plugins {
 dependencies {
     implementation libs.aws.sdk2.dynamodb
     implementation libs.aws.sdk2.dynamodbenhanced
-    implementation libs.guava
+    implementation commons.guava
     implementation libs.jackson.databind
     implementation libs.jackson.databind
     implementation libs.nva.commons.apigateway
