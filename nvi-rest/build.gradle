@@ -6,7 +6,6 @@ dependencies {
     implementation commons.guava
     implementation commons.httpclient5
     implementation commons.jackson.databind
-    implementation commons.jackson.databind
     implementation libs.aws.sdk2.dynamodbenhanced
     implementation libs.nva.commons.apigateway
     implementation libs.nva.commons.auth
