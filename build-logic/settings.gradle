@@ -1,6 +1,5 @@
 dependencyResolutionManagement {
     versionCatalogs {
-        // Other versions defined in this repository
         create("libs", { from(files("../gradle/libs.versions.toml")) })
     }
 }
