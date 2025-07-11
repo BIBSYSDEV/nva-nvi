@@ -6,6 +6,7 @@ plugins {
 
 repositories {
     mavenCentral()
+    mavenLocal() // FIXME
 }
 
 // Configure project-wide automatic formatting

@@ -18,7 +18,7 @@ junit = { strictly = '5.12.2' }
 junitPlatform = { strictly = '1.12.2' } # May need to sync minor&patch version with 'junit' version
 log4j = { strictly = '2.24.3' }
 mockito = { strictly = '5.17.0' }
-nva = { strictly = '2.3.0' }
+nva = { strictly = '2.3.1' }
 nvaLanguage = { strictly = '1.2.1' }
 openCsv = { strictly = '5.10' }
 openSearchJava = { strictly = '2.23.0' }
@@ -28,7 +28,7 @@ slf4j = { require = '2.0.16' }
 spotless = { strictly = '7.0.2' }
 testContainers = { strictly = '1.21.0' }
 versions = { strictly = '0.52.0' }
-wiremock = { strictly = '3.13.0' }
+wiremock = { strictly = '4.0.0-beta.14' }
 zalando = { strictly = '0.27.1' }
 
 [libraries]
@@ -98,7 +98,7 @@ spotless = { group = 'com.diffplug.spotless', name = 'spotless-plugin-gradle', v
 testContainers = { group = 'org.testcontainers', name = 'testcontainers', version.ref = 'testContainers' }
 testContainersJunit = { group = 'org.testcontainers', name = 'junit-jupiter', version.ref = 'testContainers' }
 testContainersOpenSearch = { group = 'org.opensearch', name = 'opensearch-testcontainers', version.ref = 'openSearchTestContainer' }
-wiremock = { group = "org.wiremock", name = "wiremock-jetty12", version.ref = "wiremock" }
+wiremock = { group = 'org.wiremock', name = 'wiremock', version.ref = 'wiremock' }
 zalando = { group = 'org.zalando', name = 'problem', version.ref = 'zalando' }
 
 [bundles]

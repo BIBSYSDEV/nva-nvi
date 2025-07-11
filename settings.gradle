@@ -2,6 +2,7 @@ pluginManagement {
     includeBuild('build-logic')
     repositories {
         mavenCentral()
+        mavenLocal() // FIXME
         gradlePluginPortal()
     }
 }
@@ -9,12 +10,13 @@ pluginManagement {
 dependencyResolutionManagement {
     repositories {
         mavenCentral()
+        mavenLocal() // FIXME
         gradlePluginPortal()
     }
     versionCatalogs {
         // Version catalog imported from nva-commons
         create("commons") {
-            from("com.github.bibsysdev:versions:2.3.0")
+            from("com.github.bibsysdev:versions:2.3.1")
         }
     }
 }
