@@ -2,6 +2,18 @@ pluginManagement {
     includeBuild('build-logic')
 }
 
+dependencyResolutionManagement {
+    repositories {
+        mavenCentral()
+    }
+    versionCatalogs {
+        // Version catalog imported from nva-commons
+        create("commons") {
+            from("com.github.bibsysdev:versions:2.3.1")
+        }
+    }
+}
+
 rootProject.name = 'nva-nvi'
 
 include 'nvi-rest'

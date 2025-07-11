@@ -5,16 +5,16 @@ plugins {
 }
 
 dependencies {
-    implementation libs.aws.lambda.events
-    implementation libs.aws.sdk2.apache.client
-    implementation libs.aws.sdk2.dynamodb
+    implementation commons.aws.apache.client
+    implementation commons.aws.lambda.events
+    implementation commons.aws.sdk2.dynamo
+    implementation commons.aws.sdk2.s3
+    implementation commons.aws.sdk2.urlconnection
+    implementation commons.jackson.databind
     implementation libs.aws.sdk2.dynamodbenhanced
-    implementation libs.aws.sdk2.s3
     implementation libs.aws.sdk2.sns
     implementation libs.aws.sdk2.sqs
-    implementation libs.aws.sdk2.urlconnection
     implementation libs.bundles.jena
-    implementation libs.jackson.databind
     implementation libs.nva.commons.apigateway
     implementation libs.nva.commons.auth
     implementation libs.nva.commons.clients
@@ -23,8 +23,10 @@ dependencies {
     implementation libs.nva.json
     implementation libs.nva.s3
 
-    testFixturesImplementation libs.aws.lambda.events
-    testFixturesImplementation libs.aws.sdk2.s3
+    testFixturesAnnotationProcessor libs.errorprone
+    testFixturesImplementation commons.aws.lambda.events
+    testFixturesImplementation commons.aws.sdk2.s3
+    testFixturesImplementation commons.hamcrest
     testFixturesImplementation libs.aws.sdk2.sqs
     testFixturesImplementation libs.bundles.cucumber
     testFixturesImplementation libs.bundles.testing
@@ -35,8 +37,8 @@ dependencies {
     testFixturesImplementation libs.nva.json
     testFixturesImplementation libs.nva.s3
     testFixturesImplementation project(':nvi-test')
-    testFixturesAnnotationProcessor libs.errorprone
 
+    testImplementation commons.hamcrest
     testImplementation libs.bundles.cucumber
     testImplementation libs.dynamodDbLocal
     testImplementation project(':nvi-test')
