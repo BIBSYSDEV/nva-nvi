@@ -2,11 +2,12 @@ plugins {
     id 'nva.nvi.java-conventions'
 }
 dependencies {
-    implementation libs.aws.sdk2.dynamodb
+    implementation commons.aws.sdk2.dynamo
     implementation libs.aws.sdk2.dynamodbenhanced
     implementation commons.guava
-    implementation libs.jackson.databind
-    implementation libs.jackson.databind
+    implementation commons.hamcrest
+    implementation commons.jackson.databind
+    implementation commons.jackson.databind
     implementation libs.nva.commons.apigateway
     implementation libs.nva.commons.auth
     implementation libs.nva.commons.clients
@@ -14,6 +15,7 @@ dependencies {
     implementation libs.nva.json
     implementation project(':nvi-commons')
 
+    testImplementation commons.zalando
     testImplementation libs.bundles.cucumber
     testImplementation libs.bundles.testing
     testImplementation libs.dynamodDbLocal

@@ -3,12 +3,12 @@ plugins {
 }
 
 dependencies {
-    testImplementation libs.aws.java.sdk.core
-    testImplementation libs.aws.lambda.events
-    testImplementation libs.aws.lambda.java.core
-    testImplementation libs.aws.sdk2.core
-    testImplementation libs.aws.sdk2.dynamodb
-    testImplementation libs.aws.sdk2.s3
+    testImplementation commons.aws.java.sdk.core
+    testImplementation commons.aws.lambda.events
+    testImplementation commons.aws.lambda.core
+    testImplementation commons.aws.sdk2.core
+    testImplementation commons.aws.sdk2.dynamo
+    testImplementation commons.aws.sdk2.s3
     testImplementation libs.aws.sdk2.sns
     testImplementation libs.aws.sdk2.sqs
     testImplementation libs.com.auth0.jwt

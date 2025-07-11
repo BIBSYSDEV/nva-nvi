@@ -2,7 +2,6 @@ pluginManagement {
     includeBuild('build-logic')
     repositories {
         mavenCentral()
-        mavenLocal() // FIXME
         gradlePluginPortal()
     }
 }
@@ -10,7 +9,6 @@ pluginManagement {
 dependencyResolutionManagement {
     repositories {
         mavenCentral()
-        mavenLocal() // FIXME
         gradlePluginPortal()
     }
     versionCatalogs {
