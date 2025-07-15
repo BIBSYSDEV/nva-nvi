@@ -3,23 +3,25 @@ plugins {
 }
 
 dependencies {
+    testImplementation libs.aws.sdk2.sns
+    testImplementation libs.aws.sdk2.sqs
+    testImplementation libs.junit.platform.suite
+    testImplementation nvaCatalog.assertj.core
     testImplementation nvaCatalog.aws.java.sdk.core
     testImplementation nvaCatalog.aws.lambda.core
     testImplementation nvaCatalog.aws.lambda.events
     testImplementation nvaCatalog.aws.sdk2.core
     testImplementation nvaCatalog.aws.sdk2.dynamo
     testImplementation nvaCatalog.aws.sdk2.s3
-    testImplementation libs.aws.sdk2.sns
-    testImplementation libs.aws.sdk2.sqs
-    testImplementation libs.bundles.cucumber
-    testImplementation libs.bundles.testing
-    testImplementation libs.com.auth0.jwt
+    testImplementation nvaCatalog.bundles.testing.cucumber
+    testImplementation nvaCatalog.bundles.testing.junit
+    testImplementation nvaCatalog.com.auth0.jwt
+    testImplementation nvaCatalog.mockito.core
     testImplementation nvaLibs.auth
     testImplementation nvaLibs.core
     testImplementation nvaLibs.json
     testImplementation nvaLibs.s3
     testImplementation nvaLibs.testutils
-
     testImplementation project(":event-handlers")
     testImplementation project(":index-handlers")
     testImplementation project(":nvi-commons")

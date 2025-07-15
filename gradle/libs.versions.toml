@@ -1,65 +1,16 @@
 [versions]
-apache-poi = { strictly = '5.4.1' }
-assertj = { strictly = '3.27.3' }
 awsSdk2 = { strictly = '2.31.78' }
-com-auth0-jwt = { strictly = '4.5.0' }
-cucumber = { strictly = '7.23.0' }
 dynamoDbLocal = { strictly = '2.6.1' }
-errorprone = { strictly = '2.39.0' }
-errorpronePlugin = { strictly = '4.3.0' }
 jackson = { strictly = '2.19.1' }
-jena = { strictly = '5.4.0' }
-junit = { strictly = '5.13.3' }
 junitPlatform = { strictly = '1.13.3' } # May need to sync minor&patch version with 'junit' version
-mockito = { strictly = '5.18.0' }
 nvaLanguage = { strictly = '1.2.1' }
-openCsv = { strictly = '5.11.2' }
-openSearchJava = { strictly = '3.1.0' }
-openSearchRestClient = { strictly = '3.1.0' }
-openSearchTestContainer = { strictly = '3.0.1' }
-spotless = { strictly = '7.1.0' }
-testContainers = { strictly = '1.21.3' }
-versions = { strictly = '0.52.0' }
 
 [libraries]
-apache-poi = { group = 'org.apache.poi', name = 'poi', version.ref = 'apache-poi' }
-apache-poi-ooxml = { group = 'org.apache.poi', name = 'poi-ooxml', version.ref = 'apache-poi' }
-assertj-core = { group = 'org.assertj', name = 'assertj-core', version.ref = 'assertj' }
 aws-sdk2-dynamodbenhanced = { group = 'software.amazon.awssdk', name = 'dynamodb-enhanced', version.ref = 'awsSdk2' }
 aws-sdk2-regions = { group = 'software.amazon.awssdk', name = 'regions', version.ref = 'awsSdk2' }
 aws-sdk2-sns = { group = 'software.amazon.awssdk', name = 'sns', version.ref = 'awsSdk2' }
 aws-sdk2-sqs = { group = 'software.amazon.awssdk', name = 'sqs', version.ref = 'awsSdk2' }
-com-auth0-jwt = { group = 'com.auth0', name = 'java-jwt', version.ref = 'com-auth0-jwt' }
-cucumber-java = { group = 'io.cucumber', name = 'cucumber-java', version.ref = 'cucumber' }
-cucumber-junit-platform-engine = { group = 'io.cucumber', name = 'cucumber-junit-platform-engine', version.ref = 'cucumber' }
-cucumber-picocontainer = { group = 'io.cucumber', name = 'cucumber-picocontainer', version.ref = 'cucumber' }
 dynamodDbLocal = { group = 'com.amazonaws', name = 'DynamoDBLocal', version.ref = 'dynamoDbLocal' }
-errorprone = { group = 'com.google.errorprone', name = 'error_prone_core', version.ref = 'errorprone' }
-errorprone-plugin = { group = 'net.ltgt.errorprone', name = 'net.ltgt.errorprone.gradle.plugin', version.ref = 'errorpronePlugin' }
-gradle-versions-plugin = { group = 'com.github.ben-manes', name = 'gradle-versions-plugin', version.ref = 'versions' }
 jackson-csv = { group = 'com.fasterxml.jackson.dataformat', name = 'jackson-dataformat-csv', version.ref = 'jackson' }
-jackson-jr-annotations = { group = 'com.fasterxml.jackson.jr', name = 'jackson-jr-annotation-support', version.ref = 'jackson' }
-jackson-jr-objects = { group = 'com.fasterxml.jackson.jr', name = 'jackson-jr-objects', version.ref = 'jackson' }
-jena-arq = { group = 'org.apache.jena', name = 'jena-arq', version.ref = 'jena' }
-jena-core = { group = 'org.apache.jena', name = 'jena-core', version.ref = 'jena' }
-junit-jupiter-api = { group = 'org.junit.jupiter', name = 'junit-jupiter-api', version.ref = 'junit' }
-junit-jupiter-engine = { group = 'org.junit.jupiter', name = 'junit-jupiter-engine', version.ref = 'junit' }
-junit-jupiter-params = { group = 'org.junit.jupiter', name = 'junit-jupiter-params', version.ref = 'junit' }
 junit-platform-suite = { group = 'org.junit.platform', name = 'junit-platform-suite', version.ref = 'junitPlatform' }
-mockito-core = { group = 'org.mockito', name = 'mockito-core', version.ref = 'mockito' }
 nva-language = { group = 'com.github.bibsysdev', name = 'nva-language', version.ref = 'nvaLanguage' }
-openCsv = { group = 'com.opencsv', name = 'opencsv', version.ref = 'openCsv' }
-opensearch-java = { group = 'org.opensearch.client', name = 'opensearch-java', version.ref = 'openSearchJava' }
-opensearch-rest-client = { group = 'org.opensearch.client', name = 'opensearch-rest-client', version.ref = 'openSearchRestClient' }
-spotless = { group = 'com.diffplug.spotless', name = 'spotless-plugin-gradle', version.ref = 'spotless' }
-testContainers = { group = 'org.testcontainers', name = 'testcontainers', version.ref = 'testContainers' }
-testContainersJunit = { group = 'org.testcontainers', name = 'junit-jupiter', version.ref = 'testContainers' }
-testContainersOpenSearch = { group = 'org.opensearch', name = 'opensearch-testcontainers', version.ref = 'openSearchTestContainer' }
-
-[bundles]
-apachePoi = ['apache-poi', 'apache-poi-ooxml']
-jacksonjr = ['jackson-jr-objects', 'jackson-jr-annotations']
-jena = ['jena-core', 'jena-arq']
-testContainers = ['testContainers', 'testContainersJunit', 'testContainersOpenSearch']
-testing = ['assertj-core', 'junit-jupiter-api', 'junit-jupiter-params', 'junit-jupiter-engine', 'junit-platform-suite', 'mockito-core']
-cucumber = ['cucumber-java', 'cucumber-junit-platform-engine', 'cucumber-picocontainer']

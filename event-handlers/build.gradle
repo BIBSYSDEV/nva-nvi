@@ -4,6 +4,9 @@ plugins {
 }
 
 dependencies {
+    implementation libs.aws.sdk2.sns
+    implementation libs.aws.sdk2.sqs
+    implementation libs.jackson.csv
     implementation nvaCatalog.aws.java.sdk.core
     implementation nvaCatalog.aws.lambda.core
     implementation nvaCatalog.aws.lambda.events
@@ -13,41 +16,39 @@ dependencies {
     implementation nvaCatalog.aws.sdk2.s3
     implementation nvaCatalog.aws.sdk2.secrets
     implementation nvaCatalog.aws.sdk2.urlconnection
+    implementation nvaCatalog.bundles.jena
     implementation nvaCatalog.bundles.logging
+    implementation nvaCatalog.com.auth0.jwt
     implementation nvaCatalog.jackson.core
     implementation nvaCatalog.jackson.databind
-    implementation libs.aws.sdk2.sns
-    implementation libs.aws.sdk2.sqs
-    implementation libs.bundles.jena
-    implementation libs.com.auth0.jwt
-    implementation libs.jackson.csv
     implementation nvaLibs.auth
     implementation nvaLibs.core
-    implementation nvaLibs.secrets
     implementation nvaLibs.core
     implementation nvaLibs.eventhandlers
     implementation nvaLibs.json
     implementation nvaLibs.s3
+    implementation nvaLibs.secrets
     implementation project(':nvi-commons')
-
-    testFixturesAnnotationProcessor libs.errorprone
+    testFixturesAnnotationProcessor nvaCatalog.errorprone
+    testFixturesImplementation libs.aws.sdk2.sns
     testFixturesImplementation nvaCatalog.aws.lambda.core
     testFixturesImplementation nvaCatalog.aws.lambda.events
+    testFixturesImplementation nvaCatalog.bundles.testing.cucumber
+    testFixturesImplementation nvaCatalog.bundles.testing.junit
+    testFixturesImplementation nvaCatalog.com.auth0.jwt
     testFixturesImplementation nvaCatalog.hamcrest
-    testFixturesImplementation libs.aws.sdk2.sns
-    testFixturesImplementation libs.bundles.cucumber
-    testFixturesImplementation libs.bundles.testing
-    testFixturesImplementation libs.com.auth0.jwt
+    testFixturesImplementation nvaCatalog.mockito.core
     testFixturesImplementation nvaLibs.core
     testFixturesImplementation nvaLibs.testutils
     testFixturesImplementation project(':nvi-test')
     testFixturesImplementation(testFixtures(project(":nvi-commons")))
-
+    testImplementation libs.dynamodDbLocal
+    testImplementation nvaCatalog.assertj.core
+    testImplementation nvaCatalog.bundles.testing.cucumber
+    testImplementation nvaCatalog.bundles.testing.junit
     testImplementation nvaCatalog.hamcrest
     testImplementation nvaCatalog.jackson.datatype.jsr310
-    testImplementation libs.bundles.cucumber
-    testImplementation libs.bundles.testing
-    testImplementation libs.dynamodDbLocal
+    testImplementation nvaCatalog.mockito.core
     testImplementation nvaLibs.logutils
     testImplementation nvaLibs.testutils
     testImplementation project(':nvi-test')

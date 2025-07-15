@@ -2,45 +2,46 @@ plugins {
     id 'nva.nvi.java-conventions'
 }
 dependencies {
+    implementation libs.aws.sdk2.regions
+    implementation libs.aws.sdk2.sqs
+    implementation libs.nva.language
     implementation nvaCatalog.aws.apache.client
     implementation nvaCatalog.aws.java.sdk.core
     implementation nvaCatalog.aws.lambda.core
     implementation nvaCatalog.aws.lambda.events
     implementation nvaCatalog.aws.sdk2.dynamo
     implementation nvaCatalog.aws.sdk2.s3
+    implementation nvaCatalog.bundles.apache.poi
+    implementation nvaCatalog.bundles.jacksonjr
     implementation nvaCatalog.bundles.logging
+    implementation nvaCatalog.com.auth0.jwt
     implementation nvaCatalog.guava
     implementation nvaCatalog.jackson.core
     implementation nvaCatalog.jackson.databind
-    implementation libs.aws.sdk2.regions
-    implementation libs.aws.sdk2.sqs
-    implementation libs.bundles.apachePoi
-    implementation libs.bundles.jacksonjr
-    implementation libs.com.auth0.jwt
-    implementation libs.jena.core
+    implementation nvaCatalog.jena.core
+    implementation nvaCatalog.opensearch.java
+    implementation nvaCatalog.opensearch.rest.client
     implementation nvaLibs.apigateway
     implementation nvaLibs.auth
     implementation nvaLibs.clients
-    implementation nvaLibs.pagination
-    implementation nvaLibs.secrets
     implementation nvaLibs.core
     implementation nvaLibs.json
-    implementation libs.nva.language
+    implementation nvaLibs.pagination
     implementation nvaLibs.s3
-    implementation libs.opensearch.java
-    implementation libs.opensearch.rest.client
+    implementation nvaLibs.secrets
     implementation project(':nvi-commons')
-
+    testImplementation libs.dynamodDbLocal
+    testImplementation nvaCatalog.assertj.core
+    testImplementation nvaCatalog.bundles.testing.cucumber
+    testImplementation nvaCatalog.bundles.testing.junit
+    testImplementation nvaCatalog.bundles.testing.testcontainers
     testImplementation nvaCatalog.hamcrest
+    testImplementation nvaCatalog.mockito.core
+    testImplementation nvaCatalog.opencsv
     testImplementation nvaCatalog.zalando
-    testImplementation libs.bundles.cucumber
-    testImplementation libs.bundles.testContainers
-    testImplementation libs.bundles.testing
+    testImplementation nvaLibs.identifiers
     testImplementation nvaLibs.logutils
     testImplementation nvaLibs.testutils
-    testImplementation libs.dynamodDbLocal
-    testImplementation nvaLibs.identifiers
-    testImplementation libs.openCsv
     testImplementation project(':nvi-test')
     testImplementation(testFixtures(project(":nvi-commons")))
 }
