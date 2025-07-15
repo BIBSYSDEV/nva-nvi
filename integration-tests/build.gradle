@@ -3,15 +3,16 @@ plugins {
 }
 
 dependencies {
-    testImplementation commons.aws.java.sdk.core
-    testImplementation commons.aws.lambda.core
-    testImplementation commons.aws.lambda.events
-    testImplementation commons.aws.sdk2.core
-    testImplementation commons.aws.sdk2.dynamo
-    testImplementation commons.aws.sdk2.s3
+    testImplementation nvaCatalog.aws.java.sdk.core
+    testImplementation nvaCatalog.aws.lambda.core
+    testImplementation nvaCatalog.aws.lambda.events
+    testImplementation nvaCatalog.aws.sdk2.core
+    testImplementation nvaCatalog.aws.sdk2.dynamo
+    testImplementation nvaCatalog.aws.sdk2.s3
     testImplementation libs.aws.sdk2.sns
     testImplementation libs.aws.sdk2.sqs
     testImplementation libs.bundles.cucumber
+    testImplementation libs.bundles.testing
     testImplementation libs.com.auth0.jwt
     testImplementation libs.nva.commons.auth
     testImplementation libs.nva.commons.core

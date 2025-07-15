@@ -8,8 +8,16 @@ dependencyResolutionManagement {
     }
     versionCatalogs {
         // Version catalog imported from nva-commons
-        create("commons") {
-            from("com.github.bibsysdev:versions:2.3.1")
+        create("nvaCatalog") {
+            from("com.github.bibsysdev:versions:${nvaCommonsVersion}")
+        }
+
+        // Local version catalog for libraries in nva-commons
+        // This is defined programmatically to reference the version from gradle.properties
+        create("nvaLibs") {
+            version('nva', "${nvaCommonsVersion}")
+            library("core", "com.github.bibsysdev", "core").versionRef("nva")
+            library("testutils", "com.github.bibsysdev", "nvatestutils").versionRef("nva")
         }
     }
 }

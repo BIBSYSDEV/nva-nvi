@@ -1,3 +1,17 @@
 plugins {
     id 'nva.nvi.root-module-conventions'
+    alias(nvaCatalog.plugins.errorprone)
+    alias(nvaCatalog.plugins.gradle.versions)
+    alias(nvaCatalog.plugins.spotless)
+}
+
+allprojects {
+    plugins.withId('java') {
+        plugins.withId('net.ltgt.errorprone') {
+            dependencies {
+                annotationProcessor nvaCatalog.errorprone
+                testAnnotationProcessor nvaCatalog.errorprone
+            }
+        }
+    }
 }

@@ -5,12 +5,12 @@ plugins {
 }
 
 dependencies {
-    implementation commons.aws.apache.client
-    implementation commons.aws.lambda.events
-    implementation commons.aws.sdk2.dynamo
-    implementation commons.aws.sdk2.s3
-    implementation commons.aws.sdk2.urlconnection
-    implementation commons.jackson.databind
+    implementation nvaCatalog.aws.apache.client
+    implementation nvaCatalog.aws.lambda.events
+    implementation nvaCatalog.aws.sdk2.dynamo
+    implementation nvaCatalog.aws.sdk2.s3
+    implementation nvaCatalog.aws.sdk2.urlconnection
+    implementation nvaCatalog.jackson.databind
     implementation libs.aws.sdk2.dynamodbenhanced
     implementation libs.aws.sdk2.sns
     implementation libs.aws.sdk2.sqs
@@ -24,9 +24,9 @@ dependencies {
     implementation libs.nva.s3
 
     testFixturesAnnotationProcessor libs.errorprone
-    testFixturesImplementation commons.aws.lambda.events
-    testFixturesImplementation commons.aws.sdk2.s3
-    testFixturesImplementation commons.hamcrest
+    testFixturesImplementation nvaCatalog.aws.lambda.events
+    testFixturesImplementation nvaCatalog.aws.sdk2.s3
+    testFixturesImplementation nvaCatalog.hamcrest
     testFixturesImplementation libs.aws.sdk2.sqs
     testFixturesImplementation libs.bundles.cucumber
     testFixturesImplementation libs.bundles.testing
@@ -38,8 +38,9 @@ dependencies {
     testFixturesImplementation libs.nva.s3
     testFixturesImplementation project(':nvi-test')
 
-    testImplementation commons.hamcrest
+    testImplementation nvaCatalog.hamcrest
     testImplementation libs.bundles.cucumber
+    testImplementation libs.bundles.testing
     testImplementation libs.dynamodDbLocal
     testImplementation project(':nvi-test')
 }

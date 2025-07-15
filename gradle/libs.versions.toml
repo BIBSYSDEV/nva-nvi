@@ -1,7 +1,7 @@
 [versions]
 apache-poi = { strictly = '5.4.1' }
 assertj = { strictly = '3.27.3' }
-awsSdk2 = { strictly = '2.31.77' }
+awsSdk2 = { strictly = '2.31.78' }
 com-auth0-jwt = { strictly = '4.5.0' }
 cucumber = { strictly = '7.23.0' }
 dynamoDbLocal = { strictly = '2.6.1' }
@@ -12,7 +12,7 @@ jena = { strictly = '5.4.0' }
 junit = { strictly = '5.13.3' }
 junitPlatform = { strictly = '1.13.3' } # May need to sync minor&patch version with 'junit' version
 mockito = { strictly = '5.18.0' }
-nva = { strictly = '2.3.1' }
+nva = { strictly = '2.3.5' }
 nvaLanguage = { strictly = '1.2.1' }
 openCsv = { strictly = '5.11.2' }
 openSearchJava = { strictly = '3.1.0' }
@@ -51,7 +51,7 @@ mockito-core = { group = 'org.mockito', name = 'mockito-core', version.ref = 'mo
 nva-commons-apigateway = { group = 'com.github.bibsysdev', name = 'apigateway', version.ref = 'nva' }
 nva-commons-auth = { group = 'com.github.bibsysdev', name = 'auth', version.ref = 'nva' }
 nva-commons-clients = { group = 'com.github.bibsysdev', name = 'clients', version.ref = 'nva' }
-nva-commons-core = { group = 'com.github.bibsysdev', name = 'core', version.ref = 'nva' }
+nva-commons-core = { group = 'com.github.bibsysdev', name = 'core', version.ref = 'nva' } # FIXME: Duplicate
 nva-commons-pagination = { group = 'com.github.bibsysdev', name = 'pagination', version.ref = 'nva' }
 nva-commons-secrets = { group = 'com.github.bibsysdev', name = 'secrets', version.ref = 'nva' }
 nva-core = { group = 'com.github.bibsysdev', name = 'core', version.ref = 'nva' }

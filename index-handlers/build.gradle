@@ -2,16 +2,16 @@ plugins {
     id 'nva.nvi.java-conventions'
 }
 dependencies {
-    implementation commons.aws.apache.client
-    implementation commons.aws.java.sdk.core
-    implementation commons.aws.lambda.core
-    implementation commons.aws.lambda.events
-    implementation commons.aws.sdk2.dynamo
-    implementation commons.aws.sdk2.s3
-    implementation commons.bundles.logging
-    implementation commons.guava
-    implementation commons.jackson.core
-    implementation commons.jackson.databind
+    implementation nvaCatalog.aws.apache.client
+    implementation nvaCatalog.aws.java.sdk.core
+    implementation nvaCatalog.aws.lambda.core
+    implementation nvaCatalog.aws.lambda.events
+    implementation nvaCatalog.aws.sdk2.dynamo
+    implementation nvaCatalog.aws.sdk2.s3
+    implementation nvaCatalog.bundles.logging
+    implementation nvaCatalog.guava
+    implementation nvaCatalog.jackson.core
+    implementation nvaCatalog.jackson.databind
     implementation libs.aws.sdk2.regions
     implementation libs.aws.sdk2.sqs
     implementation libs.bundles.apachePoi
@@ -31,10 +31,11 @@ dependencies {
     implementation libs.opensearch.rest.client
     implementation project(':nvi-commons')
 
-    testImplementation commons.hamcrest
-    testImplementation commons.zalando
+    testImplementation nvaCatalog.hamcrest
+    testImplementation nvaCatalog.zalando
     testImplementation libs.bundles.cucumber
     testImplementation libs.bundles.testContainers
+    testImplementation libs.bundles.testing
     testImplementation libs.dynamodDbLocal
     testImplementation libs.nva.identifiers
     testImplementation libs.openCsv
