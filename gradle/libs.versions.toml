@@ -12,7 +12,6 @@ jena = { strictly = '5.4.0' }
 junit = { strictly = '5.13.3' }
 junitPlatform = { strictly = '1.13.3' } # May need to sync minor&patch version with 'junit' version
 mockito = { strictly = '5.18.0' }
-nva = { strictly = '2.3.5' }
 nvaLanguage = { strictly = '1.2.1' }
 openCsv = { strictly = '5.11.2' }
 openSearchJava = { strictly = '3.1.0' }
@@ -48,20 +47,7 @@ junit-jupiter-engine = { group = 'org.junit.jupiter', name = 'junit-jupiter-engi
 junit-jupiter-params = { group = 'org.junit.jupiter', name = 'junit-jupiter-params', version.ref = 'junit' }
 junit-platform-suite = { group = 'org.junit.platform', name = 'junit-platform-suite', version.ref = 'junitPlatform' }
 mockito-core = { group = 'org.mockito', name = 'mockito-core', version.ref = 'mockito' }
-nva-commons-apigateway = { group = 'com.github.bibsysdev', name = 'apigateway', version.ref = 'nva' }
-nva-commons-auth = { group = 'com.github.bibsysdev', name = 'auth', version.ref = 'nva' }
-nva-commons-clients = { group = 'com.github.bibsysdev', name = 'clients', version.ref = 'nva' }
-nva-commons-core = { group = 'com.github.bibsysdev', name = 'core', version.ref = 'nva' } # FIXME: Duplicate
-nva-commons-pagination = { group = 'com.github.bibsysdev', name = 'pagination', version.ref = 'nva' }
-nva-commons-secrets = { group = 'com.github.bibsysdev', name = 'secrets', version.ref = 'nva' }
-nva-core = { group = 'com.github.bibsysdev', name = 'core', version.ref = 'nva' }
-nva-eventhandlers = { group = 'com.github.bibsysdev', name = 'eventhandlers', version.ref = 'nva' }
-nva-identifiers = { group = 'com.github.bibsysdev', name = 'identifiers', version.ref = 'nva' }
-nva-json = { group = 'com.github.bibsysdev', name = 'json', version.ref = 'nva' }
 nva-language = { group = 'com.github.bibsysdev', name = 'nva-language', version.ref = 'nvaLanguage' }
-nva-logutils = { group = 'com.github.bibsysdev', name = 'logutils', version.ref = 'nva' }
-nva-s3 = { group = 'com.github.bibsysdev', name = 's3', version.ref = 'nva' }
-nva-testutils = { group = 'com.github.bibsysdev', name = 'nvatestutils', version.ref = 'nva' }
 openCsv = { group = 'com.opencsv', name = 'opencsv', version.ref = 'openCsv' }
 opensearch-java = { group = 'org.opensearch.client', name = 'opensearch-java', version.ref = 'openSearchJava' }
 opensearch-rest-client = { group = 'org.opensearch.client', name = 'opensearch-rest-client', version.ref = 'openSearchRestClient' }
@@ -75,5 +61,5 @@ apachePoi = ['apache-poi', 'apache-poi-ooxml']
 jacksonjr = ['jackson-jr-objects', 'jackson-jr-annotations']
 jena = ['jena-core', 'jena-arq']
 testContainers = ['testContainers', 'testContainersJunit', 'testContainersOpenSearch']
-testing = ['assertj-core', 'junit-jupiter-api', 'junit-jupiter-params', 'junit-jupiter-engine', 'junit-platform-suite', 'mockito-core', 'nva-testutils', 'nva-logutils']
+testing = ['assertj-core', 'junit-jupiter-api', 'junit-jupiter-params', 'junit-jupiter-engine', 'junit-platform-suite', 'mockito-core']
 cucumber = ['cucumber-java', 'cucumber-junit-platform-engine', 'cucumber-picocontainer']

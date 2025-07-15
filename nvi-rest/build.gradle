@@ -7,11 +7,11 @@ dependencies {
     implementation nvaCatalog.httpclient5
     implementation nvaCatalog.jackson.databind
     implementation libs.aws.sdk2.dynamodbenhanced
-    implementation libs.nva.commons.apigateway
-    implementation libs.nva.commons.auth
-    implementation libs.nva.commons.clients
-    implementation libs.nva.commons.core
-    implementation libs.nva.json
+    implementation nvaLibs.apigateway
+    implementation nvaLibs.auth
+    implementation nvaLibs.clients
+    implementation nvaLibs.core
+    implementation nvaLibs.json
     implementation project(':nvi-commons')
 
     testImplementation nvaCatalog.hamcrest
@@ -19,7 +19,7 @@ dependencies {
     testImplementation libs.bundles.cucumber
     testImplementation libs.bundles.testing
     testImplementation libs.dynamodDbLocal
-    testImplementation libs.nva.testutils
+    testImplementation nvaLibs.testutils
     testImplementation project(':nvi-test')
     testImplementation(testFixtures(project(":nvi-commons")))
 }

@@ -5,8 +5,8 @@ plugins {
 dependencies {
     implementation nvaCatalog.jackson.databind
     implementation libs.bundles.testing
-    implementation libs.nva.commons.core
-    implementation libs.nva.testutils
+    implementation nvaLibs.core
+    implementation nvaLibs.testutils
 }
 
 test {

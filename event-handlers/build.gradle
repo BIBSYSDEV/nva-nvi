@@ -21,13 +21,13 @@ dependencies {
     implementation libs.bundles.jena
     implementation libs.com.auth0.jwt
     implementation libs.jackson.csv
-    implementation libs.nva.commons.auth
-    implementation libs.nva.commons.core
-    implementation libs.nva.commons.secrets
-    implementation libs.nva.core
-    implementation libs.nva.eventhandlers
-    implementation libs.nva.json
-    implementation libs.nva.s3
+    implementation nvaLibs.auth
+    implementation nvaLibs.core
+    implementation nvaLibs.secrets
+    implementation nvaLibs.core
+    implementation nvaLibs.eventhandlers
+    implementation nvaLibs.json
+    implementation nvaLibs.s3
     implementation project(':nvi-commons')
 
     testFixturesAnnotationProcessor libs.errorprone
@@ -38,8 +38,8 @@ dependencies {
     testFixturesImplementation libs.bundles.cucumber
     testFixturesImplementation libs.bundles.testing
     testFixturesImplementation libs.com.auth0.jwt
-    testFixturesImplementation libs.nva.commons.core
-    testFixturesImplementation libs.nva.testutils
+    testFixturesImplementation nvaLibs.core
+    testFixturesImplementation nvaLibs.testutils
     testFixturesImplementation project(':nvi-test')
     testFixturesImplementation(testFixtures(project(":nvi-commons")))
 
@@ -48,7 +48,8 @@ dependencies {
     testImplementation libs.bundles.cucumber
     testImplementation libs.bundles.testing
     testImplementation libs.dynamodDbLocal
-    testImplementation libs.nva.testutils
+    testImplementation nvaLibs.logutils
+    testImplementation nvaLibs.testutils
     testImplementation project(':nvi-test')
     testImplementation(testFixtures(project(":nvi-commons")))
 }

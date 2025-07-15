@@ -18,15 +18,15 @@ dependencies {
     implementation libs.bundles.jacksonjr
     implementation libs.com.auth0.jwt
     implementation libs.jena.core
-    implementation libs.nva.commons.apigateway
-    implementation libs.nva.commons.auth
-    implementation libs.nva.commons.clients
-    implementation libs.nva.commons.pagination
-    implementation libs.nva.commons.secrets
-    implementation libs.nva.core
-    implementation libs.nva.json
+    implementation nvaLibs.apigateway
+    implementation nvaLibs.auth
+    implementation nvaLibs.clients
+    implementation nvaLibs.pagination
+    implementation nvaLibs.secrets
+    implementation nvaLibs.core
+    implementation nvaLibs.json
     implementation libs.nva.language
-    implementation libs.nva.s3
+    implementation nvaLibs.s3
     implementation libs.opensearch.java
     implementation libs.opensearch.rest.client
     implementation project(':nvi-commons')
@@ -36,8 +36,10 @@ dependencies {
     testImplementation libs.bundles.cucumber
     testImplementation libs.bundles.testContainers
     testImplementation libs.bundles.testing
+    testImplementation nvaLibs.logutils
+    testImplementation nvaLibs.testutils
     testImplementation libs.dynamodDbLocal
-    testImplementation libs.nva.identifiers
+    testImplementation nvaLibs.identifiers
     testImplementation libs.openCsv
     testImplementation project(':nvi-test')
     testImplementation(testFixtures(project(":nvi-commons")))

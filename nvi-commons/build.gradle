@@ -15,13 +15,13 @@ dependencies {
     implementation libs.aws.sdk2.sns
     implementation libs.aws.sdk2.sqs
     implementation libs.bundles.jena
-    implementation libs.nva.commons.apigateway
-    implementation libs.nva.commons.auth
-    implementation libs.nva.commons.clients
-    implementation libs.nva.core
-    implementation libs.nva.identifiers
-    implementation libs.nva.json
-    implementation libs.nva.s3
+    implementation nvaLibs.apigateway
+    implementation nvaLibs.auth
+    implementation nvaLibs.clients
+    implementation nvaLibs.core
+    implementation nvaLibs.identifiers
+    implementation nvaLibs.json
+    implementation nvaLibs.s3
 
     testFixturesAnnotationProcessor libs.errorprone
     testFixturesImplementation nvaCatalog.aws.lambda.events
@@ -31,14 +31,17 @@ dependencies {
     testFixturesImplementation libs.bundles.cucumber
     testFixturesImplementation libs.bundles.testing
     testFixturesImplementation libs.dynamodDbLocal
-    testFixturesImplementation libs.nva.commons.apigateway
-    testFixturesImplementation libs.nva.commons.auth
-    testFixturesImplementation libs.nva.core
-    testFixturesImplementation libs.nva.json
-    testFixturesImplementation libs.nva.s3
+    testFixturesImplementation nvaLibs.apigateway
+    testFixturesImplementation nvaLibs.auth
+    testFixturesImplementation nvaLibs.core
+    testFixturesImplementation nvaLibs.json
+    testFixturesImplementation nvaLibs.s3
+    testFixturesImplementation nvaLibs.testutils
     testFixturesImplementation project(':nvi-test')
 
     testImplementation nvaCatalog.hamcrest
+    testImplementation nvaLibs.logutils
+    testImplementation nvaLibs.testutils
     testImplementation libs.bundles.cucumber
     testImplementation libs.bundles.testing
     testImplementation libs.dynamodDbLocal

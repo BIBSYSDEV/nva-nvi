@@ -14,11 +14,11 @@ dependencies {
     testImplementation libs.bundles.cucumber
     testImplementation libs.bundles.testing
     testImplementation libs.com.auth0.jwt
-    testImplementation libs.nva.commons.auth
-    testImplementation libs.nva.commons.core
-    testImplementation libs.nva.json
-    testImplementation libs.nva.s3
-    testImplementation libs.nva.testutils
+    testImplementation nvaLibs.auth
+    testImplementation nvaLibs.core
+    testImplementation nvaLibs.json
+    testImplementation nvaLibs.s3
+    testImplementation nvaLibs.testutils
 
     testImplementation project(":event-handlers")
     testImplementation project(":index-handlers")
