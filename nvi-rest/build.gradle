@@ -2,24 +2,25 @@ plugins {
     id 'nva.nvi.java-conventions'
 }
 dependencies {
-    implementation commons.aws.sdk2.dynamo
-    implementation commons.guava
-    implementation commons.httpclient5
-    implementation commons.jackson.databind
     implementation libs.aws.sdk2.dynamodbenhanced
-    implementation libs.nva.commons.apigateway
-    implementation libs.nva.commons.auth
-    implementation libs.nva.commons.clients
-    implementation libs.nva.commons.core
-    implementation libs.nva.json
+    implementation nvaCatalog.aws.sdk2.dynamo
+    implementation nvaCatalog.guava
+    implementation nvaCatalog.httpclient5
+    implementation nvaCatalog.jackson.databind
+    implementation nvaLibs.apigateway
+    implementation nvaLibs.auth
+    implementation nvaLibs.clients
+    implementation nvaLibs.core
+    implementation nvaLibs.json
     implementation project(':nvi-commons')
-
-    testImplementation commons.hamcrest
-    testImplementation commons.zalando
-    testImplementation libs.bundles.cucumber
-    testImplementation libs.bundles.testing
     testImplementation libs.dynamodDbLocal
-    testImplementation libs.nva.testutils
+    testImplementation nvaCatalog.assertj.core
+    testImplementation nvaCatalog.bundles.testing.cucumber
+    testImplementation nvaCatalog.bundles.testing.junit
+    testImplementation nvaCatalog.hamcrest
+    testImplementation nvaCatalog.mockito.core
+    testImplementation nvaCatalog.zalando
+    testImplementation nvaLibs.testutils
     testImplementation project(':nvi-test')
     testImplementation(testFixtures(project(":nvi-commons")))
 }
