@@ -23,7 +23,6 @@ dependencies {
     implementation nvaCatalog.jackson.databind
     implementation nvaLibs.auth
     implementation nvaLibs.core
-    implementation nvaLibs.core
     implementation nvaLibs.eventhandlers
     implementation nvaLibs.json
     implementation nvaLibs.s3
