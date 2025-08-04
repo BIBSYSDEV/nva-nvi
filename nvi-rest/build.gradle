@@ -2,18 +2,15 @@ plugins {
     id 'nva.nvi.java-conventions'
 }
 dependencies {
-    implementation libs.aws.sdk2.dynamodbenhanced
     implementation nvaCatalog.aws.sdk2.dynamo
-    implementation nvaCatalog.guava
-    implementation nvaCatalog.httpclient5
-    implementation nvaCatalog.jackson.databind
-    implementation nvaLibs.apigateway
+    api nvaCatalog.guava
+    api nvaCatalog.jackson.databind
+    api nvaLibs.apigateway
     implementation nvaLibs.auth
-    implementation nvaLibs.clients
-    implementation nvaLibs.core
-    implementation nvaLibs.json
-    implementation project(':nvi-commons')
-    testImplementation libs.dynamodDbLocal
+    api nvaLibs.clients
+    api nvaLibs.core
+    api nvaLibs.json
+    api project(':nvi-commons')
     testImplementation nvaCatalog.assertj.core
     testImplementation nvaCatalog.bundles.testing.cucumber
     testImplementation nvaCatalog.bundles.testing.junit
@@ -23,6 +20,13 @@ dependencies {
     testImplementation nvaLibs.testutils
     testImplementation project(':nvi-test')
     testImplementation(testFixtures(project(":nvi-commons")))
+  api nvaCatalog.jackson.annotations
+  testImplementation nvaCatalog.jackson.core
+  testImplementation nvaCatalog.aws.lambda.core
+  implementation nvaCatalog.slf4j.api
+  testImplementation 'software.amazon.awssdk:utils:2.31.78'
+  api nvaCatalog.aws.lambda.core
+  testImplementation 'org.apache.httpcomponents.core5:httpcore5:5.3.4'
 }
 
 test {

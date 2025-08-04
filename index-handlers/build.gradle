@@ -2,48 +2,53 @@ plugins {
     id 'nva.nvi.java-conventions'
 }
 dependencies {
-    implementation libs.aws.sdk2.regions
-    implementation libs.aws.sdk2.sqs
+    testImplementation libs.aws.sdk2.sqs
     implementation libs.nva.language
-    implementation nvaCatalog.aws.apache.client
+    runtimeOnly nvaCatalog.aws.apache.client
     implementation nvaCatalog.aws.java.sdk.core
-    implementation nvaCatalog.aws.lambda.core
-    implementation nvaCatalog.aws.lambda.events
+    api nvaCatalog.aws.lambda.core
+    api nvaCatalog.aws.lambda.events
     implementation nvaCatalog.aws.sdk2.dynamo
-    implementation nvaCatalog.aws.sdk2.s3
+    api nvaCatalog.aws.sdk2.s3
     implementation nvaCatalog.bundles.apache.poi
     implementation nvaCatalog.bundles.jacksonjr
     implementation nvaCatalog.bundles.logging
-    implementation nvaCatalog.com.auth0.jwt
-    implementation nvaCatalog.guava
-    implementation nvaCatalog.jackson.core
-    implementation nvaCatalog.jackson.databind
+    api nvaCatalog.com.auth0.jwt
+    api nvaCatalog.guava
+    api nvaCatalog.jackson.core
+    api nvaCatalog.jackson.databind
     implementation nvaCatalog.jena.core
-    implementation nvaCatalog.opensearch.java
-    implementation nvaCatalog.opensearch.rest.client
-    implementation nvaLibs.apigateway
-    implementation nvaLibs.auth
-    implementation nvaLibs.clients
-    implementation nvaLibs.core
-    implementation nvaLibs.json
-    implementation nvaLibs.pagination
+    api nvaCatalog.opensearch.java
+    api nvaCatalog.opensearch.rest.client
+    api nvaLibs.apigateway
+    api nvaLibs.auth
+    api nvaLibs.clients
+    api nvaLibs.core
+    api nvaLibs.json
+    api nvaLibs.pagination
     implementation nvaLibs.s3
     implementation nvaLibs.secrets
-    implementation project(':nvi-commons')
-    testImplementation libs.dynamodDbLocal
+    api project(':nvi-commons')
     testImplementation nvaCatalog.assertj.core
     testImplementation nvaCatalog.bundles.testing.cucumber
     testImplementation nvaCatalog.bundles.testing.junit
     testImplementation nvaCatalog.bundles.testing.testcontainers
     testImplementation nvaCatalog.hamcrest
     testImplementation nvaCatalog.mockito.core
-    testImplementation nvaCatalog.opencsv
     testImplementation nvaCatalog.zalando
     testImplementation nvaLibs.identifiers
     testImplementation nvaLibs.logutils
     testImplementation nvaLibs.testutils
     testImplementation project(':nvi-test')
     testImplementation(testFixtures(project(":nvi-commons")))
+  api nvaCatalog.jackson.annotations
+  implementation 'org.apache.httpcomponents.core5:httpcore5:5.3.4'
+  testImplementation 'org.apache.httpcomponents:httpcore:4.4.16'
+  testImplementation 'software.amazon.awssdk:aws-core:2.31.78'
+  implementation 'jakarta.json:jakarta.json-api:2.1.3'
+  testImplementation nvaCatalog.hamcrest.core
+  testImplementation 'org.apache.httpcomponents.core5:httpcore5:5.3.4'
+  testImplementation 'org.picocontainer:picocontainer:2.15'
 }
 
 test {

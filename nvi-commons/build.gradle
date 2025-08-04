@@ -5,41 +5,39 @@ plugins {
 }
 
 dependencies {
-    implementation libs.aws.sdk2.dynamodbenhanced
-    implementation libs.aws.sdk2.sns
-    implementation libs.aws.sdk2.sqs
+    api libs.aws.sdk2.dynamodbenhanced
+    api libs.aws.sdk2.sns
+    api libs.aws.sdk2.sqs
     implementation nvaCatalog.aws.apache.client
-    implementation nvaCatalog.aws.lambda.events
-    implementation nvaCatalog.aws.sdk2.dynamo
-    implementation nvaCatalog.aws.sdk2.s3
+    api nvaCatalog.aws.lambda.events
+    api nvaCatalog.aws.sdk2.dynamo
+    api nvaCatalog.aws.sdk2.s3
     implementation nvaCatalog.aws.sdk2.urlconnection
     implementation nvaCatalog.bundles.jena
-    implementation nvaCatalog.jackson.databind
-    implementation nvaLibs.apigateway
-    implementation nvaLibs.auth
-    implementation nvaLibs.clients
-    implementation nvaLibs.core
-    implementation nvaLibs.identifiers
-    implementation nvaLibs.json
+    api nvaCatalog.jackson.databind
+    api nvaLibs.apigateway
+    api nvaLibs.auth
+    api nvaLibs.clients
+    api nvaLibs.core
+    api nvaLibs.identifiers
+    api nvaLibs.json
     implementation nvaLibs.s3
     testFixturesAnnotationProcessor nvaCatalog.errorprone
-    testFixturesImplementation libs.aws.sdk2.sqs
+    testFixturesApi libs.aws.sdk2.sqs
     testFixturesImplementation libs.dynamodDbLocal
-    testFixturesImplementation nvaCatalog.aws.lambda.events
-    testFixturesImplementation nvaCatalog.aws.sdk2.s3
+    testFixturesApi nvaCatalog.aws.lambda.events
+    testFixturesApi nvaCatalog.aws.sdk2.s3
     testFixturesImplementation nvaCatalog.bundles.testing.cucumber
     testFixturesImplementation nvaCatalog.bundles.testing.junit
     testFixturesImplementation nvaCatalog.hamcrest
     testFixturesImplementation nvaCatalog.mockito.core
     testFixturesImplementation nvaLibs.apigateway
-    testFixturesImplementation nvaLibs.auth
-    testFixturesImplementation nvaLibs.core
+    testFixturesApi nvaLibs.auth
+    testFixturesApi nvaLibs.core
     testFixturesImplementation nvaLibs.json
-    testFixturesImplementation nvaLibs.s3
+    testFixturesApi nvaLibs.s3
     testFixturesImplementation nvaLibs.testutils
-    testFixturesImplementation project(':nvi-test')
-    testImplementation libs.dynamodDbLocal
-    testImplementation libs.junit.platform.suite
+    testFixturesApi project(':nvi-test')
     testImplementation nvaCatalog.assertj.core
     testImplementation nvaCatalog.bundles.testing.cucumber
     testImplementation nvaCatalog.bundles.testing.junit
@@ -48,6 +46,29 @@ dependencies {
     testImplementation nvaLibs.logutils
     testImplementation nvaLibs.testutils
     testImplementation project(':nvi-test')
+  api nvaCatalog.jackson.core
+  implementation 'software.amazon.awssdk:auth:2.31.78'
+  testFixturesApi nvaCatalog.aws.sdk2.dynamo
+  testFixturesImplementation 'software.amazon.awssdk:aws-core:2.31.78'
+  testFixturesImplementation nvaCatalog.jackson.datatype.jsr310
+  testFixturesImplementation nvaCatalog.slf4j.api
+  testImplementation nvaCatalog.jackson.core
+  api libs.aws.sdk2.regions
+  implementation 'com.apicatalog:titanium-json-ld:1.6.0'
+  testFixturesImplementation nvaCatalog.jackson.core
+  api nvaCatalog.jackson.annotations
+  implementation nvaCatalog.slf4j.api
+  testImplementation nvaCatalog.aws.sdk2.core
+  implementation 'software.amazon.awssdk:http-client-spi:2.31.78'
+  testFixturesApi 'org.picocontainer:picocontainer:2.15'
+  testImplementation 'io.cucumber:cucumber-core:7.21.1'
+  implementation nvaCatalog.aws.sdk2.core
+  testImplementation 'software.amazon.awssdk:http-client-spi:2.31.78'
+  testFixturesApi nvaCatalog.jackson.databind
+  implementation nvaCatalog.commons.lang
+  implementation 'org.glassfish:jakarta.json:2.0.1'
+  testImplementation 'org.junit.platform:junit-platform-suite-api:1.13.3'
+  implementation 'software.amazon.awssdk:aws-core:2.31.78'
 }
 
 test {

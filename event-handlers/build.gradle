@@ -4,54 +4,50 @@ plugins {
 }
 
 dependencies {
-    implementation libs.aws.sdk2.sns
-    implementation libs.aws.sdk2.sqs
+    testImplementation libs.aws.sdk2.sqs
     implementation libs.jackson.csv
-    implementation nvaCatalog.aws.java.sdk.core
-    implementation nvaCatalog.aws.lambda.core
-    implementation nvaCatalog.aws.lambda.events
+    api nvaCatalog.aws.lambda.core
+    api nvaCatalog.aws.lambda.events
     implementation nvaCatalog.aws.sdk2.core
     implementation nvaCatalog.aws.sdk2.dynamo
-    implementation nvaCatalog.aws.sdk2.eventbridge
-    implementation nvaCatalog.aws.sdk2.s3
-    implementation nvaCatalog.aws.sdk2.secrets
+    api nvaCatalog.aws.sdk2.eventbridge
+    api nvaCatalog.aws.sdk2.s3
     implementation nvaCatalog.aws.sdk2.urlconnection
     implementation nvaCatalog.bundles.jena
     implementation nvaCatalog.bundles.logging
-    implementation nvaCatalog.com.auth0.jwt
-    implementation nvaCatalog.jackson.core
-    implementation nvaCatalog.jackson.databind
-    implementation nvaLibs.auth
-    implementation nvaLibs.core
-    implementation nvaLibs.eventhandlers
-    implementation nvaLibs.json
+    api nvaCatalog.jackson.core
+    api nvaCatalog.jackson.databind
+    api nvaLibs.auth
+    api nvaLibs.core
+    api nvaLibs.eventhandlers
+    api nvaLibs.json
     implementation nvaLibs.s3
-    implementation nvaLibs.secrets
-    implementation project(':nvi-commons')
+    api project(':nvi-commons')
     testFixturesAnnotationProcessor nvaCatalog.errorprone
-    testFixturesImplementation libs.aws.sdk2.sns
+    testFixturesApi libs.aws.sdk2.sns
     testFixturesImplementation nvaCatalog.aws.lambda.core
-    testFixturesImplementation nvaCatalog.aws.lambda.events
+    testFixturesApi nvaCatalog.aws.lambda.events
     testFixturesImplementation nvaCatalog.bundles.testing.cucumber
     testFixturesImplementation nvaCatalog.bundles.testing.junit
-    testFixturesImplementation nvaCatalog.com.auth0.jwt
-    testFixturesImplementation nvaCatalog.hamcrest
     testFixturesImplementation nvaCatalog.mockito.core
     testFixturesImplementation nvaLibs.core
-    testFixturesImplementation nvaLibs.testutils
-    testFixturesImplementation project(':nvi-test')
-    testFixturesImplementation(testFixtures(project(":nvi-commons")))
-    testImplementation libs.dynamodDbLocal
+    testFixturesApi(testFixtures(project(":nvi-commons")))
     testImplementation nvaCatalog.assertj.core
     testImplementation nvaCatalog.bundles.testing.cucumber
     testImplementation nvaCatalog.bundles.testing.junit
     testImplementation nvaCatalog.hamcrest
-    testImplementation nvaCatalog.jackson.datatype.jsr310
+    testRuntimeOnly nvaCatalog.jackson.datatype.jsr310
     testImplementation nvaCatalog.mockito.core
     testImplementation nvaLibs.logutils
     testImplementation nvaLibs.testutils
     testImplementation project(':nvi-test')
     testImplementation(testFixtures(project(":nvi-commons")))
+  api nvaCatalog.jackson.annotations
+  implementation 'software.amazon.awssdk:http-client-spi:2.31.78'
+  testImplementation libs.aws.sdk2.dynamodbenhanced
+  testFixturesApi project(':nvi-commons')
+  testImplementation libs.aws.sdk2.regions
+  testImplementation 'software.amazon.awssdk:http-client-spi:2.31.78'
 }
 
 test {
