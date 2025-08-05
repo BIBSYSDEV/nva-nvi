@@ -26,11 +26,17 @@ public final class CristinTestUtils {
   private CristinTestUtils() {}
 
   public static List<Organization> getTopLevelOrganizations(CristinNviReport cristinNviReport) {
+    var actualTopLevelOrganizations =
+        cristinNviReport.cristinLocales().stream()
+            .map(CristinIdWrapper::from)
+            .map(CristinIdWrapper::getInstitutionId)
+            .toList();
     return cristinNviReport.scientificResources().stream()
         .map(ScientificResource::getCreators)
         .flatMap(List::stream)
         .map(CristinIdWrapper::from)
         .map(CristinIdWrapper::getTopLevelOrganization)
+        .filter(organization -> actualTopLevelOrganizations.contains(organization.id()))
         .toList();
   }
 

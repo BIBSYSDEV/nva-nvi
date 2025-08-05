@@ -3,12 +3,14 @@ plugins {
 }
 
 dependencies {
-    implementation libs.bundles.testing
-    implementation libs.jackson.databind
-    implementation libs.nva.commons.core
-    implementation libs.nva.testutils
+    implementation nvaCatalog.bundles.testing.junit
+    implementation nvaCatalog.jackson.databind
+    implementation nvaCatalog.mockito.core
+    implementation nvaLibs.core
+    implementation nvaLibs.testutils
 }
 
 test {
     useJUnitPlatform()
+    environment("LOG_LEVEL", "debug")
 }

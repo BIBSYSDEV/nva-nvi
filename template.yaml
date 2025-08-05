@@ -21,6 +21,7 @@ Globals:
         SEARCH_INFRASTRUCTURE_AUTH_URI: !Ref SearchInfrastructureAuthUri
         CUSTOM_DOMAIN_BASE_PATH: !Ref CustomDomainBasePath
         API_HOST: !Ref ApiDomain
+        LOG_LEVEL: !Ref LogLevel
   Api:
     Cors:
       AllowMethods: "'PUT, GET,OPTIONS,DELETE,POST'"
@@ -49,6 +50,14 @@ Parameters:
   EventBusArn:
     Type: AWS::SSM::Parameter::Value<String>
     Default: /NVA/Events/EventsBusArn
+  LogLevel:
+    Type: String
+    Default: "debug"
+    AllowedValues:
+      - "trace"
+      - "debug"
+      - "info"
+    Description: Minimum severity for logging. Should be 'info' in production environments.
   ResourcesBucket:
     Type: AWS::SSM::Parameter::Value<String>
     Default: /NVA/Events/PersistedEntriesBucketName
@@ -99,6 +108,10 @@ Parameters:
     Type: String
     Description: comma separated list of external clients that are allowed to contact the HTTP APIs, "*" indicates that all origins are allowed
     Default: '*'
+  DefaultTimeoutForParsingLambdas:
+    Type: Number
+    Description: Timeout in seconds for functions that parse JSON-LD documents. These need a high timeout in order to handle unusually large documents.
+    Default: 300 # 5 minutes
 
 Conditions:
   WithSuffix: !Not [ !Equals [ !Ref Suffix, '' ] ]
@@ -733,9 +746,7 @@ Resources:
       CodeUri: event-handlers
       Handler: no.sikt.nva.nvi.events.evaluator.EvaluateNviCandidateHandler::handleRequest
       Role: !GetAtt NvaNviRole.Arn
-      #For publications with many contributors, evaluation can take more than 30 sec due to
-      #many external requests. Timeout is set to 5 minutes.
-      Timeout: 300
+      Timeout: !Ref DefaultTimeoutForParsingLambdas
       MemorySize: 1536
       AutoPublishAlias: live
       SnapStart:
@@ -966,7 +977,7 @@ Resources:
       CodeUri: event-handlers
       Handler: no.sikt.nva.nvi.events.cristin.CristinNviReportEventConsumer::handleRequest
       Role: !GetAtt NvaNviRole.Arn
-      Timeout: 30
+      Timeout: !Ref DefaultTimeoutForParsingLambdas
       MemorySize: 1536
       Environment:
         Variables:

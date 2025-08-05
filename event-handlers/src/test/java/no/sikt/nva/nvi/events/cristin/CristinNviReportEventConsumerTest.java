@@ -189,7 +189,58 @@ class CristinNviReportEventConsumerTest {
             .map(BigDecimal::new)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
     assertThat(nviCandidate.getTotalPoints().setScale(4, RoundingMode.HALF_UP))
-        .isEqualTo(expectedTotalPoints.setScale(4, RoundingMode.HALF_UP));
+        .isEqualTo(expectedTotalPoints.setScale(4, RoundingMode.HALF_UP))
+        .isNotZero();
+  }
+
+  @Test
+  void shouldHandleImportedCandidateWithNoAffiliations() {
+    var cristinNviReport = createImportedPublicationWithMissingTopLevelOrganization();
+
+    handler.handleRequest(createEvent(cristinNviReport), CONTEXT);
+    var nviCandidate = getByPublicationIdOf(cristinNviReport);
+
+    assertThat(nviCandidate)
+        .extracting(Candidate::isApplicable, Candidate::isReported)
+        .containsOnly(true);
+
+    assertThat(nviCandidate.getPublicationDetails().topLevelOrganizations()).isEmpty();
+  }
+
+  @Test
+  void shouldMigrateAuthorsWithoutTopLevelOrganizations() {
+    var cristinNviReport = createRandomCristinNviReport().withCristinLocales(emptyList()).build();
+    var publicationFactoryWithExtraCreator =
+        createPublicationFactory(cristinNviReport, scenario)
+            .withTopLevelOrganizations(emptyList())
+            .withCreatorAffiliatedWith(emptyList());
+    setupPublicationInS3(cristinNviReport, publicationFactoryWithExtraCreator);
+
+    handler.handleRequest(createEvent(cristinNviReport), CONTEXT);
+    var nviCandidate = getByPublicationIdOf(cristinNviReport);
+
+    var expectedCreatorIdentifiers =
+        cristinNviReport.scientificResources().stream()
+            .map(ScientificResource::getCreators)
+            .flatMap(List::stream)
+            .map(ScientificPerson::getCristinPersonIdentifier)
+            .toList();
+
+    assertThat(nviCandidate.getPublicationDetails().nviCreators())
+        .extracting(NviCreator::id)
+        .map(UriWrapper::fromUri)
+        .map(UriWrapper::getLastPathElement)
+        .containsExactlyInAnyOrderElementsOf(expectedCreatorIdentifiers);
+  }
+
+  private CristinNviReport createImportedPublicationWithMissingTopLevelOrganization() {
+    var cristinNviReport = createRandomCristinNviReport().withCristinLocales(emptyList()).build();
+    var publicationFactoryWithExtraCreator =
+        createPublicationFactory(cristinNviReport, scenario)
+            .withTopLevelOrganizations(emptyList())
+            .withCreatorAffiliatedWith(emptyList());
+    setupPublicationInS3(cristinNviReport, publicationFactoryWithExtraCreator);
+    return cristinNviReport;
   }
 
   private Candidate getByPublicationIdOf(CristinNviReport cristinNviReport) {

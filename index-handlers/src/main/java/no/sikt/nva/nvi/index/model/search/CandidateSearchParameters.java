@@ -7,6 +7,7 @@ import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PAR
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_EXCLUDE_SUB_UNITS;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_EXCLUDE_UNASSIGNED;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_FILTER;
+import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_GLOBAL_STATUS;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_OFFSET;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_ORDER_BY;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_SEARCH_TERM;
@@ -43,6 +44,7 @@ public record CandidateSearchParameters(
     String aggregationType,
     List<String> excludeFields,
     List<String> statuses,
+    List<String> globalStatuses,
     SearchResultParameters searchResultParameters)
     implements JsonSerializable {
 
@@ -77,6 +79,7 @@ public record CandidateSearchParameters(
         .withTopLevelCristinOrg(requestInfo.getTopLevelOrgCristinId().orElse(null))
         .withExcludeFields(List.of(CONTRIBUTORS_EXCLUDED_TO_REDUCE_RESPONSE_SIZE))
         .withStatuses(extractQueryParamStatus(requestInfo))
+        .withGlobalStatuses(extractQueryParamGlobalStatus(requestInfo))
         .build();
   }
 
@@ -178,6 +181,14 @@ public record CandidateSearchParameters(
         .orElse(emptyList());
   }
 
+  private static List<String> extractQueryParamGlobalStatus(RequestInfo requestInfo) {
+    return requestInfo
+        .getQueryParameterOpt(QUERY_PARAM_GLOBAL_STATUS)
+        .map(RequestUtil::parseStringAsCommaSeparatedList)
+        .orElse(emptyList());
+  }
+
+  @SuppressWarnings("PMD.TooManyFields")
   public static final class Builder {
 
     private String searchTerm;
@@ -194,6 +205,7 @@ public record CandidateSearchParameters(
     private String aggregationType;
     private List<String> excludeFields = emptyList();
     private List<String> statuses = emptyList();
+    private List<String> globalStatuses = emptyList();
     private SearchResultParameters searchResultParameters =
         SearchResultParameters.builder().build();
 
@@ -269,6 +281,11 @@ public record CandidateSearchParameters(
       return this;
     }
 
+    public Builder withGlobalStatuses(List<String> globalStatuses) {
+      this.globalStatuses = globalStatuses;
+      return this;
+    }
+
     public Builder withSearchResultParameters(SearchResultParameters searchResultParameters) {
       this.searchResultParameters = searchResultParameters;
       return this;
@@ -290,6 +307,7 @@ public record CandidateSearchParameters(
           aggregationType,
           excludeFields,
           statuses,
+          globalStatuses,
           searchResultParameters);
     }
   }

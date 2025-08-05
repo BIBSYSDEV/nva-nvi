@@ -2,7 +2,6 @@ package no.sikt.nva.nvi.index.query;
 
 import static java.util.Collections.emptyList;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.jsonPathOf;
-import static no.sikt.nva.nvi.common.utils.Validator.hasElements;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.APPROVED;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.NEW;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.PENDING;
@@ -24,6 +23,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
+import no.sikt.nva.nvi.index.utils.QueryFunctions;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 
@@ -41,9 +41,16 @@ public record ApprovalQuery(
     return Optional.of(
         nestedQuery(
             APPROVALS,
-            mustMatch(
-                approvalBelongsTo(topLevelOrganization),
-                mustMatch(subQueries.toArray(Query[]::new)))));
+            approvalBelongsTo(topLevelOrganization),
+            mustMatch(subQueries.toArray(Query[]::new))));
+  }
+
+  public static Query approvalBelongsTo(String organization) {
+    return fieldValueQuery(jsonPathOf(APPROVALS, INSTITUTION_ID), organization);
+  }
+
+  public static Query approvalStatusIs(ApprovalStatus approvalStatus) {
+    return fieldValueQuery(jsonPathOf(APPROVALS, APPROVAL_STATUS), approvalStatus.getValue());
   }
 
   private List<Query> getSubQueries() {
@@ -54,13 +61,10 @@ public record ApprovalQuery(
   }
 
   private Optional<Query> statusQuery() {
-    if (hasElements(allowedStatuses)) {
-      var statusQueries =
-          allowedStatuses.stream().flatMap(status -> toStatusQuery(status).stream()).toList();
-
-      return Optional.of(matchAtLeastOne(statusQueries.toArray(Query[]::new)));
-    }
-    return Optional.empty();
+    return allowedStatuses.stream()
+        .map(ApprovalQuery::toStatusQuery)
+        .flatMap(List::stream)
+        .reduce(QueryFunctions::matchAtLeastOne);
   }
 
   private static List<Query> toStatusQuery(ApprovalStatus status) {
@@ -87,13 +91,6 @@ public record ApprovalQuery(
     return Optional.of(mustNotMatch(approvalIsUnassigned()));
   }
 
-  private static Query approvalBelongsTo(String organization) {
-    return QueryBuilders.bool()
-        .must(fieldValueQuery(jsonPathOf(APPROVALS, INSTITUTION_ID), organization))
-        .build()
-        .toQuery();
-  }
-
   private static Query approvalIsAssignedTo(String username) {
     return QueryBuilders.matchPhrase()
         .field(jsonPathOf(APPROVALS, ASSIGNEE))
@@ -103,16 +100,6 @@ public record ApprovalQuery(
   }
 
   private static Query approvalIsUnassigned() {
-    return QueryBuilders.bool()
-        .mustNot(existsQuery(jsonPathOf(APPROVALS, ASSIGNEE)))
-        .build()
-        .toQuery();
-  }
-
-  private static Query approvalStatusIs(ApprovalStatus approvalStatus) {
-    return QueryBuilders.bool()
-        .must(fieldValueQuery(jsonPathOf(APPROVALS, APPROVAL_STATUS), approvalStatus.getValue()))
-        .build()
-        .toQuery();
+    return mustNotMatch(existsQuery(jsonPathOf(APPROVALS, ASSIGNEE)));
   }
 }

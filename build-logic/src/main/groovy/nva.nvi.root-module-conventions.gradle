@@ -62,10 +62,10 @@ tasks.register('showCoverageReport') {
     description = "Show clickable link to test coverage report"
     dependsOn tasks.named('testCodeCoverageReport', JacocoReport)
     outputs.upToDateWhen { false }
+    def reportDirPath = "reports/jacoco/testCodeCoverageReport/html"
+    def reportDir = layout.buildDirectory.dir(reportDirPath).get().asFile
 
     doLast {
-        def reportDirPath = "reports/jacoco/testCodeCoverageReport/html"
-        def reportDir = layout.buildDirectory.dir(reportDirPath).get().asFile
         logger.quiet("Combined coverage report:")
         logger.quiet("file://${reportDir}/index.html")
     }

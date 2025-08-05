@@ -4,10 +4,6 @@ plugins {
     id 'com.diffplug.spotless'
 }
 
-repositories {
-    mavenCentral()
-}
-
 // Configure project-wide automatic formatting
 spotless {
     java {

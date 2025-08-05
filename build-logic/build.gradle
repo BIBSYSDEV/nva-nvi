@@ -5,9 +5,3 @@ plugins {
 repositories {
     gradlePluginPortal()
 }
-
-dependencies {
-    implementation libs.errorprone.plugin
-    implementation libs.gradle.versions.plugin
-    implementation libs.spotless
-}

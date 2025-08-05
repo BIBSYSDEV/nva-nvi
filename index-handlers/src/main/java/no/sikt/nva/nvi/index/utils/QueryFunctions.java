@@ -112,12 +112,15 @@ public final class QueryFunctions {
   }
 
   public static Query disputeQuery() {
-    return fieldValueQuery(
-        jsonPathOf(GLOBAL_APPROVAL_STATUS), GlobalApprovalStatus.DISPUTE.getValue());
+    return globalStatusQuery(GlobalApprovalStatus.DISPUTE);
+  }
+
+  public static Query globalStatusQuery(GlobalApprovalStatus globalStatus) {
+    return fieldValueQuery(jsonPathOf(GLOBAL_APPROVAL_STATUS), globalStatus.getValue());
   }
 
   public static Query multipleApprovalsQuery() {
-    return mustMatch(rangeFromQuery(NUMBER_OF_APPROVALS, MULTIPLE));
+    return rangeFromQuery(NUMBER_OF_APPROVALS, MULTIPLE);
   }
 
   public static Query assignmentsQuery(String username, String customer) {

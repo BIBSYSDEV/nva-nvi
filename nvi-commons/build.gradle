@@ -5,41 +5,49 @@ plugins {
 }
 
 dependencies {
-    implementation libs.aws.lambda.events
-    implementation libs.aws.sdk2.apache.client
-    implementation libs.aws.sdk2.dynamodb
     implementation libs.aws.sdk2.dynamodbenhanced
-    implementation libs.aws.sdk2.s3
     implementation libs.aws.sdk2.sns
     implementation libs.aws.sdk2.sqs
-    implementation libs.aws.sdk2.urlconnection
-    implementation libs.bundles.jena
-    implementation libs.jena.shacl
-    implementation libs.jackson.databind
-    implementation libs.nva.commons.apigateway
-    implementation libs.nva.commons.auth
-    implementation libs.nva.commons.clients
-    implementation libs.nva.core
-    implementation libs.nva.identifiers
-    implementation libs.nva.json
-    implementation libs.nva.s3
-
-    testFixturesImplementation libs.aws.lambda.events
-    testFixturesImplementation libs.aws.sdk2.s3
+    implementation libs.jena.shaql
+    implementation nvaCatalog.aws.apache.client
+    implementation nvaCatalog.aws.lambda.events
+    implementation nvaCatalog.aws.sdk2.dynamo
+    implementation nvaCatalog.aws.sdk2.s3
+    implementation nvaCatalog.aws.sdk2.urlconnection
+    implementation nvaCatalog.bundles.jena
+    implementation nvaCatalog.jackson.databind
+    implementation nvaLibs.apigateway
+    implementation nvaLibs.auth
+    implementation nvaLibs.clients
+    implementation nvaLibs.core
+    implementation nvaLibs.identifiers
+    implementation nvaLibs.json
+    implementation nvaLibs.s3
+    testFixturesAnnotationProcessor nvaCatalog.errorprone
     testFixturesImplementation libs.aws.sdk2.sqs
-    testFixturesImplementation libs.bundles.cucumber
-    testFixturesImplementation libs.bundles.testing
     testFixturesImplementation libs.dynamodDbLocal
-    testFixturesImplementation libs.nva.commons.apigateway
-    testFixturesImplementation libs.nva.commons.auth
-    testFixturesImplementation libs.nva.core
-    testFixturesImplementation libs.nva.json
-    testFixturesImplementation libs.nva.s3
+    testFixturesImplementation nvaCatalog.aws.lambda.events
+    testFixturesImplementation nvaCatalog.aws.sdk2.s3
+    testFixturesImplementation nvaCatalog.bundles.testing.cucumber
+    testFixturesImplementation nvaCatalog.bundles.testing.junit
+    testFixturesImplementation nvaCatalog.hamcrest
+    testFixturesImplementation nvaCatalog.mockito.core
+    testFixturesImplementation nvaLibs.apigateway
+    testFixturesImplementation nvaLibs.auth
+    testFixturesImplementation nvaLibs.core
+    testFixturesImplementation nvaLibs.json
+    testFixturesImplementation nvaLibs.s3
+    testFixturesImplementation nvaLibs.testutils
     testFixturesImplementation project(':nvi-test')
-    testFixturesAnnotationProcessor libs.errorprone
-
-    testImplementation libs.bundles.cucumber
     testImplementation libs.dynamodDbLocal
+    testImplementation libs.junit.platform.suite
+    testImplementation nvaCatalog.assertj.core
+    testImplementation nvaCatalog.bundles.testing.cucumber
+    testImplementation nvaCatalog.bundles.testing.junit
+    testImplementation nvaCatalog.hamcrest
+    testImplementation nvaCatalog.mockito.core
+    testImplementation nvaLibs.logutils
+    testImplementation nvaLibs.testutils
     testImplementation project(':nvi-test')
 }
 
@@ -53,4 +61,5 @@ test {
     environment("NVI_TABLE_NAME", "some-table")
     environment("BACKEND_CLIENT_AUTH_URL", "example.org/auth")
     environment("COGNITO_AUTHORIZER_URLS", "http://localhost:3000")
+    environment("LOG_LEVEL", "debug")
 }

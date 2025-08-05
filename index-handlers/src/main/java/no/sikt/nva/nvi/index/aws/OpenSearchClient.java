@@ -11,6 +11,7 @@ import static nva.commons.core.attempt.Try.attempt;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.time.Clock;
 import java.util.List;
@@ -28,7 +29,7 @@ import no.unit.nva.auth.CognitoAuthenticator;
 import no.unit.nva.auth.CognitoCredentials;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.secrets.SecretsReader;
-import org.apache.http.HttpHost;
+import org.apache.hc.core5.http.HttpHost;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch._types.FieldSort;
@@ -63,19 +64,24 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
   private static final Logger LOGGER = LoggerFactory.getLogger(OpenSearchClient.class);
   private static final String ERROR_MSG_CREATE_INDEX =
       "Error while creating index: " + NVI_CANDIDATES_INDEX;
+  private static final int MAX_QUERY_SIZE = 150;
   private final org.opensearch.client.opensearch.OpenSearchClient client;
   private final CachedValueProvider<DecodedJWT> cachedJwtProvider;
 
   public OpenSearchClient(CachedJwtProvider cachedJwtProvider) {
     this.cachedJwtProvider = cachedJwtProvider;
-    var httpHost = HttpHost.create(SEARCH_INFRASTRUCTURE_API_HOST);
-    var restClient = RestClient.builder(httpHost).build();
-    var options =
-        RestClientOptions.builder()
-            .addHeader(AUTHORIZATION, cachedJwtProvider.getValue().getToken())
-            .build();
-    var transport = new RestClientTransport(restClient, new JacksonJsonpMapper(), options);
-    this.client = new org.opensearch.client.opensearch.OpenSearchClient(transport);
+    try {
+      var httpHost = HttpHost.create(SEARCH_INFRASTRUCTURE_API_HOST);
+      var restClient = RestClient.builder(httpHost).build();
+      var options =
+          RestClientOptions.builder()
+              .addHeader(AUTHORIZATION, cachedJwtProvider.getValue().getToken())
+              .build();
+      var transport = new RestClientTransport(restClient, new JacksonJsonpMapper(), options);
+      this.client = new org.opensearch.client.opensearch.OpenSearchClient(transport);
+    } catch (URISyntaxException e) {
+      throw new IllegalArgumentException(e);
+    }
   }
 
   public OpenSearchClient(
@@ -129,9 +135,23 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
   @Override
   public SearchResponse<NviCandidateIndexDocument> search(
       CandidateSearchParameters candidateSearchParameters) throws IOException {
-    return client
-        .withTransportOptions(getOptions())
-        .search(constructSearchRequest(candidateSearchParameters), NviCandidateIndexDocument.class);
+    var query = constructSearchRequest(candidateSearchParameters);
+    logQueryDetails(query);
+    return client.withTransportOptions(getOptions()).search(query, NviCandidateIndexDocument.class);
+  }
+
+  private void logQueryDetails(SearchRequest query) {
+    var queryString = query.toJsonString();
+    var estimatedQueryComplexity = (int) queryString.chars().filter(ch -> '{' == ch).count();
+    if (estimatedQueryComplexity > MAX_QUERY_SIZE) {
+      LOGGER.warn(
+          "Query complexity ({} nested objects) exceeds recommended limit of {}."
+              + "Consider simplifying query structure",
+          estimatedQueryComplexity,
+          MAX_QUERY_SIZE);
+    }
+    LOGGER.debug("Executing query with {} nested objects", estimatedQueryComplexity);
+    LOGGER.trace("Executing query: {}", queryString);
   }
 
   @Override

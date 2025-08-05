@@ -27,11 +27,11 @@ public class AggregateResponseTestUtil {
         .aggregations(topLevelOrg, filterAggregate)
         .docCount(3)
         .build()
-        ._toAggregate();
+        .toAggregate();
   }
 
   public static Aggregate getGlobalAggregate() {
-    return new GlobalAggregate.Builder().docCount(1).build()._toAggregate();
+    return new GlobalAggregate.Builder().docCount(1).build().toAggregate();
   }
 
   public static Aggregate filterAggregate(Integer docCount) {
@@ -43,15 +43,15 @@ public class AggregateResponseTestUtil {
         .docCount(docCount)
         .aggregations(aggregations)
         .build()
-        ._toAggregate();
+        .toAggregate();
   }
 
   private static Aggregate createTermsAggregateWithBuckets(Buckets<StringTermsBucket> buckets) {
     return new StringTermsAggregate.Builder()
         .buckets(buckets)
-        .sumOtherDocCount(2)
+        .sumOtherDocCount(2L)
         .build()
-        ._toAggregate();
+        .toAggregate();
   }
 
   private static StringTermsBucket getStringTermsBucket(

@@ -3,23 +3,25 @@ plugins {
 }
 
 dependencies {
-    testImplementation libs.aws.java.sdk.core
-    testImplementation libs.aws.lambda.events
-    testImplementation libs.aws.lambda.java.core
-    testImplementation libs.aws.sdk2.core
-    testImplementation libs.aws.sdk2.dynamodb
-    testImplementation libs.aws.sdk2.s3
     testImplementation libs.aws.sdk2.sns
     testImplementation libs.aws.sdk2.sqs
-    testImplementation libs.com.auth0.jwt
-    testImplementation libs.nva.commons.auth
-    testImplementation libs.nva.commons.core
-    testImplementation libs.nva.json
-    testImplementation libs.nva.s3
-    testImplementation libs.nva.testutils
-
-    testImplementation libs.bundles.cucumber
-
+    testImplementation libs.junit.platform.suite
+    testImplementation nvaCatalog.assertj.core
+    testImplementation nvaCatalog.aws.java.sdk.core
+    testImplementation nvaCatalog.aws.lambda.core
+    testImplementation nvaCatalog.aws.lambda.events
+    testImplementation nvaCatalog.aws.sdk2.core
+    testImplementation nvaCatalog.aws.sdk2.dynamo
+    testImplementation nvaCatalog.aws.sdk2.s3
+    testImplementation nvaCatalog.bundles.testing.cucumber
+    testImplementation nvaCatalog.bundles.testing.junit
+    testImplementation nvaCatalog.com.auth0.jwt
+    testImplementation nvaCatalog.mockito.core
+    testImplementation nvaLibs.auth
+    testImplementation nvaLibs.core
+    testImplementation nvaLibs.json
+    testImplementation nvaLibs.s3
+    testImplementation nvaLibs.testutils
     testImplementation project(":event-handlers")
     testImplementation project(":index-handlers")
     testImplementation project(":nvi-commons")
@@ -37,6 +39,7 @@ test {
     environment("COGNITO_AUTHORIZER_URLS", "http://localhost:3000")
     environment("CUSTOM_DOMAIN_BASE_PATH", "scientific-index")
     environment("EXPANDED_RESOURCES_BUCKET", "testBucket")
+    environment("LOG_LEVEL", "debug")
     environment("NVI_TABLE_NAME", "some-table")
     environment("UPSERT_CANDIDATE_DLQ_QUEUE_URL", "http://localhost:3000/upsert-candidate-DLQ")
 }
