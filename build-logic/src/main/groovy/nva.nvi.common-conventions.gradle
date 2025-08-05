@@ -12,7 +12,7 @@ spotless {
     }
 
     groovyGradle {
-        target '**/*.gradle'
+        target('**/*.gradle')
         greclipse()
         leadingTabsToSpaces(4)
         trimTrailingWhitespace()
@@ -20,7 +20,7 @@ spotless {
     }
 
     format 'misc', {
-        target '.gitignore', '.gitattributes', '.editorconfig', '**/*.md'
+        target('.gitignore', '.gitattributes', '.editorconfig', '**/*.md')
         leadingTabsToSpaces(4)
         trimTrailingWhitespace()
         endWithNewline()
