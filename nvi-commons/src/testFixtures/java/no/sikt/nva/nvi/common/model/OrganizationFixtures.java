@@ -182,4 +182,27 @@ public class OrganizationFixtures {
     when(response.body()).thenReturn(body);
     return response;
   }
+
+  public static Organization createOrganizationHierarchy(
+      URI topLevelId, URI departmentId, URI subDepartmentId, URI groupId) {
+    var builder = Organization.builder().withCountryCode(COUNTRY_CODE_NORWAY);
+    var group =
+        builder
+            .withId(groupId)
+            .withPartOf(List.of(getAsOrganizationLeafNode(subDepartmentId)))
+            .build();
+    var subDepartment =
+        builder
+            .withId(subDepartmentId)
+            .withHasPart(List.of(group))
+            .withPartOf(List.of(getAsOrganizationLeafNode(departmentId)))
+            .build();
+    var department =
+        builder
+            .withId(departmentId)
+            .withHasPart(List.of(subDepartment))
+            .withPartOf(List.of(getAsOrganizationLeafNode(topLevelId)))
+            .build();
+    return builder.withId(topLevelId).withHasPart(List.of(department)).build();
+  }
 }
