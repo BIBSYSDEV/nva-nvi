@@ -1,9 +1,13 @@
 package no.sikt.nva.nvi.rest.fetch;
 
 import static java.util.Collections.emptySet;
+import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
 import static no.sikt.nva.nvi.common.dto.AllowedOperationFixtures.CURATOR_CANNOT_UPDATE_APPROVAL;
 import static no.sikt.nva.nvi.common.dto.AllowedOperationFixtures.CURATOR_CAN_FINALIZE_APPROVAL;
 import static no.sikt.nva.nvi.common.dto.AllowedOperationFixtures.CURATOR_CAN_RESET_APPROVAL;
+import static no.sikt.nva.nvi.common.dto.NviCreatorDtoFixtures.verifiedNviCreatorDtoFrom;
+import static no.sikt.nva.nvi.common.model.OrganizationFixtures.createOrganizationHierarchy;
+import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationId;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -17,10 +21,13 @@ import com.google.common.net.HttpHeaders;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.net.URI;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatusDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
@@ -265,5 +272,50 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
     var expectedProblems = Set.of(new UnverifiedCreatorProblem());
     var actualProblems = candidateDto.problems();
     assertEquals(expectedProblems, actualProblems);
+  }
+
+  @Test
+  void shouldAllowTopLevelCuratorAccessToDirectSubUnits() throws IOException {
+    var departmentId = randomOrganizationId();
+    var subDepartmentId = randomOrganizationId();
+    var groupId = randomOrganizationId();
+    var topLevelOrganization =
+        createOrganizationHierarchy(topLevelOrganizationId, departmentId, subDepartmentId, groupId);
+    var candidate = setupCandidateWithCreatorFrom(topLevelOrganization, departmentId);
+
+    var request = createRequestWithCuratorAccess(candidate.getIdentifier().toString());
+    var candidateDto = handleRequest(request);
+
+    Assertions.assertThat(candidateDto.allowedOperations())
+        .containsExactlyInAnyOrderElementsOf(CURATOR_CAN_FINALIZE_APPROVAL);
+  }
+
+  @Test
+  void shouldAllowTopLevelCuratorAccessToNestedSubUnits() throws IOException {
+    var departmentId = randomOrganizationId();
+    var subDepartmentId = randomOrganizationId();
+    var groupId = randomOrganizationId();
+    var topLevelOrganization =
+        createOrganizationHierarchy(topLevelOrganizationId, departmentId, subDepartmentId, groupId);
+    var candidate = setupCandidateWithCreatorFrom(topLevelOrganization, subDepartmentId);
+
+    var request = createRequestWithCuratorAccess(candidate.getIdentifier().toString());
+    var candidateDto = handleRequest(request);
+
+    Assertions.assertThat(candidateDto.allowedOperations())
+        .containsExactlyInAnyOrderElementsOf(CURATOR_CAN_FINALIZE_APPROVAL);
+  }
+
+  private Candidate setupCandidateWithCreatorFrom(
+      Organization topLevelOrganization, URI creatorAffiliationId) {
+    var upsertRequest =
+        randomUpsertRequestBuilder()
+            .withCreatorsAndPoints(
+                Map.of(
+                    topLevelOrganization,
+                    List.of(verifiedNviCreatorDtoFrom(creatorAffiliationId))));
+
+    var candidate = scenario.upsertCandidate(upsertRequest.build());
+    return candidate;
   }
 }
