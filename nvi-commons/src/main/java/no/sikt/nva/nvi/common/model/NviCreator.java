@@ -143,7 +143,7 @@ public record NviCreator(
     if (topLevelOrganization.isPresent()) {
       return topLevelOrganization.get();
     }
-    LOGGER.warn("Failed to find top-level organization for {}", affiliationId);
+    LOGGER.error("Failed to find top-level organization for {}", affiliationId);
     return null;
   }
 
