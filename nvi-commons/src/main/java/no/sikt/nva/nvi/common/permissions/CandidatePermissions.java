@@ -69,7 +69,6 @@ public class CandidatePermissions {
     return denyStrategies.stream().filter(strategy -> strategy.deniesAction(operation)).toList();
   }
 
-  // FIXME: Include this logging/checking in the read operations too?
   private void validateDenyStrategiesRestrictions(CandidateOperation operation)
       throws UnauthorizedException {
     var strategies =

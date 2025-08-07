@@ -67,7 +67,6 @@ public abstract class BaseCandidateRestHandlerTest {
   protected void commonSetup() {
     scenario = new TestScenario();
     setupOpenPeriod(scenario, CURRENT_YEAR);
-    // TODO: Try replacing this with simpler setup
     topLevelOrganization = scenario.getDefaultOrganization();
     topLevelOrganizations = List.of(topLevelOrganization);
     topLevelOrganizationId = topLevelOrganization.id();
