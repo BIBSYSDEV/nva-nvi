@@ -37,7 +37,8 @@ phases:
 
   build:
     commands:
-      - echo "Gradle options: '$GRADLE_OPTS'"
+      - echo "Testing stuff"
+      - echo "GRADLE_OPTS=$GRADLE_OPTS"
       - sam build
 
   post_build:
