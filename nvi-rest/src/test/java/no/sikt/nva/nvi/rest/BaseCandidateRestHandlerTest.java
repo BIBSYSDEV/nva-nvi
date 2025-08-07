@@ -9,6 +9,7 @@ import static no.sikt.nva.nvi.common.model.OrganizationFixtures.mockOrganization
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
+import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.apigateway.AccessRight.MANAGE_NVI;
 import static nva.commons.apigateway.AccessRight.MANAGE_NVI_CANDIDATES;
 import static org.mockito.Mockito.mock;
@@ -182,6 +183,7 @@ public abstract class BaseCandidateRestHandlerTest {
     return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
         .withHeaders(Map.of(HttpHeaders.ACCEPT, ContentType.APPLICATION_JSON.getMimeType()))
         .withUserName(randomString())
+        .withCurrentCustomer(randomUri())
         .withPathParameters(Map.of(resourcePathParameter, resourceIdentifier));
   }
 
@@ -193,12 +195,20 @@ public abstract class BaseCandidateRestHandlerTest {
         .build();
   }
 
-  protected InputStream createRequestWithCuratorAccess(String resourceIdentifier)
-      throws JsonProcessingException {
-    return createDefaultRequestBuilder(resourceIdentifier)
-        .withAccessRights(topLevelOrganizationId, MANAGE_NVI_CANDIDATES)
-        .withTopLevelCristinOrgId(topLevelOrganizationId)
-        .build();
+  protected InputStream createRequestWithCuratorAccess(
+      String resourceIdentifier, URI userTopLevelOrganizationId) {
+    try {
+      return createDefaultRequestBuilder(resourceIdentifier)
+          .withAccessRights(userTopLevelOrganizationId, MANAGE_NVI_CANDIDATES)
+          .withTopLevelCristinOrgId(userTopLevelOrganizationId)
+          .build();
+    } catch (JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  protected InputStream createRequestWithCuratorAccess(String resourceIdentifier) {
+    return createRequestWithCuratorAccess(resourceIdentifier, topLevelOrganizationId);
   }
 
   protected InputStream createRequestWithoutAccessRight(String resourceIdentifier)

@@ -5,6 +5,7 @@ import static no.sikt.nva.nvi.common.model.ContributorFixtures.STATUS_VERIFIED;
 import static no.sikt.nva.nvi.test.TestUtils.randomUriWithSuffix;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 
+import java.net.URI;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Stream;
@@ -30,12 +31,24 @@ public class NviCreatorFixtures {
     return nviCreators.stream().map(NviCreator::toDbCreatorType).toList();
   }
 
-  public static NviCreator verifiedNviCreatorFrom(Organization... affiliations) {
+  public static NviCreator verifiedNviCreatorFrom(
+      Organization topLevelOrganization, URI... affiliations) {
     var creatorId = randomUriWithSuffix("creatorId");
-    return new NviCreator(creatorId, randomString(), STATUS_VERIFIED, List.of(affiliations));
+    return new NviCreator(
+        creatorId,
+        randomString(),
+        STATUS_VERIFIED,
+        List.of(affiliations),
+        List.of(topLevelOrganization));
   }
 
-  public static NviCreator unverifiedNviCreatorFrom(Organization... affiliations) {
-    return new NviCreator(null, randomString(), STATUS_UNVERIFIED, List.of(affiliations));
+  public static NviCreator unverifiedNviCreatorFrom(
+      Organization topLevelOrganization, URI... affiliations) {
+    return new NviCreator(
+        null,
+        randomString(),
+        STATUS_UNVERIFIED,
+        List.of(affiliations),
+        List.of(topLevelOrganization));
   }
 }
