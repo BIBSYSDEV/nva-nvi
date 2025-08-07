@@ -2,14 +2,13 @@ package no.sikt.nva.nvi.common.model;
 
 import static java.util.Collections.emptyList;
 import static java.util.Objects.nonNull;
-import static no.sikt.nva.nvi.common.utils.Validator.hasElements;
 import static no.sikt.nva.nvi.common.utils.Validator.shouldNotBeNull;
 import static nva.commons.core.StringUtils.isBlank;
 
 import java.net.URI;
-import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
 import no.sikt.nva.nvi.common.client.model.Organization;
@@ -20,6 +19,8 @@ import no.sikt.nva.nvi.common.dto.VerificationStatus;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * An NviCreator is a person registered as a 'Creator' (i.e. author or equivalent) on a publication,
@@ -36,12 +37,17 @@ import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
  *     identity is confirmed.
  * @param nviAffiliations A collection of organizations that the person is directly affiliated with.
  *     These may be part of a larger organization hierarchy.
+ * @param topLevelNviOrganizations A collection of top-level organizations that the person is
+ *     affiliated with, either directly or indirectly.
  */
 public record NviCreator(
     URI id,
     String name,
     VerificationStatus verificationStatus,
-    Collection<Organization> nviAffiliations) {
+    Collection<URI> nviAffiliations,
+    Collection<Organization> topLevelNviOrganizations) {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(NviCreator.class);
 
   public NviCreator {
     nviAffiliations = Optional.ofNullable(nviAffiliations).orElse(emptyList());
@@ -62,14 +68,20 @@ public record NviCreator(
    *     affiliations.
    */
   public static NviCreator from(NviCreatorDto creator, Collection<Organization> organizations) {
-    var creatorOrganizations = getCreatorOrganizations(creator.affiliations(), organizations);
+    var affiliatedTopLevelOrganizations =
+        findTopLevelOrganizations(creator.affiliations(), organizations);
     var verificationStatus =
         new VerificationStatus(
             creator instanceof VerifiedNviCreatorDto ? "Verified" : "NotVerified");
     var creatorId =
         creator instanceof VerifiedNviCreatorDto verifiedCreator ? verifiedCreator.id() : null;
 
-    return new NviCreator(creatorId, creator.name(), verificationStatus, creatorOrganizations);
+    return new NviCreator(
+        creatorId,
+        creator.name(),
+        verificationStatus,
+        creator.affiliations(),
+        affiliatedTopLevelOrganizations);
   }
 
   /**
@@ -83,7 +95,8 @@ public record NviCreator(
    * @return A NviCreator domain model including the full organization hierarchy for all
    */
   public static NviCreator from(DbCreatorType creator, Collection<Organization> organizations) {
-    var creatorOrganizations = getCreatorOrganizations(creator.affiliations(), organizations);
+    var affiliatedTopLevelOrganizations =
+        findTopLevelOrganizations(creator.affiliations(), organizations);
     var verificationStatus =
         (creator instanceof DbCreator)
             ? new VerificationStatus("Verified")
@@ -92,51 +105,53 @@ public record NviCreator(
         (creator instanceof DbCreator verifiedCreator) ? verifiedCreator.creatorId() : null;
 
     return new NviCreator(
-        creatorId, creator.creatorName(), verificationStatus, creatorOrganizations);
+        creatorId,
+        creator.creatorName(),
+        verificationStatus,
+        creator.affiliations(),
+        affiliatedTopLevelOrganizations);
   }
 
   public List<URI> getAffiliationIds() {
-    return nviAffiliations.stream().map(Organization::id).toList();
+    return List.copyOf(nviAffiliations);
   }
 
   public static Predicate<NviCreator> isAffiliatedWithTopLevelOrganization(
       URI topLevelOrganizationId) {
     return creator ->
-        creator.nviAffiliations().stream()
-            .map(Organization::getTopLevelOrg)
+        creator.topLevelNviOrganizations().stream()
             .map(Organization::id)
             .anyMatch(id -> id.equals(topLevelOrganizationId));
   }
 
-  private static List<Organization> getCreatorOrganizations(
+  private static List<Organization> findTopLevelOrganizations(
       Collection<URI> affiliations, Collection<Organization> topLevelOrganizations) {
-    return affiliations.stream().map(id -> findOrganization(id, topLevelOrganizations)).toList();
+
+    return affiliations.stream()
+        .map(id -> findTopLevelOrganizationOf(id, topLevelOrganizations))
+        .filter(Objects::nonNull)
+        .distinct()
+        .toList();
   }
 
-  private static Organization findOrganization(
+  private static Organization findTopLevelOrganizationOf(
       URI affiliationId, Collection<Organization> topLevelOrganizations) {
-    // Try to find a matching organization in the persisted data
-    var candidateOrganizations = new ArrayDeque<>(topLevelOrganizations);
-    while (!candidateOrganizations.isEmpty()) {
-      var organization = candidateOrganizations.pop();
-      if (organization.id().equals(affiliationId)) {
-        return organization;
-      }
-      if (hasElements(organization.hasPart())) {
-        candidateOrganizations.addAll(organization.hasPart());
-      }
+    var topLevelOrganization =
+        topLevelOrganizations.stream()
+            .filter(organization -> organization.isTopLevelOrganizationOf(affiliationId))
+            .findFirst();
+    if (topLevelOrganization.isPresent()) {
+      return topLevelOrganization.get();
     }
-
-    // Fall back to creating a new organization if not found, using just the ID
-    return Organization.builder().withId(affiliationId).build();
+    LOGGER.warn("Failed to find top-level organization for {}", affiliationId);
+    return null;
   }
 
   public NviCreatorDto toDto() {
-    var affiliationUris = nviAffiliations.stream().map(Organization::id).toList();
     if (isVerified()) {
-      return new VerifiedNviCreatorDto(id, name, affiliationUris);
+      return new VerifiedNviCreatorDto(id, name, List.copyOf(nviAffiliations));
     }
-    return new UnverifiedNviCreatorDto(name, affiliationUris);
+    return new UnverifiedNviCreatorDto(name, List.copyOf(nviAffiliations));
   }
 
   public boolean isVerified() {
@@ -144,10 +159,9 @@ public record NviCreator(
   }
 
   public DbCreatorType toDbCreatorType() {
-    var affiliationUris = nviAffiliations.stream().map(Organization::id).toList();
     if (isVerified()) {
-      return new DbCreator(id, name, affiliationUris);
+      return new DbCreator(id, name, List.copyOf(nviAffiliations));
     }
-    return new DbUnverifiedCreator(name, affiliationUris);
+    return new DbUnverifiedCreator(name, List.copyOf(nviAffiliations));
   }
 }

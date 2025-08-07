@@ -8,6 +8,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.net.URI;
+import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -53,6 +54,21 @@ public record Organization(
 
   public static Builder builder() {
     return new Builder();
+  }
+
+  @JsonIgnore
+  public boolean isTopLevelOrganizationOf(URI organizationId) {
+    var candidateOrganizations = new ArrayDeque<>(List.of(this));
+    while (!candidateOrganizations.isEmpty()) {
+      var organization = candidateOrganizations.pop();
+      if (organization.id().equals(organizationId)) {
+        return true;
+      }
+      if (hasElements(organization.hasPart())) {
+        candidateOrganizations.addAll(organization.hasPart());
+      }
+    }
+    return false;
   }
 
   @JsonIgnore

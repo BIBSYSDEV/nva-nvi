@@ -69,6 +69,7 @@ public class CandidatePermissions {
     return denyStrategies.stream().filter(strategy -> strategy.deniesAction(operation)).toList();
   }
 
+  // FIXME: Include this logging/checking in the read operations too?
   private void validateDenyStrategiesRestrictions(CandidateOperation operation)
       throws UnauthorizedException {
     var strategies =
@@ -78,7 +79,7 @@ public class CandidatePermissions {
             .toList();
 
     if (!strategies.isEmpty()) {
-      logger.info(
+      logger.warn(
           "User {} was denied access {} on candidate {} from strategies {}",
           userInstance.userName(),
           operation,
@@ -97,6 +98,11 @@ public class CandidatePermissions {
             .toList();
 
     if (strategies.isEmpty()) {
+      logger.warn(
+          "User {} was denied access {} on candidate {} because no valid grant strategy was found",
+          userInstance.userName(),
+          operation,
+          candidate.getIdentifier());
       throw new UnauthorizedException(formatUnauthorizedMessage(operation));
     }
 

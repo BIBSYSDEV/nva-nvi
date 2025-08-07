@@ -260,8 +260,9 @@ class BatchScanUtilTest {
     var nonNviOrganization =
         publicationBuilder.setupTopLevelOrganization(COUNTRY_CODE_SWEDEN, false);
 
-    var verifiedCreator = verifiedNviCreatorFrom(nviOrganization1);
-    var unverifiedCreator = unverifiedNviCreatorFrom(nviOrganization2.hasPart().getFirst());
+    var verifiedCreator = verifiedNviCreatorFrom(nviOrganization1, nviOrganization1.id());
+    var unverifiedCreator =
+        unverifiedNviCreatorFrom(nviOrganization2, nviOrganization2.hasPart().getFirst().id());
     var expectedNviCreators = List.of(verifiedCreator, unverifiedCreator);
     var expectedTopLevelOrganizations = List.of(nviOrganization1, nviOrganization2);
     var expectedLanguage = "http://lexvo.org/id/iso639-3/nob";
@@ -315,7 +316,7 @@ class BatchScanUtilTest {
     // Create an expanded publication document
     var publicationBuilder = new SampleExpandedPublicationFactory(scenario);
     var nviOrganization1 = publicationBuilder.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, true);
-    var verifiedCreator = verifiedNviCreatorFrom(nviOrganization1);
+    var verifiedCreator = verifiedNviCreatorFrom(nviOrganization1, nviOrganization1.id());
     var expectedNviCreators = List.of(verifiedCreator);
     var expectedTopLevelOrganizations = List.of(nviOrganization1);
     var expectedModifiedDate = Instant.now();

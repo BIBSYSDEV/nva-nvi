@@ -306,14 +306,32 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
         .containsExactlyInAnyOrderElementsOf(CURATOR_CAN_FINALIZE_APPROVAL);
   }
 
+  @Test
+  void shouldHandleUserWithMultipleAffiliationsToSameTopLevelOrganization() throws IOException {
+    var departmentId = randomOrganizationId();
+    var subDepartmentId = randomOrganizationId();
+    var groupId1 = randomOrganizationId();
+    var groupId2 = randomOrganizationId();
+    var topLevelOrganization =
+        createOrganizationHierarchy(
+            topLevelOrganizationId, departmentId, subDepartmentId, groupId1, groupId2);
+    var candidate = setupCandidateWithCreatorFrom(topLevelOrganization, groupId1, groupId2);
+
+    var request =
+        createRequestWithCuratorAccess(
+            candidate.getIdentifier().toString(), topLevelOrganization.id());
+    var candidateDto = handleRequest(request);
+
+    Assertions.assertThat(candidateDto.allowedOperations())
+        .containsExactlyInAnyOrderElementsOf(CURATOR_CAN_FINALIZE_APPROVAL);
+  }
+
   private Candidate setupCandidateWithCreatorFrom(
-      Organization topLevelOrganization, URI creatorAffiliationId) {
+      Organization topLevelOrganization, URI... affiliations) {
     var upsertRequest =
         randomUpsertRequestBuilder()
             .withCreatorsAndPoints(
-                Map.of(
-                    topLevelOrganization,
-                    List.of(verifiedNviCreatorDtoFrom(creatorAffiliationId))));
+                Map.of(topLevelOrganization, List.of(verifiedNviCreatorDtoFrom(affiliations))));
 
     var candidate = scenario.upsertCandidate(upsertRequest.build());
     return candidate;
