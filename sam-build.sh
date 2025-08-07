@@ -1,5 +1,4 @@
 #!/bin/bash
-# SAM build wrapper that disables Gradle configuration cache
+# Wrapper script for running `sam build` locally
 export GRADLE_OPTS="-Dorg.gradle.configuration-cache=false"
-echo "Gradle options: '$GRADLE_OPTS'"
 sam build "$@"
