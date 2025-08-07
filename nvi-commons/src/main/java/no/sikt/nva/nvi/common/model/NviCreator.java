@@ -143,7 +143,9 @@ public record NviCreator(
     if (topLevelOrganization.isPresent()) {
       return topLevelOrganization.get();
     }
-    LOGGER.error("Failed to find top-level organization for {}", affiliationId);
+    LOGGER.error(
+        "Failed to find top-level organization for {}, which indicates incomplete organization tree in persisted data.",
+        affiliationId);
     return null;
   }
 
