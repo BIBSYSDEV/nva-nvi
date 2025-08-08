@@ -8,6 +8,7 @@ dependencies {
     implementation libs.aws.sdk2.dynamodbenhanced
     implementation libs.aws.sdk2.sns
     implementation libs.aws.sdk2.sqs
+    implementation libs.jena.shaql
     implementation nvaCatalog.aws.apache.client
     implementation nvaCatalog.aws.lambda.events
     implementation nvaCatalog.aws.sdk2.dynamo
