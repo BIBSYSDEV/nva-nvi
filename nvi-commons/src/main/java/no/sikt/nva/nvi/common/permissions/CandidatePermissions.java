@@ -78,7 +78,7 @@ public class CandidatePermissions {
             .toList();
 
     if (!strategies.isEmpty()) {
-      logger.info(
+      logger.warn(
           "User {} was denied access {} on candidate {} from strategies {}",
           userInstance.userName(),
           operation,
@@ -97,6 +97,11 @@ public class CandidatePermissions {
             .toList();
 
     if (strategies.isEmpty()) {
+      logger.warn(
+          "User {} was denied access {} on candidate {} because no valid grant strategy was found",
+          userInstance.userName(),
+          operation,
+          candidate.getIdentifier());
       throw new UnauthorizedException(formatUnauthorizedMessage(operation));
     }
 

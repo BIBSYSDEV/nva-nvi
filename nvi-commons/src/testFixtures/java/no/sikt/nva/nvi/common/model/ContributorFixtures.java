@@ -61,12 +61,16 @@ public class ContributorFixtures {
   }
 
   public static ContributorDto mapToContributorDto(NviCreator nviCreator) {
+    var affiliations =
+        nviCreator.nviAffiliations().stream()
+            .map(OrganizationFixtures::getAsOrganizationLeafNode)
+            .toList();
     return new ContributorDto(
         nviCreator.id(),
         nviCreator.name(),
         nviCreator.verificationStatus(),
         ROLE_CREATOR,
-        nviCreator.nviAffiliations());
+        affiliations);
   }
 
   public static ContributorDtoBuilder builder() {

@@ -11,8 +11,11 @@ import no.sikt.nva.nvi.common.permissions.BaseStrategy;
 import no.sikt.nva.nvi.common.service.dto.CandidateOperation;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class NviCuratorGrantStrategy extends BaseStrategy implements GrantStrategy {
+  private static final Logger LOGGER = LoggerFactory.getLogger(NviCuratorGrantStrategy.class);
 
   public NviCuratorGrantStrategy(Candidate candidate, UserInstance userInstance) {
     super(candidate, userInstance);
@@ -21,6 +24,7 @@ public class NviCuratorGrantStrategy extends BaseStrategy implements GrantStrate
   @Override
   public boolean allowsAction(CandidateOperation operation) {
     if (isNotCuratorForCandidate()) {
+      LOGGER.warn("Access denied: User is not a curator for candidate {}", candidate.getId());
       return false;
     }
 

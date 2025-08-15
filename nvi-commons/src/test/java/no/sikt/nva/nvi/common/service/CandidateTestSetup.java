@@ -4,6 +4,7 @@ import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBui
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.dto.NviCreatorDtoFixtures.verifiedNviCreatorDtoFrom;
 import static no.sikt.nva.nvi.common.dto.PointCalculationDtoBuilder.randomPointCalculationDtoBuilder;
+import static no.sikt.nva.nvi.common.model.OrganizationFixtures.getAsOrganizationLeafNode;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 
@@ -48,6 +49,7 @@ public class CandidateTestSetup {
     return randomUpsertRequestBuilder()
         .withPointCalculation(pointCalculation)
         .withNviCreators(creator)
+        .withTopLevelOrganizations(getAsOrganizationLeafNode(institutionId))
         .build();
   }
 

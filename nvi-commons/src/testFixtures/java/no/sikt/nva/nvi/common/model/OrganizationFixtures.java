@@ -1,5 +1,7 @@
 package no.sikt.nva.nvi.common.model;
 
+import static java.util.Collections.emptyList;
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.API_HOST;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_NORWAY;
@@ -22,6 +24,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.client.model.Organization.Builder;
 import no.unit.nva.auth.uriretriever.UriRetriever;
@@ -181,5 +184,29 @@ public class OrganizationFixtures {
     when(response.statusCode()).thenReturn(status);
     when(response.body()).thenReturn(body);
     return response;
+  }
+
+  public static Organization createOrganizationHierarchy(
+      URI topLevelId, URI departmentId, URI subDepartmentId, URI... groupIds) {
+    var leafNodes =
+        Stream.of(groupIds)
+            .map(id -> createOrganization(id, subDepartmentId, emptyList()))
+            .toList();
+    var subDepartment = createOrganization(subDepartmentId, departmentId, leafNodes);
+    var department = createOrganization(departmentId, topLevelId, List.of(subDepartment));
+    return createOrganization(topLevelId, null, List.of(department));
+  }
+
+  private static Organization createOrganization(
+      URI id, URI parentOrganization, Collection<Organization> subOrganizations) {
+    return Organization.builder()
+        .withCountryCode(COUNTRY_CODE_NORWAY)
+        .withId(id)
+        .withHasPart(List.copyOf(subOrganizations))
+        .withPartOf(
+            isNull(parentOrganization)
+                ? emptyList()
+                : List.of(getAsOrganizationLeafNode(parentOrganization)))
+        .build();
   }
 }

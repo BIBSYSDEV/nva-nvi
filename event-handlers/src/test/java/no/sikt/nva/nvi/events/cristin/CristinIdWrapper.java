@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.events.cristin;
 
+import static no.sikt.nva.nvi.common.model.OrganizationFixtures.createOrganizationHierarchy;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.getAsOrganizationLeafNode;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.organizationIdFromIdentifier;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_NORWAY;
@@ -66,25 +67,8 @@ public record CristinIdWrapper(
   }
 
   public Organization getTopLevelOrganization() {
-    var builder = Organization.builder().withCountryCode(COUNTRY_CODE_NORWAY);
-    var group =
-        builder
-            .withId(getGroupId())
-            .withPartOf(List.of(getAsOrganizationLeafNode(getSubDepartmentId())))
-            .build();
-    var subDepartment =
-        builder
-            .withId(getSubDepartmentId())
-            .withHasPart(List.of(group))
-            .withPartOf(List.of(getAsOrganizationLeafNode(getDepartmentId())))
-            .build();
-    var department =
-        builder
-            .withId(getDepartmentId())
-            .withHasPart(List.of(subDepartment))
-            .withPartOf(List.of(getAsOrganizationLeafNode(getInstitutionId())))
-            .build();
-    return builder.withId(getInstitutionId()).withHasPart(List.of(department)).build();
+    return createOrganizationHierarchy(
+        getInstitutionId(), getDepartmentId(), getSubDepartmentId(), getGroupId());
   }
 
   public Organization createLeafNodeOrganization() {
