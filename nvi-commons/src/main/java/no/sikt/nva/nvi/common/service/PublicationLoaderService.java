@@ -1,32 +1,16 @@
 package no.sikt.nva.nvi.common.service;
 
-import static no.sikt.nva.nvi.common.utils.GraphUtils.createModel;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
-import static nva.commons.core.ioutils.IoUtils.inputStreamFromResources;
 import static nva.commons.core.ioutils.IoUtils.stringFromResources;
 
-import com.apicatalog.jsonld.JsonLd;
-import com.apicatalog.jsonld.JsonLdError;
-import com.apicatalog.jsonld.document.JsonDocument;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import java.io.ByteArrayOutputStream;
-import java.io.StringReader;
 import java.net.URI;
-import java.nio.charset.Charset;
 import java.nio.file.Path;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.dto.PublicationDto;
 import no.sikt.nva.nvi.common.exceptions.ParsingException;
-import org.apache.jena.query.QueryExecutionFactory;
-import org.apache.jena.rdf.model.Model;
-import org.apache.jena.riot.Lang;
-import org.apache.jena.riot.RDFDataMgr;
-import org.apache.jena.shacl.ShaclValidator;
-import org.apache.jena.shacl.Shapes;
-import org.apache.jena.shacl.ValidationReport;
-import org.apache.jena.shacl.lib.ShLib;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,14 +20,11 @@ import org.slf4j.LoggerFactory;
  * extracts and flattens relevant fields, and a JSON-LD frame that structures the output.
  */
 public class PublicationLoaderService {
+
   private static final String CONTEXT_NODE = "@context";
   private static final String JSON_PTR_BODY = "/body";
   private static final String INPUT_CONTEXT_FILE = "nva_context.json";
   private static final JsonNode INPUT_CONTEXT = getInputContext();
-  private static final String OUTPUT_FRAMING_CONTEXT_FILE = "publication_frame.json";
-  private static final JsonDocument OUTPUT_FRAMING_CONTEXT = getOutputFramingContext();
-  private static final String SPARQL_QUERY =
-      stringFromResources(Path.of("publication_query.sparql"));
 
   private final Logger logger = LoggerFactory.getLogger(PublicationLoaderService.class);
   private final StorageReader<URI> storageReader;
@@ -57,11 +38,8 @@ public class PublicationLoaderService {
 
     logger.info("Extracting publication from S3 ({})", publicationBucketUri);
     var content = extractContentFromStorage(publicationBucketUri);
-    var inputModel = createModel(content);
-
-    logger.info("Parsing publication with SPARQL query ({})", publicationBucketUri);
-    var resultJson = parseInputModelToJsonLd(inputModel);
-
+    var graph = extractNvaGraph(content);
+    var resultJson = extractNviData(graph).toJsonLd();
     try {
       logger.info("Transforming JSON-LD to PublicationDto ({})", publicationBucketUri);
       return PublicationDto.from(resultJson);
@@ -71,6 +49,27 @@ public class PublicationLoaderService {
       logger.error(resultJson);
       throw new ParsingException(e.getMessage());
     }
+  }
+
+  private NviGraph extractNviData(NvaGraph graph) {
+    var nviGraph = graph.toNviGraph();
+    var nviValidationReport = nviGraph.validate(new NviGraphValidator());
+    // TODO: once the validation is in place, we will throw exceptions at this point
+    if (nviValidationReport.isNonConformant()) {
+      nviValidationReport.log(logger);
+    }
+    return nviGraph;
+  }
+
+  private NvaGraph extractNvaGraph(JsonNode content) {
+    var graph = NvaGraph.fromJsonLd(content);
+    var nvaValidator = new NvaGraphValidator();
+    var nvaValidationReport = graph.validate(nvaValidator);
+    // TODO: once the validation is in place, we will throw exceptions at this point
+    if (nvaValidationReport.isNonConformant()) {
+      nvaValidationReport.log(logger);
+    }
+    return graph;
   }
 
   /**
@@ -91,50 +90,11 @@ public class PublicationLoaderService {
     }
   }
 
-  private String parseInputModelToJsonLd(Model inputModel) {
-    try (var queryExecution = QueryExecutionFactory.create(SPARQL_QUERY, inputModel)) {
-      var resultModel = queryExecution.execConstruct();
-      validateResultModel(resultModel);
-      var document = JsonDocument.of(toJsonReader(resultModel));
-      return JsonLd.frame(document, OUTPUT_FRAMING_CONTEXT).get().toString();
-    } catch (JsonLdError e) {
-      throw new ParsingException(e.getMessage());
-    }
-  }
-
-  private void validateResultModel(Model resultModel) {
-    var shape = Shapes.parse(RDFDataMgr.loadGraph("shape.ttl"));
-    var validation = ShaclValidator.get().validate(shape, resultModel.getGraph());
-    if (!validation.conforms() && logger.isWarnEnabled()) {
-      logger.warn("Model validation failed: {}", generateReportString(validation));
-    }
-  }
-
-  private static String generateReportString(ValidationReport validation) {
-    var outputStream = new ByteArrayOutputStream();
-    ShLib.printReport(outputStream, validation);
-    return outputStream.toString(Charset.defaultCharset());
-  }
-
-  private static StringReader toJsonReader(Model resultModel) {
-    var outputStream = new ByteArrayOutputStream();
-    RDFDataMgr.write(outputStream, resultModel, Lang.JSONLD);
-    return new StringReader(outputStream.toString(Charset.defaultCharset()));
-  }
-
   private static JsonNode getInputContext() {
     var inputStream = stringFromResources(Path.of(INPUT_CONTEXT_FILE));
     try {
       return dtoObjectMapper.readTree(inputStream);
     } catch (JsonProcessingException e) {
-      throw new ParsingException(e.getMessage());
-    }
-  }
-
-  private static JsonDocument getOutputFramingContext() {
-    try {
-      return JsonDocument.of(inputStreamFromResources(OUTPUT_FRAMING_CONTEXT_FILE));
-    } catch (JsonLdError e) {
       throw new ParsingException(e.getMessage());
     }
   }
