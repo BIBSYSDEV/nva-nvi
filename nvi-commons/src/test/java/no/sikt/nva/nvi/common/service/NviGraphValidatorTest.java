@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayInputStream;
+import java.net.URI;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
@@ -30,6 +31,14 @@ class NviGraphValidatorTest {
   public static final String PUBLICATION_DATE_CLASS = "PublicationDate";
   public static final String CONTRIBUTOR_CLASS = "Contributor";
   public static final String PUBLICATION_CHANNEL_CLASS = "PublicationChannel";
+  public static final String NAME_PROPERTY = "name";
+  public static final String IDENTIFIER_PROPERTY = "identifier";
+  public static final String ROLE_PROPERTY = "role";
+  public static final String TITLE_PROPERTY = "title";
+  public static final String STATUS_PROPERTY = "status";
+  public static final String PUBLICATION_TYPE_PROPERTY = "publicationType";
+  public static final String ABSTRACT_TEXT_PROPERTY = "abstractText";
+  public static final String PRINT_ISSN_PROPERTY = "printIssn";
   private NviGraphValidator nviGraphValidator;
   private Logger logger;
 
@@ -129,6 +138,15 @@ class NviGraphValidatorTest {
   }
 
   @Test
+  void shouldReportWhenModifiedDateIsInvalid() {
+    var model = createModelWithNoErrors();
+    var validation = nviGraphValidator.validate(replaceModifiedDateWithInvalidValue(model));
+    assertThat(validation.generateReport())
+        .containsSequence("Publication modified date is invalid")
+        .hasSize(1);
+  }
+
+  @Test
   void shouldReportWhenPublicationAbstractIsMissing() {
     var model = createModelWithNoErrors();
     var validation = nviGraphValidator.validate(removeAbstract(model));
@@ -143,6 +161,15 @@ class NviGraphValidatorTest {
     var validation = nviGraphValidator.validate(addAbstract(model));
     assertThat(validation.generateReport())
         .containsSequence("Publication abstract is repeated")
+        .hasSize(1);
+  }
+
+  @Test
+  void shouldReportWhenPublicationAbstractIsInvalid() {
+    var model = createModelWithNoErrors();
+    var validation = nviGraphValidator.validate(addInvalidAbstract(model));
+    assertThat(validation.generateReport())
+        .containsSequence("Publication abstract is invalid")
         .hasSize(1);
   }
 
@@ -420,8 +447,7 @@ class NviGraphValidatorTest {
     assertThat(validation.generateReport())
         .containsSequence("Contributor role is repeated")
         // Because we have to pass in an invalid role to create a duplicate (graphs cannot have
-        // duplicates), we have
-        // two errors.
+        // duplicates), we have two errors.
         .hasSize(2);
   }
 
@@ -666,17 +692,35 @@ class NviGraphValidatorTest {
 
   private Model replacePublicationDateYear(Model model) {
     var removeModel = removeTriples(model, removeQuery(PUBLICATION_DATE_CLASS, YEAR_PROPERTY));
-    var query =
-        """
-        PREFIX : <%s>
-        CONSTRUCT {
-          ?subject :year "MMXXV" .
-        } WHERE {
-          ?subject a :PublicationDate .
-        }
-        """
-            .formatted(NVA_ONTOLOGY);
-    return addTriples(removeModel, query);
+    return addTriples(removeModel, addQuery("PublicationDate", "year", "MMXXV"));
+  }
+
+  private String addQuery(String targetClass, String addProperty, Object value) {
+    return """
+           PREFIX : <%s>
+           CONSTRUCT {
+             ?subject :%s %s .
+           } WHERE {
+             ?subject a :%s .
+           }
+           """
+        .formatted(NVA_ONTOLOGY, addProperty, createObject(value), targetClass);
+  }
+
+  private static String createObject(Object value) {
+    return switch (value) {
+      case String string -> createObjectFromString(string);
+      case Number number -> number.toString();
+      case Boolean bool -> bool.toString();
+      case URI uri -> "<" + uri + ">";
+      case null, default -> throw new IllegalArgumentException("Unsupported value " + value);
+    };
+  }
+
+  private static String createObjectFromString(String string) {
+    return string.startsWith("Class:")
+        ? ":" + string.replaceAll("Class:", "")
+        : "\"" + string + "\"";
   }
 
   private Model removePublicationDateYear(Model model) {
@@ -684,18 +728,7 @@ class NviGraphValidatorTest {
   }
 
   private Model addPublicationDateYear(Model model) {
-    var query =
-        """
-        PREFIX : <%s>
-        CONSTRUCT {
-          ?subject :year "7777" .
-        } WHERE {
-          ?subject a :PublicationDate ;
-                   :year [] .
-        }
-        """
-            .formatted(NVA_ONTOLOGY);
-    return addTriples(model, query);
+    return addTriples(model, addQuery(PUBLICATION_DATE_CLASS, YEAR_PROPERTY, "7777"));
   }
 
   @Test
@@ -744,85 +777,43 @@ class NviGraphValidatorTest {
 
   private Model replacePublicationChannelType(Model model) {
     var removeModel = removeTriples(model, removeQuery(PUBLICATION_CHANNEL_CLASS, "channelType"));
-    var query =
-        """
-        PREFIX : <%s>
-        CONSTRUCT {
-          ?subject :channelType :NonsenseChannelType .
-        } WHERE {
-          ?subject a :PublicationChannel .
-        }
-        """
-            .formatted(NVA_ONTOLOGY);
-    return addTriples(removeModel, query);
+    return addTriples(
+        removeModel,
+        addQuery(PUBLICATION_CHANNEL_CLASS, "channelType", "Class:NonsensicalChannelType"));
   }
 
   private Model removePublicationChannelName(Model model) {
-    return removeTriples(model, removeQuery(PUBLICATION_CHANNEL_CLASS, "name"));
+    return removeTriples(model, removeQuery(PUBLICATION_CHANNEL_CLASS, NAME_PROPERTY));
   }
 
   private Model addPublicationChannelName(Model model) {
-    var query =
-        """
-        PREFIX : <%s>
-        CONSTRUCT {
-          ?subject :name "Another name for the thing" .
-        } WHERE {
-          ?subject a :PublicationChannel ;
-                   :name [] .
-        }
-        """
-            .formatted(NVA_ONTOLOGY);
-    return addTriples(model, query);
+    return addTriples(
+        model, addQuery(PUBLICATION_CHANNEL_CLASS, NAME_PROPERTY, "Another name for the thing"));
   }
 
   private Model replacePublicationChannelName(Model model) {
-    var removeModel = removeTriples(model, removeQuery(PUBLICATION_CHANNEL_CLASS, "name"));
-    var query =
-        """
-        PREFIX : <%s>
-        CONSTRUCT {
-          ?subject :name <https://example.org/abc> .
-        } WHERE {
-          ?subject a :PublicationChannel .
-        }
-        """
-            .formatted(NVA_ONTOLOGY);
-    return addTriples(removeModel, query);
+    var removeModel = removeTriples(model, removeQuery(PUBLICATION_CHANNEL_CLASS, NAME_PROPERTY));
+    return addTriples(
+        removeModel,
+        addQuery(PUBLICATION_CHANNEL_CLASS, NAME_PROPERTY, URI.create("https://example.org/abc")));
   }
 
   private Model removePublicationChannelIdentifier(Model model) {
-    return removeTriples(model, removeQuery(PUBLICATION_CHANNEL_CLASS, "identifier"));
+    return removeTriples(model, removeQuery(PUBLICATION_CHANNEL_CLASS, IDENTIFIER_PROPERTY));
   }
 
   private Model addPublicationChannelIdentifier(Model model) {
-    var query =
-        """
-        PREFIX : <%s>
-        CONSTRUCT {
-          ?subject :identifier "%s" .
-        } WHERE {
-          ?subject a :PublicationChannel ;
-                   :identifier [] .
-        }
-        """
-            .formatted(NVA_ONTOLOGY, UUID.randomUUID().toString());
-    return addTriples(model, query);
+    return addTriples(
+        model,
+        addQuery(PUBLICATION_CHANNEL_CLASS, IDENTIFIER_PROPERTY, UUID.randomUUID().toString()));
   }
 
   private Model replacePublicationChannelIdentifier(Model model) {
-    var removedModel = removeTriples(model, removeQuery(PUBLICATION_CHANNEL_CLASS, "identifier"));
-    var query =
-        """
-        PREFIX : <%s>
-        CONSTRUCT {
-          ?subject :identifier :NonsensicalIdentifier .
-        } WHERE {
-          ?subject a :PublicationChannel .
-        }
-        """
-            .formatted(NVA_ONTOLOGY);
-    return addTriples(removedModel, query);
+    var removedModel =
+        removeTriples(model, removeQuery(PUBLICATION_CHANNEL_CLASS, IDENTIFIER_PROPERTY));
+    return addTriples(
+        removedModel,
+        addQuery(PUBLICATION_CHANNEL_CLASS, IDENTIFIER_PROPERTY, "Class:NonsensicalIdentifier"));
   }
 
   private Model removePublicationChannelScientificValue(Model model) {
@@ -847,47 +838,17 @@ class NviGraphValidatorTest {
   private Model replacePublicationChannelScientificValue(Model model) {
     var removedModel =
         removeTriples(model, removeQuery(PUBLICATION_CHANNEL_CLASS, "scientificValue"));
-    var query =
-        """
-        PREFIX : <%s>
-        CONSTRUCT {
-          ?subject :scientificValue "NonsenseLevel" .
-        } WHERE {
-          ?subject a :PublicationChannel .
-        }
-        """
-            .formatted(NVA_ONTOLOGY);
-    return addTriples(removedModel, query);
+    return addTriples(
+        removedModel, addQuery(PUBLICATION_CHANNEL_CLASS, "scientificValue", "NonsenseLevel"));
   }
 
   private Model replacePublicationChannelYear(Model model) {
     var removed = removeTriples(model, removeQuery(PUBLICATION_CHANNEL_CLASS, YEAR_PROPERTY));
-    var query =
-        """
-        PREFIX : <%s>
-        CONSTRUCT {
-          ?subject :year "MMXXV" .
-        } WHERE {
-          ?subject a :PublicationChannel .
-        }
-        """
-            .formatted(NVA_ONTOLOGY);
-    return addTriples(removed, query);
+    return addTriples(removed, addQuery(PUBLICATION_CHANNEL_CLASS, YEAR_PROPERTY, "MMXXV"));
   }
 
   private Model addPublicationChannelYear(Model model) {
-    String query =
-        """
-        PREFIX : <%s>
-        CONSTRUCT {
-          ?subject :year "1777" .
-        } WHERE {
-          ?subject a :PublicationChannel ;
-                   :year [] .
-        }
-        """
-            .formatted(NVA_ONTOLOGY);
-    return addTriples(model, query);
+    return addTriples(model, addQuery(PUBLICATION_CHANNEL_CLASS, YEAR_PROPERTY, "1777"));
   }
 
   private Model removePublicationChannelYear(Model model) {
@@ -895,37 +856,18 @@ class NviGraphValidatorTest {
   }
 
   private Model removePublicationChannelIssn(Model model) {
-    return removeTriples(model, removeQuery(PUBLICATION_CHANNEL_CLASS, "printIssn"));
+    return removeTriples(model, removeQuery(PUBLICATION_CHANNEL_CLASS, PRINT_ISSN_PROPERTY));
   }
 
   private Model addPublicationChannelIssn(Model model) {
-    var query =
-        """
-        PREFIX : <%s>
-        CONSTRUCT {
-          ?subject :printIssn "2999-111X" .
-        } WHERE {
-          ?subject a :PublicationChannel ;
-                   :printIssn [] .
-        }
-        """
-            .formatted(NVA_ONTOLOGY);
-    return addTriples(model, query);
+    return addTriples(model, addQuery(PUBLICATION_CHANNEL_CLASS, PRINT_ISSN_PROPERTY, "2999-111X"));
   }
 
   private Model replacePublicationChannelIssnWithInvalidValue(Model model) {
-    var query =
-        """
-        PREFIX : <%s>
-        CONSTRUCT {
-          ?subject :printIssn "2999-111GUM" .
-        } WHERE {
-          ?subject a :PublicationChannel .
-        }
-        """
-            .formatted(NVA_ONTOLOGY);
+    var removeTriples =
+        removeTriples(model, removeQuery(PUBLICATION_CHANNEL_CLASS, PRINT_ISSN_PROPERTY));
     return addTriples(
-        removeTriples(model, removeQuery(PUBLICATION_CHANNEL_CLASS, "printIssn")), query);
+        removeTriples, addQuery(PUBLICATION_CHANNEL_CLASS, PRINT_ISSN_PROPERTY, "2999-111GUM"));
   }
 
   private Model removeContributorVerificationStatus(Model model) {
@@ -949,126 +891,43 @@ class NviGraphValidatorTest {
   }
 
   private Model replaceContributorVerificationStatusWithInvalidValue(Model model) {
-    var query =
-        """
-        PREFIX : <%s>
-        CONSTRUCT {
-          ?subject  :verificationStatus "Longshoreperson" .
-        } WHERE {
-          ?subject a :Contributor .
-        }
-        """
-            .formatted(NVA_ONTOLOGY);
+    var removeTriples = removeTriples(model, removeQuery(CONTRIBUTOR_CLASS, "verificationStatus"));
     return addTriples(
-        removeTriples(model, removeQuery(CONTRIBUTOR_CLASS, "verificationStatus")), query);
+        removeTriples,
+        addQuery(CONTRIBUTOR_CLASS, "verificationStatus", "Some string that is not a class"));
   }
 
   private Model removeContributorRole(Model model) {
-    return removeTriples(model, removeQuery(CONTRIBUTOR_CLASS, "role"));
+    return removeTriples(model, removeQuery(CONTRIBUTOR_CLASS, ROLE_PROPERTY));
   }
 
   private Model addContributorRole(Model model) {
-    var query =
-        """
-        PREFIX : <%s>
-        CONSTRUCT {
-          ?subject :role :Photographer .
-        } WHERE {
-          ?subject a :Contributor ;
-                  :role [] .
-        }
-        """
-            .formatted(NVA_ONTOLOGY);
-    return addTriples(model, query);
+    return addTriples(model, addQuery(CONTRIBUTOR_CLASS, ROLE_PROPERTY, "Class:Photographer"));
   }
 
   private Model replaceContributorRoleWithInvalidValue(Model model) {
-    var query =
-        """
-        PREFIX : <%s>
-        CONSTRUCT {
-          ?subject :role :Photographer .
-        } WHERE {
-          ?subject a :Contributor .
-        }
-        """
-            .formatted(NVA_ONTOLOGY);
-    return addTriples(removeTriples(model, removeQuery(CONTRIBUTOR_CLASS, "role")), query);
+    var removeTriples = removeTriples(model, removeQuery(CONTRIBUTOR_CLASS, ROLE_PROPERTY));
+    return addTriples(
+        removeTriples, addQuery(CONTRIBUTOR_CLASS, ROLE_PROPERTY, "Class:Photographer"));
   }
 
   private Model replaceContributorNameWithInvalidValue(Model model) {
-    var addQuery =
-        """
-        PREFIX : <%s>
-        CONSTRUCT {
-          ?subject :name 222 .
-        } WHERE {
-          ?subject a :Contributor ;
-                   :name [] .
-        }
-        """
-            .formatted(NVA_ONTOLOGY);
-    var removeQuery =
-        """
-        PREFIX : <%s>
-        PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-        CONSTRUCT {
-          ?subject :name ?object .
-        } WHERE {
-          ?subject a :Contributor ;
-                   :name ?object .
-          FILTER(DATATYPE(?object) = xsd:string)
-        }
-        """
-            .formatted(NVA_ONTOLOGY);
-    return removeTriples(addTriples(model, addQuery), removeQuery);
+    var removeTriples = removeTriples(model, removeQuery(CONTRIBUTOR_CLASS, NAME_PROPERTY));
+    return addTriples(removeTriples, addQuery(CONTRIBUTOR_CLASS, NAME_PROPERTY, 222));
   }
 
   private Model addContributorName(Model model) {
-    var query =
-        """
-        PREFIX : <%s>
-        CONSTRUCT {
-          ?subject :name "Hockey McWilson" .
-        } WHERE {
-          ?subject a :Contributor ;
-                   :name [] .
-        }
-        """
-            .formatted(NVA_ONTOLOGY);
-    return addTriples(model, query);
+    return addTriples(model, addQuery(CONTRIBUTOR_CLASS, NAME_PROPERTY, "Hockey McWilson"));
   }
 
   private Model removeContributorName(Model model) {
-    return removeTriples(model, removeQuery(CONTRIBUTOR_CLASS, "name"));
+    return removeTriples(model, removeQuery(CONTRIBUTOR_CLASS, NAME_PROPERTY));
   }
 
   private Model replaceContributorAffiliationWithInvalidData(Model model) {
-    var replacement = "Milky way galaxy";
-    var addQuery =
-        """
-          PREFIX : <%s>
-          CONSTRUCT {
-            ?subject :affiliation "%s" .
-          } WHERE {
-            ?subject a :Contributor ;
-                     :affiliation [] .
-          }
-        """
-            .formatted(NVA_ONTOLOGY, replacement);
-    var removeQuery =
-        """
-        PREFIX : <%s>
-        CONSTRUCT {
-          ?subject :affiliation ?object
-        } WHERE {
-          ?subject a :Contributor ;
-                   :affiliation ?object .
-          FILTER(?object != "%s")
-        }
-        """
-            .formatted(NVA_ONTOLOGY, replacement);
-    return removeTriples(addTriples(model, addQuery), removeQuery);
+    var removeTriples = removeTriples(model, removeQuery(CONTRIBUTOR_CLASS, "affiliation"));
+    return addTriples(
+        removeTriples, addQuery(CONTRIBUTOR_CLASS, "affiliation", "Milky way galaxy"));
   }
 
   private Model removeContributorAffiliation(Model model) {
@@ -1081,147 +940,56 @@ class NviGraphValidatorTest {
   }
 
   private Model replacePublicationTopLevelOrganizationWithInvalidType(Model model) {
-    var organization = "\"A string not an organization\"";
-    var addQuery =
-        """
-        PREFIX : <%s>
-        CONSTRUCT {
-          ?subject :topLevelOrganization %s .
-        } WHERE {
-          ?subject a :Publication ;
-                   :topLevelOrganization [] .
-        }
-        """
-            .formatted(NVA_ONTOLOGY, organization);
-    var removeQuery =
-        """
-        PREFIX : <%s>
-        CONSTRUCT {
-          ?subject :topLevelOrganization ?organization .
-        } WHERE {
-          ?subject a :Publication ;
-                   :topLevelOrganization ?organization .
-          FILTER(?organization != %s)
-        }
-        """
-            .formatted(NVA_ONTOLOGY, organization);
-    return removeTriples(addTriples(model, addQuery), removeQuery);
+    var removeTriples = removeTriples(model, removeQuery("Publication", "topLevelOrganization"));
+    return addTriples(
+        removeTriples,
+        addQuery(PUBLICATION, "topLevelOrganization", "A string not an organization"));
   }
 
   private Model removePublicationTitle(Model model) {
-    return removeTriples(model, removeQuery(PUBLICATION, "title"));
+    return removeTriples(model, removeQuery(PUBLICATION, TITLE_PROPERTY));
   }
 
   private Model addPublicationTitle(Model model) {
-    var query =
-        """
-        PREFIX : <%s>
-        CONSTRUCT {
-         ?subject :title "Some additional title" .
-        } WHERE {
-          ?subject a :Publication ;
-                   :title [] .
-        }
-        """
-            .formatted(NVA_ONTOLOGY);
-    return addTriples(model, query);
+    return addTriples(model, addQuery(PUBLICATION, TITLE_PROPERTY, "Some additional title"));
   }
 
   private Model replacePublicationTitleWithInvalidType(Model model) {
     var addQuery =
-        """
-        PREFIX : <%s>
-        CONSTRUCT {
-          ?subject :title <https://example.org/not-a-title> .
-        } WHERE {
-          ?subject a :Publication ;
-                  :title [] .
-        }
-        """
-            .formatted(NVA_ONTOLOGY);
-    var removeQuery =
-        """
-        PREFIX : <%s>
-        PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
-        CONSTRUCT {
-          ?subject :title ?title .
-        } WHERE {
-          ?subject a :Publication ;
-                   :title ?title .
-          FILTER(DATATYPE(?title) = xsd:string)
-        }
-        """
-            .formatted(NVA_ONTOLOGY);
-    return removeTriples(addTriples(model, addQuery), removeQuery);
+        addQuery(PUBLICATION, TITLE_PROPERTY, URI.create("https://example.org/not-a-title"));
+    var removeQuery = removeQuery(PUBLICATION, TITLE_PROPERTY);
+    return addTriples(removeTriples(model, removeQuery), addQuery);
   }
 
   private Model addPublicationStatus(Model model) {
-    return addTriples(model, additionalValueQuery(PUBLICATION, "status", "UNPUBLISHED"));
+    return addTriples(model, additionalValueQuery(PUBLICATION, STATUS_PROPERTY, "UNPUBLISHED"));
   }
 
   private Model removePublicationStatus(Model model) {
-    return removeTriples(model, removeQuery(PUBLICATION, "status"));
+    return removeTriples(model, removeQuery(PUBLICATION, STATUS_PROPERTY));
   }
 
   private Model replacePublicationStatusWithInvalidType(Model model) {
-    var status = ":NONSENSE_STATUS";
-    var addQuery =
-        """
-        PREFIX : <%s>
-        CONSTRUCT {
-          ?subject :status %s .
-        } WHERE {
-          ?subject :status [] .
-        }
-        """
-            .formatted(NVA_ONTOLOGY, status);
-    var removeQuery =
-        """
-        PREFIX : <%s>
-        CONSTRUCT {
-          ?subject :status ?object .
-        } WHERE {
-          ?subject :status ?object .
-          FILTER(?object != %s)
-        }
-        """
-            .formatted(NVA_ONTOLOGY, status);
-    return removeTriples(addTriples(model, addQuery), removeQuery);
+    var status = "Class:NONSENSE_STATUS";
+    var addQuery = addQuery(PUBLICATION, STATUS_PROPERTY, status);
+    var removeQuery = removeQuery(PUBLICATION, STATUS_PROPERTY);
+    return addTriples(removeTriples(model, removeQuery), addQuery);
   }
 
   private Model removePublicationType(Model model) {
-    return removeTriples(model, removeQuery(PUBLICATION, "publicationType"));
+    return removeTriples(model, removeQuery(PUBLICATION, PUBLICATION_TYPE_PROPERTY));
   }
 
   private Model addPublicationType(Model model) {
     return addTriples(
-        model, additionalValueQuery(PUBLICATION, "publicationType", "AcademicMonograph"));
+        model, additionalValueQuery(PUBLICATION, PUBLICATION_TYPE_PROPERTY, "AcademicMonograph"));
   }
 
   private Model replacePublicationTypeWithInvalidType(Model model) {
-    var type = ":NonsenseCategory";
-    var addQuery =
-        """
-        PREFIX : <%s>
-        CONSTRUCT {
-          ?subject :publicationType %s .
-        } WHERE {
-          ?subject :publicationType [] .
-        }
-        """
-            .formatted(NVA_ONTOLOGY, type);
-    var removeQuery =
-        """
-        PREFIX : <%s>
-        CONSTRUCT {
-          ?subject :publicationType ?object .
-        } WHERE {
-          ?subject :publicationType ?object .
-          FILTER(?object != %s)
-        }
-        """
-            .formatted(NVA_ONTOLOGY, type);
-    return removeTriples(addTriples(model, addQuery), removeQuery);
+    var type = "Class:NonsenseCategory";
+    var addQuery = addQuery(PUBLICATION, PUBLICATION_TYPE_PROPERTY, type);
+    var removeQuery = removeQuery(PUBLICATION, PUBLICATION_TYPE_PROPERTY);
+    return addTriples(removeTriples(model, removeQuery), addQuery);
   }
 
   private Model addPublicationDate(Model model) {
@@ -1246,29 +1014,10 @@ class NviGraphValidatorTest {
   }
 
   private Model swapPublicationChannelWithInvalidIri(Model model) {
-    var removeQuery =
-        """
-        PREFIX : <%s>
-        CONSTRUCT {
-          ?subject :publicationChannel ?object .
-        } WHERE {
-          ?subject :publicationChannel ?object .
-          FILTER(REGEX(STR(?object), ".*unit.*", "i"))
-        }
-        """
-            .formatted(NVA_ONTOLOGY);
+    var removeQuery = removeQuery(PUBLICATION, "publicationChannel");
     var addQuery =
-        """
-        PREFIX : <%s>
-        CONSTRUCT {
-          ?subject :publicationChannel <https://example.org/some/fishy/iri> .
-        } WHERE {
-          ?subject :publicationChannel ?object .
-        }
-        """
-            .formatted(NVA_ONTOLOGY);
-    var modelAdd = addTriples(model, addQuery);
-    return removeTriples(modelAdd, removeQuery);
+        addQuery(PUBLICATION, "publicationChannel", URI.create("https://example.org/channel"));
+    return addTriples(removeTriples(model, removeQuery), addQuery);
   }
 
   private Model removePublicationChannel(Model model) {
@@ -1321,16 +1070,7 @@ CONSTRUCT {
   }
 
   private Model addILanguage(Model model) {
-    var query =
-        """
-        PREFIX : <%s>
-        CONSTRUCT {
-          ?subject :language <http://lexvo.org/id/iso639-3/cym> .
-        } WHERE {
-          ?subject :language ?object .
-        }
-        """
-            .formatted(NVA_ONTOLOGY);
+    var query = addQuery(PUBLICATION, "language", URI.create("http://lexvo.org/id/iso639-3/cym"));
     return addTriples(model, query);
   }
 
@@ -1373,21 +1113,18 @@ CONSTRUCT {
   }
 
   private Model addAbstract(Model model) {
-    var query =
-        """
-        PREFIX : <%s>
-        CONSTRUCT {
-          ?subject :abstractText "Some more abstract text" .
-        } WHERE {
-          ?subject :abstractText [] .
-        }
-        """
-            .formatted(NVA_ONTOLOGY);
+    var query = addQuery(PUBLICATION, ABSTRACT_TEXT_PROPERTY, "Some abstract text");
     return addTriples(model, query);
   }
 
   private Model removeAbstract(Model model) {
-    return removeTriples(model, removeQuery(PUBLICATION, "abstractText"));
+    return removeTriples(model, removeQuery(PUBLICATION, ABSTRACT_TEXT_PROPERTY));
+  }
+
+  private Model addInvalidAbstract(Model model) {
+    return addTriples(
+        removeTriples(model, removeQuery(PUBLICATION, ABSTRACT_TEXT_PROPERTY)),
+        addQuery(PUBLICATION, ABSTRACT_TEXT_PROPERTY, URI.create("https://example.com/abc")));
   }
 
   private Model repeatModifiedDate(Model model) {
@@ -1405,6 +1142,11 @@ CONSTRUCT {
     return addTriples(model, query);
   }
 
+  private Model replaceModifiedDateWithInvalidValue(Model model) {
+    var removeTriples = removeTriples(model, removeQuery(PUBLICATION, "modifiedDate"));
+    return addTriples(removeTriples, addQuery(PUBLICATION, "modifiedDate", "Not a date time"));
+  }
+
   private static String getCurrentDateTime() {
     var now = Instant.now();
     var formatter =
@@ -1417,17 +1159,8 @@ CONSTRUCT {
   }
 
   private Model addAdditionalPublicationIdentifier(Model model) {
-    var query =
-        """
-        PREFIX : <%s>
-        CONSTRUCT {
-          ?subject :identifier "%s" .
-        } WHERE {
-          ?subject a :Publication .
-        }
-        """
-            .formatted(NVA_ONTOLOGY, UUID.randomUUID().toString());
-    return addTriples(model, query);
+    return addTriples(
+        model, addQuery(PUBLICATION, IDENTIFIER_PROPERTY, UUID.randomUUID().toString()));
   }
 
   private static Model addTriples(Model model, String query) {
@@ -1437,18 +1170,7 @@ CONSTRUCT {
   }
 
   private Model removePublicationIdentifier(Model model) {
-    var query =
-        """
-        PREFIX : <%s>
-        CONSTRUCT {
-          ?subject :identifier ?object .
-        } WHERE {
-          ?subject a :Publication ;
-                   :identifier ?object .
-        }
-        """
-            .formatted(NVA_ONTOLOGY);
-    return removeTriples(model, query);
+    return removeTriples(model, removeQuery(PUBLICATION, IDENTIFIER_PROPERTY));
   }
 
   private static Model removeTriples(Model model, String query) {
