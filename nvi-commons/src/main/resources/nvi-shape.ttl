@@ -43,22 +43,37 @@
     sh:severity sh:Violation ;
     sh:message "Publication does not have at least one verified or unverified contributor" ;
     sh:path :contributor ;
-    sh:minCount 1 ;
+    sh:minCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication contributor is not a value of correct type" ;
+    sh:path :contributor ;
     sh:nodeKind sh:BlankNodeOrIRI
   ] ;
   sh:property [
     sh:severity sh:Violation ;
     sh:message "Publication identifier is missing" ;
     sh:path :identifier ;
-    sh:minCount 1 ;
-    sh:datatype xsd:string
+    sh:minCount 1
   ] ;
   sh:property [
     sh:severity sh:Violation ;
     sh:message "Publication identifier is repeated" ;
     sh:path :identifier ;
-    sh:maxCount 1 ;
+    sh:maxCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication identifier is not a string" ;
+    sh:path :identifier ;
     sh:datatype xsd:string
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication identifier is invalid" ;
+    sh:path :identifier ;
+    sh:pattern "^(?:[0-9a-fA-F]{12}-)?[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
   ] ;
   sh:property [
     sh:severity sh:Violation ;
@@ -100,30 +115,42 @@
     sh:severity sh:Violation ;
     sh:message "Publication applicability is missing" ;
     sh:path :isApplicable ;
-    sh:minCount 1 ;
-    sh:datatype xsd:boolean
-  #  sh:in ( "true"^^xsd:boolean )
+    sh:minCount 1
   ] ;
   sh:property [
     sh:severity sh:Violation ;
     sh:message "Publication applicability is repeated" ;
     sh:path :isApplicable ;
-    sh:maxCount 1 ;
-    sh:datatype xsd:boolean
-    # sh:in ( "true"^^xsd:boolean )
+    sh:maxCount 1
   ] ;
   sh:property [
     sh:severity sh:Violation ;
-    sh:message "Publication international collaboration is not flagged" ;
-    sh:path :isInternationalCollaboration ;
-    sh:minCount 1 ;
+    sh:message "Publication applicability is not a boolean" ;
+    sh:path :isApplicable ;
     sh:datatype xsd:boolean
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication applicability is not TRUE" ;
+    sh:path :isApplicable ;
+    sh:in ( "true"^^xsd:boolean )
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication international collaboration is missing" ;
+    sh:path :isInternationalCollaboration ;
+    sh:minCount 1
   ] ;
   sh:property [
     sh:severity sh:Violation ;
     sh:message "Publication international collaboration is repeated" ;
     sh:path :isInternationalCollaboration ;
-    sh:maxCount 1 ;
+    sh:maxCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication international collaboration is not a boolean" ;
+    sh:path :isInternationalCollaboration ;
     sh:datatype xsd:boolean
   ] ;
   sh:property [
@@ -133,6 +160,21 @@
     sh:minCount 0 ;
     sh:maxCount 1 ;
     sh:nodeKind sh:IRI
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication language is not a valid IRI" ;
+    sh:path :language ;
+    sh:nodeKind sh:IRI ;
+    sh:sparql [
+    sh:select """
+        SELECT $this
+        WHERE {
+          ?this <https://nva.sikt.no/ontology/publication#language> ?language .
+          FILTER (!REGEX(STR(?language), "^http://lexvo.org/id/iso639-[35]/[a-z]{3}$"))
+        }
+      """ ;
+    ] ;
   ] ;
 
   # We want to check the validity of the page count? What are the criteria for validity?
@@ -152,15 +194,13 @@
     sh:severity sh:Violation ;
     sh:message "Publication channel is missing" ;
     sh:path :publicationChannel ;
-    sh:minCount 1 ;
-    sh:nodeKind sh:IRI
+    sh:minCount 1
   ] ;
   sh:property [
     sh:severity sh:Violation ;
     sh:message "Publication channel is repeated more than twice" ;
     sh:path :publicationChannel ;
-    sh:maxCount 2 ;
-    sh:nodeKind sh:IRI
+    sh:maxCount 2
   ] ;
   sh:property [
     sh:severity sh:Violation ;
@@ -181,14 +221,18 @@
     sh:severity sh:Violation ;
     sh:message "Publication date is missing" ;
     sh:path :publicationDate ;
-    sh:minCount 1 ;
-    sh:nodeKind sh:BlankNode
+    sh:minCount 1
   ] ;
   sh:property [
     sh:severity sh:Violation ;
     sh:message "Publication date is repeated" ;
     sh:path :publicationDate ;
-    sh:maxCount 1 ;
+    sh:maxCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication date is not a blank node" ;
+    sh:path :publicationDate ;
     sh:nodeKind sh:BlankNode
   ] ;
   sh:property [

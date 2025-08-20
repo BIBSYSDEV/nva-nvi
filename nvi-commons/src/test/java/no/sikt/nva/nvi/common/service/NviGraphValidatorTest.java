@@ -11,6 +11,8 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
+import java.util.stream.Stream;
+import no.unit.nva.identifiers.SortableIdentifier;
 import nva.commons.core.ioutils.IoUtils;
 import nva.commons.logutils.LogUtils;
 import org.apache.jena.query.QueryExecutionFactory;
@@ -19,28 +21,41 @@ import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.riot.Lang;
 import org.apache.jena.riot.RDFDataMgr;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 class NviGraphValidatorTest {
 
   private static final String NVA_ONTOLOGY = "https://nva.sikt.no/ontology/publication#";
-  public static final String PUBLICATION = "Publication";
-  public static final String YEAR_PROPERTY = "year";
-  public static final String PUBLICATION_DATE_CLASS = "PublicationDate";
-  public static final String CONTRIBUTOR_CLASS = "Contributor";
-  public static final String PUBLICATION_CHANNEL_CLASS = "PublicationChannel";
-  public static final String NAME_PROPERTY = "name";
-  public static final String IDENTIFIER_PROPERTY = "identifier";
-  public static final String ROLE_PROPERTY = "role";
-  public static final String TITLE_PROPERTY = "title";
-  public static final String STATUS_PROPERTY = "status";
-  public static final String PUBLICATION_TYPE_PROPERTY = "publicationType";
-  public static final String ABSTRACT_TEXT_PROPERTY = "abstractText";
-  public static final String PRINT_ISSN_PROPERTY = "printIssn";
+  private static final String PUBLICATION = "Publication";
+  private static final String YEAR_PROPERTY = "year";
+  private static final String PUBLICATION_DATE_CLASS = "PublicationDate";
+  private static final String CONTRIBUTOR_CLASS = "Contributor";
+  private static final String PUBLICATION_CHANNEL_CLASS = "PublicationChannel";
+  private static final String NAME_PROPERTY = "name";
+  private static final String IDENTIFIER_PROPERTY = "identifier";
+  private static final String ROLE_PROPERTY = "role";
+  private static final String TITLE_PROPERTY = "title";
+  private static final String STATUS_PROPERTY = "status";
+  private static final String PUBLICATION_TYPE_PROPERTY = "publicationType";
+  private static final String ABSTRACT_TEXT_PROPERTY = "abstractText";
+  private static final String PRINT_ISSN_PROPERTY = "printIssn";
+  private static final String PUBLICATION_CHANNEL_PROPERTY = "publicationChannel";
   private NviGraphValidator nviGraphValidator;
   private Logger logger;
+
+  public static Stream<Named<Object>> invalidPublicationIdentifierProvider() {
+    return Stream.of(
+        Named.of("UUID with extra numbers", UUID.randomUUID() + "123"),
+        Named.of(
+            "Badly trimmed SortableIdentifier", SortableIdentifier.next().toString().substring(2)));
+  }
 
   @BeforeEach
   void setUp() {
@@ -102,6 +117,15 @@ class NviGraphValidatorTest {
   }
 
   @Test
+  void shouldReportWhenContributorsHaveWrongType() {
+    var model = createModelWithNoErrors();
+    var validation = nviGraphValidator.validate(replaceContributorWithInvalidValue(model));
+    assertThat(validation.generateReport())
+        .containsSequence("Publication contributor is not a value of correct type")
+        .hasSize(1);
+  }
+
+  @Test
   void shouldReportWhenPublicationIdentifierIsMissing() {
     var model = createModelWithNoErrors();
     var validation = nviGraphValidator.validate(removePublicationIdentifier(model));
@@ -116,6 +140,31 @@ class NviGraphValidatorTest {
     var validation = nviGraphValidator.validate(addAdditionalPublicationIdentifier(model));
     assertThat(validation.generateReport())
         .containsSequence("Publication identifier is repeated")
+        .hasSize(1);
+  }
+
+  @Test
+  void shouldReportWhenPublicationisNotString() {
+    var model = createModelWithNoErrors();
+    var uri = URI.create("https://example.org/publication/" + UUID.randomUUID());
+    var validation =
+        nviGraphValidator.validate(replacePublicationIdentifierWithInvalidValue(model, uri));
+    assertThat(validation.generateReport())
+        .containsSequence("Publication identifier is not a string")
+        // It is also generally invalid since it cannot match the required pattern, so two errors
+        // not just thhis one
+        .hasSize(2);
+  }
+
+  @ParameterizedTest
+  @DisplayName("Should report when Publication identifier is invalid")
+  @MethodSource("invalidPublicationIdentifierProvider")
+  void shouldReportWhenPublicationIdentifierIsInvalid(String value) {
+    var model = createModelWithNoErrors();
+    var validation =
+        nviGraphValidator.validate(replacePublicationIdentifierWithInvalidValue(model, value));
+    assertThat(validation.generateReport())
+        .containsSequence("Publication identifier is invalid")
         .hasSize(1);
   }
 
@@ -188,7 +237,38 @@ class NviGraphValidatorTest {
     var validation = nviGraphValidator.validate(addIsApplicable(model));
     assertThat(validation.generateReport())
         .containsSequence("Publication applicability is repeated")
+        // A graph needs distinct values and false causes an additional error.
+        .hasSize(2);
+  }
+
+  @Test
+  void shouldReportWhenPublicationApplicabilityIsNotBoolean() {
+    var model = createModelWithNoErrors();
+    var validation = nviGraphValidator.validate(replaceIsApplicableWithNoBoolean(model));
+    assertThat(validation.generateReport())
+        .containsSequence("Publication applicability is not a boolean")
+        // We end up with two errors since it cannot fulfil requirements for being true if it is not
+        // a boolean
+        .hasSize(2);
+  }
+
+  private Model replaceIsApplicableWithNoBoolean(Model model) {
+    var removeModel = removeIsApplicable(model);
+    return addTriples(removeModel, addQuery(PUBLICATION, "isApplicable", "Not boolean"));
+  }
+
+  @Test
+  void shouldReportWhenPublicationApplicabilityIsInvalid() {
+    var model = createModelWithNoErrors();
+    var validation = nviGraphValidator.validate(replaceApplicableValueWithFalse(model));
+    assertThat(validation.generateReport())
+        .containsSequence("Publication applicability is not TRUE")
         .hasSize(1);
+  }
+
+  private Model replaceApplicableValueWithFalse(Model model) {
+    var removeModel = removeIsApplicable(model);
+    return addTriples(removeModel, addQuery(PUBLICATION, "isApplicable", false));
   }
 
   @Test
@@ -196,7 +276,7 @@ class NviGraphValidatorTest {
     var model = createModelWithNoErrors();
     var validation = nviGraphValidator.validate(removeInternationalCollaboration(model));
     assertThat(validation.generateReport())
-        .containsSequence("Publication international collaboration is not flagged")
+        .containsSequence("Publication international collaboration is missing")
         .hasSize(1);
   }
 
@@ -210,11 +290,30 @@ class NviGraphValidatorTest {
   }
 
   @Test
+  void shouldReportWhenPublicationInternationalCollaborationIsNotBoolean() {
+    var model = createModelWithNoErrors();
+    var validation =
+        nviGraphValidator.validate(replaceInternationalCollaborationWithNonBoolean(model));
+    assertThat(validation.generateReport())
+        .containsSequence("Publication international collaboration is not a boolean")
+        .hasSize(1);
+  }
+
+  @Test
   void shouldReportWhenPublicationLanguageIsRepeated() {
     var model = createModelWithNoErrors();
     var validation = nviGraphValidator.validate(addILanguage(model));
     assertThat(validation.generateReport())
         .containsSequence("Publication language is repeated")
+        .hasSize(1);
+  }
+
+  @Test
+  void shouldReportWhenPublicationLanguageIsInvalidIri() {
+    var model = createModelWithNoErrors();
+    var validation = nviGraphValidator.validate(swapLanguageWithInvalidIri(model));
+    assertThat(validation.generateReport())
+        .containsSequence("Publication language is not a valid IRI")
         .hasSize(1);
   }
 
@@ -256,6 +355,25 @@ class NviGraphValidatorTest {
         .hasSize(1);
   }
 
+  @ParameterizedTest
+  @ValueSource(
+      strings = {
+        "https://api.dev.nva.aws.unit.no/publication-channels-v2/serial-publication/CEB75710-B16D-4E32-8DA8-041470CCAD61/2008",
+        "https://api.e2e.nva.aws.unit.no/publication-channels-v2/serial-publication/CEB75710-B16D-4E32-8DA8-041470CCAD61"
+            + "/2008",
+        "https://api.sandbox.nva.aws.unit.no/publication-channels-v2/serial-publication/CEB75710-B16D-4E32-8DA8"
+            + "-041470CCAD61/2008",
+        "https://api.test.nva.aws.unit.no/publication-channels-v2/serial-publication/CEB75710-B16D-4E32-8DA8-041470CCAD61"
+            + "/2008",
+        "https://api.nva.unit.no/publication-channels-v2/serial-publication/CEB75710-B16D-4E32-8DA8-041470CCAD61/2008"
+      })
+  void shouldNotReportWhenPublicationChannelIsValid(String channel) {
+    var model = createModelWithNoErrors();
+    var modelWithValidChannel = swapPublicationChannelWithValidIri(model, channel);
+    var validation = nviGraphValidator.validate(modelWithValidChannel);
+    assertThat(validation.hasViolations()).isFalse();
+  }
+
   @Test
   void shouldReportWhenPublicationChannelIriIsInvalid() {
     var model = createModelWithNoErrors();
@@ -280,6 +398,15 @@ class NviGraphValidatorTest {
     var validation = nviGraphValidator.validate(addPublicationDate(model));
     assertThat(validation.generateReport())
         .containsSequence("Publication date is repeated")
+        .hasSize(1);
+  }
+
+  @Test
+  void shouldNotReportWhenPublicationDateIsInvalid() {
+    var model = createModelWithNoErrors();
+    var validation = nviGraphValidator.validate(addInvalidPublicationDate(model));
+    assertThat(validation.generateReport())
+        .containsSequence("Publication date is not a blank node")
         .hasSize(1);
   }
 
@@ -711,7 +838,7 @@ class NviGraphValidatorTest {
     return switch (value) {
       case String string -> createObjectFromString(string);
       case Number number -> number.toString();
-      case Boolean bool -> bool.toString();
+      case Boolean bool -> "\"" + bool + "\"^^<http://www.w3.org/2001/XMLSchema#boolean>";
       case URI uri -> "<" + uri + ">";
       case null, default -> throw new IllegalArgumentException("Unsupported value " + value);
     };
@@ -976,6 +1103,25 @@ class NviGraphValidatorTest {
     return addTriples(removeTriples(model, removeQuery), addQuery);
   }
 
+  private Model addInvalidPublicationDate(Model model) {
+    var removeModel = removeTriples(model, removeQuery(PUBLICATION, "publicationDate"));
+    return addTriples(removeModel, addPublicationDateAsIriQuery());
+  }
+
+  private String addPublicationDateAsIriQuery() {
+    return """
+           PREFIX : <%s>
+           CONSTRUCT {
+             ?subject :publicationDate <https://example.com/publicationDate> .
+             <https://example.com/publicationDate> a :PublicationDate ;
+               :year "2025" .
+           } WHERE {
+             ?subject a :Publication .
+           }
+           """
+        .formatted(NVA_ONTOLOGY);
+  }
+
   private Model removePublicationType(Model model) {
     return removeTriples(model, removeQuery(PUBLICATION, PUBLICATION_TYPE_PROPERTY));
   }
@@ -1013,15 +1159,22 @@ class NviGraphValidatorTest {
     return removeTriples(model, removeQuery(PUBLICATION, "publicationDate"));
   }
 
+  private Model swapPublicationChannelWithValidIri(Model model, String channel) {
+    var removeModel = removeTriples(model, removeQuery(PUBLICATION, PUBLICATION_CHANNEL_PROPERTY));
+    var addQuery = addQuery(PUBLICATION, PUBLICATION_CHANNEL_PROPERTY, URI.create(channel));
+    return addTriples(removeModel, addQuery);
+  }
+
   private Model swapPublicationChannelWithInvalidIri(Model model) {
-    var removeQuery = removeQuery(PUBLICATION, "publicationChannel");
+    var removeQuery = removeQuery(PUBLICATION, PUBLICATION_CHANNEL_PROPERTY);
     var addQuery =
-        addQuery(PUBLICATION, "publicationChannel", URI.create("https://example.org/channel"));
+        addQuery(
+            PUBLICATION, PUBLICATION_CHANNEL_PROPERTY, URI.create("https://example.org/channel"));
     return addTriples(removeTriples(model, removeQuery), addQuery);
   }
 
   private Model removePublicationChannel(Model model) {
-    return removeTriples(model, removeQuery(PUBLICATION, "publicationChannel"));
+    return removeTriples(model, removeQuery(PUBLICATION, PUBLICATION_CHANNEL_PROPERTY));
   }
 
   private Model addIPublicationChannel(Model model) {
@@ -1074,6 +1227,13 @@ CONSTRUCT {
     return addTriples(model, query);
   }
 
+  private Model swapLanguageWithInvalidIri(Model model) {
+    var removeModel = removeTriples(model, removeQuery(PUBLICATION, "language"));
+    return addTriples(
+        removeModel,
+        addQuery(PUBLICATION, "language", URI.create("https://example.org/language/1")));
+  }
+
   private Model removeInternationalCollaboration(Model model) {
     return removeTriples(model, removeQuery(PUBLICATION, "isInternationalCollaboration"));
   }
@@ -1091,6 +1251,12 @@ CONSTRUCT {
         """
             .formatted(NVA_ONTOLOGY);
     return addTriples(model, query);
+  }
+
+  private Model replaceInternationalCollaborationWithNonBoolean(Model model) {
+    var removeModel = removeInternationalCollaboration(model);
+    return addTriples(
+        removeModel, addQuery(PUBLICATION, "isInternationalCollaboration", "Not boolean"));
   }
 
   private Model removeIsApplicable(Model model) {
@@ -1163,6 +1329,11 @@ CONSTRUCT {
         model, addQuery(PUBLICATION, IDENTIFIER_PROPERTY, UUID.randomUUID().toString()));
   }
 
+  private Model replacePublicationIdentifierWithInvalidValue(Model model, Object value) {
+    var removeModel = removeTriples(model, removeQuery(PUBLICATION, IDENTIFIER_PROPERTY));
+    return addTriples(removeModel, addQuery(PUBLICATION, IDENTIFIER_PROPERTY, value));
+  }
+
   private static Model addTriples(Model model, String query) {
     try (var queryExecution = QueryExecutionFactory.create(query, model)) {
       return model.add(queryExecution.execConstruct());
@@ -1181,6 +1352,11 @@ CONSTRUCT {
 
   private Model removeContributors(Model model) {
     return removeTriples(model, removeQuery(PUBLICATION, "contributor"));
+  }
+
+  private Model replaceContributorWithInvalidValue(Model model) {
+    var removeModel = removeContributors(model);
+    return addTriples(removeModel, addQuery(PUBLICATION, "contributor", "Herring stew"));
   }
 
   private Model createModelWithNoErrors() {
