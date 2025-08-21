@@ -80,7 +80,7 @@ public class ExamplePublications {
   public static final String REPEATED_PUBLICATION_DATE_YEAR =
       "expandedPublications/validation/candidateWithRepeatedPublicationDateYear.json";
   public static final String PUBLICATION_DATE_YEAR_TEMPLATE =
-      "expandedPublications/validation/candidatePublicationDateYearTemplate.json";
+      "expandedPublications/validation/candidatePublicationDateYearTemplate.json_template";
   public static final String CONTRIBUTOR_NO_AFFILIATION =
       "expandedPublications/validation/contributorNoAffiliation.json";
   public static final String CONTRIBUTOR_NO_NAME =
