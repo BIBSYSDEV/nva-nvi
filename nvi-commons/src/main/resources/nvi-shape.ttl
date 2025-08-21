@@ -106,7 +106,7 @@
     sh:maxCount 1
   ] ;
   sh:property [
-    sh:severity sh:Warning ;
+    sh:severity sh:Violation ;
     sh:message "Publication abstract is invalid" ;
     sh:path :abstractText ;
     sh:datatype xsd:string

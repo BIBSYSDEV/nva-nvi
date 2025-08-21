@@ -10,6 +10,8 @@ import java.net.URI;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import java.util.stream.Stream;
 import no.unit.nva.identifiers.SortableIdentifier;
@@ -26,7 +28,6 @@ import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,6 +56,29 @@ class NviGraphValidatorTest {
         Named.of("UUID with extra numbers", UUID.randomUUID() + "123"),
         Named.of(
             "Badly trimmed SortableIdentifier", SortableIdentifier.next().toString().substring(2)));
+  }
+
+  private static Stream<Named<URI>> channelUriProvider() {
+    var hosts =
+        List.of(
+            "api.dev.nva.aws.unit.no",
+            "api.e2e.nva.aws.unit.no",
+            "api.sandbox.nva.aws.unit.no",
+            "api.test.nva.aws.unit.no",
+            "api.nva.unit.no");
+    var types = List.of("publisher", "serial-publication");
+    var template =
+        "https://%s/publication-channels-v2/%s/CEB75710-B16D-4E32-8DA8-041470CCAD61/2008";
+    var uris = new ArrayList<Named<URI>>();
+    for (var host : hosts) {
+      for (var type : types) {
+        uris.add(
+            Named.of(
+                "URI host %s, type %s".formatted(host, type),
+                URI.create(template.formatted(host, type))));
+      }
+    }
+    return uris.stream();
   }
 
   @BeforeEach
@@ -347,8 +371,8 @@ class NviGraphValidatorTest {
   @Test
   void shouldReportWhenPublicationChannelIsRepeated() {
     var model = createModelWithNoErrors();
-    var modelWithTwoChannels = addIPublicationChannel(model);
-    var modelWithThreeChannels = addIPublicationChannel(modelWithTwoChannels);
+    var modelWithTwoChannels = addPublicationChannel(model);
+    var modelWithThreeChannels = addPublicationChannel(modelWithTwoChannels);
     var validation = nviGraphValidator.validate(modelWithThreeChannels);
     assertThat(validation.generateReport())
         .containsSequence("Publication channel is repeated more than twice")
@@ -356,18 +380,9 @@ class NviGraphValidatorTest {
   }
 
   @ParameterizedTest
-  @ValueSource(
-      strings = {
-        "https://api.dev.nva.aws.unit.no/publication-channels-v2/serial-publication/CEB75710-B16D-4E32-8DA8-041470CCAD61/2008",
-        "https://api.e2e.nva.aws.unit.no/publication-channels-v2/serial-publication/CEB75710-B16D-4E32-8DA8-041470CCAD61"
-            + "/2008",
-        "https://api.sandbox.nva.aws.unit.no/publication-channels-v2/serial-publication/CEB75710-B16D-4E32-8DA8"
-            + "-041470CCAD61/2008",
-        "https://api.test.nva.aws.unit.no/publication-channels-v2/serial-publication/CEB75710-B16D-4E32-8DA8-041470CCAD61"
-            + "/2008",
-        "https://api.nva.unit.no/publication-channels-v2/serial-publication/CEB75710-B16D-4E32-8DA8-041470CCAD61/2008"
-      })
-  void shouldNotReportWhenPublicationChannelIsValid(String channel) {
+  @DisplayName("Should not report when publication channel is valid")
+  @MethodSource("channelUriProvider")
+  void shouldNotReportWhenPublicationChannelIsValid(URI channel) {
     var model = createModelWithNoErrors();
     var modelWithValidChannel = swapPublicationChannelWithValidIri(model, channel);
     var validation = nviGraphValidator.validate(modelWithValidChannel);
@@ -1159,9 +1174,9 @@ class NviGraphValidatorTest {
     return removeTriples(model, removeQuery(PUBLICATION, "publicationDate"));
   }
 
-  private Model swapPublicationChannelWithValidIri(Model model, String channel) {
+  private Model swapPublicationChannelWithValidIri(Model model, URI channel) {
     var removeModel = removeTriples(model, removeQuery(PUBLICATION, PUBLICATION_CHANNEL_PROPERTY));
-    var addQuery = addQuery(PUBLICATION, PUBLICATION_CHANNEL_PROPERTY, URI.create(channel));
+    var addQuery = addQuery(PUBLICATION, PUBLICATION_CHANNEL_PROPERTY, channel);
     return addTriples(removeModel, addQuery);
   }
 
@@ -1177,7 +1192,7 @@ class NviGraphValidatorTest {
     return removeTriples(model, removeQuery(PUBLICATION, PUBLICATION_CHANNEL_PROPERTY));
   }
 
-  private Model addIPublicationChannel(Model model) {
+  private Model addPublicationChannel(Model model) {
     var uuid = UUID.randomUUID().toString();
     var query =
         """

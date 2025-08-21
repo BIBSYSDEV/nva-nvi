@@ -7,9 +7,11 @@ import org.apache.jena.shacl.Shapes;
 
 public class NvaGraphValidator implements GraphValidator {
 
+  private static final String NVA_SHAPE_TTL = "nva-shape.ttl";
+
   @Override
   public GraphValidation validate(Model model) {
-    var shape = Shapes.parse(RDFDataMgr.loadGraph("nva-shape.ttl"));
+    var shape = Shapes.parse(RDFDataMgr.loadGraph(NVA_SHAPE_TTL));
     return new GraphValidation(ShaclValidator.get().validate(shape, model.getGraph()));
   }
 }

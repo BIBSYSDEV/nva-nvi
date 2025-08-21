@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.common.service;
 
-import static java.util.Objects.isNull;
 import static nva.commons.core.ioutils.IoUtils.stringToStream;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -21,7 +20,6 @@ public record NvaGraph(Model model) implements GraphValidable {
   public static NvaGraph fromJsonLd(JsonNode content) {
     var model = ModelFactory.createDefaultModel();
     loadDataIntoModel(model, stringToStream(content.toString()));
-
     return new NvaGraph(model);
   }
 
@@ -35,9 +33,6 @@ public record NvaGraph(Model model) implements GraphValidable {
   }
 
   private static void loadDataIntoModel(Model model, InputStream inputStream) {
-    if (isNull(inputStream)) {
-      return;
-    }
     try {
       RDFDataMgr.read(model, inputStream, Lang.JSONLD);
     } catch (RiotException e) {
