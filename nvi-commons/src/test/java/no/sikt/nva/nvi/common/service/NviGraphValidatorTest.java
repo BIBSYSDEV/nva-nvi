@@ -152,7 +152,7 @@ class NviGraphValidatorTest {
     assertThat(validation.generateReport())
         .containsSequence("Publication identifier is not a string")
         // It is also generally invalid since it cannot match the required pattern, so two errors
-        // not just thhis one
+        // not just this one
         .hasSize(2);
   }
 
