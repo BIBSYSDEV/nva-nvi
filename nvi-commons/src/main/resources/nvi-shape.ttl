@@ -442,9 +442,14 @@
   ] ;
   sh:property [
     sh:severity sh:Violation ;
-    sh:message "Publication channel scientific value is not a string matching (LevelOne, LevelTwo)" ;
+    sh:message "Publication channel scientific value is not a string" ;
     sh:path :scientificValue ;
-    sh:datatype xsd:string ;
+    sh:datatype xsd:string
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication channel scientific value is not one of [ LevelOne, LevelTwo ]" ;
+    sh:path :scientificValue ;
     sh:in ( "LevelOne" "LevelTwo" )
   ] ;
   sh:property [

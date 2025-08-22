@@ -28,6 +28,7 @@ import org.junit.jupiter.api.Named;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -714,14 +715,28 @@ class NviGraphValidatorTest {
         .hasSize(1);
   }
 
-  @Test
-  void shouldReportWhenPublicationChannelScientificValueIsInvalid() {
+  @ParameterizedTest
+  @ValueSource(strings = {"NonsenseLevel", "Unassigned", "X"})
+  void shouldReportWhenPublicationChannelScientificValueIsInvalid(String invalidLevel) {
     var model = createModelWithNoErrors();
-    var validation = nviGraphValidator.validate(replacePublicationChannelScientificValue(model));
+    var validation =
+        nviGraphValidator.validate(replacePublicationChannelScientificValue(model, invalidLevel));
     assertThat(validation.generateReport())
         .containsSequence(
-            "Publication channel scientific value is not a string matching (LevelOne, LevelTwo)")
+            "Publication channel scientific value is not one of [ LevelOne, LevelTwo ]")
         .hasSize(1);
+  }
+
+  @Test
+  void shouldReportWhenPublicationChannelScientificValueIsInvalidType() {
+    var model = createModelWithNoErrors();
+    var validation =
+        nviGraphValidator.validate(
+            replacePublicationChannelScientificValue(model, URI.create("https://example.org/X")));
+    assertThat(validation.generateReport())
+        .containsSequence("Publication channel scientific value is not a string")
+        // Size is two since the value also cannot match the required (string) values.
+        .hasSize(2);
   }
 
   @Test
@@ -977,11 +992,11 @@ class NviGraphValidatorTest {
     return addTriples(model, query);
   }
 
-  private Model replacePublicationChannelScientificValue(Model model) {
+  private Model replacePublicationChannelScientificValue(Model model, Object invalidLevel) {
     var removedModel =
         removeTriples(model, removeQuery(PUBLICATION_CHANNEL_CLASS, "scientificValue"));
     return addTriples(
-        removedModel, addQuery(PUBLICATION_CHANNEL_CLASS, "scientificValue", "NonsenseLevel"));
+        removedModel, addQuery(PUBLICATION_CHANNEL_CLASS, "scientificValue", invalidLevel));
   }
 
   private Model replacePublicationChannelYear(Model model) {
