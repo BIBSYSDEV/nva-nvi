@@ -85,7 +85,7 @@ public record SampleExpandedPublication(
     var root = objectMapper.createObjectNode();
     var expandedResource = createExpandedResource();
     root.set(BODY_FIELD, expandedResource);
-//    root.put(NT_FIELD, toNtriples(expandedResource));
+    root.put(NT_FIELD, toNtriples(expandedResource));
     return root;
   }
 
