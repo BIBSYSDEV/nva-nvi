@@ -129,6 +129,8 @@ public class ExamplePublications {
       "expandedPublications/validation/publicationChannelPissnRepeated.json";
   public static final String PUBLICATION_CHANNEL_PISSN_NOT_STRING =
       "expandedPublications/validation/publicationChannelPissnNotString.json";
+  public static final String EXAMPLE_WITH_NTRIPLES =
+      "expandedPublications/publicationWithNtriples.json";
   public static final PublicationDto EXAMPLE_PUBLICATION_1 =
       PublicationDto.builder()
           .withId(

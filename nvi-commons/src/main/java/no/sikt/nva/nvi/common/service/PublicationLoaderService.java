@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.common.service;
 
+import static java.util.Objects.nonNull;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.ioutils.IoUtils.stringFromResources;
 
@@ -23,6 +24,7 @@ public class PublicationLoaderService {
 
   private static final String CONTEXT_NODE = "@context";
   private static final String JSON_PTR_BODY = "/body";
+  private static final String JSON_PTR_NT = "/nt";
   private static final String INPUT_CONTEXT_FILE = "nva_context.json";
   private static final JsonNode INPUT_CONTEXT = getInputContext();
 
@@ -62,7 +64,7 @@ public class PublicationLoaderService {
   }
 
   private NvaGraph extractNvaGraph(JsonNode content) {
-    var graph = NvaGraph.fromJsonLd(content);
+    var graph = content.isTextual() ? NvaGraph.fromNtriples(content) : NvaGraph.fromJsonLd(content);
     var nvaValidator = new NvaGraphValidator();
     var nvaValidationReport = graph.validate(nvaValidator);
     // TODO: once the validation is in place, we will throw exceptions at this point
@@ -82,6 +84,12 @@ public class PublicationLoaderService {
     try {
       var jsonString = storageReader.read(publicationBucketUri);
       var jsonDocument = dtoObjectMapper.readTree(jsonString);
+      var nt = jsonDocument.at(JSON_PTR_NT);
+      if (nonNull(nt) && !nt.isMissingNode()) {
+        logger.info("Using N-Triples data");
+        return nt;
+      }
+      logger.info("Using JSON-LD data");
       var body = (ObjectNode) jsonDocument.at(JSON_PTR_BODY);
       body.set(CONTEXT_NODE, INPUT_CONTEXT);
       return body;

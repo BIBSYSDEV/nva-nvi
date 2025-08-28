@@ -95,6 +95,13 @@ class PublicationLoaderServiceTest {
     assertThat(logAppender.getMessages()).containsSequence("Publication is missing or duplicated");
   }
 
+  @Test
+  void shouldLogUseOfNtriplesWhenNtriplesAreAvailable() {
+    var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
+    assertDoesNotThrow(() -> parseExampleDocument(ExamplePublications.EXAMPLE_WITH_NTRIPLES));
+    assertThat(logAppender.getMessages()).containsSequence("Using N-Triples data");
+  }
+
   /**
    * This test is unfortunately necessary because the rule for Publication-type-checking may result
    * in false positives / false negatives.
