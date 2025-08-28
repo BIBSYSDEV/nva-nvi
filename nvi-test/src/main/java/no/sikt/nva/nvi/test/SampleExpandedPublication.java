@@ -35,12 +35,16 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.ioutils.IoUtils;
+import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.riot.Lang;
+import org.apache.jena.riot.RDFDataMgr;
 
 /**
  * This is intended to create a JSON representation of an expanded resource, mirroring the expected
@@ -67,6 +71,7 @@ public record SampleExpandedPublication(
   private static final String TEMPLATE_JSON_PATH = "template_publication.json";
   private static final String PUBLICATION_CHANNELS_MUST_NOT_BE_EMPTY =
       "Publication channels must not be empty";
+  private static final String NT_FIELD = "nt";
 
   public static Builder builder() {
     return new Builder();
@@ -78,8 +83,18 @@ public record SampleExpandedPublication(
 
   public JsonNode toJsonNode() {
     var root = objectMapper.createObjectNode();
-    root.set(BODY_FIELD, createExpandedResource());
+    var expandedResource = createExpandedResource();
+    root.set(BODY_FIELD, expandedResource);
+    root.put(NT_FIELD, toNtriples(expandedResource));
     return root;
+  }
+
+  private String toNtriples(JsonNode expandedResource) {
+    var model = ModelFactory.createDefaultModel();
+    RDFDataMgr.read(model, IoUtils.stringToStream(expandedResource.toString()), Lang.JSONLD);
+    var stringWriter = new StringWriter();
+    RDFDataMgr.write(stringWriter, model, Lang.NTRIPLES);
+    return stringWriter.toString();
   }
 
   private ObjectNode createAndPopulatePublicationInstance(String type) {

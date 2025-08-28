@@ -1,0 +1,199 @@
+{
+  "body" : {
+    "type" : "Publication",
+    "publicationContextUris" : [ "https://api.sandbox.nva.aws.unit.no/publication-channels-v2/serial-publication/013E7484-327D-4F42-ACA4-8F975CCFF34C/2025" ],
+    "id" : "https://api.sandbox.nva.aws.unit.no/publication/0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5",
+    "associatedArtifacts" : [ {
+      "type" : "NullAssociatedArtifact"
+    } ],
+    "contributorOrganizations" : [ "https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.0.0.0", "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0", "https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.2.0.0" ],
+    "createdDate" : "2025-03-24T06:57:59.857549521Z",
+    "curatingInstitutions" : [ "https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.0.0.0", "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0" ],
+    "entityDescription" : {
+      "type" : "EntityDescription",
+      "abstract" : "Lorem ipsum",
+      "alternativeAbstracts" : { },
+      "contributors" : [ {
+        "type" : "Contributor",
+        "affiliations" : [ {
+          "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.2.0.0",
+          "type" : "Organization",
+          "countryCode" : "NO",
+          "labels" : {
+            "nn" : "Divisjon for forskings- og kunnskapsressursar",
+            "nb" : "Divisjon forsknings- og kunnskapsressurser",
+            "en" : "The Research and Education Resources Division"
+          },
+          "partOf" : [ {
+            "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.0.0.0"
+          } ]
+        }, {
+          "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0",
+          "type" : "Organization",
+          "contributorCristinIds" : [ {
+            "id" : "https://api.sandbox.nva.aws.unit.no/cristin/person/1215176",
+            "type" : "Identity",
+            "name" : "Ola Nordmann",
+            "verificationStatus" : "Verified"
+          } ],
+          "countryCode" : "NO",
+          "labels" : {
+            "nn" : "Noregs teknisk-naturvitskaplege universitet",
+            "nb" : "Norges teknisk-naturvitenskapelige universitet",
+            "en" : "Norwegian University of Science and Technology"
+          }
+        } ],
+        "correspondingAuthor" : "false",
+        "identity" : {
+          "id" : "https://api.sandbox.nva.aws.unit.no/cristin/person/1215176",
+          "type" : "Identity",
+          "name" : "Ola Nordmann",
+          "verificationStatus" : "Verified"
+        },
+        "role" : {
+          "type" : "Creator"
+        },
+        "sequence" : "1"
+      } ],
+      "description" : "dolor sit amet",
+      "language" : "http://lexvo.org/id/iso639-3/nob",
+      "mainTitle" : "Example NVI candidate #1",
+      "publicationDate" : {
+        "type" : "PublicationDate",
+        "year" : "2025"
+      },
+      "reference" : {
+        "type" : "Reference",
+        "publicationContext" : {
+          "id" : "https://api.sandbox.nva.aws.unit.no/publication-channels-v2/serial-publication/013E7484-327D-4F42-ACA4-8F975CCFF34C/2025",
+          "type" : "Journal",
+          "identifier" : "013E7484-327D-4F42-ACA4-8F975CCFF34C",
+          "name" : "IEEE International Conference on Software Testing Verification and Validation Workshop, ICSTW",
+          "printIssn" : "2159-4848",
+          "sameAs" : "https://kanalregister.hkdir.no/publiseringskanaler/info/tidsskrift?pid=013E7484-327D-4F42-ACA4-8F975CCFF34C",
+          "scientificValue" : "LevelOne",
+          "year" : "2025"
+        },
+        "publicationInstance" : {
+          "type" : "AcademicArticle",
+          "pages" : {
+            "type" : "Range"
+          }
+        }
+      },
+      "tags" : [ "testing", "test" ],
+      "contributorsCount" : 1,
+      "contributorsPreview" : [ {
+        "type" : "Contributor",
+        "affiliations" : [ {
+          "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.2.0.0",
+          "type" : "Organization",
+          "countryCode" : "NO",
+          "labels" : {
+            "nn" : "Divisjon for forskings- og kunnskapsressursar",
+            "nb" : "Divisjon forsknings- og kunnskapsressurser",
+            "en" : "The Research and Education Resources Division"
+          },
+          "partOf" : [ {
+            "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.0.0.0"
+          } ]
+        }, {
+          "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0",
+          "type" : "Organization",
+          "contributorCristinIds" : [ {
+            "id" : "https://api.sandbox.nva.aws.unit.no/cristin/person/1215176",
+            "type" : "Identity",
+            "name" : "Ola Nordmann",
+            "verificationStatus" : "Verified"
+          } ],
+          "countryCode" : "NO",
+          "labels" : {
+            "nn" : "Noregs teknisk-naturvitskaplege universitet",
+            "nb" : "Norges teknisk-naturvitenskapelige universitet",
+            "en" : "Norwegian University of Science and Technology"
+          }
+        } ],
+        "correspondingAuthor" : "false",
+        "identity" : {
+          "id" : "https://api.sandbox.nva.aws.unit.no/cristin/person/1215176",
+          "type" : "Identity",
+          "name" : "Ola Nordmann",
+          "verificationStatus" : "Verified"
+        },
+        "role" : {
+          "type" : "Creator"
+        },
+        "sequence" : "1"
+      } ]
+    },
+    "identifier" : "0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5",
+    "modelVersion" : "0.23.3",
+    "modifiedDate" : "2025-03-24T06:59:56.170369925Z",
+    "pendingOpenFileCount" : "0",
+    "publishedDate" : "2025-03-24T06:59:56.149611Z",
+    "publisher" : {
+      "id" : "https://api.sandbox.nva.aws.unit.no/customer/bb3d0c0c-5065-4623-9b98-5810983c2478",
+      "type" : "Organization"
+    },
+    "resourceOwner" : {
+      "owner" : "1215176@20754.0.0.0",
+      "ownerAffiliation" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.0.0.0"
+    },
+    "scientificIndex" : { },
+    "status" : "PUBLISHED",
+    "topLevelOrganizations" : [ {
+      "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0",
+      "type" : "Organization",
+      "contributorCristinIds" : [ {
+        "id" : "https://api.sandbox.nva.aws.unit.no/cristin/person/1215176",
+        "type" : "Identity",
+        "name" : "Ola Nordmann",
+        "verificationStatus" : "Verified"
+      } ],
+      "countryCode" : "NO",
+      "labels" : {
+        "nn" : "Noregs teknisk-naturvitskaplege universitet",
+        "nb" : "Norges teknisk-naturvitenskapelige universitet",
+        "en" : "Norwegian University of Science and Technology"
+      }
+    }, {
+      "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.0.0.0",
+      "type" : "Organization",
+      "contributorCristinIds" : [ {
+        "id" : "https://api.sandbox.nva.aws.unit.no/cristin/person/1215176",
+        "type" : "Identity",
+        "name" : "Ola Nordmann",
+        "verificationStatus" : "Verified"
+      } ],
+      "countryCode" : "NO",
+      "hasPart" : [ {
+        "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.2.0.0",
+        "type" : "Organization",
+        "countryCode" : "NO",
+        "labels" : {
+          "nn" : "Divisjon for forskings- og kunnskapsressursar",
+          "nb" : "Divisjon forsknings- og kunnskapsressurser",
+          "en" : "The Research and Education Resources Division"
+        },
+        "partOf" : [ {
+          "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.0.0.0"
+        } ]
+      } ],
+      "labels" : {
+        "nb" : "Sikt – Kunnskapssektorens tjenesteleverandør",
+        "en" : "Sikt - Norwegian Agency for Shared Services in Education and Research"
+      }
+    } ],
+    "@context" : "https://api.sandbox.nva.aws.unit.no/publication/context",
+    "filesStatus" : "noFiles",
+    "joinField" : {
+      "name" : "partOf",
+      "parent" : "PARENT_IDENTIFIER_NOT_FOUND"
+    }
+  },
+  "consumptionAttributes" : {
+    "index" : "resources",
+    "documentIdentifier" : "0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5"
+  },
+  "nt": "<https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://nva.sikt.no/ontology/publication#Organization> .\n<https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0> <https://nva.sikt.no/ontology/publication#contributorCristinId> <https://api.sandbox.nva.aws.unit.no/cristin/person/1215176> .\n<https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0> <https://nva.sikt.no/ontology/publication#country> \"NO\" .\n<https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0> <https://nva.sikt.no/ontology/publication#label> \"Noregs teknisk-naturvitskaplege universitet\"@nn .\n<https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0> <https://nva.sikt.no/ontology/publication#label> \"Norges teknisk-naturvitenskapelige universitet\"@nb .\n<https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0> <https://nva.sikt.no/ontology/publication#label> \"Norwegian University of Science and Technology\"@en .\n<https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.0.0.0> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://nva.sikt.no/ontology/publication#Organization> .\n<https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.0.0.0> <https://nva.sikt.no/ontology/publication#contributorCristinId> <https://api.sandbox.nva.aws.unit.no/cristin/person/1215176> .\n<https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.0.0.0> <https://nva.sikt.no/ontology/publication#country> \"NO\" .\n<https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.0.0.0> <https://nva.sikt.no/ontology/publication#hasPart> <https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.2.0.0> .\n<https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.0.0.0> <https://nva.sikt.no/ontology/publication#label> \"Sikt - Norwegian Agency for Shared Services in Education and Research\"@en .\n<https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.0.0.0> <https://nva.sikt.no/ontology/publication#label> \"Sikt – Kunnskapssektorens tjenesteleverandør\"@nb .\n<https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.2.0.0> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://nva.sikt.no/ontology/publication#Organization> .\n<https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.2.0.0> <https://nva.sikt.no/ontology/publication#country> \"NO\" .\n<https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.2.0.0> <https://nva.sikt.no/ontology/publication#label> \"Divisjon for forskings- og kunnskapsressursar\"@nn .\n<https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.2.0.0> <https://nva.sikt.no/ontology/publication#label> \"Divisjon forsknings- og kunnskapsressurser\"@nb .\n<https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.2.0.0> <https://nva.sikt.no/ontology/publication#label> \"The Research and Education Resources Division\"@en .\n<https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.2.0.0> <https://nva.sikt.no/ontology/publication#partOf> <https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.0.0.0> .\n<https://api.sandbox.nva.aws.unit.no/cristin/person/1215176> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://nva.sikt.no/ontology/publication#Identity> .\n<https://api.sandbox.nva.aws.unit.no/cristin/person/1215176> <https://nva.sikt.no/ontology/publication#name> \"Ola Nordmann\" .\n<https://api.sandbox.nva.aws.unit.no/cristin/person/1215176> <https://nva.sikt.no/ontology/publication#verificationStatus> \"Verified\" .\n<https://api.sandbox.nva.aws.unit.no/customer/bb3d0c0c-5065-4623-9b98-5810983c2478> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://nva.sikt.no/ontology/publication#Organization> .\n<https://api.sandbox.nva.aws.unit.no/publication-channels-v2/serial-publication/013E7484-327D-4F42-ACA4-8F975CCFF34C/2025> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://nva.sikt.no/ontology/publication#Journal> .\n<https://api.sandbox.nva.aws.unit.no/publication-channels-v2/serial-publication/013E7484-327D-4F42-ACA4-8F975CCFF34C/2025> <https://nva.sikt.no/ontology/publication#identifier> \"013E7484-327D-4F42-ACA4-8F975CCFF34C\" .\n<https://api.sandbox.nva.aws.unit.no/publication-channels-v2/serial-publication/013E7484-327D-4F42-ACA4-8F975CCFF34C/2025> <https://nva.sikt.no/ontology/publication#name> \"IEEE International Conference on Software Testing Verification and Validation Workshop, ICSTW\" .\n<https://api.sandbox.nva.aws.unit.no/publication-channels-v2/serial-publication/013E7484-327D-4F42-ACA4-8F975CCFF34C/2025> <https://nva.sikt.no/ontology/publication#printIssn> \"2159-4848\" .\n<https://api.sandbox.nva.aws.unit.no/publication-channels-v2/serial-publication/013E7484-327D-4F42-ACA4-8F975CCFF34C/2025> <https://nva.sikt.no/ontology/publication#sameAs> \"https://kanalregister.hkdir.no/publiseringskanaler/info/tidsskrift?pid=013E7484-327D-4F42-ACA4-8F975CCFF34C\" .\n<https://api.sandbox.nva.aws.unit.no/publication-channels-v2/serial-publication/013E7484-327D-4F42-ACA4-8F975CCFF34C/2025> <https://nva.sikt.no/ontology/publication#scientificValue> \"LevelOne\" .\n<https://api.sandbox.nva.aws.unit.no/publication-channels-v2/serial-publication/013E7484-327D-4F42-ACA4-8F975CCFF34C/2025> <https://nva.sikt.no/ontology/publication#year> \"2025\" .\n<https://api.sandbox.nva.aws.unit.no/publication/0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://nva.sikt.no/ontology/publication#Publication> .\n<https://api.sandbox.nva.aws.unit.no/publication/0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5> <https://nva.sikt.no/ontology/publication#associatedArtifact> _:b0 .\n<https://api.sandbox.nva.aws.unit.no/publication/0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5> <https://nva.sikt.no/ontology/publication#contributorOrganization> <https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0> .\n<https://api.sandbox.nva.aws.unit.no/publication/0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5> <https://nva.sikt.no/ontology/publication#contributorOrganization> <https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.0.0.0> .\n<https://api.sandbox.nva.aws.unit.no/publication/0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5> <https://nva.sikt.no/ontology/publication#contributorOrganization> <https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.2.0.0> .\n<https://api.sandbox.nva.aws.unit.no/publication/0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5> <https://nva.sikt.no/ontology/publication#createdDate> \"2025-03-24T06:57:59.857549521Z\"^^<http://www.w3.org/2001/XMLSchema#dateTime> .\n<https://api.sandbox.nva.aws.unit.no/publication/0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5> <https://nva.sikt.no/ontology/publication#curatingOrganization> <https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0> .\n<https://api.sandbox.nva.aws.unit.no/publication/0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5> <https://nva.sikt.no/ontology/publication#curatingOrganization> <https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.0.0.0> .\n<https://api.sandbox.nva.aws.unit.no/publication/0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5> <https://nva.sikt.no/ontology/publication#entityDescription> _:b1 .\n<https://api.sandbox.nva.aws.unit.no/publication/0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5> <https://nva.sikt.no/ontology/publication#filesStatus> \"noFiles\" .\n<https://api.sandbox.nva.aws.unit.no/publication/0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5> <https://nva.sikt.no/ontology/publication#identifier> \"0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5\" .\n<https://api.sandbox.nva.aws.unit.no/publication/0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5> <https://nva.sikt.no/ontology/publication#joinField> _:b11 .\n<https://api.sandbox.nva.aws.unit.no/publication/0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5> <https://nva.sikt.no/ontology/publication#modelVersion> \"0.23.3\" .\n<https://api.sandbox.nva.aws.unit.no/publication/0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5> <https://nva.sikt.no/ontology/publication#modifiedDate> \"2025-03-24T06:59:56.170369925Z\"^^<http://www.w3.org/2001/XMLSchema#dateTime> .\n<https://api.sandbox.nva.aws.unit.no/publication/0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5> <https://nva.sikt.no/ontology/publication#pendingOpenFileCount> \"0\"^^<http://www.w3.org/2001/XMLSchema#integer> .\n<https://api.sandbox.nva.aws.unit.no/publication/0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5> <https://nva.sikt.no/ontology/publication#publicationContextUris> \"https://api.sandbox.nva.aws.unit.no/publication-channels-v2/serial-publication/013E7484-327D-4F42-ACA4-8F975CCFF34C/2025\" .\n<https://api.sandbox.nva.aws.unit.no/publication/0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5> <https://nva.sikt.no/ontology/publication#publishedDate> \"2025-03-24T06:59:56.149611Z\"^^<http://www.w3.org/2001/XMLSchema#dateTime> .\n<https://api.sandbox.nva.aws.unit.no/publication/0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5> <https://nva.sikt.no/ontology/publication#publisher> <https://api.sandbox.nva.aws.unit.no/customer/bb3d0c0c-5065-4623-9b98-5810983c2478> .\n<https://api.sandbox.nva.aws.unit.no/publication/0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5> <https://nva.sikt.no/ontology/publication#resourceOwner> _:b12 .\n<https://api.sandbox.nva.aws.unit.no/publication/0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5> <https://nva.sikt.no/ontology/publication#scientificIndex> _:b13 .\n<https://api.sandbox.nva.aws.unit.no/publication/0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5> <https://nva.sikt.no/ontology/publication#status> <https://nva.sikt.no/ontology/publication#PUBLISHED> .\n<https://api.sandbox.nva.aws.unit.no/publication/0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5> <https://nva.sikt.no/ontology/publication#topLevelOrganization> <https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0> .\n<https://api.sandbox.nva.aws.unit.no/publication/0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5> <https://nva.sikt.no/ontology/publication#topLevelOrganization> <https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.0.0.0> .\n_:b0 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://nva.sikt.no/ontology/publication#NullAssociatedArtifact> .\n_:b1 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://nva.sikt.no/ontology/publication#EntityDescription> .\n_:b1 <https://nva.sikt.no/ontology/publication#abstract> \"Lorem ipsum\" .\n_:b1 <https://nva.sikt.no/ontology/publication#alternativeAbstracts> _:b2 .\n_:b1 <https://nva.sikt.no/ontology/publication#contributor> _:b3 .\n_:b1 <https://nva.sikt.no/ontology/publication#contributorsCount> \"1\"^^<http://www.w3.org/2001/XMLSchema#integer> .\n_:b1 <https://nva.sikt.no/ontology/publication#contributorsPreview> _:b5 .\n_:b1 <https://nva.sikt.no/ontology/publication#description> \"dolor sit amet\" .\n_:b1 <https://nva.sikt.no/ontology/publication#language> <http://lexvo.org/id/iso639-3/nob> .\n_:b1 <https://nva.sikt.no/ontology/publication#mainTitle> \"Example NVI candidate #1\" .\n_:b1 <https://nva.sikt.no/ontology/publication#publicationDate> _:b7 .\n_:b1 <https://nva.sikt.no/ontology/publication#reference> _:b8 .\n_:b1 <https://nva.sikt.no/ontology/publication#tag> \"test\" .\n_:b1 <https://nva.sikt.no/ontology/publication#tag> \"testing\" .\n_:b10 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://nva.sikt.no/ontology/publication#Range> .\n_:b11 <https://nva.sikt.no/ontology/publication#name> \"partOf\" .\n_:b11 <https://nva.sikt.no/ontology/publication#parent> \"PARENT_IDENTIFIER_NOT_FOUND\" .\n_:b12 <https://nva.sikt.no/ontology/publication#owner> \"1215176@20754.0.0.0\" .\n_:b12 <https://nva.sikt.no/ontology/publication#ownerAffiliation> <https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.0.0.0> .\n_:b3 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://nva.sikt.no/ontology/publication#Contributor> .\n_:b3 <https://nva.sikt.no/ontology/publication#affiliation> <https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0> .\n_:b3 <https://nva.sikt.no/ontology/publication#affiliation> <https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.2.0.0> .\n_:b3 <https://nva.sikt.no/ontology/publication#correspondingAuthor> \"false\"^^<http://www.w3.org/2001/XMLSchema#boolean> .\n_:b3 <https://nva.sikt.no/ontology/publication#identity> <https://api.sandbox.nva.aws.unit.no/cristin/person/1215176> .\n_:b3 <https://nva.sikt.no/ontology/publication#role> _:b4 .\n_:b3 <https://nva.sikt.no/ontology/publication#sequence> \"1\"^^<http://www.w3.org/2001/XMLSchema#integer> .\n_:b4 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://nva.sikt.no/ontology/publication#Creator> .\n_:b5 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://nva.sikt.no/ontology/publication#Contributor> .\n_:b5 <https://nva.sikt.no/ontology/publication#affiliation> <https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0> .\n_:b5 <https://nva.sikt.no/ontology/publication#affiliation> <https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.2.0.0> .\n_:b5 <https://nva.sikt.no/ontology/publication#correspondingAuthor> \"false\"^^<http://www.w3.org/2001/XMLSchema#boolean> .\n_:b5 <https://nva.sikt.no/ontology/publication#identity> <https://api.sandbox.nva.aws.unit.no/cristin/person/1215176> .\n_:b5 <https://nva.sikt.no/ontology/publication#role> _:b6 .\n_:b5 <https://nva.sikt.no/ontology/publication#sequence> \"1\"^^<http://www.w3.org/2001/XMLSchema#integer> .\n_:b6 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://nva.sikt.no/ontology/publication#Creator> .\n_:b7 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://nva.sikt.no/ontology/publication#PublicationDate> .\n_:b7 <https://nva.sikt.no/ontology/publication#year> \"2025\" .\n_:b8 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://nva.sikt.no/ontology/publication#Reference> .\n_:b8 <https://nva.sikt.no/ontology/publication#publicationContext> <https://api.sandbox.nva.aws.unit.no/publication-channels-v2/serial-publication/013E7484-327D-4F42-ACA4-8F975CCFF34C/2025> .\n_:b8 <https://nva.sikt.no/ontology/publication#publicationInstance> _:b9 .\n_:b9 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://nva.sikt.no/ontology/publication#AcademicArticle> .\n_:b9 <https://nva.sikt.no/ontology/publication#pages> _:b10 .\n"
+}

@@ -19,7 +19,13 @@ public record NvaGraph(Model model) implements GraphValidable {
 
   public static NvaGraph fromJsonLd(JsonNode content) {
     var model = ModelFactory.createDefaultModel();
-    loadDataIntoModel(model, stringToStream(content.toString()));
+    loadJsonLdIntoModel(model, stringToStream(content.toString()));
+    return new NvaGraph(model);
+  }
+
+  public static NvaGraph fromNtriples(JsonNode content) {
+    var model = ModelFactory.createDefaultModel();
+    loadNtriplesIntoModel(model, stringToStream(content.asText()));
     return new NvaGraph(model);
   }
 
@@ -32,9 +38,17 @@ public record NvaGraph(Model model) implements GraphValidable {
     return NviGraph.fromNvaGraph(this);
   }
 
-  private static void loadDataIntoModel(Model model, InputStream inputStream) {
+  private static void loadJsonLdIntoModel(Model model, InputStream inputStream) {
     try {
       RDFDataMgr.read(model, inputStream, Lang.JSONLD);
+    } catch (RiotException e) {
+      logInvalidJsonLdInput(e);
+    }
+  }
+
+  private static void loadNtriplesIntoModel(Model model, InputStream inputStream) {
+    try {
+      RDFDataMgr.read(model, inputStream, Lang.NTRIPLES);
     } catch (RiotException e) {
       logInvalidJsonLdInput(e);
     }
