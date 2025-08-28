@@ -102,6 +102,13 @@ class PublicationLoaderServiceTest {
     assertThat(logAppender.getMessages()).containsSequence("Using N-Triples data");
   }
 
+  @Test
+  void shouldLogUseOfJsonldWhenNtriplesAreNotAvailable() {
+    var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
+    assertDoesNotThrow(() -> parseExampleDocument(ExamplePublications.EXAMPLE_PUBLICATION_1_PATH));
+    assertThat(logAppender.getMessages()).containsSequence("Using JSON-LD data");
+  }
+
   /**
    * This test is unfortunately necessary because the rule for Publication-type-checking may result
    * in false positives / false negatives.
