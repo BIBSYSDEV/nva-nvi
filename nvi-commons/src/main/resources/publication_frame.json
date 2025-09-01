@@ -24,6 +24,9 @@
       "@id": "isApplicable",
       "@type": "xsd:boolean"
     },
+    "countryCode": {
+      "@id": "country"
+    },
     "hasPart": {
       "@id": "hasPart",
       "@container": "@set"

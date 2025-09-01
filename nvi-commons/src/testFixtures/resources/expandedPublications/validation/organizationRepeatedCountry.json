@@ -165,7 +165,7 @@
         "name" : "Ola Nordmann",
         "verificationStatus" : "Verified"
       } ],
-      "countryCode" : "NO",
+      "countryCode" : [ "NO", "GB" ],
       "hasPart" : [ {
         "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.2.0.0",
         "type" : "Organization",

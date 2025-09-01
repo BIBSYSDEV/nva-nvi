@@ -1,17 +1,61 @@
 package no.sikt.nva.nvi.common.service;
 
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.CONTRIBUTOR_NO_AFFILIATION;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.CONTRIBUTOR_NO_NAME;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.CONTRIBUTOR_REPEATED_NAME;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.CONTRIBUTOR_ROLE_MISSING;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.CONTRIBUTOR_ROLE_REPEATED;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.CONTRIBUTOR_VERIFICATION_STATUS_MISSING;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.CONTRIBUTOR_VERIFICATION_STATUS_REPEATED;
 import static no.sikt.nva.nvi.common.examples.ExamplePublications.EMPTY_BODY;
 import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_ACADEMIC_CHAPTER;
 import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_ACADEMIC_CHAPTER_PATH;
 import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_INVALID_DRAFT;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_NO_ABSTRACT;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_NO_CONTRIBUTORS;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_NO_IDENTIFIER;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_NO_MODIFIED_DATE;
 import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_NO_PUBLICATION_TYPE;
 import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_PUBLICATION_1;
 import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_PUBLICATION_1_PATH;
 import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_PUBLICATION_2;
 import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_PUBLICATION_2_PATH;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_REPEATED_ABSTRACT;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_REPEATED_IDENTIFIER;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_REPEATED_MODIFIED_DATE;
 import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_WITH_DUPLICATE_DATE;
 import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_WITH_NO_TITLE;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_WITH_NTRIPLES;
 import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_WITH_TWO_TITLES;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.MISSING_PAGE_COUNT;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.MISSING_PUBLICATION_CHANNEL;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.MISSING_PUBLICATION_DATE;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.MISSING_PUBLICATION_DATE_YEAR;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.MISSING_TOP_LEVEL_ORGANIZATION;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.MULTIPLE_LANGUAGES;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.ORGANIZATION_HAS_PART_NOT_URI;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.ORGANIZATION_LABEL_INVALID;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.ORGANIZATION_LABEL_NOT_UNIQUE;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.ORGANIZATION_PART_OOF_NOT_URI;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.ORGANIZATION_REPEATED_COUNTRY;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.ORGANIZATION_UNKNOWN_COUNTRY;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.PUBLICATION_CHANNEL_IDENTIFIER_MISSING;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.PUBLICATION_CHANNEL_IDENTIFIER_NOT_STRING;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.PUBLICATION_CHANNEL_IDENTIFIER_REPEATED;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.PUBLICATION_CHANNEL_INVALID_TYPE;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.PUBLICATION_CHANNEL_NAME_MISSING;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.PUBLICATION_CHANNEL_NAME_NOT_STRING;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.PUBLICATION_CHANNEL_NAME_REPEATED;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.PUBLICATION_CHANNEL_PISSN_MISSING;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.PUBLICATION_CHANNEL_PISSN_NOT_STRING;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.PUBLICATION_CHANNEL_PISSN_REPEATED;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.PUBLICATION_CHANNEL_REPEATED;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.PUBLICATION_DATE_YEAR_TEMPLATE;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.REPEATED_PAGE_COUNT;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.REPEATED_PUBLICATION_DATE;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.REPEATED_PUBLICATION_DATE_YEAR;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.REPEATED_PUBLICATION_TYPE;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.THREE_REPEATED_PUBLICATION_CHANNELS;
 import static nva.commons.core.ioutils.IoUtils.stringFromResources;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
@@ -25,7 +69,6 @@ import java.nio.file.Path;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.dto.PublicationDto;
-import no.sikt.nva.nvi.common.examples.ExamplePublications;
 import no.sikt.nva.nvi.common.exceptions.ParsingException;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
@@ -98,14 +141,14 @@ class PublicationLoaderServiceTest {
   @Test
   void shouldLogUseOfNtriplesWhenNtriplesAreAvailable() {
     var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
-    assertDoesNotThrow(() -> parseExampleDocument(ExamplePublications.EXAMPLE_WITH_NTRIPLES));
+    assertDoesNotThrow(() -> parseExampleDocument(EXAMPLE_WITH_NTRIPLES));
     assertThat(logAppender.getMessages()).containsSequence("Using N-Triples data");
   }
 
   @Test
   void shouldLogUseOfJsonldWhenNtriplesAreNotAvailable() {
     var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
-    assertDoesNotThrow(() -> parseExampleDocument(ExamplePublications.EXAMPLE_PUBLICATION_1_PATH));
+    assertDoesNotThrow(() -> parseExampleDocument(EXAMPLE_PUBLICATION_1_PATH));
     assertThat(logAppender.getMessages()).containsSequence("Using JSON-LD data");
   }
 
@@ -123,7 +166,7 @@ class PublicationLoaderServiceTest {
   @Test
   void shouldLogPublicationWithNoContributors() {
     var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
-    assertDoesNotThrow(() -> parseExampleDocument(ExamplePublications.EXAMPLE_NO_CONTRIBUTORS));
+    assertDoesNotThrow(() -> parseExampleDocument(EXAMPLE_NO_CONTRIBUTORS));
     assertThat(logAppender.getMessages())
         .containsSequence(
             "Publication does not have at least one verified or unverified contributor");
@@ -132,23 +175,21 @@ class PublicationLoaderServiceTest {
   @Test
   void shouldLogMissingPublicationIdentifier() {
     var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
-    assertDoesNotThrow(() -> parseExampleDocument(ExamplePublications.EXAMPLE_NO_IDENTIFIER));
+    assertDoesNotThrow(() -> parseExampleDocument(EXAMPLE_NO_IDENTIFIER));
     assertThat(logAppender.getMessages()).containsSequence("Publication identifier is missing");
   }
 
   @Test
   void shouldLogRepeatedPublicationIdentifier() {
     var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
-    assertThrows(
-        ParsingException.class,
-        () -> parseExampleDocument(ExamplePublications.EXAMPLE_REPEATED_IDENTIFIER));
+    assertThrows(ParsingException.class, () -> parseExampleDocument(EXAMPLE_REPEATED_IDENTIFIER));
     assertThat(logAppender.getMessages()).containsSequence("Publication identifier is repeated");
   }
 
   @Test
   void shouldLogMissingPublicationModifiedDate() {
     var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
-    assertDoesNotThrow(() -> parseExampleDocument(ExamplePublications.EXAMPLE_NO_MODIFIED_DATE));
+    assertDoesNotThrow(() -> parseExampleDocument(EXAMPLE_NO_MODIFIED_DATE));
     assertThat(logAppender.getMessages()).containsSequence("Publication modified date is missing");
   }
 
@@ -156,24 +197,21 @@ class PublicationLoaderServiceTest {
   void shouldLogRepeatedPublicationModifiedDate() {
     var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
     assertThrows(
-        ParsingException.class,
-        () -> parseExampleDocument(ExamplePublications.EXAMPLE_REPEATED_MODIFIED_DATE));
+        ParsingException.class, () -> parseExampleDocument(EXAMPLE_REPEATED_MODIFIED_DATE));
     assertThat(logAppender.getMessages()).containsSequence("Publication modified date is repeated");
   }
 
   @Test
   void shouldLogMissingPublicationAbstract() {
     var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
-    assertDoesNotThrow(() -> parseExampleDocument(ExamplePublications.EXAMPLE_NO_ABSTRACT));
+    assertDoesNotThrow(() -> parseExampleDocument(EXAMPLE_NO_ABSTRACT));
     assertThat(logAppender.getMessages()).containsSequence("Publication abstract is missing");
   }
 
   @Test
   void shouldLogRepeatedPublicationAbstract() {
     var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
-    assertThrows(
-        ParsingException.class,
-        () -> parseExampleDocument(ExamplePublications.EXAMPLE_REPEATED_ABSTRACT));
+    assertThrows(ParsingException.class, () -> parseExampleDocument(EXAMPLE_REPEATED_ABSTRACT));
     assertThat(logAppender.getMessages()).containsSequence("Publication abstract is repeated");
   }
 
@@ -190,72 +228,63 @@ class PublicationLoaderServiceTest {
   @Test
   void shouldLogRepeatedLanguage() {
     var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
-    assertThrows(
-        ParsingException.class, () -> parseExampleDocument(ExamplePublications.MULTIPLE_LANGUAGES));
+    assertThrows(ParsingException.class, () -> parseExampleDocument(MULTIPLE_LANGUAGES));
     assertThat(logAppender.getMessages()).contains("Publication language is repeated");
   }
 
   @Test
   void shouldLogMissingPageCount() {
     var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
-    assertDoesNotThrow(() -> parseExampleDocument(ExamplePublications.MISSING_PAGE_COUNT));
+    assertDoesNotThrow(() -> parseExampleDocument(MISSING_PAGE_COUNT));
     assertThat(logAppender.getMessages()).contains("Publication page count is missing");
   }
 
   @Test
   void shouldLogRepeatedPageCount() {
     var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
-    assertThrows(
-        ParsingException.class,
-        () -> parseExampleDocument(ExamplePublications.REPEATED_PAGE_COUNT));
+    assertThrows(ParsingException.class, () -> parseExampleDocument(REPEATED_PAGE_COUNT));
     assertThat(logAppender.getMessages()).contains("Publication page count is repeated");
   }
 
   @Test
   void shouldLogMissingPublicationChannel() {
     var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
-    assertDoesNotThrow(() -> parseExampleDocument(ExamplePublications.MISSING_PUBLICATION_CHANNEL));
+    assertDoesNotThrow(() -> parseExampleDocument(MISSING_PUBLICATION_CHANNEL));
     assertThat(logAppender.getMessages()).contains("Publication channel is missing");
   }
 
   @Test
   void shouldLogWhenMoreThanThreePublicationChannelsArePresent() {
     var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
-    assertDoesNotThrow(
-        () -> parseExampleDocument(ExamplePublications.THREE_REPEATED_PUBLICATION_CHANNELS));
+    assertDoesNotThrow(() -> parseExampleDocument(THREE_REPEATED_PUBLICATION_CHANNELS));
     assertThat(logAppender.getMessages()).contains("Publication channel is repeated");
   }
 
   @Test
   void shouldLogMissingPublicationDate() {
     var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
-    assertDoesNotThrow(() -> parseExampleDocument(ExamplePublications.MISSING_PUBLICATION_DATE));
+    assertDoesNotThrow(() -> parseExampleDocument(MISSING_PUBLICATION_DATE));
     assertThat(logAppender.getMessages()).contains("Publication date is missing");
   }
 
   @Test
   void shouldLogRepeatedPublicationDate() {
     var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
-    assertThrows(
-        ParsingException.class,
-        () -> parseExampleDocument(ExamplePublications.REPEATED_PUBLICATION_DATE));
+    assertThrows(ParsingException.class, () -> parseExampleDocument(REPEATED_PUBLICATION_DATE));
     assertThat(logAppender.getMessages()).contains("Publication date is repeated");
   }
 
   @Test
   void shouldLogRepeatedPublicationType() {
     var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
-    assertThrows(
-        ParsingException.class,
-        () -> parseExampleDocument(ExamplePublications.REPEATED_PUBLICATION_TYPE));
+    assertThrows(ParsingException.class, () -> parseExampleDocument(REPEATED_PUBLICATION_TYPE));
     assertThat(logAppender.getMessages()).contains("Publication type is repeated");
   }
 
   @Test
   void shouldLogWhenTopLevelOrganizationIsMissing() {
     var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
-    assertDoesNotThrow(
-        () -> parseExampleDocument(ExamplePublications.MISSING_TOP_LEVEL_ORGANIZATION));
+    assertDoesNotThrow(() -> parseExampleDocument(MISSING_TOP_LEVEL_ORGANIZATION));
     assertThat(logAppender.getMessages()).contains("Publication top-level organization is missing");
   }
 
@@ -263,8 +292,7 @@ class PublicationLoaderServiceTest {
   @Test
   void shouldLogWhenPublicationDateYearIsMissing() {
     var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
-    assertDoesNotThrow(
-        () -> parseExampleDocument(ExamplePublications.MISSING_PUBLICATION_DATE_YEAR));
+    assertDoesNotThrow(() -> parseExampleDocument(MISSING_PUBLICATION_DATE_YEAR));
     assertThat(logAppender.getMessages()).contains("Publication date year is missing");
   }
 
@@ -273,8 +301,7 @@ class PublicationLoaderServiceTest {
   void shouldLogWhenPublicationDateYearIsRepeated() {
     var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
     assertThrows(
-        ParsingException.class,
-        () -> parseExampleDocument(ExamplePublications.REPEATED_PUBLICATION_DATE_YEAR));
+        ParsingException.class, () -> parseExampleDocument(REPEATED_PUBLICATION_DATE_YEAR));
     assertThat(logAppender.getMessages()).contains("Publication date year is repeated");
   }
 
@@ -283,7 +310,7 @@ class PublicationLoaderServiceTest {
   @ValueSource(strings = {"\"ABCD\"", "\"123\"", "2010", "\"\""})
   void shouldLogWhenPublicationDateYearIsNotCorrectType(String value) {
     var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
-    var filename = ExamplePublications.PUBLICATION_DATE_YEAR_TEMPLATE;
+    var filename = PUBLICATION_DATE_YEAR_TEMPLATE;
     var document = stringFromResources(Path.of(filename)).formatted(value);
     if ("\"ABCD\"".equals(value) || "\"123\"".equals(value)) {
       assertDoesNotThrow(() -> parseExampleDocument(filename, document));
@@ -297,7 +324,7 @@ class PublicationLoaderServiceTest {
   @Test
   void shouldLogWhenContributorDoesNotHaveAtLeastOneAffiliation() {
     var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
-    assertDoesNotThrow(() -> parseExampleDocument(ExamplePublications.CONTRIBUTOR_NO_AFFILIATION));
+    assertDoesNotThrow(() -> parseExampleDocument(CONTRIBUTOR_NO_AFFILIATION));
     assertThat(logAppender.getMessages()).contains("Contributor affiliation is missing");
   }
 
@@ -305,7 +332,7 @@ class PublicationLoaderServiceTest {
   @Test
   void shouldLogWhenContributorNameIsMissing() {
     var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
-    assertDoesNotThrow(() -> parseExampleDocument(ExamplePublications.CONTRIBUTOR_NO_NAME));
+    assertDoesNotThrow(() -> parseExampleDocument(CONTRIBUTOR_NO_NAME));
     assertThat(logAppender.getMessages()).contains("Contributor name is missing");
   }
 
@@ -313,7 +340,7 @@ class PublicationLoaderServiceTest {
   @Test
   void shouldLogWhenContributorNameIsRepeated() {
     var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
-    assertDoesNotThrow(() -> parseExampleDocument(ExamplePublications.CONTRIBUTOR_REPEATED_NAME));
+    assertDoesNotThrow(() -> parseExampleDocument(CONTRIBUTOR_REPEATED_NAME));
     assertThat(logAppender.getMessages()).contains("Contributor name is repeated");
   }
 
@@ -321,7 +348,7 @@ class PublicationLoaderServiceTest {
   @Test
   void shouldLogWhenContributorRoleIsMissing() {
     var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
-    assertDoesNotThrow(() -> parseExampleDocument(ExamplePublications.CONTRIBUTOR_ROLE_MISSING));
+    assertDoesNotThrow(() -> parseExampleDocument(CONTRIBUTOR_ROLE_MISSING));
     assertThat(logAppender.getMessages()).contains("Contributor role is missing");
   }
 
@@ -329,7 +356,7 @@ class PublicationLoaderServiceTest {
   @Test
   void shouldLogWhenContributorRoleIsRepeated() {
     var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
-    assertDoesNotThrow(() -> parseExampleDocument(ExamplePublications.CONTRIBUTOR_ROLE_REPEATED));
+    assertDoesNotThrow(() -> parseExampleDocument(CONTRIBUTOR_ROLE_REPEATED));
     assertThat(logAppender.getMessages()).contains("Contributor role is repeated");
   }
 
@@ -337,8 +364,7 @@ class PublicationLoaderServiceTest {
   @Test
   void shouldLogWhenContributorVerificationStatusIsMissing() {
     var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
-    assertDoesNotThrow(
-        () -> parseExampleDocument(ExamplePublications.CONTRIBUTOR_VERIFICATION_STATUS_MISSING));
+    assertDoesNotThrow(() -> parseExampleDocument(CONTRIBUTOR_VERIFICATION_STATUS_MISSING));
     assertThat(logAppender.getMessages()).contains("Contributor role is missing");
   }
 
@@ -346,8 +372,7 @@ class PublicationLoaderServiceTest {
   @Test
   void shouldLogWhenContributorVerificationStatusIsRepeated() {
     var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
-    assertDoesNotThrow(
-        () -> parseExampleDocument(ExamplePublications.CONTRIBUTOR_VERIFICATION_STATUS_REPEATED));
+    assertDoesNotThrow(() -> parseExampleDocument(CONTRIBUTOR_VERIFICATION_STATUS_REPEATED));
     assertThat(logAppender.getMessages()).contains("Contributor role is repeated");
   }
 
@@ -355,9 +380,7 @@ class PublicationLoaderServiceTest {
   @Test
   void shouldLogWhenOrganizationIsNotFromKnownCountry() {
     var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
-    assertThrows(
-        ParsingException.class,
-        () -> parseExampleDocument(ExamplePublications.ORGANIZATION_UNKNOWN_COUNTRY));
+    assertThrows(ParsingException.class, () -> parseExampleDocument(ORGANIZATION_UNKNOWN_COUNTRY));
     assertThat(logAppender.getMessages()).contains("Organization country is not equal to 'NO'");
   }
 
@@ -365,9 +388,7 @@ class PublicationLoaderServiceTest {
   @Test
   void shouldLogWhenOrganizationHasRepeatedCountry() {
     var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
-    assertThrows(
-        ParsingException.class,
-        () -> parseExampleDocument(ExamplePublications.ORGANIZATION_REPEATED_COUNTRY));
+    assertThrows(ParsingException.class, () -> parseExampleDocument(ORGANIZATION_REPEATED_COUNTRY));
     assertThat(logAppender.getMessages()).contains("Organization country is repeated");
   }
 
@@ -375,9 +396,7 @@ class PublicationLoaderServiceTest {
   @Test
   void shouldLogWhenOrganizationHasPartIsNotKnownType() {
     var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
-    assertThrows(
-        ParsingException.class,
-        () -> parseExampleDocument(ExamplePublications.ORGANIZATION_HAS_PART_NOT_URI));
+    assertThrows(ParsingException.class, () -> parseExampleDocument(ORGANIZATION_HAS_PART_NOT_URI));
     assertThat(logAppender.getMessages()).contains("Organization hasPart is not IRI");
   }
 
@@ -385,9 +404,7 @@ class PublicationLoaderServiceTest {
   @Test
   void shouldLogWhenOrganizationPartOfIsNotKnownType() {
     var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
-    assertThrows(
-        ParsingException.class,
-        () -> parseExampleDocument(ExamplePublications.ORGANIZATION_PART_OOF_NOT_URI));
+    assertThrows(ParsingException.class, () -> parseExampleDocument(ORGANIZATION_PART_OOF_NOT_URI));
     assertThat(logAppender.getMessages()).contains("Organization partOf is not IRI");
   }
 
@@ -395,7 +412,7 @@ class PublicationLoaderServiceTest {
   @Test
   void shouldLogWhenOrganizationLabelIsPresentAndIsNotKnownLanguage() {
     var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
-    assertDoesNotThrow(() -> parseExampleDocument(ExamplePublications.ORGANIZATION_LABEL_INVALID));
+    assertDoesNotThrow(() -> parseExampleDocument(ORGANIZATION_LABEL_INVALID));
     assertThat(logAppender.getMessages())
         .contains("Organization label is not a unique language literal from [en, nb, nn]");
   }
@@ -404,9 +421,7 @@ class PublicationLoaderServiceTest {
   @Test
   void shouldLogWhenOrganizationLabelIsPresentAndIsNotUniqueLanguage() {
     var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
-    assertThrows(
-        ParsingException.class,
-        () -> parseExampleDocument(ExamplePublications.ORGANIZATION_LABEL_NOT_UNIQUE));
+    assertThrows(ParsingException.class, () -> parseExampleDocument(ORGANIZATION_LABEL_NOT_UNIQUE));
     assertThat(logAppender.getMessages())
         .contains("Organization label is not a unique language literal from [en, nb, nn]");
   }
@@ -415,8 +430,7 @@ class PublicationLoaderServiceTest {
   @Test
   void shouldLogWhenPublicationChannelIsNotKnownType() {
     var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
-    assertDoesNotThrow(
-        () -> parseExampleDocument(ExamplePublications.PUBLICATION_CHANNEL_INVALID_TYPE));
+    assertDoesNotThrow(() -> parseExampleDocument(PUBLICATION_CHANNEL_INVALID_TYPE));
     assertThat(logAppender.getMessages())
         .contains("Publication channel is not an IRI of type (Journal, Publisher, Series)");
   }
@@ -425,8 +439,7 @@ class PublicationLoaderServiceTest {
   @Test
   void shouldLogWhenPublicationChannelIsMissingInNviData() {
     var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
-    assertDoesNotThrow(
-        () -> parseExampleDocument(ExamplePublications.PUBLICATION_CHANNEL_INVALID_TYPE));
+    assertDoesNotThrow(() -> parseExampleDocument(PUBLICATION_CHANNEL_INVALID_TYPE));
     assertThat(logAppender.getMessages()).contains("Publication channel is missing");
   }
 
@@ -434,8 +447,7 @@ class PublicationLoaderServiceTest {
   @Test
   void shouldLogWhenPublicationChannelTypeHasMultipleValues() {
     var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
-    assertDoesNotThrow(
-        () -> parseExampleDocument(ExamplePublications.PUBLICATION_CHANNEL_REPEATED));
+    assertDoesNotThrow(() -> parseExampleDocument(PUBLICATION_CHANNEL_REPEATED));
     assertThat(logAppender.getMessages()).contains("Publication channel type has multiple values");
   }
 
@@ -443,8 +455,7 @@ class PublicationLoaderServiceTest {
   @Test
   void shouldLogWhenPublicationChannelIdentifierIsMissing() {
     var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
-    assertDoesNotThrow(
-        () -> parseExampleDocument(ExamplePublications.PUBLICATION_CHANNEL_IDENTIFIER_MISSING));
+    assertDoesNotThrow(() -> parseExampleDocument(PUBLICATION_CHANNEL_IDENTIFIER_MISSING));
     assertThat(logAppender.getMessages()).contains("Publication channel identifier is missing");
   }
 
@@ -454,7 +465,7 @@ class PublicationLoaderServiceTest {
     var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
     assertThrows(
         ParsingException.class,
-        () -> parseExampleDocument(ExamplePublications.PUBLICATION_CHANNEL_IDENTIFIER_REPEATED));
+        () -> parseExampleDocument(PUBLICATION_CHANNEL_IDENTIFIER_REPEATED));
     assertThat(logAppender.getMessages())
         .contains("Publication channel identifier has multiple values");
   }
@@ -465,7 +476,7 @@ class PublicationLoaderServiceTest {
     var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
     assertThrows(
         ParsingException.class,
-        () -> parseExampleDocument(ExamplePublications.PUBLICATION_CHANNEL_IDENTIFIER_NOT_STRING));
+        () -> parseExampleDocument(PUBLICATION_CHANNEL_IDENTIFIER_NOT_STRING));
     assertThat(logAppender.getMessages())
         .contains("Publication channel identifier is not a string");
   }
@@ -474,8 +485,7 @@ class PublicationLoaderServiceTest {
   @Test
   void shouldLogWhenPublicationChannelNameIsMissing() {
     var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
-    assertDoesNotThrow(
-        () -> parseExampleDocument(ExamplePublications.PUBLICATION_CHANNEL_NAME_MISSING));
+    assertDoesNotThrow(() -> parseExampleDocument(PUBLICATION_CHANNEL_NAME_MISSING));
     assertThat(logAppender.getMessages()).contains("Publication channel name is missing");
   }
 
@@ -484,8 +494,7 @@ class PublicationLoaderServiceTest {
   void shouldLogWhenPublicationChannelNameIsRepeated() {
     var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
     assertThrows(
-        ParsingException.class,
-        () -> parseExampleDocument(ExamplePublications.PUBLICATION_CHANNEL_NAME_REPEATED));
+        ParsingException.class, () -> parseExampleDocument(PUBLICATION_CHANNEL_NAME_REPEATED));
     assertThat(logAppender.getMessages()).contains("Publication channel name is repeated");
   }
 
@@ -494,8 +503,7 @@ class PublicationLoaderServiceTest {
   void shouldLogWhenPublicationChannelNameIsNotStringDataType() {
     var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
     assertThrows(
-        ParsingException.class,
-        () -> parseExampleDocument(ExamplePublications.PUBLICATION_CHANNEL_NAME_NOT_STRING));
+        ParsingException.class, () -> parseExampleDocument(PUBLICATION_CHANNEL_NAME_NOT_STRING));
     assertThat(logAppender.getMessages()).contains("Publication channel name is not a string");
   }
 
@@ -504,8 +512,7 @@ class PublicationLoaderServiceTest {
   @Test
   void shouldLogWarningWhenPublicationChannelPrintIssnIsMissing() {
     var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
-    assertDoesNotThrow(
-        () -> parseExampleDocument(ExamplePublications.PUBLICATION_CHANNEL_PISSN_MISSING));
+    assertDoesNotThrow(() -> parseExampleDocument(PUBLICATION_CHANNEL_PISSN_MISSING));
     assertThat(logAppender.getMessages()).contains("Publication channel print ISSN is missing");
   }
 
@@ -514,8 +521,7 @@ class PublicationLoaderServiceTest {
   void shouldLogWhenPublicationChannelPrintIssnIsRepeated() {
     var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
     assertThrows(
-        ParsingException.class,
-        () -> parseExampleDocument(ExamplePublications.PUBLICATION_CHANNEL_PISSN_REPEATED));
+        ParsingException.class, () -> parseExampleDocument(PUBLICATION_CHANNEL_PISSN_REPEATED));
     assertThat(logAppender.getMessages()).contains("Publication channel print ISSN is repeated");
   }
 
@@ -524,8 +530,7 @@ class PublicationLoaderServiceTest {
   void shouldLogWhenPublicationChannelPrintIssnIsNotStringDataType() {
     var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
     assertThrows(
-        ParsingException.class,
-        () -> parseExampleDocument(ExamplePublications.PUBLICATION_CHANNEL_PISSN_NOT_STRING));
+        ParsingException.class, () -> parseExampleDocument(PUBLICATION_CHANNEL_PISSN_NOT_STRING));
     assertThat(logAppender.getMessages())
         .contains("Publication channel print ISSN is not a string");
   }

@@ -5,7 +5,6 @@
   ],
   "@context" : {
     "@vocab" : "https://nva.sikt.no/ontology/publication#",
-    "hasPart" : "https://bibsysdev.github.io/src/organization-ontology.ttl#hasPart",
     "xsd" : "http://www.w3.org/2001/XMLSchema#",
     "DIRHEALTH" : "https://nva.sikt.no/ontology/approvals-body#DIRHEALTH",
     "NMA" : "https://nva.sikt.no/ontology/approvals-body#NMA",
@@ -69,6 +68,9 @@
     "contributors" : {
       "@container" : "@set",
       "@id" : "contributor"
+    },
+    "countryCode": {
+      "@id": "country"
     },
     "createdDate" : {
       "@type" : "xsd:dateTime"
@@ -167,6 +169,10 @@
     "to" : {
       "@type" : "xsd:dateTime"
     },
+    "topLevelOrganizations": {
+      "@container": "@set",
+      "@id": "topLevelOrganization"
+    },
     "trackList" : {
       "@container" : "@set",
       "@id" : "trackList"
@@ -185,7 +191,8 @@
     "NviCandidate" : "https://nva.sikt.no/ontology/publication#NviCandidate",
     "NonNviCandidate" : "https://nva.sikt.no/ontology/publication#NonNviCandidate",
     "publicationContextUris" : {
-      "@container" : "@set"
+      "@container" : "@set",
+      "@id": "publicationContextUri"
     }
   },
   "createdDate" : "2023-06-05T10:44:10.665103Z",
