@@ -167,6 +167,10 @@
     },
     "@type": "@vocab"
   },
+  "publicationContextUris": {
+    "@container": "@set",
+    "@id": "publicationContextUri"
+  },
   "outputs": {
     "@container": "@set",
     "@id": "output"

@@ -7,11 +7,14 @@ import static nva.commons.core.ioutils.IoUtils.stringFromResources;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import java.io.StringWriter;
 import java.net.URI;
 import java.nio.file.Path;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.dto.PublicationDto;
 import no.sikt.nva.nvi.common.exceptions.ParsingException;
+import org.apache.jena.riot.Lang;
+import org.apache.jena.riot.RDFDataMgr;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
