@@ -788,6 +788,11 @@ Resources:
           Type: SQS
           Properties:
             Queue: !GetAtt EvaluatedCandidateQueue.Arn
+      EventInvokeConfig:
+        DestinationConfig:
+          OnFailure:
+            Type: SQS
+            Destination: !GetAtt UpsertCandidateDLQ.Arn
 
   DynamoDbEventToQueueHandler:
     Type: AWS::Serverless::Function
