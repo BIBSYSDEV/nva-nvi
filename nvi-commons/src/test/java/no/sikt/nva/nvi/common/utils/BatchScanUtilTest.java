@@ -35,15 +35,18 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.SampleExpandedPublicationFactory;
 import no.sikt.nva.nvi.common.TestScenario;
+import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
+import no.sikt.nva.nvi.common.model.NviCreator;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails;
@@ -299,12 +302,26 @@ class BatchScanUtilTest {
         Candidate.fetchByPublicationId(
             publication::id, candidateRepository, scenario.getPeriodRepository());
 
-    Assertions.assertThat(actualCandidate.getPublicationDetails())
-        .extracting(
-            PublicationDetails::language,
-            PublicationDetails::topLevelOrganizations,
-            PublicationDetails::nviCreators)
-        .containsExactly(expectedLanguage, expectedTopLevelOrganizations, expectedNviCreators);
+    assertExpectedOrganizationsForCandidate(actualCandidate, expectedTopLevelOrganizations);
+    assertExpectedCreatorsForCandidate(actualCandidate, expectedNviCreators);
+    Assertions.assertThat(actualCandidate.getPublicationDetails().language())
+        .isEqualTo(expectedLanguage);
+  }
+
+  private static void assertExpectedOrganizationsForCandidate(
+      Candidate actualCandidate, Collection<Organization> expectedTopLevelOrganizations) {
+    Assertions.assertThat(actualCandidate.getPublicationDetails().topLevelOrganizations())
+        .usingRecursiveComparison()
+        .ignoringCollectionOrder()
+        .isEqualTo(expectedTopLevelOrganizations);
+  }
+
+  private static void assertExpectedCreatorsForCandidate(
+      Candidate actualCandidate, Collection<NviCreator> expectedNviCreators) {
+    Assertions.assertThat(actualCandidate.getPublicationDetails().nviCreators())
+        .usingRecursiveComparison()
+        .ignoringCollectionOrder()
+        .isEqualTo(expectedNviCreators);
   }
 
   /**
@@ -353,17 +370,11 @@ class BatchScanUtilTest {
         Candidate.fetchByPublicationId(
             publication::id, candidateRepository, scenario.getPeriodRepository());
 
+    assertExpectedOrganizationsForCandidate(actualCandidate, expectedTopLevelOrganizations);
+    assertExpectedCreatorsForCandidate(actualCandidate, expectedNviCreators);
     Assertions.assertThat(actualCandidate.getPublicationDetails())
-        .extracting(
-            PublicationDetails::topLevelOrganizations,
-            PublicationDetails::nviCreators,
-            PublicationDetails::abstractText,
-            PublicationDetails::modifiedDate)
-        .containsExactly(
-            expectedTopLevelOrganizations,
-            expectedNviCreators,
-            dbPublicationDetails.abstractText(),
-            dbPublicationDetails.modifiedDate());
+        .extracting(PublicationDetails::abstractText, PublicationDetails::modifiedDate)
+        .containsExactly(dbPublicationDetails.abstractText(), dbPublicationDetails.modifiedDate());
   }
 
   @Test
