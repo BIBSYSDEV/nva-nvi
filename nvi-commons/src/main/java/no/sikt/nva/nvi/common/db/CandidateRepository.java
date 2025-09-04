@@ -31,6 +31,7 @@ import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.NoteDao.DbNote;
 import no.sikt.nva.nvi.common.db.model.KeyField;
+import no.sikt.nva.nvi.common.exceptions.TransactionException;
 import no.sikt.nva.nvi.common.model.ListingResult;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbIndex;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
@@ -47,6 +48,7 @@ import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.PutRequest;
 import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
 import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
+import software.amazon.awssdk.services.dynamodb.model.TransactionCanceledException;
 import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
 
 // Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
@@ -135,7 +137,7 @@ public class CandidateRepository extends DynamoRepository {
   public void updateCandidate(CandidateDao candidate) {
     var transaction = TransactWriteItemsEnhancedRequest.builder();
     transaction.addPutItem(candidateTable, candidate);
-    client.transactWriteItems(transaction.build());
+    sendTransaction(transaction);
   }
 
   public void updateCandidateAndDeleteOtherApprovals(
@@ -156,7 +158,7 @@ public class CandidateRepository extends DynamoRepository {
     updatedApprovals
         .values()
         .forEach(approvalStatus -> transaction.addPutItem(approvalStatusTable, approvalStatus));
-    client.transactWriteItems(transaction.build());
+    sendTransaction(transaction);
   }
 
   public void updateCandidateAndKeepOtherApprovals(
@@ -173,7 +175,16 @@ public class CandidateRepository extends DynamoRepository {
     updatedApprovals
         .values()
         .forEach(approvalStatus -> transaction.addPutItem(approvalStatusTable, approvalStatus));
-    client.transactWriteItems(transaction.build());
+    sendTransaction(transaction);
+  }
+
+  private void sendTransaction(Builder transaction) {
+    var request = transaction.build();
+    try {
+      client.transactWriteItems(request);
+    } catch (TransactionCanceledException transactionCanceledException) {
+      throw TransactionException.from(transactionCanceledException, request);
+    }
   }
 
   public void updateCandidateAndRemovingApprovals(
@@ -182,7 +193,7 @@ public class CandidateRepository extends DynamoRepository {
     transactionBuilder.addPutItem(candidateTable, nonApplicableCandidate);
     getApprovalStatuses(identifier)
         .forEach(approvalDao -> transactionBuilder.addDeleteItem(approvalStatusTable, approvalDao));
-    client.transactWriteItems(transactionBuilder.build());
+    sendTransaction(transactionBuilder);
   }
 
   public Optional<CandidateDao> findCandidateById(UUID candidateIdentifier) {
