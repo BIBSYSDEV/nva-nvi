@@ -2,7 +2,6 @@ package no.sikt.nva.nvi.common.exceptions;
 
 import java.util.ArrayList;
 import java.util.Optional;
-import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.enhanced.dynamodb.model.TransactWriteItemsEnhancedRequest;
 import software.amazon.awssdk.services.dynamodb.model.Delete;
 import software.amazon.awssdk.services.dynamodb.model.Put;
@@ -10,7 +9,6 @@ import software.amazon.awssdk.services.dynamodb.model.TransactWriteItem;
 import software.amazon.awssdk.services.dynamodb.model.TransactionCanceledException;
 import software.amazon.awssdk.services.dynamodb.model.Update;
 
-@JacocoGenerated
 public class TransactionException extends RuntimeException {
 
   public TransactionException(String message) {
@@ -22,7 +20,6 @@ public class TransactionException extends RuntimeException {
     return new TransactionException(constructErrorMessage(exception, request));
   }
 
-  @JacocoGenerated
   private static String constructErrorMessage(
       TransactionCanceledException e, TransactWriteItemsEnhancedRequest request) {
     var reasons = e.cancellationReasons();

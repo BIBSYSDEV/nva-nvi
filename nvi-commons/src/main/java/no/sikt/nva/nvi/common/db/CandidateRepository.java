@@ -130,14 +130,14 @@ public class CandidateRepository extends DynamoRepository {
     var uniqueness = new CandidateUniquenessEntryDao(dbCandidate.publicationId().toString());
     var transactionBuilder = buildTransaction(approvalStatuses, candidate, identifier, uniqueness);
 
-    this.client.transactWriteItems(transactionBuilder.build());
+    sendTransaction(transactionBuilder.build());
     return candidateTable.getItem(candidate);
   }
 
   public void updateCandidate(CandidateDao candidate) {
     var transaction = TransactWriteItemsEnhancedRequest.builder();
     transaction.addPutItem(candidateTable, candidate);
-    sendTransaction(transaction);
+    sendTransaction(transaction.build());
   }
 
   public void updateCandidateAndDeleteOtherApprovals(
@@ -158,7 +158,7 @@ public class CandidateRepository extends DynamoRepository {
     updatedApprovals
         .values()
         .forEach(approvalStatus -> transaction.addPutItem(approvalStatusTable, approvalStatus));
-    sendTransaction(transaction);
+    sendTransaction(transaction.build());
   }
 
   public void updateCandidateAndKeepOtherApprovals(
@@ -175,11 +175,10 @@ public class CandidateRepository extends DynamoRepository {
     updatedApprovals
         .values()
         .forEach(approvalStatus -> transaction.addPutItem(approvalStatusTable, approvalStatus));
-    sendTransaction(transaction);
+    sendTransaction(transaction.build());
   }
 
-  private void sendTransaction(Builder transaction) {
-    var request = transaction.build();
+  private void sendTransaction(TransactWriteItemsEnhancedRequest request) {
     try {
       client.transactWriteItems(request);
     } catch (TransactionCanceledException transactionCanceledException) {
@@ -193,7 +192,7 @@ public class CandidateRepository extends DynamoRepository {
     transactionBuilder.addPutItem(candidateTable, nonApplicableCandidate);
     getApprovalStatuses(identifier)
         .forEach(approvalDao -> transactionBuilder.addDeleteItem(approvalStatusTable, approvalDao));
-    sendTransaction(transactionBuilder);
+    sendTransaction(transactionBuilder.build());
   }
 
   public Optional<CandidateDao> findCandidateById(UUID candidateIdentifier) {
