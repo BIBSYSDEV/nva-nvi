@@ -83,21 +83,9 @@ class CandidateRepositoryTest {
     doReturn(Optional.empty()).when(repository).findByPublicationId(any());
 
     when(client.transactWriteItems((TransactWriteItemsRequest) any()))
-        .thenThrow(
-            TransactionCanceledException.builder()
-                .cancellationReasons(
-                    List.of(
-                        CancellationReason.builder()
-                            .code(randomString())
-                            .item(
-                                Map.of(
-                                    randomString(),
-                                    AttributeValue.builder().s(randomString()).build()))
-                            .message(randomString())
-                            .build()))
-                .build());
+        .thenThrow(getTransactionCanceledException());
 
-    TransactionException exception =
+    var exception =
         assertThrows(
             TransactionException.class,
             () ->
@@ -107,7 +95,22 @@ class CandidateRepositoryTest {
     assertTrue(exception.getMessage().contains("Operation PUT with condition"));
   }
 
-  private static UpsertNviCandidateRequest getUpsertNviCandidateRequest() {
+    private static TransactionCanceledException getTransactionCanceledException() {
+        return TransactionCanceledException.builder()
+                   .cancellationReasons(
+                       List.of(
+                           CancellationReason.builder()
+                               .code(randomString())
+                               .item(
+                                   Map.of(
+                                       randomString(),
+                                       AttributeValue.builder().s(randomString()).build()))
+                               .message(randomString())
+                               .build()))
+                   .build();
+    }
+
+    private static UpsertNviCandidateRequest getUpsertNviCandidateRequest() {
     return createUpsertCandidateRequest(randomUri())
         .withInstanceType(InstanceType.ACADEMIC_ARTICLE)
         .build();
