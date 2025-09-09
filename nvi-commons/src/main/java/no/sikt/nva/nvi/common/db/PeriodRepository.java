@@ -7,6 +7,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.internal.conditional.BeginsWithConditional;
@@ -16,6 +18,7 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 public class PeriodRepository extends DynamoRepository {
 
   public static final String PERIOD = "PERIOD";
+  private static final Logger LOGGER = LoggerFactory.getLogger(PeriodRepository.class);
   protected final DynamoDbTable<NviPeriodDao> nviPeriodTable;
 
   public PeriodRepository(DynamoDbClient client) {
@@ -24,6 +27,7 @@ public class PeriodRepository extends DynamoRepository {
   }
 
   public DbNviPeriod save(DbNviPeriod nviPeriod) {
+    LOGGER.info("Saving period: {}", nviPeriod);
     var nviPeriodDao =
         NviPeriodDao.builder()
             .identifier(nviPeriod.publishingYear())

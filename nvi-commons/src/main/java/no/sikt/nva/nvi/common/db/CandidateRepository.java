@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.DatabaseConstants;
@@ -33,6 +32,8 @@ import no.sikt.nva.nvi.common.db.NoteDao.DbNote;
 import no.sikt.nva.nvi.common.db.model.KeyField;
 import no.sikt.nva.nvi.common.exceptions.TransactionException;
 import no.sikt.nva.nvi.common.model.ListingResult;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbIndex;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
@@ -55,6 +56,7 @@ import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
 @SuppressWarnings("PMD.CouplingBetweenObjects")
 public class CandidateRepository extends DynamoRepository {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(CandidateRepository.class);
   public static final int DEFAULT_PAGE_SIZE = 100;
   private static final int BATCH_SIZE = 25;
   private static final long INITIAL_RETRY_WAIT_TIME_MS = 1000;
@@ -119,6 +121,11 @@ public class CandidateRepository extends DynamoRepository {
 
   public CandidateDao create(
       DbCandidate dbCandidate, List<DbApprovalStatus> approvalStatuses, String year) {
+    LOGGER.info(
+        "Creating candidate for publication {} for year {} and with approvals {}",
+        dbCandidate.publicationId(),
+        year,
+        approvalStatuses);
     var identifier = randomUUID();
     var candidate =
         CandidateDao.builder()
@@ -135,6 +142,7 @@ public class CandidateRepository extends DynamoRepository {
   }
 
   public void updateCandidate(CandidateDao candidate) {
+    LOGGER.info("Updating candidate {}", candidate.identifier());
     var transaction = TransactWriteItemsEnhancedRequest.builder();
     transaction.addPutItem(candidateTable, candidate);
     sendTransaction(transaction.build());
@@ -142,6 +150,8 @@ public class CandidateRepository extends DynamoRepository {
 
   public void updateCandidateAndDeleteOtherApprovals(
       CandidateDao candidateDao, List<DbApprovalStatus> approvals) {
+    LOGGER.info("Updating candidate {} and deleting other approvals", candidateDao.identifier());
+    LOGGER.info("Updating approvals and deleting those not specified: {}", approvals);
     var updatedApprovals =
         approvals.stream()
             .map(approval -> mapToApprovalStatusDao(candidateDao.identifier(), approval))
@@ -163,6 +173,9 @@ public class CandidateRepository extends DynamoRepository {
 
   public void updateCandidateAndKeepOtherApprovals(
       CandidateDao candidateDao, List<DbApprovalStatus> approvals) {
+    LOGGER.info(
+        "Updating candidate {} without resetting other approvals", candidateDao.identifier());
+    LOGGER.info("Updating approvals and ignoring those not specified: {}", approvals);
     var updatedApprovals =
         approvals.stream()
             .map(approval -> mapToApprovalStatusDao(candidateDao.identifier(), approval))
@@ -188,6 +201,7 @@ public class CandidateRepository extends DynamoRepository {
 
   public void updateCandidateAndRemovingApprovals(
       UUID identifier, CandidateDao nonApplicableCandidate) {
+    LOGGER.info("Updating candidate {} and removing all existing approvals", identifier);
     var transactionBuilder = TransactWriteItemsEnhancedRequest.builder();
     transactionBuilder.addPutItem(candidateTable, nonApplicableCandidate);
     getApprovalStatuses(identifier)
@@ -212,16 +226,25 @@ public class CandidateRepository extends DynamoRepository {
   }
 
   public ApprovalStatusDao updateApprovalStatusDao(UUID identifier, DbApprovalStatus newApproval) {
-    return approvalStatusTable.updateItem(newApproval.toDao(identifier));
+    LOGGER.info(
+        "Updating approval status: candidateId={}, newApproval={}", identifier, newApproval);
+    var result = approvalStatusTable.updateItem(newApproval.toDao(identifier));
+    LOGGER.info(
+        "Successfully updated approval status: candidateId={}, newApproval={}",
+        identifier,
+        result.approvalStatus());
+    return result;
   }
 
   public NoteDao saveNote(UUID candidateIdentifier, DbNote dbNote) {
+    LOGGER.info("Saving note: candidateId={}, note={}", candidateIdentifier, dbNote);
     var note = newNoteDao(candidateIdentifier, dbNote);
     noteTable.putItem(note);
     return note;
   }
 
   public void deleteNote(UUID candidateIdentifier, UUID noteIdentifier) {
+    LOGGER.info("Deleting note: candidateId={}, noteId={}, ", candidateIdentifier, noteIdentifier);
     noteTable.deleteItem(noteKey(candidateIdentifier, noteIdentifier));
   }
 
@@ -250,7 +273,7 @@ public class CandidateRepository extends DynamoRepository {
   }
 
   private static List<CandidateDao> filterOutReportedCandidates(Page<CandidateDao> page) {
-    return page.items().stream().filter(CandidateDao::isNotReported).collect(Collectors.toList());
+    return page.items().stream().filter(CandidateDao::isNotReported).toList();
   }
 
   private static <T> Stream<List<T>> getBatches(List<T> scanResult) {
@@ -338,7 +361,7 @@ public class CandidateRepository extends DynamoRepository {
   private List<Dao> extractDatabaseEntries(ScanResponse response) {
     return response.items().stream()
         .map(value -> DynamoEntryWithRangeKey.parseAttributeValuesMap(value, Dao.class))
-        .collect(Collectors.toList());
+        .toList();
   }
 
   private List<WriteRequest> createWriteRequestsForBatchJob(List<Dao> refreshedEntries) {
@@ -346,7 +369,7 @@ public class CandidateRepository extends DynamoRepository {
         .map(Dao::toDynamoFormat)
         .map(this::mutateVersion)
         .map(this::toWriteRequest)
-        .collect(Collectors.toList());
+        .toList();
   }
 
   private Page<CandidateDao> queryYearIndex(
