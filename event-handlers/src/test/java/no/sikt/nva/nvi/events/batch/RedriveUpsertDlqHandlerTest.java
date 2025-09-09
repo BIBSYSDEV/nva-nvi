@@ -28,6 +28,7 @@ import no.sikt.nva.nvi.common.queue.NviReceiveMessageResponse;
 import no.sikt.nva.nvi.common.queue.NviSendMessageResponse;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
+import no.sikt.nva.nvi.events.persist.UpsertDlqMessageBody;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
 import nva.commons.logutils.LogUtils;
@@ -63,10 +64,10 @@ class RedriveUpsertDlqHandlerTest {
     var publicationId = randomUri();
     var publicationBucketUri = createS3Uri(publicationId);
     var candidateMessage = createCandidateEvaluatedMessage(publicationId, publicationBucketUri);
-    var messageBody = dtoObjectMapper.writeValueAsString(candidateMessage);
+    var dlqMessageBody = createDlqMessageBody(candidateMessage);
 
     var receiveMessage =
-        new NviReceiveMessage(messageBody, randomString(), Map.of(), randomString());
+        new NviReceiveMessage(dlqMessageBody, randomString(), Map.of(), randomString());
     var receiveResponse = new NviReceiveMessageResponse(List.of(receiveMessage));
     var emptyResponse = new NviReceiveMessageResponse(List.of());
 
@@ -87,6 +88,10 @@ class RedriveUpsertDlqHandlerTest {
     assertThat(sentMessage.resourceFileUri(), is(equalTo(publicationBucketUri)));
 
     verify(queueClient).deleteMessage(eq(DLQ_URL), eq(receiveMessage.receiptHandle()));
+  }
+
+  private static String createDlqMessageBody(CandidateEvaluatedMessage candidateMessage) {
+    return UpsertDlqMessageBody.create(candidateMessage, new Exception()).toJsonString();
   }
 
   @Test
@@ -128,15 +133,15 @@ class RedriveUpsertDlqHandlerTest {
   }
 
   @Test
-  void shouldHandleDuplicateMessages() throws JsonProcessingException {
+  void shouldHandleDuplicateMessages() {
     var publicationId = randomUri();
     var candidateMessage =
         createCandidateEvaluatedMessage(publicationId, createS3Uri(publicationId));
-    var messageBody = dtoObjectMapper.writeValueAsString(candidateMessage);
+    var dlqMessageBody = createDlqMessageBody(candidateMessage);
     var messageId = randomString();
 
-    var message1 = new NviReceiveMessage(messageBody, messageId, Map.of(), randomString());
-    var message2 = new NviReceiveMessage(messageBody, messageId, Map.of(), randomString());
+    var message1 = new NviReceiveMessage(dlqMessageBody, messageId, Map.of(), randomString());
+    var message2 = new NviReceiveMessage(dlqMessageBody, messageId, Map.of(), randomString());
 
     var receiveResponse = new NviReceiveMessageResponse(List.of(message1, message2));
     var emptyResponse = new NviReceiveMessageResponse(List.of());
@@ -182,12 +187,9 @@ class RedriveUpsertDlqHandlerTest {
               var publicationId = randomUri();
               var candidateMessage =
                   createCandidateEvaluatedMessage(publicationId, createS3Uri(publicationId));
-              try {
-                var messageBody = dtoObjectMapper.writeValueAsString(candidateMessage);
-                return new NviReceiveMessage(messageBody, randomString(), Map.of(), randomString());
-              } catch (JsonProcessingException e) {
-                throw new RuntimeException(e);
-              }
+              var dlqMessageBody = createDlqMessageBody(candidateMessage);
+              return new NviReceiveMessage(
+                  dlqMessageBody, randomString(), Map.of(), randomString());
             })
         .toList();
   }
