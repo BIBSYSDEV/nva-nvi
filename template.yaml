@@ -1035,6 +1035,24 @@ Resources:
         Variables:
           DLQ_QUEUE_URL: !Ref IndexDLQ
 
+  NviRedriveUpsertDlqHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: >
+        Lambda that reprocesses messages from UpsertCandidateDLQ by re-evaluating the publications.
+        Needs to be run manually from aws console. Run with count as parameter to 
+        limit number of messages to process. Default is 10, max is 100.
+      CodeUri: event-handlers
+      Handler: no.sikt.nva.nvi.events.batch.RedriveUpsertDlqHandler::handleRequest
+      Role: !GetAtt NvaNviRole.Arn
+      AutoPublishAlias: live
+      Timeout: 300
+      Environment:
+        Variables:
+          UPSERT_CANDIDATE_DLQ_QUEUE_URL: !Ref UpsertCandidateDLQ
+          PERSISTED_RESOURCE_QUEUE_URL: !Ref ResourceEvaluationQueue
+          EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
+
   BatchReEvaluateNviCandidatesHandler:
     Type: AWS::Serverless::Function
     Properties:
