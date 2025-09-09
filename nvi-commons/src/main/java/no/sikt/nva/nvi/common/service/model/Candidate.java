@@ -68,11 +68,14 @@ import nva.commons.apigateway.exceptions.UnauthorizedException;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.paths.UriWrapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 // Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
 @SuppressWarnings({"PMD.GodClass", "PMD.CouplingBetweenObjects"})
 public final class Candidate {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(Candidate.class);
   private static final Environment ENVIRONMENT = new Environment();
   private static final String BASE_PATH = ENVIRONMENT.readEnv("CUSTOM_DOMAIN_BASE_PATH");
   private static final String API_DOMAIN = ENVIRONMENT.readEnv("API_HOST");
@@ -330,9 +333,23 @@ public final class Candidate {
     var newState = input.approvalStatus();
 
     if (currentState.equals(newState)) {
-      // No change in state, return without making any changes
+      LOGGER.warn(
+          "Approval status update attempted with no change: candidateId={}, request={},"
+              + " userInstance={}",
+          identifier,
+          input,
+          userInstance);
       return this;
     }
+
+    LOGGER.info(
+        "Updating approval status: candidateId={}, organizationId={}, oldStatus={}, newStatus={},"
+            + " username={}",
+        identifier,
+        input.institutionId(),
+        currentState,
+        newState,
+        input.username());
 
     var permissions = new CandidatePermissions(this, userInstance);
     var attemptedOperation = CandidateOperation.fromApprovalStatus(input.approvalStatus());
@@ -343,6 +360,16 @@ public final class Candidate {
     }
 
     approvals.computeIfPresent(input.institutionId(), (uri, approval) -> approval.update(input));
+
+    LOGGER.info(
+        "Successfully updated approval status: candidateId={}, "
+            + "organizationId={}, oldStatus={}, newStatus={}, username={}",
+        identifier,
+        input.institutionId(),
+        currentState,
+        newState,
+        input.username());
+
     return this;
   }
 
