@@ -48,6 +48,7 @@ public class RedriveUpsertDlqHandler implements RequestHandler<RedriveUpsertDlqI
   private final NviQueueClient queueClient;
   private final String dlqQueueUrl;
   private final String evaluationQueueUrl;
+  private final String expandedResourcesBucket;
 
   @JacocoGenerated
   public RedriveUpsertDlqHandler() {
@@ -58,6 +59,7 @@ public class RedriveUpsertDlqHandler implements RequestHandler<RedriveUpsertDlqI
     this.queueClient = queueClient;
     this.dlqQueueUrl = environment.readEnv(UPSERT_CANDIDATE_DLQ_QUEUE_URL);
     this.evaluationQueueUrl = environment.readEnv(RESOURCE_EVALUATION_QUEUE_URL);
+    this.expandedResourcesBucket = environment.readEnv(EXPANDED_RESOURCES_BUCKET);
   }
 
   @Override
@@ -143,10 +145,9 @@ public class RedriveUpsertDlqHandler implements RequestHandler<RedriveUpsertDlqI
     } else {
       var publicationId = candidateType.publicationId();
       var publicationIdentifier = UriWrapper.fromUri(publicationId).getLastPathElement();
-      return UriWrapper.fromHost(EXPANDED_RESOURCES_BUCKET)
-          .addChild(RESOURCES)
-          .addChild(publicationIdentifier + ".gz")
-          .getUri();
+      return URI.create(
+          String.format(
+              "s3://%s/%s/%s.gz", expandedResourcesBucket, RESOURCES, publicationIdentifier));
     }
   }
 }

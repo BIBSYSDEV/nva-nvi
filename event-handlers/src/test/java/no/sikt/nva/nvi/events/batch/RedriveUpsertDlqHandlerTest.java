@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.events.batch;
 
+import static no.sikt.nva.nvi.common.EnvironmentFixtures.getRedriveUpsertDlqHandlerEnvironment;
 import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -21,7 +22,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
-import no.sikt.nva.nvi.common.FakeEnvironment;
+import no.sikt.nva.nvi.common.EnvironmentFixtures;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.NviReceiveMessage;
 import no.sikt.nva.nvi.common.queue.NviReceiveMessageResponse;
@@ -29,7 +30,6 @@ import no.sikt.nva.nvi.common.queue.NviSendMessageResponse;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.sikt.nva.nvi.events.persist.UpsertDlqMessageBody;
-import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
 import nva.commons.logutils.LogUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,16 +38,12 @@ import org.mockito.ArgumentCaptor;
 
 class RedriveUpsertDlqHandlerTest {
 
-  private static final Environment ENVIRONMENT =
-      new FakeEnvironment(
-          Map.of(
-              "UPSERT_CANDIDATE_DLQ_QUEUE_URL", randomString(),
-              "PERSISTED_RESOURCE_QUEUE_URL", randomString(),
-              "EXPANDED_RESOURCES_BUCKET", randomString()));
-  private static final String DLQ_URL = ENVIRONMENT.readEnv("UPSERT_CANDIDATE_DLQ_QUEUE_URL");
-  private static final String EVALUATION_QUEUE_URL =
-      ENVIRONMENT.readEnv("PERSISTED_RESOURCE_QUEUE_URL");
-  private static final String BUCKET_NAME = ENVIRONMENT.readEnv("EXPANDED_RESOURCES_BUCKET");
+  private static final String DLQ_URL =
+      EnvironmentFixtures.UPSERT_CANDIDATE_DLQ_QUEUE_URL.getValue();
+  private static final String PERSISTED_RESOURCE_QUEUE_URL =
+      EnvironmentFixtures.PERSISTED_RESOURCE_QUEUE_URL.getValue();
+  private static final String BUCKET_NAME =
+      EnvironmentFixtures.EXPANDED_RESOURCES_BUCKET.getValue();
   private static final Context CONTEXT = mock(Context.class);
 
   private NviQueueClient queueClient;
@@ -56,7 +52,7 @@ class RedriveUpsertDlqHandlerTest {
   @BeforeEach
   void setUp() {
     queueClient = mock(NviQueueClient.class);
-    handler = new RedriveUpsertDlqHandler(queueClient, ENVIRONMENT);
+    handler = new RedriveUpsertDlqHandler(queueClient, getRedriveUpsertDlqHandlerEnvironment());
   }
 
   @Test
@@ -74,14 +70,14 @@ class RedriveUpsertDlqHandlerTest {
     when(queueClient.receiveMessage(eq(DLQ_URL), anyInt()))
         .thenReturn(receiveResponse)
         .thenReturn(emptyResponse);
-    when(queueClient.sendMessage(eq(EVALUATION_QUEUE_URL), any()))
+    when(queueClient.sendMessage(eq(PERSISTED_RESOURCE_QUEUE_URL), any()))
         .thenReturn(new NviSendMessageResponse(randomString()));
 
     var input = new RedriveUpsertDlqInput(1);
     handler.handleRequest(input, CONTEXT);
 
     var argumentCaptor = ArgumentCaptor.forClass(String.class);
-    verify(queueClient).sendMessage(eq(EVALUATION_QUEUE_URL), argumentCaptor.capture());
+    verify(queueClient).sendMessage(eq(PERSISTED_RESOURCE_QUEUE_URL), argumentCaptor.capture());
 
     var sentMessage =
         dtoObjectMapper.readValue(argumentCaptor.getValue(), PersistedResourceMessage.class);
@@ -123,7 +119,7 @@ class RedriveUpsertDlqHandlerTest {
         .thenReturn(firstBatch)
         .thenReturn(secondBatch)
         .thenReturn(emptyResponse);
-    when(queueClient.sendMessage(eq(EVALUATION_QUEUE_URL), any()))
+    when(queueClient.sendMessage(eq(PERSISTED_RESOURCE_QUEUE_URL), any()))
         .thenReturn(new NviSendMessageResponse(randomString()));
 
     var input = new RedriveUpsertDlqInput(15);
@@ -149,14 +145,14 @@ class RedriveUpsertDlqHandlerTest {
     when(queueClient.receiveMessage(eq(DLQ_URL), anyInt()))
         .thenReturn(receiveResponse)
         .thenReturn(emptyResponse);
-    when(queueClient.sendMessage(eq(EVALUATION_QUEUE_URL), any()))
+    when(queueClient.sendMessage(eq(PERSISTED_RESOURCE_QUEUE_URL), any()))
         .thenReturn(new NviSendMessageResponse(randomString()));
 
     var input = new RedriveUpsertDlqInput(2);
     handler.handleRequest(input, CONTEXT);
 
     verify(queueClient, times(2)).deleteMessage(eq(DLQ_URL), any());
-    verify(queueClient, times(1)).sendMessage(eq(EVALUATION_QUEUE_URL), any());
+    verify(queueClient, times(1)).sendMessage(eq(PERSISTED_RESOURCE_QUEUE_URL), any());
   }
 
   @Test
