@@ -1,0 +1,49 @@
+<https://api.sandbox.nva.aws.unit.no/cristin/person/1215176> <https://nva.sikt.no/ontology/publication#affiliation> <https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0> .
+<https://api.sandbox.nva.aws.unit.no/cristin/person/1215176> <https://nva.sikt.no/ontology/publication#name> "Ola Nordmann" .
+<https://api.sandbox.nva.aws.unit.no/cristin/person/1215176> <https://nva.sikt.no/ontology/publication#verificationStatus> "Verified" .
+<https://api.sandbox.nva.aws.unit.no/cristin/person/1215176> <https://nva.sikt.no/ontology/publication#role> <https://nva.sikt.no/ontology/publication#Creator> .
+<https://api.sandbox.nva.aws.unit.no/cristin/person/1215176> <https://nva.sikt.no/ontology/publication#affiliation> <https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.2.0.0> .
+<https://api.sandbox.nva.aws.unit.no/cristin/person/1215176> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://nva.sikt.no/ontology/publication#Contributor> .
+<https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0> <https://nva.sikt.no/ontology/publication#label> "Noregs teknisk-naturvitskaplege universitet"@nn .
+<https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0> <https://nva.sikt.no/ontology/publication#label> "Norges teknisk-naturvitenskapelige universitet"@nb .
+<https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0> <https://nva.sikt.no/ontology/publication#label> "Norwegian University of Science and Technology"@en .
+<https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0> <https://nva.sikt.no/ontology/publication#country> "NO" .
+<https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://nva.sikt.no/ontology/publication#Organization> .
+<https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.0.0.0> <https://nva.sikt.no/ontology/publication#label> "Sikt – Kunnskapssektorens tjenesteleverandør"@nb .
+<https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.0.0.0> <https://nva.sikt.no/ontology/publication#hasPart> <https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.2.0.0> .
+<https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.0.0.0> <https://nva.sikt.no/ontology/publication#label> "Sikt - Norwegian Agency for Shared Services in Education and Research"@en .
+<https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.0.0.0> <https://nva.sikt.no/ontology/publication#country> "NO" .
+<https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.0.0.0> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://nva.sikt.no/ontology/publication#Organization> .
+<https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.2.0.0> <https://nva.sikt.no/ontology/publication#label> "Divisjon for forskings- og kunnskapsressursar"@nn .
+<https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.2.0.0> <https://nva.sikt.no/ontology/publication#label> "Divisjon forsknings- og kunnskapsressurser"@nb .
+<https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.2.0.0> <https://nva.sikt.no/ontology/publication#partOf> <https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.0.0.0> .
+<https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.2.0.0> <https://nva.sikt.no/ontology/publication#label> "The Research and Education Resources Division"@en .
+<https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.2.0.0> <https://nva.sikt.no/ontology/publication#country> "NO" .
+<https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.2.0.0> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://nva.sikt.no/ontology/publication#Organization> .
+<https://api.sandbox.nva.aws.unit.no/customer/bb3d0c0c-5065-4623-9b98-5810983c2478> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://nva.sikt.no/ontology/publication#Organization> .
+<https://api.sandbox.nva.aws.unit.no/publication-channels-v2/serial-publication/013E7484-327D-4F42-ACA4-8F975CCFF34C/2025> <https://nva.sikt.no/ontology/publication#printIssn> "2159-4848" .
+<https://api.sandbox.nva.aws.unit.no/publication-channels-v2/serial-publication/013E7484-327D-4F42-ACA4-8F975CCFF34C/2025> <https://nva.sikt.no/ontology/publication#year> "2025" .
+<https://api.sandbox.nva.aws.unit.no/publication-channels-v2/serial-publication/013E7484-327D-4F42-ACA4-8F975CCFF34C/2025> <https://nva.sikt.no/ontology/publication#scientificValue> "LevelOne" .
+<https://api.sandbox.nva.aws.unit.no/publication-channels-v2/serial-publication/013E7484-327D-4F42-ACA4-8F975CCFF34C/2025> <https://nva.sikt.no/ontology/publication#name> "IEEE International Conference on Software Testing Verification and Validation Workshop, ICSTW" .
+<https://api.sandbox.nva.aws.unit.no/publication-channels-v2/serial-publication/013E7484-327D-4F42-ACA4-8F975CCFF34C/2025> <https://nva.sikt.no/ontology/publication#identifier> "013E7484-327D-4F42-ACA4-8F975CCFF34C" .
+<https://api.sandbox.nva.aws.unit.no/publication-channels-v2/serial-publication/013E7484-327D-4F42-ACA4-8F975CCFF34C/2025> <https://nva.sikt.no/ontology/publication#channelType> <https://nva.sikt.no/ontology/publication#Journal> .
+<https://api.sandbox.nva.aws.unit.no/publication-channels-v2/serial-publication/013E7484-327D-4F42-ACA4-8F975CCFF34C/2025> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://nva.sikt.no/ontology/publication#PublicationChannel> .
+_:B84581d1f2b5caf904b177e6c0ebde078 <https://nva.sikt.no/ontology/publication#year> "2025" .
+_:B84581d1f2b5caf904b177e6c0ebde078 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://nva.sikt.no/ontology/publication#PublicationDate> .
+_:Bd381351fa9ada018f1a732cdab5e142c <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://nva.sikt.no/ontology/publication#PageCount> .
+<https://api.sandbox.nva.aws.unit.no/publication/0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5> <https://nva.sikt.no/ontology/publication#topLevelOrganization> <https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0> .
+<https://api.sandbox.nva.aws.unit.no/publication/0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5> <https://nva.sikt.no/ontology/publication#topLevelOrganization> <https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.0.0.0> .
+<https://api.sandbox.nva.aws.unit.no/publication/0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5> <https://nva.sikt.no/ontology/publication#contributor> <https://api.sandbox.nva.aws.unit.no/cristin/person/1215176> .
+<https://api.sandbox.nva.aws.unit.no/publication/0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5> <https://nva.sikt.no/ontology/publication#isInternationalCollaboration> "false"^^<http://www.w3.org/2001/XMLSchema#boolean> .
+<https://api.sandbox.nva.aws.unit.no/publication/0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5> <https://nva.sikt.no/ontology/publication#isApplicable> "true"^^<http://www.w3.org/2001/XMLSchema#boolean> .
+<https://api.sandbox.nva.aws.unit.no/publication/0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5> <https://nva.sikt.no/ontology/publication#publicationChannel> <https://api.sandbox.nva.aws.unit.no/publication-channels-v2/serial-publication/013E7484-327D-4F42-ACA4-8F975CCFF34C/2025> .
+<https://api.sandbox.nva.aws.unit.no/publication/0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5> <https://nva.sikt.no/ontology/publication#publicationType> <https://nva.sikt.no/ontology/publication#AcademicArticle> .
+<https://api.sandbox.nva.aws.unit.no/publication/0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5> <https://nva.sikt.no/ontology/publication#publicationDate> _:B84581d1f2b5caf904b177e6c0ebde078 .
+<https://api.sandbox.nva.aws.unit.no/publication/0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5> <https://nva.sikt.no/ontology/publication#pageCount> _:Bd381351fa9ada018f1a732cdab5e142c .
+<https://api.sandbox.nva.aws.unit.no/publication/0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5> <https://nva.sikt.no/ontology/publication#abstractText> "Lorem ipsum" .
+<https://api.sandbox.nva.aws.unit.no/publication/0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5> <https://nva.sikt.no/ontology/publication#language> <http://lexvo.org/id/iso639-3/nob> .
+<https://api.sandbox.nva.aws.unit.no/publication/0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5> <https://nva.sikt.no/ontology/publication#title> "Example NVI candidate #1" .
+<https://api.sandbox.nva.aws.unit.no/publication/0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5> <https://nva.sikt.no/ontology/publication#modifiedDate> "2025-03-24T06:59:56.170369925Z"^^<http://www.w3.org/2001/XMLSchema#dateTime> .
+<https://api.sandbox.nva.aws.unit.no/publication/0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5> <https://nva.sikt.no/ontology/publication#status> <https://nva.sikt.no/ontology/publication#PUBLISHED> .
+<https://api.sandbox.nva.aws.unit.no/publication/0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5> <https://nva.sikt.no/ontology/publication#identifier> "0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5" .
+<https://api.sandbox.nva.aws.unit.no/publication/0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://nva.sikt.no/ontology/publication#Publication> .
