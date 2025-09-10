@@ -15,9 +15,12 @@ import no.sikt.nva.nvi.common.model.UpdateApprovalRequest;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import nva.commons.core.JacocoGenerated;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Approval {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(Approval.class);
   public static final String ERROR_MSG_USERNAME_NULL = "Username cannot be null";
   private static final String UNKNOWN_REQUEST_TYPE_MESSAGE = "Unknown request type";
   private static final String ERROR_MISSING_REJECTION_REASON =
@@ -79,10 +82,20 @@ public class Approval {
 
   public Approval update(UpdateApprovalRequest input) {
     if (input instanceof UpdateAssigneeRequest request) {
+      LOGGER.info(
+          "Updating approval assignee: candidateId={}, organizationId={}, newAssignee={}",
+          identifier,
+          institutionId,
+          request.username());
       var newDao = repository.updateApprovalStatusDao(identifier, updateAssignee(request));
       return new Approval(repository, identifier, newDao);
     } else if (input instanceof UpdateStatusRequest request) {
       validateUpdateStatusRequest(request);
+      LOGGER.info(
+          "Updating approval status: candidateId={}, oldStatus={}, request={}",
+          identifier,
+          this.status,
+          request);
       var newDao = repository.updateApprovalStatusDao(identifier, updateStatus(request));
       return new Approval(repository, identifier, newDao);
     } else {
