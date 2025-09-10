@@ -8,10 +8,7 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.net.URI;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
@@ -81,12 +78,6 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
         .orElseThrow(failure -> new InvalidNviMessageException(INVALID_NVI_CANDIDATE_MESSAGE));
   }
 
-  private static String getStackTrace(Exception e) {
-    var stringWriter = new StringWriter();
-    e.printStackTrace(new PrintWriter(stringWriter));
-    return stringWriter.toString();
-  }
-
   private static Optional<URI> extractPublicationId(CandidateEvaluatedMessage evaluatedCandidate) {
     return Optional.ofNullable(evaluatedCandidate.candidate().publicationId());
   }
@@ -122,12 +113,7 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
       attempt(
           () ->
               queueClient.sendMessage(
-                  dtoObjectMapper.writeValueAsString(
-                      Map.of(
-                          "exception", getStackTrace(e),
-                          "evaluatedMessage",
-                              dtoObjectMapper.writeValueAsString(evaluatedCandidate))),
-                  dlqUrl));
+                  UpsertDlqMessageBody.create(evaluatedCandidate, e).toJsonString(), dlqUrl));
     }
   }
 

@@ -35,7 +35,8 @@ public enum EnvironmentFixtures {
   INDEX_DLQ("http://localhost:3000/index-dlq"),
   UPSERT_CANDIDATE_DLQ_QUEUE_URL("http://localhost:3000/upsert-candidate-dlq"),
   EVENT_BUS_NAME("bus-name"),
-  BATCH_SCAN_RECOVERY_QUEUE("recover-queue");
+  BATCH_SCAN_RECOVERY_QUEUE("recover-queue"),
+  PERSISTED_RESOURCE_QUEUE_URL("persisted-resource");
 
   private final String value;
 
@@ -83,6 +84,14 @@ public enum EnvironmentFixtures {
     return getDefaultEnvironmentBuilder()
         .with(EXPANDED_RESOURCES_BUCKET)
         .with(BATCH_SCAN_RECOVERY_QUEUE)
+        .build();
+  }
+
+  public static FakeEnvironment getRedriveUpsertDlqHandlerEnvironment() {
+    return getDefaultEnvironmentBuilder()
+        .with(EXPANDED_RESOURCES_BUCKET)
+        .with(UPSERT_CANDIDATE_DLQ_QUEUE_URL)
+        .with(PERSISTED_RESOURCE_QUEUE_URL)
         .build();
   }
 
