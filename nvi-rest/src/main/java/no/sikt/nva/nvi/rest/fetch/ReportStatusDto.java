@@ -36,7 +36,7 @@ public record ReportStatusDto(
     } else if (candidate.isNotReportedInClosedPeriod()) {
       return StatusDto.NOT_REPORTED;
     } else {
-      throw new IllegalStateException("Unable to determine report status for candidate");
+      return StatusDto.UNKNOWN;
     }
   }
 
@@ -47,7 +47,8 @@ public record ReportStatusDto(
     REJECTED("Rejected by all involved institutions in open period"),
     REPORTED("Reported in closed period"),
     NOT_REPORTED("Not reported in closed period"),
-    NOT_CANDIDATE("Not a candidate");
+    NOT_CANDIDATE("Not a candidate"),
+    UNKNOWN("Unknown status");
     private final String description;
 
     StatusDto(String description) {
