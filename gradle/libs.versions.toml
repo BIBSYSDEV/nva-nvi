@@ -1,5 +1,6 @@
 [versions]
 awsSdk2 = { strictly = '2.31.78' }
+dependency-analysis = { strictly = '2.19.0'}
 dynamoDbLocal = { strictly = '2.6.1' }
 jackson = { strictly = '2.19.1' }
 junitPlatform = { strictly = '1.13.3' } # May need to sync minor&patch version with 'junit' version
@@ -14,3 +15,6 @@ dynamodDbLocal = { group = 'com.amazonaws', name = 'DynamoDBLocal', version.ref 
 jackson-csv = { group = 'com.fasterxml.jackson.dataformat', name = 'jackson-dataformat-csv', version.ref = 'jackson' }
 junit-platform-suite = { group = 'org.junit.platform', name = 'junit-platform-suite', version.ref = 'junitPlatform' }
 nva-language = { group = 'com.github.bibsysdev', name = 'nva-language', version.ref = 'nvaLanguage' }
+
+[plugins]
+linter-dependencies = { id = 'com.autonomousapps.dependency-analysis', version.ref = 'dependency-analysis' }
