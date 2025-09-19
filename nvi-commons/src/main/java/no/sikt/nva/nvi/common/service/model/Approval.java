@@ -95,12 +95,11 @@ public class Approval {
     return ApprovalStatus.PENDING.equals(status) && !isAssigned();
   }
 
-  // FIXME
-  public Approval updateAssigneeProperly(
+  public Approval updateAssignee(
       CandidateRepository repository, CandidateDao candidate, UpdateAssigneeRequest request) {
     LOGGER.info("Updating assignee for candidateId={}: {}", identifier, request);
     LOGGER.info("Current assignee for institutionId={}: {}", institutionId, assignee);
-    var updatedDbStatus = updateAssignee(request);
+    var updatedDbStatus = createUpdatedStatus(request);
     var updatedApprovalDao = this.toDao(updatedDbStatus);
     var newDao = repository.updateApprovalStatusDao(candidate, updatedApprovalDao);
     var newAssignee = newDao.approvalStatus().assignee();
@@ -108,13 +107,12 @@ public class Approval {
     return new Approval(identifier, newDao);
   }
 
-  // FIXME
-  public Approval updateStatusProperly(
+  public Approval updateStatus(
       CandidateRepository repository, CandidateDao candidate, UpdateStatusRequest request) {
     LOGGER.info("Updating approval status for candidateId={}: {}", identifier, request);
     LOGGER.info("Current status for institutionId={}: {}", institutionId, status);
     validateUpdateStatusRequest(request);
-    var updatedDbStatus = updateStatus(request);
+    var updatedDbStatus = createUpdatedStatus(request);
     var updatedApprovalDao = this.toDao(updatedDbStatus);
     var newDao = repository.updateApprovalStatusDao(candidate, updatedApprovalDao);
     var newStatus = newDao.approvalStatus().status();
@@ -134,7 +132,7 @@ public class Approval {
   public ApprovalStatusDao toDao() {
     return ApprovalStatusDao.builder()
         .identifier(identifier)
-        .approvalStatus(currentStatus())
+        .approvalStatus(createCopyOfCurrentStatus())
         .revision(revisionRead)
         .version(randomUUID().toString())
         .build();
@@ -188,7 +186,7 @@ public class Approval {
         + '}';
   }
 
-  private DbApprovalStatus updateAssignee(UpdateAssigneeRequest request) {
+  private DbApprovalStatus createUpdatedStatus(UpdateAssigneeRequest request) {
     return new DbApprovalStatus(
         institutionId,
         DbStatus.parse(status.getValue()),
@@ -198,15 +196,15 @@ public class Approval {
         reason);
   }
 
-  private DbApprovalStatus updateStatus(UpdateStatusRequest request) {
+  private DbApprovalStatus createUpdatedStatus(UpdateStatusRequest request) {
     return switch (request.approvalStatus()) {
-      case APPROVED -> finalizeApprovedStatus(request);
-      case REJECTED -> finalizeRejectedStatus(request);
-      case PENDING, NONE -> resetStatus();
+      case APPROVED -> createFinalizedStatus(request);
+      case REJECTED -> createRejectedStatus(request);
+      case PENDING, NONE -> createResetStatus();
     };
   }
 
-  private DbApprovalStatus resetStatus() {
+  private DbApprovalStatus createResetStatus() {
     return new DbApprovalStatus(
         institutionId,
         DbStatus.PENDING,
@@ -216,7 +214,7 @@ public class Approval {
         null);
   }
 
-  private DbApprovalStatus currentStatus() {
+  private DbApprovalStatus createCopyOfCurrentStatus() {
     return new DbApprovalStatus(
         institutionId,
         toDbStatus(status),
@@ -226,7 +224,7 @@ public class Approval {
         reason);
   }
 
-  private DbApprovalStatus finalizeApprovedStatus(UpdateStatusRequest request) {
+  private DbApprovalStatus createFinalizedStatus(UpdateStatusRequest request) {
     var username = no.sikt.nva.nvi.common.db.model.Username.fromString(request.username());
     return new DbApprovalStatus(
         institutionId,
@@ -237,7 +235,7 @@ public class Approval {
         null);
   }
 
-  private DbApprovalStatus finalizeRejectedStatus(UpdateStatusRequest request) {
+  private DbApprovalStatus createRejectedStatus(UpdateStatusRequest request) {
     if (isNull(request.reason())) {
       throw new UnsupportedOperationException(ERROR_MISSING_REJECTION_REASON);
     }

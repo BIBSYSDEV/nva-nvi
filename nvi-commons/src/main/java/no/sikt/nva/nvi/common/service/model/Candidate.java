@@ -344,7 +344,7 @@ public final class Candidate {
       throw new IllegalCandidateUpdateException("No approval found matching UpdateAssigneeRequest");
     }
     var approval = approvals.get(input.institutionId());
-    approval.updateAssigneeProperly(repository, toDao(), input);
+    approval.updateAssignee(repository, toDao(), input);
   }
 
   public void updateApprovalStatus(UpdateStatusRequest input, UserInstance userInstance) {
@@ -386,7 +386,7 @@ public final class Candidate {
       throw new IllegalCandidateUpdateException("No approval found matching UpdateStatusRequest");
     }
     var approval = approvals.get(input.institutionId());
-    approval.updateStatusProperly(repository, toDao(), input);
+    approval.updateStatus(repository, toDao(), input);
   }
 
   public Candidate createNote(CreateNoteRequest input, CandidateRepository repository) {
@@ -823,7 +823,7 @@ public final class Candidate {
   private Approval updateAssigneeIfUnassigned(String username, Approval approval) {
     return approval.isAssigned()
         ? approval
-        : approval.updateAssigneeProperly(
+        : approval.updateAssignee(
             repository, toDao(), new UpdateAssigneeRequest(approval.getInstitutionId(), username));
   }
 
