@@ -142,7 +142,7 @@ public final class Candidate {
     var dbCandidate = candidateDao.candidate();
     this.identifier = candidateDao.identifier();
     this.applicable = dbCandidate.applicable();
-    this.approvals = mapToApprovalsMap(repository, approvals);
+    this.approvals = mapToApprovalsMap(approvals);
     this.notes = mapToNotesMap(repository, notes);
     this.period = period;
     this.pointCalculation = PointCalculation.from(candidateDao);
@@ -329,7 +329,7 @@ public final class Candidate {
     return pointCalculation.channel();
   }
 
-  public Candidate updateApprovalAssignee(UpdateAssigneeRequest input) {
+  public void updateApprovalAssignee(UpdateAssigneeRequest input) {
     validateCandidateState();
     if (!approvals.containsKey(input.institutionId())) {
       LOGGER.error("No approval found matching UpdateAssigneeRequest: {}", input);
@@ -337,10 +337,9 @@ public final class Candidate {
     }
     var approval = approvals.get(input.institutionId());
     approval.updateAssigneeProperly(repository, toDao(), input);
-    return this;
   }
 
-  public Candidate updateApprovalStatus(UpdateStatusRequest input, UserInstance userInstance) {
+  public void updateApprovalStatus(UpdateStatusRequest input, UserInstance userInstance) {
     validateUpdateStatusRequest(input);
     validateCandidateState();
 
@@ -354,7 +353,7 @@ public final class Candidate {
           identifier,
           input,
           userInstance);
-      return this;
+      return;
     }
 
     LOGGER.info(
@@ -380,7 +379,6 @@ public final class Candidate {
     }
     var approval = approvals.get(input.institutionId());
     approval.updateStatusProperly(repository, toDao(), input);
-    return this;
   }
 
   public Candidate createNote(CreateNoteRequest input, CandidateRepository repository) {
@@ -703,8 +701,7 @@ public final class Candidate {
         .collect(Collectors.toMap(Note::getNoteId, Function.identity()));
   }
 
-  private static Map<URI, Approval> mapToApprovalsMap(
-      CandidateRepository repository, List<ApprovalStatusDao> approvals) {
+  private static Map<URI, Approval> mapToApprovalsMap(List<ApprovalStatusDao> approvals) {
     return approvals.stream()
         .map(dao -> new Approval(dao.identifier(), dao))
         .collect(Collectors.toMap(Approval::getInstitutionId, Function.identity()));
@@ -788,6 +785,7 @@ public final class Candidate {
 
   private Builder copy() {
     return new Builder()
+        .withRepository(repository)
         .withIdentifier(identifier)
         .withApplicable(applicable)
         .withApprovals(approvals)

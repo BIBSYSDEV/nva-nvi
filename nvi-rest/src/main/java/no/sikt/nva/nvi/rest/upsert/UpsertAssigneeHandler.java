@@ -77,17 +77,13 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<UpsertAssigneeReque
     var candidateIdentifier = UUID.fromString(requestInfo.getPathParameter(CANDIDATE_IDENTIFIER));
     var institutionId = input.institutionId();
     var assignee = input.assignee();
+    var username = RequestUtil.getUsername(requestInfo);
     var userInstance = UserInstance.fromRequestInfo(requestInfo);
-    return attempt(
-            () -> Candidate.fetch(() -> candidateIdentifier, candidateRepository, periodRepository))
-        .map(
-            candidate ->
-                validateViewingScope(
-                    viewingScopeValidator, RequestUtil.getUsername(requestInfo), candidate))
-        .map(
-            candidate ->
-                candidate.updateApprovalAssignee(
-                    new UpdateAssigneeRequest(institutionId, assignee)))
+    var updateRequest = new UpdateAssigneeRequest(institutionId, assignee);
+
+    return attempt(() -> fetchCandidate(candidateIdentifier))
+        .map(candidate -> validateViewingScope(viewingScopeValidator, username, candidate))
+        .map(candidate -> updateAndRefetch(candidate, updateRequest))
         .map(candidate -> CandidateResponseFactory.create(candidate, userInstance))
         .orElseThrow(ExceptionMapper::map);
   }
@@ -95,6 +91,15 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<UpsertAssigneeReque
   @Override
   protected Integer getSuccessStatusCode(UpsertAssigneeRequest input, CandidateDto output) {
     return HttpURLConnection.HTTP_OK;
+  }
+
+  private Candidate fetchCandidate(UUID candidateIdentifier) {
+    return Candidate.fetch(() -> candidateIdentifier, candidateRepository, periodRepository);
+  }
+
+  private Candidate updateAndRefetch(Candidate candidate, UpdateAssigneeRequest updateRequest) {
+    candidate.updateApprovalAssignee(updateRequest);
+    return fetchCandidate(candidate.getIdentifier());
   }
 
   private static void hasSameCustomer(UpsertAssigneeRequest input, RequestInfo requestInfo)
