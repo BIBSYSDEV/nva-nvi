@@ -6,7 +6,7 @@ import static no.sikt.nva.nvi.common.db.DbPointCalculationFixtures.randomPointCa
 import static no.sikt.nva.nvi.common.db.DbPublicationDetailsFixtures.getExpectedPublicationDetails;
 import static no.sikt.nva.nvi.common.db.DbPublicationDetailsFixtures.randomPublicationBuilder;
 import static no.sikt.nva.nvi.common.model.NviCreatorFixtures.mapToDbCreators;
-import static no.unit.nva.testutils.RandomDataGenerator.randomString;
+import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 
 import java.net.URI;
@@ -127,6 +127,11 @@ public class DbCandidateFixtures {
             .totalPoints(dbPointCalculation.totalPoints())
             .createdDate(createdDate)
             .build();
-    return new CandidateDao(candidateIdentifier, dbCandidate, randomString(), randomString());
+    return CandidateDao.builder()
+        .identifier(candidateIdentifier)
+        .candidate(dbCandidate)
+        .version(randomUUID().toString())
+        .periodYear(randomYear())
+        .build();
   }
 }

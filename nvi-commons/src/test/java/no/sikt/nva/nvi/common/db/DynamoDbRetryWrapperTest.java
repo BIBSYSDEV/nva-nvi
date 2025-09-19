@@ -1,6 +1,6 @@
 package no.sikt.nva.nvi.common.db;
 
-import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidate;
+import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.randomApplicableCandidateDao;
 import static no.sikt.nva.nvi.common.utils.ApplicationConstants.NVI_TABLE_NAME;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -18,7 +18,6 @@ import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import nva.commons.logutils.LogUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -123,8 +122,7 @@ class DynamoDbRetryWrapperTest {
     var mockedDatabaseClient = mock(DynamoDbClient.class);
     var dynamoDbRetryWrapper =
         DynamoDbRetryWrapper.builder().dynamoDbClient(mockedDatabaseClient).build();
-    var dao =
-        new CandidateDao(UUID.randomUUID(), randomCandidate(), randomString(), randomString());
+    var dao = randomApplicableCandidateDao();
     var batchItemRequest = generateBatchItemRequest(dao);
     when(mockedDatabaseClient.batchWriteItem(eq(batchItemRequest)))
         .thenThrow(DynamoDbException.class);

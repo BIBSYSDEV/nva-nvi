@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.common.service.model;
 
+import static java.util.UUID.randomUUID;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -23,7 +24,11 @@ class ApprovalTest {
   }
 
   private static ApprovalStatusDao createPendingApproval(UUID identifier) {
-    return new ApprovalStatusDao(identifier, createPendingApproval(), "1");
+    return ApprovalStatusDao.builder()
+        .identifier(identifier)
+        .approvalStatus(createPendingApproval())
+        .version(randomUUID().toString())
+        .build();
   }
 
   private static DbApprovalStatus createPendingApproval() {

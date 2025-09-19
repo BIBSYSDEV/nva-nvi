@@ -181,7 +181,7 @@ class UpsertNviCandidateHandlerTest {
     var candidate =
         Candidate.fetchByPublicationId(
             upsertCandidateRequest::publicationId, candidateRepository, periodRepository);
-    scenario.updateApprovalStatus(candidate, ApprovalStatus.APPROVED, institutionId);
+    scenario.updateApprovalStatusDangerously(candidate, ApprovalStatus.APPROVED, institutionId);
 
     var approval = candidate.getApprovals().get(institutionId);
     var newUpsertRequest = createNewUpsertRequestNotAffectingApprovals(upsertCandidateRequest);

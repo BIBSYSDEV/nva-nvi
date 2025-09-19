@@ -240,8 +240,8 @@ class CandidateTest extends CandidateTestSetup {
     var request = createUpsertCandidateRequest(organization1, organization2).build();
     var candidate = scenario.upsertCandidate(request);
 
-    scenario.updateApprovalStatus(candidate, approvalStatus, organization1.id());
-    scenario.updateApprovalStatus(candidate, approvalStatus, organization2.id());
+    scenario.updateApprovalStatus(candidate.getIdentifier(), approvalStatus, organization1.id());
+    scenario.updateApprovalStatus(candidate.getIdentifier(), approvalStatus, organization2.id());
 
     var updatedCandidate =
         Candidate.fetchByPublicationId(
@@ -295,8 +295,8 @@ class CandidateTest extends CandidateTestSetup {
     var createRequest =
         createUpsertCandidateRequest(institution1, institution2, institution3).build();
     var candidate = scenario.upsertCandidate(createRequest);
-    scenario.updateApprovalStatus(candidate, ApprovalStatus.APPROVED, institution1);
-    scenario.updateApprovalStatus(candidate, ApprovalStatus.REJECTED, institution2);
+    scenario.updateApprovalStatus(candidate.getIdentifier(), ApprovalStatus.APPROVED, institution1);
+    scenario.updateApprovalStatus(candidate.getIdentifier(), ApprovalStatus.REJECTED, institution2);
 
     assertEquals(ApprovalStatus.PENDING, candidate.getApprovals().get(institution3).getStatus());
     assertEquals(GlobalApprovalStatus.DISPUTE, candidate.getGlobalApprovalStatus());
@@ -456,7 +456,9 @@ class CandidateTest extends CandidateTestSetup {
     var request =
         createUpsertCandidateRequestWithSingleAffiliation(reviewingInstitution, randomUri());
     var candidate = scenario.upsertCandidate(request);
-    scenario.updateApprovalStatus(candidate, approvalStatus, reviewingInstitution);
+    candidate =
+        scenario.updateApprovalStatus(
+            candidate.getIdentifier(), approvalStatus, reviewingInstitution);
     assertFalse(candidate.isPendingReview());
   }
 
@@ -469,7 +471,9 @@ class CandidateTest extends CandidateTestSetup {
     var request =
         createUpsertCandidateRequestWithSingleAffiliation(reviewingInstitution, randomUri());
     var candidate = scenario.upsertCandidate(request);
-    scenario.updateApprovalStatus(candidate, approvalStatus, reviewingInstitution);
+    candidate =
+        scenario.updateApprovalStatus(
+            candidate.getIdentifier(), approvalStatus, reviewingInstitution);
     assertTrue(candidate.isUnderReview());
   }
 

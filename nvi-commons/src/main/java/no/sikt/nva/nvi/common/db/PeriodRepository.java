@@ -41,6 +41,16 @@ public class PeriodRepository extends DynamoRepository {
     return fetched.nviPeriod();
   }
 
+  // TODO: Added because we need DAOs in tests. Refactor when we fix transaction locking.
+  public Optional<NviPeriodDao> findByYear(String publishingYear) {
+    var queryObj =
+        NviPeriodDao.builder()
+            .nviPeriod(DbNviPeriod.builder().publishingYear(publishingYear).build())
+            .identifier(publishingYear)
+            .build();
+    return Optional.ofNullable(nviPeriodTable.getItem(queryObj));
+  }
+
   public Optional<DbNviPeriod> findByPublishingYear(String publishingYear) {
     var queryObj =
         NviPeriodDao.builder()

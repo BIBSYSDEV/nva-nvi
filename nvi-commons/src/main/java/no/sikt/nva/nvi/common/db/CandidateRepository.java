@@ -36,6 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbIndex;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
+import software.amazon.awssdk.enhanced.dynamodb.Expression;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
@@ -142,7 +143,7 @@ public class CandidateRepository extends DynamoRepository {
   }
 
   public void updateCandidate(CandidateDao candidate) {
-    LOGGER.info("Updating candidate {}", candidate.identifier());
+    LOGGER.warn("Updating candidate {}", candidate.identifier());
     var transaction = TransactWriteItemsEnhancedRequest.builder();
     transaction.addPutItem(candidateTable, candidate);
     sendTransaction(transaction.build());
@@ -150,8 +151,8 @@ public class CandidateRepository extends DynamoRepository {
 
   public void updateCandidateAndDeleteOtherApprovals(
       CandidateDao candidateDao, List<DbApprovalStatus> approvals) {
-    LOGGER.info("Updating candidate {} and deleting other approvals", candidateDao.identifier());
-    LOGGER.info("Updating approvals and deleting those not specified: {}", approvals);
+    LOGGER.warn("Updating candidate {} and deleting other approvals", candidateDao.identifier());
+    LOGGER.warn("Updating approvals and deleting those not specified: {}", approvals);
     var updatedApprovals =
         approvals.stream()
             .map(approval -> mapToApprovalStatusDao(candidateDao.identifier(), approval))
@@ -228,7 +229,17 @@ public class CandidateRepository extends DynamoRepository {
   public ApprovalStatusDao updateApprovalStatusDao(UUID identifier, DbApprovalStatus newApproval) {
     LOGGER.info(
         "Updating approval status: candidateId={}, newApproval={}", identifier, newApproval);
-    var result = approvalStatusTable.updateItem(newApproval.toDao(identifier));
+    // FIXME: Replacing update with put to test things
+    var approvalStatusDao = newApproval.toDao(identifier);
+    //    approvalStatusTable.putItem(approvalStatusDao);
+    if (approvalStatusDao.revision() == null) {
+      // This is legacy data, use putItem without version check
+      approvalStatusTable.putItem(approvalStatusDao.copy().revision(1L).build());
+    } else {
+      // This has versioning, use normal Enhanced Client operations
+      approvalStatusTable.updateItem(approvalStatusDao);
+    }
+    var result = approvalStatusTable.getItem(approvalStatusDao);
     LOGGER.info(
         "Successfully updated approval status: candidateId={}, newApproval={}",
         identifier,
@@ -236,15 +247,104 @@ public class CandidateRepository extends DynamoRepository {
     return result;
   }
 
+  // TODO: Add transactions here
+
+  public ApprovalStatusDao updateApprovalStatusDao(
+      CandidateDao candidate, ApprovalStatusDao approval) {
+    LOGGER.info(
+        "Persisting approval: candidateId={}, approval={}",
+        approval.identifier(),
+        approval.approvalStatus());
+    var initialCurrent = approvalStatusTable.getItem(approval);
+    var transaction = TransactWriteItemsEnhancedRequest.builder();
+    transaction.addUpdateItem(approvalStatusTable, approval);
+
+    // Add conditions
+    //    var candidateKey = createCandidateKey(candidateId);
+    //    var versionCondition = createVersionCondition(expectedVersions.candidateVersion());
+    //    transaction.addConditionCheck(
+    //        candidateTable,
+    //        ConditionCheck.builder()
+    //            .key(candidateKey)
+    //            .conditionExpression(versionCondition)
+    //            .returnValuesOnConditionCheckFailure(
+    //                ReturnValuesOnConditionCheckFailure
+    //                    .ALL_OLD) // FIXME: Remove this? Full object for
+    // comparison/debugging/logging
+    //            .build());
+
+    try {
+      client.transactWriteItems(transaction.build());
+      LOGGER.info("Successfully persisted approval for candidateId={}", approval.identifier());
+      return approval; // FIXME
+
+    } catch (TransactionCanceledException e) {
+      LOGGER.error("Failed to persist approval: approval={}", approval);
+      var actualCurrent = approvalStatusTable.getItem(approval);
+      handleTransactionFailure(e, approval);
+      throw TransactionException.from(e, transaction.build());
+    }
+  }
+
+  private void handleTransactionFailure(
+      TransactionCanceledException e, ApprovalStatusDao approval) {
+    LOGGER.error("Transaction cancelled for candidate {}", approval.identifier(), e);
+    if (e.cancellationReasons() != null) {
+      for (int i = 0; i < e.cancellationReasons().size(); i++) {
+        var reason = e.cancellationReasons().get(i);
+
+        if ("ConditionalCheckFailed".equals(reason.code())) {
+          LOGGER.error(
+              "Condition check failed for operation {}: code={}, message={}",
+              i,
+              reason.code(),
+              reason.message());
+
+          // If ReturnValuesOnConditionCheckFailure was set, you can access the current values
+          //          if (reason.item() != null && !reason.item().isEmpty()) {
+          //            var currentVersion = reason.item().get("version");
+          //            LOGGER.error(
+          //                "Version conflict detected: expected='{}', actual='{}'",
+          //                expectedVersions,
+          //                currentVersion != null ? currentVersion.s() : "null");
+          //          }
+        }
+      }
+    }
+  }
+
+  private Key createCandidateKey(UUID candidateIdentifier) {
+    return Key.builder()
+        .partitionValue(CandidateDao.createPartitionKey(candidateIdentifier.toString()))
+        .sortValue(CandidateDao.createPartitionKey(candidateIdentifier.toString()))
+        .build();
+  }
+
+  //  private Expression createVersionCondition(String expectedVersion) {
+  //    return Expression.builder()
+  //        .expression("#a = :b")
+  //        .putExpressionName("#a", "version")
+  //        .putExpressionValue(":b", AttributeValue.builder().s(expectedVersion).build())
+  //        .build();
+  //  }
+
+  private Expression createVersionCondition(String expectedVersion) {
+    return Expression.builder()
+        .expression("version = :expectedVersion")
+        .expressionValues(
+            Map.of(":expectedVersion", AttributeValue.builder().s(expectedVersion).build()))
+        .build();
+  }
+
   public NoteDao saveNote(UUID candidateIdentifier, DbNote dbNote) {
-    LOGGER.info("Saving note: candidateId={}, note={}", candidateIdentifier, dbNote);
+    LOGGER.warn("Saving note: candidateId={}, note={}", candidateIdentifier, dbNote);
     var note = newNoteDao(candidateIdentifier, dbNote);
     noteTable.putItem(note);
     return note;
   }
 
   public void deleteNote(UUID candidateIdentifier, UUID noteIdentifier) {
-    LOGGER.info("Deleting note: candidateId={}, noteId={}, ", candidateIdentifier, noteIdentifier);
+    LOGGER.warn("Deleting note: candidateId={}, noteId={}, ", candidateIdentifier, noteIdentifier);
     noteTable.deleteItem(noteKey(candidateIdentifier, noteIdentifier));
   }
 

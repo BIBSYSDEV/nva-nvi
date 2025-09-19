@@ -17,6 +17,7 @@ import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
+import no.sikt.nva.nvi.common.model.UserInstance;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 
@@ -33,6 +34,16 @@ public class UpsertRequestFixtures {
         .withApprovalStatus(status)
         .withInstitutionId(institutionId)
         .withUsername(username)
+        .build();
+  }
+
+  public static UpdateStatusRequest createUpdateStatusRequest(
+      ApprovalStatus status, UserInstance userInstance) {
+    return UpdateStatusRequest.builder()
+        .withReason(ApprovalStatus.REJECTED.equals(status) ? randomString() : null)
+        .withApprovalStatus(status)
+        .withInstitutionId(userInstance.topLevelOrganizationId())
+        .withUsername(userInstance.userName().toString())
         .build();
   }
 

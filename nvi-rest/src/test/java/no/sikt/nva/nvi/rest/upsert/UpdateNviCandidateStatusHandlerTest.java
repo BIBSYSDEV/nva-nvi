@@ -205,7 +205,7 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
   void shouldUpdateApprovalStatus(ApprovalStatus oldStatus, ApprovalStatus newStatus)
       throws IOException {
     var candidate = setupValidCandidate();
-    scenario.updateApprovalStatus(candidate, oldStatus, topLevelOrganizationId);
+    scenario.updateApprovalStatusDangerously(candidate, oldStatus, topLevelOrganizationId);
     var request = createRequest(candidate.getIdentifier(), topLevelOrganizationId, newStatus);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
@@ -232,7 +232,7 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
   void shouldResetFinalizedValuesWhenUpdatingStatusToPending(ApprovalStatus oldStatus)
       throws IOException {
     var candidate = setupValidCandidate();
-    scenario.updateApprovalStatus(candidate, oldStatus, topLevelOrganizationId);
+    scenario.updateApprovalStatusDangerously(candidate, oldStatus, topLevelOrganizationId);
     var newStatus = ApprovalStatus.PENDING;
     var request = createRequest(candidate.getIdentifier(), topLevelOrganizationId, newStatus);
     handler.handleRequest(request, output, CONTEXT);
@@ -250,7 +250,7 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
       names = {STATUS_PENDING, STATUS_APPROVED})
   void shouldUpdateApprovalStatusToRejectedWithReason(ApprovalStatus oldStatus) throws IOException {
     var candidate = setupValidCandidate();
-    scenario.updateApprovalStatus(candidate, oldStatus, topLevelOrganizationId);
+    scenario.updateApprovalStatusDangerously(candidate, oldStatus, topLevelOrganizationId);
     var rejectionReason = randomString();
     var requestBody =
         new NviStatusRequest(topLevelOrganizationId, ApprovalStatus.REJECTED, rejectionReason);
@@ -285,7 +285,7 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
   void shouldRemoveReasonWhenUpdatingStatusFromRejected(ApprovalStatus newStatus)
       throws IOException {
     var candidate = setupValidCandidate();
-    scenario.updateApprovalStatus(candidate, ApprovalStatus.REJECTED, topLevelOrganizationId);
+    scenario.updateApprovalStatusDangerously(candidate, ApprovalStatus.REJECTED, topLevelOrganizationId);
     var request =
         createRequest(
             candidate.getIdentifier(),

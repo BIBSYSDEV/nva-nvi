@@ -192,7 +192,7 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
   private Candidate candidateWithFinalizedApproval(String newAssignee) {
     candidate.updateApprovalAssignee(
         new UpdateAssigneeRequest(topLevelOrganizationId, newAssignee));
-    scenario.updateApprovalStatus(candidate, ApprovalStatus.APPROVED, topLevelOrganizationId);
+    scenario.updateApprovalStatusDangerously(candidate, ApprovalStatus.APPROVED, topLevelOrganizationId);
     return candidate;
   }
 

@@ -100,6 +100,7 @@ public final class Candidate {
   private final Instant createdDate;
   private final Instant modifiedDate;
   private final ReportStatus reportStatus;
+  private final Long revisionRead;
 
   private Candidate(
       UUID identifier,
@@ -111,7 +112,8 @@ public final class Candidate {
       PublicationDetails publicationDetails,
       Instant createdDate,
       Instant modifiedDate,
-      ReportStatus reportStatus) {
+      ReportStatus reportStatus,
+      Long revisionRead) {
     this.identifier = identifier;
     this.applicable = applicable;
     this.approvals = approvals;
@@ -122,6 +124,7 @@ public final class Candidate {
     this.createdDate = createdDate;
     this.modifiedDate = modifiedDate;
     this.reportStatus = reportStatus;
+    this.revisionRead = revisionRead;
   }
 
   private Candidate(
@@ -141,6 +144,7 @@ public final class Candidate {
     this.createdDate = dbCandidate.createdDate();
     this.modifiedDate = dbCandidate.modifiedDate();
     this.reportStatus = dbCandidate.reportStatus();
+    this.revisionRead = candidateDao.revision();
   }
 
   public static Candidate fetchByPublicationId(
@@ -321,7 +325,12 @@ public final class Candidate {
 
   public Candidate updateApprovalAssignee(UpdateAssigneeRequest input) {
     validateCandidateState();
-    approvals.computeIfPresent(input.institutionId(), (uri, approval) -> approval.update(input));
+    if (!approvals.containsKey(input.institutionId())) {
+      LOGGER.error("No approval found matching UpdateAssigneeRequest: {}", input);
+      throw new IllegalCandidateUpdateException("No approval found matching UpdateAssigneeRequest");
+    }
+    var approval = approvals.get(input.institutionId());
+    approval.updateAssigneeProperly(this.toDao(), input);
     return this;
   }
 
@@ -359,17 +368,12 @@ public final class Candidate {
       throw new IllegalStateException("Cannot update approval status");
     }
 
-    approvals.computeIfPresent(input.institutionId(), (uri, approval) -> approval.update(input));
-
-    LOGGER.info(
-        "Successfully updated approval status: candidateId={}, "
-            + "organizationId={}, oldStatus={}, newStatus={}, username={}",
-        identifier,
-        input.institutionId(),
-        currentState,
-        newState,
-        input.username());
-
+    if (!approvals.containsKey(input.institutionId())) {
+      LOGGER.error("No approval found matching UpdateStatusRequest: {}", input);
+      throw new IllegalCandidateUpdateException("No approval found matching UpdateStatusRequest");
+    }
+    var approval = approvals.get(input.institutionId());
+    approval.updateStatusProperly(this.toDao(), input);
     return this;
   }
 
@@ -496,10 +500,15 @@ public final class Candidate {
     validateCandidate(request);
     var updatedCandidate = candidate.apply(request);
     if (shouldResetCandidate(request, candidate) || isNotApplicable(candidate)) {
+      LOGGER.info("Resetting all approvals for candidate {}", candidate.getIdentifier());
       var newApprovals = mapToApprovals(updatedCandidate.getInstitutionPoints());
       repository.updateCandidateAndDeleteOtherApprovals(updatedCandidate.toDao(), newApprovals);
     } else {
       var updatedApprovals = getIndividualApprovalsToReset(candidate, updatedCandidate);
+      LOGGER.info(
+          "Resetting individual approvals for candidate {}: {}",
+          candidate.getIdentifier(),
+          updatedApprovals);
       repository.updateCandidateAndKeepOtherApprovals(updatedCandidate.toDao(), updatedApprovals);
     }
   }
@@ -732,7 +741,8 @@ public final class Candidate {
         .withModifiedDate(modifiedDate)
         .withCreatedDate(createdDate)
         .withPointCalculation(pointCalculation)
-        .withPublicationDetails(publicationDetails);
+        .withPublicationDetails(publicationDetails)
+        .withRevision(revisionRead);
   }
 
   private CandidateDao toDao() {
@@ -765,6 +775,7 @@ public final class Candidate {
     return CandidateDao.builder()
         .identifier(identifier)
         .candidate(dbCandidate)
+        .revision(revisionRead)
         .version(randomUUID().toString())
         .periodYear(dbPublication.publicationDate().year())
         .build();
@@ -787,7 +798,8 @@ public final class Candidate {
   private Approval updateAssigneeIfUnassigned(String username, Approval approval) {
     return approval.isAssigned()
         ? approval
-        : approval.update(new UpdateAssigneeRequest(approval.getInstitutionId(), username));
+        : approval.updateAssigneeProperly(
+            this.toDao(), new UpdateAssigneeRequest(approval.getInstitutionId(), username));
   }
 
   private boolean isDispute() {
@@ -834,6 +846,7 @@ public final class Candidate {
     private Instant createdDate;
     private Instant modifiedDate;
     private ReportStatus reportStatus;
+    private Long revision;
 
     private Builder() {}
 
@@ -887,6 +900,11 @@ public final class Candidate {
       return this;
     }
 
+    public Builder withRevision(Long revision) {
+      this.revision = revision;
+      return this;
+    }
+
     public Candidate build() {
       return new Candidate(
           identifier,
@@ -898,7 +916,8 @@ public final class Candidate {
           publicationDetails,
           createdDate,
           modifiedDate,
-          reportStatus);
+          reportStatus,
+          revision);
     }
   }
 }

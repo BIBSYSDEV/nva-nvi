@@ -425,7 +425,8 @@ class CandidateApprovalTest extends CandidateTestSetup {
       URI approvedByOrg, Map<Organization, Collection<NviCreatorDto>> creatorsPerOrganization) {
     var requestBuilder = randomApplicableCandidateRequestBuilder(creatorsPerOrganization);
     var candidate = scenario.upsertCandidate(requestBuilder.build());
-    scenario.updateApprovalStatus(candidate, ApprovalStatus.APPROVED, approvedByOrg);
+    scenario.updateApprovalStatus(
+        candidate.getIdentifier(), ApprovalStatus.APPROVED, approvedByOrg);
     return requestBuilder;
   }
 

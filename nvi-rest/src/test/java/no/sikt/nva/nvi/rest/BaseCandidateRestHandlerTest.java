@@ -137,7 +137,7 @@ public abstract class BaseCandidateRestHandlerTest {
 
   protected Candidate setupCandidateWithApproval() {
     var candidate = setupValidCandidate();
-    return scenario.updateApprovalStatus(
+    return scenario.updateApprovalStatusDangerously(
         candidate, ApprovalStatus.APPROVED, topLevelOrganizationId);
   }
 
