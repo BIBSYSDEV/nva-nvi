@@ -19,6 +19,7 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
+import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.model.UserInstance;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
@@ -159,6 +160,13 @@ public class TestScenario {
     var updateRequest = createUpdateStatusRequest(status, topLevelOrganizationId, randomString());
     var userInstance = createCuratorUserInstance(topLevelOrganizationId);
     candidate.updateApprovalStatus(updateRequest, userInstance);
+    return getCandidateByIdentifier(candidate.getIdentifier());
+  }
+
+  public Candidate updateApprovalAssignee(
+      UUID candidateIdentifier, UpdateAssigneeRequest updateRequest) {
+    var candidate = getCandidateByIdentifier(candidateIdentifier);
+    candidate.updateApprovalAssignee(updateRequest);
     return getCandidateByIdentifier(candidate.getIdentifier());
   }
 
