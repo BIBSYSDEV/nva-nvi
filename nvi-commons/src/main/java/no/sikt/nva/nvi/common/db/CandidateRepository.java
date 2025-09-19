@@ -149,8 +149,7 @@ public class CandidateRepository extends DynamoRepository {
     sendTransaction(transaction.build());
   }
 
-  // FIXME: Better name?
-  public void updateCandidateAndDeleteOtherApprovals(
+  public void updateCandidateAndApprovals(
       CandidateDao candidateDao,
       Collection<ApprovalStatusDao> approvalsToUpdate,
       Collection<ApprovalStatusDao> approvalsToDelete) {
@@ -205,81 +204,42 @@ public class CandidateRepository extends DynamoRepository {
         .findFirst();
   }
 
-  public ApprovalStatusDao updateApprovalStatusDao(UUID identifier, DbApprovalStatus newApproval) {
-    LOGGER.info(
-        "Updating approval status: candidateId={}, newApproval={}", identifier, newApproval);
-    // FIXME: Replacing update with put to test things
-    var approvalStatusDao = newApproval.toDao(identifier);
-    //    approvalStatusTable.putItem(approvalStatusDao);
-    if (approvalStatusDao.revision() == null) {
-      // This is legacy data, use putItem without version check
-      approvalStatusTable.putItem(approvalStatusDao.copy().revision(1L).build());
-    } else {
-      // This has versioning, use normal Enhanced Client operations
-      approvalStatusTable.updateItem(approvalStatusDao);
-    }
-    var result = approvalStatusTable.getItem(approvalStatusDao);
-    LOGGER.info(
-        "Successfully updated approval status: candidateId={}, newApproval={}",
-        identifier,
-        result.approvalStatus());
-    return result;
-  }
-
-  // TODO: Add transactions here
-
   public ApprovalStatusDao updateApprovalStatusDao(
       CandidateDao candidate, ApprovalStatusDao approval) {
     LOGGER.info(
-        "Persisting approval: candidateId={}, approval={}",
+        "Updating approval: candidateId={}, approval={}",
         approval.identifier(),
         approval.approvalStatus());
     var transaction = TransactWriteItemsEnhancedRequest.builder();
     transaction.addUpdateItem(approvalStatusTable, approval);
-
-    var candidateKey = createCandidateKey(candidate.identifier());
-    var revisionCondition = createRevisionCondition(candidate.revision());
-    transaction.addConditionCheck(
-        candidateTable,
-        ConditionCheck.builder().key(candidateKey).conditionExpression(revisionCondition).build());
+    transaction.addConditionCheck(candidateTable, requireExpectedCandidateRevision(candidate));
 
     try {
       client.transactWriteItems(transaction.build());
-      LOGGER.info("Successfully persisted approval for candidateId={}", approval.identifier());
-      return approval; // FIXME
+      LOGGER.info("Successfully updated approval for candidateId={}", approval.identifier());
+      return approval;
 
     } catch (TransactionCanceledException e) {
-      LOGGER.error("Failed to persist approval: approval={}", approval);
-      var actualCurrent = approvalStatusTable.getItem(approval);
+      LOGGER.error("Failed to update approval: approval={}", approval);
       handleTransactionFailure(e, approval);
       throw TransactionException.from(e, transaction.build());
     }
   }
 
+  private ConditionCheck<CandidateDao> requireExpectedCandidateRevision(CandidateDao candidate) {
+    var candidateKey = createCandidateKey(candidate.identifier());
+    var revisionCondition = createRevisionCondition(candidate.revision());
+    return ConditionCheck.builder()
+        .key(candidateKey)
+        .conditionExpression(revisionCondition)
+        .build();
+  }
+
   private void handleTransactionFailure(
       TransactionCanceledException e, ApprovalStatusDao approval) {
     LOGGER.error("Transaction cancelled for candidate {}", approval.identifier(), e);
-    if (e.cancellationReasons() != null) {
-      for (int i = 0; i < e.cancellationReasons().size(); i++) {
-        var reason = e.cancellationReasons().get(i);
-
-        if ("ConditionalCheckFailed".equals(reason.code())) {
-          LOGGER.error(
-              "Condition check failed for operation {}: code={}, message={}",
-              i,
-              reason.code(),
-              reason.message());
-
-          // If ReturnValuesOnConditionCheckFailure was set, you can access the current values
-          //          if (reason.item() != null && !reason.item().isEmpty()) {
-          //            var currentVersion = reason.item().get("version");
-          //            LOGGER.error(
-          //                "Version conflict detected: expected='{}', actual='{}'",
-          //                expectedVersions,
-          //                currentVersion != null ? currentVersion.s() : "null");
-          //          }
-        }
-      }
+    for (var reason : e.cancellationReasons()) {
+      LOGGER.error("Cancellation reason: {}", reason);
     }
   }
 

@@ -503,18 +503,20 @@ public final class Candidate {
     var updatedCandidate = candidate.apply(request);
     if (shouldResetCandidate(request, candidate) || isNotApplicable(candidate)) {
       LOGGER.info("Resetting all approvals for candidate {}", candidate.getIdentifier());
-      var approvalsToReset = getApprovalsPresentInBoth(candidate, updatedCandidate);
+      var approvalsToReset =
+          mapToResetApprovals(candidate, updatedCandidate.getInstitutionPoints());
       var approvalsToDelete = getApprovalsToDelete(candidate, updatedCandidate);
 
-      repository.updateCandidateAndDeleteOtherApprovals(
+      repository.updateCandidateAndApprovals(
           updatedCandidate.toDao(), approvalsToReset, approvalsToDelete);
     } else {
-      var approvalsToReset = getIndividualApprovalsToReset(candidate, updatedCandidate);
+      var updatedPoints = getUpdatedInstitutionPoints(candidate, updatedCandidate);
+      var approvalsToReset = mapToResetApprovals(candidate, updatedPoints);
       LOGGER.info(
           "Resetting individual approvals for candidate {}: {}",
           candidate.getIdentifier(),
           approvalsToReset);
-      repository.updateCandidateAndDeleteOtherApprovals(
+      repository.updateCandidateAndApprovals(
           updatedCandidate.toDao(), approvalsToReset, emptyList());
     }
   }
@@ -523,25 +525,23 @@ public final class Candidate {
    * Returns new approvals in a pending state for all institutions that should have their approvals
    * reset because their points have changed.
    */
-  private static List<ApprovalStatusDao> getIndividualApprovalsToReset(
+  //  private static List<ApprovalStatusDao> getIndividualApprovalsToReset(
+  //      Candidate currentCandidate, Candidate updatedCandidate) {
+  //    var updatedPoints =
+  //        updatedCandidate.getInstitutionPoints().stream()
+  //            .filter(
+  //                institutionPoints -> !hasSameInstitutionPoints(currentCandidate,
+  // institutionPoints))
+  //            .toList();
+  //    var statusesBasedOnNewPoints = mapToApprovals(updatedPoints);
+  //    return getUpdatedApprovalDetails(currentCandidate, statusesBasedOnNewPoints);
+  //  }
+
+  private static List<InstitutionPoints> getUpdatedInstitutionPoints(
       Candidate currentCandidate, Candidate updatedCandidate) {
-    var oldApprovals = currentCandidate.getApprovals();
-    var newApprovals = new ArrayList<ApprovalStatusDao>();
-    var updatedPoints =
-        updatedCandidate.getInstitutionPoints().stream()
-            .filter(
-                institutionPoints -> !hasSameInstitutionPoints(currentCandidate, institutionPoints))
-            .toList();
-    var statusesBasedOnNewPoints = mapToApprovals(updatedPoints);
-
-    for (var newStatus : statusesBasedOnNewPoints) {
-      var oldApproval = oldApprovals.get(newStatus.institutionId());
-      var expectedRevision = isNull(oldApproval) ? null : oldApproval.getRevisionRead();
-      var newApproval = new Approval(currentCandidate.getIdentifier(), newStatus, expectedRevision);
-      newApprovals.add(newApproval.toDao());
-    }
-
-    return newApprovals;
+    return updatedCandidate.getInstitutionPoints().stream()
+        .filter(institutionPoints -> !hasSameInstitutionPoints(currentCandidate, institutionPoints))
+        .toList();
   }
 
   /**
@@ -561,13 +561,17 @@ public final class Candidate {
    * Returns reset approvals for all institutions that still have points after the candidate is
    * updated.
    */
-  private static List<ApprovalStatusDao> getApprovalsPresentInBoth(
-      Candidate currentCandidate, Candidate updatedCandidate) {
+  //  private static List<ApprovalStatusDao> getApprovalsPresentInBoth(
+  //      Candidate currentCandidate, Candidate updatedCandidate) {
+  //    var statusesBasedOnNewPoints = mapToApprovals(updatedCandidate.getInstitutionPoints());
+  //    return getUpdatedApprovalDetails(currentCandidate, statusesBasedOnNewPoints);
+  //  }
+
+  private static List<ApprovalStatusDao> getUpdatedApprovalDetails(
+      Candidate currentCandidate, Collection<DbApprovalStatus> updatedDetails) {
     var oldApprovals = currentCandidate.getApprovals();
     var newApprovals = new ArrayList<ApprovalStatusDao>();
-    var statusesBasedOnNewPoints = mapToApprovals(updatedCandidate.getInstitutionPoints());
-
-    for (var newStatus : statusesBasedOnNewPoints) {
+    for (var newStatus : updatedDetails) {
       var oldApproval = oldApprovals.get(newStatus.institutionId());
       var expectedRevision = isNull(oldApproval) ? null : oldApproval.getRevisionRead();
       var newApproval = new Approval(currentCandidate.getIdentifier(), newStatus, expectedRevision);
@@ -678,7 +682,8 @@ public final class Candidate {
       UpsertNviCandidateRequest request, CandidateRepository repository) {
     request.validate();
     repository.create(
-        mapToCandidate(request), mapToApprovals(request.pointCalculation().institutionPoints()));
+        mapToCandidate(request),
+        mapToNewApprovalDetails(request.pointCalculation().institutionPoints()));
   }
 
   private static Map<UUID, Note> mapToNotesMap(
@@ -701,14 +706,28 @@ public final class Candidate {
         .orElse(PERIOD_STATUS_NO_PERIOD);
   }
 
-  private static List<DbApprovalStatus> mapToApprovals(List<InstitutionPoints> institutionPoints) {
+  private static List<ApprovalStatusDao> mapToResetApprovals(
+      Candidate candidate, Collection<InstitutionPoints> institutionPoints) {
+    var resetApprovalDetails = mapToNewApprovalDetails(institutionPoints);
+    var newApprovals = new ArrayList<ApprovalStatusDao>();
+    for (var newStatus : resetApprovalDetails) {
+      var oldApproval = candidate.getApprovals().get(newStatus.institutionId());
+      var expectedRevision = isNull(oldApproval) ? null : oldApproval.getRevisionRead();
+      var newApproval = new Approval(candidate.getIdentifier(), newStatus, expectedRevision);
+      newApprovals.add(newApproval.toDao());
+    }
+    return newApprovals;
+  }
+
+  private static List<DbApprovalStatus> mapToNewApprovalDetails(
+      Collection<InstitutionPoints> institutionPoints) {
     return institutionPoints.stream()
         .map(InstitutionPoints::institutionId)
-        .map(Candidate::mapToApproval)
+        .map(Candidate::mapToNewApproval)
         .toList();
   }
 
-  private static DbApprovalStatus mapToApproval(URI institutionId) {
+  private static DbApprovalStatus mapToNewApproval(URI institutionId) {
     return DbApprovalStatus.builder().institutionId(institutionId).status(DbStatus.PENDING).build();
   }
 
