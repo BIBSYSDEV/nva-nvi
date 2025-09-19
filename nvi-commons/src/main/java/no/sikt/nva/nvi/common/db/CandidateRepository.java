@@ -143,7 +143,7 @@ public class CandidateRepository extends DynamoRepository {
   }
 
   public void updateCandidate(CandidateDao candidate) {
-    LOGGER.warn("Updating candidate {}", candidate.identifier());
+    LOGGER.info("Updating candidate {}", candidate.identifier());
     var transaction = TransactWriteItemsEnhancedRequest.builder();
     transaction.addPutItem(candidateTable, candidate);
     sendTransaction(transaction.build());
@@ -251,14 +251,14 @@ public class CandidateRepository extends DynamoRepository {
   }
 
   public NoteDao saveNote(UUID candidateIdentifier, DbNote dbNote) {
-    LOGGER.warn("Saving note: candidateId={}, note={}", candidateIdentifier, dbNote);
+    LOGGER.info("Saving note: candidateId={}, note={}", candidateIdentifier, dbNote);
     var note = newNoteDao(candidateIdentifier, dbNote);
     noteTable.putItem(note);
     return note;
   }
 
   public void deleteNote(UUID candidateIdentifier, UUID noteIdentifier) {
-    LOGGER.warn("Deleting note: candidateId={}, noteId={}, ", candidateIdentifier, noteIdentifier);
+    LOGGER.info("Deleting note: candidateId={}, noteId={}, ", candidateIdentifier, noteIdentifier);
     noteTable.deleteItem(noteKey(candidateIdentifier, noteIdentifier));
   }
 
