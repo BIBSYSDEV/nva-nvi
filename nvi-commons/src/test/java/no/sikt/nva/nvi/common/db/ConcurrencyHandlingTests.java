@@ -20,7 +20,6 @@ import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.UpsertRequestBuilder;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.exceptions.TransactionException;
-import no.sikt.nva.nvi.common.model.InstanceType;
 import no.sikt.nva.nvi.common.model.PublicationDate;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
@@ -55,7 +54,7 @@ class ConcurrencyHandlingTests {
     candidateRepository = scenario.getCandidateRepository();
     upsertRequestBuilder =
         createUpsertCandidateRequest(ORGANIZATION_1, ORGANIZATION_2)
-            .withInstanceType(InstanceType.ACADEMIC_ARTICLE)
+            .withInstanceType(ACADEMIC_ARTICLE)
             .withPublicationDate(PUBLICATION_DATE.toDtoPublicationDate());
     candidateIdentifier = prepareCandidateWithNotesAndApprovals();
   }

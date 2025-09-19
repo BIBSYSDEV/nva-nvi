@@ -14,7 +14,7 @@ class ApprovalTest {
 
   @Test
   void shouldReturnTrueWhenApprovalIsPendingAndUnassigned() {
-    var identifier = UUID.randomUUID();
+    var identifier = randomUUID();
     var approval = new Approval(identifier, createPendingApproval(identifier));
     assertTrue(approval.isPendingAndUnassigned());
   }
