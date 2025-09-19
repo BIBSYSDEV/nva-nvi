@@ -178,16 +178,6 @@ public class CandidateRepository extends DynamoRepository {
     }
   }
 
-  public void updateCandidateAndRemovingApprovals(
-      UUID identifier, CandidateDao nonApplicableCandidate) {
-    LOGGER.info("Updating candidate {} and removing all existing approvals", identifier);
-    var transactionBuilder = TransactWriteItemsEnhancedRequest.builder();
-    transactionBuilder.addPutItem(candidateTable, nonApplicableCandidate);
-    getApprovalStatuses(identifier)
-        .forEach(approvalDao -> transactionBuilder.addDeleteItem(approvalStatusTable, approvalDao));
-    sendTransaction(transactionBuilder.build());
-  }
-
   public Optional<CandidateDao> findCandidateById(UUID candidateIdentifier) {
     return Optional.ofNullable(
         candidateTable.getItem(
@@ -316,11 +306,6 @@ public class CandidateRepository extends DynamoRepository {
         .collect(toMap(Map.Entry::getKey, e -> e.getValue().s()));
   }
 
-  private static ApprovalStatusDao mapToApprovalStatusDao(
-      UUID identifier, DbApprovalStatus approval) {
-    return ApprovalStatusDao.builder().identifier(identifier).approvalStatus(approval).build();
-  }
-
   private static QueryConditional constructApprovalsQuery(UUID identifier) {
     return sortBeginsWith(
         Key.builder()
@@ -362,24 +347,6 @@ public class CandidateRepository extends DynamoRepository {
         .item(insert)
         .conditionExpression(uniquePrimaryKeysExpression())
         .build();
-  }
-
-  private static boolean isNotPresentInNewApprovals(
-      Map<URI, ApprovalStatusDao> newApprovals, ApprovalStatusDao oldApproval) {
-    return !newApprovals.containsKey(oldApproval.approvalStatus().institutionId());
-  }
-
-  private Stream<ApprovalStatusDao> identifyApprovalsForDeletion(
-      UUID identifier, Map<URI, ApprovalStatusDao> newApprovals) {
-    return getApprovalStatuses(identifier)
-        .filter(approval -> isNotPresentInNewApprovals(newApprovals, approval));
-  }
-
-  private Stream<ApprovalStatusDao> getApprovalStatuses(UUID identifier) {
-    return approvalStatusTable
-        .query(queryCandidateParts(identifier, ApprovalStatusDao.TYPE))
-        .items()
-        .stream();
   }
 
   private List<Dao> extractDatabaseEntries(ScanResponse response) {

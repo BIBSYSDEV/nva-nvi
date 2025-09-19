@@ -196,10 +196,14 @@ public final class Candidate {
       PeriodRepository periodRepository) {
     var optionalCandidate =
         fetchOptionalCandidate(request.publicationId(), candidateRepository, periodRepository);
+    LOGGER.info(
+        "Updating candidate for publicationId={} to non-candidate", request.publicationId());
     if (optionalCandidate.isPresent()) {
       var candidate = optionalCandidate.get();
+      LOGGER.info("Rmoving all approvals for candidateId={}", candidate.getIdentifier());
       return Optional.of(updateToNotApplicable(candidate, candidateRepository));
     }
+    LOGGER.error("No candidate found for publicationId={}", request.publicationId());
     return Optional.empty();
   }
 
