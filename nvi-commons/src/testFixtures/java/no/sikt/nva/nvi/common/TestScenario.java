@@ -34,6 +34,8 @@ import nva.commons.core.paths.UnixPath;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.s3.S3Client;
 
+// Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
+@SuppressWarnings("PMD.CouplingBetweenObjects")
 public class TestScenario {
   private final AuthorizedBackendUriRetriever authorizedBackendUriRetriever;
   private final UriRetriever mockUriRetriever;
