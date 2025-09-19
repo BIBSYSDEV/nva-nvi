@@ -529,22 +529,6 @@ public final class Candidate {
     }
   }
 
-  /**
-   * Returns new approvals in a pending state for all institutions that should have their approvals
-   * reset because their points have changed.
-   */
-  //  private static List<ApprovalStatusDao> getIndividualApprovalsToReset(
-  //      Candidate currentCandidate, Candidate updatedCandidate) {
-  //    var updatedPoints =
-  //        updatedCandidate.getInstitutionPoints().stream()
-  //            .filter(
-  //                institutionPoints -> !hasSameInstitutionPoints(currentCandidate,
-  // institutionPoints))
-  //            .toList();
-  //    var statusesBasedOnNewPoints = mapToApprovals(updatedPoints);
-  //    return getUpdatedApprovalDetails(currentCandidate, statusesBasedOnNewPoints);
-  //  }
-
   private static List<InstitutionPoints> getUpdatedInstitutionPoints(
       Candidate currentCandidate, Candidate updatedCandidate) {
     return updatedCandidate.getInstitutionPoints().stream()
@@ -563,29 +547,6 @@ public final class Candidate {
         .map(id -> currentCandidate.getApprovals().get(id))
         .map(Approval::toDao)
         .toList();
-  }
-
-  /**
-   * Returns reset approvals for all institutions that still have points after the candidate is
-   * updated.
-   */
-  //  private static List<ApprovalStatusDao> getApprovalsPresentInBoth(
-  //      Candidate currentCandidate, Candidate updatedCandidate) {
-  //    var statusesBasedOnNewPoints = mapToApprovals(updatedCandidate.getInstitutionPoints());
-  //    return getUpdatedApprovalDetails(currentCandidate, statusesBasedOnNewPoints);
-  //  }
-
-  private static List<ApprovalStatusDao> getUpdatedApprovalDetails(
-      Candidate currentCandidate, Collection<DbApprovalStatus> updatedDetails) {
-    var oldApprovals = currentCandidate.getApprovals();
-    var newApprovals = new ArrayList<ApprovalStatusDao>();
-    for (var newStatus : updatedDetails) {
-      var oldApproval = oldApprovals.get(newStatus.institutionId());
-      var expectedRevision = isNull(oldApproval) ? null : oldApproval.getRevisionRead();
-      var newApproval = new Approval(currentCandidate.getIdentifier(), newStatus, expectedRevision);
-      newApprovals.add(newApproval.toDao());
-    }
-    return newApprovals;
   }
 
   private static boolean isNotApplicable(Candidate candidate) {
