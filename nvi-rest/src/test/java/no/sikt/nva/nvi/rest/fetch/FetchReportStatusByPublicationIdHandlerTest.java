@@ -202,7 +202,7 @@ class FetchReportStatusByPublicationIdHandlerTest {
   void shouldReturnNotCandidateWhenPublicationIsNotApplicableCandidate() throws IOException {
     var pendingCandidate = setupCandidateWithPublicationYear(CURRENT_YEAR);
     var upsertRequest = createUpsertNonCandidateRequest(pendingCandidate.getPublicationId());
-    Candidate.updateNonCandidate(upsertRequest, candidateRepository);
+    Candidate.updateNonCandidate(upsertRequest, candidateRepository, periodRepository);
 
     handler.handleRequest(createRequest(pendingCandidate.getPublicationId()), output, context);
 

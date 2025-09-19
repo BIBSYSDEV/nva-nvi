@@ -183,16 +183,22 @@ public final class Candidate {
       UpsertNviCandidateRequest request,
       CandidateRepository candidateRepository,
       PeriodRepository periodRepository) {
-    var optionalCandidate = fetchOptionalCandidate(request, candidateRepository, periodRepository);
+    var optionalCandidate =
+        fetchOptionalCandidate(request.publicationId(), candidateRepository, periodRepository);
     optionalCandidate.ifPresentOrElse(
         candidate -> updateExistingCandidate(request, candidateRepository, candidate),
         () -> createCandidate(request, candidateRepository));
   }
 
   public static Optional<Candidate> updateNonCandidate(
-      UpsertNonNviCandidateRequest request, CandidateRepository repository) {
-    if (isExistingCandidate(request.publicationId(), repository)) {
-      return Optional.of(updateToNotApplicable(request, repository));
+      UpsertNonNviCandidateRequest request,
+      CandidateRepository candidateRepository,
+      PeriodRepository periodRepository) {
+    var optionalCandidate =
+        fetchOptionalCandidate(request.publicationId(), candidateRepository, periodRepository);
+    if (optionalCandidate.isPresent()) {
+      var candidate = optionalCandidate.get();
+      return Optional.of(updateToNotApplicable(candidate, candidateRepository));
     }
     return Optional.empty();
   }
@@ -459,12 +465,11 @@ public final class Candidate {
   }
 
   private static Optional<Candidate> fetchOptionalCandidate(
-      UpsertNviCandidateRequest request,
+      URI publicationId,
       CandidateRepository candidateRepository,
       PeriodRepository periodRepository) {
     return attempt(
-            () ->
-                fetchByPublicationId(request::publicationId, candidateRepository, periodRepository))
+            () -> fetchByPublicationId(() -> publicationId, candidateRepository, periodRepository))
         .toOptional();
   }
 
@@ -480,14 +485,13 @@ public final class Candidate {
   }
 
   private static Candidate updateToNotApplicable(
-      UpsertNonNviCandidateRequest request, CandidateRepository repository) {
-    var existingCandidateDao =
-        repository
-            .findByPublicationId(request.publicationId())
-            .orElseThrow(CandidateNotFoundException::new);
+      Candidate currentCandidate, CandidateRepository repository) {
+    var existingCandidateDao = currentCandidate.toDao();
     var nonApplicableCandidate = updateCandidateToNonApplicable(existingCandidateDao);
-    repository.updateCandidateAndRemovingApprovals(
-        existingCandidateDao.identifier(), nonApplicableCandidate);
+    var approvalsToDelete =
+        currentCandidate.getApprovals().values().stream().map(Approval::toDao).toList();
+
+    repository.updateCandidateAndApprovals(nonApplicableCandidate, emptyList(), approvalsToDelete);
 
     return new Candidate(
         repository,
@@ -771,10 +775,6 @@ public final class Candidate {
     return Stream.concat(verifiedCreators, unverifiedCreators)
         .map(DbCreatorType.class::cast)
         .toList();
-  }
-
-  private static boolean isExistingCandidate(URI publicationId, CandidateRepository repository) {
-    return repository.findByPublicationId(publicationId).isPresent();
   }
 
   private static CandidateDao updateCandidateToNonApplicable(CandidateDao candidateDao) {

@@ -105,7 +105,7 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
         Candidate.upsert(candidate, candidateRepository, periodRepository);
       } else {
         var nonNviCandidate = (UpsertNonNviCandidateRequest) evaluatedCandidate.candidate();
-        Candidate.updateNonCandidate(nonNviCandidate, candidateRepository);
+        Candidate.updateNonCandidate(nonNviCandidate, candidateRepository, periodRepository);
       }
       logPersistence(evaluatedCandidate);
     } catch (Exception e) {

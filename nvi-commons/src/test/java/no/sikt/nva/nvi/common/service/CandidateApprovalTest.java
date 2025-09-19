@@ -225,7 +225,8 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var candidate = setupRandomApplicableCandidate(scenario);
     var updateRequest = createUpsertNonCandidateRequest(candidate.getPublicationId());
     var updatedCandidate =
-        Candidate.updateNonCandidate(updateRequest, candidateRepository).orElseThrow();
+        Candidate.updateNonCandidate(updateRequest, candidateRepository, periodRepository)
+            .orElseThrow();
     assertThat(updatedCandidate.getIdentifier(), is(equalTo(candidate.getIdentifier())));
     assertThat(updatedCandidate.getApprovals().size(), is(equalTo(0)));
   }
@@ -450,7 +451,9 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var candidate = scenario.upsertCandidate(upsertCandidateRequest);
     var nonCandidate =
         Candidate.updateNonCandidate(
-                createUpsertNonCandidateRequest(candidate.getPublicationId()), candidateRepository)
+                createUpsertNonCandidateRequest(candidate.getPublicationId()),
+                candidateRepository,
+                periodRepository)
             .orElseThrow();
     assertFalse(nonCandidate.isApplicable());
     var updatedCandidate =
