@@ -50,7 +50,6 @@ import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.model.InstanceType;
-import no.sikt.nva.nvi.common.model.InvalidNviCandidateException;
 import no.sikt.nva.nvi.common.model.PointCalculation;
 import no.sikt.nva.nvi.common.model.PublicationChannel;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
@@ -89,7 +88,6 @@ public final class Candidate {
       "Period is closed, perform actions on candidate is forbidden!";
   private static final String PERIOD_NOT_OPENED_MESSAGE =
       "Period is not opened yet, perform actions on candidate is" + " forbidden!";
-  private static final String INVALID_CANDIDATE_MESSAGE = "Candidate is missing mandatory fields";
   private static final PeriodStatus PERIOD_STATUS_NO_PERIOD =
       PeriodStatus.builder().withStatus(Status.NO_PERIOD).build();
   private final CandidateRepository repository;
@@ -499,11 +497,9 @@ public final class Candidate {
         PeriodStatus.builder().withStatus(Status.NO_PERIOD).build());
   }
 
-  // TODO: Add validate method to assert invariants, such as approvals matching institutions
-
   private static void updateCandidate(
       UpsertNviCandidateRequest request, CandidateRepository repository, Candidate candidate) {
-    validateCandidate(request);
+    request.validate();
     var updatedCandidate = candidate.apply(request);
     if (shouldResetCandidate(request, candidate) || isNotApplicable(candidate)) {
       LOGGER.info("Resetting all approvals for candidate {}", candidate.getIdentifier());
@@ -680,18 +676,9 @@ public final class Candidate {
 
   private static void createCandidate(
       UpsertNviCandidateRequest request, CandidateRepository repository) {
-    validateCandidate(request);
+    request.validate();
     repository.create(
         mapToCandidate(request), mapToApprovals(request.pointCalculation().institutionPoints()));
-  }
-
-  private static void validateCandidate(UpsertNviCandidateRequest candidate) {
-    attempt(
-            () -> {
-              candidate.validate();
-              return candidate;
-            })
-        .orElseThrow(failure -> new InvalidNviCandidateException(INVALID_CANDIDATE_MESSAGE));
   }
 
   private static Map<UUID, Note> mapToNotesMap(
@@ -878,6 +865,7 @@ public final class Candidate {
     return approvals.values().stream();
   }
 
+  // FIXME: Expand this
   private void validateCandidateState() {
     if (Status.CLOSED_PERIOD.equals(period.status())) {
       throw new IllegalStateException(PERIOD_CLOSED_MESSAGE);
