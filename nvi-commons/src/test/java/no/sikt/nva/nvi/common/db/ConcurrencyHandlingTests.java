@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.net.URI;
 import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.UpsertRequestBuilder;
@@ -25,8 +26,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
 import software.amazon.awssdk.services.dynamodb.model.TransactionCanceledException;
+import software.amazon.awssdk.services.dynamodb.model.UpdateItemRequest;
 
 /**
  * Tests for scenarios with concurrent read/write operations against DynamoDB, which may cause
@@ -70,13 +73,24 @@ class ConcurrencyHandlingTests {
 
     @Test
     void shouldHandleExistingCandidatesWithoutRevision() {
-      // TODO
-      var first = getCandidateDao(candidateIdentifier);
+      var initialCandidate = getLegacyVersionOfCandidate(candidateIdentifier);
+
+      candidateRepository.candidateTable.putItem(initialCandidate);
+
+      var updatedCandidate = getCandidateDao(candidateIdentifier);
+      assertThat(updatedCandidate.revision()).isEqualTo(1L);
     }
 
     @Test
     void shouldHandleExistingCandidatesWithoutTimestamp() {
-      // TODO
+      var initialCandidate = getLegacyVersionOfCandidate(candidateIdentifier);
+
+      var beforeWrite = Instant.now();
+      candidateRepository.candidateTable.putItem(initialCandidate);
+      var afterWrite = Instant.now();
+
+      var updatedCandidate = getCandidateDao(candidateIdentifier);
+      assertThat(updatedCandidate.lastWrittenAt()).isBetween(beforeWrite, afterWrite);
     }
 
     @Test
@@ -279,5 +293,37 @@ class ConcurrencyHandlingTests {
     return ApprovalStatus.APPROVED.equals(originalStatus)
         ? ApprovalStatus.PENDING
         : ApprovalStatus.REJECTED;
+  }
+
+  /**
+   * Remove the new fields (revision and lastWrittenAt) from stored data to mimic unmigrated
+   * production data.
+   */
+  private CandidateDao getLegacyVersionOfCandidate(UUID candidateId) {
+    var initialCandidate = getCandidateDao(candidateId);
+    updateDirectlyWithLowLevelClient(initialCandidate, "REMOVE revision, lastWrittenAt");
+
+    var legacyCandidate = getCandidateDao(candidateId);
+    assertThat(legacyCandidate.revision()).isNull();
+    assertThat(legacyCandidate.lastWrittenAt()).isNull();
+    return legacyCandidate;
+  }
+
+  /**
+   * Updates a CandidateDao directly using the low-level defaultClient, bypassing safeguards and
+   * rules in the EnhancedClient and repository.
+   */
+  private void updateDirectlyWithLowLevelClient(CandidateDao current, String updateExpression) {
+    candidateRepository.defaultClient.updateItem(
+        UpdateItemRequest.builder()
+            .tableName(System.getenv("NVI_TABLE_NAME"))
+            .key(
+                Map.of(
+                    "PrimaryKeyHashKey",
+                    AttributeValue.builder().s(current.primaryKeyHashKey()).build(),
+                    "PrimaryKeyRangeKey",
+                    AttributeValue.builder().s(current.primaryKeyRangeKey()).build()))
+            .updateExpression(updateExpression)
+            .build());
   }
 }
