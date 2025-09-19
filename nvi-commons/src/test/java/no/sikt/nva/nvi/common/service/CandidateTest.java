@@ -298,8 +298,10 @@ class CandidateTest extends CandidateTestSetup {
     scenario.updateApprovalStatus(candidate.getIdentifier(), ApprovalStatus.APPROVED, institution1);
     scenario.updateApprovalStatus(candidate.getIdentifier(), ApprovalStatus.REJECTED, institution2);
 
-    assertEquals(ApprovalStatus.PENDING, candidate.getApprovals().get(institution3).getStatus());
-    assertEquals(GlobalApprovalStatus.DISPUTE, candidate.getGlobalApprovalStatus());
+    var updatedCandidate = scenario.getCandidateByIdentifier(candidate.getIdentifier());
+    assertEquals(
+        ApprovalStatus.PENDING, updatedCandidate.getApprovals().get(institution3).getStatus());
+    assertEquals(GlobalApprovalStatus.DISPUTE, updatedCandidate.getGlobalApprovalStatus());
   }
 
   @Test

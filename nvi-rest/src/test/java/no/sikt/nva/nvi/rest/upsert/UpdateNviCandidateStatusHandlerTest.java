@@ -285,7 +285,8 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
   void shouldRemoveReasonWhenUpdatingStatusFromRejected(ApprovalStatus newStatus)
       throws IOException {
     var candidate = setupValidCandidate();
-    scenario.updateApprovalStatusDangerously(candidate, ApprovalStatus.REJECTED, topLevelOrganizationId);
+    scenario.updateApprovalStatusDangerously(
+        candidate, ApprovalStatus.REJECTED, topLevelOrganizationId);
     var request =
         createRequest(
             candidate.getIdentifier(),

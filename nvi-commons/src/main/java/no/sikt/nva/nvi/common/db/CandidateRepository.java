@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.DatabaseConstants;
@@ -38,6 +37,7 @@ import software.amazon.awssdk.enhanced.dynamodb.DynamoDbIndex;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Expression;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
+import software.amazon.awssdk.enhanced.dynamodb.model.ConditionCheck;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
@@ -149,46 +149,25 @@ public class CandidateRepository extends DynamoRepository {
     sendTransaction(transaction.build());
   }
 
+  // FIXME: Better name?
   public void updateCandidateAndDeleteOtherApprovals(
-      CandidateDao candidateDao, List<DbApprovalStatus> approvals) {
-    LOGGER.warn("Updating candidate {} and deleting other approvals", candidateDao.identifier());
-    LOGGER.warn("Updating approvals and deleting those not specified: {}", approvals);
-    var updatedApprovals =
-        approvals.stream()
-            .map(approval -> mapToApprovalStatusDao(candidateDao.identifier(), approval))
-            .collect(
-                toMap(
-                    approvalStatusDao -> approvalStatusDao.approvalStatus().institutionId(),
-                    Function.identity()));
+      CandidateDao candidateDao,
+      Collection<ApprovalStatusDao> approvalsToUpdate,
+      Collection<ApprovalStatusDao> approvalsToDelete) {
+    LOGGER.info("Updating candidate {} and resetting approvals", candidateDao.identifier());
+    LOGGER.info("Updating approvals in: {}", approvalsToUpdate);
+    LOGGER.info("Deleting approvals in: {}", approvalsToDelete);
     var transaction = TransactWriteItemsEnhancedRequest.builder();
     transaction.addPutItem(candidateTable, candidateDao);
-    var approvalsForDeletion =
-        identifyApprovalsForDeletion(candidateDao.identifier(), updatedApprovals);
-    approvalsForDeletion.forEach(
-        approvalStatusDao -> transaction.addDeleteItem(approvalStatusTable, approvalStatusDao));
-    updatedApprovals
-        .values()
-        .forEach(approvalStatus -> transaction.addPutItem(approvalStatusTable, approvalStatus));
-    sendTransaction(transaction.build());
-  }
 
-  public void updateCandidateAndKeepOtherApprovals(
-      CandidateDao candidateDao, List<DbApprovalStatus> approvals) {
-    LOGGER.info(
-        "Updating candidate {} without resetting other approvals", candidateDao.identifier());
-    LOGGER.info("Updating approvals and ignoring those not specified: {}", approvals);
-    var updatedApprovals =
-        approvals.stream()
-            .map(approval -> mapToApprovalStatusDao(candidateDao.identifier(), approval))
-            .collect(
-                toMap(
-                    approvalStatusDao -> approvalStatusDao.approvalStatus().institutionId(),
-                    Function.identity()));
-    var transaction = TransactWriteItemsEnhancedRequest.builder();
-    transaction.addPutItem(candidateTable, candidateDao);
-    updatedApprovals
-        .values()
-        .forEach(approvalStatus -> transaction.addPutItem(approvalStatusTable, approvalStatus));
+    for (var updatedApproval : approvalsToUpdate) {
+      transaction.addPutItem(approvalStatusTable, updatedApproval);
+    }
+
+    for (var otherApproval : approvalsToDelete) {
+      transaction.addDeleteItem(approvalStatusTable, otherApproval);
+    }
+
     sendTransaction(transaction.build());
   }
 
@@ -255,23 +234,14 @@ public class CandidateRepository extends DynamoRepository {
         "Persisting approval: candidateId={}, approval={}",
         approval.identifier(),
         approval.approvalStatus());
-    var initialCurrent = approvalStatusTable.getItem(approval);
     var transaction = TransactWriteItemsEnhancedRequest.builder();
     transaction.addUpdateItem(approvalStatusTable, approval);
 
-    // Add conditions
-    //    var candidateKey = createCandidateKey(candidateId);
-    //    var versionCondition = createVersionCondition(expectedVersions.candidateVersion());
-    //    transaction.addConditionCheck(
-    //        candidateTable,
-    //        ConditionCheck.builder()
-    //            .key(candidateKey)
-    //            .conditionExpression(versionCondition)
-    //            .returnValuesOnConditionCheckFailure(
-    //                ReturnValuesOnConditionCheckFailure
-    //                    .ALL_OLD) // FIXME: Remove this? Full object for
-    // comparison/debugging/logging
-    //            .build());
+    var candidateKey = createCandidateKey(candidate.identifier());
+    var revisionCondition = createRevisionCondition(candidate.revision());
+    transaction.addConditionCheck(
+        candidateTable,
+        ConditionCheck.builder().key(candidateKey).conditionExpression(revisionCondition).build());
 
     try {
       client.transactWriteItems(transaction.build());
@@ -320,19 +290,13 @@ public class CandidateRepository extends DynamoRepository {
         .build();
   }
 
-  //  private Expression createVersionCondition(String expectedVersion) {
-  //    return Expression.builder()
-  //        .expression("#a = :b")
-  //        .putExpressionName("#a", "version")
-  //        .putExpressionValue(":b", AttributeValue.builder().s(expectedVersion).build())
-  //        .build();
-  //  }
-
-  private Expression createVersionCondition(String expectedVersion) {
+  private Expression createRevisionCondition(Long expectedCandidateRevision) {
     return Expression.builder()
-        .expression("version = :expectedVersion")
+        .expression("revision = :expectedCandidateRevision")
         .expressionValues(
-            Map.of(":expectedVersion", AttributeValue.builder().s(expectedVersion).build()))
+            Map.of(
+                ":expectedCandidateRevision",
+                AttributeValue.builder().n(String.valueOf(expectedCandidateRevision)).build()))
         .build();
   }
 

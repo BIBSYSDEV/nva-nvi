@@ -8,18 +8,14 @@ import java.util.UUID;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
-import no.sikt.nva.nvi.common.db.CandidateRepository;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 class ApprovalTest {
 
   @Test
   void shouldReturnTrueWhenApprovalIsPendingAndUnassigned() {
     var identifier = UUID.randomUUID();
-    var approval =
-        new Approval(
-            Mockito.mock(CandidateRepository.class), identifier, createPendingApproval(identifier));
+    var approval = new Approval(identifier, createPendingApproval(identifier));
     assertTrue(approval.isPendingAndUnassigned());
   }
 

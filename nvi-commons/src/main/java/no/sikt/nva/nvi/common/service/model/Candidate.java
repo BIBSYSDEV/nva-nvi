@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.common.service.model;
 
 import static java.util.Collections.emptyList;
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.UUID.randomUUID;
 import static java.util.function.Predicate.not;
@@ -19,6 +20,7 @@ import java.math.BigDecimal;
 import java.net.URI;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -90,6 +92,7 @@ public final class Candidate {
   private static final String INVALID_CANDIDATE_MESSAGE = "Candidate is missing mandatory fields";
   private static final PeriodStatus PERIOD_STATUS_NO_PERIOD =
       PeriodStatus.builder().withStatus(Status.NO_PERIOD).build();
+  private final CandidateRepository repository;
   private final UUID identifier;
   private final boolean applicable;
   private final Map<URI, Approval> approvals;
@@ -103,6 +106,7 @@ public final class Candidate {
   private final Long revisionRead;
 
   private Candidate(
+      CandidateRepository repository,
       UUID identifier,
       boolean applicable,
       Map<URI, Approval> approvals,
@@ -114,6 +118,7 @@ public final class Candidate {
       Instant modifiedDate,
       ReportStatus reportStatus,
       Long revisionRead) {
+    this.repository = repository;
     this.identifier = identifier;
     this.applicable = applicable;
     this.approvals = approvals;
@@ -133,6 +138,7 @@ public final class Candidate {
       List<ApprovalStatusDao> approvals,
       List<NoteDao> notes,
       PeriodStatus period) {
+    this.repository = repository;
     var dbCandidate = candidateDao.candidate();
     this.identifier = candidateDao.identifier();
     this.applicable = dbCandidate.applicable();
@@ -330,7 +336,7 @@ public final class Candidate {
       throw new IllegalCandidateUpdateException("No approval found matching UpdateAssigneeRequest");
     }
     var approval = approvals.get(input.institutionId());
-    approval.updateAssigneeProperly(this.toDao(), input);
+    approval.updateAssigneeProperly(repository, toDao(), input);
     return this;
   }
 
@@ -373,7 +379,7 @@ public final class Candidate {
       throw new IllegalCandidateUpdateException("No approval found matching UpdateStatusRequest");
     }
     var approval = approvals.get(input.institutionId());
-    approval.updateStatusProperly(this.toDao(), input);
+    approval.updateStatusProperly(repository, toDao(), input);
     return this;
   }
 
@@ -495,35 +501,85 @@ public final class Candidate {
         PeriodStatus.builder().withStatus(Status.NO_PERIOD).build());
   }
 
+  // TODO: Add validate method to assert invariants, such as approvals matching institutions
+
   private static void updateCandidate(
       UpsertNviCandidateRequest request, CandidateRepository repository, Candidate candidate) {
     validateCandidate(request);
     var updatedCandidate = candidate.apply(request);
     if (shouldResetCandidate(request, candidate) || isNotApplicable(candidate)) {
       LOGGER.info("Resetting all approvals for candidate {}", candidate.getIdentifier());
-      var newApprovals = mapToApprovals(updatedCandidate.getInstitutionPoints());
-      repository.updateCandidateAndDeleteOtherApprovals(updatedCandidate.toDao(), newApprovals);
+      var approvalsToReset = getApprovalsPresentInBoth(candidate, updatedCandidate);
+      var approvalsToDelete = getApprovalsToDelete(candidate, updatedCandidate);
+
+      repository.updateCandidateAndDeleteOtherApprovals(
+          updatedCandidate.toDao(), approvalsToReset, approvalsToDelete);
     } else {
-      var updatedApprovals = getIndividualApprovalsToReset(candidate, updatedCandidate);
+      var approvalsToReset = getIndividualApprovalsToReset(candidate, updatedCandidate);
       LOGGER.info(
           "Resetting individual approvals for candidate {}: {}",
           candidate.getIdentifier(),
-          updatedApprovals);
-      repository.updateCandidateAndKeepOtherApprovals(updatedCandidate.toDao(), updatedApprovals);
+          approvalsToReset);
+      repository.updateCandidateAndDeleteOtherApprovals(
+          updatedCandidate.toDao(), approvalsToReset, emptyList());
     }
   }
 
   /**
    * Returns new approvals in a pending state for all institutions that should have their approvals
-   * reset.
+   * reset because their points have changed.
    */
-  private static List<DbApprovalStatus> getIndividualApprovalsToReset(
-      Candidate candidate, Candidate updatedCandidate) {
-    return updatedCandidate.getInstitutionPoints().stream()
-        .filter(institutionPoints -> !hasSameInstitutionPoints(candidate, institutionPoints))
-        .map(InstitutionPoints::institutionId)
-        .map(Candidate::mapToApproval)
+  private static List<ApprovalStatusDao> getIndividualApprovalsToReset(
+      Candidate currentCandidate, Candidate updatedCandidate) {
+    var oldApprovals = currentCandidate.getApprovals();
+    var newApprovals = new ArrayList<ApprovalStatusDao>();
+    var updatedPoints =
+        updatedCandidate.getInstitutionPoints().stream()
+            .filter(
+                institutionPoints -> !hasSameInstitutionPoints(currentCandidate, institutionPoints))
+            .toList();
+    var statusesBasedOnNewPoints = mapToApprovals(updatedPoints);
+
+    for (var newStatus : statusesBasedOnNewPoints) {
+      var oldApproval = oldApprovals.get(newStatus.institutionId());
+      var expectedRevision = isNull(oldApproval) ? null : oldApproval.getRevisionRead();
+      var newApproval = new Approval(currentCandidate.getIdentifier(), newStatus, expectedRevision);
+      newApprovals.add(newApproval.toDao());
+    }
+
+    return newApprovals;
+  }
+
+  /**
+   * Returns current approvals for all institutions that should have their approval deleted because
+   * they no longer have associated points.
+   */
+  private static List<ApprovalStatusDao> getApprovalsToDelete(
+      Candidate currentCandidate, Candidate updatedCandidate) {
+    return currentCandidate.getApprovals().keySet().stream()
+        .filter(not(id -> updatedCandidate.getInstitutionPoints(id).isPresent()))
+        .map(id -> currentCandidate.getApprovals().get(id))
+        .map(Approval::toDao)
         .toList();
+  }
+
+  /**
+   * Returns reset approvals for all institutions that still have points after the candidate is
+   * updated.
+   */
+  private static List<ApprovalStatusDao> getApprovalsPresentInBoth(
+      Candidate currentCandidate, Candidate updatedCandidate) {
+    var oldApprovals = currentCandidate.getApprovals();
+    var newApprovals = new ArrayList<ApprovalStatusDao>();
+    var statusesBasedOnNewPoints = mapToApprovals(updatedCandidate.getInstitutionPoints());
+
+    for (var newStatus : statusesBasedOnNewPoints) {
+      var oldApproval = oldApprovals.get(newStatus.institutionId());
+      var expectedRevision = isNull(oldApproval) ? null : oldApproval.getRevisionRead();
+      var newApproval = new Approval(currentCandidate.getIdentifier(), newStatus, expectedRevision);
+      newApprovals.add(newApproval.toDao());
+    }
+    return newApprovals;
   }
 
   private static boolean isNotApplicable(Candidate candidate) {
@@ -650,7 +706,7 @@ public final class Candidate {
   private static Map<URI, Approval> mapToApprovalsMap(
       CandidateRepository repository, List<ApprovalStatusDao> approvals) {
     return approvals.stream()
-        .map(dao -> new Approval(repository, dao.identifier(), dao))
+        .map(dao -> new Approval(dao.identifier(), dao))
         .collect(Collectors.toMap(Approval::getInstitutionId, Function.identity()));
   }
 
@@ -799,7 +855,7 @@ public final class Candidate {
     return approval.isAssigned()
         ? approval
         : approval.updateAssigneeProperly(
-            this.toDao(), new UpdateAssigneeRequest(approval.getInstitutionId(), username));
+            repository, toDao(), new UpdateAssigneeRequest(approval.getInstitutionId(), username));
   }
 
   private boolean isDispute() {
@@ -836,6 +892,7 @@ public final class Candidate {
 
   public static final class Builder {
 
+    private CandidateRepository repository;
     private UUID identifier;
     private boolean applicable;
     private Map<URI, Approval> approvals;
@@ -849,6 +906,11 @@ public final class Candidate {
     private Long revision;
 
     private Builder() {}
+
+    public Builder withRepository(CandidateRepository repository) {
+      this.repository = repository;
+      return this;
+    }
 
     public Builder withIdentifier(UUID identifier) {
       this.identifier = identifier;
@@ -907,6 +969,7 @@ public final class Candidate {
 
     public Candidate build() {
       return new Candidate(
+          repository,
           identifier,
           applicable,
           approvals,

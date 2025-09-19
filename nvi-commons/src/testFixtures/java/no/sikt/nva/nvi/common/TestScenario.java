@@ -19,6 +19,8 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
+import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
+import no.sikt.nva.nvi.common.model.UserInstance;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
@@ -145,13 +147,24 @@ public class TestScenario {
   }
 
   public Candidate updateApprovalStatus(
-      UUID candidateId, ApprovalStatus status, URI topLevelOrganizationId) {
-    var candidate = getCandidateByIdentifier(candidateId);
-    return updateApprovalStatusDangerously(candidate, status, topLevelOrganizationId);
+      UUID candidateIdentifier, UpdateStatusRequest updateRequest, UserInstance userInstance) {
+    var candidate = getCandidateByIdentifier(candidateIdentifier);
+    candidate.updateApprovalStatus(updateRequest, userInstance);
+    return getCandidateByIdentifier(candidate.getIdentifier());
   }
 
-  public Candidate createNote(UUID candidateId, String content, URI topLevelOrganizationId) {
-    var candidate = getCandidateByIdentifier(candidateId);
+  public Candidate updateApprovalStatus(
+      UUID candidateIdentifier, ApprovalStatus status, URI topLevelOrganizationId) {
+    var candidate = getCandidateByIdentifier(candidateIdentifier);
+    var updateRequest = createUpdateStatusRequest(status, topLevelOrganizationId, randomString());
+    var userInstance = createCuratorUserInstance(topLevelOrganizationId);
+    candidate.updateApprovalStatus(updateRequest, userInstance);
+    return getCandidateByIdentifier(candidate.getIdentifier());
+  }
+
+  public Candidate createNote(
+      UUID candidateIdentifier, String content, URI topLevelOrganizationId) {
+    var candidate = getCandidateByIdentifier(candidateIdentifier);
     var noteRequest = new CreateNoteRequest(content, randomString(), topLevelOrganizationId);
     return candidate.createNote(noteRequest, candidateRepository);
   }

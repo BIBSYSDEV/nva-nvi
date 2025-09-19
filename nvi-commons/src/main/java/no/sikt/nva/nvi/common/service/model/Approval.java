@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.common.service.model;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.UUID.randomUUID;
+import static no.sikt.nva.nvi.common.service.model.ApprovalStatus.toDbStatus;
 
 import java.net.URI;
 import java.time.Instant;
@@ -27,7 +28,6 @@ public class Approval {
       "Cannot reject approval status without reason.";
   private static final String ERROR_MSG_MISSING_ORGANIZATION_ID =
       "Request is missing required organization ID";
-  private final CandidateRepository repository;
   private final UUID identifier;
   private final URI institutionId;
   private final ApprovalStatus status;
@@ -36,12 +36,9 @@ public class Approval {
   private final Instant finalizedDate;
   private final String reason;
   private final Long revisionRead;
-  private final String versionRead;
 
-  public Approval(
-      CandidateRepository repository, UUID identifier, ApprovalStatusDao dbApprovalStatus) {
-    this.repository = repository;
-    this.identifier = identifier;
+  public Approval(UUID candidateIdentifier, ApprovalStatusDao dbApprovalStatus) {
+    this.identifier = candidateIdentifier;
     this.institutionId = dbApprovalStatus.approvalStatus().institutionId();
     this.status = ApprovalStatus.parse(dbApprovalStatus.approvalStatus().status().getValue());
     this.assignee = Username.fromUserName(dbApprovalStatus.approvalStatus().assignee());
@@ -49,7 +46,17 @@ public class Approval {
     this.finalizedDate = dbApprovalStatus.approvalStatus().finalizedDate();
     this.reason = dbApprovalStatus.approvalStatus().reason();
     this.revisionRead = dbApprovalStatus.revision();
-    this.versionRead = dbApprovalStatus.version();
+  }
+
+  public Approval(UUID candidateIdentifier, DbApprovalStatus approvalStatus, Long revisionRead) {
+    this.identifier = candidateIdentifier;
+    this.institutionId = approvalStatus.institutionId();
+    this.status = ApprovalStatus.parse(approvalStatus.status().getValue());
+    this.assignee = Username.fromUserName(approvalStatus.assignee());
+    this.finalizedBy = Username.fromUserName(approvalStatus.finalizedBy());
+    this.finalizedDate = approvalStatus.finalizedDate();
+    this.reason = approvalStatus.reason();
+    this.revisionRead = revisionRead;
   }
 
   public URI getInstitutionId() {
@@ -76,6 +83,10 @@ public class Approval {
     return reason;
   }
 
+  public Long getRevisionRead() {
+    return revisionRead;
+  }
+
   public boolean isAssigned() {
     return nonNull(assignee) && nonNull(assignee.value());
   }
@@ -85,7 +96,8 @@ public class Approval {
   }
 
   // FIXME
-  public Approval updateAssigneeProperly(CandidateDao candidate, UpdateAssigneeRequest request) {
+  public Approval updateAssigneeProperly(
+      CandidateRepository repository, CandidateDao candidate, UpdateAssigneeRequest request) {
     LOGGER.info("Updating assignee for candidateId={}: {}", identifier, request);
     LOGGER.info("Current assignee for institutionId={}: {}", institutionId, assignee);
     var updatedDbStatus = updateAssignee(request);
@@ -93,11 +105,12 @@ public class Approval {
     var newDao = repository.updateApprovalStatusDao(candidate, updatedApprovalDao);
     var newAssignee = newDao.approvalStatus().assignee();
     LOGGER.info("Assignee updated successfully: {} -> {}", assignee, newAssignee);
-    return new Approval(repository, identifier, newDao);
+    return new Approval(identifier, newDao);
   }
 
   // FIXME
-  public Approval updateStatusProperly(CandidateDao candidate, UpdateStatusRequest request) {
+  public Approval updateStatusProperly(
+      CandidateRepository repository, CandidateDao candidate, UpdateStatusRequest request) {
     LOGGER.info("Updating approval status for candidateId={}: {}", identifier, request);
     LOGGER.info("Current status for institutionId={}: {}", institutionId, status);
     validateUpdateStatusRequest(request);
@@ -106,14 +119,22 @@ public class Approval {
     var newDao = repository.updateApprovalStatusDao(candidate, updatedApprovalDao);
     var newStatus = newDao.approvalStatus().status();
     LOGGER.info("Approval status updated successfully: {} -> {}", status, newStatus);
-    return new Approval(repository, identifier, newDao);
+    return new Approval(identifier, newDao);
   }
 
-  private ApprovalStatusDao toDao(DbApprovalStatus dbStatus) {
-    //    var revision = nonNull(revisionRead) ? revisionRead : 1L;
+  public ApprovalStatusDao toDao(DbApprovalStatus dbStatus) {
     return ApprovalStatusDao.builder()
         .identifier(identifier)
         .approvalStatus(dbStatus)
+        .revision(revisionRead)
+        .version(randomUUID().toString())
+        .build();
+  }
+
+  public ApprovalStatusDao toDao() {
+    return ApprovalStatusDao.builder()
+        .identifier(identifier)
+        .approvalStatus(currentStatus())
         .revision(revisionRead)
         .version(randomUUID().toString())
         .build();
@@ -193,6 +214,16 @@ public class Approval {
         null,
         null,
         null);
+  }
+
+  private DbApprovalStatus currentStatus() {
+    return new DbApprovalStatus(
+        institutionId,
+        toDbStatus(status),
+        no.sikt.nva.nvi.common.db.model.Username.fromUserName(assignee),
+        no.sikt.nva.nvi.common.db.model.Username.fromUserName(finalizedBy),
+        finalizedDate,
+        reason);
   }
 
   private DbApprovalStatus finalizeApprovedStatus(UpdateStatusRequest request) {

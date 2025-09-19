@@ -7,6 +7,7 @@ import static no.sikt.nva.nvi.common.model.InstanceType.ACADEMIC_MONOGRAPH;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationId;
 import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublicationDate;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
+import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -18,6 +19,7 @@ import java.util.UUID;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.UpsertRequestBuilder;
 import no.sikt.nva.nvi.common.db.model.Username;
+import no.sikt.nva.nvi.common.exceptions.TransactionException;
 import no.sikt.nva.nvi.common.model.InstanceType;
 import no.sikt.nva.nvi.common.model.PublicationDate;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
@@ -28,7 +30,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
-import software.amazon.awssdk.services.dynamodb.model.TransactionCanceledException;
 import software.amazon.awssdk.services.dynamodb.model.UpdateItemRequest;
 
 /**
@@ -180,12 +181,16 @@ class ConcurrencyHandlingTests {
   class DomainObjectUpdateTests {
 
     @Test
-    void shouldAllowConcurrentWritesOfSeparateApprovals() {
-      var readCandidate = scenario.getCandidateByIdentifier(candidateIdentifier);
-      assertThatNoException()
-          .isThrownBy(() -> changeApprovalStatusForOrganization(readCandidate, ORGANIZATION_1));
-      assertThatNoException()
-          .isThrownBy(() -> changeApprovalStatusForOrganization(readCandidate, ORGANIZATION_2));
+    void shouldAllowSequentialUpsertRequests() {
+      var firstRequest = upsertRequestBuilder.withPublicationBucketUri(randomUri()).build();
+      var secondRequest = upsertRequestBuilder.withPublicationBucketUri(randomUri()).build();
+
+      var first = scenario.upsertCandidate(firstRequest);
+      var second = scenario.upsertCandidate(secondRequest);
+
+      assertThat(first.getIdentifier()).isEqualTo(second.getIdentifier());
+      assertThat(first.getPublicationDetails().publicationBucketUri())
+          .isNotEqualTo(second.getPublicationDetails().publicationBucketUri());
     }
 
     @Test
@@ -206,7 +211,24 @@ class ConcurrencyHandlingTests {
     }
 
     @Test
-    void shouldFailOnConcurrentWrite() {
+    void shouldAllowConcurrentWritesOfSeparateApprovals() {
+      var readCandidate = scenario.getCandidateByIdentifier(candidateIdentifier);
+      var originalStatus = readCandidate.getApprovalStatus(ORGANIZATION_1);
+      var firstUpdate = getOtherStatus(originalStatus);
+      var secondUpdate = getOtherStatus(firstUpdate);
+
+      assertThatNoException()
+          .isThrownBy(
+              () -> {
+                scenario.updateApprovalStatusDangerously(
+                    readCandidate, firstUpdate, ORGANIZATION_1);
+                scenario.updateApprovalStatusDangerously(
+                    readCandidate, secondUpdate, ORGANIZATION_2);
+              });
+    }
+
+    @Test
+    void shouldFailOnConcurrentConflictingWrite() {
       var readCandidate = scenario.getCandidateByIdentifier(candidateIdentifier);
       var originalStatus = readCandidate.getApprovalStatus(ORGANIZATION_1);
       var firstUpdate = getOtherStatus(originalStatus);
@@ -218,8 +240,9 @@ class ConcurrencyHandlingTests {
               () ->
                   scenario.updateApprovalStatusDangerously(
                       readCandidate, secondUpdate, ORGANIZATION_1))
-          .isInstanceOf(ConditionalCheckFailedException.class)
-          .hasMessageContaining("The conditional request failed");
+          .isInstanceOf(TransactionException.class)
+          .hasMessageContaining("condition revision = :expectedCandidateRevision")
+          .hasMessageContaining("ConditionalCheckFailed");
     }
 
     @Test
@@ -229,12 +252,14 @@ class ConcurrencyHandlingTests {
 
       var originalStatus = readCandidate.getApprovalStatus(ORGANIZATION_1);
       var newStatus = getOtherStatus(originalStatus);
+
       assertThatThrownBy(
               () ->
                   scenario.updateApprovalStatusDangerously(
                       readCandidate, newStatus, ORGANIZATION_1))
-          .isInstanceOf(TransactionCanceledException.class)
-          .hasMessageContaining("Transaction cancelled due to version conflict");
+          .isInstanceOf(TransactionException.class)
+          .hasMessageContaining("condition revision = :expectedCandidateRevision")
+          .hasMessageContaining("ConditionalCheckFailed");
     }
   }
 
