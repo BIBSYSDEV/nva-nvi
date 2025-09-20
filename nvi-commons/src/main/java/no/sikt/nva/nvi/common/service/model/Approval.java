@@ -101,7 +101,7 @@ public class Approval {
     LOGGER.info("Current assignee for institutionId={}: {}", institutionId, assignee);
     var updatedDbStatus = createUpdatedStatus(request);
     var updatedApprovalDao = this.toDao(updatedDbStatus);
-    var newDao = repository.updateApprovalStatusDao(candidate, updatedApprovalDao);
+    var newDao = repository.updateApproval(candidate, updatedApprovalDao);
     var newAssignee = newDao.approvalStatus().assignee();
     LOGGER.info("Assignee updated successfully: {} -> {}", assignee, newAssignee);
     return new Approval(identifier, newDao);
@@ -114,7 +114,7 @@ public class Approval {
     validateUpdateStatusRequest(request);
     var updatedDbStatus = createUpdatedStatus(request);
     var updatedApprovalDao = this.toDao(updatedDbStatus);
-    var newDao = repository.updateApprovalStatusDao(candidate, updatedApprovalDao);
+    var newDao = repository.updateApproval(candidate, updatedApprovalDao);
     var newStatus = newDao.approvalStatus().status();
     LOGGER.info("Approval status updated successfully: {} -> {}", status, newStatus);
     return new Approval(identifier, newDao);
