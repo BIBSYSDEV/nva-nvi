@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.common.db;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.UUID.randomUUID;
 import static java.util.stream.Collectors.toMap;
@@ -241,12 +242,16 @@ public class CandidateRepository extends DynamoRepository {
   }
 
   private Expression createRevisionCondition(Long expectedCandidateRevision) {
+    if (isNull(expectedCandidateRevision)) {
+      return Expression.builder().expression("attribute_not_exists(revision)").build();
+    }
+
     return Expression.builder()
         .expression("revision = :expectedCandidateRevision")
         .expressionValues(
             Map.of(
                 ":expectedCandidateRevision",
-                AttributeValue.builder().n(String.valueOf(expectedCandidateRevision)).build()))
+                AttributeValue.builder().n(expectedCandidateRevision.toString()).build()))
         .build();
   }
 

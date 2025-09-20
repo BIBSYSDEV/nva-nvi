@@ -305,6 +305,10 @@ public final class Candidate {
     return pointCalculation.totalPoints();
   }
 
+  public Long getRevisionRead() {
+    return revisionRead;
+  }
+
   public boolean isReported() {
     return REPORTED.equals(reportStatus);
   }

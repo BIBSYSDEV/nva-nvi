@@ -72,28 +72,6 @@ class ConcurrencyHandlingTests {
     }
 
     @Test
-    void shouldHandleExistingCandidatesWithoutRevision() {
-      var initialCandidate = getLegacyVersionOfCandidate(candidateIdentifier);
-
-      candidateRepository.candidateTable.putItem(initialCandidate);
-
-      var updatedCandidate = getCandidateDao(candidateIdentifier);
-      assertThat(updatedCandidate.revision()).isEqualTo(1L);
-    }
-
-    @Test
-    void shouldHandleExistingCandidatesWithoutTimestamp() {
-      var initialCandidate = getLegacyVersionOfCandidate(candidateIdentifier);
-
-      var beforeWrite = Instant.now();
-      candidateRepository.candidateTable.putItem(initialCandidate);
-      var afterWrite = Instant.now();
-
-      var updatedCandidate = getCandidateDao(candidateIdentifier);
-      assertThat(updatedCandidate.lastWrittenAt()).isBetween(beforeWrite, afterWrite);
-    }
-
-    @Test
     void shouldAllowWriteAfterFetch() {
       var first = getCandidateDao(candidateIdentifier);
       candidateRepository.candidateTable.putItem(first);
@@ -158,6 +136,32 @@ class ConcurrencyHandlingTests {
   @Nested
   @DisplayName("Repository-level operations")
   class RepositoryUpdateTests {
+
+    @Test
+    void shouldHandleExistingCandidatesWithoutRevision() {
+      removeRevisionAndTimestampFromCandidate(candidateIdentifier);
+      var first = scenario.getCandidateByIdentifier(candidateIdentifier);
+      assertThat(first.getRevisionRead()).isNull();
+
+      candidateRepository.candidateTable.putItem(getCandidateDao(candidateIdentifier));
+      var second = scenario.getCandidateByIdentifier(candidateIdentifier);
+
+      assertThat(second.getRevisionRead()).isEqualTo(1L);
+    }
+
+    @Test
+    void shouldHandleExistingCandidatesWithoutTimestamp() {
+      removeRevisionAndTimestampFromCandidate(candidateIdentifier);
+      var first = getCandidateDao(candidateIdentifier);
+      assertThat(first.lastWrittenAt()).isNull();
+
+      var beforeWrite = Instant.now();
+      candidateRepository.candidateTable.putItem(first);
+      var afterWrite = Instant.now();
+
+      var second = getCandidateDao(candidateIdentifier);
+      assertThat(second.lastWrittenAt()).isBetween(beforeWrite, afterWrite);
+    }
 
     @Test
     void shouldNotChangeVersionOnConsecutiveReads() {
@@ -260,6 +264,21 @@ class ConcurrencyHandlingTests {
           .hasMessageContaining("condition revision = :expectedCandidateRevision")
           .hasMessageContaining("ConditionalCheckFailed");
     }
+
+    @Test
+    void shouldNotFailWhenUpdatingApprovalForCandidateWithNullRevision() {
+      removeRevisionAndTimestampFromCandidate(candidateIdentifier);
+
+      var legacyCandidate = scenario.getCandidateByIdentifier(candidateIdentifier);
+      var originalStatus = legacyCandidate.getApprovalStatus(ORGANIZATION_1);
+      var newStatus = getOtherStatus(originalStatus);
+
+      assertThatNoException()
+          .isThrownBy(
+              () ->
+                  scenario.updateApprovalStatusDangerously(
+                      legacyCandidate, newStatus, ORGANIZATION_1));
+    }
   }
 
   /**
@@ -323,14 +342,13 @@ class ConcurrencyHandlingTests {
    * Remove the new fields (revision and lastWrittenAt) from stored data to mimic unmigrated
    * production data.
    */
-  private CandidateDao getLegacyVersionOfCandidate(UUID candidateId) {
+  private void removeRevisionAndTimestampFromCandidate(UUID candidateId) {
     var initialCandidate = getCandidateDao(candidateId);
     updateDirectlyWithLowLevelClient(initialCandidate, "REMOVE revision, lastWrittenAt");
 
     var legacyCandidate = getCandidateDao(candidateId);
     assertThat(legacyCandidate.revision()).isNull();
     assertThat(legacyCandidate.lastWrittenAt()).isNull();
-    return legacyCandidate;
   }
 
   /**
