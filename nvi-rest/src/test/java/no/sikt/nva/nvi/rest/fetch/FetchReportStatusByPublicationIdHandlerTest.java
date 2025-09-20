@@ -112,7 +112,7 @@ class FetchReportStatusByPublicationIdHandlerTest {
     var involvedInstitutions = new URI[] {institution1, randomUri()};
     var upsertCandidateRequest = createUpsertCandidateRequest(involvedInstitutions).build();
     var candidate = upsert(upsertCandidateRequest);
-    scenario.updateApprovalStatusDangerously(candidate, ApprovalStatus.REJECTED, institution1);
+    scenario.updateApprovalStatus(candidate.getIdentifier(), approvalStatus, institution1);
 
     handler.handleRequest(createRequest(candidate.getPublicationId()), output, context);
 
