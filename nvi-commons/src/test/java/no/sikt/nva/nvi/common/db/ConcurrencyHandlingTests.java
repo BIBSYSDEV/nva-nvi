@@ -14,19 +14,25 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.net.URI;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.IntStream;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.UpsertRequestBuilder;
+import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.exceptions.TransactionException;
 import no.sikt.nva.nvi.common.model.PublicationDate;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
 import software.amazon.awssdk.services.dynamodb.model.UpdateItemRequest;
@@ -279,6 +285,40 @@ class ConcurrencyHandlingTests {
                   scenario.updateApprovalStatusDangerously(
                       legacyCandidate, newStatus, ORGANIZATION_1));
     }
+
+    @Disabled
+    @ParameterizedTest
+    @ValueSource(ints = {10, 50, 200})
+    void shouldBeAbleToUpsertCandidateWithManyApprovals(int numberOfNviOrganizations) {
+      var organizations = createOrganizations(numberOfNviOrganizations);
+      var request =
+          createUpsertCandidateRequest(organizations)
+              .withInstanceType(ACADEMIC_ARTICLE)
+              .withPublicationDate(PUBLICATION_DATE.toDtoPublicationDate())
+              .build();
+
+      assertThatNoException().isThrownBy(() -> scenario.upsertCandidate(request));
+    }
+
+    @Disabled
+    @ParameterizedTest
+    @ValueSource(ints = {10, 50, 200})
+    void shouldBeAbleToResetCandidateWithManyApprovals(int numberOfNviOrganizations) {
+      var organizations = createOrganizations(numberOfNviOrganizations);
+      var requestBuilder =
+          createUpsertCandidateRequest(organizations)
+              .withInstanceType(ACADEMIC_ARTICLE)
+              .withPublicationDate(PUBLICATION_DATE.toDtoPublicationDate());
+      var candidateId = scenario.upsertCandidate(requestBuilder.build()).getIdentifier();
+
+      var approvingOrganization = organizations.getFirst().id();
+      scenario.updateApprovalStatus(candidateId, ApprovalStatus.APPROVED, approvingOrganization);
+
+      var updateRequest = requestBuilder.withInstanceType(ACADEMIC_MONOGRAPH).build();
+      var updatedCandidate = scenario.upsertCandidate(updateRequest);
+      assertThat(updatedCandidate.getApprovalStatus(approvingOrganization))
+          .isEqualTo(ApprovalStatus.PENDING);
+    }
   }
 
   /**
@@ -298,6 +338,14 @@ class ConcurrencyHandlingTests {
     scenario.createNote(candidateId, "Note 3", ORGANIZATION_1);
 
     return candidateId;
+  }
+
+  private List<Organization> createOrganizations(int numberOfNviOrganizations) {
+    return IntStream.range(0, numberOfNviOrganizations)
+        .mapToObj(i -> randomOrganizationId())
+        .map(Organization.builder()::withId)
+        .map(Organization.Builder::build)
+        .toList();
   }
 
   private CandidateDao getCandidateDao(UUID candidateIdentifier) {
@@ -324,12 +372,6 @@ class ConcurrencyHandlingTests {
     var oldType = candidate.getPublicationType();
     var newType = ACADEMIC_MONOGRAPH.equals(oldType) ? ACADEMIC_ARTICLE : ACADEMIC_MONOGRAPH;
     scenario.upsertCandidate(upsertRequestBuilder.withInstanceType(newType).build());
-  }
-
-  private void changeApprovalStatusForOrganization(Candidate readCandidate, URI organization) {
-    var originalStatus = readCandidate.getApprovalStatus(organization);
-    var newStatus = getOtherStatus(originalStatus);
-    scenario.updateApprovalStatusDangerously(readCandidate, newStatus, organization);
   }
 
   private static ApprovalStatus getOtherStatus(ApprovalStatus originalStatus) {
