@@ -200,7 +200,7 @@ public final class Candidate {
         "Updating candidate for publicationId={} to non-candidate", request.publicationId());
     if (optionalCandidate.isPresent()) {
       var candidate = optionalCandidate.get();
-      LOGGER.info("Rmoving all approvals for candidateId={}", candidate.getIdentifier());
+      LOGGER.info("Removing all approvals for candidateId={}", candidate.getIdentifier());
       return Optional.of(updateToNotApplicable(candidate, candidateRepository));
     }
     LOGGER.error("No candidate found for publicationId={}", request.publicationId());
