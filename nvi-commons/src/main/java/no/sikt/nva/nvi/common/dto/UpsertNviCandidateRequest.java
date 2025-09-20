@@ -9,9 +9,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import no.sikt.nva.nvi.common.client.model.Organization;
+import no.sikt.nva.nvi.common.model.InvalidNviCandidateException;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSerialize
@@ -24,12 +27,20 @@ public record UpsertNviCandidateRequest(
     implements CandidateType {
 
   private static final boolean ALWAYS_APPLICABLE = true;
+  private static final String INVALID_CANDIDATE_MESSAGE = "Candidate is missing mandatory fields";
+  private static final Logger LOGGER = LoggerFactory.getLogger(UpsertNviCandidateRequest.class);
 
   public void validate() {
-    publicationDetails.validate();
-    pointCalculation.validate();
-    shouldNotBeNull(publicationBucketUri, "Required field 'publicationBucketUri' is null");
-    shouldNotBeNull(nviCreators, "Required field 'nviCreators' is null");
+    try {
+      publicationDetails.validate();
+      pointCalculation.validate();
+      shouldNotBeNull(publicationBucketUri, "Required field 'publicationBucketUri' is null");
+      shouldNotBeNull(nviCreators, "Required field 'nviCreators' is null");
+    } catch (Exception e) {
+      LOGGER.error(
+          "Publication failed validation due to missing required data: {}", e.getMessage());
+      throw new InvalidNviCandidateException(INVALID_CANDIDATE_MESSAGE);
+    }
   }
 
   @Override

@@ -10,6 +10,7 @@ import com.amazonaws.services.lambda.runtime.Context;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.model.UserInstance;
 import no.sikt.nva.nvi.common.service.CandidateResponseFactory;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
@@ -69,10 +70,9 @@ public class UpdateNviCandidateStatusHandler
     var updateRequest = input.toUpdateRequest(username.value());
     var userInstance = UserInstance.fromRequestInfo(requestInfo);
 
-    return attempt(
-            () -> Candidate.fetch(() -> candidateIdentifier, candidateRepository, periodRepository))
+    return attempt(() -> fetchCandidate(candidateIdentifier))
         .map(candidate -> validateViewingScope(viewingScopeValidator, username, candidate))
-        .map(candidate -> candidate.updateApprovalStatus(updateRequest, userInstance))
+        .map(candidate -> updateAndRefetch(candidate, updateRequest, userInstance))
         .map(candidate -> CandidateResponseFactory.create(candidate, userInstance))
         .orElseThrow(ExceptionMapper::map);
   }
@@ -80,6 +80,16 @@ public class UpdateNviCandidateStatusHandler
   @Override
   protected Integer getSuccessStatusCode(NviStatusRequest input, CandidateDto output) {
     return HTTP_OK;
+  }
+
+  private Candidate fetchCandidate(UUID candidateIdentifier) {
+    return Candidate.fetch(() -> candidateIdentifier, candidateRepository, periodRepository);
+  }
+
+  private Candidate updateAndRefetch(
+      Candidate candidate, UpdateStatusRequest updateRequest, UserInstance userInstance) {
+    candidate.updateApprovalStatus(updateRequest, userInstance);
+    return fetchCandidate(candidate.getIdentifier());
   }
 
   private static void validateCustomerAndAccessRight(

@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.common.db;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.UUID.randomUUID;
 import static java.util.stream.Collectors.toMap;
@@ -22,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.DatabaseConstants;
@@ -36,7 +36,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbIndex;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
+import software.amazon.awssdk.enhanced.dynamodb.Expression;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
+import software.amazon.awssdk.enhanced.dynamodb.model.ConditionCheck;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
@@ -148,47 +150,46 @@ public class CandidateRepository extends DynamoRepository {
     sendTransaction(transaction.build());
   }
 
-  public void updateCandidateAndDeleteOtherApprovals(
-      CandidateDao candidateDao, List<DbApprovalStatus> approvals) {
-    LOGGER.info("Updating candidate {} and deleting other approvals", candidateDao.identifier());
-    LOGGER.info("Updating approvals and deleting those not specified: {}", approvals);
-    var updatedApprovals =
-        approvals.stream()
-            .map(approval -> mapToApprovalStatusDao(candidateDao.identifier(), approval))
-            .collect(
-                toMap(
-                    approvalStatusDao -> approvalStatusDao.approvalStatus().institutionId(),
-                    Function.identity()));
+  public void updateCandidateAndApprovals(
+      CandidateDao candidateDao,
+      Collection<ApprovalStatusDao> approvalsToUpdate,
+      Collection<ApprovalStatusDao> approvalsToDelete) {
+    LOGGER.info("Updating candidate {} and resetting approvals", candidateDao.identifier());
+    LOGGER.info("Updating approvals in: {}", approvalsToUpdate);
+    LOGGER.info("Deleting approvals in: {}", approvalsToDelete);
     var transaction = TransactWriteItemsEnhancedRequest.builder();
     transaction.addPutItem(candidateTable, candidateDao);
-    var approvalsForDeletion =
-        identifyApprovalsForDeletion(candidateDao.identifier(), updatedApprovals);
-    approvalsForDeletion.forEach(
-        approvalStatusDao -> transaction.addDeleteItem(approvalStatusTable, approvalStatusDao));
-    updatedApprovals
-        .values()
-        .forEach(approvalStatus -> transaction.addPutItem(approvalStatusTable, approvalStatus));
+
+    for (var updatedApproval : approvalsToUpdate) {
+      transaction.addPutItem(approvalStatusTable, updatedApproval);
+    }
+
+    for (var otherApproval : approvalsToDelete) {
+      transaction.addDeleteItem(approvalStatusTable, otherApproval);
+    }
+
     sendTransaction(transaction.build());
   }
 
-  public void updateCandidateAndKeepOtherApprovals(
-      CandidateDao candidateDao, List<DbApprovalStatus> approvals) {
+  public ApprovalStatusDao updateApproval(CandidateDao candidate, ApprovalStatusDao approval) {
     LOGGER.info(
-        "Updating candidate {} without resetting other approvals", candidateDao.identifier());
-    LOGGER.info("Updating approvals and ignoring those not specified: {}", approvals);
-    var updatedApprovals =
-        approvals.stream()
-            .map(approval -> mapToApprovalStatusDao(candidateDao.identifier(), approval))
-            .collect(
-                toMap(
-                    approvalStatusDao -> approvalStatusDao.approvalStatus().institutionId(),
-                    Function.identity()));
+        "Updating approval: candidateId={}, approval={}",
+        approval.identifier(),
+        approval.approvalStatus());
     var transaction = TransactWriteItemsEnhancedRequest.builder();
-    transaction.addPutItem(candidateTable, candidateDao);
-    updatedApprovals
-        .values()
-        .forEach(approvalStatus -> transaction.addPutItem(approvalStatusTable, approvalStatus));
-    sendTransaction(transaction.build());
+    transaction.addUpdateItem(approvalStatusTable, approval);
+    transaction.addConditionCheck(candidateTable, requireExpectedCandidateRevision(candidate));
+
+    try {
+      client.transactWriteItems(transaction.build());
+      LOGGER.info("Successfully updated approval for candidateId={}", approval.identifier());
+      return approval;
+
+    } catch (TransactionCanceledException e) {
+      LOGGER.error("Failed to update approval: approval={}", approval);
+      handleTransactionFailure(e, approval);
+      throw TransactionException.from(e, transaction.build());
+    }
   }
 
   private void sendTransaction(TransactWriteItemsEnhancedRequest request) {
@@ -197,16 +198,6 @@ public class CandidateRepository extends DynamoRepository {
     } catch (TransactionCanceledException transactionCanceledException) {
       throw TransactionException.from(transactionCanceledException, request);
     }
-  }
-
-  public void updateCandidateAndRemovingApprovals(
-      UUID identifier, CandidateDao nonApplicableCandidate) {
-    LOGGER.info("Updating candidate {} and removing all existing approvals", identifier);
-    var transactionBuilder = TransactWriteItemsEnhancedRequest.builder();
-    transactionBuilder.addPutItem(candidateTable, nonApplicableCandidate);
-    getApprovalStatuses(identifier)
-        .forEach(approvalDao -> transactionBuilder.addDeleteItem(approvalStatusTable, approvalDao));
-    sendTransaction(transactionBuilder.build());
   }
 
   public Optional<CandidateDao> findCandidateById(UUID candidateIdentifier) {
@@ -225,15 +216,42 @@ public class CandidateRepository extends DynamoRepository {
         .findFirst();
   }
 
-  public ApprovalStatusDao updateApprovalStatusDao(UUID identifier, DbApprovalStatus newApproval) {
-    LOGGER.info(
-        "Updating approval status: candidateId={}, newApproval={}", identifier, newApproval);
-    var result = approvalStatusTable.updateItem(newApproval.toDao(identifier));
-    LOGGER.info(
-        "Successfully updated approval status: candidateId={}, newApproval={}",
-        identifier,
-        result.approvalStatus());
-    return result;
+  private ConditionCheck<CandidateDao> requireExpectedCandidateRevision(CandidateDao candidate) {
+    var candidateKey = createCandidateKey(candidate.identifier());
+    var revisionCondition = createRevisionCondition(candidate.revision());
+    return ConditionCheck.builder()
+        .key(candidateKey)
+        .conditionExpression(revisionCondition)
+        .build();
+  }
+
+  private void handleTransactionFailure(
+      TransactionCanceledException e, ApprovalStatusDao approval) {
+    LOGGER.error("Transaction cancelled for candidate {}", approval.identifier(), e);
+    for (var reason : e.cancellationReasons()) {
+      LOGGER.error("Cancellation reason: {}", reason);
+    }
+  }
+
+  private Key createCandidateKey(UUID candidateIdentifier) {
+    return Key.builder()
+        .partitionValue(CandidateDao.createPartitionKey(candidateIdentifier.toString()))
+        .sortValue(CandidateDao.createPartitionKey(candidateIdentifier.toString()))
+        .build();
+  }
+
+  private Expression createRevisionCondition(Long expectedCandidateRevision) {
+    if (isNull(expectedCandidateRevision)) {
+      return Expression.builder().expression("attribute_not_exists(revision)").build();
+    }
+
+    return Expression.builder()
+        .expression("revision = :expectedCandidateRevision")
+        .expressionValues(
+            Map.of(
+                ":expectedCandidateRevision",
+                AttributeValue.builder().n(expectedCandidateRevision.toString()).build()))
+        .build();
   }
 
   public NoteDao saveNote(UUID candidateIdentifier, DbNote dbNote) {
@@ -292,11 +310,6 @@ public class CandidateRepository extends DynamoRepository {
         .collect(toMap(Map.Entry::getKey, e -> e.getValue().s()));
   }
 
-  private static ApprovalStatusDao mapToApprovalStatusDao(
-      UUID identifier, DbApprovalStatus approval) {
-    return ApprovalStatusDao.builder().identifier(identifier).approvalStatus(approval).build();
-  }
-
   private static QueryConditional constructApprovalsQuery(UUID identifier) {
     return sortBeginsWith(
         Key.builder()
@@ -338,24 +351,6 @@ public class CandidateRepository extends DynamoRepository {
         .item(insert)
         .conditionExpression(uniquePrimaryKeysExpression())
         .build();
-  }
-
-  private static boolean isNotPresentInNewApprovals(
-      Map<URI, ApprovalStatusDao> newApprovals, ApprovalStatusDao oldApproval) {
-    return !newApprovals.containsKey(oldApproval.approvalStatus().institutionId());
-  }
-
-  private Stream<ApprovalStatusDao> identifyApprovalsForDeletion(
-      UUID identifier, Map<URI, ApprovalStatusDao> newApprovals) {
-    return getApprovalStatuses(identifier)
-        .filter(approval -> isNotPresentInNewApprovals(newApprovals, approval));
-  }
-
-  private Stream<ApprovalStatusDao> getApprovalStatuses(UUID identifier) {
-    return approvalStatusTable
-        .query(queryCandidateParts(identifier, ApprovalStatusDao.TYPE))
-        .items()
-        .stream();
   }
 
   private List<Dao> extractDatabaseEntries(ScanResponse response) {

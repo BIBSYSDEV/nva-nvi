@@ -12,6 +12,7 @@ import java.util.Optional;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil;
@@ -89,9 +90,22 @@ public class EvaluateNviCandidateHandler implements RequestHandler<SQSEvent, Voi
   }
 
   private void sendEvent(CandidateEvaluatedMessage candidateEvaluatedMessage) {
+    logEvaluationOutcome(candidateEvaluatedMessage);
     var messageBody =
         attempt(() -> dtoObjectMapper.writeValueAsString(candidateEvaluatedMessage)).orElseThrow();
+
+    LOGGER.info(
+        "Sending evaluated publication {} to upsert queue",
+        candidateEvaluatedMessage.candidate().publicationId());
     queueClient.sendMessage(messageBody, queueUrl);
+  }
+
+  private static void logEvaluationOutcome(CandidateEvaluatedMessage candidateEvaluatedMessage) {
+    if (candidateEvaluatedMessage.candidate() instanceof UpsertNviCandidateRequest) {
+      LOGGER.info("Received UpsertNviCandidateRequest");
+    } else {
+      LOGGER.info("Received NonNviCandidateRequest");
+    }
   }
 
   private PersistedResourceMessage extractPersistedResourceMessage(SQSEvent input) {

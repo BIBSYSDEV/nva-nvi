@@ -225,7 +225,8 @@ class CandidateTest extends CandidateTestSetup {
   void shouldDoNothingIfCreateRequestIsForNonCandidateThatDoesNotExist() {
     var updateRequest = createUpsertNonCandidateRequest(randomUri());
 
-    var optionalCandidate = Candidate.updateNonCandidate(updateRequest, candidateRepository);
+    var optionalCandidate =
+        Candidate.updateNonCandidate(updateRequest, candidateRepository, periodRepository);
     assertThat(optionalCandidate, is(equalTo(Optional.empty())));
   }
 
@@ -240,8 +241,8 @@ class CandidateTest extends CandidateTestSetup {
     var request = createUpsertCandidateRequest(organization1, organization2).build();
     var candidate = scenario.upsertCandidate(request);
 
-    scenario.updateApprovalStatus(candidate, approvalStatus, organization1.id());
-    scenario.updateApprovalStatus(candidate, approvalStatus, organization2.id());
+    scenario.updateApprovalStatus(candidate.getIdentifier(), approvalStatus, organization1.id());
+    scenario.updateApprovalStatus(candidate.getIdentifier(), approvalStatus, organization2.id());
 
     var updatedCandidate =
         Candidate.fetchByPublicationId(
@@ -295,11 +296,13 @@ class CandidateTest extends CandidateTestSetup {
     var createRequest =
         createUpsertCandidateRequest(institution1, institution2, institution3).build();
     var candidate = scenario.upsertCandidate(createRequest);
-    scenario.updateApprovalStatus(candidate, ApprovalStatus.APPROVED, institution1);
-    scenario.updateApprovalStatus(candidate, ApprovalStatus.REJECTED, institution2);
+    scenario.updateApprovalStatus(candidate.getIdentifier(), ApprovalStatus.APPROVED, institution1);
+    scenario.updateApprovalStatus(candidate.getIdentifier(), ApprovalStatus.REJECTED, institution2);
 
-    assertEquals(ApprovalStatus.PENDING, candidate.getApprovals().get(institution3).getStatus());
-    assertEquals(GlobalApprovalStatus.DISPUTE, candidate.getGlobalApprovalStatus());
+    var updatedCandidate = scenario.getCandidateByIdentifier(candidate.getIdentifier());
+    assertEquals(
+        ApprovalStatus.PENDING, updatedCandidate.getApprovals().get(institution3).getStatus());
+    assertEquals(GlobalApprovalStatus.DISPUTE, updatedCandidate.getGlobalApprovalStatus());
   }
 
   @Test
@@ -321,7 +324,8 @@ class CandidateTest extends CandidateTestSetup {
     var tempCandidate = setupRandomApplicableCandidate(candidateRepository, periodRepository);
     var updateRequest = createUpsertNonCandidateRequest(tempCandidate.getPublicationId());
     var candidateBO =
-        Candidate.updateNonCandidate(updateRequest, candidateRepository).orElseThrow();
+        Candidate.updateNonCandidate(updateRequest, candidateRepository, periodRepository)
+            .orElseThrow();
     var fetchedCandidate =
         Candidate.fetch(candidateBO::getIdentifier, candidateRepository, periodRepository);
     assertThat(fetchedCandidate.getPeriod().status(), is(equalTo(Status.NO_PERIOD)));
@@ -456,7 +460,9 @@ class CandidateTest extends CandidateTestSetup {
     var request =
         createUpsertCandidateRequestWithSingleAffiliation(reviewingInstitution, randomUri());
     var candidate = scenario.upsertCandidate(request);
-    scenario.updateApprovalStatus(candidate, approvalStatus, reviewingInstitution);
+    candidate =
+        scenario.updateApprovalStatus(
+            candidate.getIdentifier(), approvalStatus, reviewingInstitution);
     assertFalse(candidate.isPendingReview());
   }
 
@@ -469,7 +475,9 @@ class CandidateTest extends CandidateTestSetup {
     var request =
         createUpsertCandidateRequestWithSingleAffiliation(reviewingInstitution, randomUri());
     var candidate = scenario.upsertCandidate(request);
-    scenario.updateApprovalStatus(candidate, approvalStatus, reviewingInstitution);
+    candidate =
+        scenario.updateApprovalStatus(
+            candidate.getIdentifier(), approvalStatus, reviewingInstitution);
     assertTrue(candidate.isUnderReview());
   }
 
@@ -516,7 +524,8 @@ class CandidateTest extends CandidateTestSetup {
     var tempCandidate = setupRandomApplicableCandidate(candidateRepository, periodRepository);
     var updateRequest = createUpsertNonCandidateRequest(tempCandidate.getPublicationId());
     var candidateBO =
-        Candidate.updateNonCandidate(updateRequest, candidateRepository).orElseThrow();
+        Candidate.updateNonCandidate(updateRequest, candidateRepository, periodRepository)
+            .orElseThrow();
     return Candidate.fetch(candidateBO::getIdentifier, candidateRepository, periodRepository);
   }
 

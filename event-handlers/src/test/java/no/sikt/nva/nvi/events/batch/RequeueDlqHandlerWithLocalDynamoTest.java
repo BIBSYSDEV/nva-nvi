@@ -55,7 +55,7 @@ class RequeueDlqHandlerWithLocalDynamoTest {
         candidateRepository.findCandidateById(expectedCandidate.identifier()).orElseThrow();
     assertThat(actualCandidate)
         .usingRecursiveComparison()
-        .ignoringFields("version")
+        .ignoringFields("version", "revision", "lastWrittenAt")
         .ignoringCollectionOrder()
         .isEqualTo(expectedCandidate);
   }

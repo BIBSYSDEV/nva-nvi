@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.common.service.model;
 
 import static java.util.Collections.emptyList;
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.UUID.randomUUID;
 import static java.util.function.Predicate.not;
@@ -19,6 +20,7 @@ import java.math.BigDecimal;
 import java.net.URI;
 import java.nio.file.Path;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -48,7 +50,6 @@ import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.model.InstanceType;
-import no.sikt.nva.nvi.common.model.InvalidNviCandidateException;
 import no.sikt.nva.nvi.common.model.PointCalculation;
 import no.sikt.nva.nvi.common.model.PublicationChannel;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
@@ -87,9 +88,9 @@ public final class Candidate {
       "Period is closed, perform actions on candidate is forbidden!";
   private static final String PERIOD_NOT_OPENED_MESSAGE =
       "Period is not opened yet, perform actions on candidate is" + " forbidden!";
-  private static final String INVALID_CANDIDATE_MESSAGE = "Candidate is missing mandatory fields";
   private static final PeriodStatus PERIOD_STATUS_NO_PERIOD =
       PeriodStatus.builder().withStatus(Status.NO_PERIOD).build();
+  private final CandidateRepository repository;
   private final UUID identifier;
   private final boolean applicable;
   private final Map<URI, Approval> approvals;
@@ -100,8 +101,10 @@ public final class Candidate {
   private final Instant createdDate;
   private final Instant modifiedDate;
   private final ReportStatus reportStatus;
+  private final Long revisionRead;
 
   private Candidate(
+      CandidateRepository repository,
       UUID identifier,
       boolean applicable,
       Map<URI, Approval> approvals,
@@ -111,7 +114,9 @@ public final class Candidate {
       PublicationDetails publicationDetails,
       Instant createdDate,
       Instant modifiedDate,
-      ReportStatus reportStatus) {
+      ReportStatus reportStatus,
+      Long revisionRead) {
+    this.repository = repository;
     this.identifier = identifier;
     this.applicable = applicable;
     this.approvals = approvals;
@@ -122,6 +127,7 @@ public final class Candidate {
     this.createdDate = createdDate;
     this.modifiedDate = modifiedDate;
     this.reportStatus = reportStatus;
+    this.revisionRead = revisionRead;
   }
 
   private Candidate(
@@ -130,10 +136,11 @@ public final class Candidate {
       List<ApprovalStatusDao> approvals,
       List<NoteDao> notes,
       PeriodStatus period) {
+    this.repository = repository;
     var dbCandidate = candidateDao.candidate();
     this.identifier = candidateDao.identifier();
     this.applicable = dbCandidate.applicable();
-    this.approvals = mapToApprovalsMap(repository, approvals);
+    this.approvals = mapToApprovalsMap(approvals);
     this.notes = mapToNotesMap(repository, notes);
     this.period = period;
     this.pointCalculation = PointCalculation.from(candidateDao);
@@ -141,6 +148,7 @@ public final class Candidate {
     this.createdDate = dbCandidate.createdDate();
     this.modifiedDate = dbCandidate.modifiedDate();
     this.reportStatus = dbCandidate.reportStatus();
+    this.revisionRead = candidateDao.revision();
   }
 
   public static Candidate fetchByPublicationId(
@@ -175,17 +183,27 @@ public final class Candidate {
       UpsertNviCandidateRequest request,
       CandidateRepository candidateRepository,
       PeriodRepository periodRepository) {
-    var optionalCandidate = fetchOptionalCandidate(request, candidateRepository, periodRepository);
+    var optionalCandidate =
+        fetchOptionalCandidate(request.publicationId(), candidateRepository, periodRepository);
     optionalCandidate.ifPresentOrElse(
         candidate -> updateExistingCandidate(request, candidateRepository, candidate),
         () -> createCandidate(request, candidateRepository));
   }
 
   public static Optional<Candidate> updateNonCandidate(
-      UpsertNonNviCandidateRequest request, CandidateRepository repository) {
-    if (isExistingCandidate(request.publicationId(), repository)) {
-      return Optional.of(updateToNotApplicable(request, repository));
+      UpsertNonNviCandidateRequest request,
+      CandidateRepository candidateRepository,
+      PeriodRepository periodRepository) {
+    var optionalCandidate =
+        fetchOptionalCandidate(request.publicationId(), candidateRepository, periodRepository);
+    LOGGER.info(
+        "Updating candidate for publicationId={} to non-candidate", request.publicationId());
+    if (optionalCandidate.isPresent()) {
+      var candidate = optionalCandidate.get();
+      LOGGER.info("Removing all approvals for candidateId={}", candidate.getIdentifier());
+      return Optional.of(updateToNotApplicable(candidate, candidateRepository));
     }
+    LOGGER.error("No candidate found for publicationId={}", request.publicationId());
     return Optional.empty();
   }
 
@@ -287,6 +305,10 @@ public final class Candidate {
     return pointCalculation.totalPoints();
   }
 
+  public Long getRevisionRead() {
+    return revisionRead;
+  }
+
   public boolean isReported() {
     return REPORTED.equals(reportStatus);
   }
@@ -319,13 +341,17 @@ public final class Candidate {
     return pointCalculation.channel();
   }
 
-  public Candidate updateApprovalAssignee(UpdateAssigneeRequest input) {
+  public void updateApprovalAssignee(UpdateAssigneeRequest input) {
     validateCandidateState();
-    approvals.computeIfPresent(input.institutionId(), (uri, approval) -> approval.update(input));
-    return this;
+    if (!approvals.containsKey(input.institutionId())) {
+      LOGGER.error("No approval found matching UpdateAssigneeRequest: {}", input);
+      throw new IllegalCandidateUpdateException("No approval found matching UpdateAssigneeRequest");
+    }
+    var approval = approvals.get(input.institutionId());
+    approval.updateAssignee(repository, toDao(), input);
   }
 
-  public Candidate updateApprovalStatus(UpdateStatusRequest input, UserInstance userInstance) {
+  public void updateApprovalStatus(UpdateStatusRequest input, UserInstance userInstance) {
     validateUpdateStatusRequest(input);
     validateCandidateState();
 
@@ -339,7 +365,7 @@ public final class Candidate {
           identifier,
           input,
           userInstance);
-      return this;
+      return;
     }
 
     LOGGER.info(
@@ -359,18 +385,12 @@ public final class Candidate {
       throw new IllegalStateException("Cannot update approval status");
     }
 
-    approvals.computeIfPresent(input.institutionId(), (uri, approval) -> approval.update(input));
-
-    LOGGER.info(
-        "Successfully updated approval status: candidateId={}, "
-            + "organizationId={}, oldStatus={}, newStatus={}, username={}",
-        identifier,
-        input.institutionId(),
-        currentState,
-        newState,
-        input.username());
-
-    return this;
+    if (!approvals.containsKey(input.institutionId())) {
+      LOGGER.error("No approval found matching UpdateStatusRequest: {}", input);
+      throw new IllegalCandidateUpdateException("No approval found matching UpdateStatusRequest");
+    }
+    var approval = approvals.get(input.institutionId());
+    approval.updateStatus(repository, toDao(), input);
   }
 
   public Candidate createNote(CreateNoteRequest input, CandidateRepository repository) {
@@ -453,12 +473,11 @@ public final class Candidate {
   }
 
   private static Optional<Candidate> fetchOptionalCandidate(
-      UpsertNviCandidateRequest request,
+      URI publicationId,
       CandidateRepository candidateRepository,
       PeriodRepository periodRepository) {
     return attempt(
-            () ->
-                fetchByPublicationId(request::publicationId, candidateRepository, periodRepository))
+            () -> fetchByPublicationId(() -> publicationId, candidateRepository, periodRepository))
         .toOptional();
   }
 
@@ -474,14 +493,13 @@ public final class Candidate {
   }
 
   private static Candidate updateToNotApplicable(
-      UpsertNonNviCandidateRequest request, CandidateRepository repository) {
-    var existingCandidateDao =
-        repository
-            .findByPublicationId(request.publicationId())
-            .orElseThrow(CandidateNotFoundException::new);
+      Candidate currentCandidate, CandidateRepository repository) {
+    var existingCandidateDao = currentCandidate.toDao();
     var nonApplicableCandidate = updateCandidateToNonApplicable(existingCandidateDao);
-    repository.updateCandidateAndRemovingApprovals(
-        existingCandidateDao.identifier(), nonApplicableCandidate);
+    var approvalsToDelete =
+        currentCandidate.getApprovals().values().stream().map(Approval::toDao).toList();
+
+    repository.updateCandidateAndApprovals(nonApplicableCandidate, emptyList(), approvalsToDelete);
 
     return new Candidate(
         repository,
@@ -493,27 +511,45 @@ public final class Candidate {
 
   private static void updateCandidate(
       UpsertNviCandidateRequest request, CandidateRepository repository, Candidate candidate) {
-    validateCandidate(request);
+    request.validate();
     var updatedCandidate = candidate.apply(request);
     if (shouldResetCandidate(request, candidate) || isNotApplicable(candidate)) {
-      var newApprovals = mapToApprovals(updatedCandidate.getInstitutionPoints());
-      repository.updateCandidateAndDeleteOtherApprovals(updatedCandidate.toDao(), newApprovals);
+      LOGGER.info("Resetting all approvals for candidate {}", candidate.getIdentifier());
+      var approvalsToReset =
+          mapToResetApprovals(candidate, updatedCandidate.getInstitutionPoints());
+      var approvalsToDelete = getApprovalsToDelete(candidate, updatedCandidate);
+
+      repository.updateCandidateAndApprovals(
+          updatedCandidate.toDao(), approvalsToReset, approvalsToDelete);
     } else {
-      var updatedApprovals = getIndividualApprovalsToReset(candidate, updatedCandidate);
-      repository.updateCandidateAndKeepOtherApprovals(updatedCandidate.toDao(), updatedApprovals);
+      var updatedPoints = getUpdatedInstitutionPoints(candidate, updatedCandidate);
+      var approvalsToReset = mapToResetApprovals(candidate, updatedPoints);
+      LOGGER.info(
+          "Resetting individual approvals for candidate {}: {}",
+          candidate.getIdentifier(),
+          approvalsToReset);
+      repository.updateCandidateAndApprovals(
+          updatedCandidate.toDao(), approvalsToReset, emptyList());
     }
   }
 
-  /**
-   * Returns new approvals in a pending state for all institutions that should have their approvals
-   * reset.
-   */
-  private static List<DbApprovalStatus> getIndividualApprovalsToReset(
-      Candidate candidate, Candidate updatedCandidate) {
+  private static List<InstitutionPoints> getUpdatedInstitutionPoints(
+      Candidate currentCandidate, Candidate updatedCandidate) {
     return updatedCandidate.getInstitutionPoints().stream()
-        .filter(institutionPoints -> !hasSameInstitutionPoints(candidate, institutionPoints))
-        .map(InstitutionPoints::institutionId)
-        .map(Candidate::mapToApproval)
+        .filter(institutionPoints -> !hasSameInstitutionPoints(currentCandidate, institutionPoints))
+        .toList();
+  }
+
+  /**
+   * Returns current approvals for all institutions that should have their approval deleted because
+   * they no longer have associated points.
+   */
+  private static List<ApprovalStatusDao> getApprovalsToDelete(
+      Candidate currentCandidate, Candidate updatedCandidate) {
+    return currentCandidate.getApprovals().keySet().stream()
+        .filter(not(id -> updatedCandidate.getInstitutionPoints(id).isPresent()))
+        .map(id -> currentCandidate.getApprovals().get(id))
+        .map(Approval::toDao)
         .toList();
   }
 
@@ -617,18 +653,10 @@ public final class Candidate {
 
   private static void createCandidate(
       UpsertNviCandidateRequest request, CandidateRepository repository) {
-    validateCandidate(request);
+    request.validate();
     repository.create(
-        mapToCandidate(request), mapToApprovals(request.pointCalculation().institutionPoints()));
-  }
-
-  private static void validateCandidate(UpsertNviCandidateRequest candidate) {
-    attempt(
-            () -> {
-              candidate.validate();
-              return candidate;
-            })
-        .orElseThrow(failure -> new InvalidNviCandidateException(INVALID_CANDIDATE_MESSAGE));
+        mapToCandidate(request),
+        mapToNewApprovalDetails(request.pointCalculation().institutionPoints()));
   }
 
   private static Map<UUID, Note> mapToNotesMap(
@@ -638,10 +666,9 @@ public final class Candidate {
         .collect(Collectors.toMap(Note::getNoteId, Function.identity()));
   }
 
-  private static Map<URI, Approval> mapToApprovalsMap(
-      CandidateRepository repository, List<ApprovalStatusDao> approvals) {
+  private static Map<URI, Approval> mapToApprovalsMap(List<ApprovalStatusDao> approvals) {
     return approvals.stream()
-        .map(dao -> new Approval(repository, dao.identifier(), dao))
+        .map(dao -> new Approval(dao.identifier(), dao))
         .collect(Collectors.toMap(Approval::getInstitutionId, Function.identity()));
   }
 
@@ -652,14 +679,28 @@ public final class Candidate {
         .orElse(PERIOD_STATUS_NO_PERIOD);
   }
 
-  private static List<DbApprovalStatus> mapToApprovals(List<InstitutionPoints> institutionPoints) {
+  private static List<ApprovalStatusDao> mapToResetApprovals(
+      Candidate candidate, Collection<InstitutionPoints> institutionPoints) {
+    var resetApprovalDetails = mapToNewApprovalDetails(institutionPoints);
+    var newApprovals = new ArrayList<ApprovalStatusDao>();
+    for (var newStatus : resetApprovalDetails) {
+      var oldApproval = candidate.getApprovals().get(newStatus.institutionId());
+      var expectedRevision = isNull(oldApproval) ? null : oldApproval.getRevisionRead();
+      var newApproval = new Approval(candidate.getIdentifier(), newStatus, expectedRevision);
+      newApprovals.add(newApproval.toDao());
+    }
+    return newApprovals;
+  }
+
+  private static List<DbApprovalStatus> mapToNewApprovalDetails(
+      Collection<InstitutionPoints> institutionPoints) {
     return institutionPoints.stream()
         .map(InstitutionPoints::institutionId)
-        .map(Candidate::mapToApproval)
+        .map(Candidate::mapToNewApproval)
         .toList();
   }
 
-  private static DbApprovalStatus mapToApproval(URI institutionId) {
+  private static DbApprovalStatus mapToNewApproval(URI institutionId) {
     return DbApprovalStatus.builder().institutionId(institutionId).status(DbStatus.PENDING).build();
   }
 
@@ -705,10 +746,6 @@ public final class Candidate {
         .toList();
   }
 
-  private static boolean isExistingCandidate(URI publicationId, CandidateRepository repository) {
-    return repository.findByPublicationId(publicationId).isPresent();
-  }
-
   private static CandidateDao updateCandidateToNonApplicable(CandidateDao candidateDao) {
     return candidateDao
         .copy()
@@ -723,6 +760,7 @@ public final class Candidate {
 
   private Builder copy() {
     return new Builder()
+        .withRepository(repository)
         .withIdentifier(identifier)
         .withApplicable(applicable)
         .withApprovals(approvals)
@@ -732,7 +770,8 @@ public final class Candidate {
         .withModifiedDate(modifiedDate)
         .withCreatedDate(createdDate)
         .withPointCalculation(pointCalculation)
-        .withPublicationDetails(publicationDetails);
+        .withPublicationDetails(publicationDetails)
+        .withRevision(revisionRead);
   }
 
   private CandidateDao toDao() {
@@ -765,6 +804,7 @@ public final class Candidate {
     return CandidateDao.builder()
         .identifier(identifier)
         .candidate(dbCandidate)
+        .revision(revisionRead)
         .version(randomUUID().toString())
         .periodYear(dbPublication.publicationDate().year())
         .build();
@@ -787,7 +827,8 @@ public final class Candidate {
   private Approval updateAssigneeIfUnassigned(String username, Approval approval) {
     return approval.isAssigned()
         ? approval
-        : approval.update(new UpdateAssigneeRequest(approval.getInstitutionId(), username));
+        : approval.updateAssignee(
+            repository, toDao(), new UpdateAssigneeRequest(approval.getInstitutionId(), username));
   }
 
   private boolean isDispute() {
@@ -812,6 +853,7 @@ public final class Candidate {
     return approvals.values().stream();
   }
 
+  // FIXME: Expand this
   private void validateCandidateState() {
     if (Status.CLOSED_PERIOD.equals(period.status())) {
       throw new IllegalStateException(PERIOD_CLOSED_MESSAGE);
@@ -824,6 +866,7 @@ public final class Candidate {
 
   public static final class Builder {
 
+    private CandidateRepository repository;
     private UUID identifier;
     private boolean applicable;
     private Map<URI, Approval> approvals;
@@ -834,8 +877,14 @@ public final class Candidate {
     private Instant createdDate;
     private Instant modifiedDate;
     private ReportStatus reportStatus;
+    private Long revision;
 
     private Builder() {}
+
+    public Builder withRepository(CandidateRepository repository) {
+      this.repository = repository;
+      return this;
+    }
 
     public Builder withIdentifier(UUID identifier) {
       this.identifier = identifier;
@@ -887,8 +936,14 @@ public final class Candidate {
       return this;
     }
 
+    public Builder withRevision(Long revision) {
+      this.revision = revision;
+      return this;
+    }
+
     public Candidate build() {
       return new Candidate(
+          repository,
           identifier,
           applicable,
           approvals,
@@ -898,7 +953,8 @@ public final class Candidate {
           publicationDetails,
           createdDate,
           modifiedDate,
-          reportStatus);
+          reportStatus,
+          revision);
     }
   }
 }

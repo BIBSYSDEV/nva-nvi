@@ -546,6 +546,7 @@ Resources:
                 Action:
                   - dynamodb:BatchGetItem
                   - dynamodb:BatchWriteItem
+                  - dynamodb:ConditionCheckItem
                   - dynamodb:DeleteItem
                   - dynamodb:DescribeLimits
                   - dynamodb:DescribeReservedCapacity
