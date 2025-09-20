@@ -288,7 +288,7 @@ class ConcurrencyHandlingTests {
 
     @Disabled
     @ParameterizedTest
-    @ValueSource(ints = {10, 50, 200})
+    @ValueSource(ints = {75, 150, 250})
     void shouldBeAbleToUpsertCandidateWithManyApprovals(int numberOfNviOrganizations) {
       var organizations = createOrganizations(numberOfNviOrganizations);
       var request =
@@ -302,7 +302,7 @@ class ConcurrencyHandlingTests {
 
     @Disabled
     @ParameterizedTest
-    @ValueSource(ints = {10, 50, 200})
+    @ValueSource(ints = {75, 150, 250})
     void shouldBeAbleToResetCandidateWithManyApprovals(int numberOfNviOrganizations) {
       var organizations = createOrganizations(numberOfNviOrganizations);
       var requestBuilder =
