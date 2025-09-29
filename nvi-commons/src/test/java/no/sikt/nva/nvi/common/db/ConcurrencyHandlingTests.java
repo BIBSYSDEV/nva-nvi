@@ -393,6 +393,7 @@ class ConcurrencyHandlingTests {
       var updatedCandidate = scenario.upsertCandidate(updateRequest);
       assertThat(updatedCandidate.getRevisionRead())
           .isEqualTo(originalCandidate.getRevisionRead() + 1);
+      assertThat(updatedCandidate.getApprovals().size()).isZero();
     }
   }
 
