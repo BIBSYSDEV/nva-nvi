@@ -176,7 +176,7 @@ class ConcurrencyHandlingTests {
 
     @Test
     void shouldHandleExistingCandidatesWithoutRevision() {
-      removeRevisionAndTimestampFromCandidate(candidateIdentifier);
+      removeRevisionFromCandidate(candidateIdentifier);
       var first = scenario.getCandidateByIdentifier(candidateIdentifier);
       assertThat(first.getRevisionRead()).isNull();
 
@@ -188,7 +188,7 @@ class ConcurrencyHandlingTests {
 
     @Test
     void shouldHandleExistingCandidatesWithoutTimestamp() {
-      removeRevisionAndTimestampFromCandidate(candidateIdentifier);
+      removeTimestampFromCandidate(candidateIdentifier);
       var first = getCandidateDao(candidateIdentifier);
       assertThat(first.lastWrittenAt()).isNull();
 
@@ -198,6 +198,25 @@ class ConcurrencyHandlingTests {
 
       var second = getCandidateDao(candidateIdentifier);
       assertThat(second.lastWrittenAt()).isBetween(beforeWrite, afterWrite);
+    }
+
+    @Test
+    void shouldHandleExistingCandidatesWithoutRevisionOrTimestamp() {
+      removeRevisionFromCandidate(candidateIdentifier);
+      removeTimestampFromCandidate(candidateIdentifier);
+      var first = getCandidateDao(candidateIdentifier);
+      assertThat(first.revision()).isNull();
+      assertThat(first.lastWrittenAt()).isNull();
+
+      var beforeWrite = Instant.now();
+      candidateRepository.candidateTable.putItem(first);
+      var afterWrite = Instant.now();
+
+      var secondDao = getCandidateDao(candidateIdentifier);
+      assertThat(secondDao.lastWrittenAt()).isBetween(beforeWrite, afterWrite);
+
+      var second = scenario.getCandidateByIdentifier(candidateIdentifier);
+      assertThat(second.getRevisionRead()).isEqualTo(1L);
     }
 
     @Test
@@ -316,7 +335,7 @@ class ConcurrencyHandlingTests {
 
     @Test
     void shouldNotFailWhenUpdatingApprovalForCandidateWithNullRevision() {
-      removeRevisionAndTimestampFromCandidate(candidateIdentifier);
+      removeRevisionFromCandidate(candidateIdentifier);
 
       var legacyCandidate = scenario.getCandidateByIdentifier(candidateIdentifier);
       var user = createCuratorUserInstance(ORGANIZATION_1);
@@ -443,16 +462,19 @@ class ConcurrencyHandlingTests {
         .hasMessageContaining("ConditionalCheckFailed");
   }
 
-  /**
-   * Remove the new fields (revision and lastWrittenAt) from stored data to mimic unmigrated
-   * production data.
-   */
-  private void removeRevisionAndTimestampFromCandidate(UUID candidateId) {
+  private void removeRevisionFromCandidate(UUID candidateId) {
     var initialCandidate = getCandidateDao(candidateId);
-    updateDirectlyWithLowLevelClient(initialCandidate, "REMOVE revision, lastWrittenAt");
+    updateDirectlyWithLowLevelClient(initialCandidate, "REMOVE revision");
 
     var legacyCandidate = getCandidateDao(candidateId);
     assertThat(legacyCandidate.revision()).isNull();
+  }
+
+  private void removeTimestampFromCandidate(UUID candidateId) {
+    var initialCandidate = getCandidateDao(candidateId);
+    updateDirectlyWithLowLevelClient(initialCandidate, "REMOVE lastWrittenAt");
+
+    var legacyCandidate = getCandidateDao(candidateId);
     assertThat(legacyCandidate.lastWrittenAt()).isNull();
   }
 
