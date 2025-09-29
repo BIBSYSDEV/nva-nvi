@@ -1,11 +1,13 @@
 package no.sikt.nva.nvi.common.db;
 
+import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpdateStatusRequest;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.model.InstanceType.ACADEMIC_ARTICLE;
 import static no.sikt.nva.nvi.common.model.InstanceType.ACADEMIC_MONOGRAPH;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationId;
 import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublicationDate;
+import static no.sikt.nva.nvi.common.model.UserInstanceFixtures.createCuratorUserInstance;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -26,6 +28,7 @@ import no.sikt.nva.nvi.common.exceptions.TransactionException;
 import no.sikt.nva.nvi.common.model.PublicationDate;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import org.assertj.core.api.ThrowableAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
@@ -230,71 +233,83 @@ class ConcurrencyHandlingTests {
 
     @Test
     void shouldAllowWriteAfterFetch() {
-      var readCandidate1 = scenario.getCandidateByIdentifier(candidateIdentifier);
-      var originalStatus = readCandidate1.getApprovalStatus(ORGANIZATION_1);
-      var firstUpdate = getOtherStatus(originalStatus);
-      var secondUpdate = getOtherStatus(firstUpdate);
+      var readCandidate1 =
+          scenario.updateApprovalStatus(
+              candidateIdentifier, ApprovalStatus.PENDING, ORGANIZATION_1);
 
-      scenario.updateApprovalStatusDangerously(readCandidate1, firstUpdate, ORGANIZATION_1);
-      var readCandidate2 = scenario.getCandidateByIdentifier(candidateIdentifier);
-
-      assertThatNoException()
-          .isThrownBy(
-              () ->
-                  scenario.updateApprovalStatusDangerously(
-                      readCandidate2, secondUpdate, ORGANIZATION_1));
-    }
-
-    @Test
-    void shouldAllowConcurrentWritesOfSeparateApprovals() {
-      var readCandidate = scenario.getCandidateByIdentifier(candidateIdentifier);
-      var originalStatus = readCandidate.getApprovalStatus(ORGANIZATION_1);
-      var firstUpdate = getOtherStatus(originalStatus);
-      var secondUpdate = getOtherStatus(firstUpdate);
+      var user = createCuratorUserInstance(ORGANIZATION_1);
+      var firstUpdate = createUpdateStatusRequest(ApprovalStatus.APPROVED, user);
+      var secondUpdate = createUpdateStatusRequest(ApprovalStatus.APPROVED, user);
 
       assertThatNoException()
           .isThrownBy(
               () -> {
-                scenario.updateApprovalStatusDangerously(
-                    readCandidate, firstUpdate, ORGANIZATION_1);
-                scenario.updateApprovalStatusDangerously(
-                    readCandidate, secondUpdate, ORGANIZATION_2);
+                readCandidate1.updateApprovalStatus(firstUpdate, user);
+                var readCandidate2 = scenario.getCandidateByIdentifier(candidateIdentifier);
+                readCandidate2.updateApprovalStatus(secondUpdate, user);
               });
     }
 
     @Test
-    void shouldFailOnConcurrentConflictingWrite() {
-      var readCandidate = scenario.getCandidateByIdentifier(candidateIdentifier);
-      var originalStatus = readCandidate.getApprovalStatus(ORGANIZATION_1);
-      var firstUpdate = getOtherStatus(originalStatus);
-      var secondUpdate = getOtherStatus(firstUpdate);
+    void shouldAllowConcurrentWritesOfSeparateApprovals() {
+      var candidate =
+          scenario.updateApprovalStatus(
+              candidateIdentifier, ApprovalStatus.PENDING, ORGANIZATION_1);
 
-      scenario.updateApprovalStatusDangerously(readCandidate, firstUpdate, ORGANIZATION_1);
+      var firstUser = createCuratorUserInstance(ORGANIZATION_1);
+      var firstUpdate = createUpdateStatusRequest(ApprovalStatus.APPROVED, firstUser);
+      var secondUser = createCuratorUserInstance(ORGANIZATION_2);
+      var secondUpdate = createUpdateStatusRequest(ApprovalStatus.APPROVED, secondUser);
 
-      assertThatThrownBy(
-              () ->
-                  scenario.updateApprovalStatusDangerously(
-                      readCandidate, secondUpdate, ORGANIZATION_1))
-          .isInstanceOf(TransactionException.class)
-          .hasMessageContaining("condition revision = :expectedCandidateRevision")
-          .hasMessageContaining("ConditionalCheckFailed");
+      assertThatNoException()
+          .isThrownBy(
+              () -> {
+                candidate.updateApprovalStatus(firstUpdate, firstUser);
+                candidate.updateApprovalStatus(secondUpdate, secondUser);
+              });
+    }
+
+    @Test
+    void shouldFailOnConcurrentConflictingChangeOfApproval() {
+      var candidate =
+          scenario.updateApprovalStatus(
+              candidateIdentifier, ApprovalStatus.PENDING, ORGANIZATION_1);
+
+      var firstUser = createCuratorUserInstance(ORGANIZATION_1);
+      var firstUpdate = createUpdateStatusRequest(ApprovalStatus.APPROVED, firstUser);
+      var secondUser = createCuratorUserInstance(ORGANIZATION_1);
+      var secondUpdate = createUpdateStatusRequest(ApprovalStatus.APPROVED, secondUser);
+
+      assertThatNoException()
+          .isThrownBy(() -> candidate.updateApprovalStatus(firstUpdate, firstUser));
+      assertThrowsConcurrencyException(
+          () -> candidate.updateApprovalStatus(secondUpdate, secondUser));
+    }
+
+    @Test
+    void shouldFailOnConcurrentDuplicateChangeOfApproval() {
+      var user = createCuratorUserInstance(ORGANIZATION_1);
+      var candidate =
+          scenario.updateApprovalStatus(
+              candidateIdentifier, ApprovalStatus.PENDING, ORGANIZATION_1);
+      var updateRequest = createUpdateStatusRequest(ApprovalStatus.APPROVED, user);
+
+      assertThatNoException().isThrownBy(() -> candidate.updateApprovalStatus(updateRequest, user));
+      assertThrowsConcurrencyException(() -> candidate.updateApprovalStatus(updateRequest, user));
     }
 
     @Test
     void shouldFailOnWriteAfterCandidateUpdate() {
       var readCandidate = scenario.getCandidateByIdentifier(candidateIdentifier);
       updateCandidate(readCandidate);
-
       var originalStatus = readCandidate.getApprovalStatus(ORGANIZATION_1);
       var newStatus = getOtherStatus(originalStatus);
 
-      assertThatThrownBy(
-              () ->
-                  scenario.updateApprovalStatusDangerously(
-                      readCandidate, newStatus, ORGANIZATION_1))
-          .isInstanceOf(TransactionException.class)
-          .hasMessageContaining("condition revision = :expectedCandidateRevision")
-          .hasMessageContaining("ConditionalCheckFailed");
+      var user = createCuratorUserInstance(ORGANIZATION_1);
+      var updateRequest = createUpdateStatusRequest(newStatus, user);
+
+      assertThrowsConcurrencyException(
+          () -> readCandidate.updateApprovalStatus(updateRequest, user));
     }
 
     @Test
@@ -302,14 +317,13 @@ class ConcurrencyHandlingTests {
       removeRevisionAndTimestampFromCandidate(candidateIdentifier);
 
       var legacyCandidate = scenario.getCandidateByIdentifier(candidateIdentifier);
+      var user = createCuratorUserInstance(ORGANIZATION_1);
       var originalStatus = legacyCandidate.getApprovalStatus(ORGANIZATION_1);
       var newStatus = getOtherStatus(originalStatus);
+      var updateRequest = createUpdateStatusRequest(newStatus, user);
 
       assertThatNoException()
-          .isThrownBy(
-              () ->
-                  scenario.updateApprovalStatusDangerously(
-                      legacyCandidate, newStatus, ORGANIZATION_1));
+          .isThrownBy(() -> legacyCandidate.updateApprovalStatus(updateRequest, user));
     }
 
     @Disabled
@@ -404,6 +418,13 @@ class ConcurrencyHandlingTests {
     return ApprovalStatus.APPROVED.equals(originalStatus)
         ? ApprovalStatus.PENDING
         : ApprovalStatus.REJECTED;
+  }
+
+  private static void assertThrowsConcurrencyException(ThrowableAssert.ThrowingCallable operation) {
+    assertThatThrownBy(operation)
+        .isInstanceOf(TransactionException.class)
+        .hasMessageContaining("condition revision = :expectedCandidateRevision")
+        .hasMessageContaining("ConditionalCheckFailed");
   }
 
   /**
