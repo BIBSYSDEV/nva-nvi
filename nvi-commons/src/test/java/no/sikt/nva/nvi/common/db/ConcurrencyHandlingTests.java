@@ -87,11 +87,37 @@ class ConcurrencyHandlingTests {
     }
 
     @Test
-    void shouldFailOnConcurrentWrite() {
+    void shouldFailOnConcurrentWriteOfCandidate() {
       var first = getCandidateDao(candidateIdentifier);
       candidateRepository.candidateTable.putItem(first);
       var second = copyAndMutateCandidate(first);
       assertThatThrownBy(() -> candidateRepository.candidateTable.putItem(second))
+          .isInstanceOf(ConditionalCheckFailedException.class)
+          .hasMessageContaining("The conditional request failed");
+    }
+
+    @Test
+    void shouldFailOnDuplicateWriteOfApproval() {
+      var initialState = scenario.getAllRelatedData(candidateIdentifier);
+      var first = initialState.approvals().getFirst();
+
+      var updatedApproval = copyAndMutateApproval(first);
+      candidateRepository.approvalStatusTable.putItem(updatedApproval);
+
+      assertThatThrownBy(() -> candidateRepository.approvalStatusTable.putItem(updatedApproval))
+          .isInstanceOf(ConditionalCheckFailedException.class)
+          .hasMessageContaining("The conditional request failed");
+    }
+
+    @Test
+    void shouldFailOnWriteOfApprovalForUnknownCandidate() {
+      var initialState = scenario.getAllRelatedData(candidateIdentifier);
+      var first = initialState.approvals().getFirst();
+
+      var updatedApproval =
+          copyAndMutateApproval(first).copy().identifier(UUID.randomUUID()).build();
+
+      assertThatThrownBy(() -> candidateRepository.approvalStatusTable.putItem(updatedApproval))
           .isInstanceOf(ConditionalCheckFailedException.class)
           .hasMessageContaining("The conditional request failed");
     }
