@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.common.db;
 
+import static java.util.Collections.emptyList;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpdateStatusRequest;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
@@ -16,9 +17,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.net.URI;
 import java.time.Instant;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.UpsertRequestBuilder;
@@ -328,7 +330,7 @@ class ConcurrencyHandlingTests {
 
     @Disabled
     @ParameterizedTest
-    @ValueSource(ints = {75, 150, 250})
+    @ValueSource(ints = {1, 75, 150, 250})
     void shouldBeAbleToUpsertCandidateWithManyApprovals(int numberOfNviOrganizations) {
       var organizations = createOrganizations(numberOfNviOrganizations);
       var request =
@@ -342,7 +344,7 @@ class ConcurrencyHandlingTests {
 
     @Disabled
     @ParameterizedTest
-    @ValueSource(ints = {75, 150, 250})
+    @ValueSource(ints = {1, 75, 150, 250})
     void shouldBeAbleToResetCandidateWithManyApprovals(int numberOfNviOrganizations) {
       var organizations = createOrganizations(numberOfNviOrganizations);
       var requestBuilder =
@@ -351,13 +353,27 @@ class ConcurrencyHandlingTests {
               .withPublicationDate(PUBLICATION_DATE.toDtoPublicationDate());
       var candidateId = scenario.upsertCandidate(requestBuilder.build()).getIdentifier();
 
-      var approvingOrganization = organizations.getFirst().id();
+      var approvingOrganization = organizations.iterator().next().id();
       scenario.updateApprovalStatus(candidateId, ApprovalStatus.APPROVED, approvingOrganization);
 
       var updateRequest = requestBuilder.withInstanceType(ACADEMIC_MONOGRAPH).build();
       var updatedCandidate = scenario.upsertCandidate(updateRequest);
       assertThat(updatedCandidate.getApprovalStatus(approvingOrganization))
           .isEqualTo(ApprovalStatus.PENDING);
+    }
+
+    @Test
+    void shouldBeAbleToResetCandidateWithNoApprovals() {
+      var requestBuilder =
+          createUpsertCandidateRequest(emptyList())
+              .withInstanceType(ACADEMIC_ARTICLE)
+              .withPublicationDate(PUBLICATION_DATE.toDtoPublicationDate());
+      var originalCandidate = scenario.upsertCandidate(requestBuilder.build());
+
+      var updateRequest = requestBuilder.withInstanceType(ACADEMIC_MONOGRAPH).build();
+      var updatedCandidate = scenario.upsertCandidate(updateRequest);
+      assertThat(updatedCandidate.getRevisionRead())
+          .isEqualTo(originalCandidate.getRevisionRead() + 1);
     }
   }
 
@@ -380,12 +396,12 @@ class ConcurrencyHandlingTests {
     return candidateId;
   }
 
-  private List<Organization> createOrganizations(int numberOfNviOrganizations) {
+  private Set<Organization> createOrganizations(int numberOfNviOrganizations) {
     return IntStream.range(0, numberOfNviOrganizations)
         .mapToObj(i -> randomOrganizationId())
         .map(Organization.builder()::withId)
         .map(Organization.Builder::build)
-        .toList();
+        .collect(Collectors.toSet());
   }
 
   private CandidateDao getCandidateDao(UUID candidateIdentifier) {
