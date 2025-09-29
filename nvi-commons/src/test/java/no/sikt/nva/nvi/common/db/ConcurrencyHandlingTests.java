@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.common.db;
 
 import static java.util.Collections.emptyList;
+import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpdateStatusRequest;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
@@ -119,8 +120,7 @@ class ConcurrencyHandlingTests {
       var initialState = scenario.getAllRelatedData(candidateIdentifier);
       var first = initialState.approvals().getFirst();
 
-      var updatedApproval =
-          copyAndMutateApproval(first).copy().identifier(UUID.randomUUID()).build();
+      var updatedApproval = copyAndMutateApproval(first).copy().identifier(randomUUID()).build();
 
       assertThatThrownBy(() -> candidateRepository.approvalStatusTable.putItem(updatedApproval))
           .isInstanceOf(ConditionalCheckFailedException.class)
@@ -232,6 +232,23 @@ class ConcurrencyHandlingTests {
     void shouldHaveDefaultRevisionOnCreate() {
       var candidateDao = getCandidateDao(candidateIdentifier);
       assertThat(candidateDao.revision()).isNotNull().isOne();
+    }
+
+    @Test
+    void shouldIncrementRevisionForEachUpdate() {
+      removeRevisionFromCandidate(candidateIdentifier);
+      var first = scenario.getCandidateByIdentifier(candidateIdentifier);
+      assertThat(first.getRevisionRead()).isNull();
+
+      candidateRepository.candidateTable.putItem(getCandidateDao(candidateIdentifier));
+      var second = scenario.getCandidateByIdentifier(candidateIdentifier);
+      assertThat(second.getRevisionRead()).isEqualTo(1L);
+
+      var secondUpdate =
+          getCandidateDao(candidateIdentifier).copy().version(randomUUID().toString()).build();
+      candidateRepository.candidateTable.putItem(secondUpdate);
+      var third = scenario.getCandidateByIdentifier(candidateIdentifier);
+      assertThat(third.getRevisionRead()).isEqualTo(2L);
     }
   }
 
