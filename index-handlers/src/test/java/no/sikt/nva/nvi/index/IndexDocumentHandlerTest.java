@@ -778,7 +778,9 @@ class IndexDocumentHandlerTest {
         Candidate.fetchByPublicationId(
             request::publicationId, candidateRepository, periodRepository);
     return Candidate.updateNonCandidate(
-            createUpsertNonCandidateRequest(candidate.getPublicationId()), candidateRepository)
+            createUpsertNonCandidateRequest(candidate.getPublicationId()),
+            candidateRepository,
+            periodRepository)
         .orElseThrow();
   }
 

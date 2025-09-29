@@ -177,20 +177,20 @@ class UpsertNviCandidateHandlerTest {
   void shouldNotResetApprovalsWhenUpdatingFieldsNotEffectingApprovals() {
     var institutionId = randomUri();
     var upsertCandidateRequest = createUpsertCandidateRequest(institutionId).build();
-    Candidate.upsert(upsertCandidateRequest, candidateRepository, periodRepository);
-    var candidate =
-        Candidate.fetchByPublicationId(
-            upsertCandidateRequest::publicationId, candidateRepository, periodRepository);
-    scenario.updateApprovalStatus(candidate, ApprovalStatus.APPROVED, institutionId);
+    var publicationId = upsertCandidateRequest.publicationId();
 
-    var approval = candidate.getApprovals().get(institutionId);
+    Candidate.upsert(upsertCandidateRequest, candidateRepository, periodRepository);
+    var candidate = scenario.getCandidateByPublicationId(publicationId);
+    scenario.updateApprovalStatus(
+        candidate.getIdentifier(), ApprovalStatus.APPROVED, institutionId);
+
+    var approvedCandidate = scenario.getCandidateByPublicationId(publicationId);
+    var approval = approvedCandidate.getApprovals().get(institutionId);
     var newUpsertRequest = createNewUpsertRequestNotAffectingApprovals(upsertCandidateRequest);
     Candidate.upsert(newUpsertRequest, candidateRepository, periodRepository);
-    var updatedCandidate =
-        Candidate.fetchByPublicationId(
-            newUpsertRequest::publicationId, candidateRepository, periodRepository);
-    var updatedApproval = updatedCandidate.getApprovals().get(institutionId);
 
+    var updatedCandidate = scenario.getCandidateByPublicationId(publicationId);
+    var updatedApproval = updatedCandidate.getApprovals().get(institutionId);
     assertThat(updatedApproval, is(equalTo(approval)));
   }
 

@@ -6,7 +6,7 @@ import static no.sikt.nva.nvi.common.RequestFixtures.createNoteRequest;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpdateStatusRequest;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidate;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidateBuilder;
-import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.periodRepositoryReturningOpenedPeriod;
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.model.UserInstanceFixtures.createCuratorUserInstance;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -40,10 +40,11 @@ class MigrationTests {
   private CandidateRepository candidateRepository;
   private PeriodRepository periodRepository;
   private BatchScanUtil batchScanUtil;
+  private TestScenario scenario;
 
   @BeforeEach
   void setUp() {
-    var scenario = new TestScenario();
+    scenario = new TestScenario();
     candidateRepository = scenario.getCandidateRepository();
     periodRepository = scenario.getPeriodRepository();
     batchScanUtil =
@@ -52,11 +53,11 @@ class MigrationTests {
             scenario.getS3StorageReaderForExpandedResourcesBucket(),
             new FakeSqsClient(),
             getEventBasedBatchScanHandlerEnvironment());
+    setupOpenPeriod(scenario, CURRENT_YEAR);
   }
 
   @Test
   void shouldWriteCandidateWithNotesAndApprovalsAsIsWhenMigrating() {
-    periodRepository = periodRepositoryReturningOpenedPeriod(CURRENT_YEAR);
     var candidate = setupCandidateWithApprovalAndNotes();
     batchScanUtil.migrateAndUpdateVersion(DEFAULT_PAGE_SIZE, null, emptyList());
     var migratedCandidate =
@@ -127,7 +128,8 @@ class MigrationTests {
     var curatorOrganization = getInstitutionId(candidate);
     var userInstance = createCuratorUserInstance(curatorOrganization);
 
-    return candidate.updateApprovalStatus(
+    return scenario.updateApprovalStatus(
+        candidate.getIdentifier(),
         createUpdateStatusRequest(ApprovalStatus.REJECTED, curatorOrganization, randomString()),
         userInstance);
   }

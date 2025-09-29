@@ -127,7 +127,8 @@ public abstract class BaseCandidateRestHandlerTest {
     var candidate = scenario.upsertCandidate(createUpsertCandidateRequest(institutionId).build());
     return Candidate.updateNonCandidate(
             createUpsertNonCandidateRequest(candidate.getPublicationId()),
-            scenario.getCandidateRepository())
+            scenario.getCandidateRepository(),
+            scenario.getPeriodRepository())
         .orElseThrow();
   }
 
@@ -138,7 +139,7 @@ public abstract class BaseCandidateRestHandlerTest {
   protected Candidate setupCandidateWithApproval() {
     var candidate = setupValidCandidate();
     return scenario.updateApprovalStatus(
-        candidate, ApprovalStatus.APPROVED, topLevelOrganizationId);
+        candidate.getIdentifier(), ApprovalStatus.APPROVED, topLevelOrganizationId);
   }
 
   protected Candidate setupCandidateWithUnverifiedCreatorFromAnotherInstitution() {

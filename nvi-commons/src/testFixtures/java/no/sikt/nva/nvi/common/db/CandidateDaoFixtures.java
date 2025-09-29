@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.common.db;
 
 import static java.util.Objects.nonNull;
+import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.EXPANDED_RESOURCES_BUCKET;
 import static no.sikt.nva.nvi.common.SampleExpandedPublicationFactory.defaultExpandedPublicationFactory;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidate;
@@ -23,8 +24,12 @@ public class CandidateDaoFixtures {
   private static final String UUID_SEPARATOR = "-";
 
   public static CandidateDao randomApplicableCandidateDao() {
-    return new CandidateDao(
-        UUID.randomUUID(), randomCandidate(), UUID.randomUUID().toString(), randomYear());
+    return CandidateDao.builder()
+        .identifier(randomUUID())
+        .candidate(randomCandidate())
+        .version(randomUUID().toString())
+        .periodYear(randomYear())
+        .build();
   }
 
   public static List<CandidateDao> createNumberOfCandidatesForYear(
@@ -57,7 +62,7 @@ public class CandidateDaoFixtures {
   }
 
   public static CandidateDao createCandidateDao(DbCandidate candidate) {
-    return CandidateDao.builder().identifier(UUID.randomUUID()).candidate(candidate).build();
+    return CandidateDao.builder().identifier(randomUUID()).candidate(candidate).build();
   }
 
   public static List<CandidateDao> sortByIdentifier(List<CandidateDao> candidates, Integer limit) {

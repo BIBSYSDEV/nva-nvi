@@ -148,9 +148,12 @@ class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
   void shouldNotSetUserAsAssigneeWhenUsersInstitutionApprovalHasAssignee() throws IOException {
     var candidate = setupValidCandidate();
     var existingApprovalAssignee = randomString();
-    candidate.updateApprovalAssignee(
-        new UpdateAssigneeRequest(topLevelOrganizationId, existingApprovalAssignee));
-    assertNotNull(candidate.getApprovals().get(topLevelOrganizationId).getAssigneeUsername());
+    var updateRequest = new UpdateAssigneeRequest(topLevelOrganizationId, existingApprovalAssignee);
+    var updatedCandidate =
+        scenario.updateApprovalAssignee(candidate.getIdentifier(), updateRequest);
+    assertNotNull(
+        updatedCandidate.getApprovals().get(topLevelOrganizationId).getAssigneeUsername());
+
     var request =
         createRequest(
             candidate.getIdentifier(), randomNote(), randomString(), topLevelOrganizationId);
