@@ -119,7 +119,7 @@ class NviPeriodTest {
 
   @Test
   void shouldThrowPeriodNotFoundExceptionWhenPeriodDoesNotExist() {
-    assertThrows(PeriodNotFoundException.class, () -> periodService.fetchByPublishingYear("2022"));
+    assertThrows(PeriodNotFoundException.class, () -> periodService.getByPublishingYear("2022"));
   }
 
   @Test

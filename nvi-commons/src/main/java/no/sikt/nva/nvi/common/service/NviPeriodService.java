@@ -11,12 +11,15 @@ import no.sikt.nva.nvi.common.service.model.UpdatePeriodRequest;
 import no.sikt.nva.nvi.common.service.requests.CreatePeriodRequest;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class NviPeriodService {
 
-  private static final String SCIENTIFIC_INDEX_API_PATH = "scientific-index";
-  private static final String PERIOD_PATH = "period";
+  private static final Logger LOGGER = LoggerFactory.getLogger(NviPeriodService.class);
   private static final String API_HOST = "API_HOST";
+  private static final String PERIOD_PATH = "period";
+  private static final String SCIENTIFIC_INDEX_API_PATH = "scientific-index";
   private final Environment environment;
   private final PeriodRepository periodRepository;
 
@@ -26,26 +29,29 @@ public class NviPeriodService {
   }
 
   public NviPeriod create(CreatePeriodRequest request) {
+    LOGGER.info("Processing create period request {}", request);
     request.validate();
-    var period = findByPublishingYear(request.publishingYear());
-    if (period.isPresent()) {
-      throw new PeriodAlreadyExistsException(
-          String.format(
-              "Period with publishing year %s already exists!", request.publishingYear()));
+    var year = String.valueOf(request.publishingYear());
+    if (findByPublishingYear(year).isPresent()) {
+      throw PeriodAlreadyExistsException.forYear(year);
     }
 
-    var updatedPeriod = newPeriodFromRequest(request).toDao();
+    var updatedPeriod = createNewPeriodFromRequest(request).toDao();
     periodRepository.save(updatedPeriod);
-    return fetchByPublishingYear(request.publishingYear());
+    LOGGER.info("Created new period successfully");
+    return getByPublishingYear(year);
   }
 
   public NviPeriod update(UpdatePeriodRequest request) {
+    LOGGER.info("Processing update period request {}", request);
     request.validate();
-    var currentPeriod = fetchByPublishingYear(request.publishingYear());
+    var year = String.valueOf(request.publishingYear());
+    var currentPeriod = getByPublishingYear(year);
 
     var updatedPeriod = currentPeriod.updateWithRequest(request).toDao();
     periodRepository.save(updatedPeriod);
-    return fetchByPublishingYear(request.publishingYear());
+    LOGGER.info("Updated period successfully");
+    return getByPublishingYear(year);
   }
 
   public Optional<NviPeriod> findByPublishingYear(String publishingYear) {
@@ -56,47 +62,18 @@ public class NviPeriodService {
     return Optional.empty();
   }
 
-  public Optional<NviPeriod> findByPublishingYear(Integer publishingYear) {
-    return findByPublishingYear(String.valueOf(publishingYear));
-  }
-
   public NviPeriod getByPublishingYear(String publishingYear) {
     return findByPublishingYear(publishingYear)
-        .orElseThrow(
-            () ->
-                PeriodNotFoundException.withMessage(
-                    String.format("Period for year %s does not exist!", publishingYear)));
+        .orElseThrow(PeriodNotFoundException.forYear(publishingYear));
   }
 
-  public NviPeriod fetchByPublishingYear(String publishingYear) {
-    return periodRepository
-        .findByPublishingYear(publishingYear)
-        .map(NviPeriod::fromDao)
-        .orElseThrow(
-            () ->
-                PeriodNotFoundException.withMessage(
-                    String.format("Period for year %s does not exist!", publishingYear)));
-  }
-     // TODO: Fix naming (get or find, not fetch)
-  public NviPeriod fetchByPublishingYear(int publishingYear) {
-    return fetchByPublishingYear(String.valueOf(publishingYear));
-  }
-
-  public List<NviPeriod> fetchAll() {
+  public List<NviPeriod> getAll() {
     return periodRepository.getPeriods().stream().map(NviPeriod::fromDao).toList();
   }
 
-  public Optional<Integer> fetchLatestClosedPeriodYear() {
-    return periodRepository.getPeriods().stream()
-        .map(NviPeriod::fromDao)
-        .filter(NviPeriod::isClosed)
-        .map(NviPeriod::publishingYear)
-        .reduce(Integer::max);
-  }
-
-  private NviPeriod newPeriodFromRequest(CreatePeriodRequest request) {
+  private NviPeriod createNewPeriodFromRequest(CreatePeriodRequest request) {
     return NviPeriod.builder()
-        .withId(constructId(request.publishingYear()))
+        .withId(createPeriodId(request.publishingYear()))
         .withPublishingYear(request.publishingYear())
         .withStartDate(request.startDate())
         .withReportingDate(request.reportingDate())
@@ -105,7 +82,7 @@ public class NviPeriodService {
         .build();
   }
 
-  private URI constructId(Integer publishingYear) {
+  private URI createPeriodId(Integer publishingYear) {
     return UriWrapper.fromHost(environment.readEnv(API_HOST))
         .addChild(SCIENTIFIC_INDEX_API_PATH)
         .addChild(PERIOD_PATH)

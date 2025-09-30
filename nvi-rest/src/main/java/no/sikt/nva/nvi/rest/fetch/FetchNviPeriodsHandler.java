@@ -43,7 +43,7 @@ public class FetchNviPeriodsHandler extends ApiGatewayHandler<Void, NviPeriodsRe
   @Override
   protected NviPeriodsResponse processInput(Void input, RequestInfo requestInfo, Context context)
       throws ApiGatewayException {
-    return attempt(nviPeriodService::fetchAll).map(this::toNviPeriodsResponse).orElseThrow();
+    return attempt(nviPeriodService::getAll).map(this::toNviPeriodsResponse).orElseThrow();
   }
 
   @Override

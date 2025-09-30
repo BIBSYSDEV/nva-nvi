@@ -83,7 +83,7 @@ class UpdateNviPeriodHandlerTest {
 
     handleRequest(updateRequest, otherUser);
 
-    var updatedPeriod = periodService.fetchByPublishingYear(year);
+    var updatedPeriod = periodService.getByPublishingYear(year);
     assertThat(updatedPeriod.reportingDate()).isNotEqualTo(persistedPeriod.reportingDate());
     assertThat(updatedPeriod.modifiedBy()).isEqualTo(otherUser.userName());
   }

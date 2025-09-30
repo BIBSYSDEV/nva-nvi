@@ -57,13 +57,13 @@ public class ReportingPeriodSteps {
 
   @Then("the period for {string} should be closed")
   public void thenPeriodIsClosed(String year) {
-    var period = periodService.fetchByPublishingYear(year);
+    var period = periodService.getByPublishingYear(year);
     assertTrue(period.isClosed());
   }
 
   @Then("the period for {string} should not be closed")
   public void thenPeriodIsNotClosed(String year) {
-    var period = periodService.fetchByPublishingYear(year);
+    var period = periodService.getByPublishingYear(year);
     assertFalse(period.isClosed());
   }
 }

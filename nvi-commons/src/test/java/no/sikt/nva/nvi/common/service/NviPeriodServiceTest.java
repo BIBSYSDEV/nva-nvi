@@ -31,17 +31,7 @@ class NviPeriodServiceTest {
   void shouldReturnAllPeriods() {
     setupClosedPeriod(scenario, CURRENT_YEAR - 1);
     setupOpenPeriod(scenario, CURRENT_YEAR);
-    assertEquals(2, periodService.fetchAll().size());
-  }
-
-  @Test
-  void shouldReturnLatestClosedPeriodYear() {
-    setupClosedPeriod(scenario, CURRENT_YEAR - 1);
-    setupClosedPeriod(scenario, CURRENT_YEAR);
-    setupOpenPeriod(scenario, CURRENT_YEAR + 1);
-
-    var latestClosedPeriod = periodService.fetchLatestClosedPeriodYear().orElseThrow();
-    assertEquals(CURRENT_YEAR, latestClosedPeriod);
+    assertEquals(2, periodService.getAll().size());
   }
 
   @Test
