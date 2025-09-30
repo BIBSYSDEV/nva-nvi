@@ -114,7 +114,7 @@ class ConcurrencyHandlingTests {
     @Test
     void shouldFailOnDuplicateWriteOfApproval() {
       var initialState = scenario.getAllRelatedData(candidateIdentifier);
-      var first = initialState.approvals().getFirst();
+      var first = initialState.approvals().iterator().next();
 
       var updatedApproval = copyAndMutateApproval(first);
       candidateRepository.approvalStatusTable.putItem(updatedApproval);
@@ -127,7 +127,7 @@ class ConcurrencyHandlingTests {
     @Test
     void shouldFailOnWriteOfApprovalForUnknownCandidate() {
       var initialState = scenario.getAllRelatedData(candidateIdentifier);
-      var first = initialState.approvals().getFirst();
+      var first = initialState.approvals().iterator().next();
 
       var updatedApproval = copyAndMutateApproval(first).copy().identifier(randomUUID()).build();
 
