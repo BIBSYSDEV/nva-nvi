@@ -9,10 +9,11 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
+
+import java.net.URI;
 import java.util.Objects;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
@@ -32,24 +33,17 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
   private static final String INVALID_NVI_CANDIDATE_MESSAGE = "Invalid nvi candidate message";
   private static final String UPSERT_CANDIDATE_DLQ_QUEUE_URL = "UPSERT_CANDIDATE_DLQ_QUEUE_URL";
   private final CandidateRepository candidateRepository;
-  private final PeriodRepository periodRepository;
   private final QueueClient queueClient;
   private final String dlqUrl;
 
   @JacocoGenerated
   public UpsertNviCandidateHandler() {
-    this(
-        new CandidateRepository(defaultDynamoClient()), new PeriodRepository(defaultDynamoClient()),
-        new NviQueueClient(), new Environment());
+    this(new CandidateRepository(defaultDynamoClient()), new NviQueueClient(), new Environment());
   }
 
   public UpsertNviCandidateHandler(
-      CandidateRepository candidateRepository,
-      PeriodRepository periodRepository,
-      QueueClient queueClient,
-      Environment environment) {
+      CandidateRepository candidateRepository, QueueClient queueClient, Environment environment) {
     this.candidateRepository = candidateRepository;
-    this.periodRepository = periodRepository;
     this.queueClient = queueClient;
     this.dlqUrl = environment.readEnv(UPSERT_CANDIDATE_DLQ_QUEUE_URL);
   }
@@ -87,10 +81,10 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
     try {
       validateMessage(evaluatedCandidate);
       if (evaluatedCandidate.candidate() instanceof UpsertNviCandidateRequest candidate) {
-        Candidate.upsert(candidate, candidateRepository, periodRepository);
+        Candidate.upsert(candidate, candidateRepository);
       } else {
         var nonNviCandidate = (UpsertNonNviCandidateRequest) evaluatedCandidate.candidate();
-        Candidate.updateNonCandidate(nonNviCandidate, candidateRepository, periodRepository);
+        Candidate.updateNonCandidate(nonNviCandidate, candidateRepository);
       }
       LOGGER.info("NVI candidate persisted for publication: {}", publicationId);
     } catch (Exception e) {

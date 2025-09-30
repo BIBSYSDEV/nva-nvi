@@ -22,7 +22,6 @@ import java.util.Map;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.UpsertRequestBuilder;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
@@ -44,7 +43,6 @@ class FetchReportStatusByPublicationIdHandlerTest {
   private Context context;
   private ByteArrayOutputStream output;
   private CandidateRepository candidateRepository;
-  private PeriodRepository periodRepository;
   private TestScenario scenario;
   private FetchReportStatusByPublicationIdHandler handler;
 
@@ -53,18 +51,15 @@ class FetchReportStatusByPublicationIdHandlerTest {
     scenario = new TestScenario();
     setupOpenPeriod(scenario, CURRENT_YEAR);
     candidateRepository = scenario.getCandidateRepository();
-    periodRepository = scenario.getPeriodRepository();
     output = new ByteArrayOutputStream();
     context = new FakeContext();
-    handler =
-        new FetchReportStatusByPublicationIdHandler(
-            candidateRepository, periodRepository, ENVIRONMENT);
+    handler = new FetchReportStatusByPublicationIdHandler(candidateRepository, ENVIRONMENT);
   }
 
   @Test
   void shouldReturnReportedYearWhenPublicationIsReportedInClosedPeriod() throws IOException {
     var dao = setupReportedCandidate(candidateRepository, String.valueOf(CURRENT_YEAR));
-    var reportedCandidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
+    var reportedCandidate = Candidate.fetch(dao::identifier, candidateRepository);
     setupClosedPeriod(scenario, CURRENT_YEAR);
 
     handler.handleRequest(createRequest(reportedCandidate.getPublicationId()), output, context);
@@ -202,7 +197,7 @@ class FetchReportStatusByPublicationIdHandlerTest {
   void shouldReturnNotCandidateWhenPublicationIsNotApplicableCandidate() throws IOException {
     var pendingCandidate = setupCandidateWithPublicationYear(CURRENT_YEAR);
     var upsertRequest = createUpsertNonCandidateRequest(pendingCandidate.getPublicationId());
-    Candidate.updateNonCandidate(upsertRequest, candidateRepository, periodRepository);
+    Candidate.updateNonCandidate(upsertRequest, candidateRepository);
 
     handler.handleRequest(createRequest(pendingCandidate.getPublicationId()), output, context);
 
@@ -250,8 +245,7 @@ class FetchReportStatusByPublicationIdHandlerTest {
   }
 
   private Candidate upsert(UpsertNviCandidateRequest request) {
-    Candidate.upsert(request, candidateRepository, periodRepository);
-    return Candidate.fetchByPublicationId(
-        request::publicationId, candidateRepository, periodRepository);
+    Candidate.upsert(request, candidateRepository);
+    return Candidate.fetchByPublicationId(request::publicationId, candidateRepository);
   }
 }

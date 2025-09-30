@@ -11,7 +11,6 @@ import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.model.UserInstance;
 import no.sikt.nva.nvi.common.service.CandidateResponseFactory;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
@@ -31,23 +30,16 @@ public class FetchNviCandidateByPublicationIdHandler extends ApiGatewayHandler<V
 
   public static final String CANDIDATE_PUBLICATION_ID = "candidatePublicationId";
   private final CandidateRepository candidateRepository;
-  private final PeriodRepository periodRepository;
 
   @JacocoGenerated
   public FetchNviCandidateByPublicationIdHandler() {
-    this(
-        new CandidateRepository(defaultDynamoClient()),
-        new PeriodRepository(defaultDynamoClient()),
-        new Environment());
+    this(new CandidateRepository(defaultDynamoClient()), new Environment());
   }
 
   public FetchNviCandidateByPublicationIdHandler(
-      CandidateRepository candidateRepository,
-      PeriodRepository periodRepository,
-      Environment environment) {
+      CandidateRepository candidateRepository, Environment environment) {
     super(Void.class, environment);
     this.candidateRepository = candidateRepository;
-    this.periodRepository = periodRepository;
   }
 
   @Override
@@ -61,10 +53,7 @@ public class FetchNviCandidateByPublicationIdHandler extends ApiGatewayHandler<V
       throws ApiGatewayException {
     var userInstance = UserInstance.fromRequestInfo(requestInfo);
     return attempt(() -> getPublicationId(requestInfo))
-        .map(
-            identifier ->
-                Candidate.fetchByPublicationId(
-                    () -> identifier, candidateRepository, periodRepository))
+        .map(identifier -> Candidate.fetchByPublicationId(() -> identifier, candidateRepository))
         .map(this::checkIfApplicable)
         .map(candidate -> CandidateResponseFactory.create(candidate, userInstance))
         .orElseThrow(ExceptionMapper::map);

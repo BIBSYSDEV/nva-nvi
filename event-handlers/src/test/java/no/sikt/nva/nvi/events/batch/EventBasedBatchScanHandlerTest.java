@@ -366,9 +366,7 @@ class EventBasedBatchScanHandlerTest {
 
   private List<Candidate> getPersistedCandidates(Collection<Candidate> candidates) {
     return candidates.stream()
-        .map(
-            candidate ->
-                Candidate.fetch(candidate::getIdentifier, candidateRepository, periodRepository))
+        .map(candidate -> Candidate.fetch(candidate::getIdentifier, candidateRepository))
         .toList();
   }
 
@@ -411,10 +409,7 @@ class EventBasedBatchScanHandlerTest {
   private Stream<Candidate> createRandomCandidates(int i) {
     return IntStream.range(0, i)
         .boxed()
-        .map(
-            item ->
-                CandidateFixtures.setupRandomApplicableCandidate(
-                    candidateRepository, periodRepository))
+        .map(item -> CandidateFixtures.setupRandomApplicableCandidate(candidateRepository))
         .map(
             a ->
                 a.createNote(

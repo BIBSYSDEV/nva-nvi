@@ -37,6 +37,9 @@ class NviPeriodServiceTest {
     assertEquals(2023, nviPeriodService.fetchLatestClosedPeriodYear().get());
   }
 
+  @Test
+  void shouldUpdateExistingRecordWhenSavedSecondTime() {}
+
   private void persistPeriod(int publishingYear) {
     periodRepository.save(
         DbNviPeriod.builder()

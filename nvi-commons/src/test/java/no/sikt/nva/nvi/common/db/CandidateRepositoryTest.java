@@ -1,6 +1,6 @@
 package no.sikt.nva.nvi.common.db;
 
-import static no.sikt.nva.nvi.common.LocalDynamoTestSetup.initializeTestDatabase;
+import static java.util.Collections.emptyList;
 import static no.sikt.nva.nvi.common.LocalDynamoTestSetup.scanDB;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidateBuilder;
@@ -18,9 +18,12 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import no.sikt.nva.nvi.common.TestScenario;
+import no.sikt.nva.nvi.common.db.model.ResponseContext;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.exceptions.TransactionException;
 import no.sikt.nva.nvi.common.model.InstanceType;
@@ -37,13 +40,12 @@ class CandidateRepositoryTest {
 
   private DynamoDbClient localDynamo;
   private CandidateRepository candidateRepository;
-  private PeriodRepository periodRepository;
 
   @BeforeEach
   void setUp() {
-    localDynamo = initializeTestDatabase();
-    candidateRepository = new CandidateRepository(localDynamo);
-    periodRepository = new PeriodRepository(localDynamo);
+    var scenario = new TestScenario();
+    localDynamo = scenario.getLocalDynamo();
+    candidateRepository = scenario.getCandidateRepository();
   }
 
   @Test
@@ -61,13 +63,13 @@ class CandidateRepositoryTest {
     var requestBuilder =
         createUpsertCandidateRequest(randomUri()).withInstanceType(InstanceType.ACADEMIC_ARTICLE);
     var originalRequest = requestBuilder.build();
-    Candidate.upsert(originalRequest, candidateRepository, periodRepository);
+    Candidate.upsert(originalRequest, candidateRepository);
     var candidateDao =
         candidateRepository.findByPublicationId(originalRequest.publicationId()).get();
     var originalDbCandidate = candidateDao.candidate();
 
     var newUpsertRequest = requestBuilder.withInstanceType(InstanceType.ACADEMIC_MONOGRAPH).build();
-    Candidate.upsert(newUpsertRequest, candidateRepository, periodRepository);
+    Candidate.upsert(newUpsertRequest, candidateRepository);
     var updatedDbCandidate =
         candidateRepository.findCandidateById(candidateDao.identifier()).get().candidate();
 
@@ -78,9 +80,11 @@ class CandidateRepositoryTest {
   @Test
   void shouldThrowTransactionExceptionWhenFailingOnSendingTransaction() {
     var client = mock(DynamoDbClient.class);
-    var repository = spy(new CandidateRepository(client));
+    var failingRepository = spy(new CandidateRepository(client));
 
-    doReturn(Optional.empty()).when(repository).findByPublicationId(any());
+    doReturn(new ResponseContext(Optional.empty(), emptyList()))
+        .when(failingRepository)
+        .getCandidateAggregate((URI) any());
 
     when(client.transactWriteItems((TransactWriteItemsRequest) any()))
         .thenThrow(getTransactionCanceledException());
@@ -88,9 +92,7 @@ class CandidateRepositoryTest {
     var exception =
         assertThrows(
             TransactionException.class,
-            () ->
-                Candidate.upsert(
-                    getUpsertNviCandidateRequest(), repository, mock(PeriodRepository.class)));
+            () -> Candidate.upsert(getUpsertNviCandidateRequest(), failingRepository));
 
     assertTrue(exception.getMessage().contains("Operation PUT with condition"));
   }

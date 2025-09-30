@@ -53,8 +53,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Override
   protected ApiGatewayHandler<Void, CandidateDto> createHandler() {
-    return new FetchNviCandidateHandler(
-        scenario.getCandidateRepository(), scenario.getPeriodRepository(), ENVIRONMENT);
+    return new FetchNviCandidateHandler(scenario.getCandidateRepository(), ENVIRONMENT);
   }
 
   @BeforeEach

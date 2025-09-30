@@ -60,7 +60,6 @@ import java.util.Optional;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.SampleExpandedPublicationFactory;
 import no.sikt.nva.nvi.common.client.model.Organization;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures;
 import no.sikt.nva.nvi.common.dto.PointCalculationDto;
 import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
@@ -168,7 +167,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     var year = LocalDateTime.now().getYear();
     var resourceFileUri = setupCandidate(year);
     periodRepository = PeriodRepositoryFixtures.periodRepositoryReturningOpenedPeriod(year);
-    setupEvaluatorService(periodRepository);
+    setupEvaluatorService();
 
     handler =
         new EvaluateNviCandidateHandler(
@@ -624,15 +623,14 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     return nviCreators.stream().mapToInt(creator -> creator.affiliations().size()).sum();
   }
 
-  private void setupEvaluatorService(PeriodRepository periodRepository) {
+  private void setupEvaluatorService() {
     var environment = getEvaluateNviCandidateHandlerEnvironment();
     var calculator = new CreatorVerificationUtil(authorizedBackendUriRetriever, environment);
     evaluatorService =
         new EvaluatorService(
             scenario.getS3StorageReaderForExpandedResourcesBucket(),
             calculator,
-            candidateRepository,
-            periodRepository);
+            candidateRepository);
   }
 
   private URI setupCandidate(int year) throws IOException {
@@ -640,10 +638,9 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
         randomUpsertRequestBuilder()
             .withPublicationDate(new PublicationDateDto(String.valueOf(year), null, null))
             .build();
-    Candidate.upsert(upsertCandidateRequest, candidateRepository, periodRepository);
+    Candidate.upsert(upsertCandidateRequest, candidateRepository);
     var candidateInClosedPeriod =
-        Candidate.fetchByPublicationId(
-            upsertCandidateRequest::publicationId, candidateRepository, periodRepository);
+        Candidate.fetchByPublicationId(upsertCandidateRequest::publicationId, candidateRepository);
     var content =
         stringFromResources(Path.of(ACADEMIC_ARTICLE_PATH))
             .replace(
@@ -1070,7 +1067,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
               .withPublicationDate(new PublicationDateDto(year, null, null))
               .withPublicationId(sampleExpandedPublication.id())
               .build();
-      Candidate.upsert(upsertCandidateRequest, candidateRepository, periodRepository);
+      Candidate.upsert(upsertCandidateRequest, candidateRepository);
     }
   }
 }

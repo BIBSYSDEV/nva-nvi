@@ -62,6 +62,7 @@ import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -78,7 +79,7 @@ class CandidateTest extends CandidateTestSetup {
   void shouldThrowNotFoundExceptionWhenCandidateDoesNotExist() {
     assertThrows(
         CandidateNotFoundException.class,
-        () -> Candidate.fetch(UUID::randomUUID, candidateRepository, periodRepository));
+        () -> Candidate.fetch(UUID::randomUUID, candidateRepository));
   }
 
   @Test
@@ -101,7 +102,7 @@ class CandidateTest extends CandidateTestSetup {
             .build();
     var pointCalculation = randomPointCalculationDtoBuilder().withChannel(channel).build();
     var request = randomUpsertRequestBuilder().withPointCalculation(pointCalculation).build();
-    Candidate.upsert(request, candidateRepository, periodRepository);
+    Candidate.upsert(request, candidateRepository);
     var persistedCandidate =
         candidateRepository.findByPublicationId(request.publicationId()).orElseThrow().candidate();
     assertEquals(expectedLevel, persistedCandidate.level());
@@ -168,10 +169,8 @@ class CandidateTest extends CandidateTestSetup {
   @Test
   void shouldUpdateCandidateWithSystemGeneratedModifiedDate() {
     var request = getUpdateRequestForExistingCandidate();
-    var candidate =
-        Candidate.fetchByPublicationId(
-            request::publicationId, candidateRepository, periodRepository);
-    Candidate.upsert(request, candidateRepository, periodRepository);
+    var candidate = Candidate.fetchByPublicationId(request::publicationId, candidateRepository);
+    Candidate.upsert(request, candidateRepository);
     var updatedCandidate =
         candidateRepository.findCandidateById(candidate.getIdentifier()).orElseThrow().candidate();
     assertNotEquals(candidate.getModifiedDate(), updatedCandidate.modifiedDate());
@@ -180,11 +179,9 @@ class CandidateTest extends CandidateTestSetup {
   @Test
   void shouldNotUpdateCandidateCreatedDateOnUpdates() {
     var request = getUpdateRequestForExistingCandidate();
-    var candidate =
-        Candidate.fetchByPublicationId(
-            request::publicationId, candidateRepository, periodRepository);
+    var candidate = Candidate.fetchByPublicationId(request::publicationId, candidateRepository);
     var expectedCreatedDate = candidate.getCreatedDate();
-    Candidate.upsert(request, candidateRepository, periodRepository);
+    Candidate.upsert(request, candidateRepository);
     var actualPersistedCandidate =
         candidateRepository.findCandidateById(candidate.getIdentifier()).orElseThrow().candidate();
     assertEquals(expectedCreatedDate, actualPersistedCandidate.createdDate());
@@ -199,7 +196,7 @@ class CandidateTest extends CandidateTestSetup {
         randomUpsertRequestBuilder().withPublicationId(candidate.publicationId()).build();
     assertThrows(
         IllegalCandidateUpdateException.class,
-        () -> Candidate.upsert(updateRequest, candidateRepository, periodRepository));
+        () -> Candidate.upsert(updateRequest, candidateRepository));
   }
 
   @Test
@@ -214,10 +211,9 @@ class CandidateTest extends CandidateTestSetup {
 
   @Test
   void shouldFetchCandidateByPublicationId() {
-    var candidate = setupRandomApplicableCandidate(candidateRepository, periodRepository);
+    var candidate = setupRandomApplicableCandidate(candidateRepository);
     var fetchedCandidate =
-        Candidate.fetchByPublicationId(
-            candidate::getPublicationId, candidateRepository, periodRepository);
+        Candidate.fetchByPublicationId(candidate::getPublicationId, candidateRepository);
     assertThat(fetchedCandidate.getIdentifier(), is(equalTo(candidate.getIdentifier())));
   }
 
@@ -225,8 +221,7 @@ class CandidateTest extends CandidateTestSetup {
   void shouldDoNothingIfCreateRequestIsForNonCandidateThatDoesNotExist() {
     var updateRequest = createUpsertNonCandidateRequest(randomUri());
 
-    var optionalCandidate =
-        Candidate.updateNonCandidate(updateRequest, candidateRepository, periodRepository);
+    var optionalCandidate = Candidate.updateNonCandidate(updateRequest, candidateRepository);
     assertThat(optionalCandidate, is(equalTo(Optional.empty())));
   }
 
@@ -245,8 +240,7 @@ class CandidateTest extends CandidateTestSetup {
     scenario.updateApprovalStatus(candidate.getIdentifier(), approvalStatus, organization2.id());
 
     var updatedCandidate =
-        Candidate.fetchByPublicationId(
-            candidate::getPublicationId, candidateRepository, periodRepository);
+        Candidate.fetchByPublicationId(candidate::getPublicationId, candidateRepository);
     assertEquals(approvalStatus.getValue(), updatedCandidate.getGlobalApprovalStatus().getValue());
   }
 
@@ -321,13 +315,11 @@ class CandidateTest extends CandidateTestSetup {
 
   @Test
   void shouldReturnCandidateWithNoPeriodWhenNotApplicable() {
-    var tempCandidate = setupRandomApplicableCandidate(candidateRepository, periodRepository);
+    var tempCandidate = setupRandomApplicableCandidate(candidateRepository);
     var updateRequest = createUpsertNonCandidateRequest(tempCandidate.getPublicationId());
     var candidateBO =
-        Candidate.updateNonCandidate(updateRequest, candidateRepository, periodRepository)
-            .orElseThrow();
-    var fetchedCandidate =
-        Candidate.fetch(candidateBO::getIdentifier, candidateRepository, periodRepository);
+        Candidate.updateNonCandidate(updateRequest, candidateRepository).orElseThrow();
+    var fetchedCandidate = Candidate.fetch(candidateBO::getIdentifier, candidateRepository);
     assertThat(fetchedCandidate.getPeriod().status(), is(equalTo(Status.NO_PERIOD)));
   }
 
@@ -338,11 +330,9 @@ class CandidateTest extends CandidateTestSetup {
         randomUpsertRequestBuilder()
             .withPublicationId(nonApplicableCandidate.getPublicationId())
             .build(),
-        candidateRepository,
-        periodRepository);
+        candidateRepository);
     var updatedApplicableCandidate =
-        Candidate.fetch(
-            nonApplicableCandidate::getIdentifier, candidateRepository, periodRepository);
+        Candidate.fetch(nonApplicableCandidate::getIdentifier, candidateRepository);
     assertThat(
         updatedApplicableCandidate.getPeriod().year(),
         is(equalTo(updatedApplicableCandidate.getPeriod().year())));
@@ -363,7 +353,7 @@ class CandidateTest extends CandidateTestSetup {
   @Test
   void shouldReturnCandidateWithReportStatus() {
     var dao = setupReportedCandidate(candidateRepository, randomYear());
-    var candidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
+    var candidate = Candidate.fetch(dao::identifier, candidateRepository);
 
     var actualStatus = candidate.getReportStatus().getValue();
     var expectedStatus = ReportStatus.REPORTED.getValue();
@@ -376,7 +366,7 @@ class CandidateTest extends CandidateTestSetup {
         candidateRepository.create(
             randomCandidate().copy().reportStatus(ReportStatus.REPORTED).build(),
             List.of(randomApproval()));
-    var candidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
+    var candidate = Candidate.fetch(dao::identifier, candidateRepository);
     assertTrue(candidate.isReported());
   }
 
@@ -386,7 +376,7 @@ class CandidateTest extends CandidateTestSetup {
         candidateRepository.create(
             randomCandidate().copy().reportStatus(ReportStatus.REPORTED).build(),
             List.of(randomApproval()));
-    var candidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
+    var candidate = Candidate.fetch(dao::identifier, candidateRepository);
     var id = PeriodStatusDto.fromPeriodStatus(candidate.getPeriod()).id();
 
     assertThat(id, is(not(nullValue())));
@@ -399,8 +389,7 @@ class CandidateTest extends CandidateTestSetup {
             randomCandidate().copy().reportStatus(ReportStatus.REPORTED).build(),
             List.of(randomApproval()));
     var candidate =
-        Candidate.fetchByPublicationId(
-            () -> dao.candidate().publicationId(), candidateRepository, periodRepository);
+        Candidate.fetchByPublicationId(() -> dao.candidate().publicationId(), candidateRepository);
     var id = PeriodStatusDto.fromPeriodStatus(candidate.getPeriod()).id();
 
     assertThat(id, is(not(nullValue())));
@@ -424,20 +413,19 @@ class CandidateTest extends CandidateTestSetup {
         candidateRepository.create(
             randomCandidate().copy().creators(List.of(creator1, creator2)).build(),
             List.of(randomApproval()));
-    var candidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
+    var candidate = Candidate.fetch(dao::identifier, candidateRepository);
     assertEquals(
         List.of(creator1affiliation, creator2affiliation), candidate.getNviCreatorAffiliations());
   }
 
   @Test
   void shouldUpdateVersion() {
-    var candidate = setupRandomApplicableCandidate(candidateRepository, periodRepository);
+    var candidate = setupRandomApplicableCandidate(candidateRepository);
     var dao = candidateRepository.findCandidateById(candidate.getIdentifier()).orElseThrow();
 
-    candidate.updateVersion(candidateRepository);
+    candidateRepository.updateCandidate(dao);
 
-    var updatedCandidate =
-        Candidate.fetch(candidate::getIdentifier, candidateRepository, periodRepository);
+    var updatedCandidate = Candidate.fetch(candidate::getIdentifier, candidateRepository);
     var updatedDao = candidateRepository.findCandidateById(candidate.getIdentifier()).orElseThrow();
 
     assertEquals(candidate, updatedCandidate);
@@ -492,8 +480,22 @@ class CandidateTest extends CandidateTestSetup {
   void shouldReturnFalseWhenCandidateIsReportedInClosedPeriod() {
     var dao = setupReportedCandidate(candidateRepository, String.valueOf(CURRENT_YEAR));
     setupClosedPeriod(scenario, CURRENT_YEAR);
-    var candidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
+    var candidate = Candidate.fetch(dao::identifier, candidateRepository);
     assertFalse(candidate.isNotReportedInClosedPeriod());
+  }
+
+  @Test
+  @Disabled
+  void shouldBeAbleToRoundTripWithNoLossOfData() {
+    var candidate = setupRandomApplicableCandidate(candidateRepository);
+    var aggregate = candidateRepository.getCandidateAggregate(candidate.getIdentifier());
+    var originalCandidate = aggregate.candidateAggregate().orElseThrow().candidate();
+    var roundTrippedCandidate = Candidate.fromAggregate(candidateRepository, aggregate).toDao();
+
+    Assertions.assertThat(originalCandidate)
+        .usingRecursiveComparison()
+        .ignoringCollectionOrder()
+        .isEqualTo(roundTrippedCandidate);
   }
 
   @Deprecated
@@ -521,17 +523,16 @@ class CandidateTest extends CandidateTestSetup {
   }
 
   private Candidate nonApplicableCandidate() {
-    var tempCandidate = setupRandomApplicableCandidate(candidateRepository, periodRepository);
+    var tempCandidate = setupRandomApplicableCandidate(candidateRepository);
     var updateRequest = createUpsertNonCandidateRequest(tempCandidate.getPublicationId());
     var candidateBO =
-        Candidate.updateNonCandidate(updateRequest, candidateRepository, periodRepository)
-            .orElseThrow();
-    return Candidate.fetch(candidateBO::getIdentifier, candidateRepository, periodRepository);
+        Candidate.updateNonCandidate(updateRequest, candidateRepository).orElseThrow();
+    return Candidate.fetch(candidateBO::getIdentifier, candidateRepository);
   }
 
   private UpsertNviCandidateRequest getUpdateRequestForExistingCandidate() {
     var insertRequest = randomUpsertRequestBuilder().build();
-    Candidate.upsert(insertRequest, candidateRepository, periodRepository);
+    Candidate.upsert(insertRequest, candidateRepository);
     return UpsertRequestBuilder.fromRequest(insertRequest).build();
   }
 

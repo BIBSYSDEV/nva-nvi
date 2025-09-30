@@ -17,7 +17,6 @@ import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.StorageWriter;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.queue.DynamoDbChangeMessage;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
@@ -54,7 +53,6 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
   private final StorageReader<URI> storageReader;
   private final StorageWriter<IndexDocumentWithConsumptionAttributes> storageWriter;
   private final CandidateRepository candidateRepository;
-  private final PeriodRepository periodRepository;
   private final UriRetriever uriRetriever;
   private final QueueClient sqsClient;
   private final String queueUrl;
@@ -67,7 +65,6 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
         new S3StorageWriter(new Environment().readEnv(EXPANDED_RESOURCES_BUCKET)),
         new NviQueueClient(),
         new CandidateRepository(defaultDynamoClient()),
-        new PeriodRepository(defaultDynamoClient()),
         new UriRetriever(),
         new Environment());
   }
@@ -77,14 +74,12 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
       StorageWriter<IndexDocumentWithConsumptionAttributes> storageWriter,
       QueueClient sqsClient,
       CandidateRepository candidateRepository,
-      PeriodRepository periodRepository,
       UriRetriever uriRetriever,
       Environment environment) {
     this.storageReader = storageReader;
     this.storageWriter = storageWriter;
     this.sqsClient = sqsClient;
     this.candidateRepository = candidateRepository;
-    this.periodRepository = periodRepository;
     this.uriRetriever = uriRetriever;
     this.queueUrl = environment.readEnv(QUEUE_URL);
     this.dlqUrl = environment.readEnv(INDEX_DLQ);
@@ -156,8 +151,7 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
   }
 
   private Candidate fetchCandidate(UUID candidateIdentifier) {
-    return attempt(
-            () -> Candidate.fetch(() -> candidateIdentifier, candidateRepository, periodRepository))
+    return attempt(() -> Candidate.fetch(() -> candidateIdentifier, candidateRepository))
         .orElse(
             failure -> {
               handleFailure(

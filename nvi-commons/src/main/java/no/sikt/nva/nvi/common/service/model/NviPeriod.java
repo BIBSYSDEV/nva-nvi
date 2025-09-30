@@ -5,6 +5,7 @@ import static nva.commons.core.attempt.Try.attempt;
 import java.net.URI;
 import java.time.Instant;
 import java.util.Objects;
+import no.sikt.nva.nvi.common.db.NviPeriodDao;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.dto.NviPeriodDto;
@@ -29,6 +30,7 @@ public class NviPeriod {
   private final Instant reportingDate;
   private final Username createdBy;
   private final Username modifiedBy;
+  private final Long revisionRead;
 
   protected NviPeriod(
       URI id,
@@ -36,13 +38,15 @@ public class NviPeriod {
       Instant startDate,
       Instant reportingDate,
       Username createdBy,
-      Username modifiedBy) {
+      Username modifiedBy,
+      Long revisionRead) {
     this.id = id;
     this.publishingYear = publishingYear;
     this.startDate = startDate;
     this.reportingDate = reportingDate;
     this.createdBy = createdBy;
     this.modifiedBy = modifiedBy;
+    this.revisionRead = revisionRead;
   }
 
   public static NviPeriod create(CreatePeriodRequest request, PeriodRepository periodRepository) {
@@ -61,10 +65,11 @@ public class NviPeriod {
     return period.fetch(periodRepository);
   }
 
+  // FIXME: Remove this
   public static NviPeriod fetchByPublishingYear(
       String publishingYear, PeriodRepository periodRepository) {
     return periodRepository
-        .findByPublishingYear(publishingYear)
+        .findByPublishingYearAsDao(publishingYear)
         .map(NviPeriod::fromDbPeriod)
         .orElseThrow(
             () ->
@@ -72,14 +77,16 @@ public class NviPeriod {
                     String.format("Period for year %s does not exist!", publishingYear)));
   }
 
-  public static NviPeriod fromDbPeriod(DbNviPeriod dbNviPeriod) {
+  public static NviPeriod fromDbPeriod(NviPeriodDao period) {
+    var dbNviPeriod = period.nviPeriod();
     return new NviPeriod(
         dbNviPeriod.id(),
         Integer.parseInt(dbNviPeriod.publishingYear()),
         dbNviPeriod.startDate(),
         dbNviPeriod.reportingDate(),
         Username.fromUserName(dbNviPeriod.createdBy()),
-        Username.fromUserName(dbNviPeriod.modifiedBy()));
+        Username.fromUserName(dbNviPeriod.modifiedBy()),
+        period.revision());
   }
 
   public URI getId() {
@@ -137,6 +144,10 @@ public class NviPeriod {
     return reportingDate.isBefore(Instant.now());
   }
 
+  public boolean isOpen() {
+    return !isClosed();
+  }
+
   private static Builder builder() {
     return new Builder();
   }
@@ -149,6 +160,7 @@ public class NviPeriod {
         request.startDate(),
         request.reportingDate(),
         request.createdBy(),
+        null,
         null);
   }
 
@@ -160,7 +172,8 @@ public class NviPeriod {
         request.startDate(),
         request.reportingDate(),
         null,
-        request.modifiedBy());
+        request.modifiedBy(),
+        null);
   }
 
   private static URI constructId(String publishingYear) {
@@ -184,7 +197,7 @@ public class NviPeriod {
   }
 
   private void persist(PeriodRepository periodRepository) {
-    periodRepository.save(this.toDbObject());
+    periodRepository.save(this.toDao());
   }
 
   private boolean exists(PeriodRepository periodRepository) {
@@ -199,6 +212,15 @@ public class NviPeriod {
         .withReportingDate(reportingDate)
         .withCreatedBy(createdBy)
         .withModifiedBy(modifiedBy);
+  }
+
+  public NviPeriodDao toDao() {
+    var dbPeriod = this.toDbObject();
+    return NviPeriodDao.builder()
+        .identifier(dbPeriod.publishingYear())
+        .nviPeriod(dbPeriod)
+        .revision(revisionRead)
+        .build();
   }
 
   private DbNviPeriod toDbObject() {
@@ -220,6 +242,7 @@ public class NviPeriod {
     private Instant reportingDate;
     private Username createdBy;
     private Username modifiedBy;
+    private Long revision;
 
     private Builder() {}
 
@@ -253,8 +276,14 @@ public class NviPeriod {
       return this;
     }
 
+    public Builder withRevision(Long revision) {
+      this.revision = revision;
+      return this;
+    }
+
     public NviPeriod build() {
-      return new NviPeriod(id, publishingYear, startDate, reportingDate, createdBy, modifiedBy);
+      return new NviPeriod(
+          id, publishingYear, startDate, reportingDate, createdBy, modifiedBy, revision);
     }
   }
 }

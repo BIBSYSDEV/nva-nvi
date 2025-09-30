@@ -295,9 +295,7 @@ class BatchScanUtilTest {
 
     // Run the migration and check that the topLevelNviOrganizations field is populated as expected
     batchScanUtil.migrateAndUpdateVersion(10, null, emptyList());
-    var actualCandidate =
-        Candidate.fetchByPublicationId(
-            publication::id, candidateRepository, scenario.getPeriodRepository());
+    var actualCandidate = Candidate.fetchByPublicationId(publication::id, candidateRepository);
 
     Assertions.assertThat(actualCandidate.getPublicationDetails())
         .extracting(
@@ -349,9 +347,7 @@ class BatchScanUtilTest {
 
     // Run the migration and check that persisted data is updated correctly
     batchScanUtil.migrateAndUpdateVersion(10, null, emptyList());
-    var actualCandidate =
-        Candidate.fetchByPublicationId(
-            publication::id, candidateRepository, scenario.getPeriodRepository());
+    var actualCandidate = Candidate.fetchByPublicationId(publication::id, candidateRepository);
 
     Assertions.assertThat(actualCandidate.getPublicationDetails())
         .extracting(

@@ -80,14 +80,11 @@ class UpsertNviCandidateHandlerTest {
   void setup() {
     scenario = new TestScenario();
     candidateRepository = scenario.getCandidateRepository();
-    periodRepository = scenario.getPeriodRepository();
     setupOpenPeriod(scenario, CURRENT_YEAR);
     queueClient = mock(QueueClient.class);
     environment = mock(Environment.class);
     when(environment.readEnv("UPSERT_CANDIDATE_DLQ_QUEUE_URL")).thenReturn(DLQ_QUEUE_URL);
-    handler =
-        new UpsertNviCandidateHandler(
-            candidateRepository, periodRepository, queueClient, environment);
+    handler = new UpsertNviCandidateHandler(candidateRepository, queueClient, environment);
   }
 
   @Test
@@ -109,9 +106,7 @@ class UpsertNviCandidateHandlerTest {
   @Test
   void shouldSendMessageToDlqWhenUnexpectedErrorOccurs() {
     candidateRepository = mock(CandidateRepository.class);
-    handler =
-        new UpsertNviCandidateHandler(
-            candidateRepository, periodRepository, queueClient, environment);
+    handler = new UpsertNviCandidateHandler(candidateRepository, queueClient, environment);
     when(candidateRepository.create(any(), any())).thenThrow(RuntimeException.class);
 
     handler.handleRequest(createEvent(randomCandidateEvaluatedMessage()), CONTEXT);
@@ -142,12 +137,10 @@ class UpsertNviCandidateHandlerTest {
 
   @Test
   void shouldUpdateExistingNviCandidateToNonCandidateWhenIncomingEventIsNonCandidate() {
-    var candidate =
-        CandidateFixtures.setupRandomApplicableCandidate(candidateRepository, periodRepository);
+    var candidate = CandidateFixtures.setupRandomApplicableCandidate(candidateRepository);
     var eventMessage = nonCandidateMessageForExistingCandidate(candidate);
     handler.handleRequest(createEvent(eventMessage), CONTEXT);
-    var updatedCandidate =
-        Candidate.fetch(candidate::getIdentifier, candidateRepository, periodRepository);
+    var updatedCandidate = Candidate.fetch(candidate::getIdentifier, candidateRepository);
     assertThat(updatedCandidate.isApplicable(), is(false));
   }
 
@@ -161,13 +154,12 @@ class UpsertNviCandidateHandlerTest {
 
     var request =
         createUpsertCandidateRequest(institutions).withPublicationId(publicationId).build();
-    Candidate.upsert(request, candidateRepository, periodRepository);
+    Candidate.upsert(request, candidateRepository);
 
     var sqsEvent = createEvent(keep, publicationId, generateS3BucketUri(identifier));
     handler.handleRequest(sqsEvent, CONTEXT);
     var approvals =
-        Candidate.fetchByPublicationId(() -> publicationId, candidateRepository, periodRepository)
-            .getApprovals();
+        Candidate.fetchByPublicationId(() -> publicationId, candidateRepository).getApprovals();
     assertTrue(approvals.containsKey(keep));
     assertFalse(approvals.containsKey(delete));
     assertThat(approvals.size(), is(2));
@@ -179,7 +171,7 @@ class UpsertNviCandidateHandlerTest {
     var upsertCandidateRequest = createUpsertCandidateRequest(institutionId).build();
     var publicationId = upsertCandidateRequest.publicationId();
 
-    Candidate.upsert(upsertCandidateRequest, candidateRepository, periodRepository);
+    Candidate.upsert(upsertCandidateRequest, candidateRepository);
     var candidate = scenario.getCandidateByPublicationId(publicationId);
     scenario.updateApprovalStatus(
         candidate.getIdentifier(), ApprovalStatus.APPROVED, institutionId);
@@ -187,7 +179,7 @@ class UpsertNviCandidateHandlerTest {
     var approvedCandidate = scenario.getCandidateByPublicationId(publicationId);
     var approval = approvedCandidate.getApprovals().get(institutionId);
     var newUpsertRequest = createNewUpsertRequestNotAffectingApprovals(upsertCandidateRequest);
-    Candidate.upsert(newUpsertRequest, candidateRepository, periodRepository);
+    Candidate.upsert(newUpsertRequest, candidateRepository);
 
     var updatedCandidate = scenario.getCandidateByPublicationId(publicationId);
     var updatedApproval = updatedCandidate.getApprovals().get(institutionId);

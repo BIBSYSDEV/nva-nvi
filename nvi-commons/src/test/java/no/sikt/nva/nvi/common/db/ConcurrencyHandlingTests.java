@@ -4,6 +4,7 @@ import static java.util.Collections.emptyList;
 import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpdateStatusRequest;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequest;
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeriod;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.model.InstanceType.ACADEMIC_ARTICLE;
 import static no.sikt.nva.nvi.common.model.InstanceType.ACADEMIC_MONOGRAPH;
@@ -15,6 +16,10 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import java.net.URI;
 import java.time.Instant;
@@ -41,6 +46,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
+import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.UpdateItemRequest;
 
 /**
@@ -57,6 +63,7 @@ class ConcurrencyHandlingTests {
   private CandidateRepository candidateRepository;
   private UpsertRequestBuilder upsertRequestBuilder;
   private UUID candidateIdentifier;
+  private URI publicationId;
   private Instant testStartedAt;
 
   @BeforeEach
@@ -68,7 +75,9 @@ class ConcurrencyHandlingTests {
         createUpsertCandidateRequest(ORGANIZATION_1, ORGANIZATION_2)
             .withInstanceType(ACADEMIC_ARTICLE)
             .withPublicationDate(PUBLICATION_DATE.toDtoPublicationDate());
-    candidateIdentifier = prepareCandidateWithNotesAndApprovals();
+    var candidate = prepareCandidateWithNotesAndApprovals();
+    candidateIdentifier = candidate.getIdentifier();
+    publicationId = candidate.getPublicationId();
   }
 
   @Nested
@@ -150,7 +159,7 @@ class ConcurrencyHandlingTests {
     @Test
     void shouldUpdateLastWrittenTimestampForApprovals() {
       var initialState = scenario.getAllRelatedData(candidateIdentifier);
-      var first = initialState.approvals().getFirst();
+      var first = initialState.approvals().stream().findFirst().orElseThrow();
       var organization = first.approvalStatus().institutionId();
 
       var checkpoint = Instant.now();
@@ -249,6 +258,48 @@ class ConcurrencyHandlingTests {
       candidateRepository.candidateTable.putItem(secondUpdate);
       var third = scenario.getCandidateByIdentifier(candidateIdentifier);
       assertThat(third.getRevisionRead()).isEqualTo(2L);
+    }
+
+    @Test
+    void shouldGetAllRelatedDataWithAggregateQuery() {
+      var response = candidateRepository.getCandidateAggregate(candidateIdentifier);
+
+      var periods = response.allPeriods();
+      var aggregate = response.candidateAggregate().orElseThrow();
+
+      assertThat(periods).hasOnlyElementsOfType(NviPeriodDao.class).hasSizeGreaterThanOrEqualTo(2);
+      assertThat(aggregate.candidate().identifier()).isEqualTo(candidateIdentifier);
+      assertThat(aggregate.approvals()).hasOnlyElementsOfType(ApprovalStatusDao.class).hasSize(2);
+      assertThat(aggregate.notes()).hasOnlyElementsOfType(NoteDao.class).hasSize(3);
+    }
+
+    @Test
+    void shouldOnlyNeedTwoRequestsToGetCandidateByIdentifier() {
+      var mockClient = spy(scenario.getLocalDynamo());
+      var testRepository = new CandidateRepository(mockClient);
+
+      testRepository.getCandidateAggregate(candidateIdentifier);
+
+      verify(mockClient, times(2)).query(any(QueryRequest.class));
+    }
+
+    @Test
+    void shouldGetPeriodsAndAllCandidateDataWithOnlyTwoRequests() {
+      var mockClient = spy(scenario.getLocalDynamo());
+      var testRepository = new CandidateRepository(mockClient);
+
+      testRepository.getCandidateAggregate(publicationId);
+
+      verify(mockClient, times(2)).query(any(QueryRequest.class));
+    }
+
+    @Test
+    void shouldReturnEmptyOptionalWhenCandidateDoesNotExist() {
+      var nonExistentCandidateId = UUID.randomUUID();
+      var response = candidateRepository.getCandidateAggregate(nonExistentCandidateId);
+
+      assertThat(response.candidateAggregate()).isEmpty();
+      assertThat(response.allPeriods()).isNotEmpty();
     }
   }
 
@@ -414,13 +465,12 @@ class ConcurrencyHandlingTests {
     }
   }
 
-  /**
-   * Set up a Candidate in a valid state, with Notes, Approvals and an open Period.
-   *
-   * @return identifier of the Candidate
-   */
-  private UUID prepareCandidateWithNotesAndApprovals() {
+  /** Set up a Candidate in a valid state, with Notes, Approvals, and an open Period. */
+  private Candidate prepareCandidateWithNotesAndApprovals() {
+    var lastYear = Integer.parseInt(PUBLICATION_DATE.year()) - 1;
+    setupClosedPeriod(scenario, String.valueOf(lastYear));
     setupOpenPeriod(scenario, PUBLICATION_DATE.year());
+
     var candidate = scenario.upsertCandidate(upsertRequestBuilder.build());
     var candidateId = candidate.getIdentifier();
 
@@ -430,7 +480,7 @@ class ConcurrencyHandlingTests {
     scenario.createNote(candidateId, "Note 2", ORGANIZATION_2);
     scenario.createNote(candidateId, "Note 3", ORGANIZATION_1);
 
-    return candidateId;
+    return scenario.getCandidateByIdentifier(candidateId);
   }
 
   private Set<Organization> createOrganizations(int numberOfNviOrganizations) {

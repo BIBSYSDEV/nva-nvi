@@ -14,6 +14,7 @@ import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.internal.conditional.BeginsWithConditional;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 
 public class PeriodRepository extends DynamoRepository {
 
@@ -26,6 +27,17 @@ public class PeriodRepository extends DynamoRepository {
     this.nviPeriodTable = this.client.table(NVI_TABLE_NAME, NviPeriodDao.TABLE_SCHEMA);
   }
 
+  // FIXME: Make this void
+  public NviPeriodDao save(NviPeriodDao period) {
+    LOGGER.info("Saving period: {}", period);
+    var updatedPeriod = period.copy().version(randomUUID().toString()).build();
+
+    this.nviPeriodTable.putItem(updatedPeriod);
+
+    return this.nviPeriodTable.getItem(updatedPeriod);
+  }
+
+  // FIXME: Remove
   public DbNviPeriod save(DbNviPeriod nviPeriod) {
     LOGGER.info("Saving period: {}", nviPeriod);
     var nviPeriodDao =
@@ -41,14 +53,15 @@ public class PeriodRepository extends DynamoRepository {
     return fetched.nviPeriod();
   }
 
-  // TODO: Added because we need DAOs in tests. Refactor when we fix transaction locking.
-  public Optional<NviPeriodDao> findByYear(String publishingYear) {
+  // FIXME: Temp
+  public Optional<NviPeriodDao> findByPublishingYearAsDao(String publishingYear) {
     var queryObj =
         NviPeriodDao.builder()
             .nviPeriod(DbNviPeriod.builder().publishingYear(publishingYear).build())
             .identifier(publishingYear)
             .build();
-    return Optional.ofNullable(nviPeriodTable.getItem(queryObj));
+    var fetched = this.nviPeriodTable.getItem(queryObj);
+    return Optional.ofNullable(fetched);
   }
 
   public Optional<DbNviPeriod> findByPublishingYear(String publishingYear) {
@@ -61,15 +74,27 @@ public class PeriodRepository extends DynamoRepository {
     return Optional.ofNullable(fetched).map(NviPeriodDao::nviPeriod);
   }
 
-  public List<DbNviPeriod> getPeriods() {
+  @Deprecated // FIXME
+  public List<NviPeriodDao> getPeriods() {
     return this.nviPeriodTable.query(beginsWithPeriodQuery()).stream()
         .map(Page::items)
         .flatMap(Collection::stream)
-        .map(NviPeriodDao::nviPeriod)
         .toList();
   }
 
-  protected static BeginsWithConditional beginsWithPeriodQuery() {
+  public static List<NviPeriodDao> getPeriods(DynamoDbTable<NviPeriodDao> periodTable) {
+    return periodTable.query(beginsWithPeriodQuery()).stream()
+        .map(Page::items)
+        .flatMap(Collection::stream)
+        .toList();
+  }
+
+  public static QueryRequest getPeriodsRequest() {
+    return queryByPartitionKey(PERIOD);
+  }
+
+  @Deprecated
+  public static BeginsWithConditional beginsWithPeriodQuery() {
     return new BeginsWithConditional(
         Key.builder().partitionValue(PERIOD).sortValue(PERIOD).build());
   }

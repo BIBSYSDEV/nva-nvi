@@ -34,7 +34,6 @@ import no.sikt.nva.nvi.common.SampleExpandedPublicationFactory;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.model.NviCreator;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.Approval;
@@ -57,14 +56,12 @@ class CristinNviReportEventConsumerTest {
   private TestScenario scenario;
   private CristinNviReportEventConsumer handler;
   private CandidateRepository candidateRepository;
-  private PeriodRepository periodRepository;
   private S3Driver s3Driver;
 
   @BeforeEach
   void setup() {
     scenario = new TestScenario();
     candidateRepository = scenario.getCandidateRepository();
-    periodRepository = scenario.getPeriodRepository();
     var s3Client = scenario.getS3Client();
     s3Driver = new S3Driver(s3Client, CRISTIN_IMPORT_BUCKET);
     var environment = getCristinNviReportEventConsumerEnvironment();
@@ -245,8 +242,7 @@ class CristinNviReportEventConsumerTest {
 
   private Candidate getByPublicationIdOf(CristinNviReport cristinNviReport) {
     var publicationId = expectedPublicationId(cristinNviReport);
-    return Candidate.fetchByPublicationId(
-        () -> publicationId, candidateRepository, periodRepository);
+    return Candidate.fetchByPublicationId(() -> publicationId, candidateRepository);
   }
 
   private void assertThatNviCandidateHasExpectedValues(

@@ -11,7 +11,6 @@ import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
@@ -44,8 +43,7 @@ public class EvaluateNviCandidateHandler implements RequestHandler<SQSEvent, Voi
             new S3StorageReader(new Environment().readEnv("EXPANDED_RESOURCES_BUCKET")),
             new CreatorVerificationUtil(
                 authorizedUriRetriever(new Environment()), new Environment()),
-            new CandidateRepository(defaultDynamoClient()),
-            new PeriodRepository(defaultDynamoClient())),
+            new CandidateRepository(defaultDynamoClient())),
         new NviQueueClient(),
         new Environment());
   }

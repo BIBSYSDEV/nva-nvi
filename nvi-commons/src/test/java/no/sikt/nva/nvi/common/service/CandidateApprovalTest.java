@@ -225,8 +225,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var candidate = setupRandomApplicableCandidate(scenario);
     var updateRequest = createUpsertNonCandidateRequest(candidate.getPublicationId());
     var updatedCandidate =
-        Candidate.updateNonCandidate(updateRequest, candidateRepository, periodRepository)
-            .orElseThrow();
+        Candidate.updateNonCandidate(updateRequest, candidateRepository).orElseThrow();
     assertThat(updatedCandidate.getIdentifier(), is(equalTo(candidate.getIdentifier())));
     assertThat(updatedCandidate.getApprovals().size(), is(equalTo(0)));
   }
@@ -241,7 +240,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
             .build();
     assertThrows(
         InvalidNviCandidateException.class,
-        () -> Candidate.upsert(updateRequest, candidateRepository, periodRepository));
+        () -> Candidate.upsert(updateRequest, candidateRepository));
   }
 
   @Test
@@ -249,7 +248,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
     updateApprovalStatus(candidateIdentifier, ApprovalStatus.APPROVED);
 
     var status =
-        Candidate.fetch(() -> candidateIdentifier, candidateRepository, periodRepository)
+        Candidate.fetch(() -> candidateIdentifier, candidateRepository)
             .getApprovals()
             .get(HARDCODED_INSTITUTION_ID)
             .getStatus();
@@ -279,8 +278,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
     candidate.updateApprovalAssignee(
         new UpdateAssigneeRequest(HARDCODED_INSTITUTION_ID, newUsername));
 
-    var updatedCandidate =
-        Candidate.fetch(candidate::getIdentifier, candidateRepository, periodRepository);
+    var updatedCandidate = Candidate.fetch(candidate::getIdentifier, candidateRepository);
     var updatedApproval = updatedCandidate.getApprovals().get(HARDCODED_INSTITUTION_ID);
     assertThat(updatedApproval.getAssigneeUsername(), is(equalTo(newUsername)));
   }
@@ -451,9 +449,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var candidate = scenario.upsertCandidate(upsertCandidateRequest);
     var nonCandidate =
         Candidate.updateNonCandidate(
-                createUpsertNonCandidateRequest(candidate.getPublicationId()),
-                candidateRepository,
-                periodRepository)
+                createUpsertNonCandidateRequest(candidate.getPublicationId()), candidateRepository)
             .orElseThrow();
     assertFalse(nonCandidate.isApplicable());
     var updatedCandidate =

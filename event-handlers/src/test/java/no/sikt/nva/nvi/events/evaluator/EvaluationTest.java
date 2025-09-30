@@ -49,7 +49,6 @@ class EvaluationTest {
   protected static final Context CONTEXT = mock(Context.class);
   protected static final int SCALE = 4;
 
-  protected static final String BUCKET_NAME = "ignoredBucket";
   protected static final String CUSTOMER_API_NVI_RESPONSE =
       "{" + "\"nviInstitution\" : \"true\"" + "}";
   protected TestScenario scenario;
@@ -94,8 +93,7 @@ class EvaluationTest {
     var creatorVerificationUtil =
         new CreatorVerificationUtil(authorizedBackendUriRetriever, evaluationEnvironment);
     evaluatorService =
-        new EvaluatorService(
-            storageReader, creatorVerificationUtil, candidateRepository, periodRepository);
+        new EvaluatorService(storageReader, creatorVerificationUtil, candidateRepository);
     handler = new EvaluateNviCandidateHandler(evaluatorService, queueClient, evaluationEnvironment);
   }
 
@@ -104,7 +102,6 @@ class EvaluationTest {
       upsertNviCandidateHandler =
           new UpsertNviCandidateHandler(
               candidateRepository,
-              periodRepository,
               mock(QueueClient.class),
               getUpsertNviCandidateHandlerEnvironment());
     }
@@ -126,8 +123,7 @@ class EvaluationTest {
   protected Candidate evaluatePublicationAndGetPersistedCandidate(
       URI publicationId, String publicationJson) {
     evaluatePublicationAndPersistResult(publicationJson);
-    return Candidate.fetchByPublicationId(
-        () -> publicationId, candidateRepository, periodRepository);
+    return Candidate.fetchByPublicationId(() -> publicationId, candidateRepository);
   }
 
   protected Candidate evaluatePublicationAndGetPersistedCandidate(
