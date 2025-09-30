@@ -295,7 +295,7 @@ class ConcurrencyHandlingTests {
 
     @Test
     void shouldReturnEmptyOptionalWhenCandidateDoesNotExist() {
-      var nonExistentCandidateId = UUID.randomUUID();
+      var nonExistentCandidateId = randomUUID();
       var response = candidateRepository.getCandidateAggregate(nonExistentCandidateId);
 
       assertThat(response.candidateAggregate()).isEmpty();
