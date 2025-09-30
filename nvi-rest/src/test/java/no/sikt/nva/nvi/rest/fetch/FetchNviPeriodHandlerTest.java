@@ -32,7 +32,6 @@ class FetchNviPeriodHandlerTest {
   private ByteArrayOutputStream output;
   private FetchNviPeriodHandler handler;
   private TestScenario scenario;
-  private NviPeriodService periodService;
 
   @BeforeEach
   void setUp() {
@@ -41,7 +40,7 @@ class FetchNviPeriodHandlerTest {
     context = new FakeContext();
 
     var environment = getFetchNviPeriodHandlerEnvironment();
-    periodService = new NviPeriodService(environment, scenario.getPeriodRepository());
+    var periodService = new NviPeriodService(environment, scenario.getPeriodRepository());
     handler = new FetchNviPeriodHandler(periodService, environment);
   }
 
