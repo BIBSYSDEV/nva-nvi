@@ -13,6 +13,8 @@ public class NoteDaoFixtures {
     return new NoteDao(
         UUID.randomUUID(),
         new DbNote(UUID.randomUUID(), randomUsername(), randomString(), randomInstant()),
-        UUID.randomUUID().toString());
+        UUID.randomUUID().toString(),
+        null,
+        null);
   }
 }

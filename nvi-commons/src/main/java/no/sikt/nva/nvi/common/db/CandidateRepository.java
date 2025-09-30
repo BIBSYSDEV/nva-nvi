@@ -9,6 +9,8 @@ import static java.util.stream.Collectors.toMap;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_PUBLICATION_ID;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_YEAR;
 import static no.sikt.nva.nvi.common.DatabaseConstants.VERSION_FIELD;
+import static no.sikt.nva.nvi.common.db.PeriodRepository.getPeriods;
+import static no.sikt.nva.nvi.common.db.PeriodRepository.getPeriodsRequest;
 import static no.sikt.nva.nvi.common.utils.ApplicationConstants.NVI_TABLE_NAME;
 import static no.sikt.nva.nvi.common.utils.Validator.hasElements;
 import static software.amazon.awssdk.enhanced.dynamodb.TableSchema.fromImmutableClass;
@@ -29,7 +31,9 @@ import no.sikt.nva.nvi.common.DatabaseConstants;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.NoteDao.DbNote;
+import no.sikt.nva.nvi.common.db.model.CandidateAggregate;
 import no.sikt.nva.nvi.common.db.model.KeyField;
+import no.sikt.nva.nvi.common.db.model.ResponseContext;
 import no.sikt.nva.nvi.common.exceptions.TransactionException;
 import no.sikt.nva.nvi.common.model.ListingResult;
 import org.slf4j.Logger;
@@ -49,6 +53,8 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.PutRequest;
+import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
+import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
 import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
 import software.amazon.awssdk.services.dynamodb.model.TransactionCanceledException;
@@ -117,10 +123,12 @@ public class CandidateRepository extends DynamoRepository {
         includeReportedCandidates ? page.items() : filterOutReportedCandidates(page));
   }
 
+  // FIXME: make it void
   public CandidateDao create(DbCandidate dbCandidate, List<DbApprovalStatus> approvalStatuses) {
     return create(dbCandidate, approvalStatuses, dbCandidate.getPublicationDate().year());
   }
 
+  // FIXME: make it void
   public CandidateDao create(
       DbCandidate dbCandidate, List<DbApprovalStatus> approvalStatuses, String year) {
     LOGGER.info(
@@ -143,10 +151,12 @@ public class CandidateRepository extends DynamoRepository {
     return candidateTable.getItem(candidate);
   }
 
-  public void updateCandidate(CandidateDao candidate) {
-    LOGGER.info("Updating candidate {}", candidate.identifier());
+  // FIXME: Remove this
+  public void updateCandidate(CandidateDao candidateDao) {
+    LOGGER.info("Updating candidate {}", candidateDao.identifier());
     var transaction = TransactWriteItemsEnhancedRequest.builder();
-    transaction.addPutItem(candidateTable, candidate);
+    var updatedCandidate = mutateDaoVersion(candidateDao);
+    transaction.addPutItem(candidateTable, updatedCandidate);
     sendTransaction(transaction.build());
   }
 
@@ -158,9 +168,11 @@ public class CandidateRepository extends DynamoRepository {
     LOGGER.info("Updating approvals in: {}", approvalsToUpdate);
     LOGGER.info("Deleting approvals in: {}", approvalsToDelete);
     var transaction = TransactWriteItemsEnhancedRequest.builder();
-    transaction.addPutItem(candidateTable, candidateDao);
+    var updatedCandidate = mutateDaoVersion(candidateDao);
+    transaction.addPutItem(candidateTable, updatedCandidate);
 
-    for (var updatedApproval : approvalsToUpdate) {
+    for (var approval : approvalsToUpdate) {
+      var updatedApproval = mutateDaoVersion(approval);
       transaction.addPutItem(approvalStatusTable, updatedApproval);
     }
 
@@ -177,7 +189,8 @@ public class CandidateRepository extends DynamoRepository {
         approval.identifier(),
         approval.approvalStatus());
     var transaction = TransactWriteItemsEnhancedRequest.builder();
-    transaction.addUpdateItem(approvalStatusTable, approval);
+    var updatedApproval = mutateDaoVersion(approval);
+    transaction.addUpdateItem(approvalStatusTable, updatedApproval);
     transaction.addConditionCheck(candidateTable, requireExpectedCandidateRevision(candidate));
 
     try {
@@ -200,7 +213,9 @@ public class CandidateRepository extends DynamoRepository {
     }
   }
 
+  @Deprecated // TODO: Remove this
   public Optional<CandidateDao> findCandidateById(UUID candidateIdentifier) {
+    LOGGER.info("Fetching candidate by identifier {}", candidateIdentifier);
     return Optional.ofNullable(
         candidateTable.getItem(
             Key.builder()
@@ -209,7 +224,9 @@ public class CandidateRepository extends DynamoRepository {
                 .build()));
   }
 
+  @Deprecated // TODO: Remove this
   public Optional<CandidateDao> findByPublicationId(URI publicationId) {
+    LOGGER.info("Fetching candidate by publication id {}", publicationId);
     return this.publicationIdIndex.query(findCandidateByPublicationIdQuery(publicationId)).stream()
         .map(Page::items)
         .flatMap(Collection::stream)
@@ -266,13 +283,57 @@ public class CandidateRepository extends DynamoRepository {
     noteTable.deleteItem(noteKey(candidateIdentifier, noteIdentifier));
   }
 
-  public List<ApprovalStatusDao> fetchApprovals(UUID identifier) {
-    return approvalStatusTable.query(constructApprovalsQuery(identifier)).items().stream().toList();
+  public ResponseContext getCandidateAggregate(URI publicationId) {
+    LOGGER.info("Fetching candidate and related data for publicationId={}", publicationId);
+    var optionalCandidate = findByPublicationId(publicationId);
+    if (optionalCandidate.isEmpty()) {
+      // Return ResponseContext with empty candidate but with all periods
+      var allPeriods = getPeriods(periodTable);
+      return new ResponseContext(Optional.empty(), allPeriods);
+    }
+    return getCandidateAggregate(optionalCandidate.get().identifier());
   }
 
-  public List<NoteDao> getNotes(UUID candidateIdentifier) {
-    return noteTable.query(queryCandidateParts(candidateIdentifier, NoteDao.TYPE)).items().stream()
-        .toList();
+  public ResponseContext getCandidateAggregate(UUID candidateId) {
+    LOGGER.info("Fetching candidate and related data for candidateId={}", candidateId);
+    var periodsQuery = executeAsync(getPeriodsRequest());
+    var candidateQuery = executeAsync(getCandidateAggregateRequest(candidateId));
+
+    var allItems =
+        candidateQuery
+            .thenCombine(periodsQuery, Stream::of)
+            .join()
+            .map(QueryResponse::items)
+            .flatMap(List::stream)
+            .map(this::mapToDao)
+            .toList();
+
+    var candidateAggregate = CandidateAggregate.fromQueryResponse(allItems);
+    var allPeriods =
+        allItems.stream()
+            .filter(NviPeriodDao.class::isInstance)
+            .map(NviPeriodDao.class::cast)
+            .toList();
+    return new ResponseContext(candidateAggregate, allPeriods);
+  }
+
+  private QueryRequest getCandidateAggregateRequest(UUID candidateId) {
+    var candidatePartitionKey = CandidateDao.createPartitionKey(candidateId.toString());
+    return queryByPartitionKey(candidatePartitionKey);
+  }
+
+  private Dao mapToDao(Map<String, AttributeValue> document) {
+    var documentType = document.get("type").s();
+    return switch (documentType) {
+      case CandidateDao.TYPE -> candidateTable.tableSchema().mapToItem(document);
+      case ApprovalStatusDao.TYPE -> approvalStatusTable.tableSchema().mapToItem(document);
+      case NoteDao.TYPE -> noteTable.tableSchema().mapToItem(document);
+      case NviPeriodDao.TYPE -> periodTable.tableSchema().mapToItem(document);
+      default -> {
+        LOGGER.error("Failed to map document type {}", documentType);
+        throw new IllegalArgumentException("Failed to map document type");
+      }
+    };
   }
 
   protected static Key noteKey(UUID candidateIdentifier, UUID noteIdentifier) {
@@ -308,14 +369,6 @@ public class CandidateRepository extends DynamoRepository {
   private static Map<String, String> toStringMap(Map<String, AttributeValue> lastEvaluatedKey) {
     return lastEvaluatedKey.entrySet().stream()
         .collect(toMap(Map.Entry::getKey, e -> e.getValue().s()));
-  }
-
-  private static QueryConditional constructApprovalsQuery(UUID identifier) {
-    return sortBeginsWith(
-        Key.builder()
-            .partitionValue(CandidateDao.createPartitionKey(identifier.toString()))
-            .sortValue(ApprovalStatusDao.TYPE)
-            .build());
   }
 
   private static NoteDao newNoteDao(UUID candidateIdentifier, DbNote dbNote) {
@@ -389,6 +442,14 @@ public class CandidateRepository extends DynamoRepository {
     var mutableMap = new HashMap<>(item);
     mutableMap.put(VERSION_FIELD, AttributeValue.builder().s(randomUUID().toString()).build());
     return mutableMap;
+  }
+
+  private CandidateDao mutateDaoVersion(CandidateDao originalDao) {
+    return originalDao.copy().version(randomUUID().toString()).build();
+  }
+
+  private ApprovalStatusDao mutateDaoVersion(ApprovalStatusDao originalDao) {
+    return originalDao.copy().version(randomUUID().toString()).build();
   }
 
   private boolean thereAreMorePagesToScan(Page<CandidateDao> page) {

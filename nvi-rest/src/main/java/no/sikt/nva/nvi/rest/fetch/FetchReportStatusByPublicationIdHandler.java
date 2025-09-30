@@ -9,7 +9,6 @@ import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.utils.ExceptionMapper;
@@ -26,23 +25,16 @@ public class FetchReportStatusByPublicationIdHandler
 
   private static final String PATH_PARAM_PUBLICATION_ID = "publicationId";
   private final CandidateRepository candidateRepository;
-  private final PeriodRepository periodRepository;
 
   @JacocoGenerated
   public FetchReportStatusByPublicationIdHandler() {
-    this(
-        new CandidateRepository(defaultDynamoClient()),
-        new PeriodRepository(defaultDynamoClient()),
-        new Environment());
+    this(new CandidateRepository(defaultDynamoClient()), new Environment());
   }
 
   public FetchReportStatusByPublicationIdHandler(
-      CandidateRepository candidateRepository,
-      PeriodRepository periodRepository,
-      Environment environment) {
+      CandidateRepository candidateRepository, Environment environment) {
     super(Void.class, environment);
     this.candidateRepository = candidateRepository;
-    this.periodRepository = periodRepository;
   }
 
   @Override
@@ -53,10 +45,7 @@ public class FetchReportStatusByPublicationIdHandler
   protected ReportStatusDto processInput(Void unused, RequestInfo requestInfo, Context context)
       throws ApiGatewayException {
     var publicationId = getPublicationId(requestInfo);
-    return attempt(
-            () ->
-                Candidate.fetchByPublicationId(
-                    () -> publicationId, candidateRepository, periodRepository))
+    return attempt(() -> Candidate.fetchByPublicationId(() -> publicationId, candidateRepository))
         .map(ReportStatusDto::fromCandidate)
         .orElse(failure -> handleNotFoundOrFailure(failure, publicationId));
   }

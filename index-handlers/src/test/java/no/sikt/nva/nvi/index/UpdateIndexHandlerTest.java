@@ -26,7 +26,6 @@ import java.util.List;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.model.CandidateFixtures;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
@@ -54,7 +53,6 @@ class UpdateIndexHandlerTest {
   private static final String BUCKET_NAME = ENVIRONMENT.readEnv(EXPANDED_RESOURCES_BUCKET);
   private final S3Client s3Client = new FakeS3Client();
   private CandidateRepository candidateRepository;
-  private PeriodRepository periodRepository;
   private S3Driver s3Driver;
   private UpdateIndexHandler handler;
   private OpenSearchClient openSearchClient;
@@ -64,7 +62,6 @@ class UpdateIndexHandlerTest {
   void setUp() {
     var localDynamo = initializeTestDatabase();
     candidateRepository = new CandidateRepository(localDynamo);
-    periodRepository = new PeriodRepository(localDynamo);
     s3Driver = new S3Driver(s3Client, BUCKET_NAME);
     openSearchClient = mock(OpenSearchClient.class);
     sqsClient = mock(FakeSqsClient.class);
@@ -196,6 +193,6 @@ class UpdateIndexHandlerTest {
   }
 
   private Candidate randomApplicableCandidate() {
-    return CandidateFixtures.setupRandomApplicableCandidate(candidateRepository, periodRepository);
+    return CandidateFixtures.setupRandomApplicableCandidate(candidateRepository);
   }
 }

@@ -8,19 +8,22 @@ import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.UpsertRequestBuilder;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 
 public class CandidateFixtures {
 
-  public static Candidate setupRandomApplicableCandidate(
-      CandidateRepository candidateRepository, PeriodRepository periodRepository) {
+  public static Candidate setupRandomApplicableCandidate(TestScenario scenario) {
+    var candidateRequest = randomUpsertRequestBuilder().build();
+    return scenario.upsertCandidate(candidateRequest);
+  }
+
+  // FIXME: Remove this?
+  public static Candidate setupRandomApplicableCandidate(CandidateRepository candidateRepository) {
     var request = randomUpsertRequestBuilder().build();
-    Candidate.upsert(request, candidateRepository, periodRepository);
-    return Candidate.fetchByPublicationId(
-        request::publicationId, candidateRepository, periodRepository);
+    Candidate.upsert(request, candidateRepository);
+    return Candidate.fetchByPublicationId(request::publicationId, candidateRepository);
   }
 
   public static UpsertRequestBuilder randomApplicableCandidateRequestBuilder(
@@ -40,11 +43,6 @@ public class CandidateFixtures {
     var publicationDate = new PublicationDateDto(String.valueOf(publicationYear), null, null);
     var candidateRequest =
         randomUpsertRequestBuilder().withPublicationDate(publicationDate).build();
-    return scenario.upsertCandidate(candidateRequest);
-  }
-
-  public static Candidate setupRandomApplicableCandidate(TestScenario scenario) {
-    var candidateRequest = randomUpsertRequestBuilder().build();
     return scenario.upsertCandidate(candidateRequest);
   }
 }

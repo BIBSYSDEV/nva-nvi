@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.model.DbCreatorTypeListConverter;
 import no.sikt.nva.nvi.common.model.CandidateFixtures;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
@@ -38,7 +37,6 @@ class MigrationTests {
 
   public static final int DEFAULT_PAGE_SIZE = 700;
   private CandidateRepository candidateRepository;
-  private PeriodRepository periodRepository;
   private BatchScanUtil batchScanUtil;
   private TestScenario scenario;
 
@@ -46,7 +44,6 @@ class MigrationTests {
   void setUp() {
     scenario = new TestScenario();
     candidateRepository = scenario.getCandidateRepository();
-    periodRepository = scenario.getPeriodRepository();
     batchScanUtil =
         new BatchScanUtil(
             candidateRepository,
@@ -60,8 +57,7 @@ class MigrationTests {
   void shouldWriteCandidateWithNotesAndApprovalsAsIsWhenMigrating() {
     var candidate = setupCandidateWithApprovalAndNotes();
     batchScanUtil.migrateAndUpdateVersion(DEFAULT_PAGE_SIZE, null, emptyList());
-    var migratedCandidate =
-        Candidate.fetch(candidate::getIdentifier, candidateRepository, periodRepository);
+    var migratedCandidate = Candidate.fetch(candidate::getIdentifier, candidateRepository);
     assertThat(migratedCandidate)
         .usingRecursiveComparison()
         .ignoringCollectionOrder()
@@ -123,7 +119,7 @@ class MigrationTests {
 
   private Candidate setupCandidateWithApprovalAndNotes() {
     var candidate =
-        CandidateFixtures.setupRandomApplicableCandidate(candidateRepository, periodRepository)
+        CandidateFixtures.setupRandomApplicableCandidate(candidateRepository)
             .createNote(createNoteRequest(randomString(), randomString()), candidateRepository);
     var curatorOrganization = getInstitutionId(candidate);
     var userInstance = createCuratorUserInstance(curatorOrganization);

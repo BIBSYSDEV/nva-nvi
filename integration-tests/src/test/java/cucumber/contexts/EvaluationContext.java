@@ -46,8 +46,7 @@ public class EvaluationContext {
         new EvaluatorService(
             scenario.getS3StorageReaderForExpandedResourcesBucket(),
             creatorVerificationUtil,
-            scenario.getCandidateRepository(),
-            scenario.getPeriodRepository());
+            scenario.getCandidateRepository());
 
     return new EvaluateNviCandidateHandler(evaluatorService, evaluationOutputQueue, environment);
   }
@@ -55,7 +54,6 @@ public class EvaluationContext {
   private UpsertNviCandidateHandler createUpsertNviCandidateHandler() {
     return new UpsertNviCandidateHandler(
         scenario.getCandidateRepository(),
-        scenario.getPeriodRepository(),
         upsertErrorQueue,
         getUpsertNviCandidateHandlerEnvironment());
   }
