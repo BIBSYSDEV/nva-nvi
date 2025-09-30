@@ -27,34 +27,14 @@ public class PeriodRepository extends DynamoRepository {
     this.nviPeriodTable = this.client.table(NVI_TABLE_NAME, NviPeriodDao.TABLE_SCHEMA);
   }
 
-  // FIXME: Make this void
-  public NviPeriodDao save(NviPeriodDao period) {
+  public void save(NviPeriodDao period) {
     LOGGER.info("Saving period: {}", period);
     var updatedPeriod = period.copy().version(randomUUID().toString()).build();
-
-    this.nviPeriodTable.putItem(updatedPeriod);
-
-    return this.nviPeriodTable.getItem(updatedPeriod);
+    nviPeriodTable.putItem(updatedPeriod);
   }
 
-  // FIXME: Remove
-  public DbNviPeriod save(DbNviPeriod nviPeriod) {
-    LOGGER.info("Saving period: {}", nviPeriod);
-    var nviPeriodDao =
-        NviPeriodDao.builder()
-            .identifier(nviPeriod.publishingYear())
-            .nviPeriod(nviPeriod)
-            .version(randomUUID().toString())
-            .build();
-
-    this.nviPeriodTable.putItem(nviPeriodDao);
-
-    var fetched = this.nviPeriodTable.getItem(nviPeriodDao);
-    return fetched.nviPeriod();
-  }
-
-  // FIXME: Temp
-  public Optional<NviPeriodDao> findByPublishingYearAsDao(String publishingYear) {
+  public Optional<NviPeriodDao> findByPublishingYear(String publishingYear) {
+    LOGGER.info("Finding period by publishing year: {}", publishingYear);
     var queryObj =
         NviPeriodDao.builder()
             .nviPeriod(DbNviPeriod.builder().publishingYear(publishingYear).build())
@@ -64,18 +44,8 @@ public class PeriodRepository extends DynamoRepository {
     return Optional.ofNullable(fetched);
   }
 
-  public Optional<DbNviPeriod> findByPublishingYear(String publishingYear) {
-    var queryObj =
-        NviPeriodDao.builder()
-            .nviPeriod(DbNviPeriod.builder().publishingYear(publishingYear).build())
-            .identifier(publishingYear)
-            .build();
-    var fetched = this.nviPeriodTable.getItem(queryObj);
-    return Optional.ofNullable(fetched).map(NviPeriodDao::nviPeriod);
-  }
-
-  @Deprecated // FIXME
   public List<NviPeriodDao> getPeriods() {
+    LOGGER.info("Getting all periods");
     return this.nviPeriodTable.query(beginsWithPeriodQuery()).stream()
         .map(Page::items)
         .flatMap(Collection::stream)
@@ -93,7 +63,6 @@ public class PeriodRepository extends DynamoRepository {
     return queryByPartitionKey(PERIOD);
   }
 
-  @Deprecated
   public static BeginsWithConditional beginsWithPeriodQuery() {
     return new BeginsWithConditional(
         Key.builder().partitionValue(PERIOD).sortValue(PERIOD).build());

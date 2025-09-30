@@ -29,6 +29,7 @@ dependencies {
     testFixturesImplementation nvaCatalog.aws.sdk2.s3
     testFixturesImplementation nvaCatalog.bundles.testing.cucumber
     testFixturesImplementation nvaCatalog.bundles.testing.junit
+    testFixturesImplementation nvaCatalog.datafaker
     testFixturesImplementation nvaCatalog.hamcrest
     testFixturesImplementation nvaCatalog.mockito.core
     testFixturesImplementation nvaLibs.apigateway
@@ -43,6 +44,7 @@ dependencies {
     testImplementation nvaCatalog.assertj.core
     testImplementation nvaCatalog.bundles.testing.cucumber
     testImplementation nvaCatalog.bundles.testing.junit
+    testImplementation nvaCatalog.datafaker
     testImplementation nvaCatalog.hamcrest
     testImplementation nvaCatalog.mockito.core
     testImplementation nvaLibs.logutils

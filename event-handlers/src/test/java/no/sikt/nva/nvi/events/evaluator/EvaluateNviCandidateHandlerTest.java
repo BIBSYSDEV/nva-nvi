@@ -60,7 +60,6 @@ import java.util.Optional;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.SampleExpandedPublicationFactory;
 import no.sikt.nva.nvi.common.client.model.Organization;
-import no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures;
 import no.sikt.nva.nvi.common.dto.PointCalculationDto;
 import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
@@ -165,13 +164,10 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
   void shouldEvaluateExistingCandidateInOpenPeriod() throws IOException {
     mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
     var year = LocalDateTime.now().getYear();
+    setupOpenPeriod(scenario, year);
     var resourceFileUri = setupCandidate(year);
-    periodRepository = PeriodRepositoryFixtures.periodRepositoryReturningOpenedPeriod(year);
     setupEvaluatorService();
 
-    handler =
-        new EvaluateNviCandidateHandler(
-            evaluatorService, queueClient, getEvaluateNviCandidateHandlerEnvironment());
     var event = createEvent(new PersistedResourceMessage(resourceFileUri));
     handler.handleRequest(event, CONTEXT);
     var candidate = (UpsertNviCandidateRequest) getMessageBody().candidate();
@@ -961,7 +957,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
 
       handler.handleRequest(createEvaluationEvent(publication), CONTEXT);
       var messageBody = getMessageBody();
-      var nviPeriod = periodRepository.findByPublishingYear(historicalDate.year());
+      var nviPeriod = periodService.findByPublishingYear(historicalDate.year());
 
       assertThat(messageBody.candidate()).isInstanceOf(UpsertNonNviCandidateRequest.class);
       assertTrue(nviPeriod.isEmpty());

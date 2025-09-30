@@ -9,8 +9,6 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
-
-import java.net.URI;
 import java.util.Objects;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.db.CandidateRepository;

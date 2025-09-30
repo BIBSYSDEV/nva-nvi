@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.rest;
 
+import static no.sikt.nva.nvi.common.EnvironmentFixtures.getCreateNviPeriodHandlerEnvironment;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupFuturePeriod;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -17,14 +18,13 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.time.ZonedDateTime;
 import no.sikt.nva.nvi.common.TestScenario;
-import no.sikt.nva.nvi.common.service.model.NviPeriod;
+import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.rest.create.CreateNviPeriodHandler;
 import no.sikt.nva.nvi.rest.model.UpsertNviPeriodRequest;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
-import nva.commons.core.Environment;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.zalando.problem.Problem;
@@ -35,13 +35,17 @@ class CreateNviPeriodHandlerTest {
   private ByteArrayOutputStream output;
   private CreateNviPeriodHandler handler;
   private TestScenario scenario;
+  private NviPeriodService periodService;
 
   @BeforeEach
   void init() {
     scenario = new TestScenario();
     output = new ByteArrayOutputStream();
     context = mock(Context.class);
-    handler = new CreateNviPeriodHandler(scenario.getPeriodRepository(), new Environment());
+
+    var environment = getCreateNviPeriodHandlerEnvironment();
+    periodService = new NviPeriodService(environment, scenario.getPeriodRepository());
+    handler = new CreateNviPeriodHandler(periodService, environment);
   }
 
   @Test
@@ -76,9 +80,8 @@ class CreateNviPeriodHandlerTest {
     var year = String.valueOf(CURRENT_YEAR);
     var period = upsertRequest(year);
     handler.handleRequest(createRequest(period), output, context);
-    var persistedPeriod = NviPeriod.fetchByPublishingYear(year, scenario.getPeriodRepository());
-    assertThat(
-        period.publishingYear(), is(equalTo(persistedPeriod.getPublishingYear().toString())));
+    var persistedPeriod = periodService.getByPublishingYear(year);
+    assertThat(period.publishingYear(), is(equalTo(persistedPeriod.publishingYear().toString())));
   }
 
   private InputStream createRequestWithoutAccessRights() throws JsonProcessingException {

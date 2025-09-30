@@ -27,6 +27,7 @@ import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
+import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil;
@@ -64,6 +65,7 @@ class EvaluationTest {
   protected S3StorageReader storageReader;
   protected PeriodRepository periodRepository;
   protected EvaluatorService evaluatorService;
+  protected NviPeriodService periodService;
   private UpsertNviCandidateHandler upsertNviCandidateHandler;
 
   protected BigDecimal getPointsForInstitution(
@@ -94,6 +96,7 @@ class EvaluationTest {
         new CreatorVerificationUtil(authorizedBackendUriRetriever, evaluationEnvironment);
     evaluatorService =
         new EvaluatorService(storageReader, creatorVerificationUtil, candidateRepository);
+    periodService = new NviPeriodService(evaluationEnvironment, periodRepository);
     handler = new EvaluateNviCandidateHandler(evaluatorService, queueClient, evaluationEnvironment);
   }
 

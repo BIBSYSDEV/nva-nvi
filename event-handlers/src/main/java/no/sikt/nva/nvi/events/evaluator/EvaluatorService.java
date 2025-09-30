@@ -152,7 +152,7 @@ public class EvaluatorService {
     if (isNull(candidatePeriod) || isNull(candidatePeriod.id())) {
       return false;
     }
-    var hasSamePeriod = candidatePeriod.id().equals(targetPeriod.getId());
+    var hasSamePeriod = candidatePeriod.id().equals(targetPeriod.id());
     return candidate.isApplicable() && hasSamePeriod;
   }
 

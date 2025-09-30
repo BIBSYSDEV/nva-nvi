@@ -18,7 +18,7 @@ public record ResponseContext(
     return allPeriods.stream()
         //        .map(NviPeriodDao::nviPeriod)
         .filter(period -> year.equals(period.nviPeriod().publishingYear()))
-        .map(NviPeriod::fromDbPeriod)
+        .map(NviPeriod::fromDao)
         .findFirst();
   }
 }

@@ -24,7 +24,9 @@ public class FetchNviPeriodsHandler extends ApiGatewayHandler<Void, NviPeriodsRe
 
   @JacocoGenerated
   public FetchNviPeriodsHandler() {
-    this(new NviPeriodService(new PeriodRepository(defaultDynamoClient())), new Environment());
+    this(
+        new NviPeriodService(new Environment(), new PeriodRepository(defaultDynamoClient())),
+        new Environment());
   }
 
   public FetchNviPeriodsHandler(NviPeriodService nviPeriodService, Environment environment) {

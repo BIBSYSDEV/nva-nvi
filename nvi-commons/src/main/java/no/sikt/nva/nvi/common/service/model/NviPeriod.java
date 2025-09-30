@@ -1,138 +1,46 @@
 package no.sikt.nva.nvi.common.service.model;
 
-import static nva.commons.core.attempt.Try.attempt;
+import static no.sikt.nva.nvi.common.utils.Validator.shouldNotBeNull;
 
 import java.net.URI;
 import java.time.Instant;
-import java.util.Objects;
 import no.sikt.nva.nvi.common.db.NviPeriodDao;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.exceptions.ValidationException;
 import no.sikt.nva.nvi.common.service.dto.NviPeriodDto;
-import no.sikt.nva.nvi.common.service.exception.PeriodAlreadyExistsException;
-import no.sikt.nva.nvi.common.service.exception.PeriodNotFoundException;
-import no.sikt.nva.nvi.common.service.requests.CreatePeriodRequest;
 import no.sikt.nva.nvi.common.service.requests.UpdatePeriodRequest;
-import nva.commons.core.Environment;
-import nva.commons.core.JacocoGenerated;
-import nva.commons.core.paths.UriWrapper;
 
-public class NviPeriod {
+public record NviPeriod(
+    URI id,
+    Integer publishingYear,
+    Instant startDate,
+    Instant reportingDate,
+    Username createdBy,
+    Username modifiedBy,
+    Long revisionRead) {
 
-  public static final String SCIENTIFIC_INDEX_API_PATH = "scientific-index";
-  public static final String PERIOD_PATH = "period";
-  public static final String PUBLISHING_YEAR_EXISTS =
-      "Period with publishing year %s already exists!";
-  private static final String API_HOST = new Environment().readEnv("API_HOST");
-  private final URI id;
-  private final Integer publishingYear;
-  private final Instant startDate;
-  private final Instant reportingDate;
-  private final Username createdBy;
-  private final Username modifiedBy;
-  private final Long revisionRead;
+  private static final String VALIDATION_ERROR_MESSAGE = "Field cannot be null: %s";
 
-  protected NviPeriod(
-      URI id,
-      Integer publishingYear,
-      Instant startDate,
-      Instant reportingDate,
-      Username createdBy,
-      Username modifiedBy,
-      Long revisionRead) {
-    this.id = id;
-    this.publishingYear = publishingYear;
-    this.startDate = startDate;
-    this.reportingDate = reportingDate;
-    this.createdBy = createdBy;
-    this.modifiedBy = modifiedBy;
-    this.revisionRead = revisionRead;
-  }
-
-  public static NviPeriod create(CreatePeriodRequest request, PeriodRepository periodRepository) {
-    var period = fromRequest(request);
-    if (period.exists(periodRepository)) {
-      throw new PeriodAlreadyExistsException(
-          String.format(PUBLISHING_YEAR_EXISTS, period.getPublishingYear()));
-    }
-    period.persist(periodRepository);
-    return period.fetch(periodRepository);
-  }
-
-  public static NviPeriod update(UpdatePeriodRequest request, PeriodRepository periodRepository) {
-    var period = fromRequest(request);
-    period.fetch(periodRepository).updateWithRequest(request).persist(periodRepository);
-    return period.fetch(periodRepository);
-  }
-
-  // FIXME: Remove this
-  public static NviPeriod fetchByPublishingYear(
-      String publishingYear, PeriodRepository periodRepository) {
-    return periodRepository
-        .findByPublishingYearAsDao(publishingYear)
-        .map(NviPeriod::fromDbPeriod)
-        .orElseThrow(
-            () ->
-                PeriodNotFoundException.withMessage(
-                    String.format("Period for year %s does not exist!", publishingYear)));
-  }
-
-  public static NviPeriod fromDbPeriod(NviPeriodDao period) {
+  public static NviPeriod fromDao(NviPeriodDao period) {
     var dbNviPeriod = period.nviPeriod();
-    return new NviPeriod(
-        dbNviPeriod.id(),
-        Integer.parseInt(dbNviPeriod.publishingYear()),
-        dbNviPeriod.startDate(),
-        dbNviPeriod.reportingDate(),
-        Username.fromUserName(dbNviPeriod.createdBy()),
-        Username.fromUserName(dbNviPeriod.modifiedBy()),
-        period.revision());
+    return builder()
+        .withId(dbNviPeriod.id())
+        .withPublishingYear(Integer.parseInt(dbNviPeriod.publishingYear()))
+        .withStartDate(dbNviPeriod.startDate())
+        .withReportingDate(dbNviPeriod.reportingDate())
+        .withCreatedBy(Username.fromUserName(dbNviPeriod.createdBy()))
+        .withModifiedBy(Username.fromUserName(dbNviPeriod.modifiedBy()))
+        .withRevision(period.revision())
+        .build();
   }
 
-  public URI getId() {
-    return id;
-  }
-
-  public Integer getPublishingYear() {
-    return publishingYear;
-  }
-
-  public Instant getStartDate() {
-    return startDate;
-  }
-
-  public Instant getReportingDate() {
-    return reportingDate;
-  }
-
-  public Username getCreatedBy() {
-    return createdBy;
-  }
-
-  public Username getModifiedBy() {
-    return modifiedBy;
-  }
-
-  @Override
-  @JacocoGenerated
-  public int hashCode() {
-    return Objects.hash(id, publishingYear, startDate, reportingDate);
-  }
-
-  @Override
-  @JacocoGenerated
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    NviPeriod nviPeriod = (NviPeriod) o;
-    return Objects.equals(id, nviPeriod.id)
-        && Objects.equals(publishingYear, nviPeriod.publishingYear)
-        && Objects.equals(startDate, nviPeriod.startDate)
-        && Objects.equals(reportingDate, nviPeriod.reportingDate);
+  public NviPeriodDao toDao() {
+    var dbPeriod = this.toDbObject();
+    return NviPeriodDao.builder()
+        .identifier(dbPeriod.publishingYear())
+        .nviPeriod(dbPeriod)
+        .revision(revisionRead)
+        .build();
   }
 
   public NviPeriodDto toDto() {
@@ -148,60 +56,16 @@ public class NviPeriod {
     return !isClosed();
   }
 
-  private static Builder builder() {
+  public static Builder builder() {
     return new Builder();
   }
 
-  private static NviPeriod fromRequest(CreatePeriodRequest request) {
-    request.validate();
-    return new NviPeriod(
-        constructId(String.valueOf(request.publishingYear())),
-        request.publishingYear(),
-        request.startDate(),
-        request.reportingDate(),
-        request.createdBy(),
-        null,
-        null);
-  }
-
-  private static NviPeriod fromRequest(UpdatePeriodRequest request) {
-    request.validate();
-    return new NviPeriod(
-        constructId(String.valueOf(request.publishingYear())),
-        request.publishingYear(),
-        request.startDate(),
-        request.reportingDate(),
-        null,
-        request.modifiedBy(),
-        null);
-  }
-
-  private static URI constructId(String publishingYear) {
-    return UriWrapper.fromHost(API_HOST)
-        .addChild(SCIENTIFIC_INDEX_API_PATH)
-        .addChild(PERIOD_PATH)
-        .addChild(publishingYear)
-        .getUri();
-  }
-
-  private NviPeriod fetch(PeriodRepository periodRepository) {
-    return fetchByPublishingYear(String.valueOf(publishingYear), periodRepository);
-  }
-
-  private NviPeriod updateWithRequest(UpdatePeriodRequest request) {
+  public NviPeriod updateWithRequest(UpdatePeriodRequest request) {
     return this.copy()
         .withStartDate(request.startDate())
         .withReportingDate(request.reportingDate())
         .withModifiedBy(request.modifiedBy())
         .build();
-  }
-
-  private void persist(PeriodRepository periodRepository) {
-    periodRepository.save(this.toDao());
-  }
-
-  private boolean exists(PeriodRepository periodRepository) {
-    return attempt(() -> fetch(periodRepository)).isSuccess();
   }
 
   private Builder copy() {
@@ -211,26 +75,18 @@ public class NviPeriod {
         .withStartDate(startDate)
         .withReportingDate(reportingDate)
         .withCreatedBy(createdBy)
-        .withModifiedBy(modifiedBy);
-  }
-
-  public NviPeriodDao toDao() {
-    var dbPeriod = this.toDbObject();
-    return NviPeriodDao.builder()
-        .identifier(dbPeriod.publishingYear())
-        .nviPeriod(dbPeriod)
-        .revision(revisionRead)
-        .build();
+        .withModifiedBy(modifiedBy)
+        .withRevision(revisionRead);
   }
 
   private DbNviPeriod toDbObject() {
     return DbNviPeriod.builder()
-        .id(this.id)
-        .publishingYear(String.valueOf(this.publishingYear))
-        .startDate(this.startDate)
-        .reportingDate(this.reportingDate)
-        .createdBy(no.sikt.nva.nvi.common.db.model.Username.fromUserName(this.createdBy))
-        .modifiedBy(no.sikt.nva.nvi.common.db.model.Username.fromUserName(this.modifiedBy))
+        .id(id)
+        .publishingYear(String.valueOf(publishingYear))
+        .startDate(startDate)
+        .reportingDate(reportingDate)
+        .createdBy(no.sikt.nva.nvi.common.db.model.Username.fromUserName(createdBy))
+        .modifiedBy(no.sikt.nva.nvi.common.db.model.Username.fromUserName(modifiedBy))
         .build();
   }
 
@@ -282,8 +138,20 @@ public class NviPeriod {
     }
 
     public NviPeriod build() {
+      validateState();
       return new NviPeriod(
           id, publishingYear, startDate, reportingDate, createdBy, modifiedBy, revision);
+    }
+
+    private void validateState() {
+      shouldNotBeNull(id, String.format(VALIDATION_ERROR_MESSAGE, "id"));
+      shouldNotBeNull(publishingYear, String.format(VALIDATION_ERROR_MESSAGE, "publishingYear"));
+      shouldNotBeNull(startDate, String.format(VALIDATION_ERROR_MESSAGE, "startDate"));
+      shouldNotBeNull(reportingDate, String.format(VALIDATION_ERROR_MESSAGE, "reportingDate"));
+      shouldNotBeNull(createdBy, String.format(VALIDATION_ERROR_MESSAGE, "createdBy"));
+      if (reportingDate.isBefore(startDate)) {
+        throw new ValidationException("reportingDate must be after startDate");
+      }
     }
   }
 }
