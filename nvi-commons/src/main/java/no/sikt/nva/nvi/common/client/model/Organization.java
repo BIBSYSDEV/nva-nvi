@@ -20,7 +20,7 @@ import nva.commons.core.SingletonCollector;
 
 public record Organization(
     @JsonProperty("id") URI id,
-    @JsonProperty("country") String countryCode,
+    @JsonProperty("countryCode") String countryCode,
     @JsonProperty("partOf") List<Organization> partOf,
     @JsonProperty("hasPart") List<Organization> hasPart,
     @JsonProperty("labels") Map<String, String> labels,
