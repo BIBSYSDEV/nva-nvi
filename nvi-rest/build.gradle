@@ -13,6 +13,8 @@ dependencies {
     implementation nvaLibs.core
     implementation nvaLibs.json
     implementation project(':nvi-commons')
+    testFixturesAnnotationProcessor nvaCatalog.errorprone
+    testFixturesImplementation(testFixtures(project(":nvi-commons")))
     testImplementation libs.dynamodDbLocal
     testImplementation nvaCatalog.assertj.core
     testImplementation nvaCatalog.bundles.testing.cucumber

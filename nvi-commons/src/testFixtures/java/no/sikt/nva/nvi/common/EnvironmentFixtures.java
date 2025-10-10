@@ -52,6 +52,10 @@ public enum EnvironmentFixtures {
     return value;
   }
 
+  public static FakeEnvironment getGlobalEnvironment() {
+    return getDefaultEnvironmentBuilder().build();
+  }
+
   public static FakeEnvironment.Builder getDefaultEnvironmentBuilder() {
     return FakeEnvironment.builder()
         .with(API_HOST)
@@ -63,6 +67,14 @@ public enum EnvironmentFixtures {
         .with(NVI_TABLE_NAME)
         .with(SEARCH_INFRASTRUCTURE_API_HOST)
         .with(SEARCH_INFRASTRUCTURE_AUTH_URI);
+  }
+
+  public static FakeEnvironment getHandlerEnvironment(EnvironmentFixtures... environmentVariables) {
+    var builder = getDefaultEnvironmentBuilder();
+    for (var variable : environmentVariables) {
+      builder.with(variable);
+    }
+    return builder.build();
   }
 
   public static FakeEnvironment getEvaluateNviCandidateHandlerEnvironment() {
