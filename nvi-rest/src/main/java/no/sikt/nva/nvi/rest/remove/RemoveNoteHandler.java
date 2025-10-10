@@ -8,7 +8,6 @@ import java.net.HttpURLConnection;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.DynamoRepository;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.model.UserInstance;
 import no.sikt.nva.nvi.common.service.CandidateResponseFactory;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
@@ -30,26 +29,22 @@ public class RemoveNoteHandler extends ApiGatewayHandler<Void, CandidateDto>
 
   public static final String PARAM_NOTE_IDENTIFIER = "noteIdentifier";
   private final CandidateRepository candidateRepository;
-  private final PeriodRepository periodRepository;
   private final ViewingScopeValidator viewingScopeValidator;
 
   @JacocoGenerated
   public RemoveNoteHandler() {
     this(
         new CandidateRepository(DynamoRepository.defaultDynamoClient()),
-        new PeriodRepository(DynamoRepository.defaultDynamoClient()),
         ViewingScopeHandler.defaultViewingScopeValidator(),
         new Environment());
   }
 
   public RemoveNoteHandler(
       CandidateRepository candidateRepository,
-      PeriodRepository periodRepository,
       ViewingScopeValidator viewingScopeValidator,
       Environment environment) {
     super(Void.class, environment);
     this.candidateRepository = candidateRepository;
-    this.periodRepository = periodRepository;
     this.viewingScopeValidator = viewingScopeValidator;
   }
 
@@ -66,8 +61,7 @@ public class RemoveNoteHandler extends ApiGatewayHandler<Void, CandidateDto>
     var candidateIdentifier = UUID.fromString(requestInfo.getPathParameter(CANDIDATE_IDENTIFIER));
     var noteIdentifier = UUID.fromString(requestInfo.getPathParameter(PARAM_NOTE_IDENTIFIER));
     var userInstance = UserInstance.fromRequestInfo(requestInfo);
-    return attempt(
-            () -> Candidate.fetch(() -> candidateIdentifier, candidateRepository, periodRepository))
+    return attempt(() -> Candidate.fetch(() -> candidateIdentifier, candidateRepository))
         .map(candidate -> validateViewingScope(viewingScopeValidator, username, candidate))
         .map(
             candidate ->

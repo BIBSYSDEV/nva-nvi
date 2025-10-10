@@ -11,11 +11,10 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.NviReceiveMessage;
 import no.sikt.nva.nvi.common.queue.NviReceiveMessageResponse;
-import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
@@ -42,26 +41,20 @@ public class RequeueDlqHandler implements RequestHandler<RequeueDlqInput, Requeu
   private final NviQueueClient queueClient;
   private final String queueUrl;
   private final CandidateRepository candidateRepository;
-  private final PeriodRepository periodRepository;
 
   @JacocoGenerated
   public RequeueDlqHandler() {
     this(
         new NviQueueClient(),
         new Environment().readEnv(DLQ_QUEUE_URL_ENV_NAME),
-        new CandidateRepository(defaultDynamoClient()),
-        new PeriodRepository(defaultDynamoClient()));
+        new CandidateRepository(defaultDynamoClient()));
   }
 
   public RequeueDlqHandler(
-      NviQueueClient queueClient,
-      String dlqQueueUrl,
-      CandidateRepository candidateRepository,
-      PeriodRepository periodRepository) {
+      NviQueueClient queueClient, String dlqQueueUrl, CandidateRepository candidateRepository) {
     this.queueClient = queueClient;
     this.queueUrl = dlqQueueUrl;
     this.candidateRepository = candidateRepository;
-    this.periodRepository = periodRepository;
   }
 
   @Override
@@ -145,8 +138,12 @@ public class RequeueDlqHandler implements RequestHandler<RequeueDlqInput, Requeu
     var identifier = input.message().messageAttributes().get(CANDIDATE_IDENTIFIER_ATTRIBUTE_NAME);
     if (nonNull(identifier)) {
       try {
-        Candidate.fetch(() -> UUID.fromString(identifier), candidateRepository, periodRepository)
-            .updateVersion(candidateRepository);
+        var candidateIdentifier = UUID.fromString(identifier);
+        var originalCandidate =
+            candidateRepository
+                .findCandidateById(candidateIdentifier)
+                .orElseThrow(CandidateNotFoundException::new);
+        candidateRepository.updateCandidate(originalCandidate);
       } catch (Exception exception) {
         return new NviProcessMessageResult(
             input.message(),

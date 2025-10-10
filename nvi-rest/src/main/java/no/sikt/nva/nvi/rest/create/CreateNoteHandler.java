@@ -11,7 +11,6 @@ import java.net.URI;
 import java.util.Objects;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.exceptions.NotApplicableException;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
 import no.sikt.nva.nvi.common.model.UserInstance;
@@ -36,26 +35,22 @@ public class CreateNoteHandler extends ApiGatewayHandler<NviNoteRequest, Candida
 
   public static final String INVALID_REQUEST_ERROR = "Request body must contain text field.";
   private final CandidateRepository candidateRepository;
-  private final PeriodRepository periodRepository;
   private final ViewingScopeValidator viewingScopeValidator;
 
   @JacocoGenerated
   public CreateNoteHandler() {
     this(
         new CandidateRepository(defaultDynamoClient()),
-        new PeriodRepository(defaultDynamoClient()),
         ViewingScopeHandler.defaultViewingScopeValidator(),
         new Environment());
   }
 
   public CreateNoteHandler(
       CandidateRepository candidateRepository,
-      PeriodRepository periodRepository,
       ViewingScopeValidator viewingScopeValidator,
       Environment environment) {
     super(NviNoteRequest.class, environment);
     this.candidateRepository = candidateRepository;
-    this.periodRepository = periodRepository;
     this.viewingScopeValidator = viewingScopeValidator;
   }
 
@@ -73,8 +68,7 @@ public class CreateNoteHandler extends ApiGatewayHandler<NviNoteRequest, Candida
     var candidateIdentifier = UUID.fromString(requestInfo.getPathParameter(CANDIDATE_IDENTIFIER));
     var institutionId = requestInfo.getTopLevelOrgCristinId().orElseThrow();
     var userInstance = UserInstance.fromRequestInfo(requestInfo);
-    return attempt(
-            () -> Candidate.fetch(() -> candidateIdentifier, candidateRepository, periodRepository))
+    return attempt(() -> Candidate.fetch(() -> candidateIdentifier, candidateRepository))
         .map(this::checkIfApplicable)
         .map(candidate -> validateViewingScope(viewingScopeValidator, username, candidate))
         .map(candidate -> createNote(input, candidate, username, institutionId))

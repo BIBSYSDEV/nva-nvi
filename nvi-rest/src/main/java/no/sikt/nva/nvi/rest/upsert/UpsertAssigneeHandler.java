@@ -9,7 +9,6 @@ import java.net.HttpURLConnection;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.DynamoRepository;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UserInstance;
 import no.sikt.nva.nvi.common.service.CandidateResponseFactory;
@@ -36,7 +35,6 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<UpsertAssigneeReque
 
   public static final String CANDIDATE_IDENTIFIER = "candidateIdentifier";
   private final CandidateRepository candidateRepository;
-  private final PeriodRepository periodRepository;
   private final IdentityServiceClient identityServiceClient;
   private final ViewingScopeValidator viewingScopeValidator;
 
@@ -44,7 +42,6 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<UpsertAssigneeReque
   public UpsertAssigneeHandler() {
     this(
         new CandidateRepository(DynamoRepository.defaultDynamoClient()),
-        new PeriodRepository(DynamoRepository.defaultDynamoClient()),
         IdentityServiceClient.prepare(),
         ViewingScopeHandler.defaultViewingScopeValidator(),
         new Environment());
@@ -52,13 +49,11 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<UpsertAssigneeReque
 
   public UpsertAssigneeHandler(
       CandidateRepository candidateRepository,
-      PeriodRepository periodRepository,
       IdentityServiceClient identityServiceClient,
       ViewingScopeValidator viewingScopeValidator,
       Environment environment) {
     super(UpsertAssigneeRequest.class, environment);
     this.candidateRepository = candidateRepository;
-    this.periodRepository = periodRepository;
     this.identityServiceClient = identityServiceClient;
     this.viewingScopeValidator = viewingScopeValidator;
   }
@@ -94,7 +89,7 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<UpsertAssigneeReque
   }
 
   private Candidate fetchCandidate(UUID candidateIdentifier) {
-    return Candidate.fetch(() -> candidateIdentifier, candidateRepository, periodRepository);
+    return Candidate.fetch(() -> candidateIdentifier, candidateRepository);
   }
 
   private Candidate updateAndRefetch(Candidate candidate, UpdateAssigneeRequest updateRequest) {

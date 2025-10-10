@@ -9,7 +9,6 @@ import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.model.UserInstance;
 import no.sikt.nva.nvi.common.service.CandidateResponseFactory;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
@@ -29,23 +28,16 @@ public class FetchNviCandidateHandler extends ApiGatewayHandler<Void, CandidateD
 
   public static final String CANDIDATE_IDENTIFIER = "candidateIdentifier";
   private final CandidateRepository candidateRepository;
-  private final PeriodRepository periodRepository;
 
   @JacocoGenerated
   public FetchNviCandidateHandler() {
-    this(
-        new CandidateRepository(defaultDynamoClient()),
-        new PeriodRepository(defaultDynamoClient()),
-        new Environment());
+    this(new CandidateRepository(defaultDynamoClient()), new Environment());
   }
 
   public FetchNviCandidateHandler(
-      CandidateRepository candidateRepository,
-      PeriodRepository periodRepository,
-      Environment environment) {
+      CandidateRepository candidateRepository, Environment environment) {
     super(Void.class, environment);
     this.candidateRepository = candidateRepository;
-    this.periodRepository = periodRepository;
   }
 
   @Override
@@ -60,7 +52,7 @@ public class FetchNviCandidateHandler extends ApiGatewayHandler<Void, CandidateD
     var userInstance = UserInstance.fromRequestInfo(requestInfo);
     return attempt(() -> requestInfo.getPathParameter(CANDIDATE_IDENTIFIER))
         .map(UUID::fromString)
-        .map(identifier -> Candidate.fetch(() -> identifier, candidateRepository, periodRepository))
+        .map(identifier -> Candidate.fetch(() -> identifier, candidateRepository))
         .map(this::checkIfApplicable)
         .map(candidate -> CandidateResponseFactory.create(candidate, userInstance))
         .orElseThrow(ExceptionMapper::map);

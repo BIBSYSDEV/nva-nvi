@@ -9,7 +9,6 @@ import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.model.UserInstance;
 import no.sikt.nva.nvi.common.service.CandidateResponseFactory;
@@ -32,26 +31,22 @@ public class UpdateNviCandidateStatusHandler
     extends ApiGatewayHandler<NviStatusRequest, CandidateDto> implements ViewingScopeHandler {
 
   private final CandidateRepository candidateRepository;
-  private final PeriodRepository periodRepository;
   private final ViewingScopeValidator viewingScopeValidator;
 
   @JacocoGenerated
   public UpdateNviCandidateStatusHandler() {
     this(
         new CandidateRepository(defaultDynamoClient()),
-        new PeriodRepository(defaultDynamoClient()),
         ViewingScopeHandler.defaultViewingScopeValidator(),
         new Environment());
   }
 
   public UpdateNviCandidateStatusHandler(
       CandidateRepository candidateRepository,
-      PeriodRepository periodRepository,
       ViewingScopeValidator viewingScopeValidator,
       Environment environment) {
     super(NviStatusRequest.class, environment);
     this.candidateRepository = candidateRepository;
-    this.periodRepository = periodRepository;
     this.viewingScopeValidator = viewingScopeValidator;
   }
 
@@ -83,7 +78,7 @@ public class UpdateNviCandidateStatusHandler
   }
 
   private Candidate fetchCandidate(UUID candidateIdentifier) {
-    return Candidate.fetch(() -> candidateIdentifier, candidateRepository, periodRepository);
+    return Candidate.fetch(() -> candidateIdentifier, candidateRepository);
   }
 
   private Candidate updateAndRefetch(

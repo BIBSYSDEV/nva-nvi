@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.rest.fetch;
 
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupFuturePeriod;
+import static no.sikt.nva.nvi.rest.EnvironmentFixtures.FETCH_NVI_PERIOD_HANDLER;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -14,12 +15,12 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.time.ZonedDateTime;
 import no.sikt.nva.nvi.common.TestScenario;
+import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.dto.NviPeriodDto;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.GatewayResponse;
-import nva.commons.core.Environment;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.zalando.problem.Problem;
@@ -33,11 +34,14 @@ class FetchNviPeriodHandlerTest {
   private TestScenario scenario;
 
   @BeforeEach
-  public void setUp() {
+  void setUp() {
     scenario = new TestScenario();
     output = new ByteArrayOutputStream();
     context = new FakeContext();
-    handler = new FetchNviPeriodHandler(scenario.getPeriodRepository(), new Environment());
+
+    var periodService =
+        new NviPeriodService(FETCH_NVI_PERIOD_HANDLER, scenario.getPeriodRepository());
+    handler = new FetchNviPeriodHandler(periodService, FETCH_NVI_PERIOD_HANDLER);
   }
 
   @Test

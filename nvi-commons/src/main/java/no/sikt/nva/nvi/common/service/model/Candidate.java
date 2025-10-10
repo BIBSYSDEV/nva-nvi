@@ -12,7 +12,6 @@ import static no.sikt.nva.nvi.common.service.model.ApprovalStatus.PENDING;
 import static no.sikt.nva.nvi.common.service.model.ApprovalStatus.REJECTED;
 import static no.sikt.nva.nvi.common.utils.DecimalUtils.adjustScaleAndRoundingMode;
 import static no.sikt.nva.nvi.common.utils.RequestUtil.getAllCreators;
-import static nva.commons.core.attempt.Try.attempt;
 import static nva.commons.core.ioutils.IoUtils.stringFromResources;
 import static nva.commons.core.paths.UriWrapper.HTTPS;
 
@@ -43,10 +42,11 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.NoteDao;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.db.NviPeriodDao;
 import no.sikt.nva.nvi.common.db.PeriodStatus;
 import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
 import no.sikt.nva.nvi.common.db.ReportStatus;
+import no.sikt.nva.nvi.common.db.model.ResponseContext;
 import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.model.InstanceType;
@@ -63,7 +63,6 @@ import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException;
 import no.sikt.nva.nvi.common.service.requests.CreateNoteRequest;
 import no.sikt.nva.nvi.common.service.requests.DeleteNoteRequest;
-import no.sikt.nva.nvi.common.service.requests.FetchByPublicationRequest;
 import no.sikt.nva.nvi.common.service.requests.FetchCandidateRequest;
 import nva.commons.apigateway.exceptions.UnauthorizedException;
 import nva.commons.core.Environment;
@@ -130,11 +129,11 @@ public final class Candidate {
     this.revisionRead = revisionRead;
   }
 
-  private Candidate(
+  public Candidate(
       CandidateRepository repository,
       CandidateDao candidateDao,
-      List<ApprovalStatusDao> approvals,
-      List<NoteDao> notes,
+      Collection<ApprovalStatusDao> approvals,
+      Collection<NoteDao> notes,
       PeriodStatus period) {
     this.repository = repository;
     var dbCandidate = candidateDao.candidate();
@@ -151,55 +150,45 @@ public final class Candidate {
     this.revisionRead = candidateDao.revision();
   }
 
-  public static Candidate fetchByPublicationId(
-      FetchByPublicationRequest request,
-      CandidateRepository repository,
-      PeriodRepository periodRepository) {
-    var candidateDao =
-        repository
-            .findByPublicationId(request.publicationId())
-            .orElseThrow(CandidateNotFoundException::new);
-    var approvalDaoList = repository.fetchApprovals(candidateDao.identifier());
-    var noteDaoList = repository.getNotes(candidateDao.identifier());
-    var periodStatus = findPeriodStatus(periodRepository, candidateDao.getPeriodYear());
-    return new Candidate(repository, candidateDao, approvalDaoList, noteDaoList, periodStatus);
+  public static Candidate fromAggregate(
+      CandidateRepository candidateRepository, ResponseContext responseContext) {
+    var aggregate =
+        responseContext.candidateAggregate().orElseThrow(CandidateNotFoundException::new);
+    var periodStatus =
+        findPeriodStatusFromCached(
+            responseContext.allPeriods(), aggregate.candidate().getPeriodYear());
+    return new Candidate(
+        candidateRepository,
+        aggregate.candidate(),
+        aggregate.approvals(),
+        aggregate.notes(),
+        periodStatus);
   }
 
   public static Candidate fetch(
-      FetchCandidateRequest request,
-      CandidateRepository repository,
-      PeriodRepository periodRepository) {
-    var candidateDao =
-        repository
-            .findCandidateById(request.identifier())
-            .orElseThrow(CandidateNotFoundException::new);
-    var approvalDaoList = repository.fetchApprovals(candidateDao.identifier());
-    var noteDaoList = repository.getNotes(candidateDao.identifier());
-    var periodStatus = findPeriodStatus(periodRepository, candidateDao.getPeriodYear());
-    return new Candidate(repository, candidateDao, approvalDaoList, noteDaoList, periodStatus);
+      FetchCandidateRequest request, CandidateRepository candidateRepository) {
+    var responseContext = candidateRepository.getCandidateAggregate(request.identifier());
+    return fromAggregate(candidateRepository, responseContext);
   }
 
   public static void upsert(
-      UpsertNviCandidateRequest request,
-      CandidateRepository candidateRepository,
-      PeriodRepository periodRepository) {
-    var optionalCandidate =
-        fetchOptionalCandidate(request.publicationId(), candidateRepository, periodRepository);
-    optionalCandidate.ifPresentOrElse(
-        candidate -> updateExistingCandidate(request, candidateRepository, candidate),
-        () -> createCandidate(request, candidateRepository));
+      UpsertNviCandidateRequest request, CandidateRepository candidateRepository) {
+    var responseContext = candidateRepository.getCandidateAggregate(request.publicationId());
+    if (responseContext.candidateAggregate().isPresent()) {
+      var originalCandidate = fromAggregate(candidateRepository, responseContext);
+      updateExistingCandidate(request, candidateRepository, originalCandidate);
+    } else {
+      createCandidate(request, candidateRepository);
+    }
   }
 
   public static Optional<Candidate> updateNonCandidate(
-      UpsertNonNviCandidateRequest request,
-      CandidateRepository candidateRepository,
-      PeriodRepository periodRepository) {
-    var optionalCandidate =
-        fetchOptionalCandidate(request.publicationId(), candidateRepository, periodRepository);
+      UpsertNonNviCandidateRequest request, CandidateRepository candidateRepository) {
+    var responseContext = candidateRepository.getCandidateAggregate(request.publicationId());
     LOGGER.info(
         "Updating candidate for publicationId={} to non-candidate", request.publicationId());
-    if (optionalCandidate.isPresent()) {
-      var candidate = optionalCandidate.get();
+    if (responseContext.candidateAggregate().isPresent()) {
+      var candidate = fromAggregate(candidateRepository, responseContext);
       LOGGER.info("Removing all approvals for candidateId={}", candidate.getIdentifier());
       return Optional.of(updateToNotApplicable(candidate, candidateRepository));
     }
@@ -458,29 +447,6 @@ public final class Candidate {
     return publicationDetails.getNviCreatorAffiliations();
   }
 
-  public void updateVersion(CandidateRepository candidateRepository) {
-    candidateRepository
-        .findCandidateById(identifier)
-        .map(candidateDao -> updateVersion(candidateRepository, candidateDao))
-        .orElseThrow(CandidateNotFoundException::new);
-  }
-
-  private static CandidateDao updateVersion(
-      CandidateRepository candidateRepository, CandidateDao candidateDao) {
-    var candidateWithNewVersion = candidateDao.copy().version(randomUUID().toString()).build();
-    candidateRepository.updateCandidate(candidateWithNewVersion);
-    return candidateWithNewVersion;
-  }
-
-  private static Optional<Candidate> fetchOptionalCandidate(
-      URI publicationId,
-      CandidateRepository candidateRepository,
-      PeriodRepository periodRepository) {
-    return attempt(
-            () -> fetchByPublicationId(() -> publicationId, candidateRepository, periodRepository))
-        .toOptional();
-  }
-
   private static void updateExistingCandidate(
       UpsertNviCandidateRequest request,
       CandidateRepository repository,
@@ -660,22 +626,29 @@ public final class Candidate {
   }
 
   private static Map<UUID, Note> mapToNotesMap(
-      CandidateRepository repository, List<NoteDao> notes) {
+      CandidateRepository repository, Collection<NoteDao> notes) {
     return notes.stream()
         .map(dao -> new Note(repository, dao.identifier(), dao))
         .collect(Collectors.toMap(Note::getNoteId, Function.identity()));
   }
 
-  private static Map<URI, Approval> mapToApprovalsMap(List<ApprovalStatusDao> approvals) {
+  private static Map<URI, Approval> mapToApprovalsMap(Collection<ApprovalStatusDao> approvals) {
     return approvals.stream()
         .map(dao -> new Approval(dao.identifier(), dao))
         .collect(Collectors.toMap(Approval::getInstitutionId, Function.identity()));
   }
 
-  private static PeriodStatus findPeriodStatus(PeriodRepository periodRepository, String year) {
-    return periodRepository
-        .findByPublishingYear(year)
+  private static PeriodStatus findPeriodStatusFromCached(
+      Collection<NviPeriodDao> allPeriods, String year) {
+    // TODO: Refactor this
+    if (isNull(year)) {
+      return PERIOD_STATUS_NO_PERIOD;
+    }
+    return allPeriods.stream()
+        .map(NviPeriodDao::nviPeriod)
+        .filter(period -> year.equals(period.publishingYear()))
         .map(PeriodStatus::fromPeriod)
+        .findFirst()
         .orElse(PERIOD_STATUS_NO_PERIOD);
   }
 
@@ -774,7 +747,7 @@ public final class Candidate {
         .withRevision(revisionRead);
   }
 
-  private CandidateDao toDao() {
+  public CandidateDao toDao() {
     var dbPublication = publicationDetails.toDbPublication();
     var dbChannel = pointCalculation.channel().toDbPublicationChannel();
     var dbCandidate =

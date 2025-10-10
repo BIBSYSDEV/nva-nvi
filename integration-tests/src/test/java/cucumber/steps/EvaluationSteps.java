@@ -95,7 +95,6 @@ public class EvaluationSteps {
   }
 
   private Candidate getCandidateByPublicationId(SampleExpandedPublication publication) {
-    return Candidate.fetchByPublicationId(
-        publication::id, scenario.getCandidateRepository(), scenario.getPeriodRepository());
+    return scenario.getCandidateByPublicationId(publication.id());
   }
 }
