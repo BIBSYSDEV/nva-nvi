@@ -3,6 +3,12 @@ package no.sikt.nva.nvi.common.service;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.isNull;
 import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
+import static no.sikt.nva.nvi.common.service.model.Candidate.getApprovalsToDelete;
+import static no.sikt.nva.nvi.common.service.model.Candidate.getUpdatedInstitutionPoints;
+import static no.sikt.nva.nvi.common.service.model.Candidate.mapToCandidate;
+import static no.sikt.nva.nvi.common.service.model.Candidate.mapToNewApprovalDetails;
+import static no.sikt.nva.nvi.common.service.model.Candidate.mapToResetApprovals;
+import static no.sikt.nva.nvi.common.service.model.Candidate.shouldResetCandidate;
 
 import java.net.URI;
 import java.util.Collection;
@@ -17,6 +23,7 @@ import no.sikt.nva.nvi.common.db.model.ResponseContext;
 import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
+import no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException;
 import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import nva.commons.core.Environment;
@@ -57,16 +64,51 @@ public class CandidateService {
     throw new UnsupportedOperationException();
   }
 
-  public Candidate update(Candidate candidate) {
-    throw new UnsupportedOperationException();
+  public void upsert(UpsertNviCandidateRequest request) {
+    var responseContext = candidateRepository.getCandidateAggregate(request.publicationId());
+    if (responseContext.candidateAggregate().isPresent()) {
+      var originalCandidate = fromAggregate(responseContext);
+      updateCandidate(request, originalCandidate);
+    } else {
+      createCandidate(request);
+    }
   }
 
-  public Candidate upsert(UpsertNviCandidateRequest request) {
-    throw new UnsupportedOperationException();
+  private void createCandidate(UpsertNviCandidateRequest request) {
+    request.validate();
+    candidateRepository.create(
+        mapToCandidate(request),
+        mapToNewApprovalDetails(request.pointCalculation().institutionPoints()));
   }
 
-  public Optional<Candidate> updateNonCandidate(
-      UpsertNonNviCandidateRequest request, CandidateRepository candidateRepository) {
+  public void updateCandidate(UpsertNviCandidateRequest request, Candidate candidate) {
+    request.validate();
+    if (candidate.isReported()) {
+      throw new IllegalCandidateUpdateException("Can not update reported candidate");
+    }
+
+    var updatedCandidate = candidate.apply(request);
+    if (shouldResetCandidate(request, candidate) || !candidate.isApplicable()) {
+      LOGGER.info("Resetting all approvals for candidate {}", candidate.getIdentifier());
+      var approvalsToReset =
+          mapToResetApprovals(candidate, updatedCandidate.getInstitutionPoints());
+      var approvalsToDelete = getApprovalsToDelete(candidate, updatedCandidate);
+
+      candidateRepository.updateCandidateAndApprovals(
+          updatedCandidate.toDao(), approvalsToReset, approvalsToDelete);
+    } else {
+      var updatedPoints = getUpdatedInstitutionPoints(candidate, updatedCandidate);
+      var approvalsToReset = mapToResetApprovals(candidate, updatedPoints);
+      LOGGER.info(
+          "Resetting individual approvals for candidate {}: {}",
+          candidate.getIdentifier(),
+          approvalsToReset);
+      candidateRepository.updateCandidateAndApprovals(
+          updatedCandidate.toDao(), approvalsToReset, emptyList());
+    }
+  }
+
+  public Optional<Candidate> updateNonCandidate(UpsertNonNviCandidateRequest request) {
     var responseContext = candidateRepository.getCandidateAggregate(request.publicationId());
     LOGGER.info(
         "Updating candidate for publicationId={} to non-candidate", request.publicationId());

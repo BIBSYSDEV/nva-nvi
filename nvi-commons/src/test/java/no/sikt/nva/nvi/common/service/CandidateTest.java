@@ -100,7 +100,7 @@ class CandidateTest extends CandidateTestSetup {
             .build();
     var pointCalculation = randomPointCalculationDtoBuilder().withChannel(channel).build();
     var request = randomUpsertRequestBuilder().withPointCalculation(pointCalculation).build();
-    Candidate.upsert(request, candidateRepository);
+    candidateService.upsert(request);
     var persistedCandidate =
         candidateRepository.findByPublicationId(request.publicationId()).orElseThrow().candidate();
     assertEquals(expectedLevel, persistedCandidate.level());
@@ -168,7 +168,7 @@ class CandidateTest extends CandidateTestSetup {
   void shouldUpdateCandidateWithSystemGeneratedModifiedDate() {
     var request = getUpdateRequestForExistingCandidate();
     var candidate = candidateService.fetchByPublicationId(request.publicationId());
-    Candidate.upsert(request, candidateRepository);
+    candidateService.upsert(request);
     var updatedCandidate =
         candidateRepository.findCandidateById(candidate.getIdentifier()).orElseThrow().candidate();
     assertNotEquals(candidate.getModifiedDate(), updatedCandidate.modifiedDate());
@@ -179,7 +179,7 @@ class CandidateTest extends CandidateTestSetup {
     var request = getUpdateRequestForExistingCandidate();
     var candidate = candidateService.fetchByPublicationId(request.publicationId());
     var expectedCreatedDate = candidate.getCreatedDate();
-    Candidate.upsert(request, candidateRepository);
+    candidateService.upsert(request);
     var actualPersistedCandidate =
         candidateRepository.findCandidateById(candidate.getIdentifier()).orElseThrow().candidate();
     assertEquals(expectedCreatedDate, actualPersistedCandidate.createdDate());
@@ -193,8 +193,7 @@ class CandidateTest extends CandidateTestSetup {
     var updateRequest =
         randomUpsertRequestBuilder().withPublicationId(candidate.publicationId()).build();
     assertThrows(
-        IllegalCandidateUpdateException.class,
-        () -> Candidate.upsert(updateRequest, candidateRepository));
+        IllegalCandidateUpdateException.class, () -> candidateService.upsert(updateRequest));
   }
 
   @Test
@@ -322,11 +321,10 @@ class CandidateTest extends CandidateTestSetup {
   @Test
   void shouldSetPeriodYearWhenResettingCandidate() {
     var nonApplicableCandidate = nonApplicableCandidate();
-    Candidate.upsert(
+    candidateService.upsert(
         randomUpsertRequestBuilder()
             .withPublicationId(nonApplicableCandidate.getPublicationId())
-            .build(),
-        candidateRepository);
+            .build());
     var updatedApplicableCandidate = candidateService.fetch(nonApplicableCandidate.getIdentifier());
     assertThat(
         updatedApplicableCandidate.getPeriod().year(),
@@ -526,7 +524,7 @@ class CandidateTest extends CandidateTestSetup {
 
   private UpsertNviCandidateRequest getUpdateRequestForExistingCandidate() {
     var insertRequest = randomUpsertRequestBuilder().build();
-    Candidate.upsert(insertRequest, candidateRepository);
+    candidateService.upsert(insertRequest);
     return UpsertRequestBuilder.fromRequest(insertRequest).build();
   }
 

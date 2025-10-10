@@ -118,8 +118,7 @@ class CandidateNotesTest extends CandidateTestSetup {
 
   private Candidate createCandidate(URI institutionId) {
     var request = createUpsertCandidateRequest(institutionId).build();
-    Candidate.upsert(request, candidateRepository);
-    return scenario.getCandidateByPublicationId(request.publicationId());
+    return scenario.upsertCandidate(request);
   }
 
   private Candidate createCandidate() {

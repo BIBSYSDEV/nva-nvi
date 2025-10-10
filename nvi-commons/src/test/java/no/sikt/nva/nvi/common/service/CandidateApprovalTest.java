@@ -238,9 +238,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
             .withPublicationId(candidate.getPublicationId())
             .withInstanceType(null)
             .build();
-    assertThrows(
-        InvalidNviCandidateException.class,
-        () -> Candidate.upsert(updateRequest, candidateRepository));
+    assertThrows(InvalidNviCandidateException.class, () -> candidateService.upsert(updateRequest));
   }
 
   @Test

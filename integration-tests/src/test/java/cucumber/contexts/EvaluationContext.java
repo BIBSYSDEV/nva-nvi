@@ -53,7 +53,7 @@ public class EvaluationContext {
 
   private UpsertNviCandidateHandler createUpsertNviCandidateHandler() {
     return new UpsertNviCandidateHandler(
-        scenario.getCandidateRepository(),
+        scenario.getCandidateService(),
         upsertErrorQueue,
         getUpsertNviCandidateHandlerEnvironment());
   }

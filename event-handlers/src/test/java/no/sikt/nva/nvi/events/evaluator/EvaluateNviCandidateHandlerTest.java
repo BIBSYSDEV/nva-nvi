@@ -634,7 +634,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
         randomUpsertRequestBuilder()
             .withPublicationDate(new PublicationDateDto(String.valueOf(year), null, null))
             .build();
-    Candidate.upsert(upsertCandidateRequest, candidateRepository);
+    candidateService.upsert(upsertCandidateRequest);
     var candidateInClosedPeriod =
         candidateService.fetchByPublicationId(upsertCandidateRequest.publicationId());
     var content =
@@ -1063,7 +1063,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
               .withPublicationDate(new PublicationDateDto(year, null, null))
               .withPublicationId(sampleExpandedPublication.id())
               .build();
-      Candidate.upsert(upsertCandidateRequest, candidateRepository);
+      candidateService.upsert(upsertCandidateRequest);
     }
   }
 }

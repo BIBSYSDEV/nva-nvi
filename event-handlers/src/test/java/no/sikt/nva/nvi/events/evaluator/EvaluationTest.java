@@ -108,9 +108,7 @@ class EvaluationTest {
     if (isNull(upsertNviCandidateHandler)) {
       upsertNviCandidateHandler =
           new UpsertNviCandidateHandler(
-              candidateRepository,
-              mock(QueueClient.class),
-              getUpsertNviCandidateHandlerEnvironment());
+              candidateService, mock(QueueClient.class), getUpsertNviCandidateHandlerEnvironment());
     }
     return upsertNviCandidateHandler;
   }

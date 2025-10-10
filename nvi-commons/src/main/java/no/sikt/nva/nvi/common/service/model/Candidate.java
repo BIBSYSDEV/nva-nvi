@@ -164,17 +164,6 @@ public final class Candidate {
         periodStatus);
   }
 
-  public static void upsert(
-      UpsertNviCandidateRequest request, CandidateRepository candidateRepository) {
-    var responseContext = candidateRepository.getCandidateAggregate(request.publicationId());
-    if (responseContext.candidateAggregate().isPresent()) {
-      var originalCandidate = fromAggregate(candidateRepository, responseContext);
-      updateExistingCandidate(request, candidateRepository, originalCandidate);
-    } else {
-      createCandidate(request, candidateRepository);
-    }
-  }
-
   public static Optional<Candidate> updateNonCandidate(
       UpsertNonNviCandidateRequest request, CandidateRepository candidateRepository) {
     var responseContext = candidateRepository.getCandidateAggregate(request.publicationId());
@@ -442,17 +431,6 @@ public final class Candidate {
     return publicationDetails.getNviCreatorAffiliations();
   }
 
-  private static void updateExistingCandidate(
-      UpsertNviCandidateRequest request,
-      CandidateRepository repository,
-      Candidate existingCandidate) {
-    if (existingCandidate.isReported()) {
-      throw new IllegalCandidateUpdateException("Can not update reported candidate");
-    } else {
-      updateCandidate(request, repository, existingCandidate);
-    }
-  }
-
   private static Candidate updateToNotApplicable(
       Candidate currentCandidate, CandidateRepository repository) {
     var existingCandidateDao = currentCandidate.toDao();
@@ -470,31 +448,7 @@ public final class Candidate {
         PeriodStatus.builder().withStatus(Status.NO_PERIOD).build());
   }
 
-  private static void updateCandidate(
-      UpsertNviCandidateRequest request, CandidateRepository repository, Candidate candidate) {
-    request.validate();
-    var updatedCandidate = candidate.apply(request);
-    if (shouldResetCandidate(request, candidate) || isNotApplicable(candidate)) {
-      LOGGER.info("Resetting all approvals for candidate {}", candidate.getIdentifier());
-      var approvalsToReset =
-          mapToResetApprovals(candidate, updatedCandidate.getInstitutionPoints());
-      var approvalsToDelete = getApprovalsToDelete(candidate, updatedCandidate);
-
-      repository.updateCandidateAndApprovals(
-          updatedCandidate.toDao(), approvalsToReset, approvalsToDelete);
-    } else {
-      var updatedPoints = getUpdatedInstitutionPoints(candidate, updatedCandidate);
-      var approvalsToReset = mapToResetApprovals(candidate, updatedPoints);
-      LOGGER.info(
-          "Resetting individual approvals for candidate {}: {}",
-          candidate.getIdentifier(),
-          approvalsToReset);
-      repository.updateCandidateAndApprovals(
-          updatedCandidate.toDao(), approvalsToReset, emptyList());
-    }
-  }
-
-  private static List<InstitutionPoints> getUpdatedInstitutionPoints(
+  public static List<InstitutionPoints> getUpdatedInstitutionPoints(
       Candidate currentCandidate, Candidate updatedCandidate) {
     return updatedCandidate.getInstitutionPoints().stream()
         .filter(institutionPoints -> !hasSameInstitutionPoints(currentCandidate, institutionPoints))
@@ -505,7 +459,7 @@ public final class Candidate {
    * Returns current approvals for all institutions that should have their approval deleted because
    * they no longer have associated points.
    */
-  private static List<ApprovalStatusDao> getApprovalsToDelete(
+  public static List<ApprovalStatusDao> getApprovalsToDelete(
       Candidate currentCandidate, Candidate updatedCandidate) {
     return currentCandidate.getApprovals().keySet().stream()
         .filter(not(id -> updatedCandidate.getInstitutionPoints(id).isPresent()))
@@ -514,11 +468,7 @@ public final class Candidate {
         .toList();
   }
 
-  private static boolean isNotApplicable(Candidate candidate) {
-    return !candidate.isApplicable();
-  }
-
-  private static boolean shouldResetCandidate(
+  public static boolean shouldResetCandidate(
       UpsertNviCandidateRequest request, Candidate candidate) {
     return publicationChannelIsUpdated(request, candidate)
         || instanceTypeIsUpdated(request, candidate)
@@ -612,14 +562,6 @@ public final class Candidate {
     return !Objects.equals(newType, currentType);
   }
 
-  private static void createCandidate(
-      UpsertNviCandidateRequest request, CandidateRepository repository) {
-    request.validate();
-    repository.create(
-        mapToCandidate(request),
-        mapToNewApprovalDetails(request.pointCalculation().institutionPoints()));
-  }
-
   private static Map<UUID, Note> mapToNotesMap(
       CandidateRepository repository, Collection<NoteDao> notes) {
     return notes.stream()
@@ -647,7 +589,7 @@ public final class Candidate {
         .orElse(PERIOD_STATUS_NO_PERIOD);
   }
 
-  private static List<ApprovalStatusDao> mapToResetApprovals(
+  public static List<ApprovalStatusDao> mapToResetApprovals(
       Candidate candidate, Collection<InstitutionPoints> institutionPoints) {
     var resetApprovalDetails = mapToNewApprovalDetails(institutionPoints);
     var newApprovals = new ArrayList<ApprovalStatusDao>();
@@ -660,7 +602,7 @@ public final class Candidate {
     return newApprovals;
   }
 
-  private static List<DbApprovalStatus> mapToNewApprovalDetails(
+  public static List<DbApprovalStatus> mapToNewApprovalDetails(
       Collection<InstitutionPoints> institutionPoints) {
     return institutionPoints.stream()
         .map(InstitutionPoints::institutionId)
@@ -672,7 +614,7 @@ public final class Candidate {
     return DbApprovalStatus.builder().institutionId(institutionId).status(DbStatus.PENDING).build();
   }
 
-  private static DbCandidate mapToCandidate(UpsertNviCandidateRequest request) {
+  public static DbCandidate mapToCandidate(UpsertNviCandidateRequest request) {
     var allCreators = mapToDbCreators(request.verifiedCreators(), request.unverifiedCreators());
     var dbDetails = PublicationDetails.from(request).toDbPublication();
     var dbPointCalculation = PointCalculation.from(request).toDbPointCalculation();
@@ -778,7 +720,7 @@ public final class Candidate {
         .build();
   }
 
-  private Candidate apply(UpsertNviCandidateRequest request) {
+  public Candidate apply(UpsertNviCandidateRequest request) {
     return this.copy()
         .withApplicable(request.isApplicable())
         .withPointCalculation(PointCalculation.from(request))

@@ -143,7 +143,7 @@ public class TestScenario {
   }
 
   public Candidate upsertCandidate(UpsertNviCandidateRequest request) {
-    Candidate.upsert(request, candidateRepository);
+    candidateService.upsert(request);
     return getCandidateByPublicationId(request.publicationId());
   }
 

@@ -24,10 +24,9 @@ import java.util.Map;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.db.model.ResponseContext;
-import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.exceptions.TransactionException;
 import no.sikt.nva.nvi.common.model.InstanceType;
-import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.service.CandidateService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
@@ -40,12 +39,14 @@ class CandidateRepositoryTest {
 
   private DynamoDbClient localDynamo;
   private CandidateRepository candidateRepository;
+  private CandidateService candidateService;
 
   @BeforeEach
   void setUp() {
     var scenario = new TestScenario();
     localDynamo = scenario.getLocalDynamo();
     candidateRepository = scenario.getCandidateRepository();
+    candidateService = scenario.getCandidateService();
   }
 
   @Test
@@ -63,13 +64,13 @@ class CandidateRepositoryTest {
     var requestBuilder =
         createUpsertCandidateRequest(randomUri()).withInstanceType(InstanceType.ACADEMIC_ARTICLE);
     var originalRequest = requestBuilder.build();
-    Candidate.upsert(originalRequest, candidateRepository);
+    candidateService.upsert(originalRequest);
     var candidateDao =
         candidateRepository.findByPublicationId(originalRequest.publicationId()).get();
     var originalDbCandidate = candidateDao.candidate();
 
     var newUpsertRequest = requestBuilder.withInstanceType(InstanceType.ACADEMIC_MONOGRAPH).build();
-    Candidate.upsert(newUpsertRequest, candidateRepository);
+    candidateService.upsert(newUpsertRequest);
     var updatedDbCandidate =
         candidateRepository.findCandidateById(candidateDao.identifier()).get().candidate();
 
@@ -89,10 +90,10 @@ class CandidateRepositoryTest {
     when(client.transactWriteItems((TransactWriteItemsRequest) any()))
         .thenThrow(getTransactionCanceledException());
 
+    var candidate = randomCandidateBuilder(true).build();
     var exception =
         assertThrows(
-            TransactionException.class,
-            () -> Candidate.upsert(getUpsertNviCandidateRequest(), failingRepository));
+            TransactionException.class, () -> failingRepository.create(candidate, List.of()));
 
     assertTrue(exception.getMessage().contains("Operation PUT with condition"));
   }
@@ -107,12 +108,6 @@ class CandidateRepositoryTest {
                         Map.of(randomString(), AttributeValue.builder().s(randomString()).build()))
                     .message(randomString())
                     .build()))
-        .build();
-  }
-
-  private static UpsertNviCandidateRequest getUpsertNviCandidateRequest() {
-    return createUpsertCandidateRequest(randomUri())
-        .withInstanceType(InstanceType.ACADEMIC_ARTICLE)
         .build();
   }
 }

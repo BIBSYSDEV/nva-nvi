@@ -236,7 +236,7 @@ class IndexDocumentHandlerTest {
             .withAffiliations(List.of(institutionId))
             .build();
     var request = randomUpsertRequestBuilder().withNviCreators(unverifiedCreator).build();
-    Candidate.upsert(request, candidateRepository);
+    candidateService.upsert(request);
     var candidate = candidateService.fetchByPublicationId(request.publicationId());
     var expectedIndexDocument =
         setupExistingResourceInS3AndGenerateExpectedDocument(candidate).indexDocument();
@@ -768,7 +768,7 @@ class IndexDocumentHandlerTest {
 
   private Candidate setupNonApplicableCandidate(URI institutionId) {
     var request = createUpsertCandidateRequest(institutionId).build();
-    Candidate.upsert(request, candidateRepository);
+    candidateService.upsert(request);
     var candidate = candidateService.fetchByPublicationId(request.publicationId());
     return Candidate.updateNonCandidate(
             createUpsertNonCandidateRequest(candidate.getPublicationId()), candidateRepository)
@@ -938,7 +938,7 @@ class IndexDocumentHandlerTest {
 
   private Candidate randomApplicableCandidate(URI topLevelOrg, URI affiliation) {
     var request = createUpsertCandidateRequestWithSingleAffiliation(topLevelOrg, affiliation);
-    Candidate.upsert(request, candidateRepository);
+    candidateService.upsert(request);
     return candidateService.fetchByPublicationId(request.publicationId());
   }
 
@@ -950,7 +950,7 @@ class IndexDocumentHandlerTest {
             .withScientificValue(ScientificValue.LEVEL_ONE)
             .build();
     var request = randomUpsertRequestBuilder().withPublicationChannel(channel).build();
-    Candidate.upsert(request, candidateRepository);
+    candidateService.upsert(request);
     return candidateService.fetchByPublicationId(request.publicationId());
   }
 

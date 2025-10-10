@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -85,7 +86,7 @@ class UpsertNviCandidateHandlerTest {
     queueClient = mock(QueueClient.class);
     environment = mock(Environment.class);
     when(environment.readEnv("UPSERT_CANDIDATE_DLQ_QUEUE_URL")).thenReturn(DLQ_QUEUE_URL);
-    handler = new UpsertNviCandidateHandler(candidateRepository, queueClient, environment);
+    handler = new UpsertNviCandidateHandler(candidateService, queueClient, environment);
   }
 
   @Test
@@ -106,9 +107,9 @@ class UpsertNviCandidateHandlerTest {
 
   @Test
   void shouldSendMessageToDlqWhenUnexpectedErrorOccurs() {
-    candidateRepository = mock(CandidateRepository.class);
-    handler = new UpsertNviCandidateHandler(candidateRepository, queueClient, environment);
-    when(candidateRepository.create(any(), any())).thenThrow(RuntimeException.class);
+    candidateService = mock(CandidateService.class);
+    handler = new UpsertNviCandidateHandler(candidateService, queueClient, environment);
+    doThrow(RuntimeException.class).when(candidateService).upsert(any());
 
     handler.handleRequest(createEvent(randomCandidateEvaluatedMessage()), CONTEXT);
 
@@ -155,7 +156,7 @@ class UpsertNviCandidateHandlerTest {
 
     var request =
         createUpsertCandidateRequest(institutions).withPublicationId(publicationId).build();
-    Candidate.upsert(request, candidateRepository);
+    candidateService.upsert(request);
 
     var sqsEvent = createEvent(keep, publicationId, generateS3BucketUri(identifier));
     handler.handleRequest(sqsEvent, CONTEXT);
@@ -171,7 +172,7 @@ class UpsertNviCandidateHandlerTest {
     var upsertCandidateRequest = createUpsertCandidateRequest(institutionId).build();
     var publicationId = upsertCandidateRequest.publicationId();
 
-    Candidate.upsert(upsertCandidateRequest, candidateRepository);
+    candidateService.upsert(upsertCandidateRequest);
     var candidate = scenario.getCandidateByPublicationId(publicationId);
     scenario.updateApprovalStatus(
         candidate.getIdentifier(), ApprovalStatus.APPROVED, institutionId);
@@ -179,7 +180,7 @@ class UpsertNviCandidateHandlerTest {
     var approvedCandidate = scenario.getCandidateByPublicationId(publicationId);
     var approval = approvedCandidate.getApprovals().get(institutionId);
     var newUpsertRequest = createNewUpsertRequestNotAffectingApprovals(upsertCandidateRequest);
-    Candidate.upsert(newUpsertRequest, candidateRepository);
+    candidateService.upsert(newUpsertRequest);
 
     var updatedCandidate = scenario.getCandidateByPublicationId(publicationId);
     var updatedApproval = updatedCandidate.getApprovals().get(institutionId);
