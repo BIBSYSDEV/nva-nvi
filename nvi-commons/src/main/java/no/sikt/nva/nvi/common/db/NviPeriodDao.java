@@ -50,6 +50,11 @@ public final class NviPeriodDao extends Dao {
     return new Builder();
   }
 
+  @DynamoDbIgnore
+  public Builder copy() {
+    return builder().identifier(identifier).nviPeriod(nviPeriod).version(version);
+  }
+
   @Override
   @DynamoDbPartitionKey
   @DynamoDbAttribute(HASH_KEY)

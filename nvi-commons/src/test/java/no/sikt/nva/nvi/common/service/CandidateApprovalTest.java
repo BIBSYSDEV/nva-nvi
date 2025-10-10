@@ -224,9 +224,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
   void shouldRemoveApprovalsWhenBecomingNonCandidate() {
     var candidate = setupRandomApplicableCandidate(scenario);
     var updateRequest = createUpsertNonCandidateRequest(candidate.getPublicationId());
-    var updatedCandidate =
-        Candidate.updateNonCandidate(updateRequest, candidateRepository, periodRepository)
-            .orElseThrow();
+    var updatedCandidate = candidateService.updateNonCandidate(updateRequest).orElseThrow();
     assertThat(updatedCandidate.getIdentifier(), is(equalTo(candidate.getIdentifier())));
     assertThat(updatedCandidate.getApprovals().size(), is(equalTo(0)));
   }
@@ -239,9 +237,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
             .withPublicationId(candidate.getPublicationId())
             .withInstanceType(null)
             .build();
-    assertThrows(
-        InvalidNviCandidateException.class,
-        () -> Candidate.upsert(updateRequest, candidateRepository, periodRepository));
+    assertThrows(InvalidNviCandidateException.class, () -> candidateService.upsert(updateRequest));
   }
 
   @Test
@@ -249,7 +245,8 @@ class CandidateApprovalTest extends CandidateTestSetup {
     updateApprovalStatus(candidateIdentifier, ApprovalStatus.APPROVED);
 
     var status =
-        Candidate.fetch(() -> candidateIdentifier, candidateRepository, periodRepository)
+        candidateService
+            .fetch(candidateIdentifier)
             .getApprovals()
             .get(HARDCODED_INSTITUTION_ID)
             .getStatus();
@@ -279,8 +276,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
     candidate.updateApprovalAssignee(
         new UpdateAssigneeRequest(HARDCODED_INSTITUTION_ID, newUsername));
 
-    var updatedCandidate =
-        Candidate.fetch(candidate::getIdentifier, candidateRepository, periodRepository);
+    var updatedCandidate = candidateService.fetch(candidate.getIdentifier());
     var updatedApproval = updatedCandidate.getApprovals().get(HARDCODED_INSTITUTION_ID);
     assertThat(updatedApproval.getAssigneeUsername(), is(equalTo(newUsername)));
   }
@@ -450,10 +446,8 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var upsertCandidateRequest = createUpsertCandidateRequest(HARDCODED_INSTITUTION_ID).build();
     var candidate = scenario.upsertCandidate(upsertCandidateRequest);
     var nonCandidate =
-        Candidate.updateNonCandidate(
-                createUpsertNonCandidateRequest(candidate.getPublicationId()),
-                candidateRepository,
-                periodRepository)
+        candidateService
+            .updateNonCandidate(createUpsertNonCandidateRequest(candidate.getPublicationId()))
             .orElseThrow();
     assertFalse(nonCandidate.isApplicable());
     var updatedCandidate =

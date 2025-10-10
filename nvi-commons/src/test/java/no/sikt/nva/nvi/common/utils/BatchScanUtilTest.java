@@ -45,7 +45,6 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
-import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails;
 import no.sikt.nva.nvi.test.SampleExpandedPublication;
 import org.assertj.core.api.Assertions;
@@ -295,9 +294,7 @@ class BatchScanUtilTest {
 
     // Run the migration and check that the topLevelNviOrganizations field is populated as expected
     batchScanUtil.migrateAndUpdateVersion(10, null, emptyList());
-    var actualCandidate =
-        Candidate.fetchByPublicationId(
-            publication::id, candidateRepository, scenario.getPeriodRepository());
+    var actualCandidate = scenario.getCandidateByPublicationId(publication.id());
 
     Assertions.assertThat(actualCandidate.getPublicationDetails())
         .extracting(
@@ -349,9 +346,7 @@ class BatchScanUtilTest {
 
     // Run the migration and check that persisted data is updated correctly
     batchScanUtil.migrateAndUpdateVersion(10, null, emptyList());
-    var actualCandidate =
-        Candidate.fetchByPublicationId(
-            publication::id, candidateRepository, scenario.getPeriodRepository());
+    var actualCandidate = scenario.getCandidateByPublicationId(publication.id());
 
     Assertions.assertThat(actualCandidate.getPublicationDetails())
         .extracting(

@@ -14,6 +14,7 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.model.UserInstance;
 import no.sikt.nva.nvi.common.service.CandidateResponseFactory;
+import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.model.Candidate;
@@ -30,8 +31,7 @@ public class FetchNviCandidateByPublicationIdHandler extends ApiGatewayHandler<V
     implements ViewingScopeHandler {
 
   public static final String CANDIDATE_PUBLICATION_ID = "candidatePublicationId";
-  private final CandidateRepository candidateRepository;
-  private final PeriodRepository periodRepository;
+  private final CandidateService candidateService;
 
   @JacocoGenerated
   public FetchNviCandidateByPublicationIdHandler() {
@@ -46,8 +46,8 @@ public class FetchNviCandidateByPublicationIdHandler extends ApiGatewayHandler<V
       PeriodRepository periodRepository,
       Environment environment) {
     super(Void.class, environment);
-    this.candidateRepository = candidateRepository;
-    this.periodRepository = periodRepository;
+    this.candidateService =
+        new CandidateService(environment, periodRepository, candidateRepository);
   }
 
   @Override
@@ -61,10 +61,7 @@ public class FetchNviCandidateByPublicationIdHandler extends ApiGatewayHandler<V
       throws ApiGatewayException {
     var userInstance = UserInstance.fromRequestInfo(requestInfo);
     return attempt(() -> getPublicationId(requestInfo))
-        .map(
-            identifier ->
-                Candidate.fetchByPublicationId(
-                    () -> identifier, candidateRepository, periodRepository))
+        .map(candidateService::fetchByPublicationId)
         .map(this::checkIfApplicable)
         .map(candidate -> CandidateResponseFactory.create(candidate, userInstance))
         .orElseThrow(ExceptionMapper::map);

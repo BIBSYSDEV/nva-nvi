@@ -1,8 +1,8 @@
 package no.sikt.nva.nvi.common.service.model;
 
 import static java.time.temporal.ChronoUnit.DAYS;
-import static no.sikt.nva.nvi.common.LocalDynamoTestSetup.initializeTestDatabase;
-import static no.sikt.nva.nvi.common.model.UsernameFixtures.randomUserName;
+import static no.sikt.nva.nvi.common.EnvironmentFixtures.getGlobalEnvironment;
+import static no.sikt.nva.nvi.common.model.UsernameFixtures.randomUsername;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -12,7 +12,8 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.TestScenario;
+import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.exception.PeriodAlreadyExistsException;
 import no.sikt.nva.nvi.common.service.exception.PeriodNotFoundException;
 import nva.commons.core.Environment;
@@ -23,19 +24,21 @@ import org.junit.jupiter.api.Test;
 class NviPeriodTest {
 
   private static final int YEAR = LocalDateTime.now().getYear() + 1;
-  private PeriodRepository periodRepository;
+  private static final Environment ENVIRONMENT = getGlobalEnvironment();
+  private NviPeriodService periodService;
 
   @BeforeEach
   void setup() {
-    periodRepository = new PeriodRepository(initializeTestDatabase());
+    var scenario = new TestScenario();
+    periodService = new NviPeriodService(ENVIRONMENT, scenario.getPeriodRepository());
   }
 
   @Test
   void shouldCreateNviPeriod() {
     var request = createRequest(YEAR);
     var expectedId = constructExpectedId(request);
-    var actual = NviPeriod.create(request, periodRepository);
-    assertEquals(expectedId, actual.getId());
+    var actual = periodService.create(request);
+    assertEquals(expectedId, actual.id());
     assertThatRequestMatchesYear(request, actual);
   }
 
@@ -43,19 +46,17 @@ class NviPeriodTest {
   void shouldCreateNviPeriodForCurrentYear() {
     var request = createRequest(YEAR - 1);
     var expectedId = constructExpectedId(request);
-    var actual = NviPeriod.create(request, periodRepository);
-    assertEquals(expectedId, actual.getId());
+    var actual = periodService.create(request);
+    assertEquals(expectedId, actual.id());
     assertThatRequestMatchesYear(request, actual);
   }
 
   @Test
   void shouldThrowPeriodAlreadyExistsExceptionWhenPeriodAlreadyExists() {
     var createRequest = createRequest(YEAR);
-    NviPeriod.create(createRequest, periodRepository);
+    periodService.create(createRequest);
     var newCreateRequest = createRequest(YEAR);
-    assertThrows(
-        PeriodAlreadyExistsException.class,
-        () -> NviPeriod.create(newCreateRequest, periodRepository));
+    assertThrows(PeriodAlreadyExistsException.class, () -> periodService.create(newCreateRequest));
   }
 
   @Test
@@ -63,78 +64,69 @@ class NviPeriodTest {
     var createPeriodRequest =
         CreatePeriodRequest.builder()
             .withPublishingYear(YEAR)
-            .withCreatedBy(randomUserName())
+            .withCreatedBy(randomUsername())
             .build();
-    assertThrows(
-        IllegalArgumentException.class,
-        () -> NviPeriod.create(createPeriodRequest, periodRepository));
+    assertThrows(IllegalArgumentException.class, () -> periodService.create(createPeriodRequest));
   }
 
   @Test
   void shouldUpdateNviPeriod() {
     var originalRequest = createRequest(YEAR, nowPlusDays(1), nowPlusDays(2));
-    var originalPeriod = NviPeriod.create(originalRequest, periodRepository);
+    var originalPeriod = periodService.create(originalRequest);
     var updatedRequest = updateRequest(YEAR, originalRequest.startDate(), nowPlusDays(3));
-    var updatedPeriod = NviPeriod.update(updatedRequest, periodRepository);
+    var updatedPeriod = periodService.update(updatedRequest);
     assertNotEquals(updatedPeriod, originalPeriod);
-    assertEquals(updatedRequest.modifiedBy(), updatedPeriod.getModifiedBy());
+    assertEquals(updatedRequest.modifiedBy(), updatedPeriod.modifiedBy());
   }
 
   @Test
   void shouldNotAllowNviPeriodReportingDateInInPastOnUpdate() {
     var originalRequest = createRequest(YEAR, nowPlusDays(1), nowPlusDays(2));
-    NviPeriod.create(originalRequest, periodRepository);
+    periodService.create(originalRequest);
     var updatedRequest =
         updateRequest(
             YEAR, originalRequest.startDate(), ZonedDateTime.now().minusWeeks(10).toInstant());
-    assertThrows(
-        IllegalArgumentException.class, () -> NviPeriod.update(updatedRequest, periodRepository));
+    assertThrows(IllegalArgumentException.class, () -> periodService.update(updatedRequest));
   }
 
   @Test
   void shouldNotAllowNviPeriodStartAfterReportingDateOnUpdate() {
     var originalRequest = createRequest(YEAR, nowPlusDays(1), nowPlusDays(2));
-    NviPeriod.create(originalRequest, periodRepository);
+    periodService.create(originalRequest);
     var updatedRequest =
         updateRequest(
             YEAR, originalRequest.reportingDate().plus(1, DAYS), originalRequest.reportingDate());
-    assertThrows(
-        IllegalArgumentException.class, () -> NviPeriod.update(updatedRequest, periodRepository));
+    assertThrows(IllegalArgumentException.class, () -> periodService.update(updatedRequest));
   }
 
   @Test
   void shouldReturnIllegalArgumentExceptionWhenPublishingYearHasInvalidLength() {
     var createRequest = createRequest(22);
-    assertThrows(
-        IllegalArgumentException.class, () -> NviPeriod.create(createRequest, periodRepository));
+    assertThrows(IllegalArgumentException.class, () -> periodService.create(createRequest));
   }
 
   @Test
   void shouldReturnIllegalArgumentWhenReportingDateIsBeforeNow() {
     var createRequest = createRequest(YEAR, nowPlusDays(1), Instant.now().minus(1, DAYS));
-    assertThrows(
-        IllegalArgumentException.class, () -> NviPeriod.create(createRequest, periodRepository));
+    assertThrows(IllegalArgumentException.class, () -> periodService.create(createRequest));
   }
 
   @Test
   void shouldReturnIllegalArgumentWhenStartDateIsAfterReportingDate() {
     var createRequest = createRequest(YEAR, nowPlusDays(10), nowPlusDays(9));
-    assertThrows(
-        IllegalArgumentException.class, () -> NviPeriod.create(createRequest, periodRepository));
+    assertThrows(IllegalArgumentException.class, () -> periodService.create(createRequest));
   }
 
   @Test
   void shouldThrowPeriodNotFoundExceptionWhenPeriodDoesNotExist() {
-    assertThrows(
-        PeriodNotFoundException.class,
-        () -> NviPeriod.fetchByPublishingYear("2022", periodRepository));
+    assertThrows(PeriodNotFoundException.class, () -> periodService.getByPublishingYear("2022"));
   }
 
   @Test
   void shouldReturnDto() {
     var request = createRequest(YEAR);
     var expectedId = constructExpectedId(request);
-    var actual = NviPeriod.create(request, periodRepository).toDto();
+    var actual = periodService.create(request).toDto();
     assertEquals(expectedId, actual.id());
     assertEquals(request.publishingYear().toString(), actual.publishingYear());
     assertEquals(request.startDate().toString(), actual.startDate());
@@ -151,7 +143,7 @@ class NviPeriodTest {
         .withPublishingYear(year)
         .withStartDate(startDate)
         .withReportingDate(reportingDate)
-        .withCreatedBy(randomUserName())
+        .withCreatedBy(randomUsername())
         .build();
   }
 
@@ -161,7 +153,7 @@ class NviPeriodTest {
         .withPublishingYear(year)
         .withStartDate(startDate)
         .withReportingDate(reportingDate)
-        .withModifiedBy(randomUserName())
+        .withModifiedBy(randomUsername())
         .build();
   }
 
@@ -172,7 +164,7 @@ class NviPeriodTest {
   }
 
   private static URI constructExpectedId(CreatePeriodRequest createPeriodRequest) {
-    return UriWrapper.fromHost(new Environment().readEnv("API_HOST"))
+    return UriWrapper.fromHost(ENVIRONMENT.readEnv("API_HOST"))
         .addChild("scientific-index")
         .addChild("period")
         .addChild(String.valueOf(createPeriodRequest.publishingYear()))
@@ -180,9 +172,9 @@ class NviPeriodTest {
   }
 
   private static void assertThatRequestMatchesYear(CreatePeriodRequest request, NviPeriod actual) {
-    assertEquals(request.publishingYear(), actual.getPublishingYear());
-    assertEquals(request.startDate(), actual.getStartDate());
-    assertEquals(request.reportingDate(), actual.getReportingDate());
-    assertEquals(request.createdBy(), actual.getCreatedBy());
+    assertEquals(request.publishingYear(), actual.publishingYear());
+    assertEquals(request.startDate(), actual.startDate());
+    assertEquals(request.reportingDate(), actual.reportingDate());
+    assertEquals(request.createdBy(), actual.createdBy());
   }
 }

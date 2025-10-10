@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.index;
 
-import static no.sikt.nva.nvi.common.LocalDynamoTestSetup.initializeTestDatabase;
 import static no.sikt.nva.nvi.common.QueueServiceTestUtils.invalidSqsMessage;
+import static no.sikt.nva.nvi.common.model.CandidateFixtures.setupRandomApplicableCandidate;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.NVI_CONTEXT;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.createPath;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.expandApprovals;
@@ -25,9 +25,7 @@ import java.net.URI;
 import java.util.List;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.StorageReader;
-import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.common.model.CandidateFixtures;
+import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.common.service.model.Candidate;
@@ -53,18 +51,15 @@ class UpdateIndexHandlerTest {
   private static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
   private static final String BUCKET_NAME = ENVIRONMENT.readEnv(EXPANDED_RESOURCES_BUCKET);
   private final S3Client s3Client = new FakeS3Client();
-  private CandidateRepository candidateRepository;
-  private PeriodRepository periodRepository;
   private S3Driver s3Driver;
   private UpdateIndexHandler handler;
   private OpenSearchClient openSearchClient;
   private QueueClient sqsClient;
+  private TestScenario scenario;
 
   @BeforeEach
   void setUp() {
-    var localDynamo = initializeTestDatabase();
-    candidateRepository = new CandidateRepository(localDynamo);
-    periodRepository = new PeriodRepository(localDynamo);
+    scenario = new TestScenario();
     s3Driver = new S3Driver(s3Client, BUCKET_NAME);
     openSearchClient = mock(OpenSearchClient.class);
     sqsClient = mock(FakeSqsClient.class);
@@ -75,7 +70,7 @@ class UpdateIndexHandlerTest {
 
   @Test
   void shouldUpdateIndexWithDocumentFromS3WhenReceivingEventWithDocumentUri() {
-    var candidate = randomApplicableCandidate();
+    var candidate = setupRandomApplicableCandidate(scenario);
     var expectedIndexDocument = setupExistingIndexDocumentInBucket(candidate).indexDocument();
     handler.handleRequest(createUpdateIndexEvent(List.of(candidate)), CONTEXT);
     verify(openSearchClient, times(1)).addDocumentToIndex(expectedIndexDocument);
@@ -83,7 +78,7 @@ class UpdateIndexHandlerTest {
 
   @Test
   void shouldSendMessageToDlqWhenHandlingError() {
-    var candidate = randomApplicableCandidate();
+    var candidate = setupRandomApplicableCandidate(scenario);
     var expectedIndexDocument = setupExistingIndexDocumentInBucket(candidate).indexDocument();
     var event = createUpdateIndexEvent(List.of(candidate));
     when(openSearchClient.addDocumentToIndex(expectedIndexDocument))
@@ -95,7 +90,7 @@ class UpdateIndexHandlerTest {
 
   @Test
   void shouldNotFailForWholeBatchWhenFailingToParseOneMessageBody() {
-    var candidateToSucceed = randomApplicableCandidate();
+    var candidateToSucceed = setupRandomApplicableCandidate(scenario);
     setupExistingIndexDocumentInBucket(candidateToSucceed);
     var event = createUpdateIndexEventWithOneInvalidMessageBody(candidateToSucceed);
     assertDoesNotThrow(() -> handler.handleRequest(event, CONTEXT));
@@ -104,8 +99,8 @@ class UpdateIndexHandlerTest {
   @SuppressWarnings("unchecked")
   @Test
   void shouldNotFailForWholeBatchWhenFailingToReadOneS3Blob() throws JsonProcessingException {
-    var candidateToSucceed = randomApplicableCandidate();
-    var candidateToFail = randomApplicableCandidate();
+    var candidateToSucceed = setupRandomApplicableCandidate(scenario);
+    var candidateToFail = setupRandomApplicableCandidate(scenario);
     var storageReader =
         setupStorageReaderFailingForOneCandidate(candidateToSucceed, candidateToFail);
     handler = new UpdateIndexHandler(openSearchClient, storageReader, sqsClient);
@@ -117,7 +112,7 @@ class UpdateIndexHandlerTest {
 
   @Test
   void shouldNotFailForWholeBatchWhenFailingToAddDocumentToIndex() {
-    var candidate = randomApplicableCandidate();
+    var candidate = setupRandomApplicableCandidate(scenario);
     var expectedIndexDocument = setupExistingIndexDocumentInBucket(candidate).indexDocument();
     var event = createUpdateIndexEvent(List.of(candidate));
     when(openSearchClient.addDocumentToIndex(expectedIndexDocument))
@@ -193,9 +188,5 @@ class UpdateIndexHandlerTest {
                     createPath(candidate), indexDocumentWithConsumptionAttributes.toJsonString()))
         .orElseThrow();
     return indexDocumentWithConsumptionAttributes;
-  }
-
-  private Candidate randomApplicableCandidate() {
-    return CandidateFixtures.setupRandomApplicableCandidate(candidateRepository, periodRepository);
   }
 }

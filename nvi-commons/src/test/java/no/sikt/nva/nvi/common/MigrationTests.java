@@ -7,6 +7,7 @@ import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpdateStatusReq
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidate;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidateBuilder;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
+import static no.sikt.nva.nvi.common.model.CandidateFixtures.setupRandomApplicableCandidate;
 import static no.sikt.nva.nvi.common.model.UserInstanceFixtures.createCuratorUserInstance;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -23,10 +24,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.model.DbCreatorTypeListConverter;
-import no.sikt.nva.nvi.common.model.CandidateFixtures;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
+import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.utils.BatchScanUtil;
@@ -38,7 +38,7 @@ class MigrationTests {
 
   public static final int DEFAULT_PAGE_SIZE = 700;
   private CandidateRepository candidateRepository;
-  private PeriodRepository periodRepository;
+  private CandidateService candidateService;
   private BatchScanUtil batchScanUtil;
   private TestScenario scenario;
 
@@ -46,7 +46,7 @@ class MigrationTests {
   void setUp() {
     scenario = new TestScenario();
     candidateRepository = scenario.getCandidateRepository();
-    periodRepository = scenario.getPeriodRepository();
+    candidateService = scenario.getCandidateService();
     batchScanUtil =
         new BatchScanUtil(
             candidateRepository,
@@ -60,8 +60,7 @@ class MigrationTests {
   void shouldWriteCandidateWithNotesAndApprovalsAsIsWhenMigrating() {
     var candidate = setupCandidateWithApprovalAndNotes();
     batchScanUtil.migrateAndUpdateVersion(DEFAULT_PAGE_SIZE, null, emptyList());
-    var migratedCandidate =
-        Candidate.fetch(candidate::getIdentifier, candidateRepository, periodRepository);
+    var migratedCandidate = candidateService.fetch(candidate.getIdentifier());
     assertThat(migratedCandidate)
         .usingRecursiveComparison()
         .ignoringCollectionOrder()
@@ -123,8 +122,8 @@ class MigrationTests {
 
   private Candidate setupCandidateWithApprovalAndNotes() {
     var candidate =
-        CandidateFixtures.setupRandomApplicableCandidate(candidateRepository, periodRepository)
-            .createNote(createNoteRequest(randomString(), randomString()), candidateRepository);
+        setupRandomApplicableCandidate(scenario)
+            .createNote(createNoteRequest(randomString(), randomString()));
     var curatorOrganization = getInstitutionId(candidate);
     var userInstance = createCuratorUserInstance(curatorOrganization);
 

@@ -12,7 +12,6 @@ import static no.sikt.nva.nvi.common.service.model.ApprovalStatus.PENDING;
 import static no.sikt.nva.nvi.common.service.model.ApprovalStatus.REJECTED;
 import static no.sikt.nva.nvi.common.utils.DecimalUtils.adjustScaleAndRoundingMode;
 import static no.sikt.nva.nvi.common.utils.RequestUtil.getAllCreators;
-import static nva.commons.core.attempt.Try.attempt;
 import static nva.commons.core.ioutils.IoUtils.stringFromResources;
 import static nva.commons.core.paths.UriWrapper.HTTPS;
 
@@ -43,11 +42,11 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.NoteDao;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.db.NviPeriodDao;
 import no.sikt.nva.nvi.common.db.PeriodStatus;
 import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
 import no.sikt.nva.nvi.common.db.ReportStatus;
-import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
+import no.sikt.nva.nvi.common.db.model.ResponseContext;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.model.InstanceType;
 import no.sikt.nva.nvi.common.model.PointCalculation;
@@ -63,8 +62,6 @@ import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException;
 import no.sikt.nva.nvi.common.service.requests.CreateNoteRequest;
 import no.sikt.nva.nvi.common.service.requests.DeleteNoteRequest;
-import no.sikt.nva.nvi.common.service.requests.FetchByPublicationRequest;
-import no.sikt.nva.nvi.common.service.requests.FetchCandidateRequest;
 import nva.commons.apigateway.exceptions.UnauthorizedException;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
@@ -130,11 +127,11 @@ public final class Candidate {
     this.revisionRead = revisionRead;
   }
 
-  private Candidate(
+  public Candidate(
       CandidateRepository repository,
       CandidateDao candidateDao,
-      List<ApprovalStatusDao> approvals,
-      List<NoteDao> notes,
+      Collection<ApprovalStatusDao> approvals,
+      Collection<NoteDao> notes,
       PeriodStatus period) {
     this.repository = repository;
     var dbCandidate = candidateDao.candidate();
@@ -151,60 +148,19 @@ public final class Candidate {
     this.revisionRead = candidateDao.revision();
   }
 
-  public static Candidate fetchByPublicationId(
-      FetchByPublicationRequest request,
-      CandidateRepository repository,
-      PeriodRepository periodRepository) {
-    var candidateDao =
-        repository
-            .findByPublicationId(request.publicationId())
-            .orElseThrow(CandidateNotFoundException::new);
-    var approvalDaoList = repository.fetchApprovals(candidateDao.identifier());
-    var noteDaoList = repository.getNotes(candidateDao.identifier());
-    var periodStatus = findPeriodStatus(periodRepository, candidateDao.getPeriodYear());
-    return new Candidate(repository, candidateDao, approvalDaoList, noteDaoList, periodStatus);
-  }
-
-  public static Candidate fetch(
-      FetchCandidateRequest request,
-      CandidateRepository repository,
-      PeriodRepository periodRepository) {
-    var candidateDao =
-        repository
-            .findCandidateById(request.identifier())
-            .orElseThrow(CandidateNotFoundException::new);
-    var approvalDaoList = repository.fetchApprovals(candidateDao.identifier());
-    var noteDaoList = repository.getNotes(candidateDao.identifier());
-    var periodStatus = findPeriodStatus(periodRepository, candidateDao.getPeriodYear());
-    return new Candidate(repository, candidateDao, approvalDaoList, noteDaoList, periodStatus);
-  }
-
-  public static void upsert(
-      UpsertNviCandidateRequest request,
-      CandidateRepository candidateRepository,
-      PeriodRepository periodRepository) {
-    var optionalCandidate =
-        fetchOptionalCandidate(request.publicationId(), candidateRepository, periodRepository);
-    optionalCandidate.ifPresentOrElse(
-        candidate -> updateExistingCandidate(request, candidateRepository, candidate),
-        () -> createCandidate(request, candidateRepository));
-  }
-
-  public static Optional<Candidate> updateNonCandidate(
-      UpsertNonNviCandidateRequest request,
-      CandidateRepository candidateRepository,
-      PeriodRepository periodRepository) {
-    var optionalCandidate =
-        fetchOptionalCandidate(request.publicationId(), candidateRepository, periodRepository);
-    LOGGER.info(
-        "Updating candidate for publicationId={} to non-candidate", request.publicationId());
-    if (optionalCandidate.isPresent()) {
-      var candidate = optionalCandidate.get();
-      LOGGER.info("Removing all approvals for candidateId={}", candidate.getIdentifier());
-      return Optional.of(updateToNotApplicable(candidate, candidateRepository));
-    }
-    LOGGER.error("No candidate found for publicationId={}", request.publicationId());
-    return Optional.empty();
+  public static Candidate fromAggregate(
+      CandidateRepository candidateRepository, ResponseContext responseContext) {
+    var aggregate =
+        responseContext.candidateAggregate().orElseThrow(CandidateNotFoundException::new);
+    var periodStatus =
+        findPeriodStatusFromCached(
+            responseContext.allPeriods(), aggregate.candidate().getPeriodYear());
+    return new Candidate(
+        candidateRepository,
+        aggregate.candidate(),
+        aggregate.approvals(),
+        aggregate.notes(),
+        periodStatus);
   }
 
   public static String getJsonLdContext() {
@@ -393,7 +349,8 @@ public final class Candidate {
     approval.updateStatus(repository, toDao(), input);
   }
 
-  public Candidate createNote(CreateNoteRequest input, CandidateRepository repository) {
+  // FIXME: Move to service layer
+  public Candidate createNote(CreateNoteRequest input) {
     validateCandidateState();
     var note = Note.fromRequest(input, identifier, repository);
     notes.put(note.getNoteId(), note);
@@ -401,6 +358,7 @@ public final class Candidate {
     return this;
   }
 
+  // FIXME: Move to service layer
   public Candidate deleteNote(DeleteNoteRequest request) {
     validateCandidateState();
     var note = notes.get(request.noteId());
@@ -458,82 +416,7 @@ public final class Candidate {
     return publicationDetails.getNviCreatorAffiliations();
   }
 
-  public void updateVersion(CandidateRepository candidateRepository) {
-    candidateRepository
-        .findCandidateById(identifier)
-        .map(candidateDao -> updateVersion(candidateRepository, candidateDao))
-        .orElseThrow(CandidateNotFoundException::new);
-  }
-
-  private static CandidateDao updateVersion(
-      CandidateRepository candidateRepository, CandidateDao candidateDao) {
-    var candidateWithNewVersion = candidateDao.copy().version(randomUUID().toString()).build();
-    candidateRepository.updateCandidate(candidateWithNewVersion);
-    return candidateWithNewVersion;
-  }
-
-  private static Optional<Candidate> fetchOptionalCandidate(
-      URI publicationId,
-      CandidateRepository candidateRepository,
-      PeriodRepository periodRepository) {
-    return attempt(
-            () -> fetchByPublicationId(() -> publicationId, candidateRepository, periodRepository))
-        .toOptional();
-  }
-
-  private static void updateExistingCandidate(
-      UpsertNviCandidateRequest request,
-      CandidateRepository repository,
-      Candidate existingCandidate) {
-    if (existingCandidate.isReported()) {
-      throw new IllegalCandidateUpdateException("Can not update reported candidate");
-    } else {
-      updateCandidate(request, repository, existingCandidate);
-    }
-  }
-
-  private static Candidate updateToNotApplicable(
-      Candidate currentCandidate, CandidateRepository repository) {
-    var existingCandidateDao = currentCandidate.toDao();
-    var nonApplicableCandidate = updateCandidateToNonApplicable(existingCandidateDao);
-    var approvalsToDelete =
-        currentCandidate.getApprovals().values().stream().map(Approval::toDao).toList();
-
-    repository.updateCandidateAndApprovals(nonApplicableCandidate, emptyList(), approvalsToDelete);
-
-    return new Candidate(
-        repository,
-        nonApplicableCandidate,
-        emptyList(),
-        emptyList(),
-        PeriodStatus.builder().withStatus(Status.NO_PERIOD).build());
-  }
-
-  private static void updateCandidate(
-      UpsertNviCandidateRequest request, CandidateRepository repository, Candidate candidate) {
-    request.validate();
-    var updatedCandidate = candidate.apply(request);
-    if (shouldResetCandidate(request, candidate) || isNotApplicable(candidate)) {
-      LOGGER.info("Resetting all approvals for candidate {}", candidate.getIdentifier());
-      var approvalsToReset =
-          mapToResetApprovals(candidate, updatedCandidate.getInstitutionPoints());
-      var approvalsToDelete = getApprovalsToDelete(candidate, updatedCandidate);
-
-      repository.updateCandidateAndApprovals(
-          updatedCandidate.toDao(), approvalsToReset, approvalsToDelete);
-    } else {
-      var updatedPoints = getUpdatedInstitutionPoints(candidate, updatedCandidate);
-      var approvalsToReset = mapToResetApprovals(candidate, updatedPoints);
-      LOGGER.info(
-          "Resetting individual approvals for candidate {}: {}",
-          candidate.getIdentifier(),
-          approvalsToReset);
-      repository.updateCandidateAndApprovals(
-          updatedCandidate.toDao(), approvalsToReset, emptyList());
-    }
-  }
-
-  private static List<InstitutionPoints> getUpdatedInstitutionPoints(
+  public static List<InstitutionPoints> getUpdatedInstitutionPoints(
       Candidate currentCandidate, Candidate updatedCandidate) {
     return updatedCandidate.getInstitutionPoints().stream()
         .filter(institutionPoints -> !hasSameInstitutionPoints(currentCandidate, institutionPoints))
@@ -544,7 +427,7 @@ public final class Candidate {
    * Returns current approvals for all institutions that should have their approval deleted because
    * they no longer have associated points.
    */
-  private static List<ApprovalStatusDao> getApprovalsToDelete(
+  public static List<ApprovalStatusDao> getApprovalsToDelete(
       Candidate currentCandidate, Candidate updatedCandidate) {
     return currentCandidate.getApprovals().keySet().stream()
         .filter(not(id -> updatedCandidate.getInstitutionPoints(id).isPresent()))
@@ -553,11 +436,7 @@ public final class Candidate {
         .toList();
   }
 
-  private static boolean isNotApplicable(Candidate candidate) {
-    return !candidate.isApplicable();
-  }
-
-  private static boolean shouldResetCandidate(
+  public static boolean shouldResetCandidate(
       UpsertNviCandidateRequest request, Candidate candidate) {
     return publicationChannelIsUpdated(request, candidate)
         || instanceTypeIsUpdated(request, candidate)
@@ -651,35 +530,34 @@ public final class Candidate {
     return !Objects.equals(newType, currentType);
   }
 
-  private static void createCandidate(
-      UpsertNviCandidateRequest request, CandidateRepository repository) {
-    request.validate();
-    repository.create(
-        mapToCandidate(request),
-        mapToNewApprovalDetails(request.pointCalculation().institutionPoints()));
-  }
-
   private static Map<UUID, Note> mapToNotesMap(
-      CandidateRepository repository, List<NoteDao> notes) {
+      CandidateRepository repository, Collection<NoteDao> notes) {
     return notes.stream()
         .map(dao -> new Note(repository, dao.identifier(), dao))
         .collect(Collectors.toMap(Note::getNoteId, Function.identity()));
   }
 
-  private static Map<URI, Approval> mapToApprovalsMap(List<ApprovalStatusDao> approvals) {
+  private static Map<URI, Approval> mapToApprovalsMap(Collection<ApprovalStatusDao> approvals) {
     return approvals.stream()
         .map(dao -> new Approval(dao.identifier(), dao))
         .collect(Collectors.toMap(Approval::getInstitutionId, Function.identity()));
   }
 
-  private static PeriodStatus findPeriodStatus(PeriodRepository periodRepository, String year) {
-    return periodRepository
-        .findByPublishingYear(year)
+  private static PeriodStatus findPeriodStatusFromCached(
+      Collection<NviPeriodDao> allPeriods, String year) {
+    // TODO: Refactor this
+    if (isNull(year)) {
+      return PERIOD_STATUS_NO_PERIOD;
+    }
+    return allPeriods.stream()
+        .map(NviPeriodDao::nviPeriod)
+        .filter(period -> year.equals(period.publishingYear()))
         .map(PeriodStatus::fromPeriod)
+        .findFirst()
         .orElse(PERIOD_STATUS_NO_PERIOD);
   }
 
-  private static List<ApprovalStatusDao> mapToResetApprovals(
+  public static List<ApprovalStatusDao> mapToResetApprovals(
       Candidate candidate, Collection<InstitutionPoints> institutionPoints) {
     var resetApprovalDetails = mapToNewApprovalDetails(institutionPoints);
     var newApprovals = new ArrayList<ApprovalStatusDao>();
@@ -692,7 +570,7 @@ public final class Candidate {
     return newApprovals;
   }
 
-  private static List<DbApprovalStatus> mapToNewApprovalDetails(
+  public static List<DbApprovalStatus> mapToNewApprovalDetails(
       Collection<InstitutionPoints> institutionPoints) {
     return institutionPoints.stream()
         .map(InstitutionPoints::institutionId)
@@ -704,7 +582,7 @@ public final class Candidate {
     return DbApprovalStatus.builder().institutionId(institutionId).status(DbStatus.PENDING).build();
   }
 
-  private static DbCandidate mapToCandidate(UpsertNviCandidateRequest request) {
+  public static DbCandidate mapToCandidate(UpsertNviCandidateRequest request) {
     var allCreators = mapToDbCreators(request.verifiedCreators(), request.unverifiedCreators());
     var dbDetails = PublicationDetails.from(request).toDbPublication();
     var dbPointCalculation = PointCalculation.from(request).toDbPointCalculation();
@@ -746,14 +624,6 @@ public final class Candidate {
         .toList();
   }
 
-  private static CandidateDao updateCandidateToNonApplicable(CandidateDao candidateDao) {
-    return candidateDao
-        .copy()
-        .candidate(candidateDao.candidate().copy().applicable(false).build())
-        .periodYear(null)
-        .build();
-  }
-
   private Set<URI> getVerifiedNviCreatorIds() {
     return publicationDetails.getVerifiedNviCreatorIds();
   }
@@ -774,7 +644,7 @@ public final class Candidate {
         .withRevision(revisionRead);
   }
 
-  private CandidateDao toDao() {
+  public CandidateDao toDao() {
     var dbPublication = publicationDetails.toDbPublication();
     var dbChannel = pointCalculation.channel().toDbPublicationChannel();
     var dbCandidate =
@@ -810,7 +680,7 @@ public final class Candidate {
         .build();
   }
 
-  private Candidate apply(UpsertNviCandidateRequest request) {
+  public Candidate apply(UpsertNviCandidateRequest request) {
     return this.copy()
         .withApplicable(request.isApplicable())
         .withPointCalculation(PointCalculation.from(request))

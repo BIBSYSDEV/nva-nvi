@@ -2,6 +2,9 @@ package no.sikt.nva.nvi.events.batch;
 
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.getEventBasedBatchScanHandlerEnvironment;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidateBuilder;
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
+import static no.sikt.nva.nvi.common.model.CandidateFixtures.setupRandomApplicableCandidate;
+import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -18,9 +21,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.time.Instant;
 import java.time.Year;
-import java.time.ZonedDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -37,14 +38,13 @@ import no.sikt.nva.nvi.common.db.CandidateUniquenessEntryDao;
 import no.sikt.nva.nvi.common.db.Dao;
 import no.sikt.nva.nvi.common.db.NoteDao;
 import no.sikt.nva.nvi.common.db.NviPeriodDao;
-import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.db.model.KeyField;
-import no.sikt.nva.nvi.common.model.CandidateFixtures;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
 import no.sikt.nva.nvi.common.model.ListingResult;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
+import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.utils.BatchScanUtil;
 import no.sikt.nva.nvi.events.model.ScanDatabaseRequest;
@@ -59,7 +59,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
-import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
@@ -74,21 +73,24 @@ class EventBasedBatchScanHandlerTest {
   private static final String OUTPUT_EVENT_TOPIC = "OUTPUT_EVENT_TOPIC";
   private static final String TOPIC = new Environment().readEnv(OUTPUT_EVENT_TOPIC);
   private static final int PAGE_SIZE = 4;
+  private TestScenario scenario;
   private EventBasedBatchScanHandler handler;
   private ByteArrayOutputStream output;
   private static final Context CONTEXT = mock(Context.class);
   private FakeEventBridgeClient eventBridgeClient;
   private NviCandidateRepositoryHelper candidateRepository;
-  private NviPeriodRepositoryHelper periodRepository;
+  private PeriodRepository periodRepository;
+  private CandidateService candidateService;
 
   @BeforeEach
   void init() {
-    var scenario = new TestScenario();
+    scenario = new TestScenario();
+    candidateService = scenario.getCandidateService();
     output = new ByteArrayOutputStream();
     when(CONTEXT.getInvokedFunctionArn()).thenReturn(randomString());
     eventBridgeClient = new FakeEventBridgeClient();
     candidateRepository = new NviCandidateRepositoryHelper(scenario.getLocalDynamo());
-    periodRepository = new NviPeriodRepositoryHelper(scenario.getLocalDynamo());
+    periodRepository = scenario.getPeriodRepository();
     var batchScanUtil =
         new BatchScanUtil(
             candidateRepository,
@@ -100,7 +102,7 @@ class EventBasedBatchScanHandlerTest {
 
   @Test
   void shouldNotGoIntoInfiniteLoop() {
-    createPeriod();
+    setupOpenPeriod(scenario, CURRENT_YEAR);
     createRandomCandidates(100).forEach(item -> {});
 
     pushInitialEntryInEventBridge(
@@ -112,7 +114,7 @@ class EventBasedBatchScanHandlerTest {
 
   @Test
   void shouldIterateAllCandidates() {
-    createPeriod();
+    setupOpenPeriod(scenario, CURRENT_YEAR);
     var daos = generatedRepositoryCandidates();
 
     pushInitialEntryInEventBridge(
@@ -128,11 +130,11 @@ class EventBasedBatchScanHandlerTest {
   @ValueSource(
       strings = {CandidateDao.TYPE, ApprovalStatusDao.TYPE, NoteDao.TYPE, NviPeriodDao.TYPE})
   void shouldUpdateDataEntriesWithGivenTypeWhenRequestContainsType(String type) {
-    createPeriod();
+    setupOpenPeriod(scenario, CURRENT_YEAR);
     var candidateDaos = generatedRepositoryCandidates();
     var approvalStatusDaos = generateCandidatesWithApprovalStatuses();
     var noteDaos = generateRepositoryCandidatesWithNotes();
-    var periodDaos = periodRepository.getPeriodsDao().toList();
+    var periodDaos = periodRepository.getPeriods();
 
     var scanDatabaseRequest =
         new ScanDatabaseRequest(
@@ -145,7 +147,7 @@ class EventBasedBatchScanHandlerTest {
 
   @Test
   void shouldNotUpdateInitialDbCandidate() {
-    createPeriod();
+    setupOpenPeriod(scenario, CURRENT_YEAR);
     var dbCandidate = randomCandidateBuilder(true).reportStatus(ReportStatus.REPORTED).build();
     var dao =
         Optional.ofNullable(
@@ -168,7 +170,7 @@ class EventBasedBatchScanHandlerTest {
 
   @Test
   void shouldIterateAllNotes() {
-    createPeriod();
+    setupOpenPeriod(scenario, CURRENT_YEAR);
     var daos = generateRepositoryCandidatesWithNotes();
 
     pushInitialEntryInEventBridge(
@@ -181,7 +183,7 @@ class EventBasedBatchScanHandlerTest {
 
   @Test
   void shouldIterateAllApprovals() {
-    createPeriod();
+    setupOpenPeriod(scenario, CURRENT_YEAR);
     var daos = generateCandidatesWithApprovalStatuses();
 
     pushInitialEntryInEventBridge(
@@ -194,10 +196,10 @@ class EventBasedBatchScanHandlerTest {
 
   @Test
   void shouldIteratePeriodEntries() {
-    createPeriod();
+    setupOpenPeriod(scenario, CURRENT_YEAR);
     createRandomCandidates(10).forEach(item -> {});
 
-    var items = periodRepository.getPeriodsDao().toList();
+    var items = periodRepository.getPeriods();
 
     pushInitialEntryInEventBridge(
         new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, null, TOPIC));
@@ -210,7 +212,7 @@ class EventBasedBatchScanHandlerTest {
 
   @Test
   void shouldNotIterateUniquenessEntries() {
-    createPeriod();
+    setupOpenPeriod(scenario, CURRENT_YEAR);
     createRandomCandidates(10).forEach(item -> {});
 
     var items = candidateRepository.getUniquenessEntries().toList();
@@ -229,7 +231,7 @@ class EventBasedBatchScanHandlerTest {
 
   @Test
   void bodyShouldNotChange() {
-    createPeriod();
+    setupOpenPeriod(scenario, CURRENT_YEAR);
     var candidates = createRandomCandidates(10).toList();
 
     pushInitialEntryInEventBridge(
@@ -280,9 +282,9 @@ class EventBasedBatchScanHandlerTest {
       List<ApprovalStatusDao> approvalStatusDaos,
       List<NoteDao> noteDaos,
       List<NviPeriodDao> periodDaos) {
-    assertTrue(hasSameVerions(candidateDaos));
-    assertTrue(hasSameVerions(approvalStatusDaos));
-    assertTrue(hasSameVerions(noteDaos));
+    assertTrue(hasSameVersions(candidateDaos));
+    assertTrue(hasSameVersions(approvalStatusDaos));
+    assertTrue(hasSameVersions(noteDaos));
     assertTrue(hasUpdatedVersions(periodDaos));
   }
 
@@ -291,10 +293,10 @@ class EventBasedBatchScanHandlerTest {
       List<ApprovalStatusDao> approvalStatusDaos,
       List<NoteDao> noteDaos,
       List<NviPeriodDao> periodDaos) {
-    assertTrue(hasSameVerions(candidateDaos));
-    assertTrue(hasSameVerions(approvalStatusDaos));
+    assertTrue(hasSameVersions(candidateDaos));
+    assertTrue(hasSameVersions(approvalStatusDaos));
     assertTrue(hasUpdatedVersions(noteDaos));
-    assertTrue(hasSameVerions(periodDaos));
+    assertTrue(hasSameVersions(periodDaos));
   }
 
   private void assertOnlyAprovalsUpdated(
@@ -302,10 +304,10 @@ class EventBasedBatchScanHandlerTest {
       List<ApprovalStatusDao> approvalStatusDaos,
       List<NoteDao> noteDaos,
       List<NviPeriodDao> periodDaos) {
-    assertTrue(hasSameVerions(candidateDaos));
+    assertTrue(hasSameVersions(candidateDaos));
     assertTrue(hasUpdatedVersions(approvalStatusDaos));
-    assertTrue(hasSameVerions(noteDaos));
-    assertTrue(hasSameVerions(periodDaos));
+    assertTrue(hasSameVersions(noteDaos));
+    assertTrue(hasSameVersions(periodDaos));
   }
 
   private void assertOnlyCandidatesUpdated(
@@ -314,26 +316,17 @@ class EventBasedBatchScanHandlerTest {
       List<NoteDao> noteDaos,
       List<NviPeriodDao> periodDaos) {
     assertTrue(hasUpdatedVersions(candidateDaos));
-    assertTrue(hasSameVerions(approvalStatusDaos));
-    assertTrue(hasSameVerions(noteDaos));
-    assertTrue(hasSameVerions(periodDaos));
+    assertTrue(hasSameVersions(approvalStatusDaos));
+    assertTrue(hasSameVersions(noteDaos));
+    assertTrue(hasSameVersions(periodDaos));
   }
 
   private boolean hasUpdatedVersions(List<? extends Dao> daos) {
     return daos.stream().noneMatch(this::isSameVersionAsRepositoryCopy);
   }
 
-  private boolean hasSameVerions(List<? extends Dao> daos) {
+  private boolean hasSameVersions(List<? extends Dao> daos) {
     return daos.stream().allMatch(this::isSameVersionAsRepositoryCopy);
-  }
-
-  private void createPeriod() {
-    periodRepository.save(
-        DbNviPeriod.builder()
-            .publishingYear(String.valueOf(Year.now().getValue()))
-            .startDate(Instant.now())
-            .reportingDate(ZonedDateTime.now().plusMonths(10).toInstant())
-            .build());
   }
 
   private void consumeEvents() {
@@ -365,11 +358,7 @@ class EventBasedBatchScanHandlerTest {
   }
 
   private List<Candidate> getPersistedCandidates(Collection<Candidate> candidates) {
-    return candidates.stream()
-        .map(
-            candidate ->
-                Candidate.fetch(candidate::getIdentifier, candidateRepository, periodRepository))
-        .toList();
+    return candidates.stream().map(Candidate::getIdentifier).map(candidateService::fetch).toList();
   }
 
   private boolean isSameVersionAsRepositoryCopy(Dao dao) {
@@ -385,12 +374,16 @@ class EventBasedBatchScanHandlerTest {
               approvalStatusDao.identifier(), approvalStatusDao.approvalStatus().institutionId());
       case NoteDao noteDao ->
           candidateRepository.getNoteDaoById(noteDao.identifier(), noteDao.note().noteId());
-      case NviPeriodDao nviPeriodDao ->
-          periodRepository.findDaoByPublishingYear(nviPeriodDao.nviPeriod().publishingYear());
+      case NviPeriodDao nviPeriodDao -> getPersistedNviPeriodDao(nviPeriodDao);
       case CandidateUniquenessEntryDao candidateUniquenessEntryDao ->
           candidateRepository.getUniquenessEntry(candidateUniquenessEntryDao);
       case null, default -> throw new IllegalArgumentException("Unknown type: " + dao);
     };
+  }
+
+  private NviPeriodDao getPersistedNviPeriodDao(NviPeriodDao currentPeriod) {
+    var year = currentPeriod.nviPeriod().publishingYear();
+    return periodRepository.findByPublishingYear(year).orElseThrow();
   }
 
   private ScanDatabaseRequest consumeLatestEmittedEvent() {
@@ -411,15 +404,8 @@ class EventBasedBatchScanHandlerTest {
   private Stream<Candidate> createRandomCandidates(int i) {
     return IntStream.range(0, i)
         .boxed()
-        .map(
-            item ->
-                CandidateFixtures.setupRandomApplicableCandidate(
-                    candidateRepository, periodRepository))
-        .map(
-            a ->
-                a.createNote(
-                    new CreateNoteRequest(randomString(), randomString(), randomUri()),
-                    candidateRepository));
+        .map(item -> setupRandomApplicableCandidate(scenario))
+        .map(a -> a.createNote(new CreateNoteRequest(randomString(), randomString(), randomUri())));
   }
 
   private InputStream eventToInputStream(ScanDatabaseRequest scanDatabaseRequest) {
@@ -488,29 +474,6 @@ class EventBasedBatchScanHandlerTest {
           .partitionValue(CandidateDao.createPartitionKey(identifier.toString()))
           .sortValue(ApprovalStatusDao.createSortKey(uri.toString()))
           .build();
-    }
-  }
-
-  protected static class NviPeriodRepositoryHelper extends PeriodRepository {
-
-    public NviPeriodRepositoryHelper(DynamoDbClient client) {
-      super(client);
-    }
-
-    public Stream<NviPeriodDao> getPeriodsDao() {
-      return nviPeriodTable.query(beginsWithPeriodQuery()).stream()
-          .map(Page::items)
-          .flatMap(Collection::stream);
-    }
-
-    public NviPeriodDao findDaoByPublishingYear(String publishingYear) {
-      var queryObj =
-          NviPeriodDao.builder()
-              .nviPeriod(DbNviPeriod.builder().publishingYear(publishingYear).build())
-              .identifier(publishingYear)
-              .build();
-
-      return this.nviPeriodTable.getItem(queryObj);
     }
   }
 }

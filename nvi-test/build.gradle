@@ -8,6 +8,7 @@ dependencies {
     implementation nvaCatalog.mockito.core
     implementation nvaLibs.core
     implementation nvaLibs.testutils
+    testFixturesAnnotationProcessor nvaCatalog.errorprone
 }
 
 test {

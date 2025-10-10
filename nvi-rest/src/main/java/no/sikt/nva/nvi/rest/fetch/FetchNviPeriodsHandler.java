@@ -24,7 +24,9 @@ public class FetchNviPeriodsHandler extends ApiGatewayHandler<Void, NviPeriodsRe
 
   @JacocoGenerated
   public FetchNviPeriodsHandler() {
-    this(new NviPeriodService(new PeriodRepository(defaultDynamoClient())), new Environment());
+    this(
+        new NviPeriodService(new Environment(), new PeriodRepository(defaultDynamoClient())),
+        new Environment());
   }
 
   public FetchNviPeriodsHandler(NviPeriodService nviPeriodService, Environment environment) {
@@ -41,7 +43,7 @@ public class FetchNviPeriodsHandler extends ApiGatewayHandler<Void, NviPeriodsRe
   @Override
   protected NviPeriodsResponse processInput(Void input, RequestInfo requestInfo, Context context)
       throws ApiGatewayException {
-    return attempt(nviPeriodService::fetchAll).map(this::toNviPeriodsResponse).orElseThrow();
+    return attempt(nviPeriodService::getAll).map(this::toNviPeriodsResponse).orElseThrow();
   }
 
   @Override
