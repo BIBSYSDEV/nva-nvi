@@ -224,8 +224,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
   void shouldRemoveApprovalsWhenBecomingNonCandidate() {
     var candidate = setupRandomApplicableCandidate(scenario);
     var updateRequest = createUpsertNonCandidateRequest(candidate.getPublicationId());
-    var updatedCandidate =
-        Candidate.updateNonCandidate(updateRequest, candidateRepository).orElseThrow();
+    var updatedCandidate = candidateService.updateNonCandidate(updateRequest).orElseThrow();
     assertThat(updatedCandidate.getIdentifier(), is(equalTo(candidate.getIdentifier())));
     assertThat(updatedCandidate.getApprovals().size(), is(equalTo(0)));
   }
@@ -447,8 +446,8 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var upsertCandidateRequest = createUpsertCandidateRequest(HARDCODED_INSTITUTION_ID).build();
     var candidate = scenario.upsertCandidate(upsertCandidateRequest);
     var nonCandidate =
-        Candidate.updateNonCandidate(
-                createUpsertNonCandidateRequest(candidate.getPublicationId()), candidateRepository)
+        candidateService
+            .updateNonCandidate(createUpsertNonCandidateRequest(candidate.getPublicationId()))
             .orElseThrow();
     assertFalse(nonCandidate.isApplicable());
     var updatedCandidate =

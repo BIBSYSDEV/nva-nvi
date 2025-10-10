@@ -217,7 +217,7 @@ class CandidateTest extends CandidateTestSetup {
   void shouldDoNothingIfCreateRequestIsForNonCandidateThatDoesNotExist() {
     var updateRequest = createUpsertNonCandidateRequest(randomUri());
 
-    var optionalCandidate = Candidate.updateNonCandidate(updateRequest, candidateRepository);
+    var optionalCandidate = candidateService.updateNonCandidate(updateRequest);
     assertThat(optionalCandidate, is(equalTo(Optional.empty())));
   }
 
@@ -312,8 +312,7 @@ class CandidateTest extends CandidateTestSetup {
   void shouldReturnCandidateWithNoPeriodWhenNotApplicable() {
     var tempCandidate = setupRandomApplicableCandidate(scenario);
     var updateRequest = createUpsertNonCandidateRequest(tempCandidate.getPublicationId());
-    var candidateBO =
-        Candidate.updateNonCandidate(updateRequest, candidateRepository).orElseThrow();
+    var candidateBO = candidateService.updateNonCandidate(updateRequest).orElseThrow();
     var fetchedCandidate = candidateService.fetch(candidateBO.getIdentifier());
     assertThat(fetchedCandidate.getPeriod().status(), is(equalTo(Status.NO_PERIOD)));
   }
@@ -517,8 +516,7 @@ class CandidateTest extends CandidateTestSetup {
   private Candidate nonApplicableCandidate() {
     var tempCandidate = setupRandomApplicableCandidate(scenario);
     var updateRequest = createUpsertNonCandidateRequest(tempCandidate.getPublicationId());
-    var candidateBO =
-        Candidate.updateNonCandidate(updateRequest, candidateRepository).orElseThrow();
+    var candidateBO = candidateService.updateNonCandidate(updateRequest).orElseThrow();
     return candidateService.fetch(candidateBO.getIdentifier());
   }
 

@@ -47,7 +47,6 @@ import no.sikt.nva.nvi.common.db.PeriodStatus;
 import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
 import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.db.model.ResponseContext;
-import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.model.InstanceType;
 import no.sikt.nva.nvi.common.model.PointCalculation;
@@ -162,20 +161,6 @@ public final class Candidate {
         aggregate.approvals(),
         aggregate.notes(),
         periodStatus);
-  }
-
-  public static Optional<Candidate> updateNonCandidate(
-      UpsertNonNviCandidateRequest request, CandidateRepository candidateRepository) {
-    var responseContext = candidateRepository.getCandidateAggregate(request.publicationId());
-    LOGGER.info(
-        "Updating candidate for publicationId={} to non-candidate", request.publicationId());
-    if (responseContext.candidateAggregate().isPresent()) {
-      var candidate = fromAggregate(candidateRepository, responseContext);
-      LOGGER.info("Removing all approvals for candidateId={}", candidate.getIdentifier());
-      return Optional.of(updateToNotApplicable(candidate, candidateRepository));
-    }
-    LOGGER.error("No candidate found for publicationId={}", request.publicationId());
-    return Optional.empty();
   }
 
   public static String getJsonLdContext() {
@@ -431,23 +416,6 @@ public final class Candidate {
     return publicationDetails.getNviCreatorAffiliations();
   }
 
-  private static Candidate updateToNotApplicable(
-      Candidate currentCandidate, CandidateRepository repository) {
-    var existingCandidateDao = currentCandidate.toDao();
-    var nonApplicableCandidate = updateCandidateToNonApplicable(existingCandidateDao);
-    var approvalsToDelete =
-        currentCandidate.getApprovals().values().stream().map(Approval::toDao).toList();
-
-    repository.updateCandidateAndApprovals(nonApplicableCandidate, emptyList(), approvalsToDelete);
-
-    return new Candidate(
-        repository,
-        nonApplicableCandidate,
-        emptyList(),
-        emptyList(),
-        PeriodStatus.builder().withStatus(Status.NO_PERIOD).build());
-  }
-
   public static List<InstitutionPoints> getUpdatedInstitutionPoints(
       Candidate currentCandidate, Candidate updatedCandidate) {
     return updatedCandidate.getInstitutionPoints().stream()
@@ -654,14 +622,6 @@ public final class Candidate {
     return Stream.concat(verifiedCreators, unverifiedCreators)
         .map(DbCreatorType.class::cast)
         .toList();
-  }
-
-  private static CandidateDao updateCandidateToNonApplicable(CandidateDao candidateDao) {
-    return candidateDao
-        .copy()
-        .candidate(candidateDao.candidate().copy().applicable(false).build())
-        .periodYear(null)
-        .build();
   }
 
   private Set<URI> getVerifiedNviCreatorIds() {

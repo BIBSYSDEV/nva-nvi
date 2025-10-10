@@ -770,8 +770,8 @@ class IndexDocumentHandlerTest {
     var request = createUpsertCandidateRequest(institutionId).build();
     candidateService.upsert(request);
     var candidate = candidateService.fetchByPublicationId(request.publicationId());
-    return Candidate.updateNonCandidate(
-            createUpsertNonCandidateRequest(candidate.getPublicationId()), candidateRepository)
+    return candidateService
+        .updateNonCandidate(createUpsertNonCandidateRequest(candidate.getPublicationId()))
         .orElseThrow();
   }
 
