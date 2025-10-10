@@ -28,11 +28,11 @@ class CandidateNotesTest extends CandidateTestSetup {
   void shouldCreateNoteWhenValidCreateNoteRequest() {
     var candidate = createCandidate();
     var noteRequest = createNoteRequest(randomString(), randomString());
-    candidate.createNote(noteRequest, candidateRepository);
+    candidate.createNote(noteRequest);
     var userOrganizationId = getAnyOrganizationId(candidate);
     mockOrganizationResponseForAffiliation(userOrganizationId, null, mockUriRetriever);
 
-    var updatedCandidate = Candidate.fetch(candidate::getIdentifier, candidateRepository);
+    var updatedCandidate = candidateService.fetch(candidate.getIdentifier());
     var actualNote = getAnyNote(updatedCandidate);
 
     assertThat(noteRequest.username(), is(equalTo(actualNote.user())));
@@ -46,9 +46,7 @@ class CandidateNotesTest extends CandidateTestSetup {
     var candidate = createCandidate();
     var noteRequest = createNoteRequest(randomString(), null);
 
-    assertThrows(
-        IllegalArgumentException.class,
-        () -> candidate.createNote(noteRequest, candidateRepository));
+    assertThrows(IllegalArgumentException.class, () -> candidate.createNote(noteRequest));
   }
 
   @Test
@@ -56,9 +54,7 @@ class CandidateNotesTest extends CandidateTestSetup {
     var candidate = createCandidate();
     var noteRequest = createNoteRequest(null, randomString());
 
-    assertThrows(
-        IllegalArgumentException.class,
-        () -> candidate.createNote(noteRequest, candidateRepository));
+    assertThrows(IllegalArgumentException.class, () -> candidate.createNote(noteRequest));
   }
 
   @Test
@@ -66,15 +62,14 @@ class CandidateNotesTest extends CandidateTestSetup {
     var candidate = createCandidate();
     var username = randomString();
     var candidateWithNote =
-        candidate.createNote(
-            new CreateNoteRequest(randomString(), username, randomUri()), candidateRepository);
+        candidate.createNote(new CreateNoteRequest(randomString(), username, randomUri()));
     var userOrganizationId = getAnyOrganizationId(candidateWithNote);
     mockOrganizationResponseForAffiliation(userOrganizationId, null, mockUriRetriever);
 
     var noteToDelete = getAnyNote(candidate);
     candidate.deleteNote(new DeleteNoteRequest(noteToDelete.identifier(), username));
 
-    var updatedCandidate = Candidate.fetch(candidate::getIdentifier, candidateRepository);
+    var updatedCandidate = candidateService.fetch(candidate.getIdentifier());
     Assertions.assertThat(updatedCandidate.getNotes()).isEmpty();
   }
 
@@ -82,9 +77,7 @@ class CandidateNotesTest extends CandidateTestSetup {
   void shouldThrowUnauthorizedOperationExceptionWhenRequesterIsNotAnOwner() {
     var candidate = createCandidate();
     var candidateWithNote =
-        candidate.createNote(
-            new CreateNoteRequest(randomString(), randomString(), randomUri()),
-            candidateRepository);
+        candidate.createNote(new CreateNoteRequest(randomString(), randomString(), randomUri()));
     var userOrganizationId = getAnyOrganizationId(candidateWithNote);
     mockOrganizationResponseForAffiliation(userOrganizationId, null, mockUriRetriever);
 
@@ -102,7 +95,7 @@ class CandidateNotesTest extends CandidateTestSetup {
     var candidate = createCandidate(institutionId);
     var username = randomString();
     var noteRequest = new CreateNoteRequest(randomString(), username, institutionId);
-    var candidateWithNote = candidate.createNote(noteRequest, candidateRepository);
+    var candidateWithNote = candidate.createNote(noteRequest);
     var actualAssignee = candidateWithNote.getApprovals().get(institutionId).getAssigneeUsername();
     assertEquals(username, actualAssignee);
   }
@@ -116,7 +109,7 @@ class CandidateNotesTest extends CandidateTestSetup {
 
     var candidateWithAssignee = scenario.getCandidateByIdentifier(candidate.getIdentifier());
     var noteRequest = new CreateNoteRequest(randomString(), randomString(), institutionId);
-    candidateWithAssignee.createNote(noteRequest, candidateRepository);
+    candidateWithAssignee.createNote(noteRequest);
 
     var candidateWithNote = scenario.getCandidateByIdentifier(candidate.getIdentifier());
     var actualAssignee = candidateWithNote.getApprovals().get(institutionId).getAssigneeUsername();

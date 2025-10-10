@@ -26,6 +26,7 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.model.DbCreatorTypeListConverter;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
+import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.utils.BatchScanUtil;
@@ -37,6 +38,7 @@ class MigrationTests {
 
   public static final int DEFAULT_PAGE_SIZE = 700;
   private CandidateRepository candidateRepository;
+  private CandidateService candidateService;
   private BatchScanUtil batchScanUtil;
   private TestScenario scenario;
 
@@ -44,6 +46,7 @@ class MigrationTests {
   void setUp() {
     scenario = new TestScenario();
     candidateRepository = scenario.getCandidateRepository();
+    candidateService = scenario.getCandidateService();
     batchScanUtil =
         new BatchScanUtil(
             candidateRepository,
@@ -57,7 +60,7 @@ class MigrationTests {
   void shouldWriteCandidateWithNotesAndApprovalsAsIsWhenMigrating() {
     var candidate = setupCandidateWithApprovalAndNotes();
     batchScanUtil.migrateAndUpdateVersion(DEFAULT_PAGE_SIZE, null, emptyList());
-    var migratedCandidate = Candidate.fetch(candidate::getIdentifier, candidateRepository);
+    var migratedCandidate = candidateService.fetch(candidate.getIdentifier());
     assertThat(migratedCandidate)
         .usingRecursiveComparison()
         .ignoringCollectionOrder()
@@ -120,7 +123,7 @@ class MigrationTests {
   private Candidate setupCandidateWithApprovalAndNotes() {
     var candidate =
         setupRandomApplicableCandidate(scenario)
-            .createNote(createNoteRequest(randomString(), randomString()), candidateRepository);
+            .createNote(createNoteRequest(randomString(), randomString()));
     var curatorOrganization = getInstitutionId(candidate);
     var userInstance = createCuratorUserInstance(curatorOrganization);
 

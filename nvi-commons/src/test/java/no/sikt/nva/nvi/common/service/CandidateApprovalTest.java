@@ -248,7 +248,8 @@ class CandidateApprovalTest extends CandidateTestSetup {
     updateApprovalStatus(candidateIdentifier, ApprovalStatus.APPROVED);
 
     var status =
-        Candidate.fetch(() -> candidateIdentifier, candidateRepository)
+        candidateService
+            .fetch(candidateIdentifier)
             .getApprovals()
             .get(HARDCODED_INSTITUTION_ID)
             .getStatus();
@@ -278,7 +279,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
     candidate.updateApprovalAssignee(
         new UpdateAssigneeRequest(HARDCODED_INSTITUTION_ID, newUsername));
 
-    var updatedCandidate = Candidate.fetch(candidate::getIdentifier, candidateRepository);
+    var updatedCandidate = candidateService.fetch(candidate.getIdentifier());
     var updatedApproval = updatedCandidate.getApprovals().get(HARDCODED_INSTITUTION_ID);
     assertThat(updatedApproval.getAssigneeUsername(), is(equalTo(newUsername)));
   }

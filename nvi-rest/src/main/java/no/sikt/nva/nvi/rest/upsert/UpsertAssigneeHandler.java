@@ -7,11 +7,10 @@ import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.net.HttpURLConnection;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.db.DynamoRepository;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UserInstance;
 import no.sikt.nva.nvi.common.service.CandidateResponseFactory;
+import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.utils.ExceptionMapper;
@@ -34,26 +33,26 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<UpsertAssigneeReque
     implements ViewingScopeHandler {
 
   public static final String CANDIDATE_IDENTIFIER = "candidateIdentifier";
-  private final CandidateRepository candidateRepository;
+  private final CandidateService candidateService;
   private final IdentityServiceClient identityServiceClient;
   private final ViewingScopeValidator viewingScopeValidator;
 
   @JacocoGenerated
   public UpsertAssigneeHandler() {
     this(
-        new CandidateRepository(DynamoRepository.defaultDynamoClient()),
+        CandidateService.defaultCandidateService(),
         IdentityServiceClient.prepare(),
         ViewingScopeHandler.defaultViewingScopeValidator(),
         new Environment());
   }
 
   public UpsertAssigneeHandler(
-      CandidateRepository candidateRepository,
+      CandidateService candidateService,
       IdentityServiceClient identityServiceClient,
       ViewingScopeValidator viewingScopeValidator,
       Environment environment) {
     super(UpsertAssigneeRequest.class, environment);
-    this.candidateRepository = candidateRepository;
+    this.candidateService = candidateService;
     this.identityServiceClient = identityServiceClient;
     this.viewingScopeValidator = viewingScopeValidator;
   }
@@ -76,7 +75,7 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<UpsertAssigneeReque
     var userInstance = UserInstance.fromRequestInfo(requestInfo);
     var updateRequest = new UpdateAssigneeRequest(institutionId, assignee);
 
-    return attempt(() -> fetchCandidate(candidateIdentifier))
+    return attempt(() -> candidateService.fetch(candidateIdentifier))
         .map(candidate -> validateViewingScope(viewingScopeValidator, username, candidate))
         .map(candidate -> updateAndRefetch(candidate, updateRequest))
         .map(candidate -> CandidateResponseFactory.create(candidate, userInstance))
@@ -88,13 +87,9 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<UpsertAssigneeReque
     return HttpURLConnection.HTTP_OK;
   }
 
-  private Candidate fetchCandidate(UUID candidateIdentifier) {
-    return Candidate.fetch(() -> candidateIdentifier, candidateRepository);
-  }
-
   private Candidate updateAndRefetch(Candidate candidate, UpdateAssigneeRequest updateRequest) {
     candidate.updateApprovalAssignee(updateRequest);
-    return fetchCandidate(candidate.getIdentifier());
+    return candidateService.fetch(candidate.getIdentifier());
   }
 
   private static void hasSameCustomer(UpsertAssigneeRequest input, RequestInfo requestInfo)

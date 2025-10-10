@@ -44,7 +44,6 @@ import no.sikt.nva.nvi.common.UpsertRequestBuilder;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.queue.QueueClient;
@@ -73,7 +72,6 @@ class UpsertNviCandidateHandlerTest {
   private TestScenario scenario;
   private UpsertNviCandidateHandler handler;
   private CandidateRepository candidateRepository;
-  private PeriodRepository periodRepository;
   private CandidateService candidateService;
   private QueueClient queueClient;
   private Environment environment;
@@ -143,7 +141,7 @@ class UpsertNviCandidateHandlerTest {
     var candidate = setupRandomApplicableCandidate(scenario);
     var eventMessage = nonCandidateMessageForExistingCandidate(candidate);
     handler.handleRequest(createEvent(eventMessage), CONTEXT);
-    var updatedCandidate = Candidate.fetch(candidate::getIdentifier, candidateRepository);
+    var updatedCandidate = candidateService.fetch(candidate.getIdentifier());
     assertThat(updatedCandidate.isApplicable(), is(false));
   }
 

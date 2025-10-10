@@ -129,11 +129,11 @@ class IndexDocumentHandlerTest {
   private final S3Client s3Client = new FakeS3Client();
   private IndexDocumentHandler handler;
   private CandidateRepository candidateRepository;
+  private CandidateService candidateService;
   private S3Driver s3Reader;
   private S3Driver s3Writer;
   private UriRetriever uriRetriever;
   private FakeSqsClient sqsClient;
-  private CandidateService candidateService;
   private TestScenario scenario;
 
   public static Stream<Arguments> channelTypeIssnProvider() {
@@ -160,7 +160,7 @@ class IndexDocumentHandlerTest {
             new S3StorageReader(s3Client, BUCKET_NAME),
             new S3StorageWriter(s3Client, BUCKET_NAME),
             sqsClient,
-            candidateRepository,
+            candidateService,
             uriRetriever,
             ENVIRONMENT);
   }
@@ -207,7 +207,7 @@ class IndexDocumentHandlerTest {
         candidateRepository.create(
             createDbCandidateWithoutChannelIdOrType(institutionId),
             List.of(randomApproval(institutionId)));
-    var candidate = Candidate.fetch(dao::identifier, candidateRepository);
+    var candidate = candidateService.fetch(dao.identifier());
     var expectedIndexDocument =
         setupExistingResourceInS3AndGenerateExpectedDocument(candidate).indexDocument();
     mockUriRetrieverOrgResponse(candidate);
@@ -292,7 +292,7 @@ class IndexDocumentHandlerTest {
     // implemented yet
     // TODO: Use Candidate.setReported when implemented
     var dao = setupReportedCandidate(candidateRepository, randomYear());
-    var candidate = Candidate.fetch(dao::identifier, candidateRepository);
+    var candidate = candidateService.fetch(dao.identifier());
     var expectedIndexDocument =
         setupExistingResourceInS3AndGenerateExpectedDocument(candidate).indexDocument();
     var event = createEvent(candidate.getIdentifier());
@@ -537,7 +537,7 @@ class IndexDocumentHandlerTest {
             new S3StorageReader(s3Client, BUCKET_NAME),
             new S3StorageWriter(s3Client, BUCKET_NAME),
             mockedSqsClient,
-            candidateRepository,
+            candidateService,
             uriRetriever,
             ENVIRONMENT);
     var event = createEvent(candidateToFail.getIdentifier(), candidateToSucceed.getIdentifier());
@@ -585,7 +585,7 @@ class IndexDocumentHandlerTest {
             new S3StorageReader(s3Client, BUCKET_NAME),
             s3Writer,
             sqsClient,
-            candidateRepository,
+            candidateService,
             uriRetriever,
             ENVIRONMENT);
     assertDoesNotThrow(() -> handler.handleRequest(event, CONTEXT));
@@ -621,7 +621,7 @@ class IndexDocumentHandlerTest {
     // When the candidate is processed for indexing
     // Then an index document is created successfully
     var candidateDao = setupReportedCandidateWithInvalidProperties();
-    var candidate = Candidate.fetch(candidateDao::identifier, candidateRepository);
+    var candidate = candidateService.fetch(candidateDao.identifier());
     var expectedIndexDocument =
         setupExistingResourceInS3AndGenerateExpectedDocument(candidate).indexDocument();
 

@@ -1,17 +1,16 @@
 package no.sikt.nva.nvi.rest.upsert;
 
 import static java.net.HttpURLConnection.HTTP_OK;
-import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
 import static no.sikt.nva.nvi.common.utils.RequestUtil.hasAccessRight;
 import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateHandler.CANDIDATE_IDENTIFIER;
 import static nva.commons.core.attempt.Try.attempt;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.model.UserInstance;
 import no.sikt.nva.nvi.common.service.CandidateResponseFactory;
+import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.utils.ExceptionMapper;
@@ -30,23 +29,23 @@ import nva.commons.core.JacocoGenerated;
 public class UpdateNviCandidateStatusHandler
     extends ApiGatewayHandler<NviStatusRequest, CandidateDto> implements ViewingScopeHandler {
 
-  private final CandidateRepository candidateRepository;
+  private final CandidateService candidateService;
   private final ViewingScopeValidator viewingScopeValidator;
 
   @JacocoGenerated
   public UpdateNviCandidateStatusHandler() {
     this(
-        new CandidateRepository(defaultDynamoClient()),
+        CandidateService.defaultCandidateService(),
         ViewingScopeHandler.defaultViewingScopeValidator(),
         new Environment());
   }
 
   public UpdateNviCandidateStatusHandler(
-      CandidateRepository candidateRepository,
+      CandidateService candidateService,
       ViewingScopeValidator viewingScopeValidator,
       Environment environment) {
     super(NviStatusRequest.class, environment);
-    this.candidateRepository = candidateRepository;
+    this.candidateService = candidateService;
     this.viewingScopeValidator = viewingScopeValidator;
   }
 
@@ -78,7 +77,7 @@ public class UpdateNviCandidateStatusHandler
   }
 
   private Candidate fetchCandidate(UUID candidateIdentifier) {
-    return Candidate.fetch(() -> candidateIdentifier, candidateRepository);
+    return candidateService.fetch(candidateIdentifier);
   }
 
   private Candidate updateAndRefetch(

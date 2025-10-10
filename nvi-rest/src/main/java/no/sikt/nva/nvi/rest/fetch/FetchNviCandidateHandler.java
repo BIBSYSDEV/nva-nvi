@@ -1,16 +1,15 @@
 package no.sikt.nva.nvi.rest.fetch;
 
 import static java.net.HttpURLConnection.HTTP_OK;
-import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
 import static no.sikt.nva.nvi.common.utils.RequestUtil.isNviAdmin;
 import static no.sikt.nva.nvi.common.utils.RequestUtil.isNviCurator;
 import static nva.commons.core.attempt.Try.attempt;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.model.UserInstance;
 import no.sikt.nva.nvi.common.service.CandidateResponseFactory;
+import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.model.Candidate;
@@ -27,17 +26,16 @@ public class FetchNviCandidateHandler extends ApiGatewayHandler<Void, CandidateD
     implements ViewingScopeHandler {
 
   public static final String CANDIDATE_IDENTIFIER = "candidateIdentifier";
-  private final CandidateRepository candidateRepository;
+  private final CandidateService candidateService;
 
   @JacocoGenerated
   public FetchNviCandidateHandler() {
-    this(new CandidateRepository(defaultDynamoClient()), new Environment());
+    this(CandidateService.defaultCandidateService(), new Environment());
   }
 
-  public FetchNviCandidateHandler(
-      CandidateRepository candidateRepository, Environment environment) {
+  public FetchNviCandidateHandler(CandidateService candidateService, Environment environment) {
     super(Void.class, environment);
-    this.candidateRepository = candidateRepository;
+    this.candidateService = candidateService;
   }
 
   @Override
@@ -52,7 +50,7 @@ public class FetchNviCandidateHandler extends ApiGatewayHandler<Void, CandidateD
     var userInstance = UserInstance.fromRequestInfo(requestInfo);
     return attempt(() -> requestInfo.getPathParameter(CANDIDATE_IDENTIFIER))
         .map(UUID::fromString)
-        .map(identifier -> Candidate.fetch(() -> identifier, candidateRepository))
+        .map(identifier -> candidateService.fetch(identifier))
         .map(this::checkIfApplicable)
         .map(candidate -> CandidateResponseFactory.create(candidate, userInstance))
         .orElseThrow(ExceptionMapper::map);

@@ -6,12 +6,10 @@ import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.net.HttpURLConnection;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.db.DynamoRepository;
 import no.sikt.nva.nvi.common.model.UserInstance;
 import no.sikt.nva.nvi.common.service.CandidateResponseFactory;
+import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
-import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.requests.DeleteNoteRequest;
 import no.sikt.nva.nvi.common.utils.ExceptionMapper;
 import no.sikt.nva.nvi.common.utils.RequestUtil;
@@ -28,23 +26,23 @@ public class RemoveNoteHandler extends ApiGatewayHandler<Void, CandidateDto>
     implements ViewingScopeHandler {
 
   public static final String PARAM_NOTE_IDENTIFIER = "noteIdentifier";
-  private final CandidateRepository candidateRepository;
+  private final CandidateService candidateService;
   private final ViewingScopeValidator viewingScopeValidator;
 
   @JacocoGenerated
   public RemoveNoteHandler() {
     this(
-        new CandidateRepository(DynamoRepository.defaultDynamoClient()),
+        CandidateService.defaultCandidateService(),
         ViewingScopeHandler.defaultViewingScopeValidator(),
         new Environment());
   }
 
   public RemoveNoteHandler(
-      CandidateRepository candidateRepository,
+      CandidateService candidateService,
       ViewingScopeValidator viewingScopeValidator,
       Environment environment) {
     super(Void.class, environment);
-    this.candidateRepository = candidateRepository;
+    this.candidateService = candidateService;
     this.viewingScopeValidator = viewingScopeValidator;
   }
 
@@ -61,7 +59,7 @@ public class RemoveNoteHandler extends ApiGatewayHandler<Void, CandidateDto>
     var candidateIdentifier = UUID.fromString(requestInfo.getPathParameter(CANDIDATE_IDENTIFIER));
     var noteIdentifier = UUID.fromString(requestInfo.getPathParameter(PARAM_NOTE_IDENTIFIER));
     var userInstance = UserInstance.fromRequestInfo(requestInfo);
-    return attempt(() -> Candidate.fetch(() -> candidateIdentifier, candidateRepository))
+    return attempt(() -> candidateService.fetch(candidateIdentifier))
         .map(candidate -> validateViewingScope(viewingScopeValidator, username, candidate))
         .map(
             candidate ->

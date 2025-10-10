@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.rest.create;
 
-import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
 import static no.sikt.nva.nvi.common.utils.RequestUtil.hasAccessRight;
 import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateHandler.CANDIDATE_IDENTIFIER;
 import static nva.commons.core.attempt.Try.attempt;
@@ -10,11 +9,11 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.util.Objects;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.exceptions.NotApplicableException;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
 import no.sikt.nva.nvi.common.model.UserInstance;
 import no.sikt.nva.nvi.common.service.CandidateResponseFactory;
+import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.Username;
@@ -34,23 +33,23 @@ public class CreateNoteHandler extends ApiGatewayHandler<NviNoteRequest, Candida
     implements ViewingScopeHandler {
 
   public static final String INVALID_REQUEST_ERROR = "Request body must contain text field.";
-  private final CandidateRepository candidateRepository;
+  private final CandidateService candidateService;
   private final ViewingScopeValidator viewingScopeValidator;
 
   @JacocoGenerated
   public CreateNoteHandler() {
     this(
-        new CandidateRepository(defaultDynamoClient()),
+        CandidateService.defaultCandidateService(),
         ViewingScopeHandler.defaultViewingScopeValidator(),
         new Environment());
   }
 
   public CreateNoteHandler(
-      CandidateRepository candidateRepository,
+      CandidateService candidateService,
       ViewingScopeValidator viewingScopeValidator,
       Environment environment) {
     super(NviNoteRequest.class, environment);
-    this.candidateRepository = candidateRepository;
+    this.candidateService = candidateService;
     this.viewingScopeValidator = viewingScopeValidator;
   }
 
@@ -68,7 +67,7 @@ public class CreateNoteHandler extends ApiGatewayHandler<NviNoteRequest, Candida
     var candidateIdentifier = UUID.fromString(requestInfo.getPathParameter(CANDIDATE_IDENTIFIER));
     var institutionId = requestInfo.getTopLevelOrgCristinId().orElseThrow();
     var userInstance = UserInstance.fromRequestInfo(requestInfo);
-    return attempt(() -> Candidate.fetch(() -> candidateIdentifier, candidateRepository))
+    return attempt(() -> candidateService.fetch(candidateIdentifier))
         .map(this::checkIfApplicable)
         .map(candidate -> validateViewingScope(viewingScopeValidator, username, candidate))
         .map(candidate -> createNote(input, candidate, username, institutionId))
@@ -84,7 +83,7 @@ public class CreateNoteHandler extends ApiGatewayHandler<NviNoteRequest, Candida
   private Candidate createNote(
       NviNoteRequest input, Candidate candidate, Username username, URI institutionId) {
     var noteRequest = new CreateNoteRequest(input.text(), username.value(), institutionId);
-    return candidate.createNote(noteRequest, candidateRepository);
+    return candidate.createNote(noteRequest);
   }
 
   private Candidate checkIfApplicable(Candidate candidate) {

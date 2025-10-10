@@ -63,7 +63,6 @@ import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException;
 import no.sikt.nva.nvi.common.service.requests.CreateNoteRequest;
 import no.sikt.nva.nvi.common.service.requests.DeleteNoteRequest;
-import no.sikt.nva.nvi.common.service.requests.FetchCandidateRequest;
 import nva.commons.apigateway.exceptions.UnauthorizedException;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
@@ -163,12 +162,6 @@ public final class Candidate {
         aggregate.approvals(),
         aggregate.notes(),
         periodStatus);
-  }
-
-  public static Candidate fetch(
-      FetchCandidateRequest request, CandidateRepository candidateRepository) {
-    var responseContext = candidateRepository.getCandidateAggregate(request.identifier());
-    return fromAggregate(candidateRepository, responseContext);
   }
 
   public static void upsert(
@@ -382,7 +375,8 @@ public final class Candidate {
     approval.updateStatus(repository, toDao(), input);
   }
 
-  public Candidate createNote(CreateNoteRequest input, CandidateRepository repository) {
+  // FIXME: Move to service layer
+  public Candidate createNote(CreateNoteRequest input) {
     validateCandidateState();
     var note = Note.fromRequest(input, identifier, repository);
     notes.put(note.getNoteId(), note);
@@ -390,6 +384,7 @@ public final class Candidate {
     return this;
   }
 
+  // FIXME: Move to service layer
   public Candidate deleteNote(DeleteNoteRequest request) {
     validateCandidateState();
     var note = notes.get(request.noteId());

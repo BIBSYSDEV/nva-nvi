@@ -47,7 +47,7 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
   @Override
   protected ApiGatewayHandler<Void, CandidateDto> createHandler() {
     return new RemoveNoteHandler(
-        scenario.getCandidateRepository(), mockViewingScopeValidator, ENVIRONMENT);
+        scenario.getCandidateService(), mockViewingScopeValidator, ENVIRONMENT);
   }
 
   @BeforeEach
@@ -76,7 +76,7 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
     var viewingScopeValidatorReturningFalse = new FakeViewingScopeValidator(false);
     handler =
         new RemoveNoteHandler(
-            scenario.getCandidateRepository(), viewingScopeValidatorReturningFalse, ENVIRONMENT);
+            scenario.getCandidateService(), viewingScopeValidatorReturningFalse, ENVIRONMENT);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
     assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
@@ -119,9 +119,7 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
   void shouldReturnConflictWhenRemovingNoteAndReportingPeriodIsClosed() throws IOException {
     var candidate = setupValidCandidate();
     var user = randomString();
-    candidate.createNote(
-        new CreateNoteRequest(randomString(), user, randomUri()),
-        scenario.getCandidateRepository());
+    candidate.createNote(new CreateNoteRequest(randomString(), user, randomUri()));
     var noteId = getIdOfFirstNote(candidate);
     var request = createRequest(candidate.getIdentifier(), noteId, user).build();
     setupClosedPeriod(scenario, CURRENT_YEAR);
@@ -148,8 +146,7 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
 
   private Candidate createNote(Candidate candidate, Username user) {
     return candidate.createNote(
-        new CreateNoteRequest(randomString(), user.value(), topLevelOrganizationId),
-        scenario.getCandidateRepository());
+        new CreateNoteRequest(randomString(), user.value(), topLevelOrganizationId));
   }
 
   private HandlerRequestBuilder<NviNoteRequest> createRequest(

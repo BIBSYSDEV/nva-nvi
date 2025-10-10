@@ -44,6 +44,7 @@ import no.sikt.nva.nvi.common.db.model.KeyField;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
 import no.sikt.nva.nvi.common.model.ListingResult;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
+import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.utils.BatchScanUtil;
 import no.sikt.nva.nvi.events.model.ScanDatabaseRequest;
@@ -79,10 +80,12 @@ class EventBasedBatchScanHandlerTest {
   private FakeEventBridgeClient eventBridgeClient;
   private NviCandidateRepositoryHelper candidateRepository;
   private PeriodRepository periodRepository;
+  private CandidateService candidateService;
 
   @BeforeEach
   void init() {
     scenario = new TestScenario();
+    candidateService = scenario.getCandidateService();
     output = new ByteArrayOutputStream();
     when(CONTEXT.getInvokedFunctionArn()).thenReturn(randomString());
     eventBridgeClient = new FakeEventBridgeClient();
@@ -355,9 +358,7 @@ class EventBasedBatchScanHandlerTest {
   }
 
   private List<Candidate> getPersistedCandidates(Collection<Candidate> candidates) {
-    return candidates.stream()
-        .map(candidate -> Candidate.fetch(candidate::getIdentifier, candidateRepository))
-        .toList();
+    return candidates.stream().map(Candidate::getIdentifier).map(candidateService::fetch).toList();
   }
 
   private boolean isSameVersionAsRepositoryCopy(Dao dao) {
@@ -404,11 +405,7 @@ class EventBasedBatchScanHandlerTest {
     return IntStream.range(0, i)
         .boxed()
         .map(item -> setupRandomApplicableCandidate(scenario))
-        .map(
-            a ->
-                a.createNote(
-                    new CreateNoteRequest(randomString(), randomString(), randomUri()),
-                    candidateRepository));
+        .map(a -> a.createNote(new CreateNoteRequest(randomString(), randomString(), randomUri())));
   }
 
   private InputStream eventToInputStream(ScanDatabaseRequest scanDatabaseRequest) {

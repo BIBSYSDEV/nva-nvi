@@ -180,7 +180,7 @@ public class TestScenario {
   public void createNote(UUID candidateIdentifier, String content, URI topLevelOrganizationId) {
     var candidate = getCandidateByIdentifier(candidateIdentifier);
     var noteRequest = new CreateNoteRequest(content, randomString(), topLevelOrganizationId);
-    candidate.createNote(noteRequest, candidateRepository);
+    candidate.createNote(noteRequest);
   }
 
   public URI setupExpandedPublicationInS3(SampleExpandedPublication publication) {

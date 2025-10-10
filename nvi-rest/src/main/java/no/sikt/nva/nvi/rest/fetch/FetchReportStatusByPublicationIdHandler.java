@@ -1,7 +1,6 @@
 package no.sikt.nva.nvi.rest.fetch;
 
 import static java.net.HttpURLConnection.HTTP_OK;
-import static no.sikt.nva.nvi.common.service.CandidateService.defaultCandidateService;
 import static nva.commons.core.attempt.Try.attempt;
 
 import com.amazonaws.services.lambda.runtime.Context;
@@ -27,7 +26,7 @@ public class FetchReportStatusByPublicationIdHandler
 
   @JacocoGenerated
   public FetchReportStatusByPublicationIdHandler() {
-    this(defaultCandidateService(), new Environment());
+    this(CandidateService.defaultCandidateService(), new Environment());
   }
 
   public FetchReportStatusByPublicationIdHandler(
