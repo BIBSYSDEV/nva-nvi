@@ -131,6 +131,27 @@ public class CandidateService {
     return fromAggregate(responseContext);
   }
 
+  private static PeriodStatus findPeriodStatusFromCached(
+      Collection<NviPeriodDao> allPeriods, String year) {
+    if (isNull(year)) {
+      return PERIOD_STATUS_NO_PERIOD;
+    }
+    return allPeriods.stream()
+        .map(NviPeriodDao::nviPeriod)
+        .filter(period -> year.equals(period.publishingYear()))
+        .map(PeriodStatus::fromPeriod)
+        .findFirst()
+        .orElse(PERIOD_STATUS_NO_PERIOD);
+  }
+
+  private static CandidateDao updateCandidateToNonApplicable(CandidateDao candidateDao) {
+    return candidateDao
+        .copy()
+        .candidate(candidateDao.candidate().copy().applicable(false).build())
+        .periodYear(null)
+        .build();
+  }
+
   private Candidate fromAggregate(ResponseContext responseContext) {
     var aggregate =
         responseContext.candidateAggregate().orElseThrow(CandidateNotFoundException::new);
@@ -143,19 +164,6 @@ public class CandidateService {
         aggregate.approvals(),
         aggregate.notes(),
         periodStatus);
-  }
-
-  private static PeriodStatus findPeriodStatusFromCached(
-      Collection<NviPeriodDao> allPeriods, String year) {
-    if (isNull(year)) {
-      return PERIOD_STATUS_NO_PERIOD;
-    }
-    return allPeriods.stream()
-        .map(NviPeriodDao::nviPeriod)
-        .filter(period -> year.equals(period.publishingYear()))
-        .map(PeriodStatus::fromPeriod)
-        .findFirst()
-        .orElse(PERIOD_STATUS_NO_PERIOD);
   }
 
   private Candidate updateToNotApplicable(Candidate currentCandidate) {
@@ -173,13 +181,5 @@ public class CandidateService {
         emptyList(),
         emptyList(),
         PeriodStatus.builder().withStatus(PeriodStatus.Status.NO_PERIOD).build());
-  }
-
-  private static CandidateDao updateCandidateToNonApplicable(CandidateDao candidateDao) {
-    return candidateDao
-        .copy()
-        .candidate(candidateDao.candidate().copy().applicable(false).build())
-        .periodYear(null)
-        .build();
   }
 }

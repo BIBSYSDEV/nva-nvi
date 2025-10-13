@@ -33,7 +33,6 @@ import java.util.UUID;
 import no.sikt.nva.nvi.common.SampleExpandedPublicationFactory;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.client.model.Organization;
-import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.model.NviCreator;
 import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
@@ -56,20 +55,18 @@ class CristinNviReportEventConsumerTest {
   private static final Context CONTEXT = mock(Context.class);
   private TestScenario scenario;
   private CristinNviReportEventConsumer handler;
-  private CandidateRepository candidateRepository;
   private CandidateService candidateService;
   private S3Driver s3Driver;
 
   @BeforeEach
   void setup() {
     scenario = new TestScenario();
-    candidateRepository = scenario.getCandidateRepository();
+    var candidateRepository = scenario.getCandidateRepository();
     var s3Client = scenario.getS3Client();
     s3Driver = new S3Driver(s3Client, CRISTIN_IMPORT_BUCKET);
     var environment = getCristinNviReportEventConsumerEnvironment();
     candidateService =
-        new CandidateService(
-            environment, scenario.getPeriodRepository(), scenario.getCandidateRepository());
+        new CandidateService(environment, scenario.getPeriodRepository(), candidateRepository);
     handler = new CristinNviReportEventConsumer(candidateRepository, s3Client, environment);
   }
 

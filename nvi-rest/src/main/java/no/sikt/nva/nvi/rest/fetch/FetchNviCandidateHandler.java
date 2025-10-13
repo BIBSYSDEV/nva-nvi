@@ -50,7 +50,7 @@ public class FetchNviCandidateHandler extends ApiGatewayHandler<Void, CandidateD
     var userInstance = UserInstance.fromRequestInfo(requestInfo);
     return attempt(() -> requestInfo.getPathParameter(CANDIDATE_IDENTIFIER))
         .map(UUID::fromString)
-        .map(identifier -> candidateService.fetch(identifier))
+        .map(candidateService::fetch)
         .map(this::checkIfApplicable)
         .map(candidate -> CandidateResponseFactory.create(candidate, userInstance))
         .orElseThrow(ExceptionMapper::map);

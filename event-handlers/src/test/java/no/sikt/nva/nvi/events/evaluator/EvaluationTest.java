@@ -23,7 +23,6 @@ import java.util.List;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
@@ -64,7 +63,6 @@ class EvaluationTest {
   protected FakeSqsClient queueClient;
   protected CandidateRepository candidateRepository;
   protected S3StorageReader storageReader;
-  protected PeriodRepository periodRepository;
   protected EvaluatorService evaluatorService;
   protected NviPeriodService periodService;
   protected CandidateService candidateService;
@@ -84,8 +82,6 @@ class EvaluationTest {
     var evaluationEnvironment = getEvaluateNviCandidateHandlerEnvironment();
     scenario = new TestScenario();
     uriRetriever = scenario.getMockedUriRetriever();
-    candidateRepository = scenario.getCandidateRepository();
-    periodRepository = scenario.getPeriodRepository();
     setupOpenPeriod(scenario, HARDCODED_JSON_PUBLICATION_DATE.year());
 
     setupHttpResponses();
@@ -94,8 +90,11 @@ class EvaluationTest {
     queueClient = new FakeSqsClient();
     s3Driver = scenario.getS3DriverForExpandedResourcesBucket();
     storageReader = scenario.getS3StorageReaderForExpandedResourcesBucket();
+
     var creatorVerificationUtil =
         new CreatorVerificationUtil(authorizedBackendUriRetriever, evaluationEnvironment);
+    var periodRepository = scenario.getPeriodRepository();
+    candidateRepository = scenario.getCandidateRepository();
     evaluatorService =
         new EvaluatorService(storageReader, creatorVerificationUtil, candidateRepository);
     periodService = new NviPeriodService(evaluationEnvironment, periodRepository);
