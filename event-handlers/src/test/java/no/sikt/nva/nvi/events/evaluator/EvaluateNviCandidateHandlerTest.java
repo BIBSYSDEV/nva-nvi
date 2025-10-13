@@ -624,9 +624,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     var calculator = new CreatorVerificationUtil(authorizedBackendUriRetriever, environment);
     evaluatorService =
         new EvaluatorService(
-            scenario.getS3StorageReaderForExpandedResourcesBucket(),
-            calculator,
-            candidateRepository);
+            scenario.getS3StorageReaderForExpandedResourcesBucket(), calculator, candidateService);
   }
 
   private URI setupCandidate(int year) throws IOException {

@@ -28,6 +28,7 @@ public class NviPeriodService {
     this.periodRepository = periodRepository;
   }
 
+  // TODO: Make this return void?
   public NviPeriod create(CreatePeriodRequest request) {
     LOGGER.info("Processing create period request {}", request);
     request.validate();
@@ -42,6 +43,7 @@ public class NviPeriodService {
     return getByPublishingYear(year);
   }
 
+  // TODO: Make this return void?
   public NviPeriod update(UpdatePeriodRequest request) {
     LOGGER.info("Processing update period request {}", request);
     request.validate();

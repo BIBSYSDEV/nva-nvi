@@ -95,11 +95,11 @@ class EvaluationTest {
         new CreatorVerificationUtil(authorizedBackendUriRetriever, evaluationEnvironment);
     var periodRepository = scenario.getPeriodRepository();
     candidateRepository = scenario.getCandidateRepository();
-    evaluatorService =
-        new EvaluatorService(storageReader, creatorVerificationUtil, candidateRepository);
     periodService = new NviPeriodService(evaluationEnvironment, periodRepository);
     candidateService =
         new CandidateService(evaluationEnvironment, periodRepository, candidateRepository);
+    evaluatorService =
+        new EvaluatorService(storageReader, creatorVerificationUtil, candidateService);
     handler = new EvaluateNviCandidateHandler(evaluatorService, queueClient, evaluationEnvironment);
   }
 

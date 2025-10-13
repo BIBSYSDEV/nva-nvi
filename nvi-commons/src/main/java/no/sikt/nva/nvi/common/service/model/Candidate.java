@@ -98,7 +98,7 @@ public final class Candidate {
   private final Instant createdDate;
   private final Instant modifiedDate;
   private final ReportStatus reportStatus;
-  private final Long revisionRead;
+  private final Long revision;
 
   private Candidate(
       CandidateRepository repository,
@@ -112,7 +112,7 @@ public final class Candidate {
       Instant createdDate,
       Instant modifiedDate,
       ReportStatus reportStatus,
-      Long revisionRead) {
+      Long revision) {
     this.repository = repository;
     this.identifier = identifier;
     this.applicable = applicable;
@@ -124,7 +124,7 @@ public final class Candidate {
     this.createdDate = createdDate;
     this.modifiedDate = modifiedDate;
     this.reportStatus = reportStatus;
-    this.revisionRead = revisionRead;
+    this.revision = revision;
   }
 
   public Candidate(
@@ -145,7 +145,7 @@ public final class Candidate {
     this.createdDate = dbCandidate.createdDate();
     this.modifiedDate = dbCandidate.modifiedDate();
     this.reportStatus = dbCandidate.reportStatus();
-    this.revisionRead = candidateDao.revision();
+    this.revision = candidateDao.revision();
   }
 
   public static Candidate fromAggregate(
@@ -261,8 +261,8 @@ public final class Candidate {
     return pointCalculation.totalPoints();
   }
 
-  public Long getRevisionRead() {
-    return revisionRead;
+  public Long getRevision() {
+    return revision;
   }
 
   public boolean isReported() {
@@ -563,7 +563,7 @@ public final class Candidate {
     var newApprovals = new ArrayList<ApprovalStatusDao>();
     for (var newStatus : resetApprovalDetails) {
       var oldApproval = candidate.getApprovals().get(newStatus.institutionId());
-      var expectedRevision = isNull(oldApproval) ? null : oldApproval.getRevisionRead();
+      var expectedRevision = isNull(oldApproval) ? null : oldApproval.getRevision();
       var newApproval = new Approval(candidate.getIdentifier(), newStatus, expectedRevision);
       newApprovals.add(newApproval.toDao());
     }
@@ -641,7 +641,7 @@ public final class Candidate {
         .withCreatedDate(createdDate)
         .withPointCalculation(pointCalculation)
         .withPublicationDetails(publicationDetails)
-        .withRevision(revisionRead);
+        .withRevision(revision);
   }
 
   public CandidateDao toDao() {
@@ -665,7 +665,7 @@ public final class Candidate {
             .points(mapToPoints(getInstitutionPoints()))
             .totalPoints(adjustScaleAndRoundingMode(getTotalPoints()))
             .createdDate(createdDate)
-            .modifiedDate(Instant.now())
+            .modifiedDate(modifiedDate)
             .reportStatus(reportStatus)
             .publicationBucketUri(dbPublication.publicationBucketUri())
             .publicationId(dbPublication.id())
@@ -674,7 +674,7 @@ public final class Candidate {
     return CandidateDao.builder()
         .identifier(identifier)
         .candidate(dbCandidate)
-        .revision(revisionRead)
+        .revision(revision)
         .version(randomUUID().toString())
         .periodYear(dbPublication.publicationDate().year())
         .build();

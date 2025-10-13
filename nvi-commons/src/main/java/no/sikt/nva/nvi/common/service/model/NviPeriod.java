@@ -50,6 +50,14 @@ public record NviPeriod(
     return !isClosed();
   }
 
+  public boolean hasPublishingYear(String year) {
+    return String.valueOf(publishingYear).equals(year);
+  }
+
+  public boolean hasPublishingYear(int year) {
+    return publishingYear == year;
+  }
+
   public static Builder builder() {
     return new Builder();
   }

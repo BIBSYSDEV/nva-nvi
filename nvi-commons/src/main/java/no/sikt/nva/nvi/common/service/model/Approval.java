@@ -35,7 +35,7 @@ public class Approval {
   private final Username finalizedBy;
   private final Instant finalizedDate;
   private final String reason;
-  private final Long revisionRead;
+  private final Long revision;
 
   public Approval(UUID candidateIdentifier, ApprovalStatusDao dbApprovalStatus) {
     this.identifier = candidateIdentifier;
@@ -45,10 +45,10 @@ public class Approval {
     this.finalizedBy = Username.fromUserName(dbApprovalStatus.approvalStatus().finalizedBy());
     this.finalizedDate = dbApprovalStatus.approvalStatus().finalizedDate();
     this.reason = dbApprovalStatus.approvalStatus().reason();
-    this.revisionRead = dbApprovalStatus.revision();
+    this.revision = dbApprovalStatus.revision();
   }
 
-  public Approval(UUID candidateIdentifier, DbApprovalStatus approvalStatus, Long revisionRead) {
+  public Approval(UUID candidateIdentifier, DbApprovalStatus approvalStatus, Long revision) {
     this.identifier = candidateIdentifier;
     this.institutionId = approvalStatus.institutionId();
     this.status = ApprovalStatus.parse(approvalStatus.status().getValue());
@@ -56,7 +56,7 @@ public class Approval {
     this.finalizedBy = Username.fromUserName(approvalStatus.finalizedBy());
     this.finalizedDate = approvalStatus.finalizedDate();
     this.reason = approvalStatus.reason();
-    this.revisionRead = revisionRead;
+    this.revision = revision;
   }
 
   public URI getInstitutionId() {
@@ -83,8 +83,8 @@ public class Approval {
     return reason;
   }
 
-  public Long getRevisionRead() {
-    return revisionRead;
+  public Long getRevision() {
+    return revision;
   }
 
   public boolean isAssigned() {
@@ -124,7 +124,7 @@ public class Approval {
     return ApprovalStatusDao.builder()
         .identifier(identifier)
         .approvalStatus(dbStatus)
-        .revision(revisionRead)
+        .revision(revision)
         .version(randomUUID().toString())
         .build();
   }
@@ -133,7 +133,7 @@ public class Approval {
     return ApprovalStatusDao.builder()
         .identifier(identifier)
         .approvalStatus(createCopyOfCurrentStatus())
-        .revision(revisionRead)
+        .revision(revision)
         .version(randomUUID().toString())
         .build();
   }

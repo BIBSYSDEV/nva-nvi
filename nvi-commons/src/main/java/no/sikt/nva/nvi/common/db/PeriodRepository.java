@@ -6,6 +6,7 @@ import static no.sikt.nva.nvi.common.utils.ApplicationConstants.NVI_TABLE_NAME;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,6 +51,11 @@ public class PeriodRepository extends DynamoRepository {
         .map(Page::items)
         .flatMap(Collection::stream)
         .toList();
+  }
+
+  public CompletableFuture<List<NviPeriodDao>> getPeriodsAsync() {
+    LOGGER.info("Getting all periods with async wrapper");
+    return CompletableFuture.supplyAsync(() -> getPeriods());
   }
 
   // FIXME: Remove this

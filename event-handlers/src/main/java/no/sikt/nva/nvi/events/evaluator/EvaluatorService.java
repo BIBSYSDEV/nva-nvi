@@ -13,11 +13,11 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.client.model.Organization;
-import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.dto.PublicationDto;
 import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.exceptions.ValidationException;
+import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.PublicationLoaderService;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
@@ -42,15 +42,15 @@ public class EvaluatorService {
       "Publication is already reported and cannot be updated.";
   private final Logger logger = LoggerFactory.getLogger(EvaluatorService.class);
   private final CreatorVerificationUtil creatorVerificationUtil;
-  private final CandidateRepository candidateRepository;
+  private final CandidateService candidateService;
   private final PublicationLoaderService publicationLoader;
 
   public EvaluatorService(
       StorageReader<URI> storageReader,
       CreatorVerificationUtil creatorVerificationUtil,
-      CandidateRepository candidateRepository) {
+      CandidateService candidateService) {
     this.creatorVerificationUtil = creatorVerificationUtil;
-    this.candidateRepository = candidateRepository;
+    this.candidateService = candidateService;
     this.publicationLoader = new PublicationLoaderService(storageReader);
   }
 
@@ -59,11 +59,8 @@ public class EvaluatorService {
     logger.info("Evaluating publication with ID: {}", publication.id());
 
     // Get candidate aggregate (if it exists) and list of all periods
-    var responseContext = candidateRepository.getCandidateAggregate(publication.id());
-    var optionalCandidate =
-        responseContext
-            .candidateAggregate()
-            .map(aggregate -> Candidate.fromAggregate(candidateRepository, responseContext));
+    var candidateContext = candidateService.findAggregateByPublicationId(publication.id());
+    var optionalCandidate = candidateContext.candidate();
 
     if (shouldSkipEvaluation(optionalCandidate, publication)) {
       logger.info(SKIPPED_EVALUATION_MESSAGE, publication.id());
@@ -83,7 +80,7 @@ public class EvaluatorService {
     }
 
     // Check that the publication can be a candidate in the target period
-    var optionalPeriod = responseContext.getOptionalPeriod(publication.publicationDate().year());
+    var optionalPeriod = candidateContext.getOptionalPeriod(publication.publicationDate().year());
     if (!canEvaluateInPeriod(optionalPeriod, optionalCandidate)) {
       logger.info("Publication is not applicable in the target period");
       return createNonNviCandidateMessage(publication.id());

@@ -479,11 +479,12 @@ class CandidateTest extends CandidateTestSetup {
   @Disabled
   void shouldBeAbleToRoundTripWithNoLossOfData() {
     var candidate = setupRandomApplicableCandidate(scenario);
-    var aggregate = candidateRepository.getCandidateAggregate(candidate.getIdentifier());
-    var originalCandidate = aggregate.candidateAggregate().orElseThrow().candidate();
-    var roundTrippedCandidate = Candidate.fromAggregate(candidateRepository, aggregate).toDao();
+    var aggregate = scenario.getAllRelatedData(candidate.getIdentifier());
 
-    Assertions.assertThat(originalCandidate)
+    var originalCandidateDao = aggregate.candidate();
+    var roundTrippedCandidate = candidateService.fetch(candidate.getIdentifier()).toDao();
+
+    Assertions.assertThat(originalCandidateDao)
         .usingRecursiveComparison()
         .ignoringCollectionOrder()
         .isEqualTo(roundTrippedCandidate);

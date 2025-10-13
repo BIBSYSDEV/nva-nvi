@@ -128,10 +128,15 @@ public class TestScenario {
    * business model for a Candidate class.
    */
   public CandidateAggregate getAllRelatedData(UUID candidateIdentifier) {
-    return candidateRepository
-        .getCandidateAggregate(candidateIdentifier)
-        .candidateAggregate()
-        .orElseThrow();
+    var candidateFuture = candidateRepository.getCandidateAggregateAsync(candidateIdentifier);
+    try {
+      return candidateFuture
+          .thenApply(candidateItems -> CandidateAggregate.fromQueryResponse(candidateItems))
+          .get()
+          .orElseThrow();
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
   }
 
   public Candidate getCandidateByIdentifier(UUID candidateIdentifier) {

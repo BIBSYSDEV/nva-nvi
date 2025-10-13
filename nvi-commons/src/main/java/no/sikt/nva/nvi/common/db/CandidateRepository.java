@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.DatabaseConstants;
@@ -294,6 +295,8 @@ public class CandidateRepository extends DynamoRepository {
     return getCandidateAggregate(optionalCandidate.get().identifier());
   }
 
+  // TODO: Make this just return the CandidateAggregate
+  // TODO: Make the ResponseContext/Aggregate classes use domain model and not DAO
   public ResponseContext getCandidateAggregate(UUID candidateId) {
     LOGGER.info("Fetching candidate and related data for candidateId={}", candidateId);
     var periodsQuery = executeAsync(getPeriodsRequest());
@@ -315,6 +318,14 @@ public class CandidateRepository extends DynamoRepository {
             .map(NviPeriodDao.class::cast)
             .toList();
     return new ResponseContext(candidateAggregate, allPeriods);
+  }
+
+  public CompletableFuture<List<Dao>> getCandidateAggregateAsync(UUID candidateId) {
+    LOGGER.info("Fetching candidate and related data for candidateId={}", candidateId);
+
+    return executeAsync(getCandidateAggregateRequest(candidateId))
+        .thenApply(QueryResponse::items)
+        .thenApply(items -> items.stream().map(this::mapToDao).toList());
   }
 
   private QueryRequest getCandidateAggregateRequest(UUID candidateId) {

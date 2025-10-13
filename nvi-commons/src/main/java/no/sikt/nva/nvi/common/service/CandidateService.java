@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.common.service;
 
 import static java.util.Collections.emptyList;
 import static java.util.Objects.isNull;
+import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
 import static no.sikt.nva.nvi.common.service.model.Candidate.getApprovalsToDelete;
 import static no.sikt.nva.nvi.common.service.model.Candidate.getUpdatedInstitutionPoints;
@@ -19,6 +20,7 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.NviPeriodDao;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.PeriodStatus;
+import no.sikt.nva.nvi.common.db.model.CandidateAggregate;
 import no.sikt.nva.nvi.common.db.model.ResponseContext;
 import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
@@ -26,6 +28,8 @@ import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException;
 import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.service.model.CandidateContext;
+import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
@@ -60,18 +64,21 @@ public class CandidateService {
         new CandidateRepository(dynamoClient));
   }
 
-  public Candidate create(Candidate candidate) {
-    throw new UnsupportedOperationException();
-  }
-
   public void upsert(UpsertNviCandidateRequest request) {
-    var responseContext = candidateRepository.getCandidateAggregate(request.publicationId());
-    if (responseContext.candidateAggregate().isPresent()) {
-      var originalCandidate = fromAggregate(responseContext);
+    var responseContext = findAggregateByPublicationId(request.publicationId());
+    if (responseContext.candidate().isPresent()) {
+      var originalCandidate = responseContext.candidate().get();
       updateCandidate(request, originalCandidate);
     } else {
       createCandidate(request);
     }
+  }
+
+  public void update(Candidate candidate) {
+    LOGGER.info("Saving updated candidate: {}", candidate.getIdentifier());
+    var updatedDao =
+        candidate.toDao().copy().version(randomUUID().toString()).build(); // FIXME: Duplicate
+    candidateRepository.updateCandidateAndApprovals(updatedDao, emptyList(), emptyList());
   }
 
   private void createCandidate(UpsertNviCandidateRequest request) {
@@ -84,6 +91,7 @@ public class CandidateService {
   public void updateCandidate(UpsertNviCandidateRequest request, Candidate candidate) {
     request.validate();
     if (candidate.isReported()) {
+      // TODO: Leave this validation to the Candidate
       throw new IllegalCandidateUpdateException("Can not update reported candidate");
     }
 
@@ -109,11 +117,11 @@ public class CandidateService {
   }
 
   public Optional<Candidate> updateNonCandidate(UpsertNonNviCandidateRequest request) {
-    var responseContext = candidateRepository.getCandidateAggregate(request.publicationId());
+    var responseContext = findAggregateByPublicationId(request.publicationId());
     LOGGER.info(
         "Updating candidate for publicationId={} to non-candidate", request.publicationId());
-    if (responseContext.candidateAggregate().isPresent()) {
-      var candidate = fromAggregate(responseContext);
+    if (responseContext.candidate().isPresent()) {
+      var candidate = responseContext.candidate().get();
       LOGGER.info("Removing all approvals for candidateId={}", candidate.getIdentifier());
       return Optional.of(updateToNotApplicable(candidate));
     }
@@ -122,13 +130,75 @@ public class CandidateService {
   }
 
   public Candidate fetch(UUID candidateIdentifier) {
-    var responseContext = candidateRepository.getCandidateAggregate(candidateIdentifier);
-    return fromAggregate(responseContext);
+    LOGGER.info("Fetching candidate by identifier {}", candidateIdentifier);
+    var responseContext = findAggregate(candidateIdentifier);
+    return responseContext.candidate().orElseThrow(CandidateNotFoundException::new);
   }
 
   public Candidate fetchByPublicationId(URI publicationId) {
-    var responseContext = candidateRepository.getCandidateAggregate(publicationId);
-    return fromAggregate(responseContext);
+    LOGGER.info("Fetching candidate by publication id {}", publicationId);
+    var responseContext = findAggregateByPublicationId(publicationId);
+    return responseContext.candidate().orElseThrow(CandidateNotFoundException::new);
+  }
+
+  //  public ResponseContext findAggregate(UUID candidateIdentifier) {
+  //    LOGGER.info("Fetching candidate and periods by identifier {}", candidateIdentifier);
+  //
+  //    var candidateFuture = candidateRepository.getCandidateAggregateAsync(candidateIdentifier);
+  //    var periodsFuture = periodRepository.getPeriodsAsync();
+  //
+  //    return candidateFuture
+  //        .thenCombine(
+  //            periodsFuture,
+  //            (candidateItems, allPeriods) -> {
+  //              var candidateAggregate = CandidateAggregate.fromQueryResponse(candidateItems);
+  //              return new ResponseContext(candidateAggregate, allPeriods);
+  //            })
+  //        .join();
+  //  }
+
+  //  public ResponseContext findAggregateByPublicationId(URI publicationId) {
+  //    LOGGER.info("Fetching candidate and periods by publication id {}", publicationId);
+  //    var optionalCandidate = candidateRepository.findByPublicationId(publicationId);
+  //
+  //    if (optionalCandidate.isEmpty()) {
+  //      LOGGER.info("No candidate found for publicationId={}", publicationId);
+  //      var allPeriods = periodRepository.getPeriods();
+  //      return new ResponseContext(Optional.empty(), allPeriods);
+  //    }
+  //    return findAggregate(optionalCandidate.get().identifier());
+  //  }
+
+  public CandidateContext findAggregate(UUID candidateIdentifier) {
+    LOGGER.info("Fetching candidate and periods by identifier {}", candidateIdentifier);
+
+    var candidateFuture = candidateRepository.getCandidateAggregateAsync(candidateIdentifier);
+    var periodsFuture = periodRepository.getPeriodsAsync();
+
+    return candidateFuture
+        .thenCombine(
+            periodsFuture,
+            (candidateItems, allPeriods) -> {
+              var candidateAggregate = CandidateAggregate.fromQueryResponse(candidateItems);
+              var periods = allPeriods.stream().map(NviPeriod::fromDao).toList();
+
+              var candidate =
+                  candidateAggregate.map(aggregate -> fromAggregate(aggregate, periods));
+              return new CandidateContext(candidate, periods);
+            })
+        .join();
+  }
+
+  public CandidateContext findAggregateByPublicationId(URI publicationId) {
+    LOGGER.info("Fetching candidate and periods by publication id {}", publicationId);
+    var optionalCandidate = candidateRepository.findByPublicationId(publicationId);
+
+    if (optionalCandidate.isEmpty()) {
+      LOGGER.info("No candidate found for publicationId={}", publicationId);
+      var allPeriods = periodRepository.getPeriods().stream().map(NviPeriod::fromDao).toList();
+      return new CandidateContext(Optional.empty(), allPeriods);
+    }
+    return findAggregate(optionalCandidate.get().identifier());
   }
 
   private static PeriodStatus findPeriodStatusFromCached(
@@ -144,6 +214,21 @@ public class CandidateService {
         .orElse(PERIOD_STATUS_NO_PERIOD);
   }
 
+  private static PeriodStatus findPeriodStatus(Collection<NviPeriod> allPeriods, String year) {
+    if (isNull(year)) {
+      return PERIOD_STATUS_NO_PERIOD;
+    }
+
+    // FIXME: Shouldn't need to go via dao
+    return allPeriods.stream()
+        .filter(period -> period.hasPublishingYear(year))
+        .map(NviPeriod::toDao)
+        .map(NviPeriodDao::nviPeriod)
+        .map(PeriodStatus::fromPeriod)
+        .findFirst()
+        .orElse(PERIOD_STATUS_NO_PERIOD);
+  }
+
   private static CandidateDao updateCandidateToNonApplicable(CandidateDao candidateDao) {
     return candidateDao
         .copy()
@@ -152,7 +237,8 @@ public class CandidateService {
         .build();
   }
 
-  private Candidate fromAggregate(ResponseContext responseContext) {
+  // FIXME: Make private
+  public Candidate fromAggregate(ResponseContext responseContext) {
     var aggregate =
         responseContext.candidateAggregate().orElseThrow(CandidateNotFoundException::new);
     var periodStatus =
@@ -163,6 +249,17 @@ public class CandidateService {
         aggregate.candidate(),
         aggregate.approvals(),
         aggregate.notes(),
+        periodStatus);
+  }
+
+  public Candidate fromAggregate(
+      CandidateAggregate candidateAggregate, Collection<NviPeriod> allPeriods) {
+    var periodStatus = findPeriodStatus(allPeriods, candidateAggregate.candidate().getPeriodYear());
+    return new Candidate(
+        candidateRepository,
+        candidateAggregate.candidate(),
+        candidateAggregate.approvals(),
+        candidateAggregate.notes(),
         periodStatus);
   }
 

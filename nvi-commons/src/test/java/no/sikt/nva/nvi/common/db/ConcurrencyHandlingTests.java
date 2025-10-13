@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.common.db;
 
 import static java.util.Collections.emptyList;
 import static java.util.UUID.randomUUID;
+import static no.sikt.nva.nvi.common.EnvironmentFixtures.getGlobalEnvironment;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpdateStatusRequest;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeriod;
@@ -34,6 +35,7 @@ import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.exceptions.TransactionException;
 import no.sikt.nva.nvi.common.model.PublicationDate;
+import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import org.assertj.core.api.ThrowableAssert;
@@ -61,6 +63,7 @@ class ConcurrencyHandlingTests {
   private static final PublicationDate PUBLICATION_DATE = randomPublicationDate();
   private TestScenario scenario;
   private CandidateRepository candidateRepository;
+  private CandidateService candidateService;
   private UpsertRequestBuilder upsertRequestBuilder;
   private UUID candidateIdentifier;
   private URI publicationId;
@@ -71,6 +74,7 @@ class ConcurrencyHandlingTests {
     testStartedAt = Instant.now();
     scenario = new TestScenario();
     candidateRepository = scenario.getCandidateRepository();
+    candidateService = scenario.getCandidateService();
     upsertRequestBuilder =
         createUpsertCandidateRequest(ORGANIZATION_1, ORGANIZATION_2)
             .withInstanceType(ACADEMIC_ARTICLE)
@@ -187,12 +191,12 @@ class ConcurrencyHandlingTests {
     void shouldHandleExistingCandidatesWithoutRevision() {
       removeRevisionFromCandidate(candidateIdentifier);
       var first = scenario.getCandidateByIdentifier(candidateIdentifier);
-      assertThat(first.getRevisionRead()).isNull();
+      assertThat(first.getRevision()).isNull();
 
       candidateRepository.candidateTable.putItem(getCandidateDao(candidateIdentifier));
       var second = scenario.getCandidateByIdentifier(candidateIdentifier);
 
-      assertThat(second.getRevisionRead()).isEqualTo(1L);
+      assertThat(second.getRevision()).isEqualTo(1L);
     }
 
     @Test
@@ -225,7 +229,7 @@ class ConcurrencyHandlingTests {
       assertThat(secondDao.lastWrittenAt()).isBetween(beforeWrite, afterWrite);
 
       var second = scenario.getCandidateByIdentifier(candidateIdentifier);
-      assertThat(second.getRevisionRead()).isEqualTo(1L);
+      assertThat(second.getRevision()).isEqualTo(1L);
     }
 
     @Test
@@ -247,59 +251,17 @@ class ConcurrencyHandlingTests {
     void shouldIncrementRevisionForEachUpdate() {
       removeRevisionFromCandidate(candidateIdentifier);
       var first = scenario.getCandidateByIdentifier(candidateIdentifier);
-      assertThat(first.getRevisionRead()).isNull();
+      assertThat(first.getRevision()).isNull();
 
       candidateRepository.candidateTable.putItem(getCandidateDao(candidateIdentifier));
       var second = scenario.getCandidateByIdentifier(candidateIdentifier);
-      assertThat(second.getRevisionRead()).isEqualTo(1L);
+      assertThat(second.getRevision()).isEqualTo(1L);
 
       var secondUpdate =
           getCandidateDao(candidateIdentifier).copy().version(randomUUID().toString()).build();
       candidateRepository.candidateTable.putItem(secondUpdate);
       var third = scenario.getCandidateByIdentifier(candidateIdentifier);
-      assertThat(third.getRevisionRead()).isEqualTo(2L);
-    }
-
-    @Test
-    void shouldGetAllRelatedDataWithAggregateQuery() {
-      var response = candidateRepository.getCandidateAggregate(candidateIdentifier);
-
-      var periods = response.allPeriods();
-      var aggregate = response.candidateAggregate().orElseThrow();
-
-      assertThat(periods).hasOnlyElementsOfType(NviPeriodDao.class).hasSizeGreaterThanOrEqualTo(2);
-      assertThat(aggregate.candidate().identifier()).isEqualTo(candidateIdentifier);
-      assertThat(aggregate.approvals()).hasOnlyElementsOfType(ApprovalStatusDao.class).hasSize(2);
-      assertThat(aggregate.notes()).hasOnlyElementsOfType(NoteDao.class).hasSize(3);
-    }
-
-    @Test
-    void shouldOnlyNeedTwoRequestsToGetCandidateByIdentifier() {
-      var mockClient = spy(scenario.getLocalDynamo());
-      var testRepository = new CandidateRepository(mockClient);
-
-      testRepository.getCandidateAggregate(candidateIdentifier);
-
-      verify(mockClient, times(2)).query(any(QueryRequest.class));
-    }
-
-    @Test
-    void shouldGetPeriodsAndAllCandidateDataWithOnlyTwoRequests() {
-      var mockClient = spy(scenario.getLocalDynamo());
-      var testRepository = new CandidateRepository(mockClient);
-
-      testRepository.getCandidateAggregate(publicationId);
-
-      verify(mockClient, times(2)).query(any(QueryRequest.class));
-    }
-
-    @Test
-    void shouldReturnEmptyOptionalWhenCandidateDoesNotExist() {
-      var nonExistentCandidateId = randomUUID();
-      var response = candidateRepository.getCandidateAggregate(nonExistentCandidateId);
-
-      assertThat(response.candidateAggregate()).isEmpty();
-      assertThat(response.allPeriods()).isNotEmpty();
+      assertThat(third.getRevision()).isEqualTo(2L);
     }
   }
 
@@ -459,9 +421,59 @@ class ConcurrencyHandlingTests {
 
       var updateRequest = requestBuilder.withInstanceType(ACADEMIC_MONOGRAPH).build();
       var updatedCandidate = scenario.upsertCandidate(updateRequest);
-      assertThat(updatedCandidate.getRevisionRead())
-          .isEqualTo(originalCandidate.getRevisionRead() + 1);
+      assertThat(updatedCandidate.getRevision()).isEqualTo(originalCandidate.getRevision() + 1);
       assertThat(updatedCandidate.getApprovals().size()).isZero();
+    }
+
+    @Test
+    void shouldGetAllRelatedDataWithAggregateQuery() {
+      var response = candidateService.findAggregate(candidateIdentifier);
+
+      var periods = response.allPeriods();
+      var aggregate = response.candidate().orElseThrow();
+
+      assertThat(periods).hasSizeGreaterThanOrEqualTo(2);
+      assertThat(aggregate.getIdentifier()).isEqualTo(candidateIdentifier);
+      assertThat(aggregate.getApprovals()).hasSize(2);
+      assertThat(aggregate.getNotes()).hasSize(3);
+    }
+
+    @Test
+    void shouldUseTwoRequestsToGetCandidateByIdentifierWithPeriods() {
+      var mockClient = spy(scenario.getLocalDynamo());
+      var testService =
+          new CandidateService(
+              getGlobalEnvironment(),
+              new PeriodRepository(mockClient),
+              new CandidateRepository(mockClient));
+
+      testService.findAggregate(candidateIdentifier);
+
+      verify(mockClient, times(1)).queryPaginator(any(QueryRequest.class));
+      verify(mockClient, times(1)).query(any(QueryRequest.class));
+    }
+
+    @Test
+    void shouldUseThreeRequestsToGetCandidateByPublicationIdWithPeriods() {
+      var mockClient = spy(scenario.getLocalDynamo());
+      var testService =
+          new CandidateService(
+              getGlobalEnvironment(),
+              new PeriodRepository(mockClient),
+              new CandidateRepository(mockClient));
+
+      testService.findAggregateByPublicationId(publicationId);
+
+      verify(mockClient, times(2)).queryPaginator(any(QueryRequest.class));
+      verify(mockClient, times(1)).query(any(QueryRequest.class));
+    }
+
+    @Test
+    void shouldReturnEmptyOptionalWhenCandidateDoesNotExist() {
+      var response = candidateService.findAggregate(randomUUID());
+
+      assertThat(response.candidate()).isEmpty();
+      assertThat(response.allPeriods()).isNotEmpty();
     }
   }
 
