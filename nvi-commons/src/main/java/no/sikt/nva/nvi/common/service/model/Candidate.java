@@ -277,6 +277,7 @@ public final class Candidate {
     return pointCalculation.channel();
   }
 
+  // FIXME: Move to service layer
   public void updateApprovalAssignee(UpdateAssigneeRequest input) {
     validateCandidateState();
     if (!approvals.containsKey(input.institutionId())) {
@@ -287,6 +288,7 @@ public final class Candidate {
     approval.updateAssignee(repository, toDao(), input);
   }
 
+  // FIXME: Move to service layer
   public void updateApprovalStatus(UpdateStatusRequest input, UserInstance userInstance) {
     validateUpdateStatusRequest(input);
     validateCandidateState();

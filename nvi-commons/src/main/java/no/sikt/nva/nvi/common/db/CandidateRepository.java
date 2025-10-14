@@ -9,8 +9,6 @@ import static java.util.stream.Collectors.toMap;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_PUBLICATION_ID;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_YEAR;
 import static no.sikt.nva.nvi.common.DatabaseConstants.VERSION_FIELD;
-import static no.sikt.nva.nvi.common.db.PeriodRepository.getPeriods;
-import static no.sikt.nva.nvi.common.db.PeriodRepository.getPeriodsRequest;
 import static no.sikt.nva.nvi.common.utils.ApplicationConstants.NVI_TABLE_NAME;
 import static no.sikt.nva.nvi.common.utils.Validator.hasElements;
 import static software.amazon.awssdk.enhanced.dynamodb.TableSchema.fromImmutableClass;
@@ -32,9 +30,7 @@ import no.sikt.nva.nvi.common.DatabaseConstants;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.NoteDao.DbNote;
-import no.sikt.nva.nvi.common.db.model.CandidateAggregate;
 import no.sikt.nva.nvi.common.db.model.KeyField;
-import no.sikt.nva.nvi.common.db.model.ResponseContext;
 import no.sikt.nva.nvi.common.exceptions.TransactionException;
 import no.sikt.nva.nvi.common.model.ListingResult;
 import org.slf4j.Logger;
@@ -152,14 +148,6 @@ public class CandidateRepository extends DynamoRepository {
     return candidateTable.getItem(candidate);
   }
 
-  // FIXME: Remove this
-  public void updateCandidate(CandidateDao candidateDao) {
-    LOGGER.info("Updating candidate {}", candidateDao.identifier());
-    var transaction = TransactWriteItemsEnhancedRequest.builder();
-    var updatedCandidate = mutateDaoVersion(candidateDao);
-    transaction.addPutItem(candidateTable, updatedCandidate);
-    sendTransaction(transaction.build());
-  }
 
   public void updateCandidateAndApprovals(
       CandidateDao candidateDao,
@@ -282,42 +270,6 @@ public class CandidateRepository extends DynamoRepository {
   public void deleteNote(UUID candidateIdentifier, UUID noteIdentifier) {
     LOGGER.info("Deleting note: candidateId={}, noteId={}, ", candidateIdentifier, noteIdentifier);
     noteTable.deleteItem(noteKey(candidateIdentifier, noteIdentifier));
-  }
-
-  public ResponseContext getCandidateAggregate(URI publicationId) {
-    LOGGER.info("Fetching candidate and related data for publicationId={}", publicationId);
-    var optionalCandidate = findByPublicationId(publicationId);
-    if (optionalCandidate.isEmpty()) {
-      // Return ResponseContext with empty candidate but with all periods
-      var allPeriods = getPeriods(periodTable);
-      return new ResponseContext(Optional.empty(), allPeriods);
-    }
-    return getCandidateAggregate(optionalCandidate.get().identifier());
-  }
-
-  // TODO: Make this just return the CandidateAggregate
-  // TODO: Make the ResponseContext/Aggregate classes use domain model and not DAO
-  public ResponseContext getCandidateAggregate(UUID candidateId) {
-    LOGGER.info("Fetching candidate and related data for candidateId={}", candidateId);
-    var periodsQuery = executeAsync(getPeriodsRequest());
-    var candidateQuery = executeAsync(getCandidateAggregateRequest(candidateId));
-
-    var allItems =
-        candidateQuery
-            .thenCombine(periodsQuery, Stream::of)
-            .join()
-            .map(QueryResponse::items)
-            .flatMap(List::stream)
-            .map(this::mapToDao)
-            .toList();
-
-    var candidateAggregate = CandidateAggregate.fromQueryResponse(allItems);
-    var allPeriods =
-        allItems.stream()
-            .filter(NviPeriodDao.class::isInstance)
-            .map(NviPeriodDao.class::cast)
-            .toList();
-    return new ResponseContext(candidateAggregate, allPeriods);
   }
 
   public CompletableFuture<List<Dao>> getCandidateAggregateAsync(UUID candidateId) {

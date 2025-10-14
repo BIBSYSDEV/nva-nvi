@@ -156,6 +156,28 @@ public class CandidateService {
     return findAggregate(optionalCandidate.get().identifier());
   }
 
+  //    public void createNote(CreateNoteRequest input) {
+  //        validateCandidateState();
+  //        var note = Note.fromRequest(input, identifier, repository);
+  //        notes.put(note.getNoteId(), note);
+  //        setUserAsAssigneeIfApprovalIsUnassigned(input.username(), input.institutionId());
+  //        return this;
+  //    }
+  //
+  //    // FIXME: Move to service layer
+  //    public void deleteNote(DeleteNoteRequest request) {
+  //        validateCandidateState();
+  //        var note = notes.get(request.noteId());
+  //        note.validateOwner(request.username());
+  //        notes.computeIfPresent(
+  //          request.noteId(),
+  //          (uuid, noteBO) -> {
+  //              noteBO.delete();
+  //              return null;
+  //          });
+  //        return this;
+  //    }
+
   private CandidateContext findAggregate(UUID candidateIdentifier) {
     LOGGER.info("Fetching candidate and periods by identifier {}", candidateIdentifier);
 

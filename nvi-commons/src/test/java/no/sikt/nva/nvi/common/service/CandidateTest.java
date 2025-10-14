@@ -416,13 +416,24 @@ class CandidateTest extends CandidateTestSetup {
     var candidate = setupRandomApplicableCandidate(scenario);
     var dao = candidateRepository.findCandidateById(candidate.getIdentifier()).orElseThrow();
 
-    candidateRepository.updateCandidate(dao);
+    candidateService.update(candidate);
 
-    var updatedCandidate = candidateService.getByIdentifier(candidate.getIdentifier());
     var updatedDao = candidateRepository.findCandidateById(candidate.getIdentifier()).orElseThrow();
 
-    assertEquals(candidate, updatedCandidate);
+    assertEquals(dao.identifier(), updatedDao.identifier());
     assertNotEquals(dao.version(), updatedDao.version());
+  }
+
+  @Test
+  void shouldUpdateRevision() {
+    var candidate = setupRandomApplicableCandidate(scenario);
+
+    candidateService.update(candidate);
+
+    var updatedCandidate = candidateService.getByIdentifier(candidate.getIdentifier());
+
+    assertEquals(candidate, updatedCandidate);
+    assertNotEquals(candidate.getRevision(), updatedCandidate.getRevision());
   }
 
   @Test

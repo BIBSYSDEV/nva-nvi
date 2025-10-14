@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.common.db;
 
-import static java.util.Collections.emptyList;
 import static no.sikt.nva.nvi.common.LocalDynamoTestSetup.scanDB;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidateBuilder;
@@ -13,17 +12,12 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
-import java.net.URI;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import no.sikt.nva.nvi.common.TestScenario;
-import no.sikt.nva.nvi.common.db.model.ResponseContext;
 import no.sikt.nva.nvi.common.exceptions.TransactionException;
 import no.sikt.nva.nvi.common.model.InstanceType;
 import no.sikt.nva.nvi.common.service.CandidateService;
@@ -81,11 +75,7 @@ class CandidateRepositoryTest {
   @Test
   void shouldThrowTransactionExceptionWhenFailingOnSendingTransaction() {
     var client = mock(DynamoDbClient.class);
-    var failingRepository = spy(new CandidateRepository(client));
-
-    doReturn(new ResponseContext(Optional.empty(), emptyList()))
-        .when(failingRepository)
-        .getCandidateAggregate((URI) any());
+    var failingRepository = new CandidateRepository(client);
 
     when(client.transactWriteItems((TransactWriteItemsRequest) any()))
         .thenThrow(getTransactionCanceledException());
