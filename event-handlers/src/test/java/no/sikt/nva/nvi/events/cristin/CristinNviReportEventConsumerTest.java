@@ -285,7 +285,7 @@ class CristinNviReportEventConsumerTest {
         .isEqualTo(expectedCreators(cristinNviReport));
 
     assertThat(candidate.getApprovals().values())
-        .extracting(Approval::getStatus)
+        .extracting(Approval::status)
         .containsOnly(ApprovalStatus.APPROVED);
   }
 

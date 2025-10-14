@@ -131,10 +131,10 @@ class FetchReportStatusByPublicationIdHandlerTest {
     var organization2 = randomTopLevelOrganization();
     var request = createUpsertCandidateRequest(organization1, organization2).build();
     var candidate = scenario.upsertCandidate(request);
-    scenario.updateApprovalStatusDangerously(
-        candidate, ApprovalStatus.APPROVED, organization1.id());
-    scenario.updateApprovalStatusDangerously(
-        candidate, ApprovalStatus.APPROVED, organization2.id());
+    scenario.updateApprovalStatus(
+        candidate.getIdentifier(), ApprovalStatus.APPROVED, organization1.id());
+    scenario.updateApprovalStatus(
+        candidate.getIdentifier(), ApprovalStatus.APPROVED, organization2.id());
 
     handler.handleRequest(createRequest(candidate.getPublicationId()), output, context);
 
@@ -156,10 +156,10 @@ class FetchReportStatusByPublicationIdHandlerTest {
     var organization2 = randomTopLevelOrganization();
     var request = createUpsertCandidateRequest(organization1, organization2).build();
     var candidate = scenario.upsertCandidate(request);
-    scenario.updateApprovalStatusDangerously(
-        candidate, ApprovalStatus.REJECTED, organization1.id());
-    scenario.updateApprovalStatusDangerously(
-        candidate, ApprovalStatus.REJECTED, organization2.id());
+    scenario.updateApprovalStatus(
+        candidate.getIdentifier(), ApprovalStatus.REJECTED, organization1.id());
+    scenario.updateApprovalStatus(
+        candidate.getIdentifier(), ApprovalStatus.REJECTED, organization2.id());
 
     handler.handleRequest(createRequest(candidate.getPublicationId()), output, context);
 

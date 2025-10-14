@@ -149,17 +149,10 @@ public class TestScenario {
     return getCandidateByPublicationId(request.publicationId());
   }
 
-  public void updateApprovalStatusDangerously(
-      Candidate candidate, ApprovalStatus status, URI topLevelOrganizationId) {
-    var updateRequest = createUpdateStatusRequest(status, topLevelOrganizationId, randomString());
-    var userInstance = createCuratorUserInstance(topLevelOrganizationId);
-    candidate.updateApprovalStatus(updateRequest, userInstance);
-  }
-
   public Candidate updateApprovalStatus(
       UUID candidateIdentifier, UpdateStatusRequest updateRequest, UserInstance userInstance) {
     var candidate = getCandidateByIdentifier(candidateIdentifier);
-    candidate.updateApprovalStatus(updateRequest, userInstance);
+    candidateService.updateApprovalStatus(candidate, updateRequest, userInstance);
     return getCandidateByIdentifier(candidate.getIdentifier());
   }
 
@@ -168,21 +161,21 @@ public class TestScenario {
     var candidate = getCandidateByIdentifier(candidateIdentifier);
     var updateRequest = createUpdateStatusRequest(status, topLevelOrganizationId, randomString());
     var userInstance = createCuratorUserInstance(topLevelOrganizationId);
-    candidate.updateApprovalStatus(updateRequest, userInstance);
+    candidateService.updateApprovalStatus(candidate, updateRequest, userInstance);
     return getCandidateByIdentifier(candidate.getIdentifier());
   }
 
   public Candidate updateApprovalAssignee(
       UUID candidateIdentifier, UpdateAssigneeRequest updateRequest) {
     var candidate = getCandidateByIdentifier(candidateIdentifier);
-    candidate.updateApprovalAssignee(updateRequest);
+    candidateService.updateApprovalAssignee(candidate, updateRequest);
     return getCandidateByIdentifier(candidate.getIdentifier());
   }
 
   public void createNote(UUID candidateIdentifier, String content, URI topLevelOrganizationId) {
     var candidate = getCandidateByIdentifier(candidateIdentifier);
     var noteRequest = new CreateNoteRequest(content, randomString(), topLevelOrganizationId);
-    candidate.createNote(noteRequest);
+    candidateService.createNote(candidate, noteRequest);
   }
 
   public URI setupExpandedPublicationInS3(SampleExpandedPublication publication) {

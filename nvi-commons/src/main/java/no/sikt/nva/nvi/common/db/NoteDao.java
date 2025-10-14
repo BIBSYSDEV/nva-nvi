@@ -14,6 +14,7 @@ import no.sikt.nva.nvi.common.db.NoteDao.Builder;
 import no.sikt.nva.nvi.common.db.model.Username;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbIgnore;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmutable;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
@@ -49,6 +50,11 @@ public final class NoteDao extends Dao {
 
   public static Builder builder() {
     return new Builder();
+  }
+
+  @DynamoDbIgnore
+  public Builder copy() {
+    return new Builder().identifier(identifier).note(note).version(version);
   }
 
   @Override

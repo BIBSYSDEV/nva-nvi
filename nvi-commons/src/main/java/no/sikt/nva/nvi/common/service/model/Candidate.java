@@ -6,7 +6,7 @@ import static java.util.Objects.nonNull;
 import static java.util.UUID.randomUUID;
 import static java.util.function.Predicate.not;
 import static no.sikt.nva.nvi.common.db.ReportStatus.REPORTED;
-import static no.sikt.nva.nvi.common.service.model.Approval.validateUpdateStatusRequest;
+import static no.sikt.nva.nvi.common.service.model.Approval.createNewApproval;
 import static no.sikt.nva.nvi.common.service.model.ApprovalStatus.APPROVED;
 import static no.sikt.nva.nvi.common.service.model.ApprovalStatus.PENDING;
 import static no.sikt.nva.nvi.common.service.model.ApprovalStatus.REJECTED;
@@ -33,11 +33,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
-import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
-import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbCreatorType;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
@@ -49,17 +46,14 @@ import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.model.InstanceType;
 import no.sikt.nva.nvi.common.model.PointCalculation;
 import no.sikt.nva.nvi.common.model.PublicationChannel;
+import no.sikt.nva.nvi.common.model.UpdateApprovalRequest;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
-import no.sikt.nva.nvi.common.model.UserInstance;
-import no.sikt.nva.nvi.common.permissions.CandidatePermissions;
-import no.sikt.nva.nvi.common.service.dto.CandidateOperation;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException;
 import no.sikt.nva.nvi.common.service.requests.CreateNoteRequest;
 import no.sikt.nva.nvi.common.service.requests.DeleteNoteRequest;
-import nva.commons.apigateway.exceptions.UnauthorizedException;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.paths.UriWrapper;
@@ -133,7 +127,7 @@ public final class Candidate {
     this.identifier = candidateDao.identifier();
     this.applicable = dbCandidate.applicable();
     this.approvals = mapToApprovalsMap(approvals);
-    this.notes = mapToNotesMap(repository, notes);
+    this.notes = mapToNotesMap(notes);
     this.period = period;
     this.pointCalculation = PointCalculation.from(candidateDao);
     this.publicationDetails = PublicationDetails.from(candidateDao);
@@ -141,6 +135,30 @@ public final class Candidate {
     this.modifiedDate = dbCandidate.modifiedDate();
     this.reportStatus = dbCandidate.reportStatus();
     this.revision = candidateDao.revision();
+  }
+
+  public static Candidate fromRequest(
+      UUID identifier,
+      UpsertNviCandidateRequest request,
+      PeriodStatus period,
+      CandidateRepository candidateRepository) {
+    var approvals =
+        request.pointCalculation().institutionPoints().stream()
+            .map(InstitutionPoints::institutionId)
+            .map(institutionId -> createNewApproval(identifier, institutionId))
+            .collect(Collectors.toMap(Approval::institutionId, Function.identity()));
+
+    return new Builder()
+        .withRepository(candidateRepository)
+        .withIdentifier(identifier)
+        .withApplicable(request.isApplicable())
+        .withApprovals(approvals)
+        .withPeriod(period)
+        .withModifiedDate(Instant.now())
+        .withCreatedDate(Instant.now())
+        .withPointCalculation(PointCalculation.from(request))
+        .withPublicationDetails(PublicationDetails.from(request))
+        .build();
   }
 
   public static String getJsonLdContext() {
@@ -218,7 +236,7 @@ public final class Candidate {
 
   public ApprovalStatus getApprovalStatus(URI organizationId) {
     var approval = approvals.get(organizationId);
-    return nonNull(approval) ? approval.getStatus() : ApprovalStatus.NONE;
+    return nonNull(approval) ? approval.status() : ApprovalStatus.NONE;
   }
 
   public BigDecimal getBasePoints() {
@@ -277,81 +295,45 @@ public final class Candidate {
     return pointCalculation.channel();
   }
 
-  // FIXME: Move to service layer
-  public void updateApprovalAssignee(UpdateAssigneeRequest input) {
+  public Approval updateApprovalAssignee(UpdateAssigneeRequest request) {
     validateCandidateState();
-    if (!approvals.containsKey(input.institutionId())) {
-      LOGGER.error("No approval found matching UpdateAssigneeRequest: {}", input);
-      throw new IllegalCandidateUpdateException("No approval found matching UpdateAssigneeRequest");
-    }
-    var approval = approvals.get(input.institutionId());
-    approval.updateAssignee(repository, toDao(), input);
+    var updatedApproval = getApproval(request).withAssignee(request);
+    approvals.put(request.institutionId(), updatedApproval);
+    return updatedApproval;
   }
 
-  // FIXME: Move to service layer
-  public void updateApprovalStatus(UpdateStatusRequest input, UserInstance userInstance) {
-    validateUpdateStatusRequest(input);
+  public Approval updateApprovalStatus(UpdateStatusRequest request) {
     validateCandidateState();
-
-    var currentState = getApprovalStatus(input.institutionId());
-    var newState = input.approvalStatus();
-
-    if (currentState.equals(newState)) {
-      LOGGER.warn(
-          "Approval status update attempted with no change: candidateId={}, request={},"
-              + " userInstance={}",
-          identifier,
-          input,
-          userInstance);
-      return;
-    }
-
-    LOGGER.info(
-        "Updating approval status: candidateId={}, organizationId={}, oldStatus={}, newStatus={},"
-            + " username={}",
-        identifier,
-        input.institutionId(),
-        currentState,
-        newState,
-        input.username());
-
-    var permissions = new CandidatePermissions(this, userInstance);
-    var attemptedOperation = CandidateOperation.fromApprovalStatus(input.approvalStatus());
-    try {
-      permissions.validateAuthorization(attemptedOperation);
-    } catch (UnauthorizedException e) {
-      throw new IllegalStateException("Cannot update approval status");
-    }
-
-    if (!approvals.containsKey(input.institutionId())) {
-      LOGGER.error("No approval found matching UpdateStatusRequest: {}", input);
-      throw new IllegalCandidateUpdateException("No approval found matching UpdateStatusRequest");
-    }
-    var approval = approvals.get(input.institutionId());
-    approval.updateStatus(repository, toDao(), input);
+    var currentApproval = getApproval(request);
+    return currentApproval.withStatus(request);
   }
 
-  // FIXME: Move to service layer
-  public Candidate createNote(CreateNoteRequest input) {
-    validateCandidateState();
-    var note = Note.fromRequest(input, identifier, repository);
-    notes.put(note.getNoteId(), note);
-    setUserAsAssigneeIfApprovalIsUnassigned(input.username(), input.institutionId());
-    return this;
+  private Approval getApproval(UpdateApprovalRequest request) {
+    var approval = approvals.get(request.institutionId());
+    if (isNull(approval)) {
+      LOGGER.error("No approval found matching request: {}", request);
+      throw new IllegalCandidateUpdateException("No approval found matching request");
+    }
+    return approval;
   }
 
-  // FIXME: Move to service layer
-  public Candidate deleteNote(DeleteNoteRequest request) {
+  public NoteCreationResult createNote(CreateNoteRequest input) {
+    validateCandidateState();
+    var note = Note.fromRequest(input, identifier);
+    notes.put(note.noteIdentifier(), note);
+
+    var updatedApproval = assignUserToApprovalIfUnassigned(input.username(), input.institutionId());
+
+    return new NoteCreationResult(note, updatedApproval);
+  }
+
+  public Note deleteNote(DeleteNoteRequest request) {
     validateCandidateState();
     var note = notes.get(request.noteId());
     note.validateOwner(request.username());
-    notes.computeIfPresent(
-        request.noteId(),
-        (uuid, noteBO) -> {
-          noteBO.delete();
-          return null;
-        });
-    return this;
+    notes.remove(request.noteId());
+
+    return note;
   }
 
   @Override
@@ -512,84 +494,36 @@ public final class Candidate {
     return !Objects.equals(newType, currentType);
   }
 
-  private static Map<UUID, Note> mapToNotesMap(
-      CandidateRepository repository, Collection<NoteDao> notes) {
+  private static Map<UUID, Note> mapToNotesMap(Collection<NoteDao> notes) {
     return notes.stream()
-        .map(dao -> new Note(repository, dao.identifier(), dao))
-        .collect(Collectors.toMap(Note::getNoteId, Function.identity()));
+        .map(Note::fromDao)
+        .collect(Collectors.toMap(Note::noteIdentifier, Function.identity()));
   }
 
   private static Map<URI, Approval> mapToApprovalsMap(Collection<ApprovalStatusDao> approvals) {
     return approvals.stream()
-        .map(dao -> new Approval(dao.identifier(), dao))
-        .collect(Collectors.toMap(Approval::getInstitutionId, Function.identity()));
+        .map(Approval::fromDao)
+        .collect(Collectors.toMap(Approval::institutionId, Function.identity()));
   }
 
-  public static List<ApprovalStatusDao> mapToResetApprovals(
-      Candidate candidate, Collection<InstitutionPoints> institutionPoints) {
-    var resetApprovalDetails = mapToNewApprovalDetails(institutionPoints);
-    var newApprovals = new ArrayList<ApprovalStatusDao>();
-    for (var newStatus : resetApprovalDetails) {
-      var oldApproval = candidate.getApprovals().get(newStatus.institutionId());
-      var expectedRevision = isNull(oldApproval) ? null : oldApproval.getRevision();
-      var newApproval = new Approval(candidate.getIdentifier(), newStatus, expectedRevision);
-      newApprovals.add(newApproval.toDao());
-    }
-    return newApprovals;
-  }
-
-  public static List<DbApprovalStatus> mapToNewApprovalDetails(
+  public List<Approval> createResetApprovalsForAllInstitutions(
       Collection<InstitutionPoints> institutionPoints) {
-    return institutionPoints.stream()
-        .map(InstitutionPoints::institutionId)
-        .map(Candidate::mapToNewApproval)
-        .toList();
-  }
-
-  private static DbApprovalStatus mapToNewApproval(URI institutionId) {
-    return DbApprovalStatus.builder().institutionId(institutionId).status(DbStatus.PENDING).build();
-  }
-
-  public static DbCandidate mapToCandidate(UpsertNviCandidateRequest request) {
-    var allCreators = mapToDbCreators(request.verifiedCreators(), request.unverifiedCreators());
-    var dbDetails = PublicationDetails.from(request).toDbPublication();
-    var dbPointCalculation = PointCalculation.from(request).toDbPointCalculation();
-    return DbCandidate.builder()
-        .publicationId(dbDetails.id())
-        .pointCalculation(dbPointCalculation)
-        .publicationDetails(dbDetails)
-        .publicationBucketUri(request.publicationBucketUri())
-        .publicationIdentifier(dbDetails.identifier())
-        .applicable(request.isApplicable())
-        .creators(allCreators)
-        .creatorShareCount(dbPointCalculation.creatorShareCount())
-        .channelId(dbPointCalculation.publicationChannel().id())
-        .channelType(dbPointCalculation.publicationChannel().channelType())
-        .level(DbLevel.parse(dbPointCalculation.publicationChannel().scientificValue()))
-        .instanceType(request.pointCalculation().instanceType().getValue())
-        .publicationDate(dbDetails.publicationDate())
-        .internationalCollaboration(dbPointCalculation.internationalCollaboration())
-        .collaborationFactor(dbPointCalculation.collaborationFactor())
-        .basePoints(dbPointCalculation.basePoints())
-        .points(dbPointCalculation.institutionPoints())
-        .totalPoints(dbPointCalculation.totalPoints())
-        .createdDate(Instant.now())
-        .modifiedDate(Instant.now())
-        .build();
+    var oldApprovals = getApprovals();
+    var resetApprovals = new ArrayList<Approval>();
+    for (var institutionPoint : institutionPoints) {
+      var organizationId = institutionPoint.institutionId();
+      var currentApproval = oldApprovals.get(organizationId);
+      var newApproval =
+          isNull(currentApproval)
+              ? createNewApproval(identifier, organizationId)
+              : currentApproval.resetApproval();
+      resetApprovals.add(newApproval);
+    }
+    return resetApprovals;
   }
 
   private static List<DbInstitutionPoints> mapToPoints(List<InstitutionPoints> points) {
     return points.stream().map(DbInstitutionPoints::from).toList();
-  }
-
-  private static List<DbCreatorType> mapToDbCreators(
-      Collection<VerifiedNviCreatorDto> verifiedNviCreators,
-      Collection<UnverifiedNviCreatorDto> unverifiedNviCreators) {
-    var verifiedCreators = verifiedNviCreators.stream().map(VerifiedNviCreatorDto::toDao);
-    var unverifiedCreators = unverifiedNviCreators.stream().map(UnverifiedNviCreatorDto::toDao);
-    return Stream.concat(verifiedCreators, unverifiedCreators)
-        .map(DbCreatorType.class::cast)
-        .toList();
   }
 
   private Set<URI> getVerifiedNviCreatorIds() {
@@ -657,34 +591,37 @@ public final class Candidate {
         .build();
   }
 
-  private void setUserAsAssigneeIfApprovalIsUnassigned(String username, URI institutionId) {
-    approvals.computeIfPresent(
-        institutionId, (uri, approval) -> updateAssigneeIfUnassigned(username, approval));
-  }
-
-  private Approval updateAssigneeIfUnassigned(String username, Approval approval) {
-    return approval.isAssigned()
-        ? approval
-        : approval.updateAssignee(
-            repository, toDao(), new UpdateAssigneeRequest(approval.getInstitutionId(), username));
+  /**
+   * Creates a copy of the approval with the user assigned, if the approval exists and is currently
+   * unassigned.
+   *
+   * @return Optional containing the updated approval, or empty if no update needed
+   */
+  private Optional<Approval> assignUserToApprovalIfUnassigned(String username, URI institutionId) {
+    var approval = approvals.get(institutionId);
+    if (isNull(approval) || approval.isAssigned()) {
+      return Optional.empty();
+    }
+    var updatedApproval = approval.withAssignee(new UpdateAssigneeRequest(institutionId, username));
+    return Optional.of(updatedApproval);
   }
 
   private boolean isDispute() {
-    var approvalStatuses = streamApprovals().map(Approval::getStatus).toList();
+    var approvalStatuses = streamApprovals().map(Approval::status).toList();
     return approvalStatuses.stream().anyMatch(APPROVED::equals)
         && approvalStatuses.stream().anyMatch(REJECTED::equals);
   }
 
   private boolean areAllApprovalsApproved() {
-    return streamApprovals().map(Approval::getStatus).allMatch(APPROVED::equals);
+    return streamApprovals().map(Approval::status).allMatch(APPROVED::equals);
   }
 
   private boolean areAllApprovalsPending() {
-    return streamApprovals().map(Approval::getStatus).allMatch(PENDING::equals);
+    return streamApprovals().map(Approval::status).allMatch(PENDING::equals);
   }
 
   private boolean areAnyApprovalsPending() {
-    return streamApprovals().anyMatch(approval -> PENDING.equals(approval.getStatus()));
+    return streamApprovals().anyMatch(approval -> PENDING.equals(approval.status()));
   }
 
   private Stream<Approval> streamApprovals() {

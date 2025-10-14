@@ -69,16 +69,16 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<UpsertAssigneeReque
       UpsertAssigneeRequest input, RequestInfo requestInfo, Context context)
       throws ApiGatewayException {
     var candidateIdentifier = UUID.fromString(requestInfo.getPathParameter(CANDIDATE_IDENTIFIER));
+    var user = UserInstance.fromRequestInfo(requestInfo);
+
     var institutionId = input.institutionId();
     var assignee = input.assignee();
-    var username = RequestUtil.getUsername(requestInfo);
-    var userInstance = UserInstance.fromRequestInfo(requestInfo);
     var updateRequest = new UpdateAssigneeRequest(institutionId, assignee);
 
     return attempt(() -> candidateService.getByIdentifier(candidateIdentifier))
-        .map(candidate -> validateViewingScope(viewingScopeValidator, username, candidate))
+        .map(candidate -> validateViewingScope(viewingScopeValidator, user.userName(), candidate))
         .map(candidate -> updateAndRefetch(candidate, updateRequest))
-        .map(candidate -> CandidateResponseFactory.create(candidate, userInstance))
+        .map(candidate -> CandidateResponseFactory.create(candidate, user))
         .orElseThrow(ExceptionMapper::map);
   }
 
@@ -88,7 +88,7 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<UpsertAssigneeReque
   }
 
   private Candidate updateAndRefetch(Candidate candidate, UpdateAssigneeRequest updateRequest) {
-    candidate.updateApprovalAssignee(updateRequest);
+    candidateService.updateApprovalAssignee(candidate, updateRequest);
     return candidateService.getByIdentifier(candidate.getIdentifier());
   }
 

@@ -10,6 +10,7 @@ import no.sikt.nva.nvi.common.model.UserInstance;
 import no.sikt.nva.nvi.common.service.CandidateResponseFactory;
 import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
+import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.requests.DeleteNoteRequest;
 import no.sikt.nva.nvi.common.utils.ExceptionMapper;
 import no.sikt.nva.nvi.common.utils.RequestUtil;
@@ -55,17 +56,21 @@ public class RemoveNoteHandler extends ApiGatewayHandler<Void, CandidateDto>
   @Override
   protected CandidateDto processInput(Void input, RequestInfo requestInfo, Context context)
       throws ApiGatewayException {
-    var username = RequestUtil.getUsername(requestInfo);
     var candidateIdentifier = UUID.fromString(requestInfo.getPathParameter(CANDIDATE_IDENTIFIER));
     var noteIdentifier = UUID.fromString(requestInfo.getPathParameter(PARAM_NOTE_IDENTIFIER));
-    var userInstance = UserInstance.fromRequestInfo(requestInfo);
+    var user = UserInstance.fromRequestInfo(requestInfo);
+    var deleteNoteRequest = new DeleteNoteRequest(noteIdentifier, user.userName().value());
+
     return attempt(() -> candidateService.getByIdentifier(candidateIdentifier))
-        .map(candidate -> validateViewingScope(viewingScopeValidator, username, candidate))
-        .map(
-            candidate ->
-                candidate.deleteNote(new DeleteNoteRequest(noteIdentifier, username.value())))
-        .map(candidate -> CandidateResponseFactory.create(candidate, userInstance))
+        .map(candidate -> validateViewingScope(viewingScopeValidator, user.userName(), candidate))
+        .map(candidate -> deleteNote(candidate, deleteNoteRequest))
+        .map(candidate -> CandidateResponseFactory.create(candidate, user))
         .orElseThrow(ExceptionMapper::map);
+  }
+
+  private Candidate deleteNote(Candidate candidate, DeleteNoteRequest request) {
+    candidateService.deleteNote(candidate, request);
+    return candidateService.getByIdentifier(candidate.getIdentifier());
   }
 
   @Override

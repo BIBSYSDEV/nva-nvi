@@ -331,7 +331,7 @@ public final class IndexDocumentTestUtils {
   private static no.sikt.nva.nvi.index.model.document.Approval toApproval(
       Approval approval, Candidate candidate, List<ContributorType> contributors) {
     return no.sikt.nva.nvi.index.model.document.Approval.builder()
-        .withInstitutionId(approval.getInstitutionId())
+        .withInstitutionId(approval.institutionId())
         .withApprovalStatus(getApprovalStatus(approval))
         .withAssignee(approval.getAssigneeUsername())
         .withPoints(getInstitutionPoints(approval, candidate))
@@ -343,7 +343,7 @@ public final class IndexDocumentTestUtils {
 
   private static InstitutionPoints getInstitutionPoints(Approval approval, Candidate candidate) {
     return candidate
-        .getInstitutionPoints(approval.getInstitutionId())
+        .getInstitutionPoints(approval.institutionId())
         .map(InstitutionPoints::from)
         .orElse(null);
   }
@@ -354,18 +354,18 @@ public final class IndexDocumentTestUtils {
         .filter(NviContributor.class::isInstance)
         .map(NviContributor.class::cast)
         .flatMap(
-            contributor -> contributor.getOrganizationsPartOf(approval.getInstitutionId()).stream())
+            contributor -> contributor.getOrganizationsPartOf(approval.institutionId()).stream())
         .collect(Collectors.toSet());
   }
 
   private static ApprovalStatus getApprovalStatus(Approval approval) {
     return isApprovalPendingAndUnassigned(approval)
         ? ApprovalStatus.NEW
-        : ApprovalStatus.parse(approval.getStatus().getValue());
+        : ApprovalStatus.parse(approval.status().getValue());
   }
 
   private static boolean isApprovalPendingAndUnassigned(Approval approval) {
-    return no.sikt.nva.nvi.common.service.model.ApprovalStatus.PENDING.equals(approval.getStatus())
+    return no.sikt.nva.nvi.common.service.model.ApprovalStatus.PENDING.equals(approval.status())
         && isNull(approval.getAssigneeUsername());
   }
 

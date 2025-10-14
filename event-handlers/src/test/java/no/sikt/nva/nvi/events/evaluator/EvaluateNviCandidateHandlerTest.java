@@ -1055,10 +1055,14 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
 
     private void setupCandidateMatchingPublication(
         SampleExpandedPublication sampleExpandedPublication) {
-      var year = sampleExpandedPublication.publicationDate().year();
+      var publicationDate =
+          new PublicationDateDto(
+              sampleExpandedPublication.publicationDate().year(),
+              sampleExpandedPublication.publicationDate().month(),
+              sampleExpandedPublication.publicationDate().day());
       var upsertCandidateRequest =
           randomUpsertRequestBuilder()
-              .withPublicationDate(new PublicationDateDto(year, null, null))
+              .withPublicationDate(publicationDate)
               .withPublicationId(sampleExpandedPublication.id())
               .build();
       candidateService.upsert(upsertCandidateRequest);

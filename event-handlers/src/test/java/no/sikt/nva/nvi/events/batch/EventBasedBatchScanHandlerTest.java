@@ -405,10 +405,16 @@ class EventBasedBatchScanHandlerTest {
   }
 
   private Stream<Candidate> createRandomCandidates(int i) {
-    return IntStream.range(0, i)
-        .boxed()
-        .map(item -> setupRandomApplicableCandidate(scenario))
-        .map(a -> a.createNote(new CreateNoteRequest(randomString(), randomString(), randomUri())));
+    var candidates =
+        IntStream.range(0, i)
+            .boxed()
+            .map(item -> setupRandomApplicableCandidate(scenario))
+            .toList();
+    for (var candidate : candidates) {
+      var note = new CreateNoteRequest(randomString(), randomString(), randomUri());
+      candidateService.createNote(candidate, note);
+    }
+    return candidates.stream();
   }
 
   private InputStream eventToInputStream(ScanDatabaseRequest scanDatabaseRequest) {

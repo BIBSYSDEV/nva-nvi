@@ -60,7 +60,7 @@ public final class CandidateResponseFactory {
   private static Function<Approval, ApprovalDto> mapToApprovalDto(Candidate candidate) {
     return approval ->
         ApprovalDto.fromApprovalAndInstitutionPoints(
-            approval, candidate.getPointValueForInstitution(approval.getInstitutionId()));
+            approval, candidate.getPointValueForInstitution(approval.institutionId()));
   }
 
   private static String getReportStatus(Candidate candidate) {

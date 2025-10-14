@@ -121,9 +121,9 @@ class MigrationTests {
   }
 
   private Candidate setupCandidateWithApprovalAndNotes() {
-    var candidate =
-        setupRandomApplicableCandidate(scenario)
-            .createNote(createNoteRequest(randomString(), randomString()));
+    var candidate = setupRandomApplicableCandidate(scenario);
+    var note = createNoteRequest(randomString(), randomString());
+    candidateService.createNote(candidate, note);
     var curatorOrganization = getInstitutionId(candidate);
     var userInstance = createCuratorUserInstance(curatorOrganization);
 

@@ -290,14 +290,14 @@ class ConcurrencyHandlingTests {
 
       var user = createCuratorUserInstance(ORGANIZATION_1);
       var firstUpdate = createUpdateStatusRequest(ApprovalStatus.APPROVED, user);
-      var secondUpdate = createUpdateStatusRequest(ApprovalStatus.APPROVED, user);
+      var secondUpdate = createUpdateStatusRequest(ApprovalStatus.REJECTED, user);
 
       assertThatNoException()
           .isThrownBy(
               () -> {
-                readCandidate1.updateApprovalStatus(firstUpdate, user);
+                candidateService.updateApprovalStatus(readCandidate1, firstUpdate, user);
                 var readCandidate2 = scenario.getCandidateByIdentifier(candidateIdentifier);
-                readCandidate2.updateApprovalStatus(secondUpdate, user);
+                candidateService.updateApprovalStatus(readCandidate2, secondUpdate, user);
               });
     }
 
@@ -315,8 +315,8 @@ class ConcurrencyHandlingTests {
       assertThatNoException()
           .isThrownBy(
               () -> {
-                candidate.updateApprovalStatus(firstUpdate, firstUser);
-                candidate.updateApprovalStatus(secondUpdate, secondUser);
+                candidateService.updateApprovalStatus(candidate, firstUpdate, firstUser);
+                candidateService.updateApprovalStatus(candidate, secondUpdate, secondUser);
               });
     }
 
@@ -332,9 +332,10 @@ class ConcurrencyHandlingTests {
       var secondUpdate = createUpdateStatusRequest(ApprovalStatus.APPROVED, secondUser);
 
       assertThatNoException()
-          .isThrownBy(() -> candidate.updateApprovalStatus(firstUpdate, firstUser));
+          .isThrownBy(
+              () -> candidateService.updateApprovalStatus(candidate, firstUpdate, firstUser));
       assertThrowsConcurrencyException(
-          () -> candidate.updateApprovalStatus(secondUpdate, secondUser));
+          () -> candidateService.updateApprovalStatus(candidate, secondUpdate, secondUser));
     }
 
     @Test
@@ -345,8 +346,10 @@ class ConcurrencyHandlingTests {
               candidateIdentifier, ApprovalStatus.PENDING, ORGANIZATION_1);
       var updateRequest = createUpdateStatusRequest(ApprovalStatus.APPROVED, user);
 
-      assertThatNoException().isThrownBy(() -> candidate.updateApprovalStatus(updateRequest, user));
-      assertThrowsConcurrencyException(() -> candidate.updateApprovalStatus(updateRequest, user));
+      assertThatNoException()
+          .isThrownBy(() -> candidateService.updateApprovalStatus(candidate, updateRequest, user));
+      assertThrowsConcurrencyException(
+          () -> candidateService.updateApprovalStatus(candidate, updateRequest, user));
     }
 
     @Test
@@ -360,7 +363,7 @@ class ConcurrencyHandlingTests {
       var updateRequest = createUpdateStatusRequest(newStatus, user);
 
       assertThrowsConcurrencyException(
-          () -> readCandidate.updateApprovalStatus(updateRequest, user));
+          () -> candidateService.updateApprovalStatus(readCandidate, updateRequest, user));
     }
 
     @Test
@@ -374,7 +377,8 @@ class ConcurrencyHandlingTests {
       var updateRequest = createUpdateStatusRequest(newStatus, user);
 
       assertThatNoException()
-          .isThrownBy(() -> legacyCandidate.updateApprovalStatus(updateRequest, user));
+          .isThrownBy(
+              () -> candidateService.updateApprovalStatus(legacyCandidate, updateRequest, user));
     }
 
     @Disabled

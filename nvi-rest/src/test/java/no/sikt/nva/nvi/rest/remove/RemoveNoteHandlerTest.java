@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.rest.remove;
 
+import static no.sikt.nva.nvi.common.RequestFixtures.randomNoteRequest;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeriod;
 import static no.sikt.nva.nvi.common.db.UsernameFixtures.randomUsername;
 import static no.sikt.nva.nvi.common.dto.AllowedOperationFixtures.CURATOR_CAN_FINALIZE_APPROVAL;
@@ -8,7 +9,6 @@ import static no.sikt.nva.nvi.rest.remove.RemoveNoteHandler.PARAM_NOTE_IDENTIFIE
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
-import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -117,9 +117,8 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldReturnConflictWhenRemovingNoteAndReportingPeriodIsClosed() throws IOException {
-    var candidate = setupValidCandidate();
+    var candidate = createCandidateWithNote();
     var user = randomString();
-    candidate.createNote(new CreateNoteRequest(randomString(), user, randomUri()));
     var noteId = getIdOfFirstNote(candidate);
     var request = createRequest(candidate.getIdentifier(), noteId, user).build();
     setupClosedPeriod(scenario, CURRENT_YEAR);
@@ -144,9 +143,18 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
         actualAllowedOperations, containsInAnyOrder(CURATOR_CAN_FINALIZE_APPROVAL.toArray()));
   }
 
+  private Candidate createCandidateWithNote() {
+    var candidateService = scenario.getCandidateService();
+    var candidate = setupValidCandidate();
+    candidateService.createNote(candidate, randomNoteRequest());
+    return candidateService.getByIdentifier(candidate.getIdentifier());
+  }
+
   private Candidate createNote(Candidate candidate, Username user) {
-    return candidate.createNote(
-        new CreateNoteRequest(randomString(), user.value(), topLevelOrganizationId));
+    var candidateService = scenario.getCandidateService();
+    var noteRequest = new CreateNoteRequest(randomString(), user.value(), topLevelOrganizationId);
+    candidateService.createNote(candidate, noteRequest);
+    return candidateService.getByIdentifier(candidate.getIdentifier());
   }
 
   private HandlerRequestBuilder<NviNoteRequest> createRequest(
@@ -161,6 +169,6 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
     return candidateWithNote.getNotes().values().stream()
         .findFirst()
         .orElseThrow(() -> new IllegalStateException("Candidate has no notes"))
-        .getNoteId();
+        .noteIdentifier();
   }
 }

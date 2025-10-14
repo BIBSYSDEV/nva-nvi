@@ -132,7 +132,7 @@ class UpsertNviCandidateHandlerTest {
         .allSatisfy(
             (id, approval) -> {
               Assertions.assertThat(approval)
-                  .extracting(Approval::getInstitutionId, Approval::getStatus)
+                  .extracting(Approval::institutionId, Approval::status)
                   .contains(id, ApprovalStatus.PENDING);
             });
   }

@@ -118,7 +118,7 @@ public final class NviCandidateIndexDocumentGenerator {
   private static ApprovalStatus getApprovalStatus(Approval approval) {
     return approval.isPendingAndUnassigned()
         ? ApprovalStatus.NEW
-        : ApprovalStatus.parse(approval.getStatus().getValue());
+        : ApprovalStatus.parse(approval.status().getValue());
   }
 
   private static Set<URI> extractInvolvedOrganizations(
@@ -127,7 +127,7 @@ public final class NviCandidateIndexDocumentGenerator {
         .filter(NviContributor.class::isInstance)
         .map(NviContributor.class::cast)
         .flatMap(
-            contributor -> contributor.getOrganizationsPartOf(approval.getInstitutionId()).stream())
+            contributor -> contributor.getOrganizationsPartOf(approval.institutionId()).stream())
         .collect(Collectors.toSet());
   }
 
@@ -147,7 +147,7 @@ public final class NviCandidateIndexDocumentGenerator {
   private static Optional<Map<String, String>> extractLabels(
       Approval approval, JsonNode topLevelOrganizations) {
     return streamNode(topLevelOrganizations)
-        .filter(organization -> isOrgWithInstitutionId(organization, approval.getInstitutionId()))
+        .filter(organization -> isOrgWithInstitutionId(organization, approval.institutionId()))
         .findFirst()
         .map(org -> org.at(JSON_PTR_LABELS))
         .flatMap(NviCandidateIndexDocumentGenerator::readAsStringMap);
@@ -155,7 +155,7 @@ public final class NviCandidateIndexDocumentGenerator {
 
   private Map<String, String> extractLabels(Approval approval) {
     return extractLabelsFromExpandedResource(expandedResource, approval)
-        .orElse(fetchOrganization(approval.getInstitutionId()).labels());
+        .orElse(fetchOrganization(approval.institutionId()).labels());
   }
 
   private NviCandidateIndexDocument buildDocument(
@@ -183,7 +183,7 @@ public final class NviCandidateIndexDocumentGenerator {
 
   private InstitutionPoints getInstitutionPoints(Approval approval) {
     return candidate
-        .getInstitutionPoints(approval.getInstitutionId())
+        .getInstitutionPoints(approval.institutionId())
         .map(InstitutionPoints::from)
         .orElse(null);
   }
@@ -317,7 +317,7 @@ public final class NviCandidateIndexDocumentGenerator {
   private no.sikt.nva.nvi.index.model.document.Approval toApproval(
       Approval approval, List<ContributorType> expandedContributors) {
     return no.sikt.nva.nvi.index.model.document.Approval.builder()
-        .withInstitutionId(approval.getInstitutionId())
+        .withInstitutionId(approval.institutionId())
         .withLabels(extractLabels(approval))
         .withApprovalStatus(getApprovalStatus(approval))
         .withPoints(getInstitutionPoints(approval))

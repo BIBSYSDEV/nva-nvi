@@ -35,6 +35,11 @@ public enum ApprovalStatus {
   }
 
   @JsonIgnore
+  public boolean isFinalized() {
+    return APPROVED.equals(this) || REJECTED.equals(this);
+  }
+
+  @JsonIgnore
   public Set<ApprovalStatus> getValidTransitions() {
     return switch (this) {
       case APPROVED -> EnumSet.of(PENDING, REJECTED);

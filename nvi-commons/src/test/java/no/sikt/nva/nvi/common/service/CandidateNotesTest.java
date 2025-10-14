@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.common.service;
 
 import static no.sikt.nva.nvi.common.RequestFixtures.createNoteRequest;
+import static no.sikt.nva.nvi.common.RequestFixtures.randomNoteRequest;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.mockOrganizationResponseForAffiliation;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -28,7 +29,7 @@ class CandidateNotesTest extends CandidateTestSetup {
   void shouldCreateNoteWhenValidCreateNoteRequest() {
     var candidate = createCandidate();
     var noteRequest = createNoteRequest(randomString(), randomString());
-    candidate.createNote(noteRequest);
+    candidateService.createNote(candidate, noteRequest);
     var userOrganizationId = getAnyOrganizationId(candidate);
     mockOrganizationResponseForAffiliation(userOrganizationId, null, mockUriRetriever);
 
@@ -46,7 +47,8 @@ class CandidateNotesTest extends CandidateTestSetup {
     var candidate = createCandidate();
     var noteRequest = createNoteRequest(randomString(), null);
 
-    assertThrows(IllegalArgumentException.class, () -> candidate.createNote(noteRequest));
+    assertThrows(
+        IllegalArgumentException.class, () -> candidateService.createNote(candidate, noteRequest));
   }
 
   @Test
@@ -54,20 +56,20 @@ class CandidateNotesTest extends CandidateTestSetup {
     var candidate = createCandidate();
     var noteRequest = createNoteRequest(null, randomString());
 
-    assertThrows(IllegalArgumentException.class, () -> candidate.createNote(noteRequest));
+    assertThrows(
+        IllegalArgumentException.class, () -> candidateService.createNote(candidate, noteRequest));
   }
 
   @Test
   void shouldDeleteNoteWhenValidDeleteNoteRequest() {
-    var candidate = createCandidate();
-    var username = randomString();
-    var candidateWithNote =
-        candidate.createNote(new CreateNoteRequest(randomString(), username, randomUri()));
-    var userOrganizationId = getAnyOrganizationId(candidateWithNote);
+    var candidate = setupCandidateWithNote();
+
+    var userOrganizationId = getAnyOrganizationId(candidate);
     mockOrganizationResponseForAffiliation(userOrganizationId, null, mockUriRetriever);
 
     var noteToDelete = getAnyNote(candidate);
-    candidate.deleteNote(new DeleteNoteRequest(noteToDelete.identifier(), username));
+    var deleteRequest = new DeleteNoteRequest(noteToDelete.identifier(), noteToDelete.user());
+    candidateService.deleteNote(candidate, deleteRequest);
 
     var updatedCandidate = candidateService.getByIdentifier(candidate.getIdentifier());
     Assertions.assertThat(updatedCandidate.getNotes()).isEmpty();
@@ -75,18 +77,16 @@ class CandidateNotesTest extends CandidateTestSetup {
 
   @Test
   void shouldThrowUnauthorizedOperationExceptionWhenRequesterIsNotAnOwner() {
-    var candidate = createCandidate();
-    var candidateWithNote =
-        candidate.createNote(new CreateNoteRequest(randomString(), randomString(), randomUri()));
-    var userOrganizationId = getAnyOrganizationId(candidateWithNote);
+    var candidate = setupCandidateWithNote();
+    var userOrganizationId = getAnyOrganizationId(candidate);
     mockOrganizationResponseForAffiliation(userOrganizationId, null, mockUriRetriever);
 
     var noteToDelete = getAnyNote(candidate);
 
+    var deleteNoteRequest = new DeleteNoteRequest(noteToDelete.identifier(), randomString());
     assertThrows(
         UnauthorizedOperationException.class,
-        () ->
-            candidate.deleteNote(new DeleteNoteRequest(noteToDelete.identifier(), randomString())));
+        () -> candidateService.deleteNote(candidate, deleteNoteRequest));
   }
 
   @Test
@@ -95,7 +95,9 @@ class CandidateNotesTest extends CandidateTestSetup {
     var candidate = createCandidate(institutionId);
     var username = randomString();
     var noteRequest = new CreateNoteRequest(randomString(), username, institutionId);
-    var candidateWithNote = candidate.createNote(noteRequest);
+    candidateService.createNote(candidate, noteRequest);
+    var candidateWithNote = candidateService.getByIdentifier(candidate.getIdentifier());
+
     var actualAssignee = candidateWithNote.getApprovals().get(institutionId).getAssigneeUsername();
     assertEquals(username, actualAssignee);
   }
@@ -105,11 +107,12 @@ class CandidateNotesTest extends CandidateTestSetup {
     var institutionId = randomUri();
     var candidate = createCandidate(institutionId);
     var existingAssignee = randomString();
-    candidate.updateApprovalAssignee(new UpdateAssigneeRequest(institutionId, existingAssignee));
+    var updateAssigneeRequest = new UpdateAssigneeRequest(institutionId, existingAssignee);
+    candidateService.updateApprovalAssignee(candidate, updateAssigneeRequest);
 
     var candidateWithAssignee = scenario.getCandidateByIdentifier(candidate.getIdentifier());
     var noteRequest = new CreateNoteRequest(randomString(), randomString(), institutionId);
-    candidateWithAssignee.createNote(noteRequest);
+    candidateService.createNote(candidateWithAssignee, noteRequest);
 
     var candidateWithNote = scenario.getCandidateByIdentifier(candidate.getIdentifier());
     var actualAssignee = candidateWithNote.getApprovals().get(institutionId).getAssigneeUsername();
@@ -130,5 +133,11 @@ class CandidateNotesTest extends CandidateTestSetup {
         .findFirst()
         .orElseThrow(() -> new IllegalStateException("No notes found for candidate"))
         .toDto();
+  }
+
+  private Candidate setupCandidateWithNote() {
+    var candidate = createCandidate();
+    candidateService.createNote(candidate, randomNoteRequest());
+    return candidateService.getByIdentifier(candidate.getIdentifier());
   }
 }
