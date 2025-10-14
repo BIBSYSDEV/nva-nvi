@@ -130,10 +130,7 @@ public class TestScenario {
   public CandidateAggregate getAllRelatedData(UUID candidateIdentifier) {
     var candidateFuture = candidateRepository.getCandidateAggregateAsync(candidateIdentifier);
     try {
-      return candidateFuture
-          .thenApply(candidateItems -> CandidateAggregate.fromQueryResponse(candidateItems))
-          .get()
-          .orElseThrow();
+      return candidateFuture.thenApply(CandidateAggregate::fromQueryResponse).get().orElseThrow();
     } catch (Exception e) {
       throw new RuntimeException(e);
     }

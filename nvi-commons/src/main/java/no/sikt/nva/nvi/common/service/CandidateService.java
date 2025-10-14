@@ -184,11 +184,7 @@ public class CandidateService {
     var candidateFuture = candidateRepository.getCandidateAggregateAsync(candidateIdentifier);
     var periodsFuture = periodRepository.getPeriodsAsync();
 
-    return candidateFuture
-        .thenCombine(
-            periodsFuture,
-            (candidateItems, periods) -> mapToCandidateContext(candidateItems, periods))
-        .join();
+    return candidateFuture.thenCombine(periodsFuture, this::mapToCandidateContext).join();
   }
 
   private CandidateContext mapToCandidateContext(

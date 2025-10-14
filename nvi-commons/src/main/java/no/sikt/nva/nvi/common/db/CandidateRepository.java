@@ -148,7 +148,6 @@ public class CandidateRepository extends DynamoRepository {
     return candidateTable.getItem(candidate);
   }
 
-
   public void updateCandidateAndApprovals(
       CandidateDao candidateDao,
       Collection<ApprovalStatusDao> approvalsToUpdate,
