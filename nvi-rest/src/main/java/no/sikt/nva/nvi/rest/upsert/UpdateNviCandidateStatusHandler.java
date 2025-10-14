@@ -77,7 +77,7 @@ public class UpdateNviCandidateStatusHandler
   }
 
   private Candidate fetchCandidate(UUID candidateIdentifier) {
-    return candidateService.fetch(candidateIdentifier);
+    return candidateService.getByIdentifier(candidateIdentifier);
   }
 
   private Candidate updateAndRefetch(

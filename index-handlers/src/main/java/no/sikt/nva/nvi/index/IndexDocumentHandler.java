@@ -150,7 +150,7 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
   }
 
   private Candidate fetchCandidate(UUID candidateIdentifier) {
-    return attempt(() -> candidateService.fetch(candidateIdentifier))
+    return attempt(() -> candidateService.getByIdentifier(candidateIdentifier))
         .orElse(
             failure -> {
               handleFailure(

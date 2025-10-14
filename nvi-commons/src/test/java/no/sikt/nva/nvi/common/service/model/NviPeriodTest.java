@@ -37,7 +37,7 @@ class NviPeriodTest {
   void shouldCreateNviPeriod() {
     var request = createRequest(YEAR);
     var expectedId = constructExpectedId(request);
-    var actual = periodService.create(request);
+    var actual = createNviPeriod(request);
     assertEquals(expectedId, actual.id());
     assertThatRequestMatchesYear(request, actual);
   }
@@ -46,7 +46,7 @@ class NviPeriodTest {
   void shouldCreateNviPeriodForCurrentYear() {
     var request = createRequest(YEAR - 1);
     var expectedId = constructExpectedId(request);
-    var actual = periodService.create(request);
+    var actual = createNviPeriod(request);
     assertEquals(expectedId, actual.id());
     assertThatRequestMatchesYear(request, actual);
   }
@@ -72,9 +72,10 @@ class NviPeriodTest {
   @Test
   void shouldUpdateNviPeriod() {
     var originalRequest = createRequest(YEAR, nowPlusDays(1), nowPlusDays(2));
-    var originalPeriod = periodService.create(originalRequest);
+    var originalPeriod = createNviPeriod(originalRequest);
     var updatedRequest = updateRequest(YEAR, originalRequest.startDate(), nowPlusDays(3));
-    var updatedPeriod = periodService.update(updatedRequest);
+    periodService.update(updatedRequest);
+    var updatedPeriod = periodService.getByPublishingYear(String.valueOf(YEAR));
     assertNotEquals(updatedPeriod, originalPeriod);
     assertEquals(updatedRequest.modifiedBy(), updatedPeriod.modifiedBy());
   }
@@ -126,11 +127,16 @@ class NviPeriodTest {
   void shouldReturnDto() {
     var request = createRequest(YEAR);
     var expectedId = constructExpectedId(request);
-    var actual = periodService.create(request).toDto();
+    var actual = createNviPeriod(request).toDto();
     assertEquals(expectedId, actual.id());
     assertEquals(request.publishingYear().toString(), actual.publishingYear());
     assertEquals(request.startDate().toString(), actual.startDate());
     assertEquals(request.reportingDate().toString(), actual.reportingDate());
+  }
+
+  private NviPeriod createNviPeriod(CreatePeriodRequest request) {
+    periodService.create(request);
+    return periodService.getByPublishingYear(request.publishingYear().toString());
   }
 
   private static Instant nowPlusDays(int numberOfDays) {

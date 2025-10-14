@@ -28,8 +28,7 @@ public class NviPeriodService {
     this.periodRepository = periodRepository;
   }
 
-  // TODO: Make this return void?
-  public NviPeriod create(CreatePeriodRequest request) {
+  public void create(CreatePeriodRequest request) {
     LOGGER.info("Processing create period request {}", request);
     request.validate();
     var year = String.valueOf(request.publishingYear());
@@ -40,11 +39,9 @@ public class NviPeriodService {
     var updatedPeriod = createNewPeriodFromRequest(request).toDao();
     periodRepository.save(updatedPeriod);
     LOGGER.info("Created new period successfully");
-    return getByPublishingYear(year);
   }
 
-  // TODO: Make this return void?
-  public NviPeriod update(UpdatePeriodRequest request) {
+  public void update(UpdatePeriodRequest request) {
     LOGGER.info("Processing update period request {}", request);
     request.validate();
     var year = String.valueOf(request.publishingYear());
@@ -53,7 +50,6 @@ public class NviPeriodService {
     var updatedPeriod = currentPeriod.updateWithRequest(request).toDao();
     periodRepository.save(updatedPeriod);
     LOGGER.info("Updated period successfully");
-    return getByPublishingYear(year);
   }
 
   public Optional<NviPeriod> findByPublishingYear(String publishingYear) {

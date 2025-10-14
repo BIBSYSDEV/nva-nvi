@@ -59,7 +59,7 @@ public class EvaluatorService {
     logger.info("Evaluating publication with ID: {}", publication.id());
 
     // Get candidate aggregate (if it exists) and list of all periods
-    var candidateContext = candidateService.findAggregateByPublicationId(publication.id());
+    var candidateContext = candidateService.getCandidateContext(publication.id());
     var optionalCandidate = candidateContext.candidate();
 
     if (shouldSkipEvaluation(optionalCandidate, publication)) {

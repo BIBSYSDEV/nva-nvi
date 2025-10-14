@@ -55,7 +55,7 @@ public class PeriodRepository extends DynamoRepository {
 
   public CompletableFuture<List<NviPeriodDao>> getPeriodsAsync() {
     LOGGER.info("Getting all periods with async wrapper");
-    return CompletableFuture.supplyAsync(() -> getPeriods());
+    return CompletableFuture.supplyAsync(this::getPeriods);
   }
 
   // FIXME: Remove this

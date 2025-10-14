@@ -75,7 +75,7 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<UpsertAssigneeReque
     var userInstance = UserInstance.fromRequestInfo(requestInfo);
     var updateRequest = new UpdateAssigneeRequest(institutionId, assignee);
 
-    return attempt(() -> candidateService.fetch(candidateIdentifier))
+    return attempt(() -> candidateService.getByIdentifier(candidateIdentifier))
         .map(candidate -> validateViewingScope(viewingScopeValidator, username, candidate))
         .map(candidate -> updateAndRefetch(candidate, updateRequest))
         .map(candidate -> CandidateResponseFactory.create(candidate, userInstance))
@@ -89,7 +89,7 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<UpsertAssigneeReque
 
   private Candidate updateAndRefetch(Candidate candidate, UpdateAssigneeRequest updateRequest) {
     candidate.updateApprovalAssignee(updateRequest);
-    return candidateService.fetch(candidate.getIdentifier());
+    return candidateService.getByIdentifier(candidate.getIdentifier());
   }
 
   private static void hasSameCustomer(UpsertAssigneeRequest input, RequestInfo requestInfo)

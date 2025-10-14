@@ -32,7 +32,7 @@ class CandidateNotesTest extends CandidateTestSetup {
     var userOrganizationId = getAnyOrganizationId(candidate);
     mockOrganizationResponseForAffiliation(userOrganizationId, null, mockUriRetriever);
 
-    var updatedCandidate = candidateService.fetch(candidate.getIdentifier());
+    var updatedCandidate = candidateService.getByIdentifier(candidate.getIdentifier());
     var actualNote = getAnyNote(updatedCandidate);
 
     assertThat(noteRequest.username(), is(equalTo(actualNote.user())));
@@ -69,7 +69,7 @@ class CandidateNotesTest extends CandidateTestSetup {
     var noteToDelete = getAnyNote(candidate);
     candidate.deleteNote(new DeleteNoteRequest(noteToDelete.identifier(), username));
 
-    var updatedCandidate = candidateService.fetch(candidate.getIdentifier());
+    var updatedCandidate = candidateService.getByIdentifier(candidate.getIdentifier());
     Assertions.assertThat(updatedCandidate.getNotes()).isEmpty();
   }
 

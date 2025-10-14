@@ -9,7 +9,7 @@ import java.net.HttpURLConnection;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.dto.NviPeriodDto;
-import no.sikt.nva.nvi.common.service.model.NviPeriod;
+import no.sikt.nva.nvi.common.service.model.UpdatePeriodRequest;
 import no.sikt.nva.nvi.common.service.model.UpdatePeriodRequest.Builder;
 import no.sikt.nva.nvi.common.utils.ExceptionMapper;
 import no.sikt.nva.nvi.common.utils.RequestUtil;
@@ -50,9 +50,14 @@ public class UpdateNviPeriodHandler
     return attempt(input::toUpdatePeriodRequest)
         .map(builder -> builder.withModifiedBy(getUsername(requestInfo)))
         .map(Builder::build)
-        .map(periodService::update)
-        .map(NviPeriod::toDto)
+        .map(this::updateAndFetchPeriod)
         .orElseThrow(ExceptionMapper::map);
+  }
+
+  private NviPeriodDto updateAndFetchPeriod(UpdatePeriodRequest request) {
+    periodService.update(request);
+    var publishingYear = String.valueOf(request.publishingYear());
+    return periodService.getByPublishingYear(publishingYear).toDto();
   }
 
   @Override

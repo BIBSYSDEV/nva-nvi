@@ -142,7 +142,7 @@ class UpsertNviCandidateHandlerTest {
     var candidate = setupRandomApplicableCandidate(scenario);
     var eventMessage = nonCandidateMessageForExistingCandidate(candidate);
     handler.handleRequest(createEvent(eventMessage), CONTEXT);
-    var updatedCandidate = candidateService.fetch(candidate.getIdentifier());
+    var updatedCandidate = candidateService.getByIdentifier(candidate.getIdentifier());
     assertThat(updatedCandidate.isApplicable(), is(false));
   }
 
@@ -160,7 +160,7 @@ class UpsertNviCandidateHandlerTest {
 
     var sqsEvent = createEvent(keep, publicationId, generateS3BucketUri(identifier));
     handler.handleRequest(sqsEvent, CONTEXT);
-    var approvals = candidateService.fetchByPublicationId(publicationId).getApprovals();
+    var approvals = candidateService.getByPublicationId(publicationId).getApprovals();
     assertTrue(approvals.containsKey(keep));
     assertFalse(approvals.containsKey(delete));
     assertThat(approvals.size(), is(2));

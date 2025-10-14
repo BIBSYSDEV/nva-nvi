@@ -13,15 +13,16 @@ import static no.sikt.nva.nvi.common.service.model.Candidate.shouldResetCandidat
 
 import java.net.URI;
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
+import no.sikt.nva.nvi.common.db.Dao;
 import no.sikt.nva.nvi.common.db.NviPeriodDao;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.PeriodStatus;
 import no.sikt.nva.nvi.common.db.model.CandidateAggregate;
-import no.sikt.nva.nvi.common.db.model.ResponseContext;
 import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
@@ -65,7 +66,8 @@ public class CandidateService {
   }
 
   public void upsert(UpsertNviCandidateRequest request) {
-    var responseContext = findAggregateByPublicationId(request.publicationId());
+    var responseContext = getCandidateContext(request.publicationId());
+
     if (responseContext.candidate().isPresent()) {
       var originalCandidate = responseContext.candidate().get();
       updateCandidate(request, originalCandidate);
@@ -116,8 +118,9 @@ public class CandidateService {
     }
   }
 
+  // FIXME: Return void
   public Optional<Candidate> updateNonCandidate(UpsertNonNviCandidateRequest request) {
-    var responseContext = findAggregateByPublicationId(request.publicationId());
+    var responseContext = getCandidateContext(request.publicationId());
     LOGGER.info(
         "Updating candidate for publicationId={} to non-candidate", request.publicationId());
     if (responseContext.candidate().isPresent()) {
@@ -129,67 +132,19 @@ public class CandidateService {
     return Optional.empty();
   }
 
-  public Candidate fetch(UUID candidateIdentifier) {
+  public Candidate getByIdentifier(UUID candidateIdentifier) {
     LOGGER.info("Fetching candidate by identifier {}", candidateIdentifier);
     var responseContext = findAggregate(candidateIdentifier);
     return responseContext.candidate().orElseThrow(CandidateNotFoundException::new);
   }
 
-  public Candidate fetchByPublicationId(URI publicationId) {
+  public Candidate getByPublicationId(URI publicationId) {
     LOGGER.info("Fetching candidate by publication id {}", publicationId);
-    var responseContext = findAggregateByPublicationId(publicationId);
+    var responseContext = getCandidateContext(publicationId);
     return responseContext.candidate().orElseThrow(CandidateNotFoundException::new);
   }
 
-  //  public ResponseContext findAggregate(UUID candidateIdentifier) {
-  //    LOGGER.info("Fetching candidate and periods by identifier {}", candidateIdentifier);
-  //
-  //    var candidateFuture = candidateRepository.getCandidateAggregateAsync(candidateIdentifier);
-  //    var periodsFuture = periodRepository.getPeriodsAsync();
-  //
-  //    return candidateFuture
-  //        .thenCombine(
-  //            periodsFuture,
-  //            (candidateItems, allPeriods) -> {
-  //              var candidateAggregate = CandidateAggregate.fromQueryResponse(candidateItems);
-  //              return new ResponseContext(candidateAggregate, allPeriods);
-  //            })
-  //        .join();
-  //  }
-
-  //  public ResponseContext findAggregateByPublicationId(URI publicationId) {
-  //    LOGGER.info("Fetching candidate and periods by publication id {}", publicationId);
-  //    var optionalCandidate = candidateRepository.findByPublicationId(publicationId);
-  //
-  //    if (optionalCandidate.isEmpty()) {
-  //      LOGGER.info("No candidate found for publicationId={}", publicationId);
-  //      var allPeriods = periodRepository.getPeriods();
-  //      return new ResponseContext(Optional.empty(), allPeriods);
-  //    }
-  //    return findAggregate(optionalCandidate.get().identifier());
-  //  }
-
-  public CandidateContext findAggregate(UUID candidateIdentifier) {
-    LOGGER.info("Fetching candidate and periods by identifier {}", candidateIdentifier);
-
-    var candidateFuture = candidateRepository.getCandidateAggregateAsync(candidateIdentifier);
-    var periodsFuture = periodRepository.getPeriodsAsync();
-
-    return candidateFuture
-        .thenCombine(
-            periodsFuture,
-            (candidateItems, allPeriods) -> {
-              var candidateAggregate = CandidateAggregate.fromQueryResponse(candidateItems);
-              var periods = allPeriods.stream().map(NviPeriod::fromDao).toList();
-
-              var candidate =
-                  candidateAggregate.map(aggregate -> fromAggregate(aggregate, periods));
-              return new CandidateContext(candidate, periods);
-            })
-        .join();
-  }
-
-  public CandidateContext findAggregateByPublicationId(URI publicationId) {
+  public CandidateContext getCandidateContext(URI publicationId) {
     LOGGER.info("Fetching candidate and periods by publication id {}", publicationId);
     var optionalCandidate = candidateRepository.findByPublicationId(publicationId);
 
@@ -201,17 +156,26 @@ public class CandidateService {
     return findAggregate(optionalCandidate.get().identifier());
   }
 
-  private static PeriodStatus findPeriodStatusFromCached(
-      Collection<NviPeriodDao> allPeriods, String year) {
-    if (isNull(year)) {
-      return PERIOD_STATUS_NO_PERIOD;
-    }
-    return allPeriods.stream()
-        .map(NviPeriodDao::nviPeriod)
-        .filter(period -> year.equals(period.publishingYear()))
-        .map(PeriodStatus::fromPeriod)
-        .findFirst()
-        .orElse(PERIOD_STATUS_NO_PERIOD);
+  private CandidateContext findAggregate(UUID candidateIdentifier) {
+    LOGGER.info("Fetching candidate and periods by identifier {}", candidateIdentifier);
+
+    var candidateFuture = candidateRepository.getCandidateAggregateAsync(candidateIdentifier);
+    var periodsFuture = periodRepository.getPeriodsAsync();
+
+    return candidateFuture
+        .thenCombine(
+            periodsFuture,
+            (candidateItems, periods) -> mapToCandidateContext(candidateItems, periods))
+        .join();
+  }
+
+  private CandidateContext mapToCandidateContext(
+      List<Dao> candidateItems, List<NviPeriodDao> allPeriods) {
+    var candidateAggregate = CandidateAggregate.fromQueryResponse(candidateItems);
+    var periods = allPeriods.stream().map(NviPeriod::fromDao).toList();
+
+    var candidate = candidateAggregate.map(aggregate -> fromAggregate(aggregate, periods));
+    return new CandidateContext(candidate, periods);
   }
 
   private static PeriodStatus findPeriodStatus(Collection<NviPeriod> allPeriods, String year) {
@@ -237,24 +201,10 @@ public class CandidateService {
         .build();
   }
 
-  // FIXME: Make private
-  public Candidate fromAggregate(ResponseContext responseContext) {
-    var aggregate =
-        responseContext.candidateAggregate().orElseThrow(CandidateNotFoundException::new);
-    var periodStatus =
-        findPeriodStatusFromCached(
-            responseContext.allPeriods(), aggregate.candidate().getPeriodYear());
-    return new Candidate(
-        candidateRepository,
-        aggregate.candidate(),
-        aggregate.approvals(),
-        aggregate.notes(),
-        periodStatus);
-  }
-
-  public Candidate fromAggregate(
+  private Candidate fromAggregate(
       CandidateAggregate candidateAggregate, Collection<NviPeriod> allPeriods) {
-    var periodStatus = findPeriodStatus(allPeriods, candidateAggregate.candidate().getPeriodYear());
+    var publicationYear = candidateAggregate.candidate().getPeriodYear();
+    var periodStatus = findPeriodStatus(allPeriods, publicationYear);
     return new Candidate(
         candidateRepository,
         candidateAggregate.candidate(),

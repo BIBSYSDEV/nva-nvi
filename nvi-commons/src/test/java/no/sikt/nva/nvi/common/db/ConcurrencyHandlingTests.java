@@ -427,7 +427,7 @@ class ConcurrencyHandlingTests {
 
     @Test
     void shouldGetAllRelatedDataWithAggregateQuery() {
-      var response = candidateService.findAggregate(candidateIdentifier);
+      var response = candidateService.getCandidateContext(publicationId);
 
       var periods = response.allPeriods();
       var aggregate = response.candidate().orElseThrow();
@@ -447,7 +447,7 @@ class ConcurrencyHandlingTests {
               new PeriodRepository(mockClient),
               new CandidateRepository(mockClient));
 
-      testService.findAggregate(candidateIdentifier);
+      testService.getByIdentifier(candidateIdentifier);
 
       verify(mockClient, times(1)).queryPaginator(any(QueryRequest.class));
       verify(mockClient, times(1)).query(any(QueryRequest.class));
@@ -462,7 +462,7 @@ class ConcurrencyHandlingTests {
               new PeriodRepository(mockClient),
               new CandidateRepository(mockClient));
 
-      testService.findAggregateByPublicationId(publicationId);
+      testService.getCandidateContext(publicationId);
 
       verify(mockClient, times(2)).queryPaginator(any(QueryRequest.class));
       verify(mockClient, times(1)).query(any(QueryRequest.class));
@@ -470,7 +470,7 @@ class ConcurrencyHandlingTests {
 
     @Test
     void shouldReturnEmptyOptionalWhenCandidateDoesNotExist() {
-      var response = candidateService.findAggregate(randomUUID());
+      var response = candidateService.getCandidateContext(randomUri());
 
       assertThat(response.candidate()).isEmpty();
       assertThat(response.allPeriods()).isNotEmpty();

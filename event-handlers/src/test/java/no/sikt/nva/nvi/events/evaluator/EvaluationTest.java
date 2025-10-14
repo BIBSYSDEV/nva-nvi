@@ -127,7 +127,7 @@ class EvaluationTest {
   protected Candidate evaluatePublicationAndGetPersistedCandidate(
       URI publicationId, String publicationJson) {
     evaluatePublicationAndPersistResult(publicationJson);
-    return candidateService.fetchByPublicationId(publicationId);
+    return candidateService.getByPublicationId(publicationId);
   }
 
   protected Candidate evaluatePublicationAndGetPersistedCandidate(

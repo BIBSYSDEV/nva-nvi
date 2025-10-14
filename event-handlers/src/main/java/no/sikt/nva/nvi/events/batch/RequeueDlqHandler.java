@@ -138,7 +138,7 @@ public class RequeueDlqHandler implements RequestHandler<RequeueDlqInput, Requeu
     if (nonNull(identifier)) {
       try {
         var candidateIdentifier = UUID.fromString(identifier);
-        var originalCandidate = candidateService.fetch(candidateIdentifier);
+        var originalCandidate = candidateService.getByIdentifier(candidateIdentifier);
         candidateService.update(originalCandidate);
       } catch (Exception exception) {
         return new NviProcessMessageResult(

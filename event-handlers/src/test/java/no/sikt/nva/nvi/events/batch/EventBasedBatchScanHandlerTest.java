@@ -358,7 +358,10 @@ class EventBasedBatchScanHandlerTest {
   }
 
   private List<Candidate> getPersistedCandidates(Collection<Candidate> candidates) {
-    return candidates.stream().map(Candidate::getIdentifier).map(candidateService::fetch).toList();
+    return candidates.stream()
+        .map(Candidate::getIdentifier)
+        .map(candidateService::getByIdentifier)
+        .toList();
   }
 
   private boolean isSameVersionAsRepositoryCopy(Dao dao) {

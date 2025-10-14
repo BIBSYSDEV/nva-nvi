@@ -61,7 +61,7 @@ class FetchReportStatusByPublicationIdHandlerTest {
   @Test
   void shouldReturnReportedYearWhenPublicationIsReportedInClosedPeriod() throws IOException {
     var dao = setupReportedCandidate(candidateRepository, String.valueOf(CURRENT_YEAR));
-    var reportedCandidate = candidateService.fetch(dao.identifier());
+    var reportedCandidate = candidateService.getByIdentifier(dao.identifier());
     setupClosedPeriod(scenario, CURRENT_YEAR);
 
     handler.handleRequest(createRequest(reportedCandidate.getPublicationId()), output, context);

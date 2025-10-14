@@ -207,7 +207,7 @@ class IndexDocumentHandlerTest {
         candidateRepository.create(
             createDbCandidateWithoutChannelIdOrType(institutionId),
             List.of(randomApproval(institutionId)));
-    var candidate = candidateService.fetch(dao.identifier());
+    var candidate = candidateService.getByIdentifier(dao.identifier());
     var expectedIndexDocument =
         setupExistingResourceInS3AndGenerateExpectedDocument(candidate).indexDocument();
     mockUriRetrieverOrgResponse(candidate);
@@ -237,7 +237,7 @@ class IndexDocumentHandlerTest {
             .build();
     var request = randomUpsertRequestBuilder().withNviCreators(unverifiedCreator).build();
     candidateService.upsert(request);
-    var candidate = candidateService.fetchByPublicationId(request.publicationId());
+    var candidate = candidateService.getByPublicationId(request.publicationId());
     var expectedIndexDocument =
         setupExistingResourceInS3AndGenerateExpectedDocument(candidate).indexDocument();
 
@@ -292,7 +292,7 @@ class IndexDocumentHandlerTest {
     // implemented yet
     // TODO: Use Candidate.setReported when implemented
     var dao = setupReportedCandidate(candidateRepository, randomYear());
-    var candidate = candidateService.fetch(dao.identifier());
+    var candidate = candidateService.getByIdentifier(dao.identifier());
     var expectedIndexDocument =
         setupExistingResourceInS3AndGenerateExpectedDocument(candidate).indexDocument();
     var event = createEvent(candidate.getIdentifier());
@@ -621,7 +621,7 @@ class IndexDocumentHandlerTest {
     // When the candidate is processed for indexing
     // Then an index document is created successfully
     var candidateDao = setupReportedCandidateWithInvalidProperties();
-    var candidate = candidateService.fetch(candidateDao.identifier());
+    var candidate = candidateService.getByIdentifier(candidateDao.identifier());
     var expectedIndexDocument =
         setupExistingResourceInS3AndGenerateExpectedDocument(candidate).indexDocument();
 
@@ -769,7 +769,7 @@ class IndexDocumentHandlerTest {
   private Candidate setupNonApplicableCandidate(URI institutionId) {
     var request = createUpsertCandidateRequest(institutionId).build();
     candidateService.upsert(request);
-    var candidate = candidateService.fetchByPublicationId(request.publicationId());
+    var candidate = candidateService.getByPublicationId(request.publicationId());
     return candidateService
         .updateNonCandidate(createUpsertNonCandidateRequest(candidate.getPublicationId()))
         .orElseThrow();
@@ -939,7 +939,7 @@ class IndexDocumentHandlerTest {
   private Candidate randomApplicableCandidate(URI topLevelOrg, URI affiliation) {
     var request = createUpsertCandidateRequestWithSingleAffiliation(topLevelOrg, affiliation);
     candidateService.upsert(request);
-    return candidateService.fetchByPublicationId(request.publicationId());
+    return candidateService.getByPublicationId(request.publicationId());
   }
 
   private Candidate randomApplicableCandidate(ChannelType channelType) {
@@ -951,7 +951,7 @@ class IndexDocumentHandlerTest {
             .build();
     var request = randomUpsertRequestBuilder().withPublicationChannel(channel).build();
     candidateService.upsert(request);
-    return candidateService.fetchByPublicationId(request.publicationId());
+    return candidateService.getByPublicationId(request.publicationId());
   }
 
   private void assertContentIsEqual(

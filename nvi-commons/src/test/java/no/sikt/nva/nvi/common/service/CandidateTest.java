@@ -77,7 +77,8 @@ class CandidateTest extends CandidateTestSetup {
 
   @Test
   void shouldThrowNotFoundExceptionWhenCandidateDoesNotExist() {
-    assertThrows(CandidateNotFoundException.class, () -> candidateService.fetch(randomUUID()));
+    assertThrows(
+        CandidateNotFoundException.class, () -> candidateService.getByIdentifier(randomUUID()));
   }
 
   @Test
@@ -167,7 +168,7 @@ class CandidateTest extends CandidateTestSetup {
   @Test
   void shouldUpdateCandidateWithSystemGeneratedModifiedDate() {
     var request = getUpdateRequestForExistingCandidate();
-    var candidate = candidateService.fetchByPublicationId(request.publicationId());
+    var candidate = candidateService.getByPublicationId(request.publicationId());
     candidateService.upsert(request);
     var updatedCandidate =
         candidateRepository.findCandidateById(candidate.getIdentifier()).orElseThrow().candidate();
@@ -177,7 +178,7 @@ class CandidateTest extends CandidateTestSetup {
   @Test
   void shouldNotUpdateCandidateCreatedDateOnUpdates() {
     var request = getUpdateRequestForExistingCandidate();
-    var candidate = candidateService.fetchByPublicationId(request.publicationId());
+    var candidate = candidateService.getByPublicationId(request.publicationId());
     var expectedCreatedDate = candidate.getCreatedDate();
     candidateService.upsert(request);
     var actualPersistedCandidate =
@@ -209,7 +210,7 @@ class CandidateTest extends CandidateTestSetup {
   @Test
   void shouldFetchCandidateByPublicationId() {
     var candidate = setupRandomApplicableCandidate(scenario);
-    var fetchedCandidate = candidateService.fetchByPublicationId(candidate.getPublicationId());
+    var fetchedCandidate = candidateService.getByPublicationId(candidate.getPublicationId());
     assertThat(fetchedCandidate.getIdentifier(), is(equalTo(candidate.getIdentifier())));
   }
 
@@ -235,7 +236,7 @@ class CandidateTest extends CandidateTestSetup {
     scenario.updateApprovalStatus(candidate.getIdentifier(), approvalStatus, organization1.id());
     scenario.updateApprovalStatus(candidate.getIdentifier(), approvalStatus, organization2.id());
 
-    var updatedCandidate = candidateService.fetchByPublicationId(request.publicationId());
+    var updatedCandidate = candidateService.getByPublicationId(request.publicationId());
     assertEquals(approvalStatus.getValue(), updatedCandidate.getGlobalApprovalStatus().getValue());
   }
 
@@ -313,7 +314,7 @@ class CandidateTest extends CandidateTestSetup {
     var tempCandidate = setupRandomApplicableCandidate(scenario);
     var updateRequest = createUpsertNonCandidateRequest(tempCandidate.getPublicationId());
     var candidateBO = candidateService.updateNonCandidate(updateRequest).orElseThrow();
-    var fetchedCandidate = candidateService.fetch(candidateBO.getIdentifier());
+    var fetchedCandidate = candidateService.getByIdentifier(candidateBO.getIdentifier());
     assertThat(fetchedCandidate.getPeriod().status(), is(equalTo(Status.NO_PERIOD)));
   }
 
@@ -324,7 +325,8 @@ class CandidateTest extends CandidateTestSetup {
         randomUpsertRequestBuilder()
             .withPublicationId(nonApplicableCandidate.getPublicationId())
             .build());
-    var updatedApplicableCandidate = candidateService.fetch(nonApplicableCandidate.getIdentifier());
+    var updatedApplicableCandidate =
+        candidateService.getByIdentifier(nonApplicableCandidate.getIdentifier());
     assertThat(
         updatedApplicableCandidate.getPeriod().year(),
         is(equalTo(updatedApplicableCandidate.getPeriod().year())));
@@ -345,7 +347,7 @@ class CandidateTest extends CandidateTestSetup {
   @Test
   void shouldReturnCandidateWithReportStatus() {
     var dao = setupReportedCandidate(candidateRepository, randomYear());
-    var candidate = candidateService.fetch(dao.identifier());
+    var candidate = candidateService.getByIdentifier(dao.identifier());
 
     var actualStatus = candidate.getReportStatus().getValue();
     var expectedStatus = ReportStatus.REPORTED.getValue();
@@ -358,7 +360,7 @@ class CandidateTest extends CandidateTestSetup {
         candidateRepository.create(
             randomCandidate().copy().reportStatus(ReportStatus.REPORTED).build(),
             List.of(randomApproval()));
-    var candidate = candidateService.fetch(dao.identifier());
+    var candidate = candidateService.getByIdentifier(dao.identifier());
     assertTrue(candidate.isReported());
   }
 
@@ -368,7 +370,7 @@ class CandidateTest extends CandidateTestSetup {
         candidateRepository.create(
             randomCandidate().copy().reportStatus(ReportStatus.REPORTED).build(),
             List.of(randomApproval()));
-    var candidate = candidateService.fetch(dao.identifier());
+    var candidate = candidateService.getByIdentifier(dao.identifier());
     var id = PeriodStatusDto.fromPeriodStatus(candidate.getPeriod()).id();
 
     assertThat(id, is(not(nullValue())));
@@ -380,7 +382,7 @@ class CandidateTest extends CandidateTestSetup {
         candidateRepository.create(
             randomCandidate().copy().reportStatus(ReportStatus.REPORTED).build(),
             List.of(randomApproval()));
-    var candidate = candidateService.fetchByPublicationId(dao.candidate().publicationId());
+    var candidate = candidateService.getByPublicationId(dao.candidate().publicationId());
     var id = PeriodStatusDto.fromPeriodStatus(candidate.getPeriod()).id();
 
     assertThat(id, is(not(nullValue())));
@@ -404,7 +406,7 @@ class CandidateTest extends CandidateTestSetup {
         candidateRepository.create(
             randomCandidate().copy().creators(List.of(creator1, creator2)).build(),
             List.of(randomApproval()));
-    var candidate = candidateService.fetch(dao.identifier());
+    var candidate = candidateService.getByIdentifier(dao.identifier());
     assertEquals(
         List.of(creator1affiliation, creator2affiliation), candidate.getNviCreatorAffiliations());
   }
@@ -416,7 +418,7 @@ class CandidateTest extends CandidateTestSetup {
 
     candidateRepository.updateCandidate(dao);
 
-    var updatedCandidate = candidateService.fetch(candidate.getIdentifier());
+    var updatedCandidate = candidateService.getByIdentifier(candidate.getIdentifier());
     var updatedDao = candidateRepository.findCandidateById(candidate.getIdentifier()).orElseThrow();
 
     assertEquals(candidate, updatedCandidate);
@@ -471,7 +473,7 @@ class CandidateTest extends CandidateTestSetup {
   void shouldReturnFalseWhenCandidateIsReportedInClosedPeriod() {
     var dao = setupReportedCandidate(candidateRepository, String.valueOf(CURRENT_YEAR));
     setupClosedPeriod(scenario, CURRENT_YEAR);
-    var candidate = candidateService.fetch(dao.identifier());
+    var candidate = candidateService.getByIdentifier(dao.identifier());
     assertFalse(candidate.isNotReportedInClosedPeriod());
   }
 
@@ -482,7 +484,7 @@ class CandidateTest extends CandidateTestSetup {
     var aggregate = scenario.getAllRelatedData(candidate.getIdentifier());
 
     var originalCandidateDao = aggregate.candidate();
-    var roundTrippedCandidate = candidateService.fetch(candidate.getIdentifier()).toDao();
+    var roundTrippedCandidate = candidateService.getByIdentifier(candidate.getIdentifier()).toDao();
 
     Assertions.assertThat(originalCandidateDao)
         .usingRecursiveComparison()
@@ -518,7 +520,7 @@ class CandidateTest extends CandidateTestSetup {
     var tempCandidate = setupRandomApplicableCandidate(scenario);
     var updateRequest = createUpsertNonCandidateRequest(tempCandidate.getPublicationId());
     var candidateBO = candidateService.updateNonCandidate(updateRequest).orElseThrow();
-    return candidateService.fetch(candidateBO.getIdentifier());
+    return candidateService.getByIdentifier(candidateBO.getIdentifier());
   }
 
   private UpsertNviCandidateRequest getUpdateRequestForExistingCandidate() {

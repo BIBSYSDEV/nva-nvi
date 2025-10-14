@@ -9,8 +9,8 @@ import java.net.HttpURLConnection;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.dto.NviPeriodDto;
+import no.sikt.nva.nvi.common.service.model.CreatePeriodRequest;
 import no.sikt.nva.nvi.common.service.model.CreatePeriodRequest.Builder;
-import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.common.utils.ExceptionMapper;
 import no.sikt.nva.nvi.common.utils.RequestUtil;
 import no.sikt.nva.nvi.rest.model.UpsertNviPeriodRequest;
@@ -24,7 +24,7 @@ import nva.commons.core.JacocoGenerated;
 public class CreateNviPeriodHandler
     extends ApiGatewayHandler<UpsertNviPeriodRequest, NviPeriodDto> {
 
-  private final NviPeriodService nviPeriodService;
+  private final NviPeriodService periodService;
 
   @JacocoGenerated
   public CreateNviPeriodHandler() {
@@ -33,9 +33,9 @@ public class CreateNviPeriodHandler
         new Environment());
   }
 
-  public CreateNviPeriodHandler(NviPeriodService nviPeriodService, Environment environment) {
+  public CreateNviPeriodHandler(NviPeriodService periodService, Environment environment) {
     super(UpsertNviPeriodRequest.class, environment);
-    this.nviPeriodService = nviPeriodService;
+    this.periodService = periodService;
   }
 
   @Override
@@ -52,9 +52,14 @@ public class CreateNviPeriodHandler
     return attempt(input::toCreatePeriodRequest)
         .map(builder -> builder.withCreatedBy(getUsername(requestInfo)))
         .map(Builder::build)
-        .map(nviPeriodService::create)
-        .map(NviPeriod::toDto)
+        .map(this::createAndFetchPeriod)
         .orElseThrow(ExceptionMapper::map);
+  }
+
+  private NviPeriodDto createAndFetchPeriod(CreatePeriodRequest request) {
+    periodService.create(request);
+    var publishingYear = String.valueOf(request.publishingYear());
+    return periodService.getByPublishingYear(publishingYear).toDto();
   }
 
   @Override

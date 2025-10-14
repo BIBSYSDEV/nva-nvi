@@ -42,11 +42,9 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.NoteDao;
-import no.sikt.nva.nvi.common.db.NviPeriodDao;
 import no.sikt.nva.nvi.common.db.PeriodStatus;
 import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
 import no.sikt.nva.nvi.common.db.ReportStatus;
-import no.sikt.nva.nvi.common.db.model.ResponseContext;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.model.InstanceType;
 import no.sikt.nva.nvi.common.model.PointCalculation;
@@ -58,7 +56,6 @@ import no.sikt.nva.nvi.common.permissions.CandidatePermissions;
 import no.sikt.nva.nvi.common.service.dto.CandidateOperation;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
-import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException;
 import no.sikt.nva.nvi.common.service.requests.CreateNoteRequest;
 import no.sikt.nva.nvi.common.service.requests.DeleteNoteRequest;
@@ -85,8 +82,6 @@ public final class Candidate {
       "Period is closed, perform actions on candidate is forbidden!";
   private static final String PERIOD_NOT_OPENED_MESSAGE =
       "Period is not opened yet, perform actions on candidate is" + " forbidden!";
-  private static final PeriodStatus PERIOD_STATUS_NO_PERIOD =
-      PeriodStatus.builder().withStatus(Status.NO_PERIOD).build();
   private final CandidateRepository repository;
   private final UUID identifier;
   private final boolean applicable;
@@ -146,21 +141,6 @@ public final class Candidate {
     this.modifiedDate = dbCandidate.modifiedDate();
     this.reportStatus = dbCandidate.reportStatus();
     this.revision = candidateDao.revision();
-  }
-
-  public static Candidate fromAggregate(
-      CandidateRepository candidateRepository, ResponseContext responseContext) {
-    var aggregate =
-        responseContext.candidateAggregate().orElseThrow(CandidateNotFoundException::new);
-    var periodStatus =
-        findPeriodStatusFromCached(
-            responseContext.allPeriods(), aggregate.candidate().getPeriodYear());
-    return new Candidate(
-        candidateRepository,
-        aggregate.candidate(),
-        aggregate.approvals(),
-        aggregate.notes(),
-        periodStatus);
   }
 
   public static String getJsonLdContext() {
@@ -541,20 +521,6 @@ public final class Candidate {
     return approvals.stream()
         .map(dao -> new Approval(dao.identifier(), dao))
         .collect(Collectors.toMap(Approval::getInstitutionId, Function.identity()));
-  }
-
-  private static PeriodStatus findPeriodStatusFromCached(
-      Collection<NviPeriodDao> allPeriods, String year) {
-    // TODO: Refactor this
-    if (isNull(year)) {
-      return PERIOD_STATUS_NO_PERIOD;
-    }
-    return allPeriods.stream()
-        .map(NviPeriodDao::nviPeriod)
-        .filter(period -> year.equals(period.publishingYear()))
-        .map(PeriodStatus::fromPeriod)
-        .findFirst()
-        .orElse(PERIOD_STATUS_NO_PERIOD);
   }
 
   public static List<ApprovalStatusDao> mapToResetApprovals(

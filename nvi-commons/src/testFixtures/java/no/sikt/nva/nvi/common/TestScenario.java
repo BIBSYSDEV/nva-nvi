@@ -140,11 +140,11 @@ public class TestScenario {
   }
 
   public Candidate getCandidateByIdentifier(UUID candidateIdentifier) {
-    return candidateService.fetch(candidateIdentifier);
+    return candidateService.getByIdentifier(candidateIdentifier);
   }
 
   public Candidate getCandidateByPublicationId(URI publicationId) {
-    return candidateService.fetchByPublicationId(publicationId);
+    return candidateService.getByPublicationId(publicationId);
   }
 
   public Candidate upsertCandidate(UpsertNviCandidateRequest request) {

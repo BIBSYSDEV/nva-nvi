@@ -73,7 +73,7 @@ class RequeueDlqHandlerTest {
 
     handler.handleRequest(new RequeueDlqInput(1), CONTEXT);
 
-    var updatedCandidate = candidateService.fetch(candidate.getIdentifier());
+    var updatedCandidate = candidateService.getByIdentifier(candidate.getIdentifier());
     assertThat(updatedCandidate.getRevision()).isNotEqualTo(candidate.getRevision());
   }
 
@@ -204,7 +204,7 @@ class RequeueDlqHandlerTest {
     setupMockEvents(List.of(message), emptyList());
 
     handler.handleRequest(new RequeueDlqInput(1), CONTEXT);
-    var actualCandidate = candidateService.fetch(candidate.getIdentifier());
+    var actualCandidate = candidateService.getByIdentifier(candidate.getIdentifier());
     assertThat(actualCandidate)
         .usingRecursiveComparison()
         .ignoringFields("version", "revision", "lastWrittenAt")

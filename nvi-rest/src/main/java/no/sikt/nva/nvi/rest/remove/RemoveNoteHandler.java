@@ -59,7 +59,7 @@ public class RemoveNoteHandler extends ApiGatewayHandler<Void, CandidateDto>
     var candidateIdentifier = UUID.fromString(requestInfo.getPathParameter(CANDIDATE_IDENTIFIER));
     var noteIdentifier = UUID.fromString(requestInfo.getPathParameter(PARAM_NOTE_IDENTIFIER));
     var userInstance = UserInstance.fromRequestInfo(requestInfo);
-    return attempt(() -> candidateService.fetch(candidateIdentifier))
+    return attempt(() -> candidateService.getByIdentifier(candidateIdentifier))
         .map(candidate -> validateViewingScope(viewingScopeValidator, username, candidate))
         .map(
             candidate ->

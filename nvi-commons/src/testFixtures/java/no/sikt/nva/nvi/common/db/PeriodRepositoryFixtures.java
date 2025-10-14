@@ -64,7 +64,8 @@ public class PeriodRepositoryFixtures {
             .build();
 
     var periodService = new NviPeriodService(getGlobalEnvironment(), periodRepository);
-    return periodService.create(request);
+    periodService.create(request);
+    return periodService.getByPublishingYear(year);
   }
 
   public static NviPeriod updatePeriod(
@@ -79,6 +80,7 @@ public class PeriodRepositoryFixtures {
             .build();
 
     var periodService = new NviPeriodService(getGlobalEnvironment(), periodRepository);
-    return periodService.update(request);
+    periodService.update(request);
+    return periodService.getByPublishingYear(year);
   }
 }
