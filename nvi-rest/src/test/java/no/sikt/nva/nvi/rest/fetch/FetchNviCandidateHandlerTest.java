@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import no.sikt.nva.nvi.common.FakeEnvironment;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatusDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
@@ -35,6 +36,7 @@ import no.sikt.nva.nvi.common.service.dto.problem.UnverifiedCreatorFromOrganizat
 import no.sikt.nva.nvi.common.service.dto.problem.UnverifiedCreatorProblem;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.rest.BaseCandidateRestHandlerTest;
+import no.sikt.nva.nvi.rest.EnvironmentFixtures;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
@@ -53,7 +55,12 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Override
   protected ApiGatewayHandler<Void, CandidateDto> createHandler() {
-    return new FetchNviCandidateHandler(scenario.getCandidateService(), ENVIRONMENT);
+    return new FetchNviCandidateHandler(scenario.getCandidateService(), environment);
+  }
+
+  @Override
+  protected FakeEnvironment getHandlerEnvironment() {
+    return EnvironmentFixtures.FETCH_NVI_CANDIDATE_HANDLER;
   }
 
   @BeforeEach

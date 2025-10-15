@@ -20,11 +20,13 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.util.Map;
 import java.util.UUID;
+import no.sikt.nva.nvi.common.FakeEnvironment;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.service.dto.ApprovalDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.validator.FakeViewingScopeValidator;
 import no.sikt.nva.nvi.rest.BaseCandidateRestHandlerTest;
+import no.sikt.nva.nvi.rest.EnvironmentFixtures;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
@@ -40,7 +42,12 @@ class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
   @Override
   protected ApiGatewayHandler<NviNoteRequest, CandidateDto> createHandler() {
     return new CreateNoteHandler(
-        candidateService, noteService, mockViewingScopeValidator, ENVIRONMENT);
+        candidateService, noteService, mockViewingScopeValidator, environment);
+  }
+
+  @Override
+  protected FakeEnvironment getHandlerEnvironment() {
+    return EnvironmentFixtures.CREATE_NOTE_HANDLER;
   }
 
   @BeforeEach
@@ -65,7 +72,7 @@ class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
     var viewingScopeValidatorReturningFalse = new FakeViewingScopeValidator(false);
     handler =
         new CreateNoteHandler(
-            candidateService, noteService, viewingScopeValidatorReturningFalse, ENVIRONMENT);
+            candidateService, noteService, viewingScopeValidatorReturningFalse, environment);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
     assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));

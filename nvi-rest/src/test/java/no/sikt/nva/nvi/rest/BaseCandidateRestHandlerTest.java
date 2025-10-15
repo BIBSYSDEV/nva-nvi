@@ -25,6 +25,7 @@ import java.net.URI;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import no.sikt.nva.nvi.common.FakeEnvironment;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.UpsertRequestBuilder;
 import no.sikt.nva.nvi.common.client.model.Organization;
@@ -56,7 +57,7 @@ public abstract class BaseCandidateRestHandlerTest {
   protected static final ViewingScopeValidator mockViewingScopeValidator =
       new FakeViewingScopeValidator(true);
   protected static final Context CONTEXT = mock(Context.class);
-  protected static final Environment ENVIRONMENT = new Environment();
+  protected Environment environment;
   protected UriRetriever mockUriRetriever;
   protected String resourcePathParameter;
   protected List<Organization> topLevelOrganizations;
@@ -73,6 +74,7 @@ public abstract class BaseCandidateRestHandlerTest {
 
   @BeforeEach
   protected void commonSetup() {
+    environment = getHandlerEnvironment();
     scenario = new TestScenario();
     setupOpenPeriod(scenario, CURRENT_YEAR);
     topLevelOrganization = scenario.getDefaultOrganization();
@@ -84,13 +86,15 @@ public abstract class BaseCandidateRestHandlerTest {
 
     var candidateRepository = scenario.getCandidateRepository();
     candidateService =
-        new CandidateService(ENVIRONMENT, scenario.getPeriodRepository(), candidateRepository);
+        new CandidateService(environment, scenario.getPeriodRepository(), candidateRepository);
     noteService = new NoteService(candidateRepository);
     approvalService = new ApprovalService(candidateRepository);
 
     output = new ByteArrayOutputStream();
     handler = createHandler();
   }
+
+  protected abstract FakeEnvironment getHandlerEnvironment();
 
   protected abstract ApiGatewayHandler<?, CandidateDto> createHandler();
 

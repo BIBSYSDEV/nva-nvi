@@ -13,10 +13,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
+import no.sikt.nva.nvi.common.FakeEnvironment;
 import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatusDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.rest.BaseCandidateRestHandlerTest;
+import no.sikt.nva.nvi.rest.EnvironmentFixtures;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.GatewayResponse;
@@ -33,7 +35,12 @@ class FetchNviCandidateByPublicationIdHandlerTest extends BaseCandidateRestHandl
   @Override
   protected ApiGatewayHandler<Void, CandidateDto> createHandler() {
     return new FetchNviCandidateByPublicationIdHandler(
-        scenario.getCandidateRepository(), scenario.getPeriodRepository(), ENVIRONMENT);
+        scenario.getCandidateRepository(), scenario.getPeriodRepository(), environment);
+  }
+
+  @Override
+  protected FakeEnvironment getHandlerEnvironment() {
+    return EnvironmentFixtures.FETCH_NVI_CANDIDATE_BY_PUBLICATION_ID_HANDLER;
   }
 
   @BeforeEach

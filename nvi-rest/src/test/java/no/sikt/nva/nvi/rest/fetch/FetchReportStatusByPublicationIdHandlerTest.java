@@ -26,11 +26,11 @@ import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.rest.EnvironmentFixtures;
 import no.sikt.nva.nvi.rest.fetch.ReportStatusDto.StatusDto;
 import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.GatewayResponse;
-import nva.commons.core.Environment;
 import org.apache.hc.core5.http.ContentType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,7 +38,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 class FetchReportStatusByPublicationIdHandlerTest {
-  private static final Environment ENVIRONMENT = new Environment();
   private static final String PATH_PARAM_PUBLICATION_ID = "publicationId";
   private Context context;
   private ByteArrayOutputStream output;
@@ -55,7 +54,8 @@ class FetchReportStatusByPublicationIdHandlerTest {
     candidateService = scenario.getCandidateService();
     output = new ByteArrayOutputStream();
     context = new FakeContext();
-    handler = new FetchReportStatusByPublicationIdHandler(candidateService, ENVIRONMENT);
+    var environment = EnvironmentFixtures.FETCH_REPORT_STATUS_BY_PUBLICATION_ID_HANDLER;
+    handler = new FetchReportStatusByPublicationIdHandler(candidateService, environment);
   }
 
   @Test

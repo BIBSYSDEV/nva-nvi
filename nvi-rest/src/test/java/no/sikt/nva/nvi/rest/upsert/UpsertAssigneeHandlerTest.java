@@ -23,12 +23,14 @@ import java.net.HttpURLConnection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import no.sikt.nva.nvi.common.FakeEnvironment;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.validator.FakeViewingScopeValidator;
 import no.sikt.nva.nvi.rest.BaseCandidateRestHandlerTest;
+import no.sikt.nva.nvi.rest.EnvironmentFixtures;
 import no.sikt.nva.nvi.rest.model.UpsertAssigneeRequest;
 import no.unit.nva.clients.IdentityServiceClient;
 import no.unit.nva.clients.UserDto;
@@ -56,7 +58,12 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
         approvalService,
         mockIdentityServiceClient,
         mockViewingScopeValidator,
-        ENVIRONMENT);
+        environment);
+  }
+
+  @Override
+  protected FakeEnvironment getHandlerEnvironment() {
+    return EnvironmentFixtures.UPSERT_ASSIGNEE_HANDLER;
   }
 
   @BeforeEach
@@ -102,7 +109,7 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
             approvalService,
             mockIdentityServiceClient,
             viewingScopeValidatorReturningFalse,
-            ENVIRONMENT);
+            environment);
     handler.handleRequest(createRequest(candidateIdentifier, assignee), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
     assertThat(

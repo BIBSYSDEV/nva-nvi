@@ -22,11 +22,13 @@ import java.net.URI;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
+import no.sikt.nva.nvi.common.FakeEnvironment;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatusDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.validator.FakeViewingScopeValidator;
 import no.sikt.nva.nvi.rest.BaseCandidateRestHandlerTest;
+import no.sikt.nva.nvi.rest.EnvironmentFixtures;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
@@ -63,7 +65,12 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
   @Override
   protected ApiGatewayHandler<NviStatusRequest, CandidateDto> createHandler() {
     return new UpdateNviCandidateStatusHandler(
-        candidateService, approvalService, mockViewingScopeValidator, ENVIRONMENT);
+        candidateService, approvalService, mockViewingScopeValidator, environment);
+  }
+
+  @Override
+  protected FakeEnvironment getHandlerEnvironment() {
+    return EnvironmentFixtures.UPDATE_NVI_CANDIDATE_STATUS_HANDLER;
   }
 
   @BeforeEach
@@ -101,7 +108,7 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
             scenario.getCandidateService(),
             approvalService,
             new FakeViewingScopeValidator(false),
-            ENVIRONMENT);
+            environment);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
     assertThat(
