@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.index;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static no.sikt.nva.nvi.common.EnvironmentFixtures.getCandidateContextUri;
 import static no.sikt.nva.nvi.common.model.EnumFixtures.randomValidScientificValue;
 import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.getRandomDateInCurrentYearAsDto;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PUBLICATION_CONTEXT;
@@ -310,7 +311,7 @@ public final class IndexDocumentTestUtils {
       List<no.sikt.nva.nvi.index.model.document.Approval> approvals,
       PublicationDetails publicationDetails) {
     return NviCandidateIndexDocument.builder()
-        .withContext(Candidate.getContextUri())
+        .withContext(getCandidateContextUri())
         .withId(randomUri())
         .withIsApplicable(true)
         .withIdentifier(UUID.randomUUID())

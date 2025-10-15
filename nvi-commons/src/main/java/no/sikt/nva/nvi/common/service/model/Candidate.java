@@ -184,13 +184,19 @@ public record Candidate(
     return CONTEXT;
   }
 
-  public static URI getContextUri() {
-    return CONTEXT_URI;
+  public URI getContextUri() {
+      var basePath = environment.readEnv("CUSTOM_DOMAIN_BASE_PATH");
+      var apiHost = environment.readEnv("API_HOST");
+      return
+        UriWrapper.fromHost(apiHost).addChild(basePath, "context").getUri();
   }
 
   public URI getId() {
-    return new UriWrapper(HTTPS, API_DOMAIN)
-        .addChild(BASE_PATH, CANDIDATE_PATH, identifier.toString())
+
+      var basePath = environment.readEnv("CUSTOM_DOMAIN_BASE_PATH");
+      var apiHost = environment.readEnv("API_HOST");
+    return new UriWrapper(HTTPS, apiHost)
+        .addChild(basePath, CANDIDATE_PATH, identifier.toString())
         .getUri();
   }
 

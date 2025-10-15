@@ -340,7 +340,9 @@ class CandidateTest extends CandidateTestSetup {
 
   @Test
   void shouldReturnContextUri() {
-    var contextUri = Candidate.getContextUri();
+    var createRequest = randomUpsertRequestBuilder().build();
+    var candidate = scenario.upsertCandidate(createRequest);
+    var contextUri = candidate.getContextUri();
     assertThat(contextUri, is(equalTo(CONTEXT_URI)));
   }
 

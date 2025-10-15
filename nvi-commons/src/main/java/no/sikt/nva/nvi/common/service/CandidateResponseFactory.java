@@ -32,7 +32,7 @@ public final class CandidateResponseFactory {
   public static CandidateDto create(Candidate candidate, UserInstance userInstance) {
     return CandidateDto.builder()
         .withId(candidate.getId())
-        .withContext(Candidate.getContextUri())
+        .withContext(candidate.getContextUri())
         .withIdentifier(candidate.identifier())
         .withPublicationId(candidate.getPublicationId())
         .withApprovals(getApprovalsAsDto(candidate))

@@ -917,7 +917,7 @@ class IndexDocumentHandlerTest {
       JsonNode expandedResource, Candidate candidate) {
     var expandedPublicationDetails = expandPublicationDetails(candidate, expandedResource);
     return NviCandidateIndexDocument.builder()
-        .withContext(Candidate.getContextUri())
+        .withContext(candidate.getContextUri())
         .withId(candidate.getId())
         .withIsApplicable(candidate.isApplicable())
         .withIdentifier(candidate.identifier())

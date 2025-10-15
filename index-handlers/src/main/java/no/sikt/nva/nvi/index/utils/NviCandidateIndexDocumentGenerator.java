@@ -163,7 +163,7 @@ public final class NviCandidateIndexDocumentGenerator {
       PublicationDetails expandedPublicationDetails) {
     return NviCandidateIndexDocument.builder()
         .withId(candidate.getId())
-        .withContext(Candidate.getContextUri())
+        .withContext(candidate.getContextUri())
         .withIsApplicable(candidate.isApplicable())
         .withIdentifier(candidate.identifier())
         .withReportingPeriod(new ReportingPeriod(candidate.period().year()))

@@ -1,5 +1,9 @@
 package no.sikt.nva.nvi.common;
 
+import nva.commons.core.paths.UriWrapper;
+
+import java.net.URI;
+
 /**
  * Utility to set up fake environment variables for testing purposes. Keep this in sync with the
  * actual environment variables defined in template.yaml.
@@ -143,5 +147,11 @@ public enum EnvironmentFixtures {
 
   public static FakeEnvironment getSearchNviCandidatesHandlerEnvironment() {
     return getDefaultEnvironmentBuilder().with(ALLOWED_ORIGIN).with(COGNITO_HOST).build();
+  }
+
+  public static URI getCandidateContextUri() {
+    return UriWrapper.fromHost(API_HOST.getValue())
+        .addChild(CUSTOM_DOMAIN_BASE_PATH.getValue(), "context")
+        .getUri();
   }
 }
