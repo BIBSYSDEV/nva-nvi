@@ -15,7 +15,6 @@ import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.internal.conditional.BeginsWithConditional;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
-import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 
 public class PeriodRepository extends DynamoRepository {
 
@@ -56,18 +55,6 @@ public class PeriodRepository extends DynamoRepository {
   public CompletableFuture<List<NviPeriodDao>> getPeriodsAsync() {
     LOGGER.info("Getting all periods with async wrapper");
     return CompletableFuture.supplyAsync(this::getPeriods);
-  }
-
-  // FIXME: Remove this
-  public static List<NviPeriodDao> getPeriods(DynamoDbTable<NviPeriodDao> periodTable) {
-    return periodTable.query(beginsWithPeriodQuery()).stream()
-        .map(Page::items)
-        .flatMap(Collection::stream)
-        .toList();
-  }
-
-  public static QueryRequest getPeriodsRequest() {
-    return queryByPartitionKey(PERIOD);
   }
 
   public static BeginsWithConditional beginsWithPeriodQuery() {

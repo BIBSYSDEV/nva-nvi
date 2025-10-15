@@ -8,10 +8,6 @@ public class PeriodNotFoundException extends RuntimeException {
     super(message);
   }
 
-  public static PeriodNotFoundException withMessage(String message) {
-    return new PeriodNotFoundException(message);
-  }
-
   public static Supplier<PeriodNotFoundException> forYear(String publishingYear) {
     return () ->
         new PeriodNotFoundException(

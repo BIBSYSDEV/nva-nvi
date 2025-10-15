@@ -52,11 +52,6 @@ public class NviPeriodService {
     LOGGER.info("Updated period successfully");
   }
 
-  public Optional<NviPeriod> findByPublishingYear(String publishingYear) {
-    var periodDao = periodRepository.findByPublishingYear(publishingYear);
-    return periodDao.map(NviPeriod::fromDao);
-  }
-
   public NviPeriod getByPublishingYear(String publishingYear) {
     return findByPublishingYear(publishingYear)
         .orElseThrow(PeriodNotFoundException.forYear(publishingYear));
@@ -64,6 +59,11 @@ public class NviPeriodService {
 
   public List<NviPeriod> getAll() {
     return periodRepository.getPeriods().stream().map(NviPeriod::fromDao).toList();
+  }
+
+  public Optional<NviPeriod> findByPublishingYear(String publishingYear) {
+    var periodDao = periodRepository.findByPublishingYear(publishingYear);
+    return periodDao.map(NviPeriod::fromDao);
   }
 
   private NviPeriod createNewPeriodFromRequest(CreatePeriodRequest request) {

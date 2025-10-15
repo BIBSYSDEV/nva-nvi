@@ -234,7 +234,15 @@ public class CandidateRepository extends DynamoRepository {
     try {
       client.transactWriteItems(request);
     } catch (TransactionCanceledException transactionCanceledException) {
+      handleTransactionFailure(transactionCanceledException);
       throw TransactionException.from(transactionCanceledException, request);
+    }
+  }
+
+  private void handleTransactionFailure(TransactionCanceledException exception) {
+    LOGGER.error("Transaction failed due to an exception", exception);
+    for (var reason : exception.cancellationReasons()) {
+      LOGGER.error("Cancellation reason: {}", reason);
     }
   }
 
@@ -245,14 +253,6 @@ public class CandidateRepository extends DynamoRepository {
         .key(candidateKey)
         .conditionExpression(revisionCondition)
         .build();
-  }
-
-  private void handleTransactionFailure(
-      TransactionCanceledException e, ApprovalStatusDao approval) {
-    LOGGER.error("Transaction cancelled for candidate {}", approval.identifier(), e);
-    for (var reason : e.cancellationReasons()) {
-      LOGGER.error("Cancellation reason: {}", reason);
-    }
   }
 
   private Key createCandidateKey(UUID candidateIdentifier) {

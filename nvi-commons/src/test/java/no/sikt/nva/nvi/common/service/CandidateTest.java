@@ -45,7 +45,6 @@ import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.UpsertRequestBuilder;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
 import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
@@ -92,7 +91,7 @@ class CandidateTest extends CandidateTestSetup {
   @ParameterizedTest(name = "Should persist new candidate with correct level {0}")
   @MethodSource("levelValues")
   void shouldPersistNewCandidateWithCorrectLevelBasedOnVersionTwoLevelValues(
-      DbLevel expectedLevel, String versionTwoValue) {
+      ScientificValue expectedLevel, String versionTwoValue) {
     var channel =
         PublicationChannelDto.builder()
             .withId(randomUri())
@@ -102,9 +101,9 @@ class CandidateTest extends CandidateTestSetup {
     var pointCalculation = randomPointCalculationDtoBuilder().withChannel(channel).build();
     var request = randomUpsertRequestBuilder().withPointCalculation(pointCalculation).build();
     candidateService.upsert(request);
-    var persistedCandidate =
-        candidateRepository.findByPublicationId(request.publicationId()).orElseThrow().candidate();
-    assertEquals(expectedLevel, persistedCandidate.level());
+    var persistedCandidate = candidateService.getByPublicationId(request.publicationId());
+    var persistedLevel = persistedCandidate.pointCalculation().channel().scientificValue();
+    assertEquals(expectedLevel, persistedLevel);
   }
 
   @Test
@@ -133,7 +132,7 @@ class CandidateTest extends CandidateTestSetup {
     var candidate = scenario.upsertCandidate(request);
     var expectedCandidate = getExpectedUpdatedDbCandidate(candidate, request);
     var actualPersistedCandidate =
-        candidateRepository.findCandidateById(candidate.identifier()).orElseThrow().candidate();
+        candidateService.getByIdentifier(candidate.identifier()).toDao().candidate();
     assertThatCandidatesAreEqual(actualPersistedCandidate, expectedCandidate);
   }
 
@@ -144,7 +143,7 @@ class CandidateTest extends CandidateTestSetup {
     var candidate = scenario.upsertCandidate(request);
     var expectedCandidate = getExpectedUpdatedDbCandidate(candidate, request);
     var actualPersistedCandidate =
-        candidateRepository.findCandidateById(candidate.identifier()).orElseThrow().candidate();
+        candidateService.getByIdentifier(candidate.identifier()).toDao().candidate();
     assertThatCandidatesAreEqual(actualPersistedCandidate, expectedCandidate);
   }
 
@@ -161,7 +160,7 @@ class CandidateTest extends CandidateTestSetup {
     var candidate = scenario.upsertCandidate(request);
     var expectedCandidate = getExpectedUpdatedDbCandidate(candidate, request);
     var actualPersistedCandidate =
-        candidateRepository.findCandidateById(candidate.identifier()).orElseThrow().candidate();
+        candidateService.getByIdentifier(candidate.identifier()).toDao().candidate();
     assertThatCandidatesAreEqual(actualPersistedCandidate, expectedCandidate);
   }
 
@@ -170,8 +169,7 @@ class CandidateTest extends CandidateTestSetup {
     var request = getUpdateRequestForExistingCandidate();
     var candidate = candidateService.getByPublicationId(request.publicationId());
     candidateService.upsert(request);
-    var updatedCandidate =
-        candidateRepository.findCandidateById(candidate.identifier()).orElseThrow().candidate();
+    var updatedCandidate = candidateService.getByIdentifier(candidate.identifier());
     assertNotEquals(candidate.modifiedDate(), updatedCandidate.modifiedDate());
   }
 
@@ -181,8 +179,7 @@ class CandidateTest extends CandidateTestSetup {
     var candidate = candidateService.getByPublicationId(request.publicationId());
     var expectedCreatedDate = candidate.createdDate();
     candidateService.upsert(request);
-    var actualPersistedCandidate =
-        candidateRepository.findCandidateById(candidate.identifier()).orElseThrow().candidate();
+    var actualPersistedCandidate = candidateService.getByIdentifier(candidate.identifier());
     assertEquals(expectedCreatedDate, actualPersistedCandidate.createdDate());
   }
 
@@ -203,7 +200,7 @@ class CandidateTest extends CandidateTestSetup {
     var candidate = scenario.upsertCandidate(updateRequest);
     var expectedCandidate = getExpectedUpdatedDbCandidate(candidate, updateRequest);
     var actualPersistedCandidate =
-        candidateRepository.findCandidateById(candidate.identifier()).orElseThrow().candidate();
+        candidateService.getByIdentifier(candidate.identifier()).toDao().candidate();
     assertThatCandidatesAreEqual(actualPersistedCandidate, expectedCandidate);
   }
 
@@ -506,7 +503,8 @@ class CandidateTest extends CandidateTestSetup {
   @Deprecated
   private static Stream<Arguments> levelValues() {
     return Stream.of(
-        Arguments.of(DbLevel.LEVEL_ONE, "LevelOne"), Arguments.of(DbLevel.LEVEL_TWO, "LevelTwo"));
+        Arguments.of(ScientificValue.LEVEL_ONE, "LevelOne"),
+        Arguments.of(ScientificValue.LEVEL_TWO, "LevelTwo"));
   }
 
   private static BigDecimal adjustScaleAndRoundingMode(BigDecimal bigDecimal) {
