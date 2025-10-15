@@ -135,12 +135,12 @@ public class CandidateService {
       LOGGER.warn("No candidate found for publicationId={}", publicationId);
     } else {
       var candidate = candidateContext.candidate().orElseThrow();
-      var nonApplicableCandidate = updateCandidateToNonApplicable(candidate.toDao());
+      var updatedCandidate = candidate.updateToNonCandidate().toDao();
       var approvalsToDelete =
           candidate.getApprovals().values().stream().map(Approval::toDao).toList();
 
       candidateRepository.updateCandidateAndApprovals(
-          nonApplicableCandidate, emptyList(), approvalsToDelete);
+          updatedCandidate, emptyList(), approvalsToDelete);
       LOGGER.info("Successfully updated publicationId={} to non-candidate", publicationId);
     }
   }
@@ -229,14 +229,6 @@ public class CandidateService {
 
     var candidate = candidateAggregate.map(aggregate -> fromAggregate(aggregate, periods));
     return new CandidateContext(candidate, periods);
-  }
-
-  private static CandidateDao updateCandidateToNonApplicable(CandidateDao candidateDao) {
-    return candidateDao
-        .copy()
-        .candidate(candidateDao.candidate().copy().applicable(false).build())
-        .periodYear(null)
-        .build();
   }
 
   private Candidate fromAggregate(

@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.common.service.model;
 
 import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.UUID.randomUUID;
@@ -149,6 +150,18 @@ public record Candidate(
         .build();
   }
 
+  public Candidate updateToNonCandidate() {
+    if (isReported()) {
+      throw new IllegalCandidateUpdateException("Cannot update reported candidate");
+    }
+
+    return copy()
+        .withPeriod(Optional.empty())
+        .withApplicable(false)
+        .withApprovals(emptyMap())
+        .build();
+  }
+
   private boolean canUpdateInPeriod(NviPeriod targetPeriod) {
     var hasSamePeriod =
         period.filter(currentPeriod -> targetPeriod.id().equals(currentPeriod.id())).isPresent();
@@ -162,7 +175,7 @@ public record Candidate(
         DbCandidate.builder()
             .pointCalculation(pointCalculation.toDbPointCalculation())
             .publicationDetails(dbPublication)
-            .applicable(publicationDetails.isApplicable())
+            .applicable(applicable)
             .creators(dbPublication.creators())
             .creatorShareCount(getCreatorShareCount())
             .channelType(dbChannel.channelType())
@@ -182,12 +195,13 @@ public record Candidate(
             .publicationId(dbPublication.id())
             .publicationIdentifier(dbPublication.identifier())
             .build();
+    var periodYear = period.map(NviPeriod::publishingYear).map(Object::toString).orElse(null);
     return CandidateDao.builder()
         .identifier(identifier)
         .candidate(dbCandidate)
         .revision(revision)
-        .version(randomUUID().toString())
-        .periodYear(dbPublication.publicationDate().year())
+        .version(randomUUID().toString()) // FIXME
+        .periodYear(periodYear)
         .build();
   }
 
