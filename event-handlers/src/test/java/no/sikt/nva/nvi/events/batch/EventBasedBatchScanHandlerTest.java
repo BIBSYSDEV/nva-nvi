@@ -45,6 +45,7 @@ import no.sikt.nva.nvi.common.model.CreateNoteRequest;
 import no.sikt.nva.nvi.common.model.ListingResult;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import no.sikt.nva.nvi.common.service.CandidateService;
+import no.sikt.nva.nvi.common.service.NoteService;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.utils.BatchScanUtil;
 import no.sikt.nva.nvi.events.model.ScanDatabaseRequest;
@@ -81,16 +82,18 @@ class EventBasedBatchScanHandlerTest {
   private NviCandidateRepositoryHelper candidateRepository;
   private PeriodRepository periodRepository;
   private CandidateService candidateService;
+  private NoteService noteService;
 
   @BeforeEach
   void init() {
     scenario = new TestScenario();
-    candidateService = scenario.getCandidateService();
     output = new ByteArrayOutputStream();
     when(CONTEXT.getInvokedFunctionArn()).thenReturn(randomString());
     eventBridgeClient = new FakeEventBridgeClient();
     candidateRepository = new NviCandidateRepositoryHelper(scenario.getLocalDynamo());
     periodRepository = scenario.getPeriodRepository();
+    candidateService = scenario.getCandidateService();
+    noteService = new NoteService(candidateRepository);
     var batchScanUtil =
         new BatchScanUtil(
             candidateRepository,
@@ -412,7 +415,7 @@ class EventBasedBatchScanHandlerTest {
             .toList();
     for (var candidate : candidates) {
       var note = new CreateNoteRequest(randomString(), randomString(), randomUri());
-      candidateService.createNote(candidate, note);
+      noteService.createNote(candidate, note);
     }
     return candidates.stream();
   }

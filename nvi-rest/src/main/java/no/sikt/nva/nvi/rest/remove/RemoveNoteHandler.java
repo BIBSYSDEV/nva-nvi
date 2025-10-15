@@ -9,6 +9,7 @@ import java.util.UUID;
 import no.sikt.nva.nvi.common.model.UserInstance;
 import no.sikt.nva.nvi.common.service.CandidateResponseFactory;
 import no.sikt.nva.nvi.common.service.CandidateService;
+import no.sikt.nva.nvi.common.service.NoteService;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.requests.DeleteNoteRequest;
@@ -28,22 +29,26 @@ public class RemoveNoteHandler extends ApiGatewayHandler<Void, CandidateDto>
 
   public static final String PARAM_NOTE_IDENTIFIER = "noteIdentifier";
   private final CandidateService candidateService;
+  private final NoteService noteService;
   private final ViewingScopeValidator viewingScopeValidator;
 
   @JacocoGenerated
   public RemoveNoteHandler() {
     this(
         CandidateService.defaultCandidateService(),
+        NoteService.defaultNoteService(),
         ViewingScopeHandler.defaultViewingScopeValidator(),
         new Environment());
   }
 
   public RemoveNoteHandler(
       CandidateService candidateService,
+      NoteService noteService,
       ViewingScopeValidator viewingScopeValidator,
       Environment environment) {
     super(Void.class, environment);
     this.candidateService = candidateService;
+    this.noteService = noteService;
     this.viewingScopeValidator = viewingScopeValidator;
   }
 
@@ -69,7 +74,7 @@ public class RemoveNoteHandler extends ApiGatewayHandler<Void, CandidateDto>
   }
 
   private Candidate deleteNote(Candidate candidate, DeleteNoteRequest request) {
-    candidateService.deleteNote(candidate, request);
+    noteService.deleteNote(candidate, request);
     return candidateService.getByIdentifier(candidate.identifier());
   }
 

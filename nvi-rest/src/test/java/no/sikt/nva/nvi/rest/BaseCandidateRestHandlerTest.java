@@ -33,6 +33,7 @@ import no.sikt.nva.nvi.common.model.CandidateFixtures;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.model.UserInstance;
 import no.sikt.nva.nvi.common.service.CandidateService;
+import no.sikt.nva.nvi.common.service.NoteService;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
@@ -66,6 +67,7 @@ public abstract class BaseCandidateRestHandlerTest {
   protected ApiGatewayHandler<?, CandidateDto> handler;
   protected TestScenario scenario;
   protected CandidateService candidateService;
+  protected NoteService noteService;
   protected UserInstance curatorUser;
 
   @BeforeEach
@@ -78,6 +80,7 @@ public abstract class BaseCandidateRestHandlerTest {
     subOrganizationId = topLevelOrganization.hasPart().getFirst().id();
     mockUriRetriever = scenario.getMockedUriRetriever();
     candidateService = scenario.getCandidateService();
+    noteService = new NoteService(scenario.getCandidateRepository());
     curatorUser = createCuratorUserInstance(topLevelOrganizationId);
 
     output = new ByteArrayOutputStream();

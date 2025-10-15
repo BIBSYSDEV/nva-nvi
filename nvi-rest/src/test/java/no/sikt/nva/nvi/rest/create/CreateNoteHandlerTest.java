@@ -39,7 +39,8 @@ class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Override
   protected ApiGatewayHandler<NviNoteRequest, CandidateDto> createHandler() {
-    return new CreateNoteHandler(candidateService, mockViewingScopeValidator, ENVIRONMENT);
+    return new CreateNoteHandler(
+        candidateService, noteService, mockViewingScopeValidator, ENVIRONMENT);
   }
 
   @BeforeEach
@@ -63,7 +64,8 @@ class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
         createRequest(candidate.identifier(), new NviNoteRequest("The note"), randomString());
     var viewingScopeValidatorReturningFalse = new FakeViewingScopeValidator(false);
     handler =
-        new CreateNoteHandler(candidateService, viewingScopeValidatorReturningFalse, ENVIRONMENT);
+        new CreateNoteHandler(
+            candidateService, noteService, viewingScopeValidatorReturningFalse, ENVIRONMENT);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
     assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));

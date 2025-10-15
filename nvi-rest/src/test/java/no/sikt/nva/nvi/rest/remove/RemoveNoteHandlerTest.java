@@ -47,7 +47,7 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
   @Override
   protected ApiGatewayHandler<Void, CandidateDto> createHandler() {
     return new RemoveNoteHandler(
-        scenario.getCandidateService(), mockViewingScopeValidator, ENVIRONMENT);
+        scenario.getCandidateService(), noteService, mockViewingScopeValidator, ENVIRONMENT);
   }
 
   @BeforeEach
@@ -76,7 +76,10 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
     var viewingScopeValidatorReturningFalse = new FakeViewingScopeValidator(false);
     handler =
         new RemoveNoteHandler(
-            scenario.getCandidateService(), viewingScopeValidatorReturningFalse, ENVIRONMENT);
+            scenario.getCandidateService(),
+            noteService,
+            viewingScopeValidatorReturningFalse,
+            ENVIRONMENT);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
     assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
@@ -146,14 +149,14 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
   private Candidate createCandidateWithNote() {
     var candidateService = scenario.getCandidateService();
     var candidate = setupValidCandidate();
-    candidateService.createNote(candidate, randomNoteRequest());
+    noteService.createNote(candidate, randomNoteRequest());
     return candidateService.getByIdentifier(candidate.identifier());
   }
 
   private Candidate createNote(Candidate candidate, Username user) {
     var candidateService = scenario.getCandidateService();
     var noteRequest = new CreateNoteRequest(randomString(), user.value(), topLevelOrganizationId);
-    candidateService.createNote(candidate, noteRequest);
+    noteService.createNote(candidate, noteRequest);
     return candidateService.getByIdentifier(candidate.identifier());
   }
 

@@ -14,6 +14,7 @@ import no.sikt.nva.nvi.common.model.CreateNoteRequest;
 import no.sikt.nva.nvi.common.model.UserInstance;
 import no.sikt.nva.nvi.common.service.CandidateResponseFactory;
 import no.sikt.nva.nvi.common.service.CandidateService;
+import no.sikt.nva.nvi.common.service.NoteService;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.Username;
@@ -34,22 +35,26 @@ public class CreateNoteHandler extends ApiGatewayHandler<NviNoteRequest, Candida
 
   public static final String INVALID_REQUEST_ERROR = "Request body must contain text field.";
   private final CandidateService candidateService;
+  private final NoteService noteService;
   private final ViewingScopeValidator viewingScopeValidator;
 
   @JacocoGenerated
   public CreateNoteHandler() {
     this(
         CandidateService.defaultCandidateService(),
+        NoteService.defaultNoteService(),
         ViewingScopeHandler.defaultViewingScopeValidator(),
         new Environment());
   }
 
   public CreateNoteHandler(
       CandidateService candidateService,
+      NoteService noteService,
       ViewingScopeValidator viewingScopeValidator,
       Environment environment) {
     super(NviNoteRequest.class, environment);
     this.candidateService = candidateService;
+    this.noteService = noteService;
     this.viewingScopeValidator = viewingScopeValidator;
   }
 
@@ -83,7 +88,7 @@ public class CreateNoteHandler extends ApiGatewayHandler<NviNoteRequest, Candida
   private Candidate createNote(
       NviNoteRequest input, Candidate candidate, Username username, URI institutionId) {
     var noteRequest = new CreateNoteRequest(input.text(), username.value(), institutionId);
-    candidateService.createNote(candidate, noteRequest);
+    noteService.createNote(candidate, noteRequest);
     return candidateService.getByIdentifier(candidate.identifier());
   }
 

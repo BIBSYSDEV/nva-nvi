@@ -20,7 +20,6 @@ import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.model.CandidateAggregate;
 import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
-import no.sikt.nva.nvi.common.model.CreateNoteRequest;
 import no.sikt.nva.nvi.common.model.UpdateApprovalRequest;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
@@ -30,13 +29,11 @@ import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.CandidateContext;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
-import no.sikt.nva.nvi.common.service.requests.DeleteNoteRequest;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@SuppressWarnings("PMD.CouplingBetweenObjects")
 public class CandidateService {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CandidateService.class);
@@ -175,21 +172,6 @@ public class CandidateService {
     if (request instanceof UpdateAssigneeRequest assigneeRequest) {
       approvalService.updateApprovalAssignee(candidate, assigneeRequest);
     }
-  }
-
-  public void createNote(Candidate candidate, CreateNoteRequest request) {
-    LOGGER.info("Creating note for candidateId={}", candidate.identifier());
-    var updatedItems = candidate.createNote(request);
-    var approvalsToUpdate =
-        updatedItems.updatedApproval().map(Approval::toDao).map(List::of).orElse(emptyList());
-    var notesToAdd = List.of(updatedItems.note().toDao());
-
-    candidateRepository.updateCandidateItems(candidate.toDao(), approvalsToUpdate, notesToAdd);
-  }
-
-  public void deleteNote(Candidate candidate, DeleteNoteRequest request) {
-    var noteToDelete = candidate.deleteNote(request);
-    candidateRepository.deleteNote(candidate.identifier(), noteToDelete.noteIdentifier());
   }
 
   private CandidateContext findAggregate(UUID candidateIdentifier) {

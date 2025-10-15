@@ -1,0 +1,40 @@
+package no.sikt.nva.nvi.common.service;
+
+import static java.util.Collections.emptyList;
+import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
+
+import java.util.List;
+import no.sikt.nva.nvi.common.db.CandidateRepository;
+import no.sikt.nva.nvi.common.model.CreateNoteRequest;
+import no.sikt.nva.nvi.common.service.model.Approval;
+import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.service.requests.DeleteNoteRequest;
+import nva.commons.core.JacocoGenerated;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+public record NoteService(CandidateRepository candidateRepository) {
+  private static final Logger LOGGER = LoggerFactory.getLogger(NoteService.class);
+
+  @JacocoGenerated
+  public static NoteService defaultNoteService() {
+    var dynamoClient = defaultDynamoClient();
+    return new NoteService(new CandidateRepository(dynamoClient));
+  }
+
+  public void createNote(Candidate candidate, CreateNoteRequest request) {
+    LOGGER.info("Creating note for candidateId={}", candidate.identifier());
+    var updatedItems = candidate.createNote(request);
+    var approvalsToUpdate =
+        updatedItems.updatedApproval().map(Approval::toDao).map(List::of).orElse(emptyList());
+    var notesToAdd = List.of(updatedItems.note().toDao());
+
+    candidateRepository.updateCandidateItems(candidate.toDao(), approvalsToUpdate, notesToAdd);
+  }
+
+  public void deleteNote(Candidate candidate, DeleteNoteRequest request) {
+    LOGGER.info("Deleting note for candidateId={}", candidate.identifier());
+    var noteToDelete = candidate.deleteNote(request);
+    candidateRepository.deleteNote(candidate.identifier(), noteToDelete.noteIdentifier());
+  }
+}

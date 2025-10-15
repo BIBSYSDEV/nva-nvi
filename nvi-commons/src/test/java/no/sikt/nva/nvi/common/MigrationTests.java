@@ -27,6 +27,7 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.model.DbCreatorTypeListConverter;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import no.sikt.nva.nvi.common.service.CandidateService;
+import no.sikt.nva.nvi.common.service.NoteService;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.utils.BatchScanUtil;
@@ -39,6 +40,7 @@ class MigrationTests {
   public static final int DEFAULT_PAGE_SIZE = 700;
   private CandidateRepository candidateRepository;
   private CandidateService candidateService;
+  private NoteService noteService;
   private BatchScanUtil batchScanUtil;
   private TestScenario scenario;
 
@@ -47,6 +49,7 @@ class MigrationTests {
     scenario = new TestScenario();
     candidateRepository = scenario.getCandidateRepository();
     candidateService = scenario.getCandidateService();
+    noteService = new NoteService(candidateRepository);
     batchScanUtil =
         new BatchScanUtil(
             candidateRepository,
@@ -123,7 +126,7 @@ class MigrationTests {
   private Candidate setupCandidateWithApprovalAndNotes() {
     var candidate = setupRandomApplicableCandidate(scenario);
     var note = createNoteRequest(randomString(), randomString());
-    candidateService.createNote(candidate, note);
+    noteService.createNote(candidate, note);
     var curatorOrganization = getInstitutionId(candidate);
     var userInstance = createCuratorUserInstance(curatorOrganization);
 

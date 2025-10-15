@@ -32,6 +32,7 @@ public class CandidateTestSetup {
       UriWrapper.fromHost(API_DOMAIN).addChild(BASE_PATH, "context").getUri();
   protected TestScenario scenario;
   protected CandidateService candidateService;
+  protected NoteService noteService;
   protected CandidateRepository candidateRepository;
   protected PeriodRepository periodRepository;
   protected UriRetriever mockUriRetriever;
@@ -58,9 +59,10 @@ public class CandidateTestSetup {
   @BeforeEach
   void setup() {
     scenario = new TestScenario();
-    candidateService = scenario.getCandidateService();
     candidateRepository = scenario.getCandidateRepository();
     periodRepository = scenario.getPeriodRepository();
+    candidateService = new CandidateService(ENVIRONMENT, periodRepository, candidateRepository);
+    noteService = new NoteService(candidateRepository);
     mockUriRetriever = scenario.getMockedUriRetriever();
     setupOpenPeriod(scenario, CURRENT_YEAR);
   }

@@ -23,6 +23,7 @@ import no.sikt.nva.nvi.common.model.CreateNoteRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.model.UserInstance;
 import no.sikt.nva.nvi.common.service.CandidateService;
+import no.sikt.nva.nvi.common.service.NoteService;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
@@ -167,7 +168,8 @@ public class TestScenario {
   public void createNote(UUID candidateIdentifier, String content, URI topLevelOrganizationId) {
     var candidate = getCandidateByIdentifier(candidateIdentifier);
     var noteRequest = new CreateNoteRequest(content, randomString(), topLevelOrganizationId);
-    candidateService.createNote(candidate, noteRequest);
+    var noteService = new NoteService(candidateRepository);
+    noteService.createNote(candidate, noteRequest);
   }
 
   public URI setupExpandedPublicationInS3(SampleExpandedPublication publication) {
