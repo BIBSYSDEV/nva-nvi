@@ -19,6 +19,7 @@ import static no.sikt.nva.nvi.common.db.DbPublicationChannelFixtures.randomDbPub
 import static no.sikt.nva.nvi.common.db.DbPublicationDetailsFixtures.randomPublicationBuilder;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.model.CandidateFixtures.setupRandomApplicableCandidate;
+import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationId;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_AFFILIATIONS;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_BODY;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_TYPE;
@@ -371,13 +372,16 @@ class IndexDocumentHandlerTest {
 
   @Test
   void shouldNotBuildIndexDocumentForNonApplicableCandidate() {
-    var institutionId = randomUri();
-    var nonApplicableCandidate = setupNonApplicableCandidate(institutionId);
-    var event = createEvent(nonApplicableCandidate.identifier());
-    mockUriRetrieverOrgResponse(nonApplicableCandidate);
+    var request = createUpsertCandidateRequest(randomOrganizationId()).build();
+    candidateService.upsert(request);
+    var candidate = candidateService.getByPublicationId(request.publicationId());
+    mockUriRetrieverOrgResponse(candidate);
+
+    candidateService.updateNonCandidate(
+        createUpsertNonCandidateRequest(candidate.getPublicationId()));
+    var event = createEvent(candidate.identifier());
     handler.handleRequest(event, CONTEXT);
-    assertThrows(
-        NoSuchKeyException.class, () -> s3Writer.getFile(createPath(nonApplicableCandidate)));
+    assertThrows(NoSuchKeyException.class, () -> s3Writer.getFile(createPath(candidate)));
   }
 
   @Test
@@ -764,15 +768,6 @@ class IndexDocumentHandlerTest {
     partOfArrayNode.add(intermediateLevel);
     lowLevel.set("partOf", partOfArrayNode);
     return lowLevel;
-  }
-
-  private Candidate setupNonApplicableCandidate(URI institutionId) {
-    var request = createUpsertCandidateRequest(institutionId).build();
-    candidateService.upsert(request);
-    var candidate = candidateService.getByPublicationId(request.publicationId());
-    return candidateService
-        .updateNonCandidate(createUpsertNonCandidateRequest(candidate.getPublicationId()))
-        .orElseThrow();
   }
 
   private void mockUriResponseForTopLevelAffiliation(Candidate candidate) {

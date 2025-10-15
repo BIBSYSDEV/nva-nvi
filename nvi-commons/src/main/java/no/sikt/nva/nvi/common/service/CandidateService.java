@@ -133,21 +133,23 @@ public class CandidateService {
     }
   }
 
-  // FIXME: Return void
-  public Optional<Candidate> updateNonCandidate(UpsertNonNviCandidateRequest request) {
-    var responseContext = getCandidateContext(request.publicationId());
-    LOGGER.info(
-        "Updating candidate for publicationId={} to non-candidate", request.publicationId());
+  public void updateNonCandidate(UpsertNonNviCandidateRequest request) {
+    var publicationId = request.publicationId();
+    LOGGER.info("Updating candidate for publicationId={} to non-candidate", publicationId);
+    var candidateContext = getCandidateContext(publicationId);
 
-    var updatedCandidate = responseContext.candidate().map(this::updateToNotApplicable);
-
-    if (updatedCandidate.isPresent()) {
-      LOGGER.info(
-          "Successfully updated publicationId={} to non-candidate", request.publicationId());
+    if (candidateContext.candidate().isEmpty()) {
+      LOGGER.warn("No candidate found for publicationId={}", publicationId);
     } else {
-      LOGGER.error("No candidate found for publicationId={}", request.publicationId());
+      var candidate = candidateContext.candidate().orElseThrow();
+      var nonApplicableCandidate = updateCandidateToNonApplicable(candidate.toDao());
+      var approvalsToDelete =
+          candidate.getApprovals().values().stream().map(Approval::toDao).toList();
+
+      candidateRepository.updateCandidateAndApprovals(
+          nonApplicableCandidate, emptyList(), approvalsToDelete);
+      LOGGER.info("Successfully updated publicationId={} to non-candidate", publicationId);
     }
-    return updatedCandidate;
   }
 
   public Candidate getByIdentifier(UUID candidateIdentifier) {
@@ -255,19 +257,5 @@ public class CandidateService {
         candidateAggregate.notes(),
         period,
         environment);
-  }
-
-  // FIXME: Why return a new candidate here?
-  private Candidate updateToNotApplicable(Candidate currentCandidate) {
-    var existingCandidateDao = currentCandidate.toDao();
-    var nonApplicableCandidate = updateCandidateToNonApplicable(existingCandidateDao);
-    var approvalsToDelete =
-        currentCandidate.getApprovals().values().stream().map(Approval::toDao).toList();
-
-    candidateRepository.updateCandidateAndApprovals(
-        nonApplicableCandidate, emptyList(), approvalsToDelete);
-
-    return Candidate.fromDao(
-        nonApplicableCandidate, emptyList(), emptyList(), Optional.empty(), environment);
   }
 }

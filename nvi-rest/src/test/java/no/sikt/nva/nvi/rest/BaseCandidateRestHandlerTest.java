@@ -126,9 +126,9 @@ public abstract class BaseCandidateRestHandlerTest {
   protected Candidate setupNonApplicableCandidate(URI institutionId) {
     var candidate = scenario.upsertCandidate(createUpsertCandidateRequest(institutionId).build());
     var candidateService = scenario.getCandidateService();
-    return candidateService
-        .updateNonCandidate(createUpsertNonCandidateRequest(candidate.getPublicationId()))
-        .orElseThrow();
+    candidateService.updateNonCandidate(
+        createUpsertNonCandidateRequest(candidate.getPublicationId()));
+    return candidate;
   }
 
   protected Candidate setupCandidateWithUnverifiedCreator() {

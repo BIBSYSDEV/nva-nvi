@@ -26,7 +26,6 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -222,7 +221,8 @@ class CandidateApprovalTest extends CandidateTestSetup {
   void shouldRemoveApprovalsWhenBecomingNonCandidate() {
     var candidate = setupRandomApplicableCandidate(scenario);
     var updateRequest = createUpsertNonCandidateRequest(candidate.getPublicationId());
-    var updatedCandidate = candidateService.updateNonCandidate(updateRequest).orElseThrow();
+    candidateService.updateNonCandidate(updateRequest);
+    var updatedCandidate = candidateService.getByPublicationId(candidate.getPublicationId());
 
     assertThat(updatedCandidate.identifier()).isEqualTo(candidate.identifier());
     assertThat(updatedCandidate.getApprovals()).isEmpty();
@@ -457,11 +457,9 @@ class CandidateApprovalTest extends CandidateTestSetup {
   void shouldResetApprovalsWhenNonCandidateBecomesCandidate() {
     var upsertCandidateRequest = createUpsertCandidateRequest(HARDCODED_INSTITUTION_ID).build();
     var candidate = scenario.upsertCandidate(upsertCandidateRequest);
-    var nonCandidate =
-        candidateService
-            .updateNonCandidate(createUpsertNonCandidateRequest(candidate.getPublicationId()))
-            .orElseThrow();
-    assertFalse(nonCandidate.isApplicable());
+    candidateService.updateNonCandidate(
+        createUpsertNonCandidateRequest(candidate.getPublicationId()));
+
     var updatedCandidate =
         scenario.upsertCandidate(
             createNewUpsertRequestNotAffectingApprovals(upsertCandidateRequest));

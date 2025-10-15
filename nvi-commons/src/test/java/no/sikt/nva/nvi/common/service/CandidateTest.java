@@ -214,9 +214,11 @@ class CandidateTest extends CandidateTestSetup {
 
   @Test
   void shouldDoNothingIfCreateRequestIsForNonCandidateThatDoesNotExist() {
-    var updateRequest = createUpsertNonCandidateRequest(randomUri());
+    var publicationId = randomUri();
+    var updateRequest = createUpsertNonCandidateRequest(publicationId);
 
-    var optionalCandidate = candidateService.updateNonCandidate(updateRequest);
+    candidateService.updateNonCandidate(updateRequest);
+    var optionalCandidate = candidateService.getCandidateContext(publicationId);
     assertThat(optionalCandidate, is(equalTo(Optional.empty())));
   }
 
@@ -311,8 +313,8 @@ class CandidateTest extends CandidateTestSetup {
   void shouldReturnCandidateWithNoPeriodWhenNotApplicable() {
     var tempCandidate = setupRandomApplicableCandidate(scenario);
     var updateRequest = createUpsertNonCandidateRequest(tempCandidate.getPublicationId());
-    var candidateBO = candidateService.updateNonCandidate(updateRequest).orElseThrow();
-    var fetchedCandidate = candidateService.getByIdentifier(candidateBO.identifier());
+    candidateService.updateNonCandidate(updateRequest);
+    var fetchedCandidate = candidateService.getByIdentifier(tempCandidate.identifier());
 
     var periodStatus = toPeriodStatusDto(fetchedCandidate.period()).status();
     assertEquals(Status.NO_PERIOD, periodStatus);
@@ -320,14 +322,14 @@ class CandidateTest extends CandidateTestSetup {
 
   @Test
   void shouldSetPeriodYearWhenResettingCandidate() {
-    var nonApplicableCandidate = nonApplicableCandidate();
+    var tempCandidate = setupRandomApplicableCandidate(scenario);
+    var updateRequest = createUpsertNonCandidateRequest(tempCandidate.getPublicationId());
+    candidateService.updateNonCandidate(updateRequest);
+
     var request =
-        randomUpsertRequestBuilder()
-            .withPublicationId(nonApplicableCandidate.getPublicationId())
-            .build();
+        randomUpsertRequestBuilder().withPublicationId(tempCandidate.getPublicationId()).build();
     candidateService.upsert(request);
-    var updatedApplicableCandidate =
-        candidateService.getByIdentifier(nonApplicableCandidate.identifier());
+    var updatedApplicableCandidate = candidateService.getByIdentifier(tempCandidate.identifier());
 
     var expectedYear = request.publicationDetails().publicationDate().year();
     var period = updatedApplicableCandidate.period().orElseThrow();
@@ -528,13 +530,6 @@ class CandidateTest extends CandidateTestSetup {
                     .withAssignee(approval.getAssigneeUsername())
                     .build())
         .toList();
-  }
-
-  private Candidate nonApplicableCandidate() {
-    var tempCandidate = setupRandomApplicableCandidate(scenario);
-    var updateRequest = createUpsertNonCandidateRequest(tempCandidate.getPublicationId());
-    var candidateBO = candidateService.updateNonCandidate(updateRequest).orElseThrow();
-    return candidateService.getByIdentifier(candidateBO.identifier());
   }
 
   private UpsertNviCandidateRequest getUpdateRequestForExistingCandidate() {
