@@ -13,7 +13,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.Dao;
 import no.sikt.nva.nvi.common.db.NviPeriodDao;
@@ -22,18 +21,16 @@ import no.sikt.nva.nvi.common.db.model.CandidateAggregate;
 import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
+import no.sikt.nva.nvi.common.model.UpdateApprovalRequest;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.model.UserInstance;
-import no.sikt.nva.nvi.common.permissions.CandidatePermissions;
-import no.sikt.nva.nvi.common.service.dto.CandidateOperation;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.CandidateContext;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.common.service.requests.DeleteNoteRequest;
-import nva.commons.apigateway.exceptions.UnauthorizedException;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
@@ -46,6 +43,7 @@ public class CandidateService {
   private final Environment environment;
   private final CandidateRepository candidateRepository;
   private final PeriodRepository periodRepository;
+  private final ApprovalService approvalService;
   private final NviPeriodService periodService;
 
   public CandidateService(
@@ -55,6 +53,7 @@ public class CandidateService {
     this.environment = environment;
     this.periodRepository = periodRepository;
     this.candidateRepository = candidateRepository;
+    this.approvalService = new ApprovalService(candidateRepository);
     this.periodService = new NviPeriodService(environment, periodRepository);
   }
 
@@ -67,7 +66,7 @@ public class CandidateService {
         new CandidateRepository(dynamoClient));
   }
 
-  public void upsert(UpsertNviCandidateRequest request) {
+  public void upsertCandidate(UpsertNviCandidateRequest request) {
     LOGGER.info("Upserting candidate for publicationId={}", request.publicationId());
     request.validate();
     var candidateContext = getCandidateContext(request.publicationId());
@@ -80,11 +79,6 @@ public class CandidateService {
         .ifPresentOrElse(
             existingCandidate -> updateCandidate(request, existingCandidate, targetPeriod),
             () -> createCandidate(request, targetPeriod));
-  }
-
-  public void update(Candidate candidate) {
-    LOGGER.info("Saving updated candidate: {}", candidate.identifier());
-    candidateRepository.updateCandidateAndApprovals(candidate.toDao(), emptyList(), emptyList());
   }
 
   private void createCandidate(UpsertNviCandidateRequest request, NviPeriod period) {
@@ -126,7 +120,12 @@ public class CandidateService {
     }
   }
 
-  public void updateNonCandidate(UpsertNonNviCandidateRequest request) {
+  public void updateCandidate(Candidate candidate) {
+    LOGGER.info("Saving updated candidate: {}", candidate.identifier());
+    candidateRepository.updateCandidateAndApprovals(candidate.toDao(), emptyList(), emptyList());
+  }
+
+  public void updateCandidate(UpsertNonNviCandidateRequest request) {
     var publicationId = request.publicationId();
     LOGGER.info("Updating candidate for publicationId={} to non-candidate", publicationId);
     var candidateContext = getCandidateContext(publicationId);
@@ -168,34 +167,14 @@ public class CandidateService {
     return findAggregate(optionalCandidate.get().identifier());
   }
 
-  public void updateApprovalAssignee(Candidate candidate, UpdateAssigneeRequest request) {
-    LOGGER.info("Updating assignee for candidateId={}: {}", candidate.identifier(), request);
-    var updatedApproval = candidate.updateApprovalAssignee(request);
-    candidateRepository.updateCandidateItems(
-        candidate.toDao(), List.of(updatedApproval.toDao()), emptyList());
-  }
-
-  public void updateApprovalStatus(
-      Candidate candidate, UpdateStatusRequest request, UserInstance user) {
-    LOGGER.info("Updating approval status for candidateId={}: {}", candidate.identifier(), request);
-    var currentStatus = candidate.getApprovalStatus(request.institutionId());
-    if (request.approvalStatus().equals(currentStatus)) {
-      LOGGER.warn("Approval status update attempted with no change in status: {}", request);
-      return;
+  public void updateApproval(
+      Candidate candidate, UpdateApprovalRequest request, UserInstance user) {
+    if (request instanceof UpdateStatusRequest statusRequest) {
+      approvalService.updateApprovalStatus(candidate, statusRequest, user);
     }
-
-    var permissions = new CandidatePermissions(candidate, user);
-    var attemptedOperation = CandidateOperation.fromApprovalStatus(request.approvalStatus());
-    try {
-      permissions.validateAuthorization(attemptedOperation);
-    } catch (UnauthorizedException e) {
-      throw new IllegalStateException("Cannot update approval status");
+    if (request instanceof UpdateAssigneeRequest assigneeRequest) {
+      approvalService.updateApprovalAssignee(candidate, assigneeRequest);
     }
-
-    var updatedApproval = candidate.updateApprovalStatus(request);
-    LOGGER.info("Saving updated approval with status {}", updatedApproval.status());
-    candidateRepository.updateCandidateItems(
-        candidate.toDao(), List.of(updatedApproval.toDao()), emptyList());
   }
 
   public void createNote(Candidate candidate, CreateNoteRequest request) {

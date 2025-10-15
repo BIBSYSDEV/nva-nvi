@@ -69,10 +69,10 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
     try {
       validateMessage(evaluatedCandidate);
       if (evaluatedCandidate.candidate() instanceof UpsertNviCandidateRequest candidate) {
-        candidateService.upsert(candidate);
+        candidateService.upsertCandidate(candidate);
       } else {
         var nonNviCandidate = (UpsertNonNviCandidateRequest) evaluatedCandidate.candidate();
-        candidateService.updateNonCandidate(nonNviCandidate);
+        candidateService.updateCandidate(nonNviCandidate);
       }
       LOGGER.info("NVI candidate persisted for publication: {}", publicationId);
     } catch (Exception e) {

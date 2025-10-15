@@ -237,7 +237,7 @@ class IndexDocumentHandlerTest {
             .withAffiliations(List.of(institutionId))
             .build();
     var request = randomUpsertRequestBuilder().withNviCreators(unverifiedCreator).build();
-    candidateService.upsert(request);
+    candidateService.upsertCandidate(request);
     var candidate = candidateService.getByPublicationId(request.publicationId());
     var expectedIndexDocument =
         setupExistingResourceInS3AndGenerateExpectedDocument(candidate).indexDocument();
@@ -373,12 +373,11 @@ class IndexDocumentHandlerTest {
   @Test
   void shouldNotBuildIndexDocumentForNonApplicableCandidate() {
     var request = createUpsertCandidateRequest(randomOrganizationId()).build();
-    candidateService.upsert(request);
+    candidateService.upsertCandidate(request);
     var candidate = candidateService.getByPublicationId(request.publicationId());
     mockUriRetrieverOrgResponse(candidate);
 
-    candidateService.updateNonCandidate(
-        createUpsertNonCandidateRequest(candidate.getPublicationId()));
+    candidateService.updateCandidate(createUpsertNonCandidateRequest(candidate.getPublicationId()));
     var event = createEvent(candidate.identifier());
     handler.handleRequest(event, CONTEXT);
     assertThrows(NoSuchKeyException.class, () -> s3Writer.getFile(createPath(candidate)));
@@ -933,7 +932,7 @@ class IndexDocumentHandlerTest {
 
   private Candidate randomApplicableCandidate(URI topLevelOrg, URI affiliation) {
     var request = createUpsertCandidateRequestWithSingleAffiliation(topLevelOrg, affiliation);
-    candidateService.upsert(request);
+    candidateService.upsertCandidate(request);
     return candidateService.getByPublicationId(request.publicationId());
   }
 
@@ -945,7 +944,7 @@ class IndexDocumentHandlerTest {
             .withScientificValue(ScientificValue.LEVEL_ONE)
             .build();
     var request = randomUpsertRequestBuilder().withPublicationChannel(channel).build();
-    candidateService.upsert(request);
+    candidateService.upsertCandidate(request);
     return candidateService.getByPublicationId(request.publicationId());
   }
 

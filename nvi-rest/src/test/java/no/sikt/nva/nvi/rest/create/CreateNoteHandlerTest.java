@@ -39,8 +39,7 @@ class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Override
   protected ApiGatewayHandler<NviNoteRequest, CandidateDto> createHandler() {
-    return new CreateNoteHandler(
-        scenario.getCandidateService(), mockViewingScopeValidator, ENVIRONMENT);
+    return new CreateNoteHandler(candidateService, mockViewingScopeValidator, ENVIRONMENT);
   }
 
   @BeforeEach
@@ -64,8 +63,7 @@ class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
         createRequest(candidate.identifier(), new NviNoteRequest("The note"), randomString());
     var viewingScopeValidatorReturningFalse = new FakeViewingScopeValidator(false);
     handler =
-        new CreateNoteHandler(
-            scenario.getCandidateService(), viewingScopeValidatorReturningFalse, ENVIRONMENT);
+        new CreateNoteHandler(candidateService, viewingScopeValidatorReturningFalse, ENVIRONMENT);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
     assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
@@ -142,7 +140,8 @@ class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
     var candidate = setupValidCandidate();
     var existingApprovalAssignee = randomString();
     var updateRequest = new UpdateAssigneeRequest(topLevelOrganizationId, existingApprovalAssignee);
-    var updatedCandidate = scenario.updateApprovalAssignee(candidate.identifier(), updateRequest);
+    candidateService.updateApproval(candidate, updateRequest, curatorUser);
+    var updatedCandidate = candidateService.getByIdentifier(candidate.identifier());
     assertNotNull(
         updatedCandidate.getApprovals().get(topLevelOrganizationId).getAssigneeUsername());
 

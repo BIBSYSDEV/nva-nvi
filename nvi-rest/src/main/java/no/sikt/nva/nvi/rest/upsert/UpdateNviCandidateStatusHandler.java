@@ -82,7 +82,7 @@ public class UpdateNviCandidateStatusHandler
 
   private Candidate updateAndRefetch(
       Candidate candidate, UpdateStatusRequest updateRequest, UserInstance userInstance) {
-    candidateService.updateApprovalStatus(candidate, updateRequest, userInstance);
+    candidateService.updateApproval(candidate, updateRequest, userInstance);
     return fetchCandidate(candidate.identifier());
   }
 

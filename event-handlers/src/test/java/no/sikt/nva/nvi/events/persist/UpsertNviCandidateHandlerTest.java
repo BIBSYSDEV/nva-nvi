@@ -109,7 +109,7 @@ class UpsertNviCandidateHandlerTest {
   void shouldSendMessageToDlqWhenUnexpectedErrorOccurs() {
     candidateService = mock(CandidateService.class);
     handler = new UpsertNviCandidateHandler(candidateService, queueClient, environment);
-    doThrow(RuntimeException.class).when(candidateService).upsert(any());
+    doThrow(RuntimeException.class).when(candidateService).upsertCandidate(any());
 
     handler.handleRequest(createEvent(randomCandidateEvaluatedMessage()), CONTEXT);
 
@@ -156,7 +156,7 @@ class UpsertNviCandidateHandlerTest {
 
     var request =
         createUpsertCandidateRequest(institutions).withPublicationId(publicationId).build();
-    candidateService.upsert(request);
+    candidateService.upsertCandidate(request);
 
     var sqsEvent = createEvent(keep, publicationId, generateS3BucketUri(identifier));
     handler.handleRequest(sqsEvent, CONTEXT);
@@ -172,14 +172,14 @@ class UpsertNviCandidateHandlerTest {
     var upsertCandidateRequest = createUpsertCandidateRequest(institutionId).build();
     var publicationId = upsertCandidateRequest.publicationId();
 
-    candidateService.upsert(upsertCandidateRequest);
+    candidateService.upsertCandidate(upsertCandidateRequest);
     var candidate = scenario.getCandidateByPublicationId(publicationId);
     scenario.updateApprovalStatus(candidate.identifier(), ApprovalStatus.APPROVED, institutionId);
 
     var approvedCandidate = scenario.getCandidateByPublicationId(publicationId);
     var approval = approvedCandidate.getApprovals().get(institutionId);
     var newUpsertRequest = createNewUpsertRequestNotAffectingApprovals(upsertCandidateRequest);
-    candidateService.upsert(newUpsertRequest);
+    candidateService.upsertCandidate(newUpsertRequest);
 
     var updatedCandidate = scenario.getCandidateByPublicationId(publicationId);
     var updatedApproval = updatedCandidate.getApprovals().get(institutionId);

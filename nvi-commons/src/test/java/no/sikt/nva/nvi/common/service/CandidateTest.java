@@ -100,7 +100,7 @@ class CandidateTest extends CandidateTestSetup {
             .build();
     var pointCalculation = randomPointCalculationDtoBuilder().withChannel(channel).build();
     var request = randomUpsertRequestBuilder().withPointCalculation(pointCalculation).build();
-    candidateService.upsert(request);
+    candidateService.upsertCandidate(request);
     var persistedCandidate = candidateService.getByPublicationId(request.publicationId());
     var persistedLevel = persistedCandidate.pointCalculation().channel().scientificValue();
     assertEquals(expectedLevel, persistedLevel);
@@ -168,7 +168,7 @@ class CandidateTest extends CandidateTestSetup {
   void shouldUpdateCandidateWithSystemGeneratedModifiedDate() {
     var request = getUpdateRequestForExistingCandidate();
     var candidate = candidateService.getByPublicationId(request.publicationId());
-    candidateService.upsert(request);
+    candidateService.upsertCandidate(request);
     var updatedCandidate = candidateService.getByIdentifier(candidate.identifier());
     assertNotEquals(candidate.modifiedDate(), updatedCandidate.modifiedDate());
   }
@@ -178,7 +178,7 @@ class CandidateTest extends CandidateTestSetup {
     var request = getUpdateRequestForExistingCandidate();
     var candidate = candidateService.getByPublicationId(request.publicationId());
     var expectedCreatedDate = candidate.createdDate();
-    candidateService.upsert(request);
+    candidateService.upsertCandidate(request);
     var actualPersistedCandidate = candidateService.getByIdentifier(candidate.identifier());
     assertEquals(expectedCreatedDate, actualPersistedCandidate.createdDate());
   }
@@ -191,7 +191,8 @@ class CandidateTest extends CandidateTestSetup {
     var updateRequest =
         randomUpsertRequestBuilder().withPublicationId(candidate.publicationId()).build();
     assertThrows(
-        IllegalCandidateUpdateException.class, () -> candidateService.upsert(updateRequest));
+        IllegalCandidateUpdateException.class,
+        () -> candidateService.upsertCandidate(updateRequest));
   }
 
   @Test
@@ -216,7 +217,7 @@ class CandidateTest extends CandidateTestSetup {
     var publicationId = randomUri();
     var updateRequest = createUpsertNonCandidateRequest(publicationId);
 
-    candidateService.updateNonCandidate(updateRequest);
+    candidateService.updateCandidate(updateRequest);
     var optionalCandidate = candidateService.getCandidateContext(publicationId);
     Assertions.assertThat(optionalCandidate.candidate()).isEmpty();
   }
@@ -312,7 +313,7 @@ class CandidateTest extends CandidateTestSetup {
   void shouldReturnCandidateWithNoPeriodWhenNotApplicable() {
     var tempCandidate = setupRandomApplicableCandidate(scenario);
     var updateRequest = createUpsertNonCandidateRequest(tempCandidate.getPublicationId());
-    candidateService.updateNonCandidate(updateRequest);
+    candidateService.updateCandidate(updateRequest);
     var fetchedCandidate = candidateService.getByIdentifier(tempCandidate.identifier());
 
     var periodStatus = toPeriodStatusDto(fetchedCandidate.period()).status();
@@ -323,11 +324,11 @@ class CandidateTest extends CandidateTestSetup {
   void shouldSetPeriodYearWhenResettingCandidate() {
     var tempCandidate = setupRandomApplicableCandidate(scenario);
     var updateRequest = createUpsertNonCandidateRequest(tempCandidate.getPublicationId());
-    candidateService.updateNonCandidate(updateRequest);
+    candidateService.updateCandidate(updateRequest);
 
     var request =
         randomUpsertRequestBuilder().withPublicationId(tempCandidate.getPublicationId()).build();
-    candidateService.upsert(request);
+    candidateService.upsertCandidate(request);
     var updatedApplicableCandidate = candidateService.getByIdentifier(tempCandidate.identifier());
 
     var expectedYear = request.publicationDetails().publicationDate().year();
@@ -421,7 +422,7 @@ class CandidateTest extends CandidateTestSetup {
     var candidate = setupRandomApplicableCandidate(scenario);
     var dao = candidateRepository.findCandidateById(candidate.identifier()).orElseThrow();
 
-    candidateService.update(candidate);
+    candidateService.updateCandidate(candidate);
 
     var updatedDao = candidateRepository.findCandidateById(candidate.identifier()).orElseThrow();
 
@@ -433,7 +434,7 @@ class CandidateTest extends CandidateTestSetup {
   void shouldUpdateRevision() {
     var candidate = setupRandomApplicableCandidate(scenario);
 
-    candidateService.update(candidate);
+    candidateService.updateCandidate(candidate);
 
     var updatedCandidate = candidateService.getByIdentifier(candidate.identifier());
 
@@ -534,7 +535,7 @@ class CandidateTest extends CandidateTestSetup {
 
   private UpsertNviCandidateRequest getUpdateRequestForExistingCandidate() {
     var insertRequest = randomUpsertRequestBuilder().build();
-    candidateService.upsert(insertRequest);
+    candidateService.upsertCandidate(insertRequest);
     return UpsertRequestBuilder.fromRequest(insertRequest).build();
   }
 

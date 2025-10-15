@@ -4,6 +4,8 @@ import static no.sikt.nva.nvi.common.RequestFixtures.createNoteRequest;
 import static no.sikt.nva.nvi.common.RequestFixtures.randomNoteRequest;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.mockOrganizationResponseForAffiliation;
+import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationId;
+import static no.sikt.nva.nvi.common.model.UserInstanceFixtures.createCuratorUserInstance;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -16,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.net.URI;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
+import no.sikt.nva.nvi.common.model.UserInstance;
 import no.sikt.nva.nvi.common.service.dto.NoteDto;
 import no.sikt.nva.nvi.common.service.exception.UnauthorizedOperationException;
 import no.sikt.nva.nvi.common.service.model.Candidate;
@@ -24,6 +27,8 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class CandidateNotesTest extends CandidateTestSetup {
+  private static final URI ORGANIZATION_ID = randomOrganizationId();
+  private static final UserInstance CURATOR_USER = createCuratorUserInstance(ORGANIZATION_ID);
 
   @Test
   void shouldCreateNoteWhenValidCreateNoteRequest() {
@@ -108,7 +113,7 @@ class CandidateNotesTest extends CandidateTestSetup {
     var candidate = createCandidate(institutionId);
     var existingAssignee = randomString();
     var updateAssigneeRequest = new UpdateAssigneeRequest(institutionId, existingAssignee);
-    candidateService.updateApprovalAssignee(candidate, updateAssigneeRequest);
+    candidateService.updateApproval(candidate, updateAssigneeRequest, CURATOR_USER);
 
     var candidateWithAssignee = scenario.getCandidateByIdentifier(candidate.identifier());
     var noteRequest = new CreateNoteRequest(randomString(), randomString(), institutionId);
@@ -125,7 +130,7 @@ class CandidateNotesTest extends CandidateTestSetup {
   }
 
   private Candidate createCandidate() {
-    return createCandidate(randomUri());
+    return createCandidate(ORGANIZATION_ID);
   }
 
   private NoteDto getAnyNote(Candidate candidate) {

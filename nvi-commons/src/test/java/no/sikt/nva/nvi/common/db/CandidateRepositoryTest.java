@@ -55,13 +55,13 @@ class CandidateRepositoryTest {
     var requestBuilder =
         createUpsertCandidateRequest(randomUri()).withInstanceType(InstanceType.ACADEMIC_ARTICLE);
     var originalRequest = requestBuilder.build();
-    candidateService.upsert(originalRequest);
+    candidateService.upsertCandidate(originalRequest);
     var candidateDao =
         candidateRepository.findByPublicationId(originalRequest.publicationId()).get();
     var originalDbCandidate = candidateDao.candidate();
 
     var newUpsertRequest = requestBuilder.withInstanceType(InstanceType.ACADEMIC_MONOGRAPH).build();
-    candidateService.upsert(newUpsertRequest);
+    candidateService.upsertCandidate(newUpsertRequest);
     var updatedDbCandidate =
         candidateRepository.findCandidateById(candidateDao.identifier()).get().candidate();
 

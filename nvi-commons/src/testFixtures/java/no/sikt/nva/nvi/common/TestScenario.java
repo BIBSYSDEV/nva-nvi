@@ -20,7 +20,6 @@ import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.model.CandidateAggregate;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
-import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.model.UserInstance;
 import no.sikt.nva.nvi.common.service.CandidateService;
@@ -145,14 +144,14 @@ public class TestScenario {
   }
 
   public Candidate upsertCandidate(UpsertNviCandidateRequest request) {
-    candidateService.upsert(request);
+    candidateService.upsertCandidate(request);
     return getCandidateByPublicationId(request.publicationId());
   }
 
   public Candidate updateApprovalStatus(
       UUID candidateIdentifier, UpdateStatusRequest updateRequest, UserInstance userInstance) {
     var candidate = getCandidateByIdentifier(candidateIdentifier);
-    candidateService.updateApprovalStatus(candidate, updateRequest, userInstance);
+    candidateService.updateApproval(candidate, updateRequest, userInstance);
     return getCandidateByIdentifier(candidate.identifier());
   }
 
@@ -161,14 +160,7 @@ public class TestScenario {
     var candidate = getCandidateByIdentifier(candidateIdentifier);
     var updateRequest = createUpdateStatusRequest(status, topLevelOrganizationId, randomString());
     var userInstance = createCuratorUserInstance(topLevelOrganizationId);
-    candidateService.updateApprovalStatus(candidate, updateRequest, userInstance);
-    return getCandidateByIdentifier(candidate.identifier());
-  }
-
-  public Candidate updateApprovalAssignee(
-      UUID candidateIdentifier, UpdateAssigneeRequest updateRequest) {
-    var candidate = getCandidateByIdentifier(candidateIdentifier);
-    candidateService.updateApprovalAssignee(candidate, updateRequest);
+    candidateService.updateApproval(candidate, updateRequest, userInstance);
     return getCandidateByIdentifier(candidate.identifier());
   }
 

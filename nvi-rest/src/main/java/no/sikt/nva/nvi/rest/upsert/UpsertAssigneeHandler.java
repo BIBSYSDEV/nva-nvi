@@ -77,7 +77,7 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<UpsertAssigneeReque
 
     return attempt(() -> candidateService.getByIdentifier(candidateIdentifier))
         .map(candidate -> validateViewingScope(viewingScopeValidator, user.userName(), candidate))
-        .map(candidate -> updateAndRefetch(candidate, updateRequest))
+        .map(candidate -> updateAndRefetch(candidate, updateRequest, user))
         .map(candidate -> CandidateResponseFactory.create(candidate, user))
         .orElseThrow(ExceptionMapper::map);
   }
@@ -87,8 +87,9 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<UpsertAssigneeReque
     return HttpURLConnection.HTTP_OK;
   }
 
-  private Candidate updateAndRefetch(Candidate candidate, UpdateAssigneeRequest updateRequest) {
-    candidateService.updateApprovalAssignee(candidate, updateRequest);
+  private Candidate updateAndRefetch(
+      Candidate candidate, UpdateAssigneeRequest updateRequest, UserInstance user) {
+    candidateService.updateApproval(candidate, updateRequest, user);
     return candidateService.getByIdentifier(candidate.identifier());
   }
 

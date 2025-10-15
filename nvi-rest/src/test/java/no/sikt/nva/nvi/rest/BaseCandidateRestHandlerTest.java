@@ -6,6 +6,7 @@ import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertNonCandid
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.dto.NviCreatorDtoFixtures.verifiedNviCreatorDtoFrom;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.mockOrganizationResponseForAffiliation;
+import static no.sikt.nva.nvi.common.model.UserInstanceFixtures.createCuratorUserInstance;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -30,6 +31,8 @@ import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.dto.NviCreatorDtoFixtures;
 import no.sikt.nva.nvi.common.model.CandidateFixtures;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
+import no.sikt.nva.nvi.common.model.UserInstance;
+import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
@@ -62,6 +65,8 @@ public abstract class BaseCandidateRestHandlerTest {
   protected ByteArrayOutputStream output;
   protected ApiGatewayHandler<?, CandidateDto> handler;
   protected TestScenario scenario;
+  protected CandidateService candidateService;
+  protected UserInstance curatorUser;
 
   @BeforeEach
   protected void commonSetup() {
@@ -72,6 +77,8 @@ public abstract class BaseCandidateRestHandlerTest {
     topLevelOrganizationId = topLevelOrganization.id();
     subOrganizationId = topLevelOrganization.hasPart().getFirst().id();
     mockUriRetriever = scenario.getMockedUriRetriever();
+    candidateService = scenario.getCandidateService();
+    curatorUser = createCuratorUserInstance(topLevelOrganizationId);
 
     output = new ByteArrayOutputStream();
     handler = createHandler();
@@ -126,8 +133,7 @@ public abstract class BaseCandidateRestHandlerTest {
   protected Candidate setupNonApplicableCandidate(URI institutionId) {
     var candidate = scenario.upsertCandidate(createUpsertCandidateRequest(institutionId).build());
     var candidateService = scenario.getCandidateService();
-    candidateService.updateNonCandidate(
-        createUpsertNonCandidateRequest(candidate.getPublicationId()));
+    candidateService.updateCandidate(createUpsertNonCandidateRequest(candidate.getPublicationId()));
     return candidate;
   }
 
