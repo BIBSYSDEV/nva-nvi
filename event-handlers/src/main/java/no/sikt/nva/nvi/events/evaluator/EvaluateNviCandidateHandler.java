@@ -93,7 +93,7 @@ public class EvaluateNviCandidateHandler implements RequestHandler<SQSEvent, Voi
 
     LOGGER.info(
         "Sending evaluated publication {} to upsert queue",
-        candidateEvaluatedMessage.candidate().publicationId());
+        candidateEvaluatedMessage.publicationId());
     queueClient.sendMessage(messageBody, queueUrl);
   }
 

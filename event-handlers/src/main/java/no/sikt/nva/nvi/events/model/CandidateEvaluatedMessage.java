@@ -2,14 +2,21 @@ package no.sikt.nva.nvi.events.model;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import java.net.URI;
 import no.sikt.nva.nvi.common.dto.CandidateType;
 
 @JsonAutoDetect(fieldVisibility = Visibility.ANY)
 @JsonSerialize
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 public record CandidateEvaluatedMessage(CandidateType candidate) {
+
+  @JsonIgnore
+  public URI publicationId() {
+    return candidate.publicationId();
+  }
 
   public static Builder builder() {
     return new Builder();

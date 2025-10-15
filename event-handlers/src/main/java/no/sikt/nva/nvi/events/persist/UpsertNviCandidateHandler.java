@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.events.persist;
 
-import static java.util.Objects.isNull;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 
@@ -9,7 +8,6 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.util.Objects;
-import java.util.Optional;
 import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
@@ -24,7 +22,6 @@ import org.slf4j.LoggerFactory;
 
 public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void> {
 
-  private static final String PUBLICATION_ID_NOT_FOUND = "publicationId not found";
   private static final Logger LOGGER = LoggerFactory.getLogger(UpsertNviCandidateHandler.class);
   private static final String INVALID_NVI_CANDIDATE_MESSAGE = "Invalid nvi candidate message";
   private static final String UPSERT_CANDIDATE_DLQ_QUEUE_URL = "UPSERT_CANDIDATE_DLQ_QUEUE_URL";
@@ -59,19 +56,14 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
   private static void validateMessage(CandidateEvaluatedMessage message) {
     attempt(
             () -> {
-              Objects.requireNonNull(message.candidate().publicationId());
+              Objects.requireNonNull(message.publicationId());
               return message;
             })
         .orElseThrow(failure -> new InvalidNviMessageException(INVALID_NVI_CANDIDATE_MESSAGE));
   }
 
-  private static String extractPublicationId(CandidateEvaluatedMessage evaluatedCandidate) {
-    var publicationId = Optional.ofNullable(evaluatedCandidate.candidate().publicationId());
-    return isNull(publicationId) ? PUBLICATION_ID_NOT_FOUND : publicationId.toString();
-  }
-
   private void upsertNviCandidate(CandidateEvaluatedMessage evaluatedCandidate) {
-    var publicationId = extractPublicationId(evaluatedCandidate);
+    var publicationId = evaluatedCandidate.publicationId();
     LOGGER.info("Processing publication: {}", publicationId);
 
     try {
