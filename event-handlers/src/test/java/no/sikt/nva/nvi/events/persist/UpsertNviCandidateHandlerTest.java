@@ -142,7 +142,7 @@ class UpsertNviCandidateHandlerTest {
     var candidate = setupRandomApplicableCandidate(scenario);
     var eventMessage = nonCandidateMessageForExistingCandidate(candidate);
     handler.handleRequest(createEvent(eventMessage), CONTEXT);
-    var updatedCandidate = candidateService.getByIdentifier(candidate.getIdentifier());
+    var updatedCandidate = candidateService.getByIdentifier(candidate.identifier());
     assertThat(updatedCandidate.isApplicable(), is(false));
   }
 
@@ -174,8 +174,7 @@ class UpsertNviCandidateHandlerTest {
 
     candidateService.upsert(upsertCandidateRequest);
     var candidate = scenario.getCandidateByPublicationId(publicationId);
-    scenario.updateApprovalStatus(
-        candidate.getIdentifier(), ApprovalStatus.APPROVED, institutionId);
+    scenario.updateApprovalStatus(candidate.identifier(), ApprovalStatus.APPROVED, institutionId);
 
     var approvedCandidate = scenario.getCandidateByPublicationId(publicationId);
     var approval = approvedCandidate.getApprovals().get(institutionId);
@@ -198,7 +197,7 @@ class UpsertNviCandidateHandlerTest {
 
     var actualCandidate =
         scenario.getCandidateByPublicationId(evaluatedNviCandidate.publicationId());
-    var actualNviCreators = actualCandidate.getPublicationDetails().allCreators();
+    var actualNviCreators = actualCandidate.publicationDetails().allCreators();
     Assertions.assertThat(actualNviCreators)
         .usingRecursiveComparison()
         .ignoringCollectionOrder()
@@ -218,7 +217,7 @@ class UpsertNviCandidateHandlerTest {
 
     var actualCandidate =
         scenario.getCandidateByPublicationId(evaluatedNviCandidate.publicationId());
-    var actualNviCreators = actualCandidate.getPublicationDetails().allCreators();
+    var actualNviCreators = actualCandidate.publicationDetails().allCreators();
     Assertions.assertThat(actualNviCreators)
         .usingRecursiveComparison()
         .ignoringCollectionOrder()
@@ -230,7 +229,7 @@ class UpsertNviCandidateHandlerTest {
     var requestBuilder = randomEvaluatedNviCandidate();
     var originalCandidate = scenario.upsertCandidate(requestBuilder.build());
 
-    var updatedCreators = new ArrayList<>(originalCandidate.getPublicationDetails().allCreators());
+    var updatedCreators = new ArrayList<>(originalCandidate.publicationDetails().allCreators());
     updatedCreators.add(unverifiedNviCreatorDtoFrom(randomUri()));
     var updateRequest = requestBuilder.withNviCreators(updatedCreators).build();
 
@@ -238,7 +237,7 @@ class UpsertNviCandidateHandlerTest {
     handler.handleRequest(sqsEvent, CONTEXT);
 
     var updatedCandidate = scenario.getCandidateByPublicationId(updateRequest.publicationId());
-    var actualNviCreators = updatedCandidate.getPublicationDetails().allCreators();
+    var actualNviCreators = updatedCandidate.publicationDetails().allCreators();
     Assertions.assertThat(actualNviCreators)
         .hasSize(2)
         .usingRecursiveComparison()

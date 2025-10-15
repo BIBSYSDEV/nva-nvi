@@ -84,7 +84,7 @@ public class CreateNoteHandler extends ApiGatewayHandler<NviNoteRequest, Candida
       NviNoteRequest input, Candidate candidate, Username username, URI institutionId) {
     var noteRequest = new CreateNoteRequest(input.text(), username.value(), institutionId);
     candidateService.createNote(candidate, noteRequest);
-    return candidateService.getByIdentifier(candidate.getIdentifier());
+    return candidateService.getByIdentifier(candidate.identifier());
   }
 
   private Candidate checkIfApplicable(Candidate candidate) {

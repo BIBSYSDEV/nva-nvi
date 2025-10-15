@@ -70,7 +70,7 @@ public class RemoveNoteHandler extends ApiGatewayHandler<Void, CandidateDto>
 
   private Candidate deleteNote(Candidate candidate, DeleteNoteRequest request) {
     candidateService.deleteNote(candidate, request);
-    return candidateService.getByIdentifier(candidate.getIdentifier());
+    return candidateService.getByIdentifier(candidate.identifier());
   }
 
   @Override

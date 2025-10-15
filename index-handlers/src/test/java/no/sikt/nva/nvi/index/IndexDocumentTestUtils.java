@@ -73,7 +73,7 @@ public final class IndexDocumentTestUtils {
 
   public static UnixPath createPath(Candidate candidate) {
     return UnixPath.of(NVI_CANDIDATES_FOLDER)
-        .addChild(candidate.getIdentifier().toString() + GZIP_ENDING);
+        .addChild(candidate.identifier().toString() + GZIP_ENDING);
   }
 
   public static List<no.sikt.nva.nvi.index.model.document.Approval> expandApprovals(
@@ -87,11 +87,11 @@ public final class IndexDocumentTestUtils {
       Candidate candidate, JsonNode expandedResource) {
     return PublicationDetails.builder()
         .withType(ExpandedResourceGenerator.extractType(expandedResource))
-        .withId(candidate.getPublicationDetails().publicationId().toString())
+        .withId(candidate.publicationDetails().publicationId().toString())
         .withTitle(ExpandedResourceGenerator.extractTitle(expandedResource))
         .withAbstract(ExpandedResourceGenerator.extractOptionalAbstract(expandedResource))
         .withPublicationDate(
-            candidate.getPublicationDetails().publicationDate().toDtoPublicationDate())
+            candidate.publicationDetails().publicationDate().toDtoPublicationDate())
         .withContributors(
             mapToContributors(
                 ExpandedResourceGenerator.extractContributors(expandedResource), candidate))

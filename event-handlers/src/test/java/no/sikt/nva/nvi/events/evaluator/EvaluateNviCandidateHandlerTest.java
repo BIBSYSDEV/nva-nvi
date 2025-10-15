@@ -729,7 +729,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       var publication =
           factory.withContributor(verifiedCreatorFrom(nviOrganization)).getExpandedPublication();
       var candidate = evaluatePublicationAndGetPersistedCandidate(publication);
-      var publicationDetails = candidate.getPublicationDetails();
+      var publicationDetails = candidate.publicationDetails();
 
       assertThat(candidate)
           .extracting(Candidate::isApplicable, Candidate::getCreatorShareCount)
@@ -745,7 +745,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       var publication =
           factory.withContributor(unverifiedCreatorFrom(nviOrganization)).getExpandedPublication();
       var candidate = evaluatePublicationAndGetPersistedCandidate(publication);
-      var publicationDetails = candidate.getPublicationDetails();
+      var publicationDetails = candidate.publicationDetails();
 
       assertThat(candidate)
           .extracting(Candidate::isApplicable, Candidate::getTotalPoints)
@@ -791,7 +791,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
           factory.withContributor(createUnverifiedCreatorWithTwoNames()).getExpandedPublication();
 
       var candidate = evaluatePublicationAndGetPersistedCandidate(publication);
-      var publicationDetails = candidate.getPublicationDetails();
+      var publicationDetails = candidate.publicationDetails();
 
       assertThat(candidate)
           .extracting(Candidate::isApplicable, Candidate::getTotalPoints)
@@ -822,7 +822,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
               .withContributor(unverifiedCreatorFrom(nviOrganization))
               .getExpandedPublication();
       var candidate = evaluatePublicationAndGetPersistedCandidate(publication);
-      var publicationDetails = candidate.getPublicationDetails();
+      var publicationDetails = candidate.publicationDetails();
 
       var expectedTotalPoints = BigDecimal.valueOf(0.7071).setScale(SCALE, ROUNDING_MODE);
       assertThat(candidate)
@@ -877,7 +877,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
           factory.withContributor(verifiedCreatorFrom(nviOrganization)).getExpandedPublication();
 
       var candidate = evaluatePublicationAndGetPersistedCandidate(publication);
-      var publicationDetails = candidate.getPublicationDetails();
+      var publicationDetails = candidate.publicationDetails();
 
       assertThat(candidate.getTotalPoints()).isPositive();
       assertThat(candidate.isApplicable()).isTrue();
@@ -896,7 +896,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       setupCandidateMatchingPublication(publication);
 
       var candidate = evaluatePublicationAndGetPersistedCandidate(publication);
-      var publicationDetails = candidate.getPublicationDetails();
+      var publicationDetails = candidate.publicationDetails();
 
       assertThat(candidate.getTotalPoints()).isPositive();
       assertThat(candidate.isApplicable()).isTrue();
@@ -1032,7 +1032,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       var finalPublication =
           publicationFactory.withPublicationDate(newPeriod).getExpandedPublication();
       var updatedCandidate = evaluatePublicationAndGetPersistedCandidate(finalPublication);
-      var publicationDetails = updatedCandidate.getPublicationDetails();
+      var publicationDetails = updatedCandidate.publicationDetails();
 
       assertThat(updatedCandidate.isApplicable()).isTrue();
       assertThat(publicationDetails.publicationDate()).isEqualTo(newPeriod);

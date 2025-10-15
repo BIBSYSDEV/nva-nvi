@@ -109,7 +109,7 @@ class FetchReportStatusByPublicationIdHandlerTest {
     var involvedInstitutions = new URI[] {institution1, randomUri()};
     var upsertCandidateRequest = createUpsertCandidateRequest(involvedInstitutions).build();
     var candidate = scenario.upsertCandidate(upsertCandidateRequest);
-    scenario.updateApprovalStatus(candidate.getIdentifier(), approvalStatus, institution1);
+    scenario.updateApprovalStatus(candidate.identifier(), approvalStatus, institution1);
 
     handler.handleRequest(createRequest(candidate.getPublicationId()), output, context);
 
@@ -132,9 +132,9 @@ class FetchReportStatusByPublicationIdHandlerTest {
     var request = createUpsertCandidateRequest(organization1, organization2).build();
     var candidate = scenario.upsertCandidate(request);
     scenario.updateApprovalStatus(
-        candidate.getIdentifier(), ApprovalStatus.APPROVED, organization1.id());
+        candidate.identifier(), ApprovalStatus.APPROVED, organization1.id());
     scenario.updateApprovalStatus(
-        candidate.getIdentifier(), ApprovalStatus.APPROVED, organization2.id());
+        candidate.identifier(), ApprovalStatus.APPROVED, organization2.id());
 
     handler.handleRequest(createRequest(candidate.getPublicationId()), output, context);
 
@@ -157,9 +157,9 @@ class FetchReportStatusByPublicationIdHandlerTest {
     var request = createUpsertCandidateRequest(organization1, organization2).build();
     var candidate = scenario.upsertCandidate(request);
     scenario.updateApprovalStatus(
-        candidate.getIdentifier(), ApprovalStatus.REJECTED, organization1.id());
+        candidate.identifier(), ApprovalStatus.REJECTED, organization1.id());
     scenario.updateApprovalStatus(
-        candidate.getIdentifier(), ApprovalStatus.REJECTED, organization2.id());
+        candidate.identifier(), ApprovalStatus.REJECTED, organization2.id());
 
     handler.handleRequest(createRequest(candidate.getPublicationId()), output, context);
 

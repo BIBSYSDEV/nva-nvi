@@ -80,7 +80,7 @@ class ConcurrencyHandlingTests {
             .withInstanceType(ACADEMIC_ARTICLE)
             .withPublicationDate(PUBLICATION_DATE.toDtoPublicationDate());
     var candidate = prepareCandidateWithNotesAndApprovals();
-    candidateIdentifier = candidate.getIdentifier();
+    candidateIdentifier = candidate.identifier();
     publicationId = candidate.getPublicationId();
   }
 
@@ -191,12 +191,12 @@ class ConcurrencyHandlingTests {
     void shouldHandleExistingCandidatesWithoutRevision() {
       removeRevisionFromCandidate(candidateIdentifier);
       var first = scenario.getCandidateByIdentifier(candidateIdentifier);
-      assertThat(first.getRevision()).isNull();
+      assertThat(first.revision()).isNull();
 
       candidateRepository.candidateTable.putItem(getCandidateDao(candidateIdentifier));
       var second = scenario.getCandidateByIdentifier(candidateIdentifier);
 
-      assertThat(second.getRevision()).isEqualTo(1L);
+      assertThat(second.revision()).isEqualTo(1L);
     }
 
     @Test
@@ -229,7 +229,7 @@ class ConcurrencyHandlingTests {
       assertThat(secondDao.lastWrittenAt()).isBetween(beforeWrite, afterWrite);
 
       var second = scenario.getCandidateByIdentifier(candidateIdentifier);
-      assertThat(second.getRevision()).isEqualTo(1L);
+      assertThat(second.revision()).isEqualTo(1L);
     }
 
     @Test
@@ -251,17 +251,17 @@ class ConcurrencyHandlingTests {
     void shouldIncrementRevisionForEachUpdate() {
       removeRevisionFromCandidate(candidateIdentifier);
       var first = scenario.getCandidateByIdentifier(candidateIdentifier);
-      assertThat(first.getRevision()).isNull();
+      assertThat(first.revision()).isNull();
 
       candidateRepository.candidateTable.putItem(getCandidateDao(candidateIdentifier));
       var second = scenario.getCandidateByIdentifier(candidateIdentifier);
-      assertThat(second.getRevision()).isEqualTo(1L);
+      assertThat(second.revision()).isEqualTo(1L);
 
       var secondUpdate =
           getCandidateDao(candidateIdentifier).copy().version(randomUUID().toString()).build();
       candidateRepository.candidateTable.putItem(secondUpdate);
       var third = scenario.getCandidateByIdentifier(candidateIdentifier);
-      assertThat(third.getRevision()).isEqualTo(2L);
+      assertThat(third.revision()).isEqualTo(2L);
     }
   }
 
@@ -277,9 +277,9 @@ class ConcurrencyHandlingTests {
       var first = scenario.upsertCandidate(firstRequest);
       var second = scenario.upsertCandidate(secondRequest);
 
-      assertThat(first.getIdentifier()).isEqualTo(second.getIdentifier());
-      assertThat(first.getPublicationDetails().publicationBucketUri())
-          .isNotEqualTo(second.getPublicationDetails().publicationBucketUri());
+      assertThat(first.identifier()).isEqualTo(second.identifier());
+      assertThat(first.publicationDetails().publicationBucketUri())
+          .isNotEqualTo(second.publicationDetails().publicationBucketUri());
     }
 
     @Test
@@ -404,7 +404,7 @@ class ConcurrencyHandlingTests {
           createUpsertCandidateRequest(organizations)
               .withInstanceType(ACADEMIC_ARTICLE)
               .withPublicationDate(PUBLICATION_DATE.toDtoPublicationDate());
-      var candidateId = scenario.upsertCandidate(requestBuilder.build()).getIdentifier();
+      var candidateId = scenario.upsertCandidate(requestBuilder.build()).identifier();
 
       var approvingOrganization = organizations.iterator().next().id();
       scenario.updateApprovalStatus(candidateId, ApprovalStatus.APPROVED, approvingOrganization);
@@ -425,7 +425,7 @@ class ConcurrencyHandlingTests {
 
       var updateRequest = requestBuilder.withInstanceType(ACADEMIC_MONOGRAPH).build();
       var updatedCandidate = scenario.upsertCandidate(updateRequest);
-      assertThat(updatedCandidate.getRevision()).isEqualTo(originalCandidate.getRevision() + 1);
+      assertThat(updatedCandidate.revision()).isEqualTo(originalCandidate.revision() + 1);
       assertThat(updatedCandidate.getApprovals().size()).isZero();
     }
 
@@ -437,7 +437,7 @@ class ConcurrencyHandlingTests {
       var aggregate = response.candidate().orElseThrow();
 
       assertThat(periods).hasSizeGreaterThanOrEqualTo(2);
-      assertThat(aggregate.getIdentifier()).isEqualTo(candidateIdentifier);
+      assertThat(aggregate.identifier()).isEqualTo(candidateIdentifier);
       assertThat(aggregate.getApprovals()).hasSize(2);
       assertThat(aggregate.getNotes()).hasSize(3);
     }
@@ -488,7 +488,7 @@ class ConcurrencyHandlingTests {
     setupOpenPeriod(scenario, PUBLICATION_DATE.year());
 
     var candidate = scenario.upsertCandidate(upsertRequestBuilder.build());
-    var candidateId = candidate.getIdentifier();
+    var candidateId = candidate.identifier();
 
     scenario.updateApprovalStatus(candidateId, ApprovalStatus.APPROVED, ORGANIZATION_1);
     scenario.updateApprovalStatus(candidateId, ApprovalStatus.REJECTED, ORGANIZATION_2);

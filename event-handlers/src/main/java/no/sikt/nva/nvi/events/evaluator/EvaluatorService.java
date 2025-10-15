@@ -145,7 +145,7 @@ public class EvaluatorService {
   }
 
   private boolean isApplicableInPeriod(NviPeriod targetPeriod, Candidate candidate) {
-    var candidatePeriod = candidate.getPeriod();
+    var candidatePeriod = candidate.period();
     if (isNull(candidatePeriod) || isNull(candidatePeriod.id())) {
       return false;
     }

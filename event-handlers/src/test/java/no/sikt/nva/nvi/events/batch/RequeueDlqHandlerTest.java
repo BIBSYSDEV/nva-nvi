@@ -68,13 +68,13 @@ class RequeueDlqHandlerTest {
   @Test
   void shouldWriteToDynamodbWhenProcessing() {
     var candidate = setupRandomApplicableCandidate(scenario);
-    var message = generateMessageForCandidate(randomString(), candidate.getIdentifier());
+    var message = generateMessageForCandidate(randomString(), candidate.identifier());
     setupMockEvents(List.of(message));
 
     handler.handleRequest(new RequeueDlqInput(1), CONTEXT);
 
-    var updatedCandidate = candidateService.getByIdentifier(candidate.getIdentifier());
-    assertThat(updatedCandidate.getRevision()).isNotEqualTo(candidate.getRevision());
+    var updatedCandidate = candidateService.getByIdentifier(candidate.identifier());
+    assertThat(updatedCandidate.revision()).isNotEqualTo(candidate.revision());
   }
 
   @Test
@@ -114,7 +114,7 @@ class RequeueDlqHandlerTest {
   @Test
   void shouldIgnoreDuplicates() {
     var candidate = setupRandomApplicableCandidate(scenario);
-    var candidateMessage = generateMessageForCandidate(FIRST_BATCH + 1, candidate.getIdentifier());
+    var candidateMessage = generateMessageForCandidate(FIRST_BATCH + 1, candidate.identifier());
     setupMockEvents(List.of(candidateMessage), List.of(candidateMessage));
 
     var response = handler.handleRequest(new RequeueDlqInput(100), CONTEXT);
@@ -200,11 +200,11 @@ class RequeueDlqHandlerTest {
   @Test
   void shouldRequeueCandidateWithoutLossOfInformation() {
     var candidate = setupRandomApplicableCandidate(scenario);
-    var message = generateMessageForCandidate(randomString(), candidate.getIdentifier());
+    var message = generateMessageForCandidate(randomString(), candidate.identifier());
     setupMockEvents(List.of(message), emptyList());
 
     handler.handleRequest(new RequeueDlqInput(1), CONTEXT);
-    var actualCandidate = candidateService.getByIdentifier(candidate.getIdentifier());
+    var actualCandidate = candidateService.getByIdentifier(candidate.identifier());
     assertThat(actualCandidate)
         .usingRecursiveComparison()
         .ignoringFields("version", "revision", "lastWrittenAt")
@@ -214,7 +214,7 @@ class RequeueDlqHandlerTest {
 
   private Message createCandidateMessage(String messageId) {
     var candidate = setupRandomApplicableCandidate(scenario);
-    return generateMessageForCandidate(messageId, candidate.getIdentifier());
+    return generateMessageForCandidate(messageId, candidate.identifier());
   }
 
   private List<Message> createCandidateMessages(String batchPrefix, int count) {

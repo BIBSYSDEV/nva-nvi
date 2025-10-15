@@ -73,7 +73,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
   @Test
   void shouldReturnNotFoundWhenCandidateExistsButNotApplicable() throws IOException {
     var nonApplicableCandidate = setupNonApplicableCandidate(topLevelOrganizationId);
-    var request = createRequestWithCuratorAccess(nonApplicableCandidate.getIdentifier().toString());
+    var request = createRequestWithCuratorAccess(nonApplicableCandidate.identifier().toString());
     handler.handleRequest(request, output, CONTEXT);
     var gatewayResponse = getGatewayResponse();
 
@@ -91,7 +91,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
     var randomOrganizationId = randomUri();
 
     var request =
-        createRequest(candidate.getIdentifier().toString(), randomOrganizationId, accessRight);
+        createRequest(candidate.identifier().toString(), randomOrganizationId, accessRight);
     var responseDto = handleRequest(request);
 
     Assertions.assertThat(responseDto)
@@ -107,7 +107,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
   void shouldReturnUnauthorizedWhenUserDoesNotHaveRoleWithAccess(AccessRight accessRight)
       throws IOException {
     var candidate = setupValidCandidate();
-    var request = createRequest(candidate.getIdentifier().toString(), randomUri(), accessRight);
+    var request = createRequest(candidate.identifier().toString(), randomUri(), accessRight);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
     assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
@@ -116,7 +116,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
   @Test
   void shouldReturnUnauthorizedWhenUserDoesNotHaveSufficientAccessRight() throws IOException {
     var candidate = setupValidCandidate();
-    var request = createRequestWithoutAccessRight(candidate.getIdentifier().toString());
+    var request = createRequestWithoutAccessRight(candidate.identifier().toString());
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
@@ -130,7 +130,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
         new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
             .withHeaders(Map.of(HttpHeaders.ACCEPT, ContentType.APPLICATION_JSON.getMimeType()))
             .withUserName(randomString())
-            .withPathParameters(Map.of(resourcePathParameter, candidate.getIdentifier().toString()))
+            .withPathParameters(Map.of(resourcePathParameter, candidate.identifier().toString()))
             .build();
 
     handler.handleRequest(request, output, CONTEXT);
@@ -142,7 +142,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
   @Test
   void shouldReturnValidCandidateWhenCandidateExists() throws IOException {
     var candidate = setupValidCandidate();
-    var request = createRequestWithCuratorAccess(candidate.getIdentifier().toString());
+    var request = createRequestWithCuratorAccess(candidate.identifier().toString());
 
     var responseDto = handleRequest(request);
 
@@ -155,7 +155,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
   void shouldReturnCandidateDtoWithApprovalStatusNewWhenApprovalStatusIsPendingAndUnassigned()
       throws IOException {
     var candidate = setupValidCandidate();
-    var request = createRequestWithCuratorAccess(candidate.getIdentifier().toString());
+    var request = createRequestWithCuratorAccess(candidate.identifier().toString());
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
     var actualResponse = response.getBodyObject(CandidateDto.class);
@@ -167,7 +167,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
   @Test
   void shouldReturnValidCandidateWhenUserIsNviAdmin() throws IOException {
     var candidate = setupValidCandidate();
-    var request = createRequestWithAdminAccess(candidate.getIdentifier().toString());
+    var request = createRequestWithAdminAccess(candidate.identifier().toString());
 
     var responseDto = handleRequest(request);
 
@@ -181,7 +181,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
   @Test
   void shouldAllowFinalizingNewValidCandidate() throws IOException {
     var candidate = setupValidCandidate();
-    var request = createRequestWithCuratorAccess(candidate.getIdentifier().toString());
+    var request = createRequestWithCuratorAccess(candidate.identifier().toString());
 
     var candidateDto = handleRequest(request);
 
@@ -193,7 +193,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
   @Test
   void shouldNotAllowFinalizingNewCandidateWithUnverifiedCreator() throws IOException {
     var candidate = setupCandidateWithUnverifiedCreator();
-    var request = createRequestWithCuratorAccess(candidate.getIdentifier().toString());
+    var request = createRequestWithCuratorAccess(candidate.identifier().toString());
 
     var candidateDto = handleRequest(request);
 
@@ -206,7 +206,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
   void shouldAllowFinalizingCandidateWithUnverifiedCreatorFromAnotherInstitution()
       throws IOException {
     var candidate = setupCandidateWithUnverifiedCreatorFromAnotherInstitution();
-    var request = createRequestWithCuratorAccess(candidate.getIdentifier().toString());
+    var request = createRequestWithCuratorAccess(candidate.identifier().toString());
 
     var candidateDto = handleRequest(request);
 
@@ -218,7 +218,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
   @Test
   void shouldAllowResettingApprovalForApprovedCandidate() throws IOException {
     var candidate = setupCandidateWithApproval();
-    var request = createRequestWithCuratorAccess(candidate.getIdentifier().toString());
+    var request = createRequestWithCuratorAccess(candidate.identifier().toString());
 
     var candidateDto = handleRequest(request);
 
@@ -229,7 +229,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
   @Test
   void shouldHaveNoProblemsWhenCandidateIsValid() throws IOException {
     var candidate = setupValidCandidate();
-    var request = createRequestWithCuratorAccess(candidate.getIdentifier().toString());
+    var request = createRequestWithCuratorAccess(candidate.identifier().toString());
 
     var candidateDto = handleRequest(request);
 
@@ -241,7 +241,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
   @Test
   void shouldIncludeProblemsWhenCandidateHasUnverifiedCreator() throws IOException {
     var candidate = setupCandidateWithUnverifiedCreator();
-    var request = createRequestWithCuratorAccess(candidate.getIdentifier().toString());
+    var request = createRequestWithCuratorAccess(candidate.identifier().toString());
     var unverifiedNviCreatorNames = getUnverifiedNviCreatorNames(candidate);
 
     var candidateDto = handleRequest(request);
@@ -255,7 +255,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
   }
 
   private static Set<String> getUnverifiedNviCreatorNames(Candidate candidate) {
-    return candidate.getPublicationDetails().unverifiedCreators().stream()
+    return candidate.publicationDetails().unverifiedCreators().stream()
         .map(UnverifiedNviCreatorDto::name)
         .collect(Collectors.toSet());
   }
@@ -264,7 +264,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
   void shouldIncludeProblemWhenCandidateHasUnverifiedCreatorFromAnotherOrganization()
       throws IOException {
     var candidate = setupCandidateWithUnverifiedCreatorFromAnotherInstitution();
-    var request = createRequestWithCuratorAccess(candidate.getIdentifier().toString());
+    var request = createRequestWithCuratorAccess(candidate.identifier().toString());
 
     var candidateDto = handleRequest(request);
 
@@ -282,7 +282,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
         createOrganizationHierarchy(topLevelOrganizationId, departmentId, subDepartmentId, groupId);
     var candidate = setupCandidateWithCreatorFrom(topLevelOrganization, departmentId);
 
-    var request = createRequestWithCuratorAccess(candidate.getIdentifier().toString());
+    var request = createRequestWithCuratorAccess(candidate.identifier().toString());
     var candidateDto = handleRequest(request);
 
     Assertions.assertThat(candidateDto.allowedOperations())
@@ -298,7 +298,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
         createOrganizationHierarchy(topLevelOrganizationId, departmentId, subDepartmentId, groupId);
     var candidate = setupCandidateWithCreatorFrom(topLevelOrganization, subDepartmentId);
 
-    var request = createRequestWithCuratorAccess(candidate.getIdentifier().toString());
+    var request = createRequestWithCuratorAccess(candidate.identifier().toString());
     var candidateDto = handleRequest(request);
 
     Assertions.assertThat(candidateDto.allowedOperations())
@@ -318,7 +318,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
 
     var request =
         createRequestWithCuratorAccess(
-            candidate.getIdentifier().toString(), topLevelOrganization.id());
+            candidate.identifier().toString(), topLevelOrganization.id());
     var candidateDto = handleRequest(request);
 
     Assertions.assertThat(candidateDto.allowedOperations())

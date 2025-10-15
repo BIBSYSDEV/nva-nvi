@@ -78,7 +78,7 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
             .build();
 
     var candidate = evaluatePublicationAndGetPersistedCandidate(publication);
-    var actualTopLevelOrganizations = candidate.getPublicationDetails().topLevelOrganizations();
+    var actualTopLevelOrganizations = candidate.publicationDetails().topLevelOrganizations();
     var expectedTopLevelOrganizations = List.of(nviOrganization, nviOrganization2);
 
     assertThat(actualTopLevelOrganizations)

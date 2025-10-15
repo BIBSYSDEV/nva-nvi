@@ -164,7 +164,7 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
 
   private PersistedResource fetchPersistedResource(Candidate candidate) {
     return PersistedResource.fromUri(
-        candidate.getPublicationDetails().publicationBucketUri(), storageReader);
+        candidate.publicationDetails().publicationBucketUri(), storageReader);
   }
 
   private IndexDocumentWithConsumptionAttributes generateIndexDocument(

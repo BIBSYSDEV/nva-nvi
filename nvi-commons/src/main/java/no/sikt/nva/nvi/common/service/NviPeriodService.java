@@ -54,10 +54,7 @@ public class NviPeriodService {
 
   public Optional<NviPeriod> findByPublishingYear(String publishingYear) {
     var periodDao = periodRepository.findByPublishingYear(publishingYear);
-    if (periodDao.isPresent()) {
-      return Optional.of(NviPeriod.fromDao(periodDao.get()));
-    }
-    return Optional.empty();
+    return periodDao.map(NviPeriod::fromDao);
   }
 
   public NviPeriod getByPublishingYear(String publishingYear) {

@@ -189,9 +189,9 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
 
   private Candidate candidateWithFinalizedApproval(String newAssignee) {
     var updateRequest = new UpdateAssigneeRequest(topLevelOrganizationId, newAssignee);
-    scenario.updateApprovalAssignee(candidate.getIdentifier(), updateRequest);
+    scenario.updateApprovalAssignee(candidate.identifier(), updateRequest);
     return scenario.updateApprovalStatus(
-        candidate.getIdentifier(), ApprovalStatus.APPROVED, topLevelOrganizationId);
+        candidate.identifier(), ApprovalStatus.APPROVED, topLevelOrganizationId);
   }
 
   private InputStream createRequest(Candidate candidate, String newAssignee)
@@ -203,7 +203,7 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
         .withAccessRights(requestBody.institutionId(), AccessRight.MANAGE_NVI_CANDIDATES)
         .withUserName(randomString())
         .withBody(requestBody)
-        .withPathParameters(Map.of(resourcePathParameter, candidate.getIdentifier().toString()))
+        .withPathParameters(Map.of(resourcePathParameter, candidate.identifier().toString()))
         .build();
   }
 

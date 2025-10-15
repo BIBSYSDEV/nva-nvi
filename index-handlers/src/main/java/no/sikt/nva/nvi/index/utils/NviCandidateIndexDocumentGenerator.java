@@ -165,8 +165,8 @@ public final class NviCandidateIndexDocumentGenerator {
         .withId(candidate.getId())
         .withContext(Candidate.getContextUri())
         .withIsApplicable(candidate.isApplicable())
-        .withIdentifier(candidate.getIdentifier())
-        .withReportingPeriod(new ReportingPeriod(candidate.getPeriod().year()))
+        .withIdentifier(candidate.identifier())
+        .withReportingPeriod(new ReportingPeriod(candidate.period().year()))
         .withReported(candidate.isReported())
         .withApprovals(approvals)
         .withPublicationDetails(expandedPublicationDetails)
@@ -176,8 +176,8 @@ public final class NviCandidateIndexDocumentGenerator {
         .withGlobalApprovalStatus(candidate.getGlobalApprovalStatus())
         .withCreatorShareCount(candidate.getCreatorShareCount())
         .withInternationalCollaborationFactor(candidate.getCollaborationFactor())
-        .withCreatedDate(candidate.getCreatedDate())
-        .withModifiedDate(candidate.getModifiedDate())
+        .withCreatedDate(candidate.createdDate())
+        .withModifiedDate(candidate.modifiedDate())
         .build();
   }
 
@@ -190,7 +190,7 @@ public final class NviCandidateIndexDocumentGenerator {
 
   private PublicationDetails expandPublicationDetails(List<ContributorType> contributors) {
     return PublicationDetails.builder()
-        .withId(candidate.getPublicationDetails().publicationId().toString())
+        .withId(candidate.publicationDetails().publicationId().toString())
         .withContributors(contributors)
         .withType(extractInstanceType())
         .withPublicationDate(extractPublicationDate())
@@ -339,7 +339,7 @@ public final class NviCandidateIndexDocumentGenerator {
 
   public static Optional<VerifiedNviCreatorDto> getVerifiedNviCreatorIfPresent(
       JsonNode contributor, Candidate candidate) {
-    return candidate.getPublicationDetails().verifiedCreators().stream()
+    return candidate.publicationDetails().verifiedCreators().stream()
         .filter(
             creator -> creator.id().toString().equals(extractId(contributor.at(JSON_PTR_IDENTITY))))
         .findFirst();
@@ -347,7 +347,7 @@ public final class NviCandidateIndexDocumentGenerator {
 
   public static Optional<UnverifiedNviCreatorDto> getUnverifiedNviCreatorIfPresent(
       JsonNode contributor, Candidate candidate) {
-    return candidate.getPublicationDetails().unverifiedCreators().stream()
+    return candidate.publicationDetails().unverifiedCreators().stream()
         .filter(creator -> creator.name().equals(extractName(contributor.at(JSON_PTR_IDENTITY))))
         .findFirst();
   }

@@ -11,7 +11,7 @@ public record ReportStatusDto(
     return new ReportStatusDto(
         candidate.getPublicationId(),
         StatusWithDescriptionDto.fromStatus(getStatus(candidate)),
-        candidate.getPeriod().year());
+        candidate.period().year());
   }
 
   public static Builder builder() {
@@ -26,10 +26,10 @@ public record ReportStatusDto(
     } else if (candidate.isPendingReview()) {
       return StatusDto.PENDING_REVIEW;
     } else if (GlobalApprovalStatus.REJECTED.equals(candidate.getGlobalApprovalStatus())
-        && candidate.getPeriod().isOpen()) {
+        && candidate.period().isOpen()) {
       return StatusDto.REJECTED;
     } else if (GlobalApprovalStatus.APPROVED.equals(candidate.getGlobalApprovalStatus())
-        && candidate.getPeriod().isOpen()) {
+        && candidate.period().isOpen()) {
       return StatusDto.APPROVED;
     } else if (candidate.isUnderReview()) {
       return StatusDto.UNDER_REVIEW;

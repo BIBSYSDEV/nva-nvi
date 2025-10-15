@@ -61,7 +61,7 @@ class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
   void shouldReturnUnauthorizedWhenCandidateIsNotInUsersViewingScope() throws IOException {
     var candidate = setupValidCandidate();
     var request =
-        createRequest(candidate.getIdentifier(), new NviNoteRequest("The note"), randomString());
+        createRequest(candidate.identifier(), new NviNoteRequest("The note"), randomString());
     var viewingScopeValidatorReturningFalse = new FakeViewingScopeValidator(false);
     handler =
         new CreateNoteHandler(
@@ -90,7 +90,7 @@ class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
     var theNote = "The note";
     var userName = randomString();
 
-    var request = createRequest(candidate.getIdentifier(), new NviNoteRequest(theNote), userName);
+    var request = createRequest(candidate.identifier(), new NviNoteRequest(theNote), userName);
     handler.handleRequest(request, output, CONTEXT);
     var gatewayResponse = GatewayResponse.fromOutputStream(output, CandidateDto.class);
     var actualNote = gatewayResponse.getBodyObject(CandidateDto.class).notes().getFirst();
@@ -103,8 +103,7 @@ class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
   void shouldReturnConflictWhenCreatingNoteAndReportingPeriodIsClosed() throws IOException {
     var candidate = setupValidCandidate();
     var request =
-        createRequest(
-            candidate.getIdentifier(), new NviNoteRequest(randomString()), randomString());
+        createRequest(candidate.identifier(), new NviNoteRequest(randomString()), randomString());
     setupClosedPeriod(scenario, CURRENT_YEAR);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
@@ -116,7 +115,7 @@ class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
   void shouldReturn405NotAllowedWhenAddingNoteToNonCandidate() throws IOException {
     var nonCandidate = setupNonApplicableCandidate(topLevelOrganizationId);
     var request =
-        createRequest(nonCandidate.getIdentifier(), randomNote().toJsonString(), randomString());
+        createRequest(nonCandidate.identifier(), randomNote().toJsonString(), randomString());
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
@@ -129,7 +128,7 @@ class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
     assertNull(candidate.getApprovals().get(topLevelOrganizationId).getAssigneeUsername());
     var userName = randomString();
     var request =
-        createRequest(candidate.getIdentifier(), randomNote(), userName, topLevelOrganizationId);
+        createRequest(candidate.identifier(), randomNote(), userName, topLevelOrganizationId);
     handler.handleRequest(request, output, CONTEXT);
     var response =
         GatewayResponse.fromOutputStream(output, CandidateDto.class)
@@ -143,14 +142,12 @@ class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
     var candidate = setupValidCandidate();
     var existingApprovalAssignee = randomString();
     var updateRequest = new UpdateAssigneeRequest(topLevelOrganizationId, existingApprovalAssignee);
-    var updatedCandidate =
-        scenario.updateApprovalAssignee(candidate.getIdentifier(), updateRequest);
+    var updatedCandidate = scenario.updateApprovalAssignee(candidate.identifier(), updateRequest);
     assertNotNull(
         updatedCandidate.getApprovals().get(topLevelOrganizationId).getAssigneeUsername());
 
     var request =
-        createRequest(
-            candidate.getIdentifier(), randomNote(), randomString(), topLevelOrganizationId);
+        createRequest(candidate.identifier(), randomNote(), randomString(), topLevelOrganizationId);
     handler.handleRequest(request, output, CONTEXT);
     var response =
         GatewayResponse.fromOutputStream(output, CandidateDto.class)
@@ -164,8 +161,7 @@ class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
     var candidate = setupValidCandidate();
 
     var request =
-        createRequest(
-            candidate.getIdentifier(), new NviNoteRequest(randomString()), randomString());
+        createRequest(candidate.identifier(), new NviNoteRequest(randomString()), randomString());
     var candidateDto = handleRequest(request);
 
     var actualAllowedOperations = candidateDto.allowedOperations();

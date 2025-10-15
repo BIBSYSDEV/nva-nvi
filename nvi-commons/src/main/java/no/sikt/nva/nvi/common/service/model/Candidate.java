@@ -37,7 +37,6 @@ import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
-import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.NoteDao;
 import no.sikt.nva.nvi.common.db.PeriodStatus;
 import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
@@ -55,14 +54,25 @@ import no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException;
 import no.sikt.nva.nvi.common.service.requests.CreateNoteRequest;
 import no.sikt.nva.nvi.common.service.requests.DeleteNoteRequest;
 import nva.commons.core.Environment;
-import nva.commons.core.JacocoGenerated;
 import nva.commons.core.paths.UriWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 // Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
-@SuppressWarnings({"PMD.GodClass", "PMD.CouplingBetweenObjects", "PMD.ExcessivePublicCount"})
-public final class Candidate {
+@SuppressWarnings({"PMD.GodClass", "PMD.CouplingBetweenObjects"})
+public record Candidate(
+    UUID identifier,
+    boolean applicable,
+    Map<URI, Approval> approvals,
+    Map<UUID, Note> notes,
+    PeriodStatus period,
+    PointCalculation pointCalculation,
+    PublicationDetails publicationDetails,
+    Instant createdDate,
+    Instant modifiedDate,
+    ReportStatus reportStatus,
+    Long revision,
+    Environment environment) {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(Candidate.class);
   private static final Environment ENVIRONMENT = new Environment();
@@ -75,73 +85,37 @@ public final class Candidate {
   private static final String PERIOD_CLOSED_MESSAGE =
       "Period is closed, perform actions on candidate is forbidden!";
   private static final String PERIOD_NOT_OPENED_MESSAGE =
-      "Period is not opened yet, perform actions on candidate is" + " forbidden!";
-  private final CandidateRepository repository;
-  private final UUID identifier;
-  private final boolean applicable;
-  private final Map<URI, Approval> approvals;
-  private final Map<UUID, Note> notes;
-  private final PeriodStatus period;
-  private final PointCalculation pointCalculation;
-  private final PublicationDetails publicationDetails;
-  private final Instant createdDate;
-  private final Instant modifiedDate;
-  private final ReportStatus reportStatus;
-  private final Long revision;
+      "Period is not opened yet, perform actions on candidate is forbidden!";
 
-  private Candidate(
-      CandidateRepository repository,
-      UUID identifier,
-      boolean applicable,
-      Map<URI, Approval> approvals,
-      Map<UUID, Note> notes,
-      PeriodStatus period,
-      PointCalculation pointCalculation,
-      PublicationDetails publicationDetails,
-      Instant createdDate,
-      Instant modifiedDate,
-      ReportStatus reportStatus,
-      Long revision) {
-    this.repository = repository;
-    this.identifier = identifier;
-    this.applicable = applicable;
-    this.approvals = approvals;
-    this.notes = notes;
-    this.period = period;
-    this.pointCalculation = pointCalculation;
-    this.publicationDetails = publicationDetails;
-    this.createdDate = createdDate;
-    this.modifiedDate = modifiedDate;
-    this.reportStatus = reportStatus;
-    this.revision = revision;
-  }
-
-  public Candidate(
-      CandidateRepository repository,
+  public static Candidate fromDao(
       CandidateDao candidateDao,
       Collection<ApprovalStatusDao> approvals,
       Collection<NoteDao> notes,
-      PeriodStatus period) {
-    this.repository = repository;
+      PeriodStatus period,
+      Environment environment) {
     var dbCandidate = candidateDao.candidate();
-    this.identifier = candidateDao.identifier();
-    this.applicable = dbCandidate.applicable();
-    this.approvals = mapToApprovalsMap(approvals);
-    this.notes = mapToNotesMap(notes);
-    this.period = period;
-    this.pointCalculation = PointCalculation.from(candidateDao);
-    this.publicationDetails = PublicationDetails.from(candidateDao);
-    this.createdDate = dbCandidate.createdDate();
-    this.modifiedDate = dbCandidate.modifiedDate();
-    this.reportStatus = dbCandidate.reportStatus();
-    this.revision = candidateDao.revision();
+
+    return new Builder()
+        .withIdentifier(candidateDao.identifier())
+        .withApplicable(dbCandidate.applicable())
+        .withApprovals(mapToApprovalsMap(approvals))
+        .withNotes(mapToNotesMap(notes))
+        .withPeriod(period)
+        .withPointCalculation(PointCalculation.from(candidateDao))
+        .withPublicationDetails(PublicationDetails.from(candidateDao))
+        .withCreatedDate(dbCandidate.createdDate())
+        .withModifiedDate(dbCandidate.modifiedDate())
+        .withReportStatus(dbCandidate.reportStatus())
+        .withRevision(candidateDao.revision())
+        .withEnvironment(environment)
+        .build();
   }
 
   public static Candidate fromRequest(
       UUID identifier,
       UpsertNviCandidateRequest request,
       PeriodStatus period,
-      CandidateRepository candidateRepository) {
+      Environment environment) {
     var approvals =
         request.pointCalculation().institutionPoints().stream()
             .map(InstitutionPoints::institutionId)
@@ -149,15 +123,60 @@ public final class Candidate {
             .collect(Collectors.toMap(Approval::institutionId, Function.identity()));
 
     return new Builder()
-        .withRepository(candidateRepository)
         .withIdentifier(identifier)
         .withApplicable(request.isApplicable())
         .withApprovals(approvals)
         .withPeriod(period)
-        .withModifiedDate(Instant.now())
-        .withCreatedDate(Instant.now())
         .withPointCalculation(PointCalculation.from(request))
         .withPublicationDetails(PublicationDetails.from(request))
+        .withCreatedDate(Instant.now())
+        .withModifiedDate(Instant.now())
+        .withEnvironment(environment)
+        .build();
+  }
+
+  public Candidate apply(UpsertNviCandidateRequest request) {
+    return this.copy()
+        .withApplicable(request.isApplicable())
+        .withPointCalculation(PointCalculation.from(request))
+        .withPublicationDetails(PublicationDetails.from(request))
+        .withModifiedDate(Instant.now())
+        .build();
+  }
+
+  public CandidateDao toDao() {
+    var dbPublication = publicationDetails.toDbPublication();
+    var dbChannel = pointCalculation.channel().toDbPublicationChannel();
+    var dbCandidate =
+        DbCandidate.builder()
+            .pointCalculation(pointCalculation.toDbPointCalculation())
+            .publicationDetails(dbPublication)
+            .applicable(publicationDetails.isApplicable())
+            .creators(dbPublication.creators())
+            .creatorShareCount(getCreatorShareCount())
+            .channelType(dbChannel.channelType())
+            .channelId(dbChannel.id())
+            .level(DbLevel.parse(dbChannel.scientificValue()))
+            .instanceType(pointCalculation.instanceType().getValue())
+            .publicationDate(dbPublication.publicationDate())
+            .internationalCollaboration(pointCalculation.isInternationalCollaboration())
+            .collaborationFactor(adjustScaleAndRoundingMode(getCollaborationFactor()))
+            .basePoints(adjustScaleAndRoundingMode(getBasePoints()))
+            .points(mapToPoints(getInstitutionPoints()))
+            .totalPoints(adjustScaleAndRoundingMode(getTotalPoints()))
+            .createdDate(createdDate)
+            .modifiedDate(modifiedDate)
+            .reportStatus(reportStatus)
+            .publicationBucketUri(dbPublication.publicationBucketUri())
+            .publicationId(dbPublication.id())
+            .publicationIdentifier(dbPublication.identifier())
+            .build();
+    return CandidateDao.builder()
+        .identifier(identifier)
+        .candidate(dbCandidate)
+        .revision(revision)
+        .version(randomUUID().toString())
+        .periodYear(dbPublication.publicationDate().year())
         .build();
   }
 
@@ -167,30 +186,6 @@ public final class Candidate {
 
   public static URI getContextUri() {
     return CONTEXT_URI;
-  }
-
-  public Instant getCreatedDate() {
-    return createdDate;
-  }
-
-  public Instant getModifiedDate() {
-    return modifiedDate;
-  }
-
-  public PublicationDetails getPublicationDetails() {
-    return publicationDetails;
-  }
-
-  public PeriodStatus getPeriod() {
-    return period;
-  }
-
-  public ReportStatus getReportStatus() {
-    return reportStatus;
-  }
-
-  public UUID getIdentifier() {
-    return identifier;
   }
 
   public URI getId() {
@@ -257,10 +252,6 @@ public final class Candidate {
 
   public BigDecimal getTotalPoints() {
     return pointCalculation.totalPoints();
-  }
-
-  public Long getRevision() {
-    return revision;
   }
 
   public boolean isReported() {
@@ -336,42 +327,6 @@ public final class Candidate {
     return note;
   }
 
-  @Override
-  @JacocoGenerated
-  public int hashCode() {
-    return Objects.hash(
-        identifier,
-        applicable,
-        approvals,
-        notes,
-        period,
-        pointCalculation,
-        publicationDetails,
-        createdDate,
-        reportStatus);
-  }
-
-  @Override
-  @JacocoGenerated
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    Candidate candidate = (Candidate) o;
-    return applicable == candidate.applicable
-        && Objects.equals(identifier, candidate.identifier)
-        && Objects.equals(approvals, candidate.approvals)
-        && Objects.equals(notes, candidate.notes)
-        && Objects.equals(period, candidate.period)
-        && Objects.equals(pointCalculation, candidate.pointCalculation)
-        && Objects.equals(publicationDetails, candidate.publicationDetails)
-        && Objects.equals(createdDate, candidate.createdDate)
-        && Objects.equals(reportStatus, candidate.reportStatus);
-  }
-
   public URI getPublicationId() {
     return publicationDetails.publicationId();
   }
@@ -417,7 +372,7 @@ public final class Candidate {
 
   private static boolean publicationYearIsUpdated(
       UpsertNviCandidateRequest request, Candidate candidate) {
-    var publicationYearOfCandidate = candidate.getPublicationDetails().publicationDate().year();
+    var publicationYearOfCandidate = candidate.publicationDetails().publicationDate().year();
     var publicationYearFromRequest = request.publicationDetails().publicationDate().year();
     return not(publicationYearOfCandidate::equals).test(publicationYearFromRequest);
   }
@@ -457,7 +412,7 @@ public final class Candidate {
    */
   private static boolean creatorsAreUpdated(
       UpsertNviCandidateRequest request, Candidate candidate) {
-    var oldCreatorCount = candidate.getPublicationDetails().nviCreators().size();
+    var oldCreatorCount = candidate.publicationDetails().nviCreators().size();
     var newCreatorCount = getAllCreators(request).size();
     var hasSameCount = oldCreatorCount == newCreatorCount;
     var hasSameCreators = hasSameCreators(request, candidate);
@@ -466,7 +421,7 @@ public final class Candidate {
 
   private static boolean hasSameCreators(UpsertNviCandidateRequest request, Candidate candidate) {
     var affiliationsOfRemovedUnverifiedCreators =
-        candidate.getPublicationDetails().unverifiedCreators().stream()
+        candidate.publicationDetails().unverifiedCreators().stream()
             .filter(not(creator -> request.unverifiedCreators().contains(creator)))
             .map(UnverifiedNviCreatorDto::affiliations)
             .map(HashSet::new)
@@ -506,7 +461,7 @@ public final class Candidate {
         .collect(Collectors.toMap(Approval::institutionId, Function.identity()));
   }
 
-  public List<Approval> createResetApprovalsForAllInstitutions(
+  public List<Approval> createResetApprovalsForInstitutions(
       Collection<InstitutionPoints> institutionPoints) {
     var oldApprovals = getApprovals();
     var resetApprovals = new ArrayList<Approval>();
@@ -532,7 +487,6 @@ public final class Candidate {
 
   private Builder copy() {
     return new Builder()
-        .withRepository(repository)
         .withIdentifier(identifier)
         .withApplicable(applicable)
         .withApprovals(approvals)
@@ -544,51 +498,6 @@ public final class Candidate {
         .withPointCalculation(pointCalculation)
         .withPublicationDetails(publicationDetails)
         .withRevision(revision);
-  }
-
-  public CandidateDao toDao() {
-    var dbPublication = publicationDetails.toDbPublication();
-    var dbChannel = pointCalculation.channel().toDbPublicationChannel();
-    var dbCandidate =
-        DbCandidate.builder()
-            .pointCalculation(pointCalculation.toDbPointCalculation())
-            .publicationDetails(dbPublication)
-            .applicable(publicationDetails.isApplicable())
-            .creators(dbPublication.creators())
-            .creatorShareCount(getCreatorShareCount())
-            .channelType(dbChannel.channelType())
-            .channelId(dbChannel.id())
-            .level(DbLevel.parse(dbChannel.scientificValue()))
-            .instanceType(pointCalculation.instanceType().getValue())
-            .publicationDate(dbPublication.publicationDate())
-            .internationalCollaboration(pointCalculation.isInternationalCollaboration())
-            .collaborationFactor(adjustScaleAndRoundingMode(getCollaborationFactor()))
-            .basePoints(adjustScaleAndRoundingMode(getBasePoints()))
-            .points(mapToPoints(getInstitutionPoints()))
-            .totalPoints(adjustScaleAndRoundingMode(getTotalPoints()))
-            .createdDate(createdDate)
-            .modifiedDate(modifiedDate)
-            .reportStatus(reportStatus)
-            .publicationBucketUri(dbPublication.publicationBucketUri())
-            .publicationId(dbPublication.id())
-            .publicationIdentifier(dbPublication.identifier())
-            .build();
-    return CandidateDao.builder()
-        .identifier(identifier)
-        .candidate(dbCandidate)
-        .revision(revision)
-        .version(randomUUID().toString())
-        .periodYear(dbPublication.publicationDate().year())
-        .build();
-  }
-
-  public Candidate apply(UpsertNviCandidateRequest request) {
-    return this.copy()
-        .withApplicable(request.isApplicable())
-        .withPointCalculation(PointCalculation.from(request))
-        .withPublicationDetails(PublicationDetails.from(request))
-        .withModifiedDate(Instant.now())
-        .build();
   }
 
   /**
@@ -628,7 +537,6 @@ public final class Candidate {
     return approvals.values().stream();
   }
 
-  // FIXME: Expand this
   private void validateCandidateState() {
     if (Status.CLOSED_PERIOD.equals(period.status())) {
       throw new IllegalStateException(PERIOD_CLOSED_MESSAGE);
@@ -641,7 +549,6 @@ public final class Candidate {
 
   public static final class Builder {
 
-    private CandidateRepository repository;
     private UUID identifier;
     private boolean applicable;
     private Map<URI, Approval> approvals;
@@ -653,13 +560,9 @@ public final class Candidate {
     private Instant modifiedDate;
     private ReportStatus reportStatus;
     private Long revision;
+    private Environment environment;
 
     private Builder() {}
-
-    public Builder withRepository(CandidateRepository repository) {
-      this.repository = repository;
-      return this;
-    }
 
     public Builder withIdentifier(UUID identifier) {
       this.identifier = identifier;
@@ -716,9 +619,13 @@ public final class Candidate {
       return this;
     }
 
+    public Builder withEnvironment(Environment environment) {
+      this.environment = environment;
+      return this;
+    }
+
     public Candidate build() {
       return new Candidate(
-          repository,
           identifier,
           applicable,
           approvals,
@@ -729,7 +636,8 @@ public final class Candidate {
           createdDate,
           modifiedDate,
           reportStatus,
-          revision);
+          revision,
+          environment);
     }
   }
 }

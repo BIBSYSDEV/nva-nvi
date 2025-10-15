@@ -33,7 +33,7 @@ public final class CandidateResponseFactory {
     return CandidateDto.builder()
         .withId(candidate.getId())
         .withContext(Candidate.getContextUri())
-        .withIdentifier(candidate.getIdentifier())
+        .withIdentifier(candidate.identifier())
         .withPublicationId(candidate.getPublicationId())
         .withApprovals(getApprovalsAsDto(candidate))
         .withAllowedOperations(getAllowedOperations(candidate, userInstance))
@@ -46,7 +46,7 @@ public final class CandidateResponseFactory {
   }
 
   private static PeriodStatusDto getPeriodStatusDto(Candidate candidate) {
-    return PeriodStatusDto.fromPeriodStatus(candidate.getPeriod());
+    return PeriodStatusDto.fromPeriodStatus(candidate.period());
   }
 
   private static List<NoteDto> getNotesAsDto(Candidate candidate) {
@@ -64,9 +64,7 @@ public final class CandidateResponseFactory {
   }
 
   private static String getReportStatus(Candidate candidate) {
-    return Optional.ofNullable(candidate.getReportStatus())
-        .map(ReportStatus::getValue)
-        .orElse(null);
+    return Optional.ofNullable(candidate.reportStatus()).map(ReportStatus::getValue).orElse(null);
   }
 
   private static Set<CandidateOperation> getAllowedOperations(
@@ -93,12 +91,12 @@ public final class CandidateResponseFactory {
   }
 
   private static boolean hasUnverifiedCreators(Candidate candidate) {
-    return candidate.getPublicationDetails().nviCreators().stream()
+    return candidate.publicationDetails().nviCreators().stream()
         .anyMatch(not(NviCreator::isVerified));
   }
 
   private static List<String> getUnverifiedCreatorNames(Candidate candidate, URI organizationId) {
-    return candidate.getPublicationDetails().nviCreators().stream()
+    return candidate.publicationDetails().nviCreators().stream()
         .filter(not(NviCreator::isVerified))
         .filter(isAffiliatedWithTopLevelOrganization(organizationId))
         .map(NviCreator::name)

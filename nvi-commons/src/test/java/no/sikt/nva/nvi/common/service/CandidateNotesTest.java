@@ -33,7 +33,7 @@ class CandidateNotesTest extends CandidateTestSetup {
     var userOrganizationId = getAnyOrganizationId(candidate);
     mockOrganizationResponseForAffiliation(userOrganizationId, null, mockUriRetriever);
 
-    var updatedCandidate = candidateService.getByIdentifier(candidate.getIdentifier());
+    var updatedCandidate = candidateService.getByIdentifier(candidate.identifier());
     var actualNote = getAnyNote(updatedCandidate);
 
     assertThat(noteRequest.username(), is(equalTo(actualNote.user())));
@@ -71,7 +71,7 @@ class CandidateNotesTest extends CandidateTestSetup {
     var deleteRequest = new DeleteNoteRequest(noteToDelete.identifier(), noteToDelete.user());
     candidateService.deleteNote(candidate, deleteRequest);
 
-    var updatedCandidate = candidateService.getByIdentifier(candidate.getIdentifier());
+    var updatedCandidate = candidateService.getByIdentifier(candidate.identifier());
     Assertions.assertThat(updatedCandidate.getNotes()).isEmpty();
   }
 
@@ -96,7 +96,7 @@ class CandidateNotesTest extends CandidateTestSetup {
     var username = randomString();
     var noteRequest = new CreateNoteRequest(randomString(), username, institutionId);
     candidateService.createNote(candidate, noteRequest);
-    var candidateWithNote = candidateService.getByIdentifier(candidate.getIdentifier());
+    var candidateWithNote = candidateService.getByIdentifier(candidate.identifier());
 
     var actualAssignee = candidateWithNote.getApprovals().get(institutionId).getAssigneeUsername();
     assertEquals(username, actualAssignee);
@@ -110,11 +110,11 @@ class CandidateNotesTest extends CandidateTestSetup {
     var updateAssigneeRequest = new UpdateAssigneeRequest(institutionId, existingAssignee);
     candidateService.updateApprovalAssignee(candidate, updateAssigneeRequest);
 
-    var candidateWithAssignee = scenario.getCandidateByIdentifier(candidate.getIdentifier());
+    var candidateWithAssignee = scenario.getCandidateByIdentifier(candidate.identifier());
     var noteRequest = new CreateNoteRequest(randomString(), randomString(), institutionId);
     candidateService.createNote(candidateWithAssignee, noteRequest);
 
-    var candidateWithNote = scenario.getCandidateByIdentifier(candidate.getIdentifier());
+    var candidateWithNote = scenario.getCandidateByIdentifier(candidate.identifier());
     var actualAssignee = candidateWithNote.getApprovals().get(institutionId).getAssigneeUsername();
     assertEquals(existingAssignee, actualAssignee);
   }
@@ -138,6 +138,6 @@ class CandidateNotesTest extends CandidateTestSetup {
   private Candidate setupCandidateWithNote() {
     var candidate = createCandidate();
     candidateService.createNote(candidate, randomNoteRequest());
-    return candidateService.getByIdentifier(candidate.getIdentifier());
+    return candidateService.getByIdentifier(candidate.identifier());
   }
 }

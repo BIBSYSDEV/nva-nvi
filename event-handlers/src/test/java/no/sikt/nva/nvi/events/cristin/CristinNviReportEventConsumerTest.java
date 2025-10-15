@@ -143,7 +143,7 @@ class CristinNviReportEventConsumerTest {
             .map(CristinIdWrapper::from)
             .map(CristinIdWrapper::getInstitutionId)
             .toList();
-    assertThat(nviCandidate.getPublicationDetails().topLevelOrganizations())
+    assertThat(nviCandidate.publicationDetails().topLevelOrganizations())
         .extracting(Organization::id)
         .containsExactlyInAnyOrderElementsOf(expectedTopLevelOrganizationIds);
   }
@@ -161,7 +161,7 @@ class CristinNviReportEventConsumerTest {
     var nviCandidate = getByPublicationIdOf(cristinNviReport);
 
     var actualCreatorIds =
-        nviCandidate.getPublicationDetails().nviCreators().stream().map(NviCreator::id).toList();
+        nviCandidate.publicationDetails().nviCreators().stream().map(NviCreator::id).toList();
     var expectedCreatorIds =
         cristinNviReport.getCreators().stream().map(CristinTestUtils::expectedCreatorId).toList();
     assertThat(actualCreatorIds).containsExactlyInAnyOrderElementsOf(expectedCreatorIds);
@@ -203,7 +203,7 @@ class CristinNviReportEventConsumerTest {
         .extracting(Candidate::isApplicable, Candidate::isReported)
         .containsOnly(true);
 
-    assertThat(nviCandidate.getPublicationDetails().topLevelOrganizations()).isEmpty();
+    assertThat(nviCandidate.publicationDetails().topLevelOrganizations()).isEmpty();
   }
 
   @Test
@@ -225,7 +225,7 @@ class CristinNviReportEventConsumerTest {
             .map(ScientificPerson::getCristinPersonIdentifier)
             .toList();
 
-    assertThat(nviCandidate.getPublicationDetails().nviCreators())
+    assertThat(nviCandidate.publicationDetails().nviCreators())
         .extracting(NviCreator::id)
         .map(UriWrapper::fromUri)
         .map(UriWrapper::getLastPathElement)
@@ -262,7 +262,7 @@ class CristinNviReportEventConsumerTest {
         .extracting(
             Candidate::getPublicationId,
             Candidate::isApplicable,
-            actual -> actual.getPeriod().year(),
+            actual -> actual.period().year(),
             actual -> actual.getPublicationType().getValue(),
             actual -> actual.getPublicationChannel().scientificValue().getValue())
         .containsExactly(
@@ -274,12 +274,12 @@ class CristinNviReportEventConsumerTest {
 
     var expectedPublicationBucketUri =
         getExpectedPublicationBucketUri(cristinNviReport.publicationIdentifier());
-    assertThat(candidate.getPublicationDetails())
+    assertThat(candidate.publicationDetails())
         .extracting(PublicationDetails::publicationDate, PublicationDetails::publicationBucketUri)
         .containsExactlyInAnyOrder(
             cristinNviReport.publicationDate(), expectedPublicationBucketUri);
 
-    assertThat(candidate.getPublicationDetails().allCreators())
+    assertThat(candidate.publicationDetails().allCreators())
         .usingRecursiveComparison()
         .ignoringCollectionOrder()
         .isEqualTo(expectedCreators(cristinNviReport));

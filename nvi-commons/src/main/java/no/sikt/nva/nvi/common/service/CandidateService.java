@@ -41,7 +41,7 @@ import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@SuppressWarnings("PMD.UnusedPrivateField")
+@SuppressWarnings({"PMD.UnusedPrivateField", "PMD.CouplingBetweenObjects"})
 public class CandidateService {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CandidateService.class);
@@ -73,18 +73,16 @@ public class CandidateService {
   }
 
   public void upsert(UpsertNviCandidateRequest request) {
-    var responseContext = getCandidateContext(request.publicationId());
-
-    if (responseContext.candidate().isPresent()) {
-      var originalCandidate = responseContext.candidate().get();
-      updateCandidate(request, originalCandidate);
-    } else {
-      createCandidate(request);
-    }
+    LOGGER.info("Upserting candidate for publicationId={}", request.publicationId());
+    getCandidateContext(request.publicationId())
+        .candidate()
+        .ifPresentOrElse(
+            existingCandidate -> updateCandidate(request, existingCandidate),
+            () -> createCandidate(request));
   }
 
   public void update(Candidate candidate) {
-    LOGGER.info("Saving updated candidate: {}", candidate.getIdentifier());
+    LOGGER.info("Saving updated candidate: {}", candidate.identifier());
     var updatedDao =
         candidate.toDao().copy().version(randomUUID().toString()).build(); // FIXME: Duplicate
     candidateRepository.updateCandidateAndApprovals(updatedDao, emptyList(), emptyList());
@@ -98,7 +96,7 @@ public class CandidateService {
     var publicationYear = request.publicationDetails().publicationDate().year();
     var periodStatus = findPeriodStatus(periodService.getAll(), publicationYear);
 
-    var candidate = Candidate.fromRequest(identifier, request, periodStatus, candidateRepository);
+    var candidate = Candidate.fromRequest(identifier, request, periodStatus, environment);
     var approvals = candidate.getApprovals().values().stream().map(Approval::toDao).toList();
 
     candidateRepository.create(candidate.toDao(), approvals);
@@ -113,10 +111,10 @@ public class CandidateService {
 
     var updatedCandidate = candidate.apply(request);
     if (shouldResetCandidate(request, candidate) || !candidate.isApplicable()) {
-      LOGGER.info("Resetting all approvals for candidate {}", candidate.getIdentifier());
+      LOGGER.info("Resetting all approvals for candidate {}", candidate.identifier());
       var institutionsToReset = updatedCandidate.getInstitutionPoints();
       var approvalsToReset =
-          candidate.createResetApprovalsForAllInstitutions(institutionsToReset).stream()
+          candidate.createResetApprovalsForInstitutions(institutionsToReset).stream()
               .map(Approval::toDao)
               .toList();
       var approvalsToDelete = getApprovalsToDelete(candidate, updatedCandidate);
@@ -126,12 +124,12 @@ public class CandidateService {
     } else {
       var institutionsToReset = getUpdatedInstitutionPoints(candidate, updatedCandidate);
       var approvalsToReset =
-          candidate.createResetApprovalsForAllInstitutions(institutionsToReset).stream()
+          candidate.createResetApprovalsForInstitutions(institutionsToReset).stream()
               .map(Approval::toDao)
               .toList();
       LOGGER.info(
           "Resetting individual approvals for candidate {}: {}",
-          candidate.getIdentifier(),
+          candidate.identifier(),
           approvalsToReset);
       candidateRepository.updateCandidateAndApprovals(
           updatedCandidate.toDao(), approvalsToReset, emptyList());
@@ -143,13 +141,20 @@ public class CandidateService {
     var responseContext = getCandidateContext(request.publicationId());
     LOGGER.info(
         "Updating candidate for publicationId={} to non-candidate", request.publicationId());
-    if (responseContext.candidate().isPresent()) {
-      var candidate = responseContext.candidate().get();
-      LOGGER.info("Removing all approvals for candidateId={}", candidate.getIdentifier());
-      return Optional.of(updateToNotApplicable(candidate));
+
+    var updatedCandidate =
+        responseContext
+            .candidate()
+            .map(existingCandidate -> Optional.of(updateToNotApplicable(existingCandidate)))
+            .orElse(Optional.empty());
+
+    if (updatedCandidate.isPresent()) {
+      LOGGER.info(
+          "Successfully updated publicationId={} to non-candidate", request.publicationId());
+    } else {
+      LOGGER.error("No candidate found for publicationId={}", request.publicationId());
     }
-    LOGGER.error("No candidate found for publicationId={}", request.publicationId());
-    return Optional.empty();
+    return updatedCandidate;
   }
 
   public Candidate getByIdentifier(UUID candidateIdentifier) {
@@ -177,7 +182,7 @@ public class CandidateService {
   }
 
   public void updateApprovalAssignee(Candidate candidate, UpdateAssigneeRequest request) {
-    LOGGER.info("Updating assignee for candidateId={}: {}", candidate.getIdentifier(), request);
+    LOGGER.info("Updating assignee for candidateId={}: {}", candidate.identifier(), request);
     var updatedApproval = candidate.updateApprovalAssignee(request);
     candidateRepository.updateCandidateItems(
         candidate.toDao(), List.of(updatedApproval.toDao()), emptyList());
@@ -185,8 +190,7 @@ public class CandidateService {
 
   public void updateApprovalStatus(
       Candidate candidate, UpdateStatusRequest request, UserInstance user) {
-    LOGGER.info(
-        "Updating approval status for candidateId={}: {}", candidate.getIdentifier(), request);
+    LOGGER.info("Updating approval status for candidateId={}: {}", candidate.identifier(), request);
     var currentStatus = candidate.getApprovalStatus(request.institutionId());
     if (request.approvalStatus().equals(currentStatus)) {
       LOGGER.warn("Approval status update attempted with no change in status: {}", request);
@@ -208,7 +212,7 @@ public class CandidateService {
   }
 
   public void createNote(Candidate candidate, CreateNoteRequest request) {
-    LOGGER.info("Creating note for candidateId={}", candidate.getIdentifier());
+    LOGGER.info("Creating note for candidateId={}", candidate.identifier());
     var updatedItems = candidate.createNote(request);
     var approvalsToUpdate =
         updatedItems.updatedApproval().map(Approval::toDao).map(List::of).orElse(emptyList());
@@ -219,7 +223,7 @@ public class CandidateService {
 
   public void deleteNote(Candidate candidate, DeleteNoteRequest request) {
     var noteToDelete = candidate.deleteNote(request);
-    candidateRepository.deleteNote(candidate.getIdentifier(), noteToDelete.noteIdentifier());
+    candidateRepository.deleteNote(candidate.identifier(), noteToDelete.noteIdentifier());
   }
 
   private CandidateContext findAggregate(UUID candidateIdentifier) {
@@ -267,12 +271,12 @@ public class CandidateService {
       CandidateAggregate candidateAggregate, Collection<NviPeriod> allPeriods) {
     var publicationYear = candidateAggregate.candidate().getPeriodYear();
     var periodStatus = findPeriodStatus(allPeriods, publicationYear);
-    return new Candidate(
-        candidateRepository,
+    return Candidate.fromDao(
         candidateAggregate.candidate(),
         candidateAggregate.approvals(),
         candidateAggregate.notes(),
-        periodStatus);
+        periodStatus,
+        environment);
   }
 
   private Candidate updateToNotApplicable(Candidate currentCandidate) {
@@ -284,11 +288,11 @@ public class CandidateService {
     candidateRepository.updateCandidateAndApprovals(
         nonApplicableCandidate, emptyList(), approvalsToDelete);
 
-    return new Candidate(
-        candidateRepository,
+    return Candidate.fromDao(
         nonApplicableCandidate,
         emptyList(),
         emptyList(),
-        PeriodStatus.builder().withStatus(PeriodStatus.Status.NO_PERIOD).build());
+        PeriodStatus.builder().withStatus(PeriodStatus.Status.NO_PERIOD).build(),
+        environment);
   }
 }

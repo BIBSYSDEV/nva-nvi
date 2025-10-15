@@ -338,28 +338,28 @@ class EventBasedBatchScanHandlerTest {
 
   private List<ApprovalStatusDao> generateCandidatesWithApprovalStatuses() {
     return createRandomCandidates(10)
-        .map(Candidate::getIdentifier)
+        .map(Candidate::identifier)
         .flatMap(candidateRepository::findApprovalDaosByCandidateId)
         .toList();
   }
 
   private List<CandidateDao> generatedRepositoryCandidates() {
     return createRandomCandidates(10)
-        .map(Candidate::getIdentifier)
+        .map(Candidate::identifier)
         .map(candidateRepository::findDaoById)
         .toList();
   }
 
   private List<NoteDao> generateRepositoryCandidatesWithNotes() {
     return createRandomCandidates(10)
-        .map(Candidate::getIdentifier)
+        .map(Candidate::identifier)
         .flatMap(candidateRepository::findNoteDaosByCandidateId)
         .toList();
   }
 
   private List<Candidate> getPersistedCandidates(Collection<Candidate> candidates) {
     return candidates.stream()
-        .map(Candidate::getIdentifier)
+        .map(Candidate::identifier)
         .map(candidateService::getByIdentifier)
         .toList();
   }

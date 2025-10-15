@@ -89,7 +89,7 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<UpsertAssigneeReque
 
   private Candidate updateAndRefetch(Candidate candidate, UpdateAssigneeRequest updateRequest) {
     candidateService.updateApprovalAssignee(candidate, updateRequest);
-    return candidateService.getByIdentifier(candidate.getIdentifier());
+    return candidateService.getByIdentifier(candidate.identifier());
   }
 
   private static void hasSameCustomer(UpsertAssigneeRequest input, RequestInfo requestInfo)

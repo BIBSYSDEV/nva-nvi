@@ -84,8 +84,7 @@ class UpdateIndexHandlerTest {
     when(openSearchClient.addDocumentToIndex(expectedIndexDocument))
         .thenThrow(new RuntimeException());
     handler.handleRequest(event, CONTEXT);
-    verify(sqsClient, times(1))
-        .sendMessage(any(), eq(INDEX_DLQ_URL), eq(candidate.getIdentifier()));
+    verify(sqsClient, times(1)).sendMessage(any(), eq(INDEX_DLQ_URL), eq(candidate.identifier()));
   }
 
   @Test
@@ -175,7 +174,7 @@ class UpdateIndexHandlerTest {
         NviCandidateIndexDocument.builder()
             .withContext(NVI_CONTEXT)
             .withApprovals(expandApprovals(candidate, expandedPublicationDetails.contributors()))
-            .withIdentifier(candidate.getIdentifier())
+            .withIdentifier(candidate.identifier())
             .withPublicationDetails(expandedPublicationDetails)
             .withPoints(randomBigDecimal())
             .build();

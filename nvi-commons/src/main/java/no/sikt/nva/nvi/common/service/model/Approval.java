@@ -37,16 +37,6 @@ public record Approval(
       "Request is missing required organization ID";
   private static final String ERROR_MSG_MISMATCHED_IDS = "Mismatched organization IDs";
 
-  public Approval resetApproval() {
-    return new Approval(
-        identifier, institutionId, ApprovalStatus.PENDING, assignee, null, null, null, revision);
-  }
-
-  public static Approval createNewApproval(UUID candidateIdentifier, URI institutionId) {
-    return new Approval(
-        candidateIdentifier, institutionId, ApprovalStatus.PENDING, null, null, null, null, null);
-  }
-
   public static Approval fromDao(ApprovalStatusDao approval) {
     return new Approval(
         approval.identifier(),
@@ -57,6 +47,16 @@ public record Approval(
         approval.approvalStatus().finalizedDate(),
         approval.approvalStatus().reason(),
         approval.revision());
+  }
+
+  public static Approval createNewApproval(UUID candidateIdentifier, URI institutionId) {
+    return new Approval(
+        candidateIdentifier, institutionId, ApprovalStatus.PENDING, null, null, null, null, null);
+  }
+
+  public Approval resetApproval() {
+    return new Approval(
+        identifier, institutionId, ApprovalStatus.PENDING, assignee, null, null, null, revision);
   }
 
   public Approval withAssignee(UpdateAssigneeRequest request) {

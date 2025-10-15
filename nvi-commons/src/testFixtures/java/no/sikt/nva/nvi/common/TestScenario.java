@@ -153,7 +153,7 @@ public class TestScenario {
       UUID candidateIdentifier, UpdateStatusRequest updateRequest, UserInstance userInstance) {
     var candidate = getCandidateByIdentifier(candidateIdentifier);
     candidateService.updateApprovalStatus(candidate, updateRequest, userInstance);
-    return getCandidateByIdentifier(candidate.getIdentifier());
+    return getCandidateByIdentifier(candidate.identifier());
   }
 
   public Candidate updateApprovalStatus(
@@ -162,14 +162,14 @@ public class TestScenario {
     var updateRequest = createUpdateStatusRequest(status, topLevelOrganizationId, randomString());
     var userInstance = createCuratorUserInstance(topLevelOrganizationId);
     candidateService.updateApprovalStatus(candidate, updateRequest, userInstance);
-    return getCandidateByIdentifier(candidate.getIdentifier());
+    return getCandidateByIdentifier(candidate.identifier());
   }
 
   public Candidate updateApprovalAssignee(
       UUID candidateIdentifier, UpdateAssigneeRequest updateRequest) {
     var candidate = getCandidateByIdentifier(candidateIdentifier);
     candidateService.updateApprovalAssignee(candidate, updateRequest);
-    return getCandidateByIdentifier(candidate.getIdentifier());
+    return getCandidateByIdentifier(candidate.identifier());
   }
 
   public void createNote(UUID candidateIdentifier, String content, URI topLevelOrganizationId) {

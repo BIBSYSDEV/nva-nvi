@@ -60,7 +60,7 @@ class MigrationTests {
   void shouldWriteCandidateWithNotesAndApprovalsAsIsWhenMigrating() {
     var candidate = setupCandidateWithApprovalAndNotes();
     batchScanUtil.migrateAndUpdateVersion(DEFAULT_PAGE_SIZE, null, emptyList());
-    var migratedCandidate = candidateService.getByIdentifier(candidate.getIdentifier());
+    var migratedCandidate = candidateService.getByIdentifier(candidate.identifier());
     assertThat(migratedCandidate)
         .usingRecursiveComparison()
         .ignoringCollectionOrder()
@@ -128,7 +128,7 @@ class MigrationTests {
     var userInstance = createCuratorUserInstance(curatorOrganization);
 
     return scenario.updateApprovalStatus(
-        candidate.getIdentifier(),
+        candidate.identifier(),
         createUpdateStatusRequest(ApprovalStatus.REJECTED, curatorOrganization, randomString()),
         userInstance);
   }

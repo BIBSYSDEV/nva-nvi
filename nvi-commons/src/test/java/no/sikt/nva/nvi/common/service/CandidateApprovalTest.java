@@ -112,7 +112,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
 
     var upsertCandidateRequest = createUpsertCandidateRequest(HARDCODED_INSTITUTION_ID).build();
     initialCandidate = scenario.upsertCandidate(upsertCandidateRequest);
-    candidateIdentifier = initialCandidate.getIdentifier();
+    candidateIdentifier = initialCandidate.identifier();
   }
 
   @ParameterizedTest(name = "Should update from old status {0} to new status {1}")
@@ -224,7 +224,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var updateRequest = createUpsertNonCandidateRequest(candidate.getPublicationId());
     var updatedCandidate = candidateService.updateNonCandidate(updateRequest).orElseThrow();
 
-    assertThat(updatedCandidate.getIdentifier()).isEqualTo(candidate.getIdentifier());
+    assertThat(updatedCandidate.identifier()).isEqualTo(candidate.identifier());
     assertThat(updatedCandidate.getApprovals()).isEmpty();
   }
 
@@ -277,7 +277,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var request = new UpdateAssigneeRequest(HARDCODED_INSTITUTION_ID, newUsername);
     candidateService.updateApprovalAssignee(candidate, request);
 
-    var updatedCandidate = candidateService.getByIdentifier(candidate.getIdentifier());
+    var updatedCandidate = candidateService.getByIdentifier(candidate.identifier());
     var updatedApproval = updatedCandidate.getApprovals().get(HARDCODED_INSTITUTION_ID);
     assertThat(updatedApproval.getAssigneeUsername()).isEqualTo(newUsername);
   }
@@ -306,7 +306,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
   void shouldNotResetApprovalsWhenUpdatingCandidateFieldsNotEffectingApprovals() {
     var upsertCandidateRequest = createUpsertCandidateRequest(HARDCODED_INSTITUTION_ID).build();
     var candidate = scenario.upsertCandidate(upsertCandidateRequest);
-    candidate = updateApprovalStatus(candidate.getIdentifier(), ApprovalStatus.APPROVED);
+    candidate = updateApprovalStatus(candidate.identifier(), ApprovalStatus.APPROVED);
     var approval = candidate.getApprovals().get(HARDCODED_INSTITUTION_ID);
     var newUpsertRequest = createNewUpsertRequestNotAffectingApprovals(upsertCandidateRequest);
     var updatedCandidate = scenario.upsertCandidate(newUpsertRequest);
@@ -419,8 +419,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
       URI approvedByOrg, Map<Organization, Collection<NviCreatorDto>> creatorsPerOrganization) {
     var requestBuilder = randomApplicableCandidateRequestBuilder(creatorsPerOrganization);
     var candidate = scenario.upsertCandidate(requestBuilder.build());
-    scenario.updateApprovalStatus(
-        candidate.getIdentifier(), ApprovalStatus.APPROVED, approvedByOrg);
+    scenario.updateApprovalStatus(candidate.identifier(), ApprovalStatus.APPROVED, approvedByOrg);
     return requestBuilder;
   }
 
@@ -428,7 +427,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
   void shouldNotResetApprovalsWhenUpsertRequestContainsSameDecimalsWithAnotherScale() {
     var upsertCandidateRequest = createUpsertRequestWithDecimalScale(0, HARDCODED_INSTITUTION_ID);
     var candidate = scenario.upsertCandidate(upsertCandidateRequest);
-    candidateIdentifier = candidate.getIdentifier();
+    candidateIdentifier = candidate.identifier();
 
     candidate = updateApprovalStatus(candidateIdentifier, ApprovalStatus.APPROVED);
     var approval = candidate.getApprovals().get(HARDCODED_INSTITUTION_ID);
@@ -482,7 +481,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var upsertCandidateRequest = getUpsertCandidateRequestWithHardcodedValues();
 
     var candidate = scenario.upsertCandidate(upsertCandidateRequest);
-    updateApprovalStatus(candidate.getIdentifier(), ApprovalStatus.APPROVED);
+    updateApprovalStatus(candidate.identifier(), ApprovalStatus.APPROVED);
     var channel =
         PublicationChannelDto.builder()
             .withId(arguments.channel().id())

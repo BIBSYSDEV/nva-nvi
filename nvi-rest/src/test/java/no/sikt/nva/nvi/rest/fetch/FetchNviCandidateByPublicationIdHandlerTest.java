@@ -53,7 +53,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends BaseCandidateRestHandl
   @Test
   void shouldReturnNotFoundWhenCandidateExistsButNotApplicable() throws IOException {
     var nonApplicableCandidate = setupNonApplicableCandidate(topLevelOrganizationId);
-    var request = createRequestWithCuratorAccess(nonApplicableCandidate.getIdentifier().toString());
+    var request = createRequestWithCuratorAccess(nonApplicableCandidate.identifier().toString());
     handler.handleRequest(request, output, CONTEXT);
     var gatewayResponse = getGatewayResponse();
 
@@ -86,7 +86,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends BaseCandidateRestHandl
   void shouldReturnUnauthorizedWhenUserDoesNotHaveRoleWithAccess(AccessRight accessRight)
       throws IOException {
     var candidate = setupValidCandidate();
-    var request = createRequest(candidate.getIdentifier().toString(), randomUri(), accessRight);
+    var request = createRequest(candidate.identifier().toString(), randomUri(), accessRight);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
     assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));

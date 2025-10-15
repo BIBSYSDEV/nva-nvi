@@ -138,7 +138,7 @@ public abstract class BaseCandidateRestHandlerTest {
   protected Candidate setupCandidateWithApproval() {
     var candidate = setupValidCandidate();
     return scenario.updateApprovalStatus(
-        candidate.getIdentifier(), ApprovalStatus.APPROVED, topLevelOrganizationId);
+        candidate.identifier(), ApprovalStatus.APPROVED, topLevelOrganizationId);
   }
 
   protected Candidate setupCandidateWithUnverifiedCreatorFromAnotherInstitution() {

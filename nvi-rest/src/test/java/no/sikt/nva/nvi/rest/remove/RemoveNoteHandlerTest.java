@@ -72,7 +72,7 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
     var user = randomUsername();
     var candidateWithNote = createNote(candidate, user);
     var noteId = getIdOfFirstNote(candidateWithNote);
-    var request = createRequest(candidate.getIdentifier(), noteId, user.value()).build();
+    var request = createRequest(candidate.identifier(), noteId, user.value()).build();
     var viewingScopeValidatorReturningFalse = new FakeViewingScopeValidator(false);
     handler =
         new RemoveNoteHandler(
@@ -88,7 +88,7 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
     var user = randomUsername();
     var candidateWithNote = createNote(candidate, user);
     var noteId = getIdOfFirstNote(candidateWithNote);
-    var request = createRequest(candidate.getIdentifier(), noteId, randomString()).build();
+    var request = createRequest(candidate.identifier(), noteId, randomString()).build();
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
     assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
@@ -100,7 +100,7 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
     var user = randomUsername();
     var candidateWithNote = createNote(candidate, user);
     var noteId = getIdOfFirstNote(candidateWithNote);
-    var request = createRequest(candidate.getIdentifier(), noteId, user.value()).build();
+    var request = createRequest(candidate.identifier(), noteId, user.value()).build();
     handler.handleRequest(request, output, CONTEXT);
     var gatewayResponse = GatewayResponse.fromOutputStream(output, CandidateDto.class);
     var body = gatewayResponse.getBodyObject(CandidateDto.class);
@@ -120,7 +120,7 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
     var candidate = createCandidateWithNote();
     var user = randomString();
     var noteId = getIdOfFirstNote(candidate);
-    var request = createRequest(candidate.getIdentifier(), noteId, user).build();
+    var request = createRequest(candidate.identifier(), noteId, user).build();
     setupClosedPeriod(scenario, CURRENT_YEAR);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
@@ -135,7 +135,7 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
     var candidateWithNote = createNote(candidate, user);
     var noteId = getIdOfFirstNote(candidateWithNote);
 
-    var request = createRequest(candidate.getIdentifier(), noteId, user.value()).build();
+    var request = createRequest(candidate.identifier(), noteId, user.value()).build();
     var candidateDto = handleRequest(request);
 
     var actualAllowedOperations = candidateDto.allowedOperations();
@@ -147,14 +147,14 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
     var candidateService = scenario.getCandidateService();
     var candidate = setupValidCandidate();
     candidateService.createNote(candidate, randomNoteRequest());
-    return candidateService.getByIdentifier(candidate.getIdentifier());
+    return candidateService.getByIdentifier(candidate.identifier());
   }
 
   private Candidate createNote(Candidate candidate, Username user) {
     var candidateService = scenario.getCandidateService();
     var noteRequest = new CreateNoteRequest(randomString(), user.value(), topLevelOrganizationId);
     candidateService.createNote(candidate, noteRequest);
-    return candidateService.getByIdentifier(candidate.getIdentifier());
+    return candidateService.getByIdentifier(candidate.identifier());
   }
 
   private HandlerRequestBuilder<NviNoteRequest> createRequest(

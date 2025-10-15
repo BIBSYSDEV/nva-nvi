@@ -90,7 +90,7 @@ public class DbCandidateFixtures {
 
   public static DbCandidate getExpectedUpdatedDbCandidate(
       Candidate candidate, UpsertNviCandidateRequest request) {
-    return getExpectedDbCandidate(candidate.getIdentifier(), candidate.getCreatedDate(), request);
+    return getExpectedDbCandidate(candidate.identifier(), candidate.createdDate(), request);
   }
 
   public static DbCandidate getExpectedDbCandidate(

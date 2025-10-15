@@ -82,7 +82,7 @@ public class CandidatePermissions {
           "User {} was denied access {} on candidate {} from strategies {}",
           userInstance.userName(),
           operation,
-          candidate.getIdentifier(),
+          candidate.identifier(),
           String.join(COMMA_DELIMITER, strategies));
 
       throw new UnauthorizedException(formatUnauthorizedMessage(operation));
@@ -101,7 +101,7 @@ public class CandidatePermissions {
           "User {} was denied access {} on candidate {} because no valid grant strategy was found",
           userInstance.userName(),
           operation,
-          candidate.getIdentifier());
+          candidate.identifier());
       throw new UnauthorizedException(formatUnauthorizedMessage(operation));
     }
 
@@ -109,13 +109,13 @@ public class CandidatePermissions {
         "User {} was allowed {} on candidate {} from strategies {}",
         userInstance.userName(),
         operation,
-        candidate.getIdentifier(),
+        candidate.identifier(),
         String.join(COMMA_DELIMITER, strategies));
   }
 
   private String formatUnauthorizedMessage(CandidateOperation operation) {
     return String.format(
         "Unauthorized: %s is not allowed to perform %s on %s",
-        userInstance.userName(), operation, candidate.getIdentifier());
+        userInstance.userName(), operation, candidate.identifier());
   }
 }

@@ -296,7 +296,7 @@ class BatchScanUtilTest {
     batchScanUtil.migrateAndUpdateVersion(10, null, emptyList());
     var actualCandidate = scenario.getCandidateByPublicationId(publication.id());
 
-    Assertions.assertThat(actualCandidate.getPublicationDetails())
+    Assertions.assertThat(actualCandidate.publicationDetails())
         .extracting(
             PublicationDetails::language,
             PublicationDetails::topLevelOrganizations,
@@ -348,7 +348,7 @@ class BatchScanUtilTest {
     batchScanUtil.migrateAndUpdateVersion(10, null, emptyList());
     var actualCandidate = scenario.getCandidateByPublicationId(publication.id());
 
-    Assertions.assertThat(actualCandidate.getPublicationDetails())
+    Assertions.assertThat(actualCandidate.publicationDetails())
         .extracting(
             PublicationDetails::topLevelOrganizations,
             PublicationDetails::nviCreators,

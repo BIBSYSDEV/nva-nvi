@@ -206,28 +206,6 @@ public class CandidateRepository extends DynamoRepository {
     sendTransaction(transaction.build());
   }
 
-  public ApprovalStatusDao updateApproval(CandidateDao candidate, ApprovalStatusDao approval) {
-    LOGGER.info(
-        "Updating approval: candidateId={}, approval={}",
-        approval.identifier(),
-        approval.approvalStatus());
-    var transaction = TransactWriteItemsEnhancedRequest.builder();
-    var updatedApproval = mutateDaoVersion(approval);
-    transaction.addUpdateItem(approvalStatusTable, updatedApproval);
-    transaction.addConditionCheck(candidateTable, requireExpectedCandidateRevision(candidate));
-
-    try {
-      client.transactWriteItems(transaction.build());
-      LOGGER.info("Successfully updated approval for candidateId={}", approval.identifier());
-      return approval;
-
-    } catch (TransactionCanceledException e) {
-      LOGGER.error("Failed to update approval: approval={}", approval);
-      handleTransactionFailure(e, approval);
-      throw TransactionException.from(e, transaction.build());
-    }
-  }
-
   @Deprecated // TODO: Remove this
   public Optional<CandidateDao> findCandidateById(UUID candidateIdentifier) {
     LOGGER.info("Fetching candidate by identifier {}", candidateIdentifier);
@@ -239,7 +217,6 @@ public class CandidateRepository extends DynamoRepository {
                 .build()));
   }
 
-  @Deprecated // TODO: Remove this
   public Optional<CandidateDao> findByPublicationId(URI publicationId) {
     LOGGER.info("Fetching candidate by publication id {}", publicationId);
     return this.publicationIdIndex.query(findCandidateByPublicationIdQuery(publicationId)).stream()
