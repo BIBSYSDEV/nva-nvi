@@ -185,16 +185,15 @@ public record Candidate(
   }
 
   public URI getContextUri() {
-      var basePath = environment.readEnv("CUSTOM_DOMAIN_BASE_PATH");
-      var apiHost = environment.readEnv("API_HOST");
-      return
-        UriWrapper.fromHost(apiHost).addChild(basePath, "context").getUri();
+    var basePath = environment.readEnv("CUSTOM_DOMAIN_BASE_PATH");
+    var apiHost = environment.readEnv("API_HOST");
+    return UriWrapper.fromHost(apiHost).addChild(basePath, "context").getUri();
   }
 
   public URI getId() {
 
-      var basePath = environment.readEnv("CUSTOM_DOMAIN_BASE_PATH");
-      var apiHost = environment.readEnv("API_HOST");
+    var basePath = environment.readEnv("CUSTOM_DOMAIN_BASE_PATH");
+    var apiHost = environment.readEnv("API_HOST");
     return new UriWrapper(HTTPS, apiHost)
         .addChild(basePath, CANDIDATE_PATH, identifier.toString())
         .getUri();

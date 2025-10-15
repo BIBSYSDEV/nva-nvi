@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.common.service;
 
+import static no.sikt.nva.nvi.common.EnvironmentFixtures.getGlobalEnvironment;
 import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.dto.NviCreatorDtoFixtures.verifiedNviCreatorDtoFrom;
@@ -24,7 +25,7 @@ public class CandidateTestSetup {
 
   protected static final int EXPECTED_SCALE = 4;
   protected static final RoundingMode EXPECTED_ROUNDING_MODE = RoundingMode.HALF_UP;
-  private static final Environment ENVIRONMENT = new Environment();
+  private static final Environment ENVIRONMENT = getGlobalEnvironment();
   private static final String BASE_PATH = ENVIRONMENT.readEnv("CUSTOM_DOMAIN_BASE_PATH");
   private static final String API_DOMAIN = ENVIRONMENT.readEnv("API_HOST");
   public static final URI CONTEXT_URI =

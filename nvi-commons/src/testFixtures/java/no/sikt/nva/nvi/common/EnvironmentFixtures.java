@@ -1,8 +1,7 @@
 package no.sikt.nva.nvi.common;
 
-import nva.commons.core.paths.UriWrapper;
-
 import java.net.URI;
+import nva.commons.core.paths.UriWrapper;
 
 /**
  * Utility to set up fake environment variables for testing purposes. Keep this in sync with the
