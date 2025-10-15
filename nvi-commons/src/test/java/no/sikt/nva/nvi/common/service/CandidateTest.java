@@ -20,6 +20,7 @@ import static no.sikt.nva.nvi.common.model.CandidateFixtures.setupRandomApplicab
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.mockOrganizationResponseForAffiliation;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomTopLevelOrganization;
 import static no.sikt.nva.nvi.common.model.UserInstanceFixtures.createCuratorUserInstance;
+import static no.sikt.nva.nvi.common.service.model.NviPeriod.toPeriodStatusDto;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
@@ -45,21 +46,21 @@ import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.UpsertRequestBuilder;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
-import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
 import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.model.ChannelType;
 import no.sikt.nva.nvi.common.model.ScientificValue;
+import no.sikt.nva.nvi.common.model.Status;
 import no.sikt.nva.nvi.common.service.dto.ApprovalDto;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatusDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
-import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
+import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
@@ -262,7 +263,7 @@ class CandidateTest extends CandidateTestSetup {
             .withPublicationId(candidate.getPublicationId())
             .withIdentifier(candidate.identifier())
             .withContext(CONTEXT_URI)
-            .withPeriod(PeriodStatusDto.fromPeriodStatus(candidate.period()))
+            .withPeriod(toPeriodStatusDto(candidate.period()))
             .withTotalPoints(candidate.getTotalPoints())
             .withNotes(emptyList())
             .build();
@@ -312,21 +313,25 @@ class CandidateTest extends CandidateTestSetup {
     var updateRequest = createUpsertNonCandidateRequest(tempCandidate.getPublicationId());
     var candidateBO = candidateService.updateNonCandidate(updateRequest).orElseThrow();
     var fetchedCandidate = candidateService.getByIdentifier(candidateBO.identifier());
-    assertThat(fetchedCandidate.period().status(), is(equalTo(Status.NO_PERIOD)));
+
+    var periodStatus = toPeriodStatusDto(fetchedCandidate.period()).status();
+    assertEquals(Status.NO_PERIOD, periodStatus);
   }
 
   @Test
   void shouldSetPeriodYearWhenResettingCandidate() {
     var nonApplicableCandidate = nonApplicableCandidate();
-    candidateService.upsert(
+    var request =
         randomUpsertRequestBuilder()
             .withPublicationId(nonApplicableCandidate.getPublicationId())
-            .build());
+            .build();
+    candidateService.upsert(request);
     var updatedApplicableCandidate =
         candidateService.getByIdentifier(nonApplicableCandidate.identifier());
-    assertThat(
-        updatedApplicableCandidate.period().year(),
-        is(equalTo(updatedApplicableCandidate.period().year())));
+
+    var expectedYear = request.publicationDetails().publicationDate().year();
+    var period = updatedApplicableCandidate.period().orElseThrow();
+    assertTrue(period.hasPublishingYear(expectedYear));
   }
 
   @Test
@@ -370,7 +375,7 @@ class CandidateTest extends CandidateTestSetup {
             randomCandidate().copy().reportStatus(ReportStatus.REPORTED).build(),
             List.of(randomApproval()));
     var candidate = candidateService.getByIdentifier(dao.identifier());
-    var id = PeriodStatusDto.fromPeriodStatus(candidate.period()).id();
+    var id = candidate.period().map(NviPeriod::id).orElseThrow();
 
     assertThat(id, is(not(nullValue())));
   }
@@ -382,7 +387,7 @@ class CandidateTest extends CandidateTestSetup {
             randomCandidate().copy().reportStatus(ReportStatus.REPORTED).build(),
             List.of(randomApproval()));
     var candidate = candidateService.getByPublicationId(dao.candidate().publicationId());
-    var id = PeriodStatusDto.fromPeriodStatus(candidate.period()).id();
+    var id = candidate.period().map(NviPeriod::id).orElseThrow();
 
     assertThat(id, is(not(nullValue())));
   }

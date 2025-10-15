@@ -1,9 +1,9 @@
 package no.sikt.nva.nvi.common.service;
 
 import static java.util.Collections.emptyList;
-import static java.util.Objects.isNull;
 import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
+import static no.sikt.nva.nvi.common.service.NviPeriodService.findStatusFromCache;
 import static no.sikt.nva.nvi.common.service.model.Candidate.getApprovalsToDelete;
 import static no.sikt.nva.nvi.common.service.model.Candidate.getUpdatedInstitutionPoints;
 import static no.sikt.nva.nvi.common.service.model.Candidate.shouldResetCandidate;
@@ -18,7 +18,6 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.Dao;
 import no.sikt.nva.nvi.common.db.NviPeriodDao;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.common.db.PeriodStatus;
 import no.sikt.nva.nvi.common.db.model.CandidateAggregate;
 import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
@@ -41,12 +40,10 @@ import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@SuppressWarnings({"PMD.UnusedPrivateField", "PMD.CouplingBetweenObjects"})
+@SuppressWarnings("PMD.CouplingBetweenObjects")
 public class CandidateService {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CandidateService.class);
-  private static final PeriodStatus PERIOD_STATUS_NO_PERIOD =
-      PeriodStatus.builder().withStatus(PeriodStatus.Status.NO_PERIOD).build();
 
   private final Environment environment;
   private final CandidateRepository candidateRepository;
@@ -94,9 +91,9 @@ public class CandidateService {
     var identifier = randomUUID();
 
     var publicationYear = request.publicationDetails().publicationDate().year();
-    var periodStatus = findPeriodStatus(periodService.getAll(), publicationYear);
+    var period = findStatusFromCache(periodService.getAll(), publicationYear);
 
-    var candidate = Candidate.fromRequest(identifier, request, periodStatus, environment);
+    var candidate = Candidate.fromRequest(identifier, request, period, environment);
     var approvals = candidate.getApprovals().values().stream().map(Approval::toDao).toList();
 
     candidateRepository.create(candidate.toDao(), approvals);
@@ -142,11 +139,7 @@ public class CandidateService {
     LOGGER.info(
         "Updating candidate for publicationId={} to non-candidate", request.publicationId());
 
-    var updatedCandidate =
-        responseContext
-            .candidate()
-            .map(existingCandidate -> Optional.of(updateToNotApplicable(existingCandidate)))
-            .orElse(Optional.empty());
+    var updatedCandidate = responseContext.candidate().map(this::updateToNotApplicable);
 
     if (updatedCandidate.isPresent()) {
       LOGGER.info(
@@ -244,21 +237,6 @@ public class CandidateService {
     return new CandidateContext(candidate, periods);
   }
 
-  private static PeriodStatus findPeriodStatus(Collection<NviPeriod> allPeriods, String year) {
-    if (isNull(year)) {
-      return PERIOD_STATUS_NO_PERIOD;
-    }
-
-    // FIXME: Shouldn't need to go via dao
-    return allPeriods.stream()
-        .filter(period -> period.hasPublishingYear(year))
-        .map(NviPeriod::toDao)
-        .map(NviPeriodDao::nviPeriod)
-        .map(PeriodStatus::fromPeriod)
-        .findFirst()
-        .orElse(PERIOD_STATUS_NO_PERIOD);
-  }
-
   private static CandidateDao updateCandidateToNonApplicable(CandidateDao candidateDao) {
     return candidateDao
         .copy()
@@ -270,15 +248,16 @@ public class CandidateService {
   private Candidate fromAggregate(
       CandidateAggregate candidateAggregate, Collection<NviPeriod> allPeriods) {
     var publicationYear = candidateAggregate.candidate().getPeriodYear();
-    var periodStatus = findPeriodStatus(allPeriods, publicationYear);
+    var period = findStatusFromCache(allPeriods, publicationYear);
     return Candidate.fromDao(
         candidateAggregate.candidate(),
         candidateAggregate.approvals(),
         candidateAggregate.notes(),
-        periodStatus,
+        period,
         environment);
   }
 
+  // FIXME: Why return a new candidate here?
   private Candidate updateToNotApplicable(Candidate currentCandidate) {
     var existingCandidateDao = currentCandidate.toDao();
     var nonApplicableCandidate = updateCandidateToNonApplicable(existingCandidateDao);
@@ -289,10 +268,6 @@ public class CandidateService {
         nonApplicableCandidate, emptyList(), approvalsToDelete);
 
     return Candidate.fromDao(
-        nonApplicableCandidate,
-        emptyList(),
-        emptyList(),
-        PeriodStatus.builder().withStatus(PeriodStatus.Status.NO_PERIOD).build(),
-        environment);
+        nonApplicableCandidate, emptyList(), emptyList(), Optional.empty(), environment);
   }
 }

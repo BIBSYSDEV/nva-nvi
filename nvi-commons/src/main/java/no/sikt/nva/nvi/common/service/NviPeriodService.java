@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.common.service;
 
 import java.net.URI;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
@@ -64,6 +65,12 @@ public class NviPeriodService {
   public Optional<NviPeriod> findByPublishingYear(String publishingYear) {
     var periodDao = periodRepository.findByPublishingYear(publishingYear);
     return periodDao.map(NviPeriod::fromDao);
+  }
+
+  public static Optional<NviPeriod> findStatusFromCache(
+      Collection<NviPeriod> allPeriods, String year) {
+
+    return allPeriods.stream().filter(period -> period.hasPublishingYear(year)).findFirst();
   }
 
   private NviPeriod createNewPeriodFromRequest(CreatePeriodRequest request) {

@@ -38,8 +38,6 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.NoteDao;
-import no.sikt.nva.nvi.common.db.PeriodStatus;
-import no.sikt.nva.nvi.common.db.PeriodStatus.Status;
 import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.model.InstanceType;
@@ -65,7 +63,7 @@ public record Candidate(
     boolean applicable,
     Map<URI, Approval> approvals,
     Map<UUID, Note> notes,
-    PeriodStatus period,
+    Optional<NviPeriod> period, // FIXME: Can this be NviPeriod?
     PointCalculation pointCalculation,
     PublicationDetails publicationDetails,
     Instant createdDate,
@@ -75,11 +73,6 @@ public record Candidate(
     Environment environment) {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(Candidate.class);
-  private static final Environment ENVIRONMENT = new Environment();
-  private static final String BASE_PATH = ENVIRONMENT.readEnv("CUSTOM_DOMAIN_BASE_PATH");
-  private static final String API_DOMAIN = ENVIRONMENT.readEnv("API_HOST");
-  public static final URI CONTEXT_URI =
-      UriWrapper.fromHost(API_DOMAIN).addChild(BASE_PATH, "context").getUri();
   private static final String CONTEXT = stringFromResources(Path.of("nviCandidateContext.json"));
   private static final String CANDIDATE_PATH = "candidate";
   private static final String PERIOD_CLOSED_MESSAGE =
@@ -91,7 +84,7 @@ public record Candidate(
       CandidateDao candidateDao,
       Collection<ApprovalStatusDao> approvals,
       Collection<NoteDao> notes,
-      PeriodStatus period,
+      Optional<NviPeriod> period,
       Environment environment) {
     var dbCandidate = candidateDao.candidate();
 
@@ -114,7 +107,7 @@ public record Candidate(
   public static Candidate fromRequest(
       UUID identifier,
       UpsertNviCandidateRequest request,
-      PeriodStatus period,
+      Optional<NviPeriod> period,
       Environment environment) {
     var approvals =
         request.pointCalculation().institutionPoints().stream()
@@ -190,8 +183,8 @@ public record Candidate(
     return UriWrapper.fromHost(apiHost).addChild(basePath, "context").getUri();
   }
 
+  // FIXME: Clean-up duplication here
   public URI getId() {
-
     var basePath = environment.readEnv("CUSTOM_DOMAIN_BASE_PATH");
     var apiHost = environment.readEnv("API_HOST");
     return new UriWrapper(HTTPS, apiHost)
@@ -264,15 +257,15 @@ public record Candidate(
   }
 
   public boolean isNotReportedInClosedPeriod() {
-    return !isReported() && period.isClosed();
+    return !isReported() && period.filter(NviPeriod::isClosed).isPresent();
   }
 
   public boolean isUnderReview() {
-    return !areAllApprovalsPending() && period.isOpen();
+    return !areAllApprovalsPending() && period.filter(NviPeriod::isOpen).isPresent();
   }
 
   public boolean isPendingReview() {
-    return areAllApprovalsPending() && period.isOpen();
+    return areAllApprovalsPending() && period.filter(NviPeriod::isOpen).isPresent();
   }
 
   public GlobalApprovalStatus getGlobalApprovalStatus() {
@@ -543,12 +536,14 @@ public record Candidate(
   }
 
   private void validateCandidateState() {
-    if (Status.CLOSED_PERIOD.equals(period.status())) {
-      throw new IllegalStateException(PERIOD_CLOSED_MESSAGE);
-    }
-    if (Status.NO_PERIOD.equals(period.status())
-        || Status.UNOPENED_PERIOD.equals(period.status())) {
+    if (period.isEmpty()) {
       throw new IllegalStateException(PERIOD_NOT_OPENED_MESSAGE);
+    }
+    if (period.filter(NviPeriod::isOpen).isEmpty()) {
+      throw new IllegalStateException(PERIOD_NOT_OPENED_MESSAGE);
+    }
+    if (period.filter(NviPeriod::isClosed).isPresent()) {
+      throw new IllegalStateException(PERIOD_CLOSED_MESSAGE);
     }
   }
 
@@ -558,7 +553,7 @@ public record Candidate(
     private boolean applicable;
     private Map<URI, Approval> approvals;
     private Map<UUID, Note> notes;
-    private PeriodStatus period;
+    private Optional<NviPeriod> period;
     private PointCalculation pointCalculation;
     private PublicationDetails publicationDetails;
     private Instant createdDate;
@@ -589,7 +584,7 @@ public record Candidate(
       return this;
     }
 
-    public Builder withPeriod(PeriodStatus period) {
+    public Builder withPeriod(Optional<NviPeriod> period) {
       this.period = period;
       return this;
     }

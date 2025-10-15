@@ -3,23 +3,34 @@ package no.sikt.nva.nvi.common.service.model;
 import static java.time.temporal.ChronoUnit.DAYS;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.getGlobalEnvironment;
 import static no.sikt.nva.nvi.common.model.UsernameFixtures.randomUsername;
+import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
+import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.params.provider.Arguments.argumentSet;
 
 import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.Optional;
+import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.TestScenario;
+import no.sikt.nva.nvi.common.model.Status;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
+import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import no.sikt.nva.nvi.common.service.exception.PeriodAlreadyExistsException;
 import no.sikt.nva.nvi.common.service.exception.PeriodNotFoundException;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class NviPeriodTest {
 
@@ -134,6 +145,38 @@ class NviPeriodTest {
     assertEquals(request.reportingDate().toString(), actual.reportingDate());
   }
 
+  @ParameterizedTest()
+  @MethodSource("periodToPeriodStatusProvider")
+  void shouldConvertPeriodToPeriodStatusCorrectly(
+      Optional<NviPeriod> period, Status expectedStatus) {
+
+    var statusDto = NviPeriod.toPeriodStatusDto(period);
+
+    assertEquals(expectedStatus, statusDto.status());
+  }
+
+  @Test
+  void shouldConvertPeriodToDto() {
+    var lastMonth = ZonedDateTime.now().minusMonths(1).toInstant();
+    var nextMonth = ZonedDateTime.now().plusMonths(1).toInstant();
+    var user = randomUsername();
+
+    var period = new NviPeriod(randomUri(), CURRENT_YEAR, lastMonth, nextMonth, user, user);
+
+    var periodDto = NviPeriod.toPeriodStatusDto(Optional.of(period));
+    Assertions.assertThat(periodDto)
+        .extracting(
+            PeriodStatusDto::id,
+            PeriodStatusDto::startDate,
+            PeriodStatusDto::reportingDate,
+            PeriodStatusDto::year)
+        .containsExactly(
+            period.id(),
+            period.startDate().toString(),
+            period.reportingDate().toString(),
+            String.valueOf(CURRENT_YEAR));
+  }
+
   private NviPeriod createNviPeriod(CreatePeriodRequest request) {
     periodService.create(request);
     return periodService.getByPublishingYear(request.publishingYear().toString());
@@ -182,5 +225,21 @@ class NviPeriodTest {
     assertEquals(request.startDate(), actual.startDate());
     assertEquals(request.reportingDate(), actual.reportingDate());
     assertEquals(request.createdBy(), actual.createdBy());
+  }
+
+  public static Stream<Arguments> periodToPeriodStatusProvider() {
+    var lastMonth = ZonedDateTime.now().minusMonths(1).toInstant();
+    var nextMonth = ZonedDateTime.now().plusMonths(1).toInstant();
+    var user = randomUsername();
+
+    var openPeriod = new NviPeriod(randomUri(), CURRENT_YEAR, lastMonth, nextMonth, user, user);
+    var closedPeriod = new NviPeriod(randomUri(), CURRENT_YEAR, lastMonth, lastMonth, user, user);
+    var futurePeriod = new NviPeriod(randomUri(), CURRENT_YEAR, nextMonth, nextMonth, user, user);
+
+    return Stream.of(
+        argumentSet("No period", Optional.empty(), Status.NO_PERIOD),
+        argumentSet("Open period", Optional.of(openPeriod), Status.OPEN_PERIOD),
+        argumentSet("Closed period", Optional.of(closedPeriod), Status.CLOSED_PERIOD),
+        argumentSet("Unopened period", Optional.of(futurePeriod), Status.UNOPENED_PERIOD));
   }
 }

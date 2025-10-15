@@ -1,14 +1,11 @@
 package no.sikt.nva.nvi.common.db;
 
-import static no.sikt.nva.nvi.common.LocalDynamoTestSetup.scanDB;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidateBuilder;
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
+import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -18,9 +15,11 @@ import static org.mockito.Mockito.when;
 import java.util.List;
 import java.util.Map;
 import no.sikt.nva.nvi.common.TestScenario;
+import no.sikt.nva.nvi.common.db.model.KeyField;
 import no.sikt.nva.nvi.common.exceptions.TransactionException;
 import no.sikt.nva.nvi.common.model.InstanceType;
 import no.sikt.nva.nvi.common.service.CandidateService;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
@@ -31,14 +30,13 @@ import software.amazon.awssdk.services.dynamodb.model.TransactionCanceledExcepti
 
 class CandidateRepositoryTest {
 
-  private DynamoDbClient localDynamo;
   private CandidateRepository candidateRepository;
   private CandidateService candidateService;
 
   @BeforeEach
   void setUp() {
     var scenario = new TestScenario();
-    localDynamo = scenario.getLocalDynamo();
+    setupOpenPeriod(scenario, CURRENT_YEAR);
     candidateRepository = scenario.getCandidateRepository();
     candidateService = scenario.getCandidateService();
   }
@@ -50,7 +48,6 @@ class CandidateRepositoryTest {
     var candidate2 = randomCandidateBuilder(true).publicationId(publicationId).build();
     candidateRepository.create(candidate1, List.of());
     assertThrows(RuntimeException.class, () -> candidateRepository.create(candidate2, List.of()));
-    assertThat(scanDB(localDynamo).count(), is(equalTo(2)));
   }
 
   @Test
@@ -68,8 +65,10 @@ class CandidateRepositoryTest {
     var updatedDbCandidate =
         candidateRepository.findCandidateById(candidateDao.identifier()).get().candidate();
 
-    assertThat(scanDB(localDynamo).count(), is(equalTo(3)));
-    assertThat(updatedDbCandidate, is(not(equalTo(originalDbCandidate))));
+    Assertions.assertThat(updatedDbCandidate).isNotEqualTo(originalDbCandidate);
+
+    var candidatesInDb = candidateRepository.scanEntries(500, null, List.of(KeyField.CANDIDATE));
+    Assertions.assertThat(candidatesInDb.getDatabaseEntries()).hasSize(1);
   }
 
   @Test

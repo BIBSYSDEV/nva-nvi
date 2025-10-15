@@ -166,7 +166,7 @@ public final class NviCandidateIndexDocumentGenerator {
         .withContext(candidate.getContextUri())
         .withIsApplicable(candidate.isApplicable())
         .withIdentifier(candidate.identifier())
-        .withReportingPeriod(new ReportingPeriod(candidate.period().year()))
+        .withReportingPeriod(ReportingPeriod.fromCandidate(candidate))
         .withReported(candidate.isReported())
         .withApprovals(approvals)
         .withPublicationDetails(expandedPublicationDetails)

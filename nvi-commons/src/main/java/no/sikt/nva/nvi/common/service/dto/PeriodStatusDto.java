@@ -3,11 +3,8 @@ package no.sikt.nva.nvi.common.service.dto;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import com.fasterxml.jackson.annotation.JsonValue;
 import java.net.URI;
-import java.util.Arrays;
-import java.util.Optional;
-import nva.commons.core.JacocoGenerated;
+import no.sikt.nva.nvi.common.model.Status;
 
 @JsonTypeName(PeriodStatusDto.NVI_PERIOD)
 @JsonTypeInfo(use = Id.NAME, property = "type")
@@ -18,57 +15,6 @@ public record PeriodStatusDto(
 
   public static Builder builder() {
     return new Builder();
-  }
-
-  public static PeriodStatusDto fromPeriodStatus(
-      no.sikt.nva.nvi.common.db.PeriodStatus periodStatus) {
-    return builder()
-        .withId(periodStatus.id())
-        .withStatus(Status.parse(periodStatus.status().getValue()))
-        .withStartDate(toStartDate(periodStatus))
-        .withReportingDate(toReportingDate(periodStatus))
-        .withYear(periodStatus.year())
-        .build();
-  }
-
-  private static String toReportingDate(no.sikt.nva.nvi.common.db.PeriodStatus periodStatus) {
-    return Optional.of(periodStatus)
-        .map(no.sikt.nva.nvi.common.db.PeriodStatus::reportingDate)
-        .map(Object::toString)
-        .orElse(null);
-  }
-
-  private static String toStartDate(no.sikt.nva.nvi.common.db.PeriodStatus periodStatus) {
-    return Optional.of(periodStatus)
-        .map(no.sikt.nva.nvi.common.db.PeriodStatus::startDate)
-        .map(Object::toString)
-        .orElse(null);
-  }
-
-  public enum Status {
-    OPEN_PERIOD("OpenPeriod"),
-    CLOSED_PERIOD("ClosedPeriod"),
-    NO_PERIOD("NoPeriod"),
-    UNOPENED_PERIOD("UnopenedPeriod");
-
-    private final String value;
-
-    Status(String value) {
-      this.value = value;
-    }
-
-    public static Status parse(String value) {
-      return Arrays.stream(values())
-          .filter(status -> status.getValue().equalsIgnoreCase(value))
-          .findFirst()
-          .orElseThrow();
-    }
-
-    @JacocoGenerated
-    @JsonValue
-    public String getValue() {
-      return value;
-    }
   }
 
   public static final class Builder {

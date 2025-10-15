@@ -145,11 +145,8 @@ public class EvaluatorService {
   }
 
   private boolean isApplicableInPeriod(NviPeriod targetPeriod, Candidate candidate) {
-    var candidatePeriod = candidate.period();
-    if (isNull(candidatePeriod) || isNull(candidatePeriod.id())) {
-      return false;
-    }
-    var hasSamePeriod = candidatePeriod.id().equals(targetPeriod.id());
+    var hasSamePeriod =
+        candidate.period().filter(period -> targetPeriod.id().equals(period.id())).isPresent();
     return candidate.isApplicable() && hasSamePeriod;
   }
 

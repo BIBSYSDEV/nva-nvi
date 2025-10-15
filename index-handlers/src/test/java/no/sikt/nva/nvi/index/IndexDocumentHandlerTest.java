@@ -932,7 +932,7 @@ class IndexDocumentHandlerTest {
         .withInternationalCollaborationFactor(candidate.getCollaborationFactor())
         .withCreatedDate(candidate.createdDate())
         .withModifiedDate(candidate.modifiedDate())
-        .withReportingPeriod(new ReportingPeriod(candidate.period().year()))
+        .withReportingPeriod(ReportingPeriod.fromCandidate(candidate))
         .build();
   }
 

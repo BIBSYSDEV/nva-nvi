@@ -1,13 +1,17 @@
 package no.sikt.nva.nvi.common.service.model;
 
+import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.utils.Validator.shouldNotBeNull;
 
 import java.net.URI;
 import java.time.Instant;
+import java.util.Optional;
 import no.sikt.nva.nvi.common.db.NviPeriodDao;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.exceptions.ValidationException;
+import no.sikt.nva.nvi.common.model.Status;
 import no.sikt.nva.nvi.common.service.dto.NviPeriodDto;
+import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import no.sikt.nva.nvi.common.service.requests.UpdatePeriodRequest;
 
 public record NviPeriod(
@@ -42,12 +46,44 @@ public record NviPeriod(
         id, publishingYear.toString(), startDate.toString(), reportingDate.toString());
   }
 
+  public static PeriodStatusDto toPeriodStatusDto(Optional<NviPeriod> optionalPeriod) {
+    var status = mapToPeriodStatus(optionalPeriod);
+    return optionalPeriod
+        .map(
+            period ->
+                PeriodStatusDto.builder()
+                    .withId(period.id())
+                    .withStatus(status)
+                    .withYear(period.publishingYear().toString())
+                    .withStartDate(period.startDate().toString())
+                    .withReportingDate(period.reportingDate().toString())
+                    .build())
+        .orElseGet(() -> PeriodStatusDto.builder().withStatus(status).build());
+  }
+
+  private static Status mapToPeriodStatus(Optional<NviPeriod> period) {
+    if (period.filter(NviPeriod::isOpen).isPresent()) {
+      return Status.OPEN_PERIOD;
+    }
+    if (period.filter(NviPeriod::isClosed).isPresent()) {
+      return Status.CLOSED_PERIOD;
+    }
+    if (period.isPresent()) {
+      return Status.UNOPENED_PERIOD;
+    }
+    return Status.NO_PERIOD;
+  }
+
   public boolean isClosed() {
-    return reportingDate.isBefore(Instant.now());
+    return nonNull(reportingDate) && reportingDate.isBefore(Instant.now());
   }
 
   public boolean isOpen() {
-    return !isClosed();
+    var now = Instant.now();
+    return nonNull(startDate)
+        && startDate.isBefore(now)
+        && nonNull(reportingDate)
+        && reportingDate.isAfter(now);
   }
 
   public boolean hasPublishingYear(String year) {

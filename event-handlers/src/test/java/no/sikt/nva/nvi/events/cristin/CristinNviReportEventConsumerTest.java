@@ -39,6 +39,7 @@ import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails;
 import no.sikt.nva.nvi.events.cristin.CristinNviReport.Builder;
 import no.unit.nva.events.models.EventReference;
@@ -258,17 +259,19 @@ class CristinNviReportEventConsumerTest {
     assertThat(candidate.getApprovals().keySet().stream().toList())
         .containsExactlyInAnyOrderElementsOf(expectedApprovalIds);
 
+    var actualPeriodYear = candidate.period().map(NviPeriod::publishingYear).orElseThrow();
+    var expectedPeriodYear = cristinNviReport.getYearReportedFromHistoricalData().orElseThrow();
+    assertThat(actualPeriodYear.toString()).isEqualTo(expectedPeriodYear);
+
     assertThat(candidate)
         .extracting(
             Candidate::getPublicationId,
             Candidate::isApplicable,
-            actual -> actual.period().year(),
             actual -> actual.getPublicationType().getValue(),
             actual -> actual.getPublicationChannel().scientificValue().getValue())
         .containsExactly(
             expectedPublicationId(cristinNviReport),
             true,
-            cristinNviReport.getYearReportedFromHistoricalData().orElseThrow(),
             cristinNviReport.instanceType(),
             "LevelOne");
 
