@@ -142,7 +142,7 @@ class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
     var candidate = setupValidCandidate();
     var existingApprovalAssignee = randomString();
     var updateRequest = new UpdateAssigneeRequest(topLevelOrganizationId, existingApprovalAssignee);
-    candidateService.updateApproval(candidate, updateRequest, curatorUser);
+    approvalService.updateApproval(candidate, updateRequest, curatorUser);
     var updatedCandidate = candidateService.getByIdentifier(candidate.identifier());
     assertNotNull(
         updatedCandidate.getApprovals().get(topLevelOrganizationId).getAssigneeUsername());

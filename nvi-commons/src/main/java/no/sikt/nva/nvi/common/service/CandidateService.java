@@ -20,10 +20,6 @@ import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.model.CandidateAggregate;
 import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
-import no.sikt.nva.nvi.common.model.UpdateApprovalRequest;
-import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
-import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
-import no.sikt.nva.nvi.common.model.UserInstance;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.Candidate;
@@ -40,7 +36,6 @@ public class CandidateService {
   private final Environment environment;
   private final CandidateRepository candidateRepository;
   private final PeriodRepository periodRepository;
-  private final ApprovalService approvalService;
   private final NviPeriodService periodService;
 
   public CandidateService(
@@ -50,7 +45,6 @@ public class CandidateService {
     this.environment = environment;
     this.periodRepository = periodRepository;
     this.candidateRepository = candidateRepository;
-    this.approvalService = new ApprovalService(candidateRepository);
     this.periodService = new NviPeriodService(environment, periodRepository);
   }
 
@@ -162,16 +156,6 @@ public class CandidateService {
       return new CandidateContext(Optional.empty(), periodService.getAll());
     }
     return findAggregate(optionalCandidate.get().identifier());
-  }
-
-  public void updateApproval(
-      Candidate candidate, UpdateApprovalRequest request, UserInstance user) {
-    if (request instanceof UpdateStatusRequest statusRequest) {
-      approvalService.updateApprovalStatus(candidate, statusRequest, user);
-    }
-    if (request instanceof UpdateAssigneeRequest assigneeRequest) {
-      approvalService.updateApprovalAssignee(candidate, assigneeRequest);
-    }
   }
 
   private CandidateContext findAggregate(UUID candidateIdentifier) {

@@ -9,6 +9,7 @@ import com.amazonaws.services.lambda.runtime.Context;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.model.UserInstance;
+import no.sikt.nva.nvi.common.service.ApprovalService;
 import no.sikt.nva.nvi.common.service.CandidateResponseFactory;
 import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
@@ -30,22 +31,26 @@ public class UpdateNviCandidateStatusHandler
     extends ApiGatewayHandler<NviStatusRequest, CandidateDto> implements ViewingScopeHandler {
 
   private final CandidateService candidateService;
+  private final ApprovalService approvalService;
   private final ViewingScopeValidator viewingScopeValidator;
 
   @JacocoGenerated
   public UpdateNviCandidateStatusHandler() {
     this(
         CandidateService.defaultCandidateService(),
+        ApprovalService.defaultApprovalService(),
         ViewingScopeHandler.defaultViewingScopeValidator(),
         new Environment());
   }
 
   public UpdateNviCandidateStatusHandler(
       CandidateService candidateService,
+      ApprovalService approvalService,
       ViewingScopeValidator viewingScopeValidator,
       Environment environment) {
     super(NviStatusRequest.class, environment);
     this.candidateService = candidateService;
+    this.approvalService = approvalService;
     this.viewingScopeValidator = viewingScopeValidator;
   }
 
@@ -64,7 +69,7 @@ public class UpdateNviCandidateStatusHandler
     var updateRequest = input.toUpdateRequest(username.value());
     var userInstance = UserInstance.fromRequestInfo(requestInfo);
 
-    return attempt(() -> fetchCandidate(candidateIdentifier))
+    return attempt(() -> candidateService.getByIdentifier(candidateIdentifier))
         .map(candidate -> validateViewingScope(viewingScopeValidator, username, candidate))
         .map(candidate -> updateAndRefetch(candidate, updateRequest, userInstance))
         .map(candidate -> CandidateResponseFactory.create(candidate, userInstance))
@@ -76,14 +81,10 @@ public class UpdateNviCandidateStatusHandler
     return HTTP_OK;
   }
 
-  private Candidate fetchCandidate(UUID candidateIdentifier) {
-    return candidateService.getByIdentifier(candidateIdentifier);
-  }
-
   private Candidate updateAndRefetch(
       Candidate candidate, UpdateStatusRequest updateRequest, UserInstance userInstance) {
-    candidateService.updateApproval(candidate, updateRequest, userInstance);
-    return fetchCandidate(candidate.identifier());
+    approvalService.updateApproval(candidate, updateRequest, userInstance);
+    return candidateService.getByIdentifier(candidate.identifier());
   }
 
   private static void validateCustomerAndAccessRight(

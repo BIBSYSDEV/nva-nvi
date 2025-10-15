@@ -9,6 +9,7 @@ import java.net.HttpURLConnection;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UserInstance;
+import no.sikt.nva.nvi.common.service.ApprovalService;
 import no.sikt.nva.nvi.common.service.CandidateResponseFactory;
 import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
@@ -34,6 +35,7 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<UpsertAssigneeReque
 
   public static final String CANDIDATE_IDENTIFIER = "candidateIdentifier";
   private final CandidateService candidateService;
+  private final ApprovalService approvalService;
   private final IdentityServiceClient identityServiceClient;
   private final ViewingScopeValidator viewingScopeValidator;
 
@@ -41,6 +43,7 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<UpsertAssigneeReque
   public UpsertAssigneeHandler() {
     this(
         CandidateService.defaultCandidateService(),
+        ApprovalService.defaultApprovalService(),
         IdentityServiceClient.prepare(),
         ViewingScopeHandler.defaultViewingScopeValidator(),
         new Environment());
@@ -48,11 +51,13 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<UpsertAssigneeReque
 
   public UpsertAssigneeHandler(
       CandidateService candidateService,
+      ApprovalService approvalService,
       IdentityServiceClient identityServiceClient,
       ViewingScopeValidator viewingScopeValidator,
       Environment environment) {
     super(UpsertAssigneeRequest.class, environment);
     this.candidateService = candidateService;
+    this.approvalService = approvalService;
     this.identityServiceClient = identityServiceClient;
     this.viewingScopeValidator = viewingScopeValidator;
   }
@@ -89,7 +94,7 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<UpsertAssigneeReque
 
   private Candidate updateAndRefetch(
       Candidate candidate, UpdateAssigneeRequest updateRequest, UserInstance user) {
-    candidateService.updateApproval(candidate, updateRequest, user);
+    approvalService.updateApproval(candidate, updateRequest, user);
     return candidateService.getByIdentifier(candidate.identifier());
   }
 

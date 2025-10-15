@@ -52,7 +52,8 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
   @Override
   protected ApiGatewayHandler<UpsertAssigneeRequest, CandidateDto> createHandler() {
     return new UpsertAssigneeHandler(
-        scenario.getCandidateService(),
+        candidateService,
+        approvalService,
         mockIdentityServiceClient,
         mockViewingScopeValidator,
         ENVIRONMENT);
@@ -97,7 +98,8 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
     var viewingScopeValidatorReturningFalse = new FakeViewingScopeValidator(false);
     handler =
         new UpsertAssigneeHandler(
-            scenario.getCandidateService(),
+            candidateService,
+            approvalService,
             mockIdentityServiceClient,
             viewingScopeValidatorReturningFalse,
             ENVIRONMENT);
@@ -192,7 +194,7 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
   private Candidate candidateWithFinalizedApproval(String newAssignee) {
     var updateRequest = new UpdateAssigneeRequest(topLevelOrganizationId, newAssignee);
     var candidate = candidateService.getByIdentifier(candidateIdentifier);
-    candidateService.updateApproval(candidate, updateRequest, curatorUser);
+    approvalService.updateApproval(candidate, updateRequest, curatorUser);
     return scenario.updateApprovalStatus(
         candidateIdentifier, ApprovalStatus.APPROVED, topLevelOrganizationId);
   }

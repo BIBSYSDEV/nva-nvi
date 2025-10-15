@@ -22,6 +22,7 @@ import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.model.UserInstance;
+import no.sikt.nva.nvi.common.service.ApprovalService;
 import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.NoteService;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
@@ -152,7 +153,8 @@ public class TestScenario {
   public Candidate updateApprovalStatus(
       UUID candidateIdentifier, UpdateStatusRequest updateRequest, UserInstance userInstance) {
     var candidate = getCandidateByIdentifier(candidateIdentifier);
-    candidateService.updateApproval(candidate, updateRequest, userInstance);
+    var approvalService = new ApprovalService(candidateRepository);
+    approvalService.updateApproval(candidate, updateRequest, userInstance);
     return getCandidateByIdentifier(candidate.identifier());
   }
 
@@ -161,7 +163,8 @@ public class TestScenario {
     var candidate = getCandidateByIdentifier(candidateIdentifier);
     var updateRequest = createUpdateStatusRequest(status, topLevelOrganizationId, randomString());
     var userInstance = createCuratorUserInstance(topLevelOrganizationId);
-    candidateService.updateApproval(candidate, updateRequest, userInstance);
+    var approvalService = new ApprovalService(candidateRepository);
+    approvalService.updateApproval(candidate, updateRequest, userInstance);
     return getCandidateByIdentifier(candidate.identifier());
   }
 

@@ -35,6 +35,7 @@ import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.exceptions.TransactionException;
 import no.sikt.nva.nvi.common.model.PublicationDate;
+import no.sikt.nva.nvi.common.service.ApprovalService;
 import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
@@ -64,6 +65,7 @@ class ConcurrencyHandlingTests {
   private TestScenario scenario;
   private CandidateRepository candidateRepository;
   private CandidateService candidateService;
+  private ApprovalService approvalService;
   private UpsertRequestBuilder upsertRequestBuilder;
   private UUID candidateIdentifier;
   private URI publicationId;
@@ -75,6 +77,7 @@ class ConcurrencyHandlingTests {
     scenario = new TestScenario();
     candidateRepository = scenario.getCandidateRepository();
     candidateService = scenario.getCandidateService();
+    approvalService = new ApprovalService(candidateRepository);
     upsertRequestBuilder =
         createUpsertCandidateRequest(ORGANIZATION_1, ORGANIZATION_2)
             .withInstanceType(ACADEMIC_ARTICLE)
@@ -295,9 +298,9 @@ class ConcurrencyHandlingTests {
       assertThatNoException()
           .isThrownBy(
               () -> {
-                candidateService.updateApproval(readCandidate1, firstUpdate, user);
+                approvalService.updateApproval(readCandidate1, firstUpdate, user);
                 var readCandidate2 = scenario.getCandidateByIdentifier(candidateIdentifier);
-                candidateService.updateApproval(readCandidate2, secondUpdate, user);
+                approvalService.updateApproval(readCandidate2, secondUpdate, user);
               });
     }
 
@@ -315,8 +318,8 @@ class ConcurrencyHandlingTests {
       assertThatNoException()
           .isThrownBy(
               () -> {
-                candidateService.updateApproval(candidate, firstUpdate, firstUser);
-                candidateService.updateApproval(candidate, secondUpdate, secondUser);
+                approvalService.updateApproval(candidate, firstUpdate, firstUser);
+                approvalService.updateApproval(candidate, secondUpdate, secondUser);
               });
     }
 
@@ -332,9 +335,9 @@ class ConcurrencyHandlingTests {
       var secondUpdate = createUpdateStatusRequest(ApprovalStatus.APPROVED, secondUser);
 
       assertThatNoException()
-          .isThrownBy(() -> candidateService.updateApproval(candidate, firstUpdate, firstUser));
+          .isThrownBy(() -> approvalService.updateApproval(candidate, firstUpdate, firstUser));
       assertThrowsConcurrencyException(
-          () -> candidateService.updateApproval(candidate, secondUpdate, secondUser));
+          () -> approvalService.updateApproval(candidate, secondUpdate, secondUser));
     }
 
     @Test
@@ -346,9 +349,9 @@ class ConcurrencyHandlingTests {
       var updateRequest = createUpdateStatusRequest(ApprovalStatus.APPROVED, user);
 
       assertThatNoException()
-          .isThrownBy(() -> candidateService.updateApproval(candidate, updateRequest, user));
+          .isThrownBy(() -> approvalService.updateApproval(candidate, updateRequest, user));
       assertThrowsConcurrencyException(
-          () -> candidateService.updateApproval(candidate, updateRequest, user));
+          () -> approvalService.updateApproval(candidate, updateRequest, user));
     }
 
     @Test
@@ -362,7 +365,7 @@ class ConcurrencyHandlingTests {
       var updateRequest = createUpdateStatusRequest(newStatus, user);
 
       assertThrowsConcurrencyException(
-          () -> candidateService.updateApproval(readCandidate, updateRequest, user));
+          () -> approvalService.updateApproval(readCandidate, updateRequest, user));
     }
 
     @Test
@@ -376,7 +379,7 @@ class ConcurrencyHandlingTests {
       var updateRequest = createUpdateStatusRequest(newStatus, user);
 
       assertThatNoException()
-          .isThrownBy(() -> candidateService.updateApproval(legacyCandidate, updateRequest, user));
+          .isThrownBy(() -> approvalService.updateApproval(legacyCandidate, updateRequest, user));
     }
 
     @Disabled

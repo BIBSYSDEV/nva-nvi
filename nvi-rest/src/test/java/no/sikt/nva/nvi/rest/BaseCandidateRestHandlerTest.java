@@ -30,8 +30,8 @@ import no.sikt.nva.nvi.common.UpsertRequestBuilder;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.dto.NviCreatorDtoFixtures;
 import no.sikt.nva.nvi.common.model.CandidateFixtures;
-import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.model.UserInstance;
+import no.sikt.nva.nvi.common.service.ApprovalService;
 import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.NoteService;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
@@ -68,6 +68,7 @@ public abstract class BaseCandidateRestHandlerTest {
   protected TestScenario scenario;
   protected CandidateService candidateService;
   protected NoteService noteService;
+  protected ApprovalService approvalService;
   protected UserInstance curatorUser;
 
   @BeforeEach
@@ -79,9 +80,13 @@ public abstract class BaseCandidateRestHandlerTest {
     topLevelOrganizationId = topLevelOrganization.id();
     subOrganizationId = topLevelOrganization.hasPart().getFirst().id();
     mockUriRetriever = scenario.getMockedUriRetriever();
-    candidateService = scenario.getCandidateService();
-    noteService = new NoteService(scenario.getCandidateRepository());
     curatorUser = createCuratorUserInstance(topLevelOrganizationId);
+
+    var candidateRepository = scenario.getCandidateRepository();
+    candidateService =
+        new CandidateService(ENVIRONMENT, scenario.getPeriodRepository(), candidateRepository);
+    noteService = new NoteService(candidateRepository);
+    approvalService = new ApprovalService(candidateRepository);
 
     output = new ByteArrayOutputStream();
     handler = createHandler();
@@ -163,15 +168,6 @@ public abstract class BaseCandidateRestHandlerTest {
             List.of(verifiedCreator),
             otherOrganization,
             List.of(unverifiedCreator)));
-  }
-
-  protected UpdateStatusRequest createStatusRequest(ApprovalStatus status) {
-    return UpdateStatusRequest.builder()
-        .withInstitutionId(topLevelOrganizationId)
-        .withApprovalStatus(status)
-        .withUsername(randomString())
-        .withReason(ApprovalStatus.REJECTED.equals(status) ? randomString() : null)
-        .build();
   }
 
   protected CandidateDto handleRequest(InputStream request) throws IOException {

@@ -113,7 +113,7 @@ class CandidateNotesTest extends CandidateTestSetup {
     var candidate = createCandidate(institutionId);
     var existingAssignee = randomString();
     var updateAssigneeRequest = new UpdateAssigneeRequest(institutionId, existingAssignee);
-    candidateService.updateApproval(candidate, updateAssigneeRequest, CURATOR_USER);
+    approvalService.updateApproval(candidate, updateAssigneeRequest, CURATOR_USER);
 
     var candidateWithAssignee = scenario.getCandidateByIdentifier(candidate.identifier());
     var noteRequest = new CreateNoteRequest(randomString(), randomString(), institutionId);

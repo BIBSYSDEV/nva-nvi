@@ -1,9 +1,11 @@
 package no.sikt.nva.nvi.common.service;
 
 import static java.util.Collections.emptyList;
+import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
 
 import java.util.List;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
+import no.sikt.nva.nvi.common.model.UpdateApprovalRequest;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.model.UserInstance;
@@ -11,11 +13,28 @@ import no.sikt.nva.nvi.common.permissions.CandidatePermissions;
 import no.sikt.nva.nvi.common.service.dto.CandidateOperation;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import nva.commons.apigateway.exceptions.UnauthorizedException;
+import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public record ApprovalService(CandidateRepository candidateRepository) {
   private static final Logger LOGGER = LoggerFactory.getLogger(ApprovalService.class);
+
+  @JacocoGenerated
+  public static ApprovalService defaultApprovalService() {
+    var dynamoClient = defaultDynamoClient();
+    return new ApprovalService(new CandidateRepository(dynamoClient));
+  }
+
+  public void updateApproval(
+      Candidate candidate, UpdateApprovalRequest request, UserInstance user) {
+    if (request instanceof UpdateStatusRequest statusRequest) {
+      updateApprovalStatus(candidate, statusRequest, user);
+    }
+    if (request instanceof UpdateAssigneeRequest assigneeRequest) {
+      updateApprovalAssignee(candidate, assigneeRequest);
+    }
+  }
 
   public void updateApprovalAssignee(Candidate candidate, UpdateAssigneeRequest request) {
     LOGGER.info("Updating assignee for candidateId={}: {}", candidate.identifier(), request);

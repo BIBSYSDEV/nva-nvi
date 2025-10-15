@@ -132,7 +132,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
   void shouldResetApprovalWhenChangingToPending(ApprovalStatus oldStatus) {
     var assignee = randomString();
     var request = new UpdateAssigneeRequest(HARDCODED_INSTITUTION_ID, assignee);
-    candidateService.updateApproval(initialCandidate, request, CURATOR_USER);
+    approvalService.updateApproval(initialCandidate, request, CURATOR_USER);
     updateApprovalStatus(candidateIdentifier, oldStatus);
 
     var updatedCandidate = updateApprovalStatus(candidateIdentifier, ApprovalStatus.PENDING);
@@ -166,7 +166,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var updateRequest = createRejectionRequestWithoutReason(randomString());
     assertThrows(
         IllegalArgumentException.class,
-        () -> candidateService.updateApproval(updatedCandidate, updateRequest, CURATOR_USER));
+        () -> approvalService.updateApproval(updatedCandidate, updateRequest, CURATOR_USER));
   }
 
   @ParameterizedTest(name = "Should remove reason when updating from rejection status to {0}")
@@ -197,7 +197,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var invalidRequest = createUpdateStatusRequest(newStatus, HARDCODED_INSTITUTION_ID, null);
     assertThrows(
         IllegalArgumentException.class,
-        () -> candidateService.updateApproval(initialCandidate, invalidRequest, CURATOR_USER));
+        () -> approvalService.updateApproval(initialCandidate, invalidRequest, CURATOR_USER));
   }
 
   @Test
@@ -254,7 +254,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
   void shouldNotOverrideAssigneeWhenAssigneeAlreadyIsSet() {
     var request =
         new UpdateAssigneeRequest(HARDCODED_INSTITUTION_ID, CURATOR_USER.userName().toString());
-    candidateService.updateApproval(initialCandidate, request, CURATOR_USER);
+    approvalService.updateApproval(initialCandidate, request, CURATOR_USER);
 
     var user1 = createCuratorUserInstance(HARDCODED_INSTITUTION_ID);
     updateApprovalStatus(candidateIdentifier, ApprovalStatus.APPROVED, user1);
@@ -276,7 +276,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var candidate = scenario.upsertCandidate(upsertCandidateRequest);
     var newUsername = randomUsername().toString();
     var request = new UpdateAssigneeRequest(HARDCODED_INSTITUTION_ID, newUsername);
-    candidateService.updateApproval(candidate, request, CURATOR_USER);
+    approvalService.updateApproval(candidate, request, CURATOR_USER);
 
     var updatedCandidate = candidateService.getByIdentifier(candidate.identifier());
     var updatedApproval = updatedCandidate.getApprovals().get(HARDCODED_INSTITUTION_ID);
@@ -290,7 +290,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var request = randomAssigneeRequest();
     assertThrows(
         IllegalCandidateUpdateException.class,
-        () -> candidateService.updateApproval(candidate, request, CURATOR_USER));
+        () -> approvalService.updateApproval(candidate, request, CURATOR_USER));
   }
 
   @Test
@@ -300,7 +300,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var request = randomAssigneeRequest();
     assertThrows(
         IllegalCandidateUpdateException.class,
-        () -> candidateService.updateApproval(candidate, request, CURATOR_USER));
+        () -> approvalService.updateApproval(candidate, request, CURATOR_USER));
   }
 
   @Test

@@ -63,7 +63,7 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
   @Override
   protected ApiGatewayHandler<NviStatusRequest, CandidateDto> createHandler() {
     return new UpdateNviCandidateStatusHandler(
-        scenario.getCandidateService(), mockViewingScopeValidator, ENVIRONMENT);
+        candidateService, approvalService, mockViewingScopeValidator, ENVIRONMENT);
   }
 
   @BeforeEach
@@ -98,7 +98,10 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
         createRequest(candidate.identifier(), topLevelOrganizationId, ApprovalStatus.APPROVED);
     handler =
         new UpdateNviCandidateStatusHandler(
-            scenario.getCandidateService(), new FakeViewingScopeValidator(false), ENVIRONMENT);
+            scenario.getCandidateService(),
+            approvalService,
+            new FakeViewingScopeValidator(false),
+            ENVIRONMENT);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
     assertThat(
