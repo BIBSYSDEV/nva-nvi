@@ -55,6 +55,7 @@ import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.problem.UnverifiedCreatorFromOrganizationProblem;
 import no.sikt.nva.nvi.common.service.dto.problem.UnverifiedCreatorProblem;
+import no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException;
 import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
@@ -284,21 +285,21 @@ class CandidateApprovalTest extends CandidateTestSetup {
 
   @Test
   void shouldNotAllowUpdatingApprovalAssigneeWhenCandidateIsInClosedPeriod() {
-    setupClosedPeriod(scenario, CURRENT_YEAR);
     var candidate = setupRandomApplicableCandidate(scenario);
+    setupClosedPeriod(scenario, CURRENT_YEAR);
     var request = randomAssigneeRequest();
     assertThrows(
-        IllegalStateException.class,
+        IllegalCandidateUpdateException.class,
         () -> candidateService.updateApprovalAssignee(candidate, request));
   }
 
   @Test
   void shouldNotAllowUpdatingApprovalAssigneeWhenCandidateIsInPendingPeriod() {
-    setupFuturePeriod(scenario, CURRENT_YEAR);
     var candidate = setupRandomApplicableCandidate(scenario);
+    setupFuturePeriod(scenario, CURRENT_YEAR);
     var request = randomAssigneeRequest();
     assertThrows(
-        IllegalStateException.class,
+        IllegalCandidateUpdateException.class,
         () -> candidateService.updateApprovalAssignee(candidate, request));
   }
 

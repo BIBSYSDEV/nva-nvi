@@ -107,8 +107,12 @@ public record Candidate(
   public static Candidate fromRequest(
       UUID identifier,
       UpsertNviCandidateRequest request,
-      Optional<NviPeriod> period,
+      NviPeriod targetPeriod,
       Environment environment) {
+    if (!targetPeriod.isOpen()) {
+      throw new IllegalCandidateUpdateException("Target period is not open");
+    }
+
     var approvals =
         request.pointCalculation().institutionPoints().stream()
             .map(InstitutionPoints::institutionId)
@@ -119,7 +123,7 @@ public record Candidate(
         .withIdentifier(identifier)
         .withApplicable(request.isApplicable())
         .withApprovals(approvals)
-        .withPeriod(period)
+        .withPeriod(Optional.of(targetPeriod))
         .withPointCalculation(PointCalculation.from(request))
         .withPublicationDetails(PublicationDetails.from(request))
         .withCreatedDate(Instant.now())
@@ -128,13 +132,27 @@ public record Candidate(
         .build();
   }
 
-  public Candidate apply(UpsertNviCandidateRequest request) {
+  public Candidate apply(UpsertNviCandidateRequest request, NviPeriod targetPeriod) {
+    if (isReported()) {
+      throw new IllegalCandidateUpdateException("Cannot update reported candidate");
+    }
+    if (!canUpdateInPeriod(targetPeriod)) {
+      throw new IllegalCandidateUpdateException("Cannot move candidate to period that is not open");
+    }
+
     return this.copy()
         .withApplicable(request.isApplicable())
         .withPointCalculation(PointCalculation.from(request))
         .withPublicationDetails(PublicationDetails.from(request))
+        .withPeriod(Optional.of(targetPeriod))
         .withModifiedDate(Instant.now())
         .build();
+  }
+
+  private boolean canUpdateInPeriod(NviPeriod targetPeriod) {
+    var hasSamePeriod =
+        period.filter(currentPeriod -> targetPeriod.id().equals(currentPeriod.id())).isPresent();
+    return hasSamePeriod || targetPeriod.isOpen();
   }
 
   public CandidateDao toDao() {

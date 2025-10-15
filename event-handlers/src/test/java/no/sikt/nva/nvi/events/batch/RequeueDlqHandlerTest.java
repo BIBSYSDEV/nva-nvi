@@ -5,9 +5,11 @@ import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidateBuilder;
 import static no.sikt.nva.nvi.common.db.DbPointCalculationFixtures.randomPointCalculationBuilder;
 import static no.sikt.nva.nvi.common.db.DbPublicationDetailsFixtures.randomPublicationBuilder;
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.model.CandidateFixtures.setupRandomApplicableCandidate;
 import static no.sikt.nva.nvi.events.batch.RequeueDlqTestUtils.generateMessageForCandidate;
 import static no.sikt.nva.nvi.events.batch.RequeueDlqTestUtils.setupSqsClient;
+import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -52,6 +54,7 @@ class RequeueDlqHandlerTest {
     sqsClient = setupSqsClient();
     candidateService = scenario.getCandidateService();
     handler = new RequeueDlqHandler(new NviQueueClient(sqsClient), DLQ_URL, candidateService);
+    setupOpenPeriod(scenario, CURRENT_YEAR);
   }
 
   @Test

@@ -140,8 +140,8 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldReturnConflictWhenUpdatingStatusAndReportingPeriodIsClosed() throws IOException {
-    setupClosedPeriod(scenario, CURRENT_YEAR);
     var candidate = setupValidCandidate();
+    setupClosedPeriod(scenario, CURRENT_YEAR);
     var request =
         createRequest(candidate.identifier(), topLevelOrganizationId, ApprovalStatus.APPROVED);
     handler.handleRequest(request, output, CONTEXT);
@@ -167,8 +167,8 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldReturnConflictWhenUpdatingStatusAndNotOpenedPeriod() throws IOException {
-    setupFuturePeriod(scenario, CURRENT_YEAR);
     var candidate = setupValidCandidate();
+    setupFuturePeriod(scenario, CURRENT_YEAR);
     var request =
         createRequest(candidate.identifier(), topLevelOrganizationId, ApprovalStatus.APPROVED);
     handler.handleRequest(request, output, CONTEXT);

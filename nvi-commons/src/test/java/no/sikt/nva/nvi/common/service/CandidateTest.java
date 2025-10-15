@@ -41,7 +41,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.math.BigDecimal;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.UpsertRequestBuilder;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
@@ -219,7 +218,7 @@ class CandidateTest extends CandidateTestSetup {
 
     candidateService.updateNonCandidate(updateRequest);
     var optionalCandidate = candidateService.getCandidateContext(publicationId);
-    assertThat(optionalCandidate, is(equalTo(Optional.empty())));
+    Assertions.assertThat(optionalCandidate.candidate()).isEmpty();
   }
 
   @ParameterizedTest(
@@ -479,9 +478,10 @@ class CandidateTest extends CandidateTestSetup {
 
   @Test
   void shouldReturnTrueWhenCandidateIsNotReportedInClosedPeriod() {
-    setupClosedPeriod(scenario, CURRENT_YEAR);
     var candidate = setupRandomApplicableCandidate(scenario, CURRENT_YEAR);
-    assertTrue(candidate.isNotReportedInClosedPeriod());
+    setupClosedPeriod(scenario, CURRENT_YEAR);
+    var updatedCandidate = candidateService.getByIdentifier(candidate.identifier());
+    assertTrue(updatedCandidate.isNotReportedInClosedPeriod());
   }
 
   @Test

@@ -67,7 +67,7 @@ public class NviPeriodService {
     return periodDao.map(NviPeriod::fromDao);
   }
 
-  public static Optional<NviPeriod> findStatusFromCache(
+  public static Optional<NviPeriod> findByPublishingYear(
       Collection<NviPeriod> allPeriods, String year) {
 
     return allPeriods.stream().filter(period -> period.hasPublishingYear(year)).findFirst();

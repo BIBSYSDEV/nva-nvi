@@ -1,11 +1,13 @@
 package no.sikt.nva.nvi.index;
 
 import static no.sikt.nva.nvi.common.QueueServiceTestUtils.invalidSqsMessage;
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.model.CandidateFixtures.setupRandomApplicableCandidate;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.NVI_CONTEXT;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.createPath;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.expandApprovals;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.expandPublicationDetails;
+import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.unit.nva.s3.S3Driver.S3_SCHEME;
 import static nva.commons.core.attempt.Try.attempt;
@@ -66,6 +68,7 @@ class UpdateIndexHandlerTest {
     handler =
         new UpdateIndexHandler(
             openSearchClient, new S3StorageReader(s3Client, BUCKET_NAME), sqsClient);
+    setupOpenPeriod(scenario, CURRENT_YEAR);
   }
 
   @Test

@@ -3,7 +3,7 @@ package no.sikt.nva.nvi.common.service;
 import static java.util.Collections.emptyList;
 import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
-import static no.sikt.nva.nvi.common.service.NviPeriodService.findStatusFromCache;
+import static no.sikt.nva.nvi.common.service.NviPeriodService.findByPublishingYear;
 import static no.sikt.nva.nvi.common.service.model.Candidate.getApprovalsToDelete;
 import static no.sikt.nva.nvi.common.service.model.Candidate.getUpdatedInstitutionPoints;
 import static no.sikt.nva.nvi.common.service.model.Candidate.shouldResetCandidate;
@@ -28,7 +28,6 @@ import no.sikt.nva.nvi.common.model.UserInstance;
 import no.sikt.nva.nvi.common.permissions.CandidatePermissions;
 import no.sikt.nva.nvi.common.service.dto.CandidateOperation;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
-import no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException;
 import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.CandidateContext;
@@ -44,7 +43,6 @@ import org.slf4j.LoggerFactory;
 public class CandidateService {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CandidateService.class);
-
   private final Environment environment;
   private final CandidateRepository candidateRepository;
   private final PeriodRepository periodRepository;
@@ -71,42 +69,37 @@ public class CandidateService {
 
   public void upsert(UpsertNviCandidateRequest request) {
     LOGGER.info("Upserting candidate for publicationId={}", request.publicationId());
-    getCandidateContext(request.publicationId())
+    request.validate();
+    var candidateContext = getCandidateContext(request.publicationId());
+    var targetPeriod =
+        findByPublishingYear(candidateContext.allPeriods(), request.publicationYear())
+            .orElseThrow();
+
+    candidateContext
         .candidate()
         .ifPresentOrElse(
-            existingCandidate -> updateCandidate(request, existingCandidate),
-            () -> createCandidate(request));
+            existingCandidate -> updateCandidate(request, existingCandidate, targetPeriod),
+            () -> createCandidate(request, targetPeriod));
   }
 
   public void update(Candidate candidate) {
     LOGGER.info("Saving updated candidate: {}", candidate.identifier());
-    var updatedDao =
-        candidate.toDao().copy().version(randomUUID().toString()).build(); // FIXME: Duplicate
-    candidateRepository.updateCandidateAndApprovals(updatedDao, emptyList(), emptyList());
+    candidateRepository.updateCandidateAndApprovals(candidate.toDao(), emptyList(), emptyList());
   }
 
-  private void createCandidate(UpsertNviCandidateRequest request) {
+  private void createCandidate(UpsertNviCandidateRequest request, NviPeriod period) {
     LOGGER.info("Creating new candidate for publicationId={}", request.publicationId());
-    request.validate();
+
     var identifier = randomUUID();
-
-    var publicationYear = request.publicationDetails().publicationDate().year();
-    var period = findStatusFromCache(periodService.getAll(), publicationYear);
-
     var candidate = Candidate.fromRequest(identifier, request, period, environment);
     var approvals = candidate.getApprovals().values().stream().map(Approval::toDao).toList();
 
     candidateRepository.create(candidate.toDao(), approvals);
   }
 
-  public void updateCandidate(UpsertNviCandidateRequest request, Candidate candidate) {
-    request.validate();
-    if (candidate.isReported()) {
-      // TODO: Leave this validation to the Candidate
-      throw new IllegalCandidateUpdateException("Can not update reported candidate");
-    }
-
-    var updatedCandidate = candidate.apply(request);
+  private void updateCandidate(
+      UpsertNviCandidateRequest request, Candidate candidate, NviPeriod targetPeriod) {
+    var updatedCandidate = candidate.apply(request, targetPeriod);
     if (shouldResetCandidate(request, candidate) || !candidate.isApplicable()) {
       LOGGER.info("Resetting all approvals for candidate {}", candidate.identifier());
       var institutionsToReset = updatedCandidate.getInstitutionPoints();
@@ -170,8 +163,7 @@ public class CandidateService {
 
     if (optionalCandidate.isEmpty()) {
       LOGGER.info("No candidate found for publicationId={}", publicationId);
-      var allPeriods = periodRepository.getPeriods().stream().map(NviPeriod::fromDao).toList();
-      return new CandidateContext(Optional.empty(), allPeriods);
+      return new CandidateContext(Optional.empty(), periodService.getAll());
     }
     return findAggregate(optionalCandidate.get().identifier());
   }
@@ -250,7 +242,7 @@ public class CandidateService {
   private Candidate fromAggregate(
       CandidateAggregate candidateAggregate, Collection<NviPeriod> allPeriods) {
     var publicationYear = candidateAggregate.candidate().getPeriodYear();
-    var period = findStatusFromCache(allPeriods, publicationYear);
+    var period = findByPublishingYear(allPeriods, publicationYear);
     return Candidate.fromDao(
         candidateAggregate.candidate(),
         candidateAggregate.approvals(),

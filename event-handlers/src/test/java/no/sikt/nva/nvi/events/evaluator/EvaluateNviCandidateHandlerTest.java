@@ -890,10 +890,11 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       // And the publication is published in a closed period
       // When the publication is evaluated
       // Then it should be evaluated as a Candidate
-      setupClosedPeriod(scenario, publicationDate.year());
+      setupOpenPeriod(scenario, publicationDate.year());
       var publication =
           factory.withContributor(verifiedCreatorFrom(nviOrganization)).getExpandedPublication();
       setupCandidateMatchingPublication(publication);
+      setupClosedPeriod(scenario, publicationDate.year());
 
       var candidate = evaluatePublicationAndGetPersistedCandidate(publication);
       var publicationDetails = candidate.publicationDetails();
@@ -909,9 +910,10 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       // And the publication is published in a closed period
       // When the publication is updated to be no longer applicable
       // Then it should be re-evaluated as a NonCandidate
-      setupClosedPeriod(scenario, publicationDate.year());
+      setupOpenPeriod(scenario, publicationDate.year());
       var publicationFactory = factory.withContributor(verifiedCreatorFrom(nviOrganization));
       setupCandidateMatchingPublication(publicationFactory.getExpandedPublication());
+      setupClosedPeriod(scenario, publicationDate.year());
 
       var updatedPublication =
           publicationFactory.withPublicationType("ComicBook").getExpandedPublication();
