@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.common.service.model;
 
-import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.utils.Validator.shouldNotBeNull;
 
 import java.net.URI;
@@ -85,15 +84,12 @@ public record NviPeriod(
   }
 
   public boolean isClosed() {
-    return nonNull(reportingDate) && reportingDate.isBefore(Instant.now());
+    return reportingDate.isBefore(Instant.now());
   }
 
   public boolean isOpen() {
     var now = Instant.now();
-    return nonNull(startDate)
-        && startDate.isBefore(now)
-        && nonNull(reportingDate)
-        && reportingDate.isAfter(now);
+    return startDate.isBefore(now) && reportingDate.isAfter(now);
   }
 
   public boolean hasPublishingYear(String year) {
