@@ -23,7 +23,7 @@ public record CandidateAggregate(
             .toList();
     if (candidates.size() > ONE) {
       LOGGER.error("Expected single candidate, but found {}", candidates.size());
-      throw new IllegalStateException();
+      throw new IllegalStateException("Multiple candidates returned by aggregate query");
     }
 
     var approvals =

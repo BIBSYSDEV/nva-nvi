@@ -21,6 +21,7 @@ import no.sikt.nva.nvi.common.db.model.CandidateAggregate;
 import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
+import no.sikt.nva.nvi.common.service.exception.PeriodNotFoundException;
 import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.CandidateContext;
@@ -64,7 +65,7 @@ public class CandidateService {
     var candidateContext = getCandidateContext(request.publicationId());
     var targetPeriod =
         findByPublishingYear(candidateContext.allPeriods(), request.publicationYear())
-            .orElseThrow();
+            .orElseThrow(PeriodNotFoundException.forYear(request.publicationYear()));
 
     candidateContext
         .candidate()
@@ -78,7 +79,7 @@ public class CandidateService {
 
     var identifier = randomUUID();
     var candidate = Candidate.fromRequest(identifier, request, period, environment);
-    var approvals = candidate.getApprovals().values().stream().map(Approval::toDao).toList();
+    var approvals = candidate.approvals().values().stream().map(Approval::toDao).toList();
 
     candidateRepository.create(candidate.toDao(), approvals);
   }
@@ -114,7 +115,7 @@ public class CandidateService {
 
   public void updateCandidate(Candidate candidate) {
     LOGGER.info("Saving candidate aggregate for publicationId={}", candidate.getPublicationId());
-    var approvals = candidate.getApprovals().values().stream().map(Approval::toDao).toList();
+    var approvals = candidate.approvals().values().stream().map(Approval::toDao).toList();
     var notes = candidate.notes().values().stream().map(Note::toDao).toList();
     candidateRepository.updateCandidateAggregate(candidate.toDao(), approvals, emptyList(), notes);
   }
@@ -129,8 +130,7 @@ public class CandidateService {
     } else {
       var candidate = candidateContext.candidate().orElseThrow();
       var updatedCandidate = candidate.updateToNonCandidate().toDao();
-      var approvalsToDelete =
-          candidate.getApprovals().values().stream().map(Approval::toDao).toList();
+      var approvalsToDelete = candidate.approvals().values().stream().map(Approval::toDao).toList();
 
       candidateRepository.updateCandidateAggregate(
           updatedCandidate, emptyList(), approvalsToDelete, emptyList());

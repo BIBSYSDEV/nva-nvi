@@ -46,11 +46,11 @@ public final class CandidateResponseFactory {
   }
 
   private static List<NoteDto> getNotesAsDto(Candidate candidate) {
-    return candidate.getNotes().values().stream().map(Note::toDto).toList();
+    return candidate.notes().values().stream().map(Note::toDto).toList();
   }
 
   private static List<ApprovalDto> getApprovalsAsDto(Candidate candidate) {
-    return candidate.getApprovals().values().stream().map(mapToApprovalDto(candidate)).toList();
+    return candidate.approvals().values().stream().map(mapToApprovalDto(candidate)).toList();
   }
 
   private static Function<Approval, ApprovalDto> mapToApprovalDto(Candidate candidate) {

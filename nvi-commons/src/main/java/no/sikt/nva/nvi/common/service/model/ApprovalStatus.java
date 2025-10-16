@@ -50,6 +50,14 @@ public enum ApprovalStatus {
   }
 
   @JsonIgnore
+  public void validateStateTransition(ApprovalStatus newStatus) {
+    var validTransitions = getValidTransitions();
+    if (!validTransitions.contains(newStatus)) {
+      throw new IllegalArgumentException("Illegal state transition attempted");
+    }
+  }
+
+  @JsonIgnore
   public static ApprovalStatusDao.DbStatus toDbStatus(ApprovalStatus approvalStatus) {
     return switch (approvalStatus) {
       case APPROVED -> ApprovalStatusDao.DbStatus.APPROVED;

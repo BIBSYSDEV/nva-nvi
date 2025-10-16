@@ -427,7 +427,7 @@ class ConcurrencyHandlingTests {
       var updateRequest = requestBuilder.withInstanceType(ACADEMIC_MONOGRAPH).build();
       var updatedCandidate = scenario.upsertCandidate(updateRequest);
       assertThat(updatedCandidate.revision()).isEqualTo(originalCandidate.revision() + 1);
-      assertThat(updatedCandidate.getApprovals().size()).isZero();
+      assertThat(updatedCandidate.approvals().size()).isZero();
     }
 
     @Test
@@ -439,8 +439,8 @@ class ConcurrencyHandlingTests {
 
       assertThat(periods).hasSizeGreaterThanOrEqualTo(2);
       assertThat(aggregate.identifier()).isEqualTo(candidateIdentifier);
-      assertThat(aggregate.getApprovals()).hasSize(2);
-      assertThat(aggregate.getNotes()).hasSize(3);
+      assertThat(aggregate.approvals()).hasSize(2);
+      assertThat(aggregate.notes()).hasSize(3);
     }
 
     @Test

@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.common.service.model;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
+import static java.util.Collections.unmodifiableMap;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.function.Predicate.not;
@@ -24,7 +25,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -56,8 +57,6 @@ import no.sikt.nva.nvi.common.service.requests.CreateNoteRequest;
 import no.sikt.nva.nvi.common.service.requests.DeleteNoteRequest;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 // Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
 @SuppressWarnings({"PMD.GodClass", "PMD.CouplingBetweenObjects"})
@@ -76,7 +75,6 @@ public record Candidate(
     UUID version,
     Environment environment) {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(Candidate.class);
   private static final String CONTEXT = stringFromResources(Path.of("nviCandidateContext.json"));
   private static final String API_HOST = "API_HOST";
   private static final String CANDIDATE_PATH = "candidate";
@@ -126,7 +124,7 @@ public record Candidate(
             .map(InstitutionPoints::institutionId)
             .map(institutionId -> createNewApproval(identifier, institutionId))
             .collect(Collectors.toMap(Approval::institutionId, Function.identity()));
-
+    var createdAt = Instant.now();
     return new Builder()
         .withIdentifier(identifier)
         .withApplicable(request.isApplicable())
@@ -134,8 +132,8 @@ public record Candidate(
         .withPeriod(Optional.of(targetPeriod))
         .withPointCalculation(PointCalculation.from(request))
         .withPublicationDetails(PublicationDetails.from(request))
-        .withCreatedDate(Instant.now())
-        .withModifiedDate(Instant.now())
+        .withCreatedDate(createdAt)
+        .withModifiedDate(createdAt)
         .withEnvironment(environment)
         .build();
   }
@@ -163,6 +161,10 @@ public record Candidate(
     return hasSamePeriod || targetPeriod.isOpen();
   }
 
+  /**
+   * Returns a copy of the Candidate with relevant fields removed/reset. Other data, such as
+   * publication details and curator notes, is kept.
+   */
   public Candidate updateToNonCandidate() {
     if (isReported()) {
       throw new IllegalCandidateUpdateException(CANDIDATE_IS_REPORTED);
@@ -258,7 +260,9 @@ public record Candidate(
   }
 
   public List<InstitutionPoints> getInstitutionPoints() {
-    return Optional.ofNullable(pointCalculation.institutionPoints()).orElse(emptyList());
+    return Optional.ofNullable(pointCalculation.institutionPoints())
+        .map(Collections::unmodifiableList)
+        .orElse(emptyList());
   }
 
   // TODO: Make method return InstitutionPoints once we have migrated candidates from Cristin
@@ -268,8 +272,9 @@ public record Candidate(
         .findFirst();
   }
 
-  public Map<URI, Approval> getApprovals() {
-    return new HashMap<>(approvals);
+  @Override
+  public Map<URI, Approval> approvals() {
+    return unmodifiableMap(approvals);
   }
 
   public ApprovalStatus getApprovalStatus(URI organizationId) {
@@ -289,8 +294,9 @@ public record Candidate(
     return pointCalculation.creatorShareCount();
   }
 
-  public Map<UUID, Note> getNotes() {
-    return new HashMap<>(notes);
+  @Override
+  public Map<UUID, Note> notes() {
+    return unmodifiableMap(notes);
   }
 
   public BigDecimal getTotalPoints() {
@@ -385,9 +391,9 @@ public record Candidate(
    */
   public static List<ApprovalStatusDao> getApprovalsToDelete(
       Candidate currentCandidate, Candidate updatedCandidate) {
-    return currentCandidate.getApprovals().keySet().stream()
+    return currentCandidate.approvals().keySet().stream()
         .filter(not(id -> updatedCandidate.getInstitutionPoints(id).isPresent()))
-        .map(id -> currentCandidate.getApprovals().get(id))
+        .map(id -> currentCandidate.approvals().get(id))
         .map(Approval::toDao)
         .toList();
   }
@@ -500,7 +506,7 @@ public record Candidate(
 
   public List<Approval> createResetApprovalsForInstitutions(
       Collection<InstitutionPoints> institutionPoints) {
-    var oldApprovals = getApprovals();
+    var oldApprovals = approvals();
     var resetApprovals = new ArrayList<Approval>();
     for (var institutionPoint : institutionPoints) {
       var organizationId = institutionPoint.institutionId();

@@ -59,6 +59,7 @@ public record ApprovalService(CandidateRepository candidateRepository) {
     try {
       permissions.validateAuthorization(attemptedOperation);
     } catch (UnauthorizedException e) {
+      LOGGER.warn("Unauthorized attempt to update approval status", e);
       throw new IllegalStateException("Cannot update approval status");
     }
 

@@ -121,7 +121,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
       ApprovalStatus oldStatus, ApprovalStatus newStatus) {
     updateApprovalStatus(candidateIdentifier, oldStatus);
     var updatedCandidate = updateApprovalStatus(candidateIdentifier, newStatus);
-    var actualNewStatus = updatedCandidate.getApprovals().get(HARDCODED_INSTITUTION_ID).status();
+    var actualNewStatus = updatedCandidate.approvals().get(HARDCODED_INSTITUTION_ID).status();
     assertThat(actualNewStatus).isEqualTo(newStatus);
   }
 
@@ -136,7 +136,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
     updateApprovalStatus(candidateIdentifier, oldStatus);
 
     var updatedCandidate = updateApprovalStatus(candidateIdentifier, ApprovalStatus.PENDING);
-    var approvalStatus = updatedCandidate.getApprovals().get(HARDCODED_INSTITUTION_ID);
+    var approvalStatus = updatedCandidate.approvals().get(HARDCODED_INSTITUTION_ID);
 
     assertThat(approvalStatus)
         .extracting(
@@ -150,7 +150,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
   @Test
   void shouldCreatePendingApprovalsForNewCandidate() {
     var candidate = scenario.getCandidateByIdentifier(candidateIdentifier);
-    assertThat(candidate.getApprovals())
+    assertThat(candidate.approvals())
         .hasSize(1)
         .extractingByKey(HARDCODED_INSTITUTION_ID)
         .extracting(Approval::status)
@@ -180,7 +180,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
     scenario.updateApprovalStatus(candidateIdentifier, rejection, CURATOR_USER);
 
     var updatedCandidate = updateApprovalStatus(candidateIdentifier, newStatus);
-    assertThat(updatedCandidate.getApprovals())
+    assertThat(updatedCandidate.approvals())
         .hasSize(1)
         .extractingByKey(HARDCODED_INSTITUTION_ID)
         .extracting(Approval::status, Approval::reason)
@@ -214,7 +214,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
             .build();
     var updatedCandidate = scenario.upsertCandidate(updateRequest);
 
-    assertThat(updatedCandidate.getApprovals()).hasSize(1).containsOnlyKeys(keepInstitutionId);
+    assertThat(updatedCandidate.approvals()).hasSize(1).containsOnlyKeys(keepInstitutionId);
   }
 
   @Test
@@ -225,7 +225,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var updatedCandidate = candidateService.getByPublicationId(candidate.getPublicationId());
 
     assertThat(updatedCandidate.identifier()).isEqualTo(candidate.identifier());
-    assertThat(updatedCandidate.getApprovals()).isEmpty();
+    assertThat(updatedCandidate.approvals()).isEmpty();
   }
 
   @Test
@@ -244,7 +244,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
   void shouldPersistStatusChangeWhenRequestingAndUpdate() {
     var updatedCandidate = updateApprovalStatus(candidateIdentifier, ApprovalStatus.APPROVED);
 
-    assertThat(updatedCandidate.getApprovals())
+    assertThat(updatedCandidate.approvals())
         .extractingByKey(HARDCODED_INSTITUTION_ID)
         .extracting(Approval::status)
         .isEqualTo(ApprovalStatus.APPROVED);
@@ -264,7 +264,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
 
     var updatedCandidate = scenario.getCandidateByIdentifier(candidateIdentifier);
 
-    assertThat(updatedCandidate.getApprovals())
+    assertThat(updatedCandidate.approvals())
         .extractingByKey(HARDCODED_INSTITUTION_ID)
         .extracting(Approval::getAssigneeUsername, Approval::getFinalizedByUserName)
         .containsExactly(CURATOR_USER.userName().toString(), user2.userName().toString());
@@ -279,7 +279,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
     approvalService.updateApproval(candidate, request, CURATOR_USER);
 
     var updatedCandidate = candidateService.getByIdentifier(candidate.identifier());
-    var updatedApproval = updatedCandidate.getApprovals().get(HARDCODED_INSTITUTION_ID);
+    var updatedApproval = updatedCandidate.approvals().get(HARDCODED_INSTITUTION_ID);
     assertThat(updatedApproval.getAssigneeUsername()).isEqualTo(newUsername);
   }
 
@@ -308,10 +308,10 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var upsertCandidateRequest = createUpsertCandidateRequest(HARDCODED_INSTITUTION_ID).build();
     var candidate = scenario.upsertCandidate(upsertCandidateRequest);
     candidate = updateApprovalStatus(candidate.identifier(), ApprovalStatus.APPROVED);
-    var approval = candidate.getApprovals().get(HARDCODED_INSTITUTION_ID);
+    var approval = candidate.approvals().get(HARDCODED_INSTITUTION_ID);
     var newUpsertRequest = createNewUpsertRequestNotAffectingApprovals(upsertCandidateRequest);
     var updatedCandidate = scenario.upsertCandidate(newUpsertRequest);
-    var updatedApproval = updatedCandidate.getApprovals().get(HARDCODED_INSTITUTION_ID);
+    var updatedApproval = updatedCandidate.approvals().get(HARDCODED_INSTITUTION_ID);
 
     assertThat(updatedApproval).isEqualTo(approval);
   }
@@ -331,7 +331,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var updatedRequest = requestBuilder.withCreatorsAndPoints(creatorMap).build();
     var updatedCandidate = scenario.upsertCandidate(updatedRequest);
 
-    var updatedApprovals = updatedCandidate.getApprovals();
+    var updatedApprovals = updatedCandidate.approvals();
 
     assertThat(updatedApprovals)
         .hasSize(1)
@@ -360,7 +360,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var updatedRequest = requestBuilder.withCreatorsAndPoints(creatorMap).build();
     var updatedCandidate = scenario.upsertCandidate(updatedRequest);
 
-    assertThat(updatedCandidate.getApprovals())
+    assertThat(updatedCandidate.approvals())
         .hasSize(2)
         .extractingByKey(organization.id())
         .extracting(Approval::status)
@@ -380,7 +380,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
         requestBuilder.withCreatorsAndPoints(Map.of(organization, List.of(updatedCreator))).build();
     var updatedCandidate = scenario.upsertCandidate(updatedRequest);
 
-    assertThat(updatedCandidate.getApprovals())
+    assertThat(updatedCandidate.approvals())
         .hasSize(1)
         .extractingByKey(organization.id())
         .extracting(Approval::status)
@@ -405,7 +405,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
             .build();
     var updatedCandidate = scenario.upsertCandidate(updatedRequest);
 
-    assertThat(updatedCandidate.getApprovals())
+    assertThat(updatedCandidate.approvals())
         .hasSize(1)
         .extractingByKey(otherOrganization.id())
         .extracting(Approval::status)
@@ -431,7 +431,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
     candidateIdentifier = candidate.identifier();
 
     candidate = updateApprovalStatus(candidateIdentifier, ApprovalStatus.APPROVED);
-    var approval = candidate.getApprovals().get(HARDCODED_INSTITUTION_ID);
+    var approval = candidate.approvals().get(HARDCODED_INSTITUTION_ID);
     var samePointsWithDifferentScale =
         upsertCandidateRequest.pointCalculation().institutionPoints().stream()
             .map(
@@ -449,7 +449,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var newUpsertRequest =
         fromRequest(upsertCandidateRequest).withPointCalculation(updatedPointCalculation).build();
     var updatedCandidate = scenario.upsertCandidate(newUpsertRequest);
-    var updatedApproval = updatedCandidate.getApprovals().get(HARDCODED_INSTITUTION_ID);
+    var updatedApproval = updatedCandidate.approvals().get(HARDCODED_INSTITUTION_ID);
 
     assertEquals(approval, updatedApproval);
   }
@@ -465,7 +465,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
             createNewUpsertRequestNotAffectingApprovals(upsertCandidateRequest));
 
     assertTrue(updatedCandidate.isApplicable());
-    assertThat(updatedCandidate.getApprovals().values())
+    assertThat(updatedCandidate.approvals().values())
         .isNotEmpty()
         .extracting(Approval::status)
         .containsOnly(ApprovalStatus.PENDING);
@@ -496,7 +496,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
             .build();
 
     var updatedCandidate = scenario.upsertCandidate(newUpsertRequest);
-    var updatedApproval = updatedCandidate.getApprovals().get(HARDCODED_INSTITUTION_ID);
+    var updatedApproval = updatedCandidate.approvals().get(HARDCODED_INSTITUTION_ID);
     assertThat(updatedApproval.status()).isEqualTo(ApprovalStatus.PENDING);
   }
 

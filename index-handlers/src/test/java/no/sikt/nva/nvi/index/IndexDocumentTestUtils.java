@@ -79,7 +79,7 @@ public final class IndexDocumentTestUtils {
 
   public static List<no.sikt.nva.nvi.index.model.document.Approval> expandApprovals(
       Candidate candidate, List<ContributorType> contributors) {
-    return candidate.getApprovals().values().stream()
+    return candidate.approvals().values().stream()
         .map(approval -> toApproval(approval, candidate, contributors))
         .toList();
   }

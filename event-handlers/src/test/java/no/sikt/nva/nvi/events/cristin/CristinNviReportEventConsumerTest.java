@@ -256,7 +256,7 @@ class CristinNviReportEventConsumerTest {
             .map(CristinIdWrapper::from)
             .map(CristinIdWrapper::getInstitutionId)
             .toList();
-    assertThat(candidate.getApprovals().keySet().stream().toList())
+    assertThat(candidate.approvals().keySet().stream().toList())
         .containsExactlyInAnyOrderElementsOf(expectedApprovalIds);
 
     var actualPeriodYear = candidate.period().map(NviPeriod::publishingYear).orElseThrow();
@@ -287,7 +287,7 @@ class CristinNviReportEventConsumerTest {
         .ignoringCollectionOrder()
         .isEqualTo(expectedCreators(cristinNviReport));
 
-    assertThat(candidate.getApprovals().values())
+    assertThat(candidate.approvals().values())
         .extracting(Approval::status)
         .containsOnly(ApprovalStatus.APPROVED);
   }

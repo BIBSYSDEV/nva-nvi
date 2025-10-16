@@ -126,7 +126,7 @@ class UpsertNviCandidateHandlerTest {
 
     var actualCandidate =
         scenario.getCandidateByPublicationId(evaluatedNviCandidate.publicationId());
-    var actualApprovals = actualCandidate.getApprovals();
+    var actualApprovals = actualCandidate.approvals();
     Assertions.assertThat(actualApprovals)
         .hasSize(expectedApprovals.size())
         .allSatisfy(
@@ -160,7 +160,7 @@ class UpsertNviCandidateHandlerTest {
 
     var sqsEvent = createEvent(keep, publicationId, generateS3BucketUri(identifier));
     handler.handleRequest(sqsEvent, CONTEXT);
-    var approvals = candidateService.getByPublicationId(publicationId).getApprovals();
+    var approvals = candidateService.getByPublicationId(publicationId).approvals();
     assertTrue(approvals.containsKey(keep));
     assertFalse(approvals.containsKey(delete));
     assertThat(approvals.size(), is(2));
@@ -177,12 +177,12 @@ class UpsertNviCandidateHandlerTest {
     scenario.updateApprovalStatus(candidate.identifier(), ApprovalStatus.APPROVED, institutionId);
 
     var approvedCandidate = scenario.getCandidateByPublicationId(publicationId);
-    var approval = approvedCandidate.getApprovals().get(institutionId);
+    var approval = approvedCandidate.approvals().get(institutionId);
     var newUpsertRequest = createNewUpsertRequestNotAffectingApprovals(upsertCandidateRequest);
     candidateService.upsertCandidate(newUpsertRequest);
 
     var updatedCandidate = scenario.getCandidateByPublicationId(publicationId);
-    var updatedApproval = updatedCandidate.getApprovals().get(institutionId);
+    var updatedApproval = updatedCandidate.approvals().get(institutionId);
     assertThat(updatedApproval, is(equalTo(approval)));
   }
 

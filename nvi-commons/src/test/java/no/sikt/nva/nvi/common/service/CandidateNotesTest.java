@@ -79,7 +79,7 @@ class CandidateNotesTest extends CandidateTestSetup {
     noteService.deleteNote(candidate, deleteRequest);
 
     var updatedCandidate = candidateService.getByIdentifier(candidate.identifier());
-    Assertions.assertThat(updatedCandidate.getNotes()).isEmpty();
+    Assertions.assertThat(updatedCandidate.notes()).isEmpty();
   }
 
   @Test
@@ -117,7 +117,7 @@ class CandidateNotesTest extends CandidateTestSetup {
     noteService.createNote(candidate, noteRequest);
     var candidateWithNote = candidateService.getByIdentifier(candidate.identifier());
 
-    var actualAssignee = candidateWithNote.getApprovals().get(institutionId).getAssigneeUsername();
+    var actualAssignee = candidateWithNote.approvals().get(institutionId).getAssigneeUsername();
     assertEquals(username, actualAssignee);
   }
 
@@ -134,7 +134,7 @@ class CandidateNotesTest extends CandidateTestSetup {
     noteService.createNote(candidateWithAssignee, noteRequest);
 
     var candidateWithNote = scenario.getCandidateByIdentifier(candidate.identifier());
-    var actualAssignee = candidateWithNote.getApprovals().get(institutionId).getAssigneeUsername();
+    var actualAssignee = candidateWithNote.approvals().get(institutionId).getAssigneeUsername();
     assertEquals(existingAssignee, actualAssignee);
   }
 
@@ -148,7 +148,7 @@ class CandidateNotesTest extends CandidateTestSetup {
   }
 
   private NoteDto getAnyNote(Candidate candidate) {
-    return candidate.getNotes().values().stream()
+    return candidate.notes().values().stream()
         .findFirst()
         .orElseThrow(() -> new IllegalStateException("No notes found for candidate"))
         .toDto();

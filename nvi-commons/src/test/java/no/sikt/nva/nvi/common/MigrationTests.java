@@ -124,7 +124,7 @@ class MigrationTests {
   }
 
   private static URI getInstitutionId(Candidate candidate) {
-    return candidate.getApprovals().entrySet().stream().findFirst().map(Entry::getKey).orElse(null);
+    return candidate.approvals().entrySet().stream().findFirst().map(Entry::getKey).orElse(null);
   }
 
   private Candidate setupCandidateWithApprovalAndNotes() {

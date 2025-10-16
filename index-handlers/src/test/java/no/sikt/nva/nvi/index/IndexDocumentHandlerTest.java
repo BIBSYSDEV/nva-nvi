@@ -774,7 +774,7 @@ class IndexDocumentHandlerTest {
     candidate.publicationDetails().getNviCreatorAffiliations().stream()
         .forEach(this::mockTopLevelResponse);
 
-    candidate.getApprovals().keySet().forEach(this::mockTopLevelResponse);
+    candidate.approvals().keySet().forEach(this::mockTopLevelResponse);
   }
 
   private void mockTopLevelResponse(URI affiliationId) {
@@ -863,7 +863,7 @@ class IndexDocumentHandlerTest {
     candidate.publicationDetails().getNviCreatorAffiliations().stream()
         .forEach(this::mockOrganizationResponse);
 
-    candidate.getApprovals().keySet().forEach(this::mockOrganizationResponse);
+    candidate.approvals().keySet().forEach(this::mockOrganizationResponse);
   }
 
   private void mockOrganizationResponse(URI affiliationId) {
@@ -919,7 +919,7 @@ class IndexDocumentHandlerTest {
         .withApprovals(expandApprovals(candidate, expandedPublicationDetails.contributors()))
         .withPoints(candidate.getTotalPoints())
         .withPublicationDetails(expandedPublicationDetails)
-        .withNumberOfApprovals(candidate.getApprovals().size())
+        .withNumberOfApprovals(candidate.approvals().size())
         .withCreatorShareCount(candidate.getCreatorShareCount())
         .withReported(candidate.isReported())
         .withGlobalApprovalStatus(candidate.getGlobalApprovalStatus())

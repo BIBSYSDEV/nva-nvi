@@ -295,7 +295,7 @@ public final class NviCandidateIndexDocumentGenerator {
 
   private List<no.sikt.nva.nvi.index.model.document.Approval> createApprovals(
       List<ContributorType> expandedContributors) {
-    return streamValues(candidate.getApprovals())
+    return streamValues(candidate.approvals())
         .map(approval -> toApproval(approval, expandedContributors))
         .toList();
   }

@@ -75,7 +75,7 @@ public class EvaluationSteps {
         .extracting(Candidate::getPublicationId, Candidate::isApplicable)
         .containsExactly(publication.id(), true);
 
-    assertThat(candidate.getApprovals()).isNotEmpty();
+    assertThat(candidate.approvals()).isNotEmpty();
   }
 
   @Given("the Publication type is changed so that the Publication is no longer applicable")
@@ -91,7 +91,7 @@ public class EvaluationSteps {
     assertThat(candidate)
         .extracting(Candidate::getPublicationId, Candidate::isApplicable)
         .containsExactly(publication.id(), false);
-    assertThat(candidate.getApprovals()).isEmpty();
+    assertThat(candidate.approvals()).isEmpty();
   }
 
   private Candidate getCandidateByPublicationId(SampleExpandedPublication publication) {

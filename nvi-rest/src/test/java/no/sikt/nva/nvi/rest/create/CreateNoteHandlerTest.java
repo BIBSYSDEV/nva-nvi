@@ -132,7 +132,7 @@ class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
   @Test
   void shouldSetUserAsAssigneeWhenUsersInstitutionApprovalIsUnassigned() throws IOException {
     var candidate = setupValidCandidate();
-    assertNull(candidate.getApprovals().get(topLevelOrganizationId).getAssigneeUsername());
+    assertNull(candidate.approvals().get(topLevelOrganizationId).getAssigneeUsername());
     var userName = randomString();
     var request =
         createRequest(candidate.identifier(), randomNote(), userName, topLevelOrganizationId);
@@ -151,8 +151,7 @@ class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
     var updateRequest = new UpdateAssigneeRequest(topLevelOrganizationId, existingApprovalAssignee);
     approvalService.updateApproval(candidate, updateRequest, curatorUser);
     var updatedCandidate = candidateService.getByIdentifier(candidate.identifier());
-    assertNotNull(
-        updatedCandidate.getApprovals().get(topLevelOrganizationId).getAssigneeUsername());
+    assertNotNull(updatedCandidate.approvals().get(topLevelOrganizationId).getAssigneeUsername());
 
     var request =
         createRequest(candidate.identifier(), randomNote(), randomString(), topLevelOrganizationId);

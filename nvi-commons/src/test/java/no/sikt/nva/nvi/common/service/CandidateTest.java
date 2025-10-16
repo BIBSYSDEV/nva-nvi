@@ -290,8 +290,7 @@ class CandidateTest extends CandidateTestSetup {
     scenario.updateApprovalStatus(candidate.identifier(), ApprovalStatus.REJECTED, institution2);
 
     var updatedCandidate = scenario.getCandidateByIdentifier(candidate.identifier());
-    assertEquals(
-        ApprovalStatus.PENDING, updatedCandidate.getApprovals().get(institution3).status());
+    assertEquals(ApprovalStatus.PENDING, updatedCandidate.approvals().get(institution3).status());
     assertEquals(GlobalApprovalStatus.DISPUTE, updatedCandidate.getGlobalApprovalStatus());
   }
 
@@ -516,7 +515,7 @@ class CandidateTest extends CandidateTestSetup {
   }
 
   private List<ApprovalDto> mapToApprovalDtos(Candidate candidate) {
-    return candidate.getApprovals().values().stream()
+    return candidate.approvals().values().stream()
         .map(
             approval ->
                 ApprovalDto.builder()

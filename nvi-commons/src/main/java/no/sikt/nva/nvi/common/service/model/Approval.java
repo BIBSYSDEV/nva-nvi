@@ -137,26 +137,27 @@ public record Approval(
         reason);
   }
 
-  private void validateUpdateAssigneeRequest(UpdateAssigneeRequest input) {
-    if (isNull(input.institutionId())) {
+  private void validateUpdateAssigneeRequest(UpdateAssigneeRequest request) {
+    if (isNull(request.institutionId())) {
       throw new IllegalArgumentException(ERROR_MSG_MISSING_ORGANIZATION_ID);
     }
-    if (!institutionId.equals(input.institutionId())) {
+    if (!institutionId.equals(request.institutionId())) {
       throw new IllegalArgumentException(ERROR_MSG_MISMATCHED_IDS);
     }
   }
 
-  private void validateUpdateStatusRequest(UpdateStatusRequest input) {
-    if (isNull(input.institutionId())) {
+  private void validateUpdateStatusRequest(UpdateStatusRequest request) {
+    status.validateStateTransition(request.approvalStatus());
+    if (isNull(request.institutionId())) {
       throw new IllegalArgumentException(ERROR_MSG_MISSING_ORGANIZATION_ID);
     }
-    if (!institutionId.equals(input.institutionId())) {
+    if (!institutionId.equals(request.institutionId())) {
       throw new IllegalArgumentException(ERROR_MSG_MISMATCHED_IDS);
     }
-    if (isBlank(input.username())) {
+    if (isBlank(request.username())) {
       throw new IllegalArgumentException(ERROR_MSG_USERNAME_NULL);
     }
-    if (ApprovalStatus.REJECTED.equals(input.approvalStatus()) && isBlank(input.reason())) {
+    if (ApprovalStatus.REJECTED.equals(request.approvalStatus()) && isBlank(request.reason())) {
       throw new IllegalArgumentException(ERROR_MISSING_REJECTION_REASON);
     }
   }
