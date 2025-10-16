@@ -47,7 +47,7 @@ public final class DynamoDbUtils {
         .getS();
   }
 
-  public static String extractField(Dao<?> oldImage, Dao<?> newImage, String field) {
+  public static String extractField(Dao oldImage, Dao newImage, String field) {
     var image = nonNull(newImage) ? newImage : oldImage;
     return image.toDynamoFormat().get(field).s();
   }

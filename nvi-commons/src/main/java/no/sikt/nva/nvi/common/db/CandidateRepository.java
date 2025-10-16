@@ -111,9 +111,14 @@ public class CandidateRepository extends DynamoRepository {
       Integer pageSize,
       Map<String, String> startMarker) {
     var page = queryYearIndex(year, pageSize, startMarker);
+    var lastEvaluatedKey =
+        Optional.ofNullable(page)
+            .map(Page::lastEvaluatedKey)
+            .map(CandidateRepository::toStringMap)
+            .orElse(emptyMap());
     return new ListingResult<>(
         thereAreMorePagesToScan(page),
-        nonNull(page.lastEvaluatedKey()) ? toStringMap(page.lastEvaluatedKey()) : emptyMap(),
+        lastEvaluatedKey,
         page.items().size(),
         includeReportedCandidates ? page.items() : filterOutReportedCandidates(page));
   }
