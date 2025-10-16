@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.common.service;
 
+import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.RequestFixtures.createNoteRequest;
 import static no.sikt.nva.nvi.common.RequestFixtures.randomNoteRequest;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequest;
@@ -20,6 +21,7 @@ import no.sikt.nva.nvi.common.model.CreateNoteRequest;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UserInstance;
 import no.sikt.nva.nvi.common.service.dto.NoteDto;
+import no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException;
 import no.sikt.nva.nvi.common.service.exception.UnauthorizedOperationException;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.requests.DeleteNoteRequest;
@@ -91,6 +93,18 @@ class CandidateNotesTest extends CandidateTestSetup {
     var deleteNoteRequest = new DeleteNoteRequest(noteToDelete.identifier(), randomString());
     assertThrows(
         UnauthorizedOperationException.class,
+        () -> noteService.deleteNote(candidate, deleteNoteRequest));
+  }
+
+  @Test
+  void shouldThrowExceptionWhenNoteDoesNotExist() {
+    var candidate = setupCandidateWithNote();
+    var userOrganizationId = getAnyOrganizationId(candidate);
+    mockOrganizationResponseForAffiliation(userOrganizationId, null, mockUriRetriever);
+
+    var deleteNoteRequest = new DeleteNoteRequest(randomUUID(), randomString());
+    assertThrows(
+        IllegalCandidateUpdateException.class,
         () -> noteService.deleteNote(candidate, deleteNoteRequest));
   }
 

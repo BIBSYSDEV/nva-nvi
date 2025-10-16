@@ -35,7 +35,7 @@ public record NoteService(CandidateRepository candidateRepository) {
 
   public void deleteNote(Candidate candidate, DeleteNoteRequest request) {
     LOGGER.info("Deleting note for candidateId={}", candidate.identifier());
-    var noteToDelete = candidate.deleteNote(request);
+    var noteToDelete = candidate.getNoteForDeletion(request);
     candidateRepository.deleteNote(candidate.identifier(), noteToDelete.noteIdentifier());
   }
 }

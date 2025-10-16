@@ -8,6 +8,7 @@ import static java.util.function.Predicate.not;
 import static no.sikt.nva.nvi.common.db.ReportStatus.REPORTED;
 import static no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException.CANDIDATE_IS_REPORTED;
 import static no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException.NO_APPROVAL_FOUND;
+import static no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException.NO_NOTE_FOUND;
 import static no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException.PERIOD_IS_NOT_OPEN;
 import static no.sikt.nva.nvi.common.service.model.Approval.createNewApproval;
 import static no.sikt.nva.nvi.common.service.model.ApprovalStatus.APPROVED;
@@ -328,26 +329,20 @@ public record Candidate(
     return pointCalculation.channel();
   }
 
-  public Approval updateApprovalAssignee(UpdateAssigneeRequest request) {
+  public Approval getApprovalWithUpdatedAssignee(UpdateAssigneeRequest request) {
     validateCandidateState();
-    var updatedApproval = getApproval(request).withAssignee(request);
-    approvals.put(request.institutionId(), updatedApproval);
-    return updatedApproval;
+    return getApproval(request).withAssignee(request);
   }
 
-  public Approval updateApprovalStatus(UpdateStatusRequest request) {
+  public Approval getApprovalWithUpdatedStatus(UpdateStatusRequest request) {
     validateCandidateState();
     var currentApproval = getApproval(request);
     return currentApproval.withStatus(request);
   }
 
   private Approval getApproval(UpdateApprovalRequest request) {
-    var approval = approvals.get(request.institutionId());
-    if (isNull(approval)) {
-      LOGGER.error("No approval found matching request: {}", request);
-      throw new IllegalCandidateUpdateException(NO_APPROVAL_FOUND);
-    }
-    return approval;
+    return Optional.ofNullable(approvals.get(request.institutionId()))
+        .orElseThrow(() -> new IllegalCandidateUpdateException(NO_APPROVAL_FOUND));
   }
 
   public NoteCreationResult createNote(CreateNoteRequest input) {
@@ -360,12 +355,12 @@ public record Candidate(
     return new NoteCreationResult(note, updatedApproval);
   }
 
-  public Note deleteNote(DeleteNoteRequest request) {
+  public Note getNoteForDeletion(DeleteNoteRequest request) {
     validateCandidateState();
-    var note = notes.get(request.noteId());
+    var note =
+        Optional.ofNullable(notes.get(request.noteId()))
+            .orElseThrow(() -> new IllegalCandidateUpdateException(NO_NOTE_FOUND));
     note.validateOwner(request.username());
-    notes.remove(request.noteId());
-
     return note;
   }
 
