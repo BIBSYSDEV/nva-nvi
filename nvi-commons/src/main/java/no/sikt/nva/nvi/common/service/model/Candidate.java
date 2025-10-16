@@ -14,7 +14,6 @@ import static no.sikt.nva.nvi.common.service.model.ApprovalStatus.REJECTED;
 import static no.sikt.nva.nvi.common.utils.DecimalUtils.adjustScaleAndRoundingMode;
 import static no.sikt.nva.nvi.common.utils.RequestUtil.getAllCreators;
 import static nva.commons.core.ioutils.IoUtils.stringFromResources;
-import static nva.commons.core.paths.UriWrapper.HTTPS;
 
 import java.math.BigDecimal;
 import java.net.URI;
@@ -75,7 +74,9 @@ public record Candidate(
 
   private static final Logger LOGGER = LoggerFactory.getLogger(Candidate.class);
   private static final String CONTEXT = stringFromResources(Path.of("nviCandidateContext.json"));
+  private static final String API_HOST = "API_HOST";
   private static final String CANDIDATE_PATH = "candidate";
+  private static final String CUSTOM_DOMAIN_BASE_PATH = "CUSTOM_DOMAIN_BASE_PATH";
   private static final String PERIOD_CLOSED_MESSAGE =
       "Period is closed, perform actions on candidate is forbidden!";
   private static final String PERIOD_NOT_OPENED_MESSAGE =
@@ -210,18 +211,23 @@ public record Candidate(
   }
 
   public URI getContextUri() {
-    var basePath = environment.readEnv("CUSTOM_DOMAIN_BASE_PATH");
-    var apiHost = environment.readEnv("API_HOST");
-    return UriWrapper.fromHost(apiHost).addChild(basePath, "context").getUri();
+    return buildApiUri("context");
   }
 
-  // FIXME: Clean-up duplication here
   public URI getId() {
-    var basePath = environment.readEnv("CUSTOM_DOMAIN_BASE_PATH");
-    var apiHost = environment.readEnv("API_HOST");
-    return new UriWrapper(HTTPS, apiHost)
-        .addChild(basePath, CANDIDATE_PATH, identifier.toString())
-        .getUri();
+    return buildApiUri(CANDIDATE_PATH, identifier.toString());
+  }
+
+  private URI buildApiUri(String... pathSegments) {
+    var basePath = environment.readEnv(CUSTOM_DOMAIN_BASE_PATH);
+    var apiHost = environment.readEnv(API_HOST);
+    var uriWrapper = UriWrapper.fromHost(apiHost).addChild(basePath);
+
+    for (var segment : pathSegments) {
+      uriWrapper = uriWrapper.addChild(segment);
+    }
+
+    return uriWrapper.getUri();
   }
 
   /**
