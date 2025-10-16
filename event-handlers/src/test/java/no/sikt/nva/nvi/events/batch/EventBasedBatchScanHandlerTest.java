@@ -3,7 +3,6 @@ package no.sikt.nva.nvi.events.batch;
 import static java.util.Collections.emptyList;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.getEventBasedBatchScanHandlerEnvironment;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.createCandidateDao;
-import static no.sikt.nva.nvi.common.db.DaoMapper.createNoteKey;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidateBuilder;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.model.CandidateFixtures.setupRandomApplicableCandidate;

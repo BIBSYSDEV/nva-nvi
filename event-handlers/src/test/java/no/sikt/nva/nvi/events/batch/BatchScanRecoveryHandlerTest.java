@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.db.CandidateDao;
-import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.utils.BatchScanUtil;
@@ -31,7 +30,6 @@ class BatchScanRecoveryHandlerTest {
 
   protected static final FakeContext CONTEXT = new FakeContext();
   private TestScenario scenario;
-  private CandidateRepository candidateRepository;
   private CandidateService candidateService;
   private FakeSqsClient queueClient;
   private BatchScanRecoveryHandler handler;
@@ -41,7 +39,6 @@ class BatchScanRecoveryHandlerTest {
   @BeforeEach
   void setup() {
     scenario = new TestScenario();
-    candidateRepository = scenario.getCandidateRepository();
     candidateService = scenario.getCandidateService();
     output = new ByteArrayOutputStream();
     queueClient = new FakeSqsClient();

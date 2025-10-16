@@ -8,9 +8,6 @@ import static java.util.stream.Collectors.toMap;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_PUBLICATION_ID;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_YEAR;
 import static no.sikt.nva.nvi.common.DatabaseConstants.VERSION_FIELD;
-import static no.sikt.nva.nvi.common.db.DaoMapper.createCandidateKey;
-import static no.sikt.nva.nvi.common.db.DaoMapper.createCandidateKeyByPublicationId;
-import static no.sikt.nva.nvi.common.db.DaoMapper.createNoteKey;
 import static no.sikt.nva.nvi.common.utils.ApplicationConstants.NVI_TABLE_NAME;
 import static no.sikt.nva.nvi.common.utils.Validator.hasElements;
 import static software.amazon.awssdk.enhanced.dynamodb.TableSchema.fromImmutableClass;
@@ -111,6 +108,7 @@ public class CandidateRepository extends DynamoRepository {
       Integer pageSize,
       Map<String, String> startMarker) {
     var page = queryYearIndex(year, pageSize, startMarker);
+    //    var pageSize = Optional.ofNullable(page).map(Page::count);
     var lastEvaluatedKey =
         Optional.ofNullable(page)
             .map(Page::lastEvaluatedKey)
@@ -119,7 +117,7 @@ public class CandidateRepository extends DynamoRepository {
     return new ListingResult<>(
         thereAreMorePagesToScan(page),
         lastEvaluatedKey,
-        page.items().size(),
+        page.items().size(), // FIXME: Just use page size?
         includeReportedCandidates ? page.items() : filterOutReportedCandidates(page));
   }
 
@@ -180,6 +178,14 @@ public class CandidateRepository extends DynamoRepository {
     sendTransaction(transaction.build());
   }
 
+  public CompletableFuture<List<Dao>> getCandidateAggregateAsync(UUID candidateId) {
+    LOGGER.info("Fetching candidate and related data for candidateId={}", candidateId);
+
+    return executeAsync(getCandidateAggregateRequest(candidateId))
+        .thenApply(QueryResponse::items)
+        .thenApply(items -> items.stream().map(this::mapToDao).toList());
+  }
+
   public Optional<CandidateDao> findCandidateById(UUID candidateIdentifier) {
     LOGGER.info("Fetching candidate by identifier {}", candidateIdentifier);
     return Optional.ofNullable(
@@ -201,6 +207,41 @@ public class CandidateRepository extends DynamoRepository {
   public void deleteNote(UUID candidateIdentifier, UUID noteIdentifier) {
     LOGGER.info("Deleting note: candidateId={}, noteId={}, ", candidateIdentifier, noteIdentifier);
     noteTable.deleteItem(createNoteKey(candidateIdentifier, noteIdentifier));
+  }
+
+  protected static Key createCandidateKey(UUID candidateIdentifier) {
+    return Key.builder()
+        .partitionValue(CandidateDao.createPartitionKey(candidateIdentifier.toString()))
+        .sortValue(CandidateDao.createPartitionKey(candidateIdentifier.toString()))
+        .build();
+  }
+
+  protected static Key createCandidateKeyByPublicationId(URI publicationId) {
+    return Key.builder()
+        .partitionValue(publicationId.toString())
+        .sortValue(publicationId.toString())
+        .build();
+  }
+
+  protected static Key createNoteKey(UUID candidateIdentifier, UUID noteIdentifier) {
+    return Key.builder()
+        .partitionValue(CandidateDao.createPartitionKey(candidateIdentifier.toString()))
+        .sortValue(NoteDao.createSortKey(noteIdentifier.toString()))
+        .build();
+  }
+
+  private ConditionCheck<CandidateDao> requireExpectedCandidateRevision(CandidateDao candidate) {
+    var candidateKey = createCandidateKey(candidate.identifier());
+    var revisionCondition = requireExpectedRevision(candidate.revision());
+    return ConditionCheck.builder()
+        .key(candidateKey)
+        .conditionExpression(revisionCondition)
+        .build();
+  }
+
+  private QueryRequest getCandidateAggregateRequest(UUID candidateId) {
+    var candidatePartitionKey = CandidateDao.createPartitionKey(candidateId.toString());
+    return queryByPartitionKey(candidatePartitionKey);
   }
 
   private void addToTransaction(
@@ -239,28 +280,6 @@ public class CandidateRepository extends DynamoRepository {
     for (var reason : exception.cancellationReasons()) {
       LOGGER.error("Cancellation reason: {}", reason);
     }
-  }
-
-  private ConditionCheck<CandidateDao> requireExpectedCandidateRevision(CandidateDao candidate) {
-    var candidateKey = createCandidateKey(candidate.identifier());
-    var revisionCondition = requireExpectedRevision(candidate.revision());
-    return ConditionCheck.builder()
-        .key(candidateKey)
-        .conditionExpression(revisionCondition)
-        .build();
-  }
-
-  public CompletableFuture<List<Dao>> getCandidateAggregateAsync(UUID candidateId) {
-    LOGGER.info("Fetching candidate and related data for candidateId={}", candidateId);
-
-    return executeAsync(getCandidateAggregateRequest(candidateId))
-        .thenApply(QueryResponse::items)
-        .thenApply(items -> items.stream().map(this::mapToDao).toList());
-  }
-
-  private QueryRequest getCandidateAggregateRequest(UUID candidateId) {
-    var candidatePartitionKey = CandidateDao.createPartitionKey(candidateId.toString());
-    return queryByPartitionKey(candidatePartitionKey);
   }
 
   private Dao mapToDao(Map<String, AttributeValue> document) {

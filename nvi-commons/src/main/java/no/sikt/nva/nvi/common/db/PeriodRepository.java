@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.common.db;
 
-import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.utils.ApplicationConstants.NVI_TABLE_NAME;
 
 import java.util.Collection;
@@ -29,8 +28,7 @@ public class PeriodRepository extends DynamoRepository {
 
   public void save(NviPeriodDao period) {
     LOGGER.info("Saving period: {}", period);
-    var updatedPeriod = period.copy().version(randomUUID().toString()).build();
-    nviPeriodTable.putItem(updatedPeriod);
+    nviPeriodTable.putItem(period.withMutatedVersion());
   }
 
   public Optional<NviPeriodDao> findByPublishingYear(String publishingYear) {

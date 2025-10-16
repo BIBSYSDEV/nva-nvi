@@ -212,9 +212,14 @@ class RequeueDlqHandlerTest {
     var actualCandidate = candidateService.getByIdentifier(candidate.identifier());
     assertThat(actualCandidate)
         .usingRecursiveComparison()
-        .ignoringFields("version", "revision", "lastWrittenAt")
+        .ignoringFields("version", "revision", "lastWrittenAt", "approvals")
         .ignoringCollectionOrder()
         .isEqualTo(candidate);
+    assertThat(actualCandidate.approvals().values())
+        .usingRecursiveComparison()
+        .ignoringFields("revision")
+        .ignoringCollectionOrder()
+        .isEqualTo(candidate.approvals().values());
   }
 
   private Message createCandidateMessage(String messageId) {
