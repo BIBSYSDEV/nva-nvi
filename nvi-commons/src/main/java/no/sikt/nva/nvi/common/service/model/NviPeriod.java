@@ -21,6 +21,7 @@ public record NviPeriod(
     Instant reportingDate,
     Username createdBy,
     Username modifiedBy) {
+  private static final String VALIDATION_ERROR_MESSAGE = "Field cannot be null: %s";
 
   public NviPeriod {
     shouldNotBeNull(id, String.format(VALIDATION_ERROR_MESSAGE, "id"));
@@ -33,7 +34,6 @@ public record NviPeriod(
     }
   }
 
-  private static final String VALIDATION_ERROR_MESSAGE = "Field cannot be null: %s";
 
   public static NviPeriod fromDao(NviPeriodDao period) {
     var dbNviPeriod = period.nviPeriod();
