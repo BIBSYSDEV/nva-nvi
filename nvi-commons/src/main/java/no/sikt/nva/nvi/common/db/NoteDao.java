@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.common.db;
 
+import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.DatabaseConstants.DATA_FIELD;
 import static no.sikt.nva.nvi.common.DatabaseConstants.HASH_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.IDENTIFIER_FIELD;
@@ -55,6 +56,12 @@ public final class NoteDao extends Dao {
   @DynamoDbIgnore
   public Builder copy() {
     return new Builder().identifier(identifier).note(note).version(version);
+  }
+
+  @Override
+  @DynamoDbIgnore
+  public NoteDao withMutatedVersion() {
+    return copy().version(randomUUID().toString()).build();
   }
 
   @Override

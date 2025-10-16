@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.common.db;
 
+import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.DatabaseConstants.HASH_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
 
@@ -39,6 +40,17 @@ public final class CandidateUniquenessEntryDao extends Dao {
   @JacocoGenerated
   public static Builder builder() {
     return new Builder();
+  }
+
+  @DynamoDbIgnore
+  public Builder copy() {
+    return builder().partitionKey(partitionKey).sortKey(sortKey).version(version);
+  }
+
+  @Override
+  @DynamoDbIgnore
+  public CandidateUniquenessEntryDao withMutatedVersion() {
+    return copy().version(randomUUID().toString()).build();
   }
 
   @JacocoGenerated

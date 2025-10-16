@@ -2,13 +2,15 @@ package no.sikt.nva.nvi.common.db;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
-import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.UUID.randomUUID;
 import static java.util.stream.Collectors.toMap;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_PUBLICATION_ID;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_YEAR;
 import static no.sikt.nva.nvi.common.DatabaseConstants.VERSION_FIELD;
+import static no.sikt.nva.nvi.common.db.DaoMapper.createCandidateKey;
+import static no.sikt.nva.nvi.common.db.DaoMapper.createCandidateKeyByPublicationId;
+import static no.sikt.nva.nvi.common.db.DaoMapper.createNoteKey;
 import static no.sikt.nva.nvi.common.utils.ApplicationConstants.NVI_TABLE_NAME;
 import static no.sikt.nva.nvi.common.utils.Validator.hasElements;
 import static software.amazon.awssdk.enhanced.dynamodb.TableSchema.fromImmutableClass;
@@ -35,13 +37,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbIndex;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
-import software.amazon.awssdk.enhanced.dynamodb.Expression;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.model.ConditionCheck;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
-import software.amazon.awssdk.enhanced.dynamodb.model.TransactPutItemEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.TransactWriteItemsEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.TransactWriteItemsEnhancedRequest.Builder;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
@@ -126,7 +126,6 @@ public class CandidateRepository extends DynamoRepository {
             .identifier(identifier)
             .candidate(dbCandidate)
             .periodYear(year)
-            .version(randomUUID().toString())
             .build();
     var approvals = approvalStatuses.stream().map(approval -> approval.toDao(identifier)).toList();
     create(candidate, approvals);
@@ -138,61 +137,44 @@ public class CandidateRepository extends DynamoRepository {
 
     var publicationId = candidate.candidate().publicationId();
     var uniquenessEntry = new CandidateUniquenessEntryDao(publicationId.toString());
-    transaction.addPutItem(
-        uniquenessTable, createItemIfNotExists(uniquenessEntry, CandidateUniquenessEntryDao.class));
 
-    transaction.addPutItem(candidateTable, mutateDaoVersion(candidate));
+    transaction.addPutItem(
+        uniquenessTable, createNewItem(uniquenessEntry.withMutatedVersion(), uniquenessTable));
+    transaction.addPutItem(
+        candidateTable, createNewItem(candidate.withMutatedVersion(), candidateTable));
 
     for (var approval : approvals) {
-      transaction.addPutItem(approvalStatusTable, mutateDaoVersion(approval));
+      transaction.addPutItem(
+          approvalStatusTable, createNewItem(approval.withMutatedVersion(), approvalStatusTable));
     }
 
+    sendTransaction(transaction.build());
+  }
+
+  public void updateCandidateAggregate(
+      CandidateDao candidate,
+      Collection<ApprovalStatusDao> approvalsToUpdate,
+      Collection<ApprovalStatusDao> approvalsToDelete,
+      Collection<NoteDao> notesToUpdate) {
+    LOGGER.info("Updating candidate {}", candidate.identifier());
+    var transaction = TransactWriteItemsEnhancedRequest.builder();
+    transaction.addPutItem(candidateTable, candidate.withMutatedVersion());
+    addToTransaction(transaction, approvalsToUpdate, approvalsToDelete, notesToUpdate);
     sendTransaction(transaction.build());
   }
 
   public void updateCandidateItems(
-      CandidateDao candidate, Collection<ApprovalStatusDao> approvals, Collection<NoteDao> notes) {
+      CandidateDao candidate,
+      Collection<ApprovalStatusDao> approvalsToUpdate,
+      Collection<ApprovalStatusDao> approvalsToDelete,
+      Collection<NoteDao> notesToUpdate) {
     LOGGER.info("Updating approvals and notes for candidate {}", candidate.identifier());
     var transaction = TransactWriteItemsEnhancedRequest.builder();
     transaction.addConditionCheck(candidateTable, requireExpectedCandidateRevision(candidate));
-
-    for (var approval : approvals) {
-      var updatedApproval = mutateDaoVersion(approval);
-      transaction.addPutItem(approvalStatusTable, updatedApproval);
-    }
-
-    for (var note : notes) {
-      var updatedNote = mutateDaoVersion(note);
-      transaction.addPutItem(noteTable, updatedNote);
-    }
-
+    addToTransaction(transaction, approvalsToUpdate, approvalsToDelete, notesToUpdate);
     sendTransaction(transaction.build());
   }
 
-  public void updateCandidateAndApprovals(
-      CandidateDao candidateDao,
-      Collection<ApprovalStatusDao> approvalsToUpdate,
-      Collection<ApprovalStatusDao> approvalsToDelete) {
-    LOGGER.info("Upserting candidate {} and related approvals", candidateDao.identifier());
-    LOGGER.info("Updating approvals in: {}", approvalsToUpdate);
-    LOGGER.info("Deleting approvals in: {}", approvalsToDelete);
-    var transaction = TransactWriteItemsEnhancedRequest.builder();
-    var updatedCandidate = mutateDaoVersion(candidateDao);
-    transaction.addPutItem(candidateTable, updatedCandidate);
-
-    for (var approval : approvalsToUpdate) {
-      var updatedApproval = mutateDaoVersion(approval);
-      transaction.addPutItem(approvalStatusTable, updatedApproval);
-    }
-
-    for (var otherApproval : approvalsToDelete) {
-      transaction.addDeleteItem(approvalStatusTable, otherApproval);
-    }
-
-    sendTransaction(transaction.build());
-  }
-
-  @Deprecated // TODO: Remove this
   public Optional<CandidateDao> findCandidateById(UUID candidateIdentifier) {
     LOGGER.info("Fetching candidate by identifier {}", candidateIdentifier);
     return Optional.ofNullable(
@@ -213,7 +195,29 @@ public class CandidateRepository extends DynamoRepository {
 
   public void deleteNote(UUID candidateIdentifier, UUID noteIdentifier) {
     LOGGER.info("Deleting note: candidateId={}, noteId={}, ", candidateIdentifier, noteIdentifier);
-    noteTable.deleteItem(noteKey(candidateIdentifier, noteIdentifier));
+    noteTable.deleteItem(createNoteKey(candidateIdentifier, noteIdentifier));
+  }
+
+  private void addToTransaction(
+      Builder transaction,
+      Collection<ApprovalStatusDao> approvalsToUpdate,
+      Collection<ApprovalStatusDao> approvalsToDelete,
+      Collection<NoteDao> notesToUpdate) {
+
+    LOGGER.info("Updating {} approvals", approvalsToUpdate.size());
+    for (var updatedApproval : approvalsToUpdate) {
+      transaction.addPutItem(approvalStatusTable, updatedApproval.withMutatedVersion());
+    }
+
+    LOGGER.info("Deleting {} approvals", approvalsToDelete.size());
+    for (var removedApproval : approvalsToDelete) {
+      transaction.addDeleteItem(approvalStatusTable, removedApproval);
+    }
+
+    LOGGER.info("Updating {} approvals", notesToUpdate.size());
+    for (var note : notesToUpdate) {
+      transaction.addPutItem(noteTable, note.withMutatedVersion());
+    }
   }
 
   private void sendTransaction(TransactWriteItemsEnhancedRequest request) {
@@ -234,31 +238,10 @@ public class CandidateRepository extends DynamoRepository {
 
   private ConditionCheck<CandidateDao> requireExpectedCandidateRevision(CandidateDao candidate) {
     var candidateKey = createCandidateKey(candidate.identifier());
-    var revisionCondition = createRevisionCondition(candidate.revision());
+    var revisionCondition = requireExpectedRevision(candidate.revision());
     return ConditionCheck.builder()
         .key(candidateKey)
         .conditionExpression(revisionCondition)
-        .build();
-  }
-
-  private Key createCandidateKey(UUID candidateIdentifier) {
-    return Key.builder()
-        .partitionValue(CandidateDao.createPartitionKey(candidateIdentifier.toString()))
-        .sortValue(CandidateDao.createPartitionKey(candidateIdentifier.toString()))
-        .build();
-  }
-
-  private Expression createRevisionCondition(Long expectedCandidateRevision) {
-    if (isNull(expectedCandidateRevision)) {
-      return Expression.builder().expression("attribute_not_exists(revision)").build();
-    }
-
-    return Expression.builder()
-        .expression("revision = :expectedCandidateRevision")
-        .expressionValues(
-            Map.of(
-                ":expectedCandidateRevision",
-                AttributeValue.builder().n(expectedCandidateRevision.toString()).build()))
         .build();
   }
 
@@ -287,13 +270,6 @@ public class CandidateRepository extends DynamoRepository {
         throw new IllegalArgumentException("Failed to map document type");
       }
     };
-  }
-
-  protected static Key noteKey(UUID candidateIdentifier, UUID noteIdentifier) {
-    return Key.builder()
-        .partitionValue(CandidateDao.createPartitionKey(candidateIdentifier.toString()))
-        .sortValue(NoteDao.createSortKey(noteIdentifier.toString()))
-        .build();
   }
 
   protected static QueryConditional queryCandidateParts(UUID id, String type) {
@@ -325,22 +301,7 @@ public class CandidateRepository extends DynamoRepository {
   }
 
   private static QueryConditional findCandidateByPublicationIdQuery(URI publicationId) {
-    return keyEqualTo(candidateByPublicationIdKey(publicationId));
-  }
-
-  private static Key candidateByPublicationIdKey(URI publicationId) {
-    return Key.builder()
-        .partitionValue(publicationId.toString())
-        .sortValue(publicationId.toString())
-        .build();
-  }
-
-  private static <T> TransactPutItemEnhancedRequest<T> createItemIfNotExists(
-      T insert, Class<T> clazz) {
-    return TransactPutItemEnhancedRequest.builder(clazz)
-        .item(insert)
-        .conditionExpression(uniquePrimaryKeysExpression())
-        .build();
+    return keyEqualTo(createCandidateKeyByPublicationId(publicationId));
   }
 
   private List<Dao> extractDatabaseEntries(ScanResponse response) {
@@ -381,18 +342,6 @@ public class CandidateRepository extends DynamoRepository {
     return mutableMap;
   }
 
-  private CandidateDao mutateDaoVersion(CandidateDao originalDao) {
-    return originalDao.copy().version(randomUUID().toString()).build();
-  }
-
-  private ApprovalStatusDao mutateDaoVersion(ApprovalStatusDao originalDao) {
-    return originalDao.copy().version(randomUUID().toString()).build();
-  }
-
-  private NoteDao mutateDaoVersion(NoteDao originalDao) {
-    return originalDao.copy().version(randomUUID().toString()).build();
-  }
-
   private boolean thereAreMorePagesToScan(Page<CandidateDao> page) {
     return nonNull(page) && hasElements(page.lastEvaluatedKey());
   }
@@ -426,27 +375,5 @@ public class CandidateRepository extends DynamoRepository {
         .exclusiveStartKey(start)
         .limit(pageSize)
         .build();
-  }
-
-  private Builder buildTransaction(
-      List<DbApprovalStatus> approvalStatuses,
-      CandidateDao candidate,
-      UUID identifier,
-      CandidateUniquenessEntryDao uniqueness) {
-    var transactionBuilder = TransactWriteItemsEnhancedRequest.builder();
-
-    transactionBuilder.addPutItem(
-        this.candidateTable, createItemIfNotExists(candidate, CandidateDao.class));
-
-    approvalStatuses.stream()
-        .map(approval -> approval.toDao(identifier))
-        .forEach(
-            approval ->
-                transactionBuilder.addPutItem(
-                    this.approvalStatusTable,
-                    createItemIfNotExists(approval, ApprovalStatusDao.class)));
-    transactionBuilder.addPutItem(
-        this.uniquenessTable, createItemIfNotExists(uniqueness, CandidateUniquenessEntryDao.class));
-    return transactionBuilder;
   }
 }

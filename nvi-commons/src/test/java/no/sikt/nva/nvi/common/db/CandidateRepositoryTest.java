@@ -49,11 +49,10 @@ class CandidateRepositoryTest {
     var candidate1 = randomCandidateBuilder(true).publicationId(publicationId).build();
     var candidate2 = randomCandidateBuilder(true).publicationId(publicationId).build();
     candidateRepository.create(candidate1, emptyList(), candidate1.getPublicationDate().year());
+    var publicationYear = candidate2.getPublicationDate().year();
     assertThrows(
         RuntimeException.class,
-        () ->
-            candidateRepository.create(
-                candidate2, emptyList(), candidate2.getPublicationDate().year()));
+        () -> candidateRepository.create(candidate2, emptyList(), publicationYear));
   }
 
   @Test

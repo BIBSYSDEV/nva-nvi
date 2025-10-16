@@ -39,8 +39,10 @@ public record ApprovalService(CandidateRepository candidateRepository) {
   public void updateApprovalAssignee(Candidate candidate, UpdateAssigneeRequest request) {
     LOGGER.info("Updating assignee for candidateId={}: {}", candidate.identifier(), request);
     var updatedApproval = candidate.updateApprovalAssignee(request);
+    var updatedApprovals = List.of(updatedApproval.toDao());
+    LOGGER.info("Saving updated approval with assignee {}", updatedApproval.assignee());
     candidateRepository.updateCandidateItems(
-        candidate.toDao(), List.of(updatedApproval.toDao()), emptyList());
+        candidate.toDao(), updatedApprovals, emptyList(), emptyList());
   }
 
   public void updateApprovalStatus(
@@ -61,8 +63,9 @@ public record ApprovalService(CandidateRepository candidateRepository) {
     }
 
     var updatedApproval = candidate.updateApprovalStatus(request);
+    var updatedApprovals = List.of(updatedApproval.toDao());
     LOGGER.info("Saving updated approval with status {}", updatedApproval.status());
     candidateRepository.updateCandidateItems(
-        candidate.toDao(), List.of(updatedApproval.toDao()), emptyList());
+        candidate.toDao(), updatedApprovals, emptyList(), emptyList());
   }
 }

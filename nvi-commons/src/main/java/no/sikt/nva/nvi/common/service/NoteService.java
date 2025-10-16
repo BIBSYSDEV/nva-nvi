@@ -25,11 +25,12 @@ public record NoteService(CandidateRepository candidateRepository) {
   public void createNote(Candidate candidate, CreateNoteRequest request) {
     LOGGER.info("Creating note for candidateId={}", candidate.identifier());
     var updatedItems = candidate.createNote(request);
-    var approvalsToUpdate =
+    var updatedApprovals =
         updatedItems.updatedApproval().map(Approval::toDao).map(List::of).orElse(emptyList());
     var notesToAdd = List.of(updatedItems.note().toDao());
 
-    candidateRepository.updateCandidateItems(candidate.toDao(), approvalsToUpdate, notesToAdd);
+    candidateRepository.updateCandidateItems(
+        candidate.toDao(), updatedApprovals, emptyList(), notesToAdd);
   }
 
   public void deleteNote(Candidate candidate, DeleteNoteRequest request) {

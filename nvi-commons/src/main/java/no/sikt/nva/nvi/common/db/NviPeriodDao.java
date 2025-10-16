@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.common.db;
 
+import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.DatabaseConstants.DATA_FIELD;
 import static no.sikt.nva.nvi.common.DatabaseConstants.HASH_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.IDENTIFIER_FIELD;
@@ -53,6 +54,12 @@ public final class NviPeriodDao extends Dao {
   @DynamoDbIgnore
   public Builder copy() {
     return builder().identifier(identifier).nviPeriod(nviPeriod).version(version);
+  }
+
+  @Override
+  @DynamoDbIgnore
+  public NviPeriodDao withMutatedVersion() {
+    return copy().version(randomUUID().toString()).build();
   }
 
   @Override

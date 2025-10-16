@@ -24,6 +24,7 @@ import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.CandidateContext;
+import no.sikt.nva.nvi.common.service.model.Note;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
@@ -94,8 +95,8 @@ public class CandidateService {
               .toList();
       var approvalsToDelete = getApprovalsToDelete(candidate, updatedCandidate);
 
-      candidateRepository.updateCandidateAndApprovals(
-          updatedCandidate.toDao(), approvalsToReset, approvalsToDelete);
+      candidateRepository.updateCandidateAggregate(
+          updatedCandidate.toDao(), approvalsToReset, approvalsToDelete, emptyList());
     } else {
       var institutionsToReset = getUpdatedInstitutionPoints(candidate, updatedCandidate);
       var approvalsToReset =
@@ -106,14 +107,16 @@ public class CandidateService {
           "Resetting individual approvals for candidate {}: {}",
           candidate.identifier(),
           approvalsToReset);
-      candidateRepository.updateCandidateAndApprovals(
-          updatedCandidate.toDao(), approvalsToReset, emptyList());
+      candidateRepository.updateCandidateAggregate(
+          updatedCandidate.toDao(), approvalsToReset, emptyList(), emptyList());
     }
   }
 
   public void updateCandidate(Candidate candidate) {
-    LOGGER.info("Saving updated candidate: {}", candidate.identifier());
-    candidateRepository.updateCandidateAndApprovals(candidate.toDao(), emptyList(), emptyList());
+    LOGGER.info("Saving candidate aggregate for publicationId={}", candidate.getPublicationId());
+    var approvals = candidate.getApprovals().values().stream().map(Approval::toDao).toList();
+    var notes = candidate.notes().values().stream().map(Note::toDao).toList();
+    candidateRepository.updateCandidateAggregate(candidate.toDao(), approvals, emptyList(), notes);
   }
 
   public void updateCandidate(UpsertNonNviCandidateRequest request) {
@@ -129,8 +132,8 @@ public class CandidateService {
       var approvalsToDelete =
           candidate.getApprovals().values().stream().map(Approval::toDao).toList();
 
-      candidateRepository.updateCandidateAndApprovals(
-          updatedCandidate, emptyList(), approvalsToDelete);
+      candidateRepository.updateCandidateAggregate(
+          updatedCandidate, emptyList(), approvalsToDelete, emptyList());
       LOGGER.info("Successfully updated publicationId={} to non-candidate", publicationId);
     }
   }

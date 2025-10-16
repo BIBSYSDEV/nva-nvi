@@ -27,7 +27,7 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
       name = CandidateUniquenessEntryDao.TYPE)
 })
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
-public abstract class Dao implements DynamoEntryWithRangeKey {
+public abstract class Dao<T extends Dao<T>> implements DynamoEntryWithRangeKey {
 
   public static final String KEY_FIELD_DELIMITER = "#";
 
@@ -41,6 +41,13 @@ public abstract class Dao implements DynamoEntryWithRangeKey {
         .map(Dao::createFilterExpression)
         .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
   }
+
+  /**
+   * Returns a copy of this DAO with a new version. Subclasses must implement this to return their
+   * specific type.
+   */
+  @DynamoDbIgnore
+  public abstract T withMutatedVersion();
 
   @DynamoDbIgnore
   public Map<String, AttributeValue> toDynamoFormat() {

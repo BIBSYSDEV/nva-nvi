@@ -543,7 +543,7 @@ class ConcurrencyHandlingTests {
   private static void assertThrowsConcurrencyException(ThrowableAssert.ThrowingCallable operation) {
     assertThatThrownBy(operation)
         .isInstanceOf(TransactionException.class)
-        .hasMessageContaining("condition revision = :expectedCandidateRevision")
+        .hasMessageContaining("condition revision = :expectedRevision")
         .hasMessageContaining("ConditionalCheckFailed");
   }
 

@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.common.db;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.DatabaseConstants.DATA_FIELD;
 import static no.sikt.nva.nvi.common.DatabaseConstants.HASH_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.IDENTIFIER_FIELD;
@@ -187,6 +188,12 @@ public final class CandidateDao extends Dao {
         .version(version)
         .revision(revision)
         .lastWrittenAt(lastWrittenAt);
+  }
+
+  @Override
+  @DynamoDbIgnore
+  public CandidateDao withMutatedVersion() {
+    return copy().version(randomUUID().toString()).build();
   }
 
   public UUID identifier() {
