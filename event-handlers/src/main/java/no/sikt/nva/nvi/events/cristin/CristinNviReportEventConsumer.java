@@ -158,11 +158,6 @@ public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, V
               existingCandidate ->
                   logger.info("Candidate already exists for publicationId={}", publicationId),
               () -> createAndPersist(cristinNviReport));
-
-      var existingCandidate = repository.findByPublicationId(publicationId);
-      if (existingCandidate.isEmpty()) {
-        createAndPersist(cristinNviReport);
-      }
     } catch (Exception e) {
       ErrorReport.withMessage(e.getMessage())
           .bucket(eventReference.extractBucketName())

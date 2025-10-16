@@ -152,13 +152,13 @@ public class CandidateService {
 
   public CandidateContext getCandidateContext(URI publicationId) {
     LOGGER.info("Fetching candidate and periods by publication id {}", publicationId);
-    var optionalCandidate = candidateRepository.findByPublicationId(publicationId);
+    var candidateIdentifier = candidateRepository.findByPublicationId(publicationId);
 
-    if (optionalCandidate.isEmpty()) {
+    if (candidateIdentifier.isEmpty()) {
       LOGGER.info("No candidate found for publicationId={}", publicationId);
       return new CandidateContext(Optional.empty(), periodService.getAll());
     }
-    return findAggregate(optionalCandidate.get().identifier());
+    return findAggregate(candidateIdentifier.get());
   }
 
   private CandidateContext findAggregate(UUID candidateIdentifier) {

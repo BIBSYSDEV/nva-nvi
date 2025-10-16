@@ -5,6 +5,7 @@ import static java.util.Collections.emptyMap;
 import static java.util.Objects.nonNull;
 import static java.util.UUID.randomUUID;
 import static java.util.stream.Collectors.toMap;
+import static no.sikt.nva.nvi.common.DatabaseConstants.HASH_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_PUBLICATION_ID;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_YEAR;
 import static no.sikt.nva.nvi.common.DatabaseConstants.VERSION_FIELD;
@@ -102,6 +103,11 @@ public class CandidateRepository extends DynamoRepository {
     batches.forEach(batch -> dynamoDbRetryClient.batchWriteItem(toBatchRequest(batch)));
   }
 
+  /**
+   * Note that this query is done against a GSI and is therefore not strongly consistent. This is
+   * acceptable for bulk operations that only need to extract identifiers, but it does not guarantee
+   * reading the most up-to-date information.
+   */
   public ListingResult<CandidateDao> fetchCandidatesByYear(
       String year,
       boolean includeReportedCandidates,
@@ -188,20 +194,23 @@ public class CandidateRepository extends DynamoRepository {
 
   public Optional<CandidateDao> findCandidateById(UUID candidateIdentifier) {
     LOGGER.info("Fetching candidate by identifier {}", candidateIdentifier);
-    return Optional.ofNullable(
-        candidateTable.getItem(
-            Key.builder()
-                .partitionValue(CandidateDao.createPartitionKey(candidateIdentifier.toString()))
-                .sortValue(CandidateDao.createPartitionKey(candidateIdentifier.toString()))
-                .build()));
+    var candidateKey = createCandidateKey(candidateIdentifier);
+    return Optional.ofNullable(candidateTable.getItem(getByKey(candidateKey)));
   }
 
-  public Optional<CandidateDao> findByPublicationId(URI publicationId) {
+  /**
+   * Finds a candidate identifier by publication ID via a GSI. Because GSIs do not support strongly
+   * consistent reads it is necessary to re-fetch the actual candidate from the primary table.
+   */
+  public Optional<UUID> findByPublicationId(URI publicationId) {
     LOGGER.info("Fetching candidate by publication id {}", publicationId);
-    return this.publicationIdIndex.query(findCandidateByPublicationIdQuery(publicationId)).stream()
+    var publicationKey = createCandidateKeyByPublicationId(publicationId);
+    var query = QueryEnhancedRequest.builder().queryConditional(keyEqualTo(publicationKey)).build();
+    return publicationIdIndex.query(query).stream()
         .map(Page::items)
         .flatMap(Collection::stream)
-        .findFirst();
+        .findFirst()
+        .map(CandidateDao::identifier);
   }
 
   public void deleteNote(UUID candidateIdentifier, UUID noteIdentifier) {
@@ -240,8 +249,14 @@ public class CandidateRepository extends DynamoRepository {
   }
 
   private QueryRequest getCandidateAggregateRequest(UUID candidateId) {
-    var candidatePartitionKey = CandidateDao.createPartitionKey(candidateId.toString());
-    return queryByPartitionKey(candidatePartitionKey);
+    var candidateKey = CandidateDao.createPartitionKey(candidateId.toString());
+    return QueryRequest.builder()
+        .tableName(NVI_TABLE_NAME)
+        .keyConditionExpression("#pk = :pk")
+        .expressionAttributeNames(Map.of("#pk", HASH_KEY))
+        .expressionAttributeValues(Map.of(":pk", AttributeValue.builder().s(candidateKey).build()))
+        .consistentRead(true)
+        .build();
   }
 
   private void addToTransaction(
@@ -324,10 +339,6 @@ public class CandidateRepository extends DynamoRepository {
         .collect(toMap(Map.Entry::getKey, e -> e.getValue().s()));
   }
 
-  private static QueryConditional findCandidateByPublicationIdQuery(URI publicationId) {
-    return keyEqualTo(createCandidateKeyByPublicationId(publicationId));
-  }
-
   private List<Dao> extractDatabaseEntries(ScanResponse response) {
     return response.items().stream()
         .map(value -> DynamoEntryWithRangeKey.parseAttributeValuesMap(value, Dao.class))
@@ -344,7 +355,7 @@ public class CandidateRepository extends DynamoRepository {
 
   private Page<CandidateDao> queryYearIndex(
       String year, Integer pageSize, Map<String, String> startMarker) {
-    return this.yearIndex.query(createQuery(year, pageSize, startMarker)).stream()
+    return yearIndex.query(createQuery(year, pageSize, startMarker)).stream()
         .findFirst()
         .orElse(Page.builder(CandidateDao.class).items(emptyList()).build());
   }
@@ -398,6 +409,7 @@ public class CandidateRepository extends DynamoRepository {
         .expressionAttributeValues(Dao.scanFilterExpressionAttributeValues(types))
         .exclusiveStartKey(start)
         .limit(pageSize)
+        .consistentRead(true)
         .build();
   }
 }

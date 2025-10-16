@@ -6,18 +6,17 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.internal.conditional.BeginsWithConditional;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
+import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 public class PeriodRepository extends DynamoRepository {
 
-  public static final String PERIOD = "PERIOD";
   private static final Logger LOGGER = LoggerFactory.getLogger(PeriodRepository.class);
   protected final DynamoDbTable<NviPeriodDao> nviPeriodTable;
 
@@ -33,18 +32,18 @@ public class PeriodRepository extends DynamoRepository {
 
   public Optional<NviPeriodDao> findByPublishingYear(String publishingYear) {
     LOGGER.info("Finding period by publishing year: {}", publishingYear);
-    var queryObj =
-        NviPeriodDao.builder()
-            .nviPeriod(DbNviPeriod.builder().publishingYear(publishingYear).build())
-            .identifier(publishingYear)
-            .build();
-    var fetched = this.nviPeriodTable.getItem(queryObj);
-    return Optional.ofNullable(fetched);
+    var periodKey = createPeriodKey(publishingYear);
+    return Optional.ofNullable(nviPeriodTable.getItem(getByKey(periodKey)));
   }
 
   public List<NviPeriodDao> getPeriods() {
     LOGGER.info("Getting all periods");
-    return this.nviPeriodTable.query(beginsWithPeriodQuery()).stream()
+    var query =
+        QueryEnhancedRequest.builder()
+            .queryConditional(beginsWithPeriodQuery())
+            .consistentRead(true)
+            .build();
+    return nviPeriodTable.query(query).stream()
         .map(Page::items)
         .flatMap(Collection::stream)
         .toList();
@@ -55,8 +54,15 @@ public class PeriodRepository extends DynamoRepository {
     return CompletableFuture.supplyAsync(this::getPeriods);
   }
 
-  public static BeginsWithConditional beginsWithPeriodQuery() {
+  private static BeginsWithConditional beginsWithPeriodQuery() {
     return new BeginsWithConditional(
-        Key.builder().partitionValue(PERIOD).sortValue(PERIOD).build());
+        Key.builder().partitionValue(NviPeriodDao.TYPE).sortValue(NviPeriodDao.TYPE).build());
+  }
+
+  private static Key createPeriodKey(String publishingYear) {
+    return Key.builder()
+        .partitionValue(NviPeriodDao.TYPE)
+        .sortValue(NviPeriodDao.createSortKey(publishingYear))
+        .build();
   }
 }

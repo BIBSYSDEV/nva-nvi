@@ -62,6 +62,11 @@ public final class NviPeriodDao extends Dao {
     return copy().version(randomUUID().toString()).build();
   }
 
+  @DynamoDbIgnore
+  public static String createSortKey(String publishingYear) {
+    return String.join(FIELD_DELIMITER, TYPE, publishingYear);
+  }
+
   @Override
   @DynamoDbPartitionKey
   @DynamoDbAttribute(HASH_KEY)
