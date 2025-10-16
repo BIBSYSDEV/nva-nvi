@@ -34,7 +34,6 @@ public record NviPeriod(
     }
   }
 
-
   public static NviPeriod fromDao(NviPeriodDao period) {
     var dbNviPeriod = period.nviPeriod();
     return builder()
