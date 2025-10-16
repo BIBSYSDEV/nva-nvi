@@ -118,20 +118,9 @@ public class CandidateRepository extends DynamoRepository {
         includeReportedCandidates ? page.items() : filterOutReportedCandidates(page));
   }
 
-  // FIXME: make it void
-  public CandidateDao create(DbCandidate dbCandidate, List<DbApprovalStatus> approvalStatuses) {
-    return create(dbCandidate, approvalStatuses, dbCandidate.getPublicationDate().year());
-  }
-
-  // FIXME: make it void
-  public CandidateDao create(
+  public void create(
       DbCandidate dbCandidate, List<DbApprovalStatus> approvalStatuses, String year) {
-    LOGGER.info(
-        "Creating candidate for publication {} for year {} and with approvals {}",
-        dbCandidate.publicationId(),
-        year,
-        approvalStatuses);
-    var identifier = randomUUID(); // FIXME: Handle this in the service
+    var identifier = randomUUID();
     var candidate =
         CandidateDao.builder()
             .identifier(identifier)
@@ -139,11 +128,8 @@ public class CandidateRepository extends DynamoRepository {
             .periodYear(year)
             .version(randomUUID().toString())
             .build();
-    var uniqueness = new CandidateUniquenessEntryDao(dbCandidate.publicationId().toString());
-    var transactionBuilder = buildTransaction(approvalStatuses, candidate, identifier, uniqueness);
-
-    sendTransaction(transactionBuilder.build());
-    return candidateTable.getItem(candidate);
+    var approvals = approvalStatuses.stream().map(approval -> approval.toDao(identifier)).toList();
+    create(candidate, approvals);
   }
 
   public void create(CandidateDao candidate, Collection<ApprovalStatusDao> approvals) {
@@ -153,7 +139,7 @@ public class CandidateRepository extends DynamoRepository {
     var publicationId = candidate.candidate().publicationId();
     var uniquenessEntry = new CandidateUniquenessEntryDao(publicationId.toString());
     transaction.addPutItem(
-        uniquenessTable, insertTransaction(uniquenessEntry, CandidateUniquenessEntryDao.class));
+        uniquenessTable, createItemIfNotExists(uniquenessEntry, CandidateUniquenessEntryDao.class));
 
     transaction.addPutItem(candidateTable, mutateDaoVersion(candidate));
 
@@ -187,7 +173,7 @@ public class CandidateRepository extends DynamoRepository {
       CandidateDao candidateDao,
       Collection<ApprovalStatusDao> approvalsToUpdate,
       Collection<ApprovalStatusDao> approvalsToDelete) {
-    LOGGER.info("Updating candidate {} and resetting approvals", candidateDao.identifier());
+    LOGGER.info("Upserting candidate {} and related approvals", candidateDao.identifier());
     LOGGER.info("Updating approvals in: {}", approvalsToUpdate);
     LOGGER.info("Deleting approvals in: {}", approvalsToDelete);
     var transaction = TransactWriteItemsEnhancedRequest.builder();
@@ -349,8 +335,8 @@ public class CandidateRepository extends DynamoRepository {
         .build();
   }
 
-  // FIXME: Maybe we need to use this everywhere?
-  private static <T> TransactPutItemEnhancedRequest<T> insertTransaction(T insert, Class<T> clazz) {
+  private static <T> TransactPutItemEnhancedRequest<T> createItemIfNotExists(
+      T insert, Class<T> clazz) {
     return TransactPutItemEnhancedRequest.builder(clazz)
         .item(insert)
         .conditionExpression(uniquePrimaryKeysExpression())
@@ -450,7 +436,7 @@ public class CandidateRepository extends DynamoRepository {
     var transactionBuilder = TransactWriteItemsEnhancedRequest.builder();
 
     transactionBuilder.addPutItem(
-        this.candidateTable, insertTransaction(candidate, CandidateDao.class));
+        this.candidateTable, createItemIfNotExists(candidate, CandidateDao.class));
 
     approvalStatuses.stream()
         .map(approval -> approval.toDao(identifier))
@@ -458,9 +444,9 @@ public class CandidateRepository extends DynamoRepository {
             approval ->
                 transactionBuilder.addPutItem(
                     this.approvalStatusTable,
-                    insertTransaction(approval, ApprovalStatusDao.class)));
+                    createItemIfNotExists(approval, ApprovalStatusDao.class)));
     transactionBuilder.addPutItem(
-        this.uniquenessTable, insertTransaction(uniqueness, CandidateUniquenessEntryDao.class));
+        this.uniquenessTable, createItemIfNotExists(uniqueness, CandidateUniquenessEntryDao.class));
     return transactionBuilder;
   }
 }

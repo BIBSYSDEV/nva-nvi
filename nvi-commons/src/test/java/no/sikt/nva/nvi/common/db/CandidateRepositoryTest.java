@@ -1,6 +1,8 @@
 package no.sikt.nva.nvi.common.db;
 
+import static java.util.Collections.emptyList;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequest;
+import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.randomApplicableCandidateDao;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidateBuilder;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
@@ -46,8 +48,12 @@ class CandidateRepositoryTest {
     var publicationId = randomUri();
     var candidate1 = randomCandidateBuilder(true).publicationId(publicationId).build();
     var candidate2 = randomCandidateBuilder(true).publicationId(publicationId).build();
-    candidateRepository.create(candidate1, List.of());
-    assertThrows(RuntimeException.class, () -> candidateRepository.create(candidate2, List.of()));
+    candidateRepository.create(candidate1, emptyList(), candidate1.getPublicationDate().year());
+    assertThrows(
+        RuntimeException.class,
+        () ->
+            candidateRepository.create(
+                candidate2, emptyList(), candidate2.getPublicationDate().year()));
   }
 
   @Test
@@ -79,10 +85,10 @@ class CandidateRepositoryTest {
     when(client.transactWriteItems((TransactWriteItemsRequest) any()))
         .thenThrow(getTransactionCanceledException());
 
-    var candidate = randomCandidateBuilder(true).build();
     var exception =
         assertThrows(
-            TransactionException.class, () -> failingRepository.create(candidate, List.of()));
+            TransactionException.class,
+            () -> failingRepository.create(randomApplicableCandidateDao(), emptyList()));
 
     assertTrue(exception.getMessage().contains("Operation PUT with condition"));
   }

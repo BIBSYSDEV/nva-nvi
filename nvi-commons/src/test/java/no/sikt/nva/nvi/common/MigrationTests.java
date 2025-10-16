@@ -4,7 +4,7 @@ import static java.util.Collections.emptyList;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.getEventBasedBatchScanHandlerEnvironment;
 import static no.sikt.nva.nvi.common.RequestFixtures.createNoteRequest;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpdateStatusRequest;
-import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidate;
+import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.randomApplicableCandidateDao;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidateBuilder;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.model.CandidateFixtures.setupRandomApplicableCandidate;
@@ -72,19 +72,22 @@ class MigrationTests {
 
   @Test
   void shouldSetPeriodYearIfMissingWhenMigrating() {
-    var dbCandidate = randomCandidate();
-    var existingDao = candidateRepository.create(dbCandidate, emptyList(), null);
+    var existingDao = randomApplicableCandidateDao().copy().periodYear(null).build();
+    candidateRepository.create(existingDao, emptyList());
     batchScanUtil.migrateAndUpdateVersion(DEFAULT_PAGE_SIZE, null, emptyList());
     var migratedCandidate =
         candidateRepository.findCandidateById(existingDao.identifier()).orElseThrow();
     assertNotNull(migratedCandidate.getPeriodYear());
-    assertEquals(dbCandidate.getPublicationDate().year(), migratedCandidate.getPeriodYear());
+    assertThat(migratedCandidate.getPeriodYear())
+        .isEqualTo(existingDao.candidate().getPublicationDate().year());
   }
 
   @Test
   void shouldNotMigratePeriodYearCandidateIsNotApplicable() {
     var dbCandidate = randomCandidateBuilder(false).build();
-    var existingDao = candidateRepository.create(dbCandidate, emptyList(), null);
+    var existingDao =
+        randomApplicableCandidateDao().copy().candidate(dbCandidate).periodYear(null).build();
+    candidateRepository.create(existingDao, emptyList());
     batchScanUtil.migrateAndUpdateVersion(DEFAULT_PAGE_SIZE, null, emptyList());
     var migratedCandidate =
         candidateRepository.findCandidateById(existingDao.identifier()).orElseThrow();

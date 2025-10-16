@@ -64,7 +64,7 @@ public record Candidate(
     boolean applicable,
     Map<URI, Approval> approvals,
     Map<UUID, Note> notes,
-    Optional<NviPeriod> period, // FIXME: Can this be NviPeriod?
+    Optional<NviPeriod> period,
     PointCalculation pointCalculation,
     PublicationDetails publicationDetails,
     Instant createdDate,

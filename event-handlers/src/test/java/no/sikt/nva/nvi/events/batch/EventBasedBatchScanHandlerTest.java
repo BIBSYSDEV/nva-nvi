@@ -1,6 +1,8 @@
 package no.sikt.nva.nvi.events.batch;
 
+import static java.util.Collections.emptyList;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.getEventBasedBatchScanHandlerEnvironment;
+import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.createCandidateDao;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidateBuilder;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.model.CandidateFixtures.setupRandomApplicableCandidate;
@@ -21,7 +23,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.time.Year;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -152,23 +153,19 @@ class EventBasedBatchScanHandlerTest {
   void shouldNotUpdateInitialDbCandidate() {
     setupOpenPeriod(scenario, CURRENT_YEAR);
     var dbCandidate = randomCandidateBuilder(true).reportStatus(ReportStatus.REPORTED).build();
-    var dao =
-        Optional.ofNullable(
-                candidateRepository.create(dbCandidate, List.of(), Year.now().toString()))
-            .map(CandidateDao::identifier)
-            .map(candidateRepository::findDaoById)
-            .orElseThrow();
+    var existingDao = createCandidateDao(dbCandidate);
+    candidateRepository.create(existingDao, emptyList());
 
     pushInitialEntryInEventBridge(
         new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, null, TOPIC));
 
     consumeEvents();
-    var updated = candidateRepository.findDaoById(dao.identifier());
+    var updated = candidateRepository.findDaoById(existingDao.identifier());
 
     Assertions.assertThat(updated.candidate())
         .usingRecursiveComparison()
         .ignoringCollectionOrder()
-        .isEqualTo(dao.candidate());
+        .isEqualTo(existingDao.candidate());
   }
 
   @Test

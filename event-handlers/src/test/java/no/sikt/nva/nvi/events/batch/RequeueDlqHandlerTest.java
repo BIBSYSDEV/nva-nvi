@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.events.batch;
 
 import static java.util.Collections.emptyList;
 import static java.util.UUID.randomUUID;
+import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.createCandidateInRepository;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidateBuilder;
 import static no.sikt.nva.nvi.common.db.DbPointCalculationFixtures.randomPointCalculationBuilder;
 import static no.sikt.nva.nvi.common.db.DbPublicationDetailsFixtures.randomPublicationBuilder;
@@ -190,8 +191,9 @@ class RequeueDlqHandlerTest {
     // imported via Cristin.
     var candidate = candidateMissingChannelType();
     var repository = scenario.getCandidateRepository();
-    var candidateDao = repository.create(candidate, emptyList());
-    var candidateMessage = generateMessageForCandidate(FIRST_BATCH + 1, candidateDao.identifier());
+    var candidateIdentifier = createCandidateInRepository(repository, candidate);
+
+    var candidateMessage = generateMessageForCandidate(FIRST_BATCH + 1, candidateIdentifier);
     setupMockEvents(List.of(candidateMessage), emptyList());
 
     var response = handler.handleRequest(new RequeueDlqInput(100), CONTEXT);

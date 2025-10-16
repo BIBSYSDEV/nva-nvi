@@ -12,7 +12,7 @@ import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidate
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertNonCandidateRequest;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.createCandidateDao;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.setupReportedCandidate;
-import static no.sikt.nva.nvi.common.db.DbApprovalStatusFixtures.randomApproval;
+import static no.sikt.nva.nvi.common.db.DbApprovalStatusFixtures.randomApprovalDao;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidateBuilder;
 import static no.sikt.nva.nvi.common.db.DbPointCalculationFixtures.randomPointCalculationBuilder;
 import static no.sikt.nva.nvi.common.db.DbPublicationChannelFixtures.randomDbPublicationChannelBuilder;
@@ -204,10 +204,10 @@ class IndexDocumentHandlerTest {
     // candidates imported via
     // Cristin
     var institutionId = randomUri();
-    var dao =
-        candidateRepository.create(
-            createDbCandidateWithoutChannelIdOrType(institutionId),
-            List.of(randomApproval(institutionId)));
+    var dao = createCandidateDao(createDbCandidateWithoutChannelIdOrType(institutionId));
+    var approvals = List.of(randomApprovalDao(dao.identifier(), institutionId));
+    candidateRepository.create(dao, approvals);
+
     var candidate = candidateService.getByIdentifier(dao.identifier());
     var expectedIndexDocument =
         setupExistingResourceInS3AndGenerateExpectedDocument(candidate).indexDocument();
@@ -653,7 +653,8 @@ class IndexDocumentHandlerTest {
             .pointCalculation(pointCalculation)
             .reportStatus(ReportStatus.REPORTED)
             .build();
-    var candidateDao = createCandidateDao(candidateRepository, dbCandidate);
+    var candidateDao = createCandidateDao(dbCandidate);
+    candidateRepository.create(candidateDao, emptyList());
     return candidateDao;
   }
 

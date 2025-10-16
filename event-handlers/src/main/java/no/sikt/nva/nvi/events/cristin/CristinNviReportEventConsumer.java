@@ -20,7 +20,6 @@ import java.util.List;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
-import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.model.DbOrganization;
@@ -138,20 +137,32 @@ public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, V
    * Method is needed to wrap exception thrown by processBody() to Optional. This allows to persist
    * report for single entry.
    *
-   * @param value The string value og event body
+   * @param value The string value of event body
    */
   private void processMessageBody(String value) {
-    attempt(() -> processBody(value)).toOptional();
+    try {
+      processBody(value);
+    } catch (Exception e) {
+      logger.error("Failed to process message: {}", value, e);
+    }
   }
 
-  private CandidateDao processBody(String value) {
+  private void processBody(String value) {
     var eventReference = EventReference.fromJson(value);
     var cristinNviReport = createNviReport(eventReference);
     var publicationId = cristinMapper.constructPublicationId(cristinNviReport);
     try {
-      return repository
+      repository
           .findByPublicationId(publicationId)
-          .orElseGet(() -> createAndPersist(cristinNviReport));
+          .ifPresentOrElse(
+              existingCandidate ->
+                  logger.info("Candidate already exists for publicationId={}", publicationId),
+              () -> createAndPersist(cristinNviReport));
+
+      var existingCandidate = repository.findByPublicationId(publicationId);
+      if (existingCandidate.isEmpty()) {
+        createAndPersist(cristinNviReport);
+      }
     } catch (Exception e) {
       ErrorReport.withMessage(e.getMessage())
           .bucket(eventReference.extractBucketName())
@@ -176,7 +187,7 @@ public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, V
         .readEvent(eventReference.getUri());
   }
 
-  private CandidateDao createAndPersist(CristinNviReport cristinNviReport) {
+  private void createAndPersist(CristinNviReport cristinNviReport) {
     logger.info(
         "Processing CristinNviReport with publication identifier: {}",
         cristinNviReport.publicationIdentifier());
@@ -189,7 +200,7 @@ public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, V
       logger.info(
           "Persisting imported NVI result with identifier: {}",
           cristinNviReport.publicationIdentifier());
-      return repository.create(candidate, approvals, yearReported.get());
+      repository.create(candidate, approvals, yearReported.get());
     }
   }
 

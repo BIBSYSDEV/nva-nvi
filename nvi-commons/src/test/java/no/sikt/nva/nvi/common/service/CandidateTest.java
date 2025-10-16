@@ -7,8 +7,8 @@ import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBui
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequestWithSingleAffiliation;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertNonCandidateRequest;
+import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.createCandidateInRepository;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.setupReportedCandidate;
-import static no.sikt.nva.nvi.common.db.DbApprovalStatusFixtures.randomApproval;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.getExpectedUpdatedDbCandidate;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidate;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeriod;
@@ -362,20 +362,17 @@ class CandidateTest extends CandidateTestSetup {
 
   @Test
   void shouldReturnTrueIfReportStatusIsReported() {
-    var dao =
-        candidateRepository.create(
-            randomCandidate().copy().reportStatus(ReportStatus.REPORTED).build(),
-            List.of(randomApproval()));
+    var dao = setupReportedCandidate(candidateRepository, randomYear());
     var candidate = candidateService.getByIdentifier(dao.identifier());
     assertTrue(candidate.isReported());
   }
 
   @Test
   void shouldReturnCandidateWithPeriodStatusContainingPeriodId() {
-    var dao =
-        candidateRepository.create(
-            randomCandidate().copy().reportStatus(ReportStatus.REPORTED).build(),
-            List.of(randomApproval()));
+    var year = randomYear();
+    setupClosedPeriod(scenario, year);
+    var dao = setupReportedCandidate(candidateRepository, year);
+
     var candidate = candidateService.getByIdentifier(dao.identifier());
     var id = candidate.period().map(NviPeriod::id).orElseThrow();
 
@@ -384,10 +381,10 @@ class CandidateTest extends CandidateTestSetup {
 
   @Test
   void shouldReturnCandidateWithPeriodStatusContainingPeriodIdWhenFetchingByPublicationId() {
-    var dao =
-        candidateRepository.create(
-            randomCandidate().copy().reportStatus(ReportStatus.REPORTED).build(),
-            List.of(randomApproval()));
+    var year = randomYear();
+    setupClosedPeriod(scenario, year);
+    var dao = setupReportedCandidate(candidateRepository, year);
+
     var candidate = candidateService.getByPublicationId(dao.candidate().publicationId());
     var id = candidate.period().map(NviPeriod::id).orElseThrow();
 
@@ -408,11 +405,10 @@ class CandidateTest extends CandidateTestSetup {
             .creatorId(randomUri())
             .affiliations(List.of(creator2affiliation))
             .build();
-    var dao =
-        candidateRepository.create(
-            randomCandidate().copy().creators(List.of(creator1, creator2)).build(),
-            List.of(randomApproval()));
-    var candidate = candidateService.getByIdentifier(dao.identifier());
+    var dbCandidate = randomCandidate().copy().creators(List.of(creator1, creator2)).build();
+    var candidateIdentifier = createCandidateInRepository(candidateRepository, dbCandidate);
+
+    var candidate = candidateService.getByIdentifier(candidateIdentifier);
     assertEquals(
         List.of(creator1affiliation, creator2affiliation), candidate.getNviCreatorAffiliations());
   }

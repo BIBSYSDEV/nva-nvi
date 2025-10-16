@@ -4,6 +4,7 @@ import static java.util.Collections.emptyList;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.BATCH_SCAN_RECOVERY_QUEUE;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.getEventBasedBatchScanHandlerEnvironment;
 import static no.sikt.nva.nvi.common.SampleExpandedPublicationFactory.defaultExpandedPublicationFactory;
+import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.createCandidateInRepository;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.createNumberOfCandidatesForYear;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.getYearIndexStartMarker;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.setupReportedCandidate;
@@ -25,7 +26,6 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.core.StringUtils.isBlank;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -102,10 +102,10 @@ class BatchScanUtilTest {
   @Test
   void shouldWriteVersionOnRefreshWhenStartMarkerIsNotSet() {
     var originalCandidate = randomCandidate();
-    var candidate = candidateRepository.create(originalCandidate, List.of());
-    var original = candidateRepository.findCandidateById(candidate.identifier()).orElseThrow();
+    var candidateIdentifier = createCandidateInRepository(candidateRepository, originalCandidate);
+    var original = candidateRepository.findCandidateById(candidateIdentifier).orElseThrow();
     var result = batchScanUtil.migrateAndUpdateVersion(10, null, emptyList());
-    var modified = candidateRepository.findCandidateById(candidate.identifier()).orElseThrow();
+    var modified = candidateRepository.findCandidateById(candidateIdentifier).orElseThrow();
     assertThat(modified.version(), is(not(equalTo(original.version()))));
     assertThat(result.getStartMarker().size(), is(equalTo(0)));
     assertThat(result.getTotalItemCount(), is(equalTo(1)));
@@ -122,11 +122,9 @@ class BatchScanUtilTest {
     var startMarker = getYearIndexStartMarker(firstCandidateInIndex);
     var results =
         batchScanUtil.fetchCandidatesByYear(year, true, null, startMarker).getDatabaseEntries();
-    var expectedResults = List.of(secondCandidateInIndex);
     Assertions.assertThat(results)
-        .usingRecursiveComparison()
-        .ignoringCollectionOrder()
-        .isEqualTo(expectedResults);
+        .extracting(CandidateDao::identifier)
+        .containsOnly(secondCandidateInIndex.identifier());
   }
 
   @Test
@@ -136,13 +134,13 @@ class BatchScanUtilTest {
     createNumberOfCandidatesForYear("2022", 10, scenario);
     int pageSize = 5;
     var expectedCandidates = sortByIdentifier(candidates, pageSize);
+    var expectedIdentifiers = expectedCandidates.stream().map(CandidateDao::identifier).toList();
     var results =
         batchScanUtil.fetchCandidatesByYear(searchYear, true, pageSize, null).getDatabaseEntries();
     assertThat(results.size(), is(equalTo(pageSize)));
     Assertions.assertThat(results)
-        .usingRecursiveComparison()
-        .ignoringCollectionOrder()
-        .isEqualTo(expectedCandidates);
+        .extracting(CandidateDao::identifier)
+        .containsExactlyInAnyOrderElementsOf(expectedIdentifiers);
   }
 
   @Test
@@ -151,27 +149,25 @@ class BatchScanUtilTest {
     int numberOfCandidates = DEFAULT_PAGE_SIZE + randomIntBetween(1, 10);
     var candidates = createNumberOfCandidatesForYear(year, numberOfCandidates, scenario);
     var expectedCandidates = sortByIdentifier(candidates, DEFAULT_PAGE_SIZE);
+    var expectedIdentifiers = expectedCandidates.stream().map(CandidateDao::identifier).toList();
     var results = batchScanUtil.fetchCandidatesByYear(year, true, null, null).getDatabaseEntries();
     assertThat(results.size(), is(equalTo(DEFAULT_PAGE_SIZE)));
     Assertions.assertThat(results)
-        .usingRecursiveComparison()
-        .ignoringCollectionOrder()
-        .isEqualTo(expectedCandidates);
+        .extracting(CandidateDao::identifier)
+        .containsExactlyInAnyOrderElementsOf(expectedIdentifiers);
   }
 
   @Test
   void shouldNotFetchReportedCandidatesWhenIncludeReportedCandidatesIsFalse() {
     var year = randomYear();
     var candidates = createNumberOfCandidatesForYear(year, 2, scenario);
+    var expectedCandidates = candidates.stream().map(CandidateDao::identifier).toList();
     var reportedCandidate = setupReportedCandidate(candidateRepository, year);
-    var expectedCandidates = sortByIdentifier(candidates, null);
     var results = batchScanUtil.fetchCandidatesByYear(year, false, null, null).getDatabaseEntries();
-    assertThat(results.size(), is(equalTo(2)));
-    assertThat(results, not(containsInAnyOrder(reportedCandidate)));
     Assertions.assertThat(results)
-        .usingRecursiveComparison()
-        .ignoringCollectionOrder()
-        .isEqualTo(expectedCandidates);
+        .extracting(CandidateDao::identifier)
+        .containsExactlyInAnyOrderElementsOf(expectedCandidates)
+        .doesNotContain(reportedCandidate.identifier());
   }
 
   /**
@@ -187,15 +183,14 @@ class BatchScanUtilTest {
             .publicationDetails(null)
             .pointCalculation(null)
             .build();
-    var originalCandidate = candidateRepository.create(dbCandidate, List.of());
+    var candidateIdentifier = createCandidateInRepository(candidateRepository, dbCandidate);
 
     batchScanUtil.migrateAndUpdateVersion(10, null, emptyList());
-    var updatedDao =
-        candidateRepository.findCandidateById(originalCandidate.identifier()).orElseThrow();
+    var updatedDao = candidateRepository.findCandidateById(candidateIdentifier).orElseThrow();
     var actualPublicationIdentifier = updatedDao.candidate().publicationIdentifier();
 
-    assertNull(originalCandidate.candidate().publicationIdentifier());
-    Assertions.assertThat(originalCandidate.candidate().publicationId().toString())
+    assertNull(dbCandidate.publicationIdentifier());
+    Assertions.assertThat(dbCandidate.publicationId().toString())
         .contains(actualPublicationIdentifier);
   }
 
@@ -214,13 +209,16 @@ class BatchScanUtilTest {
             .withTopLevelOrganizations(List.of(organization));
     var publication = publicationBuilder.getExpandedPublication();
 
-    var originalDbCandidate =
+    var dbCandidate =
         setupRandomCandidateBuilderWithPublicationInS3(publication)
             .publicationDetails(null)
             .pointCalculation(null)
             .creators(List.of(originalCreator))
             .build();
-    var originalCandidate = candidateRepository.create(originalDbCandidate, List.of());
+
+    var candidateIdentifier = createCandidateInRepository(candidateRepository, dbCandidate);
+    var originalCandidate =
+        candidateRepository.findCandidateById(candidateIdentifier).orElseThrow();
     Assertions.assertThat(originalCandidate.candidate().creators())
         .allMatch(creator -> isBlank(creator.creatorName()));
 
@@ -229,8 +227,7 @@ class BatchScanUtilTest {
     scenario.setupExpandedPublicationInS3(updatedPublication);
 
     batchScanUtil.migrateAndUpdateVersion(10, null, emptyList());
-    var updatedDao =
-        candidateRepository.findCandidateById(originalCandidate.identifier()).orElseThrow();
+    var updatedDao = candidateRepository.findCandidateById(candidateIdentifier).orElseThrow();
     var actualCreators = updatedDao.candidate().creators();
 
     Assertions.assertThat(actualCreators)
@@ -287,7 +284,9 @@ class BatchScanUtilTest {
             .publicationDetails(dbPublicationDetails)
             .creators(dbCreators)
             .build();
-    var originalCandidate = candidateRepository.create(originalDbCandidate, emptyList());
+    var candidateIdentifier = createCandidateInRepository(candidateRepository, originalDbCandidate);
+    var originalCandidate =
+        candidateRepository.findCandidateById(candidateIdentifier).orElseThrow();
     Assertions.assertThat(
             originalCandidate.candidate().publicationDetails().topLevelNviOrganizations())
         .isEmpty();
@@ -339,7 +338,9 @@ class BatchScanUtilTest {
             .publicationDetails(dbPublicationDetails)
             .creators(dbCreators)
             .build();
-    var originalCandidate = candidateRepository.create(originalDbCandidate, emptyList());
+    var candidateIdentifier = createCandidateInRepository(candidateRepository, originalDbCandidate);
+    var originalCandidate =
+        candidateRepository.findCandidateById(candidateIdentifier).orElseThrow();
     Assertions.assertThat(
             originalCandidate.candidate().publicationDetails().topLevelNviOrganizations())
         .isEmpty();
@@ -374,7 +375,7 @@ class BatchScanUtilTest {
             .creators(List.of())
             .build();
     var candidate = randomCandidateBuilder(randomUri(), details).build();
-    candidateRepository.create(candidate, emptyList());
+    createCandidateInRepository(candidateRepository, candidate);
 
     assertDoesNotThrow(() -> batchScanUtil.migrateAndUpdateVersion(3, null, emptyList()));
   }
@@ -392,7 +393,9 @@ class BatchScanUtilTest {
             .creators(List.of())
             .build();
     var candidateFailingUnderBatchScan = randomCandidateBuilder(randomUri(), details).build();
-    var candidate = candidateRepository.create(candidateFailingUnderBatchScan, emptyList());
+    var candidateIdentifier =
+        createCandidateInRepository(candidateRepository, candidateFailingUnderBatchScan);
+    var candidate = candidateRepository.findCandidateById(candidateIdentifier).orElseThrow();
 
     batchScanUtil.migrateAndUpdateVersion(10, null, emptyList());
 
