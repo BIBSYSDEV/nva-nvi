@@ -22,6 +22,17 @@ public record NviPeriod(
     Username createdBy,
     Username modifiedBy) {
 
+  public NviPeriod {
+    shouldNotBeNull(id, String.format(VALIDATION_ERROR_MESSAGE, "id"));
+    shouldNotBeNull(publishingYear, String.format(VALIDATION_ERROR_MESSAGE, "publishingYear"));
+    shouldNotBeNull(startDate, String.format(VALIDATION_ERROR_MESSAGE, "startDate"));
+    shouldNotBeNull(reportingDate, String.format(VALIDATION_ERROR_MESSAGE, "reportingDate"));
+    shouldNotBeNull(createdBy, String.format(VALIDATION_ERROR_MESSAGE, "createdBy"));
+    if (reportingDate.isBefore(startDate)) {
+      throw new ValidationException("reportingDate must be after startDate");
+    }
+  }
+
   private static final String VALIDATION_ERROR_MESSAGE = "Field cannot be null: %s";
 
   public static NviPeriod fromDao(NviPeriodDao period) {
@@ -165,19 +176,7 @@ public record NviPeriod(
     }
 
     public NviPeriod build() {
-      validateState();
       return new NviPeriod(id, publishingYear, startDate, reportingDate, createdBy, modifiedBy);
-    }
-
-    private void validateState() {
-      shouldNotBeNull(id, String.format(VALIDATION_ERROR_MESSAGE, "id"));
-      shouldNotBeNull(publishingYear, String.format(VALIDATION_ERROR_MESSAGE, "publishingYear"));
-      shouldNotBeNull(startDate, String.format(VALIDATION_ERROR_MESSAGE, "startDate"));
-      shouldNotBeNull(reportingDate, String.format(VALIDATION_ERROR_MESSAGE, "reportingDate"));
-      shouldNotBeNull(createdBy, String.format(VALIDATION_ERROR_MESSAGE, "createdBy"));
-      if (reportingDate.isBefore(startDate)) {
-        throw new ValidationException("reportingDate must be after startDate");
-      }
     }
   }
 }

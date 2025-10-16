@@ -2,9 +2,11 @@ package no.sikt.nva.nvi.common.service.model;
 
 import static java.time.temporal.ChronoUnit.DAYS;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.getGlobalEnvironment;
+import static no.sikt.nva.nvi.common.model.NviPeriodFixtures.closedPeriod;
+import static no.sikt.nva.nvi.common.model.NviPeriodFixtures.futurePeriod;
+import static no.sikt.nva.nvi.common.model.NviPeriodFixtures.openPeriod;
 import static no.sikt.nva.nvi.common.model.UsernameFixtures.randomUsername;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
-import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -157,21 +159,18 @@ class NviPeriodTest {
 
   @Test
   void shouldConvertPeriodToDto() {
-    var lastMonth = ZonedDateTime.now().minusMonths(1).toInstant();
-    var nextMonth = ZonedDateTime.now().plusMonths(1).toInstant();
-    var user = randomUsername();
-
-    var period = new NviPeriod(randomUri(), CURRENT_YEAR, lastMonth, nextMonth, user, user);
-
+    var period = openPeriod();
     var periodDto = NviPeriod.toPeriodStatusDto(Optional.of(period));
     Assertions.assertThat(periodDto)
         .extracting(
             PeriodStatusDto::id,
+            PeriodStatusDto::status,
             PeriodStatusDto::startDate,
             PeriodStatusDto::reportingDate,
             PeriodStatusDto::year)
         .containsExactly(
             period.id(),
+            Status.OPEN_PERIOD,
             period.startDate().toString(),
             period.reportingDate().toString(),
             String.valueOf(CURRENT_YEAR));
@@ -228,18 +227,10 @@ class NviPeriodTest {
   }
 
   public static Stream<Arguments> periodToPeriodStatusProvider() {
-    var lastMonth = ZonedDateTime.now().minusMonths(1).toInstant();
-    var nextMonth = ZonedDateTime.now().plusMonths(1).toInstant();
-    var user = randomUsername();
-
-    var openPeriod = new NviPeriod(randomUri(), CURRENT_YEAR, lastMonth, nextMonth, user, user);
-    var closedPeriod = new NviPeriod(randomUri(), CURRENT_YEAR, lastMonth, lastMonth, user, user);
-    var futurePeriod = new NviPeriod(randomUri(), CURRENT_YEAR, nextMonth, nextMonth, user, user);
-
     return Stream.of(
         argumentSet("No period", Optional.empty(), Status.NO_PERIOD),
-        argumentSet("Open period", Optional.of(openPeriod), Status.OPEN_PERIOD),
-        argumentSet("Closed period", Optional.of(closedPeriod), Status.CLOSED_PERIOD),
-        argumentSet("Unopened period", Optional.of(futurePeriod), Status.UNOPENED_PERIOD));
+        argumentSet("Open period", Optional.of(openPeriod()), Status.OPEN_PERIOD),
+        argumentSet("Closed period", Optional.of(closedPeriod()), Status.CLOSED_PERIOD),
+        argumentSet("Unopened period", Optional.of(futurePeriod()), Status.UNOPENED_PERIOD));
   }
 }
