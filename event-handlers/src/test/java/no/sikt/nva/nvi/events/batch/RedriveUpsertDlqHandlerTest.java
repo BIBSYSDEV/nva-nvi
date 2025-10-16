@@ -70,14 +70,14 @@ class RedriveUpsertDlqHandlerTest {
     when(queueClient.receiveMessage(eq(DLQ_URL), anyInt()))
         .thenReturn(receiveResponse)
         .thenReturn(emptyResponse);
-    when(queueClient.sendMessage(eq(PERSISTED_RESOURCE_QUEUE_URL), any()))
+    when(queueClient.sendMessage(any(), eq(PERSISTED_RESOURCE_QUEUE_URL)))
         .thenReturn(new NviSendMessageResponse(randomString()));
 
     var input = new RedriveUpsertDlqInput(1);
     handler.handleRequest(input, CONTEXT);
 
     var argumentCaptor = ArgumentCaptor.forClass(String.class);
-    verify(queueClient).sendMessage(eq(PERSISTED_RESOURCE_QUEUE_URL), argumentCaptor.capture());
+    verify(queueClient).sendMessage(argumentCaptor.capture(), eq(PERSISTED_RESOURCE_QUEUE_URL));
 
     var sentMessage =
         dtoObjectMapper.readValue(argumentCaptor.getValue(), PersistedResourceMessage.class);
@@ -119,7 +119,7 @@ class RedriveUpsertDlqHandlerTest {
         .thenReturn(firstBatch)
         .thenReturn(secondBatch)
         .thenReturn(emptyResponse);
-    when(queueClient.sendMessage(eq(PERSISTED_RESOURCE_QUEUE_URL), any()))
+    when(queueClient.sendMessage(any(), eq(PERSISTED_RESOURCE_QUEUE_URL)))
         .thenReturn(new NviSendMessageResponse(randomString()));
 
     var input = new RedriveUpsertDlqInput(15);
@@ -145,14 +145,14 @@ class RedriveUpsertDlqHandlerTest {
     when(queueClient.receiveMessage(eq(DLQ_URL), anyInt()))
         .thenReturn(receiveResponse)
         .thenReturn(emptyResponse);
-    when(queueClient.sendMessage(eq(PERSISTED_RESOURCE_QUEUE_URL), any()))
+    when(queueClient.sendMessage(any(), eq(PERSISTED_RESOURCE_QUEUE_URL)))
         .thenReturn(new NviSendMessageResponse(randomString()));
 
     var input = new RedriveUpsertDlqInput(2);
     handler.handleRequest(input, CONTEXT);
 
     verify(queueClient, times(2)).deleteMessage(eq(DLQ_URL), any());
-    verify(queueClient, times(1)).sendMessage(eq(PERSISTED_RESOURCE_QUEUE_URL), any());
+    verify(queueClient, times(1)).sendMessage(any(), eq(PERSISTED_RESOURCE_QUEUE_URL));
   }
 
   @Test

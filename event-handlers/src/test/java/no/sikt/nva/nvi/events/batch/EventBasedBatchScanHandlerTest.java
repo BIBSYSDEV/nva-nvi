@@ -389,7 +389,7 @@ class EventBasedBatchScanHandlerTest {
           periodRepository.findDaoByPublishingYear(nviPeriodDao.nviPeriod().publishingYear());
       case CandidateUniquenessEntryDao candidateUniquenessEntryDao ->
           candidateRepository.getUniquenessEntry(candidateUniquenessEntryDao);
-      case null, default -> throw new IllegalArgumentException("Unknown type: " + dao);
+      default -> throw new IllegalArgumentException("Unknown type: " + dao);
     };
   }
 
