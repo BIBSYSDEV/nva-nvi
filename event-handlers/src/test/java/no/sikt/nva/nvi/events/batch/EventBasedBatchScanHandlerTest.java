@@ -244,6 +244,7 @@ class EventBasedBatchScanHandlerTest {
         .isNotEmpty()
         .usingRecursiveComparison()
         .ignoringCollectionOrder()
+        .ignoringFields("version")
         .isEqualTo(candidates);
   }
 

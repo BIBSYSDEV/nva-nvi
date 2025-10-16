@@ -67,6 +67,7 @@ class MigrationTests {
     assertThat(migratedCandidate)
         .usingRecursiveComparison()
         .ignoringCollectionOrder()
+        .ignoringFields("version")
         .isEqualTo(candidate);
   }
 

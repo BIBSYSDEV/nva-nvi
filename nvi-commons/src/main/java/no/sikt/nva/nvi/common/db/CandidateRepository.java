@@ -108,17 +108,17 @@ public class CandidateRepository extends DynamoRepository {
       Integer pageSize,
       Map<String, String> startMarker) {
     var page = queryYearIndex(year, pageSize, startMarker);
-    //    var pageSize = Optional.ofNullable(page).map(Page::count);
     var lastEvaluatedKey =
         Optional.ofNullable(page)
             .map(Page::lastEvaluatedKey)
             .map(CandidateRepository::toStringMap)
             .orElse(emptyMap());
+    var items = Optional.ofNullable(page).map(Page::items).orElse(emptyList());
     return new ListingResult<>(
         thereAreMorePagesToScan(page),
         lastEvaluatedKey,
-        page.items().size(), // FIXME: Just use page size?
-        includeReportedCandidates ? page.items() : filterOutReportedCandidates(page));
+        items.size(),
+        includeReportedCandidates ? items : filterOutReportedCandidates(items));
   }
 
   public void create(
@@ -304,8 +304,8 @@ public class CandidateRepository extends DynamoRepository {
             .build());
   }
 
-  private static List<CandidateDao> filterOutReportedCandidates(Page<CandidateDao> page) {
-    return page.items().stream().filter(CandidateDao::isNotReported).toList();
+  private static List<CandidateDao> filterOutReportedCandidates(Collection<CandidateDao> items) {
+    return items.stream().filter(CandidateDao::isNotReported).toList();
   }
 
   private static <T> Stream<List<T>> getBatches(List<T> scanResult) {

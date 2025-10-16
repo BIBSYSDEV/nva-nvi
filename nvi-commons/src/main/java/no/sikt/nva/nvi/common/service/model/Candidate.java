@@ -4,9 +4,11 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
-import static java.util.UUID.randomUUID;
 import static java.util.function.Predicate.not;
 import static no.sikt.nva.nvi.common.db.ReportStatus.REPORTED;
+import static no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException.CANDIDATE_IS_REPORTED;
+import static no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException.NO_APPROVAL_FOUND;
+import static no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException.PERIOD_IS_NOT_OPEN;
 import static no.sikt.nva.nvi.common.service.model.Approval.createNewApproval;
 import static no.sikt.nva.nvi.common.service.model.ApprovalStatus.APPROVED;
 import static no.sikt.nva.nvi.common.service.model.ApprovalStatus.PENDING;
@@ -70,6 +72,7 @@ public record Candidate(
     Instant modifiedDate,
     ReportStatus reportStatus,
     Long revision,
+    UUID version,
     Environment environment) {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(Candidate.class);
@@ -89,6 +92,7 @@ public record Candidate(
       Optional<NviPeriod> period,
       Environment environment) {
     var dbCandidate = candidateDao.candidate();
+    var version = Optional.ofNullable(candidateDao.version()).map(UUID::fromString).orElse(null);
 
     return new Builder()
         .withIdentifier(candidateDao.identifier())
@@ -102,6 +106,7 @@ public record Candidate(
         .withModifiedDate(dbCandidate.modifiedDate())
         .withReportStatus(dbCandidate.reportStatus())
         .withRevision(candidateDao.revision())
+        .withVersion(version)
         .withEnvironment(environment)
         .build();
   }
@@ -112,7 +117,7 @@ public record Candidate(
       NviPeriod targetPeriod,
       Environment environment) {
     if (!targetPeriod.isOpen()) {
-      throw new IllegalCandidateUpdateException("Target period is not open");
+      throw new IllegalCandidateUpdateException(PERIOD_IS_NOT_OPEN);
     }
 
     var approvals =
@@ -136,10 +141,10 @@ public record Candidate(
 
   public Candidate apply(UpsertNviCandidateRequest request, NviPeriod targetPeriod) {
     if (isReported()) {
-      throw new IllegalCandidateUpdateException("Cannot update reported candidate");
+      throw new IllegalCandidateUpdateException(CANDIDATE_IS_REPORTED);
     }
     if (!canUpdateInPeriod(targetPeriod)) {
-      throw new IllegalCandidateUpdateException("Cannot move candidate to period that is not open");
+      throw new IllegalCandidateUpdateException(PERIOD_IS_NOT_OPEN);
     }
 
     return this.copy()
@@ -151,9 +156,15 @@ public record Candidate(
         .build();
   }
 
+  private boolean canUpdateInPeriod(NviPeriod targetPeriod) {
+    var hasSamePeriod =
+        period.filter(currentPeriod -> targetPeriod.id().equals(currentPeriod.id())).isPresent();
+    return hasSamePeriod || targetPeriod.isOpen();
+  }
+
   public Candidate updateToNonCandidate() {
     if (isReported()) {
-      throw new IllegalCandidateUpdateException("Cannot update reported candidate");
+      throw new IllegalCandidateUpdateException(CANDIDATE_IS_REPORTED);
     }
 
     return copy()
@@ -161,12 +172,6 @@ public record Candidate(
         .withApplicable(false)
         .withApprovals(emptyMap())
         .build();
-  }
-
-  private boolean canUpdateInPeriod(NviPeriod targetPeriod) {
-    var hasSamePeriod =
-        period.filter(currentPeriod -> targetPeriod.id().equals(currentPeriod.id())).isPresent();
-    return hasSamePeriod || targetPeriod.isOpen();
   }
 
   public CandidateDao toDao() {
@@ -197,11 +202,12 @@ public record Candidate(
             .publicationIdentifier(dbPublication.identifier())
             .build();
     var periodYear = period.map(NviPeriod::publishingYear).map(Object::toString).orElse(null);
+    var daoVersion = nonNull(version) ? version.toString() : null;
     return CandidateDao.builder()
         .identifier(identifier)
         .candidate(dbCandidate)
         .revision(revision)
-        .version(randomUUID().toString()) // FIXME
+        .version(daoVersion)
         .periodYear(periodYear)
         .build();
   }
@@ -339,7 +345,7 @@ public record Candidate(
     var approval = approvals.get(request.institutionId());
     if (isNull(approval)) {
       LOGGER.error("No approval found matching request: {}", request);
-      throw new IllegalCandidateUpdateException("No approval found matching request");
+      throw new IllegalCandidateUpdateException(NO_APPROVAL_FOUND);
     }
     return approval;
   }
@@ -598,6 +604,7 @@ public record Candidate(
     private Instant modifiedDate;
     private ReportStatus reportStatus;
     private Long revision;
+    private UUID version;
     private Environment environment;
 
     private Builder() {}
@@ -657,6 +664,11 @@ public record Candidate(
       return this;
     }
 
+    public Builder withVersion(UUID version) {
+      this.version = version;
+      return this;
+    }
+
     public Builder withEnvironment(Environment environment) {
       this.environment = environment;
       return this;
@@ -675,6 +687,7 @@ public record Candidate(
           modifiedDate,
           reportStatus,
           revision,
+          version,
           environment);
     }
   }
