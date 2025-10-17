@@ -7,6 +7,7 @@ import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.net.HttpURLConnection;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.dto.NviPeriodDto;
 import no.sikt.nva.nvi.common.service.model.CreatePeriodRequest.Builder;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
@@ -23,16 +24,18 @@ import nva.commons.core.JacocoGenerated;
 public class CreateNviPeriodHandler
     extends ApiGatewayHandler<UpsertNviPeriodRequest, NviPeriodDto> {
 
-  private final PeriodRepository periodRepository;
+  private final NviPeriodService nviPeriodService;
 
   @JacocoGenerated
   public CreateNviPeriodHandler() {
-    this(new PeriodRepository(defaultDynamoClient()), new Environment());
+    this(
+        new NviPeriodService(new Environment(), new PeriodRepository(defaultDynamoClient())),
+        new Environment());
   }
 
-  public CreateNviPeriodHandler(PeriodRepository periodRepository, Environment environment) {
+  public CreateNviPeriodHandler(NviPeriodService nviPeriodService, Environment environment) {
     super(UpsertNviPeriodRequest.class, environment);
-    this.periodRepository = periodRepository;
+    this.nviPeriodService = nviPeriodService;
   }
 
   @Override
@@ -49,7 +52,7 @@ public class CreateNviPeriodHandler
     return attempt(input::toCreatePeriodRequest)
         .map(builder -> builder.withCreatedBy(getUsername(requestInfo)))
         .map(Builder::build)
-        .map(request -> NviPeriod.create(request, periodRepository))
+        .map(nviPeriodService::create)
         .map(NviPeriod::toDto)
         .orElseThrow(ExceptionMapper::map);
   }

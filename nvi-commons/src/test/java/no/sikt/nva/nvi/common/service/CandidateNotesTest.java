@@ -32,8 +32,7 @@ class CandidateNotesTest extends CandidateTestSetup {
     var userOrganizationId = getAnyOrganizationId(candidate);
     mockOrganizationResponseForAffiliation(userOrganizationId, null, mockUriRetriever);
 
-    var updatedCandidate =
-        Candidate.fetch(candidate::getIdentifier, candidateRepository, periodRepository);
+    var updatedCandidate = Candidate.fetch(candidate::getIdentifier, candidateRepository);
     var actualNote = getAnyNote(updatedCandidate);
 
     assertThat(noteRequest.username(), is(equalTo(actualNote.user())));
@@ -75,8 +74,7 @@ class CandidateNotesTest extends CandidateTestSetup {
     var noteToDelete = getAnyNote(candidate);
     candidate.deleteNote(new DeleteNoteRequest(noteToDelete.identifier(), username));
 
-    var updatedCandidate =
-        Candidate.fetch(candidate::getIdentifier, candidateRepository, periodRepository);
+    var updatedCandidate = Candidate.fetch(candidate::getIdentifier, candidateRepository);
     Assertions.assertThat(updatedCandidate.getNotes()).isEmpty();
   }
 
@@ -127,9 +125,8 @@ class CandidateNotesTest extends CandidateTestSetup {
 
   private Candidate createCandidate(URI institutionId) {
     var request = createUpsertCandidateRequest(institutionId).build();
-    Candidate.upsert(request, candidateRepository, periodRepository);
-    return Candidate.fetchByPublicationId(
-        request::publicationId, candidateRepository, periodRepository);
+    Candidate.upsert(request, candidateRepository);
+    return Candidate.fetchByPublicationId(request::publicationId, candidateRepository);
   }
 
   private Candidate createCandidate() {

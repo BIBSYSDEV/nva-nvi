@@ -52,7 +52,6 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
   protected ApiGatewayHandler<UpsertAssigneeRequest, CandidateDto> createHandler() {
     return new UpsertAssigneeHandler(
         scenario.getCandidateRepository(),
-        scenario.getPeriodRepository(),
         mockIdentityServiceClient,
         mockViewingScopeValidator,
         ENVIRONMENT);
@@ -97,7 +96,6 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
     handler =
         new UpsertAssigneeHandler(
             scenario.getCandidateRepository(),
-            scenario.getPeriodRepository(),
             mockIdentityServiceClient,
             viewingScopeValidatorReturningFalse,
             ENVIRONMENT);

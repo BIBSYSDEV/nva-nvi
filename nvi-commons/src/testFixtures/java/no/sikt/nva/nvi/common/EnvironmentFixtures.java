@@ -52,6 +52,10 @@ public enum EnvironmentFixtures {
     return value;
   }
 
+  public static FakeEnvironment getGlobalEnvironment() {
+    return getDefaultEnvironmentBuilder().build();
+  }
+
   public static FakeEnvironment.Builder getDefaultEnvironmentBuilder() {
     return FakeEnvironment.builder()
         .with(API_HOST)
@@ -131,5 +135,21 @@ public enum EnvironmentFixtures {
 
   public static FakeEnvironment getSearchNviCandidatesHandlerEnvironment() {
     return getDefaultEnvironmentBuilder().with(ALLOWED_ORIGIN).with(COGNITO_HOST).build();
+  }
+
+  public static FakeEnvironment getCreateNviPeriodHandlerEnvironment() {
+    return getDefaultEnvironmentBuilder().with(ALLOWED_ORIGIN).build();
+  }
+
+  public static FakeEnvironment getFetchNviPeriodHandlerEnvironment() {
+    return getDefaultEnvironmentBuilder().with(ALLOWED_ORIGIN).build();
+  }
+
+  public static FakeEnvironment getFetchNviPeriodsHandlerEnvironment() {
+    return getDefaultEnvironmentBuilder().with(ALLOWED_ORIGIN).build();
+  }
+
+  public static FakeEnvironment getUpdateNviPeriodHandlerEnvironment() {
+    return getDefaultEnvironmentBuilder().with(ALLOWED_ORIGIN).build();
   }
 }

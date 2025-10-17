@@ -14,15 +14,14 @@ import java.util.List;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.client.model.Organization;
-import no.sikt.nva.nvi.common.db.CandidateDataContext;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.db.model.CandidateAggregate;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.model.UserInstance;
-import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.test.SampleExpandedPublication;
@@ -112,41 +111,33 @@ public class TestScenario {
    * Fetches all related DAOs for a Candidate, mirroring what is fetched and remapped to create the
    * business model for a Candidate class.
    */
-  public CandidateDataContext getAllRelatedData(UUID candidateIdentifier) {
-    var candidate =
-        candidateRepository
-            .findCandidateById(candidateIdentifier)
-            .orElseThrow(CandidateNotFoundException::new);
-    var approvals = candidateRepository.fetchApprovals(candidateIdentifier);
-    var notes = candidateRepository.getNotes(candidateIdentifier);
-    var period =
-        periodRepository
-            .findByYear(candidate.getPeriodYear())
-            .orElseThrow(IllegalStateException::new);
-    return new CandidateDataContext(candidate, period, approvals, notes);
+  public CandidateAggregate getAllRelatedData(UUID candidateIdentifier) {
+    return candidateRepository
+        .getCandidateAggregate(candidateIdentifier)
+        .candidateAggregate()
+        .orElseThrow();
   }
 
   public Candidate getCandidateByIdentifier(UUID candidateIdentifier) {
-    return Candidate.fetch(() -> candidateIdentifier, candidateRepository, periodRepository);
+    var responseContext = candidateRepository.getCandidateAggregate(candidateIdentifier);
+    return Candidate.fromAggregate(candidateRepository, responseContext);
   }
 
   public Candidate getCandidateByPublicationId(URI publicationId) {
-    return Candidate.fetchByPublicationId(
-        () -> publicationId, candidateRepository, periodRepository);
+    var responseContext = candidateRepository.getCandidateAggregate(publicationId);
+    return Candidate.fromAggregate(candidateRepository, responseContext);
   }
 
   public Candidate upsertCandidate(UpsertNviCandidateRequest request) {
-    Candidate.upsert(request, candidateRepository, periodRepository);
-    return Candidate.fetchByPublicationId(
-        request::publicationId, candidateRepository, periodRepository);
+    Candidate.upsert(request, candidateRepository);
+    return getCandidateByPublicationId(request.publicationId());
   }
 
-  public Candidate updateApprovalStatusDangerously(
+  public void updateApprovalStatusDangerously(
       Candidate candidate, ApprovalStatus status, URI topLevelOrganizationId) {
     var updateRequest = createUpdateStatusRequest(status, topLevelOrganizationId, randomString());
     var userInstance = createCuratorUserInstance(topLevelOrganizationId);
     candidate.updateApprovalStatus(updateRequest, userInstance);
-    return getCandidateByIdentifier(candidate.getIdentifier());
   }
 
   public Candidate updateApprovalStatus(
@@ -172,11 +163,10 @@ public class TestScenario {
     return getCandidateByIdentifier(candidate.getIdentifier());
   }
 
-  public Candidate createNote(
-      UUID candidateIdentifier, String content, URI topLevelOrganizationId) {
+  public void createNote(UUID candidateIdentifier, String content, URI topLevelOrganizationId) {
     var candidate = getCandidateByIdentifier(candidateIdentifier);
     var noteRequest = new CreateNoteRequest(content, randomString(), topLevelOrganizationId);
-    return candidate.createNote(noteRequest, candidateRepository);
+    candidate.createNote(noteRequest, candidateRepository);
   }
 
   public URI setupExpandedPublicationInS3(SampleExpandedPublication publication) {

@@ -127,8 +127,7 @@ public abstract class BaseCandidateRestHandlerTest {
     var candidate = scenario.upsertCandidate(createUpsertCandidateRequest(institutionId).build());
     return Candidate.updateNonCandidate(
             createUpsertNonCandidateRequest(candidate.getPublicationId()),
-            scenario.getCandidateRepository(),
-            scenario.getPeriodRepository())
+            scenario.getCandidateRepository())
         .orElseThrow();
   }
 
