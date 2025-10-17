@@ -124,7 +124,7 @@ public class RedriveUpsertDlqHandler implements RequestHandler<RedriveUpsertDlqI
     var messageToRepublish =
         attempt(() -> dtoObjectMapper.writeValueAsString(persistedResourceMessage)).orElseThrow();
     LOGGER.info(REPUBLISHING_TO_EVALUATION_QUEUE_LOG, messageToRepublish);
-    queueClient.sendMessage(evaluationQueueUrl, messageToRepublish);
+    queueClient.sendMessage(messageToRepublish, evaluationQueueUrl);
     return receiptHandle;
   }
 
