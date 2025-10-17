@@ -31,13 +31,13 @@ public record ApprovalDto(
 
   public static ApprovalDto fromApprovalAndInstitutionPoints(Approval approval, BigDecimal points) {
     return builder()
-        .withInstitutionId(approval.getInstitutionId())
+        .withInstitutionId(approval.institutionId())
         .withStatus(ApprovalStatusDto.from(approval))
         .withPoints(points)
         .withAssignee(approval.getAssigneeUsername())
         .withFinalizedBy(approval.getFinalizedByUserName())
-        .withFinalizedDate(approval.getFinalizedDate())
-        .withReason(approval.getReason())
+        .withFinalizedDate(approval.finalizedDate())
+        .withReason(approval.reason())
         .build();
   }
 

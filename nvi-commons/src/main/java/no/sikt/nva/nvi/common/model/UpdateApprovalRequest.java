@@ -4,4 +4,6 @@ import java.net.URI;
 
 public interface UpdateApprovalRequest {
   URI institutionId();
+
+  String username();
 }

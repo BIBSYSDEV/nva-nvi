@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.common.service;
 
 import static java.util.function.Predicate.not;
 import static no.sikt.nva.nvi.common.model.NviCreator.isAffiliatedWithTopLevelOrganization;
+import static no.sikt.nva.nvi.common.service.model.NviPeriod.toPeriodStatusDto;
 
 import java.net.URI;
 import java.util.HashSet;
@@ -17,7 +18,6 @@ import no.sikt.nva.nvi.common.service.dto.ApprovalDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateOperation;
 import no.sikt.nva.nvi.common.service.dto.NoteDto;
-import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import no.sikt.nva.nvi.common.service.dto.problem.CandidateProblem;
 import no.sikt.nva.nvi.common.service.dto.problem.UnverifiedCreatorFromOrganizationProblem;
 import no.sikt.nva.nvi.common.service.dto.problem.UnverifiedCreatorProblem;
@@ -32,41 +32,35 @@ public final class CandidateResponseFactory {
   public static CandidateDto create(Candidate candidate, UserInstance userInstance) {
     return CandidateDto.builder()
         .withId(candidate.getId())
-        .withContext(Candidate.getContextUri())
-        .withIdentifier(candidate.getIdentifier())
+        .withContext(candidate.getContextUri())
+        .withIdentifier(candidate.identifier())
         .withPublicationId(candidate.getPublicationId())
         .withApprovals(getApprovalsAsDto(candidate))
         .withAllowedOperations(getAllowedOperations(candidate, userInstance))
         .withProblems(getProblems(candidate, userInstance))
         .withNotes(getNotesAsDto(candidate))
-        .withPeriod(getPeriodStatusDto(candidate))
+        .withPeriod(toPeriodStatusDto(candidate.period()))
         .withTotalPoints(candidate.getTotalPoints())
         .withReportStatus(getReportStatus(candidate))
         .build();
   }
 
-  private static PeriodStatusDto getPeriodStatusDto(Candidate candidate) {
-    return PeriodStatusDto.fromPeriodStatus(candidate.getPeriod());
-  }
-
   private static List<NoteDto> getNotesAsDto(Candidate candidate) {
-    return candidate.getNotes().values().stream().map(Note::toDto).toList();
+    return candidate.notes().values().stream().map(Note::toDto).toList();
   }
 
   private static List<ApprovalDto> getApprovalsAsDto(Candidate candidate) {
-    return candidate.getApprovals().values().stream().map(mapToApprovalDto(candidate)).toList();
+    return candidate.approvals().values().stream().map(mapToApprovalDto(candidate)).toList();
   }
 
   private static Function<Approval, ApprovalDto> mapToApprovalDto(Candidate candidate) {
     return approval ->
         ApprovalDto.fromApprovalAndInstitutionPoints(
-            approval, candidate.getPointValueForInstitution(approval.getInstitutionId()));
+            approval, candidate.getPointValueForInstitution(approval.institutionId()));
   }
 
   private static String getReportStatus(Candidate candidate) {
-    return Optional.ofNullable(candidate.getReportStatus())
-        .map(ReportStatus::getValue)
-        .orElse(null);
+    return Optional.ofNullable(candidate.reportStatus()).map(ReportStatus::getValue).orElse(null);
   }
 
   private static Set<CandidateOperation> getAllowedOperations(
@@ -93,12 +87,12 @@ public final class CandidateResponseFactory {
   }
 
   private static boolean hasUnverifiedCreators(Candidate candidate) {
-    return candidate.getPublicationDetails().nviCreators().stream()
+    return candidate.publicationDetails().nviCreators().stream()
         .anyMatch(not(NviCreator::isVerified));
   }
 
   private static List<String> getUnverifiedCreatorNames(Candidate candidate, URI organizationId) {
-    return candidate.getPublicationDetails().nviCreators().stream()
+    return candidate.publicationDetails().nviCreators().stream()
         .filter(not(NviCreator::isVerified))
         .filter(isAffiliatedWithTopLevelOrganization(organizationId))
         .map(NviCreator::name)

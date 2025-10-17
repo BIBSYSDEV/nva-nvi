@@ -82,6 +82,12 @@ public final class ApprovalStatusDao extends Dao {
   }
 
   @Override
+  @DynamoDbIgnore
+  public ApprovalStatusDao withMutatedVersion() {
+    return copy().version(randomUUID().toString()).build();
+  }
+
+  @Override
   @DynamoDbPartitionKey
   @DynamoDbAttribute(HASH_KEY)
   @JsonProperty(HASH_KEY)

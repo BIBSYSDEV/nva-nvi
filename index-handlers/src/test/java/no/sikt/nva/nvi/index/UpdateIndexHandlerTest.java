@@ -1,11 +1,13 @@
 package no.sikt.nva.nvi.index;
 
-import static no.sikt.nva.nvi.common.LocalDynamoTestSetup.initializeTestDatabase;
 import static no.sikt.nva.nvi.common.QueueServiceTestUtils.invalidSqsMessage;
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
+import static no.sikt.nva.nvi.common.model.CandidateFixtures.setupRandomApplicableCandidate;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.NVI_CONTEXT;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.createPath;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.expandApprovals;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.expandPublicationDetails;
+import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.unit.nva.s3.S3Driver.S3_SCHEME;
 import static nva.commons.core.attempt.Try.attempt;
@@ -25,9 +27,7 @@ import java.net.URI;
 import java.util.List;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.StorageReader;
-import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.common.model.CandidateFixtures;
+import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.common.service.model.Candidate;
@@ -53,29 +53,27 @@ class UpdateIndexHandlerTest {
   private static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
   private static final String BUCKET_NAME = ENVIRONMENT.readEnv(EXPANDED_RESOURCES_BUCKET);
   private final S3Client s3Client = new FakeS3Client();
-  private CandidateRepository candidateRepository;
-  private PeriodRepository periodRepository;
   private S3Driver s3Driver;
   private UpdateIndexHandler handler;
   private OpenSearchClient openSearchClient;
   private QueueClient sqsClient;
+  private TestScenario scenario;
 
   @BeforeEach
   void setUp() {
-    var localDynamo = initializeTestDatabase();
-    candidateRepository = new CandidateRepository(localDynamo);
-    periodRepository = new PeriodRepository(localDynamo);
+    scenario = new TestScenario();
     s3Driver = new S3Driver(s3Client, BUCKET_NAME);
     openSearchClient = mock(OpenSearchClient.class);
     sqsClient = mock(FakeSqsClient.class);
     handler =
         new UpdateIndexHandler(
             openSearchClient, new S3StorageReader(s3Client, BUCKET_NAME), sqsClient);
+    setupOpenPeriod(scenario, CURRENT_YEAR);
   }
 
   @Test
   void shouldUpdateIndexWithDocumentFromS3WhenReceivingEventWithDocumentUri() {
-    var candidate = randomApplicableCandidate();
+    var candidate = setupRandomApplicableCandidate(scenario);
     var expectedIndexDocument = setupExistingIndexDocumentInBucket(candidate).indexDocument();
     handler.handleRequest(createUpdateIndexEvent(List.of(candidate)), CONTEXT);
     verify(openSearchClient, times(1)).addDocumentToIndex(expectedIndexDocument);
@@ -83,19 +81,18 @@ class UpdateIndexHandlerTest {
 
   @Test
   void shouldSendMessageToDlqWhenHandlingError() {
-    var candidate = randomApplicableCandidate();
+    var candidate = setupRandomApplicableCandidate(scenario);
     var expectedIndexDocument = setupExistingIndexDocumentInBucket(candidate).indexDocument();
     var event = createUpdateIndexEvent(List.of(candidate));
     when(openSearchClient.addDocumentToIndex(expectedIndexDocument))
         .thenThrow(new RuntimeException());
     handler.handleRequest(event, CONTEXT);
-    verify(sqsClient, times(1))
-        .sendMessage(any(), eq(INDEX_DLQ_URL), eq(candidate.getIdentifier()));
+    verify(sqsClient, times(1)).sendMessage(any(), eq(INDEX_DLQ_URL), eq(candidate.identifier()));
   }
 
   @Test
   void shouldNotFailForWholeBatchWhenFailingToParseOneMessageBody() {
-    var candidateToSucceed = randomApplicableCandidate();
+    var candidateToSucceed = setupRandomApplicableCandidate(scenario);
     setupExistingIndexDocumentInBucket(candidateToSucceed);
     var event = createUpdateIndexEventWithOneInvalidMessageBody(candidateToSucceed);
     assertDoesNotThrow(() -> handler.handleRequest(event, CONTEXT));
@@ -104,8 +101,8 @@ class UpdateIndexHandlerTest {
   @SuppressWarnings("unchecked")
   @Test
   void shouldNotFailForWholeBatchWhenFailingToReadOneS3Blob() throws JsonProcessingException {
-    var candidateToSucceed = randomApplicableCandidate();
-    var candidateToFail = randomApplicableCandidate();
+    var candidateToSucceed = setupRandomApplicableCandidate(scenario);
+    var candidateToFail = setupRandomApplicableCandidate(scenario);
     var storageReader =
         setupStorageReaderFailingForOneCandidate(candidateToSucceed, candidateToFail);
     handler = new UpdateIndexHandler(openSearchClient, storageReader, sqsClient);
@@ -117,7 +114,7 @@ class UpdateIndexHandlerTest {
 
   @Test
   void shouldNotFailForWholeBatchWhenFailingToAddDocumentToIndex() {
-    var candidate = randomApplicableCandidate();
+    var candidate = setupRandomApplicableCandidate(scenario);
     var expectedIndexDocument = setupExistingIndexDocumentInBucket(candidate).indexDocument();
     var event = createUpdateIndexEvent(List.of(candidate));
     when(openSearchClient.addDocumentToIndex(expectedIndexDocument))
@@ -180,7 +177,7 @@ class UpdateIndexHandlerTest {
         NviCandidateIndexDocument.builder()
             .withContext(NVI_CONTEXT)
             .withApprovals(expandApprovals(candidate, expandedPublicationDetails.contributors()))
-            .withIdentifier(candidate.getIdentifier())
+            .withIdentifier(candidate.identifier())
             .withPublicationDetails(expandedPublicationDetails)
             .withPoints(randomBigDecimal())
             .build();
@@ -193,9 +190,5 @@ class UpdateIndexHandlerTest {
                     createPath(candidate), indexDocumentWithConsumptionAttributes.toJsonString()))
         .orElseThrow();
     return indexDocumentWithConsumptionAttributes;
-  }
-
-  private Candidate randomApplicableCandidate() {
-    return CandidateFixtures.setupRandomApplicableCandidate(candidateRepository, periodRepository);
   }
 }

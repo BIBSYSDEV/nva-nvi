@@ -15,7 +15,7 @@ class ApprovalTest {
   @Test
   void shouldReturnTrueWhenApprovalIsPendingAndUnassigned() {
     var identifier = randomUUID();
-    var approval = new Approval(identifier, createPendingApproval(identifier));
+    var approval = Approval.fromDao(createPendingApproval(identifier));
     assertTrue(approval.isPendingAndUnassigned());
   }
 

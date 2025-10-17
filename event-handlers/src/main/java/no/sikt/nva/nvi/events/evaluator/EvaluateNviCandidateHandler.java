@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.events.evaluator;
 
-import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 
@@ -10,11 +9,10 @@ import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.S3StorageReader;
-import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
+import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
@@ -44,8 +42,7 @@ public class EvaluateNviCandidateHandler implements RequestHandler<SQSEvent, Voi
             new S3StorageReader(new Environment().readEnv("EXPANDED_RESOURCES_BUCKET")),
             new CreatorVerificationUtil(
                 authorizedUriRetriever(new Environment()), new Environment()),
-            new CandidateRepository(defaultDynamoClient()),
-            new PeriodRepository(defaultDynamoClient())),
+            CandidateService.defaultCandidateService()),
         new NviQueueClient(),
         new Environment());
   }
@@ -96,7 +93,7 @@ public class EvaluateNviCandidateHandler implements RequestHandler<SQSEvent, Voi
 
     LOGGER.info(
         "Sending evaluated publication {} to upsert queue",
-        candidateEvaluatedMessage.candidate().publicationId());
+        candidateEvaluatedMessage.publicationId());
     queueClient.sendMessage(messageBody, queueUrl);
   }
 

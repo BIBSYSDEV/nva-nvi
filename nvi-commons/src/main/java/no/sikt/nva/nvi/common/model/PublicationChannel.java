@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.common.model;
 import static java.util.Objects.nonNull;
 
 import java.net.URI;
+import java.util.Optional;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.model.DbPublicationChannel;
 import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
@@ -52,8 +53,9 @@ public record PublicationChannel(URI id, ChannelType channelType, ScientificValu
   public DbPublicationChannel toDbPublicationChannel() {
     return DbPublicationChannel.builder()
         .id(id)
-        .channelType(channelType.getValue())
-        .scientificValue(scientificValue.getValue())
+        .channelType(Optional.ofNullable(channelType).map(ChannelType::getValue).orElse(null))
+        .scientificValue(
+            Optional.ofNullable(scientificValue).map(ScientificValue::getValue).orElse(null))
         .build();
   }
 }

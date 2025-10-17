@@ -60,8 +60,6 @@ import java.util.Optional;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.SampleExpandedPublicationFactory;
 import no.sikt.nva.nvi.common.client.model.Organization;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures;
 import no.sikt.nva.nvi.common.dto.PointCalculationDto;
 import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
@@ -166,13 +164,10 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
   void shouldEvaluateExistingCandidateInOpenPeriod() throws IOException {
     mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
     var year = LocalDateTime.now().getYear();
+    setupOpenPeriod(scenario, year);
     var resourceFileUri = setupCandidate(year);
-    periodRepository = PeriodRepositoryFixtures.periodRepositoryReturningOpenedPeriod(year);
-    setupEvaluatorService(periodRepository);
+    setupEvaluatorService();
 
-    handler =
-        new EvaluateNviCandidateHandler(
-            evaluatorService, queueClient, getEvaluateNviCandidateHandlerEnvironment());
     var event = createEvent(new PersistedResourceMessage(resourceFileUri));
     handler.handleRequest(event, CONTEXT);
     var candidate = (UpsertNviCandidateRequest) getMessageBody().candidate();
@@ -624,15 +619,12 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     return nviCreators.stream().mapToInt(creator -> creator.affiliations().size()).sum();
   }
 
-  private void setupEvaluatorService(PeriodRepository periodRepository) {
+  private void setupEvaluatorService() {
     var environment = getEvaluateNviCandidateHandlerEnvironment();
     var calculator = new CreatorVerificationUtil(authorizedBackendUriRetriever, environment);
     evaluatorService =
         new EvaluatorService(
-            scenario.getS3StorageReaderForExpandedResourcesBucket(),
-            calculator,
-            candidateRepository,
-            periodRepository);
+            scenario.getS3StorageReaderForExpandedResourcesBucket(), calculator, candidateService);
   }
 
   private URI setupCandidate(int year) throws IOException {
@@ -640,10 +632,9 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
         randomUpsertRequestBuilder()
             .withPublicationDate(new PublicationDateDto(String.valueOf(year), null, null))
             .build();
-    Candidate.upsert(upsertCandidateRequest, candidateRepository, periodRepository);
+    candidateService.upsertCandidate(upsertCandidateRequest);
     var candidateInClosedPeriod =
-        Candidate.fetchByPublicationId(
-            upsertCandidateRequest::publicationId, candidateRepository, periodRepository);
+        candidateService.getByPublicationId(upsertCandidateRequest.publicationId());
     var content =
         stringFromResources(Path.of(ACADEMIC_ARTICLE_PATH))
             .replace(
@@ -738,7 +729,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       var publication =
           factory.withContributor(verifiedCreatorFrom(nviOrganization)).getExpandedPublication();
       var candidate = evaluatePublicationAndGetPersistedCandidate(publication);
-      var publicationDetails = candidate.getPublicationDetails();
+      var publicationDetails = candidate.publicationDetails();
 
       assertThat(candidate)
           .extracting(Candidate::isApplicable, Candidate::getCreatorShareCount)
@@ -754,7 +745,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       var publication =
           factory.withContributor(unverifiedCreatorFrom(nviOrganization)).getExpandedPublication();
       var candidate = evaluatePublicationAndGetPersistedCandidate(publication);
-      var publicationDetails = candidate.getPublicationDetails();
+      var publicationDetails = candidate.publicationDetails();
 
       assertThat(candidate)
           .extracting(Candidate::isApplicable, Candidate::getTotalPoints)
@@ -800,7 +791,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
           factory.withContributor(createUnverifiedCreatorWithTwoNames()).getExpandedPublication();
 
       var candidate = evaluatePublicationAndGetPersistedCandidate(publication);
-      var publicationDetails = candidate.getPublicationDetails();
+      var publicationDetails = candidate.publicationDetails();
 
       assertThat(candidate)
           .extracting(Candidate::isApplicable, Candidate::getTotalPoints)
@@ -831,7 +822,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
               .withContributor(unverifiedCreatorFrom(nviOrganization))
               .getExpandedPublication();
       var candidate = evaluatePublicationAndGetPersistedCandidate(publication);
-      var publicationDetails = candidate.getPublicationDetails();
+      var publicationDetails = candidate.publicationDetails();
 
       var expectedTotalPoints = BigDecimal.valueOf(0.7071).setScale(SCALE, ROUNDING_MODE);
       assertThat(candidate)
@@ -886,7 +877,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
           factory.withContributor(verifiedCreatorFrom(nviOrganization)).getExpandedPublication();
 
       var candidate = evaluatePublicationAndGetPersistedCandidate(publication);
-      var publicationDetails = candidate.getPublicationDetails();
+      var publicationDetails = candidate.publicationDetails();
 
       assertThat(candidate.getTotalPoints()).isPositive();
       assertThat(candidate.isApplicable()).isTrue();
@@ -899,13 +890,14 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       // And the publication is published in a closed period
       // When the publication is evaluated
       // Then it should be evaluated as a Candidate
-      setupClosedPeriod(scenario, publicationDate.year());
+      setupOpenPeriod(scenario, publicationDate.year());
       var publication =
           factory.withContributor(verifiedCreatorFrom(nviOrganization)).getExpandedPublication();
       setupCandidateMatchingPublication(publication);
+      setupClosedPeriod(scenario, publicationDate.year());
 
       var candidate = evaluatePublicationAndGetPersistedCandidate(publication);
-      var publicationDetails = candidate.getPublicationDetails();
+      var publicationDetails = candidate.publicationDetails();
 
       assertThat(candidate.getTotalPoints()).isPositive();
       assertThat(candidate.isApplicable()).isTrue();
@@ -918,9 +910,10 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       // And the publication is published in a closed period
       // When the publication is updated to be no longer applicable
       // Then it should be re-evaluated as a NonCandidate
-      setupClosedPeriod(scenario, publicationDate.year());
+      setupOpenPeriod(scenario, publicationDate.year());
       var publicationFactory = factory.withContributor(verifiedCreatorFrom(nviOrganization));
       setupCandidateMatchingPublication(publicationFactory.getExpandedPublication());
+      setupClosedPeriod(scenario, publicationDate.year());
 
       var updatedPublication =
           publicationFactory.withPublicationType("ComicBook").getExpandedPublication();
@@ -964,7 +957,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
 
       handler.handleRequest(createEvaluationEvent(publication), CONTEXT);
       var messageBody = getMessageBody();
-      var nviPeriod = periodRepository.findByPublishingYear(historicalDate.year());
+      var nviPeriod = periodService.findByPublishingYear(historicalDate.year());
 
       assertThat(messageBody.candidate()).isInstanceOf(UpsertNonNviCandidateRequest.class);
       assertTrue(nviPeriod.isEmpty());
@@ -1041,7 +1034,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       var finalPublication =
           publicationFactory.withPublicationDate(newPeriod).getExpandedPublication();
       var updatedCandidate = evaluatePublicationAndGetPersistedCandidate(finalPublication);
-      var publicationDetails = updatedCandidate.getPublicationDetails();
+      var publicationDetails = updatedCandidate.publicationDetails();
 
       assertThat(updatedCandidate.isApplicable()).isTrue();
       assertThat(publicationDetails.publicationDate()).isEqualTo(newPeriod);
@@ -1064,13 +1057,17 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
 
     private void setupCandidateMatchingPublication(
         SampleExpandedPublication sampleExpandedPublication) {
-      var year = sampleExpandedPublication.publicationDate().year();
+      var publicationDate =
+          new PublicationDateDto(
+              sampleExpandedPublication.publicationDate().year(),
+              sampleExpandedPublication.publicationDate().month(),
+              sampleExpandedPublication.publicationDate().day());
       var upsertCandidateRequest =
           randomUpsertRequestBuilder()
-              .withPublicationDate(new PublicationDateDto(year, null, null))
+              .withPublicationDate(publicationDate)
               .withPublicationId(sampleExpandedPublication.id())
               .build();
-      Candidate.upsert(upsertCandidateRequest, candidateRepository, periodRepository);
+      candidateService.upsertCandidate(upsertCandidateRequest);
     }
   }
 }

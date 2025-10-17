@@ -84,13 +84,9 @@ public class DbCandidateFixtures {
                     .build()));
   }
 
-  public static DbCandidate getExpectedNewDbCandidate(UpsertNviCandidateRequest request) {
-    return getExpectedDbCandidate(randomUUID(), Instant.now(), request);
-  }
-
   public static DbCandidate getExpectedUpdatedDbCandidate(
       Candidate candidate, UpsertNviCandidateRequest request) {
-    return getExpectedDbCandidate(candidate.getIdentifier(), candidate.getCreatedDate(), request);
+    return getExpectedDbCandidate(candidate.identifier(), candidate.createdDate(), request);
   }
 
   public static DbCandidate getExpectedDbCandidate(

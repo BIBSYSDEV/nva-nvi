@@ -122,7 +122,7 @@ public final class ExpandedResourceGenerator {
     entityDescription.put(MAIN_TITLE_FIELD, randomString());
 
     var publicationDate =
-        createAndPopulatePublicationDate(candidate.getPublicationDetails().publicationDate());
+        createAndPopulatePublicationDate(candidate.publicationDetails().publicationDate());
 
     entityDescription.set(PUBLICATION_DATE_FIELD, publicationDate);
 
@@ -145,7 +145,7 @@ public final class ExpandedResourceGenerator {
 
     root.set(ENTITY_DESCRIPTION_FIELD, entityDescription);
 
-    root.put(IDENTIFIER_FIELD, candidate.getIdentifier().toString());
+    root.put(IDENTIFIER_FIELD, candidate.identifier().toString());
 
     var topLevelOrganizations = createAndPopulateTopLevelOrganizations(candidate);
 
@@ -235,7 +235,7 @@ public final class ExpandedResourceGenerator {
 
   private static JsonNode createAndPopulateTopLevelOrganizations(Candidate candidate) {
     var topLevelOrganizations = objectMapper.createArrayNode();
-    candidate.getPublicationDetails().nviCreators().stream()
+    candidate.publicationDetails().nviCreators().stream()
         .map(NviCreator::getAffiliationIds)
         .flatMap(List::stream)
         .distinct()
@@ -274,12 +274,12 @@ public final class ExpandedResourceGenerator {
 
     var contributors = objectMapper.createArrayNode();
 
-    var verifiedCreators = candidate.getPublicationDetails().verifiedCreators();
+    var verifiedCreators = candidate.publicationDetails().verifiedCreators();
     verifiedCreators.stream()
         .map(creator -> createContributorNode(creator.affiliations(), creator.id(), randomString()))
         .forEach(contributors::add);
 
-    var unverifiedCreators = candidate.getPublicationDetails().unverifiedCreators();
+    var unverifiedCreators = candidate.publicationDetails().unverifiedCreators();
     unverifiedCreators.stream()
         .map(
             unverifiedCreator ->

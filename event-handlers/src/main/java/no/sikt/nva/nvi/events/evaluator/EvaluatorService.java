@@ -1,9 +1,7 @@
 package no.sikt.nva.nvi.events.evaluator;
 
 import static java.util.Objects.isNull;
-import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.dto.PublicationDetailsDto.fromPublicationDto;
-import static no.sikt.nva.nvi.common.service.model.NviPeriod.fetchByPublishingYear;
 import static nva.commons.core.attempt.Try.attempt;
 
 import java.net.URI;
@@ -15,15 +13,12 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.client.model.Organization;
-import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.dto.PublicationDto;
 import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.exceptions.ValidationException;
+import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.PublicationLoaderService;
-import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
-import no.sikt.nva.nvi.common.service.exception.PeriodNotFoundException;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil;
@@ -47,18 +42,15 @@ public class EvaluatorService {
       "Publication is already reported and cannot be updated.";
   private final Logger logger = LoggerFactory.getLogger(EvaluatorService.class);
   private final CreatorVerificationUtil creatorVerificationUtil;
-  private final CandidateRepository candidateRepository;
-  private final PeriodRepository periodRepository;
+  private final CandidateService candidateService;
   private final PublicationLoaderService publicationLoader;
 
   public EvaluatorService(
       StorageReader<URI> storageReader,
       CreatorVerificationUtil creatorVerificationUtil,
-      CandidateRepository candidateRepository,
-      PeriodRepository periodRepository) {
+      CandidateService candidateService) {
     this.creatorVerificationUtil = creatorVerificationUtil;
-    this.candidateRepository = candidateRepository;
-    this.periodRepository = periodRepository;
+    this.candidateService = candidateService;
     this.publicationLoader = new PublicationLoaderService(storageReader);
   }
 
@@ -66,9 +58,11 @@ public class EvaluatorService {
     var publication = publicationLoader.extractAndTransform(publicationBucketUri);
     logger.info("Evaluating publication with ID: {}", publication.id());
 
-    // Check that the publication can be evaluated
-    var candidate = fetchOptionalCandidate(publication.id()).orElse(null);
-    if (shouldSkipEvaluation(candidate, publication)) {
+    // Get candidate aggregate (if it exists) and list of all periods
+    var candidateContext = candidateService.getCandidateContext(publication.id());
+    var optionalCandidate = candidateContext.candidate();
+
+    if (shouldSkipEvaluation(optionalCandidate, publication)) {
       logger.info(SKIPPED_EVALUATION_MESSAGE, publication.id());
       return Optional.empty();
     }
@@ -86,13 +80,8 @@ public class EvaluatorService {
     }
 
     // Check that the publication can be a candidate in the target period
-    var period = fetchOptionalPeriod(publication.publicationDate().year()).orElse(null);
-    var periodExists = nonNull(period) && nonNull(period.getId());
-    var periodIsOpen = periodExists && !period.isClosed();
-    var candidateExistsInPeriod =
-        periodExists && nonNull(candidate) && isApplicableInPeriod(period, candidate);
-    var canEvaluateInPeriod = periodIsOpen || candidateExistsInPeriod;
-    if (!canEvaluateInPeriod) {
+    var optionalPeriod = candidateContext.getOptionalPeriod(publication.publicationDate().year());
+    if (!canEvaluateInPeriod(optionalPeriod, optionalCandidate)) {
       logger.info("Publication is not applicable in the target period");
       return createNonNviCandidateMessage(publication.id());
     }
@@ -101,13 +90,14 @@ public class EvaluatorService {
     return createNviCandidateMessage(nviCandidate);
   }
 
-  private boolean shouldSkipEvaluation(Candidate candidate, PublicationDto publication) {
+  private boolean shouldSkipEvaluation(
+      Optional<Candidate> optionalCandidate, PublicationDto publication) {
     if (hasInvalidPublicationYear(publication)) {
       logger.warn(MALFORMED_DATE_MESSAGE, publication.publicationDate());
       return true;
     }
 
-    if (nonNull(candidate) && candidate.isReported()) {
+    if (optionalCandidate.map(Candidate::isReported).orElse(false)) {
       logger.warn(REPORTED_CANDIDATE_MESSAGE);
       return true;
     }
@@ -136,15 +126,27 @@ public class EvaluatorService {
   }
 
   private boolean isPublished(PublicationDto publication) {
-    return nonNull(publication.status()) && "published".equalsIgnoreCase(publication.status());
+    return publication.status() != null && "published".equalsIgnoreCase(publication.status());
+  }
+
+  private boolean canEvaluateInPeriod(
+      Optional<NviPeriod> optionalPeriod, Optional<Candidate> optionalCandidate) {
+    if (optionalPeriod.isEmpty()) {
+      return false;
+    }
+
+    var periodIsOpen = optionalPeriod.map(NviPeriod::isOpen).orElse(false);
+    var candidateExistsInPeriod =
+        optionalCandidate
+            .map(candidate -> isApplicableInPeriod(optionalPeriod.get(), candidate))
+            .orElse(false);
+
+    return periodIsOpen || candidateExistsInPeriod;
   }
 
   private boolean isApplicableInPeriod(NviPeriod targetPeriod, Candidate candidate) {
-    var candidatePeriod = candidate.getPeriod();
-    if (isNull(candidatePeriod) || isNull(candidatePeriod.id())) {
-      return false;
-    }
-    var hasSamePeriod = candidatePeriod.id().equals(targetPeriod.getId());
+    var hasSamePeriod =
+        candidate.period().filter(period -> targetPeriod.id().equals(period.id())).isPresent();
     return candidate.isApplicable() && hasSamePeriod;
   }
 
@@ -187,24 +189,6 @@ public class EvaluatorService {
       return true;
     }
     return attempt(() -> Year.parse(publication.publicationDate().year())).isFailure();
-  }
-
-  private Optional<Candidate> fetchOptionalCandidate(URI publicationId) {
-    try {
-      return Optional.of(
-          Candidate.fetchByPublicationId(
-              () -> publicationId, candidateRepository, periodRepository));
-    } catch (CandidateNotFoundException notFoundException) {
-      return Optional.empty();
-    }
-  }
-
-  private Optional<NviPeriod> fetchOptionalPeriod(String year) {
-    try {
-      return Optional.of(fetchByPublishingYear(year, periodRepository));
-    } catch (PeriodNotFoundException notFoundException) {
-      return Optional.empty();
-    }
   }
 
   private Optional<CandidateEvaluatedMessage> createNonNviCandidateMessage(URI publicationId) {

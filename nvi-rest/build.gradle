@@ -1,6 +1,7 @@
 plugins {
     id 'nva.nvi.java-conventions'
 }
+
 dependencies {
     implementation libs.aws.sdk2.dynamodbenhanced
     implementation nvaCatalog.aws.sdk2.dynamo
@@ -13,6 +14,8 @@ dependencies {
     implementation nvaLibs.core
     implementation nvaLibs.json
     implementation project(':nvi-commons')
+    testFixturesAnnotationProcessor nvaCatalog.errorprone
+    testFixturesImplementation(testFixtures(project(":nvi-commons")))
     testImplementation libs.dynamodDbLocal
     testImplementation nvaCatalog.assertj.core
     testImplementation nvaCatalog.bundles.testing.cucumber
@@ -26,19 +29,7 @@ dependencies {
 }
 
 test {
-    environment("ALLOWED_ORIGIN", "*")
     environment("API_HOST", "api.fake.nva.aws.unit.no")
-    environment("CANDIDATE_DLQ_URL", "http://localhost:3000/candidate-DLQ")
-    environment("CANDIDATE_QUEUE_URL", "http://localhost:3000/candidate-queue")
-    environment("CUSTOM_DOMAIN_BASE_PATH", "scientific-index")
-    environment("SEARCH_INFRASTRUCTURE_API_HOST", "localhost")
-    environment("SEARCH_INFRASTRUCTURE_AUTH_URI", "localhost")
-    environment("SEARCH_INFRASTRUCTURE_API_URI", "localhost")
     environment("BACKEND_CLIENT_AUTH_URL", "My url")
-    environment("BACKEND_CLIENT_SECRET_NAME", "My secret name")
-    environment("EXPANDED_RESOURCES_BUCKET", "testBucket")
     environment("NVI_TABLE_NAME", "some-table")
-    environment("COGNITO_AUTHORIZER_URLS", "http://localhost:3000")
-    environment("UPSERT_CANDIDATE_DLQ_QUEUE_URL", "http://localhost:3000/upsert-candidate-DLQ")
-    environment("LOG_LEVEL", "debug")
 }

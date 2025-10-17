@@ -7,7 +7,6 @@ import static org.mockito.Mockito.when;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import software.amazon.awssdk.http.SdkHttpResponse;
 import software.amazon.awssdk.services.sqs.SqsClient;
@@ -41,18 +40,20 @@ public final class RequeueDlqTestUtils {
   public static List<Message> generateMessages(
       int count, String batchPrefix, UUID candidateIdentifier) {
     return IntStream.rangeClosed(1, count)
-        .mapToObj(
-            i ->
-                Message.builder()
-                    .messageId(batchPrefix + i)
-                    .receiptHandle(batchPrefix + i)
-                    .messageAttributes(
-                        Map.of(
-                            "candidateIdentifier",
-                            MessageAttributeValue.builder()
-                                .stringValue(candidateIdentifier.toString())
-                                .build()))
-                    .build())
-        .collect(Collectors.toList());
+        .mapToObj(i -> generateMessageForCandidate(batchPrefix + i, candidateIdentifier))
+        .toList();
+  }
+
+  public static Message generateMessageForCandidate(String messageId, UUID candidateIdentifier) {
+    return Message.builder()
+        .messageId(messageId)
+        .receiptHandle(messageId)
+        .messageAttributes(
+            Map.of(
+                "candidateIdentifier",
+                MessageAttributeValue.builder()
+                    .stringValue(candidateIdentifier.toString())
+                    .build()))
+        .build();
   }
 }
