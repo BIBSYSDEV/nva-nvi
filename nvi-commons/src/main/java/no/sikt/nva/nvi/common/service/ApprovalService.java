@@ -4,6 +4,8 @@ import static java.util.Collections.emptyList;
 import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
 
 import java.util.List;
+import java.util.Objects;
+
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.model.UpdateApprovalRequest;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
@@ -17,8 +19,13 @@ import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public record ApprovalService(CandidateRepository candidateRepository) {
+public class ApprovalService {
   private static final Logger LOGGER = LoggerFactory.getLogger(ApprovalService.class);
+  private final CandidateRepository candidateRepository;
+
+  public ApprovalService(CandidateRepository candidateRepository) {
+    this.candidateRepository = candidateRepository;
+  }
 
   @JacocoGenerated
   public static ApprovalService defaultApprovalService() {

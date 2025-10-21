@@ -13,8 +13,13 @@ import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public record NoteService(CandidateRepository candidateRepository) {
+public class NoteService {
   private static final Logger LOGGER = LoggerFactory.getLogger(NoteService.class);
+  private final CandidateRepository candidateRepository;
+
+  public NoteService(CandidateRepository candidateRepository) {
+    this.candidateRepository = candidateRepository;
+  }
 
   @JacocoGenerated
   public static NoteService defaultNoteService() {

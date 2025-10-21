@@ -15,12 +15,19 @@ import nva.commons.core.paths.UriWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public record NviPeriodService(Environment environment, PeriodRepository periodRepository) {
+public class NviPeriodService {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(NviPeriodService.class);
   private static final String API_HOST = "API_HOST";
   private static final String PERIOD_PATH = "period";
   private static final String SCIENTIFIC_INDEX_API_PATH = "scientific-index";
+  private final Environment environment;
+  private final PeriodRepository periodRepository;
+
+  public NviPeriodService(Environment environment, PeriodRepository periodRepository) {
+    this.environment = environment;
+    this.periodRepository = periodRepository;
+  }
 
   public void create(CreatePeriodRequest request) {
     LOGGER.info("Processing create period request {}", request);
