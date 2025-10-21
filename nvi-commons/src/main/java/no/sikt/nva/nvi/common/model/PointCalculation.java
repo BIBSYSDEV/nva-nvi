@@ -25,16 +25,35 @@ public record PointCalculation(
     List<InstitutionPoints> institutionPoints,
     BigDecimal totalPoints) {
 
+  public PointCalculation(
+      InstanceType instanceType,
+      PublicationChannel channel,
+      boolean isInternationalCollaboration,
+      BigDecimal collaborationFactor,
+      BigDecimal basePoints,
+      int creatorShareCount,
+      List<InstitutionPoints> institutionPoints,
+      BigDecimal totalPoints) {
+    this.instanceType = instanceType;
+    this.channel = channel;
+    this.isInternationalCollaboration = isInternationalCollaboration;
+    this.collaborationFactor = adjustScaleAndRoundingMode(collaborationFactor);
+    this.basePoints = adjustScaleAndRoundingMode(basePoints);
+    this.creatorShareCount = creatorShareCount;
+    this.institutionPoints = institutionPoints;
+    this.totalPoints = adjustScaleAndRoundingMode(totalPoints);
+  }
+
   public static PointCalculation from(PointCalculationDto dto) {
     return new PointCalculation(
         dto.instanceType(),
         PublicationChannel.from(dto.channel()),
         dto.isInternationalCollaboration(),
-        adjustScaleAndRoundingMode(dto.collaborationFactor()),
-        adjustScaleAndRoundingMode(dto.basePoints()),
+        dto.collaborationFactor(),
+        dto.basePoints(),
         dto.creatorShareCount(),
         dto.institutionPoints(),
-        adjustScaleAndRoundingMode(dto.totalPoints()));
+        dto.totalPoints());
   }
 
   public static PointCalculation from(UpsertNviCandidateRequest request) {

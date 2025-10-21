@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.common.service.model;
 
 import static java.util.Collections.emptyList;
 import static java.util.Objects.nonNull;
+import static no.sikt.nva.nvi.common.utils.DecimalUtils.adjustScaleAndRoundingMode;
 
 import java.math.BigDecimal;
 import java.net.URI;
@@ -14,6 +15,15 @@ public record InstitutionPoints(
     URI institutionId,
     BigDecimal institutionPoints,
     List<CreatorAffiliationPoints> creatorAffiliationPoints) {
+
+  public InstitutionPoints(
+      URI institutionId,
+      BigDecimal institutionPoints,
+      List<CreatorAffiliationPoints> creatorAffiliationPoints) {
+    this.institutionId = institutionId;
+    this.institutionPoints = adjustScaleAndRoundingMode(institutionPoints);
+    this.creatorAffiliationPoints = creatorAffiliationPoints;
+  }
 
   public static InstitutionPoints from(DbInstitutionPoints dbInstitutionPoints) {
     var creatorAffiliationPoints =
@@ -32,6 +42,12 @@ public record InstitutionPoints(
   }
 
   public record CreatorAffiliationPoints(URI nviCreator, URI affiliationId, BigDecimal points) {
+
+    public CreatorAffiliationPoints(URI nviCreator, URI affiliationId, BigDecimal points) {
+      this.nviCreator = nviCreator;
+      this.affiliationId = affiliationId;
+      this.points = adjustScaleAndRoundingMode(points);
+    }
 
     public static CreatorAffiliationPoints from(
         DbCreatorAffiliationPoints dbCreatorAffiliationPoints) {
