@@ -5,6 +5,8 @@ import static no.sikt.nva.nvi.common.utils.Validator.shouldNotBeNull;
 
 import java.net.URI;
 import java.time.Instant;
+import java.util.Optional;
+import java.util.UUID;
 import no.sikt.nva.nvi.common.db.NviPeriodDao;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.exceptions.ValidationException;
@@ -19,7 +21,9 @@ public record NviPeriod(
     Instant startDate,
     Instant reportingDate,
     Username createdBy,
-    Username modifiedBy) {
+    Username modifiedBy,
+    UUID version,
+    Long revision) {
   private static final String VALIDATION_ERROR_MESSAGE = "Field cannot be null: %s";
 
   public NviPeriod {
@@ -35,6 +39,7 @@ public record NviPeriod(
 
   public static NviPeriod fromDao(NviPeriodDao period) {
     var dbNviPeriod = period.nviPeriod();
+    var version = Optional.ofNullable(period.version()).map(UUID::fromString).orElse(null);
     return builder()
         .withId(dbNviPeriod.id())
         .withPublishingYear(Integer.parseInt(dbNviPeriod.publishingYear()))
@@ -42,12 +47,20 @@ public record NviPeriod(
         .withReportingDate(dbNviPeriod.reportingDate())
         .withCreatedBy(Username.fromUserName(dbNviPeriod.createdBy()))
         .withModifiedBy(Username.fromUserName(dbNviPeriod.modifiedBy()))
+        .withVersion(version)
+        .withRevision(period.revision())
         .build();
   }
 
   public NviPeriodDao toDao() {
     var dbPeriod = this.toDbObject();
-    return NviPeriodDao.builder().identifier(dbPeriod.publishingYear()).nviPeriod(dbPeriod).build();
+    var daoVersion = Optional.ofNullable(version).map(UUID::toString).orElse(null);
+    return NviPeriodDao.builder()
+        .identifier(dbPeriod.publishingYear())
+        .nviPeriod(dbPeriod)
+        .version(daoVersion)
+        .revision(revision)
+        .build();
   }
 
   public NviPeriodDto toDto() {
@@ -122,7 +135,9 @@ public record NviPeriod(
         .withStartDate(startDate)
         .withReportingDate(reportingDate)
         .withCreatedBy(createdBy)
-        .withModifiedBy(modifiedBy);
+        .withModifiedBy(modifiedBy)
+        .withRevision(revision)
+        .withVersion(version);
   }
 
   private DbNviPeriod toDbObject() {
@@ -144,6 +159,8 @@ public record NviPeriod(
     private Instant reportingDate;
     private Username createdBy;
     private Username modifiedBy;
+    private Long revision;
+    private UUID version;
 
     private Builder() {}
 
@@ -177,8 +194,19 @@ public record NviPeriod(
       return this;
     }
 
+    public Builder withRevision(Long revision) {
+      this.revision = revision;
+      return this;
+    }
+
+    public Builder withVersion(UUID version) {
+      this.version = version;
+      return this;
+    }
+
     public NviPeriod build() {
-      return new NviPeriod(id, publishingYear, startDate, reportingDate, createdBy, modifiedBy);
+      return new NviPeriod(
+          id, publishingYear, startDate, reportingDate, createdBy, modifiedBy, version, revision);
     }
   }
 }

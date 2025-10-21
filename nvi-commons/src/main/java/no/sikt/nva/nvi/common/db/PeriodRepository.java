@@ -12,6 +12,7 @@ import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.internal.conditional.BeginsWithConditional;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
+import software.amazon.awssdk.enhanced.dynamodb.model.TransactWriteItemsEnhancedRequest;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 
 public class PeriodRepository extends DynamoRepository {
@@ -27,6 +28,13 @@ public class PeriodRepository extends DynamoRepository {
   public void save(NviPeriodDao period) {
     LOGGER.info("Saving period: {}", period);
     nviPeriodTable.putItem(period.withMutatedVersion());
+  }
+
+  public void update(NviPeriodDao period) {
+    LOGGER.info("Updating period: {}", period);
+    var transaction = TransactWriteItemsEnhancedRequest.builder();
+    addUpdatedItemWithVersion(transaction, nviPeriodTable, period);
+    sendTransaction(transaction.build());
   }
 
   public Optional<NviPeriodDao> findByPublishingYear(String publishingYear) {
@@ -53,7 +61,7 @@ public class PeriodRepository extends DynamoRepository {
         Key.builder().partitionValue(NviPeriodDao.TYPE).sortValue(NviPeriodDao.TYPE).build());
   }
 
-  private static Key createPeriodKey(String publishingYear) {
+  public static Key createPeriodKey(String publishingYear) {
     return Key.builder()
         .partitionValue(NviPeriodDao.TYPE)
         .sortValue(NviPeriodDao.createSortKey(publishingYear))

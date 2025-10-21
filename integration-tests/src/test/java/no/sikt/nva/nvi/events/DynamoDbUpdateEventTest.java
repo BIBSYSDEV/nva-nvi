@@ -10,8 +10,8 @@ import static no.sikt.nva.nvi.common.DynamoDbTestUtils.eventWithDao;
 import static no.sikt.nva.nvi.common.DynamoDbTestUtils.randomEventWithNumberOfDynamoRecords;
 import static no.sikt.nva.nvi.common.QueueServiceTestUtils.invalidSqsMessage;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.randomApplicableCandidateDao;
-import static no.sikt.nva.nvi.common.db.DbNviPeriodFixtures.randomPeriodDao;
 import static no.sikt.nva.nvi.common.db.NoteDaoFixtures.randomNoteDao;
+import static no.sikt.nva.nvi.common.model.NviPeriodFixtures.openPeriod;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -267,7 +267,8 @@ class DynamoDbUpdateEventTest {
   public static Stream<Arguments> otherDaoInsertEventProvider() {
     var randomUniquenessEntry = new CandidateUniquenessEntryDao(randomUUID().toString());
     return Stream.of(
-        argumentSet("Create period", eventWithDao(null, randomPeriodDao(), OperationType.INSERT)),
+        argumentSet(
+            "Create period", eventWithDao(null, openPeriod().toDao(), OperationType.INSERT)),
         argumentSet("Create note", eventWithDao(null, randomNoteDao(), OperationType.INSERT)),
         argumentSet(
             "Update note", eventWithDao(randomNoteDao(), randomNoteDao(), OperationType.MODIFY)),

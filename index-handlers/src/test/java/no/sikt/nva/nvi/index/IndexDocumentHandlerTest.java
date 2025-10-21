@@ -35,7 +35,6 @@ import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_NORWEGIAN_LABEL;
 import static no.sikt.nva.nvi.test.TestConstants.LABELS_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.NB_FIELD;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
-import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.s3.S3Driver.S3_SCHEME;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
@@ -79,6 +78,7 @@ import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.index.aws.S3StorageWriter;
 import no.sikt.nva.nvi.index.model.PersistedIndexDocumentMessage;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
@@ -136,6 +136,7 @@ class IndexDocumentHandlerTest {
   private UriRetriever uriRetriever;
   private FakeSqsClient sqsClient;
   private TestScenario scenario;
+  private NviPeriod currentPeriod;
 
   public static Stream<Arguments> channelTypeIssnProvider() {
     return Stream.of(
@@ -148,7 +149,7 @@ class IndexDocumentHandlerTest {
   @BeforeEach
   void setup() {
     scenario = new TestScenario();
-    setupOpenPeriod(scenario, CURRENT_YEAR);
+    currentPeriod = setupOpenPeriod(scenario, CURRENT_YEAR);
     candidateRepository = scenario.getCandidateRepository();
     candidateService = scenario.getCandidateService();
 
@@ -206,7 +207,7 @@ class IndexDocumentHandlerTest {
     var institutionId = randomUri();
     var dao = createCandidateDao(createDbCandidateWithoutChannelIdOrType(institutionId));
     var approvals = List.of(randomApprovalDao(dao.identifier(), institutionId));
-    candidateRepository.create(dao, approvals);
+    candidateRepository.create(currentPeriod.toDao(), dao, approvals);
 
     var candidate = candidateService.getCandidateByIdentifier(dao.identifier());
     var expectedIndexDocument =
@@ -292,7 +293,7 @@ class IndexDocumentHandlerTest {
     // Using repository to create reported candidate because setting Candidate as reported is not
     // implemented yet
     // TODO: Use Candidate.setReported when implemented
-    var dao = setupReportedCandidate(candidateRepository, randomYear());
+    var dao = setupReportedCandidate(candidateRepository, String.valueOf(CURRENT_YEAR));
     var candidate = candidateService.getCandidateByIdentifier(dao.identifier());
     var expectedIndexDocument =
         setupExistingResourceInS3AndGenerateExpectedDocument(candidate).indexDocument();
@@ -654,7 +655,7 @@ class IndexDocumentHandlerTest {
             .reportStatus(ReportStatus.REPORTED)
             .build();
     var candidateDao = createCandidateDao(dbCandidate);
-    candidateRepository.create(candidateDao, emptyList());
+    candidateRepository.create(currentPeriod.toDao(), candidateDao, emptyList());
     return candidateDao;
   }
 

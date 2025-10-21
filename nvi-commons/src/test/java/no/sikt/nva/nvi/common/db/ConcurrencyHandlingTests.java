@@ -27,6 +27,7 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import no.sikt.nva.nvi.common.TestScenario;
@@ -37,6 +38,7 @@ import no.sikt.nva.nvi.common.exceptions.TransactionException;
 import no.sikt.nva.nvi.common.model.PublicationDate;
 import no.sikt.nva.nvi.common.service.ApprovalService;
 import no.sikt.nva.nvi.common.service.CandidateService;
+import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import org.assertj.core.api.ThrowableAssert;
@@ -64,6 +66,7 @@ class ConcurrencyHandlingTests {
   private static final PublicationDate PUBLICATION_DATE = randomPublicationDate();
   private TestScenario scenario;
   private CandidateRepository candidateRepository;
+  private NviPeriodService periodService;
   private CandidateService candidateService;
   private ApprovalService approvalService;
   private UpsertRequestBuilder upsertRequestBuilder;
@@ -76,6 +79,7 @@ class ConcurrencyHandlingTests {
     testStartedAt = Instant.now();
     scenario = new TestScenario();
     candidateRepository = scenario.getCandidateRepository();
+    periodService = scenario.getPeriodService();
     candidateService = scenario.getCandidateService();
     approvalService = new ApprovalService(candidateRepository);
     upsertRequestBuilder =
@@ -266,6 +270,17 @@ class ConcurrencyHandlingTests {
       var third = scenario.getCandidateByIdentifier(candidateIdentifier);
       assertThat(third.revision()).isEqualTo(2L);
     }
+
+    @Test
+    void shouldFailOnConcurrentPeriodUpdate() {
+      var periodRepository = scenario.getPeriodRepository();
+      var currentPeriod = periodService.getByPublishingYear(PUBLICATION_DATE.year());
+      var updatedPeriod = currentPeriod.toDao();
+      periodRepository.update(updatedPeriod);
+
+      assertThrowsExceptionFromDynamoDbVersionAttributeAnnotation(
+          () -> periodRepository.update(updatedPeriod));
+    }
   }
 
   @Nested
@@ -336,7 +351,7 @@ class ConcurrencyHandlingTests {
 
       assertThatNoException()
           .isThrownBy(() -> approvalService.updateApproval(candidate, firstUpdate, firstUser));
-      assertThrowsConcurrencyException(
+      assertThrowsExceptionFromDynamoDbVersionAttributeAnnotation(
           () -> approvalService.updateApproval(candidate, secondUpdate, secondUser));
     }
 
@@ -350,7 +365,7 @@ class ConcurrencyHandlingTests {
 
       assertThatNoException()
           .isThrownBy(() -> approvalService.updateApproval(candidate, updateRequest, user));
-      assertThrowsConcurrencyException(
+      assertThrowsExceptionFromDynamoDbVersionAttributeAnnotation(
           () -> approvalService.updateApproval(candidate, updateRequest, user));
     }
 
@@ -364,7 +379,7 @@ class ConcurrencyHandlingTests {
       var user = createCuratorUserInstance(ORGANIZATION_1);
       var updateRequest = createUpdateStatusRequest(newStatus, user);
 
-      assertThrowsConcurrencyException(
+      assertThrowsExceptionFromCustomRevisionCondition(
           () -> approvalService.updateApproval(readCandidate, updateRequest, user));
     }
 
@@ -480,6 +495,20 @@ class ConcurrencyHandlingTests {
       assertThat(response.getCandidate()).isEmpty();
       assertThat(response.allPeriods()).isNotEmpty();
     }
+
+    @Test
+    void shouldFailOnApprovalUpdateAfterPeriodUpdate() {
+      var candidate = scenario.getCandidateByIdentifier(candidateIdentifier);
+      var originalStatus = candidate.getApprovalStatus(ORGANIZATION_1);
+      var newStatus = getOtherStatus(originalStatus);
+      var user = createCuratorUserInstance(ORGANIZATION_1);
+      var updateRequest = createUpdateStatusRequest(newStatus, user);
+
+      setupOpenPeriod(scenario, candidate.period().publishingYear());
+
+      assertThrowsExceptionFromCustomRevisionCondition(
+          () -> approvalService.updateApproval(candidate, updateRequest, user));
+    }
   }
 
   /** Set up a Candidate in a valid state, with Notes, Approvals, and an open Period. */
@@ -540,11 +569,26 @@ class ConcurrencyHandlingTests {
         : ApprovalStatus.REJECTED;
   }
 
-  private static void assertThrowsConcurrencyException(ThrowableAssert.ThrowingCallable operation) {
+  private static void assertThrowsExceptionFromCustomRevisionCondition(
+      ThrowableAssert.ThrowingCallable operation) {
+    var expectedError = transactionFailurePattern("revision = :expectedRevision");
     assertThatThrownBy(operation)
         .isInstanceOf(TransactionException.class)
-        .hasMessageContaining("condition revision = :expectedRevision")
-        .hasMessageContaining("ConditionalCheckFailed");
+        .hasMessageMatching(expectedError);
+  }
+
+  private static void assertThrowsExceptionFromDynamoDbVersionAttributeAnnotation(
+      ThrowableAssert.ThrowingCallable operation) {
+    var expectedError = transactionFailurePattern("#AMZN_MAPPED_revision = :old_revision_value");
+    assertThatThrownBy(operation)
+        .isInstanceOf(TransactionException.class)
+        .hasMessageMatching(expectedError);
+  }
+
+  private static String transactionFailurePattern(String conditionExpression) {
+    return String.format(
+        ".*condition %s for item \\d+ failed with code ConditionalCheckFailed.*",
+        Pattern.quote(conditionExpression));
   }
 
   private void removeRevisionFromCandidate(UUID candidateId) {
