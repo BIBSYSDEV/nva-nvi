@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.common.db;
 
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.getGlobalEnvironment;
-import static no.sikt.nva.nvi.common.db.UsernameFixtures.randomUsername;
+import static no.sikt.nva.nvi.common.model.UsernameFixtures.randomUsername;
 
 import java.time.Instant;
 import java.time.ZonedDateTime;
@@ -10,7 +10,6 @@ import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.model.CreatePeriodRequest;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.common.service.model.UpdatePeriodRequest;
-import no.sikt.nva.nvi.common.service.model.Username;
 
 public class PeriodRepositoryFixtures {
   private static final Instant previousMonth = ZonedDateTime.now().minusMonths(1).toInstant();
@@ -54,7 +53,7 @@ public class PeriodRepositoryFixtures {
 
   public static NviPeriod createPeriod(
       String year, Instant startDate, Instant reportingDate, PeriodRepository periodRepository) {
-    var user = Username.fromUserName(randomUsername());
+    var user = randomUsername();
     var request =
         CreatePeriodRequest.builder()
             .withPublishingYear(Integer.parseInt(year))
@@ -70,7 +69,7 @@ public class PeriodRepositoryFixtures {
 
   public static NviPeriod updatePeriod(
       String year, Instant startDate, Instant reportingDate, PeriodRepository periodRepository) {
-    var user = Username.fromUserName(randomUsername());
+    var user = randomUsername();
     var request =
         UpdatePeriodRequest.builder()
             .withPublishingYear(Integer.parseInt(year))

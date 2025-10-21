@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.common;
 
-import static no.sikt.nva.nvi.common.db.UsernameFixtures.randomUsername;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationId;
+import static no.sikt.nva.nvi.common.model.UsernameFixtures.randomUsername;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 

@@ -3,7 +3,7 @@ package no.sikt.nva.nvi.common.service;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.getGlobalEnvironment;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeriod;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
-import static no.sikt.nva.nvi.common.db.UsernameFixtures.randomUsername;
+import static no.sikt.nva.nvi.common.model.UsernameFixtures.randomUsername;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -11,7 +11,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.common.service.model.UpdatePeriodRequest;
-import no.sikt.nva.nvi.common.service.model.Username;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -37,7 +36,7 @@ class NviPeriodServiceTest {
     var year = String.valueOf(CURRENT_YEAR);
     var originalPeriod = setupOpenPeriod(scenario, year);
 
-    var expectedUser = Username.fromUserName(randomUsername());
+    var expectedUser = randomUsername();
     var updateRequest = toUpdateRequestBuilder(originalPeriod).withModifiedBy(expectedUser);
     periodService.update(updateRequest.build());
 

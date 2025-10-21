@@ -1,6 +1,6 @@
 package no.sikt.nva.nvi.common.db;
 
-import static no.sikt.nva.nvi.common.db.UsernameFixtures.randomUsername;
+import static no.sikt.nva.nvi.common.db.UsernameFixtures.randomDbUsername;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInstant;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -21,8 +21,8 @@ public class DbApprovalStatusFixtures {
     return new DbApprovalStatus(
         institutionId,
         randomElement(DbStatus.values()),
-        randomUsername(),
-        randomUsername(),
+        randomDbUsername(),
+        randomDbUsername(),
         randomInstant(),
         randomString());
   }
@@ -31,8 +31,8 @@ public class DbApprovalStatusFixtures {
     return new DbApprovalStatus(
             institutionId,
             randomElement(DbStatus.values()),
-            randomUsername(),
-            randomUsername(),
+            randomDbUsername(),
+            randomDbUsername(),
             randomInstant(),
             randomString())
         .toDao(candidateIdentifier);
