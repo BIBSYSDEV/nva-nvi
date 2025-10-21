@@ -61,7 +61,8 @@ public class EvaluatorService {
     var publication = publicationLoader.extractAndTransform(publicationBucketUri);
     logger.info("Evaluating publication with ID: {}", publication.id());
 
-    var candidateAndPeriods = candidateService.findCandidateAndPeriodsByPublicationId(publication.id());
+    var candidateAndPeriods =
+        candidateService.findCandidateAndPeriodsByPublicationId(publication.id());
     if (shouldSkipEvaluation(candidateAndPeriods, publication)) {
       logger.info(SKIPPED_EVALUATION_MESSAGE, publication.id());
       return Optional.empty();
@@ -90,7 +91,7 @@ public class EvaluatorService {
   }
 
   private boolean shouldSkipEvaluation(
-    CandidateAndPeriods candidateAndPeriods, PublicationDto publication) {
+      CandidateAndPeriods candidateAndPeriods, PublicationDto publication) {
     if (hasInvalidPublicationYear(publication)) {
       logger.warn(MALFORMED_DATE_MESSAGE, publication.publicationDate());
       return true;
@@ -129,7 +130,7 @@ public class EvaluatorService {
   }
 
   private boolean canEvaluateInPeriod(
-    CandidateAndPeriods candidateAndPeriods, PublicationDateDto publicationDate) {
+      CandidateAndPeriods candidateAndPeriods, PublicationDateDto publicationDate) {
     var optionalPeriod = candidateAndPeriods.getPeriod(publicationDate.year());
     if (optionalPeriod.isEmpty()) {
       return false;

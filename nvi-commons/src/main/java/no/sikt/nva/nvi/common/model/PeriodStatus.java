@@ -2,15 +2,15 @@ package no.sikt.nva.nvi.common.model;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 
-public enum Status {
-  OPEN_PERIOD("OpenPeriod"),
-  CLOSED_PERIOD("ClosedPeriod"),
-  NO_PERIOD("NoPeriod"),
-  UNOPENED_PERIOD("UnopenedPeriod");
+public enum PeriodStatus {
+  OPEN("OpenPeriod"),
+  CLOSED("ClosedPeriod"),
+  NONE("NoPeriod"),
+  UNOPENED("UnopenedPeriod");
 
   private final String value;
 
-  Status(String value) {
+  PeriodStatus(String value) {
     this.value = value;
   }
 

@@ -49,8 +49,8 @@ import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.model.ChannelType;
+import no.sikt.nva.nvi.common.model.PeriodStatus;
 import no.sikt.nva.nvi.common.model.ScientificValue;
-import no.sikt.nva.nvi.common.model.Status;
 import no.sikt.nva.nvi.common.service.dto.ApprovalDto;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatusDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
@@ -319,7 +319,7 @@ class CandidateTest extends CandidateTestSetup {
     var fetchedCandidate = candidateService.getCandidateByIdentifier(tempCandidate.identifier());
 
     var periodStatus = toPeriodStatusDto(fetchedCandidate.period()).status();
-    assertEquals(Status.NO_PERIOD, periodStatus);
+    assertEquals(PeriodStatus.NONE, periodStatus);
   }
 
   @Test

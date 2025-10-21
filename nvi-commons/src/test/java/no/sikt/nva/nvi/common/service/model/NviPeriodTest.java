@@ -19,7 +19,7 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.TestScenario;
-import no.sikt.nva.nvi.common.model.Status;
+import no.sikt.nva.nvi.common.model.PeriodStatus;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import no.sikt.nva.nvi.common.service.exception.PeriodAlreadyExistsException;
@@ -148,7 +148,7 @@ class NviPeriodTest {
 
   @ParameterizedTest()
   @MethodSource("periodToPeriodStatusProvider")
-  void shouldConvertPeriodToPeriodStatusCorrectly(NviPeriod period, Status expectedStatus) {
+  void shouldConvertPeriodToPeriodStatusCorrectly(NviPeriod period, PeriodStatus expectedStatus) {
 
     var statusDto = NviPeriod.toPeriodStatusDto(period);
 
@@ -168,7 +168,7 @@ class NviPeriodTest {
             PeriodStatusDto::year)
         .containsExactly(
             period.id(),
-            Status.OPEN_PERIOD,
+            PeriodStatus.OPEN,
             period.startDate().toString(),
             period.reportingDate().toString(),
             String.valueOf(CURRENT_YEAR));
@@ -226,9 +226,9 @@ class NviPeriodTest {
 
   public static Stream<Arguments> periodToPeriodStatusProvider() {
     return Stream.of(
-        argumentSet("No period", null, Status.NO_PERIOD),
-        argumentSet("Open period", openPeriod(), Status.OPEN_PERIOD),
-        argumentSet("Closed period", closedPeriod(), Status.CLOSED_PERIOD),
-        argumentSet("Unopened period", futurePeriod(), Status.UNOPENED_PERIOD));
+        argumentSet("No period", null, PeriodStatus.NONE),
+        argumentSet("Open period", openPeriod(), PeriodStatus.OPEN),
+        argumentSet("Closed period", closedPeriod(), PeriodStatus.CLOSED),
+        argumentSet("Unopened period", futurePeriod(), PeriodStatus.UNOPENED));
   }
 }

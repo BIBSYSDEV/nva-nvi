@@ -8,7 +8,7 @@ import java.time.Instant;
 import no.sikt.nva.nvi.common.db.NviPeriodDao;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.exceptions.ValidationException;
-import no.sikt.nva.nvi.common.model.Status;
+import no.sikt.nva.nvi.common.model.PeriodStatus;
 import no.sikt.nva.nvi.common.service.dto.NviPeriodDto;
 import no.sikt.nva.nvi.common.service.dto.PeriodStatusDto;
 import no.sikt.nva.nvi.common.service.requests.UpdatePeriodRequest;
@@ -69,17 +69,17 @@ public record NviPeriod(
         .build();
   }
 
-  private static Status mapToPeriodStatus(NviPeriod period) {
+  private static PeriodStatus mapToPeriodStatus(NviPeriod period) {
     if (isNull(period)) {
-      return Status.NO_PERIOD;
+      return PeriodStatus.NONE;
     }
     if (period.isOpen()) {
-      return Status.OPEN_PERIOD;
+      return PeriodStatus.OPEN;
     }
     if (period.isClosed()) {
-      return Status.CLOSED_PERIOD;
+      return PeriodStatus.CLOSED;
     }
-    return Status.UNOPENED_PERIOD;
+    return PeriodStatus.UNOPENED;
   }
 
   public boolean isClosed() {

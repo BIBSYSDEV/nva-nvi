@@ -157,7 +157,7 @@ public class CandidateService {
     return findCandidateAndPeriodsByIdentifier(candidateIdentifier.get());
   }
 
-    private CandidateAndPeriods findCandidateAndPeriodsByIdentifier(UUID candidateIdentifier) {
+  private CandidateAndPeriods findCandidateAndPeriodsByIdentifier(UUID candidateIdentifier) {
     LOGGER.info("Fetching candidate and periods by identifier {}", candidateIdentifier);
     var candidateFuture = candidateRepository.getCandidateAggregateAsync(candidateIdentifier);
     var periodsFuture = periodService.getAllAsync();

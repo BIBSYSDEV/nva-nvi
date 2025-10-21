@@ -4,12 +4,12 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import java.net.URI;
-import no.sikt.nva.nvi.common.model.Status;
+import no.sikt.nva.nvi.common.model.PeriodStatus;
 
 @JsonTypeName(PeriodStatusDto.NVI_PERIOD)
 @JsonTypeInfo(use = Id.NAME, property = "type")
 public record PeriodStatusDto(
-    URI id, Status status, String startDate, String reportingDate, String year) {
+    URI id, PeriodStatus status, String startDate, String reportingDate, String year) {
 
   public static final String NVI_PERIOD = "NviReportingPeriod";
 
@@ -19,7 +19,7 @@ public record PeriodStatusDto(
 
   public static final class Builder {
 
-    private Status status;
+    private PeriodStatus status;
     private String startDate;
     private String closedDate;
     private String year;
@@ -27,7 +27,7 @@ public record PeriodStatusDto(
 
     private Builder() {}
 
-    public Builder withStatus(Status status) {
+    public Builder withStatus(PeriodStatus status) {
       this.status = status;
       return this;
     }
