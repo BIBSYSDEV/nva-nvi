@@ -9,9 +9,7 @@ import static no.sikt.nva.nvi.common.service.model.Candidate.getUpdatedInstituti
 import static no.sikt.nva.nvi.common.service.model.Candidate.shouldResetCandidate;
 
 import java.net.URI;
-import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.Dao;
@@ -68,7 +66,7 @@ public class CandidateService {
             .orElseThrow(PeriodNotFoundException.forYear(request.publicationYear()));
 
     candidateContext
-        .candidate()
+        .getCandidate()
         .ifPresentOrElse(
             existingCandidate -> updateCandidate(request, existingCandidate, targetPeriod),
             () -> createCandidate(request, targetPeriod));
@@ -124,11 +122,12 @@ public class CandidateService {
     var publicationId = request.publicationId();
     LOGGER.info("Updating candidate for publicationId={} to non-candidate", publicationId);
     var candidateContext = getCandidateContext(publicationId);
+    var optionalCandidate = candidateContext.getCandidate();
 
-    if (candidateContext.candidate().isEmpty()) {
+    if (optionalCandidate.isEmpty()) {
       LOGGER.warn("No candidate found for publicationId={}", publicationId);
     } else {
-      var candidate = candidateContext.candidate().get();
+      var candidate = optionalCandidate.get();
       var updatedCandidate = candidate.updateToNonCandidate().toDao();
       var approvalsToDelete = candidate.approvals().values().stream().map(Approval::toDao).toList();
 
@@ -141,13 +140,13 @@ public class CandidateService {
   public Candidate getCandidateByIdentifier(UUID candidateIdentifier) {
     LOGGER.info("Fetching candidate by identifier {}", candidateIdentifier);
     var responseContext = findAggregate(candidateIdentifier);
-    return responseContext.candidate().orElseThrow(CandidateNotFoundException::new);
+    return responseContext.getCandidate().orElseThrow(CandidateNotFoundException::new);
   }
 
   public Candidate getCandidateByPublicationId(URI publicationId) {
     LOGGER.info("Fetching candidate by publication id {}", publicationId);
     var responseContext = getCandidateContext(publicationId);
-    return responseContext.candidate().orElseThrow(CandidateNotFoundException::new);
+    return responseContext.getCandidate().orElseThrow(CandidateNotFoundException::new);
   }
 
   public CandidateContext getCandidateContext(URI publicationId) {
@@ -156,7 +155,7 @@ public class CandidateService {
 
     if (candidateIdentifier.isEmpty()) {
       LOGGER.info("No candidate found for publicationId={}", publicationId);
-      return new CandidateContext(Optional.empty(), periodService.getAll());
+      return new CandidateContext(null, periodService.getAll());
     }
     return findAggregate(candidateIdentifier.get());
   }
@@ -174,20 +173,11 @@ public class CandidateService {
       List<Dao> candidateItems, List<NviPeriodDao> allPeriods) {
     var candidateAggregate = CandidateAggregate.fromQueryResponse(candidateItems);
     var periods = allPeriods.stream().map(NviPeriod::fromDao).toList();
+    var candidate =
+        candidateAggregate
+            .map(aggregate -> aggregate.toCandidate(environment, periods))
+            .orElse(null);
 
-    var candidate = candidateAggregate.map(aggregate -> fromAggregate(aggregate, periods));
     return new CandidateContext(candidate, periods);
-  }
-
-  private Candidate fromAggregate(
-      CandidateAggregate candidateAggregate, Collection<NviPeriod> allPeriods) {
-    var publicationYear = candidateAggregate.candidate().getPeriodYear();
-    var period = findByPublishingYear(allPeriods, publicationYear);
-    return Candidate.fromDao(
-        candidateAggregate.candidate(),
-        candidateAggregate.approvals(),
-        candidateAggregate.notes(),
-        period,
-        environment);
   }
 }

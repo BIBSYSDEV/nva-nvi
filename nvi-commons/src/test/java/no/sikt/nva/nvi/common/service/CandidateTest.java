@@ -222,7 +222,7 @@ class CandidateTest extends CandidateTestSetup {
 
     candidateService.updateCandidate(updateRequest);
     var optionalCandidate = candidateService.getCandidateContext(publicationId);
-    Assertions.assertThat(optionalCandidate.candidate()).isEmpty();
+    Assertions.assertThat(optionalCandidate.getCandidate()).isEmpty();
   }
 
   @ParameterizedTest(
@@ -335,7 +335,7 @@ class CandidateTest extends CandidateTestSetup {
         candidateService.getCandidateByIdentifier(tempCandidate.identifier());
 
     var expectedYear = request.publicationDetails().publicationDate().year();
-    var period = updatedApplicableCandidate.period().orElseThrow();
+    var period = updatedApplicableCandidate.period();
     assertTrue(period.hasPublishingYear(expectedYear));
   }
 
@@ -377,7 +377,7 @@ class CandidateTest extends CandidateTestSetup {
     var dao = setupReportedCandidate(candidateRepository, year);
 
     var candidate = candidateService.getCandidateByIdentifier(dao.identifier());
-    var id = candidate.period().map(NviPeriod::id).orElseThrow();
+    var id = candidate.getPeriod().map(NviPeriod::id).orElseThrow();
 
     assertThat(id, is(not(nullValue())));
   }
@@ -389,7 +389,7 @@ class CandidateTest extends CandidateTestSetup {
     var dao = setupReportedCandidate(candidateRepository, year);
 
     var candidate = candidateService.getCandidateByPublicationId(dao.candidate().publicationId());
-    var id = candidate.period().map(NviPeriod::id).orElseThrow();
+    var id = candidate.getPeriod().map(NviPeriod::id).orElseThrow();
 
     assertThat(id, is(not(nullValue())));
   }

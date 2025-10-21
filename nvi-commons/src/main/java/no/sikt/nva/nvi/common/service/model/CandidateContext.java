@@ -5,16 +5,20 @@ import static nva.commons.core.StringUtils.isBlank;
 import java.util.Collection;
 import java.util.Optional;
 
-public record CandidateContext(Optional<Candidate> candidate, Collection<NviPeriod> allPeriods) {
+public record CandidateContext(Candidate candidate, Collection<NviPeriod> allPeriods) {
 
-  public Optional<NviPeriod> getOptionalPeriod(String year) {
+  public Optional<Candidate> getCandidate() {
+    return Optional.ofNullable(candidate);
+  }
+
+  public Optional<NviPeriod> getPeriod(String year) {
     if (isBlank(year)) {
       throw new IllegalArgumentException("Year cannot be blank");
     }
-    return getOptionalPeriod(Integer.parseInt(year));
+    return getPeriod(Integer.parseInt(year));
   }
 
-  public Optional<NviPeriod> getOptionalPeriod(int year) {
+  public Optional<NviPeriod> getPeriod(int year) {
     return allPeriods.stream().filter(period -> period.publishingYear().equals(year)).findFirst();
   }
 }

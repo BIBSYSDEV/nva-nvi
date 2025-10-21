@@ -17,7 +17,6 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.util.Optional;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.model.Status;
@@ -149,8 +148,7 @@ class NviPeriodTest {
 
   @ParameterizedTest()
   @MethodSource("periodToPeriodStatusProvider")
-  void shouldConvertPeriodToPeriodStatusCorrectly(
-      Optional<NviPeriod> period, Status expectedStatus) {
+  void shouldConvertPeriodToPeriodStatusCorrectly(NviPeriod period, Status expectedStatus) {
 
     var statusDto = NviPeriod.toPeriodStatusDto(period);
 
@@ -160,7 +158,7 @@ class NviPeriodTest {
   @Test
   void shouldConvertPeriodToDto() {
     var period = openPeriod();
-    var periodDto = NviPeriod.toPeriodStatusDto(Optional.of(period));
+    var periodDto = NviPeriod.toPeriodStatusDto(period);
     Assertions.assertThat(periodDto)
         .extracting(
             PeriodStatusDto::id,
@@ -228,9 +226,9 @@ class NviPeriodTest {
 
   public static Stream<Arguments> periodToPeriodStatusProvider() {
     return Stream.of(
-        argumentSet("No period", Optional.empty(), Status.NO_PERIOD),
-        argumentSet("Open period", Optional.of(openPeriod()), Status.OPEN_PERIOD),
-        argumentSet("Closed period", Optional.of(closedPeriod()), Status.CLOSED_PERIOD),
-        argumentSet("Unopened period", Optional.of(futurePeriod()), Status.UNOPENED_PERIOD));
+        argumentSet("No period", null, Status.NO_PERIOD),
+        argumentSet("Open period", openPeriod(), Status.OPEN_PERIOD),
+        argumentSet("Closed period", closedPeriod(), Status.CLOSED_PERIOD),
+        argumentSet("Unopened period", futurePeriod(), Status.UNOPENED_PERIOD));
   }
 }

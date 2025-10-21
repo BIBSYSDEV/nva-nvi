@@ -11,7 +11,7 @@ public record ReportStatusDto(
 
   public static ReportStatusDto fromCandidate(Candidate candidate) {
     var publishingYear =
-        candidate.period().map(NviPeriod::publishingYear).map(Objects::toString).orElse(null);
+        candidate.getPeriod().map(NviPeriod::publishingYear).map(Objects::toString).orElse(null);
     return new ReportStatusDto(
         candidate.getPublicationId(),
         StatusWithDescriptionDto.fromStatus(getStatus(candidate)),
@@ -23,7 +23,7 @@ public record ReportStatusDto(
   }
 
   private static StatusDto getStatus(Candidate candidate) {
-    var isOpenPeriod = candidate.period().filter(NviPeriod::isOpen).isPresent();
+    var isOpenPeriod = candidate.getPeriod().filter(NviPeriod::isOpen).isPresent();
     if (!candidate.isApplicable()) {
       return StatusDto.NOT_CANDIDATE;
     } else if (candidate.isReported()) {

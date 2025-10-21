@@ -14,6 +14,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.client.model.Organization;
+import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.dto.PublicationDto;
 import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
@@ -21,6 +22,7 @@ import no.sikt.nva.nvi.common.exceptions.ValidationException;
 import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.PublicationLoaderService;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.service.model.CandidateContext;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil;
 import no.sikt.nva.nvi.events.evaluator.model.NviCreator;
@@ -61,9 +63,8 @@ public class EvaluatorService {
 
     // Get candidate aggregate (if it exists) and list of all periods
     var candidateContext = candidateService.getCandidateContext(publication.id());
-    var optionalCandidate = candidateContext.candidate();
 
-    if (shouldSkipEvaluation(optionalCandidate, publication)) {
+    if (shouldSkipEvaluation(candidateContext, publication)) {
       logger.info(SKIPPED_EVALUATION_MESSAGE, publication.id());
       return Optional.empty();
     }
@@ -81,8 +82,7 @@ public class EvaluatorService {
     }
 
     // Check that the publication can be a candidate in the target period
-    var optionalPeriod = candidateContext.getOptionalPeriod(publication.publicationDate().year());
-    if (!canEvaluateInPeriod(optionalPeriod, optionalCandidate)) {
+    if (!canEvaluateInPeriod(candidateContext, publication.publicationDate())) {
       logger.info("Publication is not applicable in the target period");
       return createNonNviCandidateMessage(publication.id());
     }
@@ -92,13 +92,13 @@ public class EvaluatorService {
   }
 
   private boolean shouldSkipEvaluation(
-      Optional<Candidate> optionalCandidate, PublicationDto publication) {
+      CandidateContext candidateContext, PublicationDto publication) {
     if (hasInvalidPublicationYear(publication)) {
       logger.warn(MALFORMED_DATE_MESSAGE, publication.publicationDate());
       return true;
     }
 
-    if (optionalCandidate.map(Candidate::isReported).orElse(false)) {
+    if (candidateContext.getCandidate().map(Candidate::isReported).orElse(false)) {
       logger.warn(REPORTED_CANDIDATE_MESSAGE);
       return true;
     }
@@ -131,23 +131,24 @@ public class EvaluatorService {
   }
 
   private boolean canEvaluateInPeriod(
-      Optional<NviPeriod> optionalPeriod, Optional<Candidate> optionalCandidate) {
+      CandidateContext candidateContext, PublicationDateDto publicationDate) {
+    var optionalPeriod = candidateContext.getPeriod(publicationDate.year());
     if (optionalPeriod.isEmpty()) {
       return false;
     }
+    var period = optionalPeriod.get();
 
-    var periodIsOpen = optionalPeriod.map(NviPeriod::isOpen).orElse(false);
     var candidateExistsInPeriod =
-        optionalCandidate
-            .map(candidate -> isApplicableInPeriod(optionalPeriod.get(), candidate))
+        candidateContext
+            .getCandidate()
+            .map(candidate -> isApplicableInPeriod(period, candidate))
             .orElse(false);
-
-    return periodIsOpen || candidateExistsInPeriod;
+    return period.isOpen() || candidateExistsInPeriod;
   }
 
   private boolean isApplicableInPeriod(NviPeriod targetPeriod, Candidate candidate) {
     var hasSamePeriod =
-        candidate.period().filter(period -> targetPeriod.id().equals(period.id())).isPresent();
+        candidate.getPeriod().filter(period -> targetPeriod.id().equals(period.id())).isPresent();
     return candidate.isApplicable() && hasSamePeriod;
   }
 

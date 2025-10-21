@@ -65,7 +65,7 @@ public record Candidate(
     boolean applicable,
     Map<URI, Approval> approvals,
     Map<UUID, Note> notes,
-    Optional<NviPeriod> period,
+    NviPeriod period,
     PointCalculation pointCalculation,
     PublicationDetails publicationDetails,
     Instant createdDate,
@@ -88,7 +88,7 @@ public record Candidate(
       CandidateDao candidateDao,
       Collection<ApprovalStatusDao> approvals,
       Collection<NoteDao> notes,
-      Optional<NviPeriod> period,
+      NviPeriod period,
       Environment environment) {
     var dbCandidate = candidateDao.candidate();
     var version = Optional.ofNullable(candidateDao.version()).map(UUID::fromString).orElse(null);
@@ -129,7 +129,7 @@ public record Candidate(
         .withIdentifier(identifier)
         .withApplicable(request.isApplicable())
         .withApprovals(approvals)
-        .withPeriod(Optional.of(targetPeriod))
+        .withPeriod(targetPeriod)
         .withPointCalculation(PointCalculation.from(request))
         .withPublicationDetails(PublicationDetails.from(request))
         .withCreatedDate(createdAt)
@@ -150,14 +150,16 @@ public record Candidate(
         .withApplicable(request.isApplicable())
         .withPointCalculation(PointCalculation.from(request))
         .withPublicationDetails(PublicationDetails.from(request))
-        .withPeriod(Optional.of(targetPeriod))
+        .withPeriod(targetPeriod)
         .withModifiedDate(Instant.now())
         .build();
   }
 
   private boolean canUpdateInPeriod(NviPeriod targetPeriod) {
     var hasSamePeriod =
-        period.filter(currentPeriod -> targetPeriod.id().equals(currentPeriod.id())).isPresent();
+        getPeriod()
+            .filter(currentPeriod -> targetPeriod.id().equals(currentPeriod.id()))
+            .isPresent();
     return hasSamePeriod || targetPeriod.isOpen();
   }
 
@@ -169,12 +171,7 @@ public record Candidate(
     if (isReported()) {
       throw new IllegalCandidateUpdateException(CANDIDATE_IS_REPORTED);
     }
-
-    return copy()
-        .withPeriod(Optional.empty())
-        .withApplicable(false)
-        .withApprovals(emptyMap())
-        .build();
+    return copy().withPeriod(null).withApplicable(false).withApprovals(emptyMap()).build();
   }
 
   public CandidateDao toDao() {
@@ -204,8 +201,8 @@ public record Candidate(
             .publicationId(dbPublication.id())
             .publicationIdentifier(dbPublication.identifier())
             .build();
-    var periodYear = period.map(NviPeriod::publishingYear).map(Object::toString).orElse(null);
-    var daoVersion = nonNull(version) ? version.toString() : null;
+    var periodYear = getPeriod().map(NviPeriod::publishingYear).map(Object::toString).orElse(null);
+    var daoVersion = getVersion().map(Object::toString).orElse(null);
     return CandidateDao.builder()
         .identifier(identifier)
         .candidate(dbCandidate)
@@ -277,6 +274,14 @@ public record Candidate(
     return unmodifiableMap(approvals);
   }
 
+  public Optional<UUID> getVersion() {
+    return Optional.ofNullable(version);
+  }
+
+  public Optional<NviPeriod> getPeriod() {
+    return Optional.ofNullable(period);
+  }
+
   public ApprovalStatus getApprovalStatus(URI organizationId) {
     var approval = approvals.get(organizationId);
     return nonNull(approval) ? approval.status() : ApprovalStatus.NONE;
@@ -308,15 +313,23 @@ public record Candidate(
   }
 
   public boolean isNotReportedInClosedPeriod() {
-    return !isReported() && period.filter(NviPeriod::isClosed).isPresent();
+    return isInClosedPeriod() && !isReported();
   }
 
   public boolean isUnderReview() {
-    return !areAllApprovalsPending() && period.filter(NviPeriod::isOpen).isPresent();
+    return isInOpenPeriod() && !areAllApprovalsPending();
   }
 
   public boolean isPendingReview() {
-    return areAllApprovalsPending() && period.filter(NviPeriod::isOpen).isPresent();
+    return isInOpenPeriod() && areAllApprovalsPending();
+  }
+
+  private boolean isInOpenPeriod() {
+    return getPeriod().map(NviPeriod::isOpen).orElse(false);
+  }
+
+  private boolean isInClosedPeriod() {
+    return getPeriod().map(NviPeriod::isClosed).orElse(false);
   }
 
   public GlobalApprovalStatus getGlobalApprovalStatus() {
@@ -581,13 +594,10 @@ public record Candidate(
   }
 
   private void validateCandidateState() {
-    if (period.isEmpty()) {
+    if (isNull(period) || !period.isOpen()) {
       throw new IllegalStateException(PERIOD_NOT_OPENED_MESSAGE);
     }
-    if (period.filter(NviPeriod::isOpen).isEmpty()) {
-      throw new IllegalStateException(PERIOD_NOT_OPENED_MESSAGE);
-    }
-    if (period.filter(NviPeriod::isClosed).isPresent()) {
+    if (period.isClosed()) {
       throw new IllegalStateException(PERIOD_CLOSED_MESSAGE);
     }
   }
@@ -598,7 +608,7 @@ public record Candidate(
     private boolean applicable;
     private Map<URI, Approval> approvals;
     private Map<UUID, Note> notes;
-    private Optional<NviPeriod> period;
+    private NviPeriod period;
     private PointCalculation pointCalculation;
     private PublicationDetails publicationDetails;
     private Instant createdDate;
@@ -630,7 +640,7 @@ public record Candidate(
       return this;
     }
 
-    public Builder withPeriod(Optional<NviPeriod> period) {
+    public Builder withPeriod(NviPeriod period) {
       this.period = period;
       return this;
     }

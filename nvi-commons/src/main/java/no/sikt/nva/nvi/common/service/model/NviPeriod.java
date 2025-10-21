@@ -1,10 +1,10 @@
 package no.sikt.nva.nvi.common.service.model;
 
+import static java.util.Objects.isNull;
 import static no.sikt.nva.nvi.common.utils.Validator.shouldNotBeNull;
 
 import java.net.URI;
 import java.time.Instant;
-import java.util.Optional;
 import no.sikt.nva.nvi.common.db.NviPeriodDao;
 import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
 import no.sikt.nva.nvi.common.exceptions.ValidationException;
@@ -55,32 +55,31 @@ public record NviPeriod(
         id, publishingYear.toString(), startDate.toString(), reportingDate.toString());
   }
 
-  public static PeriodStatusDto toPeriodStatusDto(Optional<NviPeriod> optionalPeriod) {
+  public static PeriodStatusDto toPeriodStatusDto(NviPeriod optionalPeriod) {
     var status = mapToPeriodStatus(optionalPeriod);
-    return optionalPeriod
-        .map(
-            period ->
-                PeriodStatusDto.builder()
-                    .withId(period.id())
-                    .withStatus(status)
-                    .withYear(period.publishingYear().toString())
-                    .withStartDate(period.startDate().toString())
-                    .withReportingDate(period.reportingDate().toString())
-                    .build())
-        .orElseGet(() -> PeriodStatusDto.builder().withStatus(status).build());
+    if (isNull(optionalPeriod)) {
+      return PeriodStatusDto.builder().withStatus(status).build();
+    }
+    return PeriodStatusDto.builder()
+        .withId(optionalPeriod.id())
+        .withStatus(status)
+        .withYear(optionalPeriod.publishingYear().toString())
+        .withStartDate(optionalPeriod.startDate().toString())
+        .withReportingDate(optionalPeriod.reportingDate().toString())
+        .build();
   }
 
-  private static Status mapToPeriodStatus(Optional<NviPeriod> period) {
-    if (period.filter(NviPeriod::isOpen).isPresent()) {
+  private static Status mapToPeriodStatus(NviPeriod period) {
+    if (isNull(period)) {
+      return Status.NO_PERIOD;
+    }
+    if (period.isOpen()) {
       return Status.OPEN_PERIOD;
     }
-    if (period.filter(NviPeriod::isClosed).isPresent()) {
+    if (period.isClosed()) {
       return Status.CLOSED_PERIOD;
     }
-    if (period.isPresent()) {
-      return Status.UNOPENED_PERIOD;
-    }
-    return Status.NO_PERIOD;
+    return Status.UNOPENED_PERIOD;
   }
 
   public boolean isClosed() {

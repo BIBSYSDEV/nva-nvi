@@ -259,7 +259,7 @@ class CristinNviReportEventConsumerTest {
     assertThat(candidate.approvals().keySet().stream().toList())
         .containsExactlyInAnyOrderElementsOf(expectedApprovalIds);
 
-    var actualPeriodYear = candidate.period().map(NviPeriod::publishingYear).orElseThrow();
+    var actualPeriodYear = candidate.getPeriod().map(NviPeriod::publishingYear).orElseThrow();
     var expectedPeriodYear = cristinNviReport.getYearReportedFromHistoricalData().orElseThrow();
     assertThat(actualPeriodYear.toString()).isEqualTo(expectedPeriodYear);
 

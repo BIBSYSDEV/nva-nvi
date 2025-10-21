@@ -1,11 +1,16 @@
 package no.sikt.nva.nvi.common.db.model;
 
+import static no.sikt.nva.nvi.common.service.NviPeriodService.findByPublishingYear;
+
 import java.util.Collection;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.Dao;
 import no.sikt.nva.nvi.common.db.NoteDao;
+import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.service.model.NviPeriod;
+import nva.commons.core.Environment;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,5 +42,11 @@ public record CandidateAggregate(
     return candidates.isEmpty()
         ? Optional.empty()
         : Optional.of(new CandidateAggregate(candidates.getFirst(), approvals, notes));
+  }
+
+  public Candidate toCandidate(Environment environment, Collection<NviPeriod> allPeriods) {
+    var publicationYear = candidate.getPeriodYear();
+    var period = findByPublishingYear(allPeriods, publicationYear).orElse(null);
+    return Candidate.fromDao(candidate, approvals, notes, period, environment);
   }
 }

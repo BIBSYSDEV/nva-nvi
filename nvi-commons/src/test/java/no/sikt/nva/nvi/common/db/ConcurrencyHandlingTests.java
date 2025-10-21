@@ -435,7 +435,7 @@ class ConcurrencyHandlingTests {
       var response = candidateService.getCandidateContext(publicationId);
 
       var periods = response.allPeriods();
-      var aggregate = response.candidate().orElseThrow();
+      var aggregate = response.getCandidate().orElseThrow();
 
       assertThat(periods).hasSizeGreaterThanOrEqualTo(2);
       assertThat(aggregate.identifier()).isEqualTo(candidateIdentifier);
@@ -477,7 +477,7 @@ class ConcurrencyHandlingTests {
     void shouldReturnEmptyOptionalWhenCandidateDoesNotExist() {
       var response = candidateService.getCandidateContext(randomUri());
 
-      assertThat(response.candidate()).isEmpty();
+      assertThat(response.getCandidate()).isEmpty();
       assertThat(response.allPeriods()).isNotEmpty();
     }
   }
