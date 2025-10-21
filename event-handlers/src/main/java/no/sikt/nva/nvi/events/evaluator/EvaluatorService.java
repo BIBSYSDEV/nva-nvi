@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.events.evaluator;
 
 import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.dto.PublicationDetailsDto.fromPublicationDto;
 import static nva.commons.core.attempt.Try.attempt;
 
@@ -126,7 +127,7 @@ public class EvaluatorService {
   }
 
   private boolean isPublished(PublicationDto publication) {
-    return publication.status() != null && "published".equalsIgnoreCase(publication.status());
+    return nonNull(publication.status()) && "published".equalsIgnoreCase(publication.status());
   }
 
   private boolean canEvaluateInPeriod(
