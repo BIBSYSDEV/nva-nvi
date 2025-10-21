@@ -221,7 +221,7 @@ class CandidateTest extends CandidateTestSetup {
     var updateRequest = createUpsertNonCandidateRequest(publicationId);
 
     candidateService.updateCandidate(updateRequest);
-    var optionalCandidate = candidateService.findCandidateAndPeriods(publicationId);
+    var optionalCandidate = candidateService.findCandidateAndPeriodsByPublicationId(publicationId);
     Assertions.assertThat(optionalCandidate.getCandidate()).isEmpty();
   }
 

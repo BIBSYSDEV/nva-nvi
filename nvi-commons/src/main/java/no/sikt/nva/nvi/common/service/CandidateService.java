@@ -57,7 +57,7 @@ public class CandidateService {
   public void upsertCandidate(UpsertNviCandidateRequest request) {
     LOGGER.info("Upserting candidate for publicationId={}", request.publicationId());
     request.validate();
-    var candidateContext = findCandidateAndPeriods(request.publicationId());
+    var candidateContext = findCandidateAndPeriodsByPublicationId(request.publicationId());
     var targetPeriod =
         findByPublishingYear(candidateContext.allPeriods(), request.publicationYear())
             .orElseThrow(PeriodNotFoundException.forYear(request.publicationYear()));
@@ -118,7 +118,7 @@ public class CandidateService {
   public void updateCandidate(UpsertNonNviCandidateRequest request) {
     var publicationId = request.publicationId();
     LOGGER.info("Updating candidate for publicationId={} to non-candidate", publicationId);
-    var candidateContext = findCandidateAndPeriods(publicationId);
+    var candidateContext = findCandidateAndPeriodsByPublicationId(publicationId);
     var optionalCandidate = candidateContext.getCandidate();
 
     if (optionalCandidate.isEmpty()) {
@@ -136,17 +136,17 @@ public class CandidateService {
 
   public Candidate getCandidateByIdentifier(UUID candidateIdentifier) {
     LOGGER.info("Fetching candidate by identifier {}", candidateIdentifier);
-    var responseContext = findCandidateAndPeriods(candidateIdentifier);
+    var responseContext = findCandidateAndPeriodsByIdentifier(candidateIdentifier);
     return responseContext.getCandidate().orElseThrow(CandidateNotFoundException::new);
   }
 
   public Candidate getCandidateByPublicationId(URI publicationId) {
     LOGGER.info("Fetching candidate by publication id {}", publicationId);
-    var responseContext = findCandidateAndPeriods(publicationId);
+    var responseContext = findCandidateAndPeriodsByPublicationId(publicationId);
     return responseContext.getCandidate().orElseThrow(CandidateNotFoundException::new);
   }
 
-  public CandidateAndPeriods findCandidateAndPeriods(URI publicationId) {
+  public CandidateAndPeriods findCandidateAndPeriodsByPublicationId(URI publicationId) {
     LOGGER.info("Fetching candidate and periods by publication id {}", publicationId);
     var candidateIdentifier = candidateRepository.findByPublicationId(publicationId);
 
@@ -154,10 +154,10 @@ public class CandidateService {
       LOGGER.info("No candidate found for publicationId={}", publicationId);
       return new CandidateAndPeriods(null, periodService.getAll());
     }
-    return findCandidateAndPeriods(candidateIdentifier.get());
+    return findCandidateAndPeriodsByIdentifier(candidateIdentifier.get());
   }
 
-  public CandidateAndPeriods findCandidateAndPeriods(UUID candidateIdentifier) {
+    private CandidateAndPeriods findCandidateAndPeriodsByIdentifier(UUID candidateIdentifier) {
     LOGGER.info("Fetching candidate and periods by identifier {}", candidateIdentifier);
     var candidateFuture = candidateRepository.getCandidateAggregateAsync(candidateIdentifier);
     var periodsFuture = periodService.getAllAsync();

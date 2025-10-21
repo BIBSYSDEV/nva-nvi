@@ -12,7 +12,11 @@ public record ReportingPeriod(String year) {
 
   @JsonIgnore
   public static ReportingPeriod fromCandidate(Candidate candidate) {
-    var publishingYear = candidate.getPeriod().map(NviPeriod::publishingYear).orElseThrow();
-    return new ReportingPeriod(String.valueOf(publishingYear));
+    return candidate
+        .getPeriod()
+        .map(NviPeriod::publishingYear)
+        .map(String::valueOf)
+        .map(ReportingPeriod::new)
+        .orElseThrow();
   }
 }

@@ -61,10 +61,8 @@ public class EvaluatorService {
     var publication = publicationLoader.extractAndTransform(publicationBucketUri);
     logger.info("Evaluating publication with ID: {}", publication.id());
 
-    // Get candidate aggregate (if it exists) and list of all periods
-    var candidateContext = candidateService.findCandidateAndPeriods(publication.id());
-
-    if (shouldSkipEvaluation(candidateContext, publication)) {
+    var candidateAndPeriods = candidateService.findCandidateAndPeriodsByPublicationId(publication.id());
+    if (shouldSkipEvaluation(candidateAndPeriods, publication)) {
       logger.info(SKIPPED_EVALUATION_MESSAGE, publication.id());
       return Optional.empty();
     }
@@ -82,7 +80,7 @@ public class EvaluatorService {
     }
 
     // Check that the publication can be a candidate in the target period
-    if (!canEvaluateInPeriod(candidateContext, publication.publicationDate())) {
+    if (!canEvaluateInPeriod(candidateAndPeriods, publication.publicationDate())) {
       logger.info("Publication is not applicable in the target period");
       return createNonNviCandidateMessage(publication.id());
     }

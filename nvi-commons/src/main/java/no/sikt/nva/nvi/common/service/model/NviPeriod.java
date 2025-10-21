@@ -55,17 +55,17 @@ public record NviPeriod(
         id, publishingYear.toString(), startDate.toString(), reportingDate.toString());
   }
 
-  public static PeriodStatusDto toPeriodStatusDto(NviPeriod optionalPeriod) {
-    var status = mapToPeriodStatus(optionalPeriod);
-    if (isNull(optionalPeriod)) {
+  public static PeriodStatusDto toPeriodStatusDto(NviPeriod period) {
+    var status = mapToPeriodStatus(period);
+    if (isNull(period)) {
       return PeriodStatusDto.builder().withStatus(status).build();
     }
     return PeriodStatusDto.builder()
-        .withId(optionalPeriod.id())
+        .withId(period.id())
         .withStatus(status)
-        .withYear(optionalPeriod.publishingYear().toString())
-        .withStartDate(optionalPeriod.startDate().toString())
-        .withReportingDate(optionalPeriod.reportingDate().toString())
+        .withYear(period.publishingYear().toString())
+        .withStartDate(period.startDate().toString())
+        .withReportingDate(period.reportingDate().toString())
         .build();
   }
 
