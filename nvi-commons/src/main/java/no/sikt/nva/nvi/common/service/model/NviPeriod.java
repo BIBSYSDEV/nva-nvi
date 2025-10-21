@@ -73,13 +73,17 @@ public record NviPeriod(
     if (isNull(period)) {
       return PeriodStatus.NONE;
     }
+
     if (period.isOpen()) {
       return PeriodStatus.OPEN;
     }
     if (period.isClosed()) {
       return PeriodStatus.CLOSED;
     }
-    return PeriodStatus.UNOPENED;
+    if (period.isUnopened()) {
+      return PeriodStatus.UNOPENED;
+    }
+    return PeriodStatus.NONE;
   }
 
   public boolean isClosed() {
@@ -89,6 +93,10 @@ public record NviPeriod(
   public boolean isOpen() {
     var now = Instant.now();
     return startDate.isBefore(now) && reportingDate.isAfter(now);
+  }
+
+  public boolean isUnopened() {
+    return startDate.isAfter(Instant.now());
   }
 
   public boolean hasPublishingYear(String year) {
