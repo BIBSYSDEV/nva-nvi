@@ -381,7 +381,7 @@ class EventBasedBatchScanHandlerTest {
       case NviPeriodDao nviPeriodDao -> getPersistedNviPeriodDao(nviPeriodDao);
       case CandidateUniquenessEntryDao candidateUniquenessEntryDao ->
           candidateRepository.getUniquenessEntry(candidateUniquenessEntryDao);
-      case null, default -> throw new IllegalArgumentException("Unknown type: " + dao);
+      default -> throw new IllegalArgumentException("Unknown type: " + dao);
     };
   }
 
