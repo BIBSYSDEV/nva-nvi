@@ -40,7 +40,7 @@ class CandidateNotesTest extends CandidateTestSetup {
     var userOrganizationId = getAnyOrganizationId(candidate);
     mockOrganizationResponseForAffiliation(userOrganizationId, null, mockUriRetriever);
 
-    var updatedCandidate = candidateService.getByIdentifier(candidate.identifier());
+    var updatedCandidate = candidateService.getCandidateByIdentifier(candidate.identifier());
     var actualNote = getAnyNote(updatedCandidate);
 
     assertThat(noteRequest.username(), is(equalTo(actualNote.user())));
@@ -78,7 +78,7 @@ class CandidateNotesTest extends CandidateTestSetup {
     var deleteRequest = new DeleteNoteRequest(noteToDelete.identifier(), noteToDelete.user());
     noteService.deleteNote(candidate, deleteRequest);
 
-    var updatedCandidate = candidateService.getByIdentifier(candidate.identifier());
+    var updatedCandidate = candidateService.getCandidateByIdentifier(candidate.identifier());
     Assertions.assertThat(updatedCandidate.notes()).isEmpty();
   }
 
@@ -115,7 +115,7 @@ class CandidateNotesTest extends CandidateTestSetup {
     var username = randomString();
     var noteRequest = new CreateNoteRequest(randomString(), username, institutionId);
     noteService.createNote(candidate, noteRequest);
-    var candidateWithNote = candidateService.getByIdentifier(candidate.identifier());
+    var candidateWithNote = candidateService.getCandidateByIdentifier(candidate.identifier());
 
     var actualAssignee = candidateWithNote.approvals().get(institutionId).getAssigneeUsername();
     assertEquals(username, actualAssignee);
@@ -157,6 +157,6 @@ class CandidateNotesTest extends CandidateTestSetup {
   private Candidate setupCandidateWithNote() {
     var candidate = createCandidate();
     noteService.createNote(candidate, randomNoteRequest());
-    return candidateService.getByIdentifier(candidate.identifier());
+    return candidateService.getCandidateByIdentifier(candidate.identifier());
   }
 }

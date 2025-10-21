@@ -245,7 +245,7 @@ class CristinNviReportEventConsumerTest {
 
   private Candidate getByPublicationIdOf(CristinNviReport cristinNviReport) {
     var publicationId = expectedPublicationId(cristinNviReport);
-    return candidateService.getByPublicationId(publicationId);
+    return candidateService.getCandidateByPublicationId(publicationId);
   }
 
   private void assertThatNviCandidateHasExpectedValues(

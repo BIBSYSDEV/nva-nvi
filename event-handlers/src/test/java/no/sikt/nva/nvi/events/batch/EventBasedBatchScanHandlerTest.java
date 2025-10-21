@@ -361,7 +361,7 @@ class EventBasedBatchScanHandlerTest {
   private List<Candidate> getPersistedCandidates(Collection<Candidate> candidates) {
     return candidates.stream()
         .map(Candidate::identifier)
-        .map(candidateService::getByIdentifier)
+        .map(candidateService::getCandidateByIdentifier)
         .toList();
   }
 

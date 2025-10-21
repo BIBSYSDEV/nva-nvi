@@ -61,7 +61,7 @@ public class FetchNviCandidateByPublicationIdHandler extends ApiGatewayHandler<V
       throws ApiGatewayException {
     var userInstance = UserInstance.fromRequestInfo(requestInfo);
     return attempt(() -> getPublicationId(requestInfo))
-        .map(candidateService::getByPublicationId)
+        .map(candidateService::getCandidateByPublicationId)
         .map(this::checkIfApplicable)
         .map(candidate -> CandidateResponseFactory.create(candidate, userInstance))
         .orElseThrow(ExceptionMapper::map);

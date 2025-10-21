@@ -634,7 +634,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
             .build();
     candidateService.upsertCandidate(upsertCandidateRequest);
     var candidateInClosedPeriod =
-        candidateService.getByPublicationId(upsertCandidateRequest.publicationId());
+        candidateService.getCandidateByPublicationId(upsertCandidateRequest.publicationId());
     var content =
         stringFromResources(Path.of(ACADEMIC_ARTICLE_PATH))
             .replace(

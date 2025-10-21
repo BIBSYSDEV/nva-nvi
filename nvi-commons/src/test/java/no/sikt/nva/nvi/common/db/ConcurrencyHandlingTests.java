@@ -452,7 +452,7 @@ class ConcurrencyHandlingTests {
               new PeriodRepository(mockClient),
               new CandidateRepository(mockClient));
 
-      testService.getByIdentifier(candidateIdentifier);
+      testService.getCandidateByIdentifier(candidateIdentifier);
 
       verify(mockClient, times(1)).queryPaginator(any(QueryRequest.class));
       verify(mockClient, times(1)).query(any(QueryRequest.class));

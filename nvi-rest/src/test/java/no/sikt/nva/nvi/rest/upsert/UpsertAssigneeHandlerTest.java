@@ -200,7 +200,7 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
 
   private Candidate candidateWithFinalizedApproval(String newAssignee) {
     var updateRequest = new UpdateAssigneeRequest(topLevelOrganizationId, newAssignee);
-    var candidate = candidateService.getByIdentifier(candidateIdentifier);
+    var candidate = candidateService.getCandidateByIdentifier(candidateIdentifier);
     approvalService.updateApproval(candidate, updateRequest, curatorUser);
     return scenario.updateApprovalStatus(
         candidateIdentifier, ApprovalStatus.APPROVED, topLevelOrganizationId);

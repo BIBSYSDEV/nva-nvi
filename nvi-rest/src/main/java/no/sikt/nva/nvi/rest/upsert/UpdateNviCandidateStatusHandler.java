@@ -69,7 +69,7 @@ public class UpdateNviCandidateStatusHandler
     var updateRequest = input.toUpdateRequest(username.value());
     var userInstance = UserInstance.fromRequestInfo(requestInfo);
 
-    return attempt(() -> candidateService.getByIdentifier(candidateIdentifier))
+    return attempt(() -> candidateService.getCandidateByIdentifier(candidateIdentifier))
         .map(candidate -> validateViewingScope(viewingScopeValidator, username, candidate))
         .map(candidate -> updateAndRefetch(candidate, updateRequest, userInstance))
         .map(candidate -> CandidateResponseFactory.create(candidate, userInstance))
@@ -84,7 +84,7 @@ public class UpdateNviCandidateStatusHandler
   private Candidate updateAndRefetch(
       Candidate candidate, UpdateStatusRequest updateRequest, UserInstance userInstance) {
     approvalService.updateApproval(candidate, updateRequest, userInstance);
-    return candidateService.getByIdentifier(candidate.identifier());
+    return candidateService.getCandidateByIdentifier(candidate.identifier());
   }
 
   private static void validateCustomerAndAccessRight(

@@ -66,7 +66,7 @@ public class RemoveNoteHandler extends ApiGatewayHandler<Void, CandidateDto>
     var user = UserInstance.fromRequestInfo(requestInfo);
     var deleteNoteRequest = new DeleteNoteRequest(noteIdentifier, user.userName().value());
 
-    return attempt(() -> candidateService.getByIdentifier(candidateIdentifier))
+    return attempt(() -> candidateService.getCandidateByIdentifier(candidateIdentifier))
         .map(candidate -> validateViewingScope(viewingScopeValidator, user.userName(), candidate))
         .map(candidate -> deleteNote(candidate, deleteNoteRequest))
         .map(candidate -> CandidateResponseFactory.create(candidate, user))
@@ -75,7 +75,7 @@ public class RemoveNoteHandler extends ApiGatewayHandler<Void, CandidateDto>
 
   private Candidate deleteNote(Candidate candidate, DeleteNoteRequest request) {
     noteService.deleteNote(candidate, request);
-    return candidateService.getByIdentifier(candidate.identifier());
+    return candidateService.getCandidateByIdentifier(candidate.identifier());
   }
 
   @Override

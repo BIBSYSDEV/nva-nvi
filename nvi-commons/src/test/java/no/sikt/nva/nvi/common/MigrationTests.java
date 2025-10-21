@@ -63,7 +63,7 @@ class MigrationTests {
   void shouldWriteCandidateWithNotesAndApprovalsAsIsWhenMigrating() {
     var candidate = setupCandidateWithApprovalAndNotes();
     batchScanUtil.migrateAndUpdateVersion(DEFAULT_PAGE_SIZE, null, emptyList());
-    var migratedCandidate = candidateService.getByIdentifier(candidate.identifier());
+    var migratedCandidate = candidateService.getCandidateByIdentifier(candidate.identifier());
     assertThat(migratedCandidate)
         .usingRecursiveComparison()
         .ignoringCollectionOrder()

@@ -108,7 +108,7 @@ class BatchScanRecoveryHandlerTest {
   }
 
   private CandidateDao getMigratedCandidate(CandidateDao candidate) {
-    return candidateService.getByIdentifier(candidate.identifier()).toDao();
+    return candidateService.getCandidateByIdentifier(candidate.identifier()).toDao();
   }
 
   private CandidateDao placeOnQueue(CandidateDao candidateDao) {

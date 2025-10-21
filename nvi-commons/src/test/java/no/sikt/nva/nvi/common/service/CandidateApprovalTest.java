@@ -222,7 +222,8 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var candidate = setupRandomApplicableCandidate(scenario);
     var updateRequest = createUpsertNonCandidateRequest(candidate.getPublicationId());
     candidateService.updateCandidate(updateRequest);
-    var updatedCandidate = candidateService.getByPublicationId(candidate.getPublicationId());
+    var updatedCandidate =
+        candidateService.getCandidateByPublicationId(candidate.getPublicationId());
 
     assertThat(updatedCandidate.identifier()).isEqualTo(candidate.identifier());
     assertThat(updatedCandidate.approvals()).isEmpty();
@@ -278,7 +279,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var request = new UpdateAssigneeRequest(HARDCODED_INSTITUTION_ID, newUsername);
     approvalService.updateApproval(candidate, request, CURATOR_USER);
 
-    var updatedCandidate = candidateService.getByIdentifier(candidate.identifier());
+    var updatedCandidate = candidateService.getCandidateByIdentifier(candidate.identifier());
     var updatedApproval = updatedCandidate.approvals().get(HARDCODED_INSTITUTION_ID);
     assertThat(updatedApproval.getAssigneeUsername()).isEqualTo(newUsername);
   }

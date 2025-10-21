@@ -43,7 +43,7 @@ public class FetchReportStatusByPublicationIdHandler
   protected ReportStatusDto processInput(Void unused, RequestInfo requestInfo, Context context)
       throws ApiGatewayException {
     var publicationId = getPublicationId(requestInfo);
-    return attempt(() -> candidateService.getByPublicationId(publicationId))
+    return attempt(() -> candidateService.getCandidateByPublicationId(publicationId))
         .map(ReportStatusDto::fromCandidate)
         .orElse(failure -> handleNotFoundOrFailure(failure, publicationId));
   }

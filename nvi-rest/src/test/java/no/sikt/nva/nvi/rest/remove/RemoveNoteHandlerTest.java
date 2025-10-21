@@ -157,14 +157,14 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
     var candidateService = scenario.getCandidateService();
     var candidate = setupValidCandidate();
     noteService.createNote(candidate, randomNoteRequest());
-    return candidateService.getByIdentifier(candidate.identifier());
+    return candidateService.getCandidateByIdentifier(candidate.identifier());
   }
 
   private Candidate createNote(Candidate candidate, Username user) {
     var candidateService = scenario.getCandidateService();
     var noteRequest = new CreateNoteRequest(randomString(), user.value(), topLevelOrganizationId);
     noteService.createNote(candidate, noteRequest);
-    return candidateService.getByIdentifier(candidate.identifier());
+    return candidateService.getCandidateByIdentifier(candidate.identifier());
   }
 
   private HandlerRequestBuilder<NviNoteRequest> createRequest(

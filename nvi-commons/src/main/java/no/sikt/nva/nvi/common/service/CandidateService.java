@@ -138,13 +138,13 @@ public class CandidateService {
     }
   }
 
-  public Candidate getByIdentifier(UUID candidateIdentifier) {
+  public Candidate getCandidateByIdentifier(UUID candidateIdentifier) {
     LOGGER.info("Fetching candidate by identifier {}", candidateIdentifier);
     var responseContext = findAggregate(candidateIdentifier);
     return responseContext.candidate().orElseThrow(CandidateNotFoundException::new);
   }
 
-  public Candidate getByPublicationId(URI publicationId) {
+  public Candidate getCandidateByPublicationId(URI publicationId) {
     LOGGER.info("Fetching candidate by publication id {}", publicationId);
     var responseContext = getCandidateContext(publicationId);
     return responseContext.candidate().orElseThrow(CandidateNotFoundException::new);

@@ -72,7 +72,7 @@ public class CreateNoteHandler extends ApiGatewayHandler<NviNoteRequest, Candida
     var candidateIdentifier = UUID.fromString(requestInfo.getPathParameter(CANDIDATE_IDENTIFIER));
     var institutionId = requestInfo.getTopLevelOrgCristinId().orElseThrow();
     var userInstance = UserInstance.fromRequestInfo(requestInfo);
-    return attempt(() -> candidateService.getByIdentifier(candidateIdentifier))
+    return attempt(() -> candidateService.getCandidateByIdentifier(candidateIdentifier))
         .map(this::checkIfApplicable)
         .map(candidate -> validateViewingScope(viewingScopeValidator, username, candidate))
         .map(candidate -> createNote(input, candidate, username, institutionId))
@@ -89,7 +89,7 @@ public class CreateNoteHandler extends ApiGatewayHandler<NviNoteRequest, Candida
       NviNoteRequest input, Candidate candidate, Username username, URI institutionId) {
     var noteRequest = new CreateNoteRequest(input.text(), username.value(), institutionId);
     noteService.createNote(candidate, noteRequest);
-    return candidateService.getByIdentifier(candidate.identifier());
+    return candidateService.getCandidateByIdentifier(candidate.identifier());
   }
 
   private Candidate checkIfApplicable(Candidate candidate) {
