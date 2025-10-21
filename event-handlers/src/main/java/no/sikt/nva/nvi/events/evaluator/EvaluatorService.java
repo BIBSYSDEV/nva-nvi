@@ -22,7 +22,7 @@ import no.sikt.nva.nvi.common.exceptions.ValidationException;
 import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.PublicationLoaderService;
 import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.sikt.nva.nvi.common.service.model.CandidateContext;
+import no.sikt.nva.nvi.common.service.model.CandidateAndPeriods;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil;
 import no.sikt.nva.nvi.events.evaluator.model.NviCreator;
@@ -62,7 +62,7 @@ public class EvaluatorService {
     logger.info("Evaluating publication with ID: {}", publication.id());
 
     // Get candidate aggregate (if it exists) and list of all periods
-    var candidateContext = candidateService.getCandidateContext(publication.id());
+    var candidateContext = candidateService.findCandidateAndPeriods(publication.id());
 
     if (shouldSkipEvaluation(candidateContext, publication)) {
       logger.info(SKIPPED_EVALUATION_MESSAGE, publication.id());
@@ -92,13 +92,13 @@ public class EvaluatorService {
   }
 
   private boolean shouldSkipEvaluation(
-      CandidateContext candidateContext, PublicationDto publication) {
+    CandidateAndPeriods candidateAndPeriods, PublicationDto publication) {
     if (hasInvalidPublicationYear(publication)) {
       logger.warn(MALFORMED_DATE_MESSAGE, publication.publicationDate());
       return true;
     }
 
-    if (candidateContext.getCandidate().map(Candidate::isReported).orElse(false)) {
+    if (candidateAndPeriods.getCandidate().map(Candidate::isReported).orElse(false)) {
       logger.warn(REPORTED_CANDIDATE_MESSAGE);
       return true;
     }
@@ -131,15 +131,15 @@ public class EvaluatorService {
   }
 
   private boolean canEvaluateInPeriod(
-      CandidateContext candidateContext, PublicationDateDto publicationDate) {
-    var optionalPeriod = candidateContext.getPeriod(publicationDate.year());
+    CandidateAndPeriods candidateAndPeriods, PublicationDateDto publicationDate) {
+    var optionalPeriod = candidateAndPeriods.getPeriod(publicationDate.year());
     if (optionalPeriod.isEmpty()) {
       return false;
     }
     var period = optionalPeriod.get();
 
     var candidateExistsInPeriod =
-        candidateContext
+        candidateAndPeriods
             .getCandidate()
             .map(candidate -> isApplicableInPeriod(period, candidate))
             .orElse(false);

@@ -4,6 +4,7 @@ import java.net.URI;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.exception.PeriodAlreadyExistsException;
 import no.sikt.nva.nvi.common.service.exception.PeriodNotFoundException;
@@ -60,6 +61,10 @@ public class NviPeriodService {
 
   public List<NviPeriod> getAll() {
     return periodRepository.getPeriods().stream().map(NviPeriod::fromDao).toList();
+  }
+
+  public CompletableFuture<List<NviPeriod>> getAllAsync() {
+    return CompletableFuture.supplyAsync(this::getAll);
   }
 
   public Optional<NviPeriod> findByPublishingYear(String publishingYear) {

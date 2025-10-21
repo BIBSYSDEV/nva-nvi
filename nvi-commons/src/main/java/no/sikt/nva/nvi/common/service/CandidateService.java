@@ -9,11 +9,10 @@ import static no.sikt.nva.nvi.common.service.model.Candidate.getUpdatedInstituti
 import static no.sikt.nva.nvi.common.service.model.Candidate.shouldResetCandidate;
 
 import java.net.URI;
-import java.util.List;
+import java.util.Collection;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.Dao;
-import no.sikt.nva.nvi.common.db.NviPeriodDao;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.model.CandidateAggregate;
 import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
@@ -22,7 +21,7 @@ import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.exception.PeriodNotFoundException;
 import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.sikt.nva.nvi.common.service.model.CandidateContext;
+import no.sikt.nva.nvi.common.service.model.CandidateAndPeriods;
 import no.sikt.nva.nvi.common.service.model.Note;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import nva.commons.core.Environment;
@@ -35,7 +34,6 @@ public class CandidateService {
   private static final Logger LOGGER = LoggerFactory.getLogger(CandidateService.class);
   private final Environment environment;
   private final CandidateRepository candidateRepository;
-  private final PeriodRepository periodRepository;
   private final NviPeriodService periodService;
 
   public CandidateService(
@@ -43,7 +41,6 @@ public class CandidateService {
       PeriodRepository periodRepository,
       CandidateRepository candidateRepository) {
     this.environment = environment;
-    this.periodRepository = periodRepository;
     this.candidateRepository = candidateRepository;
     this.periodService = new NviPeriodService(environment, periodRepository);
   }
@@ -60,7 +57,7 @@ public class CandidateService {
   public void upsertCandidate(UpsertNviCandidateRequest request) {
     LOGGER.info("Upserting candidate for publicationId={}", request.publicationId());
     request.validate();
-    var candidateContext = getCandidateContext(request.publicationId());
+    var candidateContext = findCandidateAndPeriods(request.publicationId());
     var targetPeriod =
         findByPublishingYear(candidateContext.allPeriods(), request.publicationYear())
             .orElseThrow(PeriodNotFoundException.forYear(request.publicationYear()));
@@ -121,7 +118,7 @@ public class CandidateService {
   public void updateCandidate(UpsertNonNviCandidateRequest request) {
     var publicationId = request.publicationId();
     LOGGER.info("Updating candidate for publicationId={} to non-candidate", publicationId);
-    var candidateContext = getCandidateContext(publicationId);
+    var candidateContext = findCandidateAndPeriods(publicationId);
     var optionalCandidate = candidateContext.getCandidate();
 
     if (optionalCandidate.isEmpty()) {
@@ -139,45 +136,43 @@ public class CandidateService {
 
   public Candidate getCandidateByIdentifier(UUID candidateIdentifier) {
     LOGGER.info("Fetching candidate by identifier {}", candidateIdentifier);
-    var responseContext = findAggregate(candidateIdentifier);
+    var responseContext = findCandidateAndPeriods(candidateIdentifier);
     return responseContext.getCandidate().orElseThrow(CandidateNotFoundException::new);
   }
 
   public Candidate getCandidateByPublicationId(URI publicationId) {
     LOGGER.info("Fetching candidate by publication id {}", publicationId);
-    var responseContext = getCandidateContext(publicationId);
+    var responseContext = findCandidateAndPeriods(publicationId);
     return responseContext.getCandidate().orElseThrow(CandidateNotFoundException::new);
   }
 
-  public CandidateContext getCandidateContext(URI publicationId) {
+  public CandidateAndPeriods findCandidateAndPeriods(URI publicationId) {
     LOGGER.info("Fetching candidate and periods by publication id {}", publicationId);
     var candidateIdentifier = candidateRepository.findByPublicationId(publicationId);
 
     if (candidateIdentifier.isEmpty()) {
       LOGGER.info("No candidate found for publicationId={}", publicationId);
-      return new CandidateContext(null, periodService.getAll());
+      return new CandidateAndPeriods(null, periodService.getAll());
     }
-    return findAggregate(candidateIdentifier.get());
+    return findCandidateAndPeriods(candidateIdentifier.get());
   }
 
-  private CandidateContext findAggregate(UUID candidateIdentifier) {
+  public CandidateAndPeriods findCandidateAndPeriods(UUID candidateIdentifier) {
     LOGGER.info("Fetching candidate and periods by identifier {}", candidateIdentifier);
-
     var candidateFuture = candidateRepository.getCandidateAggregateAsync(candidateIdentifier);
-    var periodsFuture = periodRepository.getPeriodsAsync();
+    var periodsFuture = periodService.getAllAsync();
 
-    return candidateFuture.thenCombine(periodsFuture, this::mapToCandidateContext).join();
+    return candidateFuture.thenCombine(periodsFuture, this::mergeCandidateAndPeriods).join();
   }
 
-  private CandidateContext mapToCandidateContext(
-      List<Dao> candidateItems, List<NviPeriodDao> allPeriods) {
+  private CandidateAndPeriods mergeCandidateAndPeriods(
+      Collection<Dao> candidateItems, Collection<NviPeriod> periods) {
     var candidateAggregate = CandidateAggregate.fromQueryResponse(candidateItems);
-    var periods = allPeriods.stream().map(NviPeriod::fromDao).toList();
     var candidate =
         candidateAggregate
             .map(aggregate -> aggregate.toCandidate(environment, periods))
             .orElse(null);
 
-    return new CandidateContext(candidate, periods);
+    return new CandidateAndPeriods(candidate, periods);
   }
 }

@@ -5,7 +5,12 @@ import static nva.commons.core.StringUtils.isBlank;
 import java.util.Collection;
 import java.util.Optional;
 
-public record CandidateContext(Candidate candidate, Collection<NviPeriod> allPeriods) {
+/**
+ * Holds an existing candidate (if any) along with all NVI periods. Used when evaluating
+ * publications to compare the candidate's current period against the period matching the
+ * publication's year.
+ */
+public record CandidateAndPeriods(Candidate candidate, Collection<NviPeriod> allPeriods) {
 
   public Optional<Candidate> getCandidate() {
     return Optional.ofNullable(candidate);
