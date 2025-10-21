@@ -147,14 +147,11 @@ public class CandidateRepository extends DynamoRepository {
     var publicationId = candidate.candidate().publicationId();
     var uniquenessEntry = new CandidateUniquenessEntryDao(publicationId.toString());
 
-    transaction.addPutItem(
-        uniquenessTable, createNewItem(uniquenessEntry.withMutatedVersion(), uniquenessTable));
-    transaction.addPutItem(
-        candidateTable, createNewItem(candidate.withMutatedVersion(), candidateTable));
+    addNewItemWithVersion(transaction, uniquenessTable, uniquenessEntry);
+    addNewItemWithVersion(transaction, candidateTable, candidate);
 
     for (var approval : approvals) {
-      transaction.addPutItem(
-          approvalStatusTable, createNewItem(approval.withMutatedVersion(), approvalStatusTable));
+      addNewItemWithVersion(transaction, approvalStatusTable, approval);
     }
 
     sendTransaction(transaction.build());
@@ -167,8 +164,8 @@ public class CandidateRepository extends DynamoRepository {
       Collection<NoteDao> notesToUpdate) {
     LOGGER.info("Updating candidate {}", candidate.identifier());
     var transaction = TransactWriteItemsEnhancedRequest.builder();
-    transaction.addPutItem(candidateTable, candidate.withMutatedVersion());
-    addToTransaction(transaction, approvalsToUpdate, approvalsToDelete, notesToUpdate);
+    addUpdatedItemWithVersion(transaction, candidateTable, candidate);
+    addAllToTransaction(transaction, approvalsToUpdate, approvalsToDelete, notesToUpdate);
     sendTransaction(transaction.build());
   }
 
@@ -180,7 +177,7 @@ public class CandidateRepository extends DynamoRepository {
     LOGGER.info("Updating approvals and notes for candidate {}", candidate.identifier());
     var transaction = TransactWriteItemsEnhancedRequest.builder();
     transaction.addConditionCheck(candidateTable, requireExpectedCandidateRevision(candidate));
-    addToTransaction(transaction, approvalsToUpdate, approvalsToDelete, notesToUpdate);
+    addAllToTransaction(transaction, approvalsToUpdate, approvalsToDelete, notesToUpdate);
     sendTransaction(transaction.build());
   }
 
@@ -259,7 +256,7 @@ public class CandidateRepository extends DynamoRepository {
         .build();
   }
 
-  private void addToTransaction(
+  private void addAllToTransaction(
       Builder transaction,
       Collection<ApprovalStatusDao> approvalsToUpdate,
       Collection<ApprovalStatusDao> approvalsToDelete,
@@ -267,7 +264,7 @@ public class CandidateRepository extends DynamoRepository {
 
     LOGGER.info("Updating {} approvals", approvalsToUpdate.size());
     for (var updatedApproval : approvalsToUpdate) {
-      transaction.addPutItem(approvalStatusTable, updatedApproval.withMutatedVersion());
+      addUpdatedItemWithVersion(transaction, approvalStatusTable, updatedApproval);
     }
 
     LOGGER.info("Deleting {} approvals", approvalsToDelete.size());
@@ -277,7 +274,7 @@ public class CandidateRepository extends DynamoRepository {
 
     LOGGER.info("Updating {} approvals", notesToUpdate.size());
     for (var note : notesToUpdate) {
-      transaction.addPutItem(noteTable, note.withMutatedVersion());
+      addUpdatedItemWithVersion(transaction, noteTable, note);
     }
   }
 

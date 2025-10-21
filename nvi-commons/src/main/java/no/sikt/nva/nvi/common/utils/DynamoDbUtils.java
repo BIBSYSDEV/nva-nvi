@@ -48,7 +48,7 @@ public final class DynamoDbUtils {
   }
 
   public static String extractField(Dao oldImage, Dao newImage, String field) {
-      return Optional.ofNullable(newImage).orElse(oldImage).toDynamoFormat().get(field).s();
+    return Optional.ofNullable(newImage).orElse(oldImage).toDynamoFormat().get(field).s();
   }
 
   private static Map<String, AttributeValue> mapToDynamoDbAttributeValue(

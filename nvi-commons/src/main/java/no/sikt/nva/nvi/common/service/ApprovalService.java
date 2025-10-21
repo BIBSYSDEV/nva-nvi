@@ -4,8 +4,6 @@ import static java.util.Collections.emptyList;
 import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
 
 import java.util.List;
-import java.util.Objects;
-
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.model.UpdateApprovalRequest;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
