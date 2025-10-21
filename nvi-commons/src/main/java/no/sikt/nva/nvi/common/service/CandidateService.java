@@ -128,7 +128,7 @@ public class CandidateService {
     if (candidateContext.candidate().isEmpty()) {
       LOGGER.warn("No candidate found for publicationId={}", publicationId);
     } else {
-      var candidate = candidateContext.candidate().orElseThrow();
+      var candidate = candidateContext.candidate().get();
       var updatedCandidate = candidate.updateToNonCandidate().toDao();
       var approvalsToDelete = candidate.approvals().values().stream().map(Approval::toDao).toList();
 
