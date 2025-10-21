@@ -886,10 +886,6 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
 
     @Test
     void shouldEvaluateExistingCandidateInClosedPeriod() {
-      // Given a publication that has been evaluated as an applicable Candidate
-      // And the publication is published in a closed period
-      // When the publication is evaluated
-      // Then it should be evaluated as a Candidate
       setupOpenPeriod(scenario, publicationDate.year());
       var publication =
           factory.withContributor(verifiedCreatorFrom(nviOrganization)).getExpandedPublication();
@@ -1057,17 +1053,19 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
 
     private void setupCandidateMatchingPublication(
         SampleExpandedPublication sampleExpandedPublication) {
-      var publicationDate =
-          new PublicationDateDto(
-              sampleExpandedPublication.publicationDate().year(),
-              sampleExpandedPublication.publicationDate().month(),
-              sampleExpandedPublication.publicationDate().day());
       var upsertCandidateRequest =
           randomUpsertRequestBuilder()
-              .withPublicationDate(publicationDate)
+              .withPublicationDate(getPublicationDateDto(sampleExpandedPublication))
               .withPublicationId(sampleExpandedPublication.id())
               .build();
       candidateService.upsertCandidate(upsertCandidateRequest);
     }
+  }
+
+  private static PublicationDateDto getPublicationDateDto(
+      SampleExpandedPublication sampleExpandedPublication) {
+    var publicationDate = sampleExpandedPublication.publicationDate();
+    return new PublicationDateDto(
+        publicationDate.year(), publicationDate.month(), publicationDate.day());
   }
 }
