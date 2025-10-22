@@ -188,6 +188,10 @@ public class CandidateService {
     return new CandidateAndPeriods(candidate, periods);
   }
 
+  /**
+   * Gets all periods relevant to the candidate update. Returns both old and new periods if
+   * publication year changed.
+   */
   private static List<NviPeriodDao> getExpectedPeriods(
       Candidate candidate, Candidate updatedCandidate) {
     return Stream.of(candidate.getPeriod(), updatedCandidate.getPeriod())
