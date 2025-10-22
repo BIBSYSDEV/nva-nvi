@@ -25,9 +25,11 @@ public class PeriodRepository extends DynamoRepository {
     this.nviPeriodTable = this.client.table(NVI_TABLE_NAME, NviPeriodDao.TABLE_SCHEMA);
   }
 
-  public void save(NviPeriodDao period) {
-    LOGGER.info("Saving period: {}", period);
-    nviPeriodTable.putItem(period.withMutatedVersion());
+  public void create(NviPeriodDao period) {
+    LOGGER.info("Creating period: {}", period);
+    var transaction = TransactWriteItemsEnhancedRequest.builder();
+    addNewItemWithVersion(transaction, nviPeriodTable, period);
+    sendTransaction(transaction.build());
   }
 
   public void update(NviPeriodDao period) {
