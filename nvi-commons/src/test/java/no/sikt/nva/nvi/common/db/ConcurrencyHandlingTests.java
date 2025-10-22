@@ -281,6 +281,15 @@ class ConcurrencyHandlingTests {
       assertThrowsExceptionFromDynamoDbVersionAttributeAnnotation(
           () -> periodRepository.update(updatedPeriod));
     }
+
+    @Test
+    void shouldFailWhenCreatingDuplicatePeriod() {
+      var periodRepository = scenario.getPeriodRepository();
+      var currentPeriod = periodService.getByPublishingYear(PUBLICATION_DATE.year());
+      var updatedPeriod = currentPeriod.toDao();
+
+      assertThrowsExceptionFromNewItemCondition(() -> periodRepository.create(updatedPeriod));
+    }
   }
 
   @Nested
@@ -567,6 +576,14 @@ class ConcurrencyHandlingTests {
     return ApprovalStatus.APPROVED.equals(originalStatus)
         ? ApprovalStatus.PENDING
         : ApprovalStatus.REJECTED;
+  }
+
+  private static void assertThrowsExceptionFromNewItemCondition(
+      ThrowableAssert.ThrowingCallable operation) {
+    var expectedError = "(attribute_not_exists(#partitionKey) AND attribute_not_exists(#sortKey))";
+    assertThatThrownBy(operation)
+        .isInstanceOf(TransactionException.class)
+        .hasMessageContaining(expectedError);
   }
 
   private static void assertThrowsExceptionFromCustomRevisionCondition(
