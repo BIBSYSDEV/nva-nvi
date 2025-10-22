@@ -63,7 +63,7 @@ public class PeriodRepository extends DynamoRepository {
         Key.builder().partitionValue(NviPeriodDao.TYPE).sortValue(NviPeriodDao.TYPE).build());
   }
 
-  public static Key createPeriodKey(String publishingYear) {
+  protected static Key createPeriodKey(String publishingYear) {
     return Key.builder()
         .partitionValue(NviPeriodDao.TYPE)
         .sortValue(NviPeriodDao.createSortKey(publishingYear))
