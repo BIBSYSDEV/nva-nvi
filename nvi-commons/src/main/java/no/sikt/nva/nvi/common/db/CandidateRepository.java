@@ -103,9 +103,8 @@ public class CandidateRepository extends DynamoRepository {
   }
 
   /**
-   * Note that this query is done against a GSI and is therefore not strongly consistent. This is
-   * acceptable for bulk operations that only need to extract identifiers, but it does not guarantee
-   * reading the most up-to-date information.
+   * Queries candidates by year using a GSI (not strongly consistent). Suitable for bulk operations
+   * that extract identifiers but may not return the latest data.
    */
   public ListingResult<CandidateDao> fetchCandidatesByYear(
       String year,
@@ -149,10 +148,10 @@ public class CandidateRepository extends DynamoRepository {
   /**
    * Creates a new NVI candidate with associated approvals.
    *
-   * @param dependentPeriod Period this candidate is tied to. The transaction will fail if this has
-   *     been updated concurrently.
+   * @param dependentPeriod Period the candidate belongs to. Transaction fails if modified
+   *     concurrently.
    * @param candidate Candidate to create
-   * @param approvals Approval statuses to create for this candidate
+   * @param approvals Approval statuses to create
    */
   public void create(
       NviPeriodDao dependentPeriod,
@@ -178,10 +177,10 @@ public class CandidateRepository extends DynamoRepository {
   }
 
   /**
-   * Updates a candidate with its associated approvals and notes.
+   * Updates a candidate with its approvals and notes.
    *
-   * @param dependentPeriods Periods this candidate is tied to (multiple if the publication year is
-   *     updated). The transaction will fail if any of these have been updated concurrently.
+   * @param dependentPeriods Periods the candidate belongs to. Transaction fails if any are modified
+   *     concurrently.
    * @param candidate Candidate to update
    * @param approvalsToUpdate Approval statuses to update
    * @param approvalsToDelete Approval statuses to delete
@@ -204,12 +203,11 @@ public class CandidateRepository extends DynamoRepository {
   }
 
   /**
-   * Updates the approvals and notes for a candidate, without modifying the candidate itself.
+   * Updates approvals and notes without modifying the candidate itself.
    *
-   * @param dependentPeriod Period this candidate is tied to. The transaction will fail if this has
-   *     been updated concurrently.
-   * @param candidate Candidate the items belong to. The transaction will fail if this has been
-   *     updated concurrently.
+   * @param dependentPeriod Period the candidate belongs to. Transaction fails if modified
+   *     concurrently.
+   * @param candidate Candidate the items belong to. Transaction fails if modified concurrently.
    * @param approvalsToUpdate Approval statuses to update
    * @param approvalsToDelete Approval statuses to delete
    * @param notesToUpdate Notes to update
@@ -228,6 +226,12 @@ public class CandidateRepository extends DynamoRepository {
     sendTransaction(transaction.build());
   }
 
+  /**
+   * Fetches a candidate and all related items (approvals, notes) asynchronously.
+   *
+   * @param candidateId Candidate identifier
+   * @return CompletableFuture containing all related database entries
+   */
   public CompletableFuture<List<Dao>> getCandidateAggregateAsync(UUID candidateId) {
     LOGGER.info("Fetching candidate and related data for candidateId={}", candidateId);
 
@@ -236,6 +240,12 @@ public class CandidateRepository extends DynamoRepository {
         .thenApply(items -> items.stream().map(this::mapToDao).toList());
   }
 
+  /**
+   * Fetches a candidate by identifier.
+   *
+   * @param candidateIdentifier Candidate identifier
+   * @return Optional containing the candidate, or empty if not found
+   */
   public Optional<CandidateDao> findCandidateById(UUID candidateIdentifier) {
     LOGGER.info("Fetching candidate by identifier {}", candidateIdentifier);
     var candidateKey = createCandidateKey(candidateIdentifier);
@@ -243,8 +253,8 @@ public class CandidateRepository extends DynamoRepository {
   }
 
   /**
-   * Finds a candidate identifier by publication ID via a GSI. Because GSIs do not support strongly
-   * consistent reads it is necessary to re-fetch the actual candidate from the primary table.
+   * Finds candidate identifier by publication ID via GSI. Re-fetch from primary table for strongly
+   * consistent reads.
    */
   public Optional<UUID> findByPublicationId(URI publicationId) {
     LOGGER.info("Fetching candidate by publication id {}", publicationId);
