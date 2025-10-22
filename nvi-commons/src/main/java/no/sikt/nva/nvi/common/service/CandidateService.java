@@ -86,7 +86,7 @@ public class CandidateService {
   private void updateCandidate(
       UpsertNviCandidateRequest request, Candidate candidate, NviPeriod targetPeriod) {
     var updatedCandidate = candidate.apply(request, targetPeriod);
-    var expectedPeriods = getExpectedPeriods(candidate, updatedCandidate);
+    var expectedPeriods = getRelevantPeriods(candidate, updatedCandidate);
     if (shouldResetCandidate(request, candidate) || !candidate.isApplicable()) {
       LOGGER.info("Resetting all approvals for candidate {}", candidate.identifier());
       var institutionsToReset = updatedCandidate.getInstitutionPoints();
@@ -137,7 +137,7 @@ public class CandidateService {
     } else {
       var candidate = optionalCandidate.get();
       var updatedCandidate = candidate.updateToNonCandidate();
-      var expectedPeriods = getExpectedPeriods(candidate, updatedCandidate);
+      var expectedPeriods = getRelevantPeriods(candidate, updatedCandidate);
       var approvalsToDelete = candidate.approvals().values().stream().map(Approval::toDao).toList();
 
       candidateRepository.updateCandidateAggregate(
@@ -196,7 +196,7 @@ public class CandidateService {
    * @param updatedCandidate Updated candidate
    * @return List of relevant periods (one if unchanged, two if publication year changed)
    */
-  private static List<NviPeriodDao> getExpectedPeriods(
+  private static List<NviPeriodDao> getRelevantPeriods(
       Candidate candidate, Candidate updatedCandidate) {
     return Stream.of(candidate.getPeriod(), updatedCandidate.getPeriod())
         .filter(Optional::isPresent)
