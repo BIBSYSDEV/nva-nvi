@@ -22,7 +22,7 @@ public record PointCalculation(
     BigDecimal collaborationFactor,
     BigDecimal basePoints,
     int creatorShareCount,
-    List<InstitutionPoints> institutionPoints,
+    Collection<InstitutionPoints> institutionPoints,
     BigDecimal totalPoints) {
 
   public PointCalculation(
@@ -32,7 +32,7 @@ public record PointCalculation(
       BigDecimal collaborationFactor,
       BigDecimal basePoints,
       int creatorShareCount,
-      List<InstitutionPoints> institutionPoints,
+      Collection<InstitutionPoints> institutionPoints,
       BigDecimal totalPoints) {
     this.instanceType = instanceType;
     this.channel = channel;
@@ -114,7 +114,7 @@ public record PointCalculation(
   }
 
   private static List<DbInstitutionPoints> mapToDbInstitutionPoints(
-      List<InstitutionPoints> points) {
+      Collection<InstitutionPoints> points) {
     return points.stream().map(DbInstitutionPoints::from).toList();
   }
 }

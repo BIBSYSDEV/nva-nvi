@@ -256,9 +256,9 @@ public record Candidate(
     return pointCalculation.instanceType();
   }
 
-  public List<InstitutionPoints> getInstitutionPoints() {
+  public Collection<InstitutionPoints> getInstitutionPoints() {
     return Optional.ofNullable(pointCalculation.institutionPoints())
-        .map(Collections::unmodifiableList)
+        .map(Collections::unmodifiableCollection)
         .orElse(emptyList());
   }
 
@@ -533,7 +533,7 @@ public record Candidate(
     return resetApprovals;
   }
 
-  private static List<DbInstitutionPoints> mapToPoints(List<InstitutionPoints> points) {
+  private static List<DbInstitutionPoints> mapToPoints(Collection<InstitutionPoints> points) {
     return points.stream().map(DbInstitutionPoints::from).toList();
   }
 

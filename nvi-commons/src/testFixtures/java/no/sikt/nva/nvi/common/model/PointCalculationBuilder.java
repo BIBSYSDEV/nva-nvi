@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.common.model;
 
 import java.math.BigDecimal;
-import java.util.List;
+import java.util.Collection;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 
 public final class PointCalculationBuilder {
@@ -11,7 +11,7 @@ public final class PointCalculationBuilder {
   private BigDecimal collaborationFactor;
   private BigDecimal basePoints;
   private int creatorShareCount;
-  private List<InstitutionPoints> institutionPoints;
+  private Collection<InstitutionPoints> institutionPoints;
   private BigDecimal totalPoints;
 
   public PointCalculationBuilder() {}
@@ -62,7 +62,8 @@ public final class PointCalculationBuilder {
     return this;
   }
 
-  public PointCalculationBuilder withInstitutionPoints(List<InstitutionPoints> institutionPoints) {
+  public PointCalculationBuilder withInstitutionPoints(
+      Collection<InstitutionPoints> institutionPoints) {
     this.institutionPoints = institutionPoints;
     return this;
   }

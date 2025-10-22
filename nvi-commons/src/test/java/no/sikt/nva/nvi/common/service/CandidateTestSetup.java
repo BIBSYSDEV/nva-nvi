@@ -75,6 +75,6 @@ public class CandidateTestSetup {
    * randomly generated data.
    */
   protected static URI getAnyOrganizationId(Candidate candidate) {
-    return candidate.getInstitutionPoints().getFirst().institutionId();
+    return candidate.getInstitutionPoints().iterator().next().institutionId();
   }
 }
