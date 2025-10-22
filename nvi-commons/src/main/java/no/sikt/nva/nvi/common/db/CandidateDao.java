@@ -16,7 +16,6 @@ import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_YEAR_HASH
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_YEAR_RANGE_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.VERSION_FIELD;
-import static no.sikt.nva.nvi.common.utils.DecimalUtils.adjustScaleAndRoundingMode;
 import static nva.commons.core.attempt.Try.attempt;
 import static org.apache.commons.lang3.StringUtils.equalsIgnoreCase;
 
@@ -742,7 +741,7 @@ public final class CandidateDao extends Dao {
     public static DbInstitutionPoints from(InstitutionPoints institutionPoints) {
       return new DbInstitutionPoints(
           institutionPoints.institutionId(),
-          adjustScaleAndRoundingMode(institutionPoints.institutionPoints()),
+          institutionPoints.institutionPoints(),
           institutionPoints.creatorAffiliationPoints().stream()
               .map(DbCreatorAffiliationPoints::from)
               .toList());
@@ -770,7 +769,7 @@ public final class CandidateDao extends Dao {
         return new DbCreatorAffiliationPoints(
             creatorAffiliationPoints.nviCreator(),
             creatorAffiliationPoints.affiliationId(),
-            adjustScaleAndRoundingMode(creatorAffiliationPoints.points()));
+            creatorAffiliationPoints.points());
       }
 
       public static final class Builder {
