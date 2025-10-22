@@ -163,12 +163,12 @@ public class CandidateRepository extends DynamoRepository {
     var publicationId = candidate.candidate().publicationId();
     var uniquenessEntry = new CandidateUniquenessEntryDao(publicationId.toString());
 
-    addNewItemWithVersion(transaction, uniquenessTable, uniquenessEntry);
-    addNewItemWithVersion(transaction, candidateTable, candidate);
-
     if (nonNull(dependentPeriod)) {
       transaction.addConditionCheck(periodTable, requireExpectedPeriodRevision(dependentPeriod));
     }
+    addNewItemWithVersion(transaction, uniquenessTable, uniquenessEntry);
+    addNewItemWithVersion(transaction, candidateTable, candidate);
+
     for (var approval : approvals) {
       addNewItemWithVersion(transaction, approvalStatusTable, approval);
     }
@@ -194,11 +194,11 @@ public class CandidateRepository extends DynamoRepository {
       Collection<NoteDao> notesToUpdate) {
     LOGGER.info("Updating candidate {}", candidate.identifier());
     var transaction = TransactWriteItemsEnhancedRequest.builder();
-    addUpdatedItemWithVersion(transaction, candidateTable, candidate);
-    addAllToTransaction(transaction, approvalsToUpdate, approvalsToDelete, notesToUpdate);
     for (var period : dependentPeriods) {
       transaction.addConditionCheck(periodTable, requireExpectedPeriodRevision(period));
     }
+    addUpdatedItemWithVersion(transaction, candidateTable, candidate);
+    addAllToTransaction(transaction, approvalsToUpdate, approvalsToDelete, notesToUpdate);
     sendTransaction(transaction.build());
   }
 
