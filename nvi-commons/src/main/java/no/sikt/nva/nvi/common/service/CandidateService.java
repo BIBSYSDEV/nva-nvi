@@ -191,6 +191,10 @@ public class CandidateService {
   /**
    * Gets all periods relevant to the candidate update. Returns both old and new periods if
    * publication year changed.
+   *
+   * @param candidate Current candidate
+   * @param updatedCandidate Updated candidate
+   * @return List of relevant periods (one if unchanged, two if publication year changed)
    */
   private static List<NviPeriodDao> getExpectedPeriods(
       Candidate candidate, Candidate updatedCandidate) {
