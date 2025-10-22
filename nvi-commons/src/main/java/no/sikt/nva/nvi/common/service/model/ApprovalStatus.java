@@ -35,6 +35,11 @@ public enum ApprovalStatus {
   }
 
   @JsonIgnore
+  public boolean isFinalized() {
+    return APPROVED.equals(this) || REJECTED.equals(this);
+  }
+
+  @JsonIgnore
   public Set<ApprovalStatus> getValidTransitions() {
     return switch (this) {
       case APPROVED -> EnumSet.of(PENDING, REJECTED);
@@ -42,6 +47,14 @@ public enum ApprovalStatus {
       case REJECTED -> EnumSet.of(PENDING, APPROVED);
       case NONE -> emptySet();
     };
+  }
+
+  @JsonIgnore
+  public void validateStateTransition(ApprovalStatus newStatus) {
+    var validTransitions = getValidTransitions();
+    if (!validTransitions.contains(newStatus)) {
+      throw new IllegalArgumentException("Illegal state transition attempted");
+    }
   }
 
   @JsonIgnore

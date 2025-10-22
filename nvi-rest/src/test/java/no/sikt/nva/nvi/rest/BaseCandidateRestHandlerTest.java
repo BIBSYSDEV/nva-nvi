@@ -6,6 +6,7 @@ import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertNonCandid
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.dto.NviCreatorDtoFixtures.verifiedNviCreatorDtoFrom;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.mockOrganizationResponseForAffiliation;
+import static no.sikt.nva.nvi.common.model.UserInstanceFixtures.createCuratorUserInstance;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -24,12 +25,16 @@ import java.net.URI;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import no.sikt.nva.nvi.common.FakeEnvironment;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.UpsertRequestBuilder;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.dto.NviCreatorDtoFixtures;
 import no.sikt.nva.nvi.common.model.CandidateFixtures;
-import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
+import no.sikt.nva.nvi.common.model.UserInstance;
+import no.sikt.nva.nvi.common.service.ApprovalService;
+import no.sikt.nva.nvi.common.service.CandidateService;
+import no.sikt.nva.nvi.common.service.NoteService;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
@@ -52,7 +57,7 @@ public abstract class BaseCandidateRestHandlerTest {
   protected static final ViewingScopeValidator mockViewingScopeValidator =
       new FakeViewingScopeValidator(true);
   protected static final Context CONTEXT = mock(Context.class);
-  protected static final Environment ENVIRONMENT = new Environment();
+  protected Environment environment;
   protected UriRetriever mockUriRetriever;
   protected String resourcePathParameter;
   protected List<Organization> topLevelOrganizations;
@@ -62,9 +67,14 @@ public abstract class BaseCandidateRestHandlerTest {
   protected ByteArrayOutputStream output;
   protected ApiGatewayHandler<?, CandidateDto> handler;
   protected TestScenario scenario;
+  protected CandidateService candidateService;
+  protected NoteService noteService;
+  protected ApprovalService approvalService;
+  protected UserInstance curatorUser;
 
   @BeforeEach
   protected void commonSetup() {
+    environment = getHandlerEnvironment();
     scenario = new TestScenario();
     setupOpenPeriod(scenario, CURRENT_YEAR);
     topLevelOrganization = scenario.getDefaultOrganization();
@@ -72,10 +82,19 @@ public abstract class BaseCandidateRestHandlerTest {
     topLevelOrganizationId = topLevelOrganization.id();
     subOrganizationId = topLevelOrganization.hasPart().getFirst().id();
     mockUriRetriever = scenario.getMockedUriRetriever();
+    curatorUser = createCuratorUserInstance(topLevelOrganizationId);
+
+    var candidateRepository = scenario.getCandidateRepository();
+    candidateService =
+        new CandidateService(environment, scenario.getPeriodRepository(), candidateRepository);
+    noteService = new NoteService(candidateRepository);
+    approvalService = new ApprovalService(candidateRepository);
 
     output = new ByteArrayOutputStream();
     handler = createHandler();
   }
+
+  protected abstract FakeEnvironment getHandlerEnvironment();
 
   protected abstract ApiGatewayHandler<?, CandidateDto> createHandler();
 
@@ -125,11 +144,9 @@ public abstract class BaseCandidateRestHandlerTest {
 
   protected Candidate setupNonApplicableCandidate(URI institutionId) {
     var candidate = scenario.upsertCandidate(createUpsertCandidateRequest(institutionId).build());
-    return Candidate.updateNonCandidate(
-            createUpsertNonCandidateRequest(candidate.getPublicationId()),
-            scenario.getCandidateRepository(),
-            scenario.getPeriodRepository())
-        .orElseThrow();
+    var candidateService = scenario.getCandidateService();
+    candidateService.updateCandidate(createUpsertNonCandidateRequest(candidate.getPublicationId()));
+    return candidate;
   }
 
   protected Candidate setupCandidateWithUnverifiedCreator() {
@@ -139,7 +156,7 @@ public abstract class BaseCandidateRestHandlerTest {
   protected Candidate setupCandidateWithApproval() {
     var candidate = setupValidCandidate();
     return scenario.updateApprovalStatus(
-        candidate.getIdentifier(), ApprovalStatus.APPROVED, topLevelOrganizationId);
+        candidate.identifier(), ApprovalStatus.APPROVED, topLevelOrganizationId);
   }
 
   protected Candidate setupCandidateWithUnverifiedCreatorFromAnotherInstitution() {
@@ -155,15 +172,6 @@ public abstract class BaseCandidateRestHandlerTest {
             List.of(verifiedCreator),
             otherOrganization,
             List.of(unverifiedCreator)));
-  }
-
-  protected UpdateStatusRequest createStatusRequest(ApprovalStatus status) {
-    return UpdateStatusRequest.builder()
-        .withInstitutionId(topLevelOrganizationId)
-        .withApprovalStatus(status)
-        .withUsername(randomString())
-        .withReason(ApprovalStatus.REJECTED.equals(status) ? randomString() : null)
-        .build();
   }
 
   protected CandidateDto handleRequest(InputStream request) throws IOException {

@@ -2,8 +2,10 @@ package no.sikt.nva.nvi.common.db;
 
 import static java.util.Collections.emptyList;
 import static java.util.UUID.randomUUID;
+import static no.sikt.nva.nvi.common.EnvironmentFixtures.getGlobalEnvironment;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpdateStatusRequest;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequest;
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeriod;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.model.InstanceType.ACADEMIC_ARTICLE;
 import static no.sikt.nva.nvi.common.model.InstanceType.ACADEMIC_MONOGRAPH;
@@ -15,12 +17,17 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import java.net.URI;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import no.sikt.nva.nvi.common.TestScenario;
@@ -29,6 +36,9 @@ import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.exceptions.TransactionException;
 import no.sikt.nva.nvi.common.model.PublicationDate;
+import no.sikt.nva.nvi.common.service.ApprovalService;
+import no.sikt.nva.nvi.common.service.CandidateService;
+import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import org.assertj.core.api.ThrowableAssert;
@@ -41,6 +51,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
+import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.UpdateItemRequest;
 
 /**
@@ -55,8 +66,12 @@ class ConcurrencyHandlingTests {
   private static final PublicationDate PUBLICATION_DATE = randomPublicationDate();
   private TestScenario scenario;
   private CandidateRepository candidateRepository;
+  private NviPeriodService periodService;
+  private CandidateService candidateService;
+  private ApprovalService approvalService;
   private UpsertRequestBuilder upsertRequestBuilder;
   private UUID candidateIdentifier;
+  private URI publicationId;
   private Instant testStartedAt;
 
   @BeforeEach
@@ -64,11 +79,16 @@ class ConcurrencyHandlingTests {
     testStartedAt = Instant.now();
     scenario = new TestScenario();
     candidateRepository = scenario.getCandidateRepository();
+    periodService = scenario.getPeriodService();
+    candidateService = scenario.getCandidateService();
+    approvalService = new ApprovalService(candidateRepository);
     upsertRequestBuilder =
         createUpsertCandidateRequest(ORGANIZATION_1, ORGANIZATION_2)
             .withInstanceType(ACADEMIC_ARTICLE)
             .withPublicationDate(PUBLICATION_DATE.toDtoPublicationDate());
-    candidateIdentifier = prepareCandidateWithNotesAndApprovals();
+    var candidate = prepareCandidateWithNotesAndApprovals();
+    candidateIdentifier = candidate.identifier();
+    publicationId = candidate.getPublicationId();
   }
 
   @Nested
@@ -105,7 +125,7 @@ class ConcurrencyHandlingTests {
     @Test
     void shouldFailOnDuplicateWriteOfApproval() {
       var initialState = scenario.getAllRelatedData(candidateIdentifier);
-      var first = initialState.approvals().getFirst();
+      var first = initialState.approvals().iterator().next();
 
       var updatedApproval = copyAndMutateApproval(first);
       candidateRepository.approvalStatusTable.putItem(updatedApproval);
@@ -118,7 +138,7 @@ class ConcurrencyHandlingTests {
     @Test
     void shouldFailOnWriteOfApprovalForUnknownCandidate() {
       var initialState = scenario.getAllRelatedData(candidateIdentifier);
-      var first = initialState.approvals().getFirst();
+      var first = initialState.approvals().iterator().next();
 
       var updatedApproval = copyAndMutateApproval(first).copy().identifier(randomUUID()).build();
 
@@ -150,7 +170,7 @@ class ConcurrencyHandlingTests {
     @Test
     void shouldUpdateLastWrittenTimestampForApprovals() {
       var initialState = scenario.getAllRelatedData(candidateIdentifier);
-      var first = initialState.approvals().getFirst();
+      var first = initialState.approvals().stream().findFirst().orElseThrow();
       var organization = first.approvalStatus().institutionId();
 
       var checkpoint = Instant.now();
@@ -178,12 +198,12 @@ class ConcurrencyHandlingTests {
     void shouldHandleExistingCandidatesWithoutRevision() {
       removeRevisionFromCandidate(candidateIdentifier);
       var first = scenario.getCandidateByIdentifier(candidateIdentifier);
-      assertThat(first.getRevisionRead()).isNull();
+      assertThat(first.revision()).isNull();
 
       candidateRepository.candidateTable.putItem(getCandidateDao(candidateIdentifier));
       var second = scenario.getCandidateByIdentifier(candidateIdentifier);
 
-      assertThat(second.getRevisionRead()).isEqualTo(1L);
+      assertThat(second.revision()).isEqualTo(1L);
     }
 
     @Test
@@ -216,7 +236,7 @@ class ConcurrencyHandlingTests {
       assertThat(secondDao.lastWrittenAt()).isBetween(beforeWrite, afterWrite);
 
       var second = scenario.getCandidateByIdentifier(candidateIdentifier);
-      assertThat(second.getRevisionRead()).isEqualTo(1L);
+      assertThat(second.revision()).isEqualTo(1L);
     }
 
     @Test
@@ -238,17 +258,37 @@ class ConcurrencyHandlingTests {
     void shouldIncrementRevisionForEachUpdate() {
       removeRevisionFromCandidate(candidateIdentifier);
       var first = scenario.getCandidateByIdentifier(candidateIdentifier);
-      assertThat(first.getRevisionRead()).isNull();
+      assertThat(first.revision()).isNull();
 
       candidateRepository.candidateTable.putItem(getCandidateDao(candidateIdentifier));
       var second = scenario.getCandidateByIdentifier(candidateIdentifier);
-      assertThat(second.getRevisionRead()).isEqualTo(1L);
+      assertThat(second.revision()).isEqualTo(1L);
 
       var secondUpdate =
           getCandidateDao(candidateIdentifier).copy().version(randomUUID().toString()).build();
       candidateRepository.candidateTable.putItem(secondUpdate);
       var third = scenario.getCandidateByIdentifier(candidateIdentifier);
-      assertThat(third.getRevisionRead()).isEqualTo(2L);
+      assertThat(third.revision()).isEqualTo(2L);
+    }
+
+    @Test
+    void shouldFailOnConcurrentPeriodUpdate() {
+      var periodRepository = scenario.getPeriodRepository();
+      var currentPeriod = periodService.getByPublishingYear(PUBLICATION_DATE.year());
+      var updatedPeriod = currentPeriod.toDao();
+      periodRepository.update(updatedPeriod);
+
+      assertThrowsExceptionFromDynamoDbVersionAttributeAnnotation(
+          () -> periodRepository.update(updatedPeriod));
+    }
+
+    @Test
+    void shouldFailWhenCreatingDuplicatePeriod() {
+      var periodRepository = scenario.getPeriodRepository();
+      var currentPeriod = periodService.getByPublishingYear(PUBLICATION_DATE.year());
+      var updatedPeriod = currentPeriod.toDao();
+
+      assertThrowsExceptionFromNewItemCondition(() -> periodRepository.create(updatedPeriod));
     }
   }
 
@@ -264,9 +304,9 @@ class ConcurrencyHandlingTests {
       var first = scenario.upsertCandidate(firstRequest);
       var second = scenario.upsertCandidate(secondRequest);
 
-      assertThat(first.getIdentifier()).isEqualTo(second.getIdentifier());
-      assertThat(first.getPublicationDetails().publicationBucketUri())
-          .isNotEqualTo(second.getPublicationDetails().publicationBucketUri());
+      assertThat(first.identifier()).isEqualTo(second.identifier());
+      assertThat(first.publicationDetails().publicationBucketUri())
+          .isNotEqualTo(second.publicationDetails().publicationBucketUri());
     }
 
     @Test
@@ -277,14 +317,14 @@ class ConcurrencyHandlingTests {
 
       var user = createCuratorUserInstance(ORGANIZATION_1);
       var firstUpdate = createUpdateStatusRequest(ApprovalStatus.APPROVED, user);
-      var secondUpdate = createUpdateStatusRequest(ApprovalStatus.APPROVED, user);
+      var secondUpdate = createUpdateStatusRequest(ApprovalStatus.REJECTED, user);
 
       assertThatNoException()
           .isThrownBy(
               () -> {
-                readCandidate1.updateApprovalStatus(firstUpdate, user);
+                approvalService.updateApproval(readCandidate1, firstUpdate, user);
                 var readCandidate2 = scenario.getCandidateByIdentifier(candidateIdentifier);
-                readCandidate2.updateApprovalStatus(secondUpdate, user);
+                approvalService.updateApproval(readCandidate2, secondUpdate, user);
               });
     }
 
@@ -302,8 +342,8 @@ class ConcurrencyHandlingTests {
       assertThatNoException()
           .isThrownBy(
               () -> {
-                candidate.updateApprovalStatus(firstUpdate, firstUser);
-                candidate.updateApprovalStatus(secondUpdate, secondUser);
+                approvalService.updateApproval(candidate, firstUpdate, firstUser);
+                approvalService.updateApproval(candidate, secondUpdate, secondUser);
               });
     }
 
@@ -319,9 +359,9 @@ class ConcurrencyHandlingTests {
       var secondUpdate = createUpdateStatusRequest(ApprovalStatus.APPROVED, secondUser);
 
       assertThatNoException()
-          .isThrownBy(() -> candidate.updateApprovalStatus(firstUpdate, firstUser));
-      assertThrowsConcurrencyException(
-          () -> candidate.updateApprovalStatus(secondUpdate, secondUser));
+          .isThrownBy(() -> approvalService.updateApproval(candidate, firstUpdate, firstUser));
+      assertThrowsExceptionFromDynamoDbVersionAttributeAnnotation(
+          () -> approvalService.updateApproval(candidate, secondUpdate, secondUser));
     }
 
     @Test
@@ -332,8 +372,10 @@ class ConcurrencyHandlingTests {
               candidateIdentifier, ApprovalStatus.PENDING, ORGANIZATION_1);
       var updateRequest = createUpdateStatusRequest(ApprovalStatus.APPROVED, user);
 
-      assertThatNoException().isThrownBy(() -> candidate.updateApprovalStatus(updateRequest, user));
-      assertThrowsConcurrencyException(() -> candidate.updateApprovalStatus(updateRequest, user));
+      assertThatNoException()
+          .isThrownBy(() -> approvalService.updateApproval(candidate, updateRequest, user));
+      assertThrowsExceptionFromDynamoDbVersionAttributeAnnotation(
+          () -> approvalService.updateApproval(candidate, updateRequest, user));
     }
 
     @Test
@@ -346,8 +388,8 @@ class ConcurrencyHandlingTests {
       var user = createCuratorUserInstance(ORGANIZATION_1);
       var updateRequest = createUpdateStatusRequest(newStatus, user);
 
-      assertThrowsConcurrencyException(
-          () -> readCandidate.updateApprovalStatus(updateRequest, user));
+      assertThrowsExceptionFromCustomRevisionCondition(
+          () -> approvalService.updateApproval(readCandidate, updateRequest, user));
     }
 
     @Test
@@ -361,7 +403,7 @@ class ConcurrencyHandlingTests {
       var updateRequest = createUpdateStatusRequest(newStatus, user);
 
       assertThatNoException()
-          .isThrownBy(() -> legacyCandidate.updateApprovalStatus(updateRequest, user));
+          .isThrownBy(() -> approvalService.updateApproval(legacyCandidate, updateRequest, user));
     }
 
     @Disabled
@@ -387,7 +429,7 @@ class ConcurrencyHandlingTests {
           createUpsertCandidateRequest(organizations)
               .withInstanceType(ACADEMIC_ARTICLE)
               .withPublicationDate(PUBLICATION_DATE.toDtoPublicationDate());
-      var candidateId = scenario.upsertCandidate(requestBuilder.build()).getIdentifier();
+      var candidateId = scenario.upsertCandidate(requestBuilder.build()).identifier();
 
       var approvingOrganization = organizations.iterator().next().id();
       scenario.updateApprovalStatus(candidateId, ApprovalStatus.APPROVED, approvingOrganization);
@@ -408,21 +450,84 @@ class ConcurrencyHandlingTests {
 
       var updateRequest = requestBuilder.withInstanceType(ACADEMIC_MONOGRAPH).build();
       var updatedCandidate = scenario.upsertCandidate(updateRequest);
-      assertThat(updatedCandidate.getRevisionRead())
-          .isEqualTo(originalCandidate.getRevisionRead() + 1);
-      assertThat(updatedCandidate.getApprovals().size()).isZero();
+      assertThat(updatedCandidate.revision()).isEqualTo(originalCandidate.revision() + 1);
+      assertThat(updatedCandidate.approvals().size()).isZero();
+    }
+
+    @Test
+    void shouldGetAllRelatedDataWithAggregateQuery() {
+      var response = candidateService.findCandidateAndPeriodsByPublicationId(publicationId);
+
+      var periods = response.allPeriods();
+      var aggregate = response.getCandidate().orElseThrow();
+
+      assertThat(periods).hasSizeGreaterThanOrEqualTo(2);
+      assertThat(aggregate.identifier()).isEqualTo(candidateIdentifier);
+      assertThat(aggregate.approvals()).hasSize(2);
+      assertThat(aggregate.notes()).hasSize(3);
+    }
+
+    @Test
+    void shouldUseTwoRequestsToGetCandidateByIdentifierWithPeriods() {
+      var mockClient = spy(scenario.getLocalDynamo());
+      var testService =
+          new CandidateService(
+              getGlobalEnvironment(),
+              new PeriodRepository(mockClient),
+              new CandidateRepository(mockClient));
+
+      testService.getCandidateByIdentifier(candidateIdentifier);
+
+      verify(mockClient, times(1)).queryPaginator(any(QueryRequest.class));
+      verify(mockClient, times(1)).query(any(QueryRequest.class));
+    }
+
+    @Test
+    void shouldUseThreeRequestsToGetCandidateByPublicationIdWithPeriods() {
+      var mockClient = spy(scenario.getLocalDynamo());
+      var testService =
+          new CandidateService(
+              getGlobalEnvironment(),
+              new PeriodRepository(mockClient),
+              new CandidateRepository(mockClient));
+
+      testService.findCandidateAndPeriodsByPublicationId(publicationId);
+
+      verify(mockClient, times(2)).queryPaginator(any(QueryRequest.class));
+      verify(mockClient, times(1)).query(any(QueryRequest.class));
+    }
+
+    @Test
+    void shouldReturnEmptyOptionalWhenCandidateDoesNotExist() {
+      var response = candidateService.findCandidateAndPeriodsByPublicationId(randomUri());
+
+      assertThat(response.getCandidate()).isEmpty();
+      assertThat(response.allPeriods()).isNotEmpty();
+    }
+
+    @Test
+    void shouldFailOnApprovalUpdateAfterPeriodUpdate() {
+      var candidate = scenario.getCandidateByIdentifier(candidateIdentifier);
+      var originalStatus = candidate.getApprovalStatus(ORGANIZATION_1);
+      var newStatus = getOtherStatus(originalStatus);
+      var user = createCuratorUserInstance(ORGANIZATION_1);
+      var updateRequest = createUpdateStatusRequest(newStatus, user);
+
+      setupOpenPeriod(scenario, candidate.period().publishingYear());
+
+      assertThrowsExceptionFromCustomRevisionCondition(
+          () -> approvalService.updateApproval(candidate, updateRequest, user));
     }
   }
 
-  /**
-   * Set up a Candidate in a valid state, with Notes, Approvals and an open Period.
-   *
-   * @return identifier of the Candidate
-   */
-  private UUID prepareCandidateWithNotesAndApprovals() {
+  /** Set up a Candidate in a valid state, with Notes, Approvals, and an open Period. */
+  private Candidate prepareCandidateWithNotesAndApprovals() {
+    var lastYear = Integer.parseInt(PUBLICATION_DATE.year()) - 1;
+    setupClosedPeriod(scenario, String.valueOf(lastYear));
     setupOpenPeriod(scenario, PUBLICATION_DATE.year());
+
     var candidate = scenario.upsertCandidate(upsertRequestBuilder.build());
-    var candidateId = candidate.getIdentifier();
+    var candidateId = candidate.identifier();
 
     scenario.updateApprovalStatus(candidateId, ApprovalStatus.APPROVED, ORGANIZATION_1);
     scenario.updateApprovalStatus(candidateId, ApprovalStatus.REJECTED, ORGANIZATION_2);
@@ -430,7 +535,7 @@ class ConcurrencyHandlingTests {
     scenario.createNote(candidateId, "Note 2", ORGANIZATION_2);
     scenario.createNote(candidateId, "Note 3", ORGANIZATION_1);
 
-    return candidateId;
+    return scenario.getCandidateByIdentifier(candidateId);
   }
 
   private Set<Organization> createOrganizations(int numberOfNviOrganizations) {
@@ -473,11 +578,34 @@ class ConcurrencyHandlingTests {
         : ApprovalStatus.REJECTED;
   }
 
-  private static void assertThrowsConcurrencyException(ThrowableAssert.ThrowingCallable operation) {
+  private static void assertThrowsExceptionFromNewItemCondition(
+      ThrowableAssert.ThrowingCallable operation) {
+    var expectedError = "(attribute_not_exists(#partitionKey) AND attribute_not_exists(#sortKey))";
     assertThatThrownBy(operation)
         .isInstanceOf(TransactionException.class)
-        .hasMessageContaining("condition revision = :expectedCandidateRevision")
-        .hasMessageContaining("ConditionalCheckFailed");
+        .hasMessageContaining(expectedError);
+  }
+
+  private static void assertThrowsExceptionFromCustomRevisionCondition(
+      ThrowableAssert.ThrowingCallable operation) {
+    var expectedError = transactionFailurePattern("revision = :expectedRevision");
+    assertThatThrownBy(operation)
+        .isInstanceOf(TransactionException.class)
+        .hasMessageMatching(expectedError);
+  }
+
+  private static void assertThrowsExceptionFromDynamoDbVersionAttributeAnnotation(
+      ThrowableAssert.ThrowingCallable operation) {
+    var expectedError = transactionFailurePattern("#AMZN_MAPPED_revision = :old_revision_value");
+    assertThatThrownBy(operation)
+        .isInstanceOf(TransactionException.class)
+        .hasMessageMatching(expectedError);
+  }
+
+  private static String transactionFailurePattern(String conditionExpression) {
+    return String.format(
+        ".*condition %s for item \\d+ failed with code ConditionalCheckFailed.*",
+        Pattern.quote(conditionExpression));
   }
 
   private void removeRevisionFromCandidate(UUID candidateId) {

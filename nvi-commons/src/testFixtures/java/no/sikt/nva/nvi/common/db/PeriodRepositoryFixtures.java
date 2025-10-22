@@ -1,53 +1,21 @@
 package no.sikt.nva.nvi.common.db;
 
-import static no.unit.nva.testutils.RandomDataGenerator.randomString;
-import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static no.sikt.nva.nvi.common.EnvironmentFixtures.getGlobalEnvironment;
+import static no.sikt.nva.nvi.common.model.UsernameFixtures.randomUsername;
 
 import java.time.Instant;
 import java.time.ZonedDateTime;
-import java.util.Optional;
 import no.sikt.nva.nvi.common.TestScenario;
-import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
+import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.model.CreatePeriodRequest;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.common.service.model.UpdatePeriodRequest;
-import no.sikt.nva.nvi.common.service.model.Username;
 
 public class PeriodRepositoryFixtures {
   private static final Instant previousMonth = ZonedDateTime.now().minusMonths(1).toInstant();
   private static final Instant previousYear = ZonedDateTime.now().minusMonths(12).toInstant();
   private static final Instant nextMonth = ZonedDateTime.now().plusMonths(1).toInstant();
   private static final Instant nextYear = ZonedDateTime.now().plusMonths(12).toInstant();
-
-  public static PeriodRepository periodRepositoryReturningClosedPeriod(int year) {
-    var period =
-        DbNviPeriod.builder()
-            .publishingYear(String.valueOf(year))
-            .startDate(previousYear)
-            .reportingDate(previousMonth)
-            .build();
-    return mockPeriodRepositoryReturn(period);
-  }
-
-  private static PeriodRepository mockPeriodRepositoryReturn(DbNviPeriod period) {
-    var nviPeriodRepository = mock(PeriodRepository.class);
-    when(nviPeriodRepository.findByPublishingYear(anyString())).thenReturn(Optional.of(period));
-    return nviPeriodRepository;
-  }
-
-  public static PeriodRepository periodRepositoryReturningOpenedPeriod(int year) {
-    var period =
-        DbNviPeriod.builder()
-            .publishingYear(String.valueOf(year))
-            .id(randomUri())
-            .startDate(previousMonth)
-            .reportingDate(nextYear)
-            .build();
-    return mockPeriodRepositoryReturn(period);
-  }
 
   public static NviPeriod setupFuturePeriod(TestScenario scenario, String year) {
     return upsertPeriod(year, nextMonth, nextYear, scenario.getPeriodRepository());
@@ -75,7 +43,8 @@ public class PeriodRepositoryFixtures {
 
   public static NviPeriod upsertPeriod(
       String year, Instant startDate, Instant reportingDate, PeriodRepository periodRepository) {
-    var existingPeriod = periodRepository.findByPublishingYear(year);
+    var periodService = new NviPeriodService(getGlobalEnvironment(), periodRepository);
+    var existingPeriod = periodService.findByPublishingYear(year);
     if (existingPeriod.isPresent()) {
       return updatePeriod(year, startDate, reportingDate, periodRepository);
     }
@@ -84,7 +53,7 @@ public class PeriodRepositoryFixtures {
 
   public static NviPeriod createPeriod(
       String year, Instant startDate, Instant reportingDate, PeriodRepository periodRepository) {
-    var user = Username.fromString(randomString());
+    var user = randomUsername();
     var request =
         CreatePeriodRequest.builder()
             .withPublishingYear(Integer.parseInt(year))
@@ -92,12 +61,15 @@ public class PeriodRepositoryFixtures {
             .withReportingDate(reportingDate)
             .withCreatedBy(user)
             .build();
-    return NviPeriod.create(request, periodRepository);
+
+    var periodService = new NviPeriodService(getGlobalEnvironment(), periodRepository);
+    periodService.create(request);
+    return periodService.getByPublishingYear(year);
   }
 
   public static NviPeriod updatePeriod(
       String year, Instant startDate, Instant reportingDate, PeriodRepository periodRepository) {
-    var user = Username.fromString(randomString());
+    var user = randomUsername();
     var request =
         UpdatePeriodRequest.builder()
             .withPublishingYear(Integer.parseInt(year))
@@ -105,6 +77,9 @@ public class PeriodRepositoryFixtures {
             .withReportingDate(reportingDate)
             .withModifiedBy(user)
             .build();
-    return NviPeriod.update(request, periodRepository);
+
+    var periodService = new NviPeriodService(getGlobalEnvironment(), periodRepository);
+    periodService.update(request);
+    return periodService.getByPublishingYear(year);
   }
 }

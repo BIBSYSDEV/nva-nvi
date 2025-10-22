@@ -1,14 +1,14 @@
 package no.sikt.nva.nvi.rest.remove;
 
+import static no.sikt.nva.nvi.common.RequestFixtures.randomNoteRequest;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeriod;
-import static no.sikt.nva.nvi.common.db.UsernameFixtures.randomUsername;
 import static no.sikt.nva.nvi.common.dto.AllowedOperationFixtures.CURATOR_CAN_FINALIZE_APPROVAL;
+import static no.sikt.nva.nvi.common.model.UsernameFixtures.randomUsername;
 import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateHandler.CANDIDATE_IDENTIFIER;
 import static no.sikt.nva.nvi.rest.remove.RemoveNoteHandler.PARAM_NOTE_IDENTIFIER;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
-import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -19,12 +19,14 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.util.Map;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.db.model.Username;
+import no.sikt.nva.nvi.common.FakeEnvironment;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.service.model.Username;
 import no.sikt.nva.nvi.common.validator.FakeViewingScopeValidator;
 import no.sikt.nva.nvi.rest.BaseCandidateRestHandlerTest;
+import no.sikt.nva.nvi.rest.EnvironmentFixtures;
 import no.sikt.nva.nvi.rest.create.NviNoteRequest;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
@@ -47,10 +49,12 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
   @Override
   protected ApiGatewayHandler<Void, CandidateDto> createHandler() {
     return new RemoveNoteHandler(
-        scenario.getCandidateRepository(),
-        scenario.getPeriodRepository(),
-        mockViewingScopeValidator,
-        ENVIRONMENT);
+        scenario.getCandidateService(), noteService, mockViewingScopeValidator, environment);
+  }
+
+  @Override
+  protected FakeEnvironment getHandlerEnvironment() {
+    return EnvironmentFixtures.REMOVE_NOTE_HANDLER;
   }
 
   @BeforeEach
@@ -75,14 +79,14 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
     var user = randomUsername();
     var candidateWithNote = createNote(candidate, user);
     var noteId = getIdOfFirstNote(candidateWithNote);
-    var request = createRequest(candidate.getIdentifier(), noteId, user.value()).build();
+    var request = createRequest(candidate.identifier(), noteId, user.value()).build();
     var viewingScopeValidatorReturningFalse = new FakeViewingScopeValidator(false);
     handler =
         new RemoveNoteHandler(
-            scenario.getCandidateRepository(),
-            scenario.getPeriodRepository(),
+            scenario.getCandidateService(),
+            noteService,
             viewingScopeValidatorReturningFalse,
-            ENVIRONMENT);
+            environment);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
     assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
@@ -94,7 +98,7 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
     var user = randomUsername();
     var candidateWithNote = createNote(candidate, user);
     var noteId = getIdOfFirstNote(candidateWithNote);
-    var request = createRequest(candidate.getIdentifier(), noteId, randomString()).build();
+    var request = createRequest(candidate.identifier(), noteId, randomString()).build();
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
     assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
@@ -106,7 +110,7 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
     var user = randomUsername();
     var candidateWithNote = createNote(candidate, user);
     var noteId = getIdOfFirstNote(candidateWithNote);
-    var request = createRequest(candidate.getIdentifier(), noteId, user.value()).build();
+    var request = createRequest(candidate.identifier(), noteId, user.value()).build();
     handler.handleRequest(request, output, CONTEXT);
     var gatewayResponse = GatewayResponse.fromOutputStream(output, CandidateDto.class);
     var body = gatewayResponse.getBodyObject(CandidateDto.class);
@@ -123,13 +127,10 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldReturnConflictWhenRemovingNoteAndReportingPeriodIsClosed() throws IOException {
-    var candidate = setupValidCandidate();
+    var candidate = createCandidateWithNote();
     var user = randomString();
-    candidate.createNote(
-        new CreateNoteRequest(randomString(), user, randomUri()),
-        scenario.getCandidateRepository());
     var noteId = getIdOfFirstNote(candidate);
-    var request = createRequest(candidate.getIdentifier(), noteId, user).build();
+    var request = createRequest(candidate.identifier(), noteId, user).build();
     setupClosedPeriod(scenario, CURRENT_YEAR);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
@@ -144,7 +145,7 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
     var candidateWithNote = createNote(candidate, user);
     var noteId = getIdOfFirstNote(candidateWithNote);
 
-    var request = createRequest(candidate.getIdentifier(), noteId, user.value()).build();
+    var request = createRequest(candidate.identifier(), noteId, user.value()).build();
     var candidateDto = handleRequest(request);
 
     var actualAllowedOperations = candidateDto.allowedOperations();
@@ -152,10 +153,18 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
         actualAllowedOperations, containsInAnyOrder(CURATOR_CAN_FINALIZE_APPROVAL.toArray()));
   }
 
+  private Candidate createCandidateWithNote() {
+    var candidateService = scenario.getCandidateService();
+    var candidate = setupValidCandidate();
+    noteService.createNote(candidate, randomNoteRequest());
+    return candidateService.getCandidateByIdentifier(candidate.identifier());
+  }
+
   private Candidate createNote(Candidate candidate, Username user) {
-    return candidate.createNote(
-        new CreateNoteRequest(randomString(), user.value(), topLevelOrganizationId),
-        scenario.getCandidateRepository());
+    var candidateService = scenario.getCandidateService();
+    var noteRequest = new CreateNoteRequest(randomString(), user.value(), topLevelOrganizationId);
+    noteService.createNote(candidate, noteRequest);
+    return candidateService.getCandidateByIdentifier(candidate.identifier());
   }
 
   private HandlerRequestBuilder<NviNoteRequest> createRequest(
@@ -167,9 +176,9 @@ class RemoveNoteHandlerTest extends BaseCandidateRestHandlerTest {
   }
 
   private UUID getIdOfFirstNote(Candidate candidateWithNote) {
-    return candidateWithNote.getNotes().values().stream()
+    return candidateWithNote.notes().values().stream()
         .findFirst()
         .orElseThrow(() -> new IllegalStateException("Candidate has no notes"))
-        .getNoteId();
+        .noteIdentifier();
   }
 }

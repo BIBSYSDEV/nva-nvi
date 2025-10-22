@@ -42,6 +42,13 @@ public abstract class Dao implements DynamoEntryWithRangeKey {
         .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
   }
 
+  /**
+   * Returns a copy of this DAO with a new version. Subclasses must implement this to return their
+   * specific type.
+   */
+  @DynamoDbIgnore
+  public abstract Dao withMutatedVersion();
+
   @DynamoDbIgnore
   public Map<String, AttributeValue> toDynamoFormat() {
     return EnhancedDocument.fromJson(

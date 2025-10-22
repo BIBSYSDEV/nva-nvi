@@ -5,9 +5,9 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.API_HOST;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_NORWAY;
-import static no.sikt.nva.nvi.test.TestUtils.generateUniqueIdAsString;
 import static no.sikt.nva.nvi.test.TestUtils.randomUriWithSuffix;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
+import static no.unit.nva.testutils.RandomDataGenerator.FAKER;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -33,12 +33,7 @@ import nva.commons.core.paths.UriWrapper;
 public class OrganizationFixtures {
 
   public static String randomOrganizationIdentifier() {
-    return String.format(
-        "%s.%s.%s.%s",
-        generateUniqueIdAsString(),
-        generateUniqueIdAsString(),
-        generateUniqueIdAsString(),
-        generateUniqueIdAsString());
+    return FAKER.numerify("###.###.###.###");
   }
 
   public static URI randomOrganizationId() {

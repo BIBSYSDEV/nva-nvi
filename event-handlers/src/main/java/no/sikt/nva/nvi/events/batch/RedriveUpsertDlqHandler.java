@@ -16,6 +16,7 @@ import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.NviReceiveMessage;
 import no.sikt.nva.nvi.common.queue.NviReceiveMessageResponse;
+import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.sikt.nva.nvi.events.persist.UpsertDlqMessageBody;
@@ -45,7 +46,7 @@ public class RedriveUpsertDlqHandler implements RequestHandler<RedriveUpsertDlqI
   private static final int MAX_FAILURES = 5;
   private static final int MAX_SQS_MESSAGE_COUNT_LIMIT = 10;
   private static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
-  private final NviQueueClient queueClient;
+  private final QueueClient queueClient;
   private final String dlqQueueUrl;
   private final String evaluationQueueUrl;
   private final String expandedResourcesBucket;
@@ -55,7 +56,7 @@ public class RedriveUpsertDlqHandler implements RequestHandler<RedriveUpsertDlqI
     this(new NviQueueClient(), new Environment());
   }
 
-  public RedriveUpsertDlqHandler(NviQueueClient queueClient, Environment environment) {
+  public RedriveUpsertDlqHandler(QueueClient queueClient, Environment environment) {
     this.queueClient = queueClient;
     this.dlqQueueUrl = environment.readEnv(UPSERT_CANDIDATE_DLQ_QUEUE_URL);
     this.evaluationQueueUrl = environment.readEnv(RESOURCE_EVALUATION_QUEUE_URL);

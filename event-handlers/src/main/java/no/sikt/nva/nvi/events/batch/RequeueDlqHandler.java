@@ -1,7 +1,6 @@
 package no.sikt.nva.nvi.events.batch;
 
 import static java.util.Objects.nonNull;
-import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
@@ -10,12 +9,11 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.NviReceiveMessage;
 import no.sikt.nva.nvi.common.queue.NviReceiveMessageResponse;
-import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.queue.QueueClient;
+import no.sikt.nva.nvi.common.service.CandidateService;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
@@ -39,29 +37,23 @@ public class RequeueDlqHandler implements RequestHandler<RequeueDlqInput, Requeu
       "Could not process message: %s. Missing message " + "attribute 'candidateIdentifier'";
   private static final int MAX_FAILURES = 5;
   private static final int MAX_SQS_MESSAGE_COUNT_LIMIT = 10;
-  private final NviQueueClient queueClient;
+  private final QueueClient queueClient;
   private final String queueUrl;
-  private final CandidateRepository candidateRepository;
-  private final PeriodRepository periodRepository;
+  private final CandidateService candidateService;
 
   @JacocoGenerated
   public RequeueDlqHandler() {
     this(
         new NviQueueClient(),
         new Environment().readEnv(DLQ_QUEUE_URL_ENV_NAME),
-        new CandidateRepository(defaultDynamoClient()),
-        new PeriodRepository(defaultDynamoClient()));
+        CandidateService.defaultCandidateService());
   }
 
   public RequeueDlqHandler(
-      NviQueueClient queueClient,
-      String dlqQueueUrl,
-      CandidateRepository candidateRepository,
-      PeriodRepository periodRepository) {
+      QueueClient queueClient, String dlqQueueUrl, CandidateService candidateService) {
     this.queueClient = queueClient;
     this.queueUrl = dlqQueueUrl;
-    this.candidateRepository = candidateRepository;
-    this.periodRepository = periodRepository;
+    this.candidateService = candidateService;
   }
 
   @Override
@@ -145,8 +137,9 @@ public class RequeueDlqHandler implements RequestHandler<RequeueDlqInput, Requeu
     var identifier = input.message().messageAttributes().get(CANDIDATE_IDENTIFIER_ATTRIBUTE_NAME);
     if (nonNull(identifier)) {
       try {
-        Candidate.fetch(() -> UUID.fromString(identifier), candidateRepository, periodRepository)
-            .updateVersion(candidateRepository);
+        var candidateIdentifier = UUID.fromString(identifier);
+        var originalCandidate = candidateService.getCandidateByIdentifier(candidateIdentifier);
+        candidateService.updateCandidate(originalCandidate);
       } catch (Exception exception) {
         return new NviProcessMessageResult(
             input.message(),

@@ -1,8 +1,12 @@
 package no.sikt.nva.nvi.common.service;
 
+import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.RequestFixtures.createNoteRequest;
+import static no.sikt.nva.nvi.common.RequestFixtures.randomNoteRequest;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.mockOrganizationResponseForAffiliation;
+import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationId;
+import static no.sikt.nva.nvi.common.model.UserInstanceFixtures.createCuratorUserInstance;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -15,7 +19,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.net.URI;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
+import no.sikt.nva.nvi.common.model.UserInstance;
 import no.sikt.nva.nvi.common.service.dto.NoteDto;
+import no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException;
 import no.sikt.nva.nvi.common.service.exception.UnauthorizedOperationException;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.requests.DeleteNoteRequest;
@@ -23,17 +29,18 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class CandidateNotesTest extends CandidateTestSetup {
+  private static final URI ORGANIZATION_ID = randomOrganizationId();
+  private static final UserInstance CURATOR_USER = createCuratorUserInstance(ORGANIZATION_ID);
 
   @Test
   void shouldCreateNoteWhenValidCreateNoteRequest() {
     var candidate = createCandidate();
     var noteRequest = createNoteRequest(randomString(), randomString());
-    candidate.createNote(noteRequest, candidateRepository);
+    noteService.createNote(candidate, noteRequest);
     var userOrganizationId = getAnyOrganizationId(candidate);
     mockOrganizationResponseForAffiliation(userOrganizationId, null, mockUriRetriever);
 
-    var updatedCandidate =
-        Candidate.fetch(candidate::getIdentifier, candidateRepository, periodRepository);
+    var updatedCandidate = candidateService.getCandidateByIdentifier(candidate.identifier());
     var actualNote = getAnyNote(updatedCandidate);
 
     assertThat(noteRequest.username(), is(equalTo(actualNote.user())));
@@ -48,8 +55,7 @@ class CandidateNotesTest extends CandidateTestSetup {
     var noteRequest = createNoteRequest(randomString(), null);
 
     assertThrows(
-        IllegalArgumentException.class,
-        () -> candidate.createNote(noteRequest, candidateRepository));
+        IllegalArgumentException.class, () -> noteService.createNote(candidate, noteRequest));
   }
 
   @Test
@@ -58,44 +64,48 @@ class CandidateNotesTest extends CandidateTestSetup {
     var noteRequest = createNoteRequest(null, randomString());
 
     assertThrows(
-        IllegalArgumentException.class,
-        () -> candidate.createNote(noteRequest, candidateRepository));
+        IllegalArgumentException.class, () -> noteService.createNote(candidate, noteRequest));
   }
 
   @Test
   void shouldDeleteNoteWhenValidDeleteNoteRequest() {
-    var candidate = createCandidate();
-    var username = randomString();
-    var candidateWithNote =
-        candidate.createNote(
-            new CreateNoteRequest(randomString(), username, randomUri()), candidateRepository);
-    var userOrganizationId = getAnyOrganizationId(candidateWithNote);
+    var candidate = setupCandidateWithNote();
+
+    var userOrganizationId = getAnyOrganizationId(candidate);
     mockOrganizationResponseForAffiliation(userOrganizationId, null, mockUriRetriever);
 
     var noteToDelete = getAnyNote(candidate);
-    candidate.deleteNote(new DeleteNoteRequest(noteToDelete.identifier(), username));
+    var deleteRequest = new DeleteNoteRequest(noteToDelete.identifier(), noteToDelete.user());
+    noteService.deleteNote(candidate, deleteRequest);
 
-    var updatedCandidate =
-        Candidate.fetch(candidate::getIdentifier, candidateRepository, periodRepository);
-    Assertions.assertThat(updatedCandidate.getNotes()).isEmpty();
+    var updatedCandidate = candidateService.getCandidateByIdentifier(candidate.identifier());
+    Assertions.assertThat(updatedCandidate.notes()).isEmpty();
   }
 
   @Test
   void shouldThrowUnauthorizedOperationExceptionWhenRequesterIsNotAnOwner() {
-    var candidate = createCandidate();
-    var candidateWithNote =
-        candidate.createNote(
-            new CreateNoteRequest(randomString(), randomString(), randomUri()),
-            candidateRepository);
-    var userOrganizationId = getAnyOrganizationId(candidateWithNote);
+    var candidate = setupCandidateWithNote();
+    var userOrganizationId = getAnyOrganizationId(candidate);
     mockOrganizationResponseForAffiliation(userOrganizationId, null, mockUriRetriever);
 
     var noteToDelete = getAnyNote(candidate);
 
+    var deleteNoteRequest = new DeleteNoteRequest(noteToDelete.identifier(), randomString());
     assertThrows(
         UnauthorizedOperationException.class,
-        () ->
-            candidate.deleteNote(new DeleteNoteRequest(noteToDelete.identifier(), randomString())));
+        () -> noteService.deleteNote(candidate, deleteNoteRequest));
+  }
+
+  @Test
+  void shouldThrowExceptionWhenNoteDoesNotExist() {
+    var candidate = setupCandidateWithNote();
+    var userOrganizationId = getAnyOrganizationId(candidate);
+    mockOrganizationResponseForAffiliation(userOrganizationId, null, mockUriRetriever);
+
+    var deleteNoteRequest = new DeleteNoteRequest(randomUUID(), randomString());
+    assertThrows(
+        IllegalCandidateUpdateException.class,
+        () -> noteService.deleteNote(candidate, deleteNoteRequest));
   }
 
   @Test
@@ -104,8 +114,10 @@ class CandidateNotesTest extends CandidateTestSetup {
     var candidate = createCandidate(institutionId);
     var username = randomString();
     var noteRequest = new CreateNoteRequest(randomString(), username, institutionId);
-    var candidateWithNote = candidate.createNote(noteRequest, candidateRepository);
-    var actualAssignee = candidateWithNote.getApprovals().get(institutionId).getAssigneeUsername();
+    noteService.createNote(candidate, noteRequest);
+    var candidateWithNote = candidateService.getCandidateByIdentifier(candidate.identifier());
+
+    var actualAssignee = candidateWithNote.approvals().get(institutionId).getAssigneeUsername();
     assertEquals(username, actualAssignee);
   }
 
@@ -114,32 +126,37 @@ class CandidateNotesTest extends CandidateTestSetup {
     var institutionId = randomUri();
     var candidate = createCandidate(institutionId);
     var existingAssignee = randomString();
-    candidate.updateApprovalAssignee(new UpdateAssigneeRequest(institutionId, existingAssignee));
+    var updateAssigneeRequest = new UpdateAssigneeRequest(institutionId, existingAssignee);
+    approvalService.updateApproval(candidate, updateAssigneeRequest, CURATOR_USER);
 
-    var candidateWithAssignee = scenario.getCandidateByIdentifier(candidate.getIdentifier());
+    var candidateWithAssignee = scenario.getCandidateByIdentifier(candidate.identifier());
     var noteRequest = new CreateNoteRequest(randomString(), randomString(), institutionId);
-    candidateWithAssignee.createNote(noteRequest, candidateRepository);
+    noteService.createNote(candidateWithAssignee, noteRequest);
 
-    var candidateWithNote = scenario.getCandidateByIdentifier(candidate.getIdentifier());
-    var actualAssignee = candidateWithNote.getApprovals().get(institutionId).getAssigneeUsername();
+    var candidateWithNote = scenario.getCandidateByIdentifier(candidate.identifier());
+    var actualAssignee = candidateWithNote.approvals().get(institutionId).getAssigneeUsername();
     assertEquals(existingAssignee, actualAssignee);
   }
 
   private Candidate createCandidate(URI institutionId) {
     var request = createUpsertCandidateRequest(institutionId).build();
-    Candidate.upsert(request, candidateRepository, periodRepository);
-    return Candidate.fetchByPublicationId(
-        request::publicationId, candidateRepository, periodRepository);
+    return scenario.upsertCandidate(request);
   }
 
   private Candidate createCandidate() {
-    return createCandidate(randomUri());
+    return createCandidate(ORGANIZATION_ID);
   }
 
   private NoteDto getAnyNote(Candidate candidate) {
-    return candidate.getNotes().values().stream()
+    return candidate.notes().values().stream()
         .findFirst()
         .orElseThrow(() -> new IllegalStateException("No notes found for candidate"))
         .toDto();
+  }
+
+  private Candidate setupCandidateWithNote() {
+    var candidate = createCandidate();
+    noteService.createNote(candidate, randomNoteRequest());
+    return candidateService.getCandidateByIdentifier(candidate.identifier());
   }
 }

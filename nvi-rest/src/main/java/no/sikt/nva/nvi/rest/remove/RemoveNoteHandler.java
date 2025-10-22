@@ -6,11 +6,10 @@ import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.net.HttpURLConnection;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.db.DynamoRepository;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.model.UserInstance;
 import no.sikt.nva.nvi.common.service.CandidateResponseFactory;
+import no.sikt.nva.nvi.common.service.CandidateService;
+import no.sikt.nva.nvi.common.service.NoteService;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.requests.DeleteNoteRequest;
@@ -29,27 +28,27 @@ public class RemoveNoteHandler extends ApiGatewayHandler<Void, CandidateDto>
     implements ViewingScopeHandler {
 
   public static final String PARAM_NOTE_IDENTIFIER = "noteIdentifier";
-  private final CandidateRepository candidateRepository;
-  private final PeriodRepository periodRepository;
+  private final CandidateService candidateService;
+  private final NoteService noteService;
   private final ViewingScopeValidator viewingScopeValidator;
 
   @JacocoGenerated
   public RemoveNoteHandler() {
     this(
-        new CandidateRepository(DynamoRepository.defaultDynamoClient()),
-        new PeriodRepository(DynamoRepository.defaultDynamoClient()),
+        CandidateService.defaultCandidateService(),
+        NoteService.defaultNoteService(),
         ViewingScopeHandler.defaultViewingScopeValidator(),
         new Environment());
   }
 
   public RemoveNoteHandler(
-      CandidateRepository candidateRepository,
-      PeriodRepository periodRepository,
+      CandidateService candidateService,
+      NoteService noteService,
       ViewingScopeValidator viewingScopeValidator,
       Environment environment) {
     super(Void.class, environment);
-    this.candidateRepository = candidateRepository;
-    this.periodRepository = periodRepository;
+    this.candidateService = candidateService;
+    this.noteService = noteService;
     this.viewingScopeValidator = viewingScopeValidator;
   }
 
@@ -62,18 +61,21 @@ public class RemoveNoteHandler extends ApiGatewayHandler<Void, CandidateDto>
   @Override
   protected CandidateDto processInput(Void input, RequestInfo requestInfo, Context context)
       throws ApiGatewayException {
-    var username = RequestUtil.getUsername(requestInfo);
     var candidateIdentifier = UUID.fromString(requestInfo.getPathParameter(CANDIDATE_IDENTIFIER));
     var noteIdentifier = UUID.fromString(requestInfo.getPathParameter(PARAM_NOTE_IDENTIFIER));
-    var userInstance = UserInstance.fromRequestInfo(requestInfo);
-    return attempt(
-            () -> Candidate.fetch(() -> candidateIdentifier, candidateRepository, periodRepository))
-        .map(candidate -> validateViewingScope(viewingScopeValidator, username, candidate))
-        .map(
-            candidate ->
-                candidate.deleteNote(new DeleteNoteRequest(noteIdentifier, username.value())))
-        .map(candidate -> CandidateResponseFactory.create(candidate, userInstance))
+    var user = UserInstance.fromRequestInfo(requestInfo);
+    var deleteNoteRequest = new DeleteNoteRequest(noteIdentifier, user.userName().value());
+
+    return attempt(() -> candidateService.getCandidateByIdentifier(candidateIdentifier))
+        .map(candidate -> validateViewingScope(viewingScopeValidator, user.userName(), candidate))
+        .map(candidate -> deleteNote(candidate, deleteNoteRequest))
+        .map(candidate -> CandidateResponseFactory.create(candidate, user))
         .orElseThrow(ExceptionMapper::map);
+  }
+
+  private Candidate deleteNote(Candidate candidate, DeleteNoteRequest request) {
+    noteService.deleteNote(candidate, request);
+    return candidateService.getCandidateByIdentifier(candidate.identifier());
   }
 
   @Override

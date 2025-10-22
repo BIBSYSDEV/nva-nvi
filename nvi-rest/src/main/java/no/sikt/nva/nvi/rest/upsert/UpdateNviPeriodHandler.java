@@ -7,8 +7,9 @@ import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.net.HttpURLConnection;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.dto.NviPeriodDto;
-import no.sikt.nva.nvi.common.service.model.NviPeriod;
+import no.sikt.nva.nvi.common.service.model.UpdatePeriodRequest;
 import no.sikt.nva.nvi.common.service.model.UpdatePeriodRequest.Builder;
 import no.sikt.nva.nvi.common.utils.ExceptionMapper;
 import no.sikt.nva.nvi.common.utils.RequestUtil;
@@ -23,7 +24,7 @@ import nva.commons.core.JacocoGenerated;
 public class UpdateNviPeriodHandler
     extends ApiGatewayHandler<UpsertNviPeriodRequest, NviPeriodDto> {
 
-  private final PeriodRepository periodRepository;
+  private final NviPeriodService periodService;
 
   @JacocoGenerated
   public UpdateNviPeriodHandler() {
@@ -32,7 +33,7 @@ public class UpdateNviPeriodHandler
 
   public UpdateNviPeriodHandler(PeriodRepository periodRepository, Environment environment) {
     super(UpsertNviPeriodRequest.class, environment);
-    this.periodRepository = periodRepository;
+    this.periodService = new NviPeriodService(environment, periodRepository);
   }
 
   @Override
@@ -49,9 +50,14 @@ public class UpdateNviPeriodHandler
     return attempt(input::toUpdatePeriodRequest)
         .map(builder -> builder.withModifiedBy(getUsername(requestInfo)))
         .map(Builder::build)
-        .map(request -> NviPeriod.update(request, periodRepository))
-        .map(NviPeriod::toDto)
+        .map(this::updateAndFetchPeriod)
         .orElseThrow(ExceptionMapper::map);
+  }
+
+  private NviPeriodDto updateAndFetchPeriod(UpdatePeriodRequest request) {
+    periodService.update(request);
+    var publishingYear = String.valueOf(request.publishingYear());
+    return periodService.getByPublishingYear(publishingYear).toDto();
   }
 
   @Override

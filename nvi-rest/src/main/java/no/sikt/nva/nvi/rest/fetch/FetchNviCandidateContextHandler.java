@@ -15,14 +15,20 @@ import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.core.Environment;
+import nva.commons.core.JacocoGenerated;
 
 public class FetchNviCandidateContextHandler extends ApiGatewayHandler<Void, String> {
 
   public static final ObjectMapper MAPPER = JsonUtils.dtoObjectMapper;
   public static final String CONTEXT_PROPERTY = "@context";
 
+  @JacocoGenerated
   public FetchNviCandidateContextHandler() {
-    super(Void.class, new Environment());
+    this(new Environment());
+  }
+
+  public FetchNviCandidateContextHandler(Environment environment) {
+    super(Void.class, environment);
   }
 
   @Override

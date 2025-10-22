@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.index;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static no.sikt.nva.nvi.common.EnvironmentFixtures.getCandidateContextUri;
 import static no.sikt.nva.nvi.common.model.EnumFixtures.randomValidScientificValue;
 import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.getRandomDateInCurrentYearAsDto;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PUBLICATION_CONTEXT;
@@ -73,12 +74,12 @@ public final class IndexDocumentTestUtils {
 
   public static UnixPath createPath(Candidate candidate) {
     return UnixPath.of(NVI_CANDIDATES_FOLDER)
-        .addChild(candidate.getIdentifier().toString() + GZIP_ENDING);
+        .addChild(candidate.identifier().toString() + GZIP_ENDING);
   }
 
   public static List<no.sikt.nva.nvi.index.model.document.Approval> expandApprovals(
       Candidate candidate, List<ContributorType> contributors) {
-    return candidate.getApprovals().values().stream()
+    return candidate.approvals().values().stream()
         .map(approval -> toApproval(approval, candidate, contributors))
         .toList();
   }
@@ -87,11 +88,11 @@ public final class IndexDocumentTestUtils {
       Candidate candidate, JsonNode expandedResource) {
     return PublicationDetails.builder()
         .withType(ExpandedResourceGenerator.extractType(expandedResource))
-        .withId(candidate.getPublicationDetails().publicationId().toString())
+        .withId(candidate.publicationDetails().publicationId().toString())
         .withTitle(ExpandedResourceGenerator.extractTitle(expandedResource))
         .withAbstract(ExpandedResourceGenerator.extractOptionalAbstract(expandedResource))
         .withPublicationDate(
-            candidate.getPublicationDetails().publicationDate().toDtoPublicationDate())
+            candidate.publicationDetails().publicationDate().toDtoPublicationDate())
         .withContributors(
             mapToContributors(
                 ExpandedResourceGenerator.extractContributors(expandedResource), candidate))
@@ -310,7 +311,7 @@ public final class IndexDocumentTestUtils {
       List<no.sikt.nva.nvi.index.model.document.Approval> approvals,
       PublicationDetails publicationDetails) {
     return NviCandidateIndexDocument.builder()
-        .withContext(Candidate.getContextUri())
+        .withContext(getCandidateContextUri())
         .withId(randomUri())
         .withIsApplicable(true)
         .withIdentifier(UUID.randomUUID())
@@ -331,7 +332,7 @@ public final class IndexDocumentTestUtils {
   private static no.sikt.nva.nvi.index.model.document.Approval toApproval(
       Approval approval, Candidate candidate, List<ContributorType> contributors) {
     return no.sikt.nva.nvi.index.model.document.Approval.builder()
-        .withInstitutionId(approval.getInstitutionId())
+        .withInstitutionId(approval.institutionId())
         .withApprovalStatus(getApprovalStatus(approval))
         .withAssignee(approval.getAssigneeUsername())
         .withPoints(getInstitutionPoints(approval, candidate))
@@ -343,7 +344,7 @@ public final class IndexDocumentTestUtils {
 
   private static InstitutionPoints getInstitutionPoints(Approval approval, Candidate candidate) {
     return candidate
-        .getInstitutionPoints(approval.getInstitutionId())
+        .getInstitutionPoints(approval.institutionId())
         .map(InstitutionPoints::from)
         .orElse(null);
   }
@@ -354,18 +355,18 @@ public final class IndexDocumentTestUtils {
         .filter(NviContributor.class::isInstance)
         .map(NviContributor.class::cast)
         .flatMap(
-            contributor -> contributor.getOrganizationsPartOf(approval.getInstitutionId()).stream())
+            contributor -> contributor.getOrganizationsPartOf(approval.institutionId()).stream())
         .collect(Collectors.toSet());
   }
 
   private static ApprovalStatus getApprovalStatus(Approval approval) {
     return isApprovalPendingAndUnassigned(approval)
         ? ApprovalStatus.NEW
-        : ApprovalStatus.parse(approval.getStatus().getValue());
+        : ApprovalStatus.parse(approval.status().getValue());
   }
 
   private static boolean isApprovalPendingAndUnassigned(Approval approval) {
-    return no.sikt.nva.nvi.common.service.model.ApprovalStatus.PENDING.equals(approval.getStatus())
+    return no.sikt.nva.nvi.common.service.model.ApprovalStatus.PENDING.equals(approval.status())
         && isNull(approval.getAssigneeUsername());
   }
 

@@ -1,17 +1,14 @@
 package no.sikt.nva.nvi.rest.fetch;
 
 import static java.net.HttpURLConnection.HTTP_OK;
-import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
 import static nva.commons.core.attempt.Try.attempt;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
-import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.utils.ExceptionMapper;
 import no.sikt.nva.nvi.rest.fetch.ReportStatusDto.StatusDto;
 import nva.commons.apigateway.ApiGatewayHandler;
@@ -25,24 +22,17 @@ public class FetchReportStatusByPublicationIdHandler
     extends ApiGatewayHandler<Void, ReportStatusDto> {
 
   private static final String PATH_PARAM_PUBLICATION_ID = "publicationId";
-  private final CandidateRepository candidateRepository;
-  private final PeriodRepository periodRepository;
+  private final CandidateService candidateService;
 
   @JacocoGenerated
   public FetchReportStatusByPublicationIdHandler() {
-    this(
-        new CandidateRepository(defaultDynamoClient()),
-        new PeriodRepository(defaultDynamoClient()),
-        new Environment());
+    this(CandidateService.defaultCandidateService(), new Environment());
   }
 
   public FetchReportStatusByPublicationIdHandler(
-      CandidateRepository candidateRepository,
-      PeriodRepository periodRepository,
-      Environment environment) {
+      CandidateService candidateService, Environment environment) {
     super(Void.class, environment);
-    this.candidateRepository = candidateRepository;
-    this.periodRepository = periodRepository;
+    this.candidateService = candidateService;
   }
 
   @Override
@@ -53,10 +43,7 @@ public class FetchReportStatusByPublicationIdHandler
   protected ReportStatusDto processInput(Void unused, RequestInfo requestInfo, Context context)
       throws ApiGatewayException {
     var publicationId = getPublicationId(requestInfo);
-    return attempt(
-            () ->
-                Candidate.fetchByPublicationId(
-                    () -> publicationId, candidateRepository, periodRepository))
+    return attempt(() -> candidateService.getCandidateByPublicationId(publicationId))
         .map(ReportStatusDto::fromCandidate)
         .orElse(failure -> handleNotFoundOrFailure(failure, publicationId));
   }

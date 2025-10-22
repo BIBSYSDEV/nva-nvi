@@ -17,6 +17,7 @@ import java.net.HttpURLConnection;
 import java.util.Map;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.rest.EnvironmentFixtures;
 import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.GatewayResponse;
@@ -44,7 +45,9 @@ class FetchNviCandidateContextHandlerTest {
   @BeforeEach
   void setUp() {
     output = new ByteArrayOutputStream();
-    fetchNviCandidateContextHandler = new FetchNviCandidateContextHandler();
+    fetchNviCandidateContextHandler =
+        new FetchNviCandidateContextHandler(
+            EnvironmentFixtures.FETCH_NVI_CANDIDATE_CONTEXT_HANDLER);
   }
 
   @Test

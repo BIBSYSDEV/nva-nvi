@@ -48,6 +48,10 @@ public record UpsertNviCandidateRequest(
     return publicationDetails.id();
   }
 
+  public String publicationYear() {
+    return publicationDetails.publicationDate().year();
+  }
+
   public boolean isApplicable() {
     return ALWAYS_APPLICABLE;
   }

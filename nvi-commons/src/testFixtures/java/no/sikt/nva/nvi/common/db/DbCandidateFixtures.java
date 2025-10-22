@@ -37,13 +37,14 @@ public class DbCandidateFixtures {
     return randomCandidateBuilder(organizationId, publicationDetails).applicable(applicable);
   }
 
-  public static DbCandidate randomCandidateWithYear(String year) {
-    var organizationId = randomUri();
+  public static DbCandidate randomCandidateWithYear(URI organizationId, String year) {
+    var publicationDate = new DbPublicationDate(year, null, null);
     var publicationDetails =
-        randomPublicationBuilder(organizationId)
-            .publicationDate(new DbPublicationDate(year, null, null))
-            .build();
-    return randomCandidateBuilder(organizationId, publicationDetails).applicable(true).build();
+        randomPublicationBuilder(organizationId).publicationDate(publicationDate).build();
+    return randomCandidateBuilder(organizationId, publicationDetails)
+        .publicationDate(publicationDate)
+        .applicable(true)
+        .build();
   }
 
   public static DbCandidate.Builder randomCandidateBuilder(
@@ -84,13 +85,9 @@ public class DbCandidateFixtures {
                     .build()));
   }
 
-  public static DbCandidate getExpectedNewDbCandidate(UpsertNviCandidateRequest request) {
-    return getExpectedDbCandidate(randomUUID(), Instant.now(), request);
-  }
-
   public static DbCandidate getExpectedUpdatedDbCandidate(
       Candidate candidate, UpsertNviCandidateRequest request) {
-    return getExpectedDbCandidate(candidate.getIdentifier(), candidate.getCreatedDate(), request);
+    return getExpectedDbCandidate(candidate.identifier(), candidate.createdDate(), request);
   }
 
   public static DbCandidate getExpectedDbCandidate(

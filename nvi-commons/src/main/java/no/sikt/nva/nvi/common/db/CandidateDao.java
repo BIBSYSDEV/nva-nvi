@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.common.db;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.DatabaseConstants.DATA_FIELD;
 import static no.sikt.nva.nvi.common.DatabaseConstants.HASH_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.IDENTIFIER_FIELD;
@@ -15,7 +16,6 @@ import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_YEAR_HASH
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_YEAR_RANGE_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.VERSION_FIELD;
-import static no.sikt.nva.nvi.common.utils.DecimalUtils.adjustScaleAndRoundingMode;
 import static nva.commons.core.attempt.Try.attempt;
 import static org.apache.commons.lang3.StringUtils.equalsIgnoreCase;
 
@@ -187,6 +187,12 @@ public final class CandidateDao extends Dao {
         .version(version)
         .revision(revision)
         .lastWrittenAt(lastWrittenAt);
+  }
+
+  @Override
+  @DynamoDbIgnore
+  public CandidateDao withMutatedVersion() {
+    return copy().version(randomUUID().toString()).build();
   }
 
   public UUID identifier() {
@@ -735,7 +741,7 @@ public final class CandidateDao extends Dao {
     public static DbInstitutionPoints from(InstitutionPoints institutionPoints) {
       return new DbInstitutionPoints(
           institutionPoints.institutionId(),
-          adjustScaleAndRoundingMode(institutionPoints.institutionPoints()),
+          institutionPoints.institutionPoints(),
           institutionPoints.creatorAffiliationPoints().stream()
               .map(DbCreatorAffiliationPoints::from)
               .toList());
@@ -763,7 +769,7 @@ public final class CandidateDao extends Dao {
         return new DbCreatorAffiliationPoints(
             creatorAffiliationPoints.nviCreator(),
             creatorAffiliationPoints.affiliationId(),
-            adjustScaleAndRoundingMode(creatorAffiliationPoints.points()));
+            creatorAffiliationPoints.points());
       }
 
       public static final class Builder {

@@ -30,6 +30,7 @@ dependencies {
     implementation nvaLibs.s3
     implementation nvaLibs.secrets
     implementation project(':nvi-commons')
+    testFixturesAnnotationProcessor nvaCatalog.errorprone
     testImplementation libs.dynamodDbLocal
     testImplementation nvaCatalog.assertj.core
     testImplementation nvaCatalog.bundles.testing.cucumber

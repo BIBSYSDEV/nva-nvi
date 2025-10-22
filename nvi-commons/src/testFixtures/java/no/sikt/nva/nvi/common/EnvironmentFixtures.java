@@ -1,5 +1,8 @@
 package no.sikt.nva.nvi.common;
 
+import java.net.URI;
+import nva.commons.core.paths.UriWrapper;
+
 /**
  * Utility to set up fake environment variables for testing purposes. Keep this in sync with the
  * actual environment variables defined in template.yaml.
@@ -52,6 +55,10 @@ public enum EnvironmentFixtures {
     return value;
   }
 
+  public static FakeEnvironment getGlobalEnvironment() {
+    return getDefaultEnvironmentBuilder().build();
+  }
+
   public static FakeEnvironment.Builder getDefaultEnvironmentBuilder() {
     return FakeEnvironment.builder()
         .with(API_HOST)
@@ -63,6 +70,14 @@ public enum EnvironmentFixtures {
         .with(NVI_TABLE_NAME)
         .with(SEARCH_INFRASTRUCTURE_API_HOST)
         .with(SEARCH_INFRASTRUCTURE_AUTH_URI);
+  }
+
+  public static FakeEnvironment getHandlerEnvironment(EnvironmentFixtures... environmentVariables) {
+    var builder = getDefaultEnvironmentBuilder();
+    for (var variable : environmentVariables) {
+      builder.with(variable);
+    }
+    return builder.build();
   }
 
   public static FakeEnvironment getEvaluateNviCandidateHandlerEnvironment() {
@@ -131,5 +146,11 @@ public enum EnvironmentFixtures {
 
   public static FakeEnvironment getSearchNviCandidatesHandlerEnvironment() {
     return getDefaultEnvironmentBuilder().with(ALLOWED_ORIGIN).with(COGNITO_HOST).build();
+  }
+
+  public static URI getCandidateContextUri() {
+    return UriWrapper.fromHost(API_HOST.getValue())
+        .addChild(CUSTOM_DOMAIN_BASE_PATH.getValue(), "context")
+        .getUri();
   }
 }

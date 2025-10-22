@@ -1,49 +1,54 @@
 package no.sikt.nva.nvi.common.service;
 
-import static no.sikt.nva.nvi.common.LocalDynamoTestSetup.initializeTestDatabase;
+import static no.sikt.nva.nvi.common.EnvironmentFixtures.getGlobalEnvironment;
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeriod;
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
+import static no.sikt.nva.nvi.common.model.UsernameFixtures.randomUsername;
+import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import no.sikt.nva.nvi.common.db.NviPeriodDao.DbNviPeriod;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.TestScenario;
+import no.sikt.nva.nvi.common.service.model.NviPeriod;
+import no.sikt.nva.nvi.common.service.model.UpdatePeriodRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class NviPeriodServiceTest {
-
-  private PeriodRepository periodRepository;
-  private NviPeriodService nviPeriodService;
+  private TestScenario scenario;
+  private NviPeriodService periodService;
 
   @BeforeEach
   void setup() {
-    periodRepository = new PeriodRepository(initializeTestDatabase());
-    nviPeriodService = new NviPeriodService(periodRepository);
+    scenario = new TestScenario();
+    periodService = new NviPeriodService(getGlobalEnvironment(), scenario.getPeriodRepository());
   }
 
   @Test
   void shouldReturnAllPeriods() {
-    persistPeriod(2022);
-    persistPeriod(2023);
-    assertEquals(2, nviPeriodService.fetchAll().size());
+    setupClosedPeriod(scenario, CURRENT_YEAR - 1);
+    setupOpenPeriod(scenario, CURRENT_YEAR);
+    assertEquals(2, periodService.getAll().size());
   }
 
   @Test
-  void shouldReturnLatestClosedPeriodYear() {
-    persistPeriod(2022);
-    persistPeriod(2023);
-    assertTrue(nviPeriodService.fetchLatestClosedPeriodYear().isPresent());
-    assertEquals(2023, nviPeriodService.fetchLatestClosedPeriodYear().get());
+  void shouldUpdateExistingRecordOnUpdate() {
+    var year = String.valueOf(CURRENT_YEAR);
+    var originalPeriod = setupOpenPeriod(scenario, year);
+
+    var expectedUser = randomUsername();
+    var updateRequest = toUpdateRequestBuilder(originalPeriod).withModifiedBy(expectedUser);
+    periodService.update(updateRequest.build());
+
+    var actualPeriod = scenario.getPeriodRepository().findByPublishingYear(year).orElseThrow();
+    assertThat(actualPeriod.nviPeriod().modifiedBy().value()).isEqualTo(expectedUser.value());
   }
 
-  private void persistPeriod(int publishingYear) {
-    periodRepository.save(
-        DbNviPeriod.builder()
-            .publishingYear(String.valueOf(publishingYear))
-            .startDate(LocalDateTime.of(publishingYear, 4, 1, 0, 0, 0).toInstant(ZoneOffset.UTC))
-            .reportingDate(
-                LocalDateTime.of(publishingYear + 1, 3, 1, 0, 0, 0).toInstant(ZoneOffset.UTC))
-            .build());
+  private static UpdatePeriodRequest.Builder toUpdateRequestBuilder(NviPeriod period) {
+    return UpdatePeriodRequest.builder()
+        .withPublishingYear(period.publishingYear())
+        .withStartDate(period.startDate())
+        .withReportingDate(period.reportingDate())
+        .withModifiedBy(period.modifiedBy());
   }
 }
