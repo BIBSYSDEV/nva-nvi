@@ -43,11 +43,12 @@ public class ApprovalService {
 
   public void updateApprovalAssignee(Candidate candidate, UpdateAssigneeRequest request) {
     LOGGER.info("Updating assignee for candidateId={}: {}", candidate.identifier(), request);
+    var expectedPeriod = candidate.period().toDao();
     var updatedApproval = candidate.getApprovalWithUpdatedAssignee(request);
     var updatedApprovals = List.of(updatedApproval.toDao());
     LOGGER.info("Saving updated approval with assignee {}", updatedApproval.assignee());
     candidateRepository.updateCandidateItems(
-        candidate.toDao(), updatedApprovals, emptyList(), emptyList());
+        expectedPeriod, candidate.toDao(), updatedApprovals, emptyList(), emptyList());
   }
 
   public void updateApprovalStatus(
@@ -67,11 +68,11 @@ public class ApprovalService {
       LOGGER.warn("Unauthorized attempt to update approval status", e);
       throw new IllegalStateException("Cannot update approval status");
     }
-
+    var expectedPeriod = candidate.period().toDao();
     var updatedApproval = candidate.getApprovalWithUpdatedStatus(request);
     var updatedApprovals = List.of(updatedApproval.toDao());
     LOGGER.info("Saving updated approval with status {}", updatedApproval.status());
     candidateRepository.updateCandidateItems(
-        candidate.toDao(), updatedApprovals, emptyList(), emptyList());
+        expectedPeriod, candidate.toDao(), updatedApprovals, emptyList(), emptyList());
   }
 }

@@ -553,7 +553,8 @@ public record Candidate(
         .withCreatedDate(createdDate)
         .withPointCalculation(pointCalculation)
         .withPublicationDetails(publicationDetails)
-        .withRevision(revision);
+        .withRevision(revision)
+        .withVersion(version);
   }
 
   /**

@@ -10,9 +10,13 @@ import static no.sikt.nva.nvi.common.service.model.Candidate.shouldResetCandidat
 
 import java.net.URI;
 import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.Dao;
+import no.sikt.nva.nvi.common.db.NviPeriodDao;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.model.CandidateAggregate;
 import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
@@ -76,12 +80,13 @@ public class CandidateService {
     var candidate = Candidate.fromRequest(identifier, request, period, environment);
     var approvals = candidate.approvals().values().stream().map(Approval::toDao).toList();
 
-    candidateRepository.create(candidate.toDao(), approvals);
+    candidateRepository.create(period.toDao(), candidate.toDao(), approvals);
   }
 
   private void updateCandidate(
       UpsertNviCandidateRequest request, Candidate candidate, NviPeriod targetPeriod) {
     var updatedCandidate = candidate.apply(request, targetPeriod);
+    var expectedPeriods = getRelevantPeriods(candidate, updatedCandidate);
     if (shouldResetCandidate(request, candidate) || !candidate.isApplicable()) {
       LOGGER.info("Resetting all approvals for candidate {}", candidate.identifier());
       var institutionsToReset = updatedCandidate.getInstitutionPoints();
@@ -92,7 +97,11 @@ public class CandidateService {
       var approvalsToDelete = getApprovalsToDelete(candidate, updatedCandidate);
 
       candidateRepository.updateCandidateAggregate(
-          updatedCandidate.toDao(), approvalsToReset, approvalsToDelete, emptyList());
+          expectedPeriods,
+          updatedCandidate.toDao(),
+          approvalsToReset,
+          approvalsToDelete,
+          emptyList());
     } else {
       var institutionsToReset = getUpdatedInstitutionPoints(candidate, updatedCandidate);
       var approvalsToReset =
@@ -104,15 +113,17 @@ public class CandidateService {
           candidate.identifier(),
           approvalsToReset);
       candidateRepository.updateCandidateAggregate(
-          updatedCandidate.toDao(), approvalsToReset, emptyList(), emptyList());
+          expectedPeriods, updatedCandidate.toDao(), approvalsToReset, emptyList(), emptyList());
     }
   }
 
   public void updateCandidate(Candidate candidate) {
     LOGGER.info("Saving candidate aggregate for publicationId={}", candidate.getPublicationId());
+    var expectedPeriod = List.of(candidate.period().toDao());
     var approvals = candidate.approvals().values().stream().map(Approval::toDao).toList();
     var notes = candidate.notes().values().stream().map(Note::toDao).toList();
-    candidateRepository.updateCandidateAggregate(candidate.toDao(), approvals, emptyList(), notes);
+    candidateRepository.updateCandidateAggregate(
+        expectedPeriod, candidate.toDao(), approvals, emptyList(), notes);
   }
 
   public void updateCandidate(UpsertNonNviCandidateRequest request) {
@@ -125,11 +136,12 @@ public class CandidateService {
       LOGGER.warn("No candidate found for publicationId={}", publicationId);
     } else {
       var candidate = optionalCandidate.get();
-      var updatedCandidate = candidate.updateToNonCandidate().toDao();
+      var updatedCandidate = candidate.updateToNonCandidate();
+      var expectedPeriods = getRelevantPeriods(candidate, updatedCandidate);
       var approvalsToDelete = candidate.approvals().values().stream().map(Approval::toDao).toList();
 
       candidateRepository.updateCandidateAggregate(
-          updatedCandidate, emptyList(), approvalsToDelete, emptyList());
+          expectedPeriods, updatedCandidate.toDao(), emptyList(), approvalsToDelete, emptyList());
       LOGGER.info("Successfully updated publicationId={} to non-candidate", publicationId);
     }
   }
@@ -174,5 +186,23 @@ public class CandidateService {
             .orElse(null);
 
     return new CandidateAndPeriods(candidate, periods);
+  }
+
+  /**
+   * Gets all periods relevant to the candidate update. Returns both old and new periods if
+   * publication year changed.
+   *
+   * @param candidate Current candidate
+   * @param updatedCandidate Updated candidate
+   * @return List of relevant periods (one if unchanged, two if publication year changed)
+   */
+  private static List<NviPeriodDao> getRelevantPeriods(
+      Candidate candidate, Candidate updatedCandidate) {
+    return Stream.of(candidate.getPeriod(), updatedCandidate.getPeriod())
+        .filter(Optional::isPresent)
+        .map(Optional::get)
+        .distinct()
+        .map(NviPeriod::toDao)
+        .toList();
   }
 }

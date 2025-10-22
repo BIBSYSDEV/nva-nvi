@@ -9,6 +9,7 @@ import static no.sikt.nva.nvi.common.DatabaseConstants.HASH_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_PUBLICATION_ID;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_YEAR;
 import static no.sikt.nva.nvi.common.DatabaseConstants.VERSION_FIELD;
+import static no.sikt.nva.nvi.common.db.PeriodRepository.createPeriodKey;
 import static no.sikt.nva.nvi.common.utils.ApplicationConstants.NVI_TABLE_NAME;
 import static no.sikt.nva.nvi.common.utils.Validator.hasElements;
 import static software.amazon.awssdk.enhanced.dynamodb.TableSchema.fromImmutableClass;
@@ -29,7 +30,6 @@ import no.sikt.nva.nvi.common.DatabaseConstants;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.model.KeyField;
-import no.sikt.nva.nvi.common.exceptions.TransactionException;
 import no.sikt.nva.nvi.common.model.ListingResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,7 +50,6 @@ import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
 import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
-import software.amazon.awssdk.services.dynamodb.model.TransactionCanceledException;
 import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
 
 // Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
@@ -104,9 +103,8 @@ public class CandidateRepository extends DynamoRepository {
   }
 
   /**
-   * Note that this query is done against a GSI and is therefore not strongly consistent. This is
-   * acceptable for bulk operations that only need to extract identifiers, but it does not guarantee
-   * reading the most up-to-date information.
+   * Queries candidates by year using a GSI (not strongly consistent). Suitable for bulk operations
+   * that extract identifiers but may not return the latest data.
    */
   public ListingResult<CandidateDao> fetchCandidatesByYear(
       String year,
@@ -127,6 +125,13 @@ public class CandidateRepository extends DynamoRepository {
         includeReportedCandidates ? items : filterOutReportedCandidates(items));
   }
 
+  /**
+   * Deprecated method used only for importing historical data via CristinNviReportEventConsumer.
+   * This method will be removed once the historical data import is complete.
+   *
+   * @deprecated This method is only for legacy data import.
+   */
+  @Deprecated(forRemoval = true, since = "2025-11-01")
   public void create(
       DbCandidate dbCandidate, List<DbApprovalStatus> approvalStatuses, String year) {
     var identifier = randomUUID();
@@ -137,16 +142,30 @@ public class CandidateRepository extends DynamoRepository {
             .periodYear(year)
             .build();
     var approvals = approvalStatuses.stream().map(approval -> approval.toDao(identifier)).toList();
-    create(candidate, approvals);
+    create(null, candidate, approvals);
   }
 
-  public void create(CandidateDao candidate, Collection<ApprovalStatusDao> approvals) {
+  /**
+   * Creates a new NVI candidate with associated approvals.
+   *
+   * @param dependentPeriod Period the candidate belongs to. Transaction fails if modified
+   *     concurrently.
+   * @param candidate Candidate to create
+   * @param approvals Approval statuses to create
+   */
+  public void create(
+      NviPeriodDao dependentPeriod,
+      CandidateDao candidate,
+      Collection<ApprovalStatusDao> approvals) {
     LOGGER.info("Creating new candidate with identifier={}", candidate.identifier());
     var transaction = TransactWriteItemsEnhancedRequest.builder();
 
     var publicationId = candidate.candidate().publicationId();
     var uniquenessEntry = new CandidateUniquenessEntryDao(publicationId.toString());
 
+    if (nonNull(dependentPeriod)) {
+      transaction.addConditionCheck(periodTable, requireExpectedPeriodRevision(dependentPeriod));
+    }
     addNewItemWithVersion(transaction, uniquenessTable, uniquenessEntry);
     addNewItemWithVersion(transaction, candidateTable, candidate);
 
@@ -157,30 +176,62 @@ public class CandidateRepository extends DynamoRepository {
     sendTransaction(transaction.build());
   }
 
+  /**
+   * Updates a candidate with its approvals and notes.
+   *
+   * @param dependentPeriods Periods the candidate belongs to. Transaction fails if any are modified
+   *     concurrently.
+   * @param candidate Candidate to update
+   * @param approvalsToUpdate Approval statuses to update
+   * @param approvalsToDelete Approval statuses to delete
+   * @param notesToUpdate Notes to update
+   */
   public void updateCandidateAggregate(
+      Collection<NviPeriodDao> dependentPeriods,
       CandidateDao candidate,
       Collection<ApprovalStatusDao> approvalsToUpdate,
       Collection<ApprovalStatusDao> approvalsToDelete,
       Collection<NoteDao> notesToUpdate) {
     LOGGER.info("Updating candidate {}", candidate.identifier());
     var transaction = TransactWriteItemsEnhancedRequest.builder();
+    for (var period : dependentPeriods) {
+      transaction.addConditionCheck(periodTable, requireExpectedPeriodRevision(period));
+    }
     addUpdatedItemWithVersion(transaction, candidateTable, candidate);
     addAllToTransaction(transaction, approvalsToUpdate, approvalsToDelete, notesToUpdate);
     sendTransaction(transaction.build());
   }
 
+  /**
+   * Updates approvals and notes without modifying the candidate itself.
+   *
+   * @param dependentPeriod Period the candidate belongs to. Transaction fails if modified
+   *     concurrently.
+   * @param candidate Candidate the items belong to. Transaction fails if modified concurrently.
+   * @param approvalsToUpdate Approval statuses to update
+   * @param approvalsToDelete Approval statuses to delete
+   * @param notesToUpdate Notes to update
+   */
   public void updateCandidateItems(
+      NviPeriodDao dependentPeriod,
       CandidateDao candidate,
       Collection<ApprovalStatusDao> approvalsToUpdate,
       Collection<ApprovalStatusDao> approvalsToDelete,
       Collection<NoteDao> notesToUpdate) {
     LOGGER.info("Updating approvals and notes for candidate {}", candidate.identifier());
     var transaction = TransactWriteItemsEnhancedRequest.builder();
+    transaction.addConditionCheck(periodTable, requireExpectedPeriodRevision(dependentPeriod));
     transaction.addConditionCheck(candidateTable, requireExpectedCandidateRevision(candidate));
     addAllToTransaction(transaction, approvalsToUpdate, approvalsToDelete, notesToUpdate);
     sendTransaction(transaction.build());
   }
 
+  /**
+   * Fetches a candidate and all related items (approvals, notes) asynchronously.
+   *
+   * @param candidateId Candidate identifier
+   * @return CompletableFuture containing all related database entries
+   */
   public CompletableFuture<List<Dao>> getCandidateAggregateAsync(UUID candidateId) {
     LOGGER.info("Fetching candidate and related data for candidateId={}", candidateId);
 
@@ -189,6 +240,12 @@ public class CandidateRepository extends DynamoRepository {
         .thenApply(items -> items.stream().map(this::mapToDao).toList());
   }
 
+  /**
+   * Fetches a candidate by identifier.
+   *
+   * @param candidateIdentifier Candidate identifier
+   * @return Optional containing the candidate, or empty if not found
+   */
   public Optional<CandidateDao> findCandidateById(UUID candidateIdentifier) {
     LOGGER.info("Fetching candidate by identifier {}", candidateIdentifier);
     var candidateKey = createCandidateKey(candidateIdentifier);
@@ -196,8 +253,8 @@ public class CandidateRepository extends DynamoRepository {
   }
 
   /**
-   * Finds a candidate identifier by publication ID via a GSI. Because GSIs do not support strongly
-   * consistent reads it is necessary to re-fetch the actual candidate from the primary table.
+   * Finds candidate identifier by publication ID via GSI. Re-fetch from primary table for strongly
+   * consistent reads.
    */
   public Optional<UUID> findByPublicationId(URI publicationId) {
     LOGGER.info("Fetching candidate by publication id {}", publicationId);
@@ -234,6 +291,12 @@ public class CandidateRepository extends DynamoRepository {
         .partitionValue(CandidateDao.createPartitionKey(candidateIdentifier.toString()))
         .sortValue(NoteDao.createSortKey(noteIdentifier.toString()))
         .build();
+  }
+
+  private ConditionCheck<NviPeriodDao> requireExpectedPeriodRevision(NviPeriodDao period) {
+    var periodKey = createPeriodKey(period.nviPeriod().publishingYear());
+    var revisionCondition = requireExpectedRevision(period.revision());
+    return ConditionCheck.builder().key(periodKey).conditionExpression(revisionCondition).build();
   }
 
   private ConditionCheck<CandidateDao> requireExpectedCandidateRevision(CandidateDao candidate) {
@@ -275,22 +338,6 @@ public class CandidateRepository extends DynamoRepository {
     LOGGER.info("Updating {} approvals", notesToUpdate.size());
     for (var note : notesToUpdate) {
       addUpdatedItemWithVersion(transaction, noteTable, note);
-    }
-  }
-
-  private void sendTransaction(TransactWriteItemsEnhancedRequest request) {
-    try {
-      client.transactWriteItems(request);
-    } catch (TransactionCanceledException transactionCanceledException) {
-      handleTransactionFailure(transactionCanceledException);
-      throw TransactionException.from(transactionCanceledException, request);
-    }
-  }
-
-  private void handleTransactionFailure(TransactionCanceledException exception) {
-    LOGGER.error("Transaction failed due to an exception", exception);
-    for (var reason : exception.cancellationReasons()) {
-      LOGGER.error("Cancellation reason: {}", reason);
     }
   }
 

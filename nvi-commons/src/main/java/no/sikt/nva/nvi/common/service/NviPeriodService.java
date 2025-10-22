@@ -39,7 +39,7 @@ public class NviPeriodService {
     }
 
     var updatedPeriod = createNewPeriodFromRequest(request).toDao();
-    periodRepository.save(updatedPeriod);
+    periodRepository.create(updatedPeriod);
     LOGGER.info("Created new period successfully");
   }
 
@@ -50,7 +50,7 @@ public class NviPeriodService {
     var currentPeriod = getByPublishingYear(year);
 
     var updatedPeriod = currentPeriod.updateWithRequest(request).toDao();
-    periodRepository.save(updatedPeriod);
+    periodRepository.update(updatedPeriod);
     LOGGER.info("Updated period successfully");
   }
 

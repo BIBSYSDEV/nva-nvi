@@ -7,7 +7,10 @@ import static no.sikt.nva.nvi.common.utils.ApplicationConstants.REGION;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import no.sikt.nva.nvi.common.exceptions.TransactionException;
 import nva.commons.core.JacocoGenerated;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedClient;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
@@ -24,10 +27,12 @@ import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
+import software.amazon.awssdk.services.dynamodb.model.TransactionCanceledException;
 
 public class DynamoRepository {
   private static final String PARTITION_KEY_NAME_PLACEHOLDER = "#partitionKey";
   private static final String SORT_KEY_NAME_PLACEHOLDER = "#sortKey";
+  private static final Logger LOGGER = LoggerFactory.getLogger(DynamoRepository.class);
   protected final DynamoDbEnhancedClient client;
   protected final DynamoDbClient defaultClient;
 
@@ -49,6 +54,22 @@ public class DynamoRepository {
 
   protected CompletableFuture<QueryResponse> executeAsync(QueryRequest query) {
     return CompletableFuture.supplyAsync(() -> defaultClient.query(query));
+  }
+
+  protected void sendTransaction(TransactWriteItemsEnhancedRequest request) {
+    try {
+      client.transactWriteItems(request);
+    } catch (TransactionCanceledException transactionCanceledException) {
+      handleTransactionFailure(transactionCanceledException);
+      throw TransactionException.from(transactionCanceledException, request);
+    }
+  }
+
+  private void handleTransactionFailure(TransactionCanceledException exception) {
+    LOGGER.error("Transaction failed due to an exception", exception);
+    for (var reason : exception.cancellationReasons()) {
+      LOGGER.error("Cancellation reason: {}", reason);
+    }
   }
 
   private static String keyNotExistsCondition() {

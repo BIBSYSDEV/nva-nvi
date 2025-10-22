@@ -33,9 +33,10 @@ public class NoteService {
     var updatedApprovals =
         updatedItems.updatedApproval().map(Approval::toDao).map(List::of).orElse(emptyList());
     var notesToAdd = List.of(updatedItems.note().toDao());
+    var expectedPeriod = candidate.period().toDao();
 
     candidateRepository.updateCandidateItems(
-        candidate.toDao(), updatedApprovals, emptyList(), notesToAdd);
+        expectedPeriod, candidate.toDao(), updatedApprovals, emptyList(), notesToAdd);
   }
 
   public void deleteNote(Candidate candidate, DeleteNoteRequest request) {
