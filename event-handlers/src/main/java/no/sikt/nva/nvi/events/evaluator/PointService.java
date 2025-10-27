@@ -1,7 +1,9 @@
 package no.sikt.nva.nvi.events.evaluator;
 
 import java.util.Collection;
+import java.util.Objects;
 import java.util.Optional;
+import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.dto.ContributorDto;
 import no.sikt.nva.nvi.common.dto.PointCalculationDto;
 import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
@@ -9,7 +11,6 @@ import no.sikt.nva.nvi.common.dto.PublicationDto;
 import no.sikt.nva.nvi.common.model.ChannelType;
 import no.sikt.nva.nvi.events.evaluator.calculator.PointCalculator;
 import no.sikt.nva.nvi.events.evaluator.model.NviCreator;
-import no.sikt.nva.nvi.events.evaluator.model.NviOrganization;
 
 public final class PointService {
 
@@ -20,7 +21,7 @@ public final class PointService {
     var instanceType = publication.publicationType();
     var channel = getNviChannel(publication);
     var isInternationalCollaboration = publication.isInternationalCollaboration();
-    var totalShares = getTotalShares(publication, nviCreators);
+    var totalShares = getTotalShares(publication);
 
     return new PointCalculator(
             channel, instanceType, nviCreators, isInternationalCollaboration, totalShares)
@@ -28,14 +29,12 @@ public final class PointService {
   }
 
   private static PublicationChannelDto getNviChannel(PublicationDto publication) {
-    var channelDto =
-        switch (publication.publicationType()) {
-          case ACADEMIC_ARTICLE, ACADEMIC_LITERATURE_REVIEW -> getJournal(publication);
-          case ACADEMIC_MONOGRAPH, ACADEMIC_COMMENTARY, ACADEMIC_CHAPTER ->
-              getSeriesOrPublisher(publication);
-          case NON_CANDIDATE -> throw new IllegalArgumentException("Publication type is invalid");
-        };
-    return channelDto;
+    return switch (publication.publicationType()) {
+      case ACADEMIC_ARTICLE, ACADEMIC_LITERATURE_REVIEW -> getJournal(publication);
+      case ACADEMIC_MONOGRAPH, ACADEMIC_COMMENTARY, ACADEMIC_CHAPTER ->
+          getSeriesOrPublisher(publication);
+      case NON_CANDIDATE -> throw new IllegalArgumentException("Publication type is invalid");
+    };
   }
 
   private static Optional<PublicationChannelDto> getChannel(
@@ -55,29 +54,44 @@ public final class PointService {
         .orElseGet(() -> getChannel(publication, ChannelType.PUBLISHER).orElseThrow());
   }
 
-  private static int getTotalShares(
-      PublicationDto publication, Collection<NviCreator> nviCreators) {
-
-    var totalCreatorCount =
-        (int) publication.contributors().stream().filter(ContributorDto::isCreator).count();
-
-    var extraCreatorShares =
-        nviCreators.stream().mapToInt(PointService::countOfExtraCreatorShares).sum();
-
-    return totalCreatorCount + extraCreatorShares;
+  /**
+   * Calculates the total number of forfatterandeler (author shares) for a publication.
+   *
+   * <p>A forfatterandel is defined as each unique combination of author (creator) and top-level
+   * institution in the publication. This means that an author affiliated with multiple institutions
+   * will contribute multiple shares to the total.
+   *
+   * <p>Special case: If a creator has no valid affiliations (no affiliations or all affiliations
+   * lack IDs), they contribute exactly 1 forfatterandel.
+   *
+   * <p>Example: A publication with two contributors where one has two institutions will have three
+   * forfatterandeler in total:
+   *
+   * <ul>
+   *   <li>Contributor 1 + Institution A = 1 share
+   *   <li>Contributor 1 + Institution B = 1 share
+   *   <li>Contributor 2 + Institution A = 1 share
+   * </ul>
+   */
+  private static int getTotalShares(PublicationDto publication) {
+    return (int)
+        publication.contributors().stream()
+            .filter(ContributorDto::isCreator)
+            .mapToLong(PointService::getUniqueContributorShare)
+            .sum();
   }
 
-  /**
-   * Counts the number of extra shares for a creator based on their affiliations. Creators get one
-   * extra share for each verified top-level affiliation beyond the first one.
-   */
-  private static int countOfExtraCreatorShares(NviCreator creator) {
-    var affiliationCount =
-        creator.nviAffiliations().stream()
-            .map(NviOrganization::topLevelOrganization)
-            .map(NviOrganization::id)
-            .distinct()
-            .count();
-    return (int) Math.max(0, affiliationCount - 1);
+  private static int getUniqueContributorShare(ContributorDto contributor) {
+    var uniqueTopLevelOrganizations = getUniqueTopLevelOrganizations(contributor);
+    return (int) Math.max(1, uniqueTopLevelOrganizations);
+  }
+
+  private static long getUniqueTopLevelOrganizations(ContributorDto contributor) {
+    return contributor.affiliations().stream()
+        .map(Organization::getTopLevelOrg)
+        .map(Organization::id)
+        .filter(Objects::nonNull)
+        .distinct()
+        .count();
   }
 }
