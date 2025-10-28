@@ -129,6 +129,15 @@ WHERE {
       ?anthologyReference :publicationContext ?nestedPublicationContext .
       ?nestedPublicationContext :isbn ?isbnList .
   } UNION {
+    ?publication :entityDescription/:reference/:publicationContext/:entityDescription/:reference/:publicationContext ?nestedPublicationContext .
+    {
+      ?nestedPublicationContext :isbn ?isbnList .
+    } UNION {
+      ?nestedPublicationContext :additionalIdentifier ?additionalId .
+      ?additionalId :sourceName "ISBN" ;
+                    :value ?isbnList .
+    }
+  } UNION {
     # Check whether the publication is 'applicable', i.e. can be an NVI candidate
     ?publication a :Publication ;
     :status ?status .

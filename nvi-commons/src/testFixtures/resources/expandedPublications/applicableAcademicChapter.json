@@ -77,7 +77,12 @@
                 },
                 "isbnList": [
                   "isbn_ignored_for_validation"
-                ]
+                ],
+                "additionalIdentifiers" : [ {
+                  "type" : "AdditionalIdentifier",
+                  "sourceName" : "ISBN",
+                  "value" : "additional_identifier_isbn_ignored_for_validation"
+                } ]
               }
             }
           }
