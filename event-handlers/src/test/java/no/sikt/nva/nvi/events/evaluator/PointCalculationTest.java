@@ -20,6 +20,7 @@ import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -255,6 +256,34 @@ class PointCalculationTest extends EvaluationTest {
     assertThat(actualPoints)
         .usingRecursiveFieldByFieldElementComparatorIgnoringFields("nviCreator")
         .containsExactlyInAnyOrderElementsOf(expectedPoints);
+  }
+
+  @DisplayName(
+      "Verifies that √(2 NVI creators / 4 total shares) × LevelOne(1) × international"
+          + " collaboration(1.3) = 0.91923882")
+  @Test
+  void shouldReturnExpectedPointsWhenResultWithFourSharesHasTwoNviAffiliatedContributors() {
+    var publication =
+        factory
+            .withCreatorAffiliatedWith(nviOrganization1.hasPart().getFirst())
+            .withCreatorAffiliatedWith(nonNviOrganization)
+            .withCreatorAffiliatedWith(nviOrganization1.getTopLevelOrg(), nonNviOrganization)
+            .withPublicationChannel("Journal", "LevelOne")
+            .getExpandedPublication();
+
+    var candidate = getEvaluatedCandidate(publication).pointCalculation();
+    var actualContributorPoints = getContributorPointsForInstitution(candidate, nviOrganization1);
+
+    assertEquals(asBigDecimal("0.91923882"), actualContributorPoints);
+  }
+
+  private BigDecimal getContributorPointsForInstitution(
+      PointCalculationDto candidate, Organization organization) {
+    return candidate.institutionPoints().stream()
+        .filter(institutionPoints -> institutionPoints.institutionId().equals(organization.id()))
+        .findFirst()
+        .orElseThrow()
+        .institutionPoints();
   }
 
   private List<CreatorAffiliationPoints>
