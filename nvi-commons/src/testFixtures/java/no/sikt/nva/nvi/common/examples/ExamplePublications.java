@@ -89,6 +89,7 @@ public class ExamplePublications {
                   EXAMPLE_TOP_LEVEL_ORGANIZATION_3))
           .build();
 
+  public static final String ISBN = "isbn_ignored_for_validation";
   public static final PublicationDto EXAMPLE_ACADEMIC_CHAPTER =
       PublicationDto.builder()
           .withId(
@@ -106,5 +107,6 @@ public class ExamplePublications {
           .withIsInternationalCollaboration(false)
           .withContributors(List.of(ACADEMIC_CHAPTER_CONTRIBUTOR_1))
           .withTopLevelOrganizations(List.of(TOP_LEVEL_ORGANIZATION_SIKT))
+          .withIsbnList(List.of(ISBN))
           .build();
 }

@@ -23,7 +23,8 @@ CONSTRUCT {
   :publicationChannel ?channel ;
   :contributor ?personId ;
   :topLevelOrganization ?topLevelOrganization ;
-  :modifiedDate ?modifiedDate .
+  :modifiedDate ?modifiedDate ;
+  :isbn ?isbnList .
 
   # Include page count
   ?pageCount a :PageCount ;
@@ -119,6 +120,14 @@ WHERE {
     OPTIONAL { ?channel :year ?channelYear }
     OPTIONAL { ?channel :onlineIssn ?onlineIssn }
     OPTIONAL { ?channel :printIssn ?printIssn }
+  } UNION {
+      ?publication :entityDescription ?entityDescription .
+      ?entityDescription :reference ?reference .
+      ?reference :publicationContext ?anthology .
+      ?anthology :entityDescription ?anthologyEntityDescription .
+      ?anthologyEntityDescription :reference ?anthologyReference .
+      ?anthologyReference :publicationContext ?nestedPublicationContext .
+      ?nestedPublicationContext :isbn ?isbnList .
   } UNION {
     # Check whether the publication is 'applicable', i.e. can be an NVI candidate
     ?publication a :Publication ;

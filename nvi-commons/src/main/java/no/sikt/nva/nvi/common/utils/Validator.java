@@ -6,6 +6,7 @@ import static java.util.Objects.nonNull;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Objects;
 import no.sikt.nva.nvi.common.exceptions.ValidationException;
 import no.sikt.nva.nvi.common.service.model.UpdatePeriodRequest;
 import no.sikt.nva.nvi.common.service.requests.CreatePeriodRequest;
@@ -30,6 +31,12 @@ public final class Validator {
 
   public static void shouldNotBeNull(Object object, String errorMessage) {
     if (isNull(object)) {
+      throw new ValidationException(errorMessage);
+    }
+  }
+
+  public static void shouldNotBeEmpty(Collection<?> collection, String errorMessage) {
+    if (isNull(collection) || collection.stream().filter(Objects::nonNull).toList().isEmpty()) {
       throw new ValidationException(errorMessage);
     }
   }
