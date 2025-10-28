@@ -55,43 +55,43 @@ public final class PointService {
   }
 
   /**
-   * Calculates the total number of forfatterandeler (author shares) for a publication.
+   * Calculates the total number of shares (forfatterandeler) for a publication.
    *
-   * <p>A forfatterandel is defined as each unique combination of author (creator) and top-level
-   * institution in the publication. This means that an author affiliated with multiple institutions
-   * will contribute multiple shares to the total.
+   * <p>A share is defined as a unique combination of contributor with role Creator and top-level
+   * affiliation. This means that a contributor affiliated with multiple unique top-level
+   * affiliations will contribute multiple shares to the total.
    *
-   * <p>Special case: If a creator has no valid affiliations (no affiliations or all affiliations
-   * lack IDs), they contribute exactly 1 forfatterandel.
+   * <p>Special case: If a contributor has no valid affiliations (no affiliations or all
+   * affiliations lack IDs), they contribute exactly one share.
    *
-   * <p>Example: A publication with two contributors where one has two institutions will have three
-   * forfatterandeler in total:
+   * <p>Example: A publication with one contributor with a single affiliation and a second
+   * contributor with two unique affiliations will have three shares in total:
    *
    * <ul>
-   *   <li>Contributor 1 + Institution A = 1 share
-   *   <li>Contributor 1 + Institution B = 1 share
-   *   <li>Contributor 2 + Institution A = 1 share
+   *   <li>Contributor 1 + affiliation A = 1 share
+   *   <li>Contributor 1 + affiliation B = 1 share
+   *   <li>Contributor 2 + affiliation A = 1 share
    * </ul>
    */
   private static int getTotalShares(PublicationDto publication) {
-    return (int)
-        publication.contributors().stream()
-            .filter(ContributorDto::isCreator)
-            .mapToLong(PointService::getUniqueContributorShare)
-            .sum();
+    return publication.contributors().stream()
+        .filter(ContributorDto::isCreator)
+        .mapToInt(PointService::getUniqueContributorShare)
+        .sum();
   }
 
   private static int getUniqueContributorShare(ContributorDto contributor) {
     var uniqueTopLevelOrganizations = getUniqueTopLevelOrganizations(contributor);
-    return (int) Math.max(1, uniqueTopLevelOrganizations);
+    return Math.max(1, uniqueTopLevelOrganizations);
   }
 
-  private static long getUniqueTopLevelOrganizations(ContributorDto contributor) {
-    return contributor.affiliations().stream()
-        .map(Organization::getTopLevelOrg)
-        .map(Organization::id)
-        .filter(Objects::nonNull)
-        .distinct()
-        .count();
+  private static int getUniqueTopLevelOrganizations(ContributorDto contributor) {
+    return Math.toIntExact(
+        contributor.affiliations().stream()
+            .map(Organization::getTopLevelOrg)
+            .map(Organization::id)
+            .filter(Objects::nonNull)
+            .distinct()
+            .count());
   }
 }

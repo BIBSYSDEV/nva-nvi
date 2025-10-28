@@ -262,8 +262,7 @@ class PointCalculationTest extends EvaluationTest {
       "Verifies that √(2 NVI creators / 4 total shares) × LevelOne(1) × international"
           + " collaboration(1.3) = 0.91923882")
   @Test
-  void
-      shouldCalculatePointsCorrectlyWhenTwoCreatorsAffiliatedWithNviInstitutionOutOfFourTotalShares() {
+  void shouldReturnExpectedPointsWhenResultWithFourSharesHasTwoNviAffiliatedContributors() {
     var publication =
         factory
             .withCreatorAffiliatedWith(nviOrganization1.hasPart().getFirst())
