@@ -21,7 +21,9 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.emptyIterable;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsNot.not;
@@ -78,6 +80,7 @@ import org.opensearch.client.opensearch._types.aggregations.StringTermsAggregate
 import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
 import org.opensearch.client.opensearch._types.aggregations.SumAggregate;
 import org.opensearch.client.opensearch.core.SearchResponse;
+import org.opensearch.client.opensearch.core.search.Hit;
 
 // These are not IP addresses, but cristin org identifier examples
 // Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
@@ -762,6 +765,55 @@ class OpenSearchClientTest {
     Assertions.assertThat(actualTimestamp)
         .isAfterOrEqualTo(testStartedAt)
         .isBeforeOrEqualTo(Instant.now());
+  }
+
+  @Test
+  void queryWithoutStatusesProvidedShouldNotReturnSearchResultsAtAllInstitutions()
+      throws IOException {
+    addDocumentsToIndex(randomIndexDocumentWithApprovalForOrganization(randomUri()));
+
+    var searchParameters =
+        CandidateSearchParameters.builder()
+            .withAffiliations(List.of(randomString()))
+            .withTopLevelCristinOrg(randomUri())
+            .build();
+    var searchResponse = openSearchClient.search(searchParameters);
+
+    assertThat(searchResponse.hits().hits(), is(emptyIterable()));
+  }
+
+  @Test
+  void queryWithoutStatusesProvidedShouldReturnSearchResultsWithAllStatusAtInstitution()
+      throws IOException {
+    var documentsWithApprovalsAtTopLevelOrg =
+        createSearchDocumentsWithApprovalAtTopLevelOrganization(SIKT_INSTITUTION_ID);
+
+    addDocumentsToIndex(
+        documentsWithApprovalsAtTopLevelOrg.toArray(NviCandidateIndexDocument[]::new));
+
+    var searchParameters =
+        CandidateSearchParameters.builder().withTopLevelCristinOrg(SIKT_INSTITUTION_ID).build();
+    var searchResponse = openSearchClient.search(searchParameters);
+
+    var documentsFromResponse = searchResponse.hits().hits().stream().map(Hit::source).toList();
+
+    assertThat(
+        documentsFromResponse,
+        hasItems(documentsWithApprovalsAtTopLevelOrg.toArray(NviCandidateIndexDocument[]::new)));
+  }
+
+  private static List<NviCandidateIndexDocument>
+      createSearchDocumentsWithApprovalAtTopLevelOrganization(URI topLevelOrganization) {
+    return IntStream.range(0, 10)
+        .mapToObj(i -> randomIndexDocumentWithApprovalForOrganization(topLevelOrganization))
+        .toList();
+  }
+
+  private static NviCandidateIndexDocument randomIndexDocumentWithApprovalForOrganization(
+      URI topLevelOrganization) {
+    return randomIndexDocumentBuilder()
+        .withApprovals(List.of(randomApproval(randomString(), topLevelOrganization)))
+        .build();
   }
 
   private static void assertExpectedPointWithoutRejectedPoints(
