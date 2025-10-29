@@ -28,6 +28,10 @@
       "@id": "hasPart",
       "@container": "@set"
     },
+    "isbnList": {
+      "@id": "isbn",
+      "@container": "@set"
+    },
     "labels": {
       "@id": "label",
       "@container": "@language"

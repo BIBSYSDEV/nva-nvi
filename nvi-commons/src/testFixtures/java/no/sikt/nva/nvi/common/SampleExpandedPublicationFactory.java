@@ -8,6 +8,7 @@ import static no.sikt.nva.nvi.common.EnvironmentFixtures.getEvaluateNviCandidate
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.setupRandomOrganization;
 import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublicationDateInCurrentYear;
 import static no.sikt.nva.nvi.common.utils.Validator.hasElements;
+import static no.sikt.nva.nvi.test.TestConstants.ACADEMIC_CHAPTER;
 import static no.sikt.nva.nvi.test.TestConstants.CHANNEL_PUBLISHER;
 import static no.sikt.nva.nvi.test.TestConstants.CHANNEL_SERIES;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_NORWAY;
@@ -42,6 +43,8 @@ import no.unit.nva.auth.uriretriever.UriRetriever;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
 
+// TODO Refactor to remove warnings NP-49938
+@SuppressWarnings("PMD.CouplingBetweenObjects")
 public class SampleExpandedPublicationFactory {
   private static final String ROLE_CREATOR = "Creator";
   private static final String ROLE_OTHER = "SomeOtherRole";
@@ -56,6 +59,7 @@ public class SampleExpandedPublicationFactory {
   private final URI publicationId = generatePublicationId(publicationIdentifier);
   private String publicationType = "AcademicArticle";
   private PublicationDate publicationDate = randomPublicationDateInCurrentYear();
+  private List<String> isbnList;
 
   public SampleExpandedPublicationFactory(TestScenario scenario) {
     this.environment = getEvaluateNviCandidateHandlerEnvironment();
@@ -283,6 +287,9 @@ public class SampleExpandedPublicationFactory {
     if (publicationChannels.isEmpty()) {
       addPublicationChannel("Journal", "LevelOne");
     }
+    if (ACADEMIC_CHAPTER.equals(publicationType) && collectionIsEmpty(isbnList)) {
+      isbnList = List.of(randomString());
+    }
     var expandedDate =
         new SampleExpandedPublicationDate(
             publicationDate.year(), publicationDate.month(), publicationDate.day());
@@ -294,6 +301,7 @@ public class SampleExpandedPublicationFactory {
         .withPublicationDate(expandedDate)
         .withPublicationChannels(publicationChannels)
         .withContributors(contributors)
+        .withIsbnList(isbnList)
         .withTopLevelOrganizations(topLevelOrganizations);
   }
 
@@ -310,5 +318,9 @@ public class SampleExpandedPublicationFactory {
     var customerApiUriForOrganization = getCustomerApiUri(toplevelOrganizationId);
     when(authorizedBackendUriRetriever.fetchResponse(eq(customerApiUriForOrganization), any()))
         .thenReturn(Optional.of(okResponse));
+  }
+
+  private boolean collectionIsEmpty(Collection<?> collection) {
+    return isNull(collection) || collection.isEmpty();
   }
 }
