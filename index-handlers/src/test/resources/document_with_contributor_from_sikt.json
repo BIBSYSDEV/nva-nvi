@@ -28,7 +28,12 @@
         "role" : "Creator"
       } ]
     },
-    "approvals" : [ ],
+    "approvals" : [
+      {
+        "type": "Approval",
+        "institutionId": "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0"
+      }
+    ],
     "numberOfApprovals" : 0,
     "points" : 0
   }

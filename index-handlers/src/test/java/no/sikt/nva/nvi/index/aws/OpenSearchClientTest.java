@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.index.aws;
 
 import static java.util.Objects.requireNonNull;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomApproval;
+import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomApprovalList;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomIndexDocumentBuilder;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomPublicationDetailsBuilder;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomNviContributor;
@@ -234,7 +235,10 @@ class OpenSearchClientTest {
         documentFromString("document_with_contributor_from_sikt.json"));
 
     var searchParameters =
-        defaultSearchParameters().withAffiliations(List.of(SIKT_INSTITUTION_IDENTIFIER)).build();
+        defaultSearchParameters()
+            .withAffiliations(List.of(SIKT_INSTITUTION_IDENTIFIER))
+            .withTopLevelCristinOrg(SIKT_INSTITUTION_ID)
+            .build();
     var searchResponse = openSearchClient.search(searchParameters);
 
     assertThat(searchResponse.hits().hits(), hasSize(1));
@@ -246,7 +250,10 @@ class OpenSearchClientTest {
     addDocumentsToIndex(documentFromString(DOCUMENT_WITH_CONTRIBUTOR_FROM_NTNU_SUBUNIT_JSON));
 
     var searchParameters =
-        defaultSearchParameters().withAffiliations(List.of(NTNU_INSTITUTION_IDENTIFIER)).build();
+        defaultSearchParameters()
+            .withAffiliations(List.of(NTNU_INSTITUTION_IDENTIFIER))
+            .withTopLevelCristinOrg(NTNU_INSTITUTION_ID)
+            .build();
     var searchResponse = openSearchClient.search(searchParameters);
 
     assertThat(searchResponse.hits().hits(), hasSize(1));
@@ -262,7 +269,10 @@ class OpenSearchClientTest {
         documentFromString("document_with_contributor_from_sikt.json"));
 
     var searchParameters =
-        defaultSearchParameters().withAffiliations(List.of(NTNU_INSTITUTION_IDENTIFIER)).build();
+        defaultSearchParameters()
+            .withTopLevelCristinOrg(NTNU_INSTITUTION_ID)
+            .withAffiliations(List.of(NTNU_INSTITUTION_IDENTIFIER))
+            .build();
     var searchResponse = openSearchClient.search(searchParameters);
 
     assertThat(searchResponse.hits().hits(), hasSize(2));
@@ -280,6 +290,7 @@ class OpenSearchClientTest {
     var searchParameters =
         defaultSearchParameters()
             .withAffiliations(List.of(NTNU_INSTITUTION_IDENTIFIER))
+            .withTopLevelCristinOrg(NTNU_INSTITUTION_ID)
             .withExcludeSubUnits(true)
             .build();
     var searchResponse = openSearchClient.search(searchParameters);
@@ -434,18 +445,18 @@ class OpenSearchClientTest {
 
   @Test
   void shouldReturnSingleDocumentWhenFilteringByYear() throws IOException {
-    var customer = randomUri();
     var year = randomString();
     var document =
-        indexDocumentWithCustomer(customer, randomString(), randomString(), year, randomString());
+        indexDocumentWithCustomer(
+            ORGANIZATION, randomString(), randomString(), year, randomString());
     addDocumentsToIndex(
         document,
         indexDocumentWithCustomer(
-            customer, randomString(), randomString(), randomString(), randomString()));
+            ORGANIZATION, randomString(), randomString(), randomString(), randomString()));
 
     var searchParameters =
         defaultSearchParameters()
-            .withAffiliations(List.of(getLastPathElement(customer)))
+            .withAffiliations(List.of(getLastPathElement(ORGANIZATION)))
             .withYear(year)
             .build();
 
@@ -456,18 +467,18 @@ class OpenSearchClientTest {
 
   @Test
   void shouldReturnSingleDocumentWhenFilteringByTitle() throws IOException {
-    var customer = randomUri();
     var title =
         randomString().concat(" ").concat(randomString()).concat(" ").concat(randomString());
-    var document = indexDocumentWithCustomer(customer, randomString(), randomString(), YEAR, title);
+    var document =
+        indexDocumentWithCustomer(ORGANIZATION, randomString(), randomString(), YEAR, title);
     addDocumentsToIndex(
         document,
         indexDocumentWithCustomer(
-            customer, randomString(), randomString(), randomString(), randomString()));
+            ORGANIZATION, randomString(), randomString(), randomString(), randomString()));
 
     var searchParameters =
         defaultSearchParameters()
-            .withAffiliations(List.of(getLastPathElement(customer)))
+            .withAffiliations(List.of(getLastPathElement(ORGANIZATION)))
             .withTitle(getRandomWord(title))
             .withYear(YEAR)
             .build();
@@ -901,14 +912,14 @@ class OpenSearchClientTest {
 
   private static NviCandidateIndexDocument indexDocumentWithTitle(String title) {
     var publicationDetails = publicationDetailsWithTitle(title);
-    return randomIndexDocumentBuilder(publicationDetails).build();
+    return randomIndexDocumentBuilder(publicationDetails, randomApprovalList()).build();
   }
 
   private static NviCandidateIndexDocument indexDocumentWithCustomer(
       URI customer, String contributor, String assignee, String year, String title) {
     var publicationDetails =
         randomPublicationDetailsWithCustomer(customer, contributor, year, title);
-    return randomIndexDocumentBuilder(publicationDetails)
+    return randomIndexDocumentBuilder(publicationDetails, randomApprovalList())
         .withApprovals(List.of(randomApproval(assignee, customer)))
         .withNumberOfApprovals(1)
         .build();
@@ -921,7 +932,7 @@ class OpenSearchClientTest {
         randomPublicationDetailsBuilder().withPublicationDate(publicationDate).build();
     var reportingPeriod = new ReportingPeriod(reportedYear);
 
-    return randomIndexDocumentBuilder(publicationDetails)
+    return randomIndexDocumentBuilder(publicationDetails, randomApprovalList())
         .withReportingPeriod(reportingPeriod)
         .build();
   }
