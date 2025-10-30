@@ -45,6 +45,8 @@ import nva.commons.core.ioutils.IoUtils;
  * This is intended to create a JSON representation of an expanded resource, mirroring the expected
  * input documents from `nva-publication-api`.
  */
+// TODO Refactor to remove warnings NP-49938
+@SuppressWarnings("PMD.TooManyFields")
 @JacocoGenerated
 public record SampleExpandedPublication(
     URI id,
@@ -61,7 +63,8 @@ public record SampleExpandedPublication(
     String status,
     String modifiedDate,
     List<SampleExpandedContributor> contributors,
-    List<SampleExpandedOrganization> topLevelOrganizations) {
+    List<SampleExpandedOrganization> topLevelOrganizations,
+    List<String> isbnList) {
 
   private static final String TEMPLATE_JSON_PATH = "template_publication.json";
   private static final String PUBLICATION_CHANNELS_MUST_NOT_BE_EMPTY =
@@ -169,6 +172,7 @@ public record SampleExpandedPublication(
     var innerContextNode = createNodeWithType("Report");
     for (SampleExpandedPublicationChannel publicationChannel : publicationChannels) {
       innerContextNode.set(publicationChannel.type(), publicationChannel.asObjectNode());
+      innerContextNode.set("isbnList", objectMapper.valueToTree(isbnList));
     }
     referenceNode.set(PUBLICATION_CONTEXT_FIELD, innerContextNode);
 
@@ -212,6 +216,7 @@ public record SampleExpandedPublication(
     private List<SampleExpandedPublicationChannel> publicationChannels;
     private List<SampleExpandedContributor> contributors;
     private List<SampleExpandedOrganization> topLevelOrganizations;
+    private List<String> isbnList;
 
     private Builder() {}
 
@@ -291,6 +296,11 @@ public record SampleExpandedPublication(
       return this;
     }
 
+    public Builder withIsbnList(List<String> isbnList) {
+      this.isbnList = isbnList;
+      return this;
+    }
+
     public SampleExpandedPublication build() {
       if (isNull(id)) {
         id = generatePublicationId(identifier);
@@ -310,7 +320,8 @@ public record SampleExpandedPublication(
           status,
           modifiedDate,
           contributors,
-          topLevelOrganizations);
+          topLevelOrganizations,
+          isbnList);
     }
   }
 }

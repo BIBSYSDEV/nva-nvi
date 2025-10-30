@@ -1,7 +1,10 @@
 package no.sikt.nva.nvi.common.dto;
 
+import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
+import static no.sikt.nva.nvi.common.model.InstanceType.ACADEMIC_CHAPTER;
 import static no.sikt.nva.nvi.common.utils.Validator.shouldBeTrue;
+import static no.sikt.nva.nvi.common.utils.Validator.shouldNotBeEmpty;
 import static no.sikt.nva.nvi.common.utils.Validator.shouldNotBeNull;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 
@@ -12,9 +15,12 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
 import java.time.Instant;
 import java.util.Collection;
+import java.util.Collections;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.model.InstanceType;
 
+// TODO Refactor to remove warnings NP-49938
+@SuppressWarnings("PMD.TooManyFields")
 @JsonSerialize
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonTypeName("Publication")
@@ -33,11 +39,17 @@ public record PublicationDto(
     Collection<PublicationChannelDto> publicationChannels,
     Collection<ContributorDto> contributors,
     Collection<Organization> topLevelOrganizations,
+    Collection<String> isbnList,
     Instant modifiedDate) {
 
   public PublicationDto {
     requireNonNull(id, "Required field 'id' is null");
     requireNonNull(status, "Required field 'status' is null");
+  }
+
+  @Override
+  public Collection<String> isbnList() {
+    return nonNull(isbnList) ? isbnList : Collections.emptyList();
   }
 
   public void validate() {
@@ -48,6 +60,7 @@ public record PublicationDto(
     shouldNotBeNull(topLevelOrganizations, "Required field 'topLevelOrganizations' is null");
 
     shouldBeTrue(publicationType().isValid(), "Required field 'publicationType' is invalid");
+    shouldHaveIsbnWhenAcademicChapter();
     contributors.forEach(ContributorDto::validate);
   }
 
@@ -57,6 +70,13 @@ public record PublicationDto(
 
   public static Builder builder() {
     return new Builder();
+  }
+
+  private void shouldHaveIsbnWhenAcademicChapter() {
+    if (ACADEMIC_CHAPTER.equals(publicationType())) {
+      shouldNotBeEmpty(
+          isbnList(), "Required field 'isbnList' must not be empty for AcademicChapter");
+    }
   }
 
   public static final class Builder {
@@ -75,6 +95,7 @@ public record PublicationDto(
     private Collection<PublicationChannelDto> publicationChannels;
     private Collection<ContributorDto> contributors;
     private Collection<Organization> topLevelOrganizations;
+    private Collection<String> isbnList;
     private Instant modifiedDate;
 
     private Builder() {}
@@ -149,6 +170,11 @@ public record PublicationDto(
       return this;
     }
 
+    public Builder withIsbnList(Collection<String> isbnList) {
+      this.isbnList = isbnList;
+      return this;
+    }
+
     public Builder withModifiedDate(Instant modifiedDate) {
       this.modifiedDate = modifiedDate;
       return this;
@@ -170,6 +196,7 @@ public record PublicationDto(
           publicationChannels,
           contributors,
           topLevelOrganizations,
+          nonNull(isbnList) ? isbnList : Collections.emptyList(),
           modifiedDate);
     }
   }
