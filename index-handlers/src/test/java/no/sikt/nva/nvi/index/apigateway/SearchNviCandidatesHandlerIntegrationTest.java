@@ -40,6 +40,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
+import no.sikt.nva.nvi.index.IndexDocumentFixtures;
 import no.sikt.nva.nvi.index.OpenSearchContainerContext;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
 import no.sikt.nva.nvi.index.model.document.Approval;
@@ -657,7 +658,7 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
     var allApprovals = List.of(approvals);
     var topLevelOrganizations = allApprovals.stream().map(Approval::institutionId).toList();
     var details = randomPublicationDetailsBuilder(topLevelOrganizations).withTitle(title).build();
-    return randomIndexDocumentBuilder(details)
+    return randomIndexDocumentBuilder(details, IndexDocumentFixtures.randomApprovalList())
         .withGlobalApprovalStatus(globalStatus)
         .withApprovals(allApprovals)
         .withNumberOfApprovals(allApprovals.size())

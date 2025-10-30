@@ -331,7 +331,8 @@ public record CandidateQuery(
     public CandidateQuery build() {
 
       return new CandidateQuery(
-          new ApprovalQuery(topLevelCristinOrg, assignee, excludeUnassigned, statuses),
+          new ApprovalQuery(
+              topLevelCristinOrg, assignee, excludeUnassigned, statuses, affiliationIdentifiers),
           affiliationIdentifiers,
           excludeSubUnits,
           filter,

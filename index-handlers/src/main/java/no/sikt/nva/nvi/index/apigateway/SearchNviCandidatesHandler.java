@@ -117,6 +117,7 @@ public class SearchNviCandidatesHandler
     return isNviAdmin(requestInfo) ? List.of() : getAffiliationsFromViewingScope(requestInfo);
   }
 
+  // TODO Do we still need to fetch viewingScope? We can use requestInfo.getViewingScope()
   private List<String> getAffiliationsFromViewingScope(RequestInfo requestInfo)
       throws UnauthorizedException {
     return fetchViewingScope(requestInfo.getUserName()).stream()

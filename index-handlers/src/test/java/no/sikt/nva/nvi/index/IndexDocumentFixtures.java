@@ -18,6 +18,7 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import com.fasterxml.jackson.core.type.TypeReference;
 import java.net.URI;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -75,16 +76,18 @@ public final class IndexDocumentFixtures {
             .withPublicationDate(randomPublicationDateDtoInYear(year))
             .withContributors(List.of(contributor))
             .build();
-    return randomIndexDocumentBuilder(details);
+    var approvals = new ArrayList<>(randomApprovalList());
+    approvals.add(randomApproval(randomString(), userTopLevelOrganization));
+    return randomIndexDocumentBuilder(details, approvals);
   }
 
   public static NviCandidateIndexDocument.Builder randomIndexDocumentBuilder() {
-    return randomIndexDocumentBuilder(randomPublicationDetailsBuilder().build());
+    return randomIndexDocumentBuilder(
+        randomPublicationDetailsBuilder().build(), randomApprovalList());
   }
 
   public static NviCandidateIndexDocument.Builder randomIndexDocumentBuilder(
-      PublicationDetails publicationDetails) {
-    var approvals = randomApprovalList();
+      PublicationDetails publicationDetails, List<Approval> approvals) {
     var publicationYear = publicationDetails.publicationDate().year();
     var reportingPeriod = new ReportingPeriod(publicationYear);
     var candidateId = randomUUID();
@@ -123,7 +126,7 @@ public final class IndexDocumentFixtures {
         .withContributors(List.of(randomNviContributor(randomOrganizationId())));
   }
 
-  private static List<Approval> randomApprovalList() {
+  public static List<Approval> randomApprovalList() {
     return IntStream.range(0, 5).boxed().map(i -> randomApproval()).toList();
   }
 
