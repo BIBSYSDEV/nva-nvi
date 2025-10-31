@@ -1,12 +1,15 @@
 package no.sikt.nva.nvi.events.evaluator;
 
 import static no.sikt.nva.nvi.common.SampleExpandedPublicationFactory.mapOrganizationToAffiliation;
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeriod;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupFuturePeriod;
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublicationDate;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_NORWAY;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.List;
 import no.sikt.nva.nvi.common.SampleExpandedPublicationFactory;
@@ -33,6 +36,31 @@ class NviCandidateEvaluationInPeriodTest extends EvaluationTest {
     var publication = getValidNviCandidateForCurrentYear();
 
     assertDoesNotThrow(() -> getEvaluatedCandidate(publication));
+  }
+
+  @Test
+  void shouldEvaluateAsCandidateWhenPeriodExistsAndIsStartedAndIsNotClosed() {
+    setupOpenPeriod(scenario, CURRENT_YEAR);
+
+    var publication = getValidNviCandidateForCurrentYear();
+
+    assertDoesNotThrow(() -> getEvaluatedCandidate(publication));
+  }
+
+  @Test
+  void shouldNotEvaluateAsCandidateWhenPeriodExistsAndIsClosed() {
+    setupClosedPeriod(scenario, CURRENT_YEAR);
+
+    var publication = getValidNviCandidateForCurrentYear();
+
+    assertThrows(Exception.class, () -> getEvaluatedCandidate(publication));
+  }
+
+  @Test
+  void shouldNotEvaluateAsCandidateWhenPeriodDoesNotExist() {
+    var publication = getValidNviCandidateForCurrentYear();
+
+    assertThrows(Exception.class, () -> getEvaluatedCandidate(publication));
   }
 
   private SampleExpandedPublication getValidNviCandidateForCurrentYear() {
