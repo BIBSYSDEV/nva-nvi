@@ -142,7 +142,7 @@ public class EvaluatorService {
             .getCandidate()
             .map(candidate -> isApplicableInPeriod(period, candidate))
             .orElse(false);
-    return period.isOpen() || candidateExistsInPeriod;
+    return !period.isClosed() || candidateExistsInPeriod;
   }
 
   private boolean isApplicableInPeriod(NviPeriod targetPeriod, Candidate candidate) {
