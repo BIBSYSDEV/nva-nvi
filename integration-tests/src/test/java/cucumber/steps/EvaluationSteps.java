@@ -16,7 +16,6 @@ import io.cucumber.java.en.When;
 import no.sikt.nva.nvi.common.SampleExpandedPublicationFactory;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.sikt.nva.nvi.test.SampleExpandedPublication;
 
 public class EvaluationSteps {
   private static final String OPEN_PERIOD = "OPEN";
@@ -69,18 +68,10 @@ public class EvaluationSteps {
         publicationBuilder.getExpandedPublication());
   }
 
-  @Given("the Candidate is not reported")
-  public void theCandidateIsNotReported() {
-    // This is the default state, so we simply check it for now
-    var publication = publicationBuilder.getExpandedPublication();
-    var candidate = getCandidateByPublicationId(publication);
-    assertThat(candidate.isReported()).isFalse();
-  }
-
   @Then("the Publication is persisted as a Candidate")
   public void thenThePublicationIsACandidate() {
     var publication = publicationBuilder.getExpandedPublication();
-    var candidate = getCandidateByPublicationId(publication);
+    var candidate = getCandidateByPublicationId();
     assertThat(candidate)
         .extracting(Candidate::getPublicationId, Candidate::isApplicable)
         .containsExactly(publication.id(), true);
@@ -90,8 +81,7 @@ public class EvaluationSteps {
 
   @Then("the persisted data is updated")
   public void thenThePersistedCandidateIsUpdated() {
-    var publication = publicationBuilder.getExpandedPublication();
-    var candidate = getCandidateByPublicationId(publication);
+    var candidate = getCandidateByPublicationId();
     var evaluationTimestamp = evaluationContext.getLastEvaluationTimestamp();
 
     assertThat(candidate.createdDate()).isBefore(evaluationTimestamp);
@@ -107,14 +97,22 @@ public class EvaluationSteps {
   @Then("the Publication is persisted as a NonCandidate")
   public void thenThePublicationIsANonCandidate() {
     var publication = publicationBuilder.getExpandedPublication();
-    var candidate = getCandidateByPublicationId(publication);
+    var candidate = getCandidateByPublicationId();
     assertThat(candidate)
         .extracting(Candidate::getPublicationId, Candidate::isApplicable)
         .containsExactly(publication.id(), false);
     assertThat(candidate.approvals()).isEmpty();
   }
 
-  private Candidate getCandidateByPublicationId(SampleExpandedPublication publication) {
+  @Given("the Candidate is not reported")
+  public void theCandidateIsNotReported() {
+    // This is the default state, so we simply check it for now
+    var candidate = getCandidateByPublicationId();
+    assertThat(candidate.isReported()).isFalse();
+  }
+
+  private Candidate getCandidateByPublicationId() {
+    var publication = publicationBuilder.getExpandedPublication();
     return scenario.getCandidateByPublicationId(publication.id());
   }
 }
