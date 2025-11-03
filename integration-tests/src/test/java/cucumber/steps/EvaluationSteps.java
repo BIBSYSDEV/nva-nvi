@@ -1,6 +1,7 @@
 package cucumber.steps;
 
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeriod;
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupFuturePeriod;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.model.ContributorFixtures.unverifiedCreatorFrom;
 import static no.sikt.nva.nvi.common.model.ContributorFixtures.verifiedCreatorFrom;
@@ -20,6 +21,7 @@ import no.sikt.nva.nvi.test.SampleExpandedPublication;
 public class EvaluationSteps {
   private static final String OPEN_PERIOD = "OPEN";
   private static final String CLOSED_PERIOD = "CLOSED";
+  private static final String FUTURE_PERIOD = "PENDING";
   private final TestScenario scenario;
   private final EvaluationContext evaluationContext;
   private SampleExpandedPublicationFactory publicationBuilder;
@@ -52,12 +54,12 @@ public class EvaluationSteps {
   @Given("the reporting period for the Publication is {string}")
   public void givenTheReportingPeriodForThePublicationIs(String periodState) {
     var publicationDate = publicationBuilder.getExpandedPublication().publicationDate();
-    if (CLOSED_PERIOD.equals(periodState)) {
-      setupClosedPeriod(scenario, publicationDate.year());
-    } else if (OPEN_PERIOD.equals(periodState)) {
-      setupOpenPeriod(scenario, publicationDate.year());
-    } else {
-      throw new IllegalArgumentException("Invalid period state: " + periodState);
+    switch (periodState) {
+      case CLOSED_PERIOD -> setupClosedPeriod(scenario, publicationDate.year());
+      case OPEN_PERIOD -> setupOpenPeriod(scenario, publicationDate.year());
+      case FUTURE_PERIOD -> setupFuturePeriod(scenario, publicationDate.year());
+      case null, default ->
+          throw new IllegalArgumentException("Invalid period state: " + periodState);
     }
   }
 
@@ -67,7 +69,15 @@ public class EvaluationSteps {
         publicationBuilder.getExpandedPublication());
   }
 
-  @Then("the Publication is a Candidate")
+  @Given("the Candidate is not reported")
+  public void theCandidateIsNotReported() {
+    // This is the default state, so we simply check it for now
+    var publication = publicationBuilder.getExpandedPublication();
+    var candidate = getCandidateByPublicationId(publication);
+    assertThat(candidate.isReported()).isFalse();
+  }
+
+  @Then("the Publication is persisted as a Candidate")
   public void thenThePublicationIsACandidate() {
     var publication = publicationBuilder.getExpandedPublication();
     var candidate = getCandidateByPublicationId(publication);
@@ -78,13 +88,23 @@ public class EvaluationSteps {
     assertThat(candidate.approvals()).isNotEmpty();
   }
 
+  @Then("the persisted data is updated")
+  public void thenThePersistedCandidateIsUpdated() {
+    var publication = publicationBuilder.getExpandedPublication();
+    var candidate = getCandidateByPublicationId(publication);
+    var evaluationTimestamp = evaluationContext.getLastEvaluationTimestamp();
+
+    assertThat(candidate.createdDate()).isBefore(evaluationTimestamp);
+    assertThat(candidate.modifiedDate()).isAfterOrEqualTo(evaluationTimestamp);
+  }
+
   @Given("the Publication type is changed so that the Publication is no longer applicable")
   public void whenThePublicationTypeIsChangedSoThatThePublicationIsNoLongerApplicable() {
     evaluationContext.evaluatePublicationAndPersistResult(
         publicationBuilder.withPublicationType("ComicBook").getExpandedPublication());
   }
 
-  @Then("the Publication is a NonCandidate")
+  @Then("the Publication is persisted as a NonCandidate")
   public void thenThePublicationIsANonCandidate() {
     var publication = publicationBuilder.getExpandedPublication();
     var candidate = getCandidateByPublicationId(publication);

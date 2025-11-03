@@ -1,22 +1,44 @@
 Feature: Evaluation of Publications as NVI Candidates
-  Rule: An applicable Publication in an open Period is a Candidate
-    Scenario: A new Publication is evaluated
+
+  Rule: Publications can become Candidates if the Period is not closed
+    Scenario Outline: A new applicable Publication becomes a Candidate
       Given an applicable Publication
-      And the reporting period for the Publication is "OPEN"
+      And the reporting period for the Publication is "<period_state>"
       When the Publication is evaluated
-      Then the Publication is a Candidate
+      Then the Publication is persisted as a Candidate
 
-  Rule: An applicable Candidate re-evaluated in a closed Period is a Candidate
-    Background:
+      Examples:
+        | period_state |
+        | OPEN         |
+        | PENDING      |
+
+  Rule: Unreported Candidates can be updated regardless of period state
+    Scenario Outline: An applicable Publication remains a Candidate
       Given a Publication that has previously been evaluated as a Candidate
-
-    Scenario: An applicable Publication remains a Candidate
-      Given the reporting period for the Publication is "CLOSED"
+      And the Candidate is not reported
+      And the reporting period for the Publication is "<period_state>"
       When the Publication is evaluated
-      Then the Publication is a Candidate
+      Then the Publication is persisted as a Candidate
+      And the persisted data is updated
 
-    Scenario: A non-applicable Publication becomes a NonCandidate
-      Given the reporting period for the Publication is "CLOSED"
+      Examples:
+        | period_state |
+        | OPEN         |
+        | PENDING      |
+        | CLOSED       |
+
+    Scenario Outline: A non-applicable Publication becomes a NonCandidate
+      Given a Publication that has previously been evaluated as a Candidate
+      And the Candidate is not reported
+      And the reporting period for the Publication is "<period_state>"
       And the Publication type is changed so that the Publication is no longer applicable
       When the Publication is evaluated
-      Then the Publication is a NonCandidate
+      Then the Publication is persisted as a NonCandidate
+      And the persisted data is updated
+
+      Examples:
+        | period_state |
+        | OPEN         |
+        | PENDING      |
+        | CLOSED       |
+

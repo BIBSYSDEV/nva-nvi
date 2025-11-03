@@ -8,9 +8,10 @@ import static java.util.Objects.nonNull;
 import static java.util.function.Predicate.not;
 import static no.sikt.nva.nvi.common.db.ReportStatus.REPORTED;
 import static no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException.CANDIDATE_IS_REPORTED;
+import static no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException.CANNOT_MOVE_CANDIDATE_TO_CLOSED_PERIOD;
 import static no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException.NO_APPROVAL_FOUND;
 import static no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException.NO_NOTE_FOUND;
-import static no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException.PERIOD_IS_NOT_OPEN;
+import static no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException.PERIOD_IS_CLOSED;
 import static no.sikt.nva.nvi.common.service.model.Approval.createNewApproval;
 import static no.sikt.nva.nvi.common.service.model.ApprovalStatus.APPROVED;
 import static no.sikt.nva.nvi.common.service.model.ApprovalStatus.PENDING;
@@ -115,8 +116,8 @@ public record Candidate(
       UpsertNviCandidateRequest request,
       NviPeriod targetPeriod,
       Environment environment) {
-    if (!targetPeriod.isOpen()) {
-      throw new IllegalCandidateUpdateException(PERIOD_IS_NOT_OPEN);
+    if (targetPeriod.isClosed()) {
+      throw new IllegalCandidateUpdateException(PERIOD_IS_CLOSED);
     }
 
     var approvals =
@@ -143,7 +144,7 @@ public record Candidate(
       throw new IllegalCandidateUpdateException(CANDIDATE_IS_REPORTED);
     }
     if (!canUpdateInPeriod(targetPeriod)) {
-      throw new IllegalCandidateUpdateException(PERIOD_IS_NOT_OPEN);
+      throw new IllegalCandidateUpdateException(CANNOT_MOVE_CANDIDATE_TO_CLOSED_PERIOD);
     }
 
     return this.copy()
@@ -151,7 +152,6 @@ public record Candidate(
         .withPointCalculation(PointCalculation.from(request))
         .withPublicationDetails(PublicationDetails.from(request))
         .withPeriod(targetPeriod)
-        .withModifiedDate(Instant.now())
         .build();
   }
 
@@ -553,6 +553,7 @@ public record Candidate(
         .withCreatedDate(createdDate)
         .withPointCalculation(pointCalculation)
         .withPublicationDetails(publicationDetails)
+        .withModifiedDate(Instant.now())
         .withRevision(revision)
         .withVersion(version);
   }
