@@ -152,6 +152,7 @@ public record Candidate(
         .withPointCalculation(PointCalculation.from(request))
         .withPublicationDetails(PublicationDetails.from(request))
         .withPeriod(targetPeriod)
+        .withModifiedDate(Instant.now())
         .build();
   }
 
@@ -171,7 +172,12 @@ public record Candidate(
     if (isReported()) {
       throw new IllegalCandidateUpdateException(CANDIDATE_IS_REPORTED);
     }
-    return copy().withPeriod(null).withApplicable(false).withApprovals(emptyMap()).build();
+    return copy()
+        .withPeriod(null)
+        .withApplicable(false)
+        .withApprovals(emptyMap())
+        .withModifiedDate(Instant.now())
+        .build();
   }
 
   public CandidateDao toDao() {
@@ -553,7 +559,6 @@ public record Candidate(
         .withCreatedDate(createdDate)
         .withPointCalculation(pointCalculation)
         .withPublicationDetails(publicationDetails)
-        .withModifiedDate(Instant.now())
         .withRevision(revision)
         .withVersion(version);
   }
