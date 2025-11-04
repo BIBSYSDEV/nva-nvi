@@ -5,7 +5,7 @@ Feature: Evaluation of Publications as NVI Candidates
       Given an applicable Publication
       And the reporting period for the Publication is "<period_state>"
       When the Publication is evaluated
-      Then the Publication is persisted as a Candidate
+      Then it becomes a Candidate
 
       Examples:
         | period_state |
@@ -14,12 +14,10 @@ Feature: Evaluation of Publications as NVI Candidates
 
   Rule: Unreported Candidates can be updated regardless of period state
     Scenario Outline: An applicable Publication remains a Candidate
-      Given a Publication that has previously been evaluated as a Candidate
-      And the Candidate is not reported
+      Given an unreported Candidate
       And the reporting period for the Publication is "<period_state>"
       When the Publication is evaluated
-      Then the Publication is persisted as a Candidate
-      And the persisted data is updated
+      Then the Candidate is updated
 
       Examples:
         | period_state |
@@ -28,13 +26,10 @@ Feature: Evaluation of Publications as NVI Candidates
         | CLOSED       |
 
     Scenario Outline: A non-applicable Publication becomes a NonCandidate
-      Given a Publication that has previously been evaluated as a Candidate
-      And the Candidate is not reported
+      Given an unreported Candidate
       And the reporting period for the Publication is "<period_state>"
-      And the Publication type is changed so that the Publication is no longer applicable
-      When the Publication is evaluated
-      Then the Publication is persisted as a NonCandidate
-      And the persisted data is updated
+      When the Publication is updated to be non-applicable
+      Then it becomes a NonCandidate
 
       Examples:
         | period_state |

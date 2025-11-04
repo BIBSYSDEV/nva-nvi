@@ -13,6 +13,7 @@ import cucumber.contexts.EvaluationContext;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import java.net.URI;
 import no.sikt.nva.nvi.common.SampleExpandedPublicationFactory;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.service.model.Candidate;
@@ -24,19 +25,22 @@ public class EvaluationSteps {
   private final TestScenario scenario;
   private final EvaluationContext evaluationContext;
   private SampleExpandedPublicationFactory publicationBuilder;
+  private final URI publicationId;
 
   public EvaluationSteps(TestScenario scenario) {
     this.scenario = scenario;
     this.publicationBuilder = new SampleExpandedPublicationFactory(scenario);
+    this.publicationId = publicationBuilder.getExpandedPublication().id();
     this.evaluationContext = new EvaluationContext(scenario);
   }
 
-  @Given("a Publication that has previously been evaluated as a Candidate")
-  public void givenAPublicationThatHasPreviouslyBeenEvaluatedAsACandidate() {
+  @Given("an unreported Candidate")
+  public void givenAnUnreportedCandidate() {
     givenAnApplicablePublication();
     givenTheReportingPeriodForThePublicationIs("OPEN");
     whenThePublicationIsEvaluated();
-    thenThePublicationIsACandidate();
+
+    assertPublicationIsUnreportedCandidate();
   }
 
   @Given("an applicable Publication")
@@ -68,47 +72,51 @@ public class EvaluationSteps {
         publicationBuilder.getExpandedPublication());
   }
 
-  @Then("the Publication is persisted as a Candidate")
-  public void thenThePublicationIsACandidate() {
-    var publication = publicationBuilder.getExpandedPublication();
+  @When("the Publication is updated to be non-applicable")
+  public void whenThePublicationTypeIsChangedSoThatThePublicationIsNoLongerApplicable2() {
+    evaluationContext.evaluatePublicationAndPersistResult(
+        publicationBuilder.withPublicationType("ComicBook").getExpandedPublication());
+  }
+
+  @Then("it becomes a Candidate")
+  public void thePublicationBecomesACandidate() {
+    assertPublicationIsUnreportedCandidate();
+  }
+
+  @Then("it becomes a NonCandidate")
+  public void thenThePublicationBecomesANonCandidate() {
+    assertPublicationIsNonCandidate();
+    assertCandidateIsUpdated();
+  }
+
+  @Then("the Candidate is updated")
+  public void thenTheCandidateIsUpdated() {
+    assertPublicationIsUnreportedCandidate();
+    assertCandidateIsUpdated();
+  }
+
+  private void assertPublicationIsUnreportedCandidate() {
     var candidate = getCandidateByPublicationId();
     assertThat(candidate)
-        .extracting(Candidate::getPublicationId, Candidate::isApplicable)
-        .containsExactly(publication.id(), true);
-
+        .extracting(Candidate::getPublicationId, Candidate::isApplicable, Candidate::isReported)
+        .containsExactly(publicationId, true, false);
     assertThat(candidate.approvals()).isNotEmpty();
   }
 
-  @Then("the persisted data is updated")
-  public void thenThePersistedCandidateIsUpdated() {
+  private void assertPublicationIsNonCandidate() {
+    var candidate = getCandidateByPublicationId();
+    assertThat(candidate)
+        .extracting(Candidate::getPublicationId, Candidate::isApplicable, Candidate::isReported)
+        .containsExactly(publicationId, false, false);
+    assertThat(candidate.approvals()).isEmpty();
+  }
+
+  private void assertCandidateIsUpdated() {
     var candidate = getCandidateByPublicationId();
     var evaluationTimestamp = evaluationContext.getLastEvaluationTimestamp();
 
     assertThat(candidate.createdDate()).isBefore(evaluationTimestamp);
     assertThat(candidate.modifiedDate()).isAfterOrEqualTo(evaluationTimestamp);
-  }
-
-  @Given("the Publication type is changed so that the Publication is no longer applicable")
-  public void whenThePublicationTypeIsChangedSoThatThePublicationIsNoLongerApplicable() {
-    evaluationContext.evaluatePublicationAndPersistResult(
-        publicationBuilder.withPublicationType("ComicBook").getExpandedPublication());
-  }
-
-  @Then("the Publication is persisted as a NonCandidate")
-  public void thenThePublicationIsANonCandidate() {
-    var publication = publicationBuilder.getExpandedPublication();
-    var candidate = getCandidateByPublicationId();
-    assertThat(candidate)
-        .extracting(Candidate::getPublicationId, Candidate::isApplicable)
-        .containsExactly(publication.id(), false);
-    assertThat(candidate.approvals()).isEmpty();
-  }
-
-  @Given("the Candidate is not reported")
-  public void theCandidateIsNotReported() {
-    // This is the default state, so we simply check it for now
-    var candidate = getCandidateByPublicationId();
-    assertThat(candidate.isReported()).isFalse();
   }
 
   private Candidate getCandidateByPublicationId() {
