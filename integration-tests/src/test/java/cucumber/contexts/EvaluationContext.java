@@ -9,6 +9,7 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import java.time.Instant;
 import java.util.List;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
@@ -29,6 +30,7 @@ public class EvaluationContext {
   private final FakeSqsClient evaluationOutputQueue;
   private final FakeSqsClient upsertErrorQueue;
   private final TestScenario scenario;
+  private Instant lastEvaluationStartedAt;
 
   public EvaluationContext(TestScenario scenario) {
     this.scenario = scenario;
@@ -63,12 +65,17 @@ public class EvaluationContext {
   }
 
   public void evaluatePublicationAndPersistResult(String publicationJson) {
+    lastEvaluationStartedAt = Instant.now();
     var fileUri = scenario.setupExpandedPublicationInS3(publicationJson);
     var evaluationEvent = createEvaluationEvent(new PersistedResourceMessage(fileUri));
     evaluateNviCandidateHandler.handleRequest(evaluationEvent, EVALUATION_HANDLER_CONTEXT);
 
     var upsertEvent = createUpsertEvent(getCandidateEvaluatedMessage());
     upsertNviCandidateHandler.handleRequest(upsertEvent, UPSERT_HANDLER_CONTEXT);
+  }
+
+  public Instant getLastEvaluationTimestamp() {
+    return lastEvaluationStartedAt;
   }
 
   private static SQSEvent createEvaluationEvent(PersistedResourceMessage persistedResourceMessage) {

@@ -1,41 +1,48 @@
 package cucumber.steps;
 
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeriod;
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupFuturePeriod;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.model.ContributorFixtures.unverifiedCreatorFrom;
 import static no.sikt.nva.nvi.common.model.ContributorFixtures.verifiedCreatorFrom;
 import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublicationDate;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_NORWAY;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import cucumber.contexts.EvaluationContext;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
+import java.net.URI;
 import no.sikt.nva.nvi.common.SampleExpandedPublicationFactory;
 import no.sikt.nva.nvi.common.TestScenario;
+import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.sikt.nva.nvi.test.SampleExpandedPublication;
 
 public class EvaluationSteps {
   private static final String OPEN_PERIOD = "OPEN";
   private static final String CLOSED_PERIOD = "CLOSED";
+  private static final String FUTURE_PERIOD = "PENDING";
   private final TestScenario scenario;
   private final EvaluationContext evaluationContext;
   private SampleExpandedPublicationFactory publicationBuilder;
+  private final URI publicationId;
 
   public EvaluationSteps(TestScenario scenario) {
     this.scenario = scenario;
     this.publicationBuilder = new SampleExpandedPublicationFactory(scenario);
+    this.publicationId = publicationBuilder.getExpandedPublication().id();
     this.evaluationContext = new EvaluationContext(scenario);
   }
 
-  @Given("a Publication that has previously been evaluated as a Candidate")
-  public void givenAPublicationThatHasPreviouslyBeenEvaluatedAsACandidate() {
+  @Given("an unreported Candidate")
+  public void givenAnUnreportedCandidate() {
     givenAnApplicablePublication();
     givenTheReportingPeriodForThePublicationIs("OPEN");
     whenThePublicationIsEvaluated();
-    thenThePublicationIsACandidate();
+
+    assertPublicationIsUnreportedCandidate();
   }
 
   @Given("an applicable Publication")
@@ -52,12 +59,12 @@ public class EvaluationSteps {
   @Given("the reporting period for the Publication is {string}")
   public void givenTheReportingPeriodForThePublicationIs(String periodState) {
     var publicationDate = publicationBuilder.getExpandedPublication().publicationDate();
-    if (CLOSED_PERIOD.equals(periodState)) {
-      setupClosedPeriod(scenario, publicationDate.year());
-    } else if (OPEN_PERIOD.equals(periodState)) {
-      setupOpenPeriod(scenario, publicationDate.year());
-    } else {
-      throw new IllegalArgumentException("Invalid period state: " + periodState);
+    switch (periodState) {
+      case CLOSED_PERIOD -> setupClosedPeriod(scenario, publicationDate.year());
+      case OPEN_PERIOD -> setupOpenPeriod(scenario, publicationDate.year());
+      case FUTURE_PERIOD -> setupFuturePeriod(scenario, publicationDate.year());
+      case null, default ->
+          throw new IllegalArgumentException("Invalid period state: " + periodState);
     }
   }
 
@@ -67,34 +74,61 @@ public class EvaluationSteps {
         publicationBuilder.getExpandedPublication());
   }
 
-  @Then("the Publication is a Candidate")
-  public void thenThePublicationIsACandidate() {
-    var publication = publicationBuilder.getExpandedPublication();
-    var candidate = getCandidateByPublicationId(publication);
-    assertThat(candidate)
-        .extracting(Candidate::getPublicationId, Candidate::isApplicable)
-        .containsExactly(publication.id(), true);
-
-    assertThat(candidate.approvals()).isNotEmpty();
-  }
-
-  @Given("the Publication type is changed so that the Publication is no longer applicable")
-  public void whenThePublicationTypeIsChangedSoThatThePublicationIsNoLongerApplicable() {
+  @When("the Publication is updated to be non-applicable")
+  public void whenThePublicationTypeIsChangedSoThatThePublicationIsNoLongerApplicable2() {
     evaluationContext.evaluatePublicationAndPersistResult(
         publicationBuilder.withPublicationType("ComicBook").getExpandedPublication());
   }
 
-  @Then("the Publication is a NonCandidate")
-  public void thenThePublicationIsANonCandidate() {
-    var publication = publicationBuilder.getExpandedPublication();
-    var candidate = getCandidateByPublicationId(publication);
+  @Then("it becomes a Candidate")
+  public void thePublicationBecomesACandidate() {
+    assertPublicationIsUnreportedCandidate();
+  }
+
+  @Then("it becomes a NonCandidate")
+  public void thenThePublicationBecomesANonCandidate() {
+    assertPublicationIsNonCandidate();
+    assertCandidateIsUpdated();
+  }
+
+  @Then("it does not become a Candidate")
+  public void thePublicationDoesNotBecomeACandidate() {
+    assertThatThrownBy(this::getCandidateByPublicationId)
+        .isInstanceOf(CandidateNotFoundException.class);
+  }
+
+  @Then("the Candidate is updated")
+  public void thenTheCandidateIsUpdated() {
+    assertPublicationIsUnreportedCandidate();
+    assertCandidateIsUpdated();
+  }
+
+  private void assertPublicationIsUnreportedCandidate() {
+    var candidate = getCandidateByPublicationId();
     assertThat(candidate)
-        .extracting(Candidate::getPublicationId, Candidate::isApplicable)
-        .containsExactly(publication.id(), false);
+        .extracting(Candidate::getPublicationId, Candidate::isApplicable, Candidate::isReported)
+        .containsExactly(publicationId, true, false);
+    assertThat(candidate.approvals()).isNotEmpty();
+  }
+
+  private void assertCandidateIsUpdated() {
+    var candidate = getCandidateByPublicationId();
+    var evaluationTimestamp = evaluationContext.getLastEvaluationTimestamp();
+
+    assertThat(candidate.createdDate()).isBefore(evaluationTimestamp);
+    assertThat(candidate.modifiedDate()).isAfterOrEqualTo(evaluationTimestamp);
+  }
+
+  private void assertPublicationIsNonCandidate() {
+    var candidate = getCandidateByPublicationId();
+    assertThat(candidate)
+        .extracting(Candidate::getPublicationId, Candidate::isApplicable, Candidate::isReported)
+        .containsExactly(publicationId, false, false);
     assertThat(candidate.approvals()).isEmpty();
   }
 
-  private Candidate getCandidateByPublicationId(SampleExpandedPublication publication) {
+  private Candidate getCandidateByPublicationId() {
+    var publication = publicationBuilder.getExpandedPublication();
     return scenario.getCandidateByPublicationId(publication.id());
   }
 }
