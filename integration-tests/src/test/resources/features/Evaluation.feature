@@ -1,7 +1,7 @@
 Feature: Evaluation of Publications as NVI Candidates
 
   Rule: Publications can become Candidates if the Period is not closed
-    Scenario Outline: A new applicable Publication becomes a Candidate
+    Scenario Outline: A new Publication becomes a Candidate in non-closed period
       Given an applicable Publication
       And the reporting period for the Publication is "<period_state>"
       When the Publication is evaluated
@@ -11,6 +11,12 @@ Feature: Evaluation of Publications as NVI Candidates
         | period_state |
         | OPEN         |
         | PENDING      |
+
+    Scenario: A new Publication does not become a Candidate in a closed period
+      Given an applicable Publication
+      And the reporting period for the Publication is "CLOSED"
+      When the Publication is evaluated
+      Then it does not become a Candidate
 
   Rule: Unreported Candidates can be updated regardless of period state
     Scenario Outline: An applicable Publication remains a Candidate

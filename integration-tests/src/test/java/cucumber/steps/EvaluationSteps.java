@@ -8,6 +8,7 @@ import static no.sikt.nva.nvi.common.model.ContributorFixtures.verifiedCreatorFr
 import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublicationDate;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_NORWAY;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import cucumber.contexts.EvaluationContext;
 import io.cucumber.java.en.Given;
@@ -16,6 +17,7 @@ import io.cucumber.java.en.When;
 import java.net.URI;
 import no.sikt.nva.nvi.common.SampleExpandedPublicationFactory;
 import no.sikt.nva.nvi.common.TestScenario;
+import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 
 public class EvaluationSteps {
@@ -89,6 +91,12 @@ public class EvaluationSteps {
     assertCandidateIsUpdated();
   }
 
+  @Then("it does not become a Candidate")
+  public void thePublicationDoesNotBecomeACandidate() {
+    assertThatThrownBy(this::getCandidateByPublicationId)
+        .isInstanceOf(CandidateNotFoundException.class);
+  }
+
   @Then("the Candidate is updated")
   public void thenTheCandidateIsUpdated() {
     assertPublicationIsUnreportedCandidate();
@@ -103,20 +111,20 @@ public class EvaluationSteps {
     assertThat(candidate.approvals()).isNotEmpty();
   }
 
-  private void assertPublicationIsNonCandidate() {
-    var candidate = getCandidateByPublicationId();
-    assertThat(candidate)
-        .extracting(Candidate::getPublicationId, Candidate::isApplicable, Candidate::isReported)
-        .containsExactly(publicationId, false, false);
-    assertThat(candidate.approvals()).isEmpty();
-  }
-
   private void assertCandidateIsUpdated() {
     var candidate = getCandidateByPublicationId();
     var evaluationTimestamp = evaluationContext.getLastEvaluationTimestamp();
 
     assertThat(candidate.createdDate()).isBefore(evaluationTimestamp);
     assertThat(candidate.modifiedDate()).isAfterOrEqualTo(evaluationTimestamp);
+  }
+
+  private void assertPublicationIsNonCandidate() {
+    var candidate = getCandidateByPublicationId();
+    assertThat(candidate)
+        .extracting(Candidate::getPublicationId, Candidate::isApplicable, Candidate::isReported)
+        .containsExactly(publicationId, false, false);
+    assertThat(candidate.approvals()).isEmpty();
   }
 
   private Candidate getCandidateByPublicationId() {
