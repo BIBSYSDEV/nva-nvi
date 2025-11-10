@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.FakeEnvironment;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
+import no.sikt.nva.nvi.common.service.FailingApprovalService;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
@@ -196,6 +197,27 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
     var actualAllowedOperations = candidateDto.allowedOperations();
     assertThat(
         actualAllowedOperations, containsInAnyOrder(CURATOR_CAN_FINALIZE_APPROVAL.toArray()));
+  }
+
+  @Test
+  void shouldHandleTransactionFailure() throws IOException {
+    var failingHandler = setupHandlerThatFailsOnApprovalUpdate();
+
+    var assignee = randomString();
+    mockNviCuratorAccessForUser(assignee);
+    failingHandler.handleRequest(createRequest(candidateIdentifier, assignee), output, CONTEXT);
+    var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
+    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_CONFLICT)));
+  }
+
+  private UpsertAssigneeHandler setupHandlerThatFailsOnApprovalUpdate() {
+    var failingApprovalService = new FailingApprovalService(scenario.getCandidateRepository());
+    return new UpsertAssigneeHandler(
+        candidateService,
+        failingApprovalService,
+        mockIdentityServiceClient,
+        mockViewingScopeValidator,
+        environment);
   }
 
   private Candidate candidateWithFinalizedApproval(String newAssignee) {
