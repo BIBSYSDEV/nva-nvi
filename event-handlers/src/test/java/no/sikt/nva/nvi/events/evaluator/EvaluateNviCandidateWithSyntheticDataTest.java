@@ -24,7 +24,6 @@ import no.sikt.nva.nvi.common.dto.PageCountDto;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.test.SampleExpandedContributor;
-import no.sikt.nva.nvi.test.SampleExpandedPublicationChannel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -190,18 +189,11 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
 
   @Test
   void shouldThrowParsingExceptionWhenChannelIsMalformed() {
-    var validChannel =
-        SampleExpandedPublicationChannel.builder()
-            .withType("Journal")
-            .withLevel("LevelOne")
-            .build();
-    var malformedChannel =
-        SampleExpandedPublicationChannel.builder().withType("Journal").withLevel(null).build();
-
     var publication =
         factory
+            .withPublicationChannel("Journal", "LevelOne")
+            .withPublicationChannel("Journal", null)
             .getExpandedPublicationBuilder()
-            .withPublicationChannels(List.of(validChannel, malformedChannel))
             .build();
 
     var exception = assertThrows(RuntimeException.class, () -> getEvaluatedCandidate(publication));

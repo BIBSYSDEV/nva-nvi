@@ -16,7 +16,9 @@ import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_SWEDEN;
 import static no.sikt.nva.nvi.test.TestUtils.createResponse;
 import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
 import static no.sikt.nva.nvi.test.TestUtils.randomUriWithSuffix;
+import static no.unit.nva.testutils.RandomDataGenerator.randomIsbn13;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
+import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
@@ -37,6 +39,7 @@ import no.sikt.nva.nvi.test.SampleExpandedContributor;
 import no.sikt.nva.nvi.test.SampleExpandedOrganization;
 import no.sikt.nva.nvi.test.SampleExpandedPublication;
 import no.sikt.nva.nvi.test.SampleExpandedPublicationChannel;
+import no.sikt.nva.nvi.test.SampleExpandedPublicationContext;
 import no.sikt.nva.nvi.test.SampleExpandedPublicationDate;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.auth.uriretriever.UriRetriever;
@@ -59,7 +62,8 @@ public class SampleExpandedPublicationFactory {
   private final URI publicationId = generatePublicationId(publicationIdentifier);
   private String publicationType = "AcademicArticle";
   private PublicationDate publicationDate = randomPublicationDateInCurrentYear();
-  private List<String> isbnList;
+  private Collection<String> isbnList = List.of(randomIsbn13());
+  private String revisionStatus = "Unrevised";
 
   public SampleExpandedPublicationFactory(TestScenario scenario) {
     this.environment = getEvaluateNviCandidateHandlerEnvironment();
@@ -250,6 +254,16 @@ public class SampleExpandedPublicationFactory {
     return this;
   }
 
+  public SampleExpandedPublicationFactory withIsbnList(Collection<String> isbnList) {
+    this.isbnList = isbnList;
+    return this;
+  }
+
+  public SampleExpandedPublicationFactory withRevisionStatus(String revisionStatus) {
+    this.revisionStatus = revisionStatus;
+    return this;
+  }
+
   /**
    * Adds a publication channel to the publication. If the channel type is "series" or "publisher",
    * it will add the corresponding channel with "Unassigned" as the scientific level. Valid
@@ -287,9 +301,6 @@ public class SampleExpandedPublicationFactory {
     if (publicationChannels.isEmpty()) {
       addPublicationChannel("Journal", "LevelOne");
     }
-    if (ACADEMIC_CHAPTER.equals(publicationType) && collectionIsEmpty(isbnList)) {
-      isbnList = List.of(randomString());
-    }
     var expandedDate =
         new SampleExpandedPublicationDate(
             publicationDate.year(), publicationDate.month(), publicationDate.day());
@@ -299,10 +310,18 @@ public class SampleExpandedPublicationFactory {
         .withIdentifier(publicationIdentifier)
         .withInstanceType(publicationType)
         .withPublicationDate(expandedDate)
-        .withPublicationChannels(publicationChannels)
+        .withPublicationContext(resolvePublicationContext())
         .withContributors(contributors)
-        .withIsbnList(isbnList)
         .withTopLevelOrganizations(topLevelOrganizations);
+  }
+
+  private SampleExpandedPublicationContext resolvePublicationContext() {
+    if (ACADEMIC_CHAPTER.equals(publicationType)) {
+      return SampleExpandedPublicationContext.createAnthologyContext(
+          publicationChannels, isbnList, randomUri(), randomString(), revisionStatus);
+    }
+    return SampleExpandedPublicationContext.createFlatPublicationContext(
+        "Book", publicationChannels, isbnList, revisionStatus);
   }
 
   public Organization setupTopLevelOrganization(String countryCode, boolean isNviOrganization) {
@@ -318,9 +337,5 @@ public class SampleExpandedPublicationFactory {
     var customerApiUriForOrganization = getCustomerApiUri(toplevelOrganizationId);
     when(authorizedBackendUriRetriever.fetchResponse(eq(customerApiUriForOrganization), any()))
         .thenReturn(Optional.of(okResponse));
-  }
-
-  private boolean collectionIsEmpty(Collection<?> collection) {
-    return isNull(collection) || collection.isEmpty();
   }
 }
