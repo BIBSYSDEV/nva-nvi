@@ -131,4 +131,10 @@ public final class TestUtils {
       }
     }
   }
+
+  public static void putAsArray(ObjectNode node, String field, Collection<String> values) {
+    var arrayNode = objectMapper.createArrayNode();
+    values.forEach(arrayNode::add);
+    node.set(field, arrayNode);
+  }
 }

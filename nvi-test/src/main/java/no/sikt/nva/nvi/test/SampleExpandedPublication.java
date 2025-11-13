@@ -9,12 +9,10 @@ import static no.sikt.nva.nvi.test.TestConstants.ACADEMIC_MONOGRAPH;
 import static no.sikt.nva.nvi.test.TestConstants.BODY_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.CONTRIBUTORS_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.ENTITY_DESCRIPTION_FIELD;
-import static no.sikt.nva.nvi.test.TestConstants.ENTITY_DESCRIPTION_TYPE;
 import static no.sikt.nva.nvi.test.TestConstants.IDENTIFIER_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.ID_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.LANGUAGE_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.MAIN_TITLE_FIELD;
-import static no.sikt.nva.nvi.test.TestConstants.ONE;
 import static no.sikt.nva.nvi.test.TestConstants.PAGES_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.PUBLICATION_CONTEXT_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.PUBLICATION_DATE_FIELD;
@@ -45,17 +43,14 @@ import nva.commons.core.ioutils.IoUtils;
  * This is intended to create a JSON representation of an expanded resource, mirroring the expected
  * input documents from `nva-publication-api`.
  */
-// TODO Refactor to remove warnings NP-49938
-@SuppressWarnings("PMD.TooManyFields")
 @JacocoGenerated
 public record SampleExpandedPublication(
     URI id,
     UUID identifier,
     String mainTitle,
     String issn,
-    String publicationContextType,
     SampleExpandedPageCount pageCount,
-    List<SampleExpandedPublicationChannel> publicationChannels,
+    SampleExpandedPublicationContext publicationContext,
     SampleExpandedPublicationDate publicationDate,
     String instanceType,
     String abstractText,
@@ -63,12 +58,9 @@ public record SampleExpandedPublication(
     String status,
     String modifiedDate,
     List<SampleExpandedContributor> contributors,
-    List<SampleExpandedOrganization> topLevelOrganizations,
-    List<String> isbnList) {
+    List<SampleExpandedOrganization> topLevelOrganizations) {
 
   private static final String TEMPLATE_JSON_PATH = "template_publication.json";
-  private static final String PUBLICATION_CHANNELS_MUST_NOT_BE_EMPTY =
-      "Publication channels must not be empty";
 
   public static Builder builder() {
     return new Builder();
@@ -133,49 +125,7 @@ public record SampleExpandedPublication(
   private ObjectNode createReferenceNode() {
     var node = createNodeWithType(REFERENCE_TYPE);
     node.set(PUBLICATION_INSTANCE_FIELD, createAndPopulatePublicationInstance(instanceType));
-    node.set(PUBLICATION_CONTEXT_FIELD, createPublicationContextNode());
-    return node;
-  }
-
-  private ObjectNode createPublicationContextNode() {
-    if (ACADEMIC_CHAPTER.equalsIgnoreCase(instanceType)) {
-      return createNestedAnthologyContext();
-    } else {
-      return createFlatPublicationContext();
-    }
-  }
-
-  private ObjectNode createFlatPublicationContext() {
-    if (publicationChannels.isEmpty()) {
-      throw new IllegalArgumentException(PUBLICATION_CHANNELS_MUST_NOT_BE_EMPTY);
-    }
-    if (publicationChannels.size() == ONE) {
-      return publicationChannels.getFirst().asObjectNode();
-    } else {
-      var node = createNodeWithType(publicationContextType);
-      for (SampleExpandedPublicationChannel publicationChannel : publicationChannels) {
-        node.set(publicationChannel.type(), publicationChannel.asObjectNode());
-      }
-      return node;
-    }
-  }
-
-  private ObjectNode createNestedAnthologyContext() {
-    var node = createNodeWithType("Anthology");
-
-    var entityDescriptionNode = createNodeWithType(ENTITY_DESCRIPTION_TYPE);
-    node.set(ENTITY_DESCRIPTION_FIELD, entityDescriptionNode);
-
-    var referenceNode = createNodeWithType(REFERENCE_TYPE);
-    entityDescriptionNode.set(REFERENCE_FIELD, referenceNode);
-
-    var innerContextNode = createNodeWithType("Report");
-    for (SampleExpandedPublicationChannel publicationChannel : publicationChannels) {
-      innerContextNode.set(publicationChannel.type(), publicationChannel.asObjectNode());
-      innerContextNode.set("isbnList", objectMapper.valueToTree(isbnList));
-    }
-    referenceNode.set(PUBLICATION_CONTEXT_FIELD, innerContextNode);
-
+    node.set(PUBLICATION_CONTEXT_FIELD, publicationContext.asObjectNode());
     return node;
   }
 
@@ -211,12 +161,10 @@ public record SampleExpandedPublication(
     private SampleExpandedPageCount pageCount = new SampleExpandedPageCount(null, null, null);
     private SampleExpandedPublicationDate publicationDate;
     private String instanceType = ACADEMIC_ARTICLE;
-    private String publicationContextType = "Book";
     private String modifiedDate;
-    private List<SampleExpandedPublicationChannel> publicationChannels;
     private List<SampleExpandedContributor> contributors;
     private List<SampleExpandedOrganization> topLevelOrganizations;
-    private List<String> isbnList;
+    private SampleExpandedPublicationContext publicationContext;
 
     private Builder() {}
 
@@ -270,19 +218,13 @@ public record SampleExpandedPublication(
       return this;
     }
 
-    public Builder withPublicationContextType(String publicationContextType) {
-      this.publicationContextType = publicationContextType;
-      return this;
-    }
-
     public Builder withModifiedDate(String modifiedDate) {
       this.modifiedDate = modifiedDate;
       return this;
     }
 
-    public Builder withPublicationChannels(
-        List<SampleExpandedPublicationChannel> publicationChannels) {
-      this.publicationChannels = publicationChannels;
+    public Builder withPublicationContext(SampleExpandedPublicationContext publicationContext) {
+      this.publicationContext = publicationContext;
       return this;
     }
 
@@ -296,23 +238,18 @@ public record SampleExpandedPublication(
       return this;
     }
 
-    public Builder withIsbnList(List<String> isbnList) {
-      this.isbnList = isbnList;
-      return this;
-    }
-
     public SampleExpandedPublication build() {
       if (isNull(id)) {
         id = generatePublicationId(identifier);
       }
+
       return new SampleExpandedPublication(
           id,
           identifier,
           title,
           issn,
-          publicationContextType,
           pageCount,
-          publicationChannels,
+          publicationContext,
           publicationDate,
           instanceType,
           abstractText,
@@ -320,8 +257,7 @@ public record SampleExpandedPublication(
           status,
           modifiedDate,
           contributors,
-          topLevelOrganizations,
-          isbnList);
+          topLevelOrganizations);
     }
   }
 }

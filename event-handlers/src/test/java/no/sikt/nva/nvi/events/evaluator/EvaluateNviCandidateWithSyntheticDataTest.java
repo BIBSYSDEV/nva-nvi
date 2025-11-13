@@ -8,8 +8,15 @@ import static no.sikt.nva.nvi.common.model.ContributorFixtures.verifiedCreatorFr
 import static no.sikt.nva.nvi.common.model.PageCountFixtures.PAGE_NUMBER_AS_DTO;
 import static no.sikt.nva.nvi.common.model.PageCountFixtures.PAGE_RANGE_AS_DTO;
 import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublicationDate;
+import static no.sikt.nva.nvi.test.TestConstants.ACADEMIC_ARTICLE;
+import static no.sikt.nva.nvi.test.TestConstants.ACADEMIC_MONOGRAPH;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_NORWAY;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_SWEDEN;
+import static no.sikt.nva.nvi.test.TestConstants.JOURNAL_TYPE;
+import static no.sikt.nva.nvi.test.TestConstants.LEVEL_ONE;
+import static no.sikt.nva.nvi.test.TestConstants.LEVEL_UNASSIGNED;
+import static no.sikt.nva.nvi.test.TestConstants.PUBLISHER_TYPE;
+import static no.sikt.nva.nvi.test.TestConstants.SERIES_TYPE;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -24,7 +31,6 @@ import no.sikt.nva.nvi.common.dto.PageCountDto;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.test.SampleExpandedContributor;
-import no.sikt.nva.nvi.test.SampleExpandedPublicationChannel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -108,7 +114,7 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
     var publication =
         factory
             .withContributor(verifiedCreatorFrom(nviOrganization))
-            .withPublicationChannel(channelType, "LevelOne")
+            .withPublicationChannel(channelType, LEVEL_ONE)
             .getExpandedPublicationBuilder()
             .withAbstract("Lorem ipsum")
             .withInstanceType(publicationType)
@@ -190,18 +196,11 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
 
   @Test
   void shouldThrowParsingExceptionWhenChannelIsMalformed() {
-    var validChannel =
-        SampleExpandedPublicationChannel.builder()
-            .withType("Journal")
-            .withLevel("LevelOne")
-            .build();
-    var malformedChannel =
-        SampleExpandedPublicationChannel.builder().withType("Journal").withLevel(null).build();
-
     var publication =
         factory
+            .withPublicationChannel(JOURNAL_TYPE, LEVEL_ONE)
+            .withPublicationChannel(JOURNAL_TYPE, null)
             .getExpandedPublicationBuilder()
-            .withPublicationChannels(List.of(validChannel, malformedChannel))
             .build();
 
     var exception = assertThrows(RuntimeException.class, () -> getEvaluatedCandidate(publication));
@@ -210,9 +209,39 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
         .contains("Required field 'scientificValue' is null");
   }
 
+  // TODO: Replace with test on revision filtering in NP-50261
+  @Test
+  void shouldIncludeRevisionFieldWithSingleChannel() {
+    var publication =
+        factory
+            .withContributor(verifiedCreatorFrom(nviOrganization))
+            .withPublicationChannel(JOURNAL_TYPE, LEVEL_ONE)
+            .withRevisionStatus("Unrevised")
+            .getExpandedPublication();
+
+    var json = publication.toJsonString();
+    assertThat(json).containsIgnoringWhitespaces("\"revision\": \"Unrevised\"");
+  }
+
+  // TODO: Replace with test on revision filtering in NP-50261
+  @Test
+  void shouldIncludeRevisionFieldForAnthology() {
+    var publication =
+        factory
+            .withContributor(verifiedCreatorFrom(nviOrganization))
+            .withPublicationChannel(PUBLISHER_TYPE, LEVEL_ONE)
+            .withPublicationChannel(SERIES_TYPE, LEVEL_UNASSIGNED)
+            .withRevisionStatus("Revised")
+            .getExpandedPublication();
+
+    var json = publication.toJsonString();
+    assertThat(json).containsIgnoringWhitespaces("\"revision\": \"Revised\"");
+  }
+
   private static Stream<Arguments> pageCountProvider() {
     return Stream.of(
-        argumentSet("Monograph with page count", PAGE_NUMBER_AS_DTO, "AcademicMonograph", "Series"),
-        argumentSet("Article with page range", PAGE_RANGE_AS_DTO, "AcademicArticle", "Journal"));
+        argumentSet(
+            "Monograph with page count", PAGE_NUMBER_AS_DTO, ACADEMIC_MONOGRAPH, SERIES_TYPE),
+        argumentSet("Article with page range", PAGE_RANGE_AS_DTO, ACADEMIC_ARTICLE, JOURNAL_TYPE));
   }
 }
