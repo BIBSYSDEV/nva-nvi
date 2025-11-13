@@ -87,8 +87,11 @@ public final class TestConstants {
   public static final String ACADEMIC_LITERATURE_REVIEW = "AcademicLiteratureReview";
   public static final String ACADEMIC_ARTICLE = "AcademicArticle";
   public static final String ACADEMIC_MONOGRAPH = "AcademicMonograph";
-  public static final String CHANNEL_PUBLISHER = "publisher";
-  public static final String CHANNEL_SERIES = "series";
+  public static final String JOURNAL_TYPE = "Journal";
+  public static final String PUBLISHER_TYPE = "Publisher";
+  public static final String SERIES_TYPE = "Series";
+  public static final String LEVEL_UNASSIGNED = "Unassigned";
+  public static final String LEVEL_ONE = "LevelOne";
 
   public static final String PERSISTED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
 
