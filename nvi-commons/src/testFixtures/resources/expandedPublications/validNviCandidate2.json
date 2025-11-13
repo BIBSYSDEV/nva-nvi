@@ -196,7 +196,7 @@
             "valid" : "true",
             "year" : "2025"
           },
-          "revision" : "Revised",
+          "revision" : "Unrevised",
           "series" : {
             "id" : "https://api.sandbox.nva.aws.unit.no/publication-channels-v2/serial-publication/4DB8ADA8-2031-4092-864B-795432CCBD68/2025",
             "type" : "Series",

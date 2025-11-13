@@ -18,6 +18,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.net.URI;
 import java.util.Collection;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import nva.commons.core.JacocoGenerated;
 
@@ -90,19 +91,25 @@ public record SampleExpandedPublicationContext(
         : publicationContextType;
   }
 
-  private ObjectNode createBaseContextNode() {
-    return publicationChannels.size() == ONE
-        ? publicationChannels.values().iterator().next().asObjectNode()
-        : createNodeWithType(type);
+  private ObjectNode createContextWithSingleChannel() {
+    return publicationChannels.values().iterator().next().asObjectNode();
+  }
+
+  private ObjectNode createContextWithMultipleChannels() {
+    var contextNode = createNodeWithType(type);
+    for (var entry : publicationChannels.entrySet()) {
+      var fieldName = entry.getKey().toLowerCase(Locale.ROOT);
+      var channel = entry.getValue().asObjectNode();
+      contextNode.set(fieldName, channel);
+    }
+    return contextNode;
   }
 
   private ObjectNode createSingleContextNode() {
-    var contextNode = createBaseContextNode();
-
-    for (var entry : publicationChannels.entrySet()) {
-      var channel = entry.getValue().asObjectNode();
-      contextNode.set(entry.getKey(), channel);
-    }
+    var contextNode =
+        publicationChannels.size() == ONE
+            ? createContextWithSingleChannel()
+            : createContextWithMultipleChannels();
 
     putAsArray(contextNode, ISBN_FIELD, isbnList);
     putIfNotBlank(contextNode, REVISION_FIELD, revision);
