@@ -17,6 +17,7 @@ import static no.sikt.nva.nvi.test.TestUtils.putIfNotNull;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.net.URI;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import nva.commons.core.JacocoGenerated;
 
@@ -152,7 +153,7 @@ public record SampleExpandedPublicationContext(
     }
 
     public Builder withIsbnList(Collection<String> isbnList) {
-      this.isbnList = isbnList;
+      this.isbnList = List.copyOf(isbnList);
       return this;
     }
 
@@ -174,7 +175,7 @@ public record SampleExpandedPublicationContext(
 
     public Builder withPublicationChannels(
         Map<String, SampleExpandedPublicationChannel> publicationChannels) {
-      this.publicationChannels = publicationChannels;
+      this.publicationChannels = Map.copyOf(publicationChannels);
       return this;
     }
 
