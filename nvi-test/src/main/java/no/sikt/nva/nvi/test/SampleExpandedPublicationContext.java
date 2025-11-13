@@ -1,7 +1,6 @@
 package no.sikt.nva.nvi.test;
 
-import static java.util.Collections.emptyList;
-import static java.util.Objects.nonNull;
+import static java.util.Collections.emptyMap;
 import static no.sikt.nva.nvi.test.TestConstants.ENTITY_DESCRIPTION_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.ENTITY_DESCRIPTION_TYPE;
 import static no.sikt.nva.nvi.test.TestConstants.ID_FIELD;
@@ -11,12 +10,14 @@ import static no.sikt.nva.nvi.test.TestConstants.PUBLICATION_CONTEXT_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.REFERENCE_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.REFERENCE_TYPE;
 import static no.sikt.nva.nvi.test.TestUtils.createNodeWithType;
+import static no.sikt.nva.nvi.test.TestUtils.putAsArray;
 import static no.sikt.nva.nvi.test.TestUtils.putIfNotBlank;
-import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
+import static no.sikt.nva.nvi.test.TestUtils.putIfNotNull;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.net.URI;
 import java.util.Collection;
+import java.util.Map;
 import nva.commons.core.JacocoGenerated;
 
 /**
@@ -31,7 +32,7 @@ public record SampleExpandedPublicationContext(
     String revision,
     String mainTitle,
     SampleExpandedPublicationContext nestedPublicationContext,
-    Collection<SampleExpandedPublicationChannel> publicationChannels) {
+    Map<String, SampleExpandedPublicationChannel> publicationChannels) {
 
   private static final String PUBLICATION_CHANNELS_MUST_NOT_BE_EMPTY =
       "Publication channels must not be empty";
@@ -45,27 +46,23 @@ public record SampleExpandedPublicationContext(
   }
 
   public static SampleExpandedPublicationContext createFlatPublicationContext(
-      String publicationContextType,
-      Collection<SampleExpandedPublicationChannel> publicationChannels,
+      String contextType,
+      Map<String, SampleExpandedPublicationChannel> publicationChannels,
       Collection<String> isbnList,
       String revisionStatus) {
     if (publicationChannels.isEmpty()) {
       throw new IllegalArgumentException(PUBLICATION_CHANNELS_MUST_NOT_BE_EMPTY);
     }
-    var builder =
-        builder()
-            .withPublicationChannels(publicationChannels)
-            .withIsbnList(isbnList)
-            .withRevision(revisionStatus);
-    if (publicationChannels.size() == ONE) {
-      var channel = publicationChannels.iterator().next();
-      return builder.withType(channel.type()).build();
-    }
-    return builder.withType(publicationContextType).build();
+    return builder()
+        .withType(resolveContextType(contextType, publicationChannels))
+        .withPublicationChannels(publicationChannels)
+        .withIsbnList(isbnList)
+        .withRevision(revisionStatus)
+        .build();
   }
 
   public static SampleExpandedPublicationContext createAnthologyContext(
-      Collection<SampleExpandedPublicationChannel> publicationChannels,
+      Map<String, SampleExpandedPublicationChannel> publicationChannels,
       Collection<String> isbnList,
       URI anthologyId,
       String mainTitle,
@@ -84,47 +81,51 @@ public record SampleExpandedPublicationContext(
     if (ANTHOLOGY_TYPE.equals(type)) {
       return createNestedAnthologyNode();
     } else {
-      return createSimpleContextNode();
+      return createSingleContextNode();
     }
   }
 
-  private ObjectNode createSimpleContextNode() {
-    if (publicationChannels.size() == ONE) {
-      return publicationChannels.iterator().next().asObjectNode();
+  private static String resolveContextType(
+      String publicationContextType,
+      Map<String, SampleExpandedPublicationChannel> publicationChannels) {
+    return publicationChannels.size() == ONE
+        ? publicationChannels.keySet().iterator().next()
+        : publicationContextType;
+  }
+
+  private ObjectNode createBaseContextNode() {
+    return publicationChannels.size() == ONE
+        ? publicationChannels.values().iterator().next().asObjectNode()
+        : createNodeWithType(type);
+  }
+
+  private ObjectNode createSingleContextNode() {
+    var contextNode = createBaseContextNode();
+
+    for (var entry : publicationChannels.entrySet()) {
+      var channel = entry.getValue().asObjectNode();
+      contextNode.set(entry.getKey(), channel);
     }
 
-    var node = createNodeWithType(type);
-    for (SampleExpandedPublicationChannel channel : publicationChannels) {
-      node.set(channel.type(), channel.asObjectNode());
-    }
+    putAsArray(contextNode, ISBN_FIELD, isbnList);
+    putIfNotBlank(contextNode, REVISION_FIELD, revision);
 
-    if (nonNull(isbnList) && !isbnList.isEmpty()) {
-      node.set(ISBN_FIELD, objectMapper.valueToTree(isbnList));
-    }
-
-    putIfNotBlank(node, REVISION_FIELD, revision);
-
-    return node;
+    return contextNode;
   }
 
   private ObjectNode createNestedAnthologyNode() {
-    var node = createNodeWithType(ANTHOLOGY_TYPE);
-
-    if (nonNull(id)) {
-      node.put(ID_FIELD, id.toString());
-    }
+    var anthologyContextNode = createNodeWithType(ANTHOLOGY_TYPE);
+    putIfNotNull(anthologyContextNode, ID_FIELD, id);
 
     var entityDescriptionNode = createNodeWithType(ENTITY_DESCRIPTION_TYPE);
     putIfNotBlank(entityDescriptionNode, MAIN_TITLE_FIELD, mainTitle);
-    node.set(ENTITY_DESCRIPTION_FIELD, entityDescriptionNode);
+    anthologyContextNode.set(ENTITY_DESCRIPTION_FIELD, entityDescriptionNode);
 
     var referenceNode = createNodeWithType(REFERENCE_TYPE);
-    if (nonNull(nestedPublicationContext)) {
-      referenceNode.set(PUBLICATION_CONTEXT_FIELD, nestedPublicationContext.asObjectNode());
-    }
+    referenceNode.set(PUBLICATION_CONTEXT_FIELD, nestedPublicationContext.asObjectNode());
     entityDescriptionNode.set(REFERENCE_FIELD, referenceNode);
 
-    return node;
+    return anthologyContextNode;
   }
 
   @JacocoGenerated
@@ -136,7 +137,7 @@ public record SampleExpandedPublicationContext(
     private String mainTitle;
     private SampleExpandedPublicationContext nestedPublicationContext;
     private Collection<String> isbnList;
-    private Collection<SampleExpandedPublicationChannel> publicationChannels = emptyList();
+    private Map<String, SampleExpandedPublicationChannel> publicationChannels = emptyMap();
 
     private Builder() {}
 
@@ -172,7 +173,7 @@ public record SampleExpandedPublicationContext(
     }
 
     public Builder withPublicationChannels(
-        Collection<SampleExpandedPublicationChannel> publicationChannels) {
+        Map<String, SampleExpandedPublicationChannel> publicationChannels) {
       this.publicationChannels = publicationChannels;
       return this;
     }

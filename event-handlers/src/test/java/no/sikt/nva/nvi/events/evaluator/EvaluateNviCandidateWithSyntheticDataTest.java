@@ -202,6 +202,35 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
         .contains("Required field 'scientificValue' is null");
   }
 
+  // TODO: Replace with test on revision filtering in NP-50261
+  @Test
+  void shouldIncludeRevisionFieldWithSingleChannel() {
+    var publication =
+        factory
+            .withContributor(verifiedCreatorFrom(nviOrganization))
+            .withPublicationChannel("Journal", "LevelOne")
+            .withRevisionStatus("Unrevised")
+            .getExpandedPublication();
+
+    var json = publication.toJsonString();
+    assertThat(json).containsIgnoringWhitespaces("\"revision\": \"Unrevised\"");
+  }
+
+  // TODO: Replace with test on revision filtering in NP-50261
+  @Test
+  void shouldIncludeRevisionFieldForAnthology() {
+    var publication =
+        factory
+            .withContributor(verifiedCreatorFrom(nviOrganization))
+            .withPublicationChannel("Publisher", "LevelOne")
+            .withPublicationChannel("Series", "Unassigned")
+            .withRevisionStatus("Revised")
+            .getExpandedPublication();
+
+    var json = publication.toJsonString();
+    assertThat(json).containsIgnoringWhitespaces("\"revision\": \"Revised\"");
+  }
+
   private static Stream<Arguments> pageCountProvider() {
     return Stream.of(
         argumentSet("Monograph with page count", PAGE_NUMBER_AS_DTO, "AcademicMonograph", "Series"),

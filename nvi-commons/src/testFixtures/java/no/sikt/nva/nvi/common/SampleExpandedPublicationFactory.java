@@ -9,8 +9,6 @@ import static no.sikt.nva.nvi.common.model.OrganizationFixtures.setupRandomOrgan
 import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublicationDateInCurrentYear;
 import static no.sikt.nva.nvi.common.utils.Validator.hasElements;
 import static no.sikt.nva.nvi.test.TestConstants.ACADEMIC_CHAPTER;
-import static no.sikt.nva.nvi.test.TestConstants.CHANNEL_PUBLISHER;
-import static no.sikt.nva.nvi.test.TestConstants.CHANNEL_SERIES;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_NORWAY;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_SWEDEN;
 import static no.sikt.nva.nvi.test.TestUtils.createResponse;
@@ -28,7 +26,9 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.client.model.Organization;
@@ -58,6 +58,7 @@ public class SampleExpandedPublicationFactory {
   private final List<SampleExpandedContributor> contributors = new ArrayList<>();
   private final List<SampleExpandedOrganization> topLevelOrganizations = new ArrayList<>();
   private final List<SampleExpandedPublicationChannel> publicationChannels = new ArrayList<>();
+  private final Map<String, SampleExpandedPublicationChannel> channels = new HashMap<>();
   private final UUID publicationIdentifier = randomUUID();
   private final URI publicationId = generatePublicationId(publicationIdentifier);
   private String publicationType = "AcademicArticle";
@@ -264,21 +265,9 @@ public class SampleExpandedPublicationFactory {
     return this;
   }
 
-  /**
-   * Adds a publication channel to the publication. If the channel type is "series" or "publisher",
-   * it will add the corresponding channel with "Unassigned" as the scientific level. Valid
-   * documents with one of these will have both channels, so this is a convenience method for that.
-   * Use the underlying SampleExpandedPublication builder to override this behaviour.
-   */
   public SampleExpandedPublicationFactory withPublicationChannel(
       String channelType, String scientificLevel) {
     this.addPublicationChannel(channelType, scientificLevel);
-    if (CHANNEL_SERIES.equalsIgnoreCase(channelType)) {
-      this.addPublicationChannel(CHANNEL_PUBLISHER, "Unassigned");
-    }
-    if (CHANNEL_PUBLISHER.equalsIgnoreCase(channelType)) {
-      this.addPublicationChannel(CHANNEL_SERIES, "Unassigned");
-    }
     return this;
   }
 
@@ -290,6 +279,7 @@ public class SampleExpandedPublicationFactory {
             .withLevel(scientificLevel)
             .build();
     this.publicationChannels.add(channel);
+    this.channels.put(channelType, channel);
   }
 
   public SampleExpandedPublication getExpandedPublication() {
@@ -318,10 +308,10 @@ public class SampleExpandedPublicationFactory {
   private SampleExpandedPublicationContext resolvePublicationContext() {
     if (ACADEMIC_CHAPTER.equals(publicationType)) {
       return SampleExpandedPublicationContext.createAnthologyContext(
-          publicationChannels, isbnList, randomUri(), randomString(), revisionStatus);
+          channels, isbnList, randomUri(), randomString(), revisionStatus);
     }
     return SampleExpandedPublicationContext.createFlatPublicationContext(
-        "Book", publicationChannels, isbnList, revisionStatus);
+        "Book", channels, isbnList, revisionStatus);
   }
 
   public Organization setupTopLevelOrganization(String countryCode, boolean isNviOrganization) {
