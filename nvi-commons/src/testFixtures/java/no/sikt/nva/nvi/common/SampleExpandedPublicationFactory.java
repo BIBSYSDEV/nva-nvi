@@ -11,6 +11,8 @@ import static no.sikt.nva.nvi.common.utils.Validator.hasElements;
 import static no.sikt.nva.nvi.test.TestConstants.ACADEMIC_CHAPTER;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_NORWAY;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_SWEDEN;
+import static no.sikt.nva.nvi.test.TestConstants.JOURNAL_TYPE;
+import static no.sikt.nva.nvi.test.TestConstants.LEVEL_ONE;
 import static no.sikt.nva.nvi.test.TestUtils.createResponse;
 import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
 import static no.sikt.nva.nvi.test.TestUtils.randomUriWithSuffix;
@@ -289,7 +291,7 @@ public class SampleExpandedPublicationFactory {
   public SampleExpandedPublication.Builder getExpandedPublicationBuilder() {
     // Add default publication channel if none is set
     if (publicationChannels.isEmpty()) {
-      addPublicationChannel("Journal", "LevelOne");
+      addPublicationChannel(JOURNAL_TYPE, LEVEL_ONE);
     }
     var expandedDate =
         new SampleExpandedPublicationDate(

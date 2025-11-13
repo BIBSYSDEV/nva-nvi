@@ -23,6 +23,7 @@ import java.util.List;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
+import no.sikt.nva.nvi.common.dto.CandidateType;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
@@ -112,11 +113,15 @@ class EvaluationTest {
     return upsertNviCandidateHandler;
   }
 
-  protected UpsertNviCandidateRequest getEvaluatedCandidate(SampleExpandedPublication publication) {
+  protected CandidateType getEvaluationResult(SampleExpandedPublication publication) {
     var fileUri = scenario.setupExpandedPublicationInS3(publication);
     var event = createEvent(new PersistedResourceMessage(fileUri));
     handler.handleRequest(event, CONTEXT);
-    return (UpsertNviCandidateRequest) getMessageBody().candidate();
+    return getMessageBody().candidate();
+  }
+
+  protected UpsertNviCandidateRequest getEvaluatedCandidate(SampleExpandedPublication publication) {
+    return (UpsertNviCandidateRequest) getEvaluationResult(publication);
   }
 
   /**

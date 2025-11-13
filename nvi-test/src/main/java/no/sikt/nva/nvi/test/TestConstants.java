@@ -86,6 +86,7 @@ public final class TestConstants {
   public static final String ACADEMIC_CHAPTER = "AcademicChapter";
   public static final String ACADEMIC_LITERATURE_REVIEW = "AcademicLiteratureReview";
   public static final String ACADEMIC_ARTICLE = "AcademicArticle";
+  public static final String ACADEMIC_COMMENTARY = "AcademicCommentary";
   public static final String ACADEMIC_MONOGRAPH = "AcademicMonograph";
   public static final String JOURNAL_TYPE = "Journal";
   public static final String PUBLISHER_TYPE = "Publisher";
