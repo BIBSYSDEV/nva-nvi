@@ -79,11 +79,7 @@ public record SampleExpandedPublicationContext(
   }
 
   public ObjectNode asObjectNode() {
-    if (ANTHOLOGY_TYPE.equals(type)) {
-      return createNestedAnthologyNode();
-    } else {
-      return createSingleContextNode();
-    }
+    return ANTHOLOGY_TYPE.equals(type) ? createNestedAnthologyNode() : createSingleContextNode();
   }
 
   private static String resolveContextType(
