@@ -154,6 +154,12 @@ WHERE {
     FILTER (?status = :PUBLISHED)
     FILTER (?instanceType = ?applicablePublicationType)
 
+    # Reject revised publications
+    OPTIONAL { ?reference :publicationContext ?publicationContext . }
+    OPTIONAL { ?publicationContext :entityDescription/:reference/:publicationContext ?nestedPublicationContext . }
+    FILTER NOT EXISTS { ?publicationContext :revision "Revised" . }
+    FILTER NOT EXISTS { ?nestedPublicationContext :revision "Revised" . }
+
     # If the publication is part of a series with a scientific value set, use that for filtering.
     # Otherwise, check other channels for a valid scientific value.
     OPTIONAL {
