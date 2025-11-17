@@ -19,11 +19,13 @@ import static no.sikt.nva.nvi.test.TestConstants.JOURNAL_TYPE;
 import static no.sikt.nva.nvi.test.TestConstants.LEVEL_ONE;
 import static no.sikt.nva.nvi.test.TestConstants.PUBLISHER_TYPE;
 import static no.sikt.nva.nvi.test.TestConstants.SERIES_TYPE;
+import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.params.provider.Arguments.argumentSet;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
@@ -45,6 +47,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
+
   private static final String STATUS_UNREVISED = "Unrevised";
   private static final String STATUS_REVISED = "Revised";
   private SampleExpandedPublicationFactory factory;
@@ -151,15 +154,6 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
         .containsExactlyInAnyOrder(unverifiedCreator.name(), invalidCreator.names().getFirst());
   }
 
-  private SampleExpandedContributor createContributorWithoutVerificationStatus() {
-    var expandedAffiliations = List.of(mapOrganizationToAffiliation(nviOrganization));
-    return SampleExpandedContributor.builder()
-        .withId(randomUri())
-        .withRole(ROLE_CREATOR.getValue())
-        .withAffiliations(expandedAffiliations)
-        .build();
-  }
-
   @Test
   void shouldHandleDuplicateContributorWithMultipleRoles() {
     var expandedAffiliations = List.of(mapOrganizationToAffiliation(nviOrganization));
@@ -214,6 +208,53 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
     assertThat(exception.getMessage())
         .contains("ParsingException")
         .contains("Required field 'scientificValue' is null");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"AcademicChapter", "AcademicMonograph", "AcademicCommentary"})
+  void shouldEvaluateAsNonCandidateWhenPublicationRequiringIsbnIsWithoutIsbn(
+      String publicationType) {
+    var publication =
+        factory
+            .withPublicationType(publicationType)
+            .withContributor(verifiedCreatorFrom(nviOrganization))
+            .withPublicationChannel(PUBLISHER_TYPE, LEVEL_ONE)
+            .withIsbnList(Collections.emptyList())
+            .getExpandedPublication();
+
+    var candidate = getEvaluationResult(publication);
+    assertThat(candidate).isInstanceOf(UpsertNonNviCandidateRequest.class);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"AcademicChapter", "AcademicMonograph", "AcademicCommentary"})
+  void shouldEvaluateAsCandidateResourcesRequiringIsbnWithIsbn(String publicationType) {
+    var publication =
+        factory
+            .withPublicationType(publicationType)
+            .withContributor(verifiedCreatorFrom(nviOrganization))
+            .withPublicationChannel(PUBLISHER_TYPE, LEVEL_ONE)
+            .withIsbnList(List.of(randomString()))
+            .getExpandedPublication();
+
+    var candidate = getEvaluationResult(publication);
+    assertThat(candidate).isInstanceOf(UpsertNviCandidateRequest.class);
+  }
+
+  private static Stream<Arguments> pageCountProvider() {
+    return Stream.of(
+        argumentSet(
+            "Monograph with page count", PAGE_NUMBER_AS_DTO, ACADEMIC_MONOGRAPH, SERIES_TYPE),
+        argumentSet("Article with page range", PAGE_RANGE_AS_DTO, ACADEMIC_ARTICLE, JOURNAL_TYPE));
+  }
+
+  private SampleExpandedContributor createContributorWithoutVerificationStatus() {
+    var expandedAffiliations = List.of(mapOrganizationToAffiliation(nviOrganization));
+    return SampleExpandedContributor.builder()
+        .withId(randomUri())
+        .withRole(ROLE_CREATOR.getValue())
+        .withAffiliations(expandedAffiliations)
+        .build();
   }
 
   @Nested
@@ -278,12 +319,5 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
       var candidate = getEvaluationResult(publication);
       assertThat(candidate).isInstanceOf(UpsertNonNviCandidateRequest.class);
     }
-  }
-
-  private static Stream<Arguments> pageCountProvider() {
-    return Stream.of(
-        argumentSet(
-            "Monograph with page count", PAGE_NUMBER_AS_DTO, ACADEMIC_MONOGRAPH, SERIES_TYPE),
-        argumentSet("Article with page range", PAGE_RANGE_AS_DTO, ACADEMIC_ARTICLE, JOURNAL_TYPE));
   }
 }

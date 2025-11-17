@@ -71,13 +71,14 @@ public class EvaluateNviCandidateHandler implements RequestHandler<SQSEvent, Voi
         env.readEnv(BACKEND_CLIENT_AUTH_URL), env.readEnv(BACKEND_CLIENT_SECRET_NAME));
   }
 
-  private static RuntimeException handleFailure(SQSEvent input, Failure<?> failure) {
+  private RuntimeException handleFailure(SQSEvent input, Failure<?> failure) {
     LOGGER.error(
         String.format(
             FAILURE_MESSAGE,
             input.toString(),
             failure.getException(),
             failure.getException().getMessage()));
+
     return new RuntimeException(failure.getException());
   }
 

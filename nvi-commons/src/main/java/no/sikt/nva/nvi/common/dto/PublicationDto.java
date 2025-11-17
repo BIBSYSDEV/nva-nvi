@@ -2,7 +2,6 @@ package no.sikt.nva.nvi.common.dto;
 
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
-import static no.sikt.nva.nvi.common.model.InstanceType.ACADEMIC_CHAPTER;
 import static no.sikt.nva.nvi.common.utils.Validator.shouldBeTrue;
 import static no.sikt.nva.nvi.common.utils.Validator.shouldNotBeEmpty;
 import static no.sikt.nva.nvi.common.utils.Validator.shouldNotBeNull;
@@ -16,6 +15,7 @@ import java.net.URI;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.model.InstanceType;
 
@@ -42,6 +42,12 @@ public record PublicationDto(
     Collection<String> isbnList,
     Instant modifiedDate) {
 
+  public static final List<InstanceType> PUBLICATION_INSTANCE_TYPES_REQUIRING_ISBN =
+      List.of(
+          InstanceType.ACADEMIC_CHAPTER,
+          InstanceType.ACADEMIC_COMMENTARY,
+          InstanceType.ACADEMIC_MONOGRAPH);
+
   public PublicationDto {
     requireNonNull(id, "Required field 'id' is null");
     requireNonNull(status, "Required field 'status' is null");
@@ -60,7 +66,7 @@ public record PublicationDto(
     shouldNotBeNull(topLevelOrganizations, "Required field 'topLevelOrganizations' is null");
 
     shouldBeTrue(publicationType().isValid(), "Required field 'publicationType' is invalid");
-    shouldHaveIsbnWhenAcademicChapter();
+    shouldHaveIsbn();
     contributors.forEach(ContributorDto::validate);
   }
 
@@ -72,10 +78,12 @@ public record PublicationDto(
     return new Builder();
   }
 
-  private void shouldHaveIsbnWhenAcademicChapter() {
-    if (ACADEMIC_CHAPTER.equals(publicationType())) {
+  private void shouldHaveIsbn() {
+    if (PUBLICATION_INSTANCE_TYPES_REQUIRING_ISBN.contains(publicationType())) {
       shouldNotBeEmpty(
-          isbnList(), "Required field 'isbnList' must not be empty for AcademicChapter");
+          isbnList(),
+          "Required field 'isbnList' must not be empty for %s"
+              .formatted(publicationType().getValue()));
     }
   }
 

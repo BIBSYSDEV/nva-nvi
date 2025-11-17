@@ -253,7 +253,8 @@
             "id": "https://api.dev.nva.aws.unit.no/publication-channels/d1a0860e-f246-4c8a-a725-98e6bb4fc022",
             "type": "Publisher",
             "scientificValue": "LevelOne"
-          }
+          },
+          "isbnList" : [ "isbn_ignored_for_validation" ]
         },
         "publicationInstance": {
           "type": "AcademicCommentary"

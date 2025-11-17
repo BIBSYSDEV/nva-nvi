@@ -121,6 +121,15 @@ WHERE {
     OPTIONAL { ?channel :onlineIssn ?onlineIssn }
     OPTIONAL { ?channel :printIssn ?printIssn }
   } UNION {
+      ?publication :entityDescription/:reference/:publicationContext ?publicationContext .
+      {
+        ?publicationContext :isbn ?isbnList .
+      } UNION {
+        ?publicationContext :additionalIdentifier ?additionalId .
+        ?additionalId :sourceName "ISBN" ;
+                      :value ?isbnList .
+      }
+  } UNION {
       ?publication :entityDescription ?entityDescription .
       ?entityDescription :reference ?reference .
       ?reference :publicationContext ?anthology .
