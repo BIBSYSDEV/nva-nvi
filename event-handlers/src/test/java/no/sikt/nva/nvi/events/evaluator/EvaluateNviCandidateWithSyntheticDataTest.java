@@ -19,7 +19,7 @@ import static no.sikt.nva.nvi.test.TestConstants.JOURNAL_TYPE;
 import static no.sikt.nva.nvi.test.TestConstants.LEVEL_ONE;
 import static no.sikt.nva.nvi.test.TestConstants.PUBLISHER_TYPE;
 import static no.sikt.nva.nvi.test.TestConstants.SERIES_TYPE;
-import static no.unit.nva.testutils.RandomDataGenerator.randomString;
+import static no.unit.nva.testutils.RandomDataGenerator.randomIsbn13;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -53,6 +53,10 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
   private SampleExpandedPublicationFactory factory;
   private Organization nviOrganization;
   private Organization nonNviOrganization;
+
+  public static Stream<Arguments> isbnRequiringTypeProvider() {
+    return Stream.of(Arguments.of("AcademicChapter", "AcademicMonograph", "AcademicCommentary"));
+  }
 
   @BeforeEach
   void setup() {
@@ -211,7 +215,7 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"AcademicChapter", "AcademicMonograph", "AcademicCommentary"})
+  @MethodSource("isbnRequiringTypeProvider")
   void shouldEvaluateAsNonCandidateWhenPublicationRequiringIsbnIsWithoutIsbn(
       String publicationType) {
     var publication =
@@ -227,14 +231,14 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"AcademicChapter", "AcademicMonograph", "AcademicCommentary"})
+  @MethodSource("isbnRequiringTypeProvider")
   void shouldEvaluateAsCandidateResourcesRequiringIsbnWithIsbn(String publicationType) {
     var publication =
         factory
             .withPublicationType(publicationType)
             .withContributor(verifiedCreatorFrom(nviOrganization))
             .withPublicationChannel(PUBLISHER_TYPE, LEVEL_ONE)
-            .withIsbnList(List.of(randomString()))
+            .withIsbnList(List.of(randomIsbn13()))
             .getExpandedPublication();
 
     var candidate = getEvaluationResult(publication);

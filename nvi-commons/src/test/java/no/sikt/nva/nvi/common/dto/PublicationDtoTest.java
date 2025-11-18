@@ -9,42 +9,48 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.exceptions.ValidationException;
 import no.sikt.nva.nvi.common.model.InstanceType;
 import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class PublicationDtoTest {
 
+  public static Stream<Arguments> isbnRequiringTypeProvider() {
+    return Stream.of(Arguments.of("AcademicChapter", "AcademicMonograph", "AcademicCommentary"));
+  }
+
   @ParameterizedTest
-  @ValueSource(strings = {"AcademicChapter", "AcademicMonograph", "AcademicCommentary"})
-  void shouldThrowValidationExceptionWhenPublicationIsAcademicChapterAndIsMissingIsbn(
-      String publicationType) {
+  @MethodSource("isbnRequiringTypeProvider")
+  void shouldThrowValidationExceptionWhenPublicationHasInstanceTypeAndIsMissingIsbn(
+      String instanceType) {
     var publication =
-        createPublicationDto(Collections.emptyList(), InstanceType.parse(publicationType));
+        createPublicationDto(Collections.emptyList(), InstanceType.parse(instanceType));
 
     Executable executable = publication::validate;
     var exception = assertThrows(ValidationException.class, executable);
 
     assertEquals(
-        "Required field 'isbnList' must not be empty for %s".formatted(publicationType),
+        "Required field 'isbnList' must not be empty for %s".formatted(instanceType),
         exception.getMessage());
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"AcademicChapter", "AcademicMonograph", "AcademicCommentary"})
+  @MethodSource("isbnRequiringTypeProvider")
   void
-      shouldThrowValidationExceptionWhenPublicationIsAcademicChapterAndHasIsbnListWithNullValuesOnly(
-          String publicationType) {
+      shouldThrowValidationExceptionWhenPublicationHasInstanceTypeTypeAndHasIsbnListWithNullValuesOnly(
+          String instanceType) {
     var publication =
-        createPublicationDto(Arrays.asList(null, null), InstanceType.parse(publicationType));
+        createPublicationDto(Arrays.asList(null, null), InstanceType.parse(instanceType));
 
     Executable executable = publication::validate;
     var exception = assertThrows(ValidationException.class, executable);
 
     assertEquals(
-        "Required field 'isbnList' must not be empty for %s".formatted(publicationType),
+        "Required field 'isbnList' must not be empty for %s".formatted(instanceType),
         exception.getMessage());
   }
 

@@ -66,7 +66,7 @@ public record PublicationDto(
     shouldNotBeNull(topLevelOrganizations, "Required field 'topLevelOrganizations' is null");
 
     shouldBeTrue(publicationType().isValid(), "Required field 'publicationType' is invalid");
-    shouldHaveIsbn();
+    validateIsbnWhenRequired();
     contributors.forEach(ContributorDto::validate);
   }
 
@@ -78,7 +78,7 @@ public record PublicationDto(
     return new Builder();
   }
 
-  private void shouldHaveIsbn() {
+  private void validateIsbnWhenRequired() {
     if (PUBLICATION_INSTANCE_TYPES_REQUIRING_ISBN.contains(publicationType())) {
       shouldNotBeEmpty(
           isbnList(),
