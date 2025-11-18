@@ -184,7 +184,7 @@
         "type" : "Reference",
         "publicationContext" : {
           "type" : "Book",
-          "isbnList" : [ "9783161484100" ],
+          "isbnList" : [ "isbn_ignored_for_validation" ],
           "publisher" : {
             "id" : "https://api.sandbox.nva.aws.unit.no/publication-channels-v2/publisher/DF3FB68B-F613-4D6F-90D5-38FEC2A61A41/2025",
             "type" : "Publisher",

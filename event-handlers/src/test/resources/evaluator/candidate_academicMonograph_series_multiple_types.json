@@ -262,7 +262,8 @@
               "Journal"
             ],
             "scientificValue": "LevelOne"
-          }
+          },
+          "isbnList" : [ "isbn_ignored_for_validation" ]
         },
         "publicationInstance": {
           "type": "AcademicMonograph"
