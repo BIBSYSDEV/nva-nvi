@@ -121,19 +121,20 @@ WHERE {
     OPTIONAL { ?channel :onlineIssn ?onlineIssn }
     OPTIONAL { ?channel :printIssn ?printIssn }
   } UNION {
-      {
-        ?publication :entityDescription/:reference/:publicationContext ?context .
-      } UNION {
-        ?publication :entityDescription/:reference/:publicationContext/:entityDescription/:reference/:publicationContext ?context .
-      }
-      {
-        ?context :isbn ?isbnList .
-      } UNION {
-        ?context :additionalIdentifier ?additionalId .
-        ?additionalId :sourceName "ISBN" ;
-                      :value ?isbnList .
-      }
+    ?reference a :Reference .
+    {
+      ?reference :publicationContext ?publicationContext .
     } UNION {
+      ?reference :publicationContext/:entityDescription/:reference/:publicationContext ?publicationContext .
+    }
+    {
+      ?publicationContext :isbn ?isbnList .
+    } UNION {
+      ?publicationContext :additionalIdentifier ?additionalId .
+      ?additionalId :sourceName "ISBN" ;
+                    :value ?isbnList .
+    }
+  } UNION {
     # Check whether the publication is 'applicable', i.e. can be an NVI candidate
     ?publication a :Publication ;
     :status ?status .
