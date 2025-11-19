@@ -87,6 +87,7 @@ public class ExamplePublications {
                   TOP_LEVEL_ORGANIZATION_SIKT,
                   TOP_LEVEL_ORGANIZATION_NTNU,
                   EXAMPLE_TOP_LEVEL_ORGANIZATION_3))
+          .withIsbnList(List.of("isbn_ignored_for_validation"))
           .build();
 
   private static final String ISBN = "isbn_ignored_for_validation";

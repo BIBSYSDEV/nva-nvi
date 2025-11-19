@@ -121,19 +121,16 @@ WHERE {
     OPTIONAL { ?channel :onlineIssn ?onlineIssn }
     OPTIONAL { ?channel :printIssn ?printIssn }
   } UNION {
-      ?publication :entityDescription ?entityDescription .
-      ?entityDescription :reference ?reference .
-      ?reference :publicationContext ?anthology .
-      ?anthology :entityDescription ?anthologyEntityDescription .
-      ?anthologyEntityDescription :reference ?anthologyReference .
-      ?anthologyReference :publicationContext ?nestedPublicationContext .
-      ?nestedPublicationContext :isbn ?isbnList .
-  } UNION {
-    ?publication :entityDescription/:reference/:publicationContext/:entityDescription/:reference/:publicationContext ?nestedPublicationContext .
+    ?reference a :Reference .
     {
-      ?nestedPublicationContext :isbn ?isbnList .
+      ?reference :publicationContext ?publicationContext .
     } UNION {
-      ?nestedPublicationContext :additionalIdentifier ?additionalId .
+      ?reference :publicationContext/:entityDescription/:reference/:publicationContext ?publicationContext .
+    }
+    {
+      ?publicationContext :isbn ?isbnList .
+    } UNION {
+      ?publicationContext :additionalIdentifier ?additionalId .
       ?additionalId :sourceName "ISBN" ;
                     :value ?isbnList .
     }
