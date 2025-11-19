@@ -7,6 +7,7 @@ import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_PUBLIC
 import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_PUBLICATION_1_PATH;
 import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_PUBLICATION_2;
 import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_PUBLICATION_2_PATH;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_PUBLICATION_WITH_DUPLICATE_LABEL_PATH;
 import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_WITH_DUPLICATE_DATE;
 import static nva.commons.core.ioutils.IoUtils.stringFromResources;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -88,6 +89,10 @@ class PublicationLoaderServiceTest {
     return Stream.of(
         argumentSet("Minimal example", EXAMPLE_PUBLICATION_1_PATH, EXAMPLE_PUBLICATION_1),
         argumentSet("Full example", EXAMPLE_PUBLICATION_2_PATH, EXAMPLE_PUBLICATION_2),
+        argumentSet(
+            "Duplicate label example",
+            EXAMPLE_PUBLICATION_WITH_DUPLICATE_LABEL_PATH,
+            EXAMPLE_PUBLICATION_1),
         argumentSet("Academic chapter", EXAMPLE_ACADEMIC_CHAPTER_PATH, EXAMPLE_ACADEMIC_CHAPTER));
   }
 }

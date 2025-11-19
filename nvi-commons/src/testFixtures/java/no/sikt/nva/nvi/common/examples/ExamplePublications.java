@@ -31,6 +31,8 @@ public class ExamplePublications {
       "expandedPublications/validNviCandidate1.json";
   public static final String EXAMPLE_PUBLICATION_2_PATH =
       "expandedPublications/validNviCandidate2.json";
+  public static final String EXAMPLE_PUBLICATION_WITH_DUPLICATE_LABEL_PATH =
+      "expandedPublications/validNviCandidateWithDuplicateLabel.json";
   public static final String EXAMPLE_ACADEMIC_CHAPTER_PATH =
       "expandedPublications/applicableAcademicChapter.json";
   public static final String EXAMPLE_INVALID_DRAFT = "expandedPublications/invalidDraft.json";
