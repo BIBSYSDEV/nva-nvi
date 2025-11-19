@@ -170,8 +170,8 @@ class FetchInstitutionStatusAggregationHandlerTest {
         stringFromResources(Path.of("institution_report_with_sub_organization.template"))
             .replace("__TOP_LEVEL_ORGANIZATION_ID__", OUR_ORGANIZATION.toString())
             .replace("__TOP_LEVEL_ORGANIZATION_POINTS__", expectedTotalPoints.toString())
-            .replace("__SUB_ORGANIZATION_ID", OUR_SUB_ORGANIZATION.toString())
-            .replace("__SUB_ORGANIZATION_POINTS", expectedSubOrganizationPoints.toString());
+            .replace("__SUB_ORGANIZATION_ID__", OUR_SUB_ORGANIZATION.toString())
+            .replace("__SUB_ORGANIZATION_POINTS__", expectedSubOrganizationPoints.toString());
 
     var response = handleRequest();
 
@@ -196,8 +196,8 @@ class FetchInstitutionStatusAggregationHandlerTest {
         stringFromResources(Path.of("institution_report_split_points.template"))
             .replace("__TOP_LEVEL_ORGANIZATION_ID__", OUR_ORGANIZATION.toString())
             .replace("__TOP_LEVEL_ORGANIZATION_POINTS__", expectedTotalPoints.toString())
-            .replace("__SUB_ORGANIZATION_ID", OUR_SUB_ORGANIZATION.toString())
-            .replace("__SUB_ORGANIZATION_POINTS", expectedTotalPoints.toString());
+            .replace("__SUB_ORGANIZATION_ID__", OUR_SUB_ORGANIZATION.toString())
+            .replace("__SUB_ORGANIZATION_POINTS__", expectedTotalPoints.toString());
 
     var response = handleRequest();
 

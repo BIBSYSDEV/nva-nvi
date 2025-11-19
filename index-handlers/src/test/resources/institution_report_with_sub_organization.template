@@ -25,7 +25,7 @@
       }
     }
   },
-  "__SUB_ORGANIZATION_ID" : {
+  "__SUB_ORGANIZATION_ID__" : {
     "docCount" : 4,
     "dispute" : {
       "docCount" : 0
@@ -33,7 +33,7 @@
     "points" : {
       "docCount" : 3,
       "total" : {
-        "value" : __SUB_ORGANIZATION_POINTS
+        "value" : __SUB_ORGANIZATION_POINTS__
       }
     },
     "status" : {
