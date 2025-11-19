@@ -136,7 +136,7 @@ class FetchInstitutionStatusAggregationHandlerTest {
         getExpectedTotalPointsForTopLevelOrganization(OUR_ORGANIZATION, ourDocuments);
 
     var expectedResponse =
-        stringFromResources(Path.of("institution_report.json"))
+        stringFromResources(Path.of("institution_report.template"))
             .replace("__TOP_LEVEL_ORGANIZATION_ID__", OUR_ORGANIZATION.toString())
             .replace("__TOP_LEVEL_ORGANIZATION_POINTS__", expectedTotalPoints.toString());
 
@@ -167,7 +167,7 @@ class FetchInstitutionStatusAggregationHandlerTest {
             OUR_ORGANIZATION, documentsForSubOrganization);
 
     var expectedResponse =
-        stringFromResources(Path.of("institution_report_with_sub_organization.json"))
+        stringFromResources(Path.of("institution_report_with_sub_organization.template"))
             .replace("__TOP_LEVEL_ORGANIZATION_ID__", OUR_ORGANIZATION.toString())
             .replace("__TOP_LEVEL_ORGANIZATION_POINTS__", expectedTotalPoints.toString())
             .replace("__SUB_ORGANIZATION_ID", OUR_SUB_ORGANIZATION.toString())
@@ -193,7 +193,7 @@ class FetchInstitutionStatusAggregationHandlerTest {
 
     // FIXME: Asserting current behavior and not the correct behavior, see NP-50248
     var expectedResponse =
-        stringFromResources(Path.of("institution_report_split_points.json"))
+        stringFromResources(Path.of("institution_report_split_points.template"))
             .replace("__TOP_LEVEL_ORGANIZATION_ID__", OUR_ORGANIZATION.toString())
             .replace("__TOP_LEVEL_ORGANIZATION_POINTS__", expectedTotalPoints.toString())
             .replace("__SUB_ORGANIZATION_ID", OUR_SUB_ORGANIZATION.toString())
