@@ -18,6 +18,11 @@ import no.sikt.nva.nvi.index.model.document.Approval;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.InstitutionPoints;
 
+/**
+ * Test utility for building Approval instances with related values kept in sync automatically.
+ * Creator points are summed to calculate total institution points, and involved organizations are
+ * populated based on creator affiliations, ensuring test data consistency.
+ */
 public class ApprovalFactory {
   private final Map<URI, BigDecimal> creatorPoints;
   private final URI topLevelOrganization;
