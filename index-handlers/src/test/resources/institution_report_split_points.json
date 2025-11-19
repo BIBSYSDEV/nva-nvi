@@ -1,0 +1,36 @@
+{
+  "__TOP_LEVEL_ORGANIZATION_ID__" : {
+    "docCount" : 1,
+    "dispute" : {
+      "docCount" : 0
+    },
+    "points" : {
+      "docCount" : 1,
+      "total" : {
+        "value" : __TOP_LEVEL_ORGANIZATION_POINTS__
+      }
+    },
+    "status" : {
+      "Pending" : {
+        "docCount" : 1
+      }
+    }
+  },
+  "__SUB_ORGANIZATION_ID" : {
+    "docCount" : 1,
+    "dispute" : {
+      "docCount" : 0
+    },
+    "points" : {
+      "docCount" : 1,
+      "total" : {
+        "value" : __SUB_ORGANIZATION_POINTS
+      }
+    },
+    "status" : {
+      "Pending" : {
+        "docCount" : 1
+      }
+    }
+  }
+}
