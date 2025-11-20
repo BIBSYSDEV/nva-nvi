@@ -258,7 +258,8 @@
             "id": "https://api.dev.nva.aws.unit.no/publication-channels/series/490845/2023",
             "type": "Series",
             "scientificValue": "Unassigned"
-          }
+          },
+          "isbnList" : [ "isbn_ignored_for_validation" ]
         },
         "publicationInstance": {
           "type": "AcademicMonograph"
