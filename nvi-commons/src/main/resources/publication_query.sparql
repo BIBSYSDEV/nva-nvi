@@ -177,7 +177,13 @@ WHERE {
     ?organization a :Organization .
     OPTIONAL { ?organization :partOf ?parent }
     OPTIONAL { ?organization :hasPart ?child }
-    OPTIONAL { ?organization :label ?label }
+    OPTIONAL {
+      ?organization :label ?label .
+      FILTER NOT EXISTS {
+        ?organization :label ?otherLabel .
+        FILTER(LANG(?otherLabel) = LANG(?label) && STRLEN(STR(?otherLabel)) > STRLEN(STR(?label)))
+      }
+    }
     OPTIONAL { ?organization :country ?country }
   } UNION {
     # Find all contributors with the role of Creator
