@@ -32,10 +32,12 @@ dependencies {
     implementation project(':nvi-commons')
     testFixturesAnnotationProcessor nvaCatalog.errorprone
     testImplementation libs.dynamodDbLocal
+    testImplementation(libs.jsonassert)
     testImplementation nvaCatalog.assertj.core
     testImplementation nvaCatalog.bundles.testing.cucumber
     testImplementation nvaCatalog.bundles.testing.junit
     testImplementation nvaCatalog.bundles.testing.testcontainers
+    testImplementation nvaCatalog.datafaker
     testImplementation nvaCatalog.hamcrest
     testImplementation nvaCatalog.mockito.core
     testImplementation nvaCatalog.opencsv

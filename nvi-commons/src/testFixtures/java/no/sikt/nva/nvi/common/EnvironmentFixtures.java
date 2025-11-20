@@ -148,6 +148,10 @@ public enum EnvironmentFixtures {
     return getDefaultEnvironmentBuilder().with(ALLOWED_ORIGIN).with(COGNITO_HOST).build();
   }
 
+  public static FakeEnvironment getFetchInstitutionStatusAggregationHandlerEnvironment() {
+    return getDefaultEnvironmentBuilder().with(ALLOWED_ORIGIN).build();
+  }
+
   public static URI getCandidateContextUri() {
     return UriWrapper.fromHost(API_HOST.getValue())
         .addChild(CUSTOM_DOMAIN_BASE_PATH.getValue(), "context")
