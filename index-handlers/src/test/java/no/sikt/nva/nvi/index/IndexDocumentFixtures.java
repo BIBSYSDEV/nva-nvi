@@ -27,8 +27,8 @@ import java.util.Random;
 import java.util.Set;
 import java.util.stream.IntStream;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
-import no.sikt.nva.nvi.index.model.document.Approval;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
+import no.sikt.nva.nvi.index.model.document.ApprovalView;
 import no.sikt.nva.nvi.index.model.document.ContributorType;
 import no.sikt.nva.nvi.index.model.document.InstitutionPointsView;
 import no.sikt.nva.nvi.index.model.document.InstitutionPointsView.CreatorAffiliationPointsView;
@@ -88,7 +88,7 @@ public final class IndexDocumentFixtures {
   }
 
   public static NviCandidateIndexDocument.Builder randomIndexDocumentBuilder(
-      PublicationDetails publicationDetails, List<Approval> approvals) {
+      PublicationDetails publicationDetails, List<ApprovalView> approvals) {
     var publicationYear = publicationDetails.publicationDate().year();
     var reportingPeriod = new ReportingPeriod(publicationYear);
     var candidateId = randomUUID();
@@ -127,25 +127,26 @@ public final class IndexDocumentFixtures {
         .withContributors(List.of(randomNviContributor(randomOrganizationId())));
   }
 
-  public static List<Approval> randomApprovalList() {
+  public static List<ApprovalView> randomApprovalList() {
     return IntStream.range(0, 5).boxed().map(i -> randomApproval()).toList();
   }
 
-  public static Approval randomApproval() {
+  public static ApprovalView randomApproval() {
     return randomApprovalBuilder(randomOrganizationId()).build();
   }
 
-  public static Approval randomApproval(String assignee, URI topLevelOrganization) {
+  public static ApprovalView randomApproval(String assignee, URI topLevelOrganization) {
     return randomApprovalBuilder(topLevelOrganization).withAssignee(assignee).build();
   }
 
-  public static Approval.Builder randomApprovalBuilder(URI topLevelOrganization) {
+  public static ApprovalView.Builder randomApprovalBuilder(URI topLevelOrganization) {
     var creatorAffiliation = randomOrganizationId();
     var creatorPoint =
         new CreatorAffiliationPointsView(randomUri(), creatorAffiliation, randomBigDecimal(SCALE));
     var institutionPoints =
-        new InstitutionPointsView(topLevelOrganization, randomBigDecimal(SCALE), List.of(creatorPoint));
-    return Approval.builder()
+        new InstitutionPointsView(
+            topLevelOrganization, randomBigDecimal(SCALE), List.of(creatorPoint));
+    return ApprovalView.builder()
         .withInstitutionId(topLevelOrganization)
         .withLabels(emptyMap())
         .withAssignee(randomString())

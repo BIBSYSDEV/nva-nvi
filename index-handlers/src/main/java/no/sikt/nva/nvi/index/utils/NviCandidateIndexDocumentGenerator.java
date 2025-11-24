@@ -58,6 +58,7 @@ import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
+import no.sikt.nva.nvi.index.model.document.ApprovalView;
 import no.sikt.nva.nvi.index.model.document.Contributor;
 import no.sikt.nva.nvi.index.model.document.ContributorType;
 import no.sikt.nva.nvi.index.model.document.InstitutionPointsView;
@@ -159,8 +160,7 @@ public final class NviCandidateIndexDocumentGenerator {
   }
 
   private NviCandidateIndexDocument buildDocument(
-      List<no.sikt.nva.nvi.index.model.document.Approval> approvals,
-      PublicationDetails expandedPublicationDetails) {
+      List<ApprovalView> approvals, PublicationDetails expandedPublicationDetails) {
     return NviCandidateIndexDocument.builder()
         .withId(candidate.getId())
         .withContext(candidate.getContextUri())
@@ -293,8 +293,7 @@ public final class NviCandidateIndexDocumentGenerator {
     return approvals.values().stream();
   }
 
-  private List<no.sikt.nva.nvi.index.model.document.Approval> createApprovals(
-      List<ContributorType> expandedContributors) {
+  private List<ApprovalView> createApprovals(List<ContributorType> expandedContributors) {
     return streamValues(candidate.approvals())
         .map(approval -> toApproval(approval, expandedContributors))
         .toList();
@@ -314,9 +313,8 @@ public final class NviCandidateIndexDocumentGenerator {
         .orElseThrow();
   }
 
-  private no.sikt.nva.nvi.index.model.document.Approval toApproval(
-      Approval approval, List<ContributorType> expandedContributors) {
-    return no.sikt.nva.nvi.index.model.document.Approval.builder()
+  private ApprovalView toApproval(Approval approval, List<ContributorType> expandedContributors) {
+    return ApprovalView.builder()
         .withInstitutionId(approval.institutionId())
         .withLabels(extractLabels(approval))
         .withApprovalStatus(getApprovalStatus(approval))

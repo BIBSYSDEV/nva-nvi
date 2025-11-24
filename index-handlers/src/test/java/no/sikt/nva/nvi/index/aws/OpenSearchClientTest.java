@@ -49,7 +49,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.index.OpenSearchContainerContext;
-import no.sikt.nva.nvi.index.model.document.Approval;
+import no.sikt.nva.nvi.index.model.document.ApprovalView;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.document.PublicationDetails;
 import no.sikt.nva.nvi.index.model.document.ReportingPeriod;
@@ -825,7 +825,7 @@ class OpenSearchClientTest {
     return randomIndexDocumentBuilder()
         .withApprovals(
             List.of(
-                Approval.builder()
+                ApprovalView.builder()
                     .withInstitutionId(
                         URI.create(
                             "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0"))

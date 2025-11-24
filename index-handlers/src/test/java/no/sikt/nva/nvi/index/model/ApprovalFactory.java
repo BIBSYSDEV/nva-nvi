@@ -14,8 +14,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
-import no.sikt.nva.nvi.index.model.document.Approval;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
+import no.sikt.nva.nvi.index.model.document.ApprovalView;
 import no.sikt.nva.nvi.index.model.document.InstitutionPointsView;
 
 /**
@@ -47,12 +47,12 @@ public class ApprovalFactory {
     this.globalApprovalStatus = globalApprovalStatus;
   }
 
-  public Approval build() {
+  public ApprovalView build() {
     return getBuilder().build();
   }
 
-  public Approval.Builder getBuilder() {
-    return Approval.builder()
+  public ApprovalView.Builder getBuilder() {
+    return ApprovalView.builder()
         .withInstitutionId(topLevelOrganization)
         .withLabels(emptyMap())
         .withAssignee(randomString())

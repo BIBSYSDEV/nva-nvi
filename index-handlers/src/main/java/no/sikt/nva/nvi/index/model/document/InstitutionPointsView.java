@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.util.List;
+import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 
 @JsonSerialize
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
@@ -15,8 +16,7 @@ public record InstitutionPointsView(
     BigDecimal institutionPoints,
     List<CreatorAffiliationPointsView> creatorAffiliationPoints) {
 
-  public static InstitutionPointsView from(
-      no.sikt.nva.nvi.common.service.model.InstitutionPoints institutionPoints) {
+  public static InstitutionPointsView from(InstitutionPoints institutionPoints) {
     return new InstitutionPointsView(
         institutionPoints.institutionId(),
         institutionPoints.institutionPoints(),
@@ -35,8 +35,7 @@ public record InstitutionPointsView(
   public record CreatorAffiliationPointsView(URI nviCreator, URI affiliationId, BigDecimal points) {
 
     public static CreatorAffiliationPointsView from(
-        no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints
-            creatorAffiliationPoints) {
+        InstitutionPoints.CreatorAffiliationPoints creatorAffiliationPoints) {
       return new CreatorAffiliationPointsView(
           creatorAffiliationPoints.nviCreator(),
           creatorAffiliationPoints.affiliationId(),

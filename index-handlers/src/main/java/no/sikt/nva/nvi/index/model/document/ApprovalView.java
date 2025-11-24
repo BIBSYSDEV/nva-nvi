@@ -16,7 +16,7 @@ import no.sikt.nva.nvi.index.model.document.InstitutionPointsView.CreatorAffilia
 @JsonSerialize
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonTypeName("Approval")
-public record Approval(
+public record ApprovalView(
     URI institutionId,
     Map<String, String> labels,
     ApprovalStatus approvalStatus,
@@ -39,12 +39,14 @@ public record Approval(
         .orElse(BigDecimal.ZERO);
   }
 
-  private static Predicate<CreatorAffiliationPointsView> hasContributor(NviContributor nviContributor) {
+  private static Predicate<CreatorAffiliationPointsView> hasContributor(
+      NviContributor nviContributor) {
     return creatorAffiliationPoints ->
         creatorAffiliationPoints.nviCreator().toString().equals(nviContributor.id());
   }
 
-  private static Predicate<CreatorAffiliationPointsView> hasAffiliationId(NviOrganization affiliation) {
+  private static Predicate<CreatorAffiliationPointsView> hasAffiliationId(
+      NviOrganization affiliation) {
     return creatorAffiliationPoints ->
         creatorAffiliationPoints.affiliationId().equals(affiliation.id());
   }
@@ -96,8 +98,8 @@ public record Approval(
       return this;
     }
 
-    public Approval build() {
-      return new Approval(
+    public ApprovalView build() {
+      return new ApprovalView(
           institutionId,
           labels,
           approvalStatus,
