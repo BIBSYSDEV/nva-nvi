@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
-import no.sikt.nva.nvi.index.model.document.InstitutionPoints.CreatorAffiliationPoints;
+import no.sikt.nva.nvi.index.model.document.InstitutionPointsView.CreatorAffiliationPoints;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
@@ -20,7 +20,7 @@ public record Approval(
     URI institutionId,
     Map<String, String> labels,
     ApprovalStatus approvalStatus,
-    InstitutionPoints points,
+    InstitutionPointsView points,
     Set<URI> involvedOrganizations,
     String assignee,
     GlobalApprovalStatus globalApprovalStatus) {
@@ -54,7 +54,7 @@ public record Approval(
     private URI institutionId;
     private Map<String, String> labels;
     private ApprovalStatus approvalStatus;
-    private InstitutionPoints points;
+    private InstitutionPointsView points;
     private Set<URI> involvedOrganizations;
     private String assignee;
     private GlobalApprovalStatus globalApprovalStatus;
@@ -76,7 +76,7 @@ public record Approval(
       return this;
     }
 
-    public Builder withPoints(InstitutionPoints points) {
+    public Builder withPoints(InstitutionPointsView points) {
       this.points = points;
       return this;
     }

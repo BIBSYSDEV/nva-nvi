@@ -60,7 +60,7 @@ import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.Contributor;
 import no.sikt.nva.nvi.index.model.document.ContributorType;
-import no.sikt.nva.nvi.index.model.document.InstitutionPoints;
+import no.sikt.nva.nvi.index.model.document.InstitutionPointsView;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.document.NviContributor;
 import no.sikt.nva.nvi.index.model.document.NviOrganization;
@@ -181,10 +181,10 @@ public final class NviCandidateIndexDocumentGenerator {
         .build();
   }
 
-  private InstitutionPoints getInstitutionPoints(Approval approval) {
+  private InstitutionPointsView getInstitutionPoints(Approval approval) {
     return candidate
         .getInstitutionPoints(approval.institutionId())
-        .map(InstitutionPoints::from)
+        .map(InstitutionPointsView::from)
         .orElse(null);
   }
 

@@ -33,7 +33,7 @@ import no.sikt.nva.nvi.index.OpenSearchContainerContext;
 import no.sikt.nva.nvi.index.model.ApprovalFactory;
 import no.sikt.nva.nvi.index.model.document.Approval;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
-import no.sikt.nva.nvi.index.model.document.InstitutionPoints;
+import no.sikt.nva.nvi.index.model.document.InstitutionPointsView;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
@@ -221,7 +221,7 @@ class FetchInstitutionStatusAggregationHandlerTest {
         .filter(approval -> organization.equals(approval.institutionId()))
         .filter(not(approval -> ApprovalStatus.REJECTED.equals(approval.approvalStatus())))
         .map(Approval::points)
-        .map(InstitutionPoints::institutionPoints)
+        .map(InstitutionPointsView::institutionPoints)
         .reduce(BigDecimal.ZERO, BigDecimal::add);
   }
 

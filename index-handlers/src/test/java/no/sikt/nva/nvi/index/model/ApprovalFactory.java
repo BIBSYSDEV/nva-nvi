@@ -16,7 +16,7 @@ import java.util.Set;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.Approval;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
-import no.sikt.nva.nvi.index.model.document.InstitutionPoints;
+import no.sikt.nva.nvi.index.model.document.InstitutionPointsView;
 
 /**
  * Test utility for building Approval instances with related values kept in sync automatically.
@@ -93,21 +93,21 @@ public class ApprovalFactory {
     return Set.copyOf(involvedOrganizations);
   }
 
-  private InstitutionPoints getInstitutionPoints() {
+  private InstitutionPointsView getInstitutionPoints() {
     var creatorAffiliationPoints =
         creatorPoints.entrySet().stream()
             .map(
                 tuple ->
-                    new InstitutionPoints.CreatorAffiliationPoints(
+                    new InstitutionPointsView.CreatorAffiliationPoints(
                         randomUri(), tuple.getKey(), tuple.getValue()))
             .toList();
 
     var totalPoints =
         creatorAffiliationPoints.stream()
-            .map(InstitutionPoints.CreatorAffiliationPoints::points)
+            .map(InstitutionPointsView.CreatorAffiliationPoints::points)
             .reduce(BigDecimal.ZERO, BigDecimal::add)
             .setScale(SCALE, RoundingMode.HALF_UP);
 
-    return new InstitutionPoints(topLevelOrganization, totalPoints, creatorAffiliationPoints);
+    return new InstitutionPointsView(topLevelOrganization, totalPoints, creatorAffiliationPoints);
   }
 }

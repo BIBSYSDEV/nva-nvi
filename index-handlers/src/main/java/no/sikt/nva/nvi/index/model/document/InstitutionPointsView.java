@@ -10,14 +10,14 @@ import java.util.List;
 @JsonSerialize
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonTypeName("InstitutionPoints")
-public record InstitutionPoints(
+public record InstitutionPointsView(
     URI institutionId,
     BigDecimal institutionPoints,
     List<CreatorAffiliationPoints> creatorAffiliationPoints) {
 
-  public static InstitutionPoints from(
+  public static InstitutionPointsView from(
       no.sikt.nva.nvi.common.service.model.InstitutionPoints institutionPoints) {
-    return new InstitutionPoints(
+    return new InstitutionPointsView(
         institutionPoints.institutionId(),
         institutionPoints.institutionPoints(),
         institutionPoints.creatorAffiliationPoints().stream()
@@ -102,8 +102,8 @@ public record InstitutionPoints(
       return this;
     }
 
-    public InstitutionPoints build() {
-      return new InstitutionPoints(institutionId, institutionPoints, creatorAffiliationPoints);
+    public InstitutionPointsView build() {
+      return new InstitutionPointsView(institutionId, institutionPoints, creatorAffiliationPoints);
     }
   }
 }

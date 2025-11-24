@@ -41,8 +41,8 @@ import no.sikt.nva.nvi.common.utils.JsonUtils;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.Contributor;
 import no.sikt.nva.nvi.index.model.document.ContributorType;
-import no.sikt.nva.nvi.index.model.document.InstitutionPoints;
-import no.sikt.nva.nvi.index.model.document.InstitutionPoints.CreatorAffiliationPoints;
+import no.sikt.nva.nvi.index.model.document.InstitutionPointsView;
+import no.sikt.nva.nvi.index.model.document.InstitutionPointsView.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument.Builder;
 import no.sikt.nva.nvi.index.model.document.NviContributor;
@@ -342,10 +342,10 @@ public final class IndexDocumentTestUtils {
         .build();
   }
 
-  private static InstitutionPoints getInstitutionPoints(Approval approval, Candidate candidate) {
+  private static InstitutionPointsView getInstitutionPoints(Approval approval, Candidate candidate) {
     return candidate
         .getInstitutionPoints(approval.institutionId())
-        .map(InstitutionPoints::from)
+        .map(InstitutionPointsView::from)
         .orElse(null);
   }
 
@@ -495,7 +495,7 @@ public final class IndexDocumentTestUtils {
   private static no.sikt.nva.nvi.index.model.document.Approval.Builder getApprovalBuilder(
       URI institutionId,
       GlobalApprovalStatus globalApprovalStatus,
-      InstitutionPoints institutionPoints,
+      InstitutionPointsView institutionPoints,
       Set<URI> involvedOrganizations) {
     return no.sikt.nva.nvi.index.model.document.Approval.builder()
         .withInstitutionId(institutionId)
@@ -514,7 +514,7 @@ public final class IndexDocumentTestUtils {
         .toList();
   }
 
-  private static InstitutionPoints generateInstitutionPoints(
+  private static InstitutionPointsView generateInstitutionPoints(
       List<NviContributor> contributors, URI institutionId) {
     var creatorAffiliationPoints =
         contributors.stream()
@@ -523,9 +523,9 @@ public final class IndexDocumentTestUtils {
     return getInstitutionPointsBuilder(institutionId, creatorAffiliationPoints).build();
   }
 
-  private static InstitutionPoints.Builder getInstitutionPointsBuilder(
+  private static InstitutionPointsView.Builder getInstitutionPointsBuilder(
       URI institutionId, List<CreatorAffiliationPoints> creatorAffiliationPoints) {
-    return InstitutionPoints.builder()
+    return InstitutionPointsView.builder()
         .withInstitutionId(institutionId)
         .withInstitutionPoints(randomBigDecimal())
         .withCreatorAffiliationPoints(creatorAffiliationPoints);
