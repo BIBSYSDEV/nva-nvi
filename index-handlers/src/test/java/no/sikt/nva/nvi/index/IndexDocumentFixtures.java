@@ -31,7 +31,7 @@ import no.sikt.nva.nvi.index.model.document.Approval;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.ContributorType;
 import no.sikt.nva.nvi.index.model.document.InstitutionPointsView;
-import no.sikt.nva.nvi.index.model.document.InstitutionPointsView.CreatorAffiliationPoints;
+import no.sikt.nva.nvi.index.model.document.InstitutionPointsView.CreatorAffiliationPointsView;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument.Builder;
 import no.sikt.nva.nvi.index.model.document.PublicationDetails;
@@ -142,7 +142,7 @@ public final class IndexDocumentFixtures {
   public static Approval.Builder randomApprovalBuilder(URI topLevelOrganization) {
     var creatorAffiliation = randomOrganizationId();
     var creatorPoint =
-        new CreatorAffiliationPoints(randomUri(), creatorAffiliation, randomBigDecimal(SCALE));
+        new CreatorAffiliationPointsView(randomUri(), creatorAffiliation, randomBigDecimal(SCALE));
     var institutionPoints =
         new InstitutionPointsView(topLevelOrganization, randomBigDecimal(SCALE), List.of(creatorPoint));
     return Approval.builder()

@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
-import no.sikt.nva.nvi.index.model.document.InstitutionPointsView.CreatorAffiliationPoints;
+import no.sikt.nva.nvi.index.model.document.InstitutionPointsView.CreatorAffiliationPointsView;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
@@ -34,17 +34,17 @@ public record Approval(
     return points.creatorAffiliationPoints().stream()
         .filter(hasAffiliationId(affiliation))
         .filter(hasContributor(nviContributor))
-        .map(CreatorAffiliationPoints::points)
+        .map(CreatorAffiliationPointsView::points)
         .findFirst()
         .orElse(BigDecimal.ZERO);
   }
 
-  private static Predicate<CreatorAffiliationPoints> hasContributor(NviContributor nviContributor) {
+  private static Predicate<CreatorAffiliationPointsView> hasContributor(NviContributor nviContributor) {
     return creatorAffiliationPoints ->
         creatorAffiliationPoints.nviCreator().toString().equals(nviContributor.id());
   }
 
-  private static Predicate<CreatorAffiliationPoints> hasAffiliationId(NviOrganization affiliation) {
+  private static Predicate<CreatorAffiliationPointsView> hasAffiliationId(NviOrganization affiliation) {
     return creatorAffiliationPoints ->
         creatorAffiliationPoints.affiliationId().equals(affiliation.id());
   }

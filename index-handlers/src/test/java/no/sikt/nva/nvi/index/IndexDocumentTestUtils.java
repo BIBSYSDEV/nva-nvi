@@ -42,7 +42,7 @@ import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.Contributor;
 import no.sikt.nva.nvi.index.model.document.ContributorType;
 import no.sikt.nva.nvi.index.model.document.InstitutionPointsView;
-import no.sikt.nva.nvi.index.model.document.InstitutionPointsView.CreatorAffiliationPoints;
+import no.sikt.nva.nvi.index.model.document.InstitutionPointsView.CreatorAffiliationPointsView;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument.Builder;
 import no.sikt.nva.nvi.index.model.document.NviContributor;
@@ -524,14 +524,14 @@ public final class IndexDocumentTestUtils {
   }
 
   private static InstitutionPointsView.Builder getInstitutionPointsBuilder(
-      URI institutionId, List<CreatorAffiliationPoints> creatorAffiliationPoints) {
+      URI institutionId, List<CreatorAffiliationPointsView> creatorAffiliationPoints) {
     return InstitutionPointsView.builder()
         .withInstitutionId(institutionId)
         .withInstitutionPoints(randomBigDecimal())
         .withCreatorAffiliationPoints(creatorAffiliationPoints);
   }
 
-  private static Stream<CreatorAffiliationPoints> generateListOfCreatorAffiliationPoints(
+  private static Stream<CreatorAffiliationPointsView> generateListOfCreatorAffiliationPoints(
       NviContributor contributor) {
     return contributor.affiliations().stream()
         .filter(NviOrganization.class::isInstance)
@@ -539,9 +539,9 @@ public final class IndexDocumentTestUtils {
         .map(affiliation -> generateCreatorAffiliationPoints(contributor, affiliation));
   }
 
-  private static CreatorAffiliationPoints generateCreatorAffiliationPoints(
+  private static CreatorAffiliationPointsView generateCreatorAffiliationPoints(
       NviContributor contributor, NviOrganization affiliation) {
-    return CreatorAffiliationPoints.builder()
+    return CreatorAffiliationPointsView.builder()
         .withNviCreator(URI.create(contributor.id()))
         .withAffiliationId(affiliation.id())
         .withPoints(randomBigDecimal())

@@ -13,7 +13,7 @@ import java.util.List;
 public record InstitutionPointsView(
     URI institutionId,
     BigDecimal institutionPoints,
-    List<CreatorAffiliationPoints> creatorAffiliationPoints) {
+    List<CreatorAffiliationPointsView> creatorAffiliationPoints) {
 
   public static InstitutionPointsView from(
       no.sikt.nva.nvi.common.service.model.InstitutionPoints institutionPoints) {
@@ -21,7 +21,7 @@ public record InstitutionPointsView(
         institutionPoints.institutionId(),
         institutionPoints.institutionPoints(),
         institutionPoints.creatorAffiliationPoints().stream()
-            .map(CreatorAffiliationPoints::from)
+            .map(CreatorAffiliationPointsView::from)
             .toList());
   }
 
@@ -32,12 +32,12 @@ public record InstitutionPointsView(
   @JsonSerialize
   @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
   @JsonTypeName("CreatorAffiliationPoints")
-  public record CreatorAffiliationPoints(URI nviCreator, URI affiliationId, BigDecimal points) {
+  public record CreatorAffiliationPointsView(URI nviCreator, URI affiliationId, BigDecimal points) {
 
-    public static CreatorAffiliationPoints from(
+    public static CreatorAffiliationPointsView from(
         no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints
             creatorAffiliationPoints) {
-      return new CreatorAffiliationPoints(
+      return new CreatorAffiliationPointsView(
           creatorAffiliationPoints.nviCreator(),
           creatorAffiliationPoints.affiliationId(),
           creatorAffiliationPoints.points());
@@ -71,8 +71,8 @@ public record InstitutionPointsView(
         return this;
       }
 
-      public CreatorAffiliationPoints build() {
-        return new CreatorAffiliationPoints(nviCreator, affiliationId, points);
+      public CreatorAffiliationPointsView build() {
+        return new CreatorAffiliationPointsView(nviCreator, affiliationId, points);
       }
     }
   }
@@ -82,7 +82,7 @@ public record InstitutionPointsView(
     private URI institutionId;
     private BigDecimal institutionPoints;
 
-    private List<CreatorAffiliationPoints> creatorAffiliationPoints;
+    private List<CreatorAffiliationPointsView> creatorAffiliationPoints;
 
     private Builder() {}
 
@@ -97,7 +97,7 @@ public record InstitutionPointsView(
     }
 
     public Builder withCreatorAffiliationPoints(
-        List<CreatorAffiliationPoints> creatorAffiliationPoints) {
+        List<CreatorAffiliationPointsView> creatorAffiliationPoints) {
       this.creatorAffiliationPoints = creatorAffiliationPoints;
       return this;
     }

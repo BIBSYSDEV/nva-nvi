@@ -98,13 +98,13 @@ public class ApprovalFactory {
         creatorPoints.entrySet().stream()
             .map(
                 tuple ->
-                    new InstitutionPointsView.CreatorAffiliationPoints(
+                    new InstitutionPointsView.CreatorAffiliationPointsView(
                         randomUri(), tuple.getKey(), tuple.getValue()))
             .toList();
 
     var totalPoints =
         creatorAffiliationPoints.stream()
-            .map(InstitutionPointsView.CreatorAffiliationPoints::points)
+            .map(InstitutionPointsView.CreatorAffiliationPointsView::points)
             .reduce(BigDecimal.ZERO, BigDecimal::add)
             .setScale(SCALE, RoundingMode.HALF_UP);
 
