@@ -5,7 +5,9 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.math.BigDecimal;
 import java.net.URI;
+import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 
 @JsonSerialize
@@ -14,15 +16,45 @@ import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 public record InstitutionPointsView(
     URI institutionId,
     BigDecimal institutionPoints,
+    List<OrganizationPointsView> organizationPoints,
     List<CreatorAffiliationPointsView> creatorAffiliationPoints) {
 
+  public InstitutionPointsView(
+      URI institutionId,
+      BigDecimal institutionPoints,
+      Collection<CreatorAffiliationPointsView> creatorAffiliationPoints) {
+    this(
+        institutionId,
+        institutionPoints,
+        buildOrganizationPoints(creatorAffiliationPoints),
+        List.copyOf(creatorAffiliationPoints));
+  }
+
   public static InstitutionPointsView from(InstitutionPoints institutionPoints) {
+    var creatorPoints =
+        institutionPoints.creatorAffiliationPoints().stream()
+            .map(CreatorAffiliationPointsView::from)
+            .toList();
     return new InstitutionPointsView(
         institutionPoints.institutionId(),
         institutionPoints.institutionPoints(),
-        institutionPoints.creatorAffiliationPoints().stream()
-            .map(CreatorAffiliationPointsView::from)
-            .toList());
+        buildOrganizationPoints(creatorPoints),
+        creatorPoints);
+  }
+
+  private static List<OrganizationPointsView> buildOrganizationPoints(
+      Collection<CreatorAffiliationPointsView> creatorPoints) {
+    var pointsPerOrganization =
+        creatorPoints.stream()
+            .collect(
+                Collectors.groupingBy(
+                    CreatorAffiliationPointsView::affiliationId,
+                    Collectors.reducing(
+                        BigDecimal.ZERO, CreatorAffiliationPointsView::points, BigDecimal::add)));
+
+    return pointsPerOrganization.entrySet().stream()
+        .map(entry -> new OrganizationPointsView(entry.getKey(), entry.getValue()))
+        .collect(Collectors.toList());
   }
 
   public static Builder builder() {
