@@ -54,13 +54,8 @@ public record ApprovalView(
       InstitutionPointsView institutionPoints,
       ApprovalStatus approvalStatus,
       GlobalApprovalStatus globalApprovalStatus) {
-    var pointsPerOrganization = getPointsPerOrganization(institutionPoints);
-
-    return pointsPerOrganization.entrySet().stream()
-        .map(
-            entry ->
-                new OrganizationSummary(
-                    entry.getKey(), entry.getValue(), approvalStatus, globalApprovalStatus))
+    return getPointsPerOrganization(institutionPoints).entrySet().stream()
+        .map(entry -> toOrganizationSummary(entry, approvalStatus, globalApprovalStatus))
         .toList();
   }
 
@@ -72,12 +67,18 @@ public record ApprovalView(
             .orElse(emptyList());
     return creatorPoints.stream()
         .collect(
-            Collectors.groupingBy(
-                InstitutionPointsView.CreatorAffiliationPointsView::affiliationId,
-                Collectors.reducing(
-                    BigDecimal.ZERO,
-                    InstitutionPointsView.CreatorAffiliationPointsView::points,
-                    BigDecimal::add)));
+            Collectors.toMap(
+                CreatorAffiliationPointsView::affiliationId,
+                CreatorAffiliationPointsView::points,
+                BigDecimal::add));
+  }
+
+  private static OrganizationSummary toOrganizationSummary(
+      Map.Entry<URI, BigDecimal> entry,
+      ApprovalStatus approvalStatus,
+      GlobalApprovalStatus globalApprovalStatus) {
+    return new OrganizationSummary(
+        entry.getKey(), entry.getValue(), approvalStatus, globalApprovalStatus);
   }
 
   public static Builder builder() {
