@@ -61,7 +61,7 @@ public record ApprovalView(
             entry ->
                 new OrganizationSummary(
                     entry.getKey(), entry.getValue(), approvalStatus, globalApprovalStatus))
-        .collect(Collectors.toList());
+        .toList();
   }
 
   private static Map<URI, BigDecimal> getPointsPerOrganization(

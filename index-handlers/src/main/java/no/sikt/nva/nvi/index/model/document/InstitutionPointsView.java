@@ -17,12 +17,12 @@ public record InstitutionPointsView(
     List<CreatorAffiliationPointsView> creatorAffiliationPoints) {
 
   public static InstitutionPointsView from(InstitutionPoints institutionPoints) {
-    var creatorPoints =
+    return new InstitutionPointsView(
+        institutionPoints.institutionId(),
+        institutionPoints.institutionPoints(),
         institutionPoints.creatorAffiliationPoints().stream()
             .map(CreatorAffiliationPointsView::from)
-            .toList();
-    return new InstitutionPointsView(
-        institutionPoints.institutionId(), institutionPoints.institutionPoints(), creatorPoints);
+            .toList());
   }
 
   public static Builder builder() {
