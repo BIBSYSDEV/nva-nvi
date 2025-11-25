@@ -1014,83 +1014,92 @@ components:
 
     NviInstitutionReportResponse:
       type: object
-      description: OpenSearch aggregation
-      example: {
-        "someOrgId": {
-          "docCount": 8,
-          "dispute": {
-            "docCount": 2
-          },
-          "points": {
-            "value": 7.6865
-          },
-          "status": {
-            "New": {
-              "docCount": 5
-            },
-            "Approved": {
-              "docCount": 2
-            },
-            "Rejected": {
-              "docCount": 1
-            }
-          }
-        },
-        "someOtherOrgId": {
-          "docCount": 8,
-          "dispute": {
-            "docCount": 2
-          },
-          "points": {
-            "value": 7.6865
-          },
-          "status": {
-            "New": {
-              "docCount": 5
-            },
-            "Approved": {
-              "docCount": 2
-            },
-            "Rejected": {
-              "docCount": 1
-            }
-          }
-        }
-      }
+      description: >
+        Status aggregation report for organizations within an institution.
+        Keys are organization URIs, values are aggregated status data.
+      additionalProperties:
+        $ref: '#/components/schemas/OrganizationStatusAggregation'
+      example:
+        "https://api.nva.unit.no/cristin/organization/123.0.0.0":
+          candidateCount: 16
+          pointsFromAffiliatedCreators: 27.3953
+          globalApprovalStatus:
+            Dispute: 2
+            Pending: 8
+            Rejected: 3
+            Approved: 3
+          approvalStatus:
+            New: 4
+            Pending: 4
+            Approved: 4
+            Rejected: 4
+        "https://api.nva.unit.no/cristin/organization/123.456.789.0":
+          candidateCount: 4
+          pointsFromAffiliatedCreators: 1.2345
+          globalApprovalStatus:
+            Dispute: 0
+            Pending: 2
+            Rejected: 1
+            Approved: 1
+          approvalStatus:
+            New: 1
+            Pending: 1
+            Approved: 1
+            Rejected: 1
+    OrganizationStatusAggregation:
+      type: object
+      description: Aggregated NVI candidate status for a single organization
+      required:
+        - candidateCount
+        - pointsFromAffiliatedCreators
+        - globalApprovalStatus
+        - approvalStatus
       properties:
-        institutionId:
-          type: object
-          properties:
-            docCount:
-              type: integer
-            dispute:
-              type: object
-              properties:
-                docCount:
-                  type: integer
-            points:
-              type: object
-              properties:
-                value:
-                  type: number
-            status:
-              type: object
-              properties:
-                New:
-                  type: object
-                  properties:
-                    docCount:
-                      type: integer
-                Approved:
-                  type: object
-                  properties:
-                    docCount:
-                      type: integer
-                Rejected:
-                  type: object
-                  properties:
-                    docCount:
-                      type: integer
+        candidateCount:
+          type: integer
+          description: Number of NVI candidates for this organization
+        pointsFromAffiliatedCreators:
+          type: number
+          description: Total NVI points from creators directly affiliated with this organization
+          example: 27.3953
+        globalApprovalStatus:
+          $ref: '#/components/schemas/GlobalApprovalStatusCounts'
+        approvalStatus:
+          $ref: '#/components/schemas/ApprovalStatusCounts'
+    GlobalApprovalStatusCounts:
+      type: object
+      description: Count of candidates by global approval status
+      required:
+        - Dispute
+        - Pending
+        - Rejected
+        - Approved
+      properties:
+        Dispute:
+          type: integer
+        Pending:
+          type: integer
+        Rejected:
+          type: integer
+        Approved:
+          type: integer
+    ApprovalStatusCounts:
+      type: object
+      description: Count of candidates by approval status
+      required:
+        - New
+        - Pending
+        - Approved
+        - Rejected
+      properties:
+        New:
+          type: integer
+        Pending:
+          type: integer
+        Approved:
+          type: integer
+        Rejected:
+          type: integer
     ApprovalStatus:
       type: object
       properties:
