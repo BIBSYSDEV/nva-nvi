@@ -34,6 +34,14 @@ public final class TestUtils {
     return sqsEvent;
   }
 
+  public static SQSEvent sqsEventWithSingleMessageWithBody(String body) {
+    var sqsEvent = new SQSEvent();
+    var message = new SQSMessage();
+    message.setBody(body);
+    sqsEvent.setRecords(List.of(message));
+    return sqsEvent;
+  }
+
   private static InputStream createEventInputStream(EventReference eventReference)
       throws IOException {
     var detail = new AwsEventBridgeDetail<EventReference>();
