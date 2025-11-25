@@ -1,9 +1,8 @@
 package no.sikt.nva.nvi.index.model.report;
 
-import nva.commons.core.JacocoGenerated;
-
 import java.net.URI;
 import java.util.Map;
+import nva.commons.core.JacocoGenerated;
 
 // TODO: Not in use yet, intended for NP-50248
 @JacocoGenerated
