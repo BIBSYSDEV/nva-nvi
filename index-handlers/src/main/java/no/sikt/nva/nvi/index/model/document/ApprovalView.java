@@ -6,9 +6,11 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.math.BigDecimal;
 import java.net.URI;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.InstitutionPointsView.CreatorAffiliationPointsView;
 
@@ -18,12 +20,58 @@ import no.sikt.nva.nvi.index.model.document.InstitutionPointsView.CreatorAffilia
 @JsonTypeName("Approval")
 public record ApprovalView(
     URI institutionId,
+    List<OrganizationSummary> organizationSummaries,
     Map<String, String> labels,
     ApprovalStatus approvalStatus,
     InstitutionPointsView points,
     Set<URI> involvedOrganizations,
     String assignee,
     GlobalApprovalStatus globalApprovalStatus) {
+
+  public ApprovalView(
+      URI institutionId,
+      Map<String, String> labels,
+      ApprovalStatus approvalStatus,
+      InstitutionPointsView points,
+      Set<URI> involvedOrganizations,
+      String assignee,
+      GlobalApprovalStatus globalApprovalStatus) {
+    this(
+        institutionId,
+        getOrganizationSummaries(points, approvalStatus, globalApprovalStatus),
+        labels,
+        approvalStatus,
+        points,
+        involvedOrganizations,
+        assignee,
+        globalApprovalStatus);
+  }
+
+  private static List<OrganizationSummary> getOrganizationSummaries(
+      InstitutionPointsView institutionPoints,
+      ApprovalStatus approvalStatus,
+      GlobalApprovalStatus globalApprovalStatus) {
+    var pointsPerOrganization = getPointsPerOrganization(institutionPoints);
+
+    return pointsPerOrganization.entrySet().stream()
+        .map(
+            entry ->
+                new OrganizationSummary(
+                    entry.getKey(), entry.getValue(), approvalStatus, globalApprovalStatus))
+        .collect(Collectors.toList());
+  }
+
+  private static Map<URI, BigDecimal> getPointsPerOrganization(
+      InstitutionPointsView institutionPoints) {
+    return institutionPoints.creatorAffiliationPoints().stream()
+        .collect(
+            Collectors.groupingBy(
+                InstitutionPointsView.CreatorAffiliationPointsView::affiliationId,
+                Collectors.reducing(
+                    BigDecimal.ZERO,
+                    InstitutionPointsView.CreatorAffiliationPointsView::points,
+                    BigDecimal::add)));
+  }
 
   public static Builder builder() {
     return new Builder();

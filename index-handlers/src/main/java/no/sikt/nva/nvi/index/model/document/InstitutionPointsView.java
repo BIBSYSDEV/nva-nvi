@@ -16,19 +16,7 @@ import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 public record InstitutionPointsView(
     URI institutionId,
     BigDecimal institutionPoints,
-    List<OrganizationPointsView> organizationPoints,
     List<CreatorAffiliationPointsView> creatorAffiliationPoints) {
-
-  public InstitutionPointsView(
-      URI institutionId,
-      BigDecimal institutionPoints,
-      Collection<CreatorAffiliationPointsView> creatorAffiliationPoints) {
-    this(
-        institutionId,
-        institutionPoints,
-        buildOrganizationPoints(creatorAffiliationPoints),
-        List.copyOf(creatorAffiliationPoints));
-  }
 
   public static InstitutionPointsView from(InstitutionPoints institutionPoints) {
     var creatorPoints =
@@ -38,23 +26,7 @@ public record InstitutionPointsView(
     return new InstitutionPointsView(
         institutionPoints.institutionId(),
         institutionPoints.institutionPoints(),
-        buildOrganizationPoints(creatorPoints),
         creatorPoints);
-  }
-
-  private static List<OrganizationPointsView> buildOrganizationPoints(
-      Collection<CreatorAffiliationPointsView> creatorPoints) {
-    var pointsPerOrganization =
-        creatorPoints.stream()
-            .collect(
-                Collectors.groupingBy(
-                    CreatorAffiliationPointsView::affiliationId,
-                    Collectors.reducing(
-                        BigDecimal.ZERO, CreatorAffiliationPointsView::points, BigDecimal::add)));
-
-    return pointsPerOrganization.entrySet().stream()
-        .map(entry -> new OrganizationPointsView(entry.getKey(), entry.getValue()))
-        .collect(Collectors.toList());
   }
 
   public static Builder builder() {
