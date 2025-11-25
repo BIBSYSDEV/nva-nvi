@@ -5,9 +5,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.math.BigDecimal;
 import java.net.URI;
-import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 
 @JsonSerialize
@@ -24,9 +22,7 @@ public record InstitutionPointsView(
             .map(CreatorAffiliationPointsView::from)
             .toList();
     return new InstitutionPointsView(
-        institutionPoints.institutionId(),
-        institutionPoints.institutionPoints(),
-        creatorPoints);
+        institutionPoints.institutionId(), institutionPoints.institutionPoints(), creatorPoints);
   }
 
   public static Builder builder() {

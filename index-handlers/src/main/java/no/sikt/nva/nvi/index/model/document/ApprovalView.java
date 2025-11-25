@@ -1,5 +1,7 @@
 package no.sikt.nva.nvi.index.model.document;
 
+import static java.util.Collections.emptyList;
+
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
@@ -8,6 +10,7 @@ import java.math.BigDecimal;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -63,7 +66,11 @@ public record ApprovalView(
 
   private static Map<URI, BigDecimal> getPointsPerOrganization(
       InstitutionPointsView institutionPoints) {
-    return institutionPoints.creatorAffiliationPoints().stream()
+    var creatorPoints =
+        Optional.ofNullable(institutionPoints)
+            .map(InstitutionPointsView::creatorAffiliationPoints)
+            .orElse(emptyList());
+    return creatorPoints.stream()
         .collect(
             Collectors.groupingBy(
                 InstitutionPointsView.CreatorAffiliationPointsView::affiliationId,
