@@ -1,0 +1,184 @@
+{
+  "id" : "https://example.org/kiRFSsXNE4vr/ee9603cb-888d-4a67-80dc-1c132ea5c3bd",
+  "isApplicable" : true,
+  "type" : "NviCandidate",
+  "identifier" : "ee9603cb-888d-4a67-80dc-1c132ea5c3bd",
+  "publicationDetails" : {
+    "id" : "https://example.org/yDcvNfEBfk/0c8f8513-9c00-4159-9b65-59bbdd4f9508",
+    "identifier" : "0c8f8513-9c00-4159-9b65-59bbdd4f9508",
+    "title" : "From Here to Eternity",
+    "abstract" : "WrGL64ZSEB",
+    "publicationDate" : {
+      "year" : "2025",
+      "month" : "4",
+      "day" : "11"
+    },
+    "nviContributors" : [ {
+      "type" : "NviContributor",
+      "id" : "https://www.example.com/SpTTKzB8Fyxl",
+      "name" : "96mVuRWKJa5",
+      "orcid" : "5yFH7ZBPHZbfbm9R",
+      "role" : "SVVla7HdHVeAVetZFJ",
+      "affiliations" : [ {
+        "type" : "NviOrganization",
+        "id" : "https://www.example.com/4vfQYgmZvmJtC/698.3.3.78",
+        "identifier" : "698.3.3.78",
+        "partOf" : [ "https://api.fake.nva.aws.unit.no/cristin/organization/698.295.284.665" ],
+        "partOfIdentifiers" : [ "698.295.284.665" ]
+      }, {
+        "type" : "NviOrganization",
+        "id" : "https://api.fake.nva.aws.unit.no/cristin/organization/698.295.284.665",
+        "identifier" : "698.295.284.665"
+      }, {
+        "type" : "NviOrganization",
+        "id" : "https://www.example.com/bjgf4s44Ifa",
+        "identifier" : "bjgf4s44Ifa"
+      }, {
+        "type" : "Organization",
+        "id" : "https://www.example.com/Jx4J5pF3bXRRIu",
+        "partOf" : [ "https://www.example.com/KAgmvOtJncu41Ar" ]
+      } ]
+    }, {
+      "type" : "NviContributor",
+      "id" : "https://www.example.com/1mSJC9Ew4Gg05",
+      "name" : "nnT7mBOhR9iQP",
+      "orcid" : "zhsnD8vPo20JfcuL",
+      "role" : "Y7II2jV0GBMK",
+      "affiliations" : [ {
+        "type" : "NviOrganization",
+        "id" : "https://www.example.com/2OcjE5kQeZ3slA/051.45.67.31",
+        "identifier" : "051.45.67.31",
+        "partOf" : [ "https://api.fake.nva.aws.unit.no/cristin/organization/051.805.869.242" ],
+        "partOfIdentifiers" : [ "051.805.869.242" ]
+      }, {
+        "type" : "NviOrganization",
+        "id" : "https://api.fake.nva.aws.unit.no/cristin/organization/051.805.869.242",
+        "identifier" : "051.805.869.242"
+      }, {
+        "type" : "NviOrganization",
+        "id" : "https://www.example.com/8hLivvCvFiPufV1",
+        "identifier" : "8hLivvCvFiPufV1"
+      }, {
+        "type" : "Organization",
+        "id" : "https://www.example.com/T01wZjCIESEHDusHpY",
+        "partOf" : [ "https://www.example.com/dG3NkUUtLsTprpAuLD" ]
+      } ]
+    } ],
+    "contributors" : [ {
+      "type" : "NviContributor",
+      "id" : "https://www.example.com/SpTTKzB8Fyxl",
+      "name" : "96mVuRWKJa5",
+      "orcid" : "5yFH7ZBPHZbfbm9R",
+      "role" : "SVVla7HdHVeAVetZFJ",
+      "affiliations" : [ {
+        "type" : "NviOrganization",
+        "id" : "https://www.example.com/4vfQYgmZvmJtC/698.3.3.78",
+        "identifier" : "698.3.3.78",
+        "partOf" : [ "https://api.fake.nva.aws.unit.no/cristin/organization/698.295.284.665" ],
+        "partOfIdentifiers" : [ "698.295.284.665" ]
+      }, {
+        "type" : "NviOrganization",
+        "id" : "https://api.fake.nva.aws.unit.no/cristin/organization/698.295.284.665",
+        "identifier" : "698.295.284.665"
+      }, {
+        "type" : "NviOrganization",
+        "id" : "https://www.example.com/bjgf4s44Ifa",
+        "identifier" : "bjgf4s44Ifa"
+      }, {
+        "type" : "Organization",
+        "id" : "https://www.example.com/Jx4J5pF3bXRRIu",
+        "partOf" : [ "https://www.example.com/KAgmvOtJncu41Ar" ]
+      } ]
+    }, {
+      "type" : "NviContributor",
+      "id" : "https://www.example.com/1mSJC9Ew4Gg05",
+      "name" : "nnT7mBOhR9iQP",
+      "orcid" : "zhsnD8vPo20JfcuL",
+      "role" : "Y7II2jV0GBMK",
+      "affiliations" : [ {
+        "type" : "NviOrganization",
+        "id" : "https://www.example.com/2OcjE5kQeZ3slA/051.45.67.31",
+        "identifier" : "051.45.67.31",
+        "partOf" : [ "https://api.fake.nva.aws.unit.no/cristin/organization/051.805.869.242" ],
+        "partOfIdentifiers" : [ "051.805.869.242" ]
+      }, {
+        "type" : "NviOrganization",
+        "id" : "https://api.fake.nva.aws.unit.no/cristin/organization/051.805.869.242",
+        "identifier" : "051.805.869.242"
+      }, {
+        "type" : "NviOrganization",
+        "id" : "https://www.example.com/8hLivvCvFiPufV1",
+        "identifier" : "8hLivvCvFiPufV1"
+      }, {
+        "type" : "Organization",
+        "id" : "https://www.example.com/T01wZjCIESEHDusHpY",
+        "partOf" : [ "https://www.example.com/dG3NkUUtLsTprpAuLD" ]
+      } ]
+    } ],
+    "contributorsCount" : 2,
+    "publicationChannel" : {
+      "id" : "https://www.example.com/GxCVLMeP5qZgAU",
+      "type" : "jsI2aI5OrhMZ",
+      "scientificValue" : "LevelTwo",
+      "name" : "jcN8GOWOvqI"
+    },
+    "pages" : {
+      "begin" : "n4mT5EuRotgwn9",
+      "end" : "q7NxFM5O5aLDxcUmN",
+      "numberOfPages" : "xUn3RYl0Z4mD3YH3ii8"
+    }
+  },
+  "approvals" : [ {
+    "type" : "Approval",
+    "institutionId" : "https://api.fake.nva.aws.unit.no/cristin/organization/698.295.284.665",
+    "approvalStatus" : "Pending",
+    "points" : {
+      "type" : "InstitutionPoints",
+      "institutionId" : "https://api.fake.nva.aws.unit.no/cristin/organization/698.295.284.665",
+      "institutionPoints" : 16.4862,
+      "creatorAffiliationPoints" : [ {
+        "type" : "CreatorAffiliationPoints",
+        "nviCreator" : "https://www.example.com/dMD412iJCKhBZBl",
+        "affiliationId" : "https://api.fake.nva.aws.unit.no/cristin/organization/698.295.284.665",
+        "points" : 8.2431
+      }, {
+        "type" : "CreatorAffiliationPoints",
+        "nviCreator" : "https://www.example.com/pspjljwbr7bdo",
+        "affiliationId" : "https://api.fake.nva.aws.unit.no/cristin/organization/264.972.492.461",
+        "points" : 8.2431
+      } ]
+    },
+    "involvedOrganizations" : [ "https://api.fake.nva.aws.unit.no/cristin/organization/264.972.492.461", "https://api.fake.nva.aws.unit.no/cristin/organization/698.295.284.665" ],
+    "assignee" : "GaL8bGtFgSDpF",
+    "globalApprovalStatus" : "Pending"
+  }, {
+    "type" : "Approval",
+    "institutionId" : "https://api.fake.nva.aws.unit.no/cristin/organization/051.805.869.242",
+    "approvalStatus" : "New",
+    "points" : {
+      "type" : "InstitutionPoints",
+      "institutionId" : "https://api.fake.nva.aws.unit.no/cristin/organization/051.805.869.242",
+      "institutionPoints" : 8.8099,
+      "creatorAffiliationPoints" : [ {
+        "type" : "CreatorAffiliationPoints",
+        "nviCreator" : "https://www.example.com/ZnxVwSf54dricBbKQ",
+        "affiliationId" : "https://api.fake.nva.aws.unit.no/cristin/organization/845.680.932.464",
+        "points" : 6.4884
+      } ]
+    },
+    "involvedOrganizations" : [ "https://api.fake.nva.aws.unit.no/cristin/organization/845.680.932.464", "https://api.fake.nva.aws.unit.no/cristin/organization/051.805.869.242" ],
+    "assignee" : "96atgsaXOp0",
+    "globalApprovalStatus" : "Approved"
+  } ],
+  "numberOfApprovals" : 2,
+  "points" : 9.472,
+  "creatorShareCount" : 0,
+  "reportingPeriod" : {
+    "type" : "ReportingPeriod",
+    "year" : "2025"
+  },
+  "reported" : false,
+  "createdDate" : "2025-11-20T06:23:24.649003Z",
+  "modifiedDate" : "2025-11-20T06:23:24.649106Z",
+  "indexDocumentCreatedAt" : "2025-11-20T06:23:24.649118Z"
+}

@@ -1,0 +1,36 @@
+{
+  "https://api.fake.nva.aws.unit.no/cristin/organization/264.972.492.461" : {
+    "docCount" : 1,
+    "dispute" : {
+      "docCount" : 0
+    },
+    "status" : {
+      "Pending" : {
+        "docCount" : 1
+      }
+    },
+    "points" : {
+      "docCount" : 1,
+      "total" : {
+        "value" : 16.4862
+      }
+    }
+  },
+  "https://api.fake.nva.aws.unit.no/cristin/organization/698.295.284.665" : {
+    "docCount" : 1,
+    "dispute" : {
+      "docCount" : 0
+    },
+    "status" : {
+      "Pending" : {
+        "docCount" : 1
+      }
+    },
+    "points" : {
+      "docCount" : 1,
+      "total" : {
+        "value" : 16.4862
+      }
+    }
+  }
+}
