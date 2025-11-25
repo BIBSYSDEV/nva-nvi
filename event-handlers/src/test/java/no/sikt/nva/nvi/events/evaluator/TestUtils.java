@@ -3,7 +3,6 @@ package no.sikt.nva.nvi.events.evaluator;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static nva.commons.core.attempt.Try.attempt;
-
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.io.ByteArrayInputStream;
@@ -29,14 +28,6 @@ public final class TestUtils {
     var message = new SQSMessage();
     var body =
         attempt(() -> objectMapper.writeValueAsString(persistedResourceMessage)).orElseThrow();
-    message.setBody(body);
-    sqsEvent.setRecords(List.of(message));
-    return sqsEvent;
-  }
-
-  public static SQSEvent sqsEventWithSingleMessageWithBody(String body) {
-    var sqsEvent = new SQSEvent();
-    var message = new SQSMessage();
     message.setBody(body);
     sqsEvent.setRecords(List.of(message));
     return sqsEvent;
