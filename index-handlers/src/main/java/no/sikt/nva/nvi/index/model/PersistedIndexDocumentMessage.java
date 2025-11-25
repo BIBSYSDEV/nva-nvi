@@ -1,13 +1,6 @@
 package no.sikt.nva.nvi.index.model;
 
-import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
-import static nva.commons.core.attempt.Try.attempt;
-
 import java.net.URI;
+import no.unit.nva.commons.json.JsonSerializable;
 
-public record PersistedIndexDocumentMessage(URI documentUri) {
-
-  public String asJsonString() {
-    return attempt(() -> dtoObjectMapper.writeValueAsString(this)).orElseThrow();
-  }
-}
+public record PersistedIndexDocumentMessage(URI documentUri) implements JsonSerializable {}
