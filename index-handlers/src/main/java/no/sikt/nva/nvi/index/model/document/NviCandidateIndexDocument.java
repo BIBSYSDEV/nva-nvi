@@ -65,7 +65,7 @@ public record NviCandidateIndexDocument(
     String type,
     UUID identifier,
     PublicationDetails publicationDetails,
-    List<Approval> approvals,
+    List<ApprovalView> approvals,
     int numberOfApprovals,
     BigDecimal points,
     BigDecimal publicationTypeChannelLevelPoints,
@@ -98,7 +98,7 @@ public record NviCandidateIndexDocument(
     return new Builder();
   }
 
-  public Approval getApprovalForInstitution(URI institutionId) {
+  public ApprovalView getApprovalForInstitution(URI institutionId) {
     return approvals.stream()
         .filter(approval -> approval.institutionId().equals(institutionId))
         .findAny()
@@ -255,7 +255,7 @@ public record NviCandidateIndexDocument(
     private boolean isApplicable;
     private UUID identifier;
     private PublicationDetails publicationDetails;
-    private List<Approval> approvals;
+    private List<ApprovalView> approvals;
     private int numberOfApprovals;
     private BigDecimal points;
     private BigDecimal publicationTypeChannelLevelPoints;
@@ -294,7 +294,7 @@ public record NviCandidateIndexDocument(
       return this;
     }
 
-    public Builder withApprovals(List<Approval> approvals) {
+    public Builder withApprovals(List<ApprovalView> approvals) {
       this.approvals = approvals;
       return this;
     }

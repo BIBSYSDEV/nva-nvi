@@ -43,8 +43,8 @@ import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.index.IndexDocumentFixtures;
 import no.sikt.nva.nvi.index.OpenSearchContainerContext;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
-import no.sikt.nva.nvi.index.model.document.Approval;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
+import no.sikt.nva.nvi.index.model.document.ApprovalView;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.document.ReportingPeriod;
 import no.unit.nva.commons.pagination.PaginatedSearchResult;
@@ -631,9 +631,9 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
   }
 
   private static NviCandidateIndexDocument documentWithApprovals(
-      String title, Approval... approvals) {
+      String title, ApprovalView... approvals) {
     var approvalStatuses =
-        Stream.of(approvals).map(Approval::approvalStatus).collect(Collectors.toSet());
+        Stream.of(approvals).map(ApprovalView::approvalStatus).collect(Collectors.toSet());
     var globalStatus = expectedGlobalApprovalStatus(approvalStatuses);
     return documentWithApprovals(title, globalStatus, approvals);
   }
@@ -654,9 +654,9 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
   }
 
   private static NviCandidateIndexDocument documentWithApprovals(
-      String title, GlobalApprovalStatus globalStatus, Approval... approvals) {
+      String title, GlobalApprovalStatus globalStatus, ApprovalView... approvals) {
     var allApprovals = List.of(approvals);
-    var topLevelOrganizations = allApprovals.stream().map(Approval::institutionId).toList();
+    var topLevelOrganizations = allApprovals.stream().map(ApprovalView::institutionId).toList();
     var details = randomPublicationDetailsBuilder(topLevelOrganizations).withTitle(title).build();
     return randomIndexDocumentBuilder(details, IndexDocumentFixtures.randomApprovalList())
         .withGlobalApprovalStatus(globalStatus)
