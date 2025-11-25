@@ -1015,37 +1015,57 @@ components:
     NviInstitutionReportResponse:
       type: object
       description: >
-        Status aggregation report for organizations units within a given top-level organization.
-        Keys are organization URIs, values are aggregated status data.
-      additionalProperties:
-        $ref: '#/components/schemas/OrganizationStatusAggregation'
-      example:
-        "https://api.nva.unit.no/cristin/organization/123.0.0.0":
-          candidateCount: 16
-          points: 27.3953
-          globalApprovalStatus:
-            Dispute: 2
-            Pending: 8
-            Rejected: 3
-            Approved: 3
-          approvalStatus:
-            New: 4
-            Pending: 4
-            Approved: 4
-            Rejected: 4
-        "https://api.nva.unit.no/cristin/organization/123.456.789.0":
-          candidateCount: 4
-          points: 1.2345
-          globalApprovalStatus:
-            Dispute: 0
-            Pending: 2
-            Rejected: 1
-            Approved: 1
-          approvalStatus:
-            New: 1
-            Pending: 1
-            Approved: 1
-            Rejected: 1
+        Status report for a top-level organization for a given year.
+        Approvals and points are aggregated by organizational unit based on directly affiliated creators.
+      required:
+        - year
+        - topLevelOrganizationId
+        - totals
+        - byOrganization
+      properties:
+        year:
+          type: string
+          description: The NVI reporting period year
+          example: "2025"
+        topLevelOrganizationId:
+          type: string
+          format: uri
+          description: URI of the top-level organization
+          example: "https://api.nva.unit.no/cristin/organization/123.0.0.0"
+        totals:
+          $ref: '#/components/schemas/OrganizationStatusAggregation'
+        byOrganization:
+          type: object
+          description: Aggregated status for each organization, keyed by organization URI
+          additionalProperties:
+            $ref: '#/components/schemas/OrganizationStatusAggregation'
+          example:
+            "https://api.nva.unit.no/cristin/organization/123.0.0.0":
+              candidateCount: 16
+              points: 27.3953
+              globalApprovalStatus:
+                Dispute: 2
+                Pending: 8
+                Rejected: 3
+                Approved: 3
+              approvalStatus:
+                New: 4
+                Pending: 4
+                Approved: 4
+                Rejected: 4
+            "https://api.nva.unit.no/cristin/organization/123.456.0.0":
+              candidateCount: 4
+              points: 1.2345
+              globalApprovalStatus:
+                Dispute: 0
+                Pending: 2
+                Rejected: 1
+                Approved: 1
+              approvalStatus:
+                New: 1
+                Pending: 1
+                Approved: 1
+                Rejected: 1
     OrganizationStatusAggregation:
       type: object
       description: Aggregated NVI candidate status for an organization
@@ -1058,10 +1078,11 @@ components:
         candidateCount:
           type: integer
           description: Number of NVI candidates
+          example: 20
         points:
           type: number
           description: Total NVI points from creators
-          example: 27.3953
+          example: 31.1234
         globalApprovalStatus:
           $ref: '#/components/schemas/GlobalApprovalStatusCounts'
         approvalStatus:
