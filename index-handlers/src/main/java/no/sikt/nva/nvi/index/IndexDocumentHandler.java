@@ -118,7 +118,7 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
     attempt(
             () ->
                 sqsClient.sendMessage(
-                    new PersistedIndexDocumentMessage(uri).asJsonString(), queueUrl))
+                    new PersistedIndexDocumentMessage(uri).toJsonString(), queueUrl))
         .orElse(
             failure -> {
               handleFailure(
