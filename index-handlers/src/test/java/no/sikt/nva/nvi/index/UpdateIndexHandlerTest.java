@@ -12,6 +12,8 @@ import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.unit.nva.s3.S3Driver.S3_SCHEME;
 import static nva.commons.core.attempt.Try.attempt;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -35,6 +37,7 @@ import no.sikt.nva.nvi.index.aws.OpenSearchClient;
 import no.sikt.nva.nvi.index.model.PersistedIndexDocumentMessage;
 import no.sikt.nva.nvi.index.model.document.IndexDocumentWithConsumptionAttributes;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
+import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.Environment;
@@ -52,6 +55,7 @@ class UpdateIndexHandlerTest {
   public static final String INDEX_DLQ_URL = ENVIRONMENT.readEnv(INDEX_DLQ);
   private static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
   private static final String BUCKET_NAME = ENVIRONMENT.readEnv(EXPANDED_RESOURCES_BUCKET);
+  public static final String EXCEPTION = "exception";
   private final S3Client s3Client = new FakeS3Client();
   private S3Driver s3Driver;
   private UpdateIndexHandler handler;
@@ -64,10 +68,9 @@ class UpdateIndexHandlerTest {
     scenario = new TestScenario();
     s3Driver = new S3Driver(s3Client, BUCKET_NAME);
     openSearchClient = mock(OpenSearchClient.class);
-    sqsClient = mock(FakeSqsClient.class);
-    handler =
-        new UpdateIndexHandler(
-            openSearchClient, new S3StorageReader(s3Client, BUCKET_NAME), sqsClient);
+    sqsClient = new FakeSqsClient();
+    var storageReader = new S3StorageReader(s3Client, BUCKET_NAME);
+    handler = new UpdateIndexHandler(openSearchClient, storageReader, sqsClient);
     setupOpenPeriod(scenario, CURRENT_YEAR);
   }
 
@@ -87,7 +90,36 @@ class UpdateIndexHandlerTest {
     when(openSearchClient.addDocumentToIndex(expectedIndexDocument))
         .thenThrow(new RuntimeException());
     handler.handleRequest(event, CONTEXT);
-    verify(sqsClient, times(1)).sendMessage(any(), eq(INDEX_DLQ_URL), eq(candidate.identifier()));
+    assertEquals(1, sqsClient.receiveMessage(INDEX_DLQ_URL, 1).messages().size());
+  }
+
+  @Test
+  void shouldSendMessageContainingExceptionToDlqWhenIndexingFails() throws JsonProcessingException {
+    var candidate = setupRandomApplicableCandidate(scenario);
+    var expectedIndexDocument = setupExistingIndexDocumentInBucket(candidate).indexDocument();
+    var event = createUpdateIndexEvent(List.of(candidate));
+    when(openSearchClient.addDocumentToIndex(expectedIndexDocument))
+        .thenThrow(new RuntimeException());
+    handler.handleRequest(event, CONTEXT);
+    var dlqMessage = sqsClient.receiveMessage(INDEX_DLQ_URL, 1).messages().getFirst();
+
+    assertFalse(
+        JsonUtils.dtoObjectMapper.readTree(dlqMessage.body()).get(EXCEPTION).toString().isEmpty());
+  }
+
+  @Test
+  void shouldSendMessageContainingExceptionToDlqWhenFetchingDocumentFromS3Fails()
+      throws JsonProcessingException {
+    var candidate = setupRandomApplicableCandidate(scenario);
+    var event = createUpdateIndexEvent(List.of(candidate));
+    var mockedStorageReader = mock(S3StorageReader.class);
+    when(mockedStorageReader.read(any())).thenThrow(new RuntimeException());
+    new UpdateIndexHandler(openSearchClient, mockedStorageReader, sqsClient)
+        .handleRequest(event, CONTEXT);
+    var dlqMessage = sqsClient.receiveMessage(INDEX_DLQ_URL, 1).messages().getFirst();
+
+    assertFalse(
+        JsonUtils.dtoObjectMapper.readTree(dlqMessage.body()).get(EXCEPTION).toString().isEmpty());
   }
 
   @Test
@@ -142,7 +174,7 @@ class UpdateIndexHandlerTest {
     var event = new SQSEvent();
     var message = new SQSMessage();
     message.setBody(
-        new PersistedIndexDocumentMessage(generateBucketUri(candidateToSucceed)).asJsonString());
+        new PersistedIndexDocumentMessage(generateBucketUri(candidateToSucceed)).toJsonString());
     event.setRecords(List.of(message, invalidSqsMessage()));
     return event;
   }
@@ -153,7 +185,7 @@ class UpdateIndexHandlerTest {
         candidates.stream()
             .map(
                 candidate ->
-                    new PersistedIndexDocumentMessage(generateBucketUri(candidate)).asJsonString())
+                    new PersistedIndexDocumentMessage(generateBucketUri(candidate)).toJsonString())
             .map(
                 body -> {
                   var message = new SQSMessage();
@@ -175,6 +207,7 @@ class UpdateIndexHandlerTest {
     var expandedPublicationDetails = expandPublicationDetails(candidate, expandedResource);
     var indexDocument =
         NviCandidateIndexDocument.builder()
+            .withId(candidate.getId())
             .withContext(NVI_CONTEXT)
             .withApprovals(expandApprovals(candidate, expandedPublicationDetails.contributors()))
             .withIdentifier(candidate.identifier())
