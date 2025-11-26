@@ -1,7 +1,6 @@
 package no.sikt.nva.nvi.index;
 
 import static no.sikt.nva.nvi.common.utils.ExceptionUtils.getStackTrace;
-import static no.sikt.nva.nvi.index.aws.S3StorageWriter.GZIP_ENDING;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 
@@ -9,9 +8,9 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.net.URI;
 import java.util.Objects;
-import java.util.UUID;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
@@ -23,7 +22,6 @@ import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.attempt.Failure;
-import nva.commons.core.paths.UriWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,6 +37,7 @@ public class UpdateIndexHandler implements RequestHandler<SQSEvent, Void> {
       "Failed to fetch document from S3: {}";
   private static final String ERROR_MESSAGE = "Error message: {}";
   private static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
+  public static final String EXCEPTION_FIELD = "exception";
   private final OpenSearchClient openSearchClient;
   private final StorageReader<URI> storageReader;
   private final QueueClient queueClient;
@@ -80,15 +79,6 @@ public class UpdateIndexHandler implements RequestHandler<SQSEvent, Void> {
         .orElseThrow();
   }
 
-  private static UUID extractCandidateIdentifier(URI docuemntUri) {
-    return UUID.fromString(
-        removeGz(UriWrapper.fromUri(docuemntUri).getPath().getLastPathElement()));
-  }
-
-  private static String removeGz(String filename) {
-    return filename.replace(GZIP_ENDING, "");
-  }
-
   private static void logFailure(String message, String messageArgument, Exception exception) {
     LOGGER.error(message, messageArgument);
     LOGGER.error(ERROR_MESSAGE, getStackTrace(exception));
@@ -100,20 +90,24 @@ public class UpdateIndexHandler implements RequestHandler<SQSEvent, Void> {
                 dtoObjectMapper.readValue(body, PersistedIndexDocumentMessage.class).documentUri())
         .orElse(
             failure -> {
-              handleFailure(failure, body);
+              handleFailure(failure, body, FAILED_TO_MAP_BODY_MESSAGE);
               return null;
             });
   }
 
-  private void handleFailure(
-      Failure<?> failure, String message, String messageArgument, UUID candidateIdentifier) {
-    logFailure(message, messageArgument, failure.getException());
-    queueClient.sendMessage(messageArgument, dlqUrl, candidateIdentifier);
+  private void handleFailure(Failure<?> failure, String body, String logMessage) {
+    var exception = failure.getException();
+    logFailure(logMessage, body, exception);
+    var messageWithError = injectExceptionIntoJson(body, exception);
+    queueClient.sendMessage(messageWithError, dlqUrl);
   }
 
-  private void handleFailure(Failure<?> failure, String messageArgument) {
-    logFailure(FAILED_TO_MAP_BODY_MESSAGE, messageArgument, failure.getException());
-    queueClient.sendMessage(messageArgument, dlqUrl);
+  private String injectExceptionIntoJson(String jsonMessage, Exception exception) {
+    return attempt(() -> dtoObjectMapper.readTree(jsonMessage))
+        .map(ObjectNode.class::cast)
+        .map(tree -> tree.put(EXCEPTION_FIELD, getStackTrace(exception)))
+        .map(ObjectNode::toString)
+        .orElse(failure -> jsonMessage);
   }
 
   private void addDocumentToIndex(NviCandidateIndexDocument document) {
@@ -122,9 +116,8 @@ public class UpdateIndexHandler implements RequestHandler<SQSEvent, Void> {
             failure -> {
               handleFailure(
                   failure,
-                  FAILED_TO_ADD_DOCUMENT_TO_INDEX,
-                  document.identifier().toString(),
-                  document.identifier());
+                  new PersistedIndexDocumentMessage(document.id()).toJsonString(),
+                  FAILED_TO_ADD_DOCUMENT_TO_INDEX);
               return null;
             });
   }
@@ -135,9 +128,8 @@ public class UpdateIndexHandler implements RequestHandler<SQSEvent, Void> {
             failure -> {
               handleFailure(
                   failure,
-                  FAILED_TO_FETCH_DOCUMENT_MESSAGE,
-                  documentUri.toString(),
-                  extractCandidateIdentifier(documentUri));
+                  new PersistedIndexDocumentMessage(documentUri).toJsonString(),
+                  FAILED_TO_FETCH_DOCUMENT_MESSAGE);
               return null;
             });
   }
