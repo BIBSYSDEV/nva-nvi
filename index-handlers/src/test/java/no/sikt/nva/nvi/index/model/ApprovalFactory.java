@@ -9,10 +9,11 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.Map;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.ApprovalView;
@@ -24,25 +25,25 @@ import no.sikt.nva.nvi.index.model.document.InstitutionPointsView;
  * populated based on creator affiliations, ensuring test data consistency.
  */
 public class ApprovalFactory {
-  private final Map<URI, BigDecimal> creatorPoints;
+  private final List<InstitutionPointsView.CreatorAffiliationPointsView> creatorAffiliationPoints;
   private final URI topLevelOrganization;
   private ApprovalStatus approvalStatus;
   private GlobalApprovalStatus globalApprovalStatus;
 
   public ApprovalFactory(URI topLevelOrganization) {
     this.topLevelOrganization = topLevelOrganization;
-    this.creatorPoints = new HashMap<>();
+    this.creatorAffiliationPoints = new ArrayList<>();
     this.approvalStatus = ApprovalStatus.PENDING;
     this.globalApprovalStatus = GlobalApprovalStatus.PENDING;
   }
 
   public ApprovalFactory(
       URI topLevelOrganization,
-      Map<URI, BigDecimal> creatorPoints,
+      List<InstitutionPointsView.CreatorAffiliationPointsView> affiliationPoints,
       ApprovalStatus approvalStatus,
       GlobalApprovalStatus globalApprovalStatus) {
     this.topLevelOrganization = topLevelOrganization;
-    this.creatorPoints = new HashMap<>(creatorPoints);
+    this.creatorAffiliationPoints = new ArrayList<>(affiliationPoints);
     this.approvalStatus = approvalStatus;
     this.globalApprovalStatus = globalApprovalStatus;
   }
@@ -64,7 +65,7 @@ public class ApprovalFactory {
 
   public ApprovalFactory copy() {
     return new ApprovalFactory(
-        topLevelOrganization, creatorPoints, approvalStatus, globalApprovalStatus);
+        topLevelOrganization, creatorAffiliationPoints, approvalStatus, globalApprovalStatus);
   }
 
   public ApprovalFactory withApprovalStatus(ApprovalStatus approvalStatus) {
@@ -78,30 +79,26 @@ public class ApprovalFactory {
   }
 
   public ApprovalFactory withCreatorAffiliation(URI affiliation) {
-    this.creatorPoints.put(affiliation, randomBigDecimal(SCALE));
-    return this;
+    return this.withCreatorAffiliation(affiliation, randomBigDecimal(SCALE));
   }
 
   public ApprovalFactory withCreatorAffiliation(URI affiliation, BigDecimal points) {
-    this.creatorPoints.put(affiliation, points);
+    this.creatorAffiliationPoints.add(
+        new InstitutionPointsView.CreatorAffiliationPointsView(randomUri(), affiliation, points));
     return this;
   }
 
   private Set<URI> getInvolvedOrganizations() {
-    var involvedOrganizations = new HashSet<>(creatorPoints.keySet());
+    var creatorAffiliations =
+        creatorAffiliationPoints.stream()
+            .map(InstitutionPointsView.CreatorAffiliationPointsView::affiliationId)
+            .collect(Collectors.toSet());
+    var involvedOrganizations = new HashSet<>(creatorAffiliations);
     involvedOrganizations.add(topLevelOrganization);
     return Set.copyOf(involvedOrganizations);
   }
 
   private InstitutionPointsView getInstitutionPoints() {
-    var creatorAffiliationPoints =
-        creatorPoints.entrySet().stream()
-            .map(
-                tuple ->
-                    new InstitutionPointsView.CreatorAffiliationPointsView(
-                        randomUri(), tuple.getKey(), tuple.getValue()))
-            .toList();
-
     var totalPoints =
         creatorAffiliationPoints.stream()
             .map(InstitutionPointsView.CreatorAffiliationPointsView::points)
