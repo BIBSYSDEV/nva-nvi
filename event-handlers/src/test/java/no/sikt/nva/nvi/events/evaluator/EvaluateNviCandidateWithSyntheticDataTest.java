@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.events.evaluator;
 
+import static no.sikt.nva.nvi.common.EnvironmentFixtures.EVALUATION_DLQ_URL;
 import static no.sikt.nva.nvi.common.SampleExpandedPublicationFactory.mapOrganizationToAffiliation;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.model.ContributorFixtures.ROLE_CREATOR;
@@ -22,7 +23,6 @@ import static no.sikt.nva.nvi.test.TestConstants.SERIES_TYPE;
 import static no.unit.nva.testutils.RandomDataGenerator.randomIsbn13;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.params.provider.Arguments.argumentSet;
 
 import java.util.Collections;
@@ -200,7 +200,7 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
   }
 
   @Test
-  void shouldThrowParsingExceptionWhenChannelIsMalformed() {
+  void shouldSendMessageToDlqWhenWhenChannelIsMalformed() {
     var publication =
         factory
             .withPublicationChannel(JOURNAL_TYPE, LEVEL_ONE)
@@ -208,8 +208,12 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
             .getExpandedPublicationBuilder()
             .build();
 
-    var exception = assertThrows(RuntimeException.class, () -> getEvaluatedCandidate(publication));
-    assertThat(exception.getMessage())
+    evaluate(publication);
+
+    var dlqMessage =
+        queueClient.receiveMessage(EVALUATION_DLQ_URL.getValue(), 1).messages().getFirst();
+
+    assertThat(dlqMessage.body())
         .contains("ParsingException")
         .contains("Required field 'scientificValue' is null");
   }

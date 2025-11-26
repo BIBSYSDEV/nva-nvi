@@ -7,6 +7,7 @@ import nva.commons.core.paths.UriWrapper;
  * Utility to set up fake environment variables for testing purposes. Keep this in sync with the
  * actual environment variables defined in template.yaml.
  */
+@SuppressWarnings("PMD.ExcessivePublicCount")
 public enum EnvironmentFixtures {
   // Global environment variables
   API_HOST("api.fake.nva.aws.unit.no"),
@@ -39,7 +40,8 @@ public enum EnvironmentFixtures {
   UPSERT_CANDIDATE_DLQ_QUEUE_URL("http://localhost:3000/upsert-candidate-dlq"),
   EVENT_BUS_NAME("bus-name"),
   BATCH_SCAN_RECOVERY_QUEUE("recover-queue"),
-  PERSISTED_RESOURCE_QUEUE_URL("persisted-resource");
+  PERSISTED_RESOURCE_QUEUE_URL("persisted-resource"),
+  EVALUATION_DLQ_URL("evaluation-dlq");
 
   private final String value;
 
@@ -84,6 +86,7 @@ public enum EnvironmentFixtures {
     return getDefaultEnvironmentBuilder()
         .with(EXPANDED_RESOURCES_BUCKET)
         .with(CANDIDATE_QUEUE_URL)
+        .with(EVALUATION_DLQ_URL)
         .build();
   }
 
