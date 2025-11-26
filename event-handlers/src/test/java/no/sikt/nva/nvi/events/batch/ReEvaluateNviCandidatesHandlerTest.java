@@ -6,6 +6,7 @@ import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.setupReportedCandid
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.sortByIdentifier;
 import static no.sikt.nva.nvi.test.TestUtils.randomIntBetween;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
+import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -134,7 +135,7 @@ class ReEvaluateNviCandidatesHandlerTest {
     var actualCandidates =
         batch.entries().stream()
             .map(SendMessageBatchRequestEntry::messageBody)
-            .map(PersistedResourceMessage::fromJson)
+            .map(ReEvaluateNviCandidatesHandlerTest::fromJson)
             .map(PersistedResourceMessage::resourceFileUri)
             .toList();
     assertEquals(expectedCandidates, actualCandidates);
@@ -174,6 +175,11 @@ class ReEvaluateNviCandidatesHandlerTest {
     handler.handleRequest(eventStream(createRequest(year, pageSize)), outputStream, context);
     var emittedEvents = eventBridgeClient.getRequestEntries();
     assertEquals(0, emittedEvents.size());
+  }
+
+  private static PersistedResourceMessage fromJson(String body) {
+    return attempt(() -> dtoObjectMapper.readValue(body, PersistedResourceMessage.class))
+        .orElseThrow();
   }
 
   private static ReEvaluateRequest emptyRequest() {

@@ -756,6 +756,7 @@ Resources:
         Variables:
           EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
           CANDIDATE_QUEUE_URL: !Ref EvaluatedCandidateQueue
+          EVALUATION_DLQ_URL: !Ref EvaluationDLQ
       Events:
         SqsEvent:
           Type: SQS
