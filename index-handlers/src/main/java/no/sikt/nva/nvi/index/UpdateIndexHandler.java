@@ -30,15 +30,15 @@ public class UpdateIndexHandler implements RequestHandler<SQSEvent, Void> {
   public static final String FAILED_TO_ADD_DOCUMENT_TO_INDEX =
       "Failed to add document to index: {}";
   public static final String INDEX_DLQ = "INDEX_DLQ";
-    private static final Logger LOGGER = LoggerFactory.getLogger(UpdateIndexHandler.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(UpdateIndexHandler.class);
   private static final String FAILED_TO_MAP_BODY_MESSAGE =
       "Failed to map body to PersistedIndexDocumentMessage: {}";
   private static final String FAILED_TO_FETCH_DOCUMENT_MESSAGE =
       "Failed to fetch document from S3: {}";
   private static final String ERROR_MESSAGE = "Error message: {}";
   private static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
-    public static final String EXCEPTION_FIELD = "exception";
-    private final OpenSearchClient openSearchClient;
+  public static final String EXCEPTION_FIELD = "exception";
+  private final OpenSearchClient openSearchClient;
   private final StorageReader<URI> storageReader;
   private final QueueClient queueClient;
   private final String dlqUrl;
