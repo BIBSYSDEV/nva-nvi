@@ -22,6 +22,7 @@ public final class SearchConstants {
 
   public static final String ID = "id";
   public static final String INSTITUTION_ID = "institutionId";
+  public static final String ORGANIZATION_ID = "organizationId";
   public static final String ASSIGNEE = "assignee";
   public static final String NUMBER_OF_APPROVALS = "numberOfApprovals";
   public static final String APPROVALS = "approvals";
@@ -56,6 +57,7 @@ public final class SearchConstants {
   public static final String GLOBAL_APPROVAL_STATUS = "globalApprovalStatus";
   public static final String POINTS = "points";
   public static final String INSTITUTION_POINTS = "institutionPoints";
+  public static final String ORGANIZATION_SUMMARIES = "organizationSummaries";
   public static final String CREATED_DATE = "createdDate";
   public static final String IDENTIFIER = "identifier";
   public static final String PART_OF_IDENTIFIERS = "partOfIdentifiers";
@@ -119,12 +121,21 @@ public final class SearchConstants {
         INSTITUTION_ID, keywordProperty(),
         INVOLVED_ORGS, keywordProperty(),
         APPROVAL_STATUS, keywordProperty(),
+        ORGANIZATION_SUMMARIES, nestedProperty(organizationSummaryProperties()),
         POINTS, nestedProperty(pointsProperties()),
         GLOBAL_APPROVAL_STATUS, keywordProperty());
   }
 
+  private static Map<String, Property> organizationSummaryProperties() {
+    return Map.of(
+        ORGANIZATION_ID, keywordProperty(),
+        APPROVAL_STATUS, keywordProperty(),
+        GLOBAL_APPROVAL_STATUS, keywordProperty(),
+        POINTS, doubleProperty());
+  }
+
   private static Map<String, Property> pointsProperties() {
-    return Map.of(INSTITUTION_POINTS, new DoubleNumberProperty.Builder().build().toProperty());
+    return Map.of(INSTITUTION_POINTS, doubleProperty());
   }
 
   private static Map<String, Property> nviContributorsProperties() {
@@ -144,6 +155,10 @@ public final class SearchConstants {
 
   private static Property keywordProperty() {
     return new KeywordProperty.Builder().build().toProperty();
+  }
+
+  private static Property doubleProperty() {
+    return new DoubleNumberProperty.Builder().build().toProperty();
   }
 
   private static Property textPropertyWithNestedKeyword() {

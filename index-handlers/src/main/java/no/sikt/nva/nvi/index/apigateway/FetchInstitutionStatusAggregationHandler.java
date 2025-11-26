@@ -79,6 +79,8 @@ public class FetchInstitutionStatusAggregationHandler extends ApiGatewayHandler<
             .withTopLevelCristinOrg(requestedInstitution)
             .build();
     var searchResponse = attempt(() -> openSearchClient.search(searchParameters)).orElseThrow();
+    var result = searchResponse.aggregations().get(AGGREGATION);
+    var jsonResult = result.toJsonString();
     return searchResponse.aggregations().get(AGGREGATION);
   }
 }

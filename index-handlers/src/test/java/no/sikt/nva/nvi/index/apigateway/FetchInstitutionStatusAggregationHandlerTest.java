@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.index.apigateway;
 
 import static java.util.function.Predicate.not;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.getFetchInstitutionStatusAggregationHandlerEnvironment;
+import static no.sikt.nva.nvi.common.model.OrganizationFixtures.organizationIdFromIdentifier;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationId;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.createRandomIndexDocument;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomApproval;
@@ -11,6 +12,7 @@ import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.hasEqualValue;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.sikt.nva.nvi.test.TestUtils.toBigDecimal;
+import static no.unit.nva.testutils.RandomDataGenerator.FAKER;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static nva.commons.core.ioutils.IoUtils.stringFromResources;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -69,8 +71,9 @@ class FetchInstitutionStatusAggregationHandlerTest {
   private ByteArrayOutputStream output;
 
   private static final String YEAR = "year";
-  private static final URI OUR_ORGANIZATION = randomOrganizationId();
-  private static final URI OUR_SUB_ORGANIZATION = randomOrganizationId();
+  private static final URI OUR_ORGANIZATION = organizationIdFromIdentifier("123.0.0.0");
+  private static final URI OUR_SUB_ORGANIZATION =
+      organizationIdFromIdentifier(FAKER.numerify("123.###.###.###"));
   private static final URI OTHER_ORGANIZATION = randomOrganizationId();
 
   @BeforeAll
@@ -182,16 +185,31 @@ class FetchInstitutionStatusAggregationHandlerTest {
 
   @Test
   void shouldIncludeDocumentWithCreatorsFromBothTopAndSubOrganization() {
-    var pointsPerCreator = randomBigDecimal();
-    var expectedTotalPoints = pointsPerCreator.multiply(BigDecimal.TWO);
-
+    var pointsPerCreator = BigDecimal.ONE.setScale(4);
+    var expectedTotalPoints = pointsPerCreator.multiply(BigDecimal.valueOf(3));
     var approval =
         new ApprovalFactory(OUR_ORGANIZATION)
             .withCreatorAffiliation(OUR_ORGANIZATION, pointsPerCreator)
+            .withCreatorAffiliation(OUR_ORGANIZATION, pointsPerCreator)
             .withCreatorAffiliation(OUR_SUB_ORGANIZATION, pointsPerCreator)
+            .withApprovalStatus(ApprovalStatus.PENDING)
+            .build();
+    var approval2 =
+        new ApprovalFactory(OUR_ORGANIZATION)
+            .withCreatorAffiliation(OUR_ORGANIZATION, pointsPerCreator)
+            .withCreatorAffiliation(randomOrganizationId(), pointsPerCreator)
+            .withApprovalStatus(ApprovalStatus.APPROVED)
+            .build();
+    var approval3 =
+        new ApprovalFactory(OUR_ORGANIZATION)
+            .withCreatorAffiliation(OUR_SUB_ORGANIZATION, BigDecimal.TEN)
+            .withApprovalStatus(ApprovalStatus.APPROVED)
             .build();
     var document = documentWithApprovals(approval, randomApproval());
-    CONTAINER.addDocumentsToIndex(document);
+    var document2 = documentWithApprovals(approval2);
+    var document3 = documentWithApprovals(approval3);
+    var unrelatedDocument = createRandomIndexDocument(randomOrganizationId(), CURRENT_YEAR);
+    CONTAINER.addDocumentsToIndex(document, document2, document3, unrelatedDocument);
 
     // FIXME: Asserting current behavior and not the correct behavior, see NP-50248
     var expectedResponse =
