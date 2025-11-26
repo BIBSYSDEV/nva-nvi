@@ -34,7 +34,7 @@ public class EvaluateNviCandidateHandler implements RequestHandler<SQSEvent, Voi
   private static final String BACKEND_CLIENT_SECRET_NAME = "BACKEND_CLIENT_SECRET_NAME";
   private static final String FAILURE_MESSAGE =
       "Failure while calculating NVI Candidate: %s, exception: %s, message: %s";
-  public static final String EXCEPTION_FIELD = "exception";
+  private static final String EXCEPTION_FIELD = "exception";
   private final EvaluatorService evaluatorService;
   private final QueueClient queueClient;
   private final String queueUrl;

@@ -37,7 +37,7 @@ public class UpdateIndexHandler implements RequestHandler<SQSEvent, Void> {
       "Failed to fetch document from S3: {}";
   private static final String ERROR_MESSAGE = "Error message: {}";
   private static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
-  public static final String EXCEPTION_FIELD = "exception";
+  private static final String EXCEPTION_FIELD = "exception";
   private final OpenSearchClient openSearchClient;
   private final StorageReader<URI> storageReader;
   private final QueueClient queueClient;
