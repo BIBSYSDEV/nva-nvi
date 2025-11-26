@@ -121,21 +121,22 @@ public final class SearchConstants {
         INSTITUTION_ID, keywordProperty(),
         INVOLVED_ORGS, keywordProperty(),
         APPROVAL_STATUS, keywordProperty(),
-        ORGANIZATION_SUMMARIES, nestedProperty(organizationSummaryProperties()),
-        POINTS, nestedProperty(pointsProperties()),
+        ORGANIZATION_SUMMARIES, organizationSummaryProperties(),
+        POINTS, pointsProperties(),
         GLOBAL_APPROVAL_STATUS, keywordProperty());
   }
 
-  private static Map<String, Property> organizationSummaryProperties() {
-    return Map.of(
-        ORGANIZATION_ID, keywordProperty(),
-        APPROVAL_STATUS, keywordProperty(),
-        GLOBAL_APPROVAL_STATUS, keywordProperty(),
-        POINTS, doubleProperty());
+  private static Property organizationSummaryProperties() {
+    return nestedProperty(
+        Map.of(
+            ORGANIZATION_ID, keywordProperty(),
+            APPROVAL_STATUS, keywordProperty(),
+            GLOBAL_APPROVAL_STATUS, keywordProperty(),
+            POINTS, doubleProperty()));
   }
 
-  private static Map<String, Property> pointsProperties() {
-    return Map.of(INSTITUTION_POINTS, doubleProperty());
+  private static Property pointsProperties() {
+    return nestedProperty(Map.of(INSTITUTION_POINTS, doubleProperty()));
   }
 
   private static Map<String, Property> nviContributorsProperties() {

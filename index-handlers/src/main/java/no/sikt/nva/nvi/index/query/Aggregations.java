@@ -29,6 +29,8 @@ import static no.sikt.nva.nvi.index.utils.SearchConstants.GLOBAL_APPROVAL_STATUS
 import static no.sikt.nva.nvi.index.utils.SearchConstants.INSTITUTION_ID;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.INSTITUTION_POINTS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.INVOLVED_ORGS;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.ORGANIZATION_ID;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.ORGANIZATION_SUMMARIES;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.POINTS;
 
 import java.util.HashMap;
@@ -49,6 +51,7 @@ public final class Aggregations {
   private static final String TOTAL_POINTS_SUM_AGGREGATION = "total";
   private static final String ALL_AGGREGATIONS = "all";
   private static final String STATUS_AGGREGATION = "status";
+  private static final String GLOBAL_STATUS_AGGREGATION = "globalStatus";
   private static final int ORGANIZATION_SUB_UNITS_TERMS_AGGREGATION_SIZE = 1000;
 
   private Aggregations() {}
@@ -90,20 +93,17 @@ public final class Aggregations {
   }
 
   public static Aggregation organizationApprovalStatusAggregations(String topLevelOrganizationId) {
-    shouldNotBeBlank(topLevelOrganizationId, "topLevelOrganizationId cannot be blank");
-
     var pointsAggregation = filterNotRejectedOrganizationPointsAggregation();
     var statusAggregation =
-        termsAggregation(APPROVALS, "organizationSummaries", APPROVAL_STATUS).toAggregation();
+        termsAggregation(APPROVALS, ORGANIZATION_SUMMARIES, APPROVAL_STATUS).toAggregation();
     var globalStatusAggregation =
-        termsAggregation(APPROVALS, "organizationSummaries", "globalApprovalStatus")
-            .toAggregation();
+        termsAggregation(APPROVALS, ORGANIZATION_SUMMARIES, GLOBAL_APPROVAL_STATUS).toAggregation();
 
     var organizationAggregation =
         new Aggregation.Builder()
             .terms(
                 new TermsAggregation.Builder()
-                    .field(jsonPathOf(APPROVALS, "organizationSummaries", "organizationId"))
+                    .field(jsonPathOf(APPROVALS, ORGANIZATION_SUMMARIES, ORGANIZATION_ID))
                     .size(ORGANIZATION_SUB_UNITS_TERMS_AGGREGATION_SIZE)
                     .build())
             .aggregations(
@@ -112,12 +112,12 @@ public final class Aggregations {
                     pointsAggregation,
                     STATUS_AGGREGATION,
                     statusAggregation,
-                    "globalStatus",
+                    GLOBAL_STATUS_AGGREGATION,
                     globalStatusAggregation))
             .build();
     var nestedOrganizationAggregation =
         new Aggregation.Builder()
-            .nested(nestedAggregation(APPROVALS, "organizationSummaries"))
+            .nested(nestedAggregation(APPROVALS, ORGANIZATION_SUMMARIES))
             .aggregations(Map.of("by_organization", organizationAggregation))
             .build();
     var filterAggregation =
@@ -127,8 +127,31 @@ public final class Aggregations {
 
     return new Aggregation.Builder()
         .nested(nestedAggregation(APPROVALS))
-        .aggregations(Map.of(topLevelOrganizationId, filterAggregation))
+        .aggregations(
+            Map.of(
+                topLevelOrganizationId,
+                topLevelOrganizationStatusAggregation(topLevelOrganizationId),
+                "subOrgs",
+                filterAggregation))
         .build();
+  }
+
+  public static Aggregation topLevelOrganizationStatusAggregation(String topLevelOrganizationId) {
+    var pointAggregation = filterNotRejectedPointsAggregation();
+    var statusAggregation = termsAggregation(APPROVALS, APPROVAL_STATUS).toAggregation();
+    var globalStatusAggregation =
+        termsAggregation(APPROVALS, GLOBAL_APPROVAL_STATUS).toAggregation();
+
+    var organizationAggregation =
+        Map.of(
+            STATUS_AGGREGATION,
+            statusAggregation,
+            POINTS_AGGREGATION,
+            pointAggregation,
+            GLOBAL_STATUS_AGGREGATION,
+            globalStatusAggregation);
+    return filterAggregation(
+        mustMatch(approvalInstitutionIdQuery(topLevelOrganizationId)), organizationAggregation);
   }
 
   public static Aggregation totalCountAggregation(String topLevelCristinOrg) {
@@ -183,6 +206,7 @@ public final class Aggregations {
     return filterAggregation(mustMatch(globalStatusDisputeForInstitution(topLevelCristinOrg)));
   }
 
+  // TODO: Rename to make it clear this is top-level
   private static Aggregation filterNotRejectedPointsAggregation() {
     return filterAggregation(
         mustNotMatch(REJECTED.getValue(), jsonPathOf(APPROVALS, APPROVAL_STATUS)),
@@ -204,8 +228,9 @@ public final class Aggregations {
         mustMatch(fieldValueQuery(jsonPathOf(APPROVALS, GLOBAL_APPROVAL_STATUS), DISPUTE)));
   }
 
-  private static Query approvalInstitutionIdQuery(String topLevelCristinOrg) {
-    return fieldValueQuery(INSTITUTION_ID_PATH, topLevelCristinOrg);
+  private static Query approvalInstitutionIdQuery(String topLevelOrganizationId) {
+    shouldNotBeBlank(topLevelOrganizationId, "topLevelOrganizationId cannot be blank");
+    return fieldValueQuery(INSTITUTION_ID_PATH, topLevelOrganizationId);
   }
 
   private static Query[] globalStatusDisputeForInstitution(String institutionId) {
