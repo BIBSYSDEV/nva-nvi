@@ -29,12 +29,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
+import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.index.OpenSearchContainerContext;
 import no.sikt.nva.nvi.index.model.ApprovalFactory;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.ApprovalView;
 import no.sikt.nva.nvi.index.model.document.InstitutionPointsView;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
+import no.sikt.nva.nvi.index.model.document.OrganizationSummary;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
@@ -202,6 +204,40 @@ class FetchInstitutionStatusAggregationHandlerTest {
     var response = handleRequest();
 
     assertEqualJsonContent(expectedResponse, response);
+  }
+
+  // FIXME: Temporary test to verify new data model. To be replaced in NP-50248.
+  @Test
+  void shouldIncludeOrganizationSummaryForSubOrganization() {
+    var pointsPerCreator = randomBigDecimal();
+
+    var approval =
+        new ApprovalFactory(OUR_ORGANIZATION)
+            .withCreatorAffiliation(OUR_ORGANIZATION, pointsPerCreator)
+            .withCreatorAffiliation(randomOrganizationId(), pointsPerCreator)
+            .withCreatorAffiliation(OUR_SUB_ORGANIZATION, pointsPerCreator)
+            .withCreatorAffiliation(OUR_SUB_ORGANIZATION, pointsPerCreator)
+            .withApprovalStatus(ApprovalStatus.APPROVED)
+            .withGlobalApprovalStatus(GlobalApprovalStatus.DISPUTE)
+            .build();
+    var document = documentWithApprovals(approval, randomApproval());
+
+    var expectedSummary =
+        new OrganizationSummary(
+            OUR_SUB_ORGANIZATION,
+            pointsPerCreator.multiply(BigDecimal.TWO),
+            ApprovalStatus.APPROVED,
+            GlobalApprovalStatus.DISPUTE);
+
+    var actualSummary =
+        document.approvals().stream()
+            .map(ApprovalView::organizationSummaries)
+            .flatMap(List::stream)
+            .filter(summary -> OUR_SUB_ORGANIZATION.equals(summary.organizationId()))
+            .findFirst()
+            .orElseThrow();
+
+    assertThat(actualSummary).isEqualTo(expectedSummary);
   }
 
   private static void assertEqualJsonContent(
