@@ -120,8 +120,8 @@ public class RequeueDlqHandler implements RequestHandler<RequeueDlqInput, Requeu
   }
 
   private NviProcessMessageResult deleteMessageFromDlq(NviProcessMessageResult message) {
-    LOGGER.info(DELETING_MESSAGE_FROM_DLQ_LOG, message.message().body());
     if (message.success()) {
+      LOGGER.info(DELETING_MESSAGE_FROM_DLQ_LOG, message.message().body());
       queueClient.deleteMessage(queueUrl, message.message().receiptHandle());
     }
     return message;
