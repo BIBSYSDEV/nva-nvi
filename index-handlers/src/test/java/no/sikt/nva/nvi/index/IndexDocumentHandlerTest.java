@@ -686,7 +686,7 @@ class IndexDocumentHandlerTest {
 
   private static FakeSqsClient setupFailingSqsClient(Candidate candidate) {
     var expectedFailingMessage =
-        new PersistedIndexDocumentMessage(generateBucketUri(candidate)).asJsonString();
+        new PersistedIndexDocumentMessage(generateBucketUri(candidate)).toJsonString();
     var mockedSqsClient = mock(FakeSqsClient.class);
     var sqsException = SqsException.builder().message("Some exception message").build();
     when(mockedSqsClient.sendMessage(eq(expectedFailingMessage), anyString()))
@@ -828,7 +828,7 @@ class IndexDocumentHandlerTest {
   }
 
   private String createExpectedEventMessageBody(Candidate candidate) {
-    return new PersistedIndexDocumentMessage(generateBucketUri(candidate)).asJsonString();
+    return new PersistedIndexDocumentMessage(generateBucketUri(candidate)).toJsonString();
   }
 
   private void mockUriRetrieverFailure(Candidate candidate) {
