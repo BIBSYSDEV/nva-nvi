@@ -47,6 +47,8 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.zalando.problem.Problem;
 import org.zalando.problem.StatusType;
@@ -98,102 +100,174 @@ class FetchInstitutionStatusAggregationHandlerTest {
     CONTAINER.deleteIndex();
   }
 
-  @Test
-  void shouldReturnUnauthorizedWhenUserDoesNotHaveRequiredAccessRight() {
-    userAccessRight = AccessRight.MANAGE_OWN_RESOURCES;
-    var response = handleRequestExpectingProblem();
-    assertThat(response)
-        .extracting(Problem::getStatus)
-        .extracting(StatusType::getStatusCode)
-        .isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
+  @Nested
+  @DisplayName("Access control")
+  class AccessControlTests {
+    @Test
+    void shouldReturnUnauthorizedWhenUserDoesNotHaveRequiredAccessRight() {
+      userAccessRight = AccessRight.MANAGE_OWN_RESOURCES;
+      var response = handleRequestExpectingProblem();
+      assertThat(response)
+          .extracting(Problem::getStatus)
+          .extracting(StatusType::getStatusCode)
+          .isEqualTo(HttpURLConnection.HTTP_UNAUTHORIZED);
+    }
+
+    @Test
+    void shouldExcludeUnrelatedCandidates() {
+      var otherOrganization = randomOrganizationId();
+      var approval =
+          new ApprovalFactory(otherOrganization).withCreatorAffiliation(otherOrganization).build();
+      CONTAINER.addDocumentsToIndex(documentWithApprovals(approval));
+
+      var response = handleRequest();
+
+      assertThat(response.totals().candidateCount()).isZero();
+      assertThat(response.byOrganization()).extractingByKey(otherOrganization).isNull();
+    }
   }
 
-  @Test
-  void shouldReturnEmptyAggregateForOrganizationWithNoData() {
-    userTopLevelOrg = randomOrganizationId();
-    var response = handleRequest();
+  @Nested
+  @DisplayName("Totals for top-level organization")
+  class TotalAggregationTests {
+    @Test
+    void shouldIncludeYearAndTopLevelOrganizationInReport() {
+      userTopLevelOrg = randomOrganizationId();
+      var response = handleRequest();
 
-    var expectedTotals =
-        new OrganizationStatusAggregation(
-            0, BigDecimal.ZERO, getEmptyGlobalApprovalStatusMap(), getEmptyApprovalStatusMap());
-    var expectedResponse =
-        new InstitutionStatusAggregationReport(
-            queryYear, userTopLevelOrg, expectedTotals, emptyMap());
+      assertThat(response)
+          .extracting(
+              InstitutionStatusAggregationReport::topLevelOrganizationId,
+              InstitutionStatusAggregationReport::year)
+          .containsExactly(userTopLevelOrg, queryYear);
+    }
 
-    assertThat(response).isEqualTo(expectedResponse);
+    @Test
+    void shouldReturnEmptyAggregateForOrganizationWithNoData() {
+      userTopLevelOrg = randomOrganizationId();
+      var response = handleRequest();
+
+      var expectedTotals =
+          new OrganizationStatusAggregation(
+              0, BigDecimal.ZERO, getEmptyGlobalApprovalStatusMap(), getEmptyApprovalStatusMap());
+      var expectedResponse =
+          new InstitutionStatusAggregationReport(
+              queryYear, userTopLevelOrg, expectedTotals, emptyMap());
+
+      assertThat(response).isEqualTo(expectedResponse);
+    }
+
+    @Test
+    void shouldIncludeTotalsForTopLevelOrganization() {
+      var documentsForTopLevelOrganization =
+          createIndexDocumentsForAllApprovalStatusTypes(OUR_ORGANIZATION, OUR_ORGANIZATION);
+      var documentsForSubOrganization =
+          createIndexDocumentsForAllApprovalStatusTypes(OUR_ORGANIZATION, OUR_SUB_ORGANIZATION);
+      var unrelatedDocuments = createUnrelatedDocuments();
+      CONTAINER.addDocumentsToIndex(
+          mergeDocumentSets(
+              documentsForTopLevelOrganization, documentsForSubOrganization, unrelatedDocuments));
+
+      var relevantDocuments =
+          mergeDocumentSets(documentsForTopLevelOrganization, documentsForSubOrganization);
+      var expectedTotals = getExpectedTotalAggregation(relevantDocuments);
+
+      var response = handleRequest();
+      assertThat(response.totals()).isEqualTo(expectedTotals);
+    }
+
+    @Test
+    void shouldExcludePointsFromRejectedCandidates() {
+      var approval =
+          new ApprovalFactory(OUR_ORGANIZATION)
+              .withCreatorAffiliation(OUR_ORGANIZATION)
+              .withApprovalStatus(ApprovalStatus.REJECTED)
+              .build();
+      CONTAINER.addDocumentsToIndex(documentWithApprovals(approval, randomApproval()));
+
+      var response = handleRequest();
+
+      assertThat(response.totals().points()).isZero();
+    }
+
+    private OrganizationStatusAggregation getExpectedTotalAggregation(
+        Collection<NviCandidateIndexDocument> relevantDocuments) {
+      var expectedTotalPoints = getSumOfTopLevelPoints(OUR_ORGANIZATION, relevantDocuments);
+      var expectedGlobalStatusMap = getGlobalApprovalStatusCounts(relevantDocuments);
+      var expectedStatusMap = getApprovalStatusCounts(userTopLevelOrg, relevantDocuments);
+
+      var expectedTotals =
+          new OrganizationStatusAggregation(
+              relevantDocuments.size(),
+              expectedTotalPoints,
+              expectedGlobalStatusMap,
+              expectedStatusMap);
+      return expectedTotals;
+    }
   }
 
-  @Test
-  void shouldIncludeYearAndTopLevelOrganizationInReport() {
-    userTopLevelOrg = randomOrganizationId();
-    var response = handleRequest();
+  @Nested
+  @DisplayName("Aggregated by direct affiliation")
+  class DirectAffiliationAggregationTests {
+    @Test
+    void shouldExcludeRejectedCandidatesFromPoints() {
+      var approval =
+          new ApprovalFactory(OUR_ORGANIZATION)
+              .withCreatorAffiliation(OUR_SUB_ORGANIZATION)
+              .withApprovalStatus(ApprovalStatus.REJECTED)
+              .build();
+      CONTAINER.addDocumentsToIndex(documentWithApprovals(approval, randomApproval()));
 
-    assertThat(response)
-        .extracting(
-            InstitutionStatusAggregationReport::topLevelOrganizationId,
-            InstitutionStatusAggregationReport::year)
-        .containsExactly(userTopLevelOrg, queryYear);
-  }
+      var response = handleRequest();
 
-  @Test
-  void shouldIncludeTotalsForTopLevelOrganization() {
-    var documentsForTopLevelOrganization =
-        createIndexDocumentsForAllApprovalStatusTypes(OUR_ORGANIZATION, OUR_ORGANIZATION);
-    var documentsForSubOrganization =
-        createIndexDocumentsForAllApprovalStatusTypes(OUR_ORGANIZATION, OUR_SUB_ORGANIZATION);
-    var unrelatedDocuments = createUnrelatedDocuments();
-    CONTAINER.addDocumentsToIndex(
-        mergeDocumentSets(
-            documentsForTopLevelOrganization, documentsForSubOrganization, unrelatedDocuments));
+      var organizationAggregation = response.byOrganization().get(OUR_SUB_ORGANIZATION);
+      assertThat(organizationAggregation.points()).isZero();
+      assertThat(organizationAggregation.approvalStatus())
+          .extractingByKey(ApprovalStatus.REJECTED)
+          .isEqualTo(1);
+    }
 
-    var relevantDocuments =
-        mergeDocumentSets(documentsForTopLevelOrganization, documentsForSubOrganization);
-    var expectedTotals = getExpectedTotalAggregation(relevantDocuments);
+    @Test
+    void shouldIncludeRejectedCandidatesInCount() {
+      var approval =
+          new ApprovalFactory(OUR_ORGANIZATION)
+              .withCreatorAffiliation(OUR_SUB_ORGANIZATION)
+              .withApprovalStatus(ApprovalStatus.REJECTED)
+              .build();
+      CONTAINER.addDocumentsToIndex(documentWithApprovals(approval, randomApproval()));
 
-    var response = handleRequest();
-    assertThat(response.totals()).isEqualTo(expectedTotals);
-  }
+      var response = handleRequest();
 
-  @Test
-  void shouldAggregateByDirectAffiliation() {
-    var documentsForTopLevelOrganization =
-        createIndexDocumentsForAllApprovalStatusTypes(OUR_ORGANIZATION, OUR_ORGANIZATION);
-    var documentsForSubOrganization =
-        createIndexDocumentsForAllApprovalStatusTypes(OUR_ORGANIZATION, OUR_SUB_ORGANIZATION);
-    var unrelatedDocuments = createUnrelatedDocuments();
-    CONTAINER.addDocumentsToIndex(
-        mergeDocumentSets(
-            documentsForTopLevelOrganization, documentsForSubOrganization, unrelatedDocuments));
+      var organizationAggregation = response.byOrganization().get(OUR_SUB_ORGANIZATION);
+      var rejectedCount = organizationAggregation.approvalStatus().get(ApprovalStatus.REJECTED);
+      assertThat(organizationAggregation.candidateCount()).isOne();
+      assertThat(rejectedCount).isOne();
+    }
 
-    var expectedAggregationForTopLevelOrganization =
-        getExpectedDirectAffiliationAggregation(OUR_ORGANIZATION, documentsForTopLevelOrganization);
-    var expectedAggregationForSubOrganization =
-        getExpectedDirectAffiliationAggregation(OUR_SUB_ORGANIZATION, documentsForSubOrganization);
+    @Test
+    void shouldReturnExpectedAggregatesForDirectAffiliations() {
+      var documentsForTopLevelOrganization =
+          createIndexDocumentsForAllApprovalStatusTypes(OUR_ORGANIZATION, OUR_ORGANIZATION);
+      var documentsForSubOrganization =
+          createIndexDocumentsForAllApprovalStatusTypes(OUR_ORGANIZATION, OUR_SUB_ORGANIZATION);
+      var unrelatedDocuments = createUnrelatedDocuments();
+      CONTAINER.addDocumentsToIndex(
+          mergeDocumentSets(
+              documentsForTopLevelOrganization, documentsForSubOrganization, unrelatedDocuments));
 
-    var response = handleRequest();
-    assertThat(response.byOrganization())
-        .extractingByKeys(OUR_ORGANIZATION, OUR_SUB_ORGANIZATION)
-        .containsExactly(
-            expectedAggregationForTopLevelOrganization, expectedAggregationForSubOrganization);
-  }
+      var expectedAggregationForTopLevelOrganization =
+          getExpectedDirectAffiliationAggregation(
+              OUR_ORGANIZATION, documentsForTopLevelOrganization);
+      var expectedAggregationForSubOrganization =
+          getExpectedDirectAffiliationAggregation(
+              OUR_SUB_ORGANIZATION, documentsForSubOrganization);
 
-  @Test
-  void shouldExcludePointsFromRejectedCandidates() {
-    var approval =
-        new ApprovalFactory(OUR_ORGANIZATION)
-            .withCreatorAffiliation(OUR_ORGANIZATION)
-            .withCreatorAffiliation(OUR_SUB_ORGANIZATION)
-            .withApprovalStatus(ApprovalStatus.REJECTED)
-            .build();
-    CONTAINER.addDocumentsToIndex(documentWithApprovals(approval, randomApproval()));
-
-    var response = handleRequest();
-
-    assertThat(response.totals().points()).isZero();
-    assertThat(response.byOrganization())
-        .extractingByKeys(OUR_ORGANIZATION, OUR_SUB_ORGANIZATION)
-        .extracting(OrganizationStatusAggregation::points)
-        .allSatisfy(points -> assertThat(points).isZero());
+      var response = handleRequest();
+      assertThat(response.byOrganization())
+          .extractingByKeys(OUR_ORGANIZATION, OUR_SUB_ORGANIZATION)
+          .containsExactly(
+              expectedAggregationForTopLevelOrganization, expectedAggregationForSubOrganization);
+    }
   }
 
   private static List<NviCandidateIndexDocument> createUnrelatedDocuments() {
@@ -265,21 +339,6 @@ class FetchInstitutionStatusAggregationHandlerTest {
   private static List<NviCandidateIndexDocument> mergeDocumentSets(
       Collection<NviCandidateIndexDocument>... documentCollections) {
     return Stream.of(documentCollections).flatMap(Collection::stream).toList();
-  }
-
-  private OrganizationStatusAggregation getExpectedTotalAggregation(
-      Collection<NviCandidateIndexDocument> relevantDocuments) {
-    var expectedTotalPoints = getSumOfTopLevelPoints(OUR_ORGANIZATION, relevantDocuments);
-    var expectedGlobalStatusMap = getGlobalApprovalStatusCounts(relevantDocuments);
-    var expectedStatusMap = getApprovalStatusCounts(userTopLevelOrg, relevantDocuments);
-
-    var expectedTotals =
-        new OrganizationStatusAggregation(
-            relevantDocuments.size(),
-            expectedTotalPoints,
-            expectedGlobalStatusMap,
-            expectedStatusMap);
-    return expectedTotals;
   }
 
   private OrganizationStatusAggregation getExpectedDirectAffiliationAggregation(
