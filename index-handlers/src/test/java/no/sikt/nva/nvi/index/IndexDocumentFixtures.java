@@ -98,11 +98,19 @@ public final class IndexDocumentFixtures {
         .withIsApplicable(true)
         .withPublicationDetails(publicationDetails)
         .withApprovals(approvals)
+        .withGlobalApprovalStatus(getGlobalApprovalStatus(approvals))
         .withNumberOfApprovals(approvals.size())
         .withPoints(randomBigDecimal())
         .withReportingPeriod(reportingPeriod)
         .withCreatedDate(Instant.now())
         .withModifiedDate(Instant.now());
+  }
+
+  private static GlobalApprovalStatus getGlobalApprovalStatus(Collection<ApprovalView> approvals) {
+    return approvals.stream()
+        .map(ApprovalView::globalApprovalStatus)
+        .findFirst()
+        .orElse(GlobalApprovalStatus.PENDING);
   }
 
   public static PublicationDetails.Builder randomPublicationDetailsBuilder(

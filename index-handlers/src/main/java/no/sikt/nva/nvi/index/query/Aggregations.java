@@ -93,6 +93,7 @@ public final class Aggregations {
   }
 
   public static Aggregation organizationApprovalStatusAggregations(String topLevelOrganizationId) {
+    shouldNotBeBlank(topLevelOrganizationId, "topLevelOrganizationId cannot be blank");
     var pointsAggregation = filterNotRejectedOrganizationPointsAggregation();
     var statusAggregation =
         termsAggregation(APPROVALS, ORGANIZATION_SUMMARIES, APPROVAL_STATUS).toAggregation();
@@ -229,7 +230,6 @@ public final class Aggregations {
   }
 
   private static Query approvalInstitutionIdQuery(String topLevelOrganizationId) {
-    shouldNotBeBlank(topLevelOrganizationId, "topLevelOrganizationId cannot be blank");
     return fieldValueQuery(INSTITUTION_ID_PATH, topLevelOrganizationId);
   }
 

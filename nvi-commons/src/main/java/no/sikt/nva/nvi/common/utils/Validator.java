@@ -36,11 +36,11 @@ public final class Validator {
     }
   }
 
-    public static void shouldNotBeBlank(String input, String errorMessage) {
-        if (isBlank(input)) {
-            throw new ValidationException(errorMessage);
-        }
+  public static void shouldNotBeBlank(String input, String errorMessage) {
+    if (isBlank(input)) {
+      throw new ValidationException(errorMessage);
     }
+  }
 
   public static void shouldNotBeEmpty(Collection<?> collection, String errorMessage) {
     if (isNull(collection) || collection.stream().filter(Objects::nonNull).toList().isEmpty()) {

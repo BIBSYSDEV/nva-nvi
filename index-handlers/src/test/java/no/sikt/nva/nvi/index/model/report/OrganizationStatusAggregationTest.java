@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.index.model.report;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.math.BigDecimal;
@@ -7,19 +8,24 @@ import java.util.Map;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 
 class OrganizationStatusAggregationTest {
 
-  @ParameterizedTest
-  @ValueSource(ints = {-1, 0})
-  void shouldThrowOnInvalidCandidateCount(int candidateCount) {
+  @Test
+  void shouldThrowOnNegativeCandidateCount() {
     assertThrows(
         IllegalArgumentException.class,
         () ->
             new OrganizationStatusAggregation(
-                candidateCount, BigDecimal.ONE, validGlobalStatus(), validApprovalStatus()));
+                -1, BigDecimal.ONE, validGlobalStatus(), validApprovalStatus()));
+  }
+
+  @Test
+  void shouldAllowZeroCandidateCount() {
+    var aggregation =
+        new OrganizationStatusAggregation(
+            0, BigDecimal.ZERO, validGlobalStatus(), validApprovalStatus());
+    assertEquals(0, aggregation.candidateCount());
   }
 
   @Test
