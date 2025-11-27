@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.index.OpenSearchContainerContext;
@@ -267,6 +268,23 @@ class FetchInstitutionStatusAggregationHandlerTest {
           .extractingByKeys(OUR_ORGANIZATION, OUR_SUB_ORGANIZATION)
           .containsExactly(
               expectedAggregationForTopLevelOrganization, expectedAggregationForSubOrganization);
+    }
+
+    @Test
+    void shouldHandleAggregationForUpToOneThousandInvolvedOrganizations() {
+      addIndexDocumentWithOneThousandInvolvedSubOrganizations();
+
+      var response = handleRequest();
+
+      assertThat(response.totals().candidateCount()).isOne();
+      assertThat(response.byOrganization()).hasSize(1000);
+    }
+
+    private void addIndexDocumentWithOneThousandInvolvedSubOrganizations() {
+      var affiliations = IntStream.range(0, 1000).mapToObj(i -> randomOrganizationId()).toList();
+      var approval =
+          new ApprovalFactory(OUR_ORGANIZATION).withCreatorAffiliations(affiliations).build();
+      CONTAINER.addDocumentsToIndex(documentWithApprovals(approval, randomApproval()));
     }
   }
 

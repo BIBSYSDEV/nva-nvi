@@ -12,7 +12,6 @@ import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomPublicationChan
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.NEW;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.PENDING;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.REJECTED;
-import static no.sikt.nva.nvi.index.query.Aggregations.APPROVAL_ORGANIZATIONS_AGGREGATION;
 import static no.sikt.nva.nvi.index.query.SearchAggregation.ORGANIZATION_APPROVAL_STATUS_AGGREGATION;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
@@ -26,7 +25,6 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.core.IsNot.not;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -75,7 +73,6 @@ import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate.Kind;
 import org.opensearch.client.opensearch._types.aggregations.Buckets;
 import org.opensearch.client.opensearch._types.aggregations.FilterAggregate;
-import org.opensearch.client.opensearch._types.aggregations.NestedAggregate;
 import org.opensearch.client.opensearch._types.aggregations.StringTermsAggregate;
 import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
 import org.opensearch.client.opensearch._types.aggregations.SumAggregate;
@@ -558,95 +555,6 @@ class OpenSearchClientTest {
   }
 
   @Test
-  void shouldReturnOrganizationAggregationWithSubAggregations() throws IOException {
-    addDocumentsToIndex(documentFromString("document_organization_aggregation_pending.json"));
-    addDocumentsToIndex(documentFromString("document_organization_aggregation_new.json"));
-    addDocumentsToIndex(documentFromString(DOCUMENT_ORGANIZATION_AGGREGATION_DISPUTE_JSON));
-    var aggregation = ORGANIZATION_APPROVAL_STATUS_AGGREGATION.getAggregationName();
-    var searchParameters = defaultSearchParameters().withAggregationType(aggregation).build();
-    var searchResponse = openSearchClient.search(searchParameters);
-    var actualAggregate = searchResponse.aggregations().get(aggregation);
-    var actualOrganizationAggregation =
-        ((NestedAggregate) actualAggregate._get())
-            .aggregations()
-            .get(SIKT_INSTITUTION_ID.toString());
-    var filterAggregate =
-        ((FilterAggregate) actualOrganizationAggregation._get())
-            .aggregations()
-            .get(APPROVAL_ORGANIZATIONS_AGGREGATION);
-    var actualOrgBuckets = ((StringTermsAggregate) filterAggregate._get()).buckets();
-    assertExpectedOrganizationAggregations(actualOrgBuckets);
-  }
-
-  @Test
-  void shouldNotIncludeRejectedPointsInOrganizationAggregationWithSubAggregations()
-      throws IOException {
-    addDocumentsToIndex(documentFromString("document_organization_aggregation_pending.json"));
-    addDocumentsToIndex(documentFromString("document_organization_aggregation_new.json"));
-    addDocumentsToIndex(documentFromString("document_organization_aggregation_rejected.json"));
-    var aggregation = ORGANIZATION_APPROVAL_STATUS_AGGREGATION.getAggregationName();
-    var searchParameters = defaultSearchParameters().withAggregationType(aggregation).build();
-    var searchResponse = openSearchClient.search(searchParameters);
-    var actualAggregate = searchResponse.aggregations().get(aggregation);
-    var actualOrganizationAggregation =
-        ((NestedAggregate) actualAggregate._get())
-            .aggregations()
-            .get(SIKT_INSTITUTION_ID.toString());
-    var filterAggregate =
-        ((FilterAggregate) actualOrganizationAggregation._get())
-            .aggregations()
-            .get(APPROVAL_ORGANIZATIONS_AGGREGATION);
-    var actualOrgBuckets = ((StringTermsAggregate) filterAggregate._get()).buckets();
-    assertExpectedPointWithoutRejectedPoints(actualOrgBuckets);
-  }
-
-  @Test
-  void shouldReturnOrganizationAggregationWithSubAggregationsForUpToOneThousandInvolvedOrgs()
-      throws IOException {
-    addDocumentsToIndex(nviCandidateWithOneThousandInvolvedOrgs());
-    var aggregation = ORGANIZATION_APPROVAL_STATUS_AGGREGATION.getAggregationName();
-    var searchParameters = defaultSearchParameters().withAggregationType(aggregation).build();
-    var searchResponse = openSearchClient.search(searchParameters);
-    var actualAggregate = searchResponse.aggregations().get(aggregation);
-    var actualOrganizationAggregation =
-        ((NestedAggregate) actualAggregate._get())
-            .aggregations()
-            .get(SIKT_INSTITUTION_ID.toString());
-    var filterAggregate =
-        ((FilterAggregate) actualOrganizationAggregation._get())
-            .aggregations()
-            .get(APPROVAL_ORGANIZATIONS_AGGREGATION);
-    var actualOrgBuckets = ((StringTermsAggregate) filterAggregate._get()).buckets();
-    assertEquals(1000, actualOrgBuckets.array().size());
-  }
-
-  @Test
-  void organizationAggregationShouldNotContainAggregationsForOtherTopLevelOrgs()
-      throws IOException {
-    addDocumentsToIndex(documentFromString("document_organization_aggregation_collaboration.json"));
-    var aggregation = ORGANIZATION_APPROVAL_STATUS_AGGREGATION.getAggregationName();
-    var searchParameters =
-        defaultSearchParameters()
-            .withTopLevelCristinOrg(SIKT_INSTITUTION_ID)
-            .withAggregationType(aggregation)
-            .build();
-    var searchResponse = openSearchClient.search(searchParameters);
-    var actualAggregate = searchResponse.aggregations().get(aggregation);
-    var actualOrganizationAggregation =
-        ((NestedAggregate) actualAggregate._get())
-            .aggregations()
-            .get(SIKT_INSTITUTION_ID.toString());
-    var filterAggregate =
-        ((FilterAggregate) actualOrganizationAggregation._get())
-            .aggregations()
-            .get(APPROVAL_ORGANIZATIONS_AGGREGATION);
-    var actualOrgBuckets = ((StringTermsAggregate) filterAggregate._get()).buckets();
-    var orgIds = actualOrgBuckets.array().stream().map(StringTermsBucket::key).toList();
-    assertThat(orgIds, containsInAnyOrder(SIKT_INSTITUTION_ID.toString()));
-    assertThat(orgIds, not(containsInAnyOrder(NTNU_INSTITUTION_ID.toString())));
-  }
-
-  @Test
   void shouldExcludeFields() throws IOException {
     var document = documentWithContributors();
     addDocumentsToIndex(document);
@@ -814,11 +722,6 @@ class OpenSearchClientTest {
     return randomIndexDocumentBuilder()
         .withApprovals(List.of(randomApproval(randomString(), topLevelOrganization)))
         .build();
-  }
-
-  private static void assertExpectedPointWithoutRejectedPoints(
-      Buckets<StringTermsBucket> actualOrgBuckets) {
-    actualOrgBuckets.array().forEach(OpenSearchClientTest::assertExpectedPointAggregations);
   }
 
   private static NviCandidateIndexDocument nviCandidateWithOneThousandInvolvedOrgs() {
