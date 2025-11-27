@@ -214,7 +214,6 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
   }
 
   private static CreateIndexRequest getCreateIndexRequest() {
-    var jsonMappings = MAPPINGS.toJsonString(); // FIXME: Tmp debug
     return new CreateIndexRequest.Builder().mappings(MAPPINGS).index(NVI_CANDIDATES_INDEX).build();
   }
 

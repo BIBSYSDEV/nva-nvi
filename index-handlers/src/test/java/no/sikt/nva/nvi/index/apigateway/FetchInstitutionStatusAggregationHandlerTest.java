@@ -197,13 +197,12 @@ class FetchInstitutionStatusAggregationHandlerTest {
       var expectedGlobalStatusMap = getGlobalApprovalStatusCounts(relevantDocuments);
       var expectedStatusMap = getApprovalStatusCounts(userTopLevelOrg, relevantDocuments);
 
-      var expectedTotals =
+      return
           new OrganizationStatusAggregation(
               relevantDocuments.size(),
               expectedTotalPoints,
               expectedGlobalStatusMap,
               expectedStatusMap);
-      return expectedTotals;
     }
   }
 
@@ -365,13 +364,12 @@ class FetchInstitutionStatusAggregationHandlerTest {
     var expectedGlobalStatusMap = getGlobalApprovalStatusCounts(relevantDocuments);
     var expectedStatusMap = getApprovalStatusCounts(userTopLevelOrg, relevantDocuments);
 
-    var expectedTotals =
+    return
         new OrganizationStatusAggregation(
             relevantDocuments.size(),
             expectedTotalPoints,
             expectedGlobalStatusMap,
             expectedStatusMap);
-    return expectedTotals;
   }
 
   private BigDecimal getSumOfTopLevelPoints(
@@ -400,7 +398,7 @@ class FetchInstitutionStatusAggregationHandlerTest {
         .reduce(BigDecimal.ZERO, BigDecimal::add);
   }
 
-  private static Map<ApprovalStatus, Integer> getEmptyApprovalStatusMap() {
+  private static HashMap<ApprovalStatus, Integer> getEmptyApprovalStatusMap() {
     var map = new HashMap<ApprovalStatus, Integer>();
     for (var status : ApprovalStatus.values()) {
       map.put(status, 0);
@@ -408,7 +406,7 @@ class FetchInstitutionStatusAggregationHandlerTest {
     return map;
   }
 
-  private static Map<GlobalApprovalStatus, Integer> getEmptyGlobalApprovalStatusMap() {
+  private static HashMap<GlobalApprovalStatus, Integer> getEmptyGlobalApprovalStatusMap() {
     var map = new HashMap<GlobalApprovalStatus, Integer>();
     for (var status : GlobalApprovalStatus.values()) {
       map.put(status, 0);
