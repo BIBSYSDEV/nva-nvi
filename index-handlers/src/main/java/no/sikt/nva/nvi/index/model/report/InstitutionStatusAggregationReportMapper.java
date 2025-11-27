@@ -14,6 +14,7 @@ import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 
+/** This mapper converts the raw aggregation output from OpenSearch to a simpler data class. */
 public final class InstitutionStatusAggregationReportMapper {
 
   private static final String POINTS_AGG = "points";
