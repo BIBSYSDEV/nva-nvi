@@ -1,6 +1,9 @@
 package no.sikt.nva.nvi.index.model.report;
 
 import static java.util.Objects.isNull;
+import static no.sikt.nva.nvi.index.query.Aggregations.AGGREGATED_BY_ORGANIZATION;
+import static no.sikt.nva.nvi.index.query.Aggregations.APPROVAL_ORGANIZATIONS_AGGREGATION;
+import static no.sikt.nva.nvi.index.query.Aggregations.FILTERED_BY_TOP_LEVEL_ORGANIZATION;
 
 import java.math.BigDecimal;
 import java.net.URI;
@@ -13,9 +16,6 @@ import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 
 public final class InstitutionStatusAggregationReportMapper {
 
-  private static final String SUB_ORGS_AGG = "subOrgs";
-  private static final String ORG_SUMMARIES_NESTED_AGG = "org_summaries_nested";
-  private static final String BY_ORGANIZATION_AGG = "by_organization";
   private static final String POINTS_AGG = "points";
   private static final String TOTAL_AGG = "total";
   private static final String GLOBAL_STATUS_AGG = "globalStatus";
@@ -72,19 +72,20 @@ public final class InstitutionStatusAggregationReportMapper {
   private static Map<URI, OrganizationStatusAggregation> extractByOrganization(
       Map<String, Aggregate> aggregations) {
 
-    var subOrgsAgg = aggregations.get(SUB_ORGS_AGG);
+    var subOrgsAgg = aggregations.get(APPROVAL_ORGANIZATIONS_AGGREGATION);
     if (isNull(subOrgsAgg)) {
       return Map.of();
     }
 
     var subOrgsFilter = subOrgsAgg.filter();
-    var orgSummariesNestedAgg = subOrgsFilter.aggregations().get(ORG_SUMMARIES_NESTED_AGG);
+    var orgSummariesNestedAgg =
+        subOrgsFilter.aggregations().get(FILTERED_BY_TOP_LEVEL_ORGANIZATION);
     if (isNull(orgSummariesNestedAgg)) {
       return Map.of();
     }
 
     var orgSummariesNested = orgSummariesNestedAgg.nested();
-    var byOrgTermsAgg = orgSummariesNested.aggregations().get(BY_ORGANIZATION_AGG);
+    var byOrgTermsAgg = orgSummariesNested.aggregations().get(AGGREGATED_BY_ORGANIZATION);
     if (isNull(byOrgTermsAgg)) {
       return Map.of();
     }

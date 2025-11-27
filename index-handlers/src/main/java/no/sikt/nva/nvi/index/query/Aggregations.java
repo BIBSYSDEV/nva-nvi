@@ -44,6 +44,8 @@ import org.opensearch.client.opensearch._types.query_dsl.Query;
 public final class Aggregations {
 
   public static final String APPROVAL_ORGANIZATIONS_AGGREGATION = "organizations";
+  public static final String FILTERED_BY_TOP_LEVEL_ORGANIZATION = "filtered_by";
+  public static final String AGGREGATED_BY_ORGANIZATION = "by_organization";
   private static final String INSTITUTION_ID_PATH = jsonPathOf(APPROVALS, INSTITUTION_ID);
   private static final String DISPUTE_AGGREGATION = "dispute";
   private static final String POINTS_AGGREGATION = "points";
@@ -119,12 +121,12 @@ public final class Aggregations {
     var nestedOrganizationAggregation =
         new Aggregation.Builder()
             .nested(nestedAggregation(APPROVALS, ORGANIZATION_SUMMARIES))
-            .aggregations(Map.of("by_organization", organizationAggregation))
+            .aggregations(Map.of(AGGREGATED_BY_ORGANIZATION, organizationAggregation))
             .build();
     var filterAggregation =
         filterAggregation(
             mustMatch(approvalInstitutionIdQuery(topLevelOrganizationId)),
-            Map.of("org_summaries_nested", nestedOrganizationAggregation));
+            Map.of(FILTERED_BY_TOP_LEVEL_ORGANIZATION, nestedOrganizationAggregation));
 
     return new Aggregation.Builder()
         .nested(nestedAggregation(APPROVALS))
@@ -132,7 +134,7 @@ public final class Aggregations {
             Map.of(
                 topLevelOrganizationId,
                 topLevelOrganizationStatusAggregation(topLevelOrganizationId),
-                "subOrgs",
+                APPROVAL_ORGANIZATIONS_AGGREGATION,
                 filterAggregation))
         .build();
   }

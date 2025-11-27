@@ -482,8 +482,6 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
       return response
           .getAggregations()
           .get("organizationApprovalStatuses")
-          .get(OUR_ORGANIZATION.toString())
-          .get("organizations")
           .get(OUR_ORGANIZATION.toString());
     }
 
@@ -500,7 +498,7 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
     private static Stream<Arguments> organizationApprovalStatusAggregationProvider() {
       return Stream.of(
           Arguments.of("/docCount", 20),
-          Arguments.of("/dispute/docCount", 2),
+          Arguments.of("/globalStatus/Dispute/docCount", 2),
           Arguments.of("/points/docCount", 15),
           Arguments.of("/status/New/docCount", 5),
           Arguments.of("/status/Pending/docCount", 5),
