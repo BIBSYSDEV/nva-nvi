@@ -18,6 +18,7 @@ CONSTRUCT {
   :pageCount ?pageCount ;
   :publicationDate ?date ;
   :publicationType ?instanceType ;
+  :parentPublicationType ?parentInstanceType ;
   :isApplicable ?isApplicable ;
   :isInternationalCollaboration ?isInternationalCollaboration ;
   :publicationChannel ?channel ;
@@ -133,6 +134,9 @@ WHERE {
       ?publicationContext :additionalIdentifier ?additionalId .
       ?additionalId :sourceName "ISBN" ;
                     :value ?isbnList .
+    } UNION {
+      ?publicationContext :entityDescription/:reference/:publicationInstance ?parentInstance .
+      ?parentInstance a ?parentInstanceType .
     }
   } UNION {
     # Check whether the publication is 'applicable', i.e. can be an NVI candidate

@@ -60,6 +60,9 @@
     "publicationType": {
       "@type": "@vocab"
     },
+    "parentPublicationType": {
+      "@type": "@vocab"
+    },
     "role": {
       "@type": "@vocab"
     },

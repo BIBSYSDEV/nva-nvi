@@ -113,5 +113,6 @@ public class ExamplePublications {
           .withContributors(List.of(ACADEMIC_CHAPTER_CONTRIBUTOR_1))
           .withTopLevelOrganizations(List.of(TOP_LEVEL_ORGANIZATION_SIKT))
           .withIsbnList(List.of(ISBN, ADDITIONAL_IDENTIFIER_ISBN))
+          .withParentPublicationType("BookAnthology")
           .build();
 }
