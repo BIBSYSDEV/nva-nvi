@@ -4,6 +4,7 @@ plugins {
 
 dependencies {
     implementation nvaCatalog.bundles.testing.junit
+    implementation nvaCatalog.datafaker
     implementation nvaCatalog.jackson.databind
     implementation nvaCatalog.mockito.core
     implementation nvaLibs.core
