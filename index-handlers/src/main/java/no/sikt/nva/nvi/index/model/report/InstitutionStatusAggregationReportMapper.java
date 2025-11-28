@@ -38,7 +38,7 @@ public final class InstitutionStatusAggregationReportMapper {
 
   private static Map<URI, OrganizationStatusAggregation> extractByOrganization(
       Aggregate aggregate) {
-    var byOrgTerms =
+    var summariesByOrganization =
         aggregate
             .nested()
             .aggregations()
@@ -52,11 +52,11 @@ public final class InstitutionStatusAggregationReportMapper {
             .sterms();
 
     var result = new HashMap<URI, OrganizationStatusAggregation>();
-    for (var bucket : byOrgTerms.buckets().array()) {
-      var orgId = URI.create(bucket.key());
-      var orgAggregation =
+    for (var bucket : summariesByOrganization.buckets().array()) {
+      var organizationId = URI.create(bucket.key());
+      var organizationSummary =
           extractOrganizationAggregation(bucket.aggregations(), (int) bucket.docCount());
-      result.put(orgId, orgAggregation);
+      result.put(organizationId, organizationSummary);
     }
     return result;
   }
