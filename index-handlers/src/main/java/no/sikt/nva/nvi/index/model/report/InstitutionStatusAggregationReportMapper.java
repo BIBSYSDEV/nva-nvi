@@ -1,9 +1,9 @@
 package no.sikt.nva.nvi.index.model.report;
 
 import static java.util.Objects.isNull;
-import static no.sikt.nva.nvi.index.query.Aggregations.AGGREGATED_BY_ORGANIZATION;
-import static no.sikt.nva.nvi.index.query.Aggregations.APPROVAL_ORGANIZATIONS_AGGREGATION;
-import static no.sikt.nva.nvi.index.query.Aggregations.FILTERED_BY_TOP_LEVEL_ORGANIZATION;
+import static no.sikt.nva.nvi.index.query.InstitutionStatusAggregation.AGGREGATED_BY_ORGANIZATION;
+import static no.sikt.nva.nvi.index.query.InstitutionStatusAggregation.FILTERED_BY_TOP_LEVEL_ORGANIZATION;
+import static no.sikt.nva.nvi.index.query.InstitutionStatusAggregation.ORGANIZATION_REPORT_AGGREGATION;
 
 import java.math.BigDecimal;
 import java.net.URI;
@@ -50,7 +50,7 @@ public final class InstitutionStatusAggregationReportMapper {
     }
     var filterAgg = topLevelOrgAgg.filter();
     if (filterAgg.docCount() == 0) {
-      return createEmptyOrganizationAggregation();
+      return createEmptyOrganizationAggregation(); // FIXME: Can this happen?
     }
     return extractOrganizationAggregation(filterAgg.aggregations(), (int) filterAgg.docCount());
   }
@@ -58,7 +58,7 @@ public final class InstitutionStatusAggregationReportMapper {
   private static Map<URI, OrganizationStatusAggregation> extractByOrganization(
       Map<String, Aggregate> aggregations) {
 
-    var subOrgsAgg = aggregations.get(APPROVAL_ORGANIZATIONS_AGGREGATION);
+    var subOrgsAgg = aggregations.get(ORGANIZATION_REPORT_AGGREGATION);
     if (isNull(subOrgsAgg)) {
       return Map.of();
     }

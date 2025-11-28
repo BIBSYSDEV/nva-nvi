@@ -23,11 +23,12 @@ import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.aggregations.TermsAggregation;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 
-public class InstitutionStatusAggregation {
+public final class InstitutionStatusAggregation {
 
-  public static final String APPROVAL_ORGANIZATIONS_AGGREGATION = "organizations";
+  public static final String ORGANIZATION_REPORT_AGGREGATION = "organizations";
   public static final String FILTERED_BY_TOP_LEVEL_ORGANIZATION = "filtered_by";
   public static final String AGGREGATED_BY_ORGANIZATION = "by_organization";
+
   private static final String INSTITUTION_ID_PATH = jsonPathOf(APPROVALS, INSTITUTION_ID);
   private static final String POINTS_AGGREGATION = "points";
   private static final String TOTAL_POINTS_SUM_AGGREGATION = "total";
@@ -74,7 +75,7 @@ public class InstitutionStatusAggregation {
             Map.of(
                 topLevelOrganizationId,
                 topLevelOrganizationStatusAggregation(topLevelOrganizationId),
-                APPROVAL_ORGANIZATIONS_AGGREGATION,
+                ORGANIZATION_REPORT_AGGREGATION,
                 filterAggregation))
         .build();
   }
