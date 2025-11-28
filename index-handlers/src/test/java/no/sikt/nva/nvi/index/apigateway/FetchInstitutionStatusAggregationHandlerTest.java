@@ -197,12 +197,11 @@ class FetchInstitutionStatusAggregationHandlerTest {
       var expectedGlobalStatusMap = getGlobalApprovalStatusCounts(relevantDocuments);
       var expectedStatusMap = getApprovalStatusCounts(userTopLevelOrg, relevantDocuments);
 
-      return
-          new OrganizationStatusAggregation(
-              relevantDocuments.size(),
-              expectedTotalPoints,
-              expectedGlobalStatusMap,
-              expectedStatusMap);
+      return new OrganizationStatusAggregation(
+          relevantDocuments.size(),
+          expectedTotalPoints,
+          expectedGlobalStatusMap,
+          expectedStatusMap);
     }
   }
 
@@ -364,12 +363,8 @@ class FetchInstitutionStatusAggregationHandlerTest {
     var expectedGlobalStatusMap = getGlobalApprovalStatusCounts(relevantDocuments);
     var expectedStatusMap = getApprovalStatusCounts(userTopLevelOrg, relevantDocuments);
 
-    return
-        new OrganizationStatusAggregation(
-            relevantDocuments.size(),
-            expectedTotalPoints,
-            expectedGlobalStatusMap,
-            expectedStatusMap);
+    return new OrganizationStatusAggregation(
+        relevantDocuments.size(), expectedTotalPoints, expectedGlobalStatusMap, expectedStatusMap);
   }
 
   private BigDecimal getSumOfTopLevelPoints(

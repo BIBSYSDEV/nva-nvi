@@ -25,11 +25,7 @@ public record OrganizationStatusAggregation(
     points = adjustScaleAndRoundingMode(points);
 
     validateAllEnumValues(GlobalApprovalStatus.class, globalApprovalStatus, "globalApprovalStatus");
-    try {
-      globalApprovalStatus = Map.copyOf(globalApprovalStatus);
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
+    globalApprovalStatus = Map.copyOf(globalApprovalStatus);
 
     validateAllEnumValues(ApprovalStatus.class, approvalStatus, "approvalStatus");
     approvalStatus = Map.copyOf(approvalStatus);
