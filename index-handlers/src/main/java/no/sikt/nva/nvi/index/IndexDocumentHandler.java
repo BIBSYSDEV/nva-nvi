@@ -211,16 +211,16 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
     }
   }
 
-  private void handleFailure(Failure<?> failure, String messageArgument) {
-    validateErrorMessage(messageArgument);
-    logFailure(FAILED_TO_PARSE_EVENT_MESSAGE, messageArgument, failure.getException());
-    sqsClient.sendMessage(failure.getException().getMessage(), dlqUrl);
+  private void handleFailure(Failure<?> failure, String messageBody) {
+    validateErrorMessage(messageBody);
+    logFailure(FAILED_TO_PARSE_EVENT_MESSAGE, messageBody, failure.getException());
+    sqsClient.sendMessage(getStackTrace(failure.getException()), dlqUrl);
   }
 
   private void handleFailure(
-      Failure<?> failure, String message, String messageArgument, UUID candidateIdentifier) {
+      Failure<?> failure, String errorMessage, String messageArgument, UUID candidateIdentifier) {
     validateErrorMessage(messageArgument);
-    logFailure(message, messageArgument, failure.getException());
-    sqsClient.sendMessage(failure.getException().getMessage(), dlqUrl, candidateIdentifier);
+    logFailure(errorMessage, messageArgument, failure.getException());
+    sqsClient.sendMessage(getStackTrace(failure.getException()), dlqUrl, candidateIdentifier);
   }
 }

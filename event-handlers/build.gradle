@@ -68,6 +68,7 @@ test {
     environment("PERSISTED_RESOURCE_QUEUE_URL", "PersistedResourceQueue")
     environment("DB_EVENTS_QUEUE_URL", "DbEventsQueue")
     environment("INDEX_DLQ", "IndexDlq")
+    environment("EVALUATION_DLQ_URL", "EvaluationDlq")
     environment("EXPANDED_RESOURCES_BUCKET", "ignoredBucket")
     environment("BACKEND_CLIENT_AUTH_URL", "My url")
     environment("BACKEND_CLIENT_SECRET_NAME", "My secret name")

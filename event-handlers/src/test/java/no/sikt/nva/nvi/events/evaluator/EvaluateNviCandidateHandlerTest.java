@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.events.evaluator;
 
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
+import static no.sikt.nva.nvi.common.EnvironmentFixtures.EVALUATION_DLQ_URL;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.getEvaluateNviCandidateHandlerEnvironment;
 import static no.sikt.nva.nvi.common.SampleExpandedPublicationFactory.mapOrganizationToAffiliation;
 import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
@@ -36,8 +37,8 @@ import static nva.commons.core.attempt.Try.attempt;
 import static nva.commons.core.ioutils.IoUtils.stringFromResources;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.Arguments.argumentSet;
 import static org.mockito.ArgumentMatchers.any;
@@ -45,6 +46,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -72,6 +74,7 @@ import no.sikt.nva.nvi.common.model.NviCreator;
 import no.sikt.nva.nvi.common.model.PublicationChannel;
 import no.sikt.nva.nvi.common.model.PublicationDate;
 import no.sikt.nva.nvi.common.model.ScientificValue;
+import no.sikt.nva.nvi.common.queue.NviReceiveMessage;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
@@ -82,6 +85,7 @@ import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.sikt.nva.nvi.test.SampleExpandedContributor;
 import no.sikt.nva.nvi.test.SampleExpandedPublication;
+import no.unit.nva.commons.json.JsonUtils;
 import nva.commons.core.ioutils.IoUtils;
 import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
@@ -448,10 +452,20 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
   }
 
   @Test
-  void shouldThrowExceptionIfFileDoesntExist() {
+  void shouldPlaceSqsMessageWithExceptionDetailOnDlqWhenEvaluationFails()
+      throws JsonProcessingException {
     var event =
         createEvent(new PersistedResourceMessage(UriWrapper.fromUri("s3://dummy").getUri()));
-    assertThrows(RuntimeException.class, () -> handler.handleRequest(event, CONTEXT));
+    handler.handleRequest(event, CONTEXT);
+
+    var dlqMessage = fetchMessageFromDlq();
+
+    assertFalse(
+        JsonUtils.dtoObjectMapper
+            .readTree(dlqMessage.body())
+            .get("exception")
+            .toPrettyString()
+            .isEmpty());
   }
 
   @Test
@@ -470,17 +484,27 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
         .thenReturn(Optional.of(internalServerErrorResponse));
     var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH), ACADEMIC_ARTICLE);
     var event = createEvent(new PersistedResourceMessage(fileUri));
-    assertThrows(RuntimeException.class, () -> handler.handleRequest(event, CONTEXT));
+    handler.handleRequest(event, CONTEXT);
+
+    var message = fetchMessageFromDlq();
+
+    assertTrue(message.body().contains("exception"));
   }
 
   @Test
-  void shouldThrowExceptionWhenProblemsFetchingCustomer() throws IOException {
+  void shouldSendMessageToDlqWhenProblemsFetchingCustomer() throws IOException {
     mockCristinResponseAndCustomerApiResponseForNviInstitution(internalServerErrorResponse);
     var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH), ACADEMIC_ARTICLE);
     var event = createEvent(new PersistedResourceMessage(fileUri));
-    var appender = LogUtils.getTestingAppenderForRootLogger();
-    assertThrows(RuntimeException.class, () -> handler.handleRequest(event, CONTEXT));
-    assertThat(appender.getMessages()).contains("status code: 500");
+    handler.handleRequest(event, CONTEXT);
+
+    var message = fetchMessageFromDlq();
+
+    assertThat(message.body()).contains("status code: 500");
+  }
+
+  private NviReceiveMessage fetchMessageFromDlq() {
+    return queueClient.receiveMessage(EVALUATION_DLQ_URL.getValue(), 1).messages().getFirst();
   }
 
   @Test

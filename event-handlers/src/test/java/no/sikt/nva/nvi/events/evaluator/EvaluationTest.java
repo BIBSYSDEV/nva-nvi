@@ -113,10 +113,14 @@ class EvaluationTest {
     return upsertNviCandidateHandler;
   }
 
-  protected CandidateType getEvaluationResult(SampleExpandedPublication publication) {
+  protected void evaluate(SampleExpandedPublication publication) {
     var fileUri = scenario.setupExpandedPublicationInS3(publication);
     var event = createEvent(new PersistedResourceMessage(fileUri));
     handler.handleRequest(event, CONTEXT);
+  }
+
+  protected CandidateType getEvaluationResult(SampleExpandedPublication publication) {
+    evaluate(publication);
     return getMessageBody().candidate();
   }
 
