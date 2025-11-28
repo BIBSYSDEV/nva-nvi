@@ -26,29 +26,14 @@ public final class InstitutionStatusAggregationReportMapper {
 
   public static InstitutionStatusAggregationReport fromAggregation(
       Aggregate aggregate, String year, URI topLevelOrganizationId) {
-
-    if (isNull(aggregate)) {
-      return emptyReport(year, topLevelOrganizationId);
-    }
-
     var nestedAgg = aggregate.nested();
     var aggregations = nestedAgg.aggregations();
-
-    if (isNull(aggregations) || aggregations.isEmpty()) {
-      return emptyReport(year, topLevelOrganizationId);
-    }
 
     var totals = extractTotals(aggregations, topLevelOrganizationId.toString());
     var byOrganization = extractByOrganization(aggregations);
 
     return new InstitutionStatusAggregationReport(
         year, topLevelOrganizationId, totals, byOrganization);
-  }
-
-  private static InstitutionStatusAggregationReport emptyReport(
-      String year, URI topLevelOrganizationId) {
-    return new InstitutionStatusAggregationReport(
-        year, topLevelOrganizationId, createEmptyOrganizationAggregation(), Map.of());
   }
 
   private static OrganizationStatusAggregation createEmptyOrganizationAggregation() {

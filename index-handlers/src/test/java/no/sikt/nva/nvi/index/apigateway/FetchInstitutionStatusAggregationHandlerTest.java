@@ -25,7 +25,7 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.IntStream;
@@ -393,16 +393,16 @@ class FetchInstitutionStatusAggregationHandlerTest {
         .reduce(BigDecimal.ZERO, BigDecimal::add);
   }
 
-  private static HashMap<ApprovalStatus, Integer> getEmptyApprovalStatusMap() {
-    var map = new HashMap<ApprovalStatus, Integer>();
+  private static Map<ApprovalStatus, Integer> getEmptyApprovalStatusMap() {
+    var map = new EnumMap<ApprovalStatus, Integer>(ApprovalStatus.class);
     for (var status : ApprovalStatus.values()) {
       map.put(status, 0);
     }
     return map;
   }
 
-  private static HashMap<GlobalApprovalStatus, Integer> getEmptyGlobalApprovalStatusMap() {
-    var map = new HashMap<GlobalApprovalStatus, Integer>();
+  private static Map<GlobalApprovalStatus, Integer> getEmptyGlobalApprovalStatusMap() {
+    var map = new EnumMap<GlobalApprovalStatus, Integer>(GlobalApprovalStatus.class);
     for (var status : GlobalApprovalStatus.values()) {
       map.put(status, 0);
     }

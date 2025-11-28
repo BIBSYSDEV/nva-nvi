@@ -86,14 +86,6 @@ public final class TestUtils {
     return randomBigDecimal.setScale(scale, RoundingMode.HALF_UP);
   }
 
-  public static BigDecimal toBigDecimal(Object number) {
-    return new BigDecimal(number.toString()).setScale(SCALE, RoundingMode.HALF_UP);
-  }
-
-  public static boolean hasEqualValue(BigDecimal first, BigDecimal second) {
-    return first.compareTo(second) == 0;
-  }
-
   public static HttpResponse<String> createResponse(int status, String body) {
     var response = (HttpResponse<String>) mock(HttpResponse.class);
     when(response.statusCode()).thenReturn(status);
