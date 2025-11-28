@@ -9,24 +9,18 @@ import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.REJECTED;
 import static no.sikt.nva.nvi.index.query.ApprovalQuery.approvalBelongsTo;
 import static no.sikt.nva.nvi.index.query.ApprovalQuery.approvalStatusIs;
 import static no.sikt.nva.nvi.index.utils.AggregationFunctions.filterAggregation;
-import static no.sikt.nva.nvi.index.utils.AggregationFunctions.sumAggregation;
-import static no.sikt.nva.nvi.index.utils.AggregationFunctions.termsAggregation;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.assignmentsQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.containsNonFinalizedStatusQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.fieldValueQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.matchAtLeastOne;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.multipleApprovalsQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.mustMatch;
-import static no.sikt.nva.nvi.index.utils.QueryFunctions.mustNotMatch;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.nestedQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.notDisputeQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.statusQuery;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVALS;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVAL_STATUS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.GLOBAL_APPROVAL_STATUS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.INSTITUTION_ID;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.INSTITUTION_POINTS;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.POINTS;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -38,11 +32,7 @@ import org.opensearch.client.opensearch._types.query_dsl.Query;
 public final class Aggregations {
 
   private static final String INSTITUTION_ID_PATH = jsonPathOf(APPROVALS, INSTITUTION_ID);
-  private static final String POINTS_AGGREGATION = "points";
-  private static final String TOTAL_POINTS_SUM_AGGREGATION = "total";
   private static final String ALL_AGGREGATIONS = "all";
-  private static final String STATUS_AGGREGATION = "status";
-  private static final String GLOBAL_STATUS_AGGREGATION = "globalStatus";
 
   private Aggregations() {}
 
@@ -51,24 +41,6 @@ public final class Aggregations {
     return aggregationTypeIsNotSpecified(aggregationType)
         ? generateAllDefaultAggregationTypes(username, topLevelCristinOrg)
         : generateSingleAggregation(aggregationType, username, topLevelCristinOrg);
-  }
-
-  public static Aggregation topLevelOrganizationStatusAggregation(String topLevelOrganizationId) {
-    var pointAggregation = filterNotRejectedPointsAggregation();
-    var statusAggregation = termsAggregation(APPROVALS, APPROVAL_STATUS).toAggregation();
-    var globalStatusAggregation =
-        termsAggregation(APPROVALS, GLOBAL_APPROVAL_STATUS).toAggregation();
-
-    var organizationAggregation =
-        Map.of(
-            STATUS_AGGREGATION,
-            statusAggregation,
-            POINTS_AGGREGATION,
-            pointAggregation,
-            GLOBAL_STATUS_AGGREGATION,
-            globalStatusAggregation);
-    return filterAggregation(
-        mustMatch(approvalInstitutionIdQuery(topLevelOrganizationId)), organizationAggregation);
   }
 
   public static Aggregation totalCountAggregation(String topLevelCristinOrg) {
@@ -121,14 +93,6 @@ public final class Aggregations {
 
   public static Aggregation disputeAggregation(String topLevelCristinOrg) {
     return filterAggregation(mustMatch(globalStatusDisputeForInstitution(topLevelCristinOrg)));
-  }
-
-  // TODO: Rename to make it clear this is top-level
-  private static Aggregation filterNotRejectedPointsAggregation() {
-    return filterAggregation(
-        mustNotMatch(REJECTED.getValue(), jsonPathOf(APPROVALS, APPROVAL_STATUS)),
-        Map.of(
-            TOTAL_POINTS_SUM_AGGREGATION, sumAggregation(APPROVALS, POINTS, INSTITUTION_POINTS)));
   }
 
   private static Query approvalInstitutionIdQuery(String topLevelOrganizationId) {

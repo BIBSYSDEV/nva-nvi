@@ -1,9 +1,9 @@
 package no.sikt.nva.nvi.index.model.report;
 
-import static java.util.Objects.isNull;
 import static no.sikt.nva.nvi.index.query.InstitutionStatusAggregation.AGGREGATED_BY_ORGANIZATION;
 import static no.sikt.nva.nvi.index.query.InstitutionStatusAggregation.FILTERED_BY_TOP_LEVEL_ORGANIZATION;
 import static no.sikt.nva.nvi.index.query.InstitutionStatusAggregation.ORGANIZATION_REPORT_AGGREGATION;
+import static no.sikt.nva.nvi.index.query.InstitutionStatusAggregation.ORGANIZATION_REPORT_AGGREGATION_TOTALS;
 
 import java.math.BigDecimal;
 import java.net.URI;
@@ -26,57 +26,33 @@ public final class InstitutionStatusAggregationReportMapper {
 
   public static InstitutionStatusAggregationReport fromAggregation(
       Aggregate aggregate, String year, URI topLevelOrganizationId) {
-    var nestedAgg = aggregate.nested();
-    var aggregations = nestedAgg.aggregations();
-
-    var totals = extractTotals(aggregations, topLevelOrganizationId.toString());
-    var byOrganization = extractByOrganization(aggregations);
-
     return new InstitutionStatusAggregationReport(
-        year, topLevelOrganizationId, totals, byOrganization);
+        year, topLevelOrganizationId, extractTotals(aggregate), extractByOrganization(aggregate));
   }
 
-  private static OrganizationStatusAggregation createEmptyOrganizationAggregation() {
-    return new OrganizationStatusAggregation(
-        0, BigDecimal.ZERO, initializeGlobalApprovalStatusMap(), initializeApprovalStatusMap());
-  }
+  private static OrganizationStatusAggregation extractTotals(Aggregate aggregate) {
+    var totalsAggregate =
+        aggregate.nested().aggregations().get(ORGANIZATION_REPORT_AGGREGATION_TOTALS).filter();
 
-  private static OrganizationStatusAggregation extractTotals(
-      Map<String, Aggregate> aggregations, String topLevelOrgId) {
-
-    var topLevelOrgAgg = aggregations.get(topLevelOrgId);
-    if (isNull(topLevelOrgAgg)) {
-      return createEmptyOrganizationAggregation();
-    }
-    var filterAgg = topLevelOrgAgg.filter();
-    if (filterAgg.docCount() == 0) {
-      return createEmptyOrganizationAggregation(); // FIXME: Can this happen?
-    }
-    return extractOrganizationAggregation(filterAgg.aggregations(), (int) filterAgg.docCount());
+    return extractOrganizationAggregation(
+        totalsAggregate.aggregations(), (int) totalsAggregate.docCount());
   }
 
   private static Map<URI, OrganizationStatusAggregation> extractByOrganization(
-      Map<String, Aggregate> aggregations) {
+      Aggregate aggregate) {
 
-    var subOrgsAgg = aggregations.get(ORGANIZATION_REPORT_AGGREGATION);
-    if (isNull(subOrgsAgg)) {
-      return Map.of();
-    }
-
-    var subOrgsFilter = subOrgsAgg.filter();
-    var orgSummariesNestedAgg =
-        subOrgsFilter.aggregations().get(FILTERED_BY_TOP_LEVEL_ORGANIZATION);
-    if (isNull(orgSummariesNestedAgg)) {
-      return Map.of();
-    }
-
-    var orgSummariesNested = orgSummariesNestedAgg.nested();
-    var byOrgTermsAgg = orgSummariesNested.aggregations().get(AGGREGATED_BY_ORGANIZATION);
-    if (isNull(byOrgTermsAgg)) {
-      return Map.of();
-    }
-
-    var byOrgTerms = byOrgTermsAgg.sterms();
+    var byOrgTerms =
+        aggregate
+            .nested()
+            .aggregations()
+            .get(ORGANIZATION_REPORT_AGGREGATION)
+            .filter()
+            .aggregations()
+            .get(FILTERED_BY_TOP_LEVEL_ORGANIZATION)
+            .nested()
+            .aggregations()
+            .get(AGGREGATED_BY_ORGANIZATION)
+            .sterms();
 
     var result = new LinkedHashMap<URI, OrganizationStatusAggregation>();
     for (var bucket : byOrgTerms.buckets().array()) {
