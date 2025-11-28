@@ -4,9 +4,9 @@ plugins {
 
 dependencies {
     testFixturesAnnotationProcessor nvaCatalog.errorprone
-    testImplementation libs.aws.sdk2.sns
-    testImplementation libs.aws.sdk2.sqs
-    testImplementation libs.junit.platform.suite
+    testImplementation nvaCatalog.aws.sdk2.sns
+    testImplementation nvaCatalog.aws.sdk2.sqs
+    testImplementation nvaCatalog.junit.platform.suite
     testImplementation nvaCatalog.assertj.core
     testImplementation nvaCatalog.aws.java.sdk.core
     testImplementation nvaCatalog.aws.lambda.core
