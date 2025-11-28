@@ -10,8 +10,8 @@ import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomPages;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomPublicationChannel;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
+import static no.sikt.nva.nvi.test.TestUtils.randomTitle;
 import static no.sikt.nva.nvi.test.TestUtils.randomUriWithSuffix;
-import static no.unit.nva.testutils.RandomDataGenerator.FAKER;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -127,7 +127,7 @@ public final class IndexDocumentFixtures {
     var publicationId = randomUriWithSuffix(randomUUID().toString());
     return PublicationDetails.builder()
         .withId(publicationId.toString())
-        .withTitle(FAKER.book().title())
+        .withTitle(randomTitle())
         .withAbstract(randomString())
         .withPublicationDate(randomPublicationDateDtoInYear(DEFAULT_YEAR))
         .withPublicationChannel(randomPublicationChannel())
