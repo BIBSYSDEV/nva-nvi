@@ -37,8 +37,9 @@ import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.ApprovalView;
 import no.sikt.nva.nvi.index.model.document.InstitutionPointsView;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
+import no.sikt.nva.nvi.index.model.report.DirectAffiliationAggregation;
 import no.sikt.nva.nvi.index.model.report.InstitutionStatusAggregationReport;
-import no.sikt.nva.nvi.index.model.report.OrganizationStatusAggregation;
+import no.sikt.nva.nvi.index.model.report.TopLevelAggregation;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
@@ -149,7 +150,7 @@ class FetchInstitutionStatusAggregationHandlerTest {
       var response = handleRequest();
 
       var expectedTotals =
-          new OrganizationStatusAggregation(
+          new TopLevelAggregation(
               0, BigDecimal.ZERO, getEmptyGlobalApprovalStatusMap(), getEmptyApprovalStatusMap());
       var expectedResponse =
           new InstitutionStatusAggregationReport(
@@ -191,13 +192,13 @@ class FetchInstitutionStatusAggregationHandlerTest {
       assertThat(response.totals().points()).isZero();
     }
 
-    private OrganizationStatusAggregation getExpectedTotalAggregation(
+    private TopLevelAggregation getExpectedTotalAggregation(
         Collection<NviCandidateIndexDocument> relevantDocuments) {
       var expectedTotalPoints = getSumOfTopLevelPoints(OUR_ORGANIZATION, relevantDocuments);
       var expectedGlobalStatusMap = getGlobalApprovalStatusCounts(relevantDocuments);
       var expectedStatusMap = getApprovalStatusCounts(userTopLevelOrg, relevantDocuments);
 
-      return new OrganizationStatusAggregation(
+      return new TopLevelAggregation(
           relevantDocuments.size(),
           expectedTotalPoints,
           expectedGlobalStatusMap,
@@ -357,13 +358,13 @@ class FetchInstitutionStatusAggregationHandlerTest {
     return Stream.of(documentCollections).flatMap(Collection::stream).toList();
   }
 
-  private OrganizationStatusAggregation getExpectedDirectAffiliationAggregation(
+  private DirectAffiliationAggregation getExpectedDirectAffiliationAggregation(
       URI organization, Collection<NviCandidateIndexDocument> relevantDocuments) {
     var expectedTotalPoints = getSumOfCreatorPoints(organization, relevantDocuments);
     var expectedGlobalStatusMap = getGlobalApprovalStatusCounts(relevantDocuments);
     var expectedStatusMap = getApprovalStatusCounts(userTopLevelOrg, relevantDocuments);
 
-    return new OrganizationStatusAggregation(
+    return new DirectAffiliationAggregation(
         relevantDocuments.size(), expectedTotalPoints, expectedGlobalStatusMap, expectedStatusMap);
   }
 

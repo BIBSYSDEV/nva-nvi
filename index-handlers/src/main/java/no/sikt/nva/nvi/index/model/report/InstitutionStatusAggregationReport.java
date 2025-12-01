@@ -6,5 +6,5 @@ import java.util.Map;
 public record InstitutionStatusAggregationReport(
     String year,
     URI topLevelOrganizationId,
-    OrganizationStatusAggregation totals,
-    Map<URI, OrganizationStatusAggregation> byOrganization) {}
+    TopLevelAggregation totals,
+    Map<URI, DirectAffiliationAggregation> byOrganization) {}

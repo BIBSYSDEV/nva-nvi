@@ -29,15 +29,13 @@ public final class InstitutionStatusAggregationReportMapper {
         year, topLevelOrganizationId, extractTotals(aggregate), extractByOrganization(aggregate));
   }
 
-  private static OrganizationStatusAggregation extractTotals(Aggregate aggregate) {
+  private static TopLevelAggregation extractTotals(Aggregate aggregate) {
     var totalsAggregate = aggregate.nested().aggregations().get(TOP_LEVEL_AGGREGATE).filter();
-
-    return extractOrganizationAggregation(
+    return extractTopLevelAggregation(
         totalsAggregate.aggregations(), (int) totalsAggregate.docCount());
   }
 
-  private static Map<URI, OrganizationStatusAggregation> extractByOrganization(
-      Aggregate aggregate) {
+  private static Map<URI, DirectAffiliationAggregation> extractByOrganization(Aggregate aggregate) {
     var summariesByOrganization =
         aggregate
             .nested()
@@ -51,23 +49,32 @@ public final class InstitutionStatusAggregationReportMapper {
             .get(BY_ORGANIZATION)
             .sterms();
 
-    var result = new HashMap<URI, OrganizationStatusAggregation>();
+    var result = new HashMap<URI, DirectAffiliationAggregation>();
     for (var bucket : summariesByOrganization.buckets().array()) {
       var organizationId = URI.create(bucket.key());
       var organizationSummary =
-          extractOrganizationAggregation(bucket.aggregations(), (int) bucket.docCount());
+          extractDirectAffiliationAggregation(bucket.aggregations(), (int) bucket.docCount());
       result.put(organizationId, organizationSummary);
     }
     return result;
   }
 
-  private static OrganizationStatusAggregation extractOrganizationAggregation(
+  private static TopLevelAggregation extractTopLevelAggregation(
       Map<String, Aggregate> aggregations, int candidateCount) {
     var points = extractPoints(aggregations);
     var globalApprovalStatus = extractGlobalApprovalStatusCounts(aggregations);
     var approvalStatus = extractApprovalStatusCounts(aggregations);
 
-    return new OrganizationStatusAggregation(
+    return new TopLevelAggregation(candidateCount, points, globalApprovalStatus, approvalStatus);
+  }
+
+  private static DirectAffiliationAggregation extractDirectAffiliationAggregation(
+      Map<String, Aggregate> aggregations, int candidateCount) {
+    var points = extractPoints(aggregations);
+    var globalApprovalStatus = extractGlobalApprovalStatusCounts(aggregations);
+    var approvalStatus = extractApprovalStatusCounts(aggregations);
+
+    return new DirectAffiliationAggregation(
         candidateCount, points, globalApprovalStatus, approvalStatus);
   }
 
