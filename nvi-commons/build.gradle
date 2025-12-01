@@ -3,9 +3,9 @@ plugins {
 }
 
 dependencies {
-    implementation libs.aws.sdk2.dynamodbenhanced
-    implementation libs.aws.sdk2.sns
-    implementation libs.aws.sdk2.sqs
+    implementation nvaCatalog.aws.sdk2.dynamodbenhanced
+    implementation nvaCatalog.aws.sdk2.sns
+    implementation nvaCatalog.aws.sdk2.sqs
     implementation nvaCatalog.aws.apache.client
     implementation nvaCatalog.aws.lambda.events
     implementation nvaCatalog.aws.sdk2.dynamo
@@ -21,8 +21,8 @@ dependencies {
     implementation nvaLibs.json
     implementation nvaLibs.s3
     testFixturesAnnotationProcessor nvaCatalog.errorprone
-    testFixturesImplementation libs.aws.sdk2.sqs
-    testFixturesImplementation libs.dynamodDbLocal
+    testFixturesImplementation nvaCatalog.aws.sdk2.sqs
+    testFixturesImplementation nvaCatalog.aws.dynamodb.local
     testFixturesImplementation nvaCatalog.aws.lambda.events
     testFixturesImplementation nvaCatalog.aws.sdk2.s3
     testFixturesImplementation nvaCatalog.bundles.testing.cucumber
@@ -37,8 +37,8 @@ dependencies {
     testFixturesImplementation nvaLibs.s3
     testFixturesImplementation nvaLibs.testutils
     testFixturesImplementation project(':nvi-test')
-    testImplementation libs.dynamodDbLocal
-    testImplementation libs.junit.platform.suite
+    testImplementation nvaCatalog.aws.dynamodb.local
+    testImplementation nvaCatalog.junit.platform.suite
     testImplementation nvaCatalog.assertj.core
     testImplementation nvaCatalog.bundles.testing.cucumber
     testImplementation nvaCatalog.bundles.testing.junit
