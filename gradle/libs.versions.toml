@@ -1,18 +1,7 @@
 [versions]
-awsSdk2 = { strictly = '2.31.78' }
-dynamoDbLocal = { strictly = '2.6.1' }
-jackson = { strictly = '2.19.1' }
 jsonassert = { strictly = '1.5.3'}
-junitPlatform = { strictly = '1.13.3' } # May need to sync minor&patch version with 'junit' version
 nvaLanguage = { strictly = '1.2.1' }
 
 [libraries]
-aws-sdk2-dynamodbenhanced = { group = 'software.amazon.awssdk', name = 'dynamodb-enhanced', version.ref = 'awsSdk2' }
-aws-sdk2-regions = { group = 'software.amazon.awssdk', name = 'regions', version.ref = 'awsSdk2' }
-aws-sdk2-sns = { group = 'software.amazon.awssdk', name = 'sns', version.ref = 'awsSdk2' }
-aws-sdk2-sqs = { group = 'software.amazon.awssdk', name = 'sqs', version.ref = 'awsSdk2' }
-dynamodDbLocal = { group = 'com.amazonaws', name = 'DynamoDBLocal', version.ref = 'dynamoDbLocal' }
 jsonassert = { group = 'org.skyscreamer', name = 'jsonassert', version.ref = 'jsonassert' }
-jackson-csv = { group = 'com.fasterxml.jackson.dataformat', name = 'jackson-dataformat-csv', version.ref = 'jackson' }
-junit-platform-suite = { group = 'org.junit.platform', name = 'junit-platform-suite', version.ref = 'junitPlatform' }
 nva-language = { group = 'com.github.bibsysdev', name = 'nva-language', version.ref = 'nvaLanguage' }
