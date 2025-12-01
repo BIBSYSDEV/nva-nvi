@@ -97,6 +97,9 @@ WHERE {
     OPTIONAL { ?date :day ?day }
   } UNION {
     # Find all publication channels
+    ?publication :entityDescription ?entityDescription .
+    ?entityDescription :reference ?reference .
+
     ?reference a :Reference ;
     :publicationInstance ?instance .
     ?instance a ?instanceType .
@@ -122,6 +125,9 @@ WHERE {
     OPTIONAL { ?channel :onlineIssn ?onlineIssn }
     OPTIONAL { ?channel :printIssn ?printIssn }
   } UNION {
+    ?publication :entityDescription ?entityDescription .
+    ?entityDescription :reference ?reference .
+
     ?reference a :Reference .
     {
       ?reference :publicationContext ?publicationContext .
@@ -142,6 +148,9 @@ WHERE {
     # Check whether the publication is 'applicable', i.e. can be an NVI candidate
     ?publication a :Publication ;
     :status ?status .
+
+    ?publication :entityDescription ?entityDescription .
+    ?entityDescription :reference ?reference .
 
     # Find publication type (if applicable)
     VALUES ?applicablePublicationType {

@@ -71,6 +71,13 @@ class PublicationLoaderServiceTest {
     assertEquals(InstanceType.NON_CANDIDATE, publicationDto.parentPublicationType());
   }
 
+  @Test
+  void shouldLoadNestedPublicationInstanceTypeWhenNviReportableType() {
+    var publicationDto =
+        parseExampleDocument("expandedPublications/nonCandidateAcademicChapter.json");
+    assertEquals(InstanceType.ACADEMIC_MONOGRAPH, publicationDto.parentPublicationType());
+  }
+
   private PublicationDto parseExampleDocument(String filename) {
     var document = stringFromResources(Path.of(filename));
     var publicationBucketUri = addToS3(filename, document);
