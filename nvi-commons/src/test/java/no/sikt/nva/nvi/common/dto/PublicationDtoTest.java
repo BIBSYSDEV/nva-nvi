@@ -72,8 +72,8 @@ class PublicationDtoTest {
     var exception = assertThrows(ValidationException.class, executable);
 
     assertEquals(
-        "AcademicChapter is not valid nvi candidate when it is published in %s"
-            .formatted(parentInstanceType),
+        "AcademicChapter is not valid nvi candidate when it is part of %s"
+            .formatted(InstanceType.parse(parentInstanceType)),
         exception.getMessage());
   }
 
@@ -91,7 +91,7 @@ class PublicationDtoTest {
         .withStatus(randomString())
         .withPublicationDate(new PublicationDateDto(randomYear(), null, null))
         .withPublicationType(instanceType)
-        .withParentPublicationType(parentInstanceType)
+        .withParentPublicationType(InstanceType.parse(parentInstanceType))
         .withPublicationChannels(Collections.emptyList())
         .withTopLevelOrganizations(Collections.emptyList())
         .withContributors(Collections.emptyList())

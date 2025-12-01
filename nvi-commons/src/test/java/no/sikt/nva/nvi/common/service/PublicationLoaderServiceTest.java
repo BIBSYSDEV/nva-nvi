@@ -12,7 +12,7 @@ import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_WITH_D
 import static nva.commons.core.ioutils.IoUtils.stringFromResources;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
-import static org.junit.jupiter.api.AssertionsKt.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.params.provider.Arguments.argumentSet;
 
 import java.io.IOException;
@@ -21,6 +21,7 @@ import java.nio.file.Path;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.dto.PublicationDto;
+import no.sikt.nva.nvi.common.model.InstanceType;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.paths.UnixPath;
@@ -67,7 +68,7 @@ class PublicationLoaderServiceTest {
   @Test
   void shouldLoadNestedPublicationInstanceTypeAsParentPublicationType() {
     var publicationDto = parseExampleDocument(EXAMPLE_ACADEMIC_CHAPTER_PATH);
-    assertNotNull(publicationDto);
+    assertEquals(InstanceType.NON_CANDIDATE, publicationDto.parentPublicationType());
   }
 
   private PublicationDto parseExampleDocument(String filename) {

@@ -19,6 +19,7 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.exceptions.ValidationException;
 import no.sikt.nva.nvi.common.model.InstanceType;
@@ -38,7 +39,7 @@ public record PublicationDto(
     PageCountDto pageCount,
     PublicationDateDto publicationDate,
     InstanceType publicationType,
-    String parentPublicationType,
+    InstanceType parentPublicationType,
     boolean isApplicable,
     boolean isInternationalCollaboration,
     Collection<PublicationChannelDto> publicationChannels,
@@ -76,13 +77,17 @@ public record PublicationDto(
   }
 
   private void validateParentPublicationType() {
-    if (ACADEMIC_CHAPTER.equals(publicationType())
-        && INVALID_PARENT_PUBLICATION_TYPES_FOR_ACADEMIC_CHAPTER.contains(
-            InstanceType.parse(parentPublicationType))) {
+    if (ACADEMIC_CHAPTER.equals(publicationType()) && parentPublicationTypeIsNotSupported()) {
       throw new ValidationException(
-          "AcademicChapter is not valid nvi candidate when it is published in %s"
+          "AcademicChapter is not valid nvi candidate when it is part of %s"
               .formatted(parentPublicationType()));
     }
+  }
+
+  private boolean parentPublicationTypeIsNotSupported() {
+    return Optional.ofNullable(parentPublicationType())
+        .map(INVALID_PARENT_PUBLICATION_TYPES_FOR_ACADEMIC_CHAPTER::contains)
+        .orElse(false);
   }
 
   public static PublicationDto from(String json) throws JsonProcessingException {
@@ -113,7 +118,7 @@ public record PublicationDto(
     private PageCountDto pageCount;
     private PublicationDateDto publicationDate;
     private InstanceType publicationType;
-    private String parentPublicationType;
+    private InstanceType parentPublicationType;
     private boolean isApplicable;
     private boolean isInternationalCollaboration;
     private Collection<PublicationChannelDto> publicationChannels;
@@ -164,7 +169,7 @@ public record PublicationDto(
       return this;
     }
 
-    public Builder withParentPublicationType(String parentPublicationType) {
+    public Builder withParentPublicationType(InstanceType parentPublicationType) {
       this.parentPublicationType = parentPublicationType;
       return this;
     }
