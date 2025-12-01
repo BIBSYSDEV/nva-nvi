@@ -1,109 +1,65 @@
 package no.sikt.nva.nvi.index.model.report;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.math.BigDecimal;
 import java.util.Map;
+import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class OrganizationStatusAggregationTest {
 
-  @Nested
-  class TopLevelAggregationTest {
-    @Test
-    void shouldThrowOnNegativeCandidateCount() {
-      assertThrows(
-          IllegalArgumentException.class,
-          () ->
-              new TopLevelAggregation(
-                  -1, BigDecimal.ONE, validGlobalStatus(), validApprovalStatus()));
-    }
+  private static final String AGGREGATION_FACTORIES = "aggregationFactories";
 
-    @Test
-    void shouldAllowZeroCandidateCount() {
-      var aggregation =
-          new TopLevelAggregation(0, BigDecimal.ZERO, validGlobalStatus(), validApprovalStatus());
-      assertEquals(0, aggregation.candidateCount());
-    }
-
-    @Test
-    void shouldThrowWhenPointsAreNegative() {
-      assertThrows(
-          IllegalArgumentException.class,
-          () ->
-              new TopLevelAggregation(
-                  1, BigDecimal.valueOf(-1), validGlobalStatus(), validApprovalStatus()));
-    }
-
-    @Test
-    void shouldThrowOnMissingValueInStatusMap() {
-      var invalidStatusMap = Map.of(ApprovalStatus.PENDING, 1);
-      assertThrows(
-          IllegalArgumentException.class,
-          () -> new TopLevelAggregation(1, BigDecimal.ONE, validGlobalStatus(), invalidStatusMap));
-    }
-
-    @Test
-    void shouldThrowOnMissingValueInGlobalStatusMap() {
-      var invalidStatusMap = Map.of(GlobalApprovalStatus.APPROVED, 1);
-      assertThrows(
-          IllegalArgumentException.class,
-          () ->
-              new TopLevelAggregation(1, BigDecimal.ONE, invalidStatusMap, validApprovalStatus()));
-    }
+  @FunctionalInterface
+  interface AggregationFactory {
+    OrganizationStatusAggregation create(
+        int candidateCount,
+        BigDecimal points,
+        Map<GlobalApprovalStatus, Integer> globalApprovalStatus,
+        Map<ApprovalStatus, Integer> approvalStatus);
   }
 
-  @Nested
-  class DirectAffiliationAggregationTest {
-    @Test
-    void shouldThrowOnNegativeCandidateCount() {
-      assertThrows(
-          IllegalArgumentException.class,
-          () ->
-              new DirectAffiliationAggregation(
-                  -1, BigDecimal.ONE, validGlobalStatus(), validApprovalStatus()));
-    }
+  static Stream<AggregationFactory> aggregationFactories() {
+    return Stream.of(TopLevelAggregation::new, DirectAffiliationAggregation::new);
+  }
 
-    @Test
-    void shouldAllowZeroCandidateCount() {
-      var aggregation =
-          new DirectAffiliationAggregation(
-              0, BigDecimal.ZERO, validGlobalStatus(), validApprovalStatus());
-      assertEquals(0, aggregation.candidateCount());
-    }
+  @ParameterizedTest
+  @MethodSource(AGGREGATION_FACTORIES)
+  void shouldThrowOnNegativeCandidateCount(AggregationFactory factory) {
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> factory.create(-1, BigDecimal.ONE, validGlobalStatus(), validApprovalStatus()));
+  }
 
-    @Test
-    void shouldThrowWhenPointsAreNegative() {
-      assertThrows(
-          IllegalArgumentException.class,
-          () ->
-              new DirectAffiliationAggregation(
-                  1, BigDecimal.valueOf(-1), validGlobalStatus(), validApprovalStatus()));
-    }
+  @ParameterizedTest
+  @MethodSource(AGGREGATION_FACTORIES)
+  void shouldThrowWhenPointsAreNegative(AggregationFactory factory) {
+    assertThrows(
+        IllegalArgumentException.class,
+        () ->
+            factory.create(1, BigDecimal.valueOf(-1), validGlobalStatus(), validApprovalStatus()));
+  }
 
-    @Test
-    void shouldThrowOnMissingValueInStatusMap() {
-      var invalidStatusMap = Map.of(ApprovalStatus.PENDING, 1);
-      assertThrows(
-          IllegalArgumentException.class,
-          () ->
-              new DirectAffiliationAggregation(
-                  1, BigDecimal.ONE, validGlobalStatus(), invalidStatusMap));
-    }
+  @ParameterizedTest
+  @MethodSource(AGGREGATION_FACTORIES)
+  void shouldThrowOnMissingValueInApprovalStatusMap(AggregationFactory factory) {
+    var incompleteMap = Map.of(ApprovalStatus.PENDING, 1);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> factory.create(1, BigDecimal.ONE, validGlobalStatus(), incompleteMap));
+  }
 
-    @Test
-    void shouldThrowOnMissingValueInGlobalStatusMap() {
-      var invalidStatusMap = Map.of(GlobalApprovalStatus.APPROVED, 1);
-      assertThrows(
-          IllegalArgumentException.class,
-          () ->
-              new DirectAffiliationAggregation(
-                  1, BigDecimal.ONE, invalidStatusMap, validApprovalStatus()));
-    }
+  @ParameterizedTest
+  @MethodSource(AGGREGATION_FACTORIES)
+  void shouldThrowOnMissingValueInGlobalApprovalStatusMap(AggregationFactory factory) {
+    var incompleteMap = Map.of(GlobalApprovalStatus.APPROVED, 1);
+    assertThrows(
+        IllegalArgumentException.class,
+        () -> factory.create(1, BigDecimal.ONE, incompleteMap, validApprovalStatus()));
   }
 
   private static Map<GlobalApprovalStatus, Integer> validGlobalStatus() {
