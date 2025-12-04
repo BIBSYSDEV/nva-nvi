@@ -81,6 +81,13 @@ public class EvaluationSteps {
     }
   }
 
+  @Given("the reporting period for {string} year is undefined")
+  public void theReportingPeriodForYearIsUndefined(String relativeYear) {
+    var publicationYear = String.valueOf(mapRelativeYearToValue(relativeYear));
+    var period = scenario.getPeriodService().findByPublishingYear(publicationYear);
+    assertThat(period).isEmpty();
+  }
+
   @When("the Publication is evaluated")
   public void whenThePublicationIsEvaluated() {
     evaluationContext.evaluatePublicationAndPersistResult(

@@ -123,3 +123,8 @@ Feature: Evaluation of Publications as NVI Candidates
       And the reporting period for "last" year is "CLOSED"
       When the Publication date is changed to "last" year
       Then it becomes a NonCandidate
+
+    Scenario: Candidate is demoted when moved to undefined period
+      Given the reporting period for "next" year is undefined
+      When the Publication date is changed to "next" year
+      Then it becomes a NonCandidate
