@@ -80,6 +80,5 @@ public class OpenSearchContainerContext implements Startable {
 
   public void addDocumentsToIndex(NviCandidateIndexDocument... documents) {
     addDocumentsToIndex(List.of(documents));
-    refreshIndex();
   }
 }

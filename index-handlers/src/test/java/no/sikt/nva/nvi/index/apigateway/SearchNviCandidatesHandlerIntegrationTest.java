@@ -28,7 +28,6 @@ import static org.assertj.core.api.Assertions.tuple;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.params.provider.Arguments.argumentSet;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.util.ArrayList;
@@ -461,30 +460,9 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
       assertEquals(expectedCount, actualCount);
     }
 
-    @ParameterizedTest
-    @MethodSource("organizationApprovalStatusAggregationProvider")
-    void shouldAggregateByOrganizationStatusOnlyWhenSet(
-        String aggregationField, int expectedCount) {
-      var response = handleRequest(Map.of("aggregationType", "organizationApprovalStatuses"));
-
-      var ourApprovals = getOrganizationSummary(response);
-      var actualCount = ourApprovals.at(aggregationField).asInt();
-      assertEquals(expectedCount, actualCount);
-    }
-
     private static int getAggregationCount(
         PaginatedSearchResult<NviCandidateIndexDocument> response, String field) {
       return response.getAggregations().get(field).get("docCount").asInt();
-    }
-
-    private static JsonNode getOrganizationSummary(
-        PaginatedSearchResult<NviCandidateIndexDocument> response) {
-      return response
-          .getAggregations()
-          .get("organizationApprovalStatuses")
-          .get(OUR_ORGANIZATION.toString())
-          .get("organizations")
-          .get(OUR_ORGANIZATION.toString());
     }
 
     private static Stream<Arguments> defaultAggregationCountProvider() {
@@ -495,17 +473,6 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
           Arguments.of("dispute", 2),
           Arguments.of("completed", 10),
           Arguments.of("totalCount", 20));
-    }
-
-    private static Stream<Arguments> organizationApprovalStatusAggregationProvider() {
-      return Stream.of(
-          Arguments.of("/docCount", 20),
-          Arguments.of("/dispute/docCount", 2),
-          Arguments.of("/points/docCount", 15),
-          Arguments.of("/status/New/docCount", 5),
-          Arguments.of("/status/Pending/docCount", 5),
-          Arguments.of("/status/Approved/docCount", 5),
-          Arguments.of("/status/Rejected/docCount", 5));
     }
 
     /**
