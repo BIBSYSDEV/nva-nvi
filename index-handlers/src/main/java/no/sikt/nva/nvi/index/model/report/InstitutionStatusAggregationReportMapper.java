@@ -30,6 +30,18 @@ public final class InstitutionStatusAggregationReportMapper {
         year, topLevelOrganizationId, extractTotals(aggregate), extractByOrganization(aggregate));
   }
 
+  private static TopLevelAggregation extractTotals(Aggregate aggregate) {
+    var aggregatedByTopLevel = aggregate.nested().aggregations().get(TOP_LEVEL_AGGREGATE).filter();
+    var subAggregations = aggregatedByTopLevel.aggregations();
+
+    var candidateCount = (int) aggregatedByTopLevel.docCount();
+    var points = extractPoints(subAggregations);
+    var globalApprovalStatus = extractGlobalApprovalStatusCounts(subAggregations);
+    var approvalStatus = extractApprovalStatusCounts(subAggregations);
+
+    return new TopLevelAggregation(candidateCount, points, globalApprovalStatus, approvalStatus);
+  }
+
   private static Map<URI, DirectAffiliationAggregation> extractByOrganization(Aggregate aggregate) {
     var summariesByOrganization =
         aggregate
@@ -51,18 +63,6 @@ public final class InstitutionStatusAggregationReportMapper {
       result.put(organizationId, organizationSummary);
     }
     return result;
-  }
-
-  private static TopLevelAggregation extractTotals(Aggregate aggregate) {
-    var aggregatedByTopLevel = aggregate.nested().aggregations().get(TOP_LEVEL_AGGREGATE).filter();
-    var subAggregations = aggregatedByTopLevel.aggregations();
-
-    var candidateCount = (int) aggregatedByTopLevel.docCount();
-    var points = extractPoints(subAggregations);
-    var globalApprovalStatus = extractGlobalApprovalStatusCounts(subAggregations);
-    var approvalStatus = extractApprovalStatusCounts(subAggregations);
-
-    return new TopLevelAggregation(candidateCount, points, globalApprovalStatus, approvalStatus);
   }
 
   private static DirectAffiliationAggregation extractDirectAffiliationAggregation(
