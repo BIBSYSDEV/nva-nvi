@@ -70,8 +70,10 @@ public class EvaluationContext {
     var evaluationEvent = createEvaluationEvent(new PersistedResourceMessage(fileUri));
     evaluateNviCandidateHandler.handleRequest(evaluationEvent, EVALUATION_HANDLER_CONTEXT);
 
-    var upsertEvent = createUpsertEvent(getCandidateEvaluatedMessage());
-    upsertNviCandidateHandler.handleRequest(upsertEvent, UPSERT_HANDLER_CONTEXT);
+    if (!evaluationOutputQueue.getSentMessages().isEmpty()) {
+      var upsertEvent = createUpsertEvent(getCandidateEvaluatedMessage());
+      upsertNviCandidateHandler.handleRequest(upsertEvent, UPSERT_HANDLER_CONTEXT);
+    }
   }
 
   public Instant getLastEvaluationTimestamp() {
