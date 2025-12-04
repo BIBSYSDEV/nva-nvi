@@ -143,7 +143,7 @@ public record Candidate(
     if (isReported()) {
       throw new IllegalCandidateUpdateException(CANDIDATE_IS_REPORTED);
     }
-    if (!canUpdateInPeriod(targetPeriod)) {
+    if (targetPeriod.isClosed()) {
       throw new IllegalCandidateUpdateException(CANNOT_MOVE_CANDIDATE_TO_CLOSED_PERIOD);
     }
 
@@ -154,14 +154,6 @@ public record Candidate(
         .withPeriod(targetPeriod)
         .withModifiedDate(Instant.now())
         .build();
-  }
-
-  private boolean canUpdateInPeriod(NviPeriod targetPeriod) {
-    var hasSamePeriod =
-        getPeriod()
-            .filter(currentPeriod -> targetPeriod.id().equals(currentPeriod.id()))
-            .isPresent();
-    return hasSamePeriod || targetPeriod.isOpen();
   }
 
   /**
