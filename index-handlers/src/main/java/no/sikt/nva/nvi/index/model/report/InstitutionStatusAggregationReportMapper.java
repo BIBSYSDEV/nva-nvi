@@ -21,6 +21,7 @@ import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
 
 /** This mapper converts the raw aggregation output from OpenSearch to a simpler data class. */
 public final class InstitutionStatusAggregationReportMapper {
+  private static final int INITIAL_STATUS_COUNT = 0;
 
   private InstitutionStatusAggregationReportMapper() {}
 
@@ -109,7 +110,7 @@ public final class InstitutionStatusAggregationReportMapper {
   private static Map<GlobalApprovalStatus, Integer> initializeGlobalApprovalStatusMap() {
     var map = new EnumMap<GlobalApprovalStatus, Integer>(GlobalApprovalStatus.class);
     for (var status : GlobalApprovalStatus.values()) {
-      map.put(status, 0);
+      map.put(status, INITIAL_STATUS_COUNT);
     }
     return map;
   }
@@ -117,7 +118,7 @@ public final class InstitutionStatusAggregationReportMapper {
   private static Map<ApprovalStatus, Integer> initializeApprovalStatusMap() {
     var map = new EnumMap<ApprovalStatus, Integer>(ApprovalStatus.class);
     for (var status : ApprovalStatus.values()) {
-      map.put(status, 0);
+      map.put(status, INITIAL_STATUS_COUNT);
     }
     return map;
   }
