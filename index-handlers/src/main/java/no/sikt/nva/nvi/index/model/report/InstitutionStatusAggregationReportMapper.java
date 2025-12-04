@@ -114,7 +114,7 @@ public final class InstitutionStatusAggregationReportMapper {
     return Map.copyOf(result);
   }
 
-  private static <E extends Enum<E>> EnumMap<E, Integer> enumCounterMap(Class<E> enumClass) {
+  private static <E extends Enum<E>> Map<E, Integer> enumCounterMap(Class<E> enumClass) {
     var map = new EnumMap<E, Integer>(enumClass);
     for (var value : enumClass.getEnumConstants()) {
       map.put(value, INITIAL_STATUS_COUNT);
