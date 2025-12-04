@@ -17,6 +17,7 @@ import java.util.Map;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
+import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
 
 /** This mapper converts the raw aggregation output from OpenSearch to a simpler data class. */
 public final class InstitutionStatusAggregationReportMapper {
@@ -27,12 +28,6 @@ public final class InstitutionStatusAggregationReportMapper {
       Aggregate aggregate, String year, URI topLevelOrganizationId) {
     return new InstitutionStatusAggregationReport(
         year, topLevelOrganizationId, extractTotals(aggregate), extractByOrganization(aggregate));
-  }
-
-  private static TopLevelAggregation extractTotals(Aggregate aggregate) {
-    var totalsAggregate = aggregate.nested().aggregations().get(TOP_LEVEL_AGGREGATE).filter();
-    return extractTopLevelAggregation(
-        totalsAggregate.aggregations(), (int) totalsAggregate.docCount());
   }
 
   private static Map<URI, DirectAffiliationAggregation> extractByOrganization(Aggregate aggregate) {
@@ -52,27 +47,30 @@ public final class InstitutionStatusAggregationReportMapper {
     var result = new HashMap<URI, DirectAffiliationAggregation>();
     for (var bucket : summariesByOrganization.buckets().array()) {
       var organizationId = URI.create(bucket.key());
-      var organizationSummary =
-          extractDirectAffiliationAggregation(bucket.aggregations(), (int) bucket.docCount());
+      var organizationSummary = extractDirectAffiliationAggregation(bucket);
       result.put(organizationId, organizationSummary);
     }
     return result;
   }
 
-  private static TopLevelAggregation extractTopLevelAggregation(
-      Map<String, Aggregate> aggregations, int candidateCount) {
-    var points = extractPoints(aggregations);
-    var globalApprovalStatus = extractGlobalApprovalStatusCounts(aggregations);
-    var approvalStatus = extractApprovalStatusCounts(aggregations);
+  private static TopLevelAggregation extractTotals(Aggregate aggregate) {
+    var aggregatedByTopLevel = aggregate.nested().aggregations().get(TOP_LEVEL_AGGREGATE).filter();
+    var subAggregations = aggregatedByTopLevel.aggregations();
+
+    var candidateCount = (int) aggregatedByTopLevel.docCount();
+    var points = extractPoints(subAggregations);
+    var globalApprovalStatus = extractGlobalApprovalStatusCounts(subAggregations);
+    var approvalStatus = extractApprovalStatusCounts(subAggregations);
 
     return new TopLevelAggregation(candidateCount, points, globalApprovalStatus, approvalStatus);
   }
 
   private static DirectAffiliationAggregation extractDirectAffiliationAggregation(
-      Map<String, Aggregate> aggregations, int candidateCount) {
-    var points = extractPoints(aggregations);
-    var globalApprovalStatus = extractGlobalApprovalStatusCounts(aggregations);
-    var approvalStatus = extractApprovalStatusCounts(aggregations);
+      StringTermsBucket bucket) {
+    var candidateCount = (int) bucket.docCount();
+    var points = extractPoints(bucket.aggregations());
+    var globalApprovalStatus = extractGlobalApprovalStatusCounts(bucket.aggregations());
+    var approvalStatus = extractApprovalStatusCounts(bucket.aggregations());
 
     return new DirectAffiliationAggregation(
         candidateCount, points, globalApprovalStatus, approvalStatus);
