@@ -7,6 +7,6 @@ import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 /** Denormalized model to support aggregate queries by organization. */
 public record OrganizationSummary(
     URI organizationId,
-    BigDecimal directPoints,
+    BigDecimal points,
     ApprovalStatus approvalStatus,
     GlobalApprovalStatus globalApprovalStatus) {}

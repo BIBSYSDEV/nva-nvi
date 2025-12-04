@@ -1033,14 +1033,15 @@ components:
           description: URI of the top-level organization
           example: "https://api.nva.unit.no/cristin/organization/123.0.0.0"
         totals:
-          $ref: '#/components/schemas/OrganizationStatusAggregation'
+          $ref: '#/components/schemas/TopLevelAggregation'
         byOrganization:
           type: object
           description: Aggregated status for each organization, keyed by organization URI
           additionalProperties:
-            $ref: '#/components/schemas/OrganizationStatusAggregation'
+            $ref: '#/components/schemas/DirectAffiliationAggregation'
           example:
             "https://api.nva.unit.no/cristin/organization/123.0.0.0":
+              type: DirectAffiliationAggregation
               candidateCount: 16
               points: 27.3953
               globalApprovalStatus:
@@ -1054,6 +1055,7 @@ components:
                 Approved: 4
                 Rejected: 4
             "https://api.nva.unit.no/cristin/organization/123.456.0.0":
+              type: DirectAffiliationAggregation
               candidateCount: 4
               points: 1.2345
               globalApprovalStatus:
@@ -1066,9 +1068,10 @@ components:
                 Pending: 1
                 Approved: 1
                 Rejected: 1
-    OrganizationStatusAggregation:
+
+    OrganizationStatusAggregationBase:
       type: object
-      description: Aggregated NVI candidate status for an organization
+      description: Base schema for organization status aggregations
       required:
         - candidateCount
         - points
@@ -1087,6 +1090,37 @@ components:
           $ref: '#/components/schemas/GlobalApprovalStatusCounts'
         approvalStatus:
           $ref: '#/components/schemas/ApprovalStatusCounts'
+
+    TopLevelAggregation:
+      description: >
+        Aggregation representing totals for a top-level organization.
+        Includes transitive points from all sub-organizations.
+      allOf:
+        - $ref: '#/components/schemas/OrganizationStatusAggregationBase'
+        - type: object
+          required:
+            - type
+          properties:
+            type:
+              type: string
+              enum: [TopLevelAggregation]
+              example: TopLevelAggregation
+
+    DirectAffiliationAggregation:
+      description: >
+        Aggregation based on direct creator affiliations to a specific organization.
+        Points are calculated only from creators directly affiliated with this organization.
+      allOf:
+        - $ref: '#/components/schemas/OrganizationStatusAggregationBase'
+        - type: object
+          required:
+            - type
+          properties:
+            type:
+              type: string
+              enum: [DirectAffiliationAggregation]
+              example: DirectAffiliationAggregation
+
     GlobalApprovalStatusCounts:
       type: object
       description: Count of candidates by global approval status
