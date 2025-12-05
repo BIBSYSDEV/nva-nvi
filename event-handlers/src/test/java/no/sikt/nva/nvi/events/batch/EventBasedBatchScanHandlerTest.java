@@ -47,7 +47,6 @@ import no.sikt.nva.nvi.common.model.ListingResult;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.NoteService;
-import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.utils.BatchScanUtil;
 import no.sikt.nva.nvi.events.model.ScanDatabaseRequest;
@@ -83,7 +82,6 @@ class EventBasedBatchScanHandlerTest {
   private FakeEventBridgeClient eventBridgeClient;
   private NviCandidateRepositoryHelper candidateRepository;
   private PeriodRepository periodRepository;
-  private NviPeriodService periodService;
   private CandidateService candidateService;
   private NoteService noteService;
 
@@ -95,7 +93,6 @@ class EventBasedBatchScanHandlerTest {
     eventBridgeClient = new FakeEventBridgeClient();
     candidateRepository = new NviCandidateRepositoryHelper(scenario.getLocalDynamo());
     periodRepository = scenario.getPeriodRepository();
-    periodService = scenario.getPeriodService();
     candidateService = scenario.getCandidateService();
     noteService = new NoteService(candidateRepository);
     var batchScanUtil =
@@ -154,10 +151,10 @@ class EventBasedBatchScanHandlerTest {
 
   @Test
   void shouldNotUpdateInitialDbCandidate() {
-    var period = setupOpenPeriod(scenario, CURRENT_YEAR);
+    setupOpenPeriod(scenario, CURRENT_YEAR);
     var dbCandidate = randomCandidateBuilder(true).reportStatus(ReportStatus.REPORTED).build();
     var existingDao = createCandidateDao(dbCandidate);
-    candidateRepository.create(period.toDao(), existingDao, emptyList());
+    candidateRepository.create(existingDao, emptyList());
 
     pushInitialEntryInEventBridge(
         new ScanDatabaseRequest(PAGE_SIZE, START_FROM_BEGINNING, null, TOPIC));
