@@ -74,7 +74,7 @@ class MigrationTests {
   @Test
   void shouldSetPeriodYearIfMissingWhenMigrating() {
     var existingDao = randomApplicableCandidateDao().copy().periodYear(null).build();
-    candidateRepository.create(null, existingDao, emptyList());
+    candidateRepository.create(existingDao, emptyList());
     batchScanUtil.migrateAndUpdateVersion(DEFAULT_PAGE_SIZE, null, emptyList());
     var migratedCandidate =
         candidateRepository.findCandidateById(existingDao.identifier()).orElseThrow();
@@ -88,7 +88,7 @@ class MigrationTests {
     var dbCandidate = randomCandidateBuilder(false).build();
     var existingDao =
         randomApplicableCandidateDao().copy().candidate(dbCandidate).periodYear(null).build();
-    candidateRepository.create(null, existingDao, emptyList());
+    candidateRepository.create(existingDao, emptyList());
     batchScanUtil.migrateAndUpdateVersion(DEFAULT_PAGE_SIZE, null, emptyList());
     var migratedCandidate =
         candidateRepository.findCandidateById(existingDao.identifier()).orElseThrow();

@@ -9,7 +9,6 @@ import static no.sikt.nva.nvi.common.DatabaseConstants.HASH_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_PUBLICATION_ID;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_YEAR;
 import static no.sikt.nva.nvi.common.DatabaseConstants.VERSION_FIELD;
-import static no.sikt.nva.nvi.common.db.PeriodRepository.createPeriodKey;
 import static no.sikt.nva.nvi.common.utils.ApplicationConstants.NVI_TABLE_NAME;
 import static no.sikt.nva.nvi.common.utils.Validator.hasElements;
 import static software.amazon.awssdk.enhanced.dynamodb.TableSchema.fromImmutableClass;
@@ -142,30 +141,22 @@ public class CandidateRepository extends DynamoRepository {
             .periodYear(year)
             .build();
     var approvals = approvalStatuses.stream().map(approval -> approval.toDao(identifier)).toList();
-    create(null, candidate, approvals);
+    create(candidate, approvals);
   }
 
   /**
    * Creates a new NVI candidate with associated approvals.
    *
-   * @param dependentPeriod Period the candidate belongs to. Transaction fails if modified
-   *     concurrently.
    * @param candidate Candidate to create
    * @param approvals Approval statuses to create
    */
-  public void create(
-      NviPeriodDao dependentPeriod,
-      CandidateDao candidate,
-      Collection<ApprovalStatusDao> approvals) {
+  public void create(CandidateDao candidate, Collection<ApprovalStatusDao> approvals) {
     LOGGER.info("Creating new candidate with identifier={}", candidate.identifier());
     var transaction = TransactWriteItemsEnhancedRequest.builder();
 
     var publicationId = candidate.candidate().publicationId();
     var uniquenessEntry = new CandidateUniquenessEntryDao(publicationId.toString());
 
-    if (nonNull(dependentPeriod)) {
-      transaction.addConditionCheck(periodTable, requireExpectedPeriodRevision(dependentPeriod));
-    }
     addNewItemWithVersion(transaction, uniquenessTable, uniquenessEntry);
     addNewItemWithVersion(transaction, candidateTable, candidate);
 
@@ -179,24 +170,18 @@ public class CandidateRepository extends DynamoRepository {
   /**
    * Updates a candidate with its approvals and notes.
    *
-   * @param dependentPeriods Periods the candidate belongs to. Transaction fails if any are modified
-   *     concurrently.
    * @param candidate Candidate to update
    * @param approvalsToUpdate Approval statuses to update
    * @param approvalsToDelete Approval statuses to delete
    * @param notesToUpdate Notes to update
    */
   public void updateCandidateAggregate(
-      Collection<NviPeriodDao> dependentPeriods,
       CandidateDao candidate,
       Collection<ApprovalStatusDao> approvalsToUpdate,
       Collection<ApprovalStatusDao> approvalsToDelete,
       Collection<NoteDao> notesToUpdate) {
     LOGGER.info("Updating candidate {}", candidate.identifier());
     var transaction = TransactWriteItemsEnhancedRequest.builder();
-    for (var period : dependentPeriods) {
-      transaction.addConditionCheck(periodTable, requireExpectedPeriodRevision(period));
-    }
     addUpdatedItemWithVersion(transaction, candidateTable, candidate);
     addAllToTransaction(transaction, approvalsToUpdate, approvalsToDelete, notesToUpdate);
     sendTransaction(transaction.build());
@@ -205,22 +190,18 @@ public class CandidateRepository extends DynamoRepository {
   /**
    * Updates approvals and notes without modifying the candidate itself.
    *
-   * @param dependentPeriod Period the candidate belongs to. Transaction fails if modified
-   *     concurrently.
    * @param candidate Candidate the items belong to. Transaction fails if modified concurrently.
    * @param approvalsToUpdate Approval statuses to update
    * @param approvalsToDelete Approval statuses to delete
    * @param notesToUpdate Notes to update
    */
   public void updateCandidateItems(
-      NviPeriodDao dependentPeriod,
       CandidateDao candidate,
       Collection<ApprovalStatusDao> approvalsToUpdate,
       Collection<ApprovalStatusDao> approvalsToDelete,
       Collection<NoteDao> notesToUpdate) {
     LOGGER.info("Updating approvals and notes for candidate {}", candidate.identifier());
     var transaction = TransactWriteItemsEnhancedRequest.builder();
-    transaction.addConditionCheck(periodTable, requireExpectedPeriodRevision(dependentPeriod));
     transaction.addConditionCheck(candidateTable, requireExpectedCandidateRevision(candidate));
     addAllToTransaction(transaction, approvalsToUpdate, approvalsToDelete, notesToUpdate);
     sendTransaction(transaction.build());
@@ -291,12 +272,6 @@ public class CandidateRepository extends DynamoRepository {
         .partitionValue(CandidateDao.createPartitionKey(candidateIdentifier.toString()))
         .sortValue(NoteDao.createSortKey(noteIdentifier.toString()))
         .build();
-  }
-
-  private ConditionCheck<NviPeriodDao> requireExpectedPeriodRevision(NviPeriodDao period) {
-    var periodKey = createPeriodKey(period.nviPeriod().publishingYear());
-    var revisionCondition = requireExpectedRevision(period.revision());
-    return ConditionCheck.builder().key(periodKey).conditionExpression(revisionCondition).build();
   }
 
   private ConditionCheck<CandidateDao> requireExpectedCandidateRevision(CandidateDao candidate) {
