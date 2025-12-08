@@ -202,7 +202,7 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
   }
 
   @Test
-  void shouldHandleTransactionConflict() throws IOException {
+  void shouldReturnConflictErrorWhenTransactionFailsDueToConflict() throws IOException {
     var assignee = randomString();
     mockNviCuratorAccessForUser(assignee);
     var request = createRequest(candidateIdentifier, assignee);
