@@ -24,8 +24,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.FakeEnvironment;
+import no.sikt.nva.nvi.common.exceptions.TransactionException;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
-import no.sikt.nva.nvi.common.service.FailingApprovalService;
+import no.sikt.nva.nvi.common.service.ApprovalServiceThrowingTransactionExceptions;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
@@ -41,6 +42,7 @@ import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.GatewayResponse;
 import nva.commons.apigateway.exceptions.NotFoundException;
+import org.assertj.core.api.Assertions;
 import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -200,21 +202,23 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
   }
 
   @Test
-  void shouldHandleTransactionFailure() throws IOException {
-    var failingHandler = setupHandlerThatFailsOnApprovalUpdate();
-
+  void shouldHandleTransactionConflict() throws IOException {
     var assignee = randomString();
     mockNviCuratorAccessForUser(assignee);
-    failingHandler.handleRequest(createRequest(candidateIdentifier, assignee), output, CONTEXT);
-    var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
-    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_CONFLICT)));
+    var request = createRequest(candidateIdentifier, assignee);
+
+    var failingHandler = setupHandlerThatFailsOnApprovalUpdate();
+    var response = handleRequestExpectingProblem(failingHandler, request);
+
+    Assertions.assertThat(response.getStatus().getStatusCode())
+        .isEqualTo(HttpURLConnection.HTTP_CONFLICT);
+    Assertions.assertThat(response.getDetail()).isEqualTo(TransactionException.USER_MESSAGE);
   }
 
   private UpsertAssigneeHandler setupHandlerThatFailsOnApprovalUpdate() {
-    var failingApprovalService = new FailingApprovalService(scenario.getCandidateRepository());
     return new UpsertAssigneeHandler(
         candidateService,
-        failingApprovalService,
+        new ApprovalServiceThrowingTransactionExceptions(scenario.getCandidateRepository()),
         mockIdentityServiceClient,
         mockViewingScopeValidator,
         environment);

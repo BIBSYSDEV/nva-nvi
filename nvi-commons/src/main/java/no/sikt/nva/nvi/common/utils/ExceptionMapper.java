@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.common.utils;
 import java.util.NoSuchElementException;
 import no.sikt.nva.nvi.common.exceptions.MethodNotAllowedException;
 import no.sikt.nva.nvi.common.exceptions.NotApplicableException;
+import no.sikt.nva.nvi.common.exceptions.TransactionException;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.exception.PeriodNotFoundException;
 import no.sikt.nva.nvi.common.service.exception.UnauthorizedOperationException;
@@ -36,6 +37,10 @@ public final class ExceptionMapper {
     if (exception instanceof IllegalStateException) {
       logger.error("IllegalStateException", exception);
       return new ConflictException(exception.getMessage());
+    }
+    if (exception instanceof TransactionException) {
+      logger.error("TransactionException", exception);
+      return new ConflictException(TransactionException.USER_MESSAGE);
     }
     if (exception instanceof UnauthorizedOperationException
         || exception instanceof UnauthorizedException) {
