@@ -8,10 +8,10 @@ import static no.sikt.nva.nvi.index.query.Aggregations.collaborationAggregation;
 import static no.sikt.nva.nvi.index.query.Aggregations.completedAggregation;
 import static no.sikt.nva.nvi.index.query.Aggregations.disputeAggregation;
 import static no.sikt.nva.nvi.index.query.Aggregations.finalizedCollaborationAggregation;
-import static no.sikt.nva.nvi.index.query.Aggregations.organizationApprovalStatusAggregations;
 import static no.sikt.nva.nvi.index.query.Aggregations.pendingAggregation;
 import static no.sikt.nva.nvi.index.query.Aggregations.statusAggregation;
 import static no.sikt.nva.nvi.index.query.Aggregations.totalCountAggregation;
+import static no.sikt.nva.nvi.index.query.InstitutionStatusAggregation.organizationReportAggregation;
 
 import java.util.Arrays;
 import java.util.List;
@@ -51,7 +51,7 @@ public enum SearchAggregation {
       "totalCount", (username, topLevelCristinOrg) -> totalCountAggregation(topLevelCristinOrg)),
   ORGANIZATION_APPROVAL_STATUS_AGGREGATION(
       "organizationApprovalStatuses",
-      (username, topLevelCristinOrg) -> organizationApprovalStatusAggregations(topLevelCristinOrg));
+      (username, topLevelCristinOrg) -> organizationReportAggregation(topLevelCristinOrg));
 
   private final String aggregationName;
 

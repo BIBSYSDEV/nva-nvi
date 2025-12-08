@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.common.utils;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static nva.commons.core.StringUtils.isBlank;
 
 import java.time.Instant;
 import java.util.Collection;
@@ -31,6 +32,12 @@ public final class Validator {
 
   public static void shouldNotBeNull(Object object, String errorMessage) {
     if (isNull(object)) {
+      throw new ValidationException(errorMessage);
+    }
+  }
+
+  public static void shouldNotBeBlank(String input, String errorMessage) {
+    if (isBlank(input)) {
       throw new ValidationException(errorMessage);
     }
   }

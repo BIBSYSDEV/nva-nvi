@@ -10,6 +10,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -85,6 +86,16 @@ public class ApprovalFactory {
   public ApprovalFactory withCreatorAffiliation(URI affiliation, BigDecimal points) {
     this.creatorAffiliationPoints.add(
         new InstitutionPointsView.CreatorAffiliationPointsView(randomUri(), affiliation, points));
+    return this;
+  }
+
+  public ApprovalFactory withCreatorAffiliations(Collection<URI> affiliations) {
+    var pointsPerCreator = randomBigDecimal(SCALE);
+    for (var affiliation : affiliations) {
+      this.creatorAffiliationPoints.add(
+          new InstitutionPointsView.CreatorAffiliationPointsView(
+              randomUri(), affiliation, pointsPerCreator));
+    }
     return this;
   }
 

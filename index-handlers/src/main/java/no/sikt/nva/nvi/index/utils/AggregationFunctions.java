@@ -22,12 +22,16 @@ public final class AggregationFunctions {
     return new Aggregation.Builder().filter(filterQuery).aggregations(aggregations).build();
   }
 
-  public static TermsAggregation termsAggregation(String... paths) {
-    return new TermsAggregation.Builder().field(jsonPathOf(paths)).build();
+  public static Aggregation termsAggregation(String... paths) {
+    return new TermsAggregation.Builder().field(jsonPathOf(paths)).build().toAggregation();
   }
 
-  public static NestedAggregation nestedAggregation(String... paths) {
-    return new NestedAggregation.Builder().path(jsonPathOf(paths)).build();
+  public static Aggregation nestedAggregation(
+      String path, Map<String, Aggregation> subAggregations) {
+    return new Aggregation.Builder()
+        .nested(new NestedAggregation.Builder().path(path).build())
+        .aggregations(subAggregations)
+        .build();
   }
 
   public static Aggregation sumAggregation(String... paths) {

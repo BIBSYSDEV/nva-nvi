@@ -22,7 +22,6 @@ import no.sikt.nva.nvi.common.db.model.KeyField;
 import no.sikt.nva.nvi.common.exceptions.TransactionException;
 import no.sikt.nva.nvi.common.model.InstanceType;
 import no.sikt.nva.nvi.common.service.CandidateService;
-import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,12 +35,11 @@ class CandidateRepositoryTest {
 
   private CandidateRepository candidateRepository;
   private CandidateService candidateService;
-  private NviPeriod currentPeriod;
 
   @BeforeEach
   void setUp() {
     var scenario = new TestScenario();
-    currentPeriod = setupOpenPeriod(scenario, CURRENT_YEAR);
+    setupOpenPeriod(scenario, CURRENT_YEAR);
     candidateRepository = scenario.getCandidateRepository();
     candidateService = scenario.getCandidateService();
   }
@@ -54,10 +52,8 @@ class CandidateRepositoryTest {
     var candidate2 =
         createCandidateDao(randomCandidateBuilder(true).publicationId(publicationId).build());
 
-    candidateRepository.create(currentPeriod.toDao(), candidate1, emptyList());
-    assertThrows(
-        RuntimeException.class,
-        () -> candidateRepository.create(currentPeriod.toDao(), candidate2, emptyList()));
+    candidateRepository.create(candidate1, emptyList());
+    assertThrows(RuntimeException.class, () -> candidateRepository.create(candidate2, emptyList()));
   }
 
   @Test
@@ -93,7 +89,7 @@ class CandidateRepositoryTest {
     var exception =
         assertThrows(
             TransactionException.class,
-            () -> failingRepository.create(null, randomApplicableCandidateDao(), emptyList()));
+            () -> failingRepository.create(randomApplicableCandidateDao(), emptyList()));
 
     assertTrue(exception.getMessage().contains("Operation PUT with condition"));
   }
