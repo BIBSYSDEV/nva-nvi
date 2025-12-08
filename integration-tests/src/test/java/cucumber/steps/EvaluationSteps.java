@@ -19,14 +19,12 @@ import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import java.net.URI;
 import java.time.Instant;
-import java.util.List;
 import no.sikt.nva.nvi.common.SampleExpandedPublicationFactory;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.model.PublicationDate;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.test.SampleExpandedPublication;
 
 public class EvaluationSteps {
@@ -243,11 +241,9 @@ public class EvaluationSteps {
     var candidateDao = candidate.toDao();
     var dbCandidate = candidateDao.candidate().copy().reportStatus(ReportStatus.REPORTED).build();
     var updatedCandidateDao = candidateDao.copy().candidate(dbCandidate).build();
-    var periodDao = candidate.getPeriod().map(NviPeriod::toDao).orElseThrow();
 
     scenario
         .getCandidateRepository()
-        .updateCandidateAggregate(
-            List.of(periodDao), updatedCandidateDao, emptyList(), emptyList(), emptyList());
+        .updateCandidateAggregate(updatedCandidateDao, emptyList(), emptyList(), emptyList());
   }
 }
