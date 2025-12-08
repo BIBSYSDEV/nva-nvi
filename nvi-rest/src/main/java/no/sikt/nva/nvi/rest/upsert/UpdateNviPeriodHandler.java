@@ -1,12 +1,11 @@
 package no.sikt.nva.nvi.rest.upsert;
 
-import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
+import static no.sikt.nva.nvi.common.service.NviPeriodService.defaultNviPeriodService;
 import static no.sikt.nva.nvi.common.utils.RequestUtil.getUsername;
 import static nva.commons.core.attempt.Try.attempt;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import java.net.HttpURLConnection;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.dto.NviPeriodDto;
 import no.sikt.nva.nvi.common.service.model.UpdatePeriodRequest;
@@ -28,12 +27,12 @@ public class UpdateNviPeriodHandler
 
   @JacocoGenerated
   public UpdateNviPeriodHandler() {
-    this(new PeriodRepository(defaultDynamoClient()), new Environment());
+    this(defaultNviPeriodService(), new Environment());
   }
 
-  public UpdateNviPeriodHandler(PeriodRepository periodRepository, Environment environment) {
+  public UpdateNviPeriodHandler(NviPeriodService periodService, Environment environment) {
     super(UpsertNviPeriodRequest.class, environment);
-    this.periodService = new NviPeriodService(environment, periodRepository);
+    this.periodService = periodService;
   }
 
   @Override

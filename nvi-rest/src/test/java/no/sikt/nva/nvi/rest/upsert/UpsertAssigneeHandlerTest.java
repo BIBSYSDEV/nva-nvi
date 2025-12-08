@@ -207,7 +207,7 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
     mockNviCuratorAccessForUser(assignee);
     var request = createRequest(candidateIdentifier, assignee);
 
-    var failingHandler = setupHandlerThatFailsOnApprovalUpdate();
+    var failingHandler = setupHandlerThatFailsWithTransactionConflict();
     var response = handleRequestExpectingProblem(failingHandler, request);
 
     Assertions.assertThat(response.getStatus().getStatusCode())
@@ -215,7 +215,7 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
     Assertions.assertThat(response.getDetail()).isEqualTo(TransactionException.USER_MESSAGE);
   }
 
-  private UpsertAssigneeHandler setupHandlerThatFailsOnApprovalUpdate() {
+  private UpsertAssigneeHandler setupHandlerThatFailsWithTransactionConflict() {
     return new UpsertAssigneeHandler(
         candidateService,
         new ApprovalServiceThrowingTransactionExceptions(scenario.getCandidateRepository()),

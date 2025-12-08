@@ -1,5 +1,7 @@
 package no.sikt.nva.nvi.common.service;
 
+import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
+
 import java.net.URI;
 import java.util.Collection;
 import java.util.List;
@@ -12,6 +14,7 @@ import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.common.service.model.UpdatePeriodRequest;
 import no.sikt.nva.nvi.common.service.requests.CreatePeriodRequest;
 import nva.commons.core.Environment;
+import nva.commons.core.JacocoGenerated;
 import nva.commons.core.paths.UriWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +31,12 @@ public class NviPeriodService {
   public NviPeriodService(Environment environment, PeriodRepository periodRepository) {
     this.environment = environment;
     this.periodRepository = periodRepository;
+  }
+
+  @JacocoGenerated
+  public static NviPeriodService defaultNviPeriodService() {
+    var dynamoClient = defaultDynamoClient();
+    return new NviPeriodService(new Environment(), new PeriodRepository(dynamoClient));
   }
 
   public void create(CreatePeriodRequest request) {

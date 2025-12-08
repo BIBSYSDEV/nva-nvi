@@ -196,7 +196,7 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
     var request =
         createRequest(candidate.identifier(), topLevelOrganizationId, ApprovalStatus.APPROVED);
 
-    var failingHandler = setupHandlerThatFailsOnApprovalUpdate();
+    var failingHandler = setupHandlerThatFailsWithTransactionConflict();
     var response = handleRequestExpectingProblem(failingHandler, request);
 
     Assertions.assertThat(response.getStatus().getStatusCode())
@@ -204,7 +204,7 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
     Assertions.assertThat(response.getDetail()).isEqualTo(TransactionException.USER_MESSAGE);
   }
 
-  private UpdateNviCandidateStatusHandler setupHandlerThatFailsOnApprovalUpdate() {
+  private UpdateNviCandidateStatusHandler setupHandlerThatFailsWithTransactionConflict() {
     return new UpdateNviCandidateStatusHandler(
         candidateService,
         new ApprovalServiceThrowingTransactionExceptions(scenario.getCandidateRepository()),
