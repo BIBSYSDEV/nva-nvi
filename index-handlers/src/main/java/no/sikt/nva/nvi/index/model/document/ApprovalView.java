@@ -1,29 +1,85 @@
 package no.sikt.nva.nvi.index.model.document;
 
+import static java.util.Collections.emptyList;
+
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.math.BigDecimal;
 import java.net.URI;
+import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
-import no.sikt.nva.nvi.index.model.document.InstitutionPoints.CreatorAffiliationPoints;
+import no.sikt.nva.nvi.index.model.document.InstitutionPointsView.CreatorAffiliationPointsView;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonTypeName("Approval")
-public record Approval(
+public record ApprovalView(
     URI institutionId,
+    List<OrganizationSummary> organizationSummaries,
     Map<String, String> labels,
     ApprovalStatus approvalStatus,
-    InstitutionPoints points,
+    InstitutionPointsView points,
     Set<URI> involvedOrganizations,
     String assignee,
     GlobalApprovalStatus globalApprovalStatus) {
+
+  public ApprovalView(
+      URI institutionId,
+      Map<String, String> labels,
+      ApprovalStatus approvalStatus,
+      InstitutionPointsView points,
+      Set<URI> involvedOrganizations,
+      String assignee,
+      GlobalApprovalStatus globalApprovalStatus) {
+    this(
+        institutionId,
+        getOrganizationSummaries(points, approvalStatus, globalApprovalStatus),
+        labels,
+        approvalStatus,
+        points,
+        involvedOrganizations,
+        assignee,
+        globalApprovalStatus);
+  }
+
+  private static List<OrganizationSummary> getOrganizationSummaries(
+      InstitutionPointsView institutionPoints,
+      ApprovalStatus approvalStatus,
+      GlobalApprovalStatus globalApprovalStatus) {
+    return getPointsPerOrganization(institutionPoints).entrySet().stream()
+        .map(entry -> toOrganizationSummary(entry, approvalStatus, globalApprovalStatus))
+        .toList();
+  }
+
+  private static Map<URI, BigDecimal> getPointsPerOrganization(
+      InstitutionPointsView institutionPoints) {
+    var creatorPoints =
+        Optional.ofNullable(institutionPoints)
+            .map(InstitutionPointsView::creatorAffiliationPoints)
+            .orElse(emptyList());
+    return creatorPoints.stream()
+        .collect(
+            Collectors.toMap(
+                CreatorAffiliationPointsView::affiliationId,
+                CreatorAffiliationPointsView::points,
+                BigDecimal::add));
+  }
+
+  private static OrganizationSummary toOrganizationSummary(
+      Map.Entry<URI, BigDecimal> entry,
+      ApprovalStatus approvalStatus,
+      GlobalApprovalStatus globalApprovalStatus) {
+    return new OrganizationSummary(
+        entry.getKey(), entry.getValue(), approvalStatus, globalApprovalStatus);
+  }
 
   public static Builder builder() {
     return new Builder();
@@ -34,17 +90,19 @@ public record Approval(
     return points.creatorAffiliationPoints().stream()
         .filter(hasAffiliationId(affiliation))
         .filter(hasContributor(nviContributor))
-        .map(CreatorAffiliationPoints::points)
+        .map(CreatorAffiliationPointsView::points)
         .findFirst()
         .orElse(BigDecimal.ZERO);
   }
 
-  private static Predicate<CreatorAffiliationPoints> hasContributor(NviContributor nviContributor) {
+  private static Predicate<CreatorAffiliationPointsView> hasContributor(
+      NviContributor nviContributor) {
     return creatorAffiliationPoints ->
         creatorAffiliationPoints.nviCreator().toString().equals(nviContributor.id());
   }
 
-  private static Predicate<CreatorAffiliationPoints> hasAffiliationId(NviOrganization affiliation) {
+  private static Predicate<CreatorAffiliationPointsView> hasAffiliationId(
+      NviOrganization affiliation) {
     return creatorAffiliationPoints ->
         creatorAffiliationPoints.affiliationId().equals(affiliation.id());
   }
@@ -54,7 +112,7 @@ public record Approval(
     private URI institutionId;
     private Map<String, String> labels;
     private ApprovalStatus approvalStatus;
-    private InstitutionPoints points;
+    private InstitutionPointsView points;
     private Set<URI> involvedOrganizations;
     private String assignee;
     private GlobalApprovalStatus globalApprovalStatus;
@@ -76,7 +134,7 @@ public record Approval(
       return this;
     }
 
-    public Builder withPoints(InstitutionPoints points) {
+    public Builder withPoints(InstitutionPointsView points) {
       this.points = points;
       return this;
     }
@@ -96,8 +154,8 @@ public record Approval(
       return this;
     }
 
-    public Approval build() {
-      return new Approval(
+    public ApprovalView build() {
+      return new ApprovalView(
           institutionId,
           labels,
           approvalStatus,

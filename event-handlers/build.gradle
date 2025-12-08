@@ -3,9 +3,9 @@ plugins {
 }
 
 dependencies {
-    implementation libs.aws.sdk2.sns
-    implementation libs.aws.sdk2.sqs
-    implementation libs.jackson.csv
+    implementation nvaCatalog.aws.sdk2.sns
+    implementation nvaCatalog.aws.sdk2.sqs
+    implementation nvaCatalog.jackson.dataformat.csv
     implementation nvaCatalog.aws.java.sdk.core
     implementation nvaCatalog.aws.lambda.core
     implementation nvaCatalog.aws.lambda.events
@@ -28,7 +28,7 @@ dependencies {
     implementation nvaLibs.secrets
     implementation project(':nvi-commons')
     testFixturesAnnotationProcessor nvaCatalog.errorprone
-    testFixturesImplementation libs.aws.sdk2.sns
+    testFixturesImplementation nvaCatalog.aws.sdk2.sns
     testFixturesImplementation nvaCatalog.aws.lambda.core
     testFixturesImplementation nvaCatalog.aws.lambda.events
     testFixturesImplementation nvaCatalog.bundles.testing.cucumber
@@ -40,7 +40,7 @@ dependencies {
     testFixturesImplementation nvaLibs.testutils
     testFixturesImplementation project(':nvi-test')
     testFixturesImplementation(testFixtures(project(":nvi-commons")))
-    testImplementation libs.dynamodDbLocal
+    testImplementation nvaCatalog.aws.dynamodb.local
     testImplementation nvaCatalog.assertj.core
     testImplementation nvaCatalog.bundles.testing.cucumber
     testImplementation nvaCatalog.bundles.testing.junit
@@ -68,6 +68,7 @@ test {
     environment("PERSISTED_RESOURCE_QUEUE_URL", "PersistedResourceQueue")
     environment("DB_EVENTS_QUEUE_URL", "DbEventsQueue")
     environment("INDEX_DLQ", "IndexDlq")
+    environment("EVALUATION_DLQ_URL", "EvaluationDlq")
     environment("EXPANDED_RESOURCES_BUCKET", "ignoredBucket")
     environment("BACKEND_CLIENT_AUTH_URL", "My url")
     environment("BACKEND_CLIENT_SECRET_NAME", "My secret name")

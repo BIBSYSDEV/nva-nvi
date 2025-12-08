@@ -504,20 +504,6 @@ class ConcurrencyHandlingTests {
       assertThat(response.getCandidate()).isEmpty();
       assertThat(response.allPeriods()).isNotEmpty();
     }
-
-    @Test
-    void shouldFailOnApprovalUpdateAfterPeriodUpdate() {
-      var candidate = scenario.getCandidateByIdentifier(candidateIdentifier);
-      var originalStatus = candidate.getApprovalStatus(ORGANIZATION_1);
-      var newStatus = getOtherStatus(originalStatus);
-      var user = createCuratorUserInstance(ORGANIZATION_1);
-      var updateRequest = createUpdateStatusRequest(newStatus, user);
-
-      setupOpenPeriod(scenario, candidate.period().publishingYear());
-
-      assertThrowsExceptionFromCustomRevisionCondition(
-          () -> approvalService.updateApproval(candidate, updateRequest, user));
-    }
   }
 
   /** Set up a Candidate in a valid state, with Notes, Approvals, and an open Period. */

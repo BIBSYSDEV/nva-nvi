@@ -78,7 +78,6 @@ import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.index.aws.S3StorageWriter;
 import no.sikt.nva.nvi.index.model.PersistedIndexDocumentMessage;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
@@ -136,7 +135,6 @@ class IndexDocumentHandlerTest {
   private UriRetriever uriRetriever;
   private FakeSqsClient sqsClient;
   private TestScenario scenario;
-  private NviPeriod currentPeriod;
 
   public static Stream<Arguments> channelTypeIssnProvider() {
     return Stream.of(
@@ -149,7 +147,7 @@ class IndexDocumentHandlerTest {
   @BeforeEach
   void setup() {
     scenario = new TestScenario();
-    currentPeriod = setupOpenPeriod(scenario, CURRENT_YEAR);
+    setupOpenPeriod(scenario, CURRENT_YEAR);
     candidateRepository = scenario.getCandidateRepository();
     candidateService = scenario.getCandidateService();
 
@@ -207,7 +205,7 @@ class IndexDocumentHandlerTest {
     var institutionId = randomUri();
     var dao = createCandidateDao(createDbCandidateWithoutChannelIdOrType(institutionId));
     var approvals = List.of(randomApprovalDao(dao.identifier(), institutionId));
-    candidateRepository.create(currentPeriod.toDao(), dao, approvals);
+    candidateRepository.create(dao, approvals);
 
     var candidate = candidateService.getCandidateByIdentifier(dao.identifier());
     var expectedIndexDocument =
@@ -655,7 +653,7 @@ class IndexDocumentHandlerTest {
             .reportStatus(ReportStatus.REPORTED)
             .build();
     var candidateDao = createCandidateDao(dbCandidate);
-    candidateRepository.create(currentPeriod.toDao(), candidateDao, emptyList());
+    candidateRepository.create(candidateDao, emptyList());
     return candidateDao;
   }
 
@@ -686,7 +684,7 @@ class IndexDocumentHandlerTest {
 
   private static FakeSqsClient setupFailingSqsClient(Candidate candidate) {
     var expectedFailingMessage =
-        new PersistedIndexDocumentMessage(generateBucketUri(candidate)).asJsonString();
+        new PersistedIndexDocumentMessage(generateBucketUri(candidate)).toJsonString();
     var mockedSqsClient = mock(FakeSqsClient.class);
     var sqsException = SqsException.builder().message("Some exception message").build();
     when(mockedSqsClient.sendMessage(eq(expectedFailingMessage), anyString()))
@@ -828,7 +826,7 @@ class IndexDocumentHandlerTest {
   }
 
   private String createExpectedEventMessageBody(Candidate candidate) {
-    return new PersistedIndexDocumentMessage(generateBucketUri(candidate)).asJsonString();
+    return new PersistedIndexDocumentMessage(generateBucketUri(candidate)).toJsonString();
   }
 
   private void mockUriRetrieverFailure(Candidate candidate) {

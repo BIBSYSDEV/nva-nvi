@@ -3,7 +3,9 @@ package no.sikt.nva.nvi.test;
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.test.TestConstants.ONE;
 import static no.sikt.nva.nvi.test.TestConstants.TYPE_FIELD;
+import static no.unit.nva.testutils.RandomDataGenerator.FAKER;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
+import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static nva.commons.core.StringUtils.isNotBlank;
 import static org.mockito.Mockito.mock;
@@ -68,6 +70,10 @@ public final class TestUtils {
     return String.valueOf(randomIntBetween(START_DATE.getYear(), LocalDate.now().getYear()));
   }
 
+  public static String randomTitle() {
+    return String.format("%s %d", FAKER.book().title(), randomInteger(CURRENT_YEAR));
+  }
+
   public static URI randomUriWithSuffix(String suffix) {
     return UriWrapper.fromHost("https://example.org/")
         .addChild(randomString())
@@ -130,5 +136,11 @@ public final class TestUtils {
         putIfNotBlank(node, field, values.iterator().next());
       }
     }
+  }
+
+  public static void putAsArray(ObjectNode node, String field, Collection<String> values) {
+    var arrayNode = objectMapper.createArrayNode();
+    values.forEach(arrayNode::add);
+    node.set(field, arrayNode);
   }
 }

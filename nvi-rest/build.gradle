@@ -3,7 +3,7 @@ plugins {
 }
 
 dependencies {
-    implementation libs.aws.sdk2.dynamodbenhanced
+    implementation nvaCatalog.aws.sdk2.dynamodbenhanced
     implementation nvaCatalog.aws.sdk2.dynamo
     implementation nvaCatalog.guava
     implementation nvaCatalog.httpclient5
@@ -16,7 +16,7 @@ dependencies {
     implementation project(':nvi-commons')
     testFixturesAnnotationProcessor nvaCatalog.errorprone
     testFixturesImplementation(testFixtures(project(":nvi-commons")))
-    testImplementation libs.dynamodDbLocal
+    testImplementation nvaCatalog.aws.dynamodb.local
     testImplementation nvaCatalog.assertj.core
     testImplementation nvaCatalog.bundles.testing.cucumber
     testImplementation nvaCatalog.bundles.testing.junit

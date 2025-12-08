@@ -18,6 +18,7 @@ CONSTRUCT {
   :pageCount ?pageCount ;
   :publicationDate ?date ;
   :publicationType ?instanceType ;
+  :parentPublicationType ?parentInstanceType ;
   :isApplicable ?isApplicable ;
   :isInternationalCollaboration ?isInternationalCollaboration ;
   :publicationChannel ?channel ;
@@ -96,6 +97,9 @@ WHERE {
     OPTIONAL { ?date :day ?day }
   } UNION {
     # Find all publication channels
+    ?publication :entityDescription ?entityDescription .
+    ?entityDescription :reference ?reference .
+
     ?reference a :Reference ;
     :publicationInstance ?instance .
     ?instance a ?instanceType .
@@ -121,26 +125,32 @@ WHERE {
     OPTIONAL { ?channel :onlineIssn ?onlineIssn }
     OPTIONAL { ?channel :printIssn ?printIssn }
   } UNION {
-      ?publication :entityDescription ?entityDescription .
-      ?entityDescription :reference ?reference .
-      ?reference :publicationContext ?anthology .
-      ?anthology :entityDescription ?anthologyEntityDescription .
-      ?anthologyEntityDescription :reference ?anthologyReference .
-      ?anthologyReference :publicationContext ?nestedPublicationContext .
-      ?nestedPublicationContext :isbn ?isbnList .
-  } UNION {
-    ?publication :entityDescription/:reference/:publicationContext/:entityDescription/:reference/:publicationContext ?nestedPublicationContext .
+    ?publication :entityDescription ?entityDescription .
+    ?entityDescription :reference ?reference .
+
+    ?reference a :Reference .
     {
-      ?nestedPublicationContext :isbn ?isbnList .
+      ?reference :publicationContext ?publicationContext .
     } UNION {
-      ?nestedPublicationContext :additionalIdentifier ?additionalId .
+      ?reference :publicationContext/:entityDescription/:reference/:publicationContext ?publicationContext .
+    }
+    {
+      ?publicationContext :isbn ?isbnList .
+    } UNION {
+      ?publicationContext :additionalIdentifier ?additionalId .
       ?additionalId :sourceName "ISBN" ;
                     :value ?isbnList .
+    } UNION {
+      ?publicationContext :entityDescription/:reference/:publicationInstance ?parentInstance .
+      ?parentInstance a ?parentInstanceType .
     }
   } UNION {
     # Check whether the publication is 'applicable', i.e. can be an NVI candidate
     ?publication a :Publication ;
     :status ?status .
+
+    ?publication :entityDescription ?entityDescription .
+    ?entityDescription :reference ?reference .
 
     # Find publication type (if applicable)
     VALUES ?applicablePublicationType {
@@ -153,6 +163,12 @@ WHERE {
     # Filter on valid status and publication type
     FILTER (?status = :PUBLISHED)
     FILTER (?instanceType = ?applicablePublicationType)
+
+    # Reject revised publications
+    OPTIONAL { ?reference :publicationContext ?publicationContext . }
+    OPTIONAL { ?publicationContext :entityDescription/:reference/:publicationContext ?nestedPublicationContext . }
+    FILTER NOT EXISTS { ?publicationContext :revision "Revised" . }
+    FILTER NOT EXISTS { ?nestedPublicationContext :revision "Revised" . }
 
     # If the publication is part of a series with a scientific value set, use that for filtering.
     # Otherwise, check other channels for a valid scientific value.
@@ -174,7 +190,13 @@ WHERE {
     ?organization a :Organization .
     OPTIONAL { ?organization :partOf ?parent }
     OPTIONAL { ?organization :hasPart ?child }
-    OPTIONAL { ?organization :label ?label }
+    OPTIONAL {
+      ?organization :label ?label .
+      FILTER NOT EXISTS {
+        ?organization :label ?otherLabel .
+        FILTER(LANG(?otherLabel) = LANG(?label) && STRLEN(STR(?otherLabel)) > STRLEN(STR(?label)))
+      }
+    }
     OPTIONAL { ?organization :country ?country }
   } UNION {
     # Find all contributors with the role of Creator

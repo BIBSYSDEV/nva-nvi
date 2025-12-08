@@ -2,8 +2,8 @@ plugins {
     id 'nva.nvi.java-conventions'
 }
 dependencies {
-    implementation libs.aws.sdk2.regions
-    implementation libs.aws.sdk2.sqs
+    implementation nvaCatalog.aws.sdk2.regions
+    implementation nvaCatalog.aws.sdk2.sqs
     implementation libs.nva.language
     implementation nvaCatalog.aws.apache.client
     implementation nvaCatalog.aws.java.sdk.core
@@ -31,11 +31,13 @@ dependencies {
     implementation nvaLibs.secrets
     implementation project(':nvi-commons')
     testFixturesAnnotationProcessor nvaCatalog.errorprone
-    testImplementation libs.dynamodDbLocal
+    testImplementation nvaCatalog.aws.dynamodb.local
+    testImplementation(libs.jsonassert)
     testImplementation nvaCatalog.assertj.core
     testImplementation nvaCatalog.bundles.testing.cucumber
     testImplementation nvaCatalog.bundles.testing.junit
     testImplementation nvaCatalog.bundles.testing.testcontainers
+    testImplementation nvaCatalog.datafaker
     testImplementation nvaCatalog.hamcrest
     testImplementation nvaCatalog.mockito.core
     testImplementation nvaCatalog.opencsv

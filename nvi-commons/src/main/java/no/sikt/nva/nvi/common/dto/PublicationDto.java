@@ -3,6 +3,8 @@ package no.sikt.nva.nvi.common.dto;
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 import static no.sikt.nva.nvi.common.model.InstanceType.ACADEMIC_CHAPTER;
+import static no.sikt.nva.nvi.common.model.InstanceType.ACADEMIC_COMMENTARY;
+import static no.sikt.nva.nvi.common.model.InstanceType.ACADEMIC_MONOGRAPH;
 import static no.sikt.nva.nvi.common.utils.Validator.shouldBeTrue;
 import static no.sikt.nva.nvi.common.utils.Validator.shouldNotBeEmpty;
 import static no.sikt.nva.nvi.common.utils.Validator.shouldNotBeNull;
@@ -16,7 +18,10 @@ import java.net.URI;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 import no.sikt.nva.nvi.common.client.model.Organization;
+import no.sikt.nva.nvi.common.exceptions.ValidationException;
 import no.sikt.nva.nvi.common.model.InstanceType;
 
 // TODO Refactor to remove warnings NP-49938
@@ -34,6 +39,7 @@ public record PublicationDto(
     PageCountDto pageCount,
     PublicationDateDto publicationDate,
     InstanceType publicationType,
+    InstanceType parentPublicationType,
     boolean isApplicable,
     boolean isInternationalCollaboration,
     Collection<PublicationChannelDto> publicationChannels,
@@ -41,6 +47,11 @@ public record PublicationDto(
     Collection<Organization> topLevelOrganizations,
     Collection<String> isbnList,
     Instant modifiedDate) {
+
+  public static final List<InstanceType> PUBLICATION_INSTANCE_TYPES_REQUIRING_ISBN =
+      List.of(ACADEMIC_CHAPTER, ACADEMIC_COMMENTARY, ACADEMIC_MONOGRAPH);
+  private static final List<InstanceType> INVALID_PARENT_PUBLICATION_TYPES_FOR_ACADEMIC_CHAPTER =
+      List.of(ACADEMIC_COMMENTARY, ACADEMIC_MONOGRAPH);
 
   public PublicationDto {
     requireNonNull(id, "Required field 'id' is null");
@@ -60,8 +71,23 @@ public record PublicationDto(
     shouldNotBeNull(topLevelOrganizations, "Required field 'topLevelOrganizations' is null");
 
     shouldBeTrue(publicationType().isValid(), "Required field 'publicationType' is invalid");
-    shouldHaveIsbnWhenAcademicChapter();
+    validateIsbnWhenRequired();
+    validateParentPublicationType();
     contributors.forEach(ContributorDto::validate);
+  }
+
+  private void validateParentPublicationType() {
+    if (ACADEMIC_CHAPTER.equals(publicationType()) && parentPublicationTypeIsNotSupported()) {
+      throw new ValidationException(
+          "AcademicChapter is not valid nvi candidate when it is part of %s"
+              .formatted(parentPublicationType()));
+    }
+  }
+
+  private boolean parentPublicationTypeIsNotSupported() {
+    return Optional.ofNullable(parentPublicationType())
+        .map(INVALID_PARENT_PUBLICATION_TYPES_FOR_ACADEMIC_CHAPTER::contains)
+        .orElse(false);
   }
 
   public static PublicationDto from(String json) throws JsonProcessingException {
@@ -72,10 +98,12 @@ public record PublicationDto(
     return new Builder();
   }
 
-  private void shouldHaveIsbnWhenAcademicChapter() {
-    if (ACADEMIC_CHAPTER.equals(publicationType())) {
+  private void validateIsbnWhenRequired() {
+    if (PUBLICATION_INSTANCE_TYPES_REQUIRING_ISBN.contains(publicationType())) {
       shouldNotBeEmpty(
-          isbnList(), "Required field 'isbnList' must not be empty for AcademicChapter");
+          isbnList(),
+          "Required field 'isbnList' must not be empty for %s"
+              .formatted(publicationType().getValue()));
     }
   }
 
@@ -90,6 +118,7 @@ public record PublicationDto(
     private PageCountDto pageCount;
     private PublicationDateDto publicationDate;
     private InstanceType publicationType;
+    private InstanceType parentPublicationType;
     private boolean isApplicable;
     private boolean isInternationalCollaboration;
     private Collection<PublicationChannelDto> publicationChannels;
@@ -137,6 +166,11 @@ public record PublicationDto(
 
     public Builder withPublicationType(InstanceType publicationType) {
       this.publicationType = publicationType;
+      return this;
+    }
+
+    public Builder withParentPublicationType(InstanceType parentPublicationType) {
+      this.parentPublicationType = parentPublicationType;
       return this;
     }
 
@@ -191,6 +225,7 @@ public record PublicationDto(
           pageCount,
           publicationDate,
           publicationType,
+          parentPublicationType,
           isApplicable,
           isInternationalCollaboration,
           publicationChannels,

@@ -36,7 +36,7 @@ public class CandidateDaoFixtures {
 
   public static List<CandidateDao> createNumberOfCandidatesForYear(
       String year, int number, TestScenario scenario) {
-    var period = setupOpenPeriod(scenario, year);
+    setupOpenPeriod(scenario, year);
     var candidates =
         IntStream.range(0, number)
             .mapToObj(i -> randomCandidateWithYear(randomOrganizationId(), year))
@@ -45,7 +45,7 @@ public class CandidateDaoFixtures {
 
     var candidateRepository = scenario.getCandidateRepository();
     for (var candidate : candidates) {
-      candidateRepository.create(period.toDao(), candidate, emptyList());
+      candidateRepository.create(candidate, emptyList());
       createMatchingPublicationInS3(candidate, scenario);
     }
     return candidates;
@@ -65,7 +65,7 @@ public class CandidateDaoFixtures {
   public static UUID createCandidateInRepository(
       CandidateRepository repository, DbCandidate candidate) {
     var candidateDao = createCandidateDao(candidate);
-    repository.create(null, candidateDao, emptyList());
+    repository.create(candidateDao, emptyList());
     return candidateDao.identifier();
   }
 
@@ -111,7 +111,7 @@ public class CandidateDaoFixtures {
             .build();
     var candidateDao = createCandidateDao(dbCandidate);
     var approvals = List.of(randomApprovalDao(candidateDao.identifier(), organizationId));
-    repository.create(null, candidateDao, approvals);
+    repository.create(candidateDao, approvals);
     return repository.findCandidateById(candidateDao.identifier()).orElseThrow();
   }
 

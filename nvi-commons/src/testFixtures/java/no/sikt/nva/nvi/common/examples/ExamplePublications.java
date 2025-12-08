@@ -31,6 +31,8 @@ public class ExamplePublications {
       "expandedPublications/validNviCandidate1.json";
   public static final String EXAMPLE_PUBLICATION_2_PATH =
       "expandedPublications/validNviCandidate2.json";
+  public static final String EXAMPLE_PUBLICATION_WITH_DUPLICATE_LABEL_PATH =
+      "expandedPublications/validNviCandidateWithDuplicateLabel.json";
   public static final String EXAMPLE_ACADEMIC_CHAPTER_PATH =
       "expandedPublications/applicableAcademicChapter.json";
   public static final String EXAMPLE_INVALID_DRAFT = "expandedPublications/invalidDraft.json";
@@ -87,6 +89,7 @@ public class ExamplePublications {
                   TOP_LEVEL_ORGANIZATION_SIKT,
                   TOP_LEVEL_ORGANIZATION_NTNU,
                   EXAMPLE_TOP_LEVEL_ORGANIZATION_3))
+          .withIsbnList(List.of("isbn_ignored_for_validation"))
           .build();
 
   private static final String ISBN = "isbn_ignored_for_validation";
@@ -110,5 +113,6 @@ public class ExamplePublications {
           .withContributors(List.of(ACADEMIC_CHAPTER_CONTRIBUTOR_1))
           .withTopLevelOrganizations(List.of(TOP_LEVEL_ORGANIZATION_SIKT))
           .withIsbnList(List.of(ISBN, ADDITIONAL_IDENTIFIER_ISBN))
+          .withParentPublicationType(InstanceType.NON_CANDIDATE)
           .build();
 }

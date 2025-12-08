@@ -7,10 +7,12 @@ import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_PUBLIC
 import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_PUBLICATION_1_PATH;
 import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_PUBLICATION_2;
 import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_PUBLICATION_2_PATH;
+import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_PUBLICATION_WITH_DUPLICATE_LABEL_PATH;
 import static no.sikt.nva.nvi.common.examples.ExamplePublications.EXAMPLE_WITH_DUPLICATE_DATE;
 import static nva.commons.core.ioutils.IoUtils.stringFromResources;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.params.provider.Arguments.argumentSet;
 
 import java.io.IOException;
@@ -19,10 +21,12 @@ import java.nio.file.Path;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.dto.PublicationDto;
+import no.sikt.nva.nvi.common.model.InstanceType;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.paths.UnixPath;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -61,6 +65,19 @@ class PublicationLoaderServiceTest {
     assertThat(actual).usingRecursiveComparison().ignoringCollectionOrder().isEqualTo(expected);
   }
 
+  @Test
+  void shouldLoadNestedPublicationInstanceTypeAsParentPublicationType() {
+    var publicationDto = parseExampleDocument(EXAMPLE_ACADEMIC_CHAPTER_PATH);
+    assertEquals(InstanceType.NON_CANDIDATE, publicationDto.parentPublicationType());
+  }
+
+  @Test
+  void shouldLoadNestedPublicationInstanceTypeWhenNviReportableType() {
+    var publicationDto =
+        parseExampleDocument("expandedPublications/nonCandidateAcademicChapter.json");
+    assertEquals(InstanceType.ACADEMIC_MONOGRAPH, publicationDto.parentPublicationType());
+  }
+
   private PublicationDto parseExampleDocument(String filename) {
     var document = stringFromResources(Path.of(filename));
     var publicationBucketUri = addToS3(filename, document);
@@ -88,6 +105,10 @@ class PublicationLoaderServiceTest {
     return Stream.of(
         argumentSet("Minimal example", EXAMPLE_PUBLICATION_1_PATH, EXAMPLE_PUBLICATION_1),
         argumentSet("Full example", EXAMPLE_PUBLICATION_2_PATH, EXAMPLE_PUBLICATION_2),
+        argumentSet(
+            "Duplicate label example",
+            EXAMPLE_PUBLICATION_WITH_DUPLICATE_LABEL_PATH,
+            EXAMPLE_PUBLICATION_1),
         argumentSet("Academic chapter", EXAMPLE_ACADEMIC_CHAPTER_PATH, EXAMPLE_ACADEMIC_CHAPTER));
   }
 }

@@ -83,6 +83,9 @@
                   "sourceName" : "ISBN",
                   "value" : "additional_identifier_isbn_ignored_for_validation"
                 } ]
+              },
+              "publicationInstance" : {
+                "type": "BookAnthology"
               }
             }
           }
