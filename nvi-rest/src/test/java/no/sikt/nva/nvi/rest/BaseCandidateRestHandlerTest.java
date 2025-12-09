@@ -50,6 +50,7 @@ import nva.commons.apigateway.GatewayResponse;
 import nva.commons.core.Environment;
 import org.apache.hc.core5.http.ContentType;
 import org.junit.jupiter.api.BeforeEach;
+import org.zalando.problem.Problem;
 
 /** Base test class for handlers that return a CandidateDto. */
 @SuppressWarnings("PMD.CouplingBetweenObjects")
@@ -177,6 +178,17 @@ public abstract class BaseCandidateRestHandlerTest {
   protected CandidateDto handleRequest(InputStream request) throws IOException {
     handler.handleRequest(request, output, CONTEXT);
     return getGatewayResponse().getBodyObject(CandidateDto.class);
+  }
+
+  protected Problem handleRequestExpectingProblem(
+      ApiGatewayHandler<?, CandidateDto> handlerUnderTest, InputStream request) {
+    try {
+      handlerUnderTest.handleRequest(request, output, CONTEXT);
+      var response = GatewayResponse.fromOutputStream(output, Problem.class);
+      return dtoObjectMapper.readValue(response.getBody(), Problem.class);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   protected GatewayResponse<CandidateDto> getGatewayResponse() throws JsonProcessingException {

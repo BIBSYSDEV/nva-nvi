@@ -11,6 +11,8 @@ import software.amazon.awssdk.services.dynamodb.model.Update;
 
 public class TransactionException extends RuntimeException {
 
+  public static final String USER_MESSAGE = "A conflict occurred. Please refresh and try again.";
+
   public TransactionException(String message) {
     super(message);
   }

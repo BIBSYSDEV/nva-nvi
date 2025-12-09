@@ -21,7 +21,9 @@ import java.net.URI;
 import java.util.Map;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.FakeEnvironment;
+import no.sikt.nva.nvi.common.exceptions.TransactionException;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
+import no.sikt.nva.nvi.common.service.NoteServiceThrowingTransactionExceptions;
 import no.sikt.nva.nvi.common.service.dto.ApprovalDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.validator.FakeViewingScopeValidator;
@@ -32,6 +34,7 @@ import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.GatewayResponse;
+import org.assertj.core.api.Assertions;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -116,6 +119,28 @@ class CreateNoteHandlerTest extends BaseCandidateRestHandlerTest {
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
     assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_CONFLICT)));
+  }
+
+  @Test
+  void shouldReturnConflictErrorWhenTransactionFailsDueToConflict() throws IOException {
+    var candidate = setupValidCandidate();
+    var request =
+        createRequest(candidate.identifier(), new NviNoteRequest(randomString()), randomString());
+
+    var failingHandler = setupHandlerThatFailsWithTransactionConflict();
+    var response = handleRequestExpectingProblem(failingHandler, request);
+
+    Assertions.assertThat(response.getStatus().getStatusCode())
+        .isEqualTo(HttpURLConnection.HTTP_CONFLICT);
+    Assertions.assertThat(response.getDetail()).isEqualTo(TransactionException.USER_MESSAGE);
+  }
+
+  private CreateNoteHandler setupHandlerThatFailsWithTransactionConflict() {
+    return new CreateNoteHandler(
+        candidateService,
+        new NoteServiceThrowingTransactionExceptions(scenario.getCandidateRepository()),
+        mockViewingScopeValidator,
+        environment);
   }
 
   @Test

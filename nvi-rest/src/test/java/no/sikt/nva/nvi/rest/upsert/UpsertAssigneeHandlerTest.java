@@ -24,7 +24,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.FakeEnvironment;
+import no.sikt.nva.nvi.common.exceptions.TransactionException;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
+import no.sikt.nva.nvi.common.service.ApprovalServiceThrowingTransactionExceptions;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
@@ -40,6 +42,7 @@ import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.GatewayResponse;
 import nva.commons.apigateway.exceptions.NotFoundException;
+import org.assertj.core.api.Assertions;
 import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -196,6 +199,29 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
     var actualAllowedOperations = candidateDto.allowedOperations();
     assertThat(
         actualAllowedOperations, containsInAnyOrder(CURATOR_CAN_FINALIZE_APPROVAL.toArray()));
+  }
+
+  @Test
+  void shouldReturnConflictErrorWhenTransactionFailsDueToConflict() throws IOException {
+    var assignee = randomString();
+    mockNviCuratorAccessForUser(assignee);
+    var request = createRequest(candidateIdentifier, assignee);
+
+    var failingHandler = setupHandlerThatFailsWithTransactionConflict();
+    var response = handleRequestExpectingProblem(failingHandler, request);
+
+    Assertions.assertThat(response.getStatus().getStatusCode())
+        .isEqualTo(HttpURLConnection.HTTP_CONFLICT);
+    Assertions.assertThat(response.getDetail()).isEqualTo(TransactionException.USER_MESSAGE);
+  }
+
+  private UpsertAssigneeHandler setupHandlerThatFailsWithTransactionConflict() {
+    return new UpsertAssigneeHandler(
+        candidateService,
+        new ApprovalServiceThrowingTransactionExceptions(scenario.getCandidateRepository()),
+        mockIdentityServiceClient,
+        mockViewingScopeValidator,
+        environment);
   }
 
   private Candidate candidateWithFinalizedApproval(String newAssignee) {
