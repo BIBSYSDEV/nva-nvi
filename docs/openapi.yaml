@@ -3,13 +3,30 @@ info:
   title: NVA Scientific Index API
   version: 1.0.1
   description: Public API for scientific index candidates in NVA.
+  contact:
+    email: kontakt@sikt.no
+    url: https://nva.sikt.no
+servers:
+  - url: https://api.nva.unit.no/scientific-index
+    description: Production API
 x-amazon-apigateway-request-validators:
   validate_body:
     validateRequestBody: true
     validateRequestParameters: false
+tags:
+  - name: Context
+    description: JSON-LD context operations
+  - name: Period
+    description: NVI reporting period management
+  - name: Candidate
+    description: NVI candidate operations
+  - name: Report
+    description: Institution reports and aggregations
 paths:
   /context:
     get:
+      tags:
+        - Context
       description: Get JSON-LD context for NVI
       summary: Get JSON-LD context
       operationId: getNviContext
@@ -43,6 +60,8 @@ paths:
                 $ref: "#/components/schemas/Problem"
   /period:
     post:
+      tags:
+        - Period
       description: Create NVI period
       summary: Create period
       operationId: createNviPeriod
@@ -91,6 +110,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/Problem"
     get:
+      tags:
+        - Period
       description: List NVI periods
       summary: List periods
       operationId: listNviPeriods
@@ -127,6 +148,8 @@ paths:
               schema:
                 $ref: "#/components/schemas/Problem"
     put:
+      tags:
+        - Period
       description: Update NVI period
       summary: Update period
       operationId: updateNviPeriod
@@ -183,6 +206,8 @@ paths:
 
   /period/{periodIdentifier}:
     get:
+      tags:
+        - Period
       description: Get NVI period
       summary: Get period
       operationId: getNviPeriod
@@ -222,6 +247,8 @@ paths:
 
   /candidate:
     get:
+      tags:
+        - Candidate
       description: Search for NVI candidates
       summary: Search for candidates
       operationId: searchNviCandidate
@@ -412,6 +439,8 @@ paths:
                 $ref: "#/components/schemas/Problem"
   /candidate/{candidateIdentifier}:
     get:
+      tags:
+        - Candidate
       description: Get NVI candidate
       summary: Get candidate
       operationId: getNviCandidate
@@ -455,6 +484,8 @@ paths:
                 $ref: "#/components/schemas/Problem"
   /candidate/publication/{candidatePublicationId}:
     get:
+      tags:
+        - Candidate
       description: Get NVI candidate by publication identifier
       summary: Get candidate by publication identifier
       operationId: getNviCandidateByPublicationIdentifier
@@ -498,6 +529,8 @@ paths:
                 $ref: "#/components/schemas/Problem"
   /candidate/{candidateIdentifier}/status:
     put:
+      tags:
+        - Candidate
       description: Update Candidate Approval Status
       summary: Update Candidate Approval Status
       operationId: updateNviCandidateApprovalStatus
@@ -554,6 +587,8 @@ paths:
                 $ref: "#/components/schemas/Problem"
   /candidate/{candidateIdentifier}/assignee:
     put:
+      tags:
+        - Candidate
       description: Update Candidate Assignee
       summary: Update Candidate Assignee
       operationId: updateNviCandidateAssignee
@@ -610,6 +645,8 @@ paths:
                 $ref: "#/components/schemas/Problem"
   /candidate/{candidateIdentifier}/note:
     post:
+      tags:
+        - Candidate
       description: Create note on NVI candidate
       summary: Create note on candidate
       operationId: createNviCandidateNotes
@@ -666,6 +703,8 @@ paths:
                 $ref: "#/components/schemas/Problem"
   /candidate/{candidateIdentifier}/note/{noteIdentifier}:
     delete:
+      tags:
+        - Candidate
       description: Delete note on NVI candidate
       summary: Delete note
       operationId: deleteNviCandidateNote
@@ -722,6 +761,8 @@ paths:
                 $ref: "#/components/schemas/Problem"
   /institution-report/{year}:
     get:
+      tags:
+        - Report
       description: Get organization approval aggregations for a given year
       summary: Get requesting users organization approval aggregations for a given year
       operationId: getNviOrganizationAggregationsByYear
@@ -765,6 +806,8 @@ paths:
                 $ref: "#/components/schemas/Problem"
   /institution-approval-report/{year}:
     get:
+      tags:
+        - Report
       description: Get NVI report for a given year
       summary: Get requesting users top level organizations NVI report for given year
       operationId: getNviReportByYear
@@ -811,6 +854,8 @@ paths:
                 $ref: "#/components/schemas/Problem"
   /publication/{publicationId}/report-status:
     get:
+      tags:
+        - Report
       description: Get report status by publication id
       summary: Get report status by publication id
       operationId: getReportStatusByPublicationId

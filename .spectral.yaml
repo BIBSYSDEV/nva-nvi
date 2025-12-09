@@ -1,2 +1,6 @@
 extends:
   - spectral:oas
+
+rules:
+  # Disabled because it conflicts with the AWS docs for Cognito
+  oas3-operation-security-defined: off
