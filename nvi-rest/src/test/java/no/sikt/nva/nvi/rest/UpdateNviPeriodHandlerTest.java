@@ -7,6 +7,7 @@ import static no.sikt.nva.nvi.common.model.UserInstanceFixtures.createAdminUserI
 import static no.sikt.nva.nvi.common.model.UserInstanceFixtures.createCuratorUserInstance;
 import static no.sikt.nva.nvi.rest.EnvironmentFixtures.UPDATE_NVI_PERIOD_HANDLER;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
+import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
@@ -20,12 +21,13 @@ import java.net.URI;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
 import no.sikt.nva.nvi.common.TestScenario;
+import no.sikt.nva.nvi.common.exceptions.TransactionException;
 import no.sikt.nva.nvi.common.model.UserInstance;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
+import no.sikt.nva.nvi.common.service.NviPeriodServiceThrowingTransactionExceptions;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.rest.model.UpsertNviPeriodRequest;
 import no.sikt.nva.nvi.rest.upsert.UpdateNviPeriodHandler;
-import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
@@ -47,8 +49,8 @@ class UpdateNviPeriodHandlerTest {
   void init() {
     scenario = new TestScenario();
     output = new ByteArrayOutputStream();
-    handler = new UpdateNviPeriodHandler(scenario.getPeriodRepository(), UPDATE_NVI_PERIOD_HANDLER);
     periodService = new NviPeriodService(UPDATE_NVI_PERIOD_HANDLER, scenario.getPeriodRepository());
+    handler = new UpdateNviPeriodHandler(periodService, UPDATE_NVI_PERIOD_HANDLER);
   }
 
   @Test
@@ -98,6 +100,26 @@ class UpdateNviPeriodHandlerTest {
     assertThat(allPeriods.size()).isOne();
   }
 
+  @Test
+  void shouldReturnConflictErrorWhenTransactionFailsDueToConflict() throws IOException {
+    var year = String.valueOf(CURRENT_YEAR);
+    var persistedPeriod = setupFuturePeriod(scenario, year);
+    var input = toInputStream(updateRequest(year, persistedPeriod), ADMIN_USER);
+
+    var failingHandler = setupHandlerThatFailsWithTransactionConflict();
+    var response = handleRequestExpectingProblem(failingHandler, input);
+
+    assertThat(response.getStatus().getStatusCode()).isEqualTo(HttpURLConnection.HTTP_CONFLICT);
+    assertThat(response.getDetail()).isEqualTo(TransactionException.USER_MESSAGE);
+  }
+
+  private UpdateNviPeriodHandler setupHandlerThatFailsWithTransactionConflict() {
+    return new UpdateNviPeriodHandler(
+        new NviPeriodServiceThrowingTransactionExceptions(
+            UPDATE_NVI_PERIOD_HANDLER, scenario.getPeriodRepository()),
+        UPDATE_NVI_PERIOD_HANDLER);
+  }
+
   private UpsertNviPeriodRequest updateRequest(String year, NviPeriod persistedPeriod) {
     return new UpsertNviPeriodRequest(
         year,
@@ -121,9 +143,20 @@ class UpdateNviPeriodHandlerTest {
     }
   }
 
+  private Problem handleRequestExpectingProblem(
+      UpdateNviPeriodHandler handlerUnderTest, InputStream input) {
+    try {
+      handlerUnderTest.handleRequest(input, output, CONTEXT);
+      var response = GatewayResponse.fromOutputStream(output, Problem.class);
+      return dtoObjectMapper.readValue(response.getBody(), Problem.class);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   private InputStream toInputStream(UpsertNviPeriodRequest request, UserInstance userInstance)
       throws JsonProcessingException {
-    return new HandlerRequestBuilder<UpsertNviPeriodRequest>(JsonUtils.dtoObjectMapper)
+    return new HandlerRequestBuilder<UpsertNviPeriodRequest>(dtoObjectMapper)
         .withBody(request)
         .withAccessRights(
             userInstance.topLevelOrganizationId(),

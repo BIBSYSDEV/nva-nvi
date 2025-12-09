@@ -1,12 +1,11 @@
 package no.sikt.nva.nvi.rest.create;
 
-import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
+import static no.sikt.nva.nvi.common.service.NviPeriodService.defaultNviPeriodService;
 import static no.sikt.nva.nvi.common.utils.RequestUtil.getUsername;
 import static nva.commons.core.attempt.Try.attempt;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import java.net.HttpURLConnection;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.dto.NviPeriodDto;
 import no.sikt.nva.nvi.common.service.model.CreatePeriodRequest;
@@ -28,9 +27,7 @@ public class CreateNviPeriodHandler
 
   @JacocoGenerated
   public CreateNviPeriodHandler() {
-    this(
-        new NviPeriodService(new Environment(), new PeriodRepository(defaultDynamoClient())),
-        new Environment());
+    this(defaultNviPeriodService(), new Environment());
   }
 
   public CreateNviPeriodHandler(NviPeriodService periodService, Environment environment) {
