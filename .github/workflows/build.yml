@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    uses: BIBSYSDEV/nva-github-workflows/.github/workflows/java.yml@larsv/2025-12-08-add-spectral
+    uses: BIBSYSDEV/nva-github-workflows/.github/workflows/java.yml@np-50415-add-openapi-linter
     with:
       openapi_files: "docs/*.yaml"
     secrets:
