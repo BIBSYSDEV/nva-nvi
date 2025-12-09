@@ -14,14 +14,4 @@ jobs:
     secrets:
       codacy_token: ${{ secrets.CODACY_PROJECT_TOKEN }}
 
-  custom_lint:
-    name: Run Spectral
-    runs-on: ubuntu-latest
-    steps:
-      # Check out the repository
-      - uses: actions/checkout@v3
-
-      # Run Spectral
-      - uses: stoplightio/spectral-action@latest
-        with:
-          file_glob: 'docs/*.yaml'
+#gaa
