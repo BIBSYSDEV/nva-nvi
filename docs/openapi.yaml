@@ -453,14 +453,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Problem"
-  /candidate/publication/{candidatePublicationId+}:
+  /candidate/publication/{candidatePublicationId}:
     get:
       description: Get NVI candidate by publication identifier
       summary: Get candidate by publication identifier
       operationId: getNviCandidateByPublicationIdentifier
       parameters:
         - in: path
-          name: candidatePublicationId+
+          name: candidatePublicationId
           description: The publication identifier the candidate, this must be URI UTF-8 encoded
           required: true
           schema:
