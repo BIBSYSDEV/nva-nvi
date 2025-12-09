@@ -14,6 +14,7 @@ jobs:
     secrets:
       codacy_token: ${{ secrets.CODACY_PROJECT_TOKEN }}
 
+  custom_lint:
     name: Run Spectral
     runs-on: ubuntu-latest
     steps:
