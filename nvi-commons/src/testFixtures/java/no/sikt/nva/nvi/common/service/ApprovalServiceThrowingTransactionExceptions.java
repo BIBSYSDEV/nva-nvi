@@ -14,6 +14,6 @@ public class ApprovalServiceThrowingTransactionExceptions extends ApprovalServic
   @Override
   public void updateApproval(
       Candidate candidate, UpdateApprovalRequest request, UserInstance user) {
-    throw new TransactionException("Fake failure simulating a concurrent update");
+    throw new TransactionException("Fake failure simulating a transaction error");
   }
 }

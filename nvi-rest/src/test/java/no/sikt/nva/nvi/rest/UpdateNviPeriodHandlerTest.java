@@ -101,13 +101,13 @@ class UpdateNviPeriodHandlerTest {
   }
 
   @Test
-  void shouldReturnConflictErrorWhenTransactionFailsDueToConflict() {
+  void shouldReturnConflictErrorWhenTransactionFailsDueToConflict() throws IOException {
     var year = String.valueOf(CURRENT_YEAR);
     var persistedPeriod = setupFuturePeriod(scenario, year);
-    var updateRequest = updateRequest(year, persistedPeriod);
+    var input = toInputStream(updateRequest(year, persistedPeriod), ADMIN_USER);
 
     var failingHandler = setupHandlerThatFailsWithTransactionConflict();
-    var response = handleRequestExpectingProblem(failingHandler, updateRequest, ADMIN_USER);
+    var response = handleRequestExpectingProblem(failingHandler, input);
 
     assertThat(response.getStatus().getStatusCode()).isEqualTo(HttpURLConnection.HTTP_CONFLICT);
     assertThat(response.getDetail()).isEqualTo(TransactionException.USER_MESSAGE);
@@ -143,12 +143,9 @@ class UpdateNviPeriodHandlerTest {
     }
   }
 
-  protected Problem handleRequestExpectingProblem(
-      UpdateNviPeriodHandler handlerUnderTest,
-      UpsertNviPeriodRequest request,
-      UserInstance userInstance) {
+  private Problem handleRequestExpectingProblem(
+      UpdateNviPeriodHandler handlerUnderTest, InputStream input) {
     try {
-      var input = toInputStream(request, userInstance);
       handlerUnderTest.handleRequest(input, output, CONTEXT);
       var response = GatewayResponse.fromOutputStream(output, Problem.class);
       return dtoObjectMapper.readValue(response.getBody(), Problem.class);

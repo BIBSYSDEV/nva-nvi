@@ -13,6 +13,6 @@ public class NoteServiceThrowingTransactionExceptions extends NoteService {
 
   @Override
   public void createNote(Candidate candidate, CreateNoteRequest request) {
-    throw new TransactionException("Fake failure simulating a concurrent update");
+    throw new TransactionException("Fake failure simulating a transaction error");
   }
 }
