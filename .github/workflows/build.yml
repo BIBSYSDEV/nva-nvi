@@ -12,7 +12,7 @@ on:
 
 jobs:
   build:
-    uses: BIBSYSDEV/nva-github-workflows/.github/workflows/java.yml@np-50415-add-openapi-linter
+    uses: BIBSYSDEV/nva-github-workflows/.github/workflows/java.yml@v2
     with:
       openapi_files: "docs/*.yaml"
     secrets:
