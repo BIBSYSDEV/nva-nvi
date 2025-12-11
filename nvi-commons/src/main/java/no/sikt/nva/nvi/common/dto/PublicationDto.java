@@ -1,7 +1,6 @@
 package no.sikt.nva.nvi.common.dto;
 
 import static java.util.Collections.emptyList;
-import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 import static no.sikt.nva.nvi.common.model.InstanceType.ACADEMIC_CHAPTER;
