@@ -1,7 +1,9 @@
 package no.sikt.nva.nvi.common.dto;
 
+import static java.util.Collections.emptyList;
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
+import static java.util.Objects.requireNonNullElse;
 import static no.sikt.nva.nvi.common.model.InstanceType.ACADEMIC_CHAPTER;
 import static no.sikt.nva.nvi.common.model.InstanceType.ACADEMIC_COMMENTARY;
 import static no.sikt.nva.nvi.common.model.InstanceType.ACADEMIC_MONOGRAPH;
@@ -17,7 +19,6 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
 import java.time.Instant;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.client.model.Organization;
@@ -56,19 +57,19 @@ public record PublicationDto(
   public PublicationDto {
     requireNonNull(id, "Required field 'id' is null");
     requireNonNull(status, "Required field 'status' is null");
-  }
 
-  @Override
-  public Collection<String> isbnList() {
-    return nonNull(isbnList) ? isbnList : Collections.emptyList();
+    publicationChannels = requireNonNullElse(publicationChannels, emptyList());
+    contributors = requireNonNullElse(contributors, emptyList());
+    topLevelOrganizations = requireNonNullElse(topLevelOrganizations, emptyList());
+    isbnList = requireNonNullElse(isbnList, emptyList());
   }
 
   public void validate() {
     shouldNotBeNull(publicationDate, "Required field 'publicationDate' is null");
     shouldNotBeNull(publicationType, "Required field 'publicationType' is null");
-    shouldNotBeNull(publicationChannels, "Required field 'publicationChannels' is null");
-    shouldNotBeNull(contributors, "Required field 'contributors' is null");
-    shouldNotBeNull(topLevelOrganizations, "Required field 'topLevelOrganizations' is null");
+    shouldNotBeEmpty(publicationChannels, "Required field 'publicationChannels' is empty");
+    shouldNotBeEmpty(contributors, "Required field 'contributors' is empty");
+    shouldNotBeEmpty(topLevelOrganizations, "Required field 'topLevelOrganizations' is empty");
 
     shouldBeTrue(publicationType().isValid(), "Required field 'publicationType' is invalid");
     validateIsbnWhenRequired();
@@ -231,7 +232,7 @@ public record PublicationDto(
           publicationChannels,
           contributors,
           topLevelOrganizations,
-          nonNull(isbnList) ? isbnList : Collections.emptyList(),
+          isbnList,
           modifiedDate);
     }
   }

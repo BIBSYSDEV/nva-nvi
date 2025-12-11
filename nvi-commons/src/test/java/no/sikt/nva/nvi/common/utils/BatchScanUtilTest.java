@@ -238,6 +238,32 @@ class BatchScanUtilTest {
   /**
    * @deprecated Temporary migration code. To be removed when all candidates have been migrated.
    */
+  @Deprecated(forRemoval = true, since = "2025-04-29")
+  @Test
+  void shouldNotFailWhenMigratingAndPublicationIsMissingContributors() {
+    var publication = new SampleExpandedPublicationFactory(scenario).getExpandedPublication();
+
+    var organization = scenario.setupTopLevelOrganizationWithSubUnits();
+    var originalCreatorDto = randomCreator(organization).withName(randomString()).build();
+    var originalCreator = new DbCreator(originalCreatorDto.id(), null, List.of(organization.id()));
+    var dbCandidate =
+        setupRandomCandidateBuilderWithPublicationInS3(publication)
+            .publicationDetails(null)
+            .pointCalculation(null)
+            .creators(List.of(originalCreator))
+            .build();
+    var candidateIdentifier = createCandidateInRepository(candidateRepository, dbCandidate);
+
+    batchScanUtil.migrateAndUpdateVersion(10, null, emptyList());
+    var updatedDao = candidateRepository.findCandidateById(candidateIdentifier).orElseThrow();
+    var actualCreators = updatedDao.candidate().creators();
+
+    Assertions.assertThat(actualCreators).hasSize(1).containsExactly(originalCreator);
+  }
+
+  /**
+   * @deprecated Temporary migration code. To be removed when all candidates have been migrated.
+   */
   @Deprecated(forRemoval = true, since = "2025-05-15")
   @Test
   void shouldMigrateTopLevelNviOrganizations() {
