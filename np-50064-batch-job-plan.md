@@ -83,16 +83,7 @@ The `BatchJobMessage` types are minimal - they only contain enough information t
    }
 
    public record ReportingYearFilter(
-       List<String> reportingYears  // Empty or null means all years
-   ) {}
-
-   // Internal pagination state (not provided by user, only used in self-invocation)
-   public record PaginationState(
-       Map<String, AttributeValue> lastEvaluatedKey,
-       int itemsEnqueued,    // Track items enqueued in this segment
-       int segment,          // Current segment number (0-based)
-       int totalSegments,    // Total number of segments
-       int currentYearIndex  // For GSI queries: which year in the filter list (0-based)
+       List<String> reportingYears  // Empty means all years (normalized from null)
    ) {}
 
    public record StartBatchJobRequest(
@@ -102,12 +93,51 @@ The `BatchJobMessage` types are minimal - they only contain enough information t
        Integer parallelSegments,    // Number of parallel segments - null defaults to 10
        PaginationState paginationState  // null on initial trigger, set on self-invoke
    ) {
-       public static final int PAGE_SIZE = 700;
        public static final int DEFAULT_PARALLEL_SEGMENTS = 10;
    }
    ```
 
-5. Write tests for JSON serialization/deserialization (including polymorphic round-trip for BatchJobMessage)
+5. Create `PaginationState` as a sealed interface with two implementations for different scan strategies:
+   ```java
+   @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
+   @JsonSubTypes({
+       @JsonSubTypes.Type(value = TableScanState.class, name = "TABLE_SCAN"),
+       @JsonSubTypes.Type(value = YearQueryState.class, name = "YEAR_QUERY")
+   })
+   public sealed interface PaginationState
+       permits TableScanState, YearQueryState {
+
+       Map<String, String> lastEvaluatedKey();
+       int itemsEnqueued();
+       PaginationState withNextPage(Map<String, String> newLastEvaluatedKey, int additionalItems);
+   }
+
+   // Used for parallel table scans (no year filter)
+   public record TableScanState(
+       int segment,
+       int totalSegments,
+       Map<String, String> lastEvaluatedKey,
+       int itemsEnqueued
+   ) implements PaginationState { ... }
+
+   // Used for GSI queries by year (with year filter)
+   public record YearQueryState(
+       List<String> remainingYears,  // Years left to process (shrinks as we complete each year)
+       Map<String, String> lastEvaluatedKey,
+       int itemsEnqueued
+   ) implements PaginationState {
+       public String currentYear() { return remainingYears.getFirst(); }
+       public boolean hasMoreYears() { return remainingYears.size() > 1; }
+       public YearQueryState withNextYear() { return new YearQueryState(remainingYears.subList(1, remainingYears.size()), null, itemsEnqueued); }
+   }
+   ```
+
+   **Rationale**: The two scan strategies (parallel table scan vs. GSI query by year) have different state requirements. Using a sealed interface:
+   - Eliminates unused fields (e.g., `segment`/`totalSegments` are meaningless for year queries)
+   - Makes the handler logic clearer with pattern matching
+   - Enforces valid state combinations at compile time
+
+6. Write tests for JSON serialization/deserialization (including polymorphic round-trip for BatchJobMessage and PaginationState)
 
 **Job type semantics**:
 - `REFRESH_CANDIDATES`: Read candidate from DB, write back. Triggers "on read" migrations and OpenSearch reindex.
@@ -321,33 +351,50 @@ Note: `paginationState` is not provided by the user - it's only used internally 
 **Implementation** (TDD):
 
 1. Implement `StartBatchJobHandler`:
-   - Uses `StartBatchJobRequest`, `BatchJobType`, `ReportingYearFilter`, and `PaginationState` defined in sub-task 1
+   - Uses `StartBatchJobRequest`, `BatchJobType`, `ReportingYearFilter`, and `PaginationState` (sealed interface) defined in sub-task 1
    - Check `PROCESSING_ENABLED` environment variable at start
    - Based on `jobType`, determine which entities to scan and which message type to create
 
    **Initial invocation** (when `paginationState` is null):
-   - If `filter.reportingYears` is specified: single segment (GSI query doesn't support parallel segments)
-   - Otherwise: determine segment count from `parallelSegments` or default (10)
-   - Fire N EventBridge events, one per segment (each with `paginationState.segment` = 0..N-1)
+   - If `filter.reportingYears` is specified: create single `YearQueryState` (Query operations don't support parallel segments)
+   - Otherwise: create N `TableScanState` instances, one per segment (using `parallelSegments` or default 10)
+   - Fire EventBridge events to self-invoke with the pagination state(s)
 
    **Segment processing** (when `paginationState` is set):
-   - If `filter.reportingYears` is specified: query GSI by year (iterate through years)
-   - Otherwise: scan base table with `.withSegment(n).withTotalSegments(total)`
+   ```java
+   switch (paginationState) {
+       case TableScanState state -> processTableScan(state);
+       case YearQueryState state -> processYearQuery(state);
+   }
+   ```
+
+   **TableScanState processing**:
+   - Scan base table with `.withSegment(n).withTotalSegments(total)`
    - Create appropriate `BatchJobMessage` for each entity
    - Batch-send messages to queue (10 at a time)
-   - Track `itemsEnqueued` in this segment
-   - If `maxItemsPerSegment` set and reached: stop
-   - If more pages exist (or more years to process): self-invoke with updated cursor
+   - If more pages exist: self-invoke with `state.withNextPage(lastKey, count)`
    - Otherwise: segment complete
+
+   **YearQueryState processing**:
+   - Query GSI by `state.currentYear()`
+   - Create appropriate `BatchJobMessage` for each entity
+   - Batch-send messages to queue (10 at a time)
+   - If more pages for current year: self-invoke with `state.withNextPage(lastKey, count)`
+   - Else if `state.hasMoreYears()`: self-invoke with `state.withNextYear()`
+   - Otherwise: all years complete
+
+   **Common**:
+   - Track `itemsEnqueued` in the state
+   - If `maxItemsPerSegment` set and reached: stop
 
 **Tests**:
 - Handler creates `RefreshCandidateMessage` for `REFRESH_CANDIDATES` job type
 - Handler creates `MigrateCandidateMessage` for `MIGRATE_CANDIDATES` job type
 - Handler creates `RefreshPeriodMessage` for `REFRESH_PERIODS` job type
-- No year filter: initial invocation creates N EventBridge events (parallel segments)
-- No year filter: segment processing uses `.withSegment(n).withTotalSegments(total)`
-- Year filter: initial invocation creates single segment (GSI query)
-- Year filter: iterates through years in filter list
+- No year filter: initial invocation creates N `TableScanState` events (parallel segments)
+- No year filter: `TableScanState` processing uses `.withSegment(n).withTotalSegments(total)`
+- Year filter: initial invocation creates single `YearQueryState` event
+- Year filter: `YearQueryState` processing iterates through years via `withNextYear()`
 - Segment processing: stops after reaching `maxItemsPerSegment` limit
 - Segment processing: self-invokes with updated cursor until complete
 - Handler aborts when `PROCESSING_ENABLED=false`
@@ -355,12 +402,12 @@ Note: `paginationState` is not provided by the user - it's only used internally 
 
 **Acceptance Criteria**:
 - Supports all three job types
-- Full table scan: uses parallel segments (default 10)
-- Year-filtered scan: uses GSI query (single segment, iterates through years)
+- Full table scan: uses `TableScanState` with parallel segments (default 10)
+- Year-filtered scan: uses `YearQueryState` with GSI Query (iterates through years sequentially)
 - Allows custom segment count via `parallelSegments` parameter
 - Respects `maxItemsPerSegment` limit per segment when specified
 - Enqueues correctly formatted messages with type discriminator
-- Each segment paginates independently via self-invocation
+- Each segment/year-query paginates independently via self-invocation
 - Can be stopped via environment variable
 - All tests pass
 
@@ -527,4 +574,4 @@ Note: `paginationState` is not provided by the user - it's only used internally 
 
 5. **CLI tooling**: Similar to `aws-nva-cli` for publication-api, a tool to queue specific candidate IDs for reprocessing could be useful.
 
-6. **Year-based parallelism for GSI queries**: Current parallel scanning uses DynamoDB segments. For year-filtered scans with GSI, could alternatively parallelize by year (one Lambda per year) for similar throughput benefits.
+6. **Year-based parallelism for GSI queries**: The current `YearQueryState` processes years sequentially. For large datasets, could fire N parallel Lambdas (one per year) for better throughput. This would be a simple enhancement: in the initial invocation, create one `YearQueryState` per year instead of one with all years.
