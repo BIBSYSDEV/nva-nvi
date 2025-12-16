@@ -80,7 +80,7 @@ public class CandidateService {
   }
 
   public void refreshCandidate(UUID candidateIdentifier) {
-    LOGGER.info("Refreshing candidate aggregate for candidateIdentifier={}", candidateIdentifier);
+    LOGGER.info("Refreshing persisted data for candidateIdentifier={}", candidateIdentifier);
     var candidate = getCandidateByIdentifier(candidateIdentifier);
     updateCandidate(candidate);
   }
