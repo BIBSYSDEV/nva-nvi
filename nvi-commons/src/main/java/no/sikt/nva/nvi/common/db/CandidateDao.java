@@ -63,6 +63,7 @@ public final class CandidateDao extends Dao {
 
   public static final String TYPE = "CANDIDATE";
   public static final String PERIOD_YEAR_FIELD = "periodYear";
+  private static final String DEPRECATION_DATE = "2025-12-15";
 
   @JsonProperty(IDENTIFIER_FIELD)
   private final UUID identifier;
@@ -405,25 +406,25 @@ public final class CandidateDao extends Dao {
    */
   @DynamoDbImmutable(builder = DbCandidate.Builder.class)
   public record DbCandidate(
-      @Deprecated(since = "2025-12-15", forRemoval = true) URI publicationId,
-      @Deprecated(since = "2025-12-15", forRemoval = true) URI publicationBucketUri,
-      @Deprecated(since = "2025-12-15", forRemoval = true) String publicationIdentifier,
+      @Deprecated(since = DEPRECATION_DATE, forRemoval = true) URI publicationId,
+      @Deprecated(since = DEPRECATION_DATE, forRemoval = true) URI publicationBucketUri,
+      @Deprecated(since = DEPRECATION_DATE, forRemoval = true) String publicationIdentifier,
       DbPointCalculation pointCalculation,
       DbPublicationDetails publicationDetails,
       boolean applicable,
-      @Deprecated(since = "2025-12-15", forRemoval = true) String instanceType,
-      @Deprecated(since = "2025-12-15", forRemoval = true) String channelType,
-      @Deprecated(since = "2025-12-15", forRemoval = true) URI channelId,
-      @Deprecated(since = "2025-12-15", forRemoval = true) DbLevel level,
-      @Deprecated(since = "2025-12-15", forRemoval = true) DbPublicationDate publicationDate,
-      @Deprecated(since = "2025-12-15", forRemoval = true) boolean internationalCollaboration,
-      @Deprecated(since = "2025-12-15", forRemoval = true) BigDecimal collaborationFactor,
-      @Deprecated(since = "2025-12-15", forRemoval = true) int creatorCount,
-      @Deprecated(since = "2025-12-15", forRemoval = true) int creatorShareCount,
+      @Deprecated(since = DEPRECATION_DATE, forRemoval = true) String instanceType,
+      @Deprecated(since = DEPRECATION_DATE, forRemoval = true) String channelType,
+      @Deprecated(since = DEPRECATION_DATE, forRemoval = true) URI channelId,
+      @Deprecated(since = DEPRECATION_DATE, forRemoval = true) DbLevel level,
+      @Deprecated(since = DEPRECATION_DATE, forRemoval = true) DbPublicationDate publicationDate,
+      @Deprecated(since = DEPRECATION_DATE, forRemoval = true) boolean internationalCollaboration,
+      @Deprecated(since = DEPRECATION_DATE, forRemoval = true) BigDecimal collaborationFactor,
+      @Deprecated(since = DEPRECATION_DATE, forRemoval = true) int creatorCount,
+      @Deprecated(since = DEPRECATION_DATE, forRemoval = true) int creatorShareCount,
       @DynamoDbConvertedBy(DbCreatorTypeListConverter.class) List<DbCreatorType> creators,
-      @Deprecated(since = "2025-12-15", forRemoval = true) BigDecimal basePoints,
-      @Deprecated(since = "2025-12-15", forRemoval = true) List<DbInstitutionPoints> points,
-      @Deprecated(since = "2025-12-15", forRemoval = true) BigDecimal totalPoints,
+      @Deprecated(since = DEPRECATION_DATE, forRemoval = true) BigDecimal basePoints,
+      @Deprecated(since = DEPRECATION_DATE, forRemoval = true) List<DbInstitutionPoints> points,
+      @Deprecated(since = DEPRECATION_DATE, forRemoval = true) BigDecimal totalPoints,
       Instant createdDate,
       Instant modifiedDate,
       ReportStatus reportStatus) {
