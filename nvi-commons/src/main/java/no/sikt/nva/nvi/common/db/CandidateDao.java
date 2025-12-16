@@ -383,15 +383,20 @@ public final class CandidateDao extends Dao {
    * Database representation of an NVI candidate.
    *
    * @param publicationId deprecated since 2025-12-15, use publicationDetails.id()
-   * @param publicationBucketUri deprecated since 2025-12-15, use publicationDetails.publicationBucketUri()
+   * @param publicationBucketUri deprecated since 2025-12-15, use
+   *     publicationDetails.publicationBucketUri()
    * @param publicationIdentifier deprecated since 2025-12-15, use publicationDetails.identifier()
    * @param instanceType deprecated since 2025-12-15, use pointCalculation.instanceType()
-   * @param channelType deprecated since 2025-12-15, use pointCalculation.publicationChannel().channelType()
+   * @param channelType deprecated since 2025-12-15, use
+   *     pointCalculation.publicationChannel().channelType()
    * @param channelId deprecated since 2025-12-15, use pointCalculation.publicationChannel().id()
-   * @param level deprecated since 2025-12-15, use pointCalculation.publicationChannel().scientificValue()
+   * @param level deprecated since 2025-12-15, use
+   *     pointCalculation.publicationChannel().scientificValue()
    * @param publicationDate deprecated since 2025-12-15, use publicationDetails.publicationDate()
-   * @param internationalCollaboration deprecated since 2025-12-15, use pointCalculation.internationalCollaboration()
-   * @param collaborationFactor deprecated since 2025-12-15, use pointCalculation.collaborationFactor()
+   * @param internationalCollaboration deprecated since 2025-12-15, use
+   *     pointCalculation.internationalCollaboration()
+   * @param collaborationFactor deprecated since 2025-12-15, use
+   *     pointCalculation.collaborationFactor()
    * @param creatorCount deprecated since 2025-12-15, use pointCalculation.creatorShareCount()
    * @param creatorShareCount deprecated since 2025-12-15, use pointCalculation.creatorShareCount()
    * @param basePoints deprecated since 2025-12-15, use pointCalculation.basePoints()
