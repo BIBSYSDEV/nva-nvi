@@ -79,6 +79,12 @@ public class CandidateService {
     candidateRepository.create(candidate.toDao(), approvals);
   }
 
+  public void refreshCandidate(UUID candidateIdentifier) {
+    LOGGER.info("Refreshing candidate aggregate for candidateIdentifier={}", candidateIdentifier);
+    var candidate = getCandidateByIdentifier(candidateIdentifier);
+    updateCandidate(candidate);
+  }
+
   private void updateCandidate(
       UpsertNviCandidateRequest request, Candidate candidate, NviPeriod targetPeriod) {
     var updatedCandidate = candidate.apply(request, targetPeriod);
@@ -108,7 +114,7 @@ public class CandidateService {
     }
   }
 
-  public void updateCandidate(Candidate candidate) {
+  private void updateCandidate(Candidate candidate) {
     LOGGER.info("Saving candidate aggregate for publicationId={}", candidate.getPublicationId());
     var approvals = candidate.approvals().values().stream().map(Approval::toDao).toList();
     var notes = candidate.notes().values().stream().map(Note::toDao).toList();
