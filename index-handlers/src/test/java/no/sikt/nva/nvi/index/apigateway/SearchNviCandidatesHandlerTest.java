@@ -232,7 +232,8 @@ class SearchNviCandidatesHandlerTest extends SearchNviCandidatesHandlerTestBase 
               }
             }
           }
-        }""";
+        }
+        """;
     assertEquals(
         expectedNestedAggregation, objectMapper.writeValueAsString(actualNestedAggregation));
   }

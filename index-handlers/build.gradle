@@ -32,7 +32,6 @@ dependencies {
     implementation project(':nvi-commons')
     testFixturesAnnotationProcessor nvaCatalog.errorprone
     testImplementation nvaCatalog.aws.dynamodb.local
-    testImplementation(libs.jsonassert)
     testImplementation nvaCatalog.assertj.core
     testImplementation nvaCatalog.bundles.testing.cucumber
     testImplementation nvaCatalog.bundles.testing.junit
