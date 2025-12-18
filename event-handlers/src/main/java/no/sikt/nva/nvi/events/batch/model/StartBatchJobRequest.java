@@ -7,11 +7,13 @@ import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import no.unit.nva.commons.json.JsonSerializable;
 
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 public record StartBatchJobRequest(
     BatchJobType jobType,
-    ReportingYearFilter filter,
+    BatchJobFilter filter,
     Integer maxItemsPerSegment,
     Integer parallelSegments,
     PaginationState paginationState)
@@ -37,7 +39,7 @@ public record StartBatchJobRequest(
 
   @JsonIgnore
   public boolean hasYearFilter() {
-    return !filter.includesAllYears();
+    return filter instanceof ReportingYearFilter yearFilter && !yearFilter.includesAllYears();
   }
 
   public StartBatchJobRequest withPaginationState(PaginationState newPaginationState) {

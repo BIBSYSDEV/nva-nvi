@@ -5,7 +5,7 @@ import static java.util.Objects.requireNonNullElse;
 
 import java.util.List;
 
-public record ReportingYearFilter(List<String> reportingYears) {
+public record ReportingYearFilter(List<String> reportingYears) implements BatchJobFilter {
 
   public ReportingYearFilter {
     reportingYears = requireNonNullElse(reportingYears, emptyList());
