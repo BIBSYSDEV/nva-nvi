@@ -44,6 +44,22 @@ class NviPeriodServiceTest {
     assertThat(actualPeriod.nviPeriod().modifiedBy().value()).isEqualTo(expectedUser.value());
   }
 
+  @Test
+  void shouldIncrementRevisionWhenRefreshed() {
+    var year = String.valueOf(CURRENT_YEAR);
+    setupOpenPeriod(scenario, year);
+
+    var originalPeriod = periodService.getByPublishingYear(year);
+    periodService.refreshPeriod(year);
+    var updatedPeriod = periodService.getByPublishingYear(year);
+
+    assertThat(updatedPeriod.revision()).isEqualTo(originalPeriod.revision() + 1);
+    assertThat(updatedPeriod)
+        .usingRecursiveComparison()
+        .ignoringFields("version", "revision")
+        .isEqualTo(originalPeriod);
+  }
+
   private static UpdatePeriodRequest.Builder toUpdateRequestBuilder(NviPeriod period) {
     return UpdatePeriodRequest.builder()
         .withPublishingYear(period.publishingYear())

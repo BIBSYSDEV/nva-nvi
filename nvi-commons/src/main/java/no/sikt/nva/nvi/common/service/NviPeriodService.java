@@ -63,6 +63,12 @@ public class NviPeriodService {
     LOGGER.info("Updated period successfully");
   }
 
+  public void refreshPeriod(String year) {
+    LOGGER.info("Refreshing persisted data for year={}", year);
+    var period = getByPublishingYear(year);
+    periodRepository.update(period.toDao());
+  }
+
   public NviPeriod getByPublishingYear(String publishingYear) {
     return findByPublishingYear(publishingYear)
         .orElseThrow(PeriodNotFoundException.forYear(publishingYear));

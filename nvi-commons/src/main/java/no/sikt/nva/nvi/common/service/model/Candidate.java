@@ -539,7 +539,7 @@ public record Candidate(
     return publicationDetails.getVerifiedNviCreatorIds();
   }
 
-  private Builder copy() {
+  public Builder copy() {
     return new Builder()
         .withIdentifier(identifier)
         .withApplicable(applicable)
@@ -552,7 +552,8 @@ public record Candidate(
         .withPointCalculation(pointCalculation)
         .withPublicationDetails(publicationDetails)
         .withRevision(revision)
-        .withVersion(version);
+        .withVersion(version)
+        .withEnvironment(environment);
   }
 
   /**
