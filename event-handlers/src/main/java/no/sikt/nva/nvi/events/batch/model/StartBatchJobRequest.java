@@ -15,7 +15,7 @@ public record StartBatchJobRequest(
     BatchJobType jobType,
     BatchJobFilter filter,
     Integer maxItemsPerSegment,
-    Integer parallelSegments,
+    Integer maxParallelSegments,
     PaginationState paginationState)
     implements JsonSerializable {
 
@@ -24,7 +24,7 @@ public record StartBatchJobRequest(
   public StartBatchJobRequest {
     requireNonNull(jobType, "jobType must not be null");
     filter = requireNonNullElse(filter, new ReportingYearFilter(emptyList()));
-    parallelSegments = requireNonNullElse(parallelSegments, DEFAULT_PARALLEL_SEGMENTS);
+    maxParallelSegments = requireNonNullElse(maxParallelSegments, DEFAULT_PARALLEL_SEGMENTS);
   }
 
   @JsonIgnore
@@ -44,6 +44,6 @@ public record StartBatchJobRequest(
 
   public StartBatchJobRequest withPaginationState(PaginationState newPaginationState) {
     return new StartBatchJobRequest(
-        jobType, filter, maxItemsPerSegment, parallelSegments, newPaginationState);
+        jobType, filter, maxItemsPerSegment, maxParallelSegments, newPaginationState);
   }
 }
