@@ -63,6 +63,7 @@ public final class CandidateDao extends Dao {
 
   public static final String TYPE = "CANDIDATE";
   public static final String PERIOD_YEAR_FIELD = "periodYear";
+  private static final String DEPRECATION_DATE = "2025-12-15";
 
   @JsonProperty(IDENTIFIER_FIELD)
   private final UUID identifier;
@@ -379,27 +380,51 @@ public final class CandidateDao extends Dao {
     }
   }
 
+  /**
+   * Database representation of an NVI candidate.
+   *
+   * @param publicationId deprecated since 2025-12-15, use publicationDetails.id()
+   * @param publicationBucketUri deprecated since 2025-12-15, use
+   *     publicationDetails.publicationBucketUri()
+   * @param publicationIdentifier deprecated since 2025-12-15, use publicationDetails.identifier()
+   * @param instanceType deprecated since 2025-12-15, use pointCalculation.instanceType()
+   * @param channelType deprecated since 2025-12-15, use
+   *     pointCalculation.publicationChannel().channelType()
+   * @param channelId deprecated since 2025-12-15, use pointCalculation.publicationChannel().id()
+   * @param level deprecated since 2025-12-15, use
+   *     pointCalculation.publicationChannel().scientificValue()
+   * @param publicationDate deprecated since 2025-12-15, use publicationDetails.publicationDate()
+   * @param internationalCollaboration deprecated since 2025-12-15, use
+   *     pointCalculation.internationalCollaboration()
+   * @param collaborationFactor deprecated since 2025-12-15, use
+   *     pointCalculation.collaborationFactor()
+   * @param creatorCount deprecated since 2025-12-15, use pointCalculation.creatorShareCount()
+   * @param creatorShareCount deprecated since 2025-12-15, use pointCalculation.creatorShareCount()
+   * @param basePoints deprecated since 2025-12-15, use pointCalculation.basePoints()
+   * @param points deprecated since 2025-12-15, use pointCalculation.institutionPoints()
+   * @param totalPoints deprecated since 2025-12-15, use pointCalculation.totalPoints()
+   */
   @DynamoDbImmutable(builder = DbCandidate.Builder.class)
   public record DbCandidate(
-      URI publicationId,
-      URI publicationBucketUri,
-      String publicationIdentifier,
+      @Deprecated(since = DEPRECATION_DATE, forRemoval = true) URI publicationId,
+      @Deprecated(since = DEPRECATION_DATE, forRemoval = true) URI publicationBucketUri,
+      @Deprecated(since = DEPRECATION_DATE, forRemoval = true) String publicationIdentifier,
       DbPointCalculation pointCalculation,
       DbPublicationDetails publicationDetails,
       boolean applicable,
-      String instanceType,
-      String channelType,
-      URI channelId,
-      DbLevel level,
-      DbPublicationDate publicationDate,
-      boolean internationalCollaboration,
-      BigDecimal collaborationFactor,
-      int creatorCount,
-      int creatorShareCount,
+      @Deprecated(since = DEPRECATION_DATE, forRemoval = true) String instanceType,
+      @Deprecated(since = DEPRECATION_DATE, forRemoval = true) String channelType,
+      @Deprecated(since = DEPRECATION_DATE, forRemoval = true) URI channelId,
+      @Deprecated(since = DEPRECATION_DATE, forRemoval = true) DbLevel level,
+      @Deprecated(since = DEPRECATION_DATE, forRemoval = true) DbPublicationDate publicationDate,
+      @Deprecated(since = DEPRECATION_DATE, forRemoval = true) boolean internationalCollaboration,
+      @Deprecated(since = DEPRECATION_DATE, forRemoval = true) BigDecimal collaborationFactor,
+      @Deprecated(since = DEPRECATION_DATE, forRemoval = true) int creatorCount,
+      @Deprecated(since = DEPRECATION_DATE, forRemoval = true) int creatorShareCount,
       @DynamoDbConvertedBy(DbCreatorTypeListConverter.class) List<DbCreatorType> creators,
-      BigDecimal basePoints,
-      List<DbInstitutionPoints> points,
-      BigDecimal totalPoints,
+      @Deprecated(since = DEPRECATION_DATE, forRemoval = true) BigDecimal basePoints,
+      @Deprecated(since = DEPRECATION_DATE, forRemoval = true) List<DbInstitutionPoints> points,
+      @Deprecated(since = DEPRECATION_DATE, forRemoval = true) BigDecimal totalPoints,
       Instant createdDate,
       Instant modifiedDate,
       ReportStatus reportStatus) {

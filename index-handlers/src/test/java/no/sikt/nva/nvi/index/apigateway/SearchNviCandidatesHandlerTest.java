@@ -21,14 +21,12 @@ import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PAR
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_TITLE;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
-import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.apigateway.RestRequestHandler.COMMA;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
@@ -232,9 +230,10 @@ class SearchNviCandidatesHandlerTest extends SearchNviCandidatesHandlerTestBase 
               }
             }
           }
-        }""";
-    assertEquals(
-        expectedNestedAggregation, objectMapper.writeValueAsString(actualNestedAggregation));
+        }
+        """;
+    assertThat(actualNestedAggregation.toString())
+        .isEqualToIgnoringWhitespace(expectedNestedAggregation);
   }
 
   @Test
