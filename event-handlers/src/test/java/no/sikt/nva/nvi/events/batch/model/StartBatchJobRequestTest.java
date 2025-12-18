@@ -26,7 +26,7 @@ class StartBatchJobRequestTest {
     void shouldDeserializeMinimalRequestFromAwsConsole() {
       var json =
           """
-          { "jobType": "REFRESH_CANDIDATES" }
+          { "type": "StartBatchJobRequest", "jobType": "REFRESH_CANDIDATES" }
           """;
 
       var request = fromJson(json);
@@ -49,9 +49,13 @@ class StartBatchJobRequestTest {
       var json =
           """
           {
+            "type": "StartBatchJobRequest",
             "jobType": "MIGRATE_CANDIDATES",
-            "filter": { "reportingYears": ["2024", "2025"] },
-            "parallelSegments": 5,
+            "filter": {
+              "type": "ReportingYearFilter",
+              "reportingYears": ["2024", "2025"]
+            },
+            "maxParallelSegments": 5,
             "maxItemsPerSegment": 100
           }
           """;
