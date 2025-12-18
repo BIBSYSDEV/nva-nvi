@@ -101,17 +101,15 @@ import nva.commons.apigateway.AccessRight;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
 import nva.commons.logutils.LogUtils;
-import org.apache.hc.core5.http.ProtocolVersion;
-import org.apache.hc.core5.http.message.StatusLine;
-import org.apache.http.HttpVersion;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.opensearch.client.Response;
-import org.opensearch.client.ResponseException;
+import org.opensearch.client.opensearch._types.ErrorCause;
+import org.opensearch.client.opensearch._types.ErrorResponse;
+import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.zalando.problem.Problem;
@@ -439,10 +437,10 @@ class FetchInstitutionReportHandlerTest {
         .thenReturn(
             createSearchResponseWithTotal(
                 indexDocuments.stream().limit(PAGE_SIZE).toList(), indexDocuments.size()));
-    var responseException = mockResponseException();
+    var openSearchException = createRequestEntityTooLargeException();
     var secondSearchRequest =
         buildRequest(topLevelCristinOrg, searchResultParams(PAGE_SIZE, PAGE_SIZE)).build();
-    when(openSearchClient.search(eq(secondSearchRequest))).thenThrow(responseException);
+    when(openSearchClient.search(eq(secondSearchRequest))).thenThrow(openSearchException);
     var secondSearchRequestWithReducedPageSize =
         buildRequest(topLevelCristinOrg, searchResultParams(PAGE_SIZE / 2, PAGE_SIZE)).build();
     when(openSearchClient.search(eq(secondSearchRequestWithReducedPageSize)))
@@ -459,20 +457,11 @@ class FetchInstitutionReportHandlerTest {
         .build();
   }
 
-  private static ResponseException mockResponseException() {
-    var httpVersion = HttpVersion.HTTP_1_1;
-    var statusLine =
-        new StatusLine(
-            new ProtocolVersion(
-                httpVersion.getProtocol(), httpVersion.getMajor(), httpVersion.getMinor()),
-            HTTP_REQUEST_ENTITY_TOO_LARGE,
-            "null");
-
-    var response = mock(Response.class);
-    when(response.getStatusLine()).thenReturn(statusLine);
-    var responseException = mock(ResponseException.class);
-    when(responseException.getResponse()).thenReturn(response);
-    return responseException;
+  private static OpenSearchException createRequestEntityTooLargeException() {
+    var errorCause = new ErrorCause.Builder().type("request_entity_too_large").reason("").build();
+    var errorResponse =
+        new ErrorResponse.Builder().status(HTTP_REQUEST_ENTITY_TOO_LARGE).error(errorCause).build();
+    return new OpenSearchException(errorResponse);
   }
 
   private static List<NviCandidateIndexDocument> mockCandidateWithoutApprovals(

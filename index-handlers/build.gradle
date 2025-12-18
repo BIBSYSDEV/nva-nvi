@@ -20,7 +20,7 @@ dependencies {
     implementation nvaCatalog.jackson.databind
     implementation nvaCatalog.jena.core
     implementation nvaCatalog.opensearch.java
-    implementation nvaCatalog.opensearch.rest.client
+    implementation nvaCatalog.httpclient5
     implementation nvaLibs.apigateway
     implementation nvaLibs.auth
     implementation nvaLibs.clients
