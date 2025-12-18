@@ -15,7 +15,6 @@ import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.REJECTED;
 import static no.sikt.nva.nvi.index.query.SearchAggregation.ORGANIZATION_APPROVAL_STATUS_AGGREGATION;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
-import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -66,6 +65,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.opensearch.client.opensearch._types.OpenSearchException;
@@ -216,11 +216,16 @@ class OpenSearchClientTest {
     assertEquals(expectedAggregations.size(), aggregations.size());
   }
 
-  @Test
-  void shouldReturnSpecificAggregationsWhenSpecificAggregationTypeRequested() throws IOException {
-    var requestedAggregation = randomElement(SearchAggregation.values()).getAggregationName();
+  @ParameterizedTest
+  @EnumSource(SearchAggregation.class)
+  void shouldReturnSpecificAggregationsWhenSpecificAggregationTypeRequested(
+      SearchAggregation aggregation) throws IOException {
+    var requestedAggregation = aggregation.getAggregationName();
     var searchParameters =
-        CandidateSearchParameters.builder().withAggregationType(requestedAggregation).build();
+        CandidateSearchParameters.builder()
+            .withTopLevelCristinOrg(ORGANIZATION)
+            .withAggregationType(requestedAggregation)
+            .build();
     var searchResponse = openSearchClient.search(searchParameters);
     var aggregations = searchResponse.aggregations();
     assertEquals(1, aggregations.size());

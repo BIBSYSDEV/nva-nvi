@@ -199,7 +199,7 @@ class CristinMapperTest {
   @Test
   void shouldExtractChannelIdFromAcademicArticle() {
     var academicArticleReference =
-        """
+"""
                 {
   "type" : "Reference",
   "publicationContext" : {
@@ -227,7 +227,7 @@ class CristinMapperTest {
   @Test
   void shouldExtractChannelIdFromAcademicLiteratureReview() {
     var academicArticleReference =
-        """
+"""
 {
       "type" : "Reference",
       "publicationContext" : {
@@ -255,7 +255,7 @@ class CristinMapperTest {
   @Test
   void shouldExtractChannelIdFromAcademicMonographFromSeries() {
     var academicArticleReference =
-        """
+"""
 {
       "type" : "Reference",
       "publicationContext" : {
@@ -292,7 +292,7 @@ class CristinMapperTest {
   @Test
   void shouldExtractChannelIdFromAcademicMonographFromPublisher() {
     var academicArticleReference =
-        """
+"""
 {
       "type" : "Reference",
       "publicationContext" : {
@@ -319,7 +319,7 @@ class CristinMapperTest {
   @Test
   void shouldExtractChannelIdFromAcademicChapterWhenSeriesIsPresent() {
     var academicArticleReference =
-        """
+"""
                                                  {
   "type": "Reference",
   "publicationContext": {
@@ -369,7 +369,7 @@ class CristinMapperTest {
   @Test
   void shouldExtractChannelIdFromAcademicChapter() {
     var academicArticleReference =
-        """
+"""
                           {
   "type": "Reference",
   "publicationContext": {
@@ -410,7 +410,7 @@ class CristinMapperTest {
   @Test
   void shouldNotExtractChannelIdAndChannelTypeWhenUnsupportedInstanceTypeInReference() {
     var academicArticleReference =
-        """
+"""
                           {
 
   "type": "Reference",
@@ -435,7 +435,7 @@ class CristinMapperTest {
   @Test
   void shouldNotExtractChannelIdAndChannelTypeWhenUnsupportedInstanceType() {
     var academicArticleReference =
-        """
+"""
                           {
   "type": "Reference",
   "publicationContext": {

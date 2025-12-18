@@ -1,7 +1,5 @@
 [versions]
-jsonassert = { strictly = '1.5.3'}
 nvaLanguage = { strictly = '1.2.1' }
 
 [libraries]
-jsonassert = { group = 'org.skyscreamer', name = 'jsonassert', version.ref = 'jsonassert' }
 nva-language = { group = 'com.github.bibsysdev', name = 'nva-language', version.ref = 'nvaLanguage' }
