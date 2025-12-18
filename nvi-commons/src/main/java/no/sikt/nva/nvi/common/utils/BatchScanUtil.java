@@ -301,7 +301,7 @@ public class BatchScanUtil {
   }
 
   private DbCreatorType migrateDbCreator(DbCreatorType dbCreator, Map<URI, String> creatorNames) {
-    if (dbCreator instanceof DbCreator verifiedDbCreator) {
+    if (isBlank(dbCreator.creatorName()) && dbCreator instanceof DbCreator verifiedDbCreator) {
       var creatorName = creatorNames.get(verifiedDbCreator.creatorId());
       return new DbCreator(
           verifiedDbCreator.creatorId(), creatorName, verifiedDbCreator.affiliations());
