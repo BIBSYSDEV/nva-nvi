@@ -114,7 +114,7 @@ public class CandidateService {
     }
   }
 
-  private void updateCandidate(Candidate candidate) {
+  public void updateCandidate(Candidate candidate) {
     LOGGER.info("Saving candidate aggregate for publicationId={}", candidate.getPublicationId());
     var approvals = candidate.approvals().values().stream().map(Approval::toDao).toList();
     var notes = candidate.notes().values().stream().map(Note::toDao).toList();
