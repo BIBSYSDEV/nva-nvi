@@ -141,7 +141,7 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
 
   public boolean indexExists() {
     try {
-      client.indices().get(GetIndexRequest.of(r -> r.index(NVI_CANDIDATES_INDEX)));
+      client.indices().get(GetIndexRequest.of(request -> request.index(NVI_CANDIDATES_INDEX)));
     } catch (IOException io) {
       throw new RuntimeException(io);
     } catch (OpenSearchException osex) {
