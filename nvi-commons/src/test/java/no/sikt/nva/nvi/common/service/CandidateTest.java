@@ -421,7 +421,7 @@ class CandidateTest extends CandidateTestSetup {
     var candidate = setupRandomApplicableCandidate(scenario);
     var dao = candidateRepository.findCandidateById(candidate.identifier()).orElseThrow();
 
-    candidateService.updateCandidate(candidate);
+    candidateService.refreshCandidate(candidate.identifier());
 
     var updatedDao = candidateRepository.findCandidateById(candidate.identifier()).orElseThrow();
 
@@ -433,7 +433,7 @@ class CandidateTest extends CandidateTestSetup {
   void shouldUpdateRevision() {
     var candidate = setupRandomApplicableCandidate(scenario);
 
-    candidateService.updateCandidate(candidate);
+    candidateService.refreshCandidate(candidate.identifier());
 
     var updatedCandidate = candidateService.getCandidateByIdentifier(candidate.identifier());
 

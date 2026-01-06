@@ -79,6 +79,12 @@ public class CandidateService {
     candidateRepository.create(candidate.toDao(), approvals);
   }
 
+  public void refreshCandidate(UUID candidateIdentifier) {
+    LOGGER.info("Refreshing persisted data for candidateIdentifier={}", candidateIdentifier);
+    var candidate = getCandidateByIdentifier(candidateIdentifier);
+    updateCandidate(candidate);
+  }
+
   private void updateCandidate(
       UpsertNviCandidateRequest request, Candidate candidate, NviPeriod targetPeriod) {
     var updatedCandidate = candidate.apply(request, targetPeriod);
