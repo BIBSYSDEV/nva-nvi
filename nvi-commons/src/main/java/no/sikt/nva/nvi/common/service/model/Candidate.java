@@ -295,11 +295,6 @@ public record Candidate(
     return pointCalculation.creatorShareCount();
   }
 
-  @Override
-  public Map<UUID, Note> notes() {
-    return unmodifiableMap(notes);
-  }
-
   public BigDecimal getTotalPoints() {
     return pointCalculation.totalPoints();
   }
