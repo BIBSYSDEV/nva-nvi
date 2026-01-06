@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.index.aws;
 
-import static com.amazonaws.auth.internal.SignerConstants.AUTHORIZATION;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.MAPPINGS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.NVI_CANDIDATES_INDEX;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.SEARCH_INFRASTRUCTURE_API_HOST;
@@ -8,10 +7,10 @@ import static no.sikt.nva.nvi.index.utils.SearchConstants.SEARCH_INFRASTRUCTURE_
 import static no.sikt.nva.nvi.index.utils.SearchConstants.SEARCH_INFRASTRUCTURE_CREDENTIALS;
 import static nva.commons.core.attempt.Try.attempt;
 
+import com.amazonaws.auth.internal.SignerConstants;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.time.Clock;
 import java.util.List;
@@ -29,8 +28,9 @@ import no.unit.nva.auth.CognitoAuthenticator;
 import no.unit.nva.auth.CognitoCredentials;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.secrets.SecretsReader;
+import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder;
 import org.apache.hc.core5.http.HttpHost;
-import org.opensearch.client.RestClient;
+import org.apache.hc.core5.http.message.BasicHeader;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch._types.FieldSort;
 import org.opensearch.client.opensearch._types.FieldSort.Builder;
@@ -48,9 +48,8 @@ import org.opensearch.client.opensearch.core.search.SourceFilter;
 import org.opensearch.client.opensearch.indices.CreateIndexRequest;
 import org.opensearch.client.opensearch.indices.DeleteIndexRequest;
 import org.opensearch.client.opensearch.indices.GetIndexRequest;
-import org.opensearch.client.transport.TransportOptions;
-import org.opensearch.client.transport.rest_client.RestClientOptions;
-import org.opensearch.client.transport.rest_client.RestClientTransport;
+import org.opensearch.client.opensearch.indices.RefreshRequest;
+import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBuilder;
 import org.opensearch.client.util.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,28 +67,14 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
   private final org.opensearch.client.opensearch.OpenSearchClient client;
   private final CachedValueProvider<DecodedJWT> cachedJwtProvider;
 
-  public OpenSearchClient(CachedJwtProvider cachedJwtProvider) {
-    this.cachedJwtProvider = cachedJwtProvider;
-    try {
-      var httpHost = HttpHost.create(SEARCH_INFRASTRUCTURE_API_HOST);
-      var restClient = RestClient.builder(httpHost).build();
-      var options =
-          RestClientOptions.builder()
-              .addHeader(AUTHORIZATION, cachedJwtProvider.getValue().getToken())
-              .build();
-      var transport = new RestClientTransport(restClient, new JacksonJsonpMapper(), options);
-      this.client = new org.opensearch.client.opensearch.OpenSearchClient(transport);
-    } catch (URISyntaxException e) {
-      throw new IllegalArgumentException(e);
-    }
-  }
-
-  public OpenSearchClient(
-      RestClient restClient, CachedValueProvider<DecodedJWT> cachedValueProvider) {
+  public OpenSearchClient(HttpHost httpHost, CachedValueProvider<DecodedJWT> cachedValueProvider) {
     this.cachedJwtProvider = cachedValueProvider;
-    this.client =
-        new org.opensearch.client.opensearch.OpenSearchClient(
-            new RestClientTransport(restClient, new JacksonJsonpMapper()));
+    var transport =
+        ApacheHttpClient5TransportBuilder.builder(httpHost)
+            .setMapper(new JacksonJsonpMapper())
+            .setHttpClientConfigCallback(this::configureHttpClient)
+            .build();
+    this.client = new org.opensearch.client.opensearch.OpenSearchClient(transport);
   }
 
   public static OpenSearchClient defaultOpenSearchClient() {
@@ -97,16 +82,13 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
         new CognitoAuthenticator(
             HttpClient.newHttpClient(), createCognitoCredentials(new SecretsReader()));
     var cachedJwtProvider = new CachedJwtProvider(cognitoAuthenticator, Clock.systemDefaultZone());
-    return new OpenSearchClient(cachedJwtProvider);
+    var httpHost = HttpHost.create(URI.create(SEARCH_INFRASTRUCTURE_API_HOST));
+    return new OpenSearchClient(httpHost, cachedJwtProvider);
   }
 
   @Override
   public IndexResponse addDocumentToIndex(NviCandidateIndexDocument indexDocument) {
-    return attempt(
-            () ->
-                client
-                    .withTransportOptions(getOptions())
-                    .index(constructIndexRequest(indexDocument)))
+    return attempt(() -> client.index(constructIndexRequest(indexDocument)))
         .map(
             indexResponse -> {
               LOGGER.info("Indexed document from index: {}", indexDocument.identifier());
@@ -119,9 +101,7 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
 
   @Override
   public DeleteResponse removeDocumentFromIndex(UUID identifier) {
-    return attempt(
-            () ->
-                client.withTransportOptions(getOptions()).delete(contructDeleteRequest(identifier)))
+    return attempt(() -> client.delete(contructDeleteRequest(identifier)))
         .map(
             deleteResponse -> {
               LOGGER.info("Removing document from index: {}", identifier);
@@ -137,7 +117,7 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
       CandidateSearchParameters candidateSearchParameters) throws IOException {
     var query = constructSearchRequest(candidateSearchParameters);
     logQueryDetails(query);
-    return client.withTransportOptions(getOptions()).search(query, NviCandidateIndexDocument.class);
+    return client.search(query, NviCandidateIndexDocument.class);
   }
 
   private void logQueryDetails(SearchRequest query) {
@@ -156,19 +136,12 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
 
   @Override
   public void deleteIndex() throws IOException {
-    client
-        .withTransportOptions(getOptions())
-        .indices()
-        .delete(new DeleteIndexRequest.Builder().index(NVI_CANDIDATES_INDEX).build());
+    client.indices().delete(new DeleteIndexRequest.Builder().index(NVI_CANDIDATES_INDEX).build());
   }
 
-  // TODO change with .exists() when sws index handler is cleaned up.
   public boolean indexExists() {
     try {
-      client
-          .withTransportOptions(getOptions())
-          .indices()
-          .get(GetIndexRequest.of(r -> r.index(NVI_CANDIDATES_INDEX)));
+      client.indices().get(GetIndexRequest.of(request -> request.index(NVI_CANDIDATES_INDEX)));
     } catch (IOException io) {
       throw new RuntimeException(io);
     } catch (OpenSearchException osex) {
@@ -181,10 +154,21 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
   }
 
   public void createIndex() {
-    attempt(
-            () ->
-                client.withTransportOptions(getOptions()).indices().create(getCreateIndexRequest()))
+    attempt(() -> client.indices().create(getCreateIndexRequest()))
         .orElseThrow(failure -> handleFailure(ERROR_MSG_CREATE_INDEX, failure.getException()));
+  }
+
+  public void refreshIndex() {
+    attempt(() -> client.indices().refresh(new RefreshRequest.Builder().build()))
+        .orElseThrow(failure -> handleFailure("Failed to refresh index", failure.getException()));
+  }
+
+  private HttpAsyncClientBuilder configureHttpClient(HttpAsyncClientBuilder builder) {
+    return builder.addRequestInterceptorFirst(
+        (request, entity, context) -> {
+          var token = cachedJwtProvider.getValue().getToken();
+          request.setHeader(new BasicHeader(SignerConstants.AUTHORIZATION, token));
+        });
   }
 
   private static DeleteRequest contructDeleteRequest(UUID identifier) {
@@ -244,12 +228,6 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
 
   private static SortOrder getSortOrder(String sortOrder) {
     return SortOrder.Asc.jsonValue().equalsIgnoreCase(sortOrder) ? SortOrder.Asc : SortOrder.Desc;
-  }
-
-  private TransportOptions getOptions() {
-    return RestClientOptions.builder()
-        .addHeader(AUTHORIZATION, cachedJwtProvider.getValue().getToken())
-        .build();
   }
 
   private RuntimeException handleFailure(String msg, Exception exception) {
