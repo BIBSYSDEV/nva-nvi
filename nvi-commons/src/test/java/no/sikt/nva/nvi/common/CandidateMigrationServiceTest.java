@@ -76,7 +76,7 @@ class CandidateMigrationServiceTest {
 
     var updatedCandidate = candidateService.getCandidateByIdentifier(candidateId);
     assertThat(updatedCandidate.publicationDetails().nviCreators())
-        .anyMatch(c -> orphanCreatorId.equals(c.id()));
+        .anyMatch(creator -> orphanCreatorId.equals(creator.id()));
   }
 
   private UUID createLegacyCandidate(

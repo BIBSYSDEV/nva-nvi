@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
  * expanded publications stored in S3. This can be used in batch migrations to add missing fields to
  * reported candidates.
  */
-public class CandidateMigrationService {
+public final class CandidateMigrationService {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CandidateMigrationService.class);
 

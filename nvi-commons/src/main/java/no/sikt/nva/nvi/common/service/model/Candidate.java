@@ -74,6 +74,7 @@ public record Candidate(
     ReportStatus reportStatus,
     Long revision,
     UUID version,
+    // TODO: Remove environment from this record
     Environment environment) {
 
   private static final String CONTEXT = stringFromResources(Path.of("nviCandidateContext.json"));
@@ -543,14 +544,14 @@ public record Candidate(
     return new Builder()
         .withIdentifier(identifier)
         .withApplicable(applicable)
-        .withApprovals(approvals)
-        .withNotes(notes)
-        .withPeriod(period)
+        .withApprovals(approvals())
+        .withNotes(notes())
+        .withPeriod(period) // TODO: Copy
         .withReportStatus(reportStatus)
         .withModifiedDate(modifiedDate)
         .withCreatedDate(createdDate)
-        .withPointCalculation(pointCalculation)
-        .withPublicationDetails(publicationDetails)
+        .withPointCalculation(pointCalculation) // TODO: Copy
+        .withPublicationDetails(publicationDetails) // TODO: Copy
         .withRevision(revision)
         .withVersion(version)
         .withEnvironment(environment);
