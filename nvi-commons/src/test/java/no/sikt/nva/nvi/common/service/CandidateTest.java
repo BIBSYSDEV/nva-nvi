@@ -103,7 +103,7 @@ class CandidateTest extends CandidateTestSetup {
     var request = randomUpsertRequestBuilder().withPointCalculation(pointCalculation).build();
     candidateService.upsertCandidate(request);
     var persistedCandidate = candidateService.getCandidateByPublicationId(request.publicationId());
-    var persistedLevel = persistedCandidate.pointCalculation().channel().scientificValue();
+    var persistedLevel = persistedCandidate.getPublicationChannel().scientificValue();
     assertEquals(expectedLevel, persistedLevel);
   }
 

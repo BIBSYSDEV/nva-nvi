@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.common.model;
 
 import static java.util.Collections.emptyList;
 import static java.util.Objects.nonNull;
+import static no.sikt.nva.nvi.common.utils.CollectionUtils.copyOfNullable;
 import static no.sikt.nva.nvi.common.utils.DecimalUtils.adjustScaleAndRoundingMode;
 import static no.sikt.nva.nvi.common.utils.Validator.hasElements;
 
@@ -25,23 +26,11 @@ public record PointCalculation(
     Collection<InstitutionPoints> institutionPoints,
     BigDecimal totalPoints) {
 
-  public PointCalculation(
-      InstanceType instanceType,
-      PublicationChannel channel,
-      boolean isInternationalCollaboration,
-      BigDecimal collaborationFactor,
-      BigDecimal basePoints,
-      int creatorShareCount,
-      Collection<InstitutionPoints> institutionPoints,
-      BigDecimal totalPoints) {
-    this.instanceType = instanceType;
-    this.channel = channel;
-    this.isInternationalCollaboration = isInternationalCollaboration;
-    this.collaborationFactor = adjustScaleAndRoundingMode(collaborationFactor);
-    this.basePoints = adjustScaleAndRoundingMode(basePoints);
-    this.creatorShareCount = creatorShareCount;
-    this.institutionPoints = institutionPoints;
-    this.totalPoints = adjustScaleAndRoundingMode(totalPoints);
+  public PointCalculation {
+    institutionPoints = copyOfNullable(institutionPoints);
+    collaborationFactor = adjustScaleAndRoundingMode(collaborationFactor);
+    basePoints = adjustScaleAndRoundingMode(basePoints);
+    totalPoints = adjustScaleAndRoundingMode(totalPoints);
   }
 
   public static PointCalculation from(PointCalculationDto dto) {

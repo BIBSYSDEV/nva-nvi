@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.common.dto;
 
+import static java.util.Collections.emptyList;
 import static no.sikt.nva.nvi.common.model.InstanceType.ACADEMIC_CHAPTER;
 import static no.sikt.nva.nvi.common.model.PublicationDetailsFixtures.randomPublicationDtoBuilder;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -9,7 +10,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.exceptions.ValidationException;
 import no.sikt.nva.nvi.common.model.InstanceType;
@@ -33,8 +33,7 @@ class PublicationDtoTest {
   @MethodSource("isbnRequiringTypeProvider")
   void shouldThrowValidationExceptionWhenPublicationHasInstanceTypeAndIsMissingIsbn(
       String instanceType) {
-    var publication =
-        createPublicationDto(Collections.emptyList(), InstanceType.parse(instanceType));
+    var publication = createPublicationDto(emptyList(), InstanceType.parse(instanceType));
 
     Executable executable = publication::validate;
     var exception = assertThrows(ValidationException.class, executable);
