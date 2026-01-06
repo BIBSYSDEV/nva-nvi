@@ -21,7 +21,7 @@ import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
 import no.sikt.nva.nvi.index.model.search.SearchResultParameters;
 import no.sikt.nva.nvi.index.xlsx.ExcelWorkbookGenerator;
 import nva.commons.core.paths.UriWrapper;
-import org.opensearch.client.ResponseException;
+import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.aggregations.FilterAggregate;
 import org.opensearch.client.opensearch.core.search.Hit;
@@ -79,9 +79,8 @@ public class InstitutionReportGenerator {
     hits.hits().stream().map(Hit::source).forEach(fetchedCandidates::add);
   }
 
-  private static boolean isRequestEntityTooLarge(ResponseException responseException) {
-    return responseException.getResponse().getStatusLine().getStatusCode()
-        == HTTP_REQUEST_ENTITY_TOO_LARGE;
+  private static boolean isRequestEntityTooLarge(OpenSearchException exception) {
+    return exception.status() == HTTP_REQUEST_ENTITY_TOO_LARGE;
   }
 
   private static boolean hasNotReachedMinimumPageSize(int currentPageSize) {
@@ -150,13 +149,12 @@ public class InstitutionReportGenerator {
         addHitsToListOfCandidates(newHits, fetchedCandidates);
         currentOffset += currentPageSize;
         currentPageSize = searchPageSize;
-      } catch (ResponseException responseException) {
-        if (isRequestEntityTooLarge(responseException)
-            && hasNotReachedMinimumPageSize(currentPageSize)) {
+      } catch (OpenSearchException exception) {
+        if (isRequestEntityTooLarge(exception) && hasNotReachedMinimumPageSize(currentPageSize)) {
           currentPageSize /= EXPONENTIAL_PAGE_SIZE_DIVISOR;
           currentOffset = batchOffset + fetchedCandidates.size();
         } else {
-          throw new RuntimeException(responseException);
+          throw new RuntimeException(exception);
         }
       } catch (IOException e) {
         throw new RuntimeException(e);
