@@ -24,7 +24,7 @@ import org.slf4j.LoggerFactory;
  * expanded publications stored in S3. This can be used in batch migrations to add missing fields to
  * reported candidates.
  */
-public class CandidateMigrationService {
+public final class CandidateMigrationService {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CandidateMigrationService.class);
 
@@ -38,18 +38,17 @@ public class CandidateMigrationService {
   }
 
   public void migrateCandidate(UUID identifier) {
-    LOGGER.info("Migrating candidate with identifier {}", identifier);
     var candidate = candidateService.getCandidateByIdentifier(identifier);
 
-    if (!shouldMigrate(candidate)) {
+    if (shouldMigrate(candidate)) {
+      LOGGER.info("Migrating candidate with identifier {}", identifier);
+      var publicationBucketUri = candidate.publicationDetails().publicationBucketUri();
+      var publication = publicationLoader.extractAndTransform(publicationBucketUri);
+      var enrichedCandidate = addMissingPublicationDetails(candidate, publication);
+      candidateService.updateCandidate(enrichedCandidate);
+    } else {
       LOGGER.info("Candidate {} does not require migration", identifier);
-      return;
     }
-
-    var publicationBucketUri = candidate.publicationDetails().publicationBucketUri();
-    var publication = publicationLoader.extractAndTransform(publicationBucketUri);
-    var enrichedCandidate = addMissingPublicationDetails(candidate, publication);
-    candidateService.updateCandidate(enrichedCandidate);
   }
 
   private static boolean shouldMigrate(Candidate candidate) {
@@ -71,10 +70,7 @@ public class CandidateMigrationService {
   }
 
   private static boolean hasCreatorsWithMissingNames(Collection<NviCreator> creators) {
-    return creators.stream()
-        .filter(CandidateMigrationService::shouldUpdateCreatorName)
-        .findAny()
-        .isPresent();
+    return creators.stream().anyMatch(CandidateMigrationService::shouldUpdateCreatorName);
   }
 
   private static boolean shouldUpdateCreatorName(NviCreator creator) {

@@ -21,7 +21,6 @@ import no.sikt.nva.nvi.common.model.NviCreator;
 import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.test.SampleExpandedPublication;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 class CandidateMigrationServiceTest {
@@ -43,49 +42,41 @@ class CandidateMigrationServiceTest {
     publicationFactory = new SampleExpandedPublicationFactory(scenario);
   }
 
-  /**
-   * @deprecated Tests for migrations that add new data (e.g. creator names) that did not get
-   *     persisted in the original data import. Remove when all candidates are updated.
-   */
-  @Deprecated(forRemoval = true, since = "2025-12-17")
-  @Nested
-  class ModelExpansionTests {
-    @Test
-    void shouldMigrateCreatorNames() {
-      var nviOrg = publicationFactory.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, true);
-      var creator = verifiedNviCreatorFrom(nviOrg, nviOrg.id());
-      var publication =
-          publicationFactory.withContributor(mapToContributorDto(creator)).getExpandedPublication();
+  @Test
+  void shouldMigrateCreatorNames() {
+    var nviOrg = publicationFactory.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, true);
+    var creator = verifiedNviCreatorFrom(nviOrg, nviOrg.id());
+    var publication =
+        publicationFactory.withContributor(mapToContributorDto(creator)).getExpandedPublication();
 
-      var creatorWithoutName = new DbCreator(creator.id(), null, creator.getAffiliationIds());
-      var candidateId =
-          createLegacyCandidate(
-              publication, builder -> builder.creators(List.of(creatorWithoutName)));
+    var creatorWithoutName = new DbCreator(creator.id(), null, creator.getAffiliationIds());
+    var candidateId =
+        createLegacyCandidate(
+            publication, builder -> builder.creators(List.of(creatorWithoutName)));
 
-      migrationService.migrateCandidate(candidateId);
+    migrationService.migrateCandidate(candidateId);
 
-      var updatedCandidate = candidateService.getCandidateByIdentifier(candidateId);
-      assertThat(updatedCandidate.publicationDetails().nviCreators())
-          .extracting(NviCreator::name)
-          .containsOnlyOnce(creator.name());
-    }
+    var updatedCandidate = candidateService.getCandidateByIdentifier(candidateId);
+    assertThat(updatedCandidate.publicationDetails().nviCreators())
+        .extracting(NviCreator::name)
+        .containsOnlyOnce(creator.name());
+  }
 
-    @Test
-    void shouldPreserveCreatorNotFoundInPublication() {
-      var orphanCreatorId = randomUri();
-      var orphanCreator = new DbCreator(orphanCreatorId, null, List.of(randomUri()));
+  @Test
+  void shouldPreserveCreatorNotFoundInPublication() {
+    var orphanCreatorId = randomUri();
+    var orphanCreator = new DbCreator(orphanCreatorId, null, List.of(randomUri()));
 
-      var candidateId =
-          createLegacyCandidate(
-              publicationFactory.getExpandedPublication(),
-              builder -> builder.creators(List.of(orphanCreator)));
+    var candidateId =
+        createLegacyCandidate(
+            publicationFactory.getExpandedPublication(),
+            builder -> builder.creators(List.of(orphanCreator)));
 
-      migrationService.migrateCandidate(candidateId);
+    migrationService.migrateCandidate(candidateId);
 
-      var updatedCandidate = candidateService.getCandidateByIdentifier(candidateId);
-      assertThat(updatedCandidate.publicationDetails().nviCreators())
-          .anyMatch(c -> orphanCreatorId.equals(c.id()));
-    }
+    var updatedCandidate = candidateService.getCandidateByIdentifier(candidateId);
+    assertThat(updatedCandidate.publicationDetails().nviCreators())
+        .anyMatch(creator -> orphanCreatorId.equals(creator.id()));
   }
 
   private UUID createLegacyCandidate(
