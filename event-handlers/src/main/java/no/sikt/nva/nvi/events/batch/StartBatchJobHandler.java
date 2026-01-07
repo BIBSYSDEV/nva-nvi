@@ -1,26 +1,36 @@
 package no.sikt.nva.nvi.events.batch;
 
-import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
-
 import com.amazonaws.services.lambda.runtime.Context;
-import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
-import java.io.InputStream;
-import java.io.OutputStream;
+import com.amazonaws.services.lambda.runtime.RequestHandler;
+import no.sikt.nva.nvi.common.queue.NviQueueClient;
+import no.sikt.nva.nvi.common.queue.QueueClient;
+import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.events.batch.model.StartBatchJobRequest;
 import nva.commons.core.JacocoGenerated;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class StartBatchJobHandler implements RequestStreamHandler {
+// FIXME: Temporary suppression to split up PRs
+@SuppressWarnings("PMD.UnusedPrivateField")
+public class StartBatchJobHandler implements RequestHandler<StartBatchJobRequest, Void> {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(StartBatchJobHandler.class);
+  private final CandidateService candidateService;
+  private final QueueClient queueClient;
 
   @JacocoGenerated
-  public StartBatchJobHandler() {}
-
-  @Override
-  public void handleRequest(InputStream input, OutputStream output, Context context) {
-    throw new UnsupportedOperationException("Not yet implemented");
+  public StartBatchJobHandler() {
+    this(CandidateService.defaultCandidateService(), new NviQueueClient());
   }
 
-  @SuppressWarnings("unused")
-  private StartBatchJobRequest parseRequest(InputStream input) throws Exception {
-    return dtoObjectMapper.readValue(input, StartBatchJobRequest.class);
+  public StartBatchJobHandler(CandidateService candidateService, QueueClient queueClient) {
+    this.candidateService = candidateService;
+    this.queueClient = queueClient;
+  }
+
+  @Override
+  public Void handleRequest(StartBatchJobRequest input, Context context) {
+    LOGGER.info("Processing batch job: {}", input);
+    throw new UnsupportedOperationException("Not implemented yet");
   }
 }

@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.common;
 
 import static java.util.function.Predicate.not;
+import static no.sikt.nva.nvi.common.service.CandidateService.defaultCandidateService;
 import static nva.commons.core.StringUtils.isBlank;
 
 import java.net.URI;
@@ -16,6 +17,8 @@ import no.sikt.nva.nvi.common.model.NviCreator;
 import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.PublicationLoaderService;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import nva.commons.core.Environment;
+import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,6 +31,7 @@ public final class CandidateMigrationService {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CandidateMigrationService.class);
 
+  private static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
   private final CandidateService candidateService;
   private final PublicationLoaderService publicationLoader;
 
@@ -35,6 +39,13 @@ public final class CandidateMigrationService {
       CandidateService candidateService, StorageReader<URI> storageReader) {
     this.candidateService = candidateService;
     this.publicationLoader = new PublicationLoaderService(storageReader);
+  }
+
+  @JacocoGenerated
+  public static CandidateMigrationService defaultCandidateMigrationService() {
+    return new CandidateMigrationService(
+        defaultCandidateService(),
+        new S3StorageReader(new Environment().readEnv(EXPANDED_RESOURCES_BUCKET)));
   }
 
   public void migrateCandidate(UUID identifier) {
