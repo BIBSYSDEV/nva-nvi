@@ -1,11 +1,10 @@
 package no.sikt.nva.nvi.common.dto;
 
-import static java.util.Collections.emptyList;
 import static java.util.Objects.requireNonNull;
-import static java.util.Objects.requireNonNullElse;
 import static no.sikt.nva.nvi.common.model.InstanceType.ACADEMIC_CHAPTER;
 import static no.sikt.nva.nvi.common.model.InstanceType.ACADEMIC_COMMENTARY;
 import static no.sikt.nva.nvi.common.model.InstanceType.ACADEMIC_MONOGRAPH;
+import static no.sikt.nva.nvi.common.utils.CollectionUtils.copyOfNullable;
 import static no.sikt.nva.nvi.common.utils.Validator.shouldBeTrue;
 import static no.sikt.nva.nvi.common.utils.Validator.shouldNotBeEmpty;
 import static no.sikt.nva.nvi.common.utils.Validator.shouldNotBeNull;
@@ -57,10 +56,10 @@ public record PublicationDto(
     requireNonNull(id, "Required field 'id' is null");
     requireNonNull(status, "Required field 'status' is null");
 
-    publicationChannels = requireNonNullElse(publicationChannels, emptyList());
-    contributors = requireNonNullElse(contributors, emptyList());
-    topLevelOrganizations = requireNonNullElse(topLevelOrganizations, emptyList());
-    isbnList = requireNonNullElse(isbnList, emptyList());
+    publicationChannels = copyOfNullable(publicationChannels);
+    contributors = copyOfNullable(contributors);
+    topLevelOrganizations = copyOfNullable(topLevelOrganizations);
+    isbnList = copyOfNullable(isbnList);
   }
 
   public void validate() {

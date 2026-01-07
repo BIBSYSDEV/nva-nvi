@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.common.model;
 
 import static no.sikt.nva.nvi.common.service.model.Username.fromString;
+import static no.sikt.nva.nvi.common.utils.CollectionUtils.copyOfNullable;
 
 import java.net.URI;
 import java.util.Collection;
@@ -11,6 +12,10 @@ import nva.commons.apigateway.exceptions.UnauthorizedException;
 
 public record UserInstance(
     Username userName, URI topLevelOrganizationId, Collection<AccessRight> accessRights) {
+
+  public UserInstance {
+    accessRights = copyOfNullable(accessRights);
+  }
 
   public static UserInstance fromRequestInfo(RequestInfo requestInfo) throws UnauthorizedException {
     var userName = fromString(requestInfo.getUserName());

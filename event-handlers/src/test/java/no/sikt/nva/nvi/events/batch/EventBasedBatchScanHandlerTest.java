@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.events.batch;
 
 import static java.util.Collections.emptyList;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.getEventBasedBatchScanHandlerEnvironment;
+import static no.sikt.nva.nvi.common.RequestFixtures.randomNoteRequest;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.createCandidateDao;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidateBuilder;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
@@ -9,7 +10,6 @@ import static no.sikt.nva.nvi.common.model.CandidateFixtures.setupRandomApplicab
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
-import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.core.attempt.Try.attempt;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.collection.IsEmptyCollection.empty;
@@ -42,7 +42,6 @@ import no.sikt.nva.nvi.common.db.NviPeriodDao;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.db.model.KeyField;
-import no.sikt.nva.nvi.common.model.CreateNoteRequest;
 import no.sikt.nva.nvi.common.model.ListingResult;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import no.sikt.nva.nvi.common.service.CandidateService;
@@ -412,10 +411,11 @@ class EventBasedBatchScanHandlerTest {
             .map(item -> setupRandomApplicableCandidate(scenario))
             .toList();
     for (var candidate : candidates) {
-      var note = new CreateNoteRequest(randomString(), randomString(), randomUri());
-      noteService.createNote(candidate, note);
+      noteService.createNote(candidate, randomNoteRequest());
     }
-    return candidates.stream();
+    return candidates.stream()
+        .map(Candidate::identifier)
+        .map(candidateService::getCandidateByIdentifier);
   }
 
   private InputStream eventToInputStream(ScanDatabaseRequest scanDatabaseRequest) {

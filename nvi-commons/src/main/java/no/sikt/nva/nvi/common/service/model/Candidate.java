@@ -1,8 +1,6 @@
 package no.sikt.nva.nvi.common.service.model;
 
-import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
-import static java.util.Collections.unmodifiableMap;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.function.Predicate.not;
@@ -16,6 +14,7 @@ import static no.sikt.nva.nvi.common.service.model.Approval.createNewApproval;
 import static no.sikt.nva.nvi.common.service.model.ApprovalStatus.APPROVED;
 import static no.sikt.nva.nvi.common.service.model.ApprovalStatus.PENDING;
 import static no.sikt.nva.nvi.common.service.model.ApprovalStatus.REJECTED;
+import static no.sikt.nva.nvi.common.utils.CollectionUtils.copyOfNullable;
 import static no.sikt.nva.nvi.common.utils.DecimalUtils.adjustScaleAndRoundingMode;
 import static no.sikt.nva.nvi.common.utils.RequestUtil.getAllCreators;
 import static nva.commons.core.ioutils.IoUtils.stringFromResources;
@@ -26,7 +25,6 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -85,6 +83,11 @@ public record Candidate(
       "Period is closed, perform actions on candidate is forbidden!";
   private static final String PERIOD_NOT_OPENED_MESSAGE =
       "Period is not opened yet, perform actions on candidate is forbidden!";
+
+  public Candidate {
+    approvals = copyOfNullable(approvals);
+    notes = copyOfNullable(notes);
+  }
 
   public static Candidate fromDao(
       CandidateDao candidateDao,
@@ -256,9 +259,7 @@ public record Candidate(
   }
 
   public Collection<InstitutionPoints> getInstitutionPoints() {
-    return Optional.ofNullable(pointCalculation.institutionPoints())
-        .map(Collections::unmodifiableCollection)
-        .orElse(emptyList());
+    return pointCalculation.institutionPoints();
   }
 
   // TODO: Make method return InstitutionPoints once we have migrated candidates from Cristin
@@ -268,17 +269,12 @@ public record Candidate(
         .findFirst();
   }
 
-  @Override
-  public Map<URI, Approval> approvals() {
-    return unmodifiableMap(approvals);
-  }
-
   public Optional<UUID> getVersion() {
     return Optional.ofNullable(version);
   }
 
   public Optional<NviPeriod> getPeriod() {
-    return Optional.ofNullable(period);
+    return Optional.ofNullable(period());
   }
 
   public ApprovalStatus getApprovalStatus(URI organizationId) {
@@ -296,11 +292,6 @@ public record Candidate(
 
   public int getCreatorShareCount() {
     return pointCalculation.creatorShareCount();
-  }
-
-  @Override
-  public Map<UUID, Note> notes() {
-    return unmodifiableMap(notes);
   }
 
   public BigDecimal getTotalPoints() {
@@ -366,8 +357,6 @@ public record Candidate(
   public NoteCreationResult createNote(CreateNoteRequest input) {
     validateCandidateState();
     var note = Note.fromRequest(input, identifier);
-    notes.put(note.noteIdentifier(), note);
-
     var updatedApproval = assignUserToApprovalIfUnassigned(input.username(), input.institutionId());
 
     return new NoteCreationResult(note, updatedApproval);
@@ -542,19 +531,19 @@ public record Candidate(
 
   public Builder copy() {
     return new Builder()
-        .withIdentifier(identifier)
-        .withApplicable(applicable)
-        .withApprovals(approvals())
-        .withNotes(notes())
-        .withPeriod(period) // TODO: Copy
-        .withReportStatus(reportStatus)
-        .withModifiedDate(modifiedDate)
-        .withCreatedDate(createdDate)
-        .withPointCalculation(pointCalculation) // TODO: Copy
-        .withPublicationDetails(publicationDetails) // TODO: Copy
-        .withRevision(revision)
-        .withVersion(version)
-        .withEnvironment(environment);
+        .withIdentifier(identifier())
+        .withApplicable(applicable())
+        .withApprovals(Map.copyOf(approvals()))
+        .withNotes(Map.copyOf(notes()))
+        .withPeriod(period())
+        .withReportStatus(reportStatus())
+        .withModifiedDate(modifiedDate())
+        .withCreatedDate(createdDate())
+        .withPointCalculation(pointCalculation())
+        .withPublicationDetails(publicationDetails())
+        .withRevision(revision())
+        .withVersion(version())
+        .withEnvironment(environment());
   }
 
   /**

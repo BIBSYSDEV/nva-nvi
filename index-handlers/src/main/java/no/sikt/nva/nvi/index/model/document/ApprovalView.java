@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.index.model.document;
 
 import static java.util.Collections.emptyList;
+import static no.sikt.nva.nvi.common.utils.CollectionUtils.copyOfNullable;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -31,6 +32,12 @@ public record ApprovalView(
     String assignee,
     GlobalApprovalStatus globalApprovalStatus) {
 
+  public ApprovalView {
+    organizationSummaries = copyOfNullable(organizationSummaries);
+    labels = copyOfNullable(labels);
+    involvedOrganizations = copyOfNullable(involvedOrganizations);
+  }
+
   public ApprovalView(
       URI institutionId,
       Map<String, String> labels,
@@ -41,7 +48,7 @@ public record ApprovalView(
       GlobalApprovalStatus globalApprovalStatus) {
     this(
         institutionId,
-        getOrganizationSummaries(points, approvalStatus, globalApprovalStatus),
+        deriveOrganizationSummaries(points, approvalStatus, globalApprovalStatus),
         labels,
         approvalStatus,
         points,
@@ -50,7 +57,7 @@ public record ApprovalView(
         globalApprovalStatus);
   }
 
-  private static List<OrganizationSummary> getOrganizationSummaries(
+  private static List<OrganizationSummary> deriveOrganizationSummaries(
       InstitutionPointsView institutionPoints,
       ApprovalStatus approvalStatus,
       GlobalApprovalStatus globalApprovalStatus) {

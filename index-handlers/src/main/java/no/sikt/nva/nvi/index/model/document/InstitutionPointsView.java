@@ -1,5 +1,7 @@
 package no.sikt.nva.nvi.index.model.document;
 
+import static no.sikt.nva.nvi.common.utils.CollectionUtils.copyOfNullable;
+
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -15,6 +17,10 @@ public record InstitutionPointsView(
     URI institutionId,
     BigDecimal institutionPoints,
     List<CreatorAffiliationPointsView> creatorAffiliationPoints) {
+
+  public InstitutionPointsView {
+    creatorAffiliationPoints = copyOfNullable(creatorAffiliationPoints);
+  }
 
   public static InstitutionPointsView from(InstitutionPoints institutionPoints) {
     return new InstitutionPointsView(
