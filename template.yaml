@@ -291,7 +291,7 @@ Resources:
   BatchJobWorkQueue:
     Type: AWS::SQS::Queue
     Properties:
-      VisibilityTimeout: 300
+      VisibilityTimeout: 360 # Should be 6x the function timeout
       MessageRetentionPeriod: 1209600 # 14 days
       RedrivePolicy:
         deadLetterTargetArn: !GetAtt BatchJobDLQ.Arn
@@ -1142,6 +1142,9 @@ Resources:
       AutoPublishAlias: live
       SnapStart:
         ApplyOn: PublishedVersions
+      Environment:
+        Variables:
+          EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
       Events:
         SQSEvent:
           Type: SQS
@@ -1699,6 +1702,24 @@ Resources:
       Dimensions:
         - Name: QueueName
           Value: !GetAtt BatchScanRecoveryQueue.QueueName
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      AlarmActions:
+        - !Ref SlackSnsArn
+
+  BatchJobDLQAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: NVI BatchJob failed
+      AlarmDescription: Failures during batch job processing. Check messages on BatchJobDLQ.
+      MetricName: ApproximateNumberOfMessagesVisible
+      Namespace: AWS/SQS
+      Statistic: Sum
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt BatchJobDLQ.QueueName
       Period: 300
       EvaluationPeriods: 1
       Threshold: 1
