@@ -282,6 +282,21 @@ Resources:
     Properties:
       MessageRetentionPeriod: 1209600 #14 days
 
+  #=============================== For batch job processing ======================================
+  BatchJobDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      MessageRetentionPeriod: 1209600 # 14 days
+
+  BatchJobWorkQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      VisibilityTimeout: 360 # Should be 6x the function timeout
+      MessageRetentionPeriod: 1209600 # 14 days
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt BatchJobDLQ.Arn
+        maxReceiveCount: 3
+
   #=============================== For database events ============================================
   DbEventQueue:
     Type: AWS::SQS::Queue
@@ -496,6 +511,8 @@ Resources:
                   - !GetAtt QueuePersistedResourceDLQ.Arn
                   - !GetAtt BatchScanRecoveryQueue.Arn
                   - !Ref CristinImportNviQueueArn
+                  - !GetAtt BatchJobWorkQueue.Arn
+                  - !GetAtt BatchJobDLQ.Arn
         - PolicyName: publishToSnsTopic
           PolicyDocument:
             Version: '2012-10-17'
@@ -1083,6 +1100,60 @@ Resources:
             Type: SQS
             Destination: !GetAtt ReEvaluateDLQ.Arn
 
+  StartBatchJobHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: >
+        Lambda that initiates batch job processing. Triggered manually from AWS Console with a
+        StartBatchJobRequest payload. Supports REFRESH_CANDIDATES, MIGRATE_CANDIDATES, and
+        REFRESH_PERIODS job types.
+      CodeUri: event-handlers
+      Handler: no.sikt.nva.nvi.events.batch.StartBatchJobHandler::handleRequest
+      Role: !GetAtt NvaNviRole.Arn
+      Timeout: 900
+      AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
+      Environment:
+        Variables:
+          BATCH_JOB_QUEUE_URL: !Ref BatchJobWorkQueue
+          EVENT_BUS_NAME: !GetAtt InternalBus.Name
+          PROCESSING_ENABLED: "true"
+      Events:
+        EventBridgeEvent:
+          Type: EventBridgeRule
+          Properties:
+            EventBusName: !GetAtt InternalBus.Name
+            Pattern:
+              detail-type:
+                - NviService.BatchJob.StartBatchJob
+
+  ProcessBatchJobHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: >
+        Lambda that processes individual batch job items from the work queue.
+        Uses transactional service methods with optimistic locking to update/refresh database records.
+      CodeUri: event-handlers
+      Handler: no.sikt.nva.nvi.events.batch.ProcessBatchJobHandler::handleRequest
+      Role: !GetAtt NvaNviRole.Arn
+      Timeout: 60
+      MemorySize: 1024
+      AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
+      Environment:
+        Variables:
+          EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
+      Events:
+        SQSEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt BatchJobWorkQueue.Arn
+            BatchSize: 5
+            FunctionResponseTypes:
+              - ReportBatchItemFailures # Only retry failed messages, not the entire batch
+
   # ======================= API HANDLERS ========================
 
   FetchNviCandidateHandler:
@@ -1631,6 +1702,24 @@ Resources:
       Dimensions:
         - Name: QueueName
           Value: !GetAtt BatchScanRecoveryQueue.QueueName
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      AlarmActions:
+        - !Ref SlackSnsArn
+
+  BatchJobDLQAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: NVI BatchJob failed
+      AlarmDescription: Failures during batch job processing. Check messages on BatchJobDLQ.
+      MetricName: ApproximateNumberOfMessagesVisible
+      Namespace: AWS/SQS
+      Statistic: Sum
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt BatchJobDLQ.QueueName
       Period: 300
       EvaluationPeriods: 1
       Threshold: 1
