@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.events.batch.model;
 
-import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -31,12 +30,7 @@ class StartBatchJobRequestTest {
 
       var request = fromJson(json);
       var expectedRequest =
-          new StartBatchJobRequest(
-              BatchJobType.REFRESH_CANDIDATES,
-              new ReportingYearFilter(emptyList()),
-              null,
-              10,
-              null);
+          StartBatchJobRequest.builder().withJobType(BatchJobType.REFRESH_CANDIDATES).build();
 
       assertThat(request).isEqualTo(expectedRequest);
       assertThat(request.isInitialInvocation()).isTrue();
@@ -62,12 +56,12 @@ class StartBatchJobRequestTest {
 
       var request = fromJson(json);
       var expectedRequest =
-          new StartBatchJobRequest(
-              BatchJobType.MIGRATE_CANDIDATES,
-              new ReportingYearFilter(List.of("2024", "2025")),
-              100,
-              5,
-              null);
+          StartBatchJobRequest.builder()
+              .withJobType(BatchJobType.MIGRATE_CANDIDATES)
+              .withFilter(new ReportingYearFilter(List.of("2024", "2025")))
+              .withMaxItemsPerSegment(100)
+              .withMaxParallelSegments(5)
+              .build();
 
       assertThat(request).isEqualTo(expectedRequest);
     }
@@ -83,20 +77,20 @@ class StartBatchJobRequestTest {
       return Stream.of(
           argumentSet(
               "with TableScanState",
-              new StartBatchJobRequest(
-                  BatchJobType.REFRESH_CANDIDATES,
-                  new ReportingYearFilter(emptyList()),
-                  100,
-                  10,
-                  new TableScanState(2, 10, fakeCandidateKey(1), 50))),
+              StartBatchJobRequest.builder()
+                  .withJobType(BatchJobType.REFRESH_CANDIDATES)
+                  .withMaxItemsPerSegment(100)
+                  .withPaginationState(new TableScanState(2, 10, fakeCandidateKey(1), 50))
+                  .build()),
           argumentSet(
               "with YearQueryState",
-              new StartBatchJobRequest(
-                  BatchJobType.MIGRATE_CANDIDATES,
-                  new ReportingYearFilter(List.of("2023", "2024")),
-                  50,
-                  1,
-                  new YearQueryState(List.of("2024"), fakeCandidateKey(2), 200))));
+              StartBatchJobRequest.builder()
+                  .withJobType(BatchJobType.MIGRATE_CANDIDATES)
+                  .withFilter(new ReportingYearFilter(List.of("2023", "2024")))
+                  .withMaxItemsPerSegment(50)
+                  .withPaginationState(
+                      new YearQueryState(List.of("2024"), fakeCandidateKey(2), 200))
+                  .build()));
     }
 
     private static StartBatchJobRequest fromJson(String json) {
@@ -116,14 +110,15 @@ class StartBatchJobRequestTest {
     @Test
     void shouldCreateContinuationWithUpdatedPaginationState() {
       var original =
-          new StartBatchJobRequest(
-              BatchJobType.REFRESH_CANDIDATES,
-              new ReportingYearFilter(List.of(THIS_YEAR)),
-              100,
-              5,
-              null);
+          StartBatchJobRequest.builder()
+              .withJobType(BatchJobType.REFRESH_CANDIDATES)
+              .withFilter(new ReportingYearFilter(List.of(THIS_YEAR)))
+              .withMaxItemsPerSegment(100)
+              .withMaxParallelSegments(5)
+              .build();
 
-      var continuation = original.withPaginationState(TableScanState.forSegment(2, 5));
+      var continuation =
+          original.copy().withPaginationState(TableScanState.forSegment(2, 5)).build();
 
       assertThat(continuation.jobType()).isEqualTo(original.jobType());
       assertThat(continuation.filter()).isEqualTo(original.filter());
