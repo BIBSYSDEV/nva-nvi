@@ -19,12 +19,25 @@ public record StartBatchJobRequest(
     PaginationState paginationState)
     implements JsonSerializable {
 
-  public static final int DEFAULT_PARALLEL_SEGMENTS = 10;
+  private static final int DEFAULT_PARALLEL_SEGMENTS = 10;
 
   public StartBatchJobRequest {
     requireNonNull(jobType, "jobType must not be null");
     filter = requireNonNullElse(filter, new ReportingYearFilter(emptyList()));
     maxParallelSegments = requireNonNullElse(maxParallelSegments, DEFAULT_PARALLEL_SEGMENTS);
+  }
+
+  public static Builder builder() {
+    return new Builder();
+  }
+
+  public Builder copy() {
+    return builder()
+        .withJobType(jobType)
+        .withFilter(filter)
+        .withMaxItemsPerSegment(maxItemsPerSegment)
+        .withMaxParallelSegments(maxParallelSegments)
+        .withPaginationState(paginationState);
   }
 
   @JsonIgnore
@@ -42,8 +55,43 @@ public record StartBatchJobRequest(
     return filter instanceof ReportingYearFilter yearFilter && !yearFilter.includesAllYears();
   }
 
-  public StartBatchJobRequest withPaginationState(PaginationState newPaginationState) {
-    return new StartBatchJobRequest(
-        jobType, filter, maxItemsPerSegment, maxParallelSegments, newPaginationState);
+  public static final class Builder {
+    private BatchJobType jobType;
+    private BatchJobFilter filter;
+    private Integer maxItemsPerSegment;
+    private Integer maxParallelSegments;
+    private PaginationState paginationState;
+
+    private Builder() {}
+
+    public Builder withJobType(BatchJobType jobType) {
+      this.jobType = jobType;
+      return this;
+    }
+
+    public Builder withFilter(BatchJobFilter filter) {
+      this.filter = filter;
+      return this;
+    }
+
+    public Builder withMaxItemsPerSegment(Integer maxItemsPerSegment) {
+      this.maxItemsPerSegment = maxItemsPerSegment;
+      return this;
+    }
+
+    public Builder withMaxParallelSegments(Integer maxParallelSegments) {
+      this.maxParallelSegments = maxParallelSegments;
+      return this;
+    }
+
+    public Builder withPaginationState(PaginationState paginationState) {
+      this.paginationState = paginationState;
+      return this;
+    }
+
+    public StartBatchJobRequest build() {
+      return new StartBatchJobRequest(
+          jobType, filter, maxItemsPerSegment, maxParallelSegments, paginationState);
+    }
   }
 }
