@@ -32,6 +32,10 @@ public class FakeEnvironment extends Environment {
     return readEnvOpt(variableName).orElseThrow(() -> variableNotSetException(variableName));
   }
 
+  public void setEnv(String key, String value) {
+    environmentVariables.put(key, value);
+  }
+
   private IllegalStateException variableNotSetException(String variableName) {
     String message = ENVIRONMENT_VARIABLE_NOT_SET + variableName;
     logger.error(message);

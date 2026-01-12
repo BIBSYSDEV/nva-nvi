@@ -37,6 +37,7 @@ dependencies {
     testFixturesImplementation nvaCatalog.hamcrest
     testFixturesImplementation nvaCatalog.mockito.core
     testFixturesImplementation nvaLibs.core
+    testFixturesImplementation nvaLibs.json
     testFixturesImplementation nvaLibs.testutils
     testFixturesImplementation project(':nvi-test')
     testFixturesImplementation(testFixtures(project(":nvi-commons")))

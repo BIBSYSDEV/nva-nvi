@@ -2,7 +2,7 @@ package no.sikt.nva.nvi.events.batch.model;
 
 import java.util.Map;
 
-record TableScanState(
+public record TableScanState(
     int segment, int totalSegments, Map<String, String> lastEvaluatedKey, int itemsEnqueued)
     implements PaginationState {
 
