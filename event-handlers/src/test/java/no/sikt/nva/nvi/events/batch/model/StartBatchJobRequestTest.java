@@ -132,7 +132,7 @@ class StartBatchJobRequestTest {
 
       assertThat(state.segment()).isEqualTo(3);
       assertThat(state.totalSegments()).isEqualTo(10);
-      assertThat(state.lastEvaluatedKey()).isNull();
+      assertThat(state.lastEvaluatedKey()).isEmpty();
 
       var lastEvaluatedKey = fakeCandidateKey(100);
       var afterPage = state.withNextPage(lastEvaluatedKey, 100);
