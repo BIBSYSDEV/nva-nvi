@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.events.batch;
 
-import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.service.CandidateService.defaultCandidateService;
 import static no.sikt.nva.nvi.common.service.NviPeriodService.defaultNviPeriodService;
 import static no.sikt.nva.nvi.common.utils.CollectionUtils.splitIntoBatches;
