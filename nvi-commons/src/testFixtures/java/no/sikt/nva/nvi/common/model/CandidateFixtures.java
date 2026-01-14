@@ -9,8 +9,7 @@ import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublica
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
-import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.UpsertRequestBuilder;
 import no.sikt.nva.nvi.common.client.model.Organization;
@@ -83,20 +82,19 @@ public class CandidateFixtures {
   private static List<Candidate> createCandidatesForYear(
       TestScenario scenario, String year, int candidateCount) {
     var candidates =
-        IntStream.range(0, candidateCount)
-            .mapToObj(i -> setupRandomApplicableCandidate(scenario, year))
+        Stream.generate(() -> setupRandomApplicableCandidate(scenario, year))
+            .limit(candidateCount)
             .toList();
     candidates.forEach(candidate -> createMatchingPublicationInS3(scenario, candidate));
     return candidates;
   }
 
   private static void createMatchingPublicationInS3(TestScenario scenario, Candidate candidate) {
-    var publicationIdentifier = candidate.publicationDetails().publicationIdentifier().toString();
     var publication =
         defaultExpandedPublicationFactory(scenario)
             .getExpandedPublicationBuilder()
             .withId(candidate.getPublicationId())
-            .withIdentifier(UUID.fromString(publicationIdentifier))
+            .withIdentifier(candidate.publicationDetails().publicationIdentifier())
             .withTitle(candidate.publicationDetails().title())
             .build();
     scenario.setupExpandedPublicationInS3(publication);

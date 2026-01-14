@@ -48,6 +48,7 @@ dependencies {
     testImplementation nvaCatalog.hamcrest
     testImplementation nvaCatalog.jackson.datatype.jsr310
     testImplementation nvaCatalog.mockito.core
+    testImplementation nvaLibs.identifiers
     testImplementation nvaLibs.logutils
     testImplementation nvaLibs.testutils
     testImplementation project(':nvi-test')
