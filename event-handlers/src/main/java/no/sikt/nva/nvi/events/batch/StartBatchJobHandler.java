@@ -90,18 +90,21 @@ public class StartBatchJobHandler implements RequestHandler<StartBatchJobRequest
 
   private void sendBatch(Collection<BatchJobMessage> messages) {
     var jsonMessages = messages.stream().map(BatchJobMessage::toJsonString).toList();
-    var response =
-        queueClient.sendMessageBatch(jsonMessages, queueUrl); // FIXME: Throw exception on failure?
-    LOGGER.info(
-        "Sent {} messages to queue. Failures: {}", messages.size(), response.failed().size());
+    var response = queueClient.sendMessageBatch(jsonMessages, queueUrl);
+    if (!response.failed().isEmpty()) {
+      throw new BatchJobException("Failed to send work items to queue");
+    }
+    LOGGER.info("Sent {} messages to queue", messages.size());
   }
 
   private void sendContinuationEvents(List<StartBatchJobRequest> requests) {
     var entries = requests.stream().map(this::toEventEntry).toList();
     var putEventsRequest = PutEventsRequest.builder().entries(entries).build();
-    var response =
-        eventBridgeClient.putEvents(putEventsRequest); // FIXME: Throw exception on failure?
-    LOGGER.info("EventBridge response: {} failed entries", response.failedEntryCount());
+    var response = eventBridgeClient.putEvents(putEventsRequest);
+    if (response.failedEntryCount() > 0) {
+      throw new BatchJobException("Failed to send continuation events");
+    }
+    LOGGER.info("Sent {} continuation events", entries.size());
   }
 
   private PutEventsRequestEntry toEventEntry(StartBatchJobRequest request) {
