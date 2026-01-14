@@ -39,7 +39,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.validator.FakeViewingScopeValidator;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
 import no.sikt.nva.nvi.index.aws.SearchClient;
@@ -385,8 +385,10 @@ class SearchNviCandidatesHandlerTest extends SearchNviCandidatesHandlerTestBase 
         .getUri();
   }
 
-  private List<NviCandidateIndexDocument> generateNumberOfIndexDocuments(int number) {
-    return IntStream.range(0, number).boxed().map(i -> singleNviCandidateIndexDocument()).toList();
+  private List<NviCandidateIndexDocument> generateNumberOfIndexDocuments(int documentCount) {
+    return Stream.generate(SearchNviCandidatesHandlerTest::singleNviCandidateIndexDocument)
+        .limit(documentCount)
+        .toList();
   }
 
   private String randomSiktSubUnit() {

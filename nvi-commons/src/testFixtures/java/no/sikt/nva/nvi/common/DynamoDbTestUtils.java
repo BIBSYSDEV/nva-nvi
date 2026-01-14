@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.Dao;
@@ -91,11 +91,9 @@ public final class DynamoDbTestUtils {
 
   public static DynamodbEvent randomEventWithNumberOfDynamoRecords(int numberOfRecords) {
     var records =
-        IntStream.range(0, numberOfRecords)
-            .mapToObj(index -> randomOperationType())
-            .map(
-                operationType ->
-                    dynamoRecord(payloadWithRandomCandidate(randomUUID()), operationType))
+        Stream.generate(DynamoDbTestUtils::randomOperationType)
+            .limit(numberOfRecords)
+            .map(operationType -> dynamoRecord(payloadWithRandomCandidate(), operationType))
             .toList();
     return toDynamoDbEvent(records);
   }
@@ -127,9 +125,9 @@ public final class DynamoDbTestUtils {
     return dynamodbStreamRecord;
   }
 
-  private static StreamRecord payloadWithRandomCandidate(UUID identifier) {
+  private static StreamRecord payloadWithRandomCandidate() {
     var dbCandidate = randomCandidate();
-    var dao = CandidateDao.builder().identifier(identifier).candidate(dbCandidate);
+    var dao = CandidateDao.builder().identifier(randomUUID()).candidate(dbCandidate);
     var oldImage = dao.version(randomUUID().toString()).build();
     var newImage = dao.version(randomUUID().toString()).build();
 

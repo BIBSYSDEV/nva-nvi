@@ -29,12 +29,13 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.UpsertRequestBuilder;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.exceptions.TransactionException;
+import no.sikt.nva.nvi.common.model.OrganizationFixtures;
 import no.sikt.nva.nvi.common.model.PublicationDate;
 import no.sikt.nva.nvi.common.service.ApprovalService;
 import no.sikt.nva.nvi.common.service.CandidateService;
@@ -525,8 +526,8 @@ class ConcurrencyHandlingTests {
   }
 
   private Set<Organization> createOrganizations(int numberOfNviOrganizations) {
-    return IntStream.range(0, numberOfNviOrganizations)
-        .mapToObj(i -> randomOrganizationId())
+    return Stream.generate(OrganizationFixtures::randomOrganizationId)
+        .limit(numberOfNviOrganizations)
         .map(Organization.builder()::withId)
         .map(Organization.Builder::build)
         .collect(Collectors.toSet());

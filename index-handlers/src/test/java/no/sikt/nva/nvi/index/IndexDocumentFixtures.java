@@ -25,7 +25,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
-import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.ApprovalView;
@@ -50,8 +50,8 @@ public final class IndexDocumentFixtures {
 
   public static List<NviCandidateIndexDocument> createRandomIndexDocuments(
       URI userTopLevelOrganization, int year, int count) {
-    return IntStream.range(0, count)
-        .mapToObj(i -> createRandomIndexDocument(userTopLevelOrganization, year))
+    return Stream.generate(() -> createRandomIndexDocument(userTopLevelOrganization, year))
+        .limit(count)
         .toList();
   }
 
@@ -136,7 +136,7 @@ public final class IndexDocumentFixtures {
   }
 
   public static List<ApprovalView> randomApprovalList() {
-    return IntStream.range(0, 5).boxed().map(i -> randomApproval()).toList();
+    return Stream.generate(IndexDocumentFixtures::randomApproval).limit(5).toList();
   }
 
   public static ApprovalView randomApproval() {

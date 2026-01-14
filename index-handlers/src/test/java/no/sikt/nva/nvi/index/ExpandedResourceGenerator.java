@@ -27,6 +27,7 @@ import static no.sikt.nva.nvi.test.TestConstants.TOP_LEVEL_ORGANIZATIONS_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.TYPE_FIELD;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
+import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -34,7 +35,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.model.NviCreator;
 import no.sikt.nva.nvi.common.model.PublicationDate;
 import no.sikt.nva.nvi.common.service.model.Candidate;
@@ -293,9 +294,8 @@ public final class ExpandedResourceGenerator {
 
   private static void addOtherRandomContributors(
       ArrayNode contributors, List<URI> affiliationsIds) {
-    IntStream.range(0, 10)
-        .mapToObj(
-            i -> createContributorNode(affiliationsIds, URI.create(randomString()), randomString()))
+    Stream.generate(() -> createContributorNode(affiliationsIds, randomUri(), randomString()))
+        .limit(10)
         .forEach(contributors::add);
   }
 

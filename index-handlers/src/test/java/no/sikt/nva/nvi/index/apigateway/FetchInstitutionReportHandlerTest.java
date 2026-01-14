@@ -80,7 +80,6 @@ import java.util.Base64;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.index.apigateway.utils.ExcelWorkbookUtil;
@@ -132,7 +131,7 @@ class FetchInstitutionReportHandlerTest {
   private FetchInstitutionReportHandler handler;
 
   @BeforeEach
-  public void setUp() {
+  void setUp() {
     output = new ByteArrayOutputStream();
     openSearchClient = mock(OpenSearchClient.class);
     handler = new FetchInstitutionReportHandler(openSearchClient, ENVIRONMENT);
@@ -264,7 +263,7 @@ class FetchInstitutionReportHandlerTest {
         Base64.getDecoder().decode(fromOutputStream(output, String.class).getBody());
     var actual = fromInputStream(new ByteArrayInputStream(decodedResponse));
 
-    assertEquals(institutionPoints.creatorAffiliationPoints(), emptyList());
+    assertEquals(emptyList(), institutionPoints.creatorAffiliationPoints());
     assertEquals(expected, actual);
   }
 
@@ -401,8 +400,8 @@ class FetchInstitutionReportHandlerTest {
     var topLevelCristinOrg = randomCristinOrgUri();
     var numberOfDocuments = 6;
     var indexDocuments =
-        IntStream.range(0, numberOfDocuments)
-            .mapToObj(i -> randomIndexDocumentWith(CURRENT_YEAR, topLevelCristinOrg))
+        Stream.generate(() -> randomIndexDocumentWith(CURRENT_YEAR, topLevelCristinOrg))
+            .limit(numberOfDocuments)
             .toList();
     mockOpenSearchResponseThrowingOnSecondRequest(indexDocuments, topLevelCristinOrg);
     var expected = getExpectedReport(indexDocuments, topLevelCristinOrg);
