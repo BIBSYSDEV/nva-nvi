@@ -36,6 +36,7 @@ import java.io.UncheckedIOException;
 import java.net.URI;
 import java.util.List;
 import java.util.UUID;
+import no.unit.nva.identifiers.SortableIdentifier;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.ioutils.IoUtils;
 
@@ -175,6 +176,12 @@ public record SampleExpandedPublication(
 
     public Builder withIdentifier(UUID identifier) {
       this.identifier = identifier;
+      return this;
+    }
+
+    public Builder withIdentifier(SortableIdentifier identifier) {
+      var identifierAsUuid = UUID.fromString(identifier.toString());
+      this.identifier = identifierAsUuid;
       return this;
     }
 

@@ -9,7 +9,6 @@ import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublica
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.UpsertRequestBuilder;
@@ -91,12 +90,11 @@ public class CandidateFixtures {
   }
 
   private static void createMatchingPublicationInS3(TestScenario scenario, Candidate candidate) {
-    var publicationIdentifier = candidate.publicationDetails().publicationIdentifier().toString();
     var publication =
         defaultExpandedPublicationFactory(scenario)
             .getExpandedPublicationBuilder()
             .withId(candidate.getPublicationId())
-            .withIdentifier(UUID.fromString(publicationIdentifier))
+            .withIdentifier(candidate.publicationDetails().publicationIdentifier())
             .withTitle(candidate.publicationDetails().title())
             .build();
     scenario.setupExpandedPublicationInS3(publication);
