@@ -175,8 +175,9 @@ class StartBatchJobHandlerTest {
     return new StartBatchJobHandler(
         scenario.getCandidateService(),
         scenario.getPeriodService(),
-      eventBridgeClient, environment, queueClient
-    );
+        eventBridgeClient,
+        environment,
+        queueClient);
   }
 
   private void runToCompletion(StartBatchJobRequest initialRequest) {

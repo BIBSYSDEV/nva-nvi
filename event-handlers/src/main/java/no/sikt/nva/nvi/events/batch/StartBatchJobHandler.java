@@ -40,7 +40,7 @@ public class StartBatchJobHandler implements RequestHandler<StartBatchJobRequest
   private static final String PROCESSING_ENABLED = "PROCESSING_ENABLED";
   private static final String BATCH_JOB_QUEUE_URL = "BATCH_JOB_QUEUE_URL";
   private static final String EVENT_BUS_NAME = "EVENT_BUS_NAME";
-  private static final String DETAIL_TYPE = "StartBatchJob";
+  private static final String DETAIL_TYPE = "NviService.BatchJob.StartBatchJob";
   private static final String SOURCE = "nva.nvi.batch";
   private static final int DEFAULT_PAGE_SIZE = 700;
   private static final int SQS_BATCH_SIZE = 10;
