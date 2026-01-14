@@ -10,6 +10,7 @@ import static no.sikt.nva.nvi.common.service.model.Candidate.shouldResetCandidat
 
 import java.net.URI;
 import java.util.Collection;
+import java.util.Map;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.Dao;
@@ -17,6 +18,7 @@ import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.model.CandidateAggregate;
 import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
+import no.sikt.nva.nvi.common.model.ListingResult;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.exception.PeriodNotFoundException;
 import no.sikt.nva.nvi.common.service.model.Approval;
@@ -161,6 +163,17 @@ public class CandidateService {
       return new CandidateAndPeriods(null, periodService.getAll());
     }
     return findCandidateAndPeriodsByIdentifier(candidateIdentifier.get());
+  }
+
+  public ListingResult<UUID> listCandidateIdentifiers(
+      int segment, int totalSegments, int pageSize, Map<String, String> startKey) {
+    return candidateRepository.scanForCandidateIdentifiers(
+        segment, totalSegments, pageSize, startKey);
+  }
+
+  public ListingResult<UUID> listCandidateIdentifiersByYear(
+      String year, int pageSize, Map<String, String> startKey) {
+    return candidateRepository.scanForCandidateIdentifiers(year, pageSize, startKey);
   }
 
   private CandidateAndPeriods findCandidateAndPeriodsByIdentifier(UUID candidateIdentifier) {
