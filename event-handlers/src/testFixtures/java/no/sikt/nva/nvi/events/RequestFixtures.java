@@ -32,4 +32,11 @@ public final class RequestFixtures {
         .withMaxParallelSegments(5)
         .build();
   }
+
+  public static StartBatchJobRequest refreshAllPeriods() {
+    return StartBatchJobRequest.builder()
+        .withJobType(BatchJobType.REFRESH_PERIODS)
+        .withMaxParallelSegments(1)
+        .build();
+  }
 }
