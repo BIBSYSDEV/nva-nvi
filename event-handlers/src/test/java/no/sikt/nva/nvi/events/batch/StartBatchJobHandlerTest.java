@@ -173,7 +173,6 @@ class StartBatchJobHandlerTest {
     }
 
     @Test
-    @Disabled
     void shouldQueueAllPeriods() {
       var request = refreshAllPeriods();
       runToCompletion(request);
