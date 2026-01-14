@@ -107,8 +107,6 @@ public class StartBatchJobHandler implements RequestHandler<StartBatchJobRequest
     LOGGER.info("Sent {} continuation events", entries.size());
   }
 
-  // FIXME: Temporary suppression to split up PRs
-  @JacocoGenerated
   private PutEventsRequestEntry toEventEntry(StartBatchJobRequest request) {
     return PutEventsRequestEntry.builder()
         .eventBusName(eventBusName)
