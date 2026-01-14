@@ -132,7 +132,7 @@ class StartBatchJobRequestTest {
 
       assertThat(state.segment()).isEqualTo(3);
       assertThat(state.totalSegments()).isEqualTo(10);
-      assertThat(state.lastEvaluatedKey()).isEmpty();
+      assertThat(state.lastEvaluatedKey()).isNull();
 
       var lastEvaluatedKey = fakeCandidateKey(100);
       var afterPage = state.withNextPage(lastEvaluatedKey, 100);
@@ -156,7 +156,7 @@ class StartBatchJobRequestTest {
 
       var thirdState = firstState.withNextYear();
       assertThat(thirdState.currentYear()).isEqualTo(THIS_YEAR);
-      assertThat(thirdState.lastEvaluatedKey()).isEmpty();
+      assertThat(thirdState.lastEvaluatedKey()).isNull();
       assertThat(thirdState.hasMoreYears()).isFalse();
     }
   }

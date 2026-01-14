@@ -142,7 +142,6 @@ public class CandidateRepository extends DynamoRepository {
     batches.forEach(batch -> dynamoDbRetryClient.batchWriteItem(toBatchRequest(batch)));
   }
 
-  // TODO: Create new implementation that retrieves IDs only
   /**
    * Queries candidates by year using a GSI (not strongly consistent). Suitable for bulk operations
    * that extract identifiers but may not return the latest data.
