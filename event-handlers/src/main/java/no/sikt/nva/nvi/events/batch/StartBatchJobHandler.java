@@ -1,6 +1,6 @@
 package no.sikt.nva.nvi.events.batch;
 
-import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
+import static no.sikt.nva.nvi.common.service.CandidateService.defaultCandidateService;
 import static no.sikt.nva.nvi.common.service.NviPeriodService.defaultNviPeriodService;
 
 import com.amazonaws.services.lambda.runtime.Context;
@@ -10,10 +10,10 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.IntStream;
 import no.sikt.nva.nvi.common.db.CandidateDao;
-import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.model.ListingResult;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
+import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.events.batch.model.BatchJobMessage;
@@ -45,7 +45,7 @@ public class StartBatchJobHandler implements RequestHandler<StartBatchJobRequest
   private static final int DEFAULT_PAGE_SIZE = 700;
   private static final int SQS_BATCH_SIZE = 10;
 
-  private final CandidateRepository candidateRepository;
+  private final CandidateService candidateService;
   private final NviPeriodService periodService;
   private final QueueClient queueClient;
   private final EventBridgeClient eventBridgeClient;
@@ -56,7 +56,7 @@ public class StartBatchJobHandler implements RequestHandler<StartBatchJobRequest
   @JacocoGenerated
   public StartBatchJobHandler() {
     this(
-        new CandidateRepository(defaultDynamoClient()),
+        defaultCandidateService(),
         defaultNviPeriodService(),
         new NviQueueClient(),
         defaultEventBridgeClient(),
@@ -64,12 +64,12 @@ public class StartBatchJobHandler implements RequestHandler<StartBatchJobRequest
   }
 
   public StartBatchJobHandler(
-      CandidateRepository candidateRepository,
+      CandidateService candidateService,
       NviPeriodService periodService,
       QueueClient queueClient,
       EventBridgeClient eventBridgeClient,
       Environment environment) {
-    this.candidateRepository = candidateRepository;
+    this.candidateService = candidateService;
     this.periodService = periodService;
     this.queueClient = queueClient;
     this.eventBridgeClient = eventBridgeClient;

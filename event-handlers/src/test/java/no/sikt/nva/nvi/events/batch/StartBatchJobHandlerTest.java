@@ -28,6 +28,7 @@ import no.sikt.nva.nvi.events.batch.model.StartBatchJobRequest;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.stubs.FakeEventBridgeClient;
+import nva.commons.core.Environment;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -62,25 +63,13 @@ class StartBatchJobHandlerTest {
       queueClient = new FakeSqsClient();
       eventBridgeClient = new FakeEventBridgeClient();
       environment = getStartBatchJobHandlerEnvironment();
-      handler =
-          new StartBatchJobHandler(
-              scenario.getCandidateRepository(),
-              scenario.getPeriodService(),
-              queueClient,
-              eventBridgeClient,
-              environment);
+      handler = getHandler(environment, scenario);
     }
 
     @Test
     void shouldQueueNothingWhenProcessingDisabled() {
       environment.setEnv(PROCESSING_ENABLED.getKey(), "false");
-      handler =
-          new StartBatchJobHandler(
-              scenario.getCandidateRepository(),
-              scenario.getPeriodService(),
-              queueClient,
-              eventBridgeClient,
-              environment);
+      handler = getHandler(environment, scenario);
       var request = refreshCandidatesForYear(String.valueOf(CURRENT_YEAR));
 
       runToCompletion(request);
@@ -160,13 +149,7 @@ class StartBatchJobHandlerTest {
       queueClient = new FakeSqsClient();
       eventBridgeClient = new FakeEventBridgeClient();
       environment = getStartBatchJobHandlerEnvironment();
-      handler =
-          new StartBatchJobHandler(
-              scenario.getCandidateRepository(),
-              scenario.getPeriodService(),
-              queueClient,
-              eventBridgeClient,
-              environment);
+      handler = getHandler(environment, scenario);
 
       setupClosedPeriod(scenario, CURRENT_YEAR - 1);
       setupOpenPeriod(scenario, CURRENT_YEAR);
@@ -186,6 +169,15 @@ class StartBatchJobHandlerTest {
       runToCompletion(request);
       assertThat(getQueuedMessageCount()).isEqualTo(3);
     }
+  }
+
+  private StartBatchJobHandler getHandler(Environment environment, TestScenario scenario) {
+    return new StartBatchJobHandler(
+        scenario.getCandidateService(),
+        scenario.getPeriodService(),
+        queueClient,
+        eventBridgeClient,
+        environment);
   }
 
   private void runToCompletion(StartBatchJobRequest initialRequest) {

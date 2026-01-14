@@ -98,16 +98,43 @@ public class CandidateRepository extends DynamoRepository {
   }
 
   // TODO: Move/create record for input state?
-  /** Parallelized scan to find candidate identifiers (not strongly consistent). */
+  /** Scans table to find candidate identifiers (not strongly consistent). */
   public ListingResult<UUID> scanForCandidateIdentifiers(
       int pageSize, Map<String, String> startMarker, int segment, int totalSegments) {
     var scanRequest = createScanRequest(pageSize, startMarker, segment, totalSegments);
     var scanResponse = defaultClient.scan(scanRequest);
     return new ListingResult<>(
-        thereAreMorePagesToScan(scanResponse),
+      hasElements(scanResponse.lastEvaluatedKey()),
         toStringMap(scanResponse.lastEvaluatedKey()),
         scanResponse.count(),
         getCandidateIdentifiers(scanResponse));
+  }
+
+  /** Queries GSI to find candidate identifiers (not strongly consistent). */
+  public ListingResult<UUID> scanForCandidateIdentifiers(
+    int pageSize, Map<String, String> startMarker, String year) {
+    var queryRequest = createYearQueryRequest(pageSize, startMarker, year);
+    var queryResponse = defaultClient.query(queryRequest);
+    return new ListingResult<>(
+      hasElements(queryResponse.lastEvaluatedKey()),
+      toStringMap(queryResponse.lastEvaluatedKey()),
+      queryResponse.count(),
+      getCandidateIdentifiers(queryResponse.items()));
+  }
+
+  private static QueryRequest createYearQueryRequest(
+     int pageSize, Map<String, String> startMarker, String year) {
+    var start = nonNull(startMarker) ? toAttributeMap(startMarker) : null;
+    return QueryRequest.builder()
+      .tableName(NVI_TABLE_NAME)
+      .indexName(SECONDARY_INDEX_YEAR)
+      .keyConditionExpression("#year = :year")
+      .expressionAttributeNames(Map.of("#year", "year"))
+      .expressionAttributeValues(Map.of(":year", AttributeValue.fromS(year)))
+      .projectionExpression(IDENTIFIER_FIELD)
+      .limit(pageSize)
+      .exclusiveStartKey(start)
+      .build();
   }
 
   private static ScanRequest createScanRequest(
