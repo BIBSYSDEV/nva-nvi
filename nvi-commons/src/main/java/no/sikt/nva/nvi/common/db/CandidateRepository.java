@@ -6,6 +6,7 @@ import static java.util.Objects.nonNull;
 import static java.util.UUID.randomUUID;
 import static java.util.stream.Collectors.toMap;
 import static no.sikt.nva.nvi.common.DatabaseConstants.HASH_KEY;
+import static no.sikt.nva.nvi.common.DatabaseConstants.IDENTIFIER_FIELD;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_PUBLICATION_ID;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_YEAR;
 import static no.sikt.nva.nvi.common.DatabaseConstants.VERSION_FIELD;
@@ -20,6 +21,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -30,6 +32,7 @@ import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.model.KeyField;
 import no.sikt.nva.nvi.common.model.ListingResult;
+import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbIndex;
@@ -95,12 +98,48 @@ public class CandidateRepository extends DynamoRepository {
         thereAreMorePagesToScan(scan), toStringMap(scan.lastEvaluatedKey()), scan.count(), items);
   }
 
+  // TODO: Move/create record for input state
+  /** Parallelized scan to find candidate identifiers (not strongly consistent). */
+  public ListingResult<UUID> scanForCandidateIdentifiers(
+      int pageSize, Map<String, String> startMarker, int segment, int totalSegments) {
+    var types = List.of(KeyField.CANDIDATE);
+    var scanRequest =
+        ScanRequest.builder()
+            .tableName(NVI_TABLE_NAME)
+            .expressionAttributeNames(Map.of("#PK", DatabaseConstants.SORT_KEY))
+            .filterExpression(Dao.scanFilterExpressionForDataEntries(types))
+            .expressionAttributeValues(Dao.scanFilterExpressionAttributeValues(types))
+            .projectionExpression(IDENTIFIER_FIELD)
+            .segment(segment)
+            .totalSegments(totalSegments)
+            .limit(pageSize);
+    if (nonNull(startMarker) && !startMarker.isEmpty()) {
+      scanRequest = scanRequest.exclusiveStartKey(toAttributeMap(startMarker));
+    }
+    var scan = defaultClient.scan(scanRequest.build());
+    return new ListingResult<>(
+        thereAreMorePagesToScan(scan),
+        toStringMap(scan.lastEvaluatedKey()),
+        scan.count(),
+        getCandidateIdentifiers(scan));
+  }
+
+  private static List<UUID> getCandidateIdentifiers(ScanResponse scan) {
+    return scan.items().stream()
+        .map(item -> item.get(IDENTIFIER_FIELD))
+        .filter(Objects::nonNull)
+        .map(AttributeValue::s)
+        .map(UUID::fromString)
+        .toList();
+  }
+
   public void writeEntries(List<Dao> items) {
     var writeRequests = createWriteRequestsForBatchJob(items);
     var batches = getBatches(writeRequests);
     batches.forEach(batch -> dynamoDbRetryClient.batchWriteItem(toBatchRequest(batch)));
   }
 
+  // TODO: Create new implementation that retrieves IDs only
   /**
    * Queries candidates by year using a GSI (not strongly consistent). Suitable for bulk operations
    * that extract identifiers but may not return the latest data.
@@ -381,13 +420,16 @@ public class CandidateRepository extends DynamoRepository {
 
   private QueryEnhancedRequest createQuery(
       String year, Integer pageSize, Map<String, String> startMarker) {
-    var start = nonNull(startMarker) ? toAttributeMap(startMarker) : null;
     var limit = nonNull(pageSize) ? pageSize : DEFAULT_PAGE_SIZE;
-    return QueryEnhancedRequest.builder()
-        .queryConditional(keyEqualTo(Key.builder().partitionValue(year).build()))
-        .limit(limit)
-        .exclusiveStartKey(start)
-        .build();
+    var builder =
+        QueryEnhancedRequest.builder()
+            .queryConditional(keyEqualTo(Key.builder().partitionValue(year).build()))
+            .limit(limit);
+
+    if (nonNull(startMarker) && !startMarker.isEmpty()) {
+      return builder.exclusiveStartKey(toAttributeMap(startMarker)).build();
+    }
+    return builder.build();
   }
 
   private Map<String, AttributeValue> mutateVersion(Map<String, AttributeValue> item) {

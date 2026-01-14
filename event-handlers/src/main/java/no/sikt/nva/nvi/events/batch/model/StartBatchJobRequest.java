@@ -10,6 +10,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import no.unit.nva.commons.json.JsonSerializable;
 
+// TODO: Split this into an interface with separate implementations for each BatchJobType?
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 public record StartBatchJobRequest(
     BatchJobType jobType,
@@ -43,6 +44,14 @@ public record StartBatchJobRequest(
   @JsonIgnore
   public boolean hasItemLimit() {
     return nonNull(maxItemsPerSegment);
+  }
+
+  @JsonIgnore
+  public int maxRemainingItems() {
+    if (hasItemLimit()) {
+      return maxItemsPerSegment() - paginationState.itemsEnqueued();
+    }
+    return Integer.MAX_VALUE;
   }
 
   @JsonIgnore
