@@ -14,7 +14,7 @@ public final class RequestFixtures {
   public static StartBatchJobRequest refreshAllCandidates() {
     return StartBatchJobRequest.builder()
         .withJobType(BatchJobType.REFRESH_CANDIDATES)
-        .withMaxParallelSegments(5)
+        .withMaxParallelSegments(2)
         .build();
   }
 

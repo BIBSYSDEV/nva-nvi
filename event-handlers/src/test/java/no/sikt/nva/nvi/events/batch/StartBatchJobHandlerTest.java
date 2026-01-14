@@ -30,7 +30,6 @@ import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.stubs.FakeEventBridgeClient;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
@@ -48,7 +47,7 @@ class StartBatchJobHandlerTest {
 
   @Nested
   class StaticDatasetTests {
-    private static final int CANDIDATES_PER_YEAR = 25;
+    private static final int CANDIDATES_PER_YEAR = 1000;
     private static final int TOTAL_CANDIDATE_COUNT = CANDIDATES_PER_YEAR * 2;
     private static final TestScenario scenario = new TestScenario();
 
@@ -73,7 +72,6 @@ class StartBatchJobHandlerTest {
     }
 
     @Test
-    @Disabled
     void shouldQueueNothingWhenProcessingDisabled() {
       environment.setEnv(PROCESSING_ENABLED.getKey(), "false");
       handler =
@@ -91,7 +89,6 @@ class StartBatchJobHandlerTest {
     }
 
     @Test
-    @Disabled
     void shouldQueueAllCandidatesForYear() {
       var request = refreshCandidatesForYear(THIS_YEAR);
 
@@ -102,7 +99,6 @@ class StartBatchJobHandlerTest {
     }
 
     @Test
-    @Disabled
     void shouldQueueAllCandidatesAcrossMultipleYears() {
       var request = refreshCandidatesForYear(LAST_YEAR, THIS_YEAR);
       runToCompletion(request);
@@ -110,7 +106,6 @@ class StartBatchJobHandlerTest {
     }
 
     @Test
-    @Disabled
     void shouldQueueAllCandidatesAcrossAllYears() {
       var request = refreshAllCandidates();
       runToCompletion(request);
@@ -118,7 +113,6 @@ class StartBatchJobHandlerTest {
     }
 
     @Test
-    @Disabled
     void shouldCreateMigrateCandidateMessagesForMigrateJobType() {
       var request = migrateCandidatesForCurrentYear();
 
@@ -129,7 +123,6 @@ class StartBatchJobHandlerTest {
     }
 
     @Test
-    @Disabled
     void shouldNotExceedMaxItemsLimit() {
       var request =
           refreshAllCandidates()
@@ -144,7 +137,6 @@ class StartBatchJobHandlerTest {
     }
 
     @Test
-    @Disabled
     void shouldGenerateMaxEventsPerYear() {
       var maxItemsToQueue = 4;
       var request =
@@ -182,7 +174,6 @@ class StartBatchJobHandlerTest {
     }
 
     @Test
-    @Disabled
     void shouldQueueNothingWhenNoCandidatesExist() {
       var request = refreshCandidatesForYear(String.valueOf(CURRENT_YEAR));
       runToCompletion(request);
@@ -190,7 +181,6 @@ class StartBatchJobHandlerTest {
     }
 
     @Test
-    @Disabled
     void shouldQueueAllPeriods() {
       var request = refreshAllPeriods();
       runToCompletion(request);

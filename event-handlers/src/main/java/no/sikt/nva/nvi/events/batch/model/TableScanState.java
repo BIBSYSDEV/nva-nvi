@@ -1,16 +1,14 @@
 package no.sikt.nva.nvi.events.batch.model;
 
-import static no.sikt.nva.nvi.common.utils.CollectionUtils.copyOfNullable;
-
 import java.util.Map;
+import javax.annotation.Nullable;
 
 public record TableScanState(
-    int segment, int totalSegments, Map<String, String> lastEvaluatedKey, int itemsEnqueued)
+    int segment,
+    int totalSegments,
+    @Nullable Map<String, String> lastEvaluatedKey,
+    int itemsEnqueued)
     implements PaginationState {
-
-  public TableScanState {
-    lastEvaluatedKey = copyOfNullable(lastEvaluatedKey);
-  }
 
   public static TableScanState forSegment(int segment, int totalSegments) {
     return new TableScanState(segment, totalSegments, null, 0);
