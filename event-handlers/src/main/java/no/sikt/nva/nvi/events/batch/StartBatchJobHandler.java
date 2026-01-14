@@ -72,17 +72,12 @@ public class StartBatchJobHandler implements RequestHandler<StartBatchJobRequest
 
   @Override
   public Void handleRequest(StartBatchJobRequest input, Context context) {
-    LOGGER.info("Processing batch job: {}", input);
     if (!processingEnabled) {
       LOGGER.warn("Processing disabled, aborting batch job");
-      return null;
-    }
-
-    var batchJobResult = batchJobProcessor.process(input);
-    if (nonNull(batchJobResult.messages())) {
+    } else {
+      LOGGER.info("Processing batch job: {}", input);
+      var batchJobResult = batchJobProcessor.process(input);
       sendMessagesToQueue(batchJobResult.messages());
-    }
-    if (nonNull(batchJobResult.continuationEvents())) {
       sendContinuationEvents(batchJobResult.continuationEvents());
     }
 
