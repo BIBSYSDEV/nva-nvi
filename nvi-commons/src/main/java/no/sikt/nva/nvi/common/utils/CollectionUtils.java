@@ -11,6 +11,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public final class CollectionUtils {
 
@@ -28,5 +30,17 @@ public final class CollectionUtils {
 
   public static <K, V> Map<K, V> copyOfNullable(Map<K, V> map) {
     return isNull(map) ? emptyMap() : Map.copyOf(map);
+  }
+
+  public static <T> Stream<List<T>> splitIntoBatches(List<T> messages, int batchSize) {
+    int batches = (messages.size() + batchSize - 1) / batchSize;
+
+    return IntStream.range(0, batches)
+        .mapToObj(
+            i -> {
+              int from = i * batchSize;
+              int to = Math.min(from + batchSize, messages.size());
+              return messages.subList(from, to);
+            });
   }
 }

@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.events.batch;
 
 import static no.sikt.nva.nvi.common.service.CandidateService.defaultCandidateService;
 import static no.sikt.nva.nvi.common.service.NviPeriodService.defaultNviPeriodService;
+import static no.sikt.nva.nvi.common.utils.CollectionUtils.splitIntoBatches;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
@@ -227,16 +228,8 @@ public class StartBatchJobHandler implements RequestHandler<StartBatchJobRequest
   }
 
   private void sendMessagesToQueue(List<BatchJobMessage> messages) {
-    splitIntoBatches(messages).forEach(this::sendBatch);
+    splitIntoBatches(messages, SQS_BATCH_SIZE).forEach(this::sendBatch);
     LOGGER.info("Processed {} items", messages.size());
-  }
-
-  private List<List<BatchJobMessage>> splitIntoBatches(List<BatchJobMessage> messages) {
-    var count = messages.size();
-    return IntStream.range(0, (count + SQS_BATCH_SIZE - 1) / SQS_BATCH_SIZE)
-        .mapToObj(
-            i -> messages.subList(i * SQS_BATCH_SIZE, Math.min((i + 1) * SQS_BATCH_SIZE, count)))
-        .toList();
   }
 
   private void sendBatch(Collection<BatchJobMessage> messages) {
