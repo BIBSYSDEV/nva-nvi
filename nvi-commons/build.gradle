@@ -33,6 +33,7 @@ dependencies {
     testFixturesImplementation nvaLibs.apigateway
     testFixturesImplementation nvaLibs.auth
     testFixturesImplementation nvaLibs.core
+    testFixturesImplementation nvaLibs.identifiers
     testFixturesImplementation nvaLibs.json
     testFixturesImplementation nvaLibs.s3
     testFixturesImplementation nvaLibs.testutils

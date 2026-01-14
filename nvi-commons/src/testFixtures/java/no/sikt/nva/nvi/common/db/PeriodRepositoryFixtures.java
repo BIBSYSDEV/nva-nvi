@@ -82,4 +82,13 @@ public class PeriodRepositoryFixtures {
     periodService.update(request);
     return periodService.getByPublishingYear(year);
   }
+
+  public static UpdatePeriodRequest updateRequestFromPeriod(NviPeriod period) {
+    return UpdatePeriodRequest.builder()
+        .withPublishingYear(period.publishingYear())
+        .withStartDate(period.startDate())
+        .withReportingDate(period.reportingDate())
+        .withModifiedBy(period.modifiedBy())
+        .build();
+  }
 }

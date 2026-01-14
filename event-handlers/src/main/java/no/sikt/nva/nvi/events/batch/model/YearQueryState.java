@@ -7,7 +7,7 @@ import static java.util.Objects.requireNonNullElse;
 import java.util.List;
 import java.util.Map;
 
-record YearQueryState(
+public record YearQueryState(
     List<String> remainingYears, Map<String, String> lastEvaluatedKey, int itemsEnqueued)
     implements PaginationState {
 

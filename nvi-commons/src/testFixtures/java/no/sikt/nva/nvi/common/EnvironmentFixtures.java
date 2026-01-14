@@ -31,6 +31,7 @@ public enum EnvironmentFixtures {
 
   // Other handler-specific environment variables
   ALLOWED_ORIGIN("*"),
+  BATCH_JOB_QUEUE_URL("http://localhost:3000/batch-job-queue"),
   CANDIDATE_QUEUE_URL("http://localhost:3000/candidate-queue"),
   COGNITO_HOST("not-actually-in-use-but-exists-in-template"),
   DB_EVENTS_QUEUE_URL("http://localhost:3000/db-events-queue"),
@@ -41,6 +42,7 @@ public enum EnvironmentFixtures {
   EVENT_BUS_NAME("bus-name"),
   BATCH_SCAN_RECOVERY_QUEUE("recover-queue"),
   PERSISTED_RESOURCE_QUEUE_URL("persisted-resource"),
+  PROCESSING_ENABLED("true"),
   EVALUATION_DLQ_URL("evaluation-dlq");
 
   private final String value;
@@ -110,6 +112,14 @@ public enum EnvironmentFixtures {
         .with(EXPANDED_RESOURCES_BUCKET)
         .with(UPSERT_CANDIDATE_DLQ_QUEUE_URL)
         .with(PERSISTED_RESOURCE_QUEUE_URL)
+        .build();
+  }
+
+  public static FakeEnvironment getStartBatchJobHandlerEnvironment() {
+    return getDefaultEnvironmentBuilder()
+        .with(BATCH_JOB_QUEUE_URL)
+        .with(EVENT_BUS_NAME)
+        .with(PROCESSING_ENABLED)
         .build();
   }
 
