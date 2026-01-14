@@ -58,21 +58,21 @@ public class StartBatchJobHandler implements RequestHandler<StartBatchJobRequest
     this(
         defaultCandidateService(),
         defaultNviPeriodService(),
-        new NviQueueClient(),
         defaultEventBridgeClient(),
-        new Environment());
+        new Environment(),
+        new NviQueueClient());
   }
 
   public StartBatchJobHandler(
       CandidateService candidateService,
       NviPeriodService periodService,
-      QueueClient queueClient,
       EventBridgeClient eventBridgeClient,
-      Environment environment) {
+      Environment environment,
+      QueueClient queueClient) {
     this.candidateService = candidateService;
     this.periodService = periodService;
-    this.queueClient = queueClient;
     this.eventBridgeClient = eventBridgeClient;
+    this.queueClient = queueClient;
     this.queueUrl = environment.readEnv(BATCH_JOB_QUEUE_URL);
     this.eventBusName = environment.readEnv(EVENT_BUS_NAME);
     this.processingEnabled = Boolean.parseBoolean(environment.readEnv(PROCESSING_ENABLED));
