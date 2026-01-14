@@ -50,8 +50,6 @@ public class StartBatchJobHandler implements RequestHandler<StartBatchJobRequest
         new NviQueueClient());
   }
 
-  // FIXME: Temporary suppression to split up PRs
-  @JacocoGenerated
   public StartBatchJobHandler(
       CandidateService candidateService,
       NviPeriodService periodService,
