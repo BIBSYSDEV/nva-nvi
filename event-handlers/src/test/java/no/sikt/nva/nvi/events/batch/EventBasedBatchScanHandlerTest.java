@@ -29,7 +29,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
@@ -404,11 +403,10 @@ class EventBasedBatchScanHandlerTest {
     eventBridgeClient.getRequestEntries().add(entry);
   }
 
-  private Stream<Candidate> createRandomCandidates(int i) {
+  private Stream<Candidate> createRandomCandidates(int candidateCount) {
     var candidates =
-        IntStream.range(0, i)
-            .boxed()
-            .map(item -> setupRandomApplicableCandidate(scenario))
+        Stream.generate(() -> setupRandomApplicableCandidate(scenario))
+            .limit(candidateCount)
             .toList();
     for (var candidate : candidates) {
       noteService.createNote(candidate, randomNoteRequest());

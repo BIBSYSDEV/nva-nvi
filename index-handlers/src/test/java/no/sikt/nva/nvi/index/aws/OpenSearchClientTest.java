@@ -9,9 +9,6 @@ import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomNviContributor;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomNviContributorBuilder;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomPages;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomPublicationChannel;
-import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.NEW;
-import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.PENDING;
-import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.REJECTED;
 import static no.sikt.nva.nvi.index.query.SearchAggregation.ORGANIZATION_APPROVAL_STATUS_AGGREGATION;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
@@ -41,12 +38,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Random;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.index.OpenSearchContainerContext;
-import no.sikt.nva.nvi.index.model.document.ApprovalView;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.document.PublicationDetails;
 import no.sikt.nva.nvi.index.model.document.ReportingPeriod;
@@ -69,13 +64,6 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.opensearch.client.opensearch._types.OpenSearchException;
-import org.opensearch.client.opensearch._types.aggregations.Aggregate;
-import org.opensearch.client.opensearch._types.aggregations.Aggregate.Kind;
-import org.opensearch.client.opensearch._types.aggregations.Buckets;
-import org.opensearch.client.opensearch._types.aggregations.FilterAggregate;
-import org.opensearch.client.opensearch._types.aggregations.StringTermsAggregate;
-import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
-import org.opensearch.client.opensearch._types.aggregations.SumAggregate;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.search.Hit;
 
@@ -93,10 +81,6 @@ class OpenSearchClientTest {
   public static final URI SIKT_INSTITUTION_ID =
       URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0");
   public static final String SIKT_INSTITUTION_IDENTIFIER = "20754.0.0.0";
-  public static final String SIKT_LEVEL_2_ID =
-      "https://api.dev.nva.aws.unit.no/cristin/organization/20754.1.0.0";
-  public static final String SIKT_LEVEL_3_ID =
-      "https://api.dev.nva.aws.unit.no/cristin/organization/20754.1.1.0";
   private static final URI ORGANIZATION =
       URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0");
   private static final String USERNAME = "user1";
@@ -105,8 +89,8 @@ class OpenSearchClientTest {
       "document_organization_aggregation_dispute.json";
   private static final String DOCUMENT_WITH_CONTRIBUTOR_FROM_NTNU_SUBUNIT_JSON =
       "document_with_contributor_from_ntnu_subunit.json";
-  private static final String UNEXPECTED_KEY = "Unexpected key: ";
   private static final OpenSearchContainerContext CONTAINER = new OpenSearchContainerContext();
+  private static final int DEFAULT_CANDIDATE_COUNT = 5;
   private static OpenSearchClient openSearchClient;
 
   @BeforeAll
@@ -349,7 +333,7 @@ class OpenSearchClientTest {
 
   @Test
   void shouldReturnHitOnSearchTermPublicationIdentifier() throws IOException {
-    var indexDocuments = generateNumberOfCandidates(5);
+    var indexDocuments = generateNumberOfCandidates();
     addDocumentsToIndex(indexDocuments.toArray(new NviCandidateIndexDocument[0]));
     var searchTerm = indexDocuments.get(2).publicationDetails().identifier();
     var searchParameters = defaultSearchParameters().withSearchTerm(searchTerm).build();
@@ -360,7 +344,7 @@ class OpenSearchClientTest {
 
   @Test
   void shouldReturnHitOnSearchTermCandidateIdentifier() throws IOException {
-    var indexDocuments = generateNumberOfCandidates(5);
+    var indexDocuments = generateNumberOfCandidates();
     addDocumentsToIndex(indexDocuments.toArray(new NviCandidateIndexDocument[0]));
     var searchTerm = indexDocuments.get(2).identifier().toString();
     var searchParameters = defaultSearchParameters().withSearchTerm(searchTerm).build();
@@ -371,7 +355,7 @@ class OpenSearchClientTest {
 
   @Test
   void shouldReturnHitOnSearchTermPublicationTitle() throws IOException {
-    var indexDocuments = generateNumberOfCandidates(5);
+    var indexDocuments = generateNumberOfCandidates();
     addDocumentsToIndex(indexDocuments.toArray(new NviCandidateIndexDocument[0]));
     var searchTerm = indexDocuments.get(2).publicationDetails().title();
     var searchParameters = defaultSearchParameters().withSearchTerm(searchTerm).build();
@@ -404,7 +388,7 @@ class OpenSearchClientTest {
 
   @Test
   void shouldReturnHitOnSearchTermContributorName() throws IOException {
-    var indexDocuments = generateNumberOfCandidates(5);
+    var indexDocuments = generateNumberOfCandidates();
     addDocumentsToIndex(indexDocuments.toArray(new NviCandidateIndexDocument[0]));
     var expectedHit = indexDocuments.get(2);
     var searchTerm = expectedHit.publicationDetails().contributors().getFirst().name();
@@ -416,7 +400,7 @@ class OpenSearchClientTest {
 
   @Test
   void shouldReturnHitOnSearchTermPublicationAbstract() throws IOException {
-    var indexDocuments = generateNumberOfCandidates(5);
+    var indexDocuments = generateNumberOfCandidates();
     addDocumentsToIndex(indexDocuments.toArray(new NviCandidateIndexDocument[0]));
     var searchTerm = indexDocuments.get(2).publicationDetails().abstractText();
     var searchParameters = defaultSearchParameters().withSearchTerm(searchTerm).build();
@@ -427,11 +411,11 @@ class OpenSearchClientTest {
 
   @Test
   void shouldReturnAllWhenSearchTermNotProvided() throws IOException {
-    var indexDocuments = generateNumberOfCandidates(5);
+    var indexDocuments = generateNumberOfCandidates();
     addDocumentsToIndex(indexDocuments.toArray(new NviCandidateIndexDocument[0]));
     var searchParameters = defaultSearchParameters().build();
     var searchResponse = openSearchClient.search(searchParameters);
-    assertThat(searchResponse.hits().hits(), hasSize(5));
+    assertThat(searchResponse.hits().hits(), hasSize(DEFAULT_CANDIDATE_COUNT));
   }
 
   @Test
@@ -699,7 +683,7 @@ class OpenSearchClientTest {
   void queryWithoutStatusesProvidedShouldReturnSearchResultsWithAllStatusAtInstitution()
       throws IOException {
     var documentsWithApprovalsAtTopLevelOrg =
-        createSearchDocumentsWithApprovalAtTopLevelOrganization(SIKT_INSTITUTION_ID);
+        createSearchDocumentsWithApprovalAtTopLevelOrganization();
 
     addDocumentsToIndex(
         documentsWithApprovalsAtTopLevelOrg.toArray(NviCandidateIndexDocument[]::new));
@@ -716,9 +700,10 @@ class OpenSearchClientTest {
   }
 
   private static List<NviCandidateIndexDocument>
-      createSearchDocumentsWithApprovalAtTopLevelOrganization(URI topLevelOrganization) {
-    return IntStream.range(0, 10)
-        .mapToObj(i -> randomIndexDocumentWithApprovalForOrganization(topLevelOrganization))
+      createSearchDocumentsWithApprovalAtTopLevelOrganization() {
+    return Stream.generate(
+            () -> randomIndexDocumentWithApprovalForOrganization(SIKT_INSTITUTION_ID))
+        .limit(10)
         .toList();
   }
 
@@ -729,35 +714,15 @@ class OpenSearchClientTest {
         .build();
   }
 
-  private static NviCandidateIndexDocument nviCandidateWithOneThousandInvolvedOrgs() {
-    return randomIndexDocumentBuilder()
-        .withApprovals(
-            List.of(
-                ApprovalView.builder()
-                    .withInstitutionId(
-                        URI.create(
-                            "https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0"))
-                    .withApprovalStatus(NEW)
-                    .withInvolvedOrganizations(
-                        IntStream.range(0, 1000)
-                            .mapToObj(
-                                i ->
-                                    URI.create(
-                                        "https://api.dev.nva.aws.unit.no/cristin/organization/"
-                                            + i
-                                            + ".0.0.0"))
-                            .collect(Collectors.toSet()))
-                    .build()))
-        .build();
-  }
-
   private static NviCandidateIndexDocument getFirstHit(
       SearchResponse<NviCandidateIndexDocument> searchResponse) {
     return searchResponse.hits().hits().getFirst().source();
   }
 
-  private static List<NviCandidateIndexDocument> generateNumberOfCandidates(int number) {
-    return IntStream.range(0, number).mapToObj(i -> randomIndexDocumentBuilder().build()).toList();
+  private static List<NviCandidateIndexDocument> generateNumberOfCandidates() {
+    return Stream.generate(() -> randomIndexDocumentBuilder().build())
+        .limit(DEFAULT_CANDIDATE_COUNT)
+        .toList();
   }
 
   private static NviCandidateIndexDocument documentWithContributors() {
@@ -771,81 +736,6 @@ class OpenSearchClientTest {
 
   private static String getLastPathElement(URI customer) {
     return UriWrapper.fromUri(customer).getLastPathElement();
-  }
-
-  private static void assertExpectedOrganizationAggregations(
-      Buckets<StringTermsBucket> actualStatusBuckets) {
-    actualStatusBuckets
-        .array()
-        .forEach(
-            bucket -> {
-              assertExpectedStatusAggregations(bucket);
-              assertExpectedPointAggregations(bucket);
-              assertExpectedDisputeAggregations(bucket);
-            });
-  }
-
-  private static void assertExpectedPointAggregations(StringTermsBucket bucket) {
-    var key = bucket.key();
-    var pointFilterAggregate = (FilterAggregate) bucket.aggregations().get("points")._get();
-    var pointSum = (SumAggregate) pointFilterAggregate.aggregations().get("total")._get();
-    if (SIKT_INSTITUTION_ID.toString().equals(key)) {
-      assertEquals(4.0, pointSum.value());
-    } else if (SIKT_LEVEL_2_ID.equals(key)) {
-      assertEquals(4.0, pointSum.value());
-    } else if (SIKT_LEVEL_3_ID.equals(key)) {
-      assertEquals(3.0, pointSum.value());
-    } else {
-      throw new RuntimeException(UNEXPECTED_KEY + key);
-    }
-  }
-
-  private static void assertExpectedDisputeAggregations(StringTermsBucket bucket) {
-    var disputeAggregation = (FilterAggregate) bucket.aggregations().get("dispute")._get();
-    var key = bucket.key();
-    if (SIKT_INSTITUTION_ID.toString().equals(key) || SIKT_LEVEL_2_ID.equals(key)) {
-      assertEquals(1, disputeAggregation.docCount());
-    } else if (SIKT_LEVEL_3_ID.equals(key)) {
-      assertEquals(0, disputeAggregation.docCount());
-    } else {
-      throw new RuntimeException(UNEXPECTED_KEY + key);
-    }
-  }
-
-  private static void assertExpectedStatusAggregations(StringTermsBucket bucket) {
-    var key = bucket.key();
-    var statusAggregation = bucket.aggregations().get("status");
-    if (SIKT_INSTITUTION_ID.toString().equals(key)) {
-      var expectedKeys = List.of(NEW.getValue(), PENDING.getValue(), REJECTED.getValue());
-      assertExpectedSubAggregations(statusAggregation, expectedKeys);
-    } else if (SIKT_LEVEL_2_ID.equals(key)) {
-      var expectedKeys = List.of(NEW.getValue(), PENDING.getValue(), REJECTED.getValue());
-      assertExpectedSubAggregations(statusAggregation, expectedKeys);
-    } else if (SIKT_LEVEL_3_ID.equals(key)) {
-      var expectedKeys = List.of(PENDING.getValue());
-      assertExpectedSubAggregations(statusAggregation, expectedKeys);
-    } else {
-      throw new RuntimeException(UNEXPECTED_KEY + key);
-    }
-  }
-
-  private static void assertExpectedSubAggregations(
-      Aggregate subAggregation, List<String> expectedKeys) {
-    assertEquals(Kind.Sterms, subAggregation._kind());
-    var subBuckets = ((StringTermsAggregate) subAggregation._get()).buckets();
-    assertEquals(expectedKeys.size(), subBuckets.array().size());
-    assertContainsKeys(expectedKeys, subBuckets);
-  }
-
-  private static void assertContainsKeys(
-      List<String> expectedKeys, Buckets<StringTermsBucket> subBuckets) {
-    expectedKeys.forEach(key -> assertContainsKey(subBuckets, key));
-  }
-
-  private static void assertContainsKey(Buckets<StringTermsBucket> subBuckets, String orgId) {
-    assertThat(
-        subBuckets.array().stream().filter(subBucket -> subBucket.key().equals(orgId)).count(),
-        is(1L));
   }
 
   private static void addDocumentToIndex() {
@@ -935,7 +825,7 @@ class OpenSearchClientTest {
     map.put(QueryFilterType.APPROVED_COLLABORATION_AGG.getValue(), 2);
     map.put(QueryFilterType.REJECTED_AGG.getValue(), 3);
     map.put(QueryFilterType.REJECTED_COLLABORATION_AGG.getValue(), 2);
-    map.put(QueryFilterType.ASSIGNMENTS_AGG.getValue(), 5);
+    map.put(QueryFilterType.ASSIGNMENTS_AGG.getValue(), DEFAULT_CANDIDATE_COUNT);
     map.put(QueryFilterType.DISPUTED_AGG.getValue(), 1);
     return map.entrySet().stream();
   }

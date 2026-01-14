@@ -17,7 +17,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import nva.commons.core.paths.UriWrapper;
@@ -35,11 +35,11 @@ public class CandidateDaoFixtures {
   }
 
   public static List<CandidateDao> createNumberOfCandidatesForYear(
-      String year, int number, TestScenario scenario) {
+      String year, int candidateCount, TestScenario scenario) {
     setupOpenPeriod(scenario, year);
     var candidates =
-        IntStream.range(0, number)
-            .mapToObj(i -> randomCandidateWithYear(randomOrganizationId(), year))
+        Stream.generate(() -> randomCandidateWithYear(randomOrganizationId(), year))
+            .limit(candidateCount)
             .map(CandidateDaoFixtures::createCandidateDao)
             .toList();
 

@@ -13,7 +13,7 @@ import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreatorType;
@@ -22,6 +22,7 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints.DbCreatorAffil
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
 import no.unit.nva.commons.json.JsonUtils;
+import no.unit.nva.testutils.RandomDataGenerator;
 import org.junit.jupiter.api.Test;
 
 class CandidateTest {
@@ -79,7 +80,7 @@ class CandidateTest {
   }
 
   private List<DbCreatorType> randomVerifiedCreators() {
-    return IntStream.range(1, 20).boxed().map(i -> randomVerifiedCreator()).toList();
+    return Stream.generate(this::randomVerifiedCreator).limit(20).toList();
   }
 
   private DbCreatorType randomVerifiedCreator() {
@@ -87,6 +88,6 @@ class CandidateTest {
   }
 
   private List<URI> randomAffiliations() {
-    return IntStream.range(1, 20).boxed().map(i -> randomUri()).toList();
+    return Stream.generate(RandomDataGenerator::randomUri).limit(20).toList();
   }
 }

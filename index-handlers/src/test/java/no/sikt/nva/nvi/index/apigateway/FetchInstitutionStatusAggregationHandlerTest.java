@@ -28,8 +28,8 @@ import java.util.Collection;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import no.sikt.nva.nvi.common.model.OrganizationFixtures;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.index.OpenSearchContainerContext;
 import no.sikt.nva.nvi.index.model.ApprovalFactory;
@@ -280,7 +280,8 @@ class FetchInstitutionStatusAggregationHandlerTest {
     }
 
     private void addIndexDocumentWithOneThousandInvolvedSubOrganizations() {
-      var affiliations = IntStream.range(0, 1000).mapToObj(i -> randomOrganizationId()).toList();
+      var affiliations =
+          Stream.generate(OrganizationFixtures::randomOrganizationId).limit(1000).toList();
       var approval =
           new ApprovalFactory(OUR_ORGANIZATION).withCreatorAffiliations(affiliations).build();
       CONTAINER.addDocumentsToIndex(documentWithApprovals(approval, randomApproval()));
