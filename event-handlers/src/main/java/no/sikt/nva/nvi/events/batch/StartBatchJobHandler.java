@@ -9,7 +9,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.IntStream;
-import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.model.ListingResult;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
@@ -148,18 +147,17 @@ public class StartBatchJobHandler implements RequestHandler<StartBatchJobRequest
     var year = state.currentYear();
     LOGGER.info("Processing year query for year: {}", year);
 
-    var candidates =
-        candidateRepository.fetchCandidatesByYear(
-            year, true, nextBatchSize, state.lastEvaluatedKey());
+    var listingResult =
+        candidateService.listCandidateIdentifiersByYear(
+            year, nextBatchSize, state.lastEvaluatedKey());
 
     var messages =
-        candidates.getDatabaseEntries().stream()
-            .map(CandidateDao::identifier)
+        listingResult.getDatabaseEntries().stream()
             .map(identifier -> createMessage(input.jobType(), identifier))
             .toList();
 
     sendMessagesToQueue(messages);
-    handleYearQueryPagination(input, state, candidates);
+    handleYearQueryPagination(input, state, listingResult);
   }
 
   /** Generates work items for candidates with parallelized table scan */
@@ -167,17 +165,17 @@ public class StartBatchJobHandler implements RequestHandler<StartBatchJobRequest
       StartBatchJobRequest input, TableScanState state, int nextBatchSize) {
     LOGGER.info("Processing scan query for segment: {}", state.segment());
 
-    var candidates =
-        candidateRepository.scanForCandidateIdentifiers(
-            nextBatchSize, state.lastEvaluatedKey(), state.segment(), state.totalSegments());
+    var listingResult =
+        candidateService.listCandidateIdentifiers(
+            state.segment(), state.totalSegments(), nextBatchSize, state.lastEvaluatedKey());
 
     var messages =
-        candidates.getDatabaseEntries().stream()
+        listingResult.getDatabaseEntries().stream()
             .map(identifier -> createMessage(input.jobType(), identifier))
             .toList();
 
     sendMessagesToQueue(messages);
-    handleTableScanPagination(input, state, candidates);
+    handleTableScanPagination(input, state, listingResult);
   }
 
   /** Generates work items for all periods */
@@ -194,7 +192,7 @@ public class StartBatchJobHandler implements RequestHandler<StartBatchJobRequest
   }
 
   private void handleYearQueryPagination(
-      StartBatchJobRequest input, YearQueryState state, ListingResult<CandidateDao> result) {
+      StartBatchJobRequest input, YearQueryState state, ListingResult<UUID> result) {
     if (result.shouldContinueScan()) {
       LOGGER.info("Continuing scan for current year");
       var nextState =

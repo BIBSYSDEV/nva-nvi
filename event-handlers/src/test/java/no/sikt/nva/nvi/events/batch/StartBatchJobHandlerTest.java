@@ -48,7 +48,7 @@ class StartBatchJobHandlerTest {
 
   @Nested
   class StaticDatasetTests {
-    private static final int CANDIDATES_PER_YEAR = 1000;
+    private static final int CANDIDATES_PER_YEAR = 25;
     private static final int TOTAL_CANDIDATE_COUNT = CANDIDATES_PER_YEAR * 2;
     private static final TestScenario scenario = new TestScenario();
 

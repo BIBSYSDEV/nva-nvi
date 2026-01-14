@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.events.batch.model;
 
-import static java.util.Collections.emptyMap;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.params.provider.Arguments.argumentSet;
@@ -145,7 +144,7 @@ class StartBatchJobRequestTest {
     @Test
     void yearQueryStateShouldTrackPaginationAcrossYears() {
       var firstState = YearQueryState.forYears(List.of(LAST_YEAR, THIS_YEAR));
-      var expectedFirstState = new YearQueryState(List.of(LAST_YEAR, THIS_YEAR), emptyMap(), 0);
+      var expectedFirstState = new YearQueryState(List.of(LAST_YEAR, THIS_YEAR), null, 0);
       assertThat(firstState).isEqualTo(expectedFirstState);
 
       var secondState = firstState.withNextPage(fakeCandidateKey(1), 100);

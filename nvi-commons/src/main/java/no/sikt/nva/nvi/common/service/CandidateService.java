@@ -12,8 +12,6 @@ import java.net.URI;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
-
-import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.Dao;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
@@ -167,16 +165,15 @@ public class CandidateService {
     return findCandidateAndPeriodsByIdentifier(candidateIdentifier.get());
   }
 
-  public ListingResult<UUID> listCandidateIdentifiersByYear(
-    String year, int pageSize, Map<String, String> startKey) {
-//    return candidateRepository.fetchCandidateIdentifiersByYear(year, pageSize, startKey);
-    return candidateRepository.fetchCandidatesByYear(
-      year, true, pageSize, startKey);
+  public ListingResult<UUID> listCandidateIdentifiers(
+      int segment, int totalSegments, int pageSize, Map<String, String> startKey) {
+    return candidateRepository.scanForCandidateIdentifiers(
+        segment, totalSegments, pageSize, startKey);
   }
 
-  public ListingResult<UUID> scanCandidateIdentifiers(
-    int pageSize, Map<String, String> startKey, int segment, int totalSegments) {
-    return candidateRepository.scanForCandidateIdentifiers(pageSize, startKey, segment, totalSegments);
+  public ListingResult<UUID> listCandidateIdentifiersByYear(
+      String year, int pageSize, Map<String, String> startKey) {
+    return candidateRepository.scanForCandidateIdentifiers(year, pageSize, startKey);
   }
 
   private CandidateAndPeriods findCandidateAndPeriodsByIdentifier(UUID candidateIdentifier) {
