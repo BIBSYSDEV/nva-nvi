@@ -180,8 +180,7 @@ public record SampleExpandedPublication(
     }
 
     public Builder withIdentifier(SortableIdentifier identifier) {
-      var identifierAsUuid = UUID.fromString(identifier.toString());
-      this.identifier = identifierAsUuid;
+      this.identifier = UUID.fromString(identifier.toString());
       return this;
     }
 
