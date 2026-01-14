@@ -10,7 +10,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import no.unit.nva.commons.json.JsonSerializable;
 
-// TODO: Split this into an interface with separate implementations for each BatchJobType?
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 public record StartBatchJobRequest(
     BatchJobType jobType,

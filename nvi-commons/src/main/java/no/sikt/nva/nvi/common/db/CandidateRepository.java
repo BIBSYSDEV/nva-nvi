@@ -106,22 +106,28 @@ public class CandidateRepository extends DynamoRepository {
     return mapToListingResult(scanResponse.lastEvaluatedKey(), scanResponse.items());
   }
 
+  private static ScanRequest createScanRequest(
+      int pageSize, Map<String, String> startMarker, int segment, int totalSegments) {
+    var start = nonNull(startMarker) ? toAttributeMap(startMarker) : null;
+    return ScanRequest.builder()
+        .tableName(NVI_TABLE_NAME)
+        .filterExpression("begins_with(#pk, :prefix) AND begins_with(#sk, :prefix)")
+        .expressionAttributeNames(Map.of("#pk", HASH_KEY, "#sk", SORT_KEY))
+        .expressionAttributeValues(Map.of(":prefix", AttributeValue.fromS(CandidateDao.TYPE)))
+        .projectionExpression(IDENTIFIER_FIELD)
+        .segment(segment)
+        .totalSegments(totalSegments)
+        .exclusiveStartKey(start)
+        .limit(pageSize)
+        .build();
+  }
+
   /** Queries GSI to find candidate identifiers (not strongly consistent). */
   public ListingResult<UUID> scanForCandidateIdentifiers(
       String year, int pageSize, Map<String, String> startMarker) {
     var queryRequest = createYearQueryRequest(pageSize, startMarker, year);
     var queryResponse = defaultClient.query(queryRequest);
     return mapToListingResult(queryResponse.lastEvaluatedKey(), queryResponse.items());
-  }
-
-  public static ListingResult<UUID> mapToListingResult(
-      Map<String, AttributeValue> lastEvaluatedKey,
-      List<Map<String, AttributeValue>> databaseEntries) {
-    var moreItemsToScan = hasElements(lastEvaluatedKey);
-    var totalItemCount = databaseEntries.size();
-    var candidateIdentifiers = getCandidateIdentifiers(databaseEntries);
-    return new ListingResult<>(
-        moreItemsToScan, toStringMap(lastEvaluatedKey), totalItemCount, candidateIdentifiers);
   }
 
   private static QueryRequest createYearQueryRequest(
@@ -139,20 +145,14 @@ public class CandidateRepository extends DynamoRepository {
         .build();
   }
 
-  private static ScanRequest createScanRequest(
-      int pageSize, Map<String, String> startMarker, int segment, int totalSegments) {
-    var start = nonNull(startMarker) ? toAttributeMap(startMarker) : null;
-    return ScanRequest.builder()
-        .tableName(NVI_TABLE_NAME)
-        .filterExpression("begins_with(#pk, :prefix) AND begins_with(#sk, :prefix)")
-        .expressionAttributeNames(Map.of("#pk", HASH_KEY, "#sk", SORT_KEY))
-        .expressionAttributeValues(Map.of(":prefix", AttributeValue.fromS(CandidateDao.TYPE)))
-        .projectionExpression(IDENTIFIER_FIELD)
-        .segment(segment)
-        .totalSegments(totalSegments)
-        .exclusiveStartKey(start)
-        .limit(pageSize)
-        .build();
+  public static ListingResult<UUID> mapToListingResult(
+      Map<String, AttributeValue> lastEvaluatedKey,
+      List<Map<String, AttributeValue>> databaseEntries) {
+    var moreItemsToScan = hasElements(lastEvaluatedKey);
+    var totalItemCount = databaseEntries.size();
+    var candidateIdentifiers = getCandidateIdentifiers(databaseEntries);
+    return new ListingResult<>(
+        moreItemsToScan, toStringMap(lastEvaluatedKey), totalItemCount, candidateIdentifiers);
   }
 
   private static List<UUID> getCandidateIdentifiers(Collection<Map<String, AttributeValue>> items) {
