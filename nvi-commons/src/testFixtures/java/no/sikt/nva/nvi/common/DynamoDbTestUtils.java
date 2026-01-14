@@ -93,7 +93,7 @@ public final class DynamoDbTestUtils {
     var records =
         Stream.generate(DynamoDbTestUtils::randomOperationType)
             .limit(numberOfRecords)
-            .map(operationType -> dynamoRecord(payloadWithRandomCandidate(), operationType))
+            .map(DynamoDbTestUtils::recordWithRandomCandidate)
             .toList();
     return toDynamoDbEvent(records);
   }
@@ -125,13 +125,14 @@ public final class DynamoDbTestUtils {
     return dynamodbStreamRecord;
   }
 
-  private static StreamRecord payloadWithRandomCandidate() {
+  private static DynamodbStreamRecord recordWithRandomCandidate(OperationType operationType) {
     var dbCandidate = randomCandidate();
     var dao = CandidateDao.builder().identifier(randomUUID()).candidate(dbCandidate);
     var oldImage = dao.version(randomUUID().toString()).build();
     var newImage = dao.version(randomUUID().toString()).build();
+    var streamRecord = payloadWithCandidate(oldImage, newImage);
 
-    return payloadWithCandidate(oldImage, newImage);
+    return dynamoRecord(streamRecord, operationType);
   }
 
   private static StreamRecord payloadWithCandidate(Dao oldImage, Dao newImage) {
