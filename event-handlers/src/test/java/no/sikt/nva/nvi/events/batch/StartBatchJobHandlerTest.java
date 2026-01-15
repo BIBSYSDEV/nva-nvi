@@ -13,17 +13,22 @@ import static no.sikt.nva.nvi.events.RequestFixtures.refreshAllPeriods;
 import static no.sikt.nva.nvi.events.RequestFixtures.refreshCandidatesForYear;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.params.provider.Arguments.argumentSet;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.FakeEnvironment;
 import no.sikt.nva.nvi.common.TestScenario;
+import no.sikt.nva.nvi.common.exceptions.ValidationException;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import no.sikt.nva.nvi.events.batch.model.BatchJobMessage;
 import no.sikt.nva.nvi.events.batch.model.MigrateCandidateMessage;
 import no.sikt.nva.nvi.events.batch.model.RefreshCandidateMessage;
+import no.sikt.nva.nvi.events.batch.model.ReportingYearFilter;
 import no.sikt.nva.nvi.events.batch.model.StartBatchJobRequest;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.stubs.FakeContext;
@@ -33,6 +38,9 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
 
 class StartBatchJobHandlerTest {
@@ -169,6 +177,45 @@ class StartBatchJobHandlerTest {
       var request = refreshAllPeriods();
       runToCompletion(request);
       assertThat(getQueuedMessageCount()).isEqualTo(3);
+    }
+
+    @ParameterizedTest
+    @MethodSource("invalidRequestProvider")
+    void shouldRejectInvalidRequestParameters(StartBatchJobRequest.Builder request) {
+      assertThat(getQueuedMessageCount()).isZero();
+      assertThatThrownBy(() -> runToCompletion(request.build()))
+          .isInstanceOf(ValidationException.class);
+    }
+
+    @ParameterizedTest
+    @MethodSource("invalidYearProvider")
+    void shouldRejectInvalidYearFilters(List<String> years) {
+      assertThatThrownBy(
+              () -> {
+                var request =
+                    refreshAllCandidates()
+                        .copy()
+                        .withFilter(new ReportingYearFilter(years))
+                        .build();
+                runToCompletion(request);
+              })
+          .isInstanceOf(ValidationException.class);
+      assertThat(getQueuedMessageCount()).isZero();
+    }
+
+    private static Stream<Arguments> invalidRequestProvider() {
+      return Stream.of(
+          argumentSet(
+              "Negative max items", refreshAllCandidates().copy().withMaxItemsPerSegment(-1)),
+          argumentSet(
+              "Negative segment count", refreshAllCandidates().copy().withMaxParallelSegments(-1)));
+    }
+
+    private static Stream<Arguments> invalidYearProvider() {
+      return Stream.of(
+          argumentSet("Empty string", List.of("")),
+          argumentSet("Invalid string", List.of("this year")),
+          argumentSet("Year out of range", List.of("0")));
     }
   }
 
