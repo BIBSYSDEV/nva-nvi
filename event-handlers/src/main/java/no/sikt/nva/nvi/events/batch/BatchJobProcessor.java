@@ -38,14 +38,13 @@ public class BatchJobProcessor {
   private BatchJobResult handleInitialInvocation(StartBatchJobRequest input) {
     LOGGER.info("Processing initial invocation");
     if (BatchJobType.REFRESH_PERIODS.equals(input.jobType())) {
-      return createPeriodMessages(input);
+      return createMessagesForAllPeriods(input);
     } else {
       throw new UnsupportedOperationException("Not implemented yet");
     }
   }
 
-  /** Directly generates work items for all periods because there are few of them. */
-  private BatchJobResult createPeriodMessages(StartBatchJobRequest input) {
+  private BatchJobResult createMessagesForAllPeriods(StartBatchJobRequest input) {
     var messages =
         periodService.getAll().stream()
             .map(NviPeriod::publishingYear)
