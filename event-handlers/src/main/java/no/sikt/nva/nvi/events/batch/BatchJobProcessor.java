@@ -1,6 +1,8 @@
 package no.sikt.nva.nvi.events.batch;
 
 import static java.util.Collections.emptyList;
+import static no.sikt.nva.nvi.events.batch.model.BatchJobResult.createInitialBatchJobResult;
+import static no.sikt.nva.nvi.events.batch.model.BatchJobResult.createTerminalBatchJobResult;
 
 import java.util.List;
 import java.util.UUID;
@@ -54,19 +56,18 @@ public class BatchJobProcessor {
   }
 
   private BatchJobResult handleSegmentProcessing(StartBatchJobRequest request) {
-    var nextBatchSize = Integer.min(request.maxRemainingItems(), DEFAULT_PAGE_SIZE);
-    if (nextBatchSize <= 0) {
+    if (request.isTerminalState()) {
       LOGGER.info("Item limit reached, stopping processing");
-      return new BatchJobResult(emptyList(), emptyList());
+      return createTerminalBatchJobResult();
     }
     LOGGER.info("Processing segment");
-    return createCandidateMessages(request, nextBatchSize);
+    return createCandidateMessages(request);
   }
 
-  private BatchJobResult createCandidateMessages(StartBatchJobRequest request, int nextBatchSize) {
+  private BatchJobResult createCandidateMessages(StartBatchJobRequest request) {
     return switch (request.paginationState()) {
-      case YearQueryState state -> createCandidateMessages(request, state, nextBatchSize);
-      case TableScanState state -> createCandidateMessages(request, state, nextBatchSize);
+      case YearQueryState state -> createCandidateMessages(request, state);
+      case TableScanState state -> createCandidateMessages(request, state);
     };
   }
 
@@ -90,7 +91,7 @@ public class BatchJobProcessor {
             .mapToObj(segment -> TableScanState.forSegment(segment, totalSegments))
             .map(nextState -> request.copy().withPaginationState(nextState).build())
             .toList();
-    return new BatchJobResult(emptyList(), events);
+    return createInitialBatchJobResult(events);
   }
 
   private List<StartBatchJobRequest> createTableScanContinuationEvents(
@@ -108,12 +109,15 @@ public class BatchJobProcessor {
 
   /** Creates work items for candidates with parallelized table scan */
   private BatchJobResult createCandidateMessages(
-      StartBatchJobRequest request, TableScanState state, int nextBatchSize) {
+      StartBatchJobRequest request, TableScanState state) {
     LOGGER.info("Processing scan query for segment: {}", state.segment());
 
     var listingResult =
         candidateService.listCandidateIdentifiers(
-            state.segment(), state.totalSegments(), nextBatchSize, state.lastEvaluatedKey());
+            state.segment(),
+            state.totalSegments(),
+            request.getBatchSize(DEFAULT_PAGE_SIZE),
+            state.lastEvaluatedKey());
 
     var messages = toMessages(request, listingResult);
     var continuationEvents = createTableScanContinuationEvents(request, state, listingResult);
@@ -126,7 +130,7 @@ public class BatchJobProcessor {
     var yearFilter = (ReportingYearFilter) request.filter();
     var yearQueryState = YearQueryState.forYears(yearFilter.reportingYears());
     var events = request.copy().withPaginationState(yearQueryState).build();
-    return new BatchJobResult(emptyList(), List.of(events));
+    return createInitialBatchJobResult(List.of(events));
   }
 
   private List<StartBatchJobRequest> createScanByYearContinuationEvents(
@@ -148,13 +152,13 @@ public class BatchJobProcessor {
 
   /** Creates work items for candidates by year from GSI query */
   private BatchJobResult createCandidateMessages(
-      StartBatchJobRequest request, YearQueryState state, int nextBatchSize) {
+      StartBatchJobRequest request, YearQueryState state) {
     var year = state.currentYear();
     LOGGER.info("Processing year query for year: {}", year);
 
     var listingResult =
         candidateService.listCandidateIdentifiersByYear(
-            year, nextBatchSize, state.lastEvaluatedKey());
+            year, request.getBatchSize(DEFAULT_PAGE_SIZE), state.lastEvaluatedKey());
 
     var messages = toMessages(request, listingResult);
     var continuationEvents = createScanByYearContinuationEvents(request, state, listingResult);
