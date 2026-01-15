@@ -46,6 +46,14 @@ public record StartBatchJobRequest(
   }
 
   @JsonIgnore
+  public int maxRemainingItems() {
+    if (hasItemLimit()) {
+      return maxItemsPerSegment() - paginationState.itemsEnqueued();
+    }
+    return Integer.MAX_VALUE;
+  }
+
+  @JsonIgnore
   public boolean isInitialInvocation() {
     return isNull(paginationState);
   }

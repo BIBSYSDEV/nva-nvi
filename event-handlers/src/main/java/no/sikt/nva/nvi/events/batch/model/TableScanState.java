@@ -1,9 +1,13 @@
 package no.sikt.nva.nvi.events.batch.model;
 
 import java.util.Map;
+import javax.annotation.Nullable;
 
 public record TableScanState(
-    int segment, int totalSegments, Map<String, String> lastEvaluatedKey, int itemsEnqueued)
+    int segment,
+    int totalSegments,
+    @Nullable Map<String, String> lastEvaluatedKey,
+    int itemsEnqueued)
     implements PaginationState {
 
   public static TableScanState forSegment(int segment, int totalSegments) {
