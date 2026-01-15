@@ -5,9 +5,11 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
+import static no.sikt.nva.nvi.common.utils.Validator.validateValueIsNonNegative;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import java.util.Optional;
 import no.unit.nva.commons.json.JsonSerializable;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
@@ -22,6 +24,8 @@ public record StartBatchJobRequest(
   private static final int DEFAULT_PARALLEL_SEGMENTS = 10;
 
   public StartBatchJobRequest {
+    validateValueIsNonNegative(maxItemsPerSegment);
+    validateValueIsNonNegative(maxParallelSegments);
     requireNonNull(jobType, "jobType must not be null");
     filter = requireNonNullElse(filter, new ReportingYearFilter(emptyList()));
     maxParallelSegments = requireNonNullElse(maxParallelSegments, DEFAULT_PARALLEL_SEGMENTS);
@@ -46,9 +50,14 @@ public record StartBatchJobRequest(
   }
 
   @JsonIgnore
+  public int itemsEnqueued() {
+    return Optional.ofNullable(paginationState).map(PaginationState::itemsEnqueued).orElse(0);
+  }
+
+  @JsonIgnore
   public int maxRemainingItems() {
     if (hasItemLimit()) {
-      return maxItemsPerSegment() - paginationState.itemsEnqueued();
+      return maxItemsPerSegment() - itemsEnqueued();
     }
     return Integer.MAX_VALUE;
   }
