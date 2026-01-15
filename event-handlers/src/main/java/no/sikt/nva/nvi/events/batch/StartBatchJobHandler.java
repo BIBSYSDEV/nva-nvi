@@ -7,7 +7,6 @@ import static no.sikt.nva.nvi.common.utils.CollectionUtils.splitIntoBatches;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import java.util.Collection;
-import java.util.List;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.common.service.CandidateService;
@@ -83,7 +82,7 @@ public class StartBatchJobHandler implements RequestHandler<StartBatchJobRequest
     return null;
   }
 
-  private void sendMessagesToQueue(List<BatchJobMessage> messages) {
+  private void sendMessagesToQueue(Collection<BatchJobMessage> messages) {
     splitIntoBatches(messages, SQS_BATCH_SIZE).forEach(this::sendBatch);
     LOGGER.info("Processed {} items", messages.size());
   }
@@ -97,7 +96,7 @@ public class StartBatchJobHandler implements RequestHandler<StartBatchJobRequest
     LOGGER.info("Sent {} messages to queue", messages.size());
   }
 
-  private void sendContinuationEvents(List<StartBatchJobRequest> requests) {
+  private void sendContinuationEvents(Collection<StartBatchJobRequest> requests) {
     var entries = requests.stream().map(this::toEventEntry).toList();
     var putEventsRequest = PutEventsRequest.builder().entries(entries).build();
     var response = eventBridgeClient.putEvents(putEventsRequest);

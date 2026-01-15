@@ -32,15 +32,17 @@ public final class CollectionUtils {
     return isNull(map) ? emptyMap() : Map.copyOf(map);
   }
 
-  public static <T> Stream<List<T>> splitIntoBatches(List<T> messages, int batchSize) {
-    int batches = (messages.size() + batchSize - 1) / batchSize;
+  public static <T> Stream<List<T>> splitIntoBatches(Collection<T> messages, int batchSize) {
+    var orderedMessages = List.copyOf(messages);
+    var totalSize = messages.size();
+    var batchCount = (messages.size() + batchSize - 1) / batchSize;
 
-    return IntStream.range(0, batches)
+    return IntStream.range(0, batchCount)
         .mapToObj(
             i -> {
-              int from = i * batchSize;
-              int to = Math.min(from + batchSize, messages.size());
-              return messages.subList(from, to);
+              var from = i * batchSize;
+              var to = Math.min(from + batchSize, totalSize);
+              return orderedMessages.subList(from, to);
             });
   }
 }
