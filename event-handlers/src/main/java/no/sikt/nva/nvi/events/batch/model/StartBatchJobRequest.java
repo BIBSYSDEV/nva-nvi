@@ -54,8 +54,18 @@ public record StartBatchJobRequest(
   }
 
   @JsonIgnore
+  public int getBatchSize(int maxBatchSize) {
+    return Integer.min(maxRemainingItems(), maxBatchSize);
+  }
+
+  @JsonIgnore
   public boolean isInitialInvocation() {
     return isNull(paginationState);
+  }
+
+  @JsonIgnore
+  public boolean isTerminalState() {
+    return nonNull(maxItemsPerSegment) && paginationState.itemsEnqueued() >= maxItemsPerSegment;
   }
 
   @JsonIgnore
