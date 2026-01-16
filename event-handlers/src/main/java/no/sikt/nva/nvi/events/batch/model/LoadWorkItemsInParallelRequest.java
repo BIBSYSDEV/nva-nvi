@@ -11,19 +11,19 @@ public record LoadWorkItemsInParallelRequest(
     return new TableScanRequest(
         segment,
         totalSegments,
-        paginationState.getBatchSize(),
+        paginationState.batchSize(),
         paginationState.lastCandidateRead());
   }
 
   public LoadWorkItemsInParallelRequest getNextState(ListingResult<UUID> scanResult) {
     // TODO: Clean up
-    var updatedTotal = paginationState.candidatesReadTotal() + scanResult.getTotalItemCount();
+    var updatedTotal = paginationState.itemsProcessed() + scanResult.getTotalItemCount();
     var updatedStartMarker = scanResult.shouldContinueScan() ? scanResult.getStartMarker() : null;
     var updatedPaginationState =
         new PaginationStateV2(
             updatedTotal,
             paginationState().maxBatchSize(),
-            paginationState().maxCandidatesToRead(),
+            paginationState().maxItems(),
             updatedStartMarker);
     return new LoadWorkItemsInParallelRequest(
         jobType, segment, totalSegments, updatedPaginationState);

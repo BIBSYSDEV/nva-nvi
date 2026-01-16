@@ -7,24 +7,24 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.Map;
 
 public record PaginationStateV2(
-    int candidatesReadTotal,
+    int itemsProcessed,
     int maxBatchSize,
-    Integer maxCandidatesToRead,
+    Integer maxItems,
     Map<String, String> lastCandidateRead) {
 
   public PaginationStateV2 {
-    validateValueIsNonZeroPositiveNumberIfSet(candidatesReadTotal);
+    validateValueIsNonZeroPositiveNumberIfSet(itemsProcessed);
     validateValueIsNonZeroPositiveNumberIfSet(maxBatchSize);
-    validateValueIsNonZeroPositiveNumberIfSet(maxCandidatesToRead);
+    validateValueIsNonZeroPositiveNumberIfSet(maxItems);
   }
 
   @JsonIgnore
   public boolean hasItemLimit() {
-    return nonNull(maxCandidatesToRead);
+    return nonNull(maxItems);
   }
 
   @JsonIgnore
-  public int getBatchSize() {
-    return hasItemLimit() ? Integer.min(maxCandidatesToRead(), maxBatchSize) : maxBatchSize;
+  public int batchSize() {
+    return hasItemLimit() ? Integer.min(maxItems(), maxBatchSize) : maxBatchSize;
   }
 }

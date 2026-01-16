@@ -10,18 +10,18 @@ public record LoadWorkItemsByYearRequest(
 
   public YearQueryRequest getScanRequest() {
     return new YearQueryRequest(
-        years.getFirst(), paginationState().getBatchSize(), paginationState.lastCandidateRead());
+        years.getFirst(), paginationState().batchSize(), paginationState.lastCandidateRead());
   }
 
   public LoadWorkItemsByYearRequest getNextState(ListingResult<UUID> scanResult) {
-    var updatedTotal = paginationState.candidatesReadTotal() + scanResult.getTotalItemCount();
+    var updatedTotal = paginationState.itemsProcessed() + scanResult.getTotalItemCount();
     var updatedYears = scanResult.shouldContinueScan() ? years : years.subList(1, years.size());
     var updatedStartMarker = scanResult.shouldContinueScan() ? scanResult.getStartMarker() : null;
     var updatedPaginationState =
         new PaginationStateV2(
             updatedTotal,
             paginationState().maxBatchSize(),
-            paginationState().maxCandidatesToRead(),
+            paginationState().maxItems(),
             updatedStartMarker);
     return new LoadWorkItemsByYearRequest(jobType, updatedYears, updatedPaginationState);
   }
