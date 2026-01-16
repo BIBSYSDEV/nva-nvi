@@ -32,6 +32,8 @@ import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.model.KeyField;
+import no.sikt.nva.nvi.common.db.model.TableScanRequest;
+import no.sikt.nva.nvi.common.db.model.YearQueryRequest;
 import no.sikt.nva.nvi.common.model.ListingResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -122,6 +124,28 @@ public class CandidateRepository extends DynamoRepository {
         .build();
   }
 
+  public ListingResult<UUID> scanForCandidateIdentifiers(
+    TableScanRequest requestParameters) {
+    var scanRequest = createCandidateScanRequest(requestParameters);
+    var scanResponse = defaultClient.scan(scanRequest);
+    return mapToListingResult(scanResponse.lastEvaluatedKey(), scanResponse.items());
+  }
+
+  private static ScanRequest createCandidateScanRequest(
+    TableScanRequest request) {
+    return ScanRequest.builder()
+      .tableName(NVI_TABLE_NAME)
+      .filterExpression("begins_with(#pk, :prefix) AND begins_with(#sk, :prefix)")
+      .expressionAttributeNames(Map.of("#pk", HASH_KEY, "#sk", SORT_KEY))
+      .expressionAttributeValues(Map.of(":prefix", AttributeValue.fromS(CandidateDao.TYPE)))
+      .projectionExpression(IDENTIFIER_FIELD)
+      .segment(request.segment())
+      .totalSegments(request.totalSegments())
+      .exclusiveStartKey(request.exclusiveStartKey())
+      .limit(request.batchSize())
+      .build();
+  }
+
   /** Queries GSI to find candidate identifiers (not strongly consistent). */
   public ListingResult<UUID> scanForCandidateIdentifiers(
       String year, int pageSize, Map<String, String> startMarker) {
@@ -143,6 +167,27 @@ public class CandidateRepository extends DynamoRepository {
         .limit(pageSize)
         .exclusiveStartKey(start)
         .build();
+  }
+
+  public ListingResult<UUID> scanForCandidateIdentifiers(
+    YearQueryRequest requestParameters) {
+    var queryRequest = createYearQueryRequest(requestParameters);
+    var queryResponse = defaultClient.query(queryRequest);
+    return mapToListingResult(queryResponse.lastEvaluatedKey(), queryResponse.items());
+  }
+
+  private static QueryRequest createYearQueryRequest(
+    YearQueryRequest requestParameters) {
+    return QueryRequest.builder()
+      .tableName(NVI_TABLE_NAME)
+      .indexName(SECONDARY_INDEX_YEAR)
+      .keyConditionExpression("#year = :year")
+      .expressionAttributeNames(Map.of("#year", SECONDARY_INDEX_YEAR_HASH_KEY))
+      .expressionAttributeValues(Map.of(":year", AttributeValue.fromS(requestParameters.year())))
+      .projectionExpression(IDENTIFIER_FIELD)
+      .limit(requestParameters.batchSize())
+      .exclusiveStartKey(requestParameters.exclusiveStartKey())
+      .build();
   }
 
   public static ListingResult<UUID> mapToListingResult(
