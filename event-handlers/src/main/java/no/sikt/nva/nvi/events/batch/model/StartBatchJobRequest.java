@@ -5,7 +5,7 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElse;
-import static no.sikt.nva.nvi.common.utils.Validator.validateValueIsNonNegative;
+import static no.sikt.nva.nvi.common.utils.Validator.validateValueIsNonZeroPositiveNumberIfSet;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -24,8 +24,8 @@ public record StartBatchJobRequest(
   private static final int DEFAULT_PARALLEL_SEGMENTS = 10;
 
   public StartBatchJobRequest {
-    validateValueIsNonNegative(maxItemsPerSegment);
-    validateValueIsNonNegative(maxParallelSegments);
+    validateValueIsNonZeroPositiveNumberIfSet(maxItemsPerSegment);
+    validateValueIsNonZeroPositiveNumberIfSet(maxParallelSegments);
     requireNonNull(jobType, "jobType must not be null");
     filter = requireNonNullElse(filter, new ReportingYearFilter(emptyList()));
     maxParallelSegments = requireNonNullElse(maxParallelSegments, DEFAULT_PARALLEL_SEGMENTS);
