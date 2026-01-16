@@ -101,7 +101,7 @@ public final class Validator {
     }
   }
 
-  public static void validateValueIsNonNegative(Integer value) {
+  public static void validateValueIsNonZeroPositiveNumberIfSet(Integer value) {
     if (nonNull(value) && value <= 0) {
       throw new ValidationException("Value cannot be negative");
     }
