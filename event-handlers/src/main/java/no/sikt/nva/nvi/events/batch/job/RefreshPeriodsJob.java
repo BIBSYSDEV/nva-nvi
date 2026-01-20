@@ -2,7 +2,6 @@ package no.sikt.nva.nvi.events.batch.job;
 
 import static java.util.Objects.nonNull;
 
-import java.util.List;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.events.batch.message.BatchJobMessage;
@@ -31,10 +30,9 @@ public record RefreshPeriodsJob(
     return nonNull(maxItems) ? maxItems : Integer.MAX_VALUE;
   }
 
-  // TODO: Move to filter class and re-use?
   private boolean isAllowedByFilter(String year) {
-    if (filter instanceof ReportingYearFilter(List<String> reportingYears)) {
-      return reportingYears.contains(year);
+    if (filter instanceof ReportingYearFilter reportingYearFilter) {
+      return reportingYearFilter.allowsYear(year);
     }
     return true;
   }

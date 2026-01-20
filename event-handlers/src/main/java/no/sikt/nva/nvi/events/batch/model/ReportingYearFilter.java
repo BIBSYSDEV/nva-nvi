@@ -21,6 +21,11 @@ public record ReportingYearFilter(List<String> reportingYears) implements BatchJ
   }
 
   @JsonIgnore
+  public boolean allowsYear(String year) {
+    return reportingYears.contains(year);
+  }
+
+  @JsonIgnore
   public boolean hasMoreYears() {
     return reportingYears.size() > 1;
   }
@@ -34,11 +39,5 @@ public record ReportingYearFilter(List<String> reportingYears) implements BatchJ
     return reportingYears.size() > 1
         ? reportingYears.subList(1, reportingYears.size())
         : emptyList();
-  }
-
-  // FIXME: Remove this
-  @JsonIgnore
-  public boolean includesAllYears() {
-    return reportingYears.isEmpty();
   }
 }
