@@ -1,7 +1,6 @@
 package no.sikt.nva.nvi.index.apigateway;
 
 import static java.util.Collections.emptyMap;
-import static java.util.function.Predicate.not;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.getFetchInstitutionStatusAggregationHandlerEnvironment;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.organizationIdFromIdentifier;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationId;
@@ -192,6 +191,20 @@ class FetchInstitutionStatusAggregationHandlerTest {
       assertThat(response.totals().points()).isZero();
     }
 
+    @Test
+    void shouldExcludePointsFromPendingCandidates() {
+      var approval =
+          new ApprovalFactory(OUR_ORGANIZATION)
+              .withCreatorAffiliation(OUR_ORGANIZATION)
+              .withGlobalApprovalStatus(GlobalApprovalStatus.PENDING)
+              .build();
+      CONTAINER.addDocumentsToIndex(documentWithApprovals(approval, randomApproval()));
+
+      var response = handleRequest();
+
+      assertThat(response.totals().points()).isZero();
+    }
+
     private TopLevelAggregation getExpectedTotalAggregation(
         Collection<NviCandidateIndexDocument> relevantDocuments) {
       var expectedTotalPoints = getSumOfTopLevelPoints(OUR_ORGANIZATION, relevantDocuments);
@@ -300,13 +313,16 @@ class FetchInstitutionStatusAggregationHandlerTest {
     var documents = new ArrayList<NviCandidateIndexDocument>();
     var approvalFactory = new ApprovalFactory(topLevelOrganization);
     for (var status : ApprovalStatus.values()) {
-      var approval =
-          approvalFactory
-              .copy()
-              .withApprovalStatus(status)
-              .withCreatorAffiliation(creatorAffiliation)
-              .build();
-      documents.add(documentWithApprovals(approval));
+      for (var globalStatus : GlobalApprovalStatus.values()) {
+        var approval =
+            approvalFactory
+                .copy()
+                .withApprovalStatus(status)
+                .withGlobalApprovalStatus(globalStatus)
+                .withCreatorAffiliation(creatorAffiliation)
+                .build();
+        documents.add(documentWithApprovals(approval));
+      }
     }
     return documents;
   }
@@ -375,7 +391,7 @@ class FetchInstitutionStatusAggregationHandlerTest {
         .map(NviCandidateIndexDocument::approvals)
         .flatMap(List::stream)
         .filter(approval -> organization.equals(approval.institutionId()))
-        .filter(not(approval -> ApprovalStatus.REJECTED.equals(approval.approvalStatus())))
+        .filter(approval -> GlobalApprovalStatus.APPROVED.equals(approval.globalApprovalStatus()))
         .map(ApprovalView::points)
         .map(InstitutionPointsView::institutionPoints)
         .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -386,7 +402,7 @@ class FetchInstitutionStatusAggregationHandlerTest {
     return ourDocuments.stream()
         .map(NviCandidateIndexDocument::approvals)
         .flatMap(List::stream)
-        .filter(not(approval -> ApprovalStatus.REJECTED.equals(approval.approvalStatus())))
+        .filter(approval -> GlobalApprovalStatus.APPROVED.equals(approval.globalApprovalStatus()))
         .map(ApprovalView::points)
         .map(InstitutionPointsView::creatorAffiliationPoints)
         .flatMap(List::stream)
