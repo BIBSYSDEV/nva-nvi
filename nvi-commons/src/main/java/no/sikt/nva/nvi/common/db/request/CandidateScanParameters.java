@@ -6,12 +6,14 @@ import java.util.Map;
 import java.util.Optional;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
-public interface CandidateScanRequest {
+public interface CandidateScanParameters {
+  int batchSize();
+
   Map<String, String> lastItemRead();
 
   default Map<String, AttributeValue> exclusiveStartKey() {
     return Optional.ofNullable(lastItemRead())
-        .map(CandidateScanRequest::toAttributeMap)
+        .map(CandidateScanParameters::toAttributeMap)
         .orElse(null);
   }
 
