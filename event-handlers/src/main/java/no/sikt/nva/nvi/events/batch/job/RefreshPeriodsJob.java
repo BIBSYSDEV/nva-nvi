@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.events.batch.job;
 
-
 import java.util.Optional;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
