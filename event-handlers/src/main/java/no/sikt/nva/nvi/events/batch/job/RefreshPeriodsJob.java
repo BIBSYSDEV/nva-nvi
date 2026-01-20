@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.events.batch.job;
 
-import static java.util.Objects.nonNull;
 
+import java.util.Optional;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.events.batch.message.BatchJobMessage;
@@ -27,7 +27,7 @@ public record RefreshPeriodsJob(
   }
 
   private int getEffectiveLimit() {
-    return nonNull(maxItems) ? maxItems : Integer.MAX_VALUE;
+    return Optional.ofNullable(maxItems).orElse(Integer.MAX_VALUE);
   }
 
   private boolean isAllowedByFilter(String year) {
