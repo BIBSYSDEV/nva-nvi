@@ -1,5 +1,7 @@
 package no.sikt.nva.nvi.events.batch.request;
 
+import static java.util.Objects.requireNonNull;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.Optional;
 import java.util.UUID;
@@ -10,6 +12,10 @@ import no.sikt.nva.nvi.events.batch.model.ReportingYearFilter;
 public record CandidatesByYearRequest(
     BatchJobType jobType, ReportingYearFilter yearFilter, PaginationState paginationState)
     implements BatchJobRequest {
+
+  public CandidatesByYearRequest {
+    requireNonNull(yearFilter);
+  }
 
   @JsonIgnore
   public YearQueryRequest toQueryRequest() {

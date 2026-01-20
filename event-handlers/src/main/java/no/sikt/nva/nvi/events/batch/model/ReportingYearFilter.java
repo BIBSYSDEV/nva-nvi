@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.events.batch.model;
 
 import static java.util.Collections.emptyList;
-import static no.sikt.nva.nvi.common.utils.CollectionUtils.copyOfNullable;
+import static no.sikt.nva.nvi.common.utils.Validator.shouldNotBeEmpty;
 import static no.sikt.nva.nvi.common.utils.Validator.validateYear;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -10,7 +10,8 @@ import java.util.List;
 public record ReportingYearFilter(List<String> reportingYears) implements BatchJobFilter {
 
   public ReportingYearFilter {
-    reportingYears = copyOfNullable(reportingYears);
+    shouldNotBeEmpty(reportingYears, "Must specify years to filter by");
+    reportingYears = List.copyOf(reportingYears);
     for (var year : reportingYears) {
       validateYear(year);
     }
