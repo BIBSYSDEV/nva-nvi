@@ -70,10 +70,6 @@ public final class QueryFunctions {
         .toQuery();
   }
 
-  public static Query mustNotMatch(String value, String field) {
-    return mustNotMatch(matchQuery(value, field));
-  }
-
   public static Query mustNotMatch(Query query) {
     return new Builder().mustNot(query).build().toQuery();
   }
@@ -88,10 +84,6 @@ public final class QueryFunctions {
     return new Query.Builder()
         .bool(new Builder().must(Arrays.stream(queries).toList()).build())
         .build();
-  }
-
-  public static Query matchQuery(String value, String field) {
-    return new MatchQuery.Builder().field(field).query(getFieldValue(value)).build().toQuery();
   }
 
   public static Query containsNonFinalizedStatusQuery() {
