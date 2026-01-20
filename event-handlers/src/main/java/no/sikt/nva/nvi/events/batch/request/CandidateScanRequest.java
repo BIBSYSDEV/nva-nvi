@@ -11,12 +11,6 @@ public record CandidateScanRequest(
     implements BatchJobRequest {
 
   @JsonIgnore
-  @Override
-  public int batchSize() {
-    return paginationState().batchSize();
-  }
-
-  @JsonIgnore
   public TableScanRequest toScanRequest() {
     return new TableScanRequest(
         segment, totalSegments, paginationState.batchSize(), paginationState.lastCandidateRead());

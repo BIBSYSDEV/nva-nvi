@@ -14,6 +14,4 @@ public sealed interface BatchJobRequest extends JsonSerializable
     permits StartBatchJobRequest, CandidatesByYearRequest, CandidateScanRequest {
 
   BatchJobType jobType();
-
-  int batchSize();
 }

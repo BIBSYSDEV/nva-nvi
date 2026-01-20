@@ -11,16 +11,10 @@ public record CandidatesByYearRequest(
     BatchJobType jobType, ReportingYearFilter yearFilter, PaginationState paginationState)
     implements BatchJobRequest {
 
-  @Override
-  @JsonIgnore
-  public int batchSize() {
-    return paginationState().batchSize();
-  }
-
   @JsonIgnore
   public YearQueryRequest toQueryRequest() {
     return new YearQueryRequest(
-        getFilterYear(), batchSize(), paginationState().lastCandidateRead());
+        getFilterYear(), paginationState().batchSize(), paginationState().lastCandidateRead());
   }
 
   @JsonIgnore
