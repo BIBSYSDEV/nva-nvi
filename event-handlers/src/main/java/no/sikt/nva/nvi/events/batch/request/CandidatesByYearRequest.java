@@ -25,7 +25,7 @@ public record CandidatesByYearRequest(
       return Optional.of(new CandidatesByYearRequest(jobType, yearFilter, nextPage));
     }
 
-    if (nextPage.hasCapacity() && yearFilter.hasMoreYears()) {
+    if (nextPage.hasCapacity() && yearFilter.hasMultipleYears()) {
       return Optional.of(
           new CandidatesByYearRequest(jobType, yearFilter.getIncrementedFilter(), nextPage));
     }

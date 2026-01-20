@@ -26,7 +26,7 @@ public record ReportingYearFilter(List<String> reportingYears) implements BatchJ
   }
 
   @JsonIgnore
-  public boolean hasMoreYears() {
+  public boolean hasMultipleYears() {
     return reportingYears.size() > 1;
   }
 
