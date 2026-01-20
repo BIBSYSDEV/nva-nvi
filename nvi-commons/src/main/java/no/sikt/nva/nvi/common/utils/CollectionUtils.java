@@ -5,6 +5,7 @@ import static java.util.Collections.emptyMap;
 import static java.util.Collections.emptySet;
 import static java.util.Objects.isNull;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -44,5 +45,16 @@ public final class CollectionUtils {
               var to = Math.min(from + batchSize, totalSize);
               return orderedMessages.subList(from, to);
             });
+  }
+
+  public static List<Integer> splitEvenly(int total, int numberOfChunks) {
+    var base = total / numberOfChunks;
+    var remainder = total % numberOfChunks;
+    var chunks = new ArrayList<Integer>();
+    for (var i = 0; i < numberOfChunks; i++) {
+      var chunk = base + (i < remainder ? 1 : 0);
+      chunks.add(chunk);
+    }
+    return chunks;
   }
 }

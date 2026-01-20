@@ -25,11 +25,13 @@ import no.sikt.nva.nvi.common.FakeEnvironment;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.exceptions.ValidationException;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
-import no.sikt.nva.nvi.events.batch.model.BatchJobMessage;
-import no.sikt.nva.nvi.events.batch.model.MigrateCandidateMessage;
-import no.sikt.nva.nvi.events.batch.model.RefreshCandidateMessage;
+import no.sikt.nva.nvi.events.batch.message.BatchJobMessage;
+import no.sikt.nva.nvi.events.batch.message.MigrateCandidateMessage;
+import no.sikt.nva.nvi.events.batch.message.RefreshCandidateMessage;
+import no.sikt.nva.nvi.events.batch.message.RefreshPeriodMessage;
 import no.sikt.nva.nvi.events.batch.model.ReportingYearFilter;
-import no.sikt.nva.nvi.events.batch.model.StartBatchJobRequest;
+import no.sikt.nva.nvi.events.batch.request.BatchJobRequest;
+import no.sikt.nva.nvi.events.batch.request.StartBatchJobRequest;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.stubs.FakeEventBridgeClient;
@@ -125,8 +127,9 @@ class StartBatchJobHandlerTest {
       var request =
           refreshAllCandidates()
               .copy()
-              .withMaxItemsPerSegment(5)
+              .withMaxBatchSize(3)
               .withMaxParallelSegments(3)
+              .withMaxItems(15)
               .build();
 
       runToCompletion(request);
@@ -136,11 +139,12 @@ class StartBatchJobHandlerTest {
 
     @Test
     void shouldGenerateMaxEventsPerYear() {
-      var maxItemsToQueue = 4;
+      var maxItemsToQueue = 15;
       var request =
           refreshCandidatesForYear(LAST_YEAR, THIS_YEAR)
               .copy()
-              .withMaxItemsPerSegment(maxItemsToQueue)
+              .withMaxBatchSize(5)
+              .withMaxItems(maxItemsToQueue)
               .build();
 
       runToCompletion(request);
@@ -167,7 +171,7 @@ class StartBatchJobHandlerTest {
 
     @Test
     void shouldQueueNothingWhenNoCandidatesExist() {
-      var request = refreshCandidatesForYear(String.valueOf(CURRENT_YEAR));
+      var request = refreshCandidatesForYear(THIS_YEAR);
       runToCompletion(request);
       assertThat(getQueuedMessageCount()).isZero();
     }
@@ -177,6 +181,22 @@ class StartBatchJobHandlerTest {
       var request = refreshAllPeriods();
       runToCompletion(request);
       assertThat(getQueuedMessageCount()).isEqualTo(3);
+    }
+
+    @Test
+    void shouldQueueSinglePeriod() {
+      var request = refreshAllPeriods().copy().withMaxItems(1).build();
+      runToCompletion(request);
+      assertThat(getQueuedMessageCount()).isOne();
+    }
+
+    @Test
+    void shouldQueueSpecifiedPeriod() {
+      var request =
+          refreshAllPeriods().copy().withFilter(new ReportingYearFilter(LAST_YEAR)).build();
+      runToCompletion(request);
+      var actualMessages = getQueuedMessages(RefreshPeriodMessage.class);
+      assertThat(actualMessages).singleElement().isEqualTo(new RefreshPeriodMessage(LAST_YEAR));
     }
 
     @ParameterizedTest
@@ -205,8 +225,7 @@ class StartBatchJobHandlerTest {
 
     private static Stream<Arguments> invalidRequestProvider() {
       return Stream.of(
-          argumentSet(
-              "Negative max items", refreshAllCandidates().copy().withMaxItemsPerSegment(-1)),
+          argumentSet("Negative max items", refreshAllCandidates().copy().withMaxItems(-1)),
           argumentSet(
               "Negative segment count", refreshAllCandidates().copy().withMaxParallelSegments(-1)));
     }
@@ -239,7 +258,7 @@ class StartBatchJobHandlerTest {
       eventBridgeClient.getRequestEntries().clear();
 
       for (var event : pendingEvents) {
-        var request = parseStartBatchJobRequest(event);
+        var request = parseBatchJobRequest(event);
         handler.handleRequest(request, CONTEXT);
       }
     }
@@ -265,9 +284,9 @@ class StartBatchJobHandlerTest {
     }
   }
 
-  private StartBatchJobRequest parseStartBatchJobRequest(PutEventsRequestEntry entry) {
+  private BatchJobRequest parseBatchJobRequest(PutEventsRequestEntry entry) {
     try {
-      return JsonUtils.dtoObjectMapper.readValue(entry.detail(), StartBatchJobRequest.class);
+      return JsonUtils.dtoObjectMapper.readValue(entry.detail(), BatchJobRequest.class);
     } catch (JsonProcessingException e) {
       throw new RuntimeException(e);
     }
