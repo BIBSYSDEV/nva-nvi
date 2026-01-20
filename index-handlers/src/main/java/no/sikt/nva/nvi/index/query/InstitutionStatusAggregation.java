@@ -63,7 +63,7 @@ public final class InstitutionStatusAggregation {
     var organizationAggregations =
         Map.of(
             POINTS,
-            aggregatePotentialAffiliationPoints(),
+            aggregateApprovedAffiliationPoints(),
             APPROVAL_STATUS,
             termsAggregation(SUMMARY_PATH, APPROVAL_STATUS),
             GLOBAL_APPROVAL_STATUS,
@@ -85,7 +85,7 @@ public final class InstitutionStatusAggregation {
             APPROVAL_STATUS,
             termsAggregation(APPROVALS, APPROVAL_STATUS),
             POINTS,
-            aggregatePotentialTopLevelPoints(),
+            aggregateApprovedTopLevelPoints(),
             GLOBAL_APPROVAL_STATUS,
             termsAggregation(APPROVALS, GLOBAL_APPROVAL_STATUS));
     return filterByTopLevelOrganization(topLevelOrganizationId, topLevelAggregations);
@@ -96,7 +96,7 @@ public final class InstitutionStatusAggregation {
     return filterAggregation(mustMatch(approvalBelongsTo(topLevelOrganizationId)), subAggregations);
   }
 
-  private static Aggregation aggregatePotentialTopLevelPoints() {
+  private static Aggregation aggregateApprovedTopLevelPoints() {
     return filterAggregation(
         mustMatch(
             fieldValueQuery(
@@ -105,7 +105,7 @@ public final class InstitutionStatusAggregation {
         Map.of(TOTAL, sumAggregation(APPROVALS, POINTS, INSTITUTION_POINTS)));
   }
 
-  private static Aggregation aggregatePotentialAffiliationPoints() {
+  private static Aggregation aggregateApprovedAffiliationPoints() {
     return filterAggregation(
         mustMatch(
             fieldValueQuery(
