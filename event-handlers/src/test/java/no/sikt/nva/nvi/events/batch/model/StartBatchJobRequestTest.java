@@ -3,7 +3,8 @@ package no.sikt.nva.nvi.events.batch.model;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import java.util.List;
+import no.sikt.nva.nvi.events.batch.request.BatchJobType;
+import no.sikt.nva.nvi.events.batch.request.StartBatchJobRequest;
 import no.unit.nva.commons.json.JsonUtils;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -25,9 +26,7 @@ class StartBatchJobRequestTest {
           StartBatchJobRequest.builder().withJobType(BatchJobType.REFRESH_CANDIDATES).build();
 
       assertThat(request).isEqualTo(expectedRequest);
-      assertThat(request.isInitialInvocation()).isTrue();
-      assertThat(request.hasItemLimit()).isFalse();
-      assertThat(request.hasYearFilter()).isFalse();
+      assertThat(request.filter()).isNull();
     }
 
     @Test
@@ -42,7 +41,7 @@ class StartBatchJobRequestTest {
               "reportingYears": ["2024", "2025"]
             },
             "maxParallelSegments": 5,
-            "maxItemsPerSegment": 100
+            "maxItems": 100
           }
           """;
 
@@ -50,8 +49,8 @@ class StartBatchJobRequestTest {
       var expectedRequest =
           StartBatchJobRequest.builder()
               .withJobType(BatchJobType.MIGRATE_CANDIDATES)
-              .withFilter(new ReportingYearFilter(List.of("2024", "2025")))
-              .withMaxItemsPerSegment(100)
+              .withFilter(new ReportingYearFilter("2024", "2025"))
+              .withMaxItems(100)
               .withMaxParallelSegments(5)
               .build();
 

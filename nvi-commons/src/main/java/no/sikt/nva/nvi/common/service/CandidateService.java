@@ -10,7 +10,6 @@ import static no.sikt.nva.nvi.common.service.model.Candidate.shouldResetCandidat
 
 import java.net.URI;
 import java.util.Collection;
-import java.util.Map;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.Dao;
@@ -167,23 +166,11 @@ public class CandidateService {
     return findCandidateAndPeriodsByIdentifier(candidateIdentifier.get());
   }
 
-  public ListingResult<UUID> listCandidateIdentifiers(
-      int segment, int totalSegments, int pageSize, Map<String, String> startKey) {
-    return candidateRepository.scanForCandidateIdentifiers(
-        segment, totalSegments, pageSize, startKey);
-  }
-
-  public ListingResult<UUID> listCandidateIdentifiersByYear(
-      String year, int pageSize, Map<String, String> startKey) {
-    return candidateRepository.scanForCandidateIdentifiers(year, pageSize, startKey);
-  }
-
   public ListingResult<UUID> listCandidateIdentifiers(TableScanRequest request) {
     return candidateRepository.scanForCandidateIdentifiers(request);
   }
 
-  public ListingResult<UUID> listCandidateIdentifiersByYear(
-    YearQueryRequest request) {
+  public ListingResult<UUID> listCandidateIdentifiersByYear(YearQueryRequest request) {
     return candidateRepository.scanForCandidateIdentifiers(request);
   }
 

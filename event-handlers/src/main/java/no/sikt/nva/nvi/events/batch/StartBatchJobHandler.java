@@ -11,8 +11,8 @@ import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
-import no.sikt.nva.nvi.events.batch.model.BatchJobMessage;
-import no.sikt.nva.nvi.events.batch.model.StartBatchJobRequest;
+import no.sikt.nva.nvi.events.batch.message.BatchJobMessage;
+import no.sikt.nva.nvi.events.batch.request.BatchJobRequest;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
@@ -22,7 +22,7 @@ import software.amazon.awssdk.services.eventbridge.EventBridgeClient;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequest;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
 
-public class StartBatchJobHandler implements RequestHandler<StartBatchJobRequest, Void> {
+public class StartBatchJobHandler implements RequestHandler<BatchJobRequest, Void> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(StartBatchJobHandler.class);
   private static final String PROCESSING_ENABLED = "PROCESSING_ENABLED";
@@ -32,7 +32,9 @@ public class StartBatchJobHandler implements RequestHandler<StartBatchJobRequest
   private static final String SOURCE = "nva.nvi.batch";
   private static final int SQS_BATCH_SIZE = 10;
 
-  private final BatchJobProcessor batchJobProcessor;
+  private final CandidateService candidateService;
+  private final NviPeriodService periodService;
+  private final BatchJobFactory batchJobFactory;
   private final QueueClient queueClient;
   private final EventBridgeClient eventBridgeClient;
   private final String queueUrl;
@@ -55,7 +57,9 @@ public class StartBatchJobHandler implements RequestHandler<StartBatchJobRequest
       EventBridgeClient eventBridgeClient,
       Environment environment,
       QueueClient queueClient) {
-    this.batchJobProcessor = new BatchJobProcessor(candidateService, periodService);
+    this.candidateService = candidateService;
+    this.periodService = periodService;
+    this.batchJobFactory = new BatchJobFactory(candidateService, periodService);
     this.eventBridgeClient = eventBridgeClient;
     this.queueClient = queueClient;
     this.queueUrl = environment.readEnv(BATCH_JOB_QUEUE_URL);
@@ -69,12 +73,12 @@ public class StartBatchJobHandler implements RequestHandler<StartBatchJobRequest
   }
 
   @Override
-  public Void handleRequest(StartBatchJobRequest request, Context context) {
+  public Void handleRequest(BatchJobRequest request, Context context) {
     if (!processingEnabled) {
       LOGGER.warn("Processing disabled, aborting batch job");
     } else {
       LOGGER.info("Processing batch job: {}", request);
-      var batchJobResult = batchJobProcessor.process(request);
+      var batchJobResult = batchJobFactory.from(request).execute();
       sendMessagesToQueue(batchJobResult.messages());
       sendContinuationEvents(batchJobResult.continuationEvents());
     }
@@ -96,7 +100,7 @@ public class StartBatchJobHandler implements RequestHandler<StartBatchJobRequest
     LOGGER.info("Sent {} messages to queue", messages.size());
   }
 
-  private void sendContinuationEvents(Collection<StartBatchJobRequest> requests) {
+  private void sendContinuationEvents(Collection<? extends BatchJobRequest> requests) {
     var entries = requests.stream().map(this::toEventEntry).toList();
     var putEventsRequest = PutEventsRequest.builder().entries(entries).build();
     var response = eventBridgeClient.putEvents(putEventsRequest);
@@ -106,7 +110,7 @@ public class StartBatchJobHandler implements RequestHandler<StartBatchJobRequest
     LOGGER.info("Sent {} continuation events", entries.size());
   }
 
-  private PutEventsRequestEntry toEventEntry(StartBatchJobRequest request) {
+  private PutEventsRequestEntry toEventEntry(BatchJobRequest request) {
     return PutEventsRequestEntry.builder()
         .eventBusName(eventBusName)
         .source(SOURCE)

@@ -124,26 +124,24 @@ public class CandidateRepository extends DynamoRepository {
         .build();
   }
 
-  public ListingResult<UUID> scanForCandidateIdentifiers(
-    TableScanRequest requestParameters) {
+  public ListingResult<UUID> scanForCandidateIdentifiers(TableScanRequest requestParameters) {
     var scanRequest = createCandidateScanRequest(requestParameters);
     var scanResponse = defaultClient.scan(scanRequest);
     return mapToListingResult(scanResponse.lastEvaluatedKey(), scanResponse.items());
   }
 
-  private static ScanRequest createCandidateScanRequest(
-    TableScanRequest request) {
+  private static ScanRequest createCandidateScanRequest(TableScanRequest request) {
     return ScanRequest.builder()
-      .tableName(NVI_TABLE_NAME)
-      .filterExpression("begins_with(#pk, :prefix) AND begins_with(#sk, :prefix)")
-      .expressionAttributeNames(Map.of("#pk", HASH_KEY, "#sk", SORT_KEY))
-      .expressionAttributeValues(Map.of(":prefix", AttributeValue.fromS(CandidateDao.TYPE)))
-      .projectionExpression(IDENTIFIER_FIELD)
-      .segment(request.segment())
-      .totalSegments(request.totalSegments())
-      .exclusiveStartKey(request.exclusiveStartKey())
-      .limit(request.batchSize())
-      .build();
+        .tableName(NVI_TABLE_NAME)
+        .filterExpression("begins_with(#pk, :prefix) AND begins_with(#sk, :prefix)")
+        .expressionAttributeNames(Map.of("#pk", HASH_KEY, "#sk", SORT_KEY))
+        .expressionAttributeValues(Map.of(":prefix", AttributeValue.fromS(CandidateDao.TYPE)))
+        .projectionExpression(IDENTIFIER_FIELD)
+        .segment(request.segment())
+        .totalSegments(request.totalSegments())
+        .exclusiveStartKey(request.exclusiveStartKey())
+        .limit(request.batchSize())
+        .build();
   }
 
   /** Queries GSI to find candidate identifiers (not strongly consistent). */
@@ -169,25 +167,23 @@ public class CandidateRepository extends DynamoRepository {
         .build();
   }
 
-  public ListingResult<UUID> scanForCandidateIdentifiers(
-    YearQueryRequest requestParameters) {
+  public ListingResult<UUID> scanForCandidateIdentifiers(YearQueryRequest requestParameters) {
     var queryRequest = createYearQueryRequest(requestParameters);
     var queryResponse = defaultClient.query(queryRequest);
     return mapToListingResult(queryResponse.lastEvaluatedKey(), queryResponse.items());
   }
 
-  private static QueryRequest createYearQueryRequest(
-    YearQueryRequest requestParameters) {
+  private static QueryRequest createYearQueryRequest(YearQueryRequest requestParameters) {
     return QueryRequest.builder()
-      .tableName(NVI_TABLE_NAME)
-      .indexName(SECONDARY_INDEX_YEAR)
-      .keyConditionExpression("#year = :year")
-      .expressionAttributeNames(Map.of("#year", SECONDARY_INDEX_YEAR_HASH_KEY))
-      .expressionAttributeValues(Map.of(":year", AttributeValue.fromS(requestParameters.year())))
-      .projectionExpression(IDENTIFIER_FIELD)
-      .limit(requestParameters.batchSize())
-      .exclusiveStartKey(requestParameters.exclusiveStartKey())
-      .build();
+        .tableName(NVI_TABLE_NAME)
+        .indexName(SECONDARY_INDEX_YEAR)
+        .keyConditionExpression("#year = :year")
+        .expressionAttributeNames(Map.of("#year", SECONDARY_INDEX_YEAR_HASH_KEY))
+        .expressionAttributeValues(Map.of(":year", AttributeValue.fromS(requestParameters.year())))
+        .projectionExpression(IDENTIFIER_FIELD)
+        .limit(requestParameters.batchSize())
+        .exclusiveStartKey(requestParameters.exclusiveStartKey())
+        .build();
   }
 
   public static ListingResult<UUID> mapToListingResult(
