@@ -101,29 +101,6 @@ public class CandidateRepository extends DynamoRepository {
   }
 
   /** Scans table to find candidate identifiers (not strongly consistent). */
-  public ListingResult<UUID> scanForCandidateIdentifiers(
-      int segment, int totalSegments, int pageSize, Map<String, String> startMarker) {
-    var scanRequest = createScanRequest(pageSize, startMarker, segment, totalSegments);
-    var scanResponse = defaultClient.scan(scanRequest);
-    return mapToListingResult(scanResponse.lastEvaluatedKey(), scanResponse.items());
-  }
-
-  private static ScanRequest createScanRequest(
-      int pageSize, Map<String, String> startMarker, int segment, int totalSegments) {
-    var start = nonNull(startMarker) ? toAttributeMap(startMarker) : null;
-    return ScanRequest.builder()
-        .tableName(NVI_TABLE_NAME)
-        .filterExpression("begins_with(#pk, :prefix) AND begins_with(#sk, :prefix)")
-        .expressionAttributeNames(Map.of("#pk", HASH_KEY, "#sk", SORT_KEY))
-        .expressionAttributeValues(Map.of(":prefix", AttributeValue.fromS(CandidateDao.TYPE)))
-        .projectionExpression(IDENTIFIER_FIELD)
-        .segment(segment)
-        .totalSegments(totalSegments)
-        .exclusiveStartKey(start)
-        .limit(pageSize)
-        .build();
-  }
-
   public ListingResult<UUID> scanForCandidateIdentifiers(TableScanRequest requestParameters) {
     var scanRequest = createCandidateScanRequest(requestParameters);
     var scanResponse = defaultClient.scan(scanRequest);
@@ -145,28 +122,6 @@ public class CandidateRepository extends DynamoRepository {
   }
 
   /** Queries GSI to find candidate identifiers (not strongly consistent). */
-  public ListingResult<UUID> scanForCandidateIdentifiers(
-      String year, int pageSize, Map<String, String> startMarker) {
-    var queryRequest = createYearQueryRequest(pageSize, startMarker, year);
-    var queryResponse = defaultClient.query(queryRequest);
-    return mapToListingResult(queryResponse.lastEvaluatedKey(), queryResponse.items());
-  }
-
-  private static QueryRequest createYearQueryRequest(
-      int pageSize, Map<String, String> startMarker, String year) {
-    var start = nonNull(startMarker) ? toAttributeMap(startMarker) : null;
-    return QueryRequest.builder()
-        .tableName(NVI_TABLE_NAME)
-        .indexName(SECONDARY_INDEX_YEAR)
-        .keyConditionExpression("#year = :year")
-        .expressionAttributeNames(Map.of("#year", SECONDARY_INDEX_YEAR_HASH_KEY))
-        .expressionAttributeValues(Map.of(":year", AttributeValue.fromS(year)))
-        .projectionExpression(IDENTIFIER_FIELD)
-        .limit(pageSize)
-        .exclusiveStartKey(start)
-        .build();
-  }
-
   public ListingResult<UUID> scanForCandidateIdentifiers(YearQueryRequest requestParameters) {
     var queryRequest = createYearQueryRequest(requestParameters);
     var queryResponse = defaultClient.query(queryRequest);
