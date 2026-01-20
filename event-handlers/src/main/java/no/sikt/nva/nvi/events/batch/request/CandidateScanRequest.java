@@ -11,6 +11,7 @@ public record CandidateScanRequest(
     implements BatchJobRequest {
 
   @JsonIgnore
+  @Override
   public int batchSize() {
     return paginationState().batchSize();
   }
@@ -23,11 +24,10 @@ public record CandidateScanRequest(
 
   @JsonIgnore
   public Optional<CandidateScanRequest> getNextRequest(ListingResult<UUID> scanResult) {
-    var updatedPaginationState = paginationState.createUpdatedPaginationState(scanResult);
-    if (updatedPaginationState.isTerminalState()) {
-      return Optional.empty();
+    var nextPage = paginationState.createUpdatedPaginationState(scanResult);
+    if (nextPage.hasCapacity() && scanResult.shouldContinueScan()) {
+      return Optional.of(new CandidateScanRequest(jobType, segment, totalSegments, nextPage));
     }
-    return Optional.of(
-        new CandidateScanRequest(jobType, segment, totalSegments, updatedPaginationState));
+    return Optional.empty();
   }
 }

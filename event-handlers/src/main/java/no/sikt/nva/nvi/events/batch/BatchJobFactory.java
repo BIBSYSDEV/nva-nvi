@@ -5,9 +5,9 @@ import static no.sikt.nva.nvi.events.batch.request.PaginationState.createInitial
 import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.events.batch.job.BatchJob;
-import no.sikt.nva.nvi.events.batch.job.ScanCandidatesJob;
 import no.sikt.nva.nvi.events.batch.job.CandidatesByYearJob;
 import no.sikt.nva.nvi.events.batch.job.RefreshPeriodsJob;
+import no.sikt.nva.nvi.events.batch.job.ScanCandidatesJob;
 import no.sikt.nva.nvi.events.batch.job.StartCandidateScanJob;
 import no.sikt.nva.nvi.events.batch.model.ReportingYearFilter;
 import no.sikt.nva.nvi.events.batch.request.BatchJobRequest;
@@ -28,8 +28,7 @@ public class BatchJobFactory {
   public BatchJob from(BatchJobRequest request) {
     return switch (request) {
       case StartBatchJobRequest newRequest -> handleInitialRequest(newRequest);
-      case CandidateScanRequest continuationRequest ->
-          handleScanRequest(continuationRequest);
+      case CandidateScanRequest continuationRequest -> handleScanRequest(continuationRequest);
       case CandidatesByYearRequest continuationRequest ->
           handleFilteredYearJob(continuationRequest);
     };

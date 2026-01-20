@@ -17,8 +17,7 @@ public record StartCandidateScanJob(StartBatchJobRequest request) implements Bat
     return BatchJobResult.createInitialBatchJobResult(jobs);
   }
 
-  private List<CandidateScanRequest> createInitialTableScanEvents(
-      StartBatchJobRequest request) {
+  private List<CandidateScanRequest> createInitialTableScanEvents(StartBatchJobRequest request) {
     var segmentLimits = getSegmentLimits(request);
 
     var totalSegments = request.maxParallelSegments();

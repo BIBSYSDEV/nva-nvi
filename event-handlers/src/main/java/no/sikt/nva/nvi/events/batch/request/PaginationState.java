@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.events.batch.request;
 
-import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.utils.Validator.validateValueIsNonZeroPositiveNumberIfSet;
 
@@ -28,23 +27,13 @@ public record PaginationState(
   }
 
   @JsonIgnore
-  public boolean isTerminalState() {
-    return batchSize() <= 0 || (itemsProcessed > 0 && isNull(lastCandidateRead));
-  }
-
-  @JsonIgnore
-  public boolean shouldContinue() {
+  public boolean hasCapacity() {
     return batchSize() > 0;
   }
 
   @JsonIgnore
   public boolean hasItemLimit() {
     return nonNull(maxItems);
-  }
-
-  @JsonIgnore
-  public int remainingItems() {
-    return hasItemLimit() ? maxItems - itemsProcessed : Integer.MAX_VALUE;
   }
 
   @JsonIgnore

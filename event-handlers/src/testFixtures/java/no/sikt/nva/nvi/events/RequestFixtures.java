@@ -3,8 +3,8 @@ package no.sikt.nva.nvi.events;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 
 import java.util.List;
-import no.sikt.nva.nvi.events.batch.request.BatchJobType;
 import no.sikt.nva.nvi.events.batch.model.ReportingYearFilter;
+import no.sikt.nva.nvi.events.batch.request.BatchJobType;
 import no.sikt.nva.nvi.events.batch.request.StartBatchJobRequest;
 
 public final class RequestFixtures {

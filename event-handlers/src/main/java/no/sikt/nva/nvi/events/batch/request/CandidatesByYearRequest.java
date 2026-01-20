@@ -11,6 +11,7 @@ public record CandidatesByYearRequest(
     BatchJobType jobType, ReportingYearFilter yearFilter, PaginationState paginationState)
     implements BatchJobRequest {
 
+  @Override
   @JsonIgnore
   public int batchSize() {
     return paginationState().batchSize();
@@ -24,24 +25,18 @@ public record CandidatesByYearRequest(
 
   @JsonIgnore
   public Optional<CandidatesByYearRequest> getNextRequest(ListingResult<UUID> scanResult) {
-    // FIXME: Clean up conditional logic
-    // Continue if
-    // maxItems isn't reached AND
-    // scanResult has more OR yearFilter has more
-    var updatedPaginationState = paginationState.createUpdatedPaginationState(scanResult);
-    var canContinueCurrentYear =
-        scanResult.shouldContinueScan() && updatedPaginationState.batchSize() > 0;
-    var canContinueNextYear = yearFilter.hasMoreYears() && updatedPaginationState.batchSize() > 0;
+    var nextPage = paginationState.createUpdatedPaginationState(scanResult);
 
-    if (canContinueCurrentYear) {
-      return Optional.of(new CandidatesByYearRequest(jobType, yearFilter, updatedPaginationState));
-    } else if (canContinueNextYear) {
-      return Optional.of(
-          new CandidatesByYearRequest(
-              jobType, yearFilter.getIncrementedFilter(), updatedPaginationState));
-    } else {
-      return Optional.empty();
+    if (nextPage.hasCapacity() && scanResult.shouldContinueScan()) {
+      return Optional.of(new CandidatesByYearRequest(jobType, yearFilter, nextPage));
     }
+
+    if (nextPage.hasCapacity() && yearFilter.hasMoreYears()) {
+      return Optional.of(
+          new CandidatesByYearRequest(jobType, yearFilter.getIncrementedFilter(), nextPage));
+    }
+
+    return Optional.empty();
   }
 
   private String getFilterYear() {

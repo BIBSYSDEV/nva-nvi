@@ -32,8 +32,6 @@ public class StartBatchJobHandler implements RequestHandler<BatchJobRequest, Voi
   private static final String SOURCE = "nva.nvi.batch";
   private static final int SQS_BATCH_SIZE = 10;
 
-  private final CandidateService candidateService;
-  private final NviPeriodService periodService;
   private final BatchJobFactory batchJobFactory;
   private final QueueClient queueClient;
   private final EventBridgeClient eventBridgeClient;
@@ -57,8 +55,6 @@ public class StartBatchJobHandler implements RequestHandler<BatchJobRequest, Voi
       EventBridgeClient eventBridgeClient,
       Environment environment,
       QueueClient queueClient) {
-    this.candidateService = candidateService;
-    this.periodService = periodService;
     this.batchJobFactory = new BatchJobFactory(candidateService, periodService);
     this.eventBridgeClient = eventBridgeClient;
     this.queueClient = queueClient;
