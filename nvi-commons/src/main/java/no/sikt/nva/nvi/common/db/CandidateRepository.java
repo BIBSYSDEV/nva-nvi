@@ -141,7 +141,7 @@ public class CandidateRepository extends DynamoRepository {
 
   public static ListingResult<UUID> mapToListingResult(
       Map<String, AttributeValue> lastEvaluatedKey,
-      List<Map<String, AttributeValue>> databaseEntries) {
+      Collection<Map<String, AttributeValue>> databaseEntries) {
     var moreItemsToScan = hasElements(lastEvaluatedKey);
     var totalItemCount = databaseEntries.size();
     var candidateIdentifiers = getCandidateIdentifiers(databaseEntries);
