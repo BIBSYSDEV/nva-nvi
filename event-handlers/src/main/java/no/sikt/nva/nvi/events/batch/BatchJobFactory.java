@@ -5,13 +5,13 @@ import static no.sikt.nva.nvi.events.batch.request.PaginationState.createInitial
 import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.events.batch.job.BatchJob;
-import no.sikt.nva.nvi.events.batch.job.CandidateScanJob;
+import no.sikt.nva.nvi.events.batch.job.ScanCandidatesJob;
 import no.sikt.nva.nvi.events.batch.job.CandidatesByYearJob;
 import no.sikt.nva.nvi.events.batch.job.RefreshPeriodsJob;
-import no.sikt.nva.nvi.events.batch.job.StartParallelScanJob;
+import no.sikt.nva.nvi.events.batch.job.StartCandidateScanJob;
 import no.sikt.nva.nvi.events.batch.model.ReportingYearFilter;
 import no.sikt.nva.nvi.events.batch.request.BatchJobRequest;
-import no.sikt.nva.nvi.events.batch.request.CandidateScanBatchJobRequest;
+import no.sikt.nva.nvi.events.batch.request.CandidateScanRequest;
 import no.sikt.nva.nvi.events.batch.request.CandidatesByYearRequest;
 import no.sikt.nva.nvi.events.batch.request.StartBatchJobRequest;
 
@@ -28,7 +28,7 @@ public class BatchJobFactory {
   public BatchJob from(BatchJobRequest request) {
     return switch (request) {
       case StartBatchJobRequest newRequest -> handleInitialRequest(newRequest);
-      case CandidateScanBatchJobRequest continuationRequest ->
+      case CandidateScanRequest continuationRequest ->
           handleScanRequest(continuationRequest);
       case CandidatesByYearRequest continuationRequest ->
           handleFilteredYearJob(continuationRequest);
@@ -50,7 +50,7 @@ public class BatchJobFactory {
   private BatchJob createCandidateJob(StartBatchJobRequest request) {
     return switch (request.filter()) {
       case ReportingYearFilter yearFilter -> createLoadCandidatesByYearJob(request, yearFilter);
-      case null -> new StartParallelScanJob(request);
+      case null -> new StartCandidateScanJob(request);
     };
   }
 
@@ -66,7 +66,7 @@ public class BatchJobFactory {
     return new CandidatesByYearJob(candidateService, request);
   }
 
-  private CandidateScanJob handleScanRequest(CandidateScanBatchJobRequest request) {
-    return new CandidateScanJob(candidateService, request);
+  private ScanCandidatesJob handleScanRequest(CandidateScanRequest request) {
+    return new ScanCandidatesJob(candidateService, request);
   }
 }

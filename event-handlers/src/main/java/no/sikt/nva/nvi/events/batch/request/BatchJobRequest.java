@@ -9,11 +9,11 @@ import no.unit.nva.commons.json.JsonSerializable;
   @JsonSubTypes.Type(value = StartBatchJobRequest.class, name = "StartBatchJobRequest"),
   @JsonSubTypes.Type(value = CandidatesByYearRequest.class, name = "CandidatesByYearRequest"),
   @JsonSubTypes.Type(
-      value = CandidateScanBatchJobRequest.class,
+      value = CandidateScanRequest.class,
       name = "CandidateScanBatchJobRequest")
 })
 public sealed interface BatchJobRequest extends JsonSerializable
-    permits StartBatchJobRequest, CandidatesByYearRequest, CandidateScanBatchJobRequest {
+    permits StartBatchJobRequest, CandidatesByYearRequest, CandidateScanRequest {
 
   BatchJobType jobType();
 

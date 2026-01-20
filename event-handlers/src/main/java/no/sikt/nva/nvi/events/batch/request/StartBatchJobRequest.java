@@ -7,7 +7,6 @@ import static no.sikt.nva.nvi.common.utils.Validator.validateValueIsNonZeroPosit
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import no.sikt.nva.nvi.events.batch.model.BatchJobFilter;
-import no.sikt.nva.nvi.events.batch.model.ReportingYearFilter;
 
 public record StartBatchJobRequest(
     BatchJobType jobType,
@@ -24,7 +23,6 @@ public record StartBatchJobRequest(
     validateValueIsNonZeroPositiveNumberIfSet(maxItems);
     validateValueIsNonZeroPositiveNumberIfSet(maxParallelSegments);
     requireNonNull(jobType, "jobType must not be null");
-    //    filter = requireNonNullElse(filter, new ReportingYearFilter(emptyList())); // FIXME
     maxParallelSegments = requireNonNullElse(maxParallelSegments, DEFAULT_PARALLEL_SEGMENTS);
   }
 
@@ -45,33 +43,9 @@ public record StartBatchJobRequest(
     return nonNull(maxItems);
   }
 
-  //  @JsonIgnore
-  //  public int itemsEnqueued() {
-  //    return
-  // Optional.ofNullable(paginationState).map(PaginationStateV2::itemsProcessed).orElse(0);
-  //  }
-
-  //  @JsonIgnore
-  //  public int maxRemainingItems() {
-  //    if (hasItemLimit()) {
-  //      return maxItems() - itemsEnqueued();
-  //    }
-  //    return Integer.MAX_VALUE;
-  //  }
-
   @JsonIgnore
   public int batchSize() {
     return nonNull(maxBatchSize) ? Integer.min(maxBatchSize, DEFAULT_PAGE_SIZE) : DEFAULT_PAGE_SIZE;
-  }
-
-  //  @JsonIgnore
-  //  public boolean isTerminalState() {
-  //    return nonNull(maxItems) && itemsEnqueued() >= maxItems;
-  //  }
-
-  @JsonIgnore
-  public boolean hasYearFilter() {
-    return filter instanceof ReportingYearFilter;
   }
 
   public static final class Builder {

@@ -5,11 +5,11 @@ import static no.sikt.nva.nvi.common.utils.CollectionUtils.splitEvenly;
 import java.util.List;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import no.sikt.nva.nvi.events.batch.request.CandidateScanBatchJobRequest;
+import no.sikt.nva.nvi.events.batch.request.CandidateScanRequest;
 import no.sikt.nva.nvi.events.batch.request.PaginationState;
 import no.sikt.nva.nvi.events.batch.request.StartBatchJobRequest;
 
-public record StartParallelScanJob(StartBatchJobRequest request) implements BatchJob {
+public record StartCandidateScanJob(StartBatchJobRequest request) implements BatchJob {
 
   @Override
   public BatchJobResult execute() {
@@ -17,7 +17,7 @@ public record StartParallelScanJob(StartBatchJobRequest request) implements Batc
     return BatchJobResult.createInitialBatchJobResult(jobs);
   }
 
-  private List<CandidateScanBatchJobRequest> createInitialTableScanEvents(
+  private List<CandidateScanRequest> createInitialTableScanEvents(
       StartBatchJobRequest request) {
     var segmentLimits = getSegmentLimits(request);
 
@@ -28,11 +28,11 @@ public record StartParallelScanJob(StartBatchJobRequest request) implements Batc
         .toList();
   }
 
-  private static CandidateScanBatchJobRequest createParallelScanRequest(
+  private static CandidateScanRequest createParallelScanRequest(
       StartBatchJobRequest request, int segment, Integer maxItems) {
     var paginationState =
         PaginationState.createInitialPaginationState(request.batchSize(), maxItems);
-    return new CandidateScanBatchJobRequest(
+    return new CandidateScanRequest(
         request.jobType(), segment, request.maxParallelSegments(), paginationState);
   }
 

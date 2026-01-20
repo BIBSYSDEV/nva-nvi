@@ -9,10 +9,10 @@ import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.events.batch.message.BatchJobMessage;
 import no.sikt.nva.nvi.events.batch.message.MigrateCandidateMessage;
 import no.sikt.nva.nvi.events.batch.message.RefreshCandidateMessage;
-import no.sikt.nva.nvi.events.batch.request.CandidateScanBatchJobRequest;
+import no.sikt.nva.nvi.events.batch.request.CandidateScanRequest;
 
-public record CandidateScanJob(
-    CandidateService candidateService, CandidateScanBatchJobRequest request) implements BatchJob {
+public record ScanCandidatesJob(
+    CandidateService candidateService, CandidateScanRequest request) implements BatchJob {
 
   @Override
   public BatchJobResult execute() {

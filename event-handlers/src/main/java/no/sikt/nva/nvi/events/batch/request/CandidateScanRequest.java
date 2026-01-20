@@ -6,7 +6,7 @@ import java.util.UUID;
 import no.sikt.nva.nvi.common.db.model.TableScanRequest;
 import no.sikt.nva.nvi.common.model.ListingResult;
 
-public record CandidateScanBatchJobRequest(
+public record CandidateScanRequest(
     BatchJobType jobType, int segment, int totalSegments, PaginationState paginationState)
     implements BatchJobRequest {
 
@@ -22,12 +22,12 @@ public record CandidateScanBatchJobRequest(
   }
 
   @JsonIgnore
-  public Optional<CandidateScanBatchJobRequest> getNextRequest(ListingResult<UUID> scanResult) {
+  public Optional<CandidateScanRequest> getNextRequest(ListingResult<UUID> scanResult) {
     var updatedPaginationState = paginationState.createUpdatedPaginationState(scanResult);
     if (updatedPaginationState.isTerminalState()) {
       return Optional.empty();
     }
     return Optional.of(
-        new CandidateScanBatchJobRequest(jobType, segment, totalSegments, updatedPaginationState));
+        new CandidateScanRequest(jobType, segment, totalSegments, updatedPaginationState));
   }
 }
