@@ -167,11 +167,11 @@ public class CandidateService {
   }
 
   public ListingResult<UUID> listCandidateIdentifiers(TableScanRequest request) {
-    return candidateRepository.scanForCandidateIdentifiers(request);
+    return candidateRepository.weaklyConsistentCandidateScan(request);
   }
 
   public ListingResult<UUID> listCandidateIdentifiersByYear(YearQueryRequest request) {
-    return candidateRepository.scanForCandidateIdentifiers(request);
+    return candidateRepository.weaklyConsistentCandidateScan(request);
   }
 
   private CandidateAndPeriods findCandidateAndPeriodsByIdentifier(UUID candidateIdentifier) {

@@ -100,8 +100,7 @@ public class CandidateRepository extends DynamoRepository {
         thereAreMorePagesToScan(scan), toStringMap(scan.lastEvaluatedKey()), scan.count(), items);
   }
 
-  /** Scans table to find candidate identifiers (not strongly consistent). */
-  public ListingResult<UUID> scanForCandidateIdentifiers(TableScanRequest requestParameters) {
+  public ListingResult<UUID> weaklyConsistentCandidateScan(TableScanRequest requestParameters) {
     var scanRequest = createCandidateScanRequest(requestParameters);
     var scanResponse = defaultClient.scan(scanRequest);
     return mapToListingResult(scanResponse.lastEvaluatedKey(), scanResponse.items());
@@ -121,23 +120,22 @@ public class CandidateRepository extends DynamoRepository {
         .build();
   }
 
-  /** Queries GSI to find candidate identifiers (not strongly consistent). */
-  public ListingResult<UUID> scanForCandidateIdentifiers(YearQueryRequest requestParameters) {
+  public ListingResult<UUID> weaklyConsistentCandidateScan(YearQueryRequest requestParameters) {
     var queryRequest = createYearQueryRequest(requestParameters);
     var queryResponse = defaultClient.query(queryRequest);
     return mapToListingResult(queryResponse.lastEvaluatedKey(), queryResponse.items());
   }
 
-  private static QueryRequest createYearQueryRequest(YearQueryRequest requestParameters) {
+  private static QueryRequest createYearQueryRequest(YearQueryRequest request) {
     return QueryRequest.builder()
         .tableName(NVI_TABLE_NAME)
         .indexName(SECONDARY_INDEX_YEAR)
         .keyConditionExpression("#year = :year")
         .expressionAttributeNames(Map.of("#year", SECONDARY_INDEX_YEAR_HASH_KEY))
-        .expressionAttributeValues(Map.of(":year", AttributeValue.fromS(requestParameters.year())))
+        .expressionAttributeValues(Map.of(":year", AttributeValue.fromS(request.year())))
         .projectionExpression(IDENTIFIER_FIELD)
-        .limit(requestParameters.batchSize())
-        .exclusiveStartKey(requestParameters.exclusiveStartKey())
+        .exclusiveStartKey(request.exclusiveStartKey())
+        .limit(request.batchSize())
         .build();
   }
 
