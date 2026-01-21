@@ -139,7 +139,7 @@ public class CandidateRepository extends DynamoRepository {
         .build();
   }
 
-  public static ListingResult<UUID> mapToListingResult(
+  private static ListingResult<UUID> mapToListingResult(
       Map<String, AttributeValue> lastEvaluatedKey,
       Collection<Map<String, AttributeValue>> databaseEntries) {
     var moreItemsToScan = hasElements(lastEvaluatedKey);
