@@ -1,17 +1,44 @@
 package no.sikt.nva.nvi.events.batch.model;
 
 import static java.util.Collections.emptyList;
-import static java.util.Objects.requireNonNullElse;
+import static no.sikt.nva.nvi.common.utils.Validator.shouldNotBeEmpty;
+import static no.sikt.nva.nvi.common.utils.Validator.validateYear;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.List;
 
 public record ReportingYearFilter(List<String> reportingYears) implements BatchJobFilter {
 
   public ReportingYearFilter {
-    reportingYears = requireNonNullElse(reportingYears, emptyList());
+    shouldNotBeEmpty(reportingYears, "Must specify years to filter by");
+    reportingYears = List.copyOf(reportingYears);
+    for (var year : reportingYears) {
+      validateYear(year);
+    }
   }
 
-  public boolean includesAllYears() {
-    return reportingYears.isEmpty();
+  public ReportingYearFilter(String... years) {
+    this(List.of(years));
+  }
+
+  @JsonIgnore
+  public boolean allowsYear(String year) {
+    return reportingYears.contains(year);
+  }
+
+  @JsonIgnore
+  public boolean hasMultipleYears() {
+    return reportingYears.size() > 1;
+  }
+
+  @JsonIgnore
+  public ReportingYearFilter getIncrementedFilter() {
+    return new ReportingYearFilter(getIncrementedYears());
+  }
+
+  private List<String> getIncrementedYears() {
+    return reportingYears.size() > 1
+        ? reportingYears.subList(1, reportingYears.size())
+        : emptyList();
   }
 }

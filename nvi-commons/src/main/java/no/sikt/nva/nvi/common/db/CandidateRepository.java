@@ -6,8 +6,11 @@ import static java.util.Objects.nonNull;
 import static java.util.UUID.randomUUID;
 import static java.util.stream.Collectors.toMap;
 import static no.sikt.nva.nvi.common.DatabaseConstants.HASH_KEY;
+import static no.sikt.nva.nvi.common.DatabaseConstants.IDENTIFIER_FIELD;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_PUBLICATION_ID;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_YEAR;
+import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_YEAR_HASH_KEY;
+import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.VERSION_FIELD;
 import static no.sikt.nva.nvi.common.utils.ApplicationConstants.NVI_TABLE_NAME;
 import static no.sikt.nva.nvi.common.utils.Validator.hasElements;
@@ -20,15 +23,17 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import no.sikt.nva.nvi.common.DatabaseConstants;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.model.KeyField;
+import no.sikt.nva.nvi.common.db.model.TableScanRequest;
+import no.sikt.nva.nvi.common.db.model.YearQueryRequest;
 import no.sikt.nva.nvi.common.model.ListingResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -93,6 +98,64 @@ public class CandidateRepository extends DynamoRepository {
     var items = extractDatabaseEntries(scan);
     return new ListingResult<>(
         thereAreMorePagesToScan(scan), toStringMap(scan.lastEvaluatedKey()), scan.count(), items);
+  }
+
+  public ListingResult<UUID> weaklyConsistentCandidateScan(TableScanRequest requestParameters) {
+    var scanRequest = createCandidateScanRequest(requestParameters);
+    var scanResponse = defaultClient.scan(scanRequest);
+    return mapToListingResult(scanResponse.lastEvaluatedKey(), scanResponse.items());
+  }
+
+  private static ScanRequest createCandidateScanRequest(TableScanRequest request) {
+    return ScanRequest.builder()
+        .tableName(NVI_TABLE_NAME)
+        .filterExpression("begins_with(#pk, :prefix) AND begins_with(#sk, :prefix)")
+        .expressionAttributeNames(Map.of("#pk", HASH_KEY, "#sk", SORT_KEY))
+        .expressionAttributeValues(Map.of(":prefix", AttributeValue.fromS(CandidateDao.TYPE)))
+        .projectionExpression(IDENTIFIER_FIELD)
+        .segment(request.segment())
+        .totalSegments(request.totalSegments())
+        .exclusiveStartKey(request.exclusiveStartKey())
+        .limit(request.batchSize())
+        .build();
+  }
+
+  public ListingResult<UUID> weaklyConsistentCandidateScan(YearQueryRequest requestParameters) {
+    var queryRequest = createYearQueryRequest(requestParameters);
+    var queryResponse = defaultClient.query(queryRequest);
+    return mapToListingResult(queryResponse.lastEvaluatedKey(), queryResponse.items());
+  }
+
+  private static QueryRequest createYearQueryRequest(YearQueryRequest request) {
+    return QueryRequest.builder()
+        .tableName(NVI_TABLE_NAME)
+        .indexName(SECONDARY_INDEX_YEAR)
+        .keyConditionExpression("#year = :year")
+        .expressionAttributeNames(Map.of("#year", SECONDARY_INDEX_YEAR_HASH_KEY))
+        .expressionAttributeValues(Map.of(":year", AttributeValue.fromS(request.year())))
+        .projectionExpression(IDENTIFIER_FIELD)
+        .exclusiveStartKey(request.exclusiveStartKey())
+        .limit(request.batchSize())
+        .build();
+  }
+
+  private static ListingResult<UUID> mapToListingResult(
+      Map<String, AttributeValue> lastEvaluatedKey,
+      Collection<Map<String, AttributeValue>> databaseEntries) {
+    var moreItemsToScan = hasElements(lastEvaluatedKey);
+    var totalItemCount = databaseEntries.size();
+    var candidateIdentifiers = getCandidateIdentifiers(databaseEntries);
+    return new ListingResult<>(
+        moreItemsToScan, toStringMap(lastEvaluatedKey), totalItemCount, candidateIdentifiers);
+  }
+
+  private static List<UUID> getCandidateIdentifiers(Collection<Map<String, AttributeValue>> items) {
+    return items.stream()
+        .map(item -> item.get(IDENTIFIER_FIELD))
+        .filter(Objects::nonNull)
+        .map(AttributeValue::s)
+        .map(UUID::fromString)
+        .toList();
   }
 
   public void writeEntries(List<Dao> items) {
@@ -423,7 +486,7 @@ public class CandidateRepository extends DynamoRepository {
     var start = nonNull(startMarker) ? toAttributeMap(startMarker) : null;
     return ScanRequest.builder()
         .tableName(NVI_TABLE_NAME)
-        .expressionAttributeNames(Map.of("#PK", DatabaseConstants.SORT_KEY))
+        .expressionAttributeNames(Map.of("#PK", SORT_KEY))
         .filterExpression(Dao.scanFilterExpressionForDataEntries(types))
         .expressionAttributeValues(Dao.scanFilterExpressionAttributeValues(types))
         .exclusiveStartKey(start)

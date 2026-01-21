@@ -15,8 +15,11 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.Dao;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.model.CandidateAggregate;
+import no.sikt.nva.nvi.common.db.model.TableScanRequest;
+import no.sikt.nva.nvi.common.db.model.YearQueryRequest;
 import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
+import no.sikt.nva.nvi.common.model.ListingResult;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.exception.PeriodNotFoundException;
 import no.sikt.nva.nvi.common.service.model.Approval;
@@ -161,6 +164,14 @@ public class CandidateService {
       return new CandidateAndPeriods(null, periodService.getAll());
     }
     return findCandidateAndPeriodsByIdentifier(candidateIdentifier.get());
+  }
+
+  public ListingResult<UUID> listCandidateIdentifiers(TableScanRequest request) {
+    return candidateRepository.weaklyConsistentCandidateScan(request);
+  }
+
+  public ListingResult<UUID> listCandidateIdentifiersByYear(YearQueryRequest request) {
+    return candidateRepository.weaklyConsistentCandidateScan(request);
   }
 
   private CandidateAndPeriods findCandidateAndPeriodsByIdentifier(UUID candidateIdentifier) {
