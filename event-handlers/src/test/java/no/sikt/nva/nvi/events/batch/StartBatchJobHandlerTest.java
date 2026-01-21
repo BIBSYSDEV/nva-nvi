@@ -18,6 +18,9 @@ import static org.junit.jupiter.params.provider.Arguments.argumentSet;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
@@ -36,6 +39,7 @@ import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.stubs.FakeEventBridgeClient;
 import nva.commons.core.Environment;
+import nva.commons.core.ioutils.IoUtils;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -55,6 +59,7 @@ class StartBatchJobHandlerTest {
   private FakeEnvironment environment;
   private FakeEventBridgeClient eventBridgeClient;
   private FakeSqsClient queueClient;
+  private OutputStream output;
   private StartBatchJobHandler handler;
 
   @Nested
@@ -72,6 +77,7 @@ class StartBatchJobHandlerTest {
     @BeforeEach
     void setUp() {
       queueClient = new FakeSqsClient();
+      output = new ByteArrayOutputStream();
       eventBridgeClient = new FakeEventBridgeClient();
       environment = getStartBatchJobHandlerEnvironment();
       handler = getHandler(environment, scenario);
@@ -160,6 +166,7 @@ class StartBatchJobHandlerTest {
     void setUp() {
       var scenario = new TestScenario();
       queueClient = new FakeSqsClient();
+      output = new ByteArrayOutputStream();
       eventBridgeClient = new FakeEventBridgeClient();
       environment = getStartBatchJobHandlerEnvironment();
       handler = getHandler(environment, scenario);
@@ -247,8 +254,16 @@ class StartBatchJobHandlerTest {
         queueClient);
   }
 
+  private void processHandlerRequest(BatchJobRequest request) {
+    handler.handleRequest(createEvent(request), output, CONTEXT);
+  }
+
+  private InputStream createEvent(BatchJobRequest request) {
+    return IoUtils.stringToStream(request.toJsonString());
+  }
+
   private void runToCompletion(StartBatchJobRequest initialRequest) {
-    handler.handleRequest(initialRequest, CONTEXT);
+    processHandlerRequest(initialRequest);
     processAllPendingEvents();
   }
 
@@ -259,7 +274,7 @@ class StartBatchJobHandlerTest {
 
       for (var event : pendingEvents) {
         var request = parseBatchJobRequest(event);
-        handler.handleRequest(request, CONTEXT);
+        processHandlerRequest(request);
       }
     }
   }
