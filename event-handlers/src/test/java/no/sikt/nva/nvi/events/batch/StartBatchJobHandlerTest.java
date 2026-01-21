@@ -62,6 +62,14 @@ class StartBatchJobHandlerTest {
   private OutputStream output;
   private StartBatchJobHandler handler;
 
+  @BeforeEach
+  void setUp() {
+    queueClient = new FakeSqsClient();
+    output = new ByteArrayOutputStream();
+    eventBridgeClient = new FakeEventBridgeClient();
+    environment = getStartBatchJobHandlerEnvironment();
+  }
+
   @Nested
   class StaticDatasetTests {
     private static final int CANDIDATES_PER_YEAR = 20;
@@ -76,10 +84,6 @@ class StartBatchJobHandlerTest {
 
     @BeforeEach
     void setUp() {
-      queueClient = new FakeSqsClient();
-      output = new ByteArrayOutputStream();
-      eventBridgeClient = new FakeEventBridgeClient();
-      environment = getStartBatchJobHandlerEnvironment();
       handler = getHandler(environment, scenario);
     }
 
@@ -165,10 +169,6 @@ class StartBatchJobHandlerTest {
     @BeforeEach
     void setUp() {
       var scenario = new TestScenario();
-      queueClient = new FakeSqsClient();
-      output = new ByteArrayOutputStream();
-      eventBridgeClient = new FakeEventBridgeClient();
-      environment = getStartBatchJobHandlerEnvironment();
       handler = getHandler(environment, scenario);
 
       setupClosedPeriod(scenario, LAST_YEAR);
