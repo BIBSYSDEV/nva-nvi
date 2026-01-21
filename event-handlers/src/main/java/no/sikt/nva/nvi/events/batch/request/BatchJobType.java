@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.events.batch.model;
+package no.sikt.nva.nvi.events.batch.request;
 
 public enum BatchJobType {
   REFRESH_CANDIDATES,
