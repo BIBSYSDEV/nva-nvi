@@ -3,9 +3,13 @@ package no.sikt.nva.nvi.events.batch;
 import static no.sikt.nva.nvi.common.service.CandidateService.defaultCandidateService;
 import static no.sikt.nva.nvi.common.service.NviPeriodService.defaultNviPeriodService;
 import static no.sikt.nva.nvi.common.utils.CollectionUtils.splitIntoBatches;
+import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 
 import com.amazonaws.services.lambda.runtime.Context;
-import com.amazonaws.services.lambda.runtime.RequestHandler;
+import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.util.Collection;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
@@ -22,7 +26,7 @@ import software.amazon.awssdk.services.eventbridge.EventBridgeClient;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequest;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
 
-public class StartBatchJobHandler implements RequestHandler<BatchJobRequest, Void> {
+public class StartBatchJobHandler implements RequestStreamHandler {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(StartBatchJobHandler.class);
   private static final String PROCESSING_ENABLED = "PROCESSING_ENABLED";
@@ -69,17 +73,25 @@ public class StartBatchJobHandler implements RequestHandler<BatchJobRequest, Voi
   }
 
   @Override
-  public Void handleRequest(BatchJobRequest request, Context context) {
+  public void handleRequest(InputStream input, OutputStream output, Context context) {
     if (!processingEnabled) {
       LOGGER.warn("Processing disabled, aborting batch job");
     } else {
+      var request = parseRequest(input);
       LOGGER.info("Processing batch job: {}", request);
       var batchJobResult = batchJobFactory.from(request).execute();
       sendMessagesToQueue(batchJobResult.messages());
       sendContinuationEvents(batchJobResult.continuationEvents());
     }
+  }
 
-    return null;
+  private BatchJobRequest parseRequest(InputStream input) {
+    try {
+      return dtoObjectMapper.readValue(input, BatchJobRequest.class);
+    } catch (IOException exception) {
+      LOGGER.error("Failed to parse BatchJobRequest", exception);
+      throw new RuntimeException(exception);
+    }
   }
 
   private void sendMessagesToQueue(Collection<BatchJobMessage> messages) {
