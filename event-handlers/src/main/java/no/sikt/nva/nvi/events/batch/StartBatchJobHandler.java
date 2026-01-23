@@ -109,6 +109,10 @@ public class StartBatchJobHandler implements RequestStreamHandler {
   }
 
   private void sendContinuationEvents(Collection<? extends BatchJobRequest> requests) {
+    if (requests.isEmpty()) {
+      LOGGER.info("No continuation events to send");
+      return;
+    }
     var entries = requests.stream().map(this::toEventEntry).toList();
     var putEventsRequest = PutEventsRequest.builder().entries(entries).build();
     var response = eventBridgeClient.putEvents(putEventsRequest);
