@@ -1,9 +1,15 @@
 package no.sikt.nva.nvi.test;
 
+import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
+
 import java.net.URI;
 import java.util.Map;
 
 public final class TestConstants {
+
+  public static final String LAST_YEAR = String.valueOf(CURRENT_YEAR - 1);
+  public static final String THIS_YEAR = String.valueOf(CURRENT_YEAR);
+  public static final String NEXT_YEAR = String.valueOf(CURRENT_YEAR + 1);
 
   public static final String ID_FIELD = "id";
   public static final String IDENTIFIER_FIELD = "identifier";

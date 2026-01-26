@@ -11,6 +11,9 @@ import static no.sikt.nva.nvi.events.RequestFixtures.migrateCandidatesForCurrent
 import static no.sikt.nva.nvi.events.RequestFixtures.refreshAllCandidates;
 import static no.sikt.nva.nvi.events.RequestFixtures.refreshAllPeriods;
 import static no.sikt.nva.nvi.events.RequestFixtures.refreshCandidatesForYear;
+import static no.sikt.nva.nvi.test.TestConstants.LAST_YEAR;
+import static no.sikt.nva.nvi.test.TestConstants.NEXT_YEAR;
+import static no.sikt.nva.nvi.test.TestConstants.THIS_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -52,9 +55,6 @@ import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
 class StartBatchJobHandlerTest {
 
   private static final Context CONTEXT = new FakeContext();
-  private static final String LAST_YEAR = String.valueOf(CURRENT_YEAR - 1);
-  private static final String THIS_YEAR = String.valueOf(CURRENT_YEAR);
-  private static final String NEXT_YEAR = String.valueOf(CURRENT_YEAR + 1);
 
   private FakeEnvironment environment;
   private FakeEventBridgeClient eventBridgeClient;
@@ -172,7 +172,7 @@ class StartBatchJobHandlerTest {
       handler = getHandler(environment, scenario);
 
       setupClosedPeriod(scenario, LAST_YEAR);
-      setupOpenPeriod(scenario, CURRENT_YEAR);
+      setupOpenPeriod(scenario, THIS_YEAR);
       setupFuturePeriod(scenario, NEXT_YEAR);
     }
 
