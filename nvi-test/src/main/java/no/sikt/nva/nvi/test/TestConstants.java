@@ -1,9 +1,9 @@
 package no.sikt.nva.nvi.test;
 
+import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
+
 import java.net.URI;
 import java.util.Map;
-
-import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 
 public final class TestConstants {
 
