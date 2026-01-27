@@ -21,6 +21,7 @@ import no.sikt.nva.nvi.rest.EnvironmentFixtures;
 import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.GatewayResponse;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -58,6 +59,14 @@ class FetchNviCandidateContextHandlerTest {
     var expectedContext = "{\"@context\":" + Candidate.getJsonLdContext() + "}";
     var expected = formatJson(expectedContext);
     assertThat(response.getBody(), is(equalTo(expected)));
+  }
+
+  @Test
+  void shouldOnlyHaveOneContextNodeInResponse() throws IOException {
+    var request = generateHandlerRequest(Map.of(ACCEPT, APPLICATION_JSON));
+    fetchNviCandidateContextHandler.handleRequest(request, output, context);
+    var response = GatewayResponse.fromOutputStream(output, String.class);
+    Assertions.assertThat(response.getBody()).containsOnlyOnce("@context");
   }
 
   @ParameterizedTest(name = "mediaType {0} is invalid")
