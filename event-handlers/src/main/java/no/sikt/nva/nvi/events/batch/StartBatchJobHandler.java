@@ -38,6 +38,8 @@ public class StartBatchJobHandler implements RequestStreamHandler {
   private static final String DETAIL_TYPE = "NviService.BatchJob.StartBatchJob";
   private static final String SOURCE = "nva.nvi.batch";
   private static final int SQS_BATCH_SIZE = 10;
+  private static final String EVENTBRIDGE_FIELD_DETAIL = "detail";
+  private static final String EVENTBRIDGE_FIELD_ID = "id";
 
   private final BatchJobFactory batchJobFactory;
   private final QueueClient queueClient;
@@ -101,11 +103,11 @@ public class StartBatchJobHandler implements RequestStreamHandler {
 
   private static JsonNode extractRequestBody(String jsonString) throws JsonProcessingException {
     var jsonNode = dtoObjectMapper.readTree(jsonString);
-    return isEventBridgeEvent(jsonNode) ? jsonNode.get("detail") : jsonNode;
+    return isEventBridgeEvent(jsonNode) ? jsonNode.get(EVENTBRIDGE_FIELD_DETAIL) : jsonNode;
   }
 
   private static boolean isEventBridgeEvent(JsonNode jsonNode) {
-    return jsonNode.has("detail") && jsonNode.has("id");
+    return jsonNode.has(EVENTBRIDGE_FIELD_DETAIL) && jsonNode.has(EVENTBRIDGE_FIELD_ID);
   }
 
   private void sendMessagesToQueue(Collection<BatchJobMessage> messages) {
