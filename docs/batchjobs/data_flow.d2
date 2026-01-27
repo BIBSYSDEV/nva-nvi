@@ -1,0 +1,177 @@
+classes: {
+  lambda: {
+    shape: image
+    icon: https://icons.terrastruct.com/aws/Compute/AWS-Lambda_Lambda-Function_light-bg.svg
+  }
+
+  ddb: {
+    shape: image
+    icon: https://icons.terrastruct.com/aws/Database/Amazon-DynamoDB_light-bg.svg
+  }
+
+  sqs: {
+    shape: image
+    icon: https://icons.terrastruct.com/aws/Application%20Integration/Amazon-Simple-Queue-Service-SQS_light-bg.svg
+  }
+
+  service: {
+    shape: hexagon
+  }
+
+  problem: {
+    style: {
+      stroke: red
+      stroke-dash: 3
+    }
+  }
+}
+direction: right
+
+title: Detailed data flow {
+  near: top-center
+  shape: text
+  style.font-size: 48
+  style.bold: true
+}
+
+User: {
+  shape: image
+  icon: https://icons.terrastruct.com/essentials/365-user.svg
+}
+BatchJobRequest: {
+  BatchJobRequest: {
+    shape: class
+    jobType: BatchJobType
+    maxItems: Integer
+    batchSize(): int
+  }
+
+  StartBatchJobRequest: StartBatchJobRequest extends BatchJobRequest {
+    shape: class
+    filter: BatchJobFilter
+    maxParallelSegments: Integer
+  }
+  CandidateScanRequest: CandidateScanRequest extends BatchJobRequest {
+    shape: class
+    segment: int
+    maxParallelSegments: int
+    paginationState: PaginationState
+  }
+  CandidatesByYearRequest: CandidatesByYearRequest extends BatchJobRequest {
+    shape: class
+    filter: ReportingYearFilter
+    paginationState: PaginationState
+  }
+
+  BatchJobRequest -> StartBatchJobRequest
+  BatchJobRequest -> CandidateScanRequest
+  BatchJobRequest -> CandidatesByYearRequest
+}
+
+StartBatchJobHandler: StartBatchJobHandler {
+  class: lambda
+}
+ProcessBatchJobHandler: ProcessBatchJobHandler {
+  class: lambda
+}
+User -> BatchJobRequest.StartBatchJobRequest: Initial invocation
+BatchJobRequest -> StartBatchJobHandler: Invokes handler
+StartBatchJobHandler -> BatchJobRequest.CandidateScanRequest: Continuation events
+StartBatchJobHandler -> BatchJobRequest.CandidatesByYearRequest: Continuation events
+
+BatchJobResult: BatchJobResult {
+  shape: class
+  messages: "Collection<BatchJobMessage>"
+  requests: "Collection<BatchJobRequest>"
+}
+BatchJobFactory: {
+  class: service
+}
+BatchJob: {
+  BatchJob: {
+    shape: class
+    execute(): BatchJobResult
+  }
+
+  PeriodJob: PeriodJob extends BatchJob {
+    shape: class
+    periodService: NviPeriodService
+  }
+  StartCandidateScanJob: StartCandidateScanJob extends BatchJob {
+    shape: class
+    request: StartBatchJobRequest
+  }
+  ScanCandidatesJob: ScanCandidatesJob extends BatchJob {
+    shape: class
+    candidateService: CandidateService
+    request: CandidateScanBatchJobRequest
+  }
+  CandidatesByYearJob: CandidatesByYearJob extends BatchJob {
+    shape: class
+    candidateService: CandidateService
+    request: CandidatesByYearRequest
+  }
+  BatchJob -> PeriodJob
+  BatchJob -> StartCandidateScanJob
+  BatchJob -> ScanCandidatesJob
+  BatchJob -> CandidatesByYearJob
+}
+
+StartBatchJobHandler -> BatchJobFactory: BatchJobRequest
+BatchJobFactory -> BatchJob
+
+BatchJob -> BatchJobResult
+
+BatchJobResult -> StartBatchJobHandler: BatchJobResult
+
+BatchJobMessage: {
+  BatchJobMessage: {
+    shape: class
+  }
+
+  RefreshPeriodMessage: RefreshPeriodMessage extends BatchJobMessage {
+    shape: class
+    year: String
+  }
+  RefreshCandidateMessage: RefreshCandidateMessage extends BatchJobMessage {
+    shape: class
+    candidateIdentifier: UUID
+  }
+  MigrateCandidateMessage: MigrateCandidateMessage extends BatchJobMessage {
+    shape: class
+    candidateIdentifier: UUID
+  }
+
+  BatchJobMessage -> RefreshCandidateMessage
+  BatchJobMessage -> MigrateCandidateMessage
+  BatchJobMessage -> RefreshPeriodMessage
+}
+
+WorkQueue: BatchJobWorkQueue {
+  class: sqs
+}
+DLQ: BatchJobDLQ {
+  class: sqs
+}
+
+StartBatchJobHandler -> BatchJobMessage: Work items (messages) go to queue
+BatchJobMessage -> WorkQueue
+WorkQueue -> ProcessBatchJobHandler: Consumes messages
+ProcessBatchJobHandler -> DLQ: Failed messages {
+  class: problem
+}
+DLQ -> WorkQueue: Manual redrive
+
+CandidateService: {
+  class: service
+}
+CandidateMigrationService: {
+  class: service
+}
+PeriodService: NviPeriodService {
+  class: service
+}
+
+ProcessBatchJobHandler -> CandidateService: RefreshCandidateMessage
+ProcessBatchJobHandler -> CandidateMigrationService: MigrateCandidateMessage
+ProcessBatchJobHandler -> PeriodService: RefreshPeriodMessage

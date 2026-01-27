@@ -34,20 +34,9 @@ be rebuilt, make sure to run the `InitHandler`.
 
 ## How to re-index
 
-If the index already exists, and it is not necessary to update mappings, skip
-to step 3.
-
-1. Trigger `DeleteNviCandidateIndexHandler`. Verify that the index is deleted.
-2. Trigger `InitHandler`. Verify that the index is created.
-3. Trigger `NviBatchScanStartHandler` with input:
-
-```json
-{
-  "types": [
-    "CANDIDATE"
-  ]
-}
-```
+1. Trigger `DeleteNviCandidateIndexHandler` (skip if mappings unchanged)
+2. Trigger `InitHandler` (skip if mappings unchanged)
+3. Run batch job with `REFRESH_CANDIDATES` - see [batch jobs docs](docs/batch-jobs.md)
 
 ## How to start re-evaluation scan
 
