@@ -61,11 +61,10 @@ public class ProcessBatchJobHandler implements RequestHandler<SQSEvent, SQSBatch
 
   private void processMessage(BatchJobMessage message) {
     switch (message) {
-      case RefreshCandidateMessage candidateMessage ->
-          candidateService.refreshCandidate(candidateMessage.candidateIdentifier());
+      case RefreshCandidateMessage candidateMessage -> candidateMessage.execute(candidateService);
       case MigrateCandidateMessage candidateMessage ->
-          candidateMigrationService.migrateCandidate(candidateMessage.candidateIdentifier());
-      case RefreshPeriodMessage periodMessage -> periodService.refreshPeriod(periodMessage.year());
+          candidateMessage.execute(candidateMigrationService);
+      case RefreshPeriodMessage periodMessage -> periodMessage.execute(periodService);
     }
   }
 }
