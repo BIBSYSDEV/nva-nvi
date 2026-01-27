@@ -9,14 +9,14 @@ A "work item" in this context is a request to do a specific operation on an indi
 
 ### Architecture diagrams
 
-![Batch job architecture](./batchjobs/architecture.svg)
-![Batch job data flow](./batchjobs/data_flow.svg)
+![Batch job architecture](./batchjobs/architecture.png)
+![Batch job data flow](./batchjobs/data_flow.png)
 
 
 To regenerate diagrams:
 ```bash
-d2 architecture.d2 -l tala
-d2 data_flow.d2 -l tala
+d2 architecture.d2 -l tala architecture.png
+d2 data_flow.d2 -l tala data_flow.png
 ```
 
 ## Job types
