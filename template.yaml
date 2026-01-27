@@ -1709,6 +1709,24 @@ Resources:
       AlarmActions:
         - !Ref SlackSnsArn
 
+  StartBatchJobErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: NVI StartBatchJob error
+      AlarmDescription: Errors in StartBatchJobHandler. Check logs.
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref StartBatchJobHandler
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      AlarmActions:
+        - !Ref SlackSnsArn
+
   BatchJobDLQAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
