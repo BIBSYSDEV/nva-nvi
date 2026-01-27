@@ -42,7 +42,7 @@ public class ProcessBatchJobHandler implements RequestHandler<SQSEvent, SQSBatch
 
   @Override
   public SQSBatchResponse handleRequest(SQSEvent event, Context context) {
-    LOGGER.info("Processing event {}", event);
+    LOGGER.info("Processing event with {} messages", event.getRecords().size());
     var failedMessages = new ArrayList<SQSBatchResponse.BatchItemFailure>();
 
     for (var message : event.getRecords()) {
@@ -55,16 +55,16 @@ public class ProcessBatchJobHandler implements RequestHandler<SQSEvent, SQSBatch
       }
     }
 
+    LOGGER.info("Event processed with {} failures", failedMessages.size());
     return new SQSBatchResponse(failedMessages);
   }
 
   private void processMessage(BatchJobMessage message) {
     switch (message) {
-      case RefreshCandidateMessage candidateMessage ->
-          candidateService.refreshCandidate(candidateMessage.candidateIdentifier());
+      case RefreshCandidateMessage candidateMessage -> candidateMessage.execute(candidateService);
       case MigrateCandidateMessage candidateMessage ->
-          candidateMigrationService.migrateCandidate(candidateMessage.candidateIdentifier());
-      case RefreshPeriodMessage periodMessage -> periodService.refreshPeriod(periodMessage.year());
+          candidateMessage.execute(candidateMigrationService);
+      case RefreshPeriodMessage periodMessage -> periodMessage.execute(periodService);
     }
   }
 }

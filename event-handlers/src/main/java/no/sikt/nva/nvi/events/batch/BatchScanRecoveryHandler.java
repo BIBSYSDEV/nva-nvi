@@ -16,6 +16,10 @@ import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * @deprecated Replaced by new BatchJob system.
+ */
+@Deprecated(since = "2026-01-27", forRemoval = true)
 public class BatchScanRecoveryHandler implements RequestStreamHandler {
 
   protected static final String RECOVERY_BATCH_SCAN_QUEUE = "BATCH_SCAN_RECOVERY_QUEUE";
