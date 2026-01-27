@@ -696,6 +696,12 @@ Resources:
       BinaryMediaTypes:
         - application/vnd.ms-excel
         - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+      Auth:
+        DefaultAuthorizer: CognitoUserPool
+        AddDefaultAuthorizerToCorsPreflight: false
+        Authorizers:
+          CognitoUserPool:
+            UserPoolArn: !Ref CognitoAuthorizerArn
 
   #===========================BasePathMappings========================================================
   NviBasePathMapping:
