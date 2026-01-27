@@ -11,6 +11,10 @@ import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.http.urlconnection.UrlConnectionHttpClient;
 import software.amazon.awssdk.services.eventbridge.EventBridgeClient;
 
+/**
+ * @deprecated Replaced by new BatchJob system.
+ */
+@Deprecated(since = "2026-01-27", forRemoval = true)
 public class BatchScanStartHandler implements RequestStreamHandler {
 
   private static final String EVENT_BUS_NAME = new Environment().readEnv("EVENT_BUS_NAME");

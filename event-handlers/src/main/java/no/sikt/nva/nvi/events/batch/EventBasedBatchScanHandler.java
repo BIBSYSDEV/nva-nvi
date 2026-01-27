@@ -18,6 +18,10 @@ import software.amazon.awssdk.services.eventbridge.EventBridgeClient;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequest;
 import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
 
+/**
+ * @deprecated Replaced by new BatchJob system.
+ */
+@Deprecated(since = "2026-01-27", forRemoval = true)
 public class EventBasedBatchScanHandler
     extends EventHandler<ScanDatabaseRequest, ListingResult<Dao>> {
 
