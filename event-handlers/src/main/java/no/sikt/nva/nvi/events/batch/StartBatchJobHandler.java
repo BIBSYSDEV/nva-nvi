@@ -19,6 +19,7 @@ import no.sikt.nva.nvi.events.batch.message.BatchJobMessage;
 import no.sikt.nva.nvi.events.batch.request.BatchJobRequest;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
+import nva.commons.core.ioutils.IoUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.http.urlconnection.UrlConnectionHttpClient;
@@ -86,10 +87,12 @@ public class StartBatchJobHandler implements RequestStreamHandler {
   }
 
   private BatchJobRequest parseRequest(InputStream input) {
+    var jsonString = IoUtils.streamToString(input);
     try {
-      return dtoObjectMapper.readValue(input, BatchJobRequest.class);
+      return dtoObjectMapper.readValue(jsonString, BatchJobRequest.class);
     } catch (IOException exception) {
       LOGGER.error("Failed to parse BatchJobRequest", exception);
+      LOGGER.error("Failed request: {}", jsonString);
       throw new RuntimeException(exception);
     }
   }
