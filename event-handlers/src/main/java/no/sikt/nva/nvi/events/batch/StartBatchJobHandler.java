@@ -7,6 +7,8 @@ import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -19,6 +21,7 @@ import no.sikt.nva.nvi.events.batch.message.BatchJobMessage;
 import no.sikt.nva.nvi.events.batch.request.BatchJobRequest;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
+import nva.commons.core.ioutils.IoUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.http.urlconnection.UrlConnectionHttpClient;
@@ -35,6 +38,8 @@ public class StartBatchJobHandler implements RequestStreamHandler {
   private static final String DETAIL_TYPE = "NviService.BatchJob.StartBatchJob";
   private static final String SOURCE = "nva.nvi.batch";
   private static final int SQS_BATCH_SIZE = 10;
+  private static final String EVENTBRIDGE_FIELD_DETAIL = "detail";
+  private static final String EVENTBRIDGE_FIELD_ID = "id";
 
   private final BatchJobFactory batchJobFactory;
   private final QueueClient queueClient;
@@ -86,12 +91,23 @@ public class StartBatchJobHandler implements RequestStreamHandler {
   }
 
   private BatchJobRequest parseRequest(InputStream input) {
+    var jsonString = IoUtils.streamToString(input);
     try {
-      return dtoObjectMapper.readValue(input, BatchJobRequest.class);
+      var requestBody = extractRequestBody(jsonString);
+      return dtoObjectMapper.treeToValue(requestBody, BatchJobRequest.class);
     } catch (IOException exception) {
-      LOGGER.error("Failed to parse BatchJobRequest", exception);
-      throw new RuntimeException(exception);
+      LOGGER.error("Failed to parse BatchJobRequest {}", jsonString, exception);
+      throw new RuntimeException("Failed to parse BatchJobRequest", exception);
     }
+  }
+
+  private static JsonNode extractRequestBody(String jsonString) throws JsonProcessingException {
+    var jsonNode = dtoObjectMapper.readTree(jsonString);
+    return isEventBridgeEvent(jsonNode) ? jsonNode.get(EVENTBRIDGE_FIELD_DETAIL) : jsonNode;
+  }
+
+  private static boolean isEventBridgeEvent(JsonNode jsonNode) {
+    return jsonNode.has(EVENTBRIDGE_FIELD_DETAIL) && jsonNode.has(EVENTBRIDGE_FIELD_ID);
   }
 
   private void sendMessagesToQueue(Collection<BatchJobMessage> messages) {
