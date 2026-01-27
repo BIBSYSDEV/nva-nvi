@@ -20,10 +20,16 @@ spotless {
     }
 
     format 'misc', {
-        target('.gitignore', '.gitattributes', '.editorconfig', '**/*.md')
+        target('.gitignore', '.gitattributes', '.editorconfig')
         leadingTabsToSpaces(4)
         trimTrailingWhitespace()
         endWithNewline()
+    }
+
+    format 'markdown', {
+        target('**/*.md')
+        prettier()
+                .config(['proseWrap': 'always', 'printWidth': 120])
     }
 }
 
