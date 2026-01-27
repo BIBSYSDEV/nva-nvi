@@ -5,21 +5,23 @@ The batch job system provides a queue-based approach for processing NVI candidat
 - **StartBatchJobHandler**: Scans DynamoDB and adds work items to `BatchJobWorkQueue`
 - **ProcessBatchJobHandler**: Processes individual work items using transactional service methods
 
-A "work item" in this context is a request to do a specific operation on an individual `Candidate` or `NviPeriod`.
+A "work item" in this context is a request to do a specific "job" on an individual `Candidate` or `NviPeriod`.
 
-### Architecture diagrams
+## Architecture diagrams
 
 ![Batch job architecture](./batchjobs/architecture.png)
 ![Batch job data flow](./batchjobs/data_flow.png)
 
-
 To regenerate diagrams:
+
 ```bash
 d2 architecture.d2 -l tala architecture.png
 d2 data_flow.d2 -l tala data_flow.png
 ```
 
 ## Job types
+
+This section lists the job types currently implemented.
 
 ### Refresh candidates
 
@@ -61,14 +63,14 @@ This effectively means that `ReportingYearFilter` and `maxParallelSegments` are 
 
 Other filters may be implemented later as needed.
 
-
 | Parameter | Default | Description                                                                           |
 |-----------|---------|---------------------------------------------------------------------------------------|
 | `filter.reportingYears` | All years | List of years to process.                                                             |
 | `maxParallelSegments` | 10 | Number of parallel DynamoDB scan segments (only used when no year filter is present). |
 | `maxItems` | No limit | Maximum number of work items to add to work queue. Useful for testing.                |
 
-**Example: Test with limited items**
+### Example: Test with limited items
+
 ```json
 {
   "jobType": "REFRESH_CANDIDATES",
@@ -77,7 +79,8 @@ Other filters may be implemented later as needed.
 }
 ```
 
-**Example: Full table scan with custom parallelism**
+### Example: Full table scan with custom parallelism
+
 ```json
 {
   "jobType": "REFRESH_CANDIDATES",
@@ -104,9 +107,11 @@ Edit the SQS trigger on `ProcessBatchJobHandler`:
 ## Emergency stop
 
 **To stop loading new items:**
+
 - Set `PROCESSING_ENABLED=false` environment variable on `StartBatchJobHandler`
 
 **To stop processing:**
+
 - Disable SQS trigger on `ProcessBatchJobHandler`
 - Optionally purge `BatchJobWorkQueue` if items should be discarded
 
