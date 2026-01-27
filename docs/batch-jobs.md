@@ -1,16 +1,20 @@
 # Batch jobs
 
-The batch job system provides a queue-based approach for processing NVI candidates and periods with optimistic locking. It consists of two handlers:
+The batch job system provides a queue-based approach for processing NVI candidates and periods with optimistic locking.
+
+It consists of two handlers:
 
 - **StartBatchJobHandler**: Scans DynamoDB and adds work items to `BatchJobWorkQueue`
 - **ProcessBatchJobHandler**: Processes individual work items using transactional service methods
 
-A "work item" in this context is a request to do a specific "job" on an individual `Candidate` or `NviPeriod`.
+Here, a `BatchJob` is a request to load individual work items on the work queue. The individual "work items" (i.e.
+`BatchJobMessage`) are requests to do a specific "job" on an individual `Candidate` or `NviPeriod`.
 
 ## Architecture diagrams
 
-![Batch job architecture](./batchjobs/architecture.png)
-![Batch job data flow](./batchjobs/data_flow.png)
+Architecture diagram to explain how the components interact: ![Batch job architecture](./batchjobs/architecture.png)
+
+More detailed diagram to explain the relation between message types: ![Batch job data flow](./batchjobs/data_flow.png)
 
 To regenerate diagrams:
 
@@ -57,17 +61,17 @@ Reads periods from DB and writes them back.
 
 ## Filters and other optional parameters
 
-The only filter implemented for now is `ReportingYearFilter`, which limits the scan to a list of years.
-Using this filter routes the scan through the GSI for reporting years, which does not support parallel scans.
-This effectively means that `ReportingYearFilter` and `maxParallelSegments` are mutually exclusive.
+The only filter implemented for now is `ReportingYearFilter`, which limits the scan to a list of years. Using this
+filter routes the scan through the GSI for reporting years, which does not support parallel scans. This effectively
+means that `ReportingYearFilter` and `maxParallelSegments` are mutually exclusive.
 
 Other filters may be implemented later as needed.
 
-| Parameter | Default | Description                                                                           |
-|-----------|---------|---------------------------------------------------------------------------------------|
-| `filter.reportingYears` | All years | List of years to process.                                                             |
-| `maxParallelSegments` | 10 | Number of parallel DynamoDB scan segments (only used when no year filter is present). |
-| `maxItems` | No limit | Maximum number of work items to add to work queue. Useful for testing.                |
+| Parameter               | Default   | Description                                                       |
+| ----------------------- | --------- | ----------------------------------------------------------------- |
+| `filter.reportingYears` | All years | List of years to process                                          |
+| `maxParallelSegments`   | 10        | Number of parallel scan segments (when no year filter is present) |
+| `maxItems`              | No limit  | Maximum number of work items to add to work queue                 |
 
 ### Example: Test with limited items
 
