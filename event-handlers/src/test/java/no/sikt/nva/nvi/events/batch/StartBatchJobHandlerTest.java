@@ -161,6 +161,40 @@ class StartBatchJobHandlerTest {
 
       assertThat(getQueuedMessageCount()).isEqualTo(maxItemsToQueue);
     }
+
+    @Test
+    void shouldParseEventBridgeEvents() {
+      var rawEventBridgeEvent =
+          """
+          {
+            "version": "0",
+            "id": "3f486514-7573-9de1-caa5-9de853d4fcaa",
+            "detail-type": "NviService.BatchJob.StartBatchJob",
+            "detail": {
+              "type": "CandidatesByYearRequest",
+              "jobType": "REFRESH_CANDIDATES",
+              "yearFilter": {
+                "type": "ReportingYearFilter",
+                "reportingYears": [
+                  "__YEAR__"
+                ]
+              },
+              "paginationState": {
+                "itemsProcessed": 0,
+                "maxBatchSize": 700,
+                "maxItems": 2000
+              }
+            }
+          }
+          """
+              .replace("__YEAR__", THIS_YEAR);
+      var requestInputStream = IoUtils.stringToStream(rawEventBridgeEvent);
+
+      handler.handleRequest(requestInputStream, output, CONTEXT);
+      processAllPendingEvents();
+
+      assertThat(getQueuedMessages(RefreshCandidateMessage.class)).hasSize(CANDIDATES_PER_YEAR);
+    }
   }
 
   @Nested

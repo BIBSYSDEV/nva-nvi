@@ -7,6 +7,8 @@ import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestStreamHandler;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -89,12 +91,21 @@ public class StartBatchJobHandler implements RequestStreamHandler {
   private BatchJobRequest parseRequest(InputStream input) {
     var jsonString = IoUtils.streamToString(input);
     try {
-      return dtoObjectMapper.readValue(jsonString, BatchJobRequest.class);
+      var requestBody = extractRequestBody(jsonString);
+      return dtoObjectMapper.treeToValue(requestBody, BatchJobRequest.class);
     } catch (IOException exception) {
-      LOGGER.error("Failed to parse BatchJobRequest", exception);
-      LOGGER.error("Failed request: {}", jsonString);
-      throw new RuntimeException(exception);
+      LOGGER.error("Failed to parse BatchJobRequest {}", jsonString, exception);
+      throw new RuntimeException("Failed to parse BatchJobRequest", exception);
     }
+  }
+
+  private static JsonNode extractRequestBody(String jsonString) throws JsonProcessingException {
+    var jsonNode = dtoObjectMapper.readTree(jsonString);
+    return isEventBridgeEvent(jsonNode) ? jsonNode.get("detail") : jsonNode;
+  }
+
+  private static boolean isEventBridgeEvent(JsonNode jsonNode) {
+    return jsonNode.has("detail") && jsonNode.has("id");
   }
 
   private void sendMessagesToQueue(Collection<BatchJobMessage> messages) {
