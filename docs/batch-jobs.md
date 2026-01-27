@@ -25,7 +25,7 @@ d2 data_flow.d2 -l tala data_flow.png
 
 ## Job types
 
-This section lists the job types currently implemented.
+This section lists the job types currently implemented with relevant examples. Note that `jobType` is the only required parameter.
 
 ### Refresh candidates
 
@@ -34,7 +34,8 @@ Reads candidates from DB and writes them back, triggering "on read" migrations (
 ```json
 {
   "jobType": "REFRESH_CANDIDATES",
-  "filter": { "reportingYears": ["2024", "2025"] }
+  "maxParallelSegments": 5,
+  "maxItems": 5000
 }
 ```
 
@@ -45,7 +46,8 @@ Reads candidates from DB, fetches original publication from S3, enriches with mi
 ```json
 {
   "jobType": "MIGRATE_CANDIDATES",
-  "filter": { "reportingYears": ["2024"] }
+  "filter": { "reportingYears": ["2024", "2025"] },
+  "maxItems": 500
 }
 ```
 
