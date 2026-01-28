@@ -26,14 +26,14 @@ public class PeriodRepository extends DynamoRepository {
   }
 
   public void create(NviPeriodDao period) {
-    LOGGER.info("Creating period: {}", period);
+    LOGGER.info("Creating period: {}", period.nviPeriod());
     var transaction = TransactWriteItemsEnhancedRequest.builder();
     addNewItemWithVersion(transaction, nviPeriodTable, period);
     sendTransaction(transaction.build());
   }
 
   public void update(NviPeriodDao period) {
-    LOGGER.info("Updating period: {}", period);
+    LOGGER.info("Updating period: {}", period.nviPeriod());
     var transaction = TransactWriteItemsEnhancedRequest.builder();
     addUpdatedItemWithVersion(transaction, nviPeriodTable, period);
     sendTransaction(transaction.build());
