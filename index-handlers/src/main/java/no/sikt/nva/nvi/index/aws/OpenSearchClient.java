@@ -6,8 +6,8 @@ import static no.sikt.nva.nvi.index.utils.SearchConstants.SEARCH_INFRASTRUCTURE_
 import static no.sikt.nva.nvi.index.utils.SearchConstants.SEARCH_INFRASTRUCTURE_AUTH_URI;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.SEARCH_INFRASTRUCTURE_CREDENTIALS;
 import static nva.commons.core.attempt.Try.attempt;
+import static org.apache.http.HttpHeaders.AUTHORIZATION;
 
-import com.amazonaws.auth.internal.SignerConstants;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import java.io.IOException;
 import java.net.URI;
@@ -164,11 +164,13 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
   }
 
   private HttpAsyncClientBuilder configureHttpClient(HttpAsyncClientBuilder builder) {
-    return builder.addRequestInterceptorFirst(
-        (request, entity, context) -> {
-          var token = cachedJwtProvider.getValue().getToken();
-          request.setHeader(new BasicHeader(SignerConstants.AUTHORIZATION, token));
-        });
+    return builder
+        .disableContentCompression()
+        .addRequestInterceptorFirst(
+            (request, entity, context) -> {
+              var token = cachedJwtProvider.getValue().getToken();
+              request.setHeader(new BasicHeader(AUTHORIZATION, token));
+            });
   }
 
   private static DeleteRequest contructDeleteRequest(UUID identifier) {
