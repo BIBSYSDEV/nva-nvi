@@ -59,6 +59,7 @@ public final class CandidateMigrationService {
       candidateService.updateCandidate(enrichedCandidate);
     } else {
       LOGGER.info("Candidate {} does not require migration", identifier);
+      candidateService.updateCandidate(candidate);
     }
   }
 
