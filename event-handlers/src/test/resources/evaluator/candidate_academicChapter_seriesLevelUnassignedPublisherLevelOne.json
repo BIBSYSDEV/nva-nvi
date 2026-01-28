@@ -187,6 +187,7 @@
       }
     },
     "id": "https://api.dev.nva.aws.unit.no/publication/0188beb8f346-330c9426-4757-4e36-b08f-4d698d295bb4",
+    "identifier": "0188beb8f346-330c9426-4757-4e36-b08f-4d698d295bb4",
     "entityDescription": {
       "type": "EntityDescription",
       "alternativeAbstracts": {},
