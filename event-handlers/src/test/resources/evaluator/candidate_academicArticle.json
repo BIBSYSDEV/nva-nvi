@@ -190,6 +190,7 @@
       }
     },
     "id": "__REPLACE_WITH_PUBLICATION_ID__",
+    "identifier": "__REPLACE_WITH_PUBLICATION_IDENTIFIER__",
     "entityDescription": {
       "type": "EntityDescription",
       "contributors": [
