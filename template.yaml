@@ -1153,7 +1153,7 @@ Resources:
             BatchSize: 10
             MaximumBatchingWindowInSeconds: 10
             ScalingConfig:
-              MaximumConcurrency: 2
+              MaximumConcurrency: 4
             FunctionResponseTypes:
               - ReportBatchItemFailures # Only retry failed messages, not the entire batch
 
