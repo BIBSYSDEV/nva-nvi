@@ -2,7 +2,7 @@ version: 0.2
 
 env:
   variables:
-    GRADLE_USER_HOME: '/root/.gradle'
+    GRADLE_USER_HOME: "/root/.gradle"
     GRADLE_OPTS: "-Dorg.gradle.configuration-cache=false"
     SAM_CLI_TELEMETRY: "0"
   secrets-manager:
@@ -11,7 +11,7 @@ env:
 
 cache:
   paths:
-    - '/root/.gradle/caches/**/*'
+    - "/root/.gradle/caches/**/*"
 
 phases:
   install:
@@ -20,7 +20,7 @@ phases:
 
     commands:
       - echo "Checking if AWS SAM CLI is installed"
-      - | 
+      - |
         if command -v sam >/dev/null 2>&1; then
           echo "AWS SAM CLI is already installed";
           sam --version;
