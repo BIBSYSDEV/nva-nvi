@@ -22,7 +22,7 @@ dependencies {
     implementation nvaLibs.s3
     testFixturesAnnotationProcessor nvaCatalog.errorprone
     testFixturesImplementation nvaCatalog.aws.sdk2.sqs
-    testFixturesImplementation nvaCatalog.aws.dynamodb.local
+    testFixturesImplementation nvaCatalog.aws.sdk2.dynamodblocal
     testFixturesImplementation nvaCatalog.aws.lambda.events
     testFixturesImplementation nvaCatalog.aws.sdk2.s3
     testFixturesImplementation nvaCatalog.bundles.testing.cucumber
@@ -38,7 +38,7 @@ dependencies {
     testFixturesImplementation nvaLibs.s3
     testFixturesImplementation nvaLibs.testutils
     testFixturesImplementation project(':nvi-test')
-    testImplementation nvaCatalog.aws.dynamodb.local
+    testImplementation nvaCatalog.aws.sdk2.dynamodblocal
     testImplementation nvaCatalog.junit.platform.suite
     testImplementation nvaCatalog.assertj.core
     testImplementation nvaCatalog.bundles.testing.cucumber
