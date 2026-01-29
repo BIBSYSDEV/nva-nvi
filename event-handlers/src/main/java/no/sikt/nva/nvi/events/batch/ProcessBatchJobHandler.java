@@ -5,6 +5,8 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.SQSBatchResponse;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import java.util.ArrayList;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
 import no.sikt.nva.nvi.common.CandidateMigrationService;
 import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
@@ -49,7 +51,7 @@ public class ProcessBatchJobHandler implements RequestHandler<SQSEvent, SQSBatch
       try {
         var batchJobMessage = BatchJobMessage.fromJson(message.getBody());
         processMessage(batchJobMessage);
-      } catch (Exception exception) {
+      } catch (JsonProcessingException exception) {
         LOGGER.error("Failed to process message {}", message, exception);
         failedMessages.add(new SQSBatchResponse.BatchItemFailure(message.getMessageId()));
       }
