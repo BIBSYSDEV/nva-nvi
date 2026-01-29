@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.common.model;
 import java.util.Arrays;
 import java.util.function.Supplier;
 
+@FunctionalInterface
 public interface ParsableEnum {
   String NO_MATCH_MESSAGE = "No constant in '%s' matching input '%s'";
 
