@@ -555,12 +555,12 @@ class ConcurrencyHandlingTests {
   /** Force an upsert of a Candidate by changing the publication instance type. */
   private void updateCandidate(Candidate candidate) {
     var oldType = candidate.getPublicationType();
-    var newType = ACADEMIC_MONOGRAPH.equals(oldType) ? ACADEMIC_ARTICLE : ACADEMIC_MONOGRAPH;
+    var newType = oldType == ACADEMIC_MONOGRAPH ? ACADEMIC_ARTICLE : ACADEMIC_MONOGRAPH;
     scenario.upsertCandidate(upsertRequestBuilder.withInstanceType(newType).build());
   }
 
   private static ApprovalStatus getOtherStatus(ApprovalStatus originalStatus) {
-    return ApprovalStatus.APPROVED.equals(originalStatus)
+    return originalStatus == ApprovalStatus.APPROVED
         ? ApprovalStatus.PENDING
         : ApprovalStatus.REJECTED;
   }

@@ -88,7 +88,7 @@ public record Approval(
 
     var username = Username.fromString(request.username());
     var updatedStatus = request.approvalStatus();
-    var updatedReason = ApprovalStatus.REJECTED.equals(updatedStatus) ? request.reason() : null;
+    var updatedReason = updatedStatus == ApprovalStatus.REJECTED ? request.reason() : null;
 
     LOGGER.info("Updating approval status: {} -> {}", status, updatedStatus);
     return new Approval(
@@ -124,7 +124,7 @@ public record Approval(
   }
 
   public boolean isPendingAndUnassigned() {
-    return ApprovalStatus.PENDING.equals(status) && !isAssigned();
+    return status == ApprovalStatus.PENDING && !isAssigned();
   }
 
   private DbApprovalStatus createCopyOfCurrentStatus() {
@@ -157,7 +157,7 @@ public record Approval(
     if (isBlank(request.username())) {
       throw new IllegalArgumentException(ERROR_MSG_USERNAME_NULL);
     }
-    if (ApprovalStatus.REJECTED.equals(request.approvalStatus()) && isBlank(request.reason())) {
+    if (request.approvalStatus() == ApprovalStatus.REJECTED && isBlank(request.reason())) {
       throw new IllegalArgumentException(ERROR_MISSING_REJECTION_REASON);
     }
   }

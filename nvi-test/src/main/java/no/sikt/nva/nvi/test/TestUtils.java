@@ -25,8 +25,6 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import nva.commons.core.paths.UriWrapper;
 
-// Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
-@SuppressWarnings({"PMD.CouplingBetweenObjects", "PMD.GodClass"})
 public final class TestUtils {
 
   public static final int SCALE = 4;
