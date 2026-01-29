@@ -41,7 +41,7 @@ dependencies {
     testFixturesImplementation nvaLibs.testutils
     testFixturesImplementation project(':nvi-test')
     testFixturesImplementation(testFixtures(project(":nvi-commons")))
-    testImplementation nvaCatalog.aws.dynamodb.local
+    testImplementation nvaCatalog.aws.sdk2.dynamodblocal
     testImplementation nvaCatalog.assertj.core
     testImplementation nvaCatalog.bundles.testing.cucumber
     testImplementation nvaCatalog.bundles.testing.junit
