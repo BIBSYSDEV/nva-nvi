@@ -1,8 +1,8 @@
 package no.sikt.nva.nvi.index.model.document;
 
+import static java.util.Collections.emptyList;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
-import static no.sikt.nva.nvi.common.utils.ExceptionUtils.getStackTrace;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.CONTRIBUTOR_FIRST_NAME;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.CONTRIBUTOR_IDENTIFIER;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.CONTRIBUTOR_LAST_NAME;
@@ -133,8 +133,9 @@ public record NviCandidateIndexDocument(
               + " rows",
           topLevelOrganization,
           identifier);
-      return List.of();
+      return emptyList();
     }
+    logger.info("Processing candidate={} for institution={}", identifier, topLevelOrganization);
     return getNviContributors().stream()
         .flatMap(
             nviContributor ->
@@ -151,45 +152,36 @@ public record NviCandidateIndexDocument(
 
   private Map<InstitutionReportHeader, String> generateRow(
       NviContributor nviContributor, NviOrganization affiliation, URI topLevelOrganization) {
-    try {
-      var keyValueMap = new EnumMap<InstitutionReportHeader, String>(InstitutionReportHeader.class);
-      keyValueMap.put(REPORTING_YEAR, reportingPeriod.year());
-      keyValueMap.put(PUBLICATION_IDENTIFIER, publicationIdentifier());
-      keyValueMap.put(PUBLISHED_YEAR, publicationDetails.publicationDate().year());
-      keyValueMap.put(INSTITUTION_APPROVAL_STATUS, getApprovalStatus(topLevelOrganization));
-      keyValueMap.put(PUBLICATION_INSTANCE, publicationDetails.type());
-      keyValueMap.put(CONTRIBUTOR_IDENTIFIER, nviContributor.id());
-      keyValueMap.put(INSTITUTION_ID, affiliation.getInstitutionIdentifier());
-      keyValueMap.put(FACULTY_ID, affiliation.getFacultyIdentifier());
-      keyValueMap.put(DEPARTMENT_ID, affiliation.getDepartmentIdentifier());
-      keyValueMap.put(GROUP_ID, affiliation.getGroupIdentifier());
-      keyValueMap.put(
-          CONTRIBUTOR_LAST_NAME,
-          nviContributor.name()); // We don't have a good way to split the name
-      keyValueMap.put(CONTRIBUTOR_FIRST_NAME, nviContributor.name()); // For now, use the full name
-      keyValueMap.put(PUBLICATION_TITLE, publicationDetails.title());
-      keyValueMap.put(GLOBAL_STATUS, getGlobalApprovalStatus());
-      keyValueMap.put(
-          PUBLICATION_CHANNEL_LEVEL_POINTS, publicationTypeChannelLevelPoints().toString());
-      keyValueMap.put(
-          INTERNATIONAL_COLLABORATION_FACTOR, internationalCollaborationFactor().toString());
-      keyValueMap.put(CREATOR_SHARE_COUNT, String.valueOf(creatorShareCount()));
-      keyValueMap.put(
-          POINTS_FOR_AFFILIATION,
-          getPointsForContributorAffiliation(topLevelOrganization, nviContributor, affiliation)
-              .toString());
-      keyValueMap.put(PUBLICATION_LANGUAGE, getLanguageLabel());
-      addOptionalPublicationChannelValues(keyValueMap);
-      addOptionalPages(keyValueMap);
+    var keyValueMap = new EnumMap<InstitutionReportHeader, String>(InstitutionReportHeader.class);
+    keyValueMap.put(REPORTING_YEAR, reportingPeriod.year());
+    keyValueMap.put(PUBLICATION_IDENTIFIER, publicationIdentifier());
+    keyValueMap.put(PUBLISHED_YEAR, publicationDetails.publicationDate().year());
+    keyValueMap.put(INSTITUTION_APPROVAL_STATUS, getApprovalStatus(topLevelOrganization));
+    keyValueMap.put(PUBLICATION_INSTANCE, publicationDetails.type());
+    keyValueMap.put(CONTRIBUTOR_IDENTIFIER, nviContributor.id());
+    keyValueMap.put(INSTITUTION_ID, affiliation.getInstitutionIdentifier());
+    keyValueMap.put(FACULTY_ID, affiliation.getFacultyIdentifier());
+    keyValueMap.put(DEPARTMENT_ID, affiliation.getDepartmentIdentifier());
+    keyValueMap.put(GROUP_ID, affiliation.getGroupIdentifier());
+    keyValueMap.put(
+        CONTRIBUTOR_LAST_NAME, nviContributor.name()); // We don't have a good way to split the name
+    keyValueMap.put(CONTRIBUTOR_FIRST_NAME, nviContributor.name()); // For now, use the full name
+    keyValueMap.put(PUBLICATION_TITLE, publicationDetails.title());
+    keyValueMap.put(GLOBAL_STATUS, getGlobalApprovalStatus());
+    keyValueMap.put(
+        PUBLICATION_CHANNEL_LEVEL_POINTS, publicationTypeChannelLevelPoints().toString());
+    keyValueMap.put(
+        INTERNATIONAL_COLLABORATION_FACTOR, internationalCollaborationFactor().toString());
+    keyValueMap.put(CREATOR_SHARE_COUNT, String.valueOf(creatorShareCount()));
+    keyValueMap.put(
+        POINTS_FOR_AFFILIATION,
+        getPointsForContributorAffiliation(topLevelOrganization, nviContributor, affiliation)
+            .toString());
+    keyValueMap.put(PUBLICATION_LANGUAGE, getLanguageLabel());
+    addOptionalPublicationChannelValues(keyValueMap);
+    addOptionalPages(keyValueMap);
 
-      return keyValueMap;
-    } catch (RuntimeException exception) {
-      logger.error(
-          "Failed to generate report lines for candidate: {}. Error {}",
-          id,
-          getStackTrace(exception));
-      throw exception;
-    }
+    return keyValueMap;
   }
 
   private String getLanguageLabel() {
