@@ -1150,7 +1150,10 @@ Resources:
           Type: SQS
           Properties:
             Queue: !GetAtt BatchJobWorkQueue.Arn
-            BatchSize: 5
+            BatchSize: 10
+            MaximumBatchingWindowInSeconds: 10
+            ScalingConfig:
+              MaximumConcurrency: 4
             FunctionResponseTypes:
               - ReportBatchItemFailures # Only retry failed messages, not the entire batch
 
