@@ -22,6 +22,13 @@ tags:
     description: NVI candidate operations
   - name: Report
     description: Institution reports and aggregations
+
+x-authenticated-security: &authenticated
+  - CognitoUserPool:
+    - 'https://api.nva.unit.no/scopes/backend'
+    - 'https://api.nva.unit.no/scopes/frontend'
+    - 'aws.cognito.signin.user.admin'
+
 paths:
   /context:
     get:
@@ -71,12 +78,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/NviPeriod'
-      security:
-        - CognitoUserPool: [
-          'https://api.nva.unit.no/scopes/backend',
-          'https://api.nva.unit.no/scopes/frontend',
-          'aws.cognito.signin.user.admin',
-        ]
+      security: *authenticated
       x-amazon-apigateway-request-validator: validate_body
       x-amazon-apigateway-integration:
         uri:
@@ -121,12 +123,7 @@ paths:
       description: List NVI periods
       summary: List periods
       operationId: listNviPeriods
-      security:
-        - CognitoUserPool: [
-          'https://api.nva.unit.no/scopes/backend',
-          'https://api.nva.unit.no/scopes/frontend',
-          'aws.cognito.signin.user.admin',
-        ]
+      security: *authenticated
       x-amazon-apigateway-request-validator: validate_body
       x-amazon-apigateway-integration:
         uri:
@@ -165,12 +162,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/NviPeriod'
-      security:
-        - CognitoUserPool: [
-          'https://api.nva.unit.no/scopes/backend',
-          'https://api.nva.unit.no/scopes/frontend',
-          'aws.cognito.signin.user.admin',
-        ]
+      security: *authenticated
       x-amazon-apigateway-request-validator: validate_body
       x-amazon-apigateway-integration:
         uri:
@@ -418,12 +410,7 @@ paths:
             type: string
             description: Order direction
             enum: [ "asc", "desc" ]
-      security:
-        - CognitoUserPool: [
-          'https://api.nva.unit.no/scopes/backend',
-          'https://api.nva.unit.no/scopes/frontend',
-          'aws.cognito.signin.user.admin',
-        ]
+      security: *authenticated
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SearchNviCandidatesHandler.Arn}:live/invocations
@@ -457,12 +444,7 @@ paths:
           required: true
           schema:
             type: string
-      security:
-        - CognitoUserPool: [
-          'https://api.nva.unit.no/scopes/backend',
-          'https://api.nva.unit.no/scopes/frontend',
-          'aws.cognito.signin.user.admin',
-        ]
+      security: *authenticated
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchNviCandidateHandler.Arn}:live/invocations
@@ -502,12 +484,7 @@ paths:
           required: true
           schema:
             type: string
-      security:
-        - CognitoUserPool: [
-          'https://api.nva.unit.no/scopes/backend',
-          'https://api.nva.unit.no/scopes/frontend',
-          'aws.cognito.signin.user.admin',
-        ]
+      security: *authenticated
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchNviCandidateByPublicationIdHandler.Arn}:live/invocations
@@ -553,12 +530,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/ApprovalStatusRequest'
-      security:
-        - CognitoUserPool: [
-          'https://api.nva.unit.no/scopes/backend',
-          'https://api.nva.unit.no/scopes/frontend',
-          'aws.cognito.signin.user.admin',
-        ]
+      security: *authenticated
       x-amazon-apigateway-request-validator: validate_body
       x-amazon-apigateway-integration:
         uri:
@@ -617,12 +589,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/AssigneeRequest'
-      security:
-        - CognitoUserPool: [
-          'https://api.nva.unit.no/scopes/backend',
-          'https://api.nva.unit.no/scopes/frontend',
-          'aws.cognito.signin.user.admin',
-        ]
+      security: *authenticated
       x-amazon-apigateway-request-validator: validate_body
       x-amazon-apigateway-integration:
         uri:
@@ -681,12 +648,7 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/CreateNoteRequest'
-      security:
-        - CognitoUserPool: [
-          'https://api.nva.unit.no/scopes/backend',
-          'https://api.nva.unit.no/scopes/frontend',
-          'aws.cognito.signin.user.admin',
-        ]
+      security: *authenticated
       x-amazon-apigateway-request-validator: validate_body
       x-amazon-apigateway-integration:
         uri:
@@ -745,12 +707,7 @@ paths:
           required: true
           schema:
             type: string
-      security:
-        - CognitoUserPool: [
-          'https://api.nva.unit.no/scopes/backend',
-          'https://api.nva.unit.no/scopes/frontend',
-          'aws.cognito.signin.user.admin',
-        ]
+      security: *authenticated
       x-amazon-apigateway-request-validator: validate_body
       x-amazon-apigateway-integration:
         uri:
@@ -797,12 +754,7 @@ paths:
           required: true
           schema:
             type: string
-      security:
-        - CognitoUserPool: [
-          'https://api.nva.unit.no/scopes/backend',
-          'https://api.nva.unit.no/scopes/frontend',
-          'aws.cognito.signin.user.admin',
-        ]
+      security: *authenticated
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchInstitutionStatusAggregationHandler.Arn}:live/invocations
@@ -842,12 +794,7 @@ paths:
           required: true
           schema:
             type: string
-      security:
-        - CognitoUserPool: [
-          'https://api.nva.unit.no/scopes/backend',
-          'https://api.nva.unit.no/scopes/frontend',
-          'aws.cognito.signin.user.admin',
-        ]
+      security: *authenticated
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchInstitutionReportHandler.Arn}:live/invocations
