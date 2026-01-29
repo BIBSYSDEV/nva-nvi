@@ -34,6 +34,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.services.s3.S3Client;
 
+// Ignoring warning in deprecated code that we plan to remove
+@SuppressWarnings("PMD.AvoidCatchingGenericException")
 public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, Void> {
 
   public static final String NVI_ERRORS = "NVI_ERRORS";
