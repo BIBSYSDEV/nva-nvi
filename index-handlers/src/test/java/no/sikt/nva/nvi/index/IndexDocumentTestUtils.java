@@ -366,7 +366,7 @@ public final class IndexDocumentTestUtils {
   }
 
   private static boolean isApprovalPendingAndUnassigned(Approval approval) {
-    return no.sikt.nva.nvi.common.service.model.ApprovalStatus.PENDING.equals(approval.status())
+    return approval.status() == no.sikt.nva.nvi.common.service.model.ApprovalStatus.PENDING
         && isNull(approval.getAssigneeUsername());
   }
 

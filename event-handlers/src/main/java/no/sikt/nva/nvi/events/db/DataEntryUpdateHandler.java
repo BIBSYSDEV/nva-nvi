@@ -77,7 +77,7 @@ public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
   }
 
   private static boolean isUnknownOperationType(OperationType operationType) {
-    return OperationType.UNKNOWN_TO_SDK_VERSION.equals(operationType);
+    return operationType == OperationType.UNKNOWN_TO_SDK_VERSION;
   }
 
   private void sendToDlq(String body, Exception exception) {

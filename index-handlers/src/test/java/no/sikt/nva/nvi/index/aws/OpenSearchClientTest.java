@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.index.aws;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.function.Predicate.not;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomApproval;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomApprovalList;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomIndexDocumentBuilder;
@@ -195,7 +196,7 @@ class OpenSearchClientTest {
     var aggregations = searchResponse.aggregations();
     var expectedAggregations =
         Arrays.stream(SearchAggregation.values())
-            .filter(aggregation -> !ORGANIZATION_APPROVAL_STATUS_AGGREGATION.equals(aggregation))
+            .filter(not(aggregation -> aggregation == ORGANIZATION_APPROVAL_STATUS_AGGREGATION))
             .toList();
     assertEquals(expectedAggregations.size(), aggregations.size());
   }

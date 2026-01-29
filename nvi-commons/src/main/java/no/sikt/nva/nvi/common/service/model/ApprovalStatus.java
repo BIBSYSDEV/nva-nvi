@@ -36,7 +36,7 @@ public enum ApprovalStatus {
 
   @JsonIgnore
   public boolean isFinalized() {
-    return APPROVED.equals(this) || REJECTED.equals(this);
+    return this == APPROVED || this == REJECTED;
   }
 
   @JsonIgnore

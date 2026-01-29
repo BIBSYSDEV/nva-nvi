@@ -40,7 +40,7 @@ public final class PointService {
   private static Optional<PublicationChannelDto> getChannel(
       PublicationDto publication, ChannelType channelType) {
     return publication.publicationChannels().stream()
-        .filter(channel -> channelType.equals(channel.channelType()))
+        .filter(channel -> channel.channelType() == channelType)
         .filter(PublicationChannelDto::isValid)
         .findFirst();
   }

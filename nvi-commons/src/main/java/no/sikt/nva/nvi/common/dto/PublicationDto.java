@@ -76,7 +76,7 @@ public record PublicationDto(
   }
 
   private void validateParentPublicationType() {
-    if (ACADEMIC_CHAPTER.equals(publicationType()) && parentPublicationTypeIsNotSupported()) {
+    if (publicationType() == ACADEMIC_CHAPTER && parentPublicationTypeIsNotSupported()) {
       throw new ValidationException(
           "AcademicChapter is not valid nvi candidate when it is part of %s"
               .formatted(parentPublicationType()));

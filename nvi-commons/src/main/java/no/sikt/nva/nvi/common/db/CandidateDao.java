@@ -241,7 +241,7 @@ public final class CandidateDao extends Dao {
 
   @DynamoDbIgnore
   public boolean isReported() {
-    return ReportStatus.REPORTED.equals(candidate.reportStatus);
+    return candidate.reportStatus == ReportStatus.REPORTED;
   }
 
   @DynamoDbIgnore
