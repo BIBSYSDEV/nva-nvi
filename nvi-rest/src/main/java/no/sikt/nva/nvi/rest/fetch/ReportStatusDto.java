@@ -30,10 +30,10 @@ public record ReportStatusDto(
       return StatusDto.REPORTED;
     } else if (candidate.isPendingReview()) {
       return StatusDto.PENDING_REVIEW;
-    } else if (GlobalApprovalStatus.REJECTED.equals(candidate.getGlobalApprovalStatus())
+    } else if (candidate.getGlobalApprovalStatus() == GlobalApprovalStatus.REJECTED
         && isOpenPeriod) {
       return StatusDto.REJECTED;
-    } else if (GlobalApprovalStatus.APPROVED.equals(candidate.getGlobalApprovalStatus())
+    } else if (candidate.getGlobalApprovalStatus() == GlobalApprovalStatus.APPROVED
         && isOpenPeriod) {
       return StatusDto.APPROVED;
     } else if (candidate.isUnderReview()) {

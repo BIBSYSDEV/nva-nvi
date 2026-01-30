@@ -121,9 +121,8 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
   private InputStream createRequest(
       UUID candidateIdentifier, URI institutionId, ApprovalStatus status)
       throws JsonProcessingException {
-    var requestBody =
-        new NviStatusRequest(
-            institutionId, status, ApprovalStatus.REJECTED.equals(status) ? randomString() : null);
+    var reason = status == ApprovalStatus.REJECTED ? randomString() : null;
+    var requestBody = new NviStatusRequest(institutionId, status, reason);
     return createRequest(candidateIdentifier, institutionId, requestBody);
   }
 

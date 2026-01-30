@@ -78,7 +78,7 @@ public enum SearchAggregation {
 
   private static boolean isNotOrganizationApprovalStatusAggregation(
       SearchAggregation searchAggregation) {
-    return !ORGANIZATION_APPROVAL_STATUS_AGGREGATION.equals(searchAggregation);
+    return searchAggregation != ORGANIZATION_APPROVAL_STATUS_AGGREGATION;
   }
 
   public Aggregation generateAggregation(String username, String topLevelCristinOrg) {

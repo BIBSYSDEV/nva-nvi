@@ -2,7 +2,7 @@ AWSTemplateFormatVersion: 2010-09-09
 Transform: AWS::Serverless-2016-10-31
 Description: >
   AWS
-  
+
   SAM Template for NVA NVI API
 Globals:
   Function:
@@ -14,8 +14,8 @@ Globals:
     Environment:
       Variables:
         BACKEND_CLIENT_AUTH_URL: !Ref CognitoAuthorizationUri
-        BACKEND_CLIENT_SECRET_NAME: 'BackendCognitoClientCredentials'
-        COGNITO_AUTHORIZER_URLS: !Join [ ",", !Ref CognitoAuthorizerUrls ]
+        BACKEND_CLIENT_SECRET_NAME: "BackendCognitoClientCredentials"
+        COGNITO_AUTHORIZER_URLS: !Join [",", !Ref CognitoAuthorizerUrls]
         NVI_TABLE_NAME: !Ref NvaNviTable
         SEARCH_INFRASTRUCTURE_API_HOST: !Ref SearchInfrastructureApiHost
         SEARCH_INFRASTRUCTURE_AUTH_URI: !Ref SearchInfrastructureAuthUri
@@ -30,18 +30,18 @@ Globals:
 
 Parameters:
   CognitoAuthorizerArn:
-    Type: 'AWS::SSM::Parameter::Value<String>'
+    Type: "AWS::SSM::Parameter::Value<String>"
     Description: Reference to Cognito UserPool for the stage
     Default: CognitoAuthorizerArn
   CognitoAuthorizerUrls:
-    Type: 'AWS::SSM::Parameter::Value<List<String>>'
+    Type: "AWS::SSM::Parameter::Value<List<String>>"
     Description: Combined URLs of the providers of the Amazon Cognito user pools
     Default: CognitoAuthorizerUrls
   CognitoAuthorizationUri:
-    Type: 'AWS::SSM::Parameter::Value<String>'
-    Default: '/NVA/CognitoUri'
+    Type: "AWS::SSM::Parameter::Value<String>"
+    Default: "/NVA/CognitoUri"
   ApiDomain:
-    Type: 'AWS::SSM::Parameter::Value<String>'
+    Type: "AWS::SSM::Parameter::Value<String>"
     Description: The Api domain
     Default: /NVA/ApiDomain
   EventBusName:
@@ -67,22 +67,22 @@ Parameters:
   SearchInfrastructureApiHost:
     Type: String
     Description: Host of external search infrastructure API (SWS).
-    Default: 'https://api.sws.aws.sikt.no'
+    Default: "https://api.sws.aws.sikt.no"
   SearchInfrastructureAuthUri:
     Type: String
     Description: URI to auth for external search infrastructure API (SWS).
-    Default: 'https://sws-auth.auth.eu-west-1.amazoncognito.com'
+    Default: "https://sws-auth.auth.eu-west-1.amazoncognito.com"
   CustomDomainBasePath:
     Type: String
     Description: Base path mapping in CustomDomain
     Default: scientific-index
   Suffix:
     Type: String
-    Default: ''
+    Default: ""
     Description: Suffix used for naming resources for feature branches to avoid conflicts.
   SlackSnsArn:
     Type: AWS::SSM::Parameter::Value<String>
-    Default: '/NVA/Monitoring/SlackSnsArn'
+    Default: "/NVA/Monitoring/SlackSnsArn"
   NviDataEntryUpdateCandidateInsertTopicName:
     Type: String
     Default: nvi-data-entry-update-candidate-insert
@@ -107,24 +107,23 @@ Parameters:
   AllowedOrigins:
     Type: String
     Description: comma separated list of external clients that are allowed to contact the HTTP APIs, "*" indicates that all origins are allowed
-    Default: '*'
+    Default: "*"
   DefaultTimeoutForParsingLambdas:
     Type: Number
     Description: Timeout in seconds for functions that parse JSON-LD documents. These need a high timeout in order to handle unusually large documents.
     Default: 300 # 5 minutes
 
 Conditions:
-  WithSuffix: !Not [ !Equals [ !Ref Suffix, '' ] ]
+  WithSuffix: !Not [!Equals [!Ref Suffix, ""]]
 
 Resources:
-
   ApiAccessLogGroup:
     Type: AWS::Logs::LogGroup
 
   InternalBus:
     Type: AWS::Events::EventBus
     Properties:
-      Name: !Join [ '',[ 'nvi-internal-bus',!Ref Suffix ] ]
+      Name: !Join ["", ["nvi-internal-bus", !Ref Suffix]]
 
   #=============================== SNS topics ======================================================
   NviDataEntryUpdateCandidateInsertTopic:
@@ -239,7 +238,6 @@ Resources:
       Endpoint: !GetAtt GenerateIndexDocumentQueue.Arn
       TopicArn: !Ref NviDataEntryUpdateApprovalRemoveTopic
       RawMessageDelivery: true
-
 
   #=============================== SQSs ============================================================
   #=============================== For event handling ==============================================
@@ -371,8 +369,8 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              Service: [ lambda.amazonaws.com ]
-            Action: [ 'sts:AssumeRole' ]
+              Service: [lambda.amazonaws.com]
+            Action: ["sts:AssumeRole"]
       Policies:
         - PolicyName: writeLog
           PolicyDocument:
@@ -383,7 +381,7 @@ Resources:
                   - logs:CreateLogGroup
                   - logs:CreateLogStream
                   - logs:PutLogEvents
-                Resource: !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*:*'
+                Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*:*"
   DeletePersistedDocumentRole:
     Type: AWS::IAM::Role
     Properties:
@@ -392,8 +390,8 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              Service: [ lambda.amazonaws.com ]
-            Action: [ 'sts:AssumeRole' ]
+              Service: [lambda.amazonaws.com]
+            Action: ["sts:AssumeRole"]
       Policies:
         - PolicyName: DeletePersistedDocument
           PolicyDocument:
@@ -402,10 +400,10 @@ Resources:
               - Effect: Allow
                 Action:
                   - s3:DeleteObject
-                Resource: '*'
+                Resource: "*"
         - PolicyName: sqs
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -419,7 +417,7 @@ Resources:
                   - !GetAtt DeletePersistedIndexDocumentQueue.Arn
         - PolicyName: subscribeOnSnsTopic
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -435,7 +433,7 @@ Resources:
                   - logs:CreateLogGroup
                   - logs:CreateLogStream
                   - logs:PutLogEvents
-                Resource: !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*:*'
+                Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*:*"
   NvaNviRole:
     Type: AWS::IAM::Role
     Properties:
@@ -444,8 +442,8 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              Service: [ lambda.amazonaws.com ]
-            Action: [ 'sts:AssumeRole' ]
+              Service: [lambda.amazonaws.com]
+            Action: ["sts:AssumeRole"]
       Policies:
         - PolicyName: S3Access
           PolicyDocument:
@@ -457,10 +455,10 @@ Resources:
                   - s3:List*
                   - s3:PutObject
                   - secretsmanager:*
-                Resource: '*'
+                Resource: "*"
         - PolicyName: Events
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -477,10 +475,10 @@ Resources:
                   - logs:CreateLogGroup
                   - logs:CreateLogStream
                   - logs:PutLogEvents
-                Resource: !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*:*'
+                Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*:*"
         - PolicyName: readSqs
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -515,7 +513,7 @@ Resources:
                   - !GetAtt BatchJobDLQ.Arn
         - PolicyName: publishToSnsTopic
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -530,7 +528,7 @@ Resources:
                   - !Ref NviDataEntryUpdateApprovalRemoveTopic
         - PolicyName: subscribeOnSnsTopic
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -546,7 +544,7 @@ Resources:
               - Effect: Allow
                 Action:
                   - secretsmanager:GetSecretValue
-                Resource: '*'
+                Resource: "*"
         - PolicyName: invokeFunction
           PolicyDocument:
             Version: 2012-10-17
@@ -554,7 +552,7 @@ Resources:
               - Effect: Allow
                 Action:
                   - lambda:InvokeFunction
-                Resource: '*'
+                Resource: "*"
         - PolicyName: crudDynamodb
           PolicyDocument:
             Version: 2012-10-17
@@ -580,7 +578,7 @@ Resources:
                   - !GetAtt NvaNviTable.Arn
         - PolicyName: crudDynamoDbIndex
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -589,7 +587,7 @@ Resources:
                   - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/nva-nvi-${AWS::StackName}/index/*
         - PolicyName: DynamoDbStreamAccessPolicy
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -598,18 +596,18 @@ Resources:
                   - dynamodb:ListStreams
                   - dynamodb:GetRecords
                 Resource:
-                  - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${NvaNviTable}/stream/*'
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${NvaNviTable}/stream/*"
 
   GenerateIndexDocumentQueuePolicy:
     Type: AWS::SQS::QueuePolicy
     Properties:
       PolicyDocument:
         Id: MyQueuePolicy
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Sid: Allow-SNS-SendMessage
             Effect: Allow
-            Principal: '*'
+            Principal: "*"
             Action: sqs:SendMessage
             Resource:
               - !GetAtt GenerateIndexDocumentQueue.Arn
@@ -629,11 +627,11 @@ Resources:
     Properties:
       PolicyDocument:
         Id: MyQueuePolicy
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Sid: Allow-SNS-SendMessage
             Effect: Allow
-            Principal: '*'
+            Principal: "*"
             Action: sqs:SendMessage
             Resource:
               - !GetAtt RemoveDocumentFromIndexQueue.Arn
@@ -650,11 +648,11 @@ Resources:
     Properties:
       PolicyDocument:
         Id: MyQueuePolicy
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Sid: Allow-SNS-SendMessage
             Effect: Allow
-            Principal: '*'
+            Principal: "*"
             Action: sqs:SendMessage
             Resource:
               - !GetAtt DeletePersistedIndexDocumentQueue.Arn
@@ -689,7 +687,7 @@ Resources:
       EndpointConfiguration:
         Type: REGIONAL
       DefinitionBody:
-        'Fn::Transform':
+        "Fn::Transform":
           Name: AWS::Include
           Parameters:
             Location: ./docs/openapi.yaml
@@ -751,7 +749,7 @@ Resources:
                 - Lambda Function Invocation Result - Success
               detail:
                 responsePayload:
-                  topic: [ "PublicationService.ExpandedEntry.Persisted" ]
+                  topic: ["PublicationService.ExpandedEntry.Persisted"]
       EventInvokeConfig:
         DestinationConfig:
           OnFailure:
@@ -983,7 +981,7 @@ Resources:
             EventBusName: !GetAtt InternalBus.Name
             Pattern:
               detail:
-                topic: [ "NviService.BatchScan" ]
+                topic: ["NviService.BatchScan"]
       EventInvokeConfig:
         DestinationConfig:
           OnFailure:
@@ -1037,7 +1035,7 @@ Resources:
       Environment:
         Variables:
           EVENT_BUS_NAME: !GetAtt InternalBus.Name
-          OUTPUT_EVENT_TOPIC: 'NviService.BatchScan'
+          OUTPUT_EVENT_TOPIC: "NviService.BatchScan"
 
   NviRequeueDlqHandler:
     Type: AWS::Serverless::Function
@@ -1083,7 +1081,7 @@ Resources:
       Environment:
         Variables:
           EVENT_BUS_NAME: !GetAtt InternalBus.Name
-          TOPIC_REEVALUATE_CANDIDATES: 'NviService.ReEvaluate'
+          TOPIC_REEVALUATE_CANDIDATES: "NviService.ReEvaluate"
           PERSISTED_RESOURCE_QUEUE_URL: !Ref ResourceEvaluationQueue
           EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
       Events:
@@ -1093,7 +1091,7 @@ Resources:
             EventBusName: !GetAtt InternalBus.Name
             Pattern:
               detail:
-                topic: [ "NviService.ReEvaluate" ]
+                topic: ["NviService.ReEvaluate"]
       EventInvokeConfig:
         DestinationConfig:
           OnFailure:
@@ -1150,7 +1148,10 @@ Resources:
           Type: SQS
           Properties:
             Queue: !GetAtt BatchJobWorkQueue.Arn
-            BatchSize: 5
+            BatchSize: 10
+            MaximumBatchingWindowInSeconds: 10
+            ScalingConfig:
+              MaximumConcurrency: 4
             FunctionResponseTypes:
               - ReportBatchItemFailures # Only retry failed messages, not the entire batch
 
@@ -1500,7 +1501,7 @@ Resources:
     UpdateReplacePolicy: Retain
     DeletionPolicy: Delete
     Properties:
-      TableName: !Sub 'nva-nvi-${AWS::StackName}'
+      TableName: !Sub "nva-nvi-${AWS::StackName}"
       PointInTimeRecoverySpecification:
         PointInTimeRecoveryEnabled: true
       BillingMode: PAY_PER_REQUEST
@@ -1543,7 +1544,7 @@ Resources:
         StreamViewType: NEW_AND_OLD_IMAGES
       Tags:
         - Key: IncludedInBackup
-          Value: 'true'
+          Value: "true"
 
   #============================= Alarms =========================================================
 
@@ -1702,6 +1703,24 @@ Resources:
       Dimensions:
         - Name: QueueName
           Value: !GetAtt BatchScanRecoveryQueue.QueueName
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      AlarmActions:
+        - !Ref SlackSnsArn
+
+  StartBatchJobErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: NVI StartBatchJob error
+      AlarmDescription: Errors in StartBatchJobHandler. Check logs.
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref StartBatchJobHandler
       Period: 300
       EvaluationPeriods: 1
       Threshold: 1

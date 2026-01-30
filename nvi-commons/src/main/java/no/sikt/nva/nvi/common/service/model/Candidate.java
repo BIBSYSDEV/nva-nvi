@@ -299,7 +299,7 @@ public record Candidate(
   }
 
   public boolean isReported() {
-    return REPORTED.equals(reportStatus);
+    return reportStatus == REPORTED;
   }
 
   public boolean isNotReportedInClosedPeriod() {
@@ -576,7 +576,7 @@ public record Candidate(
   }
 
   private boolean areAnyApprovalsPending() {
-    return streamApprovals().anyMatch(approval -> PENDING.equals(approval.status()));
+    return streamApprovals().map(Approval::status).anyMatch(PENDING::equals);
   }
 
   private Stream<Approval> streamApprovals() {

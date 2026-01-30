@@ -391,7 +391,7 @@ class FetchInstitutionStatusAggregationHandlerTest {
         .map(NviCandidateIndexDocument::approvals)
         .flatMap(List::stream)
         .filter(approval -> organization.equals(approval.institutionId()))
-        .filter(approval -> GlobalApprovalStatus.APPROVED.equals(approval.globalApprovalStatus()))
+        .filter(approval -> approval.globalApprovalStatus() == GlobalApprovalStatus.APPROVED)
         .map(ApprovalView::points)
         .map(InstitutionPointsView::institutionPoints)
         .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -402,7 +402,7 @@ class FetchInstitutionStatusAggregationHandlerTest {
     return ourDocuments.stream()
         .map(NviCandidateIndexDocument::approvals)
         .flatMap(List::stream)
-        .filter(approval -> GlobalApprovalStatus.APPROVED.equals(approval.globalApprovalStatus()))
+        .filter(approval -> approval.globalApprovalStatus() == GlobalApprovalStatus.APPROVED)
         .map(ApprovalView::points)
         .map(InstitutionPointsView::creatorAffiliationPoints)
         .flatMap(List::stream)

@@ -54,7 +54,7 @@ public class ApprovalService {
       Candidate candidate, UpdateStatusRequest request, UserInstance user) {
     LOGGER.info("Updating approval status for candidateId={}: {}", candidate.identifier(), request);
     var currentStatus = candidate.getApprovalStatus(request.institutionId());
-    if (request.approvalStatus().equals(currentStatus)) {
+    if (request.approvalStatus() == currentStatus) {
       LOGGER.warn("Approval status update attempted with no change in status: {}", request);
       return;
     }
