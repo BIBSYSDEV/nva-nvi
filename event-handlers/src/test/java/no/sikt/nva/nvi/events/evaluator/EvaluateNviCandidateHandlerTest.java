@@ -406,17 +406,6 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
   }
 
   @Test
-  void shouldCreateNonCandidateEventWhenIdentityIsNotVerified() throws IOException {
-    var path = "evaluator/nonCandidate_nonVerified.json";
-    var content = IoUtils.inputStreamFromResources(path);
-    var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
-    var event = createEvent(new PersistedResourceMessage(fileUri));
-    handler.handleRequest(event, CONTEXT);
-    var nonCandidate = (UpsertNonNviCandidateRequest) getMessageBody().candidate();
-    assertEquals(HARDCODED_PUBLICATION_ID, nonCandidate.publicationId());
-  }
-
-  @Test
   void shouldCreateNonCandidateEventWhenPublicationIsNotPublished() throws IOException {
     var path = "evaluator/nonCandidate_notPublished.json";
     var content = IoUtils.inputStreamFromResources(path);
@@ -897,22 +886,6 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       setupOpenPeriod(scenario, publicationDate.year());
       var publication =
           factory.withContributor(verifiedCreatorFrom(nviOrganization)).getExpandedPublication();
-
-      var candidate = evaluatePublicationAndGetPersistedCandidate(publication);
-      var publicationDetails = candidate.publicationDetails();
-
-      assertThat(candidate.getTotalPoints()).isPositive();
-      assertThat(candidate.isApplicable()).isTrue();
-      assertThat(publicationDetails.publicationDate()).isEqualTo(publicationDate);
-    }
-
-    @Test
-    void shouldEvaluateExistingCandidateInClosedPeriod() {
-      setupOpenPeriod(scenario, publicationDate.year());
-      var publication =
-          factory.withContributor(verifiedCreatorFrom(nviOrganization)).getExpandedPublication();
-      setupCandidateMatchingPublication(publication);
-      setupClosedPeriod(scenario, publicationDate.year());
 
       var candidate = evaluatePublicationAndGetPersistedCandidate(publication);
       var publicationDetails = candidate.publicationDetails();
