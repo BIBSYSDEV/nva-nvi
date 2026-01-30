@@ -98,8 +98,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-// Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
-@SuppressWarnings("PMD.CouplingBetweenObjects")
 class EvaluateNviCandidateHandlerTest extends EvaluationTest {
 
   public static final PublicationDateDto HARDCODED_PUBLICATION_DATE =

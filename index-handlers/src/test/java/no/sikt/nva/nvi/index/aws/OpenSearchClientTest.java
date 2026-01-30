@@ -68,9 +68,6 @@ import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.search.Hit;
 
-// These are not IP addresses, but cristin org identifier examples
-// Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
-@SuppressWarnings("PMD.GodClass")
 class OpenSearchClientTest {
 
   public static final String YEAR = String.valueOf(CURRENT_YEAR);

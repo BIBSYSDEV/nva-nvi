@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.fasterxml.jackson.databind.MappingIterator;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
+import java.io.IOException;
 import java.io.StringReader;
 import java.math.BigDecimal;
 import java.math.MathContext;
@@ -716,8 +717,8 @@ class CristinMapperTest {
                           Path.of("src/main/resources/cristin_transfer_departments.csv"))));
 
       return iterator.readAll();
-    } catch (Exception e) {
-      throw new RuntimeException();
+    } catch (IOException exception) {
+      throw new RuntimeException(exception);
     }
   }
 

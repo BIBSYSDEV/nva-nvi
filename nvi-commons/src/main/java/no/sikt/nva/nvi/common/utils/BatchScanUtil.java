@@ -108,6 +108,8 @@ public class BatchScanUtil {
     return databaseEntry;
   }
 
+  // Ignoring warning in deprecated code that we plan to remove
+  @SuppressWarnings("PMD.AvoidCatchingGenericException")
   private Dao attemptToMigrateCandidate(CandidateDao candidateDao) {
     try {
       logger.info(
