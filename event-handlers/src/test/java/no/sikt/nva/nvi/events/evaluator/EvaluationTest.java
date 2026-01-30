@@ -4,26 +4,27 @@ import static java.util.Objects.isNull;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.getEvaluateNviCandidateHandlerEnvironment;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.getUpsertNviCandidateHandlerEnvironment;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.updateRequestFromPeriod;
+import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublicationDateInYear;
 import static no.sikt.nva.nvi.events.evaluator.TestUtils.createEvent;
+import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_NORWAY;
 import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_JSON_PUBLICATION_DATE;
 import static no.sikt.nva.nvi.test.TestUtils.createResponse;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
-import static nva.commons.core.attempt.Try.attempt;
 import static org.mockito.Mockito.mock;
 
 import com.amazonaws.services.lambda.runtime.Context;
-import com.amazonaws.services.lambda.runtime.events.SQSEvent;
-import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
 import java.net.http.HttpResponse;
-import java.util.List;
 import no.sikt.nva.nvi.common.S3StorageReader;
+import no.sikt.nva.nvi.common.SampleExpandedPublicationFactory;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.dto.CandidateType;
+import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
@@ -150,8 +151,40 @@ class EvaluationTest {
     var evaluationEvent = createEvent(new PersistedResourceMessage(fileUri));
     handler.handleRequest(evaluationEvent, CONTEXT);
 
-    var upsertEvent = createUpsertEvent(getMessageBody());
-    getUpsertNviCandidateHandler().handleRequest(upsertEvent, CONTEXT);
+    var message = getMessageBody();
+    switch (message.candidate()) {
+      case UpsertNviCandidateRequest candidate -> candidateService.upsertCandidate(candidate);
+      case UpsertNonNviCandidateRequest nonCandidate ->
+          candidateService.updateCandidate(nonCandidate);
+    }
+  }
+
+  protected SampleExpandedPublicationFactory createApplicablePublication(String publicationYear) {
+    var factory =
+        new SampleExpandedPublicationFactory(scenario)
+            .withPublicationDate(randomPublicationDateInYear(publicationYear));
+    var nviOrganization = factory.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, true);
+    return factory.withCreatorAffiliatedWith(nviOrganization);
+  }
+
+  protected Candidate setupExistingCandidateForPublication(
+      SampleExpandedPublicationFactory publicationFactory) {
+    var publication = publicationFactory.getExpandedPublication();
+    var year = publication.publicationDate().year();
+    var period =
+        scenario
+            .getPeriodService()
+            .findByPublishingYear(year)
+            .orElse(setupOpenPeriod(scenario, year));
+
+    if (period.isOpen()) {
+      evaluatePublicationAndPersistResult(publication.toJsonString());
+    } else {
+      setupOpenPeriod(scenario, year);
+      evaluatePublicationAndPersistResult(publication.toJsonString());
+      scenario.getPeriodService().update(updateRequestFromPeriod(period));
+    }
+    return candidateService.getCandidateByPublicationId(publication.id());
   }
 
   private static void mockSecretManager() {
@@ -175,15 +208,5 @@ class EvaluationTest {
     } catch (JsonProcessingException e) {
       throw new RuntimeException(e);
     }
-  }
-
-  private SQSEvent createUpsertEvent(CandidateEvaluatedMessage candidateEvaluatedMessage) {
-    var sqsEvent = new SQSEvent();
-    var message = new SQSMessage();
-    var body =
-        attempt(() -> objectMapper.writeValueAsString(candidateEvaluatedMessage)).orElseThrow();
-    message.setBody(body);
-    sqsEvent.setRecords(List.of(message));
-    return sqsEvent;
   }
 }
