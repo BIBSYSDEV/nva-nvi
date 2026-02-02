@@ -428,14 +428,19 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
             "Publication type is MusicPerformance", "evaluator/nonCandidate_musicalArts.json"));
   }
 
-  // FIXME: This test is wrong
+  @Test
+  void shouldCreateNonCandidateEventOnAcademicCommentaryWithSeriesLevelZero() throws IOException {
+    var path = "evaluator/nonCandidate_academicCommentary_seriesLevelZero.json";
+    var content = IoUtils.inputStreamFromResources(path);
+    var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
+    var event = createEvent(new PersistedResourceMessage(fileUri));
+    handler.handleRequest(event, CONTEXT);
+    var nonCandidate = (UpsertNonNviCandidateRequest) getMessageBody().candidate();
+    assertEquals(HARDCODED_PUBLICATION_ID, nonCandidate.publicationId());
+  }
+
   @Test
   void shouldCreateNonCandidateEventWhenIdentityIsNotVerified() throws IOException {
-    mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-    when(authorizedBackendUriRetriever.fetchResponse(
-            eq(URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0")),
-            any()))
-        .thenReturn(Optional.of(okResponse));
     var path = "evaluator/nonCandidate_nonVerified.json";
     var content = IoUtils.inputStreamFromResources(path);
     var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
@@ -445,14 +450,37 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     assertEquals(HARDCODED_PUBLICATION_ID, nonCandidate.publicationId());
   }
 
-  private CandidateEvaluatedMessage getMessageBody() {
-    var sentMessages = queueClient.getSentMessages();
-    assertThat(sentMessages).hasSize(1);
+  @Test
+  void shouldCreateNonCandidateEventWhenPublicationIsNotPublished() throws IOException {
+    var path = "evaluator/nonCandidate_notPublished.json";
+    var content = IoUtils.inputStreamFromResources(path);
+    var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
+    var event = createEvent(new PersistedResourceMessage(fileUri));
+    handler.handleRequest(event, CONTEXT);
+    var nonCandidate = (UpsertNonNviCandidateRequest) getMessageBody().candidate();
+    assertEquals(HARDCODED_PUBLICATION_ID, nonCandidate.publicationId());
+  }
 
-    var message = sentMessages.getFirst();
-    return attempt(
-            () -> objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class))
-        .orElseThrow();
+  @Test
+  void shouldCreateNonCandidateForMusicalArts() throws IOException {
+    var path = "evaluator/nonCandidate_musicalArts.json";
+    var content = IoUtils.inputStreamFromResources(path);
+    var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
+    var event = createEvent(new PersistedResourceMessage(fileUri));
+    handler.handleRequest(event, CONTEXT);
+    var nonCandidate = (UpsertNonNviCandidateRequest) getMessageBody().candidate();
+    assertEquals(HARDCODED_PUBLICATION_ID, nonCandidate.publicationId());
+  }
+
+  @Test
+  void shouldCreateNonCandidateIfSeriesInMonographHasNviLevelZero() throws IOException {
+    var path = "evaluator/nonCandidate_notValidMonographArticle.json";
+    var content = IoUtils.inputStreamFromResources(path);
+    var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
+    var event = createEvent(new PersistedResourceMessage(fileUri));
+    handler.handleRequest(event, CONTEXT);
+    var nonCandidate = (UpsertNonNviCandidateRequest) getMessageBody().candidate();
+    assertEquals(HARDCODED_PUBLICATION_ID, nonCandidate.publicationId());
   }
 
   @Test
@@ -769,24 +797,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       // Then it should be evaluated as a Candidate
       setupOpenPeriod(scenario, publicationDate.year());
       var publication =
-          factory.withContributor(verifiedCreatorFrom(nviOrganization)).getExpandedPublication();
-
-      var candidate = evaluatePublicationAndGetPersistedCandidate(publication);
-      var publicationDetails = candidate.publicationDetails();
-
-      assertThat(candidate.getTotalPoints()).isPositive();
-      assertThat(candidate.isApplicable()).isTrue();
-      assertThat(publicationDetails.publicationDate()).isEqualTo(publicationDate);
-    }
-
-    // FIXME: This test is wrong
-    @Test
-    void shouldEvaluateExistingCandidateInClosedPeriod() {
-      setupOpenPeriod(scenario, publicationDate.year());
-      var publication =
-          factory.withContributor(verifiedCreatorFrom(nviOrganization)).getExpandedPublication();
-      setupCandidateMatchingPublication(publication);
-      setupClosedPeriod(scenario, publicationDate.year());
+        factory.withContributor(verifiedCreatorFrom(nviOrganization)).getExpandedPublication();
 
       var candidate = evaluatePublicationAndGetPersistedCandidate(publication);
       var publicationDetails = candidate.publicationDetails();
