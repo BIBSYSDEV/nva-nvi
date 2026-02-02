@@ -222,7 +222,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
   }
 
   @Test
-  void shouldCreateNewCandidateEventWithCorrectDataOnValidAcademicChapter() {
+  void shouldCreateNewCandidateForValidAcademicChapter() {
     mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
     var publication = getPublicationFromFile(ACADEMIC_CHAPTER_PATH);
 
@@ -243,7 +243,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
   }
 
   @Test
-  void shouldCreateNewCandidateEventWithCorrectDataOnValidAcademicMonograph() {
+  void shouldCreateNewCandidateForValidAcademicMonograph() {
     mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
     var publication = getPublicationFromFile(ACADEMIC_MONOGRAPH_JSON_PATH);
 
@@ -264,7 +264,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
   }
 
   @Test
-  void shouldCreateNewCandidateEventWithCorrectDataOnValidAcademicCommentary() {
+  void shouldCreateNewCandidateForValidAcademicCommentary() {
     mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
     var publication = getPublicationFromFile(ACADEMIC_COMMENTARY_JSON_PATH);
 
@@ -285,7 +285,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
   }
 
   @Test
-  void shouldCreateNewCandidateEventWithCorrectDataOnValidAcademicLiteratureReview() {
+  void shouldCreateNewCandidateForValidAcademicLiteratureReview() {
     mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
     var publication = getPublicationFromFile(ACADEMIC_LITERATURE_REVIEW_JSON_PATH);
 
