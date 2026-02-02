@@ -28,7 +28,6 @@ import com.amazonaws.services.lambda.runtime.Context;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.util.List;
-
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
