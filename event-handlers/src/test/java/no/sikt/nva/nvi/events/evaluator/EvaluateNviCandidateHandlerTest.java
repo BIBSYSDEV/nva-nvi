@@ -124,7 +124,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     when(authorizedBackendUriRetriever.fetchResponse(any(), any()))
         .thenReturn(Optional.of(okResponse));
     mockOrganizationResponseForAffiliation(SIKT_CRISTIN_ORG_ID, null, uriRetriever);
-    var publication = stringFromResources(Path.of("evaluator/candidate.json"));
+    var publication = getPublicationFromFile("evaluator/candidate.json");
 
     handleEvaluation(publication);
 
@@ -147,10 +147,9 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
 
   private static Stream<Arguments> invalidPublicationProvider() {
     var documentWithMalformedDate =
-        stringFromResources(Path.of("evaluator/candidate_publicationDate_replace_year.json"))
+        getPublicationFromFile("evaluator/candidate_publicationDate_replace_year.json")
             .replace("__REPLACE_YEAR__", "1948-1997");
-    var documentWithMissingDate =
-        stringFromResources(Path.of("expandedPublications/invalidDraft.json"));
+    var documentWithMissingDate = getPublicationFromFile("expandedPublications/invalidDraft.json");
     return Stream.of(
         argumentSet("Malformed publication year", documentWithMalformedDate),
         argumentSet("Missing publication date", documentWithMissingDate));
@@ -267,7 +266,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
   @Test
   void shouldCreateNewCandidateEventWithCorrectDataOnValidAcademicCommentary() {
     mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-    var publication = stringFromResources(Path.of(ACADEMIC_COMMENTARY_JSON_PATH));
+    var publication = getPublicationFromFile(ACADEMIC_COMMENTARY_JSON_PATH);
 
     handleEvaluation(publication);
 
