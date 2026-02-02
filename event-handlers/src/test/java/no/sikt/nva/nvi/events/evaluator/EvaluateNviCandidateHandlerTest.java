@@ -108,7 +108,6 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
               + ".dev.nva.aws.unit.no%2Fcristin%2Forganization%2F194.0.0.0");
   private static final String NON_NVI_CUSTOMER_PATH = "nonNviCustomerResponse.json";
 
-
   private static String getPublicationFromFile(String path, URI publicationId) {
     var identifier = SortableIdentifier.fromUri(publicationId);
     return stringFromResources(Path.of(path))
@@ -119,6 +118,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
   private static String getPublicationFromFile(String path) {
     return getPublicationFromFile(path, HARDCODED_PUBLICATION_ID);
   }
+
   @Test
   void shouldCreateNewCandidateForApplicablePublication() {
     when(authorizedBackendUriRetriever.fetchResponse(any(), any()))
