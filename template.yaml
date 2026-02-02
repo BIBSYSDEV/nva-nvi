@@ -259,10 +259,6 @@ Resources:
     Type: AWS::SQS::Queue
     Properties:
       MessageRetentionPeriod: 1209600 #14 days
-  BatchScanDLQ:
-    Type: AWS::SQS::Queue
-    Properties:
-      MessageRetentionPeriod: 1209600 #14 days
   EvaluationDLQ:
     Type: AWS::SQS::Queue
     Properties:
@@ -272,10 +268,6 @@ Resources:
     Properties:
       MessageRetentionPeriod: 1209600 #14 days
   ReEvaluateDLQ:
-    Type: AWS::SQS::Queue
-    Properties:
-      MessageRetentionPeriod: 1209600 #14 days
-  BatchScanRecoveryQueue:
     Type: AWS::SQS::Queue
     Properties:
       MessageRetentionPeriod: 1209600 #14 days
@@ -496,7 +488,6 @@ Resources:
                   - !GetAtt RemoveDocumentFromIndexQueue.Arn
                   - !GetAtt RemoveDocumentFromIndexDLQ.Arn
                   - !GetAtt EvaluationDLQ.Arn
-                  - !GetAtt BatchScanDLQ.Arn
                   - !GetAtt UpdateIndexDLQ.Arn
                   - !GetAtt UpsertCandidateDLQ.Arn
                   - !GetAtt ReEvaluateDLQ.Arn
@@ -507,7 +498,6 @@ Resources:
                   - !GetAtt DeletePersistedIndexDocumentDLQ.Arn
                   - !GetAtt DeletePersistedIndexDocumentQueue.Arn
                   - !GetAtt QueuePersistedResourceDLQ.Arn
-                  - !GetAtt BatchScanRecoveryQueue.Arn
                   - !Ref CristinImportNviQueueArn
                   - !GetAtt BatchJobWorkQueue.Arn
                   - !GetAtt BatchJobDLQ.Arn
@@ -706,23 +696,6 @@ Resources:
       DomainName: !Ref ApiDomain
       RestApiId: !Ref ScientificIndexApi
       Stage: !Ref ScientificIndexApi.Stage
-
-  #============================= Button Handlers ======================================================
-  BatchScanRecoveryHandler:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: event-handlers
-      Handler: no.sikt.nva.nvi.events.batch.BatchScanRecoveryHandler::handleRequest
-      Role: !GetAtt NvaNviRole.Arn
-      Timeout: 900
-      MemorySize: 1536
-      AutoPublishAlias: live
-      SnapStart:
-        ApplyOn: PublishedVersions
-      Environment:
-        Variables:
-          EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
-          BATCH_SCAN_RECOVERY_QUEUE: !Ref BatchScanRecoveryQueue
 
   #============================= Event Handlers ======================================================
   QueuePersistedResourceHandler:
@@ -961,32 +934,6 @@ Resources:
           OnFailure:
             Type: SQS
             Destination: !GetAtt DeletePersistedIndexDocumentDLQ.Arn
-
-  NviEventBasedBatchScanHandler:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: event-handlers
-      Handler: no.sikt.nva.nvi.events.batch.EventBasedBatchScanHandler::handleRequest
-      Role: !GetAtt NvaNviRole.Arn
-      Timeout: 900
-      Environment:
-        Variables:
-          EVENT_BUS_NAME: !GetAtt InternalBus.Name
-          EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
-          BATCH_SCAN_RECOVERY_QUEUE: !Ref BatchScanRecoveryQueue
-      Events:
-        EventBridgeEvent:
-          Type: EventBridgeRule
-          Properties:
-            EventBusName: !GetAtt InternalBus.Name
-            Pattern:
-              detail:
-                topic: ["NviService.BatchScan"]
-      EventInvokeConfig:
-        DestinationConfig:
-          OnFailure:
-            Type: SQS
-            Destination: !GetAtt BatchScanDLQ.Arn
 
   CristinNviEventConsumer:
     Type: AWS::Serverless::Function
