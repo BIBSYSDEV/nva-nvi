@@ -227,9 +227,9 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
     var publication = getPublicationFromFile(ACADEMIC_CHAPTER_PATH);
 
-    var candidate =
-        evaluatePublicationAndGetPersistedCandidate(HARDCODED_PUBLICATION_ID, publication);
+    evaluatePublicationAndPersistResult(publication);
 
+    var candidate = candidateService.getCandidateByPublicationId(HARDCODED_PUBLICATION_ID);
     var expectedPoints = ONE.setScale(SCALE, ROUNDING_MODE);
     assertThat(candidate)
         .extracting(
@@ -248,9 +248,9 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
     var publication = getPublicationFromFile(ACADEMIC_MONOGRAPH_JSON_PATH);
 
-    var candidate =
-        evaluatePublicationAndGetPersistedCandidate(HARDCODED_PUBLICATION_ID, publication);
+    evaluatePublicationAndPersistResult(publication);
 
+    var candidate = candidateService.getCandidateByPublicationId(HARDCODED_PUBLICATION_ID);
     var expectedPoints = BigDecimal.valueOf(5).setScale(SCALE, ROUNDING_MODE);
     assertThat(candidate)
         .extracting(
@@ -267,10 +267,11 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
   @Test
   void shouldCreateNewCandidateEventWithCorrectDataOnValidAcademicCommentary() {
     mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-    var content = stringFromResources(Path.of(ACADEMIC_COMMENTARY_JSON_PATH));
+    var publication = stringFromResources(Path.of(ACADEMIC_COMMENTARY_JSON_PATH));
 
-    var candidate = evaluatePublicationAndGetPersistedCandidate(HARDCODED_PUBLICATION_ID, content);
+    evaluatePublicationAndPersistResult(publication);
 
+    var candidate = candidateService.getCandidateByPublicationId(HARDCODED_PUBLICATION_ID);
     var expectedPoints = BigDecimal.valueOf(5).setScale(SCALE, ROUNDING_MODE);
     assertThat(candidate)
         .extracting(
@@ -493,10 +494,10 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
   @Deprecated
   void shouldHandleSeriesWithMultipleTypes() {
     mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-    var path = "evaluator/candidate_academicMonograph_series_multiple_types.json";
-    var candidate =
-        evaluatePublicationAndGetPersistedCandidate(
-            HARDCODED_PUBLICATION_ID, stringFromResources(Path.of(path)));
+    var publication = getPublicationFromFile("evaluator/candidate_academicMonograph_series_multiple_types.json");
+    evaluatePublicationAndPersistResult(publication);
+
+    var candidate = candidateService.getCandidateByPublicationId(HARDCODED_PUBLICATION_ID);
     var expectedChannel =
         new PublicationChannel(HARDCODED_PUBLICATION_CHANNEL_ID, SERIES, ScientificValue.LEVEL_ONE);
     assertThat(candidate)
@@ -516,10 +517,11 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
   @Deprecated
   void shouldHandleJournalWithMultipleTypes() {
     mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-    var path = "evaluator/candidate_academicArticle_journal_multiple_types.json";
-    var candidate =
-        evaluatePublicationAndGetPersistedCandidate(
-            HARDCODED_PUBLICATION_ID, stringFromResources(Path.of(path)));
+    var publication = getPublicationFromFile("evaluator/candidate_academicArticle_journal_multiple_types.json");
+
+    evaluatePublicationAndPersistResult(publication);
+
+    var candidate = candidateService.getCandidateByPublicationId(HARDCODED_PUBLICATION_ID);
     var expectedChannel =
         new PublicationChannel(
             HARDCODED_PUBLICATION_CHANNEL_ID, JOURNAL, ScientificValue.LEVEL_ONE);
