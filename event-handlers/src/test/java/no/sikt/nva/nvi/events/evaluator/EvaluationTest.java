@@ -1,8 +1,6 @@
 package no.sikt.nva.nvi.events.evaluator;
 
-import static java.util.Objects.isNull;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.getEvaluateNviCandidateHandlerEnvironment;
-import static no.sikt.nva.nvi.common.EnvironmentFixtures.getUpsertNviCandidateHandlerEnvironment;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.updateRequestFromPeriod;
 import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublicationDateInYear;
@@ -27,7 +25,6 @@ import no.sikt.nva.nvi.common.dto.CandidateType;
 import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
-import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.model.Candidate;
@@ -35,7 +32,6 @@ import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
-import no.sikt.nva.nvi.events.persist.UpsertNviCandidateHandler;
 import no.sikt.nva.nvi.test.SampleExpandedPublication;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.auth.uriretriever.BackendClientCredentials;
@@ -68,7 +64,6 @@ class EvaluationTest {
   protected EvaluatorService evaluatorService;
   protected NviPeriodService periodService;
   protected CandidateService candidateService;
-  private UpsertNviCandidateHandler upsertNviCandidateHandler;
 
   protected BigDecimal getPointsForInstitution(
       UpsertNviCandidateRequest candidate, URI institutionId) {
@@ -105,15 +100,6 @@ class EvaluationTest {
     handler = new EvaluateNviCandidateHandler(evaluatorService, queueClient, evaluationEnvironment);
   }
 
-  protected UpsertNviCandidateHandler getUpsertNviCandidateHandler() {
-    if (isNull(upsertNviCandidateHandler)) {
-      upsertNviCandidateHandler =
-          new UpsertNviCandidateHandler(
-              candidateService, mock(QueueClient.class), getUpsertNviCandidateHandlerEnvironment());
-    }
-    return upsertNviCandidateHandler;
-  }
-
   protected void evaluate(SampleExpandedPublication publication) {
     var fileUri = scenario.setupExpandedPublicationInS3(publication);
     var event = createEvent(new PersistedResourceMessage(fileUri));
@@ -129,14 +115,9 @@ class EvaluationTest {
     return (UpsertNviCandidateRequest) getEvaluationResult(publication);
   }
 
-  /**
-   * Evaluates a publication as if it was stored in S3 and returns the candidate from the database.
-   * This wrapper is an abstraction of the whole processing chain in `event-handlers`, including
-   * parsing, evaluation, and upsert.
-   */
   protected Candidate evaluatePublicationAndGetPersistedCandidate(
       URI publicationId, String publicationJson) {
-    evaluatePublicationAndPersistResult(publicationJson);
+    handleEvaluation(publicationJson);
     return candidateService.getCandidateByPublicationId(publicationId);
   }
 
@@ -146,7 +127,12 @@ class EvaluationTest {
         publication.id(), publication.toJsonString());
   }
 
-  protected void evaluatePublicationAndPersistResult(String publicationJson) {
+  /**
+   * Evaluates a publication as if it was stored in S3 and returns the candidate from the database.
+   * This wrapper is an abstraction of the whole processing chain in `event-handlers`, including
+   * parsing, evaluation, and upsert.
+   */
+  protected void handleEvaluation(String publicationJson) {
     var fileUri = scenario.setupExpandedPublicationInS3(publicationJson);
     var evaluationEvent = createEvent(new PersistedResourceMessage(fileUri));
     handler.handleRequest(evaluationEvent, CONTEXT);
@@ -178,10 +164,10 @@ class EvaluationTest {
             .orElse(setupOpenPeriod(scenario, year));
 
     if (period.isOpen()) {
-      evaluatePublicationAndPersistResult(publication.toJsonString());
+      handleEvaluation(publication.toJsonString());
     } else {
       setupOpenPeriod(scenario, year);
-      evaluatePublicationAndPersistResult(publication.toJsonString());
+      handleEvaluation(publication.toJsonString());
       scenario.getPeriodService().update(updateRequestFromPeriod(period));
     }
     return candidateService.getCandidateByPublicationId(publication.id());

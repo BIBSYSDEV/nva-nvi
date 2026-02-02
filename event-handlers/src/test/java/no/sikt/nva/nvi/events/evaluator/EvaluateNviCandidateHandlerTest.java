@@ -126,7 +126,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     mockOrganizationResponseForAffiliation(SIKT_CRISTIN_ORG_ID, null, uriRetriever);
     var publication = stringFromResources(Path.of("evaluator/candidate.json"));
 
-    evaluatePublicationAndPersistResult(publication);
+    handleEvaluation(publication);
 
     var candidate = candidateService.getCandidateByPublicationId(HARDCODED_PUBLICATION_ID);
     assertThat(candidate.isApplicable()).isTrue();
@@ -165,7 +165,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     var updatedAbstract = randomString();
     var updatedPublication =
         publication.getExpandedPublicationBuilder().withAbstract(updatedAbstract).build();
-    evaluatePublicationAndPersistResult(updatedPublication.toJsonString());
+    handleEvaluation(updatedPublication.toJsonString());
 
     var updatedCandidate = candidateService.getCandidateByPublicationId(updatedPublication.id());
     assertThat(updatedCandidate.publicationDetails().abstractText()).isEqualTo(updatedAbstract);
@@ -179,7 +179,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     mockOrganizationResponseForAffiliation(SIKT_CRISTIN_ORG_ID, null, uriRetriever);
     var publication = getPublicationFromFile("evaluator/candidate_stripped.json");
 
-    evaluatePublicationAndPersistResult(publication);
+    handleEvaluation(publication);
 
     var candidate = candidateService.getCandidateByPublicationId(HARDCODED_PUBLICATION_ID);
     assertThat(candidate.isApplicable()).isTrue();
@@ -192,7 +192,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     var publication =
         getPublicationFromFile("evaluator/candidate_verifiedCreator_with_nonNviInstitution.json");
 
-    evaluatePublicationAndPersistResult(publication);
+    handleEvaluation(publication);
 
     var candidate = candidateService.getCandidateByPublicationId(HARDCODED_PUBLICATION_ID);
     assertThat(candidate.getInstitutionPoints())
@@ -205,7 +205,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
   void shouldCreateNewCandidateEventOnValidAcademicArticle() {
     mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
 
-    evaluatePublicationAndPersistResult(ACADEMIC_ARTICLE);
+    handleEvaluation(ACADEMIC_ARTICLE);
 
     var candidate = candidateService.getCandidateByPublicationId(HARDCODED_PUBLICATION_ID);
 
@@ -227,7 +227,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
     var publication = getPublicationFromFile(ACADEMIC_CHAPTER_PATH);
 
-    evaluatePublicationAndPersistResult(publication);
+    handleEvaluation(publication);
 
     var candidate = candidateService.getCandidateByPublicationId(HARDCODED_PUBLICATION_ID);
     var expectedPoints = ONE.setScale(SCALE, ROUNDING_MODE);
@@ -248,7 +248,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
     var publication = getPublicationFromFile(ACADEMIC_MONOGRAPH_JSON_PATH);
 
-    evaluatePublicationAndPersistResult(publication);
+    handleEvaluation(publication);
 
     var candidate = candidateService.getCandidateByPublicationId(HARDCODED_PUBLICATION_ID);
     var expectedPoints = BigDecimal.valueOf(5).setScale(SCALE, ROUNDING_MODE);
@@ -269,7 +269,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
     var publication = stringFromResources(Path.of(ACADEMIC_COMMENTARY_JSON_PATH));
 
-    evaluatePublicationAndPersistResult(publication);
+    handleEvaluation(publication);
 
     var candidate = candidateService.getCandidateByPublicationId(HARDCODED_PUBLICATION_ID);
     var expectedPoints = BigDecimal.valueOf(5).setScale(SCALE, ROUNDING_MODE);
@@ -290,7 +290,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
     var publication = getPublicationFromFile(ACADEMIC_LITERATURE_REVIEW_JSON_PATH);
 
-    evaluatePublicationAndPersistResult(publication);
+    handleEvaluation(publication);
 
     var candidate = candidateService.getCandidateByPublicationId(HARDCODED_PUBLICATION_ID);
     var expectedPoints = BigDecimal.valueOf(1).setScale(SCALE, ROUNDING_MODE);
@@ -310,7 +310,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
   void shouldCalculatePointsOnValidAcademicArticle() {
     mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
 
-    evaluatePublicationAndPersistResult(ACADEMIC_ARTICLE);
+    handleEvaluation(ACADEMIC_ARTICLE);
 
     var candidate = candidateService.getCandidateByPublicationId(HARDCODED_PUBLICATION_ID);
     assertThat(candidate.getInstitutionPoints()).isNotEmpty();
@@ -322,7 +322,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
   void shouldCreateInstitutionApprovalsForTopLevelInstitutions() {
     mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
 
-    evaluatePublicationAndPersistResult(ACADEMIC_ARTICLE);
+    handleEvaluation(ACADEMIC_ARTICLE);
 
     var candidate = candidateService.getCandidateByPublicationId(HARDCODED_PUBLICATION_ID);
     assertThat(candidate.getInstitutionPoints()).isNotEmpty();
@@ -338,7 +338,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
         getPublicationFromFile(
             "evaluator/candidate_academicChapter_seriesLevelUnassignedPublisherLevelOne.json");
 
-    evaluatePublicationAndPersistResult(publication);
+    handleEvaluation(publication);
 
     var candidate = candidateService.getCandidateByPublicationId(HARDCODED_PUBLICATION_ID);
     assertThat(candidate.isApplicable()).isTrue();
@@ -352,7 +352,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
         getPublicationFromFile(
             "evaluator/candidate_academicMonograph_seriesLevelUnassignedPublisherLevelOne.json");
 
-    evaluatePublicationAndPersistResult(publication);
+    handleEvaluation(publication);
 
     var candidate = candidateService.getCandidateByPublicationId(HARDCODED_PUBLICATION_ID);
     assertThat(candidate.isApplicable()).isTrue();
@@ -365,7 +365,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     var publication =
         getPublicationFromFile("evaluator/candidate_academicCommentary_withoutSeries.json");
 
-    evaluatePublicationAndPersistResult(publication);
+    handleEvaluation(publication);
 
     var candidate = candidateService.getCandidateByPublicationId(HARDCODED_PUBLICATION_ID);
     assertThat(candidate.isApplicable()).isTrue();
@@ -376,7 +376,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
     var publication = getPublicationFromFile(ACADEMIC_MONOGRAPH_JSON_PATH);
 
-    evaluatePublicationAndPersistResult(publication);
+    handleEvaluation(publication);
 
     var candidate = candidateService.getCandidateByPublicationId(HARDCODED_PUBLICATION_ID);
     assertThat(candidate.isApplicable()).isTrue();
@@ -388,7 +388,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
     var publication = getPublicationFromFile(ACADEMIC_LITERATURE_REVIEW_JSON_PATH);
 
-    evaluatePublicationAndPersistResult(publication);
+    handleEvaluation(publication);
 
     var candidate = candidateService.getCandidateByPublicationId(HARDCODED_PUBLICATION_ID);
     assertThat(candidate.isApplicable()).isTrue();
@@ -400,7 +400,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
   void shouldNotCreateCandidateForNonApplicablePublication(String filePath) {
     var publication = getPublicationFromFile(filePath);
 
-    evaluatePublicationAndPersistResult(publication);
+    handleEvaluation(publication);
 
     assertThrows(
         CandidateNotFoundException.class,
@@ -444,7 +444,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
   void shouldCreateNonCandidateEventWhenZeroNviInstitutions() {
     mockCristinResponseAndCustomerApiResponseForNviInstitution(notFoundResponse);
 
-    evaluatePublicationAndPersistResult(ACADEMIC_ARTICLE);
+    handleEvaluation(ACADEMIC_ARTICLE);
 
     assertThrows(
         CandidateNotFoundException.class,
@@ -484,7 +484,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
   void shouldCreateNewCandidateEventWhenAffiliationAreNviInstitutions() {
     mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
 
-    evaluatePublicationAndPersistResult(ACADEMIC_ARTICLE);
+    handleEvaluation(ACADEMIC_ARTICLE);
 
     var candidate = candidateService.getCandidateByPublicationId(HARDCODED_PUBLICATION_ID);
     assertThat(candidate.isApplicable()).isTrue();
@@ -495,7 +495,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
   void shouldHandleSeriesWithMultipleTypes() {
     mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
     var publication = getPublicationFromFile("evaluator/candidate_academicMonograph_series_multiple_types.json");
-    evaluatePublicationAndPersistResult(publication);
+    handleEvaluation(publication);
 
     var candidate = candidateService.getCandidateByPublicationId(HARDCODED_PUBLICATION_ID);
     var expectedChannel =
@@ -519,7 +519,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
     var publication = getPublicationFromFile("evaluator/candidate_academicArticle_journal_multiple_types.json");
 
-    evaluatePublicationAndPersistResult(publication);
+    handleEvaluation(publication);
 
     var candidate = candidateService.getCandidateByPublicationId(HARDCODED_PUBLICATION_ID);
     var expectedChannel =
@@ -640,7 +640,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
               .build();
       var publication = factory.withContributor(unnamedContributor).getExpandedPublication();
 
-      evaluatePublicationAndPersistResult(publication.toJsonString());
+      handleEvaluation(publication.toJsonString());
 
       assertThrows(
           CandidateNotFoundException.class,
@@ -723,7 +723,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
               .withContributor(verifiedCreatorFrom(swedishOrganization))
               .getExpandedPublication();
 
-      evaluatePublicationAndPersistResult(publication.toJsonString());
+      handleEvaluation(publication.toJsonString());
 
       assertThrows(
           CandidateNotFoundException.class,
@@ -778,7 +778,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       var publication =
           factory.withContributor(verifiedCreatorFrom(nviOrganization)).getExpandedPublication();
 
-      evaluatePublicationAndPersistResult(publication.toJsonString());
+      handleEvaluation(publication.toJsonString());
 
       assertThrows(
           CandidateNotFoundException.class,
@@ -799,7 +799,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
               .withPublicationDate(historicalDate)
               .getExpandedPublication();
 
-      evaluatePublicationAndPersistResult(publication.toJsonString());
+      handleEvaluation(publication.toJsonString());
       var nviPeriod = periodService.findByPublishingYear(historicalDate.year());
 
       assertThrows(
@@ -874,11 +874,11 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
 
       var originalPublication =
           publicationFactory.withPublicationDate(openPeriod).getExpandedPublication();
-      evaluatePublicationAndPersistResult(originalPublication.toJsonString());
+      handleEvaluation(originalPublication.toJsonString());
 
       var updatedPublication =
           publicationFactory.withPublicationDate(nonPeriod).getExpandedPublication();
-      evaluatePublicationAndPersistResult(updatedPublication.toJsonString());
+      handleEvaluation(updatedPublication.toJsonString());
 
       var finalPublication =
           publicationFactory.withPublicationDate(newPeriod).getExpandedPublication();
