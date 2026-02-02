@@ -21,6 +21,7 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints.DbCreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
+import no.sikt.nva.nvi.common.model.Sector;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.RandomDataGenerator;
 import org.junit.jupiter.api.Test;
@@ -49,6 +50,7 @@ class CandidateTest {
     return new DbInstitutionPoints(
         affiliation,
         randomBigDecimal(),
+        Sector.UNKNOWN,
         List.of(
             new DbCreatorAffiliationPoints(creator.creatorId(), affiliation, randomBigDecimal())));
   }

@@ -10,6 +10,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import no.sikt.nva.nvi.common.model.InstanceType;
+import no.sikt.nva.nvi.common.model.Sector;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
 
@@ -40,7 +41,7 @@ public class PointCalculationDtoBuilder {
   public static PointCalculationDtoBuilder randomPointCalculationDtoBuilder() {
     var creatorPoint = new CreatorAffiliationPoints(randomUri(), randomUri(), randomBigDecimal());
     var institutionPoint =
-        new InstitutionPoints(randomUri(), randomBigDecimal(), List.of(creatorPoint));
+        new InstitutionPoints(randomUri(), randomBigDecimal(), Sector.OTHER, List.of(creatorPoint));
     return builder()
         .withInstanceType(InstanceType.ACADEMIC_ARTICLE)
         .withChannel(JOURNAL_OF_TESTING)
