@@ -26,11 +26,9 @@ import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
 public class NviQueueClient implements QueueClient {
 
-  public static final String CANDIDATE_IDENTIFIER = "candidateIdentifier";
   private static final int MAX_CONNECTIONS = 10_000;
   private static final int IDLE_TIME = 30;
   private static final int TIMEOUT_TIME = 30;
-  public static final String DATA_TYPE_STRING = "String";
   protected final SqsClient sqsClient;
 
   @JacocoGenerated
@@ -48,11 +46,17 @@ public class NviQueueClient implements QueueClient {
   }
 
   @Override
+  public NviSendMessageResponse sendMessage(QueueMessage message, String queueUrl) {
+    return createResponse(sqsClient.sendMessage(createSendRequest(message, queueUrl)));
+  }
+
+  @Override
   public NviSendMessageResponse sendMessage(
       String message, String queueUrl, UUID candidateIdentifier) {
+    var messageAttributes =
+        QueueMessageAttributes.fromCandidateIdentifier(candidateIdentifier).build();
     return createResponse(
-        sqsClient.sendMessage(
-            createSendRequest(message, queueUrl, getMessageAttributes(candidateIdentifier))));
+        sqsClient.sendMessage(createSendRequest(message, queueUrl, messageAttributes)));
   }
 
   @Override
@@ -84,15 +88,6 @@ public class NviQueueClient implements QueueClient {
         .build();
   }
 
-  private static Map<String, MessageAttributeValue> getMessageAttributes(UUID candidateIdentifier) {
-    return Map.of(
-        CANDIDATE_IDENTIFIER,
-        MessageAttributeValue.builder()
-            .stringValue(candidateIdentifier.toString())
-            .dataType(DATA_TYPE_STRING)
-            .build());
-  }
-
   @JacocoGenerated
   private static SdkHttpClient httpClientForConcurrentQueries() {
     return ApacheHttpClient.builder()
@@ -113,6 +108,14 @@ public class NviQueueClient implements QueueClient {
 
   private SendMessageRequest createSendRequest(String body, String queueUrl) {
     return SendMessageRequest.builder().queueUrl(queueUrl).messageBody(body).build();
+  }
+
+  private SendMessageRequest createSendRequest(QueueMessage message, String queueUrl) {
+    return SendMessageRequest.builder()
+        .queueUrl(queueUrl)
+        .messageBody(message.body().toJsonString())
+        .messageAttributes(message.attributes().build())
+        .build();
   }
 
   private SendMessageRequest createSendRequest(

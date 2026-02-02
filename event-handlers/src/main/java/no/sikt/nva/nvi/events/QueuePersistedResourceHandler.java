@@ -1,11 +1,12 @@
 package no.sikt.nva.nvi.events;
 
 import static java.util.Objects.isNull;
-import static nva.commons.core.attempt.Try.attempt;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
+import no.sikt.nva.nvi.common.queue.QueueMessage;
+import no.sikt.nva.nvi.common.queue.QueueMessageAttributes;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.unit.nva.events.handlers.DestinationsEventBridgeEventHandler;
 import no.unit.nva.events.models.AwsEventBridgeDetail;
@@ -44,7 +45,7 @@ public class QueuePersistedResourceHandler
       Context context) {
     validateInput(input);
     if (isPublication(input)) {
-      queuePersistedResource(createMessageBody(input));
+      queuePersistedResource(input);
     }
     return null;
   }
@@ -60,13 +61,11 @@ public class QueuePersistedResourceHandler
     }
   }
 
-  private void queuePersistedResource(String messageBody) {
-    queueClient.sendMessage(messageBody, queueUrl);
-  }
-
-  private String createMessageBody(EventReference input) {
-    return attempt(
-            () -> objectMapper.writeValueAsString(new PersistedResourceMessage(input.getUri())))
-        .orElseThrow();
+  private void queuePersistedResource(EventReference input) {
+    LOGGER.info("Adding publication to evaluation queue: {}", input.getUri());
+    var messageBody = new PersistedResourceMessage(input.getUri());
+    var messageAttributes = QueueMessageAttributes.fromPublicationBucketUri(input.getUri());
+    var message = new QueueMessage(messageBody, messageAttributes);
+    queueClient.sendMessage(message, queueUrl);
   }
 }

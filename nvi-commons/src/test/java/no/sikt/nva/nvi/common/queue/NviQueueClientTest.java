@@ -1,5 +1,7 @@
 package no.sikt.nva.nvi.common.queue;
 
+import static java.util.Objects.nonNull;
+import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganization;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
@@ -8,8 +10,10 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.util.List;
@@ -17,6 +21,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentMatcher;
 import software.amazon.awssdk.http.SdkHttpResponse;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.BatchResultErrorEntry;
@@ -70,6 +75,30 @@ class NviQueueClientTest {
     var result = client.sendMessage(TEST_PAYLOAD, TEST_QUEUE_URL, candidateIdentifier);
 
     assertThat(result.messageId(), is(equalTo(TEST_MESSAGE_ID)));
+  }
+
+  @Test
+  void shouldSendCorrectMessageRequestForCustomQueueMessage() {
+    when(sqsClient.sendMessage(any(SendMessageRequest.class)))
+        .thenReturn(SendMessageResponse.builder().messageId(TEST_MESSAGE_ID).build());
+    var client = new NviQueueClient(sqsClient);
+
+    var messageBody = randomOrganization().build();
+    var messageAttributes = QueueMessageAttributes.fromCandidateIdentifier(UUID.randomUUID());
+    var message = new QueueMessage(messageBody, messageAttributes);
+
+    client.sendMessage(message, TEST_QUEUE_URL);
+
+    verify(sqsClient).sendMessage(argThat(matchesSendMessageRequest(message, TEST_QUEUE_URL)));
+  }
+
+  private static ArgumentMatcher<SendMessageRequest> matchesSendMessageRequest(
+      QueueMessage expectedMessage, String expectedQueueUrl) {
+    return request ->
+        nonNull(request)
+            && request.queueUrl().equals(expectedQueueUrl)
+            && request.messageBody().equals(expectedMessage.body().toJsonString())
+            && request.messageAttributes().equals(expectedMessage.attributes().build());
   }
 
   @Test

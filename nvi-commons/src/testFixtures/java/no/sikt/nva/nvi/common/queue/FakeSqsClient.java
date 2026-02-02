@@ -30,9 +30,6 @@ import software.amazon.awssdk.services.sqs.model.SqsException;
 @SuppressWarnings("PMD.CouplingBetweenObjects")
 public class FakeSqsClient implements QueueClient {
 
-  public static final String MESSAGE_ATTRIBUTE_CANDIDATE_IDENTIFIER_QUEUE = "candidateIdentifier";
-  public static final String DATA_TYPE_STRING = "String";
-
   private final Set<String> destinationQueuesThatShouldFail = new HashSet<>();
 
   private final List<SendMessageRequest> sentMessages = new ArrayList<>();
@@ -76,10 +73,21 @@ public class FakeSqsClient implements QueueClient {
   }
 
   @Override
+  public NviSendMessageResponse sendMessage(QueueMessage message, String queueUrl) {
+    validateQueueUrl(queueUrl);
+    var request = createRequest(message, queueUrl);
+    sentMessages.add(request);
+    return createResponse(
+        SendMessageResponse.builder().messageId(UUID.randomUUID().toString()).build());
+  }
+
+  @Override
   public NviSendMessageResponse sendMessage(
       String message, String queueUrl, UUID candidateIdentifier) {
     validateQueueUrl(queueUrl);
-    var request = createRequest(message, queueUrl, candidateIdentifier);
+    var messageAttributes =
+        QueueMessageAttributes.fromCandidateIdentifier(candidateIdentifier).build();
+    var request = createRequest(message, queueUrl, messageAttributes);
     sentMessages.add(request);
     return createResponse(
         SendMessageResponse.builder().messageId(UUID.randomUUID().toString()).build());
@@ -191,22 +199,25 @@ public class FakeSqsClient implements QueueClient {
     return SendMessageBatchRequestEntry.builder().messageBody(message).build();
   }
 
-  private SendMessageRequest createRequest(String body, String queueUrl, UUID candidateIdentifier) {
+  private SendMessageRequest createRequest(QueueMessage message, String queueUrl) {
     return SendMessageRequest.builder()
         .queueUrl(queueUrl)
-        .messageAttributes(
-            Map.of(
-                MESSAGE_ATTRIBUTE_CANDIDATE_IDENTIFIER_QUEUE,
-                MessageAttributeValue.builder()
-                    .stringValue(candidateIdentifier.toString())
-                    .dataType(DATA_TYPE_STRING)
-                    .build()))
-        .messageBody(body)
+        .messageBody(message.body().toJsonString())
+        .messageAttributes(message.attributes().build())
         .build();
   }
 
   private SendMessageRequest createRequest(String body, String queueUrl) {
     return SendMessageRequest.builder().queueUrl(queueUrl).messageBody(body).build();
+  }
+
+  private SendMessageRequest createRequest(
+      String body, String queueUrl, Map<String, MessageAttributeValue> attributes) {
+    return SendMessageRequest.builder()
+        .queueUrl(queueUrl)
+        .messageBody(body)
+        .messageAttributes(attributes)
+        .build();
   }
 
   private NviSendMessageResponse createResponse(SendMessageResponse response) {

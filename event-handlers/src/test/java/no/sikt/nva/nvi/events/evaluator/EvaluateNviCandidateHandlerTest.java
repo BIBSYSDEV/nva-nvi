@@ -34,7 +34,6 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static nva.commons.core.ioutils.IoUtils.stringFromResources;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.Arguments.argumentSet;
@@ -42,7 +41,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -71,7 +69,6 @@ import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.sikt.nva.nvi.test.SampleExpandedContributor;
 import no.sikt.nva.nvi.test.SampleExpandedPublication;
-import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.identifiers.SortableIdentifier;
 import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
@@ -423,20 +420,17 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
   }
 
   @Test
-  void shouldPlaceSqsMessageWithExceptionDetailOnDlqWhenEvaluationFails()
-      throws JsonProcessingException {
-    var event =
-        createEvent(new PersistedResourceMessage(UriWrapper.fromUri("s3://dummy").getUri()));
+  void shouldPlaceSqsMessageWithExceptionDetailOnDlqWhenEvaluationFails() {
+    var originalMessage = new PersistedResourceMessage(UriWrapper.fromUri("s3://dummy").getUri());
+    var event = createEvent(originalMessage);
+
     handler.handleRequest(event, CONTEXT);
 
     var dlqMessage = fetchMessageFromDlq();
-
-    assertFalse(
-        JsonUtils.dtoObjectMapper
-            .readTree(dlqMessage.body())
-            .get("exception")
-            .toPrettyString()
-            .isEmpty());
+    assertThat(dlqMessage.body()).isEqualToIgnoringWhitespace(originalMessage.toJsonString());
+    assertThat(dlqMessage.messageAttributes().get("errorMessage")).isNotBlank();
+    assertThat(dlqMessage.messageAttributes().get("errorType")).isNotBlank();
+    assertThat(dlqMessage.messageAttributes().get("stackTrace")).isNotBlank();
   }
 
   @Test
@@ -455,12 +449,14 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     when(uriRetriever.fetchResponse(any(), any()))
         .thenReturn(Optional.of(internalServerErrorResponse));
     var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH), ACADEMIC_ARTICLE);
-    var event = createEvent(new PersistedResourceMessage(fileUri));
+    var originalMessage = new PersistedResourceMessage(fileUri);
+    var event = createEvent(originalMessage);
     handler.handleRequest(event, CONTEXT);
 
-    var message = fetchMessageFromDlq();
+    var dlqMessage = fetchMessageFromDlq();
 
-    assertTrue(message.body().contains("exception"));
+    assertThat(dlqMessage.body()).isEqualToIgnoringWhitespace(originalMessage.toJsonString());
+    assertThat(dlqMessage.messageAttributes().get("errorMessage")).isNotBlank();
   }
 
   @Test
@@ -472,7 +468,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
 
     var message = fetchMessageFromDlq();
 
-    assertThat(message.body()).contains("status code: 500");
+    assertThat(message.messageAttributes().get("errorMessage")).contains("status code: 500");
   }
 
   private NviReceiveMessage fetchMessageFromDlq() {
