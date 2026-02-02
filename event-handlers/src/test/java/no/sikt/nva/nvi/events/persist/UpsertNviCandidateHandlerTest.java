@@ -44,7 +44,6 @@ import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.UpsertRequestBuilder;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
-import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.queue.QueueClient;
@@ -63,8 +62,6 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-// Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
-@SuppressWarnings("PMD.CouplingBetweenObjects")
 class UpsertNviCandidateHandlerTest {
 
   public static final Context CONTEXT = mock(Context.class);
@@ -72,7 +69,6 @@ class UpsertNviCandidateHandlerTest {
   private static final String DLQ_QUEUE_URL = "test_dlq_url";
   private TestScenario scenario;
   private UpsertNviCandidateHandler handler;
-  private CandidateRepository candidateRepository;
   private CandidateService candidateService;
   private QueueClient queueClient;
   private Environment environment;
@@ -80,7 +76,6 @@ class UpsertNviCandidateHandlerTest {
   @BeforeEach
   void setup() {
     scenario = new TestScenario();
-    candidateRepository = scenario.getCandidateRepository();
     candidateService = scenario.getCandidateService();
     setupOpenPeriod(scenario, CURRENT_YEAR);
     queueClient = mock(QueueClient.class);

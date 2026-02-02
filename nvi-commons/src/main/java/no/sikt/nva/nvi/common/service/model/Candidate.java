@@ -58,7 +58,7 @@ import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
 
 // Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
-@SuppressWarnings({"PMD.GodClass", "PMD.CouplingBetweenObjects"})
+@SuppressWarnings({"PMD.CouplingBetweenObjects"})
 public record Candidate(
     UUID identifier,
     boolean applicable,

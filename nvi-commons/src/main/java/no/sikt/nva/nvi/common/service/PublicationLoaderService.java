@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.ByteArrayOutputStream;
 import java.io.StringReader;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.dto.PublicationDto;
@@ -99,7 +100,7 @@ public class PublicationLoaderService {
   private static StringReader toJsonReader(Model resultModel) {
     var outputStream = new ByteArrayOutputStream();
     RDFDataMgr.write(outputStream, resultModel, Lang.JSONLD);
-    return new StringReader(outputStream.toString());
+    return new StringReader(outputStream.toString(StandardCharsets.UTF_8));
   }
 
   private static JsonNode getInputContext() {

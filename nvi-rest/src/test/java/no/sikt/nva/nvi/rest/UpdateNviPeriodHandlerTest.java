@@ -138,7 +138,7 @@ class UpdateNviPeriodHandlerTest {
     try {
       var input = toInputStream(request, userInstance);
       handler.handleRequest(input, output, CONTEXT);
-    } catch (Exception e) {
+    } catch (IOException e) {
       throw new RuntimeException(e);
     }
   }

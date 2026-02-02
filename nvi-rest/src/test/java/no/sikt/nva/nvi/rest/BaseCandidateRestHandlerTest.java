@@ -22,6 +22,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -193,7 +194,7 @@ public abstract class BaseCandidateRestHandlerTest {
 
   protected GatewayResponse<CandidateDto> getGatewayResponse() throws JsonProcessingException {
     return dtoObjectMapper.readValue(
-        output.toString(),
+        output.toString(StandardCharsets.UTF_8),
         dtoObjectMapper
             .getTypeFactory()
             .constructParametricType(GatewayResponse.class, CandidateDto.class));

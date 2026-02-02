@@ -339,7 +339,6 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
             .withCreatorsAndPoints(
                 Map.of(topLevelOrganization, List.of(verifiedNviCreatorDtoFrom(affiliations))));
 
-    var candidate = scenario.upsertCandidate(upsertRequest.build());
-    return candidate;
+    return scenario.upsertCandidate(upsertRequest.build());
   }
 }
