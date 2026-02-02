@@ -4,7 +4,8 @@ import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.createNumberOfCandi
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.getYearIndexStartMarker;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.setupReportedCandidate;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.sortByIdentifier;
-import static no.sikt.nva.nvi.test.TestUtils.randomIntBetween;
+import static no.sikt.nva.nvi.common.model.CandidateFixtures.setupNumberOfCandidatesForYear;
+import static no.sikt.nva.nvi.test.TestConstants.THIS_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
@@ -18,20 +19,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
-import java.util.List;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
-import no.sikt.nva.nvi.common.model.ListingResult;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
-import no.sikt.nva.nvi.common.utils.BatchScanUtil;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.sikt.nva.nvi.events.model.ReEvaluateRequest;
 import no.unit.nva.events.models.AwsEventBridgeEvent;
@@ -46,8 +41,6 @@ import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequestEntry;
 
 class ReEvaluateNviCandidatesHandlerTest {
 
-  private static final int MAX_PAGE_SIZE = 1000;
-  private static final int DEFAULT_PAGE_SIZE = 500;
   private static final Environment environment = new Environment();
   private static final String OUTPUT_TOPIC = environment.readEnv("TOPIC_REEVALUATE_CANDIDATES");
   private static final int BATCH_SIZE = 10;
@@ -63,15 +56,10 @@ class ReEvaluateNviCandidatesHandlerTest {
     scenario = new TestScenario();
     outputStream = new ByteArrayOutputStream();
     sqsClient = new FakeSqsClient();
-    var nviService =
-        new BatchScanUtil(
-            scenario.getCandidateRepository(),
-            scenario.getS3StorageReaderForExpandedResourcesBucket(),
-            new FakeSqsClient(),
-            environment);
     this.eventBridgeClient = new FakeEventBridgeClient();
     handler =
-        new ReEvaluateNviCandidatesHandler(nviService, sqsClient, environment, eventBridgeClient);
+        new ReEvaluateNviCandidatesHandler(
+            scenario.getCandidateRepository(), sqsClient, environment, eventBridgeClient);
   }
 
   @Test
@@ -79,21 +67,6 @@ class ReEvaluateNviCandidatesHandlerTest {
     assertThrows(
         IllegalArgumentException.class,
         () -> handler.handleRequest(eventStream(emptyRequest()), outputStream, context));
-  }
-
-  @Test
-  void shouldInitializeWithDefaultPageSizeIfRequestedPageSizeIsBiggerThanMaxPageSize() {
-    var year = randomYear();
-    var pageSizeBiggerThanMaxPageSize = MAX_PAGE_SIZE + randomIntBetween(1, 100);
-    var mockedNviService = mock(BatchScanUtil.class);
-    when(mockedNviService.fetchCandidatesByYear(year, false, DEFAULT_PAGE_SIZE, null))
-        .thenReturn(new ListingResult<>(false, null, 0, List.of()));
-    var handler =
-        new ReEvaluateNviCandidatesHandler(
-            mockedNviService, sqsClient, environment, eventBridgeClient);
-    handler.handleRequest(
-        eventStream(createRequest(year, pageSizeBiggerThanMaxPageSize)), outputStream, context);
-    verify(mockedNviService, times(1)).fetchCandidatesByYear(year, false, DEFAULT_PAGE_SIZE, null);
   }
 
   @Test
@@ -143,7 +116,8 @@ class ReEvaluateNviCandidatesHandlerTest {
 
   @Test
   void shouldConsumeEventsFromEventBridgeTopic() {
-    pushInitialEntryInEventBridge(createRequest(randomYear()));
+    setupNumberOfCandidatesForYear(scenario, THIS_YEAR, BATCH_SIZE + 1);
+    pushInitialEntryInEventBridge(createRequest(THIS_YEAR, BATCH_SIZE));
     while (thereAreMoreEventsInEventBridge()) {
       var currentRequest = consumeLatestEmittedEvent();
       handler.handleRequest(eventToInputStream(currentRequest), outputStream, context);

@@ -1,7 +1,6 @@
 package no.sikt.nva.nvi.common.db.model;
 
 import static java.util.Collections.emptyList;
-import static no.sikt.nva.nvi.common.utils.Validator.isMissing;
 
 import java.net.URI;
 import java.time.Instant;
@@ -33,22 +32,6 @@ public record DbPublicationDetails(
     creators = Optional.ofNullable(creators).map(List::copyOf).orElse(emptyList());
     topLevelNviOrganizations =
         Optional.ofNullable(topLevelNviOrganizations).map(List::copyOf).orElse(emptyList());
-  }
-
-  @DynamoDbIgnore
-  public boolean hasNullOrEmptyValues() {
-    return isMissing(id)
-        || isMissing(publicationBucketUri)
-        || isMissing(pages)
-        || isMissing(publicationDate)
-        || isMissing(creators)
-        || isMissing(topLevelNviOrganizations)
-        || isMissing(modifiedDate)
-        || isMissing(abstractText)
-        || isMissing(identifier)
-        || isMissing(language)
-        || isMissing(status)
-        || isMissing(title);
   }
 
   public static Builder builder() {

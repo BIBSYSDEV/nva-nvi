@@ -18,7 +18,7 @@ import static org.mockito.Mockito.when;
 import java.util.List;
 import java.util.Map;
 import no.sikt.nva.nvi.common.TestScenario;
-import no.sikt.nva.nvi.common.db.model.KeyField;
+import no.sikt.nva.nvi.common.db.model.TableScanRequest;
 import no.sikt.nva.nvi.common.exceptions.TransactionException;
 import no.sikt.nva.nvi.common.model.InstanceType;
 import no.sikt.nva.nvi.common.service.CandidateService;
@@ -74,7 +74,8 @@ class CandidateRepositoryTest {
 
     Assertions.assertThat(updatedDbCandidate).isNotEqualTo(originalDbCandidate);
 
-    var candidatesInDb = candidateRepository.scanEntries(500, null, List.of(KeyField.CANDIDATE));
+    var scanRequest = new TableScanRequest(0, 1, 500, null);
+    var candidatesInDb = candidateRepository.weaklyConsistentCandidateScan(scanRequest);
     Assertions.assertThat(candidatesInDb.getDatabaseEntries()).hasSize(1);
   }
 
