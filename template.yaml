@@ -971,19 +971,6 @@ Resources:
       Handler: no.sikt.nva.nvi.index.DeleteNviIndexHandler::handleRequest
       Role: !GetAtt NvaNviRole.Arn
 
-  NviBatchScanStartHandler:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: event-handlers
-      Handler: no.sikt.nva.nvi.events.batch.BatchScanStartHandler::handleRequest
-      Timeout: 60
-      Role: !GetAtt NvaNviRole.Arn
-      AutoPublishAlias: live
-      Environment:
-        Variables:
-          EVENT_BUS_NAME: !GetAtt InternalBus.Name
-          OUTPUT_EVENT_TOPIC: "NviService.BatchScan"
-
   NviRequeueDlqHandler:
     Type: AWS::Serverless::Function
     Properties:
@@ -1495,24 +1482,6 @@ Resources:
 
   #============================= Alarms =========================================================
 
-  BatchScanDLQAlarm:
-    Type: AWS::CloudWatch::Alarm
-    Properties:
-      AlarmName: NVI BatchScan failed
-      AlarmDescription: If this alarm is triggered, then check sqs messages on BatchScanDLQ. Batch scan of database has failed.
-      MetricName: ApproximateNumberOfMessagesVisible
-      Namespace: AWS/SQS
-      Statistic: Sum
-      Dimensions:
-        - Name: QueueName
-          Value: !GetAtt BatchScanDLQ.QueueName
-      Period: 300
-      EvaluationPeriods: 1
-      Threshold: 1
-      ComparisonOperator: GreaterThanOrEqualToThreshold
-      AlarmActions:
-        - !Ref SlackSnsArn
-
   EvaluationDLQAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
@@ -1632,24 +1601,6 @@ Resources:
       Dimensions:
         - Name: QueueName
           Value: !GetAtt IndexDocumentDLQ.QueueName
-      Period: 300
-      EvaluationPeriods: 1
-      Threshold: 1
-      ComparisonOperator: GreaterThanOrEqualToThreshold
-      AlarmActions:
-        - !Ref SlackSnsArn
-
-  BatchScanRecoveryQueueAlarm:
-    Type: AWS::CloudWatch::Alarm
-    Properties:
-      AlarmName: NVI BatchScan Recovery failed
-      AlarmDescription: If this alarm is triggered, then check sqs messages on BatchScanRecoveryQueue.
-      MetricName: ApproximateNumberOfMessagesVisible
-      Namespace: AWS/SQS
-      Statistic: Sum
-      Dimensions:
-        - Name: QueueName
-          Value: !GetAtt BatchScanRecoveryQueue.QueueName
       Period: 300
       EvaluationPeriods: 1
       Threshold: 1
