@@ -30,9 +30,7 @@ import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_PUBLICATION_ID;
 import static no.sikt.nva.nvi.test.TestConstants.THIS_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.createResponse;
-import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
-import static nva.commons.core.attempt.Try.attempt;
 import static nva.commons.core.ioutils.IoUtils.stringFromResources;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -59,7 +57,6 @@ import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.SampleExpandedPublicationFactory;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
-import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
 import no.sikt.nva.nvi.common.model.InstanceType;
 import no.sikt.nva.nvi.common.model.NviCreator;
 import no.sikt.nva.nvi.common.model.PublicationChannel;
@@ -71,13 +68,11 @@ import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
-import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.sikt.nva.nvi.test.SampleExpandedContributor;
 import no.sikt.nva.nvi.test.SampleExpandedPublication;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.identifiers.SortableIdentifier;
-import nva.commons.core.ioutils.IoUtils;
 import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
 import nva.commons.logutils.LogUtils;
@@ -107,6 +102,12 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       "evaluator/candidate_academicCommentary.json";
   private static final String ACADEMIC_ARTICLE_PATH = "evaluator/candidate_academicArticle.json";
   private static final String ACADEMIC_ARTICLE = getPublicationFromFile(ACADEMIC_ARTICLE_PATH);
+  private static final URI CUSTOMER_API_CRISTIN_NVI_ORG_TOP_LEVEL =
+      URI.create(
+          "https://api.fake.nva.aws.unit.no/customer/cristinId/https%3A%2F%2Fapi"
+              + ".dev.nva.aws.unit.no%2Fcristin%2Forganization%2F194.0.0.0");
+  private static final String NON_NVI_CUSTOMER_PATH = "nonNviCustomerResponse.json";
+
 
   private static String getPublicationFromFile(String path, URI publicationId) {
     var identifier = SortableIdentifier.fromUri(publicationId);
@@ -118,13 +119,6 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
   private static String getPublicationFromFile(String path) {
     return getPublicationFromFile(path, HARDCODED_PUBLICATION_ID);
   }
-
-  private static final URI CUSTOMER_API_CRISTIN_NVI_ORG_TOP_LEVEL =
-      URI.create(
-          "https://api.fake.nva.aws.unit.no/customer/cristinId/https%3A%2F%2Fapi"
-              + ".dev.nva.aws.unit.no%2Fcristin%2Forganization%2F194.0.0.0");
-  private static final String NON_NVI_CUSTOMER_PATH = "nonNviCustomerResponse.json";
-
   @Test
   void shouldCreateNewCandidateForApplicablePublication() {
     when(authorizedBackendUriRetriever.fetchResponse(any(), any()))
@@ -426,61 +420,6 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
         argumentSet("Publication status is DRAFT", "evaluator/nonCandidate_notPublished.json"),
         argumentSet(
             "Publication type is MusicPerformance", "evaluator/nonCandidate_musicalArts.json"));
-  }
-
-  @Test
-  void shouldCreateNonCandidateEventOnAcademicCommentaryWithSeriesLevelZero() throws IOException {
-    var path = "evaluator/nonCandidate_academicCommentary_seriesLevelZero.json";
-    var content = IoUtils.inputStreamFromResources(path);
-    var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
-    var event = createEvent(new PersistedResourceMessage(fileUri));
-    handler.handleRequest(event, CONTEXT);
-    var nonCandidate = (UpsertNonNviCandidateRequest) getMessageBody().candidate();
-    assertEquals(HARDCODED_PUBLICATION_ID, nonCandidate.publicationId());
-  }
-
-  @Test
-  void shouldCreateNonCandidateEventWhenIdentityIsNotVerified() throws IOException {
-    var path = "evaluator/nonCandidate_nonVerified.json";
-    var content = IoUtils.inputStreamFromResources(path);
-    var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
-    var event = createEvent(new PersistedResourceMessage(fileUri));
-    handler.handleRequest(event, CONTEXT);
-    var nonCandidate = (UpsertNonNviCandidateRequest) getMessageBody().candidate();
-    assertEquals(HARDCODED_PUBLICATION_ID, nonCandidate.publicationId());
-  }
-
-  @Test
-  void shouldCreateNonCandidateEventWhenPublicationIsNotPublished() throws IOException {
-    var path = "evaluator/nonCandidate_notPublished.json";
-    var content = IoUtils.inputStreamFromResources(path);
-    var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
-    var event = createEvent(new PersistedResourceMessage(fileUri));
-    handler.handleRequest(event, CONTEXT);
-    var nonCandidate = (UpsertNonNviCandidateRequest) getMessageBody().candidate();
-    assertEquals(HARDCODED_PUBLICATION_ID, nonCandidate.publicationId());
-  }
-
-  @Test
-  void shouldCreateNonCandidateForMusicalArts() throws IOException {
-    var path = "evaluator/nonCandidate_musicalArts.json";
-    var content = IoUtils.inputStreamFromResources(path);
-    var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
-    var event = createEvent(new PersistedResourceMessage(fileUri));
-    handler.handleRequest(event, CONTEXT);
-    var nonCandidate = (UpsertNonNviCandidateRequest) getMessageBody().candidate();
-    assertEquals(HARDCODED_PUBLICATION_ID, nonCandidate.publicationId());
-  }
-
-  @Test
-  void shouldCreateNonCandidateIfSeriesInMonographHasNviLevelZero() throws IOException {
-    var path = "evaluator/nonCandidate_notValidMonographArticle.json";
-    var content = IoUtils.inputStreamFromResources(path);
-    var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
-    var event = createEvent(new PersistedResourceMessage(fileUri));
-    handler.handleRequest(event, CONTEXT);
-    var nonCandidate = (UpsertNonNviCandidateRequest) getMessageBody().candidate();
-    assertEquals(HARDCODED_PUBLICATION_ID, nonCandidate.publicationId());
   }
 
   @Test
@@ -797,7 +736,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       // Then it should be evaluated as a Candidate
       setupOpenPeriod(scenario, publicationDate.year());
       var publication =
-        factory.withContributor(verifiedCreatorFrom(nviOrganization)).getExpandedPublication();
+          factory.withContributor(verifiedCreatorFrom(nviOrganization)).getExpandedPublication();
 
       var candidate = evaluatePublicationAndGetPersistedCandidate(publication);
       var publicationDetails = candidate.publicationDetails();
