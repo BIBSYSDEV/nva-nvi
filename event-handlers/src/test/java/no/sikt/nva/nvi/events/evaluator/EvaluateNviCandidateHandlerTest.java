@@ -494,7 +494,8 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
   @Deprecated
   void shouldHandleSeriesWithMultipleTypes() {
     mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-    var publication = getPublicationFromFile("evaluator/candidate_academicMonograph_series_multiple_types.json");
+    var publication =
+        getPublicationFromFile("evaluator/candidate_academicMonograph_series_multiple_types.json");
     handleEvaluation(publication);
 
     var candidate = candidateService.getCandidateByPublicationId(HARDCODED_PUBLICATION_ID);
@@ -517,7 +518,8 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
   @Deprecated
   void shouldHandleJournalWithMultipleTypes() {
     mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-    var publication = getPublicationFromFile("evaluator/candidate_academicArticle_journal_multiple_types.json");
+    var publication =
+        getPublicationFromFile("evaluator/candidate_academicArticle_journal_multiple_types.json");
 
     handleEvaluation(publication);
 
