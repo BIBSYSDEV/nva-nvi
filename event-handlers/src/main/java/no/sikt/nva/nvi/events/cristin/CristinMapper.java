@@ -34,6 +34,7 @@ import no.sikt.nva.nvi.common.db.model.DbPublicationDetails;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.model.ChannelType;
 import no.sikt.nva.nvi.common.model.InstanceType;
+import no.sikt.nva.nvi.common.model.Sector;
 import no.sikt.nva.nvi.events.cristin.InstitutionPoints.CreatorPoints;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
@@ -301,6 +302,7 @@ public final class CristinMapper {
     return new DbInstitutionPoints(
         institutionPoints.institutionId(),
         institutionPoints.points(),
+        Sector.UNKNOWN,
         toCreatorPoints(institutionPoints));
   }
 

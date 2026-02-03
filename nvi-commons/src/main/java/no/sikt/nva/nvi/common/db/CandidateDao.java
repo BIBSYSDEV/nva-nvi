@@ -37,6 +37,7 @@ import no.sikt.nva.nvi.common.db.model.DbCreatorTypeListConverter;
 import no.sikt.nva.nvi.common.db.model.DbPointCalculation;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDetails;
+import no.sikt.nva.nvi.common.model.Sector;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
@@ -756,6 +757,7 @@ public final class CandidateDao extends Dao {
   public record DbInstitutionPoints(
       URI institutionId,
       BigDecimal points,
+      Sector sector,
       List<DbCreatorAffiliationPoints> creatorAffiliationPoints) {
 
     public static Builder builder() {
@@ -767,6 +769,7 @@ public final class CandidateDao extends Dao {
       return new DbInstitutionPoints(
           institutionPoints.institutionId(),
           institutionPoints.institutionPoints(),
+          institutionPoints.sector(),
           institutionPoints.creatorAffiliationPoints().stream()
               .map(DbCreatorAffiliationPoints::from)
               .toList());
@@ -778,6 +781,7 @@ public final class CandidateDao extends Dao {
           .institutionId(institutionId)
           .points(points)
           .creatorAffiliationPoints(creatorAffiliationPoints)
+          .sector(sector)
           .build();
     }
 
@@ -831,6 +835,7 @@ public final class CandidateDao extends Dao {
 
       private URI builderInstitutionId;
       private BigDecimal builderPoints;
+      private Sector builderSector;
       private List<DbCreatorAffiliationPoints> builderCreatorAffiliationPoints;
 
       private Builder() {}
@@ -851,9 +856,14 @@ public final class CandidateDao extends Dao {
         return this;
       }
 
+      public Builder sector(Sector sector) {
+        this.builderSector = sector;
+        return this;
+      }
+
       public DbInstitutionPoints build() {
         return new DbInstitutionPoints(
-            builderInstitutionId, builderPoints, builderCreatorAffiliationPoints);
+            builderInstitutionId, builderPoints, builderSector, builderCreatorAffiliationPoints);
       }
     }
   }
