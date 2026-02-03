@@ -83,10 +83,11 @@ class NviQueueClientTest {
         .thenReturn(SendMessageResponse.builder().messageId(TEST_MESSAGE_ID).build());
     var client = new NviQueueClient(sqsClient);
 
-    var messageBody = randomOrganization().build();
-    var messageAttributes =
-        QueueMessageAttributesBuilder.fromCandidateIdentifier(UUID.randomUUID());
-    var message = new QueueMessage(messageBody, messageAttributes);
+    var message =
+        QueueMessage.builder()
+            .withBody(randomOrganization().build())
+            .withCandidateIdentifier(UUID.randomUUID())
+            .build();
 
     client.sendMessage(message, TEST_QUEUE_URL);
 

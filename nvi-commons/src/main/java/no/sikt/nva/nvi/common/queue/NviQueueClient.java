@@ -26,9 +26,11 @@ import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
 public class NviQueueClient implements QueueClient {
 
+  private static final String CANDIDATE_IDENTIFIER = "candidateIdentifier";
   private static final int MAX_CONNECTIONS = 10_000;
   private static final int IDLE_TIME = 30;
   private static final int TIMEOUT_TIME = 30;
+  private static final String DATA_TYPE_STRING = "String";
   protected final SqsClient sqsClient;
 
   @JacocoGenerated
@@ -53,11 +55,9 @@ public class NviQueueClient implements QueueClient {
   @Override
   public NviSendMessageResponse sendMessage(
       String message, String queueUrl, UUID candidateIdentifier) {
-    var messageAttributes =
-        QueueMessageAttributesBuilder.fromCandidateIdentifier(candidateIdentifier)
-            .toMessageAttributeValues();
     return createResponse(
-        sqsClient.sendMessage(createSendRequest(message, queueUrl, messageAttributes)));
+        sqsClient.sendMessage(
+            createSendRequest(message, queueUrl, getMessageAttributes(candidateIdentifier))));
   }
 
   @Override
@@ -87,6 +87,15 @@ public class NviQueueClient implements QueueClient {
         .region(ApplicationConstants.REGION)
         .httpClient(httpClientForConcurrentQueries())
         .build();
+  }
+
+  private static Map<String, MessageAttributeValue> getMessageAttributes(UUID candidateIdentifier) {
+    return Map.of(
+        CANDIDATE_IDENTIFIER,
+        MessageAttributeValue.builder()
+            .stringValue(candidateIdentifier.toString())
+            .dataType(DATA_TYPE_STRING)
+            .build());
   }
 
   @JacocoGenerated

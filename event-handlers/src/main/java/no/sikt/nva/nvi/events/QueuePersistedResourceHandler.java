@@ -6,7 +6,6 @@ import com.amazonaws.services.lambda.runtime.Context;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.common.queue.QueueMessage;
-import no.sikt.nva.nvi.common.queue.QueueMessageAttributesBuilder;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.unit.nva.events.handlers.DestinationsEventBridgeEventHandler;
 import no.unit.nva.events.models.AwsEventBridgeDetail;
@@ -63,9 +62,11 @@ public class QueuePersistedResourceHandler
 
   private void queuePersistedResource(EventReference input) {
     LOGGER.info("Adding publication to evaluation queue: {}", input.getUri());
-    var messageBody = new PersistedResourceMessage(input.getUri());
-    var messageAttributes = QueueMessageAttributesBuilder.fromPublicationBucketUri(input.getUri());
-    var message = new QueueMessage(messageBody, messageAttributes);
+    var message =
+        QueueMessage.builder()
+            .withBody(new PersistedResourceMessage(input.getUri()))
+            .withPublicationBucketUri(input.getUri())
+            .build();
     queueClient.sendMessage(message, queueUrl);
   }
 }

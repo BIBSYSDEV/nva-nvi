@@ -30,6 +30,9 @@ import software.amazon.awssdk.services.sqs.model.SqsException;
 @SuppressWarnings("PMD.CouplingBetweenObjects")
 public class FakeSqsClient implements QueueClient {
 
+  private static final String CANDIDATE_IDENTIFIER = "candidateIdentifier";
+  private static final String DATA_TYPE_STRING = "String";
+
   private final Set<String> destinationQueuesThatShouldFail = new HashSet<>();
 
   private final List<SendMessageRequest> sentMessages = new ArrayList<>();
@@ -85,10 +88,7 @@ public class FakeSqsClient implements QueueClient {
   public NviSendMessageResponse sendMessage(
       String message, String queueUrl, UUID candidateIdentifier) {
     validateQueueUrl(queueUrl);
-    var messageAttributes =
-        QueueMessageAttributesBuilder.fromCandidateIdentifier(candidateIdentifier)
-            .toMessageAttributeValues();
-    var request = createRequest(message, queueUrl, messageAttributes);
+    var request = createRequest(message, queueUrl, candidateIdentifier);
     sentMessages.add(request);
     return createResponse(
         SendMessageResponse.builder().messageId(UUID.randomUUID().toString()).build());
@@ -205,6 +205,20 @@ public class FakeSqsClient implements QueueClient {
         .queueUrl(queueUrl)
         .messageBody(message.body().toJsonString())
         .messageAttributes(message.attributes())
+        .build();
+  }
+
+  private SendMessageRequest createRequest(String body, String queueUrl, UUID candidateIdentifier) {
+    return SendMessageRequest.builder()
+        .queueUrl(queueUrl)
+        .messageAttributes(
+            Map.of(
+                CANDIDATE_IDENTIFIER,
+                MessageAttributeValue.builder()
+                    .stringValue(candidateIdentifier.toString())
+                    .dataType(DATA_TYPE_STRING)
+                    .build()))
+        .messageBody(body)
         .build();
   }
 
