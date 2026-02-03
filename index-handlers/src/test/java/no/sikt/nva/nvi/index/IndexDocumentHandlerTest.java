@@ -303,8 +303,7 @@ class IndexDocumentHandlerTest {
   }
 
   @Test
-  void
-      shouldFetchOrganizationLabelsFromCristinApiWhenExpandedResourceIsMissingTopLevelOrganization() {
+  void shouldReturnEmptyLabelsWhenExpandedResourceIsMissingTopLevelOrganization() {
     var candidate = randomApplicableCandidate(HARD_CODED_TOP_LEVEL_ORG, randomUri());
     var expandedResource =
         ExpandedResourceGenerator.builder()
@@ -859,7 +858,9 @@ class IndexDocumentHandlerTest {
   }
 
   private void mockUriRetrieverOrgResponse(Candidate candidate) {
-    candidate.publicationDetails().getNviCreatorAffiliations().stream()
+    candidate
+        .publicationDetails()
+        .getNviCreatorAffiliations()
         .forEach(this::mockOrganizationResponse);
 
     candidate.approvals().keySet().forEach(this::mockOrganizationResponse);
@@ -915,7 +916,8 @@ class IndexDocumentHandlerTest {
         .withId(candidate.getId())
         .withIsApplicable(candidate.isApplicable())
         .withIdentifier(candidate.identifier())
-        .withApprovals(expandApprovals(candidate, expandedPublicationDetails.contributors()))
+        .withApprovals(
+            expandApprovals(candidate, expandedPublicationDetails.contributors(), expandedResource))
         .withPoints(candidate.getTotalPoints())
         .withPublicationDetails(expandedPublicationDetails)
         .withNumberOfApprovals(candidate.approvals().size())
