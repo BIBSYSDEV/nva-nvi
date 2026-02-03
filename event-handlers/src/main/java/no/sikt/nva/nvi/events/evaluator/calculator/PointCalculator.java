@@ -139,6 +139,7 @@ public class PointCalculator {
     var institutionPoints = executeNviFormula(institutionContributorFraction);
     var creatorPoints = calculateAffiliationPoints(institutionCreatorCount, institutionPoints);
 
+    // TODO: Add Sector here (NP-50729)
     return new InstitutionPoints(institution, institutionPoints, creatorPoints);
   }
 

@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.common.service.model;
 
 import static java.util.Collections.emptyList;
 import static java.util.Objects.nonNull;
+import static java.util.Objects.requireNonNullElse;
 import static no.sikt.nva.nvi.common.utils.DecimalUtils.adjustScaleAndRoundingMode;
 
 import java.math.BigDecimal;
@@ -10,19 +11,24 @@ import java.util.Collection;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints.DbCreatorAffiliationPoints;
+import no.sikt.nva.nvi.common.model.Sector;
 
 public record InstitutionPoints(
     URI institutionId,
     BigDecimal institutionPoints,
+    Sector sector,
     Collection<CreatorAffiliationPoints> creatorAffiliationPoints) {
+
+  public InstitutionPoints {
+    institutionPoints = adjustScaleAndRoundingMode(institutionPoints);
+    sector = requireNonNullElse(sector, Sector.UNKNOWN);
+  }
 
   public InstitutionPoints(
       URI institutionId,
       BigDecimal institutionPoints,
       Collection<CreatorAffiliationPoints> creatorAffiliationPoints) {
-    this.institutionId = institutionId;
-    this.institutionPoints = adjustScaleAndRoundingMode(institutionPoints);
-    this.creatorAffiliationPoints = creatorAffiliationPoints;
+    this(institutionId, institutionPoints, null, creatorAffiliationPoints);
   }
 
   public static InstitutionPoints from(DbInstitutionPoints dbInstitutionPoints) {
@@ -33,6 +39,7 @@ public record InstitutionPoints(
     return new InstitutionPoints(
         dbInstitutionPoints.institutionId(),
         dbInstitutionPoints.points(),
+        dbInstitutionPoints.sector(),
         creatorAffiliationPoints);
   }
 
