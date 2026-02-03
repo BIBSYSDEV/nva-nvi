@@ -28,6 +28,10 @@ public record QueueMessage(JsonSerializable body, Map<String, MessageAttributeVa
   private static final String DATA_TYPE_STRING = "String";
   private static final int MAX_STACK_TRACE_LENGTH = 1000;
 
+  public QueueMessage {
+    attributes = Map.copyOf(attributes);
+  }
+
   public static Builder builder() {
     return new Builder();
   }
