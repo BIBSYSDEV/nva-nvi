@@ -1,26 +1,36 @@
 package no.sikt.nva.nvi.common.service.model;
 
+import static java.util.Collections.emptyList;
 import static no.sikt.nva.nvi.common.model.PointCalculationFixtures.randomPointCalculation;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.List;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.model.PointCalculationBuilder;
+import no.sikt.nva.nvi.common.model.Sector;
 import org.junit.jupiter.api.Test;
 
 class InstitutionPointsTest {
 
   @Test
-  void shouldParseEntityWithNoCreatorPoints() {
+  void shouldParseEntityWithMissingFields() {
     var institutionId = randomUri();
-    var dbPoints =
-        List.of(new CandidateDao.DbInstitutionPoints(institutionId, BigDecimal.ZERO, null));
-    var expectedPoints = new InstitutionPoints(institutionId, BigDecimal.ZERO, List.of());
-    var actualPoints = InstitutionPoints.from(dbPoints.getFirst());
+    var dbPoints = new CandidateDao.DbInstitutionPoints(institutionId, BigDecimal.ZERO, null, null);
+    var expectedPoints =
+        new InstitutionPoints(institutionId, BigDecimal.ZERO, Sector.UNKNOWN, emptyList());
+    var actualPoints = InstitutionPoints.from(dbPoints);
     assertEquals(expectedPoints, actualPoints);
+  }
+
+  @Test
+  void shouldPersistInstitutionSector() {
+    var originalPoints =
+        new InstitutionPoints(randomUri(), BigDecimal.ZERO, Sector.UHI, emptyList());
+    var dbPoints = CandidateDao.DbInstitutionPoints.from(originalPoints);
+    var roundTrippedPoints = InstitutionPoints.from(dbPoints);
+    assertEquals(originalPoints, roundTrippedPoints);
   }
 
   @Test

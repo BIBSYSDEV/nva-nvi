@@ -33,7 +33,8 @@ public final class PointCalculationFixtures {
     var firstCreator = randomCreatorAffiliationPoints(institutionId, scale);
     var secondCreator = randomCreatorAffiliationPoints(institutionId, scale);
     var totalPoints = firstCreator.points().add(secondCreator.points());
-    return new InstitutionPoints(institutionId, totalPoints, List.of(firstCreator, secondCreator));
+    return new InstitutionPoints(
+        institutionId, totalPoints, Sector.OTHER, List.of(firstCreator, secondCreator));
   }
 
   public static InstitutionPoints.CreatorAffiliationPoints randomCreatorAffiliationPoints(

@@ -15,6 +15,7 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints.DbCreatorAffiliationPoints;
 import no.sikt.nva.nvi.common.db.model.DbPointCalculation;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
+import no.sikt.nva.nvi.common.model.Sector;
 import no.sikt.nva.nvi.test.TestUtils;
 
 public class DbPointCalculationFixtures {
@@ -56,6 +57,7 @@ public class DbPointCalculationFixtures {
         .points(points)
         .institutionId(institutionId)
         .points(points)
+        .sector(Sector.OTHER)
         .creatorAffiliationPoints(
             List.of(new DbCreatorAffiliationPoints(creatorId, institutionId, points)))
         .build();
