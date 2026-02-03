@@ -13,7 +13,7 @@ import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.common.queue.QueueMessage;
-import no.sikt.nva.nvi.common.queue.QueueMessageAttributes;
+import no.sikt.nva.nvi.common.queue.QueueMessageAttributesBuilder;
 import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
@@ -78,9 +78,8 @@ public class EvaluateNviCandidateHandler implements RequestHandler<SQSEvent, Voi
     LOGGER.error("Failed to process event: {}", input.toString(), failure.getException());
     var messageBody = extractPersistedResourceMessage(input);
     var messageAttributes =
-        QueueMessageAttributes.builder().withErrorContext(failure.getException());
+        new QueueMessageAttributesBuilder().withErrorContext(failure.getException());
     var message = new QueueMessage(messageBody, messageAttributes);
-    LOGGER.error("Sending message to DLQ: {}", messageBody, failure.getException());
     queueClient.sendMessage(message, evaluationDlqUrl);
     return null;
   }
@@ -96,7 +95,7 @@ public class EvaluateNviCandidateHandler implements RequestHandler<SQSEvent, Voi
         "Sending evaluated publication {} to upsert queue",
         candidateEvaluatedMessage.publicationId());
     var messageAttributes =
-        QueueMessageAttributes.fromPublicationId(candidateEvaluatedMessage.publicationId());
+        QueueMessageAttributesBuilder.fromPublicationId(candidateEvaluatedMessage.publicationId());
     var message = new QueueMessage(candidateEvaluatedMessage, messageAttributes);
     queueClient.sendMessage(message, queueUrl);
   }

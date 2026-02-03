@@ -84,7 +84,8 @@ class NviQueueClientTest {
     var client = new NviQueueClient(sqsClient);
 
     var messageBody = randomOrganization().build();
-    var messageAttributes = QueueMessageAttributes.fromCandidateIdentifier(UUID.randomUUID());
+    var messageAttributes =
+        QueueMessageAttributesBuilder.fromCandidateIdentifier(UUID.randomUUID());
     var message = new QueueMessage(messageBody, messageAttributes);
 
     client.sendMessage(message, TEST_QUEUE_URL);
@@ -98,7 +99,7 @@ class NviQueueClientTest {
         nonNull(request)
             && request.queueUrl().equals(expectedQueueUrl)
             && request.messageBody().equals(expectedMessage.body().toJsonString())
-            && request.messageAttributes().equals(expectedMessage.attributes().build());
+            && request.messageAttributes().equals(expectedMessage.attributes());
   }
 
   @Test

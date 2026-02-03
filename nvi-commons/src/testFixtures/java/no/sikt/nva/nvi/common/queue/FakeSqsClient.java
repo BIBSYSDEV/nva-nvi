@@ -86,7 +86,8 @@ public class FakeSqsClient implements QueueClient {
       String message, String queueUrl, UUID candidateIdentifier) {
     validateQueueUrl(queueUrl);
     var messageAttributes =
-        QueueMessageAttributes.fromCandidateIdentifier(candidateIdentifier).build();
+        QueueMessageAttributesBuilder.fromCandidateIdentifier(candidateIdentifier)
+            .toMessageAttributeValues();
     var request = createRequest(message, queueUrl, messageAttributes);
     sentMessages.add(request);
     return createResponse(
@@ -203,7 +204,7 @@ public class FakeSqsClient implements QueueClient {
     return SendMessageRequest.builder()
         .queueUrl(queueUrl)
         .messageBody(message.body().toJsonString())
-        .messageAttributes(message.attributes().build())
+        .messageAttributes(message.attributes())
         .build();
   }
 

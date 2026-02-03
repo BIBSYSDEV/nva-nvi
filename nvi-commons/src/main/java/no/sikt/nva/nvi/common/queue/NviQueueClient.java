@@ -54,7 +54,8 @@ public class NviQueueClient implements QueueClient {
   public NviSendMessageResponse sendMessage(
       String message, String queueUrl, UUID candidateIdentifier) {
     var messageAttributes =
-        QueueMessageAttributes.fromCandidateIdentifier(candidateIdentifier).build();
+        QueueMessageAttributesBuilder.fromCandidateIdentifier(candidateIdentifier)
+            .toMessageAttributeValues();
     return createResponse(
         sqsClient.sendMessage(createSendRequest(message, queueUrl, messageAttributes)));
   }
@@ -114,7 +115,7 @@ public class NviQueueClient implements QueueClient {
     return SendMessageRequest.builder()
         .queueUrl(queueUrl)
         .messageBody(message.body().toJsonString())
-        .messageAttributes(message.attributes().build())
+        .messageAttributes(message.attributes())
         .build();
   }
 
