@@ -226,15 +226,6 @@ public class FakeSqsClient implements QueueClient {
     return SendMessageRequest.builder().queueUrl(queueUrl).messageBody(body).build();
   }
 
-  private SendMessageRequest createRequest(
-      String body, String queueUrl, Map<String, MessageAttributeValue> attributes) {
-    return SendMessageRequest.builder()
-        .queueUrl(queueUrl)
-        .messageBody(body)
-        .messageAttributes(attributes)
-        .build();
-  }
-
   private NviSendMessageResponse createResponse(SendMessageResponse response) {
     return new NviSendMessageResponse(response.messageId());
   }
