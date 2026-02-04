@@ -62,6 +62,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpResponse;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -81,6 +82,7 @@ import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.index.aws.S3StorageWriter;
 import no.sikt.nva.nvi.index.model.PersistedIndexDocumentMessage;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
+import no.sikt.nva.nvi.index.model.document.ApprovalView;
 import no.sikt.nva.nvi.index.model.document.ConsumptionAttributes;
 import no.sikt.nva.nvi.index.model.document.IndexDocumentWithConsumptionAttributes;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
@@ -303,8 +305,7 @@ class IndexDocumentHandlerTest {
   }
 
   @Test
-  void
-      shouldFetchOrganizationLabelsFromCristinApiWhenExpandedResourceIsMissingTopLevelOrganization() {
+  void shouldReturnEmptyLabelsWhenExpandedResourceIsMissingTopLevelOrganization() {
     var candidate = randomApplicableCandidate(HARD_CODED_TOP_LEVEL_ORG, randomUri());
     var expandedResource =
         ExpandedResourceGenerator.builder()
@@ -312,35 +313,14 @@ class IndexDocumentHandlerTest {
             .build()
             .createExpandedResource();
     setupResourceMissingTopLevelOrganizationsInS3(expandedResource, candidate);
-    var expectedIndexDocument =
-        IndexDocumentWithConsumptionAttributes.from(
-                createExpectedNviIndexDocument(expandedResource, candidate))
-            .indexDocument();
     var event = createEvent(candidate.identifier());
     mockUriRetrieverOrgResponse(candidate);
     handler.handleRequest(event, CONTEXT);
     var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
-    assertContentIsEqual(expectedIndexDocument, actualIndexDocument);
-  }
-
-  @Test
-  void shouldFetchOrganizationLabelsFromCristinApiWhenTopLevelOrgNodeIsInvalid() {
-    var candidate = randomApplicableCandidate(HARD_CODED_TOP_LEVEL_ORG, randomUri());
-    var expandedResource =
-        ExpandedResourceGenerator.builder()
-            .withCandidate(candidate)
-            .build()
-            .createExpandedResource();
-    setupResourceWithInvalidObjectInS3(expandedResource, candidate);
-    var expectedIndexDocument =
-        IndexDocumentWithConsumptionAttributes.from(
-                createExpectedNviIndexDocument(expandedResource, candidate))
-            .indexDocument();
-    var event = createEvent(candidate.identifier());
-    mockUriRetrieverOrgResponse(candidate);
-    handler.handleRequest(event, CONTEXT);
-    var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
-    assertContentIsEqual(expectedIndexDocument, actualIndexDocument);
+    Assertions.assertThat(actualIndexDocument.approvals())
+        .hasSizeGreaterThanOrEqualTo(1)
+        .extracting(ApprovalView::labels)
+        .allMatch(Map::isEmpty);
   }
 
   @Test
@@ -859,10 +839,10 @@ class IndexDocumentHandlerTest {
   }
 
   private void mockUriRetrieverOrgResponse(Candidate candidate) {
-    candidate.publicationDetails().getNviCreatorAffiliations().stream()
+    candidate
+        .publicationDetails()
+        .getNviCreatorAffiliations()
         .forEach(this::mockOrganizationResponse);
-
-    candidate.approvals().keySet().forEach(this::mockOrganizationResponse);
   }
 
   private void mockOrganizationResponse(URI affiliationId) {
@@ -915,7 +895,8 @@ class IndexDocumentHandlerTest {
         .withId(candidate.getId())
         .withIsApplicable(candidate.isApplicable())
         .withIdentifier(candidate.identifier())
-        .withApprovals(expandApprovals(candidate, expandedPublicationDetails.contributors()))
+        .withApprovals(
+            expandApprovals(candidate, expandedPublicationDetails.contributors(), expandedResource))
         .withPoints(candidate.getTotalPoints())
         .withPublicationDetails(expandedPublicationDetails)
         .withNumberOfApprovals(candidate.approvals().size())
