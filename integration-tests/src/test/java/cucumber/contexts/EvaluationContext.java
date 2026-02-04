@@ -20,6 +20,7 @@ import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.sikt.nva.nvi.events.persist.UpsertNviCandidateHandler;
 import no.sikt.nva.nvi.test.SampleExpandedPublication;
+import no.unit.nva.clients.IdentityServiceClient;
 
 public class EvaluationContext {
   private static final Context EVALUATION_HANDLER_CONTEXT = mock(Context.class);
@@ -27,6 +28,7 @@ public class EvaluationContext {
 
   private final EvaluateNviCandidateHandler evaluateNviCandidateHandler;
   private final UpsertNviCandidateHandler upsertNviCandidateHandler;
+  private final IdentityServiceClient identityServiceClient;
   private final FakeSqsClient evaluationOutputQueue;
   private final FakeSqsClient upsertErrorQueue;
   private final TestScenario scenario;
@@ -34,6 +36,7 @@ public class EvaluationContext {
 
   public EvaluationContext(TestScenario scenario) {
     this.scenario = scenario;
+    identityServiceClient = mock(IdentityServiceClient.class);
     evaluationOutputQueue = new FakeSqsClient();
     upsertErrorQueue = new FakeSqsClient();
     evaluateNviCandidateHandler = createEvaluateNviCandidateHandler();
@@ -46,6 +49,7 @@ public class EvaluationContext {
         new CreatorVerificationUtil(scenario.getMockedAuthorizedBackendUriRetriever(), environment);
     var evaluatorService =
         new EvaluatorService(
+            identityServiceClient,
             scenario.getS3StorageReaderForExpandedResourcesBucket(),
             creatorVerificationUtil,
             scenario.getCandidateService());

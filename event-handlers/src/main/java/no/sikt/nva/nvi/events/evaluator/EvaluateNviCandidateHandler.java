@@ -19,6 +19,7 @@ import no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
+import no.unit.nva.clients.IdentityServiceClient;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.attempt.Failure;
@@ -44,6 +45,7 @@ public class EvaluateNviCandidateHandler implements RequestHandler<SQSEvent, Voi
   public EvaluateNviCandidateHandler() {
     this(
         new EvaluatorService(
+            IdentityServiceClient.unauthorizedIdentityServiceClient(),
             new S3StorageReader(new Environment().readEnv("EXPANDED_RESOURCES_BUCKET")),
             new CreatorVerificationUtil(
                 authorizedUriRetriever(new Environment()), new Environment()),

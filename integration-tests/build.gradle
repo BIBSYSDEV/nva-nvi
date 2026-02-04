@@ -20,6 +20,7 @@ dependencies {
     testImplementation nvaCatalog.mockito.core
     testImplementation nvaLibs.auth
     testImplementation nvaLibs.core
+    testImplementation nvaLibs.clients
     testImplementation nvaLibs.json
     testImplementation nvaLibs.s3
     testImplementation nvaLibs.testutils

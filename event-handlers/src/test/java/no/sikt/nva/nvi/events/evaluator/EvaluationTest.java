@@ -36,6 +36,7 @@ import no.sikt.nva.nvi.test.SampleExpandedPublication;
 import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
 import no.unit.nva.auth.uriretriever.BackendClientCredentials;
 import no.unit.nva.auth.uriretriever.UriRetriever;
+import no.unit.nva.clients.IdentityServiceClient;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeSecretsManagerClient;
 import nva.commons.core.StringUtils;
@@ -57,6 +58,7 @@ class EvaluationTest {
   protected S3Driver s3Driver;
   protected EvaluateNviCandidateHandler handler;
   protected AuthorizedBackendUriRetriever authorizedBackendUriRetriever;
+  protected IdentityServiceClient identityServiceClient;
   protected UriRetriever uriRetriever;
   protected FakeSqsClient queueClient;
   protected CandidateRepository candidateRepository;
@@ -78,6 +80,7 @@ class EvaluationTest {
   void commonSetup() {
     var evaluationEnvironment = getEvaluateNviCandidateHandlerEnvironment();
     scenario = new TestScenario();
+    identityServiceClient = mock(IdentityServiceClient.class);
     uriRetriever = scenario.getMockedUriRetriever();
     setupOpenPeriod(scenario, HARDCODED_JSON_PUBLICATION_DATE.year());
 
@@ -96,7 +99,8 @@ class EvaluationTest {
     candidateService =
         new CandidateService(evaluationEnvironment, periodRepository, candidateRepository);
     evaluatorService =
-        new EvaluatorService(storageReader, creatorVerificationUtil, candidateService);
+        new EvaluatorService(
+            identityServiceClient, storageReader, creatorVerificationUtil, candidateService);
     handler = new EvaluateNviCandidateHandler(evaluatorService, queueClient, evaluationEnvironment);
   }
 

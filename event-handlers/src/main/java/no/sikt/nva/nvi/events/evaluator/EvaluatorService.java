@@ -28,6 +28,7 @@ import no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil;
 import no.sikt.nva.nvi.events.evaluator.model.NviCreator;
 import no.sikt.nva.nvi.events.evaluator.model.NviOrganization;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
+import no.unit.nva.clients.IdentityServiceClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,14 +47,17 @@ public class EvaluatorService {
   private final Logger logger = LoggerFactory.getLogger(EvaluatorService.class);
   private final CreatorVerificationUtil creatorVerificationUtil;
   private final CandidateService candidateService;
+  private final IdentityServiceClient identityServiceClient;
   private final PublicationLoaderService publicationLoader;
 
   public EvaluatorService(
+      IdentityServiceClient identityServiceClient,
       StorageReader<URI> storageReader,
       CreatorVerificationUtil creatorVerificationUtil,
       CandidateService candidateService) {
     this.creatorVerificationUtil = creatorVerificationUtil;
     this.candidateService = candidateService;
+    this.identityServiceClient = identityServiceClient;
     this.publicationLoader = new PublicationLoaderService(storageReader);
   }
 
