@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.index.utils;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static java.util.function.Predicate.not;
 import static no.sikt.nva.nvi.common.utils.GraphUtils.PART_OF_PROPERTY;
 import static no.sikt.nva.nvi.common.utils.GraphUtils.createModel;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_POINTER_JOURNAL_PISSN;
@@ -53,11 +54,13 @@ import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.model.ChannelType;
 import no.sikt.nva.nvi.common.model.ScientificValue;
+import no.sikt.nva.nvi.common.model.Sector;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.ApprovalView;
 import no.sikt.nva.nvi.index.model.document.Contributor;
@@ -308,7 +311,17 @@ public final class NviCandidateIndexDocumentGenerator {
         .withInvolvedOrganizations(extractInvolvedOrganizations(approval, expandedContributors))
         .withAssignee(extractAssignee(approval))
         .withGlobalApprovalStatus(candidate.getGlobalApprovalStatus())
+        .withSector(extractSector(approval.institutionId(), candidate))
         .build();
+  }
+
+  public static String extractSector(URI institutionId, Candidate candidate) {
+    return candidate
+        .getInstitutionPoints(institutionId)
+        .map(InstitutionPoints::sector)
+        .filter(not(Sector.UNKNOWN::equals))
+        .map(Sector::toString)
+        .orElse(null);
   }
 
   private String extractAssignee(Approval approval) {
