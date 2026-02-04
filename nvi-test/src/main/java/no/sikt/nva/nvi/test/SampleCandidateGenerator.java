@@ -4,6 +4,7 @@ import static java.time.temporal.ChronoUnit.DAYS;
 import static java.util.Collections.emptyMap;
 import static java.util.Objects.isNull;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
+import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInstant;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -73,18 +74,15 @@ public final class SampleCandidateGenerator {
   }
 
   private static ChannelType randomChannelType() {
-    var values = ChannelType.values();
-    return values[(int) (Math.random() * values.length)];
+    return randomElement(ChannelType.values());
   }
 
   private static ScientificValue randomScientificValue() {
-    var values = ScientificValue.values();
-    return values[(int) (Math.random() * values.length)];
+    return randomElement(ScientificValue.values());
   }
 
   private static InstanceType randomInstanceType() {
-    var values = InstanceType.values();
-    return values[(int) (Math.random() * values.length)];
+    return randomElement(InstanceType.values());
   }
 
   private static NviPeriod randomPeriod() {
