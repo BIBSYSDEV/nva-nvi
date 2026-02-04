@@ -39,6 +39,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -104,14 +105,6 @@ public final class NviCandidateIndexDocumentGenerator {
     return buildDocument(approvals, expandedPublicationDetails);
   }
 
-  private static no.sikt.nva.nvi.common.client.model.Organization toOrganization(String response) {
-    return attempt(
-            () ->
-                dtoObjectMapper.readValue(
-                    response, no.sikt.nva.nvi.common.client.model.Organization.class))
-        .orElseThrow();
-  }
-
   private static NviOrganization buildNviOrganization(URI id, List<URI> partOf) {
     return NviOrganization.builder().withId(id).withPartOf(partOf).build();
   }
@@ -154,9 +147,8 @@ public final class NviCandidateIndexDocumentGenerator {
         .flatMap(NviCandidateIndexDocumentGenerator::readAsStringMap);
   }
 
-  private Map<String, String> extractLabels(Approval approval) {
-    return extractLabelsFromExpandedResource(expandedResource, approval)
-        .orElse(fetchOrganization(approval.institutionId()).labels());
+  private Optional<Map<String, String>> extractLabels(Approval approval) {
+    return extractLabelsFromExpandedResource(expandedResource, approval);
   }
 
   private NviCandidateIndexDocument buildDocument(
@@ -307,16 +299,10 @@ public final class NviCandidateIndexDocumentGenerator {
         : extractLabels(approval, topLevelOrganizations);
   }
 
-  private no.sikt.nva.nvi.common.client.model.Organization fetchOrganization(URI institutionId) {
-    return getRawContentFromUriCached(institutionId)
-        .map(NviCandidateIndexDocumentGenerator::toOrganization)
-        .orElseThrow();
-  }
-
   private ApprovalView toApproval(Approval approval, List<ContributorType> expandedContributors) {
     return ApprovalView.builder()
         .withInstitutionId(approval.institutionId())
-        .withLabels(extractLabels(approval))
+        .withLabels(extractLabels(approval).orElse(Collections.emptyMap()))
         .withApprovalStatus(getApprovalStatus(approval))
         .withPoints(getInstitutionPoints(approval))
         .withInvolvedOrganizations(extractInvolvedOrganizations(approval, expandedContributors))

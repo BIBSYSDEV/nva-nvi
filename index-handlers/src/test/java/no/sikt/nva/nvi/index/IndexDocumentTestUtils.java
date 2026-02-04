@@ -25,9 +25,11 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import java.net.URI;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -82,6 +84,13 @@ public final class IndexDocumentTestUtils {
       Candidate candidate, List<ContributorType> contributors) {
     return candidate.approvals().values().stream()
         .map(approval -> toApproval(approval, candidate, contributors))
+        .toList();
+  }
+
+  public static List<ApprovalView> expandApprovals(
+      Candidate candidate, List<ContributorType> contributors, JsonNode expandedResource) {
+    return candidate.approvals().values().stream()
+        .map(approval -> toApproval(approval, candidate, contributors, expandedResource))
         .toList();
   }
 
@@ -339,6 +348,44 @@ public final class IndexDocumentTestUtils {
         .withLabels(Map.of(EN_FIELD, HARDCODED_ENGLISH_LABEL, NB_FIELD, HARDCODED_NORWEGIAN_LABEL))
         .withGlobalApprovalStatus(candidate.getGlobalApprovalStatus())
         .build();
+  }
+
+  private static ApprovalView toApproval(
+      Approval approval,
+      Candidate candidate,
+      List<ContributorType> contributors,
+      JsonNode expandedResource) {
+    return ApprovalView.builder()
+        .withInstitutionId(approval.institutionId())
+        .withApprovalStatus(getApprovalStatus(approval))
+        .withAssignee(approval.getAssigneeUsername())
+        .withPoints(getInstitutionPoints(approval, candidate))
+        .withInvolvedOrganizations(extractInvolvedOrganizations(approval, contributors))
+        .withLabels(extractLabels(approval, expandedResource))
+        .withGlobalApprovalStatus(candidate.getGlobalApprovalStatus())
+        .build();
+  }
+
+  private static Map<String, String> extractLabels(Approval approval, JsonNode expandedResource) {
+    var topLevelOrganizations = expandedResource.at("/topLevelOrganizations");
+    if (topLevelOrganizations.isMissingNode() || !topLevelOrganizations.isArray()) {
+      return Map.of();
+    }
+    return JsonUtils.streamNode(topLevelOrganizations)
+        .filter(org -> org.at("/id").asText().equals(approval.institutionId().toString()))
+        .findFirst()
+        .map(org -> org.at("/labels"))
+        .filter(labels -> !labels.isMissingNode())
+        .flatMap(IndexDocumentTestUtils::readLabelsAsMap)
+        .orElse(Collections.emptyMap());
+  }
+
+  private static Optional<Map<String, String>> readLabelsAsMap(JsonNode labelsNode) {
+    var labels = new java.util.HashMap<String, String>();
+    labelsNode
+        .fields()
+        .forEachRemaining(entry -> labels.put(entry.getKey(), entry.getValue().asText()));
+    return labels.isEmpty() ? Optional.empty() : Optional.of(labels);
   }
 
   private static InstitutionPointsView getInstitutionPoints(
