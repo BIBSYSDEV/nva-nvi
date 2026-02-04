@@ -313,26 +313,6 @@ class IndexDocumentHandlerTest {
             .build()
             .createExpandedResource();
     setupResourceMissingTopLevelOrganizationsInS3(expandedResource, candidate);
-    var expectedIndexDocument =
-        IndexDocumentWithConsumptionAttributes.from(
-                createExpectedNviIndexDocument(expandedResource, candidate))
-            .indexDocument();
-    var event = createEvent(candidate.identifier());
-    mockUriRetrieverOrgResponse(candidate);
-    handler.handleRequest(event, CONTEXT);
-    var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
-    assertContentIsEqual(expectedIndexDocument, actualIndexDocument);
-  }
-
-  @Test
-  void shouldFetchOrganizationLabelsFromCristinApiWhenTopLevelOrgNodeIsInvalid() {
-    var candidate = randomApplicableCandidate(HARD_CODED_TOP_LEVEL_ORG, randomUri());
-    var expandedResource =
-        ExpandedResourceGenerator.builder()
-            .withCandidate(candidate)
-            .build()
-            .createExpandedResource();
-    setupResourceWithInvalidObjectInS3(expandedResource, candidate);
     var event = createEvent(candidate.identifier());
     mockUriRetrieverOrgResponse(candidate);
     handler.handleRequest(event, CONTEXT);

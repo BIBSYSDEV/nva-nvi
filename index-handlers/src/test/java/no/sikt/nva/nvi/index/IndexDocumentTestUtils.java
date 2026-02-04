@@ -25,6 +25,7 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import java.net.URI;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -376,7 +377,7 @@ public final class IndexDocumentTestUtils {
         .map(org -> org.at("/labels"))
         .filter(labels -> !labels.isMissingNode())
         .flatMap(IndexDocumentTestUtils::readLabelsAsMap)
-        .orElse(Map.of());
+        .orElse(Collections.emptyMap());
   }
 
   private static Optional<Map<String, String>> readLabelsAsMap(JsonNode labelsNode) {
