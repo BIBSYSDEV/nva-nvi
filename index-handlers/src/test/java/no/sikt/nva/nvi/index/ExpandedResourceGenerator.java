@@ -236,13 +236,19 @@ public final class ExpandedResourceGenerator {
 
   private static JsonNode createAndPopulateTopLevelOrganizations(Candidate candidate) {
     var topLevelOrganizations = objectMapper.createArrayNode();
-    candidate.publicationDetails().nviCreators().stream()
-        .map(NviCreator::getAffiliationIds)
-        .flatMap(List::stream)
+
+    var approvalOrganizations = candidate.approvals().keySet().stream();
+    var creatorAffiliations =
+        candidate.publicationDetails().nviCreators().stream()
+            .map(NviCreator::getAffiliationIds)
+            .flatMap(List::stream);
+
+    Stream.concat(approvalOrganizations, creatorAffiliations)
         .distinct()
         .map(URI::toString)
         .map(ExpandedResourceGenerator::createOrganizationNode)
         .forEach(topLevelOrganizations::add);
+
     return topLevelOrganizations;
   }
 
