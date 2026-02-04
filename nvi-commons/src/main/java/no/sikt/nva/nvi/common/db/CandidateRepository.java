@@ -1,7 +1,6 @@
 package no.sikt.nva.nvi.common.db;
 
 import static java.util.Collections.emptyList;
-import static java.util.Collections.emptyMap;
 import static java.util.Objects.nonNull;
 import static java.util.UUID.randomUUID;
 import static java.util.stream.Collectors.toMap;
@@ -11,27 +10,21 @@ import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_PUBLICATI
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_YEAR;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_YEAR_HASH_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
-import static no.sikt.nva.nvi.common.DatabaseConstants.VERSION_FIELD;
 import static no.sikt.nva.nvi.common.utils.ApplicationConstants.NVI_TABLE_NAME;
 import static no.sikt.nva.nvi.common.utils.Validator.hasElements;
 import static software.amazon.awssdk.enhanced.dynamodb.TableSchema.fromImmutableClass;
 import static software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional.keyEqualTo;
-import static software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional.sortBeginsWith;
 
 import java.net.URI;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
-import no.sikt.nva.nvi.common.db.model.KeyField;
 import no.sikt.nva.nvi.common.db.model.TableScanRequest;
 import no.sikt.nva.nvi.common.db.model.YearQueryRequest;
 import no.sikt.nva.nvi.common.model.ListingResult;
@@ -42,19 +35,14 @@ import software.amazon.awssdk.enhanced.dynamodb.DynamoDbTable;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
 import software.amazon.awssdk.enhanced.dynamodb.model.ConditionCheck;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
-import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.TransactWriteItemsEnhancedRequest;
 import software.amazon.awssdk.enhanced.dynamodb.model.TransactWriteItemsEnhancedRequest.Builder;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
-import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemRequest;
-import software.amazon.awssdk.services.dynamodb.model.PutRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryRequest;
 import software.amazon.awssdk.services.dynamodb.model.QueryResponse;
 import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
-import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
-import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
 
 // Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
 @SuppressWarnings("PMD.CouplingBetweenObjects")
@@ -62,8 +50,6 @@ public class CandidateRepository extends DynamoRepository {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CandidateRepository.class);
   public static final int DEFAULT_PAGE_SIZE = 100;
-  private static final int BATCH_SIZE = 25;
-  private static final long INITIAL_RETRY_WAIT_TIME_MS = 1000;
   protected final DynamoDbTable<CandidateDao> candidateTable;
   protected final DynamoDbTable<CandidateUniquenessEntryDao> uniquenessTable;
   protected final DynamoDbTable<ApprovalStatusDao> approvalStatusTable;
@@ -71,7 +57,6 @@ public class CandidateRepository extends DynamoRepository {
   protected final DynamoDbTable<NviPeriodDao> periodTable;
   private final DynamoDbIndex<CandidateDao> publicationIdIndex;
   private final DynamoDbIndex<CandidateDao> yearIndex;
-  private final DynamoDbRetryWrapper dynamoDbRetryClient;
 
   public CandidateRepository(DynamoDbClient client) {
     super(client);
@@ -84,20 +69,6 @@ public class CandidateRepository extends DynamoRepository {
         this.client.table(NVI_TABLE_NAME, fromImmutableClass(ApprovalStatusDao.class));
     this.noteTable = this.client.table(NVI_TABLE_NAME, fromImmutableClass(NoteDao.class));
     this.periodTable = this.client.table(NVI_TABLE_NAME, fromImmutableClass(NviPeriodDao.class));
-    this.dynamoDbRetryClient =
-        DynamoDbRetryWrapper.builder()
-            .dynamoDbClient(defaultClient)
-            .initialRetryWaitTimeMs(INITIAL_RETRY_WAIT_TIME_MS)
-            .tableName(NVI_TABLE_NAME)
-            .build();
-  }
-
-  public ListingResult<Dao> scanEntries(
-      int pageSize, Map<String, String> startMarker, List<KeyField> types) {
-    var scan = defaultClient.scan(createScanRequest(pageSize, startMarker, types));
-    var items = extractDatabaseEntries(scan);
-    return new ListingResult<>(
-        thereAreMorePagesToScan(scan), toStringMap(scan.lastEvaluatedKey()), scan.count(), items);
   }
 
   public ListingResult<UUID> weaklyConsistentCandidateScan(TableScanRequest requestParameters) {
@@ -158,12 +129,6 @@ public class CandidateRepository extends DynamoRepository {
         .toList();
   }
 
-  public void writeEntries(List<Dao> items) {
-    var writeRequests = createWriteRequestsForBatchJob(items);
-    var batches = getBatches(writeRequests);
-    batches.forEach(batch -> dynamoDbRetryClient.batchWriteItem(toBatchRequest(batch)));
-  }
-
   /**
    * Queries candidates by year using a GSI (not strongly consistent). Suitable for bulk operations
    * that extract identifiers but may not return the latest data.
@@ -178,7 +143,7 @@ public class CandidateRepository extends DynamoRepository {
         Optional.ofNullable(page)
             .map(Page::lastEvaluatedKey)
             .map(CandidateRepository::toStringMap)
-            .orElse(emptyMap());
+            .orElse(null);
     var items = Optional.ofNullable(page).map(Page::items).orElse(emptyList());
     return new ListingResult<>(
         thereAreMorePagesToScan(page),
@@ -393,22 +358,8 @@ public class CandidateRepository extends DynamoRepository {
     };
   }
 
-  protected static QueryConditional queryCandidateParts(UUID id, String type) {
-    return sortBeginsWith(
-        Key.builder()
-            .partitionValue(CandidateDao.createPartitionKey(id.toString()))
-            .sortValue(type)
-            .build());
-  }
-
   private static List<CandidateDao> filterOutReportedCandidates(Collection<CandidateDao> items) {
     return items.stream().filter(CandidateDao::isNotReported).toList();
-  }
-
-  private static <T> Stream<List<T>> getBatches(List<T> scanResult) {
-    var count = scanResult.size();
-    return IntStream.range(0, (count + BATCH_SIZE - 1) / BATCH_SIZE)
-        .mapToObj(i -> scanResult.subList(i * BATCH_SIZE, Math.min((i + 1) * BATCH_SIZE, count)));
   }
 
   private static Map<String, AttributeValue> toAttributeMap(Map<String, String> startMarker) {
@@ -419,20 +370,6 @@ public class CandidateRepository extends DynamoRepository {
   private static Map<String, String> toStringMap(Map<String, AttributeValue> lastEvaluatedKey) {
     return lastEvaluatedKey.entrySet().stream()
         .collect(toMap(Map.Entry::getKey, e -> e.getValue().s()));
-  }
-
-  private List<Dao> extractDatabaseEntries(ScanResponse response) {
-    return response.items().stream()
-        .map(value -> DynamoEntryWithRangeKey.parseAttributeValuesMap(value, Dao.class))
-        .toList();
-  }
-
-  private List<WriteRequest> createWriteRequestsForBatchJob(List<Dao> refreshedEntries) {
-    return refreshedEntries.stream()
-        .map(Dao::toDynamoFormat)
-        .map(this::mutateVersion)
-        .map(this::toWriteRequest)
-        .toList();
   }
 
   private Page<CandidateDao> queryYearIndex(
@@ -453,45 +390,7 @@ public class CandidateRepository extends DynamoRepository {
         .build();
   }
 
-  private Map<String, AttributeValue> mutateVersion(Map<String, AttributeValue> item) {
-    var mutableMap = new HashMap<>(item);
-    mutableMap.put(VERSION_FIELD, AttributeValue.builder().s(randomUUID().toString()).build());
-    return mutableMap;
-  }
-
   private boolean thereAreMorePagesToScan(Page<CandidateDao> page) {
     return nonNull(page) && hasElements(page.lastEvaluatedKey());
-  }
-
-  private boolean thereAreMorePagesToScan(ScanResponse scanResult) {
-    return hasElements(scanResult.lastEvaluatedKey());
-  }
-
-  private BatchWriteItemRequest toBatchRequest(Collection<WriteRequest> writeRequests) {
-    return BatchWriteItemRequest.builder()
-        .requestItems(Map.of(NVI_TABLE_NAME, writeRequests))
-        .build();
-  }
-
-  private WriteRequest toWriteRequest(Map<String, AttributeValue> dao) {
-    return WriteRequest.builder().putRequest(toPutRequest(dao)).build();
-  }
-
-  private PutRequest toPutRequest(Map<String, AttributeValue> dao) {
-    return PutRequest.builder().item(dao).build();
-  }
-
-  private ScanRequest createScanRequest(
-      int pageSize, Map<String, String> startMarker, List<KeyField> types) {
-    var start = nonNull(startMarker) ? toAttributeMap(startMarker) : null;
-    return ScanRequest.builder()
-        .tableName(NVI_TABLE_NAME)
-        .expressionAttributeNames(Map.of("#PK", SORT_KEY))
-        .filterExpression(Dao.scanFilterExpressionForDataEntries(types))
-        .expressionAttributeValues(Dao.scanFilterExpressionAttributeValues(types))
-        .exclusiveStartKey(start)
-        .limit(pageSize)
-        .consistentRead(true)
-        .build();
   }
 }
