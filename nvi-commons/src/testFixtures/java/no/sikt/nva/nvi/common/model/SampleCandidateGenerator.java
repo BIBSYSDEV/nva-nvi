@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.test;
+package no.sikt.nva.nvi.common.model;
 
 import static java.time.temporal.ChronoUnit.DAYS;
 import static java.util.Collections.emptyMap;
@@ -17,19 +17,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.model.ChannelType;
-import no.sikt.nva.nvi.common.model.InstanceType;
-import no.sikt.nva.nvi.common.model.PointCalculation;
-import no.sikt.nva.nvi.common.model.PublicationChannel;
-import no.sikt.nva.nvi.common.model.PublicationDate;
-import no.sikt.nva.nvi.common.model.ScientificValue;
-import no.sikt.nva.nvi.common.model.Sector;
 import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails;
 import no.sikt.nva.nvi.common.service.model.Username;
+import no.sikt.nva.nvi.test.TestUtils;
 import nva.commons.core.Environment;
 
 public final class SampleCandidateGenerator {
@@ -50,8 +44,7 @@ public final class SampleCandidateGenerator {
       URI institutionId, Sector sector, BigDecimal points) {
     var institutionPoint = new InstitutionPoints(institutionId, points, sector, List.of());
     this.institutionPoints.add(institutionPoint);
-    this.approvals.put(
-        institutionId, Approval.createNewApproval(candidateIdentifier, institutionId));
+    this.approvals.put(institutionId, Approval.createNewApproval(candidateIdentifier, institutionId));
     return this;
   }
 
