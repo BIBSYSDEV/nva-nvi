@@ -2,7 +2,6 @@ package no.sikt.nva.nvi.events.evaluator;
 
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.dto.CustomerDtoFixtures.createNviCustomer;
-import static no.sikt.nva.nvi.common.model.OrganizationFixtures.mockOrganizationResponseForAffiliation;
 import static no.sikt.nva.nvi.events.evaluator.TestUtils.createEvent;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static nva.commons.core.attempt.Try.attempt;
@@ -47,7 +46,6 @@ class EvaluateNviCandidateWithCristinDataTest extends EvaluationTest {
   @Test
   void shouldReturnSamePointsAsPointsCalculatedByCristinForAcademicArticleFrom2022()
       throws IOException {
-    mockCristinApiResponsesForAllSubUnitsInAcademicArticle();
     var event = setupSqsEvent("evaluator/cristin_candidate_2022_academicArticle.json");
     handler.handleRequest(event, CONTEXT);
     var candidate = getMessageBody();
@@ -62,10 +60,6 @@ class EvaluateNviCandidateWithCristinDataTest extends EvaluationTest {
   @Test
   void shouldReturnSamePointsAsPointsCalculatedByCristinForAcademicMonographFrom2022()
       throws IOException {
-    var subUnitId = UriWrapper.fromUri(BASE_PATH).addChild("185.15.13.55").getUri();
-    mockOrganizationResponseForAffiliation(UIO_TOP_LEVEL_ORG_ID, subUnitId, uriRetriever);
-    mockCristinResponseForNonNviOrganizationsForAcademicMonograph();
-
     var event = setupSqsEvent("evaluator/cristin_candidate_2022_academicMonograph.json");
     handler.handleRequest(event, CONTEXT);
     var candidate = getMessageBody();
@@ -77,10 +71,6 @@ class EvaluateNviCandidateWithCristinDataTest extends EvaluationTest {
   @Test
   void shouldReturnSamePointsAsPointsCalculatedByCristinForLiteratureReviewFrom2022()
       throws IOException {
-    var subUnitId = UriWrapper.fromUri(BASE_PATH).addChild("194.65.15.0").getUri();
-    mockOrganizationResponseForAffiliation(NTNU_TOP_LEVEL_ORG_ID, subUnitId, uriRetriever);
-    mockCristinResponseForNonNviOrganizationsForLiteratureReview();
-
     var event = setupSqsEvent("evaluator/cristin_candidate_2022_academicLiteratureReview.json");
     handler.handleRequest(event, CONTEXT);
     var candidate = getMessageBody();
@@ -92,8 +82,6 @@ class EvaluateNviCandidateWithCristinDataTest extends EvaluationTest {
   @Test
   void shouldReturnSamePointsAsPointsCalculatedByCristinForAcademicChapterFrom2022()
       throws IOException {
-    mockCristinApiResponsesForAllSubUnitsInAcademicChapter();
-
     var event = setupSqsEvent("evaluator/cristin_candidate_2022_academicChapter.json");
     handler.handleRequest(event, CONTEXT);
     var candidate = getMessageBody();
@@ -109,45 +97,10 @@ class EvaluateNviCandidateWithCristinDataTest extends EvaluationTest {
     return BigDecimal.valueOf(val).setScale(SCALE, ROUNDING_MODE);
   }
 
-  private void mockCristinResponseForNonNviOrganizationsForLiteratureReview() {
-    var organization1 = UriWrapper.fromUri(BASE_PATH).addChild("13900000.0.0.0").getUri();
-    var organization2 = UriWrapper.fromUri(BASE_PATH).addChild("13920157.0.0.0").getUri();
-    mockOrganizationResponseForAffiliation(organization1, null, uriRetriever);
-    mockOrganizationResponseForAffiliation(organization2, null, uriRetriever);
-  }
-
-  private void mockCristinResponseForNonNviOrganizationsForAcademicMonograph() {
-    var organization1 = UriWrapper.fromUri(BASE_PATH).addChild("14100020.0.0.0").getUri();
-    var organization2 = UriWrapper.fromUri(BASE_PATH).addChild("12300050.0.0.0").getUri();
-    mockOrganizationResponseForAffiliation(organization1, null, uriRetriever);
-    mockOrganizationResponseForAffiliation(organization2, null, uriRetriever);
-  }
-
-  private void mockCristinApiResponsesForAllSubUnitsInAcademicChapter() {
-    var organization1 = UriWrapper.fromUri(BASE_PATH).addChild("194.64.94.0").getUri();
-    var organization2 = UriWrapper.fromUri(BASE_PATH).addChild("194.64.45.0").getUri();
-    var organization3 = UriWrapper.fromUri(BASE_PATH).addChild("7401.30.40.0").getUri();
-    mockOrganizationResponseForAffiliation(NTNU_TOP_LEVEL_ORG_ID, organization1, uriRetriever);
-    mockOrganizationResponseForAffiliation(NTNU_TOP_LEVEL_ORG_ID, organization2, uriRetriever);
-    mockOrganizationResponseForAffiliation(SINTEF_TOP_LEVEL_ORG_ID, organization3, uriRetriever);
-  }
-
   private SQSEvent setupSqsEvent(String path) throws IOException {
     var content = IoUtils.inputStreamFromResources(path);
     var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
     return createEvent(new PersistedResourceMessage(fileUri));
-  }
-
-  private void mockCristinApiResponsesForAllSubUnitsInAcademicArticle() {
-    var organization1 = UriWrapper.fromUri(BASE_PATH).addChild("194.65.0.0").getUri();
-    var organization2 = UriWrapper.fromUri(BASE_PATH).addChild("194.63.10.0").getUri();
-    var organization3 = UriWrapper.fromUri(BASE_PATH).addChild("1920.13.0.0").getUri();
-    var organization4 = UriWrapper.fromUri(BASE_PATH).addChild("194.65.25.0").getUri();
-    mockOrganizationResponseForAffiliation(NTNU_TOP_LEVEL_ORG_ID, organization1, uriRetriever);
-    mockOrganizationResponseForAffiliation(NTNU_TOP_LEVEL_ORG_ID, organization2, uriRetriever);
-    mockOrganizationResponseForAffiliation(ST_OLAVS_TOP_LEVEL_ORG_ID, organization3, uriRetriever);
-    mockOrganizationResponseForAffiliation(NTNU_TOP_LEVEL_ORG_ID, organization4, uriRetriever);
-    mockOrganizationResponseForAffiliation(ST_OLAVS_TOP_LEVEL_ORG_ID, null, uriRetriever);
   }
 
   private void mockCustomerApi() {

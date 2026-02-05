@@ -17,7 +17,6 @@ import static no.sikt.nva.nvi.common.dto.NviCreatorDtoFixtures.unverifiedNviCrea
 import static no.sikt.nva.nvi.common.dto.NviCreatorDtoFixtures.verifiedNviCreatorDtoFrom;
 import static no.sikt.nva.nvi.common.dto.PointCalculationDtoBuilder.randomPointCalculationDtoBuilder;
 import static no.sikt.nva.nvi.common.model.CandidateFixtures.setupRandomApplicableCandidate;
-import static no.sikt.nva.nvi.common.model.OrganizationFixtures.mockOrganizationResponseForAffiliation;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomTopLevelOrganization;
 import static no.sikt.nva.nvi.common.model.UserInstanceFixtures.createCuratorUserInstance;
 import static no.sikt.nva.nvi.common.service.model.NviPeriod.toPeriodStatusDto;
@@ -255,7 +254,6 @@ class CandidateTest extends CandidateTestSetup {
     UpsertNviCandidateRequest request = randomUpsertRequestBuilder().build();
     var candidate = scenario.upsertCandidate(request);
     var userOrganizationId = getAnyOrganizationId(candidate);
-    mockOrganizationResponseForAffiliation(userOrganizationId, null, mockUriRetriever);
 
     var expectedDto =
         CandidateDto.builder()

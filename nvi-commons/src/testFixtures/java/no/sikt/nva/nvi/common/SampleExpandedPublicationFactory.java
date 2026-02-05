@@ -5,7 +5,7 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.dto.CustomerDtoFixtures.createCustomer;
-import static no.sikt.nva.nvi.common.model.OrganizationFixtures.setupRandomOrganization;
+import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganization;
 import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublicationDateInCurrentYear;
 import static no.sikt.nva.nvi.common.utils.Validator.hasElements;
 import static no.sikt.nva.nvi.test.TestConstants.ACADEMIC_CHAPTER;
@@ -36,7 +36,6 @@ import no.sikt.nva.nvi.test.SampleExpandedPublication;
 import no.sikt.nva.nvi.test.SampleExpandedPublicationChannel;
 import no.sikt.nva.nvi.test.SampleExpandedPublicationContext;
 import no.sikt.nva.nvi.test.SampleExpandedPublicationDate;
-import no.unit.nva.auth.uriretriever.UriRetriever;
 import no.unit.nva.clients.CustomerDto;
 
 // TODO Refactor to remove warnings NP-49938
@@ -45,7 +44,6 @@ public class SampleExpandedPublicationFactory {
   private static final String ROLE_CREATOR = "Creator";
   private static final String ROLE_OTHER = "SomeOtherRole";
 
-  private final UriRetriever uriRetriever;
   private final List<SampleExpandedContributor> contributors = new ArrayList<>();
   private final List<SampleExpandedOrganization> topLevelOrganizations = new ArrayList<>();
   private final List<CustomerDto> customerOrganizations = new ArrayList<>();
@@ -59,7 +57,7 @@ public class SampleExpandedPublicationFactory {
   private String revisionStatus = "Unrevised";
 
   public SampleExpandedPublicationFactory(TestScenario scenario) {
-    this.uriRetriever = scenario.getMockedUriRetriever();
+    // TODO: Use scenario?
   }
 
   public static SampleExpandedPublicationFactory defaultExpandedPublicationFactory(
@@ -303,7 +301,7 @@ public class SampleExpandedPublicationFactory {
   }
 
   public Organization setupTopLevelOrganization(String countryCode, boolean isNviOrganization) {
-    var topLevelOrganization = setupRandomOrganization(countryCode, 2, uriRetriever);
+    var topLevelOrganization = randomOrganization(countryCode, 2).build();
     this.topLevelOrganizations.add(createExpandedOrganization(topLevelOrganization, true));
     this.customerOrganizations.add(createCustomer(topLevelOrganization.id(), isNviOrganization));
     return topLevelOrganization;

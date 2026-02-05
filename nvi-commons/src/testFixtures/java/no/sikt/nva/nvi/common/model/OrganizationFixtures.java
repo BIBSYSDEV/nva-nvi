@@ -17,7 +17,6 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.net.URI;
 import java.net.http.HttpResponse;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
@@ -83,15 +82,6 @@ public class OrganizationFixtures {
         .withLabels(Map.of("nb", randomString(), "en", randomString()));
   }
 
-  public static Organization setupRandomOrganization(
-      String countryCode, int numberOfSubOrganizations, UriRetriever uriRetriever) {
-    var topLevelOrganization = randomOrganization(countryCode, numberOfSubOrganizations).build();
-    var subOrganizationIds = topLevelOrganization.hasPart().stream().map(Organization::id).toList();
-    mockOrganizationResponseForAffiliations(
-        topLevelOrganization.id(), subOrganizationIds, uriRetriever);
-    return topLevelOrganization;
-  }
-
   public static Builder randomOrganization(String countryCode, int numberOfSubOrganizations) {
     var topLevelOrganizationId = randomUriWithSuffix("topLevelOrganization");
     var topLevelLeafNode = Organization.builder().withId(topLevelOrganizationId).build();
@@ -118,26 +108,6 @@ public class OrganizationFixtures {
 
   public static Organization getAsOrganizationLeafNode(URI organizationId) {
     return Organization.builder().withId(organizationId).build();
-  }
-
-  // FIXME: Remove this
-  public static void mockOrganizationResponseForAffiliation(
-      URI topLevelInstitutionId, URI subUnitId, UriRetriever uriRetriever) {
-    var subUnits = new ArrayList<Organization>();
-    if (nonNull(subUnitId)) {
-      var topLevelOrganizationAsLeafNode =
-          Organization.builder().withId(topLevelInstitutionId).build();
-      var subUnitOrganization =
-          Organization.builder()
-              .withId(subUnitId)
-              .withPartOf(List.of(topLevelOrganizationAsLeafNode))
-              .build();
-      mockOrganizationResponse(subUnitOrganization, uriRetriever);
-      subUnits.add(subUnitOrganization);
-    }
-    var topLevelOrganization =
-        Organization.builder().withId(topLevelInstitutionId).withHasPart(subUnits).build();
-    mockOrganizationResponse(topLevelOrganization, uriRetriever);
   }
 
   public static void mockOrganizationResponseForAffiliations(

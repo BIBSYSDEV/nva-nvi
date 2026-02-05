@@ -17,7 +17,6 @@ import static no.sikt.nva.nvi.common.dto.NviCreatorDtoFixtures.verifiedNviCreato
 import static no.sikt.nva.nvi.common.model.CandidateFixtures.randomApplicableCandidateRequestBuilder;
 import static no.sikt.nva.nvi.common.model.CandidateFixtures.setupRandomApplicableCandidate;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.createOrganizationWithSubUnit;
-import static no.sikt.nva.nvi.common.model.OrganizationFixtures.mockOrganizationResponseForAffiliation;
 import static no.sikt.nva.nvi.common.model.UserInstanceFixtures.createCuratorUserInstance;
 import static no.sikt.nva.nvi.common.model.UsernameFixtures.randomUsername;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
@@ -105,8 +104,6 @@ class CandidateApprovalTest extends CandidateTestSetup {
   void setUp() {
     topLevelOrganization = scenario.setupTopLevelOrganizationWithSubUnits();
     topLevelOrganizationId = topLevelOrganization.id();
-    mockOrganizationResponseForAffiliation(
-        HARDCODED_INSTITUTION_ID, HARDCODED_SUBUNIT_ID, mockUriRetriever);
 
     var upsertCandidateRequest = createUpsertCandidateRequest(HARDCODED_INSTITUTION_ID).build();
     initialCandidate = scenario.upsertCandidate(upsertCandidateRequest);
