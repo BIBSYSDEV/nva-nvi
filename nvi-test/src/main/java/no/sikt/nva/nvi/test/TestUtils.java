@@ -8,14 +8,11 @@ import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static nva.commons.core.StringUtils.isNotBlank;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
-import java.net.http.HttpResponse;
 import java.time.LocalDate;
 import java.time.Year;
 import java.util.Collection;
@@ -95,13 +92,6 @@ public final class TestUtils {
         MIN_BIG_DECIMAL.add(
             BigDecimal.valueOf(Math.random()).multiply(MAX_BIG_DECIMAL.subtract(MIN_BIG_DECIMAL)));
     return randomBigDecimal.setScale(scale, RoundingMode.HALF_UP);
-  }
-
-  public static HttpResponse<String> createResponse(int status, String body) {
-    var response = (HttpResponse<String>) mock(HttpResponse.class);
-    when(response.statusCode()).thenReturn(status);
-    when(response.body()).thenReturn(body);
-    return response;
   }
 
   public static ObjectNode createNodeWithType(String type) {

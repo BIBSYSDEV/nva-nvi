@@ -41,7 +41,6 @@ import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.validator.FakeViewingScopeValidator;
 import no.sikt.nva.nvi.common.validator.ViewingScopeValidator;
-import no.unit.nva.auth.uriretriever.UriRetriever;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
@@ -58,7 +57,6 @@ public abstract class BaseCandidateRestHandlerTest {
       new FakeViewingScopeValidator(true);
   protected static final Context CONTEXT = mock(Context.class);
   protected Environment environment;
-  protected UriRetriever mockUriRetriever;
   protected String resourcePathParameter;
   protected List<Organization> topLevelOrganizations;
   protected Organization topLevelOrganization;
@@ -81,7 +79,6 @@ public abstract class BaseCandidateRestHandlerTest {
     topLevelOrganizations = List.of(topLevelOrganization);
     topLevelOrganizationId = topLevelOrganization.id();
     subOrganizationId = topLevelOrganization.hasPart().getFirst().id();
-    mockUriRetriever = scenario.getMockedUriRetriever();
     curatorUser = createCuratorUserInstance(topLevelOrganizationId);
 
     var candidateRepository = scenario.getCandidateRepository();

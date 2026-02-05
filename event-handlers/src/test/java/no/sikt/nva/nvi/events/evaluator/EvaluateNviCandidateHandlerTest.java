@@ -398,7 +398,6 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
   void shouldNotCreateCandidateWhenPublicationHasZeroNviInstitutions() {
     mockGetAllCustomersResponse(emptyList());
 
-    handler = createHandler();
     handleEvaluation(ACADEMIC_ARTICLE);
 
     assertThrows(
@@ -503,7 +502,6 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     void shouldIdentifyCandidateWithOnlyVerifiedNviCreators() {
       setupOpenPeriod(scenario, publicationDate.year());
       var publication = factory.withContributor(verifiedCreatorFrom(nviOrganization));
-      mockGetAllCustomersResponse(factory.getCustomerOrganizations());
 
       handleEvaluation(publication);
 
@@ -521,7 +519,6 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     void shouldIdentifyCandidateWithOnlyUnverifiedNviCreators() {
       setupOpenPeriod(scenario, publicationDate.year());
       var publication = factory.withContributor(unverifiedCreatorFrom(nviOrganization));
-      mockGetAllCustomersResponse(factory.getCustomerOrganizations());
 
       handleEvaluation(publication);
 
@@ -541,7 +538,6 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       setupOpenPeriod(scenario, publicationDate.year());
       var verifiedContributor = randomContributorDtoBuilder(nviOrganization).withName(null).build();
       var publication = factory.withContributor(verifiedContributor);
-      mockGetAllCustomersResponse(factory.getCustomerOrganizations());
 
       handleEvaluation(publication);
 
@@ -574,7 +570,6 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     void shouldHandleUnverifiedAuthorsWithMultipleNames() {
       setupOpenPeriod(scenario, publicationDate.year());
       var publication = factory.withContributor(createUnverifiedCreatorWithTwoNames());
-      mockGetAllCustomersResponse(factory.getCustomerOrganizations());
 
       handleEvaluation(publication);
 
@@ -644,8 +639,8 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     @Test
     void shouldRejectCandidateWithOnlyNonNviCustomers() {
       setupOpenPeriod(scenario, publicationDate.year());
-      var swedishOrganization = factory.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, false);
-      var publication = factory.withContributor(verifiedCreatorFrom(swedishOrganization));
+      var nonNviOrganization = factory.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, false);
+      var publication = factory.withContributor(verifiedCreatorFrom(nonNviOrganization));
 
       handleEvaluation(publication);
 
@@ -662,7 +657,6 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       // Then it should be evaluated as a Candidate
       setupOpenPeriod(scenario, publicationDate.year());
       var publication = factory.withContributor(verifiedCreatorFrom(nviOrganization));
-      mockGetAllCustomersResponse(factory.getCustomerOrganizations());
 
       handleEvaluation(publication);
 
@@ -700,13 +694,11 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       // When the publication is evaluated
       // Then it should be evaluated as a NonCandidate
       setupClosedPeriod(scenario, publicationDate.year());
-      var publication =
-          factory.withContributor(verifiedCreatorFrom(nviOrganization)).getExpandedPublication();
-      mockGetAllCustomersResponse(factory.getCustomerOrganizations());
+      var publication = factory.withContributor(verifiedCreatorFrom(nviOrganization));
 
-      handleEvaluation(publication.toJsonString());
+      handleEvaluation(publication);
 
-      assertThatNoCandidateExistsForPublication(publication.id());
+      assertThatNoCandidateExistsForPublication(publication.getPublicationId());
     }
 
     @Test
@@ -720,15 +712,11 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       var publication =
           factory
               .withContributor(verifiedCreatorFrom(nviOrganization))
-              .withPublicationDate(historicalDate)
-              .getExpandedPublication();
-      mockGetAllCustomersResponse(factory.getCustomerOrganizations());
+              .withPublicationDate(historicalDate);
 
-      handleEvaluation(publication.toJsonString());
-      var nviPeriod = periodService.findByPublishingYear(historicalDate.year());
+      handleEvaluation(publication);
 
-      assertThatNoCandidateExistsForPublication(publication.id());
-      assertTrue(nviPeriod.isEmpty());
+      assertThatNoCandidateExistsForPublication(publication.getPublicationId());
     }
 
     @Test
@@ -741,7 +729,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       // And the Candidate entry in the database should not be updated
       setupClosedPeriod(scenario, publicationDate.year());
       var existingCandidateDao =
-          setupReportedCandidate(candidateRepository, publicationDate.year());
+          setupReportedCandidate(scenario.getCandidateRepository(), publicationDate.year());
       var publicationId = existingCandidateDao.candidate().publicationId();
       var publication =
           factory
@@ -749,7 +737,6 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
               .getExpandedPublicationBuilder()
               .withId(publicationId)
               .build();
-      mockGetAllCustomersResponse(factory.getCustomerOrganizations());
       var fileUri = scenario.setupExpandedPublicationInS3(publication.toJsonString());
       var event = createEvent(new PersistedResourceMessage(fileUri));
 
@@ -775,11 +762,10 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
               .withPublicationDate(openPeriod);
       setupCandidateMatchingPublication(publicationFactory.getExpandedPublication());
 
-      var updatedPublication =
-          publicationFactory.withPublicationDate(nonPeriod).getExpandedPublication();
-      handleEvaluation(updatedPublication.toJsonString());
+      var updatedPublication = publicationFactory.withPublicationDate(nonPeriod);
+      handleEvaluation(updatedPublication);
 
-      assertThatPublicationIsNonCandidate(updatedPublication.id());
+      assertThatPublicationIsNonCandidate(updatedPublication.getPublicationId());
     }
 
     @Test

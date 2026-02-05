@@ -21,23 +21,19 @@ import java.math.RoundingMode;
 import java.net.URI;
 import java.util.List;
 import java.util.Optional;
-import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.SampleExpandedPublicationFactory;
 import no.sikt.nva.nvi.common.TestScenario;
-import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.dto.CandidateType;
 import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import no.sikt.nva.nvi.common.service.CandidateService;
-import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.sikt.nva.nvi.test.SampleExpandedPublication;
-import no.unit.nva.auth.uriretriever.UriRetriever;
 import no.unit.nva.clients.CustomerDto;
 import no.unit.nva.clients.CustomerList;
 import no.unit.nva.clients.IdentityServiceClient;
@@ -59,12 +55,7 @@ class EvaluationTest {
   protected S3Driver s3Driver;
   protected EvaluateNviCandidateHandler handler;
   protected IdentityServiceClient identityServiceClient;
-  protected UriRetriever uriRetriever;
   protected FakeSqsClient queueClient;
-  protected CandidateRepository candidateRepository;
-  protected S3StorageReader storageReader;
-  protected EvaluatorService evaluatorService;
-  protected NviPeriodService periodService;
   protected CandidateService candidateService;
 
   protected BigDecimal getPointsForInstitution(
@@ -76,28 +67,36 @@ class EvaluationTest {
         .orElseThrow();
   }
 
+  @BeforeEach
+  void commonSetup() {
+    scenario = new TestScenario();
+    queueClient = new FakeSqsClient();
+    s3Driver = scenario.getS3DriverForExpandedResourcesBucket();
+    identityServiceClient = mock(IdentityServiceClient.class);
+
+    var evaluationEnvironment = getEvaluateNviCandidateHandlerEnvironment();
+    candidateService =
+        new CandidateService(
+            evaluationEnvironment,
+            scenario.getPeriodRepository(),
+            scenario.getCandidateRepository());
+    var evaluatorService =
+        new EvaluatorService(
+            identityServiceClient,
+            scenario.getS3StorageReaderForExpandedResourcesBucket(),
+            candidateService);
+    handler = new EvaluateNviCandidateHandler(evaluatorService, queueClient, evaluationEnvironment);
+
+    mockGetAllCustomersResponse(getDefaultCustomers());
+    setupOpenPeriod(scenario, HARDCODED_JSON_PUBLICATION_DATE.year());
+  }
+
   protected void mockGetAllCustomersResponse(List<CustomerDto> customers) {
     try {
       when(identityServiceClient.getAllCustomers()).thenReturn(new CustomerList(customers));
     } catch (ApiGatewayException exception) {
       throw new RuntimeException(exception);
     }
-  }
-
-  @BeforeEach
-  void commonSetup() {
-    identityServiceClient = mock(IdentityServiceClient.class);
-    mockGetAllCustomersResponse(getDefaultCustomers());
-
-    scenario = new TestScenario();
-    uriRetriever = scenario.getMockedUriRetriever(); // FIXME: Remove?
-    setupOpenPeriod(scenario, HARDCODED_JSON_PUBLICATION_DATE.year());
-
-    queueClient = new FakeSqsClient();
-    s3Driver = scenario.getS3DriverForExpandedResourcesBucket();
-    storageReader = scenario.getS3StorageReaderForExpandedResourcesBucket();
-
-    handler = createHandler();
   }
 
   protected void assertThatPublicationIsValidCandidate(URI publicationId) {
@@ -117,17 +116,6 @@ class EvaluationTest {
     assertThrows(
         CandidateNotFoundException.class,
         () -> candidateService.getCandidateByPublicationId(publicationId));
-  }
-
-  protected EvaluateNviCandidateHandler createHandler() {
-    var evaluationEnvironment = getEvaluateNviCandidateHandlerEnvironment();
-    var periodRepository = scenario.getPeriodRepository();
-    candidateRepository = scenario.getCandidateRepository();
-    periodService = new NviPeriodService(evaluationEnvironment, periodRepository);
-    candidateService =
-        new CandidateService(evaluationEnvironment, periodRepository, candidateRepository);
-    evaluatorService = new EvaluatorService(identityServiceClient, storageReader, candidateService);
-    return new EvaluateNviCandidateHandler(evaluatorService, queueClient, evaluationEnvironment);
   }
 
   protected void evaluate(SampleExpandedPublication publication) {
