@@ -750,13 +750,13 @@ paths:
 
         * **No parameters** - Returns report for the requesting user's institution and breakdown for its sub-units
         * **institution parameter** - Returns report for the specified institution and breakdown for its sub-units
-        
+
         **Aggregation types:**
-        
+
         * **aggregation=allInstitutions** - Returns report for all institutions with institution breakdown
         * **aggregation=global** - Returns report for an NVI period across all institutions without institution breakdown
         * **aggregation=institution** - Returns report for the specified institution and breakdown for its sub-units
-        
+
         **Examples:**
         * **aggregation=allInstitutions&institution=1.0.0.0** - Returns report for
         * **aggregation=institution&institution=1.0.0.0** - Returns report for
@@ -798,7 +798,7 @@ paths:
             application/json:
               schema:
                 oneOf:
-                  - $ref: "#/components/schemas/NviInstitutionReportResponse"
+                  - $ref: "#/components/schemas/InstitutionReportResponse"
                   - $ref: "#/components/schemas/AllInstitutionsReportResponse"
                   - $ref: "#/components/schemas/GlobalReportResponse"
               examples:
@@ -897,15 +897,13 @@ paths:
                   value:
                     year: "2011"
                     type: "GlobalReport"
-                    aggregation:
-                      type: "PeriodReport"
-                      candidateCount: 39
-                      points: 6.0000
-                      globalApprovalStatus:
-                        Rejected: 3
-                        Pending: 32
-                        Approved: 2
-                        Dispute: 2
+                    candidateCount: 39
+                    points: 6.0000
+                    globalApprovalStatus:
+                      Rejected: 3
+                      Pending: 32
+                      Approved: 2
+                      Dispute: 2
         "401":
           description: "Unauthorized"
           content:
@@ -1168,7 +1166,7 @@ components:
           items:
             $ref: "#/components/schemas/CandidateProblem"
 
-    NviInstitutionReportResponse:
+    InstitutionReportResponse:
       type: object
       description: >
         Status report for a institution for a given year.
@@ -1189,12 +1187,12 @@ components:
           description: URI of the institution
           example: "https://api.nva.unit.no/cristin/organization/123.0.0.0"
         totals:
-          $ref: "#/components/schemas/TopLevelAggregation"
+          $ref: "#/components/schemas/InstitutionReport"
         byUnit:
           type: object
           description: Aggregated status for each institution, keyed by institution URI
           additionalProperties:
-            $ref: "#/components/schemas/DirectAffiliationAggregation"
+            $ref: "#/components/schemas/UnitReport"
           example:
             "https://api.nva.unit.no/cristin/organization/123.0.0.0":
               type: DirectAffiliationAggregation
@@ -1238,7 +1236,7 @@ components:
           example: "2025"
         type:
           type: string
-          enum: [ AllInstitutionsReport ]
+          enum: [AllInstitutionsReport]
           example: "AllInstitutionsReport"
         byInstitution:
           type: object
@@ -1248,8 +1246,8 @@ components:
           example:
             "https://api.dev.nva.aws.unit.no/cristin/organization/185.0.0.0":
               type: "InstitutionReport"
-              institutionName: "Universitetet i Oslo"
-              sector: "UNIVERSITY"
+              name: "Universitetet i Oslo"
+              sector: "UHI"
               candidateCount: 312
               points: 67.5000
               globalApprovalStatus:
@@ -1270,7 +1268,7 @@ components:
       properties:
         type:
           type: string
-          enum: [ InstitutionReport ]
+          enum: [InstitutionReport]
           example: "InstitutionReport"
         name:
           type: string
@@ -1280,13 +1278,12 @@ components:
           type: string
           description: Educational sector of the institution
           enum:
-            - UNIVERSITY
-            - UNIVERSITY_COLLEGE
-            - HEALTH_ENTERPRISE
-            - RESEARCH_INSTITUTE
-            - ARTS_COLLEGE
+            - UHI
+            - HEALTH
+            - INSTITUTE
+            - ABM
             - OTHER
-          example: "UNIVERSITY"
+          example: "UHI"
         candidateCount:
           type: integer
           description: Total number of NVI candidates for this institution
@@ -1310,8 +1307,8 @@ components:
       properties:
         type:
           type: string
-          enum: [ PeriodAggregation ]
-          example: "PeriodAggregation"
+          enum: [GlobalReport]
+          example: "GlobalReport"
         candidateCount:
           type: integer
           description: Total number of NVI candidates across all institutions
@@ -1322,8 +1319,6 @@ components:
           example: 6.0000
         globalApprovalStatus:
           $ref: "#/components/schemas/GlobalApprovalStatusCounts"
-
-
 
     OrganizationStatusAggregationBase:
       type: object
@@ -1347,7 +1342,7 @@ components:
         approvalStatus:
           $ref: "#/components/schemas/ApprovalStatusCounts"
 
-    TopLevelAggregation:
+    InstitutionReport:
       description: >
         Aggregation representing totals for a top-level organization.
         Includes transitive points from all sub-organizations.
@@ -1359,10 +1354,10 @@ components:
           properties:
             type:
               type: string
-              enum: [TopLevelAggregation]
-              example: TopLevelAggregation
+              enum: [InstitutionReport]
+              example: InstitutionReport
 
-    DirectAffiliationAggregation:
+    UnitReport:
       description: >
         Aggregation based on direct creator affiliations to a specific organization.
         Points are calculated only from creators directly affiliated with this organization.
@@ -1374,8 +1369,8 @@ components:
           properties:
             type:
               type: string
-              enum: [DirectAffiliationAggregation]
-              example: DirectAffiliationAggregation
+              enum: [UnitReport]
+              example: UnitReport
 
     GlobalApprovalStatusCounts:
       type: object
