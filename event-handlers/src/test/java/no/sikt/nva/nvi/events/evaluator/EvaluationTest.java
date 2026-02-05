@@ -164,12 +164,17 @@ class EvaluationTest {
    * This wrapper is an abstraction of the whole processing chain in `event-handlers`, including
    * parsing, evaluation, and upsert.
    */
-  protected void evaluatePublication(String publicationJson) {
+  protected void handleEvaluation(String publicationJson) {
     var fileUri = scenario.setupExpandedPublicationInS3(publicationJson);
     var evaluationEvent = createEvent(new PersistedResourceMessage(fileUri));
     handler.handleRequest(evaluationEvent, CONTEXT);
 
     getMessageFromUpsertQueue().ifPresent(this::upsertEvaluationResult);
+  }
+
+  protected void handleEvaluation(SampleExpandedPublicationFactory publicationFactory) {
+    mockGetAllCustomersResponse(publicationFactory.getCustomerOrganizations());
+    handleEvaluation(publicationFactory.getExpandedPublication().toJsonString());
   }
 
   private void upsertEvaluationResult(CandidateEvaluatedMessage evaluationResult) {
@@ -178,11 +183,6 @@ class EvaluationTest {
       case UpsertNonNviCandidateRequest nonCandidate ->
           candidateService.updateCandidate(nonCandidate);
     }
-  }
-
-  protected void evaluatePublication(SampleExpandedPublicationFactory publicationFactory) {
-    mockGetAllCustomersResponse(publicationFactory.getCustomerOrganizations());
-    evaluatePublication(publicationFactory.getExpandedPublication().toJsonString());
   }
 
   protected SampleExpandedPublicationFactory createApplicablePublication(String publicationYear) {
@@ -206,10 +206,10 @@ class EvaluationTest {
             .orElse(setupOpenPeriod(scenario, year));
 
     if (period.isOpen()) {
-      evaluatePublication(publication.toJsonString());
+      handleEvaluation(publication.toJsonString());
     } else {
       setupOpenPeriod(scenario, year);
-      evaluatePublication(publication.toJsonString());
+      handleEvaluation(publication.toJsonString());
       scenario.getPeriodService().update(updateRequestFromPeriod(period));
     }
     return candidateService.getCandidateByPublicationId(publication.id());
