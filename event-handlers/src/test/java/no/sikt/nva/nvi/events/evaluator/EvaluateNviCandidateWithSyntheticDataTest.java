@@ -60,7 +60,7 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
   void setup() {
     var publicationDate = randomPublicationDate();
     setupOpenPeriod(scenario, publicationDate.year());
-    factory = new SampleExpandedPublicationFactory(scenario).withPublicationDate(publicationDate);
+    factory = new SampleExpandedPublicationFactory().withPublicationDate(publicationDate);
 
     // Set up default organizations suitable for most test cases
     nviOrganization = factory.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, true);

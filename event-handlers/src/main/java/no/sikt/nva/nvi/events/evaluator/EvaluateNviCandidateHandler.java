@@ -25,8 +25,6 @@ public class EvaluateNviCandidateHandler implements RequestHandler<SQSEvent, Voi
   private static final Logger LOGGER = LoggerFactory.getLogger(EvaluateNviCandidateHandler.class);
   private static final String EVALUATED_CANDIDATE_QUEUE_URL = "CANDIDATE_QUEUE_URL";
   private static final String EVALUATION_DLQ_URL = "EVALUATION_DLQ_URL";
-  private static final String BACKEND_CLIENT_AUTH_URL = "BACKEND_CLIENT_AUTH_URL";
-  private static final String BACKEND_CLIENT_SECRET_NAME = "BACKEND_CLIENT_SECRET_NAME";
   private final EvaluatorService evaluatorService;
   private final QueueClient queueClient;
   private final String queueUrl;

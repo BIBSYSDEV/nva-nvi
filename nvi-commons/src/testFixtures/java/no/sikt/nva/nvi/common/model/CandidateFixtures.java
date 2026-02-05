@@ -91,7 +91,7 @@ public class CandidateFixtures {
 
   private static void createMatchingPublicationInS3(TestScenario scenario, Candidate candidate) {
     var publication =
-        defaultExpandedPublicationFactory(scenario)
+        defaultExpandedPublicationFactory()
             .getExpandedPublicationBuilder()
             .withId(candidate.getPublicationId())
             .withIdentifier(candidate.publicationDetails().publicationIdentifier())

@@ -9,6 +9,7 @@ import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBui
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.setupReportedCandidate;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeriod;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
+import static no.sikt.nva.nvi.common.dto.CustomerDtoFixtures.getDefaultCustomers;
 import static no.sikt.nva.nvi.common.model.ChannelType.JOURNAL;
 import static no.sikt.nva.nvi.common.model.ChannelType.SERIES;
 import static no.sikt.nva.nvi.common.model.ContributorFixtures.ROLE_CREATOR;
@@ -23,7 +24,6 @@ import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublica
 import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublicationDateInYear;
 import static no.sikt.nva.nvi.events.evaluator.TestUtils.createEvent;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_NORWAY;
-import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_SWEDEN;
 import static no.sikt.nva.nvi.test.TestConstants.CRISTIN_NVI_ORG_TOP_LEVEL_ID;
 import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_PUBLICATION_ID;
 import static no.sikt.nva.nvi.test.TestConstants.THIS_YEAR;
@@ -492,7 +492,9 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     @BeforeEach
     void setup() {
       publicationDate = randomPublicationDate();
-      factory = new SampleExpandedPublicationFactory(scenario).withPublicationDate(publicationDate);
+      factory =
+          new SampleExpandedPublicationFactory(getDefaultCustomers())
+              .withPublicationDate(publicationDate);
       nviOrganization = factory.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, true);
       mockGetAllCustomersResponse(factory.getCustomerOrganizations());
     }
@@ -640,9 +642,9 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     }
 
     @Test
-    void shouldRejectCandidateWithOnlySwedishCountryCode() {
+    void shouldRejectCandidateWithOnlyNonNviCustomers() {
       setupOpenPeriod(scenario, publicationDate.year());
-      var swedishOrganization = factory.setupTopLevelOrganization(COUNTRY_CODE_SWEDEN, false);
+      var swedishOrganization = factory.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, false);
       var publication = factory.withContributor(verifiedCreatorFrom(swedishOrganization));
 
       handleEvaluation(publication);

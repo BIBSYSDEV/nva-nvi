@@ -46,23 +46,26 @@ public class SampleExpandedPublicationFactory {
 
   private final List<SampleExpandedContributor> contributors = new ArrayList<>();
   private final List<SampleExpandedOrganization> topLevelOrganizations = new ArrayList<>();
-  private final List<CustomerDto> customerOrganizations = new ArrayList<>();
   private final List<SampleExpandedPublicationChannel> publicationChannels = new ArrayList<>();
   private final Map<String, SampleExpandedPublicationChannel> channels = new HashMap<>();
   private final UUID publicationIdentifier = randomUUID();
   private final URI publicationId = generatePublicationId(publicationIdentifier);
+  private final List<CustomerDto> customerOrganizations;
   private String publicationType = "AcademicArticle";
   private PublicationDate publicationDate = randomPublicationDateInCurrentYear();
   private Collection<String> isbnList = List.of(randomIsbn13());
   private String revisionStatus = "Unrevised";
 
-  public SampleExpandedPublicationFactory(TestScenario scenario) {
-    // TODO: Use scenario?
+  public SampleExpandedPublicationFactory() {
+    this.customerOrganizations = new ArrayList<>();
   }
 
-  public static SampleExpandedPublicationFactory defaultExpandedPublicationFactory(
-      TestScenario scenario) {
-    var factory = new SampleExpandedPublicationFactory(scenario);
+  public SampleExpandedPublicationFactory(List<CustomerDto> customers) {
+    this.customerOrganizations = new ArrayList<>(customers);
+  }
+
+  public static SampleExpandedPublicationFactory defaultExpandedPublicationFactory() {
+    var factory = new SampleExpandedPublicationFactory();
     var nviOrganization1 = factory.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, true);
     var nviOrganization2 = factory.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, true);
     var nonNviOrganization = factory.setupTopLevelOrganization(COUNTRY_CODE_SWEDEN, false);

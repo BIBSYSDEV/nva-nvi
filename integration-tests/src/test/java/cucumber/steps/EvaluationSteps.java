@@ -37,7 +37,7 @@ public class EvaluationSteps {
 
   public EvaluationSteps(TestScenario scenario) {
     this.scenario = scenario;
-    this.publicationBuilder = new SampleExpandedPublicationFactory(scenario);
+    this.publicationBuilder = new SampleExpandedPublicationFactory();
     this.publicationId = publicationBuilder.getExpandedPublication().id();
     this.evaluationContext = new EvaluationContext(scenario);
   }

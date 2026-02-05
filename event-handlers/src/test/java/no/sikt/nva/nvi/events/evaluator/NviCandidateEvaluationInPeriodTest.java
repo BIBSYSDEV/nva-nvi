@@ -22,7 +22,7 @@ class NviCandidateEvaluationInPeriodTest extends EvaluationTest {
 
   @BeforeEach
   void setup() {
-    factory = new SampleExpandedPublicationFactory(scenario);
+    factory = new SampleExpandedPublicationFactory();
     nviOrganization = factory.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, true);
     mockGetAllCustomersResponse(factory.getCustomerOrganizations());
   }

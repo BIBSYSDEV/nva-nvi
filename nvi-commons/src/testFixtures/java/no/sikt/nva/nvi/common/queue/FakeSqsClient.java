@@ -123,7 +123,6 @@ public class FakeSqsClient implements QueueClient {
                                 Collectors.toMap(
                                     Entry::getKey, entry -> entry.getValue().stringValue())),
                         null))
-            .limit(maxNumberOfMessages)
             .toList());
   }
 

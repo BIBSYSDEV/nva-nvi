@@ -14,7 +14,7 @@ import no.sikt.nva.nvi.events.evaluator.model.UnverifiedNviCreator;
 import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
 import no.unit.nva.clients.CustomerDto;
 
-public class CreatorVerificationUtil {
+public final class CreatorVerificationUtil {
 
   private CreatorVerificationUtil() {}
 

@@ -39,7 +39,7 @@ class PointCalculationTest extends EvaluationTest {
     var publicationDate = randomPublicationDate();
     var year = publicationDate.year();
     setupOpenPeriod(scenario, year);
-    factory = new SampleExpandedPublicationFactory(scenario).withPublicationDate(publicationDate);
+    factory = new SampleExpandedPublicationFactory().withPublicationDate(publicationDate);
 
     // Set up default organizations suitable for most test cases
     nviOrganization1 = factory.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, true);

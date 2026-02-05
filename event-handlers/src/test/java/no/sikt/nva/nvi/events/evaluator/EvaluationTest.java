@@ -3,8 +3,7 @@ package no.sikt.nva.nvi.events.evaluator;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.getEvaluateNviCandidateHandlerEnvironment;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.updateRequestFromPeriod;
-import static no.sikt.nva.nvi.common.dto.CustomerDtoFixtures.createNonNviCustomer;
-import static no.sikt.nva.nvi.common.dto.CustomerDtoFixtures.createNviCustomer;
+import static no.sikt.nva.nvi.common.dto.CustomerDtoFixtures.getDefaultCustomers;
 import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublicationDateInYear;
 import static no.sikt.nva.nvi.events.evaluator.TestUtils.createEvent;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_NORWAY;
@@ -55,12 +54,6 @@ class EvaluationTest {
   protected static final Environment ENVIRONMENT = getEvaluateNviCandidateHandlerEnvironment();
   protected static final int SCALE = 4;
   private static final String EVALUATED_CANDIDATE_QUEUE_URL = "CANDIDATE_QUEUE_URL";
-  private static final URI EXAMPLE_NVI_CUSTOMER_ORG =
-      URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/194.0.0.0");
-  private static final URI EXAMPLE_NON_NVI_CUSTOMER_ORG =
-      URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/150.0.0.0");
-  private static final URI SIKT_CRISTIN_ORG_ID =
-      URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0");
 
   protected TestScenario scenario;
   protected S3Driver s3Driver;
@@ -83,13 +76,6 @@ class EvaluationTest {
         .orElseThrow();
   }
 
-  private static List<CustomerDto> getDefaultCustomers() {
-    return List.of(
-        createNviCustomer(SIKT_CRISTIN_ORG_ID),
-        createNviCustomer(EXAMPLE_NVI_CUSTOMER_ORG),
-        createNonNviCustomer(EXAMPLE_NON_NVI_CUSTOMER_ORG));
-  }
-
   protected void mockGetAllCustomersResponse(List<CustomerDto> customers) {
     try {
       when(identityServiceClient.getAllCustomers()).thenReturn(new CustomerList(customers));
@@ -104,7 +90,7 @@ class EvaluationTest {
     mockGetAllCustomersResponse(getDefaultCustomers());
 
     scenario = new TestScenario();
-    uriRetriever = scenario.getMockedUriRetriever();
+    uriRetriever = scenario.getMockedUriRetriever(); // FIXME: Remove?
     setupOpenPeriod(scenario, HARDCODED_JSON_PUBLICATION_DATE.year());
 
     queueClient = new FakeSqsClient();
@@ -187,7 +173,7 @@ class EvaluationTest {
 
   protected SampleExpandedPublicationFactory createApplicablePublication(String publicationYear) {
     var factory =
-        new SampleExpandedPublicationFactory(scenario)
+        new SampleExpandedPublicationFactory()
             .withPublicationDate(randomPublicationDateInYear(publicationYear));
     var nviOrganization = factory.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, true);
     mockGetAllCustomersResponse(factory.getCustomerOrganizations());
