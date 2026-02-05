@@ -30,8 +30,8 @@ import software.amazon.awssdk.services.sqs.model.SqsException;
 @SuppressWarnings("PMD.CouplingBetweenObjects")
 public class FakeSqsClient implements QueueClient {
 
-  public static final String MESSAGE_ATTRIBUTE_CANDIDATE_IDENTIFIER_QUEUE = "candidateIdentifier";
-  public static final String DATA_TYPE_STRING = "String";
+  private static final String CANDIDATE_IDENTIFIER = "candidateIdentifier";
+  private static final String DATA_TYPE_STRING = "String";
 
   private final Set<String> destinationQueuesThatShouldFail = new HashSet<>();
 
@@ -68,6 +68,15 @@ public class FakeSqsClient implements QueueClient {
 
   @Override
   public NviSendMessageResponse sendMessage(String message, String queueUrl) {
+    validateQueueUrl(queueUrl);
+    var request = createRequest(message, queueUrl);
+    sentMessages.add(request);
+    return createResponse(
+        SendMessageResponse.builder().messageId(UUID.randomUUID().toString()).build());
+  }
+
+  @Override
+  public NviSendMessageResponse sendMessage(QueueMessage message, String queueUrl) {
     validateQueueUrl(queueUrl);
     var request = createRequest(message, queueUrl);
     sentMessages.add(request);
@@ -191,12 +200,20 @@ public class FakeSqsClient implements QueueClient {
     return SendMessageBatchRequestEntry.builder().messageBody(message).build();
   }
 
+  private SendMessageRequest createRequest(QueueMessage message, String queueUrl) {
+    return SendMessageRequest.builder()
+        .queueUrl(queueUrl)
+        .messageBody(message.body().toJsonString())
+        .messageAttributes(message.attributes())
+        .build();
+  }
+
   private SendMessageRequest createRequest(String body, String queueUrl, UUID candidateIdentifier) {
     return SendMessageRequest.builder()
         .queueUrl(queueUrl)
         .messageAttributes(
             Map.of(
-                MESSAGE_ATTRIBUTE_CANDIDATE_IDENTIFIER_QUEUE,
+                CANDIDATE_IDENTIFIER,
                 MessageAttributeValue.builder()
                     .stringValue(candidateIdentifier.toString())
                     .dataType(DATA_TYPE_STRING)
