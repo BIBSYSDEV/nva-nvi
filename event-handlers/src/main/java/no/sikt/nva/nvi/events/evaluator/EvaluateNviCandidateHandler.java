@@ -10,16 +10,11 @@ import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.util.Optional;
-import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
-import no.sikt.nva.nvi.common.service.CandidateService;
-import no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
-import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
-import no.unit.nva.clients.IdentityServiceClient;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.attempt.Failure;
@@ -31,8 +26,6 @@ public class EvaluateNviCandidateHandler implements RequestHandler<SQSEvent, Voi
   private static final Logger LOGGER = LoggerFactory.getLogger(EvaluateNviCandidateHandler.class);
   private static final String EVALUATED_CANDIDATE_QUEUE_URL = "CANDIDATE_QUEUE_URL";
   private static final String EVALUATION_DLQ_URL = "EVALUATION_DLQ_URL";
-  private static final String BACKEND_CLIENT_AUTH_URL = "BACKEND_CLIENT_AUTH_URL";
-  private static final String BACKEND_CLIENT_SECRET_NAME = "BACKEND_CLIENT_SECRET_NAME";
   private static final String FAILURE_MESSAGE =
       "Failure while calculating NVI Candidate: %s, exception: %s, message: %s";
   private static final String EXCEPTION_FIELD = "exception";
@@ -43,15 +36,7 @@ public class EvaluateNviCandidateHandler implements RequestHandler<SQSEvent, Voi
 
   @JacocoGenerated
   public EvaluateNviCandidateHandler() {
-    this(
-        new EvaluatorService(
-            IdentityServiceClient.unauthorizedIdentityServiceClient(),
-            new S3StorageReader(new Environment().readEnv("EXPANDED_RESOURCES_BUCKET")),
-            new CreatorVerificationUtil(
-                authorizedUriRetriever(new Environment()), new Environment()),
-            CandidateService.defaultCandidateService()),
-        new NviQueueClient(),
-        new Environment());
+    this(EvaluatorService.defaultEvaluatorService(), new NviQueueClient(), new Environment());
   }
 
   public EvaluateNviCandidateHandler(
@@ -71,12 +56,6 @@ public class EvaluateNviCandidateHandler implements RequestHandler<SQSEvent, Voi
             })
         .orElse(failure -> handleFailure(input, failure));
     return null;
-  }
-
-  @JacocoGenerated
-  private static AuthorizedBackendUriRetriever authorizedUriRetriever(Environment env) {
-    return new AuthorizedBackendUriRetriever(
-        env.readEnv(BACKEND_CLIENT_AUTH_URL), env.readEnv(BACKEND_CLIENT_SECRET_NAME));
   }
 
   private Void handleFailure(SQSEvent input, Failure<?> failure) {

@@ -18,6 +18,7 @@ dependencies {
     testImplementation nvaCatalog.bundles.testing.junit
     testImplementation nvaCatalog.com.auth0.jwt
     testImplementation nvaCatalog.mockito.core
+    testImplementation nvaLibs.apigateway
     testImplementation nvaLibs.auth
     testImplementation nvaLibs.core
     testImplementation nvaLibs.clients

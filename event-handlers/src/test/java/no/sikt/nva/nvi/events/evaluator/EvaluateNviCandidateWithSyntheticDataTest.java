@@ -32,8 +32,6 @@ import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.SampleExpandedPublicationFactory;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.dto.PageCountDto;
-import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
-import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.test.SampleExpandedContributor;
@@ -67,6 +65,7 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
     // Set up default organizations suitable for most test cases
     nviOrganization = factory.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, true);
     nonNviOrganization = factory.setupTopLevelOrganization(COUNTRY_CODE_SWEDEN, false);
+    mockGetAllCustomersResponse(factory.getCustomerOrganizations());
   }
 
   // The parser must be able to handle documents with 10 000 contributors in 300 seconds.
@@ -79,25 +78,25 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
     var publication =
         factory
             .withCreatorsAffiliatedWith(numberOfNorwegianContributors, nviOrganization)
-            .withCreatorsAffiliatedWith(numberOfForeignContributors, nonNviOrganization)
-            .getExpandedPublication();
+            .withCreatorsAffiliatedWith(numberOfForeignContributors, nonNviOrganization);
 
     var expectedCreatorShares = numberOfNorwegianContributors + numberOfForeignContributors;
-    var candidate = evaluatePublicationAndGetPersistedCandidate(publication);
+    evaluatePublication(publication);
+
+    var candidate = candidateService.getCandidateByPublicationId(publication.getPublicationId());
     assertThat(candidate.getCreatorShareCount()).isEqualTo(expectedCreatorShares);
   }
 
   @Test
   void shouldPersistTopLevelOrganizations() {
     var nviOrganization2 = factory.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, true);
-    var publication =
-        factory
-            .withContributor(verifiedCreatorFrom(nviOrganization))
-            .withContributor(verifiedCreatorFrom(nviOrganization2.hasPart().getFirst()))
-            .getExpandedPublicationBuilder()
-            .build();
+    factory
+        .withContributor(verifiedCreatorFrom(nviOrganization))
+        .withContributor(verifiedCreatorFrom(nviOrganization2.hasPart().getFirst()));
 
-    var candidate = evaluatePublicationAndGetPersistedCandidate(publication);
+    evaluatePublication(factory);
+
+    var candidate = candidateService.getCandidateByPublicationId(factory.getPublicationId());
     var actualTopLevelOrganizations = candidate.publicationDetails().topLevelOrganizations();
     var expectedTopLevelOrganizations = List.of(nviOrganization, nviOrganization2);
 
@@ -204,15 +203,12 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
     var publication =
         factory
             .withPublicationChannel(JOURNAL_TYPE, LEVEL_ONE)
-            .withPublicationChannel(JOURNAL_TYPE, null)
-            .getExpandedPublicationBuilder()
-            .build();
+            .withPublicationChannel(JOURNAL_TYPE, null);
 
-    evaluate(publication);
+    evaluatePublication(publication);
 
     var dlqMessage =
         queueClient.receiveMessage(EVALUATION_DLQ_URL.getValue(), 1).messages().getFirst();
-
     assertThat(dlqMessage.body())
         .contains("ParsingException")
         .contains("Required field 'scientificValue' is null");
@@ -227,11 +223,11 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
             .withPublicationType(publicationType)
             .withContributor(verifiedCreatorFrom(nviOrganization))
             .withPublicationChannel(PUBLISHER_TYPE, LEVEL_ONE)
-            .withIsbnList(Collections.emptyList())
-            .getExpandedPublication();
+            .withIsbnList(Collections.emptyList());
 
-    var candidate = getEvaluationResult(publication);
-    assertThat(candidate).isInstanceOf(UpsertNonNviCandidateRequest.class);
+    evaluatePublication(publication);
+
+    assertThatNoCandidateExistsForPublication(publication.getPublicationId());
   }
 
   @ParameterizedTest
@@ -242,11 +238,11 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
             .withPublicationType(publicationType)
             .withContributor(verifiedCreatorFrom(nviOrganization))
             .withPublicationChannel(PUBLISHER_TYPE, LEVEL_ONE)
-            .withIsbnList(List.of(randomIsbn13()))
-            .getExpandedPublication();
+            .withIsbnList(List.of(randomIsbn13()));
 
-    var candidate = getEvaluationResult(publication);
-    assertThat(candidate).isInstanceOf(UpsertNviCandidateRequest.class);
+    evaluatePublication(publication);
+
+    assertThatPublicationIsValidCandidate(publication.getPublicationId());
   }
 
   private static Stream<Arguments> pageCountProvider() {
@@ -276,11 +272,11 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
               .withPublicationType(publicationType)
               .withContributor(verifiedCreatorFrom(nviOrganization))
               .withPublicationChannel(JOURNAL_TYPE, LEVEL_ONE)
-              .withRevisionStatus(STATUS_UNREVISED)
-              .getExpandedPublication();
+              .withRevisionStatus(STATUS_UNREVISED);
 
-      var candidate = getEvaluationResult(publication);
-      assertThat(candidate).isInstanceOf(UpsertNviCandidateRequest.class);
+      evaluatePublication(publication);
+
+      assertThatPublicationIsValidCandidate(publication.getPublicationId());
     }
 
     @ParameterizedTest
@@ -291,11 +287,11 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
               .withPublicationType(publicationType)
               .withContributor(verifiedCreatorFrom(nviOrganization))
               .withPublicationChannel(JOURNAL_TYPE, LEVEL_ONE)
-              .withRevisionStatus(STATUS_REVISED)
-              .getExpandedPublication();
+              .withRevisionStatus(STATUS_REVISED);
 
-      var candidate = getEvaluationResult(publication);
-      assertThat(candidate).isInstanceOf(UpsertNonNviCandidateRequest.class);
+      evaluatePublication(publication);
+
+      assertThatNoCandidateExistsForPublication(publication.getPublicationId());
     }
 
     @ParameterizedTest
@@ -306,11 +302,11 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
               .withPublicationType(publicationType)
               .withContributor(verifiedCreatorFrom(nviOrganization))
               .withPublicationChannel(PUBLISHER_TYPE, LEVEL_ONE)
-              .withRevisionStatus(STATUS_UNREVISED)
-              .getExpandedPublication();
+              .withRevisionStatus(STATUS_UNREVISED);
 
-      var candidate = getEvaluationResult(publication);
-      assertThat(candidate).isInstanceOf(UpsertNviCandidateRequest.class);
+      evaluatePublication(publication);
+
+      assertThatPublicationIsValidCandidate(publication.getPublicationId());
     }
 
     @ParameterizedTest
@@ -321,11 +317,11 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
               .withPublicationType(publicationType)
               .withContributor(verifiedCreatorFrom(nviOrganization))
               .withPublicationChannel(PUBLISHER_TYPE, LEVEL_ONE)
-              .withRevisionStatus(STATUS_REVISED)
-              .getExpandedPublication();
+              .withRevisionStatus(STATUS_REVISED);
 
-      var candidate = getEvaluationResult(publication);
-      assertThat(candidate).isInstanceOf(UpsertNonNviCandidateRequest.class);
+      evaluatePublication(publication);
+
+      assertThatNoCandidateExistsForPublication(publication.getPublicationId());
     }
   }
 }

@@ -120,6 +120,7 @@ public class OrganizationFixtures {
     return Organization.builder().withId(organizationId).build();
   }
 
+  // FIXME: Remove this
   public static void mockOrganizationResponseForAffiliation(
       URI topLevelInstitutionId, URI subUnitId, UriRetriever uriRetriever) {
     var subUnits = new ArrayList<Organization>();

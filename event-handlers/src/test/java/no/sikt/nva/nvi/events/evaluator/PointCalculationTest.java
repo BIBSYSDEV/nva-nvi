@@ -45,6 +45,7 @@ class PointCalculationTest extends EvaluationTest {
     nviOrganization1 = factory.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, true);
     nviOrganization2 = factory.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, true);
     nonNviOrganization = factory.setupTopLevelOrganization(COUNTRY_CODE_SWEDEN, false);
+    mockGetAllCustomersResponse(factory.getCustomerOrganizations());
   }
 
   @ParameterizedTest(

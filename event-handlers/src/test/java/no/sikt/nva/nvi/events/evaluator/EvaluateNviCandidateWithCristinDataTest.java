@@ -1,27 +1,21 @@
 package no.sikt.nva.nvi.events.evaluator;
 
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
+import static no.sikt.nva.nvi.common.dto.CustomerDtoFixtures.createNviCustomer;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.mockOrganizationResponseForAffiliation;
 import static no.sikt.nva.nvi.events.evaluator.TestUtils.createEvent;
-import static no.sikt.nva.nvi.test.TestUtils.createResponse;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.when;
 
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.URI;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.Optional;
-import no.sikt.nva.nvi.common.EnvironmentFixtures;
+import java.util.List;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
@@ -44,11 +38,9 @@ class EvaluateNviCandidateWithCristinDataTest extends EvaluationTest {
   private static final URI SINTEF_TOP_LEVEL_ORG_ID =
       UriWrapper.fromUri(BASE_PATH).addChild("7401.0.0.0").getUri();
 
-  private static final String CUSTOMER = "customer";
-  private static final String CRISTIN_ID = "cristinId";
-
   @BeforeEach
   void setup() {
+    mockCustomerApi();
     setupOpenPeriod(scenario, "2022");
   }
 
@@ -56,7 +48,6 @@ class EvaluateNviCandidateWithCristinDataTest extends EvaluationTest {
   void shouldReturnSamePointsAsPointsCalculatedByCristinForAcademicArticleFrom2022()
       throws IOException {
     mockCristinApiResponsesForAllSubUnitsInAcademicArticle();
-    mockCustomerApi();
     var event = setupSqsEvent("evaluator/cristin_candidate_2022_academicArticle.json");
     handler.handleRequest(event, CONTEXT);
     var candidate = getMessageBody();
@@ -74,7 +65,6 @@ class EvaluateNviCandidateWithCristinDataTest extends EvaluationTest {
     var subUnitId = UriWrapper.fromUri(BASE_PATH).addChild("185.15.13.55").getUri();
     mockOrganizationResponseForAffiliation(UIO_TOP_LEVEL_ORG_ID, subUnitId, uriRetriever);
     mockCristinResponseForNonNviOrganizationsForAcademicMonograph();
-    mockCustomerApi(UIO_TOP_LEVEL_ORG_ID);
 
     var event = setupSqsEvent("evaluator/cristin_candidate_2022_academicMonograph.json");
     handler.handleRequest(event, CONTEXT);
@@ -90,7 +80,6 @@ class EvaluateNviCandidateWithCristinDataTest extends EvaluationTest {
     var subUnitId = UriWrapper.fromUri(BASE_PATH).addChild("194.65.15.0").getUri();
     mockOrganizationResponseForAffiliation(NTNU_TOP_LEVEL_ORG_ID, subUnitId, uriRetriever);
     mockCristinResponseForNonNviOrganizationsForLiteratureReview();
-    mockCustomerApi(NTNU_TOP_LEVEL_ORG_ID);
 
     var event = setupSqsEvent("evaluator/cristin_candidate_2022_academicLiteratureReview.json");
     handler.handleRequest(event, CONTEXT);
@@ -104,8 +93,6 @@ class EvaluateNviCandidateWithCristinDataTest extends EvaluationTest {
   void shouldReturnSamePointsAsPointsCalculatedByCristinForAcademicChapterFrom2022()
       throws IOException {
     mockCristinApiResponsesForAllSubUnitsInAcademicChapter();
-    mockCustomerApi(NTNU_TOP_LEVEL_ORG_ID);
-    mockCustomerApi(SINTEF_TOP_LEVEL_ORG_ID);
 
     var event = setupSqsEvent("evaluator/cristin_candidate_2022_academicChapter.json");
     handler.handleRequest(event, CONTEXT);
@@ -120,16 +107,6 @@ class EvaluateNviCandidateWithCristinDataTest extends EvaluationTest {
 
   private static BigDecimal scaledBigDecimal(double val) {
     return BigDecimal.valueOf(val).setScale(SCALE, ROUNDING_MODE);
-  }
-
-  private static URI createCustomerApiUri(String institutionId) {
-    var getCustomerEndpoint =
-        UriWrapper.fromHost(EnvironmentFixtures.API_HOST.getValue())
-            .addChild(CUSTOMER)
-            .addChild(CRISTIN_ID)
-            .getUri();
-    return URI.create(
-        getCustomerEndpoint + "/" + URLEncoder.encode(institutionId, StandardCharsets.UTF_8));
   }
 
   private void mockCristinResponseForNonNviOrganizationsForLiteratureReview() {
@@ -174,15 +151,13 @@ class EvaluateNviCandidateWithCristinDataTest extends EvaluationTest {
   }
 
   private void mockCustomerApi() {
-    mockCustomerApi(NTNU_TOP_LEVEL_ORG_ID);
-    mockCustomerApi(ST_OLAVS_TOP_LEVEL_ORG_ID);
-  }
-
-  private void mockCustomerApi(URI topLevelOrgId) {
-    var customerApiResponse = createResponse(200, CUSTOMER_API_NVI_RESPONSE);
-    when(authorizedBackendUriRetriever.fetchResponse(
-            eq(createCustomerApiUri(topLevelOrgId.toString())), any()))
-        .thenReturn(Optional.of(customerApiResponse));
+    var customers =
+        List.of(
+            createNviCustomer(NTNU_TOP_LEVEL_ORG_ID),
+            createNviCustomer(ST_OLAVS_TOP_LEVEL_ORG_ID),
+            createNviCustomer(UIO_TOP_LEVEL_ORG_ID),
+            createNviCustomer(SINTEF_TOP_LEVEL_ORG_ID));
+    mockGetAllCustomersResponse(customers);
   }
 
   private UpsertNviCandidateRequest getMessageBody() {

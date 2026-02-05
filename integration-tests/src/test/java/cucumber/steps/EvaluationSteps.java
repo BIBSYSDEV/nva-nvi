@@ -25,7 +25,6 @@ import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.model.PublicationDate;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.sikt.nva.nvi.test.SampleExpandedPublication;
 
 public class EvaluationSteps {
   private static final String OPEN_PERIOD = "OPEN";
@@ -51,7 +50,7 @@ public class EvaluationSteps {
 
   @Given("an unreported Candidate for the Publication exists")
   public void anUnreportedCandidateForThePublicationExists() {
-    setupCandidate(publicationBuilder.getExpandedPublication());
+    setupCandidate(publicationBuilder);
 
     var candidate = assertPublicationIsCandidate();
     assertThat(candidate.isReported()).isFalse();
@@ -59,7 +58,7 @@ public class EvaluationSteps {
 
   @Given("a reported Candidate for the Publication exists")
   public void aReportedCandidateForThePublicationExists() {
-    setupCandidate(publicationBuilder.getExpandedPublication());
+    setupCandidate(publicationBuilder);
     var candidate = assertPublicationIsCandidate();
     setCandidateToReported(candidate);
 
@@ -175,6 +174,7 @@ public class EvaluationSteps {
             .withPublicationDate(publicationDate)
             .withContributor(verifiedCreatorFrom(nviOrganization))
             .withContributor(unverifiedCreatorFrom(nviOrganization));
+    evaluationContext.mockGetAllCustomersResponse(publicationBuilder.getCustomerOrganizations());
   }
 
   private Candidate assertPublicationIsCandidate() {
@@ -220,7 +220,9 @@ public class EvaluationSteps {
     return scenario.getCandidateByPublicationId(publication.id());
   }
 
-  private void setupCandidate(SampleExpandedPublication publication) {
+  private void setupCandidate(SampleExpandedPublicationFactory publicationFactory) {
+    evaluationContext.mockGetAllCustomersResponse(publicationFactory.getCustomerOrganizations());
+    var publication = publicationFactory.getExpandedPublication();
     var publicationYear = publication.publicationDate().year();
     var period =
         scenario

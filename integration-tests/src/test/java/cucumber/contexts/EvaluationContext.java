@@ -4,6 +4,7 @@ import static no.sikt.nva.nvi.common.EnvironmentFixtures.getEvaluateNviCandidate
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.getUpsertNviCandidateHandlerEnvironment;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
@@ -15,12 +16,14 @@ import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import no.sikt.nva.nvi.events.evaluator.EvaluateNviCandidateHandler;
 import no.sikt.nva.nvi.events.evaluator.EvaluatorService;
-import no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.sikt.nva.nvi.events.persist.UpsertNviCandidateHandler;
 import no.sikt.nva.nvi.test.SampleExpandedPublication;
+import no.unit.nva.clients.CustomerDto;
+import no.unit.nva.clients.CustomerList;
 import no.unit.nva.clients.IdentityServiceClient;
+import nva.commons.apigateway.exceptions.ApiGatewayException;
 
 public class EvaluationContext {
   private static final Context EVALUATION_HANDLER_CONTEXT = mock(Context.class);
@@ -45,13 +48,10 @@ public class EvaluationContext {
 
   private EvaluateNviCandidateHandler createEvaluateNviCandidateHandler() {
     var environment = getEvaluateNviCandidateHandlerEnvironment();
-    var creatorVerificationUtil =
-        new CreatorVerificationUtil(scenario.getMockedAuthorizedBackendUriRetriever(), environment);
     var evaluatorService =
         new EvaluatorService(
             identityServiceClient,
             scenario.getS3StorageReaderForExpandedResourcesBucket(),
-            creatorVerificationUtil,
             scenario.getCandidateService());
 
     return new EvaluateNviCandidateHandler(evaluatorService, evaluationOutputQueue, environment);
@@ -62,6 +62,14 @@ public class EvaluationContext {
         scenario.getCandidateService(),
         upsertErrorQueue,
         getUpsertNviCandidateHandlerEnvironment());
+  }
+
+  public void mockGetAllCustomersResponse(List<CustomerDto> customers) {
+    try {
+      when(identityServiceClient.getAllCustomers()).thenReturn(new CustomerList(customers));
+    } catch (ApiGatewayException exception) {
+      throw new RuntimeException(exception);
+    }
   }
 
   public void evaluatePublicationAndPersistResult(SampleExpandedPublication publication) {
