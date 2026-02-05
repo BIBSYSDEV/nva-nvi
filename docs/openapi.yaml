@@ -1195,7 +1195,7 @@ components:
             $ref: "#/components/schemas/UnitReport"
           example:
             "https://api.nva.unit.no/cristin/organization/123.0.0.0":
-              type: DirectAffiliationAggregation
+              type: UnitReport
               candidateCount: 16
               points: 27.3953
               globalApprovalStatus:
@@ -1209,7 +1209,7 @@ components:
                 Approved: 4
                 Rejected: 4
             "https://api.nva.unit.no/cristin/organization/123.456.0.0":
-              type: DirectAffiliationAggregation
+              type: UnitReport
               candidateCount: 4
               points: 1.2345
               globalApprovalStatus:
