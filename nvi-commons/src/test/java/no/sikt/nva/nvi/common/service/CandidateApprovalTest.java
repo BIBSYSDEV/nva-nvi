@@ -17,6 +17,7 @@ import static no.sikt.nva.nvi.common.dto.NviCreatorDtoFixtures.verifiedNviCreato
 import static no.sikt.nva.nvi.common.model.CandidateFixtures.randomApplicableCandidateRequestBuilder;
 import static no.sikt.nva.nvi.common.model.CandidateFixtures.setupRandomApplicableCandidate;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.createOrganizationWithSubUnit;
+import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomTopLevelOrganization;
 import static no.sikt.nva.nvi.common.model.UserInstanceFixtures.createCuratorUserInstance;
 import static no.sikt.nva.nvi.common.model.UsernameFixtures.randomUsername;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
@@ -102,7 +103,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
 
   @BeforeEach
   void setUp() {
-    topLevelOrganization = scenario.setupTopLevelOrganizationWithSubUnits();
+    topLevelOrganization = randomTopLevelOrganization();
     topLevelOrganizationId = topLevelOrganization.id();
 
     var upsertCandidateRequest = createUpsertCandidateRequest(HARDCODED_INSTITUTION_ID).build();
@@ -314,7 +315,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
 
   @Test
   void shouldNotResetApprovalsWhenCreatorAffiliationChangesWithinSameInstitution() {
-    var organization = scenario.getDefaultOrganization();
+    var organization = randomTopLevelOrganization();
     var creator = createVerifiedCreator(organization);
     Map<Organization, Collection<NviCreatorDto>> creatorMap =
         Map.of(organization, List.of(creator));
@@ -343,9 +344,9 @@ class CandidateApprovalTest extends CandidateTestSetup {
 
   @Test
   void shouldNotResetApprovalWhenOtherCreatorBecomesVerified() {
-    var organization = scenario.setupTopLevelOrganizationWithSubUnits();
+    var organization = randomTopLevelOrganization();
     var creator = verifiedNviCreatorDtoFrom(organization);
-    var otherOrganization = scenario.setupTopLevelOrganizationWithSubUnits();
+    var otherOrganization = randomTopLevelOrganization();
     var otherCreator = unverifiedNviCreatorDtoFrom(otherOrganization);
 
     Map<Organization, Collection<NviCreatorDto>> creatorMap =
@@ -365,7 +366,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
 
   @Test
   void shouldResetApprovalWhenCreatorBecomesUnverified() {
-    var organization = scenario.getDefaultOrganization();
+    var organization = randomTopLevelOrganization();
     var creator = createVerifiedCreator(organization);
     var requestBuilder =
         setupApprovedCandidateAndReturnRequestBuilder(
@@ -385,14 +386,14 @@ class CandidateApprovalTest extends CandidateTestSetup {
 
   @Test
   void shouldResetApprovalWhenTopLevelAffiliationChanges() {
-    var organization = scenario.getDefaultOrganization();
+    var organization = randomTopLevelOrganization();
     var creator = createVerifiedCreator(organization);
     Map<Organization, Collection<NviCreatorDto>> creatorMap =
         Map.of(organization, List.of(creator));
     var requestBuilder =
         setupApprovedCandidateAndReturnRequestBuilder(organization.id(), creatorMap);
 
-    var otherOrganization = scenario.setupTopLevelOrganizationWithSubUnits();
+    var otherOrganization = randomTopLevelOrganization();
     var updatedCreator =
         verifiedNviCreatorDtoCopiedFrom(creator, otherOrganization.hasPart().getFirst());
     var updatedRequest =

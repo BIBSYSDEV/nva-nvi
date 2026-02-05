@@ -3,18 +3,12 @@ package no.sikt.nva.nvi.common;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.getGlobalEnvironment;
 import static no.sikt.nva.nvi.common.LocalDynamoTestSetup.initializeTestDatabase;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpdateStatusRequest;
-import static no.sikt.nva.nvi.common.model.OrganizationFixtures.mockOrganizationResponseForAffiliations;
 import static no.sikt.nva.nvi.common.model.UserInstanceFixtures.createCuratorUserInstance;
-import static no.sikt.nva.nvi.test.TestUtils.randomUriWithSuffix;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
-import static org.mockito.Mockito.mock;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.List;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.client.OrganizationRetriever;
-import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.model.CandidateAggregate;
@@ -29,8 +23,6 @@ import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.test.SampleExpandedPublication;
-import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
-import no.unit.nva.auth.uriretriever.UriRetriever;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.paths.UnixPath;
@@ -40,13 +32,9 @@ import software.amazon.awssdk.services.s3.S3Client;
 // Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
 @SuppressWarnings("PMD.CouplingBetweenObjects")
 public class TestScenario {
-  private final AuthorizedBackendUriRetriever authorizedBackendUriRetriever;
-  private final UriRetriever mockUriRetriever;
-  private final OrganizationRetriever mockOrganizationRetriever;
   private final DynamoDbClient localDynamo;
   private final CandidateRepository candidateRepository;
   private final PeriodRepository periodRepository;
-  private final Organization defaultOrganization;
   private final FakeS3Client s3Client;
   private final S3Driver s3Driver;
   private final S3StorageReader s3StorageReader;
@@ -61,23 +49,10 @@ public class TestScenario {
     candidateService =
         new CandidateService(getGlobalEnvironment(), periodRepository, candidateRepository);
 
-    authorizedBackendUriRetriever = mock(AuthorizedBackendUriRetriever.class);
-    mockUriRetriever = mock(UriRetriever.class);
-    mockOrganizationRetriever = new OrganizationRetriever(mockUriRetriever);
-    defaultOrganization = setupTopLevelOrganizationWithSubUnits();
-
     s3Client = new FakeS3Client();
     s3Driver = new S3Driver(s3Client, EnvironmentFixtures.EXPANDED_RESOURCES_BUCKET.getValue());
     s3StorageReader =
         new S3StorageReader(s3Client, EnvironmentFixtures.EXPANDED_RESOURCES_BUCKET.getValue());
-  }
-
-  public final Organization setupTopLevelOrganizationWithSubUnits() {
-    var topLevelId = randomUriWithSuffix("topLevel");
-    var subUnits = List.of(randomUriWithSuffix("subUnit1"), randomUriWithSuffix("subUnit2"));
-
-    mockOrganizationResponseForAffiliations(topLevelId, subUnits, mockUriRetriever);
-    return mockOrganizationRetriever.fetchOrganization(topLevelId);
   }
 
   public DynamoDbClient getLocalDynamo() {
@@ -100,14 +75,6 @@ public class TestScenario {
     return periodService;
   }
 
-  public UriRetriever getMockedUriRetriever() {
-    return mockUriRetriever;
-  }
-
-  public AuthorizedBackendUriRetriever getMockedAuthorizedBackendUriRetriever() {
-    return authorizedBackendUriRetriever;
-  }
-
   public S3Client getS3Client() {
     return s3Client;
   }
@@ -118,10 +85,6 @@ public class TestScenario {
 
   public S3StorageReader getS3StorageReaderForExpandedResourcesBucket() {
     return s3StorageReader;
-  }
-
-  public Organization getDefaultOrganization() {
-    return defaultOrganization;
   }
 
   /**

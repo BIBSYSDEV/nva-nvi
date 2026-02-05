@@ -6,6 +6,7 @@ import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertNonCandid
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.dto.NviCreatorDtoFixtures.unverifiedNviCreatorDtoFrom;
 import static no.sikt.nva.nvi.common.dto.NviCreatorDtoFixtures.verifiedNviCreatorDtoFrom;
+import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomTopLevelOrganization;
 import static no.sikt.nva.nvi.common.model.UserInstanceFixtures.createCuratorUserInstance;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
@@ -75,7 +76,7 @@ public abstract class BaseCandidateRestHandlerTest {
     environment = getHandlerEnvironment();
     scenario = new TestScenario();
     setupOpenPeriod(scenario, CURRENT_YEAR);
-    topLevelOrganization = scenario.getDefaultOrganization();
+    topLevelOrganization = randomTopLevelOrganization();
     topLevelOrganizations = List.of(topLevelOrganization);
     topLevelOrganizationId = topLevelOrganization.id();
     subOrganizationId = topLevelOrganization.hasPart().getFirst().id();
@@ -139,7 +140,7 @@ public abstract class BaseCandidateRestHandlerTest {
 
   protected Candidate setupCandidateWithUnverifiedCreatorFromAnotherInstitution() {
     var verifiedCreator = setupDefaultVerifiedCreator();
-    var otherOrganization = scenario.setupTopLevelOrganizationWithSubUnits();
+    var otherOrganization = randomTopLevelOrganization();
     var unverifiedCreator = unverifiedNviCreatorDtoFrom(otherOrganization.id());
 
     return CandidateFixtures.setupRandomApplicableCandidate(
