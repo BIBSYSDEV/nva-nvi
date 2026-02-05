@@ -77,6 +77,7 @@ public class EvaluatorService {
   private Map<URI, CustomerDto> getAllCustomers() {
     try {
       return identityServiceClient.getAllCustomers().customers().stream()
+          .filter(customer -> nonNull(customer.cristinId()))
           .collect(Collectors.toMap(CustomerDto::cristinId, Function.identity()));
     } catch (ApiGatewayException exception) {
       logger.error("Failed to fetch customer list");
