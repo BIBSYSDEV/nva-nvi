@@ -8,12 +8,12 @@ import static org.mockito.Mockito.mock;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import java.net.URI;
+import no.sikt.nva.nvi.common.model.SampleCandidateGenerator;
 import no.sikt.nva.nvi.common.model.Sector;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.index.ExpandedResourceGenerator;
 import no.sikt.nva.nvi.index.model.document.ApprovalView;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
-import no.sikt.nva.nvi.test.SampleCandidateGenerator;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
