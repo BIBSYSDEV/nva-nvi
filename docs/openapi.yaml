@@ -743,9 +743,26 @@ paths:
     get:
       tags:
         - Report
-      description: Get organization approval aggregations for a given year
-      summary: Get requesting users organization approval aggregations for a given year
-      operationId: getNviOrganizationAggregationsByYear
+      description: |
+        Get institution report for a given year.
+
+        **Behavior based on query parameters:**
+
+        * **No parameters** - Returns report for the requesting user's institution and breakdown for its sub-units
+        * **institution parameter** - Returns report for the specified institution and breakdown for its sub-units
+        
+        **Aggregation types:**
+        
+        * **aggregation=allInstitutions** - Returns report for all institutions with institution breakdown
+        * **aggregation=global** - Returns report for an NVI period across all institutions without institution breakdown
+        * **aggregation=institution** - Returns report for the specified institution and breakdown for its sub-units
+        
+        **Examples:**
+        * **aggregation=allInstitutions&institution=1.0.0.0** - Returns report for
+        * **aggregation=institution&institution=1.0.0.0** - Returns report for
+        * **institution=1.0.0.0** - Returns report for institution
+      summary: Get requesting users institution approval aggregations for a given year
+      operationId: getNviInstitutionReportByYear
       parameters:
         - in: path
           name: year
@@ -753,6 +770,20 @@ paths:
           required: true
           schema:
             type: string
+        - in: query
+          name: aggregation
+          schema:
+            type: string
+            enum:
+              - allInstitutions
+              - institution
+              - global
+        - in: query
+          name: institution
+          schema:
+            type: string
+            example: 1.0.0.0
+          description: Institution identifier
       security: *authenticated
       x-amazon-apigateway-integration:
         uri:
@@ -766,7 +797,115 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/NviInstitutionReportResponse"
+                oneOf:
+                  - $ref: "#/components/schemas/NviInstitutionReportResponse"
+                  - $ref: "#/components/schemas/AllInstitutionsReportResponse"
+                  - $ref: "#/components/schemas/GlobalReportResponse"
+              examples:
+                institutionsReport:
+                  summary: Institution Report
+                  description: Detailed report for user's institution with sub-unit breakdowns
+                  value:
+                    year: "2025"
+                    institution: "https://api.nva.unit.no/cristin/organization/1.0.0.0"
+                    totals:
+                      type: "InstitutionReport"
+                      candidateCount: 20
+                      points: 31.1234
+                      globalApprovalStatus:
+                        Dispute: 2
+                        Pending: 10
+                        Rejected: 4
+                        Approved: 4
+                      approvalStatus:
+                        New: 5
+                        Pending: 5
+                        Approved: 5
+                        Rejected: 5
+                    byUnit:
+                      "https://api.nva.unit.no/cristin/organization/1.1.0.0":
+                        type: "UnitReport"
+                        candidateCount: 16
+                        points: 27.3953
+                        globalApprovalStatus:
+                          Dispute: 2
+                          Pending: 8
+                          Rejected: 3
+                          Approved: 3
+                        approvalStatus:
+                          New: 4
+                          Pending: 4
+                          Approved: 4
+                          Rejected: 4
+                      "https://api.nva.unit.no/cristin/organization/1.2.0.0":
+                        type: "UnitReport"
+                        candidateCount: 16
+                        points: 27.3953
+                        globalApprovalStatus:
+                          Dispute: 2
+                          Pending: 8
+                          Rejected: 3
+                          Approved: 3
+                        approvalStatus:
+                          New: 4
+                          Pending: 4
+                          Approved: 4
+                          Rejected: 4
+
+                allInstitutionsReport:
+                  summary: All Institutions Report
+                  description: Report showing all institutions without unit breakdown
+                  value:
+                    year: "2025"
+                    type: "AllInstitutionsReport"
+                    byInstitution:
+                      "https://api.dev.nva.aws.unit.no/cristin/organization/1.0.0.0":
+                        type: "InstitutionReport"
+                        name: "Universitetet"
+                        sector: "HEALTH"
+                        candidateCount: 312
+                        points: 67.5000
+                        globalApprovalStatus:
+                          Rejected: 18
+                          Pending: 234
+                          Approved: 52
+                          Dispute: 8
+                        approvalStatus:
+                          New: 4
+                          Pending: 4
+                          Approved: 4
+                          Rejected: 4
+                      "https://api.dev.nva.aws.unit.no/cristin/organization/2.0.0.0":
+                        type: "InstitutionReport"
+                        name: "University"
+                        sector: "UHI"
+                        candidateCount: 245
+                        points: 52.3400
+                        globalApprovalStatus:
+                          Rejected: 12
+                          Pending: 180
+                          Approved: 48
+                          Dispute: 5
+                        approvalStatus:
+                          New: 4
+                          Pending: 4
+                          Approved: 4
+                          Rejected: 4
+                globalPeriodReport:
+                  summary: Global Period Report
+                  description: Single report for whole period without institution breakdown
+                  value:
+                    year: "2011"
+                    type: "GlobalReport"
+                    aggregation:
+                      type: "PeriodReport"
+                      candidateCount: 39
+                      points: 6.0000
+                      globalApprovalStatus:
+                        Rejected: 3
+                        Pending: 32
+                        Approved: 2
+                        Dispute: 2
         "401":
           description: "Unauthorized"
           content:
@@ -1032,28 +1171,28 @@ components:
     NviInstitutionReportResponse:
       type: object
       description: >
-        Status report for a top-level organization for a given year.
-        Approvals and points are aggregated by organizational unit based on directly affiliated creators.
+        Status report for a institution for a given year.
+        Approvals and points are aggregated by unit based on directly affiliated creators.
       required:
         - year
-        - topLevelOrganizationId
+        - institution
         - totals
-        - byOrganization
+        - byUnit
       properties:
         year:
           type: string
           description: The NVI reporting period year
           example: "2025"
-        topLevelOrganizationId:
+        institution:
           type: string
           format: uri
-          description: URI of the top-level organization
+          description: URI of the institution
           example: "https://api.nva.unit.no/cristin/organization/123.0.0.0"
         totals:
           $ref: "#/components/schemas/TopLevelAggregation"
-        byOrganization:
+        byUnit:
           type: object
-          description: Aggregated status for each organization, keyed by organization URI
+          description: Aggregated status for each institution, keyed by institution URI
           additionalProperties:
             $ref: "#/components/schemas/DirectAffiliationAggregation"
           example:
@@ -1085,6 +1224,106 @@ components:
                 Pending: 1
                 Approved: 1
                 Rejected: 1
+    AllInstitutionsReportResponse:
+      type: object
+      description: Status report for all the institutions reporting in NVI
+      required:
+        - year
+        - type
+        - byInstitution
+      properties:
+        year:
+          type: string
+          description: The NVI reporting period year
+          example: "2025"
+        type:
+          type: string
+          enum: [ AllInstitutionsReport ]
+          example: "AllInstitutionsReport"
+        byInstitution:
+          type: object
+          description: Aggregated status for each institution, keyed by institution URI
+          additionalProperties:
+            $ref: "#/components/schemas/InstitutionEntry"
+          example:
+            "https://api.dev.nva.aws.unit.no/cristin/organization/185.0.0.0":
+              type: "InstitutionReport"
+              institutionName: "Universitetet i Oslo"
+              sector: "UNIVERSITY"
+              candidateCount: 312
+              points: 67.5000
+              globalApprovalStatus:
+                Rejected: 18
+                Pending: 234
+                Approved: 52
+                Dispute: 8
+    InstitutionEntry:
+      type: object
+      description: Aggregated NVI statistics for a single institution
+      required:
+        - type
+        - name
+        - sector
+        - candidateCount
+        - points
+        - globalApprovalStatus
+      properties:
+        type:
+          type: string
+          enum: [ InstitutionReport ]
+          example: "InstitutionReport"
+        name:
+          type: string
+          description: Name of the institution
+          example: "Universitetet i Oslo"
+        sector:
+          type: string
+          description: Educational sector of the institution
+          enum:
+            - UNIVERSITY
+            - UNIVERSITY_COLLEGE
+            - HEALTH_ENTERPRISE
+            - RESEARCH_INSTITUTE
+            - ARTS_COLLEGE
+            - OTHER
+          example: "UNIVERSITY"
+        candidateCount:
+          type: integer
+          description: Total number of NVI candidates for this institution
+          example: 312
+        points:
+          type: number
+          description: Total NVI points for this institution
+          example: 67.5000
+        globalApprovalStatus:
+          $ref: "#/components/schemas/GlobalApprovalStatusCounts"
+        approvalStatus:
+          $ref: "#/components/schemas/ApprovalStatusCounts"
+    GlobalReportResponse:
+      type: object
+      description: Aggregated report for an NVI period
+      required:
+        - type
+        - candidateCount
+        - points
+        - globalApprovalStatus
+      properties:
+        type:
+          type: string
+          enum: [ PeriodAggregation ]
+          example: "PeriodAggregation"
+        candidateCount:
+          type: integer
+          description: Total number of NVI candidates across all institutions
+          example: 39
+        points:
+          type: number
+          description: Total NVI points across all institutions
+          example: 6.0000
+        globalApprovalStatus:
+          $ref: "#/components/schemas/GlobalApprovalStatusCounts"
+
+
 
     OrganizationStatusAggregationBase:
       type: object
