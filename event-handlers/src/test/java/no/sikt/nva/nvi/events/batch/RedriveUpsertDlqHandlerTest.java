@@ -70,7 +70,7 @@ class RedriveUpsertDlqHandlerTest {
     when(queueClient.receiveMessage(eq(DLQ_URL), anyInt()))
         .thenReturn(receiveResponse)
         .thenReturn(emptyResponse);
-    when(queueClient.sendMessage(any(), eq(PERSISTED_RESOURCE_QUEUE_URL)))
+    when(queueClient.sendMessage(any(String.class), eq(PERSISTED_RESOURCE_QUEUE_URL)))
         .thenReturn(new NviSendMessageResponse(randomString()));
 
     var input = new RedriveUpsertDlqInput(1);
@@ -119,7 +119,7 @@ class RedriveUpsertDlqHandlerTest {
         .thenReturn(firstBatch)
         .thenReturn(secondBatch)
         .thenReturn(emptyResponse);
-    when(queueClient.sendMessage(any(), eq(PERSISTED_RESOURCE_QUEUE_URL)))
+    when(queueClient.sendMessage(any(String.class), eq(PERSISTED_RESOURCE_QUEUE_URL)))
         .thenReturn(new NviSendMessageResponse(randomString()));
 
     var input = new RedriveUpsertDlqInput(15);
@@ -145,14 +145,14 @@ class RedriveUpsertDlqHandlerTest {
     when(queueClient.receiveMessage(eq(DLQ_URL), anyInt()))
         .thenReturn(receiveResponse)
         .thenReturn(emptyResponse);
-    when(queueClient.sendMessage(any(), eq(PERSISTED_RESOURCE_QUEUE_URL)))
+    when(queueClient.sendMessage(any(String.class), eq(PERSISTED_RESOURCE_QUEUE_URL)))
         .thenReturn(new NviSendMessageResponse(randomString()));
 
     var input = new RedriveUpsertDlqInput(2);
     handler.handleRequest(input, CONTEXT);
 
     verify(queueClient, times(2)).deleteMessage(eq(DLQ_URL), any());
-    verify(queueClient, times(1)).sendMessage(any(), eq(PERSISTED_RESOURCE_QUEUE_URL));
+    verify(queueClient, times(1)).sendMessage(any(String.class), eq(PERSISTED_RESOURCE_QUEUE_URL));
   }
 
   @Test

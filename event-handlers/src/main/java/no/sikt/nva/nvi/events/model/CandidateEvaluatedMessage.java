@@ -7,11 +7,12 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
 import no.sikt.nva.nvi.common.dto.CandidateType;
+import no.unit.nva.commons.json.JsonSerializable;
 
 @JsonAutoDetect(fieldVisibility = Visibility.ANY)
 @JsonSerialize
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
-public record CandidateEvaluatedMessage(CandidateType candidate) {
+public record CandidateEvaluatedMessage(CandidateType candidate) implements JsonSerializable {
 
   @JsonIgnore
   public URI publicationId() {

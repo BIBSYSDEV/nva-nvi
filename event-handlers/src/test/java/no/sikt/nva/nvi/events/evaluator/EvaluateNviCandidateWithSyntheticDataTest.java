@@ -209,8 +209,9 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
 
     var dlqMessage =
         queueClient.receiveMessage(EVALUATION_DLQ_URL.getValue(), 1).messages().getFirst();
-    assertThat(dlqMessage.body())
-        .contains("ParsingException")
+
+    assertThat(dlqMessage.messageAttributes().get("errorType")).contains("ParsingException");
+    assertThat(dlqMessage.messageAttributes().get("errorMessage"))
         .contains("Required field 'scientificValue' is null");
   }
 
