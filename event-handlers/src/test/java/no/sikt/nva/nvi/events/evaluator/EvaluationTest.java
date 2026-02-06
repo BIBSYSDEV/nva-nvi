@@ -8,7 +8,9 @@ import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublica
 import static no.sikt.nva.nvi.events.evaluator.TestUtils.createEvent;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_NORWAY;
 import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_JSON_PUBLICATION_DATE;
+import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_PUBLICATION_ID;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
+import static nva.commons.core.ioutils.IoUtils.stringFromResources;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
@@ -16,9 +18,9 @@ import static org.mockito.Mockito.when;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.SampleExpandedPublicationFactory;
@@ -30,13 +32,13 @@ import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.sikt.nva.nvi.test.SampleExpandedPublication;
 import no.unit.nva.clients.CustomerDto;
 import no.unit.nva.clients.CustomerList;
 import no.unit.nva.clients.IdentityServiceClient;
+import no.unit.nva.identifiers.SortableIdentifier;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeContext;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
@@ -58,13 +60,15 @@ class EvaluationTest {
   protected FakeSqsClient queueClient;
   protected CandidateService candidateService;
 
-  protected BigDecimal getPointsForInstitution(
-      UpsertNviCandidateRequest candidate, URI institutionId) {
-    return candidate.pointCalculation().institutionPoints().stream()
-        .filter(institutionPoints -> institutionPoints.institutionId().equals(institutionId))
-        .map(InstitutionPoints::institutionPoints)
-        .findFirst()
-        .orElseThrow();
+  protected static String getPublicationFromFile(String path, URI publicationId) {
+    var identifier = SortableIdentifier.fromUri(publicationId);
+    return stringFromResources(Path.of(path))
+        .replace("__REPLACE_WITH_PUBLICATION_ID__", publicationId.toString())
+        .replace("__REPLACE_WITH_PUBLICATION_IDENTIFIER__", identifier.toString());
+  }
+
+  protected static String getPublicationFromFile(String path) {
+    return getPublicationFromFile(path, HARDCODED_PUBLICATION_ID);
   }
 
   @BeforeEach
