@@ -751,17 +751,17 @@ paths:
         * **No parameters** - Returns report for the requesting user's institution and breakdown for its sub-units
         * **institution parameter** - Returns report for the specified institution and breakdown for its sub-units
 
-        **Aggregation types:**
+        **Report types:**
 
-        * **aggregation=allInstitutions** - Returns report for all institutions with institution breakdown
-        * **aggregation=global** - Returns report for an NVI period across all institutions without institution breakdown
-        * **aggregation=institution** - Returns report for the specified institution and breakdown for its sub-units
+        * **type=allInstitutions** - Returns report for all institutions with institution breakdown
+        * **type=global** - Returns report for an NVI period across all institutions without institution breakdown
+        * **type=institution** - Returns report for the specified institution and breakdown for its sub-units
 
         **Examples:**
-        * **aggregation=allInstitutions&institution=1.0.0.0** - Returns report for
-        * **aggregation=institution&institution=1.0.0.0** - Returns report for
+        * **type=allInstitutions&institution=1.0.0.0** - Returns report for
+        * **type=institution&institution=1.0.0.0** - Returns report for
         * **institution=1.0.0.0** - Returns report for institution
-      summary: Get requesting users institution approval aggregations for a given year
+      summary: Get requesting users institution approval reports for a given year
       operationId: getNviInstitutionReportByYear
       parameters:
         - in: path
@@ -771,13 +771,14 @@ paths:
           schema:
             type: string
         - in: query
-          name: aggregation
+          name: type
           schema:
             type: string
             enum:
               - allInstitutions
               - institution
               - global
+          description: Type of the report
         - in: query
           name: institution
           schema:
