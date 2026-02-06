@@ -1271,6 +1271,40 @@ Resources:
             Method: get
             RestApiId: !Ref ScientificIndexApi
 
+  FetchReportHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: index-handlers
+      Handler: no.sikt.nva.nvi.index.apigateway.FetchReportHandler::handleRequest
+      Role: !GetAtt NvaNviRole.Arn
+      Timeout: 600
+      MemorySize: 1536
+      AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
+      Environment:
+        Variables:
+          ALLOWED_ORIGIN: !Ref AllowedOrigins
+      Events:
+        PeriodReport:
+          Type: Api
+          Properties:
+            Path: /report
+            Method: get
+            RestApiId: !Ref ScientificIndexApi
+        AllInstitutionsReport:
+          Type: Api
+          Properties:
+            Path: /report/{period}
+            Method: get
+            RestApiId: !Ref ScientificIndexApi
+        InstitutionReport:
+          Type: Api
+          Properties:
+            Path: /report/{period}/{institution}
+            Method: get
+            RestApiId: !Ref ScientificIndexApi
+
   FetchInstitutionReportHandler:
     Type: AWS::Serverless::Function
     Properties:
