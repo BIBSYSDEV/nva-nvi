@@ -80,7 +80,7 @@ public class EvaluatorService {
           .filter(customer -> nonNull(customer.cristinId()))
           .collect(Collectors.toMap(CustomerDto::cristinId, Function.identity()));
     } catch (ApiGatewayException exception) {
-      logger.error("Failed to fetch customer list");
+      logger.error("Failed to fetch customer list", exception);
       throw new RuntimeException(exception);
     }
   }
