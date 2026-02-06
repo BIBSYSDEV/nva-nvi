@@ -871,11 +871,10 @@ paths:
         - Report
       description: Get report for all periods
       operationId: getPeriodsReport
-      security: *authenticated
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchReportHandler.Arn}:live/invocations
-        responses: { }
+        responses: {}
         httpMethod: POST
         type: AWS_PROXY
       responses:
@@ -917,11 +916,10 @@ paths:
             type: string
             pattern: '^\d{4}$'
           example: "2025"
-      security: *authenticated
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchReportHandler.Arn}:live/invocations
-        responses: { }
+        responses: {}
         httpMethod: POST
         type: AWS_PROXY
       responses:
@@ -1019,11 +1017,10 @@ paths:
             type: boolean
             default: false
           example: true
-      security: *authenticated
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchReportHandler.Arn}:live/invocations
-        responses: { }
+        responses: {}
         httpMethod: POST
         type: AWS_PROXY
       responses:
@@ -1556,7 +1553,7 @@ components:
       properties:
         type:
           type: string
-          enum: [ AllPeriodsReport ]
+          enum: [AllPeriodsReport]
         id:
           type: string
           format: uri
@@ -1576,7 +1573,7 @@ components:
       properties:
         type:
           type: string
-          enum: [ AllInstitutionsReport ]
+          enum: [AllInstitutionsReport]
         id:
           type: string
           format: uri
@@ -1600,7 +1597,7 @@ components:
       properties:
         type:
           type: string
-          enum: [ InstitutionReport ]
+          enum: [InstitutionReport]
         id:
           type: string
           format: uri
@@ -1631,7 +1628,7 @@ components:
       properties:
         type:
           type: string
-          enum: [ InstitutionReport ]
+          enum: [InstitutionReport]
         id:
           type: string
           format: uri
@@ -1639,7 +1636,7 @@ components:
           type: string
         sector:
           type: string
-          enum: [ UHI, HEALTH, INSTITUTE, OTHER ]
+          enum: [UHI, HEALTH, INSTITUTE, OTHER]
         candidateCount:
           type: integer
           minimum: 0
@@ -1684,7 +1681,7 @@ components:
       properties:
         type:
           type: string
-          enum: [ UnitReport ]
+          enum: [UnitReport]
         id:
           type: string
           format: uri
@@ -1711,7 +1708,7 @@ components:
       properties:
         type:
           type: string
-          enum: [ ReportingStatus ]
+          enum: [ReportingStatus]
         dispute:
           type: integer
           minimum: 0
@@ -1736,7 +1733,7 @@ components:
       properties:
         type:
           type: string
-          enum: [ PublicationPointStatus ]
+          enum: [PublicationPointStatus]
         new:
           type: integer
           minimum: 0

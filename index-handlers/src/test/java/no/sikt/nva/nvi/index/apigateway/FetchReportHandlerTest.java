@@ -15,7 +15,6 @@ import java.net.HttpURLConnection;
 import java.util.Map;
 import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.testutils.HandlerRequestBuilder;
-import nva.commons.apigateway.GatewayResponse;
 import nva.commons.core.Environment;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -49,7 +48,7 @@ class FetchReportHandlerTest {
     var request = createRequest(Map.of());
     handler.handleRequest(request, output, CONTEXT);
 
-    var response = GatewayResponse.fromOutputStream(output, ReportResponse.class);
+    var response = fromOutputStream(output, ReportResponse.class);
 
     assertInstanceOf(PeriodReport.class, response.getBodyObject(ReportResponse.class));
   }
@@ -59,7 +58,7 @@ class FetchReportHandlerTest {
     var request = createRequest(Map.of(PERIOD, randomString()));
     handler.handleRequest(request, output, CONTEXT);
 
-    var response = GatewayResponse.fromOutputStream(output, ReportResponse.class);
+    var response = fromOutputStream(output, ReportResponse.class);
 
     assertInstanceOf(AllInstitutionsReport.class, response.getBodyObject(ReportResponse.class));
   }
@@ -70,7 +69,7 @@ class FetchReportHandlerTest {
     var request = createRequest(Map.of(PERIOD, randomString(), INSTITUTION, randomString()));
     handler.handleRequest(request, output, CONTEXT);
 
-    var response = GatewayResponse.fromOutputStream(output, ReportResponse.class);
+    var response = fromOutputStream(output, ReportResponse.class);
 
     assertInstanceOf(InstitutionReport.class, response.getBodyObject(ReportResponse.class));
   }
