@@ -883,17 +883,12 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AllPeriodsReportResponse"
+                $ref: "#/components/schemas/PeriodReport"
               examples:
                 allPeriods:
                   summary: List of all available periods
                   value:
-                    type: "AllPeriodsReport"
-                    id: "https://api.nva.unit.no/scientific-index/report"
-                    periods:
-                      - "2023"
-                      - "2024"
-                      - "2025"
+                    type: "PeriodReport"
         "500":
           description: "Internal Server Error"
           content:
@@ -1544,24 +1539,14 @@ components:
     NviCandidateContext:
       type: object
       description: NVI Candidate context
-    AllPeriodsReportResponse:
+    PeriodReport:
       type: object
       required:
         - type
-        - id
-        - periods
       properties:
         type:
           type: string
-          enum: [AllPeriodsReport]
-        id:
-          type: string
-          format: uri
-        periods:
-          type: array
-          items:
-            type: string
-            pattern: '^\d{4}$'
+          enum: [PeriodReport]
 
     AllInstitutionsReportResponse:
       type: object
