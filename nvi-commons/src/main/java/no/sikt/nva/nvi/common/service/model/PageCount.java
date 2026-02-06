@@ -21,6 +21,10 @@ public record PageCount(String first, String last, String total) {
     return new PageCount(pageCount.first(), pageCount.last(), pageCount.total());
   }
 
+  public PageCountDto toPageCountDto() {
+    return new PageCountDto(first, last, total);
+  }
+
   public DbPageCount toDbPageCount() {
     return DbPageCount.builder().first(first).last(last).total(total).build();
   }
