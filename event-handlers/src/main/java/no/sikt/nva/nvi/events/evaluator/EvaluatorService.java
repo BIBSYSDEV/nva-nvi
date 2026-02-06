@@ -3,15 +3,19 @@ package no.sikt.nva.nvi.events.evaluator;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.dto.PublicationDetailsDto.fromPublicationDto;
+import static no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil.getNviCreatorsWithNviInstitutions;
 import static nva.commons.core.attempt.Try.attempt;
 
 import java.net.URI;
 import java.time.Year;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
@@ -24,15 +28,20 @@ import no.sikt.nva.nvi.common.service.PublicationLoaderService;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.CandidateAndPeriods;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
-import no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil;
 import no.sikt.nva.nvi.events.evaluator.model.NviCreator;
 import no.sikt.nva.nvi.events.evaluator.model.NviOrganization;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
+import no.unit.nva.clients.CustomerDto;
+import no.unit.nva.clients.IdentityServiceClient;
+import nva.commons.apigateway.exceptions.ApiGatewayException;
+import nva.commons.core.Environment;
+import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class EvaluatorService {
 
+  private static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
   private static final String NVI_CANDIDATE_MESSAGE =
       "Evaluated publication with id {} as NviCandidate.";
   private static final String NON_NVI_CANDIDATE_MESSAGE =
@@ -44,17 +53,36 @@ public class EvaluatorService {
   private static final String REPORTED_CANDIDATE_MESSAGE =
       "Publication is already reported and cannot be updated.";
   private final Logger logger = LoggerFactory.getLogger(EvaluatorService.class);
-  private final CreatorVerificationUtil creatorVerificationUtil;
   private final CandidateService candidateService;
+  private final IdentityServiceClient identityServiceClient;
   private final PublicationLoaderService publicationLoader;
 
   public EvaluatorService(
+      IdentityServiceClient identityServiceClient,
       StorageReader<URI> storageReader,
-      CreatorVerificationUtil creatorVerificationUtil,
       CandidateService candidateService) {
-    this.creatorVerificationUtil = creatorVerificationUtil;
     this.candidateService = candidateService;
+    this.identityServiceClient = identityServiceClient;
     this.publicationLoader = new PublicationLoaderService(storageReader);
+  }
+
+  @JacocoGenerated
+  public static EvaluatorService defaultEvaluatorService() {
+    return new EvaluatorService(
+        IdentityServiceClient.unauthorizedIdentityServiceClient(),
+        new S3StorageReader(new Environment().readEnv(EXPANDED_RESOURCES_BUCKET)),
+        CandidateService.defaultCandidateService());
+  }
+
+  private Map<URI, CustomerDto> getAllCustomers() {
+    try {
+      return identityServiceClient.getAllCustomers().customers().stream()
+          .filter(customer -> nonNull(customer.cristinId()))
+          .collect(Collectors.toMap(CustomerDto::cristinId, Function.identity()));
+    } catch (ApiGatewayException exception) {
+      logger.error("Failed to fetch customer list", exception);
+      throw new RuntimeException(exception);
+    }
   }
 
   public Optional<CandidateEvaluatedMessage> evaluateCandidacy(URI publicationBucketUri) {
@@ -74,7 +102,7 @@ public class EvaluatorService {
     }
 
     // Check that the publication has NVI creators
-    var creators = creatorVerificationUtil.getNviCreatorsWithNviInstitutions(publication);
+    var creators = getNviCreatorsWithNviInstitutions(getAllCustomers(), publication);
     if (creators.isEmpty()) {
       logger.info("Publication has no NVI creators");
       return createNonNviCandidateMessage(publication.id());

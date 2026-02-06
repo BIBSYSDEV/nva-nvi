@@ -83,7 +83,7 @@ public final class CristinTestUtils {
         nonNull(cristinNviReport.publicationDate())
             ? cristinNviReport.publicationDate()
             : randomPublicationDate();
-    return new SampleExpandedPublicationFactory(testScenario)
+    return new SampleExpandedPublicationFactory()
         .withContributors(contributors)
         .withTopLevelOrganizations(topLevelOrganizations)
         .withPublicationDate(publicationDate);

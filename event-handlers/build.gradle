@@ -20,8 +20,10 @@ dependencies {
     implementation nvaCatalog.com.auth0.jwt
     implementation nvaCatalog.jackson.core
     implementation nvaCatalog.jackson.databind
+    implementation nvaLibs.apigateway
     implementation nvaLibs.auth
     implementation nvaLibs.core
+    implementation nvaLibs.clients
     implementation nvaLibs.eventhandlers
     implementation nvaLibs.json
     implementation nvaLibs.s3

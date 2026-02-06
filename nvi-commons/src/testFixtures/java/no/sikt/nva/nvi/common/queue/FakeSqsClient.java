@@ -109,9 +109,10 @@ public class FakeSqsClient implements QueueClient {
   @Override
   public NviReceiveMessageResponse receiveMessage(String queueUrl, int maxNumberOfMessages) {
     validateQueueUrl(queueUrl);
-    var numberOfMessages = Math.min(maxNumberOfMessages, sentMessages.size());
     return new NviReceiveMessageResponse(
-        sentMessages.subList(0, numberOfMessages).stream()
+        sentMessages.stream()
+            .filter(message -> queueUrl.equals(message.queueUrl()))
+            .limit(maxNumberOfMessages)
             .map(
                 sendMessageRequest ->
                     new NviReceiveMessage(

@@ -39,7 +39,7 @@ class CandidateMigrationServiceTest {
     var storageReader = scenario.getS3StorageReaderForExpandedResourcesBucket();
     migrationService = new CandidateMigrationService(candidateService, storageReader);
     setupOpenPeriod(scenario, CURRENT_YEAR);
-    publicationFactory = new SampleExpandedPublicationFactory(scenario);
+    publicationFactory = new SampleExpandedPublicationFactory();
   }
 
   @Test

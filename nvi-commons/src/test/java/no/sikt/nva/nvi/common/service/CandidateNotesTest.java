@@ -4,7 +4,6 @@ import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.RequestFixtures.createNoteRequest;
 import static no.sikt.nva.nvi.common.RequestFixtures.randomNoteRequest;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequest;
-import static no.sikt.nva.nvi.common.model.OrganizationFixtures.mockOrganizationResponseForAffiliation;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationId;
 import static no.sikt.nva.nvi.common.model.UserInstanceFixtures.createCuratorUserInstance;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -37,8 +36,6 @@ class CandidateNotesTest extends CandidateTestSetup {
     var candidate = createCandidate();
     var noteRequest = createNoteRequest(randomString(), randomString());
     noteService.createNote(candidate, noteRequest);
-    var userOrganizationId = getAnyOrganizationId(candidate);
-    mockOrganizationResponseForAffiliation(userOrganizationId, null, mockUriRetriever);
 
     var updatedCandidate = candidateService.getCandidateByIdentifier(candidate.identifier());
     var actualNote = getAnyNote(updatedCandidate);
@@ -70,12 +67,9 @@ class CandidateNotesTest extends CandidateTestSetup {
   @Test
   void shouldDeleteNoteWhenValidDeleteNoteRequest() {
     var candidate = setupCandidateWithNote();
-
-    var userOrganizationId = getAnyOrganizationId(candidate);
-    mockOrganizationResponseForAffiliation(userOrganizationId, null, mockUriRetriever);
-
     var noteToDelete = getAnyNote(candidate);
     var deleteRequest = new DeleteNoteRequest(noteToDelete.identifier(), noteToDelete.user());
+
     noteService.deleteNote(candidate, deleteRequest);
 
     var updatedCandidate = candidateService.getCandidateByIdentifier(candidate.identifier());
@@ -85,12 +79,9 @@ class CandidateNotesTest extends CandidateTestSetup {
   @Test
   void shouldThrowUnauthorizedOperationExceptionWhenRequesterIsNotAnOwner() {
     var candidate = setupCandidateWithNote();
-    var userOrganizationId = getAnyOrganizationId(candidate);
-    mockOrganizationResponseForAffiliation(userOrganizationId, null, mockUriRetriever);
-
     var noteToDelete = getAnyNote(candidate);
-
     var deleteNoteRequest = new DeleteNoteRequest(noteToDelete.identifier(), randomString());
+
     assertThrows(
         UnauthorizedOperationException.class,
         () -> noteService.deleteNote(candidate, deleteNoteRequest));
@@ -99,10 +90,8 @@ class CandidateNotesTest extends CandidateTestSetup {
   @Test
   void shouldThrowExceptionWhenNoteDoesNotExist() {
     var candidate = setupCandidateWithNote();
-    var userOrganizationId = getAnyOrganizationId(candidate);
-    mockOrganizationResponseForAffiliation(userOrganizationId, null, mockUriRetriever);
-
     var deleteNoteRequest = new DeleteNoteRequest(randomUUID(), randomString());
+
     assertThrows(
         IllegalCandidateUpdateException.class,
         () -> noteService.deleteNote(candidate, deleteNoteRequest));

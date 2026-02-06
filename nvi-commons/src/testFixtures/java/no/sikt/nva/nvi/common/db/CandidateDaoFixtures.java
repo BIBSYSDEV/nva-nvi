@@ -54,7 +54,7 @@ public class CandidateDaoFixtures {
   private static void createMatchingPublicationInS3(
       CandidateDao candidateDao, TestScenario scenario) {
     var publication =
-        defaultExpandedPublicationFactory(scenario)
+        defaultExpandedPublicationFactory()
             .getExpandedPublicationBuilder()
             .withId(candidateDao.candidate().publicationId())
             .withIdentifier(UUID.fromString(candidateDao.candidate().publicationIdentifier()))

@@ -44,7 +44,8 @@ public final class SampleCandidateGenerator {
       URI institutionId, Sector sector, BigDecimal points) {
     var institutionPoint = new InstitutionPoints(institutionId, points, sector, List.of());
     this.institutionPoints.add(institutionPoint);
-    this.approvals.put(institutionId, Approval.createNewApproval(candidateIdentifier, institutionId));
+    this.approvals.put(
+        institutionId, Approval.createNewApproval(candidateIdentifier, institutionId));
     return this;
   }
 

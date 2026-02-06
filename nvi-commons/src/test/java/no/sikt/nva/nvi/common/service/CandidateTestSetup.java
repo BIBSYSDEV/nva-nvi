@@ -16,7 +16,6 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.unit.nva.auth.uriretriever.UriRetriever;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -36,7 +35,6 @@ public class CandidateTestSetup {
   protected NoteService noteService;
   protected CandidateRepository candidateRepository;
   protected PeriodRepository periodRepository;
-  protected UriRetriever mockUriRetriever;
 
   protected static UpsertNviCandidateRequest createUpsertRequestWithDecimalScale(
       int scale, URI institutionId) {
@@ -65,7 +63,6 @@ public class CandidateTestSetup {
     candidateService = new CandidateService(ENVIRONMENT, periodRepository, candidateRepository);
     approvalService = new ApprovalService(candidateRepository);
     noteService = new NoteService(candidateRepository);
-    mockUriRetriever = scenario.getMockedUriRetriever();
     setupOpenPeriod(scenario, CURRENT_YEAR);
   }
 
