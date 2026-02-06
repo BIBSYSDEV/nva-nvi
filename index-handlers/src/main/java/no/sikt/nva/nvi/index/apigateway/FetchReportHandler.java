@@ -8,8 +8,14 @@ import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.core.Environment;
+import nva.commons.core.JacocoGenerated;
 
 public class FetchReportHandler extends ApiGatewayHandler<Void, ReportResponse> {
+
+  @JacocoGenerated
+  public FetchReportHandler() {
+    this(new Environment());
+  }
 
   public FetchReportHandler(Environment environment) {
     super(Void.class, environment);
