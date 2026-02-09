@@ -31,7 +31,6 @@ import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.events.evaluator.model.NviCreator;
 import no.sikt.nva.nvi.events.evaluator.model.NviOrganization;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
-import no.unit.nva.clients.CustomerDto;
 import no.unit.nva.clients.IdentityServiceClient;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.core.Environment;
@@ -74,11 +73,12 @@ public class EvaluatorService {
         CandidateService.defaultCandidateService());
   }
 
-  private Map<URI, CustomerDto> getAllCustomers() {
+  private Map<URI, Customer> getAllCustomers() {
     try {
       return identityServiceClient.getAllCustomers().customers().stream()
           .filter(customer -> nonNull(customer.cristinId()))
-          .collect(Collectors.toMap(CustomerDto::cristinId, Function.identity()));
+          .map(Customer::fromCustomerDto)
+          .collect(Collectors.toMap(Customer::cristinId, Function.identity()));
     } catch (ApiGatewayException exception) {
       logger.error("Failed to fetch customer list", exception);
       throw new RuntimeException(exception);
@@ -102,7 +102,8 @@ public class EvaluatorService {
     }
 
     // Check that the publication has NVI creators
-    var creators = getNviCreatorsWithNviInstitutions(getAllCustomers(), publication);
+    var customers = getAllCustomers();
+    var creators = getNviCreatorsWithNviInstitutions(customers, publication);
     if (creators.isEmpty()) {
       logger.info("Publication has no NVI creators");
       return createNonNviCandidateMessage(publication.id());
@@ -114,7 +115,8 @@ public class EvaluatorService {
       return createNonNviCandidateMessage(publication.id());
     }
 
-    var nviCandidate = constructNviCandidate(publication, publicationBucketUri, creators);
+    var nviCandidate =
+        constructNviCandidate(publication, publicationBucketUri, creators, customers);
     return createNviCandidateMessage(nviCandidate);
   }
 
@@ -180,9 +182,12 @@ public class EvaluatorService {
   }
 
   private UpsertNviCandidateRequest constructNviCandidate(
-      PublicationDto publicationDto, URI publicationBucketUri, Collection<NviCreator> creators) {
+      PublicationDto publicationDto,
+      URI publicationBucketUri,
+      Collection<NviCreator> creators,
+      Map<URI, Customer> customers) {
     var nviCreatorsAsDto = creators.stream().map(NviCreator::toDto).toList();
-    var pointCalculation = PointService.calculatePoints(publicationDto, creators);
+    var pointCalculation = PointService.calculatePoints(publicationDto, creators, customers);
     var publicationDetails = fromPublicationDto(publicationDto);
     var topLevelNviOrganizations = getTopLevelNviOrganizations(publicationDto, creators);
 

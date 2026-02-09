@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.events.evaluator;
 
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
+import static no.sikt.nva.nvi.common.dto.CustomerDtoFixtures.getDefaultCustomers;
 import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublicationDate;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_NORWAY;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_SWEDEN;
@@ -11,6 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.net.URI;
 import java.util.List;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.SampleExpandedPublicationFactory;
@@ -19,6 +21,7 @@ import no.sikt.nva.nvi.common.dto.PointCalculationDto;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
+import no.unit.nva.clients.CustomerDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -39,7 +42,9 @@ class PointCalculationTest extends EvaluationTest {
     var publicationDate = randomPublicationDate();
     var year = publicationDate.year();
     setupOpenPeriod(scenario, year);
-    factory = new SampleExpandedPublicationFactory().withPublicationDate(publicationDate);
+    factory =
+        new SampleExpandedPublicationFactory(getDefaultCustomers())
+            .withPublicationDate(publicationDate);
 
     // Set up default organizations suitable for most test cases
     nviOrganization1 = factory.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, true);
@@ -257,6 +262,32 @@ class PointCalculationTest extends EvaluationTest {
     assertThat(actualPoints)
         .usingRecursiveFieldByFieldElementComparatorIgnoringFields("nviCreator")
         .containsExactlyInAnyOrderElementsOf(expectedPoints);
+  }
+
+  @Test
+  void shouldSetSectorCorrectlyInInstitutionPoints() {
+    var publication =
+        factory
+            .withCreatorAffiliatedWith(nviOrganization1.hasPart())
+            .withCreatorAffiliatedWith(nviOrganization1.hasPart().getFirst())
+            .getExpandedPublication();
+
+    var candidate = getEvaluatedCandidate(publication).pointCalculation();
+    var institutionPoints = candidate.institutionPoints();
+
+    assertThat(institutionPoints)
+        .allSatisfy(
+            points ->
+                assertThat(points.sector().toString())
+                    .isEqualTo(getInstitutionSectorFromMockedCustomers(points.institutionId())));
+  }
+
+  private String getInstitutionSectorFromMockedCustomers(URI institutionId) {
+    return factory.getCustomerOrganizations().stream()
+        .filter(customerDto -> customerDto.cristinId().equals(institutionId))
+        .map(CustomerDto::sector)
+        .findFirst()
+        .orElseThrow();
   }
 
   @DisplayName(
