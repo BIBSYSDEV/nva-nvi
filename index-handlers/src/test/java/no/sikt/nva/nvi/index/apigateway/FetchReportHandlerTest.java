@@ -3,8 +3,6 @@ package no.sikt.nva.nvi.index.apigateway;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
-import static nva.commons.apigateway.AccessRight.MANAGE_NVI;
-import static nva.commons.apigateway.AccessRight.MANAGE_NVI_CANDIDATES;
 import static nva.commons.apigateway.GatewayResponse.fromOutputStream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -24,9 +22,11 @@ import no.sikt.nva.nvi.index.model.report.PeriodReport;
 import no.sikt.nva.nvi.index.model.report.ReportResponse;
 import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.testutils.HandlerRequestBuilder;
+import nva.commons.apigateway.AccessRight;
 import nva.commons.core.Environment;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.zalando.problem.Problem;
 
 class FetchReportHandlerTest {
 
@@ -53,6 +53,15 @@ class FetchReportHandlerTest {
     var statusCode = fromOutputStream(output, ReportResponse.class).getStatusCode();
 
     assertEquals(HttpURLConnection.HTTP_OK, statusCode);
+  }
+
+  @Test
+  void shouldThrowForbiddenWhenNonNviAdminMakesRequest() throws IOException {
+    handler.handleRequest(requestWithoutAccessRights(), output, CONTEXT);
+
+    var statusCode = fromOutputStream(output, Problem.class).getStatusCode();
+
+    assertEquals(HttpURLConnection.HTTP_FORBIDDEN, statusCode);
   }
 
   @Test
@@ -99,7 +108,16 @@ class FetchReportHandlerTest {
       return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
           .withOtherProperties(Map.of(PATH, path))
           .withPathParameters(pathParameters)
+          .withAccessRights(randomUri(), AccessRight.MANAGE_NVI)
           .build();
+    } catch (JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private static InputStream requestWithoutAccessRights() {
+    try {
+      return new HandlerRequestBuilder<InputStream>(dtoObjectMapper).build();
     } catch (JsonProcessingException e) {
       throw new RuntimeException(e);
     }
