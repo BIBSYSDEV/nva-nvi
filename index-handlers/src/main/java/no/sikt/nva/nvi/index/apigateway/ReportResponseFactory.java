@@ -10,8 +10,8 @@ public final class ReportResponseFactory {
 
   private ReportResponseFactory() {}
 
-  public static ReportResponse getResponse(ReportRequest requestType) {
-    return switch (requestType.type()) {
+  public static ReportResponse getResponse(ReportRequest reportRequest) {
+    return switch (reportRequest.type()) {
       case ALL_PERIODS -> new AllPeriodsReport();
       case PERIOD -> new PeriodReport();
       case ALL_INSTITUTIONS -> new AllInstitutionsReport();

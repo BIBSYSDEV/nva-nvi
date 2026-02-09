@@ -2,6 +2,9 @@ package no.sikt.nva.nvi.index.apigateway;
 
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
+import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
+import static nva.commons.apigateway.AccessRight.MANAGE_NVI;
+import static nva.commons.apigateway.AccessRight.MANAGE_NVI_CANDIDATES;
 import static nva.commons.apigateway.GatewayResponse.fromOutputStream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -33,7 +36,7 @@ class FetchReportHandlerTest {
   private static final String REPORTS_PATH = "reports";
   private static final String REPORTS_INSTITUTIONS_PATH =
       "reports/%s/institutions".formatted(randomString());
-  public static final String PATH = "path";
+  private static final String PATH = "path";
   private FetchReportHandler handler;
   private ByteArrayOutputStream output;
 
@@ -53,7 +56,7 @@ class FetchReportHandlerTest {
   }
 
   @Test
-  void shouldReturnAllPeriodReportWhenNoPathParametersAreProvided() {
+  void shouldReturnAllPeriodsReportWhenNoPathParametersAreProvided() {
     var request = createRequest(Map.of(), REPORTS_PATH);
 
     var response = handleRequest(request);

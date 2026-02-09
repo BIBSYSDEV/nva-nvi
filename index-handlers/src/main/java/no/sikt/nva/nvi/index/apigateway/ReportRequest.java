@@ -9,7 +9,7 @@ public final class ReportRequest {
 
   private static final String PERIOD_PATH_PARAM = "period";
   private static final String INSTITUTION_PATH_PARAM = "institution";
-  public static final String INSTITUTIONS_PATH_PARAM = "institutions";
+  private static final String INSTITUTIONS_PATH_PARAM = "institutions";
   private final String period;
   private final String institution;
   private final String path;

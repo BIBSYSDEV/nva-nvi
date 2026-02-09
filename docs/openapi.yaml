@@ -1571,8 +1571,8 @@ components:
         - sector
         - candidateCount
         - totalPoints
-        - reportingStatus
-        - publicationPointStatus
+        - globalApprovalStatus
+        - approvalStatus
       properties:
         type:
           type: string
@@ -1592,9 +1592,9 @@ components:
           type: number
           format: double
           minimum: 0
-        reportingStatus:
+        globalApprovalStatus:
           $ref: "#/components/schemas/GlobalApprovalStatus"
-        publicationPointStatus:
+        approvalStatus:
           $ref: "#/components/schemas/ApprovalStatus"
 
     ReportSummary:
@@ -1602,8 +1602,8 @@ components:
       required:
         - candidateCount
         - totalPoints
-        - reportingStatus
-        - publicationPointStatus
+        - globalApprovalStatus
+        - approvalStatus
       properties:
         candidateCount:
           type: integer
@@ -1612,9 +1612,9 @@ components:
           type: number
           format: double
           minimum: 0
-        reportingStatus:
+        globalApprovalStatus:
           $ref: "#/components/schemas/GlobalApprovalStatus"
-        publicationPointStatus:
+        approvalStatus:
           $ref: "#/components/schemas/ApprovalStatus"
 
     UnitReport:
@@ -1624,8 +1624,8 @@ components:
         - id
         - candidateCount
         - totalPoints
-        - reportingStatus
-        - publicationPointStatus
+        - globalApprovalStatus
+        - approvalStatus
       properties:
         type:
           type: string
@@ -1640,9 +1640,9 @@ components:
           type: number
           format: double
           minimum: 0
-        reportingStatus:
+        globalApprovalStatus:
           $ref: "#/components/schemas/GlobalApprovalStatus"
-        publicationPointStatus:
+        approvalStatus:
           $ref: "#/components/schemas/ApprovalStatus"
 
     GlobalApprovalStatus:
