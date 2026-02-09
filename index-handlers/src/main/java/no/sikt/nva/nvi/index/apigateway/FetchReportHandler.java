@@ -3,10 +3,6 @@ package no.sikt.nva.nvi.index.apigateway;
 import static java.net.HttpURLConnection.HTTP_OK;
 
 import com.amazonaws.services.lambda.runtime.Context;
-import no.sikt.nva.nvi.index.model.report.AllInstitutionsReport;
-import no.sikt.nva.nvi.index.model.report.AllPeriodsReport;
-import no.sikt.nva.nvi.index.model.report.InstitutionReport;
-import no.sikt.nva.nvi.index.model.report.PeriodReport;
 import no.sikt.nva.nvi.index.model.report.ReportResponse;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
@@ -33,12 +29,7 @@ public class FetchReportHandler extends ApiGatewayHandler<Void, ReportResponse> 
   protected ReportResponse processInput(Void unused, RequestInfo requestInfo, Context context)
       throws ApiGatewayException {
     var requestType = ReportRequest.from(requestInfo);
-    return switch (requestType.type()) {
-      case ALL_PERIODS -> new AllPeriodsReport();
-      case PERIOD -> new PeriodReport();
-      case ALL_INSTITUTIONS -> new AllInstitutionsReport();
-      case INSTITUTION -> new InstitutionReport();
-    };
+    return ReportResponseFactory.getResponse(requestType);
   }
 
   @Override
