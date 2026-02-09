@@ -185,7 +185,8 @@
         "@container": "@set"
       }
     },
-    "identifier": "018a6cc181fe-a25d2ff4-289c-44fd-8ebf-5ad1a13627fb",
+    "id": "__REPLACE_WITH_PUBLICATION_ID__",
+    "identifier": "__REPLACE_WITH_PUBLICATION_IDENTIFIER__",
     "modelVersion": "0.20.39",
     "resourceOwner": {
       "owner": "ntnu@194.0.0.0",
@@ -371,7 +372,6 @@
       "id": "https://api.sandbox.nva.aws.unit.no/customer/f54c8aa9-073a-46a1-8f7c-dde66c853934",
       "type": "Organization"
     },
-    "id": "https://api.sandbox.nva.aws.unit.no/publication/018a6cc181fe-a25d2ff4-289c-44fd-8ebf-5ad1a13627fb",
     "publishedDate": "2022-10-03T00:00:00Z",
     "status": "PUBLISHED",
     "topLevelOrganization": [

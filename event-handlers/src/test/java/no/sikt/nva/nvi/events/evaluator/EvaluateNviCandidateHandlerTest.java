@@ -29,7 +29,6 @@ import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_PUBLICATION_ID;
 import static no.sikt.nva.nvi.test.TestConstants.THIS_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
-import static nva.commons.core.ioutils.IoUtils.stringFromResources;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -41,7 +40,6 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.SampleExpandedPublicationFactory;
@@ -61,7 +59,6 @@ import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.sikt.nva.nvi.test.SampleExpandedContributor;
 import no.sikt.nva.nvi.test.SampleExpandedPublication;
-import no.unit.nva.identifiers.SortableIdentifier;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
@@ -88,17 +85,6 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       "evaluator/candidate_academicCommentary.json";
   private static final String ACADEMIC_ARTICLE_PATH = "evaluator/candidate_academicArticle.json";
   private static final String ACADEMIC_ARTICLE = getPublicationFromFile(ACADEMIC_ARTICLE_PATH);
-
-  private static String getPublicationFromFile(String path, URI publicationId) {
-    var identifier = SortableIdentifier.fromUri(publicationId);
-    return stringFromResources(Path.of(path))
-        .replace("__REPLACE_WITH_PUBLICATION_ID__", publicationId.toString())
-        .replace("__REPLACE_WITH_PUBLICATION_IDENTIFIER__", identifier.toString());
-  }
-
-  private static String getPublicationFromFile(String path) {
-    return getPublicationFromFile(path, HARDCODED_PUBLICATION_ID);
-  }
 
   @Test
   void shouldCreateNewCandidateForApplicablePublication() {

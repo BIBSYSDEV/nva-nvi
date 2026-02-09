@@ -1,6 +1,7 @@
 {
   "body": {
-    "identifier": "018a631be44b-9901b8f5-5e03-47a4-86ff-0890bd39fcc4",
+    "id": "__REPLACE_WITH_PUBLICATION_ID__",
+    "identifier": "__REPLACE_WITH_PUBLICATION_IDENTIFIER__",
     "modelVersion": "0.20.39",
     "resourceOwner": {
       "owner": "uio@185.90.0.0",
@@ -339,7 +340,6 @@
       "id": "https://api.sandbox.nva.aws.unit.no/customer/f54c8aa9-073a-46a1-8f7c-dde66c853934",
       "type": "Organization"
     },
-    "id": "https://api.sandbox.nva.aws.unit.no/publication/018a631be44b-9901b8f5-5e03-47a4-86ff-0890bd39fcc4",
     "publishedDate": "2022-12-05T00:00:00Z",
     "status": "PUBLISHED",
     "topLevelOrganization": [
