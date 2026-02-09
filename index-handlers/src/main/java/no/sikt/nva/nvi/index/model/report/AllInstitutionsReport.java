@@ -1,8 +1,6 @@
-package no.sikt.nva.nvi.index.apigateway;
+package no.sikt.nva.nvi.index.model.report;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
-@JsonSerialize
 public record AllInstitutionsReport() implements ReportResponse {}

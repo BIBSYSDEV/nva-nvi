@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.index.apigateway;
+package no.sikt.nva.nvi.index.model.report;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -6,7 +6,9 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 @JsonSubTypes({
   @JsonSubTypes.Type(value = AllInstitutionsReport.class, name = "AllInstitutionsReport"),
   @JsonSubTypes.Type(value = InstitutionReport.class, name = "InstitutionReport"),
+  @JsonSubTypes.Type(value = AllPeriodsReport.class, name = "PeriodsOverview"),
   @JsonSubTypes.Type(value = PeriodReport.class, name = "PeriodReport")
 })
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
-public interface ReportResponse {}
+public sealed interface ReportResponse
+    permits AllInstitutionsReport, InstitutionReport, AllPeriodsReport, PeriodReport {}

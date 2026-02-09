@@ -865,12 +865,59 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Problem"
-  /report:
+  /reports:
     get:
       tags:
         - Report
       description: Get report for all periods
-      operationId: getPeriodsReport
+      operationId: getAllPeriodsReport
+      security: *authenticated
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchReportHandler.Arn}:live/invocations
+        responses: {}
+        httpMethod: POST
+        type: AWS_PROXY
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AllPeriodsReport"
+              examples:
+                allPeriodsReport:
+                  summary: List of reports for all the periods
+                  value:
+                    type: "AllPeriodsReport"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "500":
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+
+  /reports/{period}:
+    get:
+      tags:
+        - Report
+      description: Get report for a specific period
+      operationId: getPeriodReport
+      parameters:
+        - in: path
+          name: period
+          required: true
+          schema:
+            type: string
+            pattern: '^\d{4}$'
+          example: "2025"
+      security: *authenticated
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchReportHandler.Arn}:live/invocations
@@ -885,10 +932,22 @@ paths:
               schema:
                 $ref: "#/components/schemas/PeriodReport"
               examples:
-                allPeriods:
-                  summary: List of all available periods
+                periodReport:
                   value:
                     type: "PeriodReport"
+
+        "400":
+          description: "Bad Request - Invalid period format"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
         "500":
           description: "Internal Server Error"
           content:
@@ -896,21 +955,21 @@ paths:
               schema:
                 $ref: "#/components/schemas/Problem"
 
-  /report/{period}:
+  /reports/{period}/institutions:
     get:
       tags:
         - Report
-      description: Get all institutions report for a given period
+      description: Get all institutions report for a specific period
       operationId: getAllInstitutionsReport
       parameters:
         - in: path
           name: period
-          description: The reporting period (year)
           required: true
           schema:
             type: string
             pattern: '^\d{4}$'
           example: "2025"
+      security: *authenticated
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchReportHandler.Arn}:live/invocations
@@ -924,52 +983,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AllInstitutionsReportResponse"
-              examples:
-                allInstitutions:
-                  summary: Report for all institutions
-                  value:
-                    type: "AllInstitutionsReport"
-                    id: "https://api.nva.unit.no/scientific-index/report/2025"
-                    period: "2025"
-                    institutions:
-                      - type: "InstitutionReport"
-                        id: "https://api.nva.unit.no/cristin/organization/1.0.0.0"
-                        name: "Universitetet i Oslo"
-                        sector: "UHI"
-                        candidateCount: 312
-                        totalPoints: 67.5
-                        reportingStatus:
-                          type: "ReportingStatus"
-                          dispute: 8
-                          pending: 234
-                          rejected: 18
-                          approved: 52
-                        publicationPointStatus:
-                          type: "PublicationPointStatus"
-                          new: 78
-                          pending: 156
-                          approved: 52
-                          rejected: 26
-                      - type: "InstitutionReport"
-                        id: "https://api.nva.unit.no/cristin/organization/2.0.0.0"
-                        name: "Norges teknisk-naturvitenskapelige universitet"
-                        sector: "UHI"
-                        candidateCount: 245
-                        totalPoints: 52.34
-                        reportingStatus:
-                          type: "ReportingStatus"
-                          dispute: 5
-                          pending: 180
-                          rejected: 12
-                          approved: 48
-                        publicationPointStatus:
-                          type: "PublicationPointStatus"
-                          new: 61
-                          pending: 122
-                          approved: 48
-                          rejected: 14
         "400":
           description: "Bad Request - Invalid period format"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "401":
+          description: "Unauthorized"
           content:
             application/json:
               schema:
@@ -981,16 +1002,15 @@ paths:
               schema:
                 $ref: "#/components/schemas/Problem"
 
-  /report/{period}/{institution}:
+  /reports/{period}/institutions/{institution}:
     get:
       tags:
         - Report
-      description: Get institution report for a given period
+      description: Get specific institution report for a specific period
       operationId: getInstitutionReport
       parameters:
         - in: path
           name: period
-          description: The reporting period (year)
           required: true
           schema:
             type: string
@@ -998,7 +1018,6 @@ paths:
           example: "2025"
         - in: path
           name: institution
-          description: The institution identifier
           required: true
           schema:
             type: string
@@ -1006,12 +1025,10 @@ paths:
           example: "1.0.0.0"
         - in: query
           name: includeSubunits
-          description: Include subunits in the report
-          required: false
           schema:
             type: boolean
             default: false
-          example: true
+      security: *authenticated
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchReportHandler.Arn}:live/invocations
@@ -1025,62 +1042,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/InstitutionReportResponse"
-              examples:
-                institutionReport:
-                  summary: Institution report with subunits
-                  value:
-                    type: "InstitutionReport"
-                    id: "https://api.nva.unit.no/scientific-index/report/2025/1.0.0.0"
-                    period: "2025"
-                    institution: "https://api.nva.unit.no/cristin/organization/1.0.0.0"
-                    summary:
-                      candidateCount: 20
-                      totalPoints: 31.1234
-                      reportingStatus:
-                        type: "ReportingStatus"
-                        dispute: 2
-                        pending: 10
-                        rejected: 4
-                        approved: 4
-                      publicationPointStatus:
-                        type: "PublicationPointStatus"
-                        new: 5
-                        pending: 5
-                        approved: 5
-                        rejected: 5
-                    units:
-                      - type: "UnitReport"
-                        id: "https://api.nva.unit.no/cristin/organization/1.1.0.0"
-                        candidateCount: 16
-                        totalPoints: 27.3953
-                        reportingStatus:
-                          type: "ReportingStatus"
-                          dispute: 2
-                          pending: 8
-                          rejected: 3
-                          approved: 3
-                        publicationPointStatus:
-                          type: "PublicationPointStatus"
-                          new: 4
-                          pending: 4
-                          approved: 4
-                          rejected: 4
-                      - type: "UnitReport"
-                        id: "https://api.nva.unit.no/cristin/organization/1.2.0.0"
-                        candidateCount: 4
-                        totalPoints: 3.7281
-                        reportingStatus:
-                          type: "ReportingStatus"
-                          dispute: 0
-                          pending: 2
-                          rejected: 1
-                          approved: 1
-                        publicationPointStatus:
-                          type: "PublicationPointStatus"
-                          new: 1
-                          pending: 1
-                          approved: 1
-                          rejected: 1
         "400":
           description: "Bad Request - Invalid period or institution format"
           content:
@@ -1089,12 +1050,6 @@ paths:
                 $ref: "#/components/schemas/Problem"
         "401":
           description: "Unauthorized"
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Problem"
-        "404":
-          description: "Not Found - Institution not found for period"
           content:
             application/json:
               schema:
@@ -1539,6 +1494,15 @@ components:
     NviCandidateContext:
       type: object
       description: NVI Candidate context
+    AllPeriodsReport:
+      type: object
+      required:
+        - type
+        - periods
+      properties:
+        type:
+          type: string
+          enum: [AllPeriodsReport]
     PeriodReport:
       type: object
       required:
@@ -1564,7 +1528,7 @@ components:
           format: uri
         period:
           type: string
-          pattern: '^\d{4}$'
+          pattern: '^(200[2-9]|20[1-9]\d|2[1-9]\d{2}|[3-9]\d{3})$'
         institutions:
           type: array
           items:
@@ -1588,7 +1552,7 @@ components:
           format: uri
         period:
           type: string
-          pattern: '^\d{4}$'
+          pattern: '^(200[2-9]|20[1-9]\d|2[1-9]\d{2}|[3-9]\d{3})$'
         institution:
           type: string
           format: uri
@@ -1630,9 +1594,9 @@ components:
           format: double
           minimum: 0
         reportingStatus:
-          $ref: "#/components/schemas/ReportingStatus"
+          $ref: "#/components/schemas/GlobalApprovalStatus"
         publicationPointStatus:
-          $ref: "#/components/schemas/PublicationPointStatus"
+          $ref: "#/components/schemas/ApprovalStatus"
 
     ReportSummary:
       type: object
@@ -1650,9 +1614,9 @@ components:
           format: double
           minimum: 0
         reportingStatus:
-          $ref: "#/components/schemas/ReportingStatus"
+          $ref: "#/components/schemas/GlobalApprovalStatus"
         publicationPointStatus:
-          $ref: "#/components/schemas/PublicationPointStatus"
+          $ref: "#/components/schemas/ApprovalStatus"
 
     UnitReport:
       type: object
@@ -1678,11 +1642,11 @@ components:
           format: double
           minimum: 0
         reportingStatus:
-          $ref: "#/components/schemas/ReportingStatus"
+          $ref: "#/components/schemas/GlobalApprovalStatus"
         publicationPointStatus:
-          $ref: "#/components/schemas/PublicationPointStatus"
+          $ref: "#/components/schemas/ApprovalStatus"
 
-    ReportingStatus:
+    GlobalApprovalStatus:
       type: object
       required:
         - type
@@ -1693,7 +1657,7 @@ components:
       properties:
         type:
           type: string
-          enum: [ReportingStatus]
+          enum: [GlobalApprovalStatus]
         dispute:
           type: integer
           minimum: 0
@@ -1707,30 +1671,6 @@ components:
           type: integer
           minimum: 0
 
-    PublicationPointStatus:
-      type: object
-      required:
-        - type
-        - new
-        - pending
-        - approved
-        - rejected
-      properties:
-        type:
-          type: string
-          enum: [PublicationPointStatus]
-        new:
-          type: integer
-          minimum: 0
-        pending:
-          type: integer
-          minimum: 0
-        approved:
-          type: integer
-          minimum: 0
-        rejected:
-          type: integer
-          minimum: 0
   securitySchemes:
     CognitoUserPool:
       type: apiKey

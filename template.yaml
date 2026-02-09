@@ -1277,7 +1277,7 @@ Resources:
       CodeUri: index-handlers
       Handler: no.sikt.nva.nvi.index.apigateway.FetchReportHandler::handleRequest
       Role: !GetAtt NvaNviRole.Arn
-      Timeout: 600
+      Timeout: 20
       MemorySize: 1536
       AutoPublishAlias: live
       SnapStart:
@@ -1286,22 +1286,28 @@ Resources:
         Variables:
           ALLOWED_ORIGIN: !Ref AllowedOrigins
       Events:
+        AllPeriodsReport:
+          Type: Api
+          Properties:
+            Path: /reports
+            Method: get
+            RestApiId: !Ref ScientificIndexApi
         PeriodReport:
           Type: Api
           Properties:
-            Path: /report
+            Path: /reports/{period}
             Method: get
             RestApiId: !Ref ScientificIndexApi
         AllInstitutionsReport:
           Type: Api
           Properties:
-            Path: /report/{period}
+            Path: /reports/{period}/institutions
             Method: get
             RestApiId: !Ref ScientificIndexApi
         InstitutionReport:
           Type: Api
           Properties:
-            Path: /report/{period}/{institution}
+            Path: /reports/{period}/institutions/{institution}
             Method: get
             RestApiId: !Ref ScientificIndexApi
 
