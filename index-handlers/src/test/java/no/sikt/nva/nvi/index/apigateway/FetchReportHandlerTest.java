@@ -1,7 +1,9 @@
 package no.sikt.nva.nvi.index.apigateway;
 
+import static java.util.Collections.emptyMap;
+import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationIdentifier;
+import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
-import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.apigateway.GatewayResponse.fromOutputStream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -13,7 +15,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
-import java.util.Collections;
 import java.util.Map;
 import no.sikt.nva.nvi.index.model.report.AllInstitutionsReport;
 import no.sikt.nva.nvi.index.model.report.AllPeriodsReport;
@@ -33,9 +34,10 @@ class FetchReportHandlerTest {
   private static final String PERIOD = "period";
   private static final String INSTITUTION = "institution";
   private static final Context CONTEXT = new FakeContext();
+  private static final String PERIOD_FOR_QUERY = randomYear();
   private static final String REPORTS_PATH = "reports";
   private static final String REPORTS_INSTITUTIONS_PATH =
-      "reports/%s/institutions".formatted(randomString());
+      "reports/%s/institutions".formatted(PERIOD_FOR_QUERY);
   private static final String PATH = "path";
   private FetchReportHandler handler;
   private ByteArrayOutputStream output;
@@ -48,7 +50,7 @@ class FetchReportHandlerTest {
 
   @Test
   void shouldReturnOkOnSuccess() throws IOException {
-    handler.handleRequest(createRequest(Collections.emptyMap(), REPORTS_PATH), output, CONTEXT);
+    handler.handleRequest(createRequest(emptyMap(), REPORTS_PATH), output, CONTEXT);
 
     var statusCode = fromOutputStream(output, ReportResponse.class).getStatusCode();
 
@@ -66,7 +68,7 @@ class FetchReportHandlerTest {
 
   @Test
   void shouldReturnAllPeriodsReportWhenNoPathParametersAreProvided() {
-    var request = createRequest(Map.of(), REPORTS_PATH);
+    var request = createRequest(emptyMap(), REPORTS_PATH);
 
     var response = handleRequest(request);
 
@@ -75,7 +77,7 @@ class FetchReportHandlerTest {
 
   @Test
   void shouldReturnPeriodReportWhenPeriodIsProvidedInPathParameters() {
-    var request = createRequest(Map.of(PERIOD, randomString()), REPORTS_PATH);
+    var request = createRequest(Map.of(PERIOD, PERIOD_FOR_QUERY), REPORTS_PATH);
 
     var response = handleRequest(request);
 
@@ -85,7 +87,7 @@ class FetchReportHandlerTest {
   @Test
   void
       shouldReturnAllInstitutionsReportWhenPeriodIsProvidedInPathParametersAndInstitutionIsPresentInPathParameters() {
-    var request = createRequest(Map.of(PERIOD, randomString()), REPORTS_INSTITUTIONS_PATH);
+    var request = createRequest(Map.of(PERIOD, PERIOD_FOR_QUERY), REPORTS_INSTITUTIONS_PATH);
 
     var response = handleRequest(request);
 
@@ -96,7 +98,8 @@ class FetchReportHandlerTest {
   void shouldReturnInstitutionsReportWhenPeriodAndInstitutionAreProvidedInPathParameters() {
     var request =
         createRequest(
-            Map.of(PERIOD, randomString(), INSTITUTION, randomString()), REPORTS_INSTITUTIONS_PATH);
+            Map.of(PERIOD, PERIOD_FOR_QUERY, INSTITUTION, randomOrganizationIdentifier()),
+            REPORTS_INSTITUTIONS_PATH);
 
     var response = handleRequest(request);
 
@@ -127,6 +130,7 @@ class FetchReportHandlerTest {
     try {
       handler.handleRequest(request, output, CONTEXT);
       var response = fromOutputStream(output, ReportResponse.class);
+      output.reset();
       return response.getBodyObject(ReportResponse.class);
     } catch (IOException e) {
       throw new RuntimeException(e);
