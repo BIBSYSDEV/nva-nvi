@@ -1,6 +1,8 @@
 package no.sikt.nva.nvi.events.evaluator;
 
+import java.net.URI;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.client.model.Organization;
@@ -17,14 +19,21 @@ public final class PointService {
   private PointService() {}
 
   public static PointCalculationDto calculatePoints(
-      PublicationDto publication, Collection<NviCreator> nviCreators) {
+      PublicationDto publication,
+      Collection<NviCreator> nviCreators,
+      Map<URI, Customer> customers) {
     var instanceType = publication.publicationType();
     var channel = getNviChannel(publication);
     var isInternationalCollaboration = publication.isInternationalCollaboration();
     var totalShares = getTotalShares(publication);
 
     return new PointCalculator(
-            channel, instanceType, nviCreators, isInternationalCollaboration, totalShares)
+            channel,
+            instanceType,
+            nviCreators,
+            isInternationalCollaboration,
+            totalShares,
+            customers)
         .calculatePoints();
   }
 

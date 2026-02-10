@@ -8,11 +8,11 @@ import java.util.function.Predicate;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.dto.ContributorDto;
 import no.sikt.nva.nvi.common.dto.PublicationDto;
+import no.sikt.nva.nvi.events.evaluator.Customer;
 import no.sikt.nva.nvi.events.evaluator.model.NviCreator;
 import no.sikt.nva.nvi.events.evaluator.model.NviOrganization;
 import no.sikt.nva.nvi.events.evaluator.model.UnverifiedNviCreator;
 import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
-import no.unit.nva.clients.CustomerDto;
 
 public final class CreatorVerificationUtil {
 
@@ -33,7 +33,7 @@ public final class CreatorVerificationUtil {
   }
 
   public static List<NviCreator> getNviCreatorsWithNviInstitutions(
-      Map<URI, CustomerDto> customers, PublicationDto publication) {
+      Map<URI, Customer> customers, PublicationDto publication) {
     return publication.contributors().stream()
         .filter(ContributorDto::isCreator)
         .filter(CreatorVerificationUtil::isValidContributor)
@@ -58,8 +58,7 @@ public final class CreatorVerificationUtil {
         .build();
   }
 
-  private static NviCreator toNviCreator(
-      Map<URI, CustomerDto> customers, ContributorDto contributor) {
+  private static NviCreator toNviCreator(Map<URI, Customer> customers, ContributorDto contributor) {
     var nviAffiliations = getNviAffiliationsIfExist(customers, contributor);
     if (contributor.isVerified()) {
       return toVerifiedNviCreator(contributor, nviAffiliations);
@@ -84,14 +83,14 @@ public final class CreatorVerificationUtil {
   }
 
   private static List<NviOrganization> getNviAffiliationsIfExist(
-      Map<URI, CustomerDto> customers, ContributorDto contributor) {
+      Map<URI, Customer> customers, ContributorDto contributor) {
     return contributor.affiliations().stream()
         .filter(isNviInstitution(customers))
         .map(CreatorVerificationUtil::toNviOrganization)
         .toList();
   }
 
-  private static Predicate<Organization> isNviInstitution(Map<URI, CustomerDto> customers) {
+  private static Predicate<Organization> isNviInstitution(Map<URI, Customer> customers) {
     return organization -> {
       var topLevelId = organization.getTopLevelOrg().id();
       return customers.containsKey(topLevelId) && customers.get(topLevelId).nviInstitution();
