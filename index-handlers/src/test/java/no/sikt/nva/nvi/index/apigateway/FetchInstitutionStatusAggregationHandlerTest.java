@@ -4,10 +4,11 @@ import static java.util.Collections.emptyMap;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.getFetchInstitutionStatusAggregationHandlerEnvironment;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.organizationIdFromIdentifier;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationId;
+import static no.sikt.nva.nvi.common.utils.CollectionUtils.mergeCollections;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.createRandomIndexDocument;
+import static no.sikt.nva.nvi.index.IndexDocumentFixtures.documentWithApprovals;
+import static no.sikt.nva.nvi.index.IndexDocumentFixtures.documentsForAllStatusCombinations;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomApproval;
-import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomIndexDocumentBuilder;
-import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomPublicationDetailsBuilder;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.FAKER;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
@@ -22,7 +23,6 @@ import java.io.InputStream;
 import java.math.BigDecimal;
 import java.net.HttpURLConnection;
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
 import java.util.List;
@@ -161,16 +161,16 @@ class FetchInstitutionStatusAggregationHandlerTest {
     @Test
     void shouldIncludeTotalsForTopLevelOrganization() {
       var documentsForTopLevelOrganization =
-          createIndexDocumentsForAllApprovalStatusTypes(OUR_ORGANIZATION, OUR_ORGANIZATION);
+          documentsForAllStatusCombinations(OUR_ORGANIZATION, OUR_ORGANIZATION);
       var documentsForSubOrganization =
-          createIndexDocumentsForAllApprovalStatusTypes(OUR_ORGANIZATION, OUR_SUB_ORGANIZATION);
+          documentsForAllStatusCombinations(OUR_ORGANIZATION, OUR_SUB_ORGANIZATION);
       var unrelatedDocuments = createUnrelatedDocuments();
       CONTAINER.addDocumentsToIndex(
-          mergeDocumentSets(
+          mergeCollections(
               documentsForTopLevelOrganization, documentsForSubOrganization, unrelatedDocuments));
 
       var relevantDocuments =
-          mergeDocumentSets(documentsForTopLevelOrganization, documentsForSubOrganization);
+          mergeCollections(documentsForTopLevelOrganization, documentsForSubOrganization);
       var expectedTotals = getExpectedTotalAggregation(relevantDocuments);
 
       var response = handleRequest();
@@ -260,12 +260,12 @@ class FetchInstitutionStatusAggregationHandlerTest {
     @Test
     void shouldReturnExpectedAggregatesForDirectAffiliations() {
       var documentsForTopLevelOrganization =
-          createIndexDocumentsForAllApprovalStatusTypes(OUR_ORGANIZATION, OUR_ORGANIZATION);
+          documentsForAllStatusCombinations(OUR_ORGANIZATION, OUR_ORGANIZATION);
       var documentsForSubOrganization =
-          createIndexDocumentsForAllApprovalStatusTypes(OUR_ORGANIZATION, OUR_SUB_ORGANIZATION);
+          documentsForAllStatusCombinations(OUR_ORGANIZATION, OUR_SUB_ORGANIZATION);
       var unrelatedDocuments = createUnrelatedDocuments();
       CONTAINER.addDocumentsToIndex(
-          mergeDocumentSets(
+          mergeCollections(
               documentsForTopLevelOrganization, documentsForSubOrganization, unrelatedDocuments));
 
       var expectedAggregationForTopLevelOrganization =
@@ -308,32 +308,6 @@ class FetchInstitutionStatusAggregationHandlerTest {
     return List.of(fromOtherOrganization, fromLastYear, fromNextYear);
   }
 
-  private static List<NviCandidateIndexDocument> createIndexDocumentsForAllApprovalStatusTypes(
-      URI topLevelOrganization, URI creatorAffiliation) {
-    var documents = new ArrayList<NviCandidateIndexDocument>();
-    var approvalFactory = new ApprovalFactory(topLevelOrganization);
-    for (var status : ApprovalStatus.values()) {
-      for (var globalStatus : GlobalApprovalStatus.values()) {
-        var approval =
-            approvalFactory
-                .copy()
-                .withApprovalStatus(status)
-                .withGlobalApprovalStatus(globalStatus)
-                .withCreatorAffiliation(creatorAffiliation)
-                .build();
-        documents.add(documentWithApprovals(approval));
-      }
-    }
-    return documents;
-  }
-
-  private static NviCandidateIndexDocument documentWithApprovals(ApprovalView... approvals) {
-    var allApprovals = List.of(approvals);
-    var topLevelOrganizations = allApprovals.stream().map(ApprovalView::institutionId).toList();
-    var details = randomPublicationDetailsBuilder(topLevelOrganizations).build();
-    return randomIndexDocumentBuilder(details, List.of(approvals)).build();
-  }
-
   private InstitutionStatusAggregationReport handleRequest() {
     try {
       var request = createRequest();
@@ -368,11 +342,6 @@ class FetchInstitutionStatusAggregationHandlerTest {
     } catch (JsonProcessingException e) {
       throw new RuntimeException(e);
     }
-  }
-
-  private static List<NviCandidateIndexDocument> mergeDocumentSets(
-      Collection<NviCandidateIndexDocument>... documentCollections) {
-    return Stream.of(documentCollections).flatMap(Collection::stream).toList();
   }
 
   private DirectAffiliationAggregation getExpectedDirectAffiliationAggregation(
