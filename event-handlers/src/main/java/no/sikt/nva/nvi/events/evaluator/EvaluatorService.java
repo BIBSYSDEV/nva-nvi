@@ -23,6 +23,7 @@ import no.sikt.nva.nvi.common.dto.PublicationDto;
 import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.exceptions.ValidationException;
+import no.sikt.nva.nvi.common.model.Customer;
 import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.PublicationLoaderService;
 import no.sikt.nva.nvi.common.service.model.Candidate;
@@ -77,8 +78,10 @@ public class EvaluatorService {
     try {
       return identityServiceClient.getAllCustomers().customers().stream()
           .filter(customer -> nonNull(customer.cristinId()))
-          .map(Customer::fromCustomerDto)
-          .collect(Collectors.toMap(Customer::cristinId, Function.identity()));
+          .map(no.sikt.nva.nvi.common.model.Customer::fromCustomerDto)
+          .collect(
+              Collectors.toMap(
+                  Customer::cristinId, Function.identity()));
     } catch (ApiGatewayException exception) {
       logger.error("Failed to fetch customer list", exception);
       throw new RuntimeException(exception);
@@ -185,7 +188,7 @@ public class EvaluatorService {
       PublicationDto publicationDto,
       URI publicationBucketUri,
       Collection<NviCreator> creators,
-      Map<URI, Customer> customers) {
+      Map<URI, no.sikt.nva.nvi.common.model.Customer> customers) {
     var nviCreatorsAsDto = creators.stream().map(NviCreator::toDto).toList();
     var pointCalculation = PointService.calculatePoints(publicationDto, creators, customers);
     var publicationDetails = fromPublicationDto(publicationDto);
