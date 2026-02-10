@@ -48,8 +48,7 @@ class ProcessBatchJobHandlerTest {
     scenario = new TestScenario();
     candidateService = scenario.getCandidateService();
     periodService = scenario.getPeriodService();
-    var storageReader = scenario.getS3StorageReaderForExpandedResourcesBucket();
-    var candidateMigrationService = new CandidateMigrationService(candidateService, storageReader);
+    var candidateMigrationService = new CandidateMigrationService();
     handler =
         new ProcessBatchJobHandler(candidateService, candidateMigrationService, periodService);
 
@@ -62,7 +61,7 @@ class ProcessBatchJobHandlerTest {
 
   @Test
   void shouldReturnFailedItems() {
-    var failingMessage = createMessage(new MigrateCandidateMessage(randomUUID()));
+    var failingMessage = createMessage(new RefreshCandidateMessage(randomUUID()));
 
     var input = QueueServiceTestUtils.createEvent(failingMessage);
     var response = handleRequest(input);
