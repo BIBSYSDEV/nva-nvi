@@ -3,22 +3,15 @@ package no.sikt.nva.nvi.index.apigateway;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 
+import java.net.URI;
 import nva.commons.apigateway.RequestInfo;
+import nva.commons.core.paths.UriWrapper;
 
-public final class ReportRequest {
+public record ReportRequest(String period, String institution, String path) {
 
   private static final String PERIOD_PATH_PARAM = "period";
   private static final String INSTITUTION_PATH_PARAM = "institution";
   private static final String INSTITUTIONS_PATH_PARAM = "institutions";
-  private final String period;
-  private final String institution;
-  private final String path;
-
-  private ReportRequest(String period, String institution, String path) {
-    this.period = period;
-    this.institution = institution;
-    this.path = path;
-  }
 
   public static ReportRequest from(RequestInfo requestInfo) {
     var pathParameters = requestInfo.getPathParameters();
@@ -39,6 +32,17 @@ public final class ReportRequest {
       return ReportRequestType.ALL_INSTITUTIONS;
     }
     return ReportRequestType.PERIOD;
+  }
+
+  public URI getQueryId(URI baseUri) {
+    var queryUri = UriWrapper.fromUri(baseUri).addChild(PERIOD_PATH_PARAM);
+    return switch (type()) {
+      case ALL_PERIODS -> queryUri.getUri();
+      case PERIOD -> queryUri.addChild(period).getUri();
+      case ALL_INSTITUTIONS -> queryUri.addChild(period).addChild(INSTITUTIONS_PATH_PARAM).getUri();
+      case INSTITUTION ->
+          queryUri.addChild(period).addChild(INSTITUTION_PATH_PARAM).addChild(institution).getUri();
+    };
   }
 
   public enum ReportRequestType {

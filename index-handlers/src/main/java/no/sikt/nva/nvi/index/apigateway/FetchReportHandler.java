@@ -35,7 +35,7 @@ public class FetchReportHandler extends ApiGatewayHandler<Void, ReportResponse> 
   protected ReportResponse processInput(Void unused, RequestInfo requestInfo, Context context)
       throws ApiGatewayException {
     var reportRequest = ReportRequest.from(requestInfo);
-    return ReportResponseFactory.getResponse(reportRequest);
+    return ReportResponseFactory.getResponse(reportRequest, environment);
   }
 
   @Override
