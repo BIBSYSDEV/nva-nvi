@@ -25,8 +25,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
+import no.sikt.nva.nvi.index.model.ApprovalFactory;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.ApprovalView;
 import no.sikt.nva.nvi.index.model.document.ContributorType;
@@ -173,5 +175,66 @@ public final class IndexDocumentFixtures {
 
   public static GlobalApprovalStatus randomGlobalApprovalStatus() {
     return randomElement(GlobalApprovalStatus.values());
+  }
+
+  public static NviCandidateIndexDocument documentWithApprovals(ApprovalView... approvals) {
+    var allApprovals = List.of(approvals);
+    var topLevelOrganizations = allApprovals.stream().map(ApprovalView::institutionId).toList();
+    var details = randomPublicationDetailsBuilder(topLevelOrganizations).build();
+    return randomIndexDocumentBuilder(details, allApprovals).build();
+  }
+
+  public static NviCandidateIndexDocument documentWithApprovals(
+      String title, ApprovalView... approvals) {
+    var approvalStatuses =
+        Stream.of(approvals).map(ApprovalView::approvalStatus).collect(Collectors.toSet());
+    var globalStatus = deriveGlobalApprovalStatus(approvalStatuses);
+    return documentWithApprovals(title, globalStatus, approvals);
+  }
+
+  public static NviCandidateIndexDocument documentWithApprovals(
+      String title, GlobalApprovalStatus globalStatus, ApprovalView... approvals) {
+    var allApprovals = List.of(approvals);
+    var topLevelOrganizations = allApprovals.stream().map(ApprovalView::institutionId).toList();
+    var details = randomPublicationDetailsBuilder(topLevelOrganizations).withTitle(title).build();
+    return randomIndexDocumentBuilder(details, randomApprovalList())
+        .withGlobalApprovalStatus(globalStatus)
+        .withApprovals(allApprovals)
+        .withNumberOfApprovals(allApprovals.size())
+        .build();
+  }
+
+  public static List<NviCandidateIndexDocument> documentsForAllStatusCombinations(
+      URI topLevelOrganization, URI creatorAffiliation) {
+    var documents = new ArrayList<NviCandidateIndexDocument>();
+    var approvalFactory = new ApprovalFactory(topLevelOrganization);
+    for (var status : ApprovalStatus.values()) {
+      for (var globalStatus : GlobalApprovalStatus.values()) {
+        var approval =
+            approvalFactory
+                .copy()
+                .withApprovalStatus(status)
+                .withGlobalApprovalStatus(globalStatus)
+                .withCreatorAffiliation(creatorAffiliation)
+                .build();
+        documents.add(documentWithApprovals(approval));
+      }
+    }
+    return documents;
+  }
+
+  public static GlobalApprovalStatus deriveGlobalApprovalStatus(
+      Collection<ApprovalStatus> approvalStatuses) {
+    var statusSet = Set.copyOf(approvalStatuses);
+    if (statusSet.equals(Set.of(ApprovalStatus.APPROVED))) {
+      return GlobalApprovalStatus.APPROVED;
+    }
+    if (statusSet.equals(Set.of(ApprovalStatus.REJECTED))) {
+      return GlobalApprovalStatus.REJECTED;
+    }
+    if (statusSet.containsAll(Set.of(ApprovalStatus.APPROVED, ApprovalStatus.REJECTED))) {
+      return GlobalApprovalStatus.DISPUTE;
+    }
+    return GlobalApprovalStatus.PENDING;
   }
 }

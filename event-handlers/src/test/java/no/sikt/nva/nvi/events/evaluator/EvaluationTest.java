@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.SampleExpandedPublicationFactory;
 import no.sikt.nva.nvi.common.TestScenario;
-import no.sikt.nva.nvi.common.dto.CandidateType;
 import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
@@ -34,7 +33,6 @@ import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
-import no.sikt.nva.nvi.test.SampleExpandedPublication;
 import no.unit.nva.clients.CustomerDto;
 import no.unit.nva.clients.CustomerList;
 import no.unit.nva.clients.IdentityServiceClient;
@@ -120,21 +118,6 @@ class EvaluationTest {
     assertThrows(
         CandidateNotFoundException.class,
         () -> candidateService.getCandidateByPublicationId(publicationId));
-  }
-
-  protected void evaluate(SampleExpandedPublication publication) {
-    var fileUri = scenario.setupExpandedPublicationInS3(publication);
-    var event = createEvent(new PersistedResourceMessage(fileUri));
-    handler.handleRequest(event, CONTEXT);
-  }
-
-  protected CandidateType getEvaluationResult(SampleExpandedPublication publication) {
-    evaluate(publication);
-    return getMessageFromUpsertQueue().get().candidate();
-  }
-
-  protected UpsertNviCandidateRequest getEvaluatedCandidate(SampleExpandedPublication publication) {
-    return (UpsertNviCandidateRequest) getEvaluationResult(publication);
   }
 
   /**
