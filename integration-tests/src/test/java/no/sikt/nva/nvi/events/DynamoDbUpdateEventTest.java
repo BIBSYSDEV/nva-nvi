@@ -287,7 +287,10 @@ class DynamoDbUpdateEventTest {
 
   public static DynamodbEvent createCandidateEventWithEmptyPointsList() {
     var oldImage = randomApplicableCandidateDao();
-    var invalidDbCandidate = oldImage.candidate().copy().points(emptyList()).build();
+    var pointCalculationWithEmptyList =
+        oldImage.candidate().pointCalculation().copy().institutionPoints(emptyList()).build();
+    var invalidDbCandidate =
+        oldImage.candidate().copy().pointCalculation(pointCalculationWithEmptyList).build();
     var newImage =
         oldImage.copy().version(randomUUID().toString()).candidate(invalidDbCandidate).build();
     return eventWithDao(oldImage, newImage, OperationType.MODIFY);
