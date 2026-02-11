@@ -10,6 +10,8 @@ import static no.sikt.nva.nvi.test.TestConstants.NEXT_YEAR;
 import static no.sikt.nva.nvi.test.TestConstants.THIS_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -48,8 +50,8 @@ class ProcessBatchJobHandlerTest {
     scenario = new TestScenario();
     candidateService = scenario.getCandidateService();
     periodService = scenario.getPeriodService();
-    var storageReader = scenario.getS3StorageReaderForExpandedResourcesBucket();
-    var candidateMigrationService = new CandidateMigrationService(candidateService, storageReader);
+    var candidateMigrationService = mock(CandidateMigrationService.class);
+    doNothing().when(candidateMigrationService).migrateCandidate(any());
     handler =
         new ProcessBatchJobHandler(candidateService, candidateMigrationService, periodService);
 
@@ -62,8 +64,7 @@ class ProcessBatchJobHandlerTest {
 
   @Test
   void shouldReturnFailedItems() {
-    var failingMessage = createMessage(new MigrateCandidateMessage(randomUUID()));
-
+    var failingMessage = createMessage(new RefreshCandidateMessage(randomUUID()));
     var input = QueueServiceTestUtils.createEvent(failingMessage);
     var response = handleRequest(input);
 

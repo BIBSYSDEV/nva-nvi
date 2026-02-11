@@ -27,7 +27,9 @@ import org.slf4j.LoggerFactory;
  * expanded publications stored in S3. This can be used in batch migrations to add missing fields to
  * reported candidates.
  */
-public final class CandidateMigrationService {
+// TODO: Remove service
+@Deprecated(forRemoval = true)
+public final class CandidateMigrationService implements MigrationService {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CandidateMigrationService.class);
 
@@ -48,6 +50,7 @@ public final class CandidateMigrationService {
         new S3StorageReader(new Environment().readEnv(EXPANDED_RESOURCES_BUCKET)));
   }
 
+  @Override
   public void migrateCandidate(UUID identifier) {
     var candidate = candidateService.getCandidateByIdentifier(identifier);
 
