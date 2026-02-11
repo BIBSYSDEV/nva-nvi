@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.CandidateMigrationService;
+import no.sikt.nva.nvi.common.MigrationService;
 import no.sikt.nva.nvi.common.model.PointCalculation;
 import no.sikt.nva.nvi.common.model.Sector;
 import no.sikt.nva.nvi.common.service.CandidateService;
@@ -22,23 +22,22 @@ import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SectorCandidateMigrationService implements CandidateMigrationService {
+public class SectorMigrationService implements MigrationService {
 
-  private static final Logger LOGGER =
-      LoggerFactory.getLogger(SectorCandidateMigrationService.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(SectorMigrationService.class);
   private final CandidateService candidateService;
   private final IdentityServiceClient identityServiceClient;
   private final List<CustomerDto> customers = new ArrayList<>();
 
-  public SectorCandidateMigrationService(
+  public SectorMigrationService(
       CandidateService candidateService, IdentityServiceClient identityServiceClient) {
     this.candidateService = candidateService;
     this.identityServiceClient = identityServiceClient;
   }
 
   @JacocoGenerated
-  public static SectorCandidateMigrationService defaultService() {
-    return new SectorCandidateMigrationService(
+  public static SectorMigrationService defaultService() {
+    return new SectorMigrationService(
         defaultCandidateService(), IdentityServiceClient.unauthorizedIdentityServiceClient());
   }
 

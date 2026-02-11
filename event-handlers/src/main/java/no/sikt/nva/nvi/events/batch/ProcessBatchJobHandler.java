@@ -4,11 +4,13 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.SQSBatchResponse;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import java.util.ArrayList;
-import no.sikt.nva.nvi.common.CandidateMigrationService;
+import no.sikt.nva.nvi.common.MigrationService;
 import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
-import no.sikt.nva.nvi.common.validator.SectorCandidateMigrationService;
+import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
+import no.sikt.nva.nvi.common.validator.SectorMigrationService;
 import no.sikt.nva.nvi.events.batch.message.BatchJobMessage;
 import no.sikt.nva.nvi.events.batch.message.MigrateCandidateMessage;
 import no.sikt.nva.nvi.events.batch.message.RefreshCandidateMessage;
@@ -21,23 +23,23 @@ public class ProcessBatchJobHandler implements RequestHandler<SQSEvent, SQSBatch
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ProcessBatchJobHandler.class);
   private final CandidateService candidateService;
-  private final CandidateMigrationService candidateMigrationService;
+  private final MigrationService migrationService;
   private final NviPeriodService periodService;
 
   @JacocoGenerated
   public ProcessBatchJobHandler() {
     this(
         CandidateService.defaultCandidateService(),
-        SectorCandidateMigrationService.defaultService(),
+        SectorMigrationService.defaultService(),
         NviPeriodService.defaultNviPeriodService());
   }
 
   public ProcessBatchJobHandler(
       CandidateService candidateService,
-      CandidateMigrationService candidateMigrationService,
+      MigrationService migrationService,
       NviPeriodService periodService) {
     this.candidateService = candidateService;
-    this.candidateMigrationService = candidateMigrationService;
+    this.migrationService = migrationService;
     this.periodService = periodService;
   }
 
@@ -50,7 +52,7 @@ public class ProcessBatchJobHandler implements RequestHandler<SQSEvent, SQSBatch
       try {
         var batchJobMessage = BatchJobMessage.fromJson(message.getBody());
         processMessage(batchJobMessage);
-      } catch (Exception exception) {
+      } catch (JsonProcessingException | CandidateNotFoundException exception) {
         LOGGER.error("Failed to process message {}", message, exception);
         failedMessages.add(new SQSBatchResponse.BatchItemFailure(message.getMessageId()));
       }
@@ -63,8 +65,7 @@ public class ProcessBatchJobHandler implements RequestHandler<SQSEvent, SQSBatch
   private void processMessage(BatchJobMessage message) {
     switch (message) {
       case RefreshCandidateMessage candidateMessage -> candidateMessage.execute(candidateService);
-      case MigrateCandidateMessage candidateMessage ->
-          candidateMessage.execute(candidateMigrationService);
+      case MigrateCandidateMessage candidateMessage -> candidateMessage.execute(migrationService);
       case RefreshPeriodMessage periodMessage -> periodMessage.execute(periodService);
     }
   }

@@ -23,13 +23,13 @@ import no.sikt.nva.nvi.test.SampleExpandedPublication;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-@Deprecated
-class CreatorMigrationServiceTest {
+@Deprecated(forRemoval = true)
+class CandidateMigrationServiceTest {
 
   private TestScenario scenario;
   private CandidateService candidateService;
   private CandidateRepository candidateRepository;
-  private CreatorCandidateMigrationService migrationService;
+  private CandidateMigrationService migrationService;
   private SampleExpandedPublicationFactory publicationFactory;
 
   @BeforeEach
@@ -38,7 +38,7 @@ class CreatorMigrationServiceTest {
     candidateService = scenario.getCandidateService();
     candidateRepository = scenario.getCandidateRepository();
     var storageReader = scenario.getS3StorageReaderForExpandedResourcesBucket();
-    migrationService = new CreatorCandidateMigrationService(candidateService, storageReader);
+    migrationService = new CandidateMigrationService(candidateService, storageReader);
     setupOpenPeriod(scenario, CURRENT_YEAR);
     publicationFactory = new SampleExpandedPublicationFactory();
   }

@@ -1,9 +1,9 @@
 package no.sikt.nva.nvi.common;
 
-import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.createCandidateInRepository;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidateBuilder;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
+import static no.sikt.nva.nvi.common.dto.CustomerDtoFixtures.createCustomer;
 import static no.sikt.nva.nvi.common.model.PointCalculationFixtures.randomPointCalculation;
 import static no.sikt.nva.nvi.common.model.Sector.HEALTH;
 import static no.sikt.nva.nvi.common.model.Sector.INSTITUTE;
@@ -12,8 +12,6 @@ import static no.sikt.nva.nvi.common.model.Sector.UNKNOWN;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
-import static no.unit.nva.testutils.RandomDataGenerator.randomString;
-import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.core.attempt.Try.attempt;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -26,10 +24,10 @@ import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
+import no.sikt.nva.nvi.common.model.Sector;
 import no.sikt.nva.nvi.common.service.CandidateService;
-import no.sikt.nva.nvi.common.validator.SectorCandidateMigrationService;
+import no.sikt.nva.nvi.common.validator.SectorMigrationService;
 import no.unit.nva.clients.CustomerDto;
-import no.unit.nva.clients.CustomerDto.RightsRetentionStrategy;
 import no.unit.nva.clients.CustomerList;
 import no.unit.nva.clients.IdentityServiceClient;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,7 +37,7 @@ class SectorMigrationServiceTest {
 
   private CandidateService candidateService;
   private CandidateRepository candidateRepository;
-  private SectorCandidateMigrationService migrationService;
+  private SectorMigrationService migrationService;
   private IdentityServiceClient identityServiceClient;
 
   @BeforeEach
@@ -48,7 +46,7 @@ class SectorMigrationServiceTest {
     candidateService = scenario.getCandidateService();
     candidateRepository = scenario.getCandidateRepository();
     identityServiceClient = mock(IdentityServiceClient.class);
-    migrationService = new SectorCandidateMigrationService(candidateService, identityServiceClient);
+    migrationService = new SectorMigrationService(candidateService, identityServiceClient);
     setupOpenPeriod(scenario, CURRENT_YEAR);
   }
 
@@ -121,28 +119,17 @@ class SectorMigrationServiceTest {
 
   private CustomerDto toCustomerWithSector(
       DbInstitutionPoints institutionPoints, boolean customerSectorIsMatching) {
-    return new CustomerDto(
-        randomUri(),
-        randomUUID(),
-        randomString(),
-        randomString(),
-        randomString(),
+    return createCustomer(
         institutionPoints.institutionId(),
-        randomString(),
-        randomBoolean(),
-        randomBoolean(),
-        randomBoolean(),
-        List.of(),
-        new RightsRetentionStrategy(randomString(), randomUri()),
         randomBoolean(),
         getSector(institutionPoints, customerSectorIsMatching));
   }
 
-  private static String getSector(
+  private static Sector getSector(
       DbInstitutionPoints institutionPoints, boolean customerSectorIsMatching) {
     return customerSectorIsMatching
-        ? institutionPoints.sector().toString()
-        : randomElement(UHI, HEALTH, INSTITUTE).toString();
+        ? institutionPoints.sector()
+        : randomElement(UHI, HEALTH, INSTITUTE);
   }
 
   private static List<DbInstitutionPoints> getInstitutionPoints(DbCandidate dbCandidate) {
