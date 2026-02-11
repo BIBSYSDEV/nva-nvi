@@ -539,8 +539,9 @@ class ConcurrencyHandlingTests {
 
   /** Copy and mutate a CandidateDao so that the data is different. */
   private CandidateDao copyAndMutateCandidate(CandidateDao original) {
-    var originalCreatorCount = original.candidate().creatorCount();
-    var updatedData = original.candidate().copy().creatorCount(originalCreatorCount + 1).build();
+    var publicationDetails = original.candidate().publicationDetails();
+    var updatedDetails = publicationDetails.copy().abstractText(randomString()).build();
+    var updatedData = original.candidate().copy().publicationDetails(updatedDetails).build();
     return original.copy().candidate(updatedData).build();
   }
 
