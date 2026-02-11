@@ -108,13 +108,14 @@ public record PublicationDetails(
         dbCandidate.creators().stream()
             .map(creator -> NviCreator.from(creator, topLevelOrganizations))
             .toList();
+    var dbChannel = dbCandidate.pointCalculation().publicationChannel();
     var builder =
         builder()
             .withId(dbCandidate.publicationId())
             .withPublicationBucketUri(dbCandidate.publicationBucketUri())
             .withPublicationDate(PublicationDate.from(dbCandidate.getPublicationDate()))
             .withIsApplicable(dbCandidate.applicable())
-            .withPublicationChannel(PublicationChannel.from(candidateDao))
+            .withPublicationChannel(PublicationChannel.from(dbChannel))
             .withNviCreators(nviCreators)
             .withTopLevelOrganizations(topLevelOrganizations);
 

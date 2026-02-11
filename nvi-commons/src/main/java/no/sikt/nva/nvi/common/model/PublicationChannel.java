@@ -4,7 +4,6 @@ import static java.util.Objects.nonNull;
 
 import java.net.URI;
 import java.util.Optional;
-import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.model.DbPublicationChannel;
 import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
 
@@ -23,22 +22,6 @@ public record PublicationChannel(URI id, ChannelType channelType, ScientificValu
   public static PublicationChannel from(PublicationChannelDto dtoChannel) {
     return new PublicationChannel(
         dtoChannel.id(), dtoChannel.channelType(), dtoChannel.scientificValue());
-  }
-
-  /**
-   * @deprecated Temporary method while migrating data.
-   */
-  @Deprecated(since = "2025-05-05", forRemoval = true)
-  public static PublicationChannel from(CandidateDao candidateDao) {
-    var dbPointCalculation = candidateDao.candidate().pointCalculation();
-    if (nonNull(dbPointCalculation) && nonNull(dbPointCalculation.publicationChannel())) {
-      return from(dbPointCalculation.publicationChannel());
-    }
-
-    var scientificValue = ScientificValue.parse(candidateDao.candidate().level().getValue());
-    var channelType = ChannelType.parse(candidateDao.candidate().channelType());
-    return new PublicationChannel(
-        candidateDao.candidate().channelId(), channelType, scientificValue);
   }
 
   public static PublicationChannel from(DbPublicationChannel dbPublicationChannel) {
