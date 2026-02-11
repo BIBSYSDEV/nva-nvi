@@ -6,10 +6,10 @@ import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizati
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.createRandomIndexDocument;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.createRandomIndexDocumentBuilder;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.createRandomIndexDocuments;
+import static no.sikt.nva.nvi.index.IndexDocumentFixtures.deriveGlobalApprovalStatus;
+import static no.sikt.nva.nvi.index.IndexDocumentFixtures.documentWithApprovals;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomApproval;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomApprovalBuilder;
-import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomIndexDocumentBuilder;
-import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomPublicationDetailsBuilder;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.APPROVED;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.NEW;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.PENDING;
@@ -35,15 +35,12 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
-import no.sikt.nva.nvi.index.IndexDocumentFixtures;
 import no.sikt.nva.nvi.index.OpenSearchContainerContext;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
-import no.sikt.nva.nvi.index.model.document.ApprovalView;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.document.ReportingPeriod;
 import no.unit.nva.commons.pagination.PaginatedSearchResult;
@@ -500,7 +497,7 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
 
     private static NviCandidateIndexDocument docWithOneOrganization(
         URI organizationId, ApprovalStatus status) {
-      var globalStatus = expectedGlobalApprovalStatus(List.of(status));
+      var globalStatus = deriveGlobalApprovalStatus(List.of(status));
       var title = String.format("%s -> %s", status, globalStatus);
       var approval =
           randomApprovalBuilder(organizationId)
@@ -512,7 +509,7 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
 
     private static NviCandidateIndexDocument docWithTwoOrganizations(
         ApprovalStatus ourStatus, ApprovalStatus theirStatus) {
-      var globalStatus = expectedGlobalApprovalStatus(List.of(ourStatus, theirStatus));
+      var globalStatus = deriveGlobalApprovalStatus(List.of(ourStatus, theirStatus));
       var title = String.format("%s + %s -> %s", ourStatus, theirStatus, globalStatus);
       var ourApproval =
           randomApprovalBuilder(OUR_ORGANIZATION)
@@ -595,40 +592,5 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
         .ignoringCollectionOrder()
         .ignoringFields("publicationDetails.contributors")
         .isEqualTo(expectedDocuments);
-  }
-
-  private static NviCandidateIndexDocument documentWithApprovals(
-      String title, ApprovalView... approvals) {
-    var approvalStatuses =
-        Stream.of(approvals).map(ApprovalView::approvalStatus).collect(Collectors.toSet());
-    var globalStatus = expectedGlobalApprovalStatus(approvalStatuses);
-    return documentWithApprovals(title, globalStatus, approvals);
-  }
-
-  private static GlobalApprovalStatus expectedGlobalApprovalStatus(
-      Collection<ApprovalStatus> approvalStatuses) {
-    var statusSet = Set.copyOf(approvalStatuses);
-    if (statusSet.equals(Set.of(APPROVED))) {
-      return GlobalApprovalStatus.APPROVED;
-    }
-    if (statusSet.equals(Set.of(REJECTED))) {
-      return GlobalApprovalStatus.REJECTED;
-    }
-    if (statusSet.containsAll(Set.of(APPROVED, REJECTED))) {
-      return GlobalApprovalStatus.DISPUTE;
-    }
-    return GlobalApprovalStatus.PENDING;
-  }
-
-  private static NviCandidateIndexDocument documentWithApprovals(
-      String title, GlobalApprovalStatus globalStatus, ApprovalView... approvals) {
-    var allApprovals = List.of(approvals);
-    var topLevelOrganizations = allApprovals.stream().map(ApprovalView::institutionId).toList();
-    var details = randomPublicationDetailsBuilder(topLevelOrganizations).withTitle(title).build();
-    return randomIndexDocumentBuilder(details, IndexDocumentFixtures.randomApprovalList())
-        .withGlobalApprovalStatus(globalStatus)
-        .withApprovals(allApprovals)
-        .withNumberOfApprovals(allApprovals.size())
-        .build();
   }
 }

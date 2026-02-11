@@ -57,4 +57,9 @@ public final class CollectionUtils {
     }
     return chunks;
   }
+
+  @SafeVarargs // Safe: varargs array is only read, never mutated or exposed
+  public static <T> List<T> mergeCollections(Collection<T>... collections) {
+    return Stream.of(collections).flatMap(Collection::stream).toList();
+  }
 }
