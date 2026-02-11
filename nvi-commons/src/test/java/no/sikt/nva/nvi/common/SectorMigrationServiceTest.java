@@ -27,6 +27,7 @@ import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.service.CandidateService;
+import no.sikt.nva.nvi.common.validator.SectorCandidateMigrationService;
 import no.unit.nva.clients.CustomerDto;
 import no.unit.nva.clients.CustomerDto.RightsRetentionStrategy;
 import no.unit.nva.clients.CustomerList;
@@ -34,11 +35,11 @@ import no.unit.nva.clients.IdentityServiceClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class CandidateMigrationServiceTest {
+class SectorMigrationServiceTest {
 
   private CandidateService candidateService;
   private CandidateRepository candidateRepository;
-  private CandidateMigrationService migrationService;
+  private SectorCandidateMigrationService migrationService;
   private IdentityServiceClient identityServiceClient;
 
   @BeforeEach
@@ -47,7 +48,7 @@ class CandidateMigrationServiceTest {
     candidateService = scenario.getCandidateService();
     candidateRepository = scenario.getCandidateRepository();
     identityServiceClient = mock(IdentityServiceClient.class);
-    migrationService = new CandidateMigrationService(candidateService, identityServiceClient);
+    migrationService = new SectorCandidateMigrationService(candidateService, identityServiceClient);
     setupOpenPeriod(scenario, CURRENT_YEAR);
   }
 

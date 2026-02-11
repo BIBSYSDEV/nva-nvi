@@ -78,10 +78,8 @@ public class EvaluatorService {
     try {
       return identityServiceClient.getAllCustomers().customers().stream()
           .filter(customer -> nonNull(customer.cristinId()))
-          .map(no.sikt.nva.nvi.common.model.Customer::fromCustomerDto)
-          .collect(
-              Collectors.toMap(
-                  Customer::cristinId, Function.identity()));
+          .map(Customer::fromCustomerDto)
+          .collect(Collectors.toMap(Customer::cristinId, Function.identity()));
     } catch (ApiGatewayException exception) {
       logger.error("Failed to fetch customer list", exception);
       throw new RuntimeException(exception);
@@ -188,7 +186,7 @@ public class EvaluatorService {
       PublicationDto publicationDto,
       URI publicationBucketUri,
       Collection<NviCreator> creators,
-      Map<URI, no.sikt.nva.nvi.common.model.Customer> customers) {
+      Map<URI, Customer> customers) {
     var nviCreatorsAsDto = creators.stream().map(NviCreator::toDto).toList();
     var pointCalculation = PointService.calculatePoints(publicationDto, creators, customers);
     var publicationDetails = fromPublicationDto(publicationDto);

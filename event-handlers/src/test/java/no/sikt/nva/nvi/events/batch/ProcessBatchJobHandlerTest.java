@@ -21,7 +21,7 @@ import com.amazonaws.services.lambda.runtime.events.SQSBatchResponse;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import java.util.Collection;
 import java.util.List;
-import no.sikt.nva.nvi.common.CandidateMigrationService;
+import no.sikt.nva.nvi.common.CreatorCandidateMigrationService;
 import no.sikt.nva.nvi.common.QueueServiceTestUtils;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.service.CandidateService;
@@ -50,7 +50,7 @@ class ProcessBatchJobHandlerTest {
     scenario = new TestScenario();
     candidateService = scenario.getCandidateService();
     periodService = scenario.getPeriodService();
-    var candidateMigrationService = mock(CandidateMigrationService.class);
+    var candidateMigrationService = mock(CreatorCandidateMigrationService.class);
     doNothing().when(candidateMigrationService).migrateCandidate(any());
     handler =
         new ProcessBatchJobHandler(candidateService, candidateMigrationService, periodService);
@@ -103,7 +103,7 @@ class ProcessBatchJobHandlerTest {
 
   @Test
   void shouldPassMigrateCandidateMessageToService() {
-    var mockedCandidateMigrationService = mock(CandidateMigrationService.class);
+    var mockedCandidateMigrationService = mock(CreatorCandidateMigrationService.class);
     handler =
         new ProcessBatchJobHandler(
             candidateService, mockedCandidateMigrationService, periodService);

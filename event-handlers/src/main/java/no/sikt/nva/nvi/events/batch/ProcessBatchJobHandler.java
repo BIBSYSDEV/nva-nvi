@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import no.sikt.nva.nvi.common.CandidateMigrationService;
 import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
+import no.sikt.nva.nvi.common.validator.SectorCandidateMigrationService;
 import no.sikt.nva.nvi.events.batch.message.BatchJobMessage;
 import no.sikt.nva.nvi.events.batch.message.MigrateCandidateMessage;
 import no.sikt.nva.nvi.events.batch.message.RefreshCandidateMessage;
@@ -27,7 +28,7 @@ public class ProcessBatchJobHandler implements RequestHandler<SQSEvent, SQSBatch
   public ProcessBatchJobHandler() {
     this(
         CandidateService.defaultCandidateService(),
-        CandidateMigrationService.defaultCandidateMigrationService(),
+        SectorCandidateMigrationService.defaultService(),
         NviPeriodService.defaultNviPeriodService());
   }
 
