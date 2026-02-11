@@ -130,7 +130,6 @@ class FetchReportHandlerTest {
     try {
       handler.handleRequest(request, output, CONTEXT);
       var response = fromOutputStream(output, ReportResponse.class);
-      output.reset();
       return response.getBodyObject(ReportResponse.class);
     } catch (IOException e) {
       throw new RuntimeException(e);
