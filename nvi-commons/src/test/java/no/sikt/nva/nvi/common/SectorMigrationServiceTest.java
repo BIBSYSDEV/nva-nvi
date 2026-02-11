@@ -37,7 +37,6 @@ class SectorMigrationServiceTest {
 
   private CandidateService candidateService;
   private CandidateRepository candidateRepository;
-  private SectorMigrationService migrationService;
   private IdentityServiceClient identityServiceClient;
 
   @BeforeEach
@@ -46,7 +45,6 @@ class SectorMigrationServiceTest {
     candidateService = scenario.getCandidateService();
     candidateRepository = scenario.getCandidateRepository();
     identityServiceClient = mock(IdentityServiceClient.class);
-    migrationService = new SectorMigrationService(candidateService, identityServiceClient);
     setupOpenPeriod(scenario, CURRENT_YEAR);
   }
 
@@ -55,12 +53,13 @@ class SectorMigrationServiceTest {
     var dbCandidate = candidateWithInstitutionPointsWithoutSector();
     var candidateIdentifier = createCandidateInRepository(candidateRepository, dbCandidate);
     var institutionsToMockInResponse = getInstitutionPoints(dbCandidate);
-    mockFetchAllCustomersResponse(institutionsToMockInResponse, false);
+    var service =
+        migrationServiceWithMockedFetchAllCustomersResponse(institutionsToMockInResponse, false);
 
     assertThat(dbCandidate.pointCalculation().institutionPoints())
         .allSatisfy(points -> assertThat(points.sector()).isEqualTo(UNKNOWN));
 
-    migrationService.migrateCandidate(candidateIdentifier);
+    service.migrateCandidate(candidateIdentifier);
 
     var migratedCandidate =
         candidateRepository.findCandidateById(candidateIdentifier).orElseThrow();
@@ -73,11 +72,12 @@ class SectorMigrationServiceTest {
     var dbCandidate = candidateWithInstitutionPointsWithoutSector();
     var candidateIdentifier = createCandidateInRepository(candidateRepository, dbCandidate);
     var institutionsToMockInResponse = getInstitutionPoints(dbCandidate);
-    mockFetchAllCustomersResponse(institutionsToMockInResponse, true);
+    var service =
+        migrationServiceWithMockedFetchAllCustomersResponse(institutionsToMockInResponse, true);
 
     var candidate = candidateService.getCandidateByIdentifier(candidateIdentifier);
 
-    migrationService.migrateCandidate(candidateIdentifier);
+    service.migrateCandidate(candidateIdentifier);
 
     var migratedCandidate = candidateService.getCandidateByIdentifier(candidateIdentifier);
 
@@ -86,14 +86,12 @@ class SectorMigrationServiceTest {
 
   @Test
   void shouldThrowExceptionWhenFailingFetchingCustomers() {
-    var dbCandidate = candidateWithInstitutionPoints();
-    var candidateIdentifier = createCandidateInRepository(candidateRepository, dbCandidate);
-
     when(attempt(identityServiceClient::getAllCustomers).orElseThrow())
         .thenThrow(RuntimeException.class);
 
     assertThrows(
-        RuntimeException.class, () -> migrationService.migrateCandidate(candidateIdentifier));
+        RuntimeException.class,
+        () -> new SectorMigrationService(candidateService, identityServiceClient));
   }
 
   private static void assertSectorIsPresentForAllInstitutionPoints(CandidateDao migratedCandidate) {
@@ -105,7 +103,7 @@ class SectorMigrationServiceTest {
             });
   }
 
-  private void mockFetchAllCustomersResponse(
+  private SectorMigrationService migrationServiceWithMockedFetchAllCustomersResponse(
       List<DbInstitutionPoints> institutionPointsList, boolean customerSectorIsMatching) {
     var customers =
         institutionPointsList.stream()
@@ -115,6 +113,7 @@ class SectorMigrationServiceTest {
             .toList();
     when(attempt(identityServiceClient::getAllCustomers).orElseThrow())
         .thenReturn(new CustomerList(customers));
+    return new SectorMigrationService(candidateService, identityServiceClient);
   }
 
   private CustomerDto toCustomerWithSector(
@@ -134,12 +133,6 @@ class SectorMigrationServiceTest {
 
   private static List<DbInstitutionPoints> getInstitutionPoints(DbCandidate dbCandidate) {
     return dbCandidate.pointCalculation().institutionPoints().stream().toList();
-  }
-
-  private static DbCandidate candidateWithInstitutionPoints() {
-    return randomCandidateBuilder(true)
-        .pointCalculation(randomPointCalculation(2).toDbPointCalculation())
-        .build();
   }
 
   private static DbCandidate candidateWithInstitutionPointsWithoutSector() {

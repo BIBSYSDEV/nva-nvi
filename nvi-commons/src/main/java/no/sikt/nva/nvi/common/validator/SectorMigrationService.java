@@ -5,10 +5,13 @@ import static no.sikt.nva.nvi.common.service.CandidateService.defaultCandidateSe
 import static nva.commons.core.attempt.Try.attempt;
 
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.MigrationService;
 import no.sikt.nva.nvi.common.model.PointCalculation;
 import no.sikt.nva.nvi.common.model.Sector;
@@ -27,12 +30,13 @@ public class SectorMigrationService implements MigrationService {
   private static final Logger LOGGER = LoggerFactory.getLogger(SectorMigrationService.class);
   private final CandidateService candidateService;
   private final IdentityServiceClient identityServiceClient;
-  private final List<CustomerDto> customers = new ArrayList<>();
+  private final Map<URI, CustomerDto> customers;
 
   public SectorMigrationService(
       CandidateService candidateService, IdentityServiceClient identityServiceClient) {
     this.candidateService = candidateService;
     this.identityServiceClient = identityServiceClient;
+    this.customers = fetchCustomers();
   }
 
   @JacocoGenerated
@@ -64,15 +68,15 @@ public class SectorMigrationService implements MigrationService {
         .build();
   }
 
-  private List<CustomerDto> getCustomers() {
-    return customers.isEmpty() ? fetchCustomers() : customers;
+  private Map<URI, CustomerDto> fetchCustomers() {
+    return attempt(identityServiceClient::getAllCustomers)
+        .map(CustomerList::customers)
+        .map(SectorMigrationService::collectToCustomerMap)
+        .orElseThrow(failure -> new RuntimeException("Could not fetch customers!"));
   }
 
-  private List<CustomerDto> fetchCustomers() {
-    var fetchedCustomers =
-        attempt(identityServiceClient::getAllCustomers).map(CustomerList::customers).orElseThrow();
-    customers.addAll(fetchedCustomers);
-    return customers;
+  private static Map<URI, CustomerDto> collectToCustomerMap(List<CustomerDto> list) {
+    return list.stream().collect(Collectors.toMap(CustomerDto::cristinId, Function.identity()));
   }
 
   private PointCalculation migratePointCalculation(PointCalculation pointCalculation) {
@@ -102,9 +106,7 @@ public class SectorMigrationService implements MigrationService {
   }
 
   private Sector getInstitutionSector(URI institutionId) {
-    return getCustomers().stream()
-        .filter(customerDto -> customerDto.cristinId().equals(institutionId))
-        .findFirst()
+    return Optional.ofNullable(customers.get(institutionId))
         .map(CustomerDto::sector)
         .flatMap(Sector::fromString)
         .orElseThrow();
