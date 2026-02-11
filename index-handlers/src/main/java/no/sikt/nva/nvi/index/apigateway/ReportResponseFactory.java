@@ -26,8 +26,8 @@ public final class ReportResponseFactory {
 
   public static ReportResponse getResponse(ReportRequest reportRequest, Environment environment) {
     return switch (reportRequest.type()) {
-      case ALL_PERIODS -> new AllPeriodsReport(); // FIXME: Temporary placeholder
-      case PERIOD -> new PeriodReport(); // FIXME: Temporary placeholder
+      case ALL_PERIODS -> placeholderAllPeriodsReport(reportRequest, environment);
+      case PERIOD -> placeholderPeriodReport(reportRequest, environment);
       case ALL_INSTITUTIONS -> placeholderAllInstitutionsReport(reportRequest, environment);
       case INSTITUTION -> placeholderInstitutionReport(reportRequest, environment);
     };
@@ -47,6 +47,20 @@ public final class ReportResponseFactory {
         .addChild("organization")
         .addChild(reportRequest.institution())
         .getUri();
+  }
+
+  // FIXME: Temporary placeholder
+  private static AllPeriodsReport placeholderAllPeriodsReport(
+      ReportRequest reportRequest, Environment environment) {
+    var queryId = reportRequest.getQueryId(getBaseUri(environment));
+    return new AllPeriodsReport(queryId);
+  }
+
+  // FIXME: Temporary placeholder
+  private static PeriodReport placeholderPeriodReport(
+      ReportRequest reportRequest, Environment environment) {
+    var queryId = reportRequest.getQueryId(getBaseUri(environment));
+    return new PeriodReport(queryId);
   }
 
   // FIXME: Temporary placeholder

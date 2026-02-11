@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import no.unit.nva.commons.json.JsonSerializable;
 
+import java.net.URI;
+
 @JsonSubTypes({
   @JsonSubTypes.Type(value = AllInstitutionsReport.class, name = "AllInstitutionsReport"),
   @JsonSubTypes.Type(value = InstitutionReport.class, name = "InstitutionReport"),
@@ -12,4 +14,7 @@ import no.unit.nva.commons.json.JsonSerializable;
 })
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 public sealed interface ReportResponse extends JsonSerializable
-    permits AllInstitutionsReport, InstitutionReport, AllPeriodsReport, PeriodReport {}
+    permits AllInstitutionsReport, InstitutionReport, AllPeriodsReport, PeriodReport {
+
+    URI id();
+}
