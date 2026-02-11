@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbIgnore;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmutable;
 
 @DynamoDbImmutable(builder = DbPointCalculation.Builder.class)
@@ -26,6 +27,20 @@ public record DbPointCalculation(
 
   public static Builder builder() {
     return new Builder();
+  }
+
+  @DynamoDbIgnore
+  public Builder copy() {
+    var copiedPoints = institutionPoints.stream().map(DbInstitutionPoints::copy).toList();
+    return builder()
+        .basePoints(basePoints)
+        .collaborationFactor(collaborationFactor)
+        .totalPoints(totalPoints)
+        .publicationChannel(publicationChannel)
+        .institutionPoints(copiedPoints)
+        .internationalCollaboration(internationalCollaboration)
+        .creatorShareCount(creatorShareCount)
+        .instanceType(instanceType);
   }
 
   public static final class Builder {
