@@ -110,7 +110,7 @@ public record PublicationDetails(
     var builder =
         builder()
             .withId(dbCandidate.publicationId())
-            .withPublicationBucketUri(dbCandidate.publicationBucketUri())
+            .withPublicationBucketUri(dbDetails.publicationBucketUri())
             .withPublicationDate(PublicationDate.from(dbCandidate.getPublicationDate()))
             .withIsApplicable(dbCandidate.applicable())
             .withPublicationChannel(PublicationChannel.from(dbChannel))

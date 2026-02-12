@@ -185,7 +185,6 @@ public record Candidate(
             .createdDate(createdDate)
             .modifiedDate(modifiedDate)
             .reportStatus(reportStatus)
-            .publicationBucketUri(dbPublication.publicationBucketUri())
             .publicationId(dbPublication.id())
             .build();
     var periodYear = getPeriod().map(NviPeriod::publishingYear).map(Object::toString).orElse(null);

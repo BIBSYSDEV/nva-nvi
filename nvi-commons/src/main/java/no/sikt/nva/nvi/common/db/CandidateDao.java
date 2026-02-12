@@ -376,14 +376,10 @@ public final class CandidateDao extends Dao {
    * Database representation of an NVI candidate.
    *
    * @param publicationId deprecated since 2025-12-15, use publicationDetails.id()
-   * @param publicationBucketUri deprecated since 2025-12-15, use
-   *     publicationDetails.publicationBucketUri()
-   * @param publicationIdentifier deprecated since 2025-12-15, use publicationDetails.identifier()
    */
   @DynamoDbImmutable(builder = DbCandidate.Builder.class)
   public record DbCandidate(
       @Deprecated(since = DEPRECATION_DATE, forRemoval = true) URI publicationId,
-      @Deprecated(since = DEPRECATION_DATE, forRemoval = true) URI publicationBucketUri,
       DbPointCalculation pointCalculation,
       DbPublicationDetails publicationDetails,
       boolean applicable,
@@ -400,7 +396,6 @@ public final class CandidateDao extends Dao {
     public Builder copy() {
       return builder()
           .publicationId(publicationId)
-          .publicationBucketUri(publicationBucketUri)
           .pointCalculation(pointCalculation.copy().build())
           .publicationDetails(publicationDetails.copy().build())
           .applicable(applicable)
@@ -419,7 +414,6 @@ public final class CandidateDao extends Dao {
     public static final class Builder {
 
       private URI builderPublicationId;
-      private URI builderPublicationBucketUri;
       private DbPointCalculation builderPointCalculation;
       private DbPublicationDetails builderPublicationDetails;
       private boolean builderApplicable;
@@ -432,11 +426,6 @@ public final class CandidateDao extends Dao {
 
       public Builder publicationId(URI publicationId) {
         this.builderPublicationId = publicationId;
-        return this;
-      }
-
-      public Builder publicationBucketUri(URI publicationBucketUri) {
-        this.builderPublicationBucketUri = publicationBucketUri;
         return this;
       }
 
@@ -478,7 +467,6 @@ public final class CandidateDao extends Dao {
       public DbCandidate build() {
         return new DbCandidate(
             builderPublicationId,
-            builderPublicationBucketUri,
             builderPointCalculation,
             builderPublicationDetails,
             builderApplicable,

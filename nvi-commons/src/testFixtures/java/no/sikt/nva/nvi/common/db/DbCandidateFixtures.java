@@ -57,7 +57,6 @@ public class DbCandidateFixtures {
     var creatorId = randomUri();
     return DbCandidate.builder()
         .publicationId(publicationDetails.id())
-        .publicationBucketUri(publicationDetails.publicationBucketUri())
         .pointCalculation(pointCalculation)
         .publicationDetails(publicationDetails)
         .applicable(true)
@@ -90,7 +89,6 @@ public class DbCandidateFixtures {
     var dbCandidate =
         DbCandidate.builder()
             .publicationId(request.publicationId())
-            .publicationBucketUri(request.publicationBucketUri())
             .pointCalculation(dbPointCalculation)
             .publicationDetails(dbPublicationDetails)
             .applicable(dtoPublicationDetails.isApplicable())
