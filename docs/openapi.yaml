@@ -1505,25 +1505,47 @@ components:
     NviCandidateContext:
       type: object
       description: NVI Candidate context
+
     AllPeriodsReport:
       type: object
+      description: >
+        Overview of all available NVI reporting periods.
+        NOTE: Placeholder model, not implemented yet.
       required:
         - type
+        - id
       properties:
         type:
           type: string
           enum: [AllPeriodsReport]
+        id:
+          type: string
+          description: Query ID for this report
+          example: https://api.nva.unit.no/scientific-index/reports
+          format: uri
+
     PeriodReport:
       type: object
+      description: >
+        Report for a specific NVI reporting period.
+        NOTE: Placeholder model, not implemented yet.
       required:
         - type
+        - id
       properties:
         type:
           type: string
           enum: [PeriodReport]
+        id:
+          type: string
+          description: Query ID for this report
+          example: https://api.nva.unit.no/scientific-index/reports/2025
+          format: uri
 
     AllInstitutionsReportResponse:
       type: object
+      description: >
+        Report listing all institutions with NVI candidates for a given period, including per-institution statistics.
       required:
         - type
         - id
@@ -1549,12 +1571,13 @@ components:
 
     InstitutionReportResponse:
       type: object
+      description: >
+        Detailed report for a single institution in a given period, including overall statistics and a per-unit breakdown.
       required:
         - type
         - id
         - period
         - institution
-        - summary
         - units
       properties:
         type:
@@ -1570,10 +1593,7 @@ components:
           pattern: '^(200[2-9]|20[1-9]\d|2[1-9]\d{2}|[3-9]\d{3})$'
           example: "2025"
         institution:
-          type: string
-          format: uri
-        summary:
-          $ref: "#/components/schemas/TopLevelAggregation"
+          $ref: "#/components/schemas/InstitutionSummary"
         units:
           type: array
           items:
@@ -1587,9 +1607,8 @@ components:
       required:
         - type
         - id
-        - name
         - sector
-        - summary
+        - statistics
       properties:
         type:
           type: string
@@ -1599,12 +1618,10 @@ components:
           description: ID of the institution
           format: uri
           example: https://api.nva.unit.no/cristin/organization/20754.0.0.0
-        name:
-          type: string
         sector:
           type: string
           enum: [UHI, HEALTH, INSTITUTE, OTHER]
-        summary:
+        statistics:
           $ref: "#/components/schemas/TopLevelAggregation"
 
     UnitSummary:
@@ -1615,7 +1632,8 @@ components:
       required:
         - type
         - id
-        - summary
+        - name
+        - statistics
       properties:
         type:
           type: string
@@ -1625,7 +1643,7 @@ components:
           description: ID of the unit
           format: uri
           example: https://api.nva.unit.no/cristin/organization/20754.1.0.0
-        summary:
+        statistics:
           $ref: "#/components/schemas/DirectAffiliationAggregation"
 
   securitySchemes:

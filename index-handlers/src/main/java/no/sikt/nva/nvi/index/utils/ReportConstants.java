@@ -6,7 +6,6 @@ public final class ReportConstants {
   public static final String REPORTS_PATH_SEGMENT = "reports";
   public static final String PERIOD_PATH_PARAM = "period";
   public static final String INSTITUTION_PATH_PARAM = "institution";
-  public static final String INSTITUTIONS_PATH_PARAM = "institutions";
   public static final String INSTITUTIONS_PATH_SEGMENT = "institutions";
 
   private ReportConstants() {}

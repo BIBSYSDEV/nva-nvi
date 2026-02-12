@@ -5,6 +5,7 @@ import static java.util.Collections.emptyList;
 import java.math.BigDecimal;
 import java.util.EnumMap;
 import java.util.Map;
+import no.sikt.nva.nvi.common.model.Sector;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.index.apigateway.requests.AllInstitutionsReportRequest;
 import no.sikt.nva.nvi.index.apigateway.requests.AllPeriodsReportRequest;
@@ -15,6 +16,7 @@ import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.report.AllInstitutionsReport;
 import no.sikt.nva.nvi.index.model.report.AllPeriodsReport;
 import no.sikt.nva.nvi.index.model.report.InstitutionReport;
+import no.sikt.nva.nvi.index.model.report.InstitutionSummary;
 import no.sikt.nva.nvi.index.model.report.PeriodReport;
 import no.sikt.nva.nvi.index.model.report.ReportResponse;
 import no.sikt.nva.nvi.index.model.report.TopLevelAggregation;
@@ -50,9 +52,11 @@ public final class ReportResponseFactory {
 
   // FIXME: Temporary placeholder
   private static InstitutionReport placeholderInstitutionReport(InstitutionReportRequest request) {
-    var summary = getEmptyTopLevelAggregation();
+    var institutionSummary =
+        new InstitutionSummary(
+            request.institutionId(), Sector.UNKNOWN.toString(), getEmptyTopLevelAggregation());
     return new InstitutionReport(
-        request.queryId(), request.period(), request.institutionId(), summary, emptyList());
+        request.queryId(), request.period(), institutionSummary, emptyList());
   }
 
   private static TopLevelAggregation getEmptyTopLevelAggregation() {
