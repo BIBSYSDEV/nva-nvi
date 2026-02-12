@@ -1,3 +1,5 @@
 package no.sikt.nva.nvi.index.model.report;
 
-public record AllPeriodsReport() implements ReportResponse {}
+import java.net.URI;
+
+public record AllPeriodsReport(URI id) implements ReportResponse {}

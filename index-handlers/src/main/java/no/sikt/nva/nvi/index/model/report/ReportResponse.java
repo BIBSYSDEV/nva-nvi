@@ -2,6 +2,8 @@ package no.sikt.nva.nvi.index.model.report;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import java.net.URI;
+import no.unit.nva.commons.json.JsonSerializable;
 
 @JsonSubTypes({
   @JsonSubTypes.Type(value = AllInstitutionsReport.class, name = "AllInstitutionsReport"),
@@ -10,5 +12,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
   @JsonSubTypes.Type(value = PeriodReport.class, name = "PeriodReport")
 })
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
-public sealed interface ReportResponse
-    permits AllInstitutionsReport, InstitutionReport, AllPeriodsReport, PeriodReport {}
+public sealed interface ReportResponse extends JsonSerializable
+    permits AllInstitutionsReport, InstitutionReport, AllPeriodsReport, PeriodReport {
+
+  URI id();
+}
