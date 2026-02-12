@@ -187,7 +187,6 @@ public record Candidate(
             .reportStatus(reportStatus)
             .publicationBucketUri(dbPublication.publicationBucketUri())
             .publicationId(dbPublication.id())
-            .publicationIdentifier(dbPublication.identifier())
             .build();
     var periodYear = getPeriod().map(NviPeriod::publishingYear).map(Object::toString).orElse(null);
     var daoVersion = getVersion().map(Object::toString).orElse(null);

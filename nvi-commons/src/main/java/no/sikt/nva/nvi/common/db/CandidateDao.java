@@ -384,7 +384,6 @@ public final class CandidateDao extends Dao {
   public record DbCandidate(
       @Deprecated(since = DEPRECATION_DATE, forRemoval = true) URI publicationId,
       @Deprecated(since = DEPRECATION_DATE, forRemoval = true) URI publicationBucketUri,
-      @Deprecated(since = DEPRECATION_DATE, forRemoval = true) String publicationIdentifier,
       DbPointCalculation pointCalculation,
       DbPublicationDetails publicationDetails,
       boolean applicable,
@@ -402,7 +401,6 @@ public final class CandidateDao extends Dao {
       return builder()
           .publicationId(publicationId)
           .publicationBucketUri(publicationBucketUri)
-          .publicationIdentifier(publicationIdentifier)
           .pointCalculation(pointCalculation.copy().build())
           .publicationDetails(publicationDetails.copy().build())
           .applicable(applicable)
@@ -422,7 +420,6 @@ public final class CandidateDao extends Dao {
 
       private URI builderPublicationId;
       private URI builderPublicationBucketUri;
-      private String builderPublicationIdentifier;
       private DbPointCalculation builderPointCalculation;
       private DbPublicationDetails builderPublicationDetails;
       private boolean builderApplicable;
@@ -440,11 +437,6 @@ public final class CandidateDao extends Dao {
 
       public Builder publicationBucketUri(URI publicationBucketUri) {
         this.builderPublicationBucketUri = publicationBucketUri;
-        return this;
-      }
-
-      public Builder publicationIdentifier(String publicationIdentifier) {
-        this.builderPublicationIdentifier = publicationIdentifier;
         return this;
       }
 
@@ -487,7 +479,6 @@ public final class CandidateDao extends Dao {
         return new DbCandidate(
             builderPublicationId,
             builderPublicationBucketUri,
-            builderPublicationIdentifier,
             builderPointCalculation,
             builderPublicationDetails,
             builderApplicable,
