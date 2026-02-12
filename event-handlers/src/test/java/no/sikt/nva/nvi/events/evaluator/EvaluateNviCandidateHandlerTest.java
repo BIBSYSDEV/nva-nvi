@@ -607,6 +607,24 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     }
 
     @Test
+    void shouldUpdateExistingNviCandidateWhenUnverifiedCreatorIsAdded() {
+      setupOpenPeriod(scenario, publicationDate.year());
+      var publication = factory.withContributor(verifiedCreatorFrom(nviOrganization));
+      handleEvaluation(publication);
+
+      var unverifiedCreator = unverifiedCreatorFrom(nviOrganization);
+      var updatedPublication = publication.withContributor(unverifiedCreator);
+      handleEvaluation(updatedPublication);
+
+      var candidate = candidateService.getCandidateByPublicationId(publication.getPublicationId());
+      var publicationDetails = candidate.publicationDetails();
+      assertThat(publicationDetails.nviCreators())
+          .hasSize(2)
+          .extracting(NviCreator::name)
+          .contains(unverifiedCreator.name());
+    }
+
+    @Test
     void shouldIdentifyCandidateWithMissingCountryCode() {
       setupOpenPeriod(scenario, publicationDate.year());
       var organizationWithoutCountryCode = factory.setupTopLevelOrganization(null, true);

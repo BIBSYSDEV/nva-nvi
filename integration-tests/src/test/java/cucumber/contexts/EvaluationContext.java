@@ -1,7 +1,6 @@
 package cucumber.contexts;
 
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.getEvaluateNviCandidateHandlerEnvironment;
-import static no.sikt.nva.nvi.common.EnvironmentFixtures.getUpsertNviCandidateHandlerEnvironment;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -16,9 +15,7 @@ import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import no.sikt.nva.nvi.events.evaluator.EvaluateNviCandidateHandler;
 import no.sikt.nva.nvi.events.evaluator.EvaluatorService;
-import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
-import no.sikt.nva.nvi.events.persist.UpsertNviCandidateHandler;
 import no.sikt.nva.nvi.test.SampleExpandedPublication;
 import no.unit.nva.clients.CustomerDto;
 import no.unit.nva.clients.CustomerList;
@@ -27,13 +24,10 @@ import nva.commons.apigateway.exceptions.ApiGatewayException;
 
 public class EvaluationContext {
   private static final Context EVALUATION_HANDLER_CONTEXT = mock(Context.class);
-  private static final Context UPSERT_HANDLER_CONTEXT = mock(Context.class);
 
   private final EvaluateNviCandidateHandler evaluateNviCandidateHandler;
-  private final UpsertNviCandidateHandler upsertNviCandidateHandler;
   private final IdentityServiceClient identityServiceClient;
   private final FakeSqsClient evaluationOutputQueue;
-  private final FakeSqsClient upsertErrorQueue;
   private final TestScenario scenario;
   private Instant lastEvaluationStartedAt;
 
@@ -41,27 +35,20 @@ public class EvaluationContext {
     this.scenario = scenario;
     identityServiceClient = mock(IdentityServiceClient.class);
     evaluationOutputQueue = new FakeSqsClient();
-    upsertErrorQueue = new FakeSqsClient();
     evaluateNviCandidateHandler = createEvaluateNviCandidateHandler();
-    upsertNviCandidateHandler = createUpsertNviCandidateHandler();
   }
 
   private EvaluateNviCandidateHandler createEvaluateNviCandidateHandler() {
     var environment = getEvaluateNviCandidateHandlerEnvironment();
+    var candidateService = scenario.getCandidateService();
     var evaluatorService =
         new EvaluatorService(
             identityServiceClient,
             scenario.getS3StorageReaderForExpandedResourcesBucket(),
-            scenario.getCandidateService());
+            candidateService);
 
-    return new EvaluateNviCandidateHandler(evaluatorService, evaluationOutputQueue, environment);
-  }
-
-  private UpsertNviCandidateHandler createUpsertNviCandidateHandler() {
-    return new UpsertNviCandidateHandler(
-        scenario.getCandidateService(),
-        upsertErrorQueue,
-        getUpsertNviCandidateHandlerEnvironment());
+    return new EvaluateNviCandidateHandler(
+        candidateService, evaluatorService, evaluationOutputQueue, environment);
   }
 
   public void mockGetAllCustomersResponse(List<CustomerDto> customers) {
@@ -81,11 +68,6 @@ public class EvaluationContext {
     var fileUri = scenario.setupExpandedPublicationInS3(publicationJson);
     var evaluationEvent = createEvaluationEvent(new PersistedResourceMessage(fileUri));
     evaluateNviCandidateHandler.handleRequest(evaluationEvent, EVALUATION_HANDLER_CONTEXT);
-
-    if (!evaluationOutputQueue.getSentMessages().isEmpty()) {
-      var upsertEvent = createUpsertEvent(getCandidateEvaluatedMessage());
-      upsertNviCandidateHandler.handleRequest(upsertEvent, UPSERT_HANDLER_CONTEXT);
-    }
   }
 
   public Instant getLastEvaluationTimestamp() {
@@ -96,25 +78,6 @@ public class EvaluationContext {
     try {
       var body = objectMapper.writeValueAsString(persistedResourceMessage);
       return createEvent(body);
-    } catch (JsonProcessingException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  private SQSEvent createUpsertEvent(CandidateEvaluatedMessage candidateEvaluatedMessage) {
-    try {
-      var body = objectMapper.writeValueAsString(candidateEvaluatedMessage);
-      return createEvent(body);
-    } catch (JsonProcessingException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  private CandidateEvaluatedMessage getCandidateEvaluatedMessage() {
-    try {
-      var sentMessages = evaluationOutputQueue.getSentMessages();
-      var message = sentMessages.removeFirst();
-      return objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class);
     } catch (JsonProcessingException e) {
       throw new RuntimeException(e);
     }
