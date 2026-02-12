@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.index.apigateway;
 import static java.net.HttpURLConnection.HTTP_OK;
 
 import com.amazonaws.services.lambda.runtime.Context;
+import no.sikt.nva.nvi.index.apigateway.requests.ReportRequestFactory;
 import no.sikt.nva.nvi.index.model.report.ReportResponse;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
@@ -34,8 +35,8 @@ public class FetchReportHandler extends ApiGatewayHandler<Void, ReportResponse> 
   @Override
   protected ReportResponse processInput(Void unused, RequestInfo requestInfo, Context context)
       throws ApiGatewayException {
-    var reportRequest = ReportRequest.from(requestInfo);
-    return ReportResponseFactory.getResponse(reportRequest, environment);
+    var reportRequest = ReportRequestFactory.getRequest(requestInfo, environment);
+    return ReportResponseFactory.getResponse(reportRequest);
   }
 
   @Override
