@@ -23,6 +23,7 @@ import no.sikt.nva.nvi.test.SampleExpandedPublication;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+@Deprecated(forRemoval = true)
 class CandidateMigrationServiceTest {
 
   private TestScenario scenario;

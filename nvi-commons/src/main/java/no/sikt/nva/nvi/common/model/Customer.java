@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.events.evaluator;
+package no.sikt.nva.nvi.common.model;
 
 import java.net.URI;
 import no.unit.nva.clients.CustomerDto;

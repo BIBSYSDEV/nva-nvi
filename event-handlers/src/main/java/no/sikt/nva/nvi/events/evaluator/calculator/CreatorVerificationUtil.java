@@ -8,7 +8,7 @@ import java.util.function.Predicate;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.dto.ContributorDto;
 import no.sikt.nva.nvi.common.dto.PublicationDto;
-import no.sikt.nva.nvi.events.evaluator.Customer;
+import no.sikt.nva.nvi.common.model.Customer;
 import no.sikt.nva.nvi.events.evaluator.model.NviCreator;
 import no.sikt.nva.nvi.events.evaluator.model.NviOrganization;
 import no.sikt.nva.nvi.events.evaluator.model.UnverifiedNviCreator;
