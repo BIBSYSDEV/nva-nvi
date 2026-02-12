@@ -885,11 +885,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AllPeriodsReport"
-              examples:
-                allPeriodsReport:
-                  summary: List of reports for all the periods
-                  value:
-                    type: "AllPeriodsReport"
         "401":
           description: "Unauthorized"
           content:
@@ -931,11 +926,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PeriodReport"
-              examples:
-                periodReport:
-                  value:
-                    type: "PeriodReport"
-
         "400":
           description: "Bad Request - Invalid period format"
           content:
@@ -1632,7 +1622,6 @@ components:
       required:
         - type
         - id
-        - name
         - statistics
       properties:
         type:
