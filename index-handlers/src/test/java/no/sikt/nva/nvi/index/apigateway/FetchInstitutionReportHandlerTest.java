@@ -49,6 +49,8 @@ import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICA
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLISHED_YEAR;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.REPORTING_YEAR;
 import static no.sikt.nva.nvi.index.query.SearchAggregation.TOTAL_COUNT_AGGREGATION_AGG;
+import static no.sikt.nva.nvi.test.TestConstants.THIS_YEAR;
+import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -74,7 +76,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
-import java.time.Year;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashSet;
@@ -118,13 +119,11 @@ import org.zalando.problem.Problem;
 class FetchInstitutionReportHandlerTest {
 
   private static final String YEAR = "year";
-  private static final int CURRENT_YEAR = Year.now().getValue();
   private static final Context CONTEXT = mock(Context.class);
   protected static final Environment ENVIRONMENT = new Environment();
   private static final int PAGE_SIZE =
       Integer.parseInt(new Environment().readEnv("INSTITUTION_REPORT_SEARCH_PAGE_SIZE"));
   private static final String NESTED_FIELD_CONTRIBUTORS = "publicationDetails.contributors";
-  private static final int HTTP_REQUEST_ENTITY_TOO_LARGE = 413;
   private static final String EXPECTED_SORT_ORDER = SortOrder.Asc.jsonValue();
   private static SearchClient<NviCandidateIndexDocument> openSearchClient;
   private ByteArrayOutputStream output;
@@ -141,9 +140,7 @@ class FetchInstitutionReportHandlerTest {
   void shouldReturnUnauthorizedWhenUserDoesNotHaveSufficientAccessRight() throws IOException {
     var institutionId = randomUri();
     var request =
-        createRequest(
-                institutionId, AccessRight.MANAGE_DOI, Map.of(YEAR, String.valueOf(CURRENT_YEAR)))
-            .build();
+        createRequest(institutionId, AccessRight.MANAGE_DOI, Map.of(YEAR, THIS_YEAR)).build();
     handler.handleRequest(request, output, CONTEXT);
     var response = fromOutputStream(output, Problem.class);
 
@@ -459,7 +456,10 @@ class FetchInstitutionReportHandlerTest {
   private static OpenSearchException createRequestEntityTooLargeException() {
     var errorCause = new ErrorCause.Builder().type("request_entity_too_large").reason("").build();
     var errorResponse =
-        new ErrorResponse.Builder().status(HTTP_REQUEST_ENTITY_TOO_LARGE).error(errorCause).build();
+        new ErrorResponse.Builder()
+            .status(HttpURLConnection.HTTP_ENTITY_TOO_LARGE)
+            .error(errorCause)
+            .build();
     return new OpenSearchException(errorResponse);
   }
 
@@ -521,7 +521,7 @@ class FetchInstitutionReportHandlerTest {
   private static CandidateSearchParameters.Builder buildRequest(
       URI topLevelCristinOrg, SearchResultParameters resultParameters) {
     return CandidateSearchParameters.builder()
-        .withYear(String.valueOf(CURRENT_YEAR))
+        .withYear(THIS_YEAR)
         .withTopLevelCristinOrg(topLevelCristinOrg)
         .withAffiliations(List.of(extractIdentifier(topLevelCristinOrg)))
         .withSearchResultParameters(resultParameters)
@@ -578,7 +578,7 @@ class FetchInstitutionReportHandlerTest {
   private static InputStream requestWithMediaType(String mediaType, URI topLevelCristinOrg)
       throws JsonProcessingException {
     return createRequest(
-            topLevelCristinOrg, MANAGE_NVI_CANDIDATES, Map.of(YEAR, String.valueOf(CURRENT_YEAR)))
+            topLevelCristinOrg, MANAGE_NVI_CANDIDATES, Map.of(YEAR, THIS_YEAR))
         .withHeaders(Map.of(ACCEPT, mediaType))
         .build();
   }
