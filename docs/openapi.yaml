@@ -1281,9 +1281,9 @@ components:
                 Approved: 1
                 Rejected: 1
 
-    OrganizationStatusAggregationBase:
+    StatusAggregation:
       type: object
-      description: Base schema for organization status aggregations
+      description: Base schema for status aggregations
       required:
         - candidateCount
         - points
@@ -1292,11 +1292,14 @@ components:
       properties:
         candidateCount:
           type: integer
-          description: Number of NVI candidates
+          description: Total number of NVI candidates
+          minimum: 0
           example: 20
         points:
           type: number
-          description: Total NVI points from creators
+          description: Sum of expected or reported NVI points
+          format: double
+          minimum: 0
           example: 31.1234
         globalApprovalStatus:
           $ref: "#/components/schemas/GlobalApprovalStatusCounts"
@@ -1308,7 +1311,7 @@ components:
         Aggregation representing totals for a top-level organization.
         Includes transitive points from all sub-organizations.
       allOf:
-        - $ref: "#/components/schemas/OrganizationStatusAggregationBase"
+        - $ref: "#/components/schemas/StatusAggregation"
         - type: object
           required:
             - type
@@ -1323,7 +1326,7 @@ components:
         Aggregation based on direct creator affiliations to a specific organization.
         Points are calculated only from creators directly affiliated with this organization.
       allOf:
-        - $ref: "#/components/schemas/OrganizationStatusAggregationBase"
+        - $ref: "#/components/schemas/StatusAggregation"
         - type: object
           required:
             - type
@@ -1344,12 +1347,16 @@ components:
       properties:
         Dispute:
           type: integer
+          minimum: 0
         Pending:
           type: integer
+          minimum: 0
         Rejected:
           type: integer
+          minimum: 0
         Approved:
           type: integer
+          minimum: 0
     ApprovalStatusCounts:
       type: object
       description: Count of candidates by approval status
@@ -1361,12 +1368,16 @@ components:
       properties:
         New:
           type: integer
+          minimum: 0
         Pending:
           type: integer
+          minimum: 0
         Approved:
           type: integer
+          minimum: 0
         Rejected:
           type: integer
+          minimum: 0
     ApprovalStatus:
       type: object
       properties:
@@ -1524,10 +1535,13 @@ components:
           enum: [AllInstitutionsReport]
         id:
           type: string
+          description: Query ID for this report
+          example: https://api.nva.unit.no/scientific-index/reports/2025/institutions
           format: uri
         period:
           type: string
           pattern: '^(200[2-9]|20[1-9]\d|2[1-9]\d{2}|[3-9]\d{3})$'
+          example: "2025"
         institutions:
           type: array
           items:
@@ -1548,127 +1562,71 @@ components:
           enum: [InstitutionReport]
         id:
           type: string
+          description: Query ID for this report
           format: uri
+          example: https://api.nva.unit.no/scientific-index/reports/2025/institutions/20754.0.0.0
         period:
           type: string
           pattern: '^(200[2-9]|20[1-9]\d|2[1-9]\d{2}|[3-9]\d{3})$'
+          example: "2025"
         institution:
           type: string
           format: uri
         summary:
-          $ref: "#/components/schemas/ReportSummary"
+          $ref: "#/components/schemas/TopLevelAggregation"
         units:
           type: array
           items:
-            $ref: "#/components/schemas/UnitReport"
+            $ref: "#/components/schemas/UnitSummary"
 
     InstitutionSummary:
+      description: >
+        Summary of NVI candidates and points for an institution.
+        This is based on publications with creators affiliated with any unit of the institution.
       type: object
       required:
         - type
         - id
         - name
         - sector
-        - candidateCount
-        - totalPoints
-        - globalApprovalStatus
-        - approvalStatus
+        - summary
       properties:
         type:
           type: string
-          enum: [InstitutionReport]
+          enum: [InstitutionSummary]
         id:
           type: string
+          description: ID of the institution
           format: uri
+          example: https://api.nva.unit.no/cristin/organization/20754.0.0.0
         name:
           type: string
         sector:
           type: string
           enum: [UHI, HEALTH, INSTITUTE, OTHER]
-        candidateCount:
-          type: integer
-          minimum: 0
-        totalPoints:
-          type: number
-          format: double
-          minimum: 0
-        globalApprovalStatus:
-          $ref: "#/components/schemas/GlobalApprovalStatus"
-        approvalStatus:
-          $ref: "#/components/schemas/ApprovalStatus"
+        summary:
+          $ref: "#/components/schemas/TopLevelAggregation"
 
-    ReportSummary:
-      type: object
-      required:
-        - candidateCount
-        - totalPoints
-        - globalApprovalStatus
-        - approvalStatus
-      properties:
-        candidateCount:
-          type: integer
-          minimum: 0
-        totalPoints:
-          type: number
-          format: double
-          minimum: 0
-        globalApprovalStatus:
-          $ref: "#/components/schemas/GlobalApprovalStatus"
-        approvalStatus:
-          $ref: "#/components/schemas/ApprovalStatus"
-
-    UnitReport:
+    UnitSummary:
+      description: >
+        Summary of NVI candidates and points for an organizational unit of an institution.
+        This is based on publications with creators affiliated with this unit directly.
       type: object
       required:
         - type
         - id
-        - candidateCount
-        - totalPoints
-        - globalApprovalStatus
-        - approvalStatus
+        - summary
       properties:
         type:
           type: string
-          enum: [UnitReport]
+          enum: [UnitSummary]
         id:
           type: string
+          description: ID of the unit
           format: uri
-        candidateCount:
-          type: integer
-          minimum: 0
-        totalPoints:
-          type: number
-          format: double
-          minimum: 0
-        globalApprovalStatus:
-          $ref: "#/components/schemas/GlobalApprovalStatus"
-        approvalStatus:
-          $ref: "#/components/schemas/ApprovalStatus"
-
-    GlobalApprovalStatus:
-      type: object
-      required:
-        - type
-        - dispute
-        - pending
-        - rejected
-        - approved
-      properties:
-        type:
-          type: string
-          enum: [GlobalApprovalStatus]
-        dispute:
-          type: integer
-          minimum: 0
-        pending:
-          type: integer
-          minimum: 0
-        rejected:
-          type: integer
-          minimum: 0
-        approved:
-          type: integer
-          minimum: 0
+          example: https://api.nva.unit.no/cristin/organization/20754.1.0.0
+        summary:
+          $ref: "#/components/schemas/DirectAffiliationAggregation"
 
   securitySchemes:
     CognitoUserPool:
