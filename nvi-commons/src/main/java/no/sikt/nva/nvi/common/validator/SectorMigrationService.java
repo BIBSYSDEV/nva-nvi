@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.common.validator;
 
-import static java.util.Objects.isNull;
 import static no.sikt.nva.nvi.common.service.CandidateService.defaultCandidateService;
 import static nva.commons.core.attempt.Try.attempt;
 
@@ -118,9 +117,7 @@ public class SectorMigrationService implements MigrationService {
   }
 
   private boolean sectorDifferFromCustomerSector(InstitutionPoints institutionPoints) {
-    return isNull(institutionPoints.sector())
-        || !institutionPoints
-            .sector()
-            .equals(getInstitutionSector(institutionPoints.institutionId()));
+    var customerSector = getInstitutionSector(institutionPoints.institutionId());
+    return institutionPoints.sector() != customerSector;
   }
 }
