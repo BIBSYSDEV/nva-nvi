@@ -58,8 +58,8 @@ public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
     try {
       var dbChangeMessage = DynamoDbChangeMessage.from(body);
       publishUpdateMessage(dbChangeMessage);
-    } catch (Exception e) {
-      sendToDlq(body, e);
+    } catch (JsonProcessingException exception) {
+      sendToDlq(body, exception);
     }
   }
 
