@@ -14,6 +14,7 @@ import no.sikt.nva.nvi.common.queue.NviReceiveMessage;
 import no.sikt.nva.nvi.common.queue.NviReceiveMessageResponse;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.common.service.CandidateService;
+import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
@@ -139,7 +140,7 @@ public class RequeueDlqHandler implements RequestHandler<RequeueDlqInput, Requeu
       try {
         var candidateIdentifier = UUID.fromString(identifier);
         candidateService.refreshCandidate(candidateIdentifier);
-      } catch (Exception exception) {
+      } catch (CandidateNotFoundException exception) {
         LOGGER.error(exception.getMessage(), exception);
         return new NviProcessMessageResult(
             input.message(),
