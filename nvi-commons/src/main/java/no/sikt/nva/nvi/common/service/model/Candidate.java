@@ -185,7 +185,6 @@ public record Candidate(
             .createdDate(createdDate)
             .modifiedDate(modifiedDate)
             .reportStatus(reportStatus)
-            .publicationId(dbPublication.id())
             .build();
     var periodYear = getPeriod().map(NviPeriod::publishingYear).map(Object::toString).orElse(null);
     var daoVersion = getVersion().map(Object::toString).orElse(null);

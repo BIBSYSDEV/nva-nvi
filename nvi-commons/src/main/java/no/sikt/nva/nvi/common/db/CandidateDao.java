@@ -151,7 +151,7 @@ public final class CandidateDao extends Dao {
   @DynamoDbAttribute(SECONDARY_INDEX_1_HASH_KEY)
   @JsonProperty(SECONDARY_INDEX_1_HASH_KEY)
   public String searchByPublicationIdHashKey() {
-    return nonNull(candidate.publicationId()) ? candidate.publicationId().toString() : null;
+    return nonNull(publicationId()) ? publicationId().toString() : null;
   }
 
   @JacocoGenerated
@@ -159,7 +159,7 @@ public final class CandidateDao extends Dao {
   @DynamoDbAttribute(SECONDARY_INDEX_1_RANGE_KEY)
   @JsonProperty(SECONDARY_INDEX_1_RANGE_KEY)
   public String searchByPublicationIdSortKey() {
-    return nonNull(candidate.publicationId()) ? candidate.publicationId().toString() : null;
+    return nonNull(publicationId()) ? publicationId().toString() : null;
   }
 
   @JacocoGenerated
@@ -246,6 +246,11 @@ public final class CandidateDao extends Dao {
   @DynamoDbIgnore
   public boolean isNotReported() {
     return !isReported();
+  }
+
+  @DynamoDbIgnore
+  public URI publicationId() {
+    return candidate().publicationDetails.id();
   }
 
   @Deprecated
@@ -372,14 +377,9 @@ public final class CandidateDao extends Dao {
     }
   }
 
-  /**
-   * Database representation of an NVI candidate.
-   *
-   * @param publicationId deprecated since 2025-12-15, use publicationDetails.id()
-   */
+  /** Database representation of an NVI candidate. */
   @DynamoDbImmutable(builder = DbCandidate.Builder.class)
   public record DbCandidate(
-      @Deprecated(since = DEPRECATION_DATE, forRemoval = true) URI publicationId,
       DbPointCalculation pointCalculation,
       DbPublicationDetails publicationDetails,
       boolean applicable,
@@ -395,7 +395,6 @@ public final class CandidateDao extends Dao {
     @DynamoDbIgnore
     public Builder copy() {
       return builder()
-          .publicationId(publicationId)
           .pointCalculation(pointCalculation.copy().build())
           .publicationDetails(publicationDetails.copy().build())
           .applicable(applicable)
@@ -413,7 +412,6 @@ public final class CandidateDao extends Dao {
     @SuppressWarnings("PMD.TooManyFields")
     public static final class Builder {
 
-      private URI builderPublicationId;
       private DbPointCalculation builderPointCalculation;
       private DbPublicationDetails builderPublicationDetails;
       private boolean builderApplicable;
@@ -423,11 +421,6 @@ public final class CandidateDao extends Dao {
       private ReportStatus builderReportStatus;
 
       private Builder() {}
-
-      public Builder publicationId(URI publicationId) {
-        this.builderPublicationId = publicationId;
-        return this;
-      }
 
       public Builder pointCalculation(DbPointCalculation pointCalculation) {
         this.builderPointCalculation = pointCalculation;
@@ -466,7 +459,6 @@ public final class CandidateDao extends Dao {
 
       public DbCandidate build() {
         return new DbCandidate(
-            builderPublicationId,
             builderPointCalculation,
             builderPublicationDetails,
             builderApplicable,
