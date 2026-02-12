@@ -409,7 +409,6 @@ public final class CandidateDao extends Dao {
       return publicationDetails.publicationDate();
     }
 
-    @SuppressWarnings("PMD.TooManyFields")
     public static final class Builder {
 
       private DbPointCalculation builderPointCalculation;

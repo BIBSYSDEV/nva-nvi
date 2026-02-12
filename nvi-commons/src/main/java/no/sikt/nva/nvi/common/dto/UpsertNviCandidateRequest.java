@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import no.sikt.nva.nvi.common.client.model.Organization;
+import no.sikt.nva.nvi.common.exceptions.ValidationException;
 import no.sikt.nva.nvi.common.model.InvalidNviCandidateException;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
@@ -36,9 +37,9 @@ public record UpsertNviCandidateRequest(
       pointCalculation.validate();
       shouldNotBeNull(publicationBucketUri, "Required field 'publicationBucketUri' is null");
       shouldNotBeNull(nviCreators, "Required field 'nviCreators' is null");
-    } catch (Exception e) {
+    } catch (ValidationException exception) {
       LOGGER.error(
-          "Publication failed validation due to missing required data: {}", e.getMessage());
+          "Publication failed validation due to missing required data: {}", exception.getMessage());
       throw new InvalidNviCandidateException(INVALID_CANDIDATE_MESSAGE);
     }
   }
