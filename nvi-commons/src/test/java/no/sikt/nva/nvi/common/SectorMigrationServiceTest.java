@@ -19,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.util.Collections;
 import java.util.List;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
@@ -82,6 +83,35 @@ class SectorMigrationServiceTest {
     var migratedCandidate = candidateService.getCandidateByIdentifier(candidateIdentifier);
 
     assertEquals(candidate, migratedCandidate);
+  }
+
+  @Test
+  void shouldSetUnknownSectorWhenInstitutionIsNotPresentInCustomers() {
+    var dbCandidate = candidateWithInstitutionPointsWithoutSector();
+    var candidateIdentifier = createCandidateInRepository(candidateRepository, dbCandidate);
+    var service = mockMigrationServiceWithoutCustomers();
+
+    service.migrateCandidate(candidateIdentifier);
+
+    var migratedCandidate =
+        candidateRepository.findCandidateById(candidateIdentifier).orElseThrow();
+
+    assertAllPointsAreSetToUnknown(migratedCandidate);
+  }
+
+  private static void assertAllPointsAreSetToUnknown(CandidateDao migratedCandidate) {
+    assertThat(migratedCandidate.candidate().pointCalculation().institutionPoints())
+        .allSatisfy(
+            points -> {
+              assertThat(points.sector()).isNotNull();
+              assertThat(points.sector()).isEqualTo(UNKNOWN);
+            });
+  }
+
+  private SectorMigrationService mockMigrationServiceWithoutCustomers() {
+    when(attempt(identityServiceClient::getAllCustomers).orElseThrow())
+        .thenReturn(new CustomerList(Collections.emptyList()));
+    return new SectorMigrationService(candidateService, identityServiceClient);
   }
 
   @Test
