@@ -70,7 +70,7 @@ public final class QueryFunctions {
   }
 
   public static Query mustNotMatch(Query query) {
-    return new Builder().mustNot(query).build().toQuery();
+    return new BoolQuery.Builder().mustNot(query).build().toQuery();
   }
 
   public static Query matchAtLeastOne(Query... queries) {
