@@ -72,7 +72,6 @@ import no.sikt.nva.nvi.index.model.document.NviOrganization;
 import no.sikt.nva.nvi.index.model.document.Organization;
 import no.sikt.nva.nvi.index.model.document.OrganizationType;
 import no.sikt.nva.nvi.index.model.document.Pages;
-import no.sikt.nva.nvi.index.model.document.Pages.Builder;
 import no.sikt.nva.nvi.index.model.document.PublicationChannel;
 import no.sikt.nva.nvi.index.model.document.PublicationDetails;
 import no.sikt.nva.nvi.index.model.document.ReportingPeriod;
@@ -213,17 +212,17 @@ public final class NviCandidateIndexDocumentGenerator {
     return pagesBuilder.build();
   }
 
-  private void extractNumberOfPagesIfPresent(Builder pagesBuilder) {
+  private void extractNumberOfPagesIfPresent(Pages.Builder pagesBuilder) {
     var pages = extractOptJsonNodeTextValue(expandedResource, JSON_PTR_PAGES_NUMBER);
     pages.ifPresent(pagesBuilder::withNumberOfPages);
   }
 
-  private void extractPagesEndIfPresent(Builder pagesBuilder) {
+  private void extractPagesEndIfPresent(Pages.Builder pagesBuilder) {
     var end = extractOptJsonNodeTextValue(expandedResource, JSON_PRT_PAGES_END);
     end.ifPresent(pagesBuilder::withEnd);
   }
 
-  private void extractPagesBeginIfPresent(Builder pagesBuilder) {
+  private void extractPagesBeginIfPresent(Pages.Builder pagesBuilder) {
     var begin = extractOptJsonNodeTextValue(expandedResource, JSON_PTR_PAGES_BEGIN);
     begin.ifPresent(pagesBuilder::withBegin);
   }

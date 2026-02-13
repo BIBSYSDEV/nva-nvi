@@ -1,11 +1,14 @@
 package no.sikt.nva.nvi.common.db;
 
 import static java.util.Collections.emptyList;
+import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.createCandidateDao;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.randomApplicableCandidateDao;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidateBuilder;
+import static no.sikt.nva.nvi.common.db.DbPublicationDetailsFixtures.randomPublicationBuilder;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
+import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationId;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -17,6 +20,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.db.model.TableScanRequest;
 import no.sikt.nva.nvi.common.exceptions.TransactionException;
@@ -46,14 +50,19 @@ class CandidateRepositoryTest {
 
   @Test
   void shouldThrowExceptionWhenAttemptingToSaveCandidateWithExistingPublicationId() {
-    var publicationId = randomUri();
-    var candidate1 =
-        createCandidateDao(randomCandidateBuilder(true).publicationId(publicationId).build());
-    var candidate2 =
-        createCandidateDao(randomCandidateBuilder(true).publicationId(publicationId).build());
+    var publicationIdentifier = randomUUID();
+    var candidate1 = createCandidateDaoForPublication(publicationIdentifier);
+    var candidate2 = createCandidateDaoForPublication(publicationIdentifier);
 
     candidateRepository.create(candidate1, emptyList());
     assertThrows(RuntimeException.class, () -> candidateRepository.create(candidate2, emptyList()));
+  }
+
+  private static CandidateDao createCandidateDaoForPublication(UUID publicationIdentifier) {
+    var topLevelInstitution = randomOrganizationId();
+    var dbDetails = randomPublicationBuilder(publicationIdentifier, topLevelInstitution);
+    var dbCandidate = randomCandidateBuilder(topLevelInstitution, dbDetails.build()).build();
+    return createCandidateDao(dbCandidate);
   }
 
   @Test

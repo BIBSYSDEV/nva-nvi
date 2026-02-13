@@ -56,9 +56,6 @@ public class DbCandidateFixtures {
       DbPointCalculation pointCalculation) {
     var creatorId = randomUri();
     return DbCandidate.builder()
-        .publicationId(publicationDetails.id())
-        .publicationBucketUri(publicationDetails.publicationBucketUri())
-        .publicationIdentifier(publicationDetails.identifier())
         .pointCalculation(pointCalculation)
         .publicationDetails(publicationDetails)
         .applicable(true)
@@ -90,9 +87,6 @@ public class DbCandidateFixtures {
     var dbPublicationDetails = getExpectedPublicationDetails(request);
     var dbCandidate =
         DbCandidate.builder()
-            .publicationId(request.publicationId())
-            .publicationIdentifier(dbPublicationDetails.identifier())
-            .publicationBucketUri(request.publicationBucketUri())
             .pointCalculation(dbPointCalculation)
             .publicationDetails(dbPublicationDetails)
             .applicable(dtoPublicationDetails.isApplicable())

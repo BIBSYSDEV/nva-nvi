@@ -109,8 +109,8 @@ public record PublicationDetails(
     var dbChannel = dbCandidate.pointCalculation().publicationChannel();
     var builder =
         builder()
-            .withId(dbCandidate.publicationId())
-            .withPublicationBucketUri(dbCandidate.publicationBucketUri())
+            .withId(candidateDao.publicationId())
+            .withPublicationBucketUri(dbDetails.publicationBucketUri())
             .withPublicationDate(PublicationDate.from(dbCandidate.getPublicationDate()))
             .withIsApplicable(dbCandidate.applicable())
             .withPublicationChannel(PublicationChannel.from(dbChannel))

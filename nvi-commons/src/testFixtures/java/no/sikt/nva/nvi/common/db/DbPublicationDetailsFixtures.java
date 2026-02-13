@@ -12,6 +12,7 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import java.net.URI;
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
 import no.sikt.nva.nvi.common.db.model.DbOrganization;
@@ -21,9 +22,10 @@ import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.service.model.PageCount;
 
 public class DbPublicationDetailsFixtures {
-  public static DbPublicationDetails.Builder randomPublicationBuilder(URI organizationId) {
+
+  public static DbPublicationDetails.Builder randomPublicationBuilder(
+      UUID publicationIdentifier, URI organizationId) {
     var creatorId = randomUri();
-    var publicationIdentifier = randomUUID();
     var publicationId = generatePublicationId(publicationIdentifier);
     var topLevelNviOrganization = DbOrganization.builder().id(organizationId).build();
     return DbPublicationDetails.builder()
@@ -39,6 +41,10 @@ public class DbPublicationDetailsFixtures {
                     .creatorId(creatorId)
                     .affiliations(List.of(organizationId))
                     .build()));
+  }
+
+  public static DbPublicationDetails.Builder randomPublicationBuilder(URI organizationId) {
+    return randomPublicationBuilder(randomUUID(), organizationId);
   }
 
   public static DbPublicationDetails.Builder getExpectedPublicationDetailsBuilder(

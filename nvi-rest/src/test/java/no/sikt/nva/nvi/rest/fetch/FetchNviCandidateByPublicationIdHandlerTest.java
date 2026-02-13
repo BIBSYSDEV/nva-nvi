@@ -118,7 +118,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends BaseCandidateRestHandl
     var candidate =
         setupReportedCandidate(
             scenario.getCandidateRepository(), randomYear(), topLevelOrganizationId);
-    var publicationId = candidate.candidate().publicationId();
+    var publicationId = candidate.publicationId();
     var request = createRequestWithCuratorAccess(publicationId.toString());
 
     handler.handleRequest(request, output, CONTEXT);

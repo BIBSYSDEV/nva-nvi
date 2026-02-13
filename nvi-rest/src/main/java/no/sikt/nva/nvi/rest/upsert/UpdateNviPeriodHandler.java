@@ -9,7 +9,6 @@ import java.net.HttpURLConnection;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.dto.NviPeriodDto;
 import no.sikt.nva.nvi.common.service.model.UpdatePeriodRequest;
-import no.sikt.nva.nvi.common.service.model.UpdatePeriodRequest.Builder;
 import no.sikt.nva.nvi.common.utils.ExceptionMapper;
 import no.sikt.nva.nvi.common.utils.RequestUtil;
 import no.sikt.nva.nvi.rest.model.UpsertNviPeriodRequest;
@@ -48,7 +47,7 @@ public class UpdateNviPeriodHandler
       throws ApiGatewayException {
     return attempt(input::toUpdatePeriodRequest)
         .map(builder -> builder.withModifiedBy(getUsername(requestInfo)))
-        .map(Builder::build)
+        .map(UpdatePeriodRequest.Builder::build)
         .map(this::updateAndFetchPeriod)
         .orElseThrow(ExceptionMapper::map);
   }
