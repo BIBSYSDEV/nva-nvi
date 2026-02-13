@@ -13,6 +13,7 @@ import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
+import no.sikt.nva.nvi.common.db.model.DbPublicationDetails;
 import no.sikt.nva.nvi.common.model.ListingResult;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
@@ -104,7 +105,8 @@ public class ReEvaluateNviCandidatesHandler extends EventHandler<ReEvaluateReque
   private static List<URI> mapToFileUris(ListingResult<CandidateDao> result) {
     return result.getDatabaseEntries().stream()
         .map(CandidateDao::candidate)
-        .map(DbCandidate::publicationBucketUri)
+        .map(DbCandidate::publicationDetails)
+        .map(DbPublicationDetails::publicationBucketUri)
         .toList();
   }
 

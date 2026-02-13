@@ -185,7 +185,7 @@ class CandidateTest extends CandidateTestSetup {
   @Test
   void shouldNotUpdateReportedCandidate() {
     var year = randomYear();
-    var candidate = setupReportedCandidate(candidateRepository, year).candidate();
+    var candidate = setupReportedCandidate(candidateRepository, year);
 
     var updateRequest =
         randomUpsertRequestBuilder().withPublicationId(candidate.publicationId()).build();
@@ -384,7 +384,7 @@ class CandidateTest extends CandidateTestSetup {
     setupClosedPeriod(scenario, year);
     var dao = setupReportedCandidate(candidateRepository, year);
 
-    var candidate = candidateService.getCandidateByPublicationId(dao.candidate().publicationId());
+    var candidate = candidateService.getCandidateByPublicationId(dao.publicationId());
     var id = candidate.getPeriod().map(NviPeriod::id).orElseThrow();
 
     assertThat(id, is(not(nullValue())));
