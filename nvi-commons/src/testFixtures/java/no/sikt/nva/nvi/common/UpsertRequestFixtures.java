@@ -30,7 +30,7 @@ public class UpsertRequestFixtures {
   public static UpdateStatusRequest createUpdateStatusRequest(
       ApprovalStatus status, URI institutionId, String username) {
     return UpdateStatusRequest.builder()
-        .withReason(ApprovalStatus.REJECTED.equals(status) ? randomString() : null)
+        .withReason(status == ApprovalStatus.REJECTED ? randomString() : null)
         .withApprovalStatus(status)
         .withInstitutionId(institutionId)
         .withUsername(username)
@@ -40,7 +40,7 @@ public class UpsertRequestFixtures {
   public static UpdateStatusRequest createUpdateStatusRequest(
       ApprovalStatus status, UserInstance userInstance) {
     return UpdateStatusRequest.builder()
-        .withReason(ApprovalStatus.REJECTED.equals(status) ? randomString() : null)
+        .withReason(status == ApprovalStatus.REJECTED ? randomString() : null)
         .withApprovalStatus(status)
         .withInstitutionId(userInstance.topLevelOrganizationId())
         .withUsername(userInstance.userName().toString())

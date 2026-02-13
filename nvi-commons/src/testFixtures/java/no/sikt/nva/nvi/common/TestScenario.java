@@ -9,6 +9,7 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import java.io.IOException;
 import java.net.URI;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.model.CandidateAggregate;
@@ -29,8 +30,6 @@ import nva.commons.core.paths.UnixPath;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.s3.S3Client;
 
-// Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
-@SuppressWarnings("PMD.CouplingBetweenObjects")
 public class TestScenario {
   private final DynamoDbClient localDynamo;
   private final CandidateRepository candidateRepository;
@@ -95,8 +94,8 @@ public class TestScenario {
     var candidateFuture = candidateRepository.getCandidateAggregateAsync(candidateIdentifier);
     try {
       return candidateFuture.thenApply(CandidateAggregate::fromQueryResponse).get().orElseThrow();
-    } catch (Exception e) {
-      throw new RuntimeException(e);
+    } catch (InterruptedException | ExecutionException exception) {
+      throw new RuntimeException(exception);
     }
   }
 
