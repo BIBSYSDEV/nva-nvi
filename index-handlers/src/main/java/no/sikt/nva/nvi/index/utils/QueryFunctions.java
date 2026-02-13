@@ -18,7 +18,6 @@ import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
-import org.opensearch.client.opensearch._types.query_dsl.BoolQuery.Builder;
 import org.opensearch.client.opensearch._types.query_dsl.MatchAllQuery;
 import org.opensearch.client.opensearch._types.query_dsl.NestedQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
@@ -70,7 +69,7 @@ public final class QueryFunctions {
   }
 
   public static Query mustNotMatch(Query query) {
-    return new Builder().mustNot(query).build().toQuery();
+    return new BoolQuery.Builder().mustNot(query).build().toQuery();
   }
 
   public static Query matchAtLeastOne(Query... queries) {
@@ -81,7 +80,7 @@ public final class QueryFunctions {
 
   public static Query mustMatch(Query... queries) {
     return new Query.Builder()
-        .bool(new Builder().must(Arrays.stream(queries).toList()).build())
+        .bool(new BoolQuery.Builder().must(Arrays.stream(queries).toList()).build())
         .build();
   }
 
