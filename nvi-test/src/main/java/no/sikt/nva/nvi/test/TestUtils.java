@@ -64,7 +64,7 @@ public final class TestUtils {
   }
 
   public static String randomYear() {
-    return String.valueOf(randomIntBetween(START_DATE.getYear(), LocalDate.now().getYear()));
+    return String.valueOf(randomIntBetween(START_DATE.getYear(), CURRENT_YEAR));
   }
 
   public static String randomTitle() {
