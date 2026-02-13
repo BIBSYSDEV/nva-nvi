@@ -8,10 +8,12 @@ import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.util.Optional;
+import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.common.queue.QueueMessage;
+import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import nva.commons.core.Environment;
@@ -23,23 +25,29 @@ import org.slf4j.LoggerFactory;
 public class EvaluateNviCandidateHandler implements RequestHandler<SQSEvent, Void> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(EvaluateNviCandidateHandler.class);
-  private static final String EVALUATED_CANDIDATE_QUEUE_URL = "CANDIDATE_QUEUE_URL";
   private static final String EVALUATION_DLQ_URL = "EVALUATION_DLQ_URL";
+  private final CandidateService candidateService;
   private final EvaluatorService evaluatorService;
   private final QueueClient queueClient;
-  private final String queueUrl;
   private final String evaluationDlqUrl;
 
   @JacocoGenerated
   public EvaluateNviCandidateHandler() {
-    this(EvaluatorService.defaultEvaluatorService(), new NviQueueClient(), new Environment());
+    this(
+        CandidateService.defaultCandidateService(),
+        EvaluatorService.defaultEvaluatorService(),
+        new NviQueueClient(),
+        new Environment());
   }
 
   public EvaluateNviCandidateHandler(
-      EvaluatorService evaluatorService, QueueClient queueClient, Environment environment) {
+      CandidateService candidateService,
+      EvaluatorService evaluatorService,
+      QueueClient queueClient,
+      Environment environment) {
+    this.candidateService = candidateService;
     this.evaluatorService = evaluatorService;
     this.queueClient = queueClient;
-    this.queueUrl = environment.readEnv(EVALUATED_CANDIDATE_QUEUE_URL);
     this.evaluationDlqUrl = environment.readEnv(EVALUATION_DLQ_URL);
   }
 
@@ -47,11 +55,25 @@ public class EvaluateNviCandidateHandler implements RequestHandler<SQSEvent, Voi
   public Void handleRequest(SQSEvent input, Context context) {
     attempt(
             () -> {
-              evaluateCandidacy(extractPersistedResourceMessage(input)).ifPresent(this::sendEvent);
+              evaluateCandidacy(extractPersistedResourceMessage(input))
+                  .ifPresent(this::persistResult);
               return null;
             })
         .orElse(failure -> handleFailure(input, failure));
     return null;
+  }
+
+  private void persistResult(CandidateEvaluatedMessage candidateEvaluatedMessage) {
+    LOGGER.info(
+        "Upserting evaluation result for publication {}",
+        candidateEvaluatedMessage.publicationId());
+    var candidate = candidateEvaluatedMessage.candidate();
+    switch (candidate) {
+      case UpsertNviCandidateRequest candidateRequest ->
+          candidateService.upsertCandidate(candidateRequest);
+      case UpsertNonNviCandidateRequest nonNviCandidateRequest ->
+          candidateService.updateCandidate(nonNviCandidateRequest);
+    }
   }
 
   private Void handleFailure(SQSEvent input, Failure<?> failure) {
@@ -68,27 +90,6 @@ public class EvaluateNviCandidateHandler implements RequestHandler<SQSEvent, Voi
   private static PersistedResourceMessage parseBody(String body) {
     return attempt(() -> dtoObjectMapper.readValue(body, PersistedResourceMessage.class))
         .orElseThrow();
-  }
-
-  private void sendEvent(CandidateEvaluatedMessage candidateEvaluatedMessage) {
-    logEvaluationOutcome(candidateEvaluatedMessage);
-    LOGGER.info(
-        "Sending evaluated publication {} to upsert queue",
-        candidateEvaluatedMessage.publicationId());
-    var message =
-        QueueMessage.builder()
-            .withBody(candidateEvaluatedMessage)
-            .withPublicationId(candidateEvaluatedMessage.publicationId())
-            .build();
-    queueClient.sendMessage(message, queueUrl);
-  }
-
-  private static void logEvaluationOutcome(CandidateEvaluatedMessage candidateEvaluatedMessage) {
-    if (candidateEvaluatedMessage.candidate() instanceof UpsertNviCandidateRequest) {
-      LOGGER.info("Received UpsertNviCandidateRequest");
-    } else {
-      LOGGER.info("Received NonNviCandidateRequest");
-    }
   }
 
   private PersistedResourceMessage extractPersistedResourceMessage(SQSEvent input) {
