@@ -32,6 +32,7 @@ import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
+import no.sikt.nva.nvi.common.db.model.DbPublicationDetails;
 import no.sikt.nva.nvi.common.model.ListingResult;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
@@ -127,7 +128,8 @@ class ReEvaluateNviCandidatesHandlerTest {
     var expectedCandidates =
         sortByIdentifier(candidates, BATCH_SIZE).stream()
             .map(CandidateDao::candidate)
-            .map(DbCandidate::publicationBucketUri)
+            .map(DbCandidate::publicationDetails)
+            .map(DbPublicationDetails::publicationBucketUri)
             .toList();
     var actualCandidates =
         batch.entries().stream()

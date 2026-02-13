@@ -181,7 +181,7 @@ public class CandidateRepository extends DynamoRepository {
     LOGGER.info("Creating new candidate with identifier={}", candidate.identifier());
     var transaction = TransactWriteItemsEnhancedRequest.builder();
 
-    var publicationId = candidate.candidate().publicationId();
+    var publicationId = candidate.publicationId();
     var uniquenessEntry = new CandidateUniquenessEntryDao(publicationId.toString());
 
     addNewItemWithVersion(transaction, uniquenessTable, uniquenessEntry);

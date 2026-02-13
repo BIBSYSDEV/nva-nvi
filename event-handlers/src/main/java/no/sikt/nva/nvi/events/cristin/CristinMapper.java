@@ -121,8 +121,6 @@ public final class CristinMapper {
             cristinNviReport.instanceType());
     var publicationDetails = toDbPublication(cristinNviReport);
     return DbCandidate.builder()
-        .publicationId(publicationDetails.id())
-        .publicationBucketUri(publicationDetails.publicationBucketUri())
         .pointCalculation(pointCalculation)
         .publicationDetails(publicationDetails)
         .reportStatus(ReportStatus.REPORTED)

@@ -716,7 +716,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       setupClosedPeriod(scenario, publicationDate.year());
       var existingCandidateDao =
           setupReportedCandidate(scenario.getCandidateRepository(), publicationDate.year());
-      var publicationId = existingCandidateDao.candidate().publicationId();
+      var publicationId = existingCandidateDao.publicationId();
       var publication =
           factory
               .withContributor(verifiedCreatorFrom(nviOrganization))
