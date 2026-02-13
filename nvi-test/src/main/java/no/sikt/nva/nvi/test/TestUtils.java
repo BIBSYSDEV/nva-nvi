@@ -15,6 +15,7 @@ import java.math.RoundingMode;
 import java.net.URI;
 import java.time.LocalDate;
 import java.time.Year;
+import java.time.ZoneId;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -28,7 +29,7 @@ public final class TestUtils {
   public static final int SCALE = 4;
   public static final BigDecimal MIN_BIG_DECIMAL = BigDecimal.ZERO;
   public static final BigDecimal MAX_BIG_DECIMAL = BigDecimal.TEN;
-  public static final int CURRENT_YEAR = Year.now().getValue();
+  public static final int CURRENT_YEAR = getCurrentYear();
   public static final Random RANDOM = new Random();
   public static final AtomicInteger ID_COUNTER = new AtomicInteger(100);
 
@@ -137,5 +138,10 @@ public final class TestUtils {
     var arrayNode = objectMapper.createArrayNode();
     values.forEach(arrayNode::add);
     node.set(field, arrayNode);
+  }
+
+  @SuppressWarnings("TimeInStaticInitializer")
+  private static int getCurrentYear() {
+    return Year.now(ZoneId.systemDefault()).getValue();
   }
 }
