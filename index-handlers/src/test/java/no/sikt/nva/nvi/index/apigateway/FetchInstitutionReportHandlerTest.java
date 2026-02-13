@@ -577,8 +577,7 @@ class FetchInstitutionReportHandlerTest {
 
   private static InputStream requestWithMediaType(String mediaType, URI topLevelCristinOrg)
       throws JsonProcessingException {
-    return createRequest(
-            topLevelCristinOrg, MANAGE_NVI_CANDIDATES, Map.of(YEAR, THIS_YEAR))
+    return createRequest(topLevelCristinOrg, MANAGE_NVI_CANDIDATES, Map.of(YEAR, THIS_YEAR))
         .withHeaders(Map.of(ACCEPT, mediaType))
         .build();
   }
