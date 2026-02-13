@@ -109,7 +109,7 @@ public class SectorMigrationService implements MigrationService {
     return Optional.ofNullable(customers.get(institutionId))
         .map(CustomerDto::sector)
         .flatMap(Sector::fromString)
-        .orElseThrow();
+        .orElse(Sector.UNKNOWN);
   }
 
   private boolean shouldMigrateInstitutionPointMissingSector(Candidate candidate) {
