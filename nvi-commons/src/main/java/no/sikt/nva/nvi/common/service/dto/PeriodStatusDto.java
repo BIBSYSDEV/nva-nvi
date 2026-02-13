@@ -1,13 +1,12 @@
 package no.sikt.nva.nvi.common.service.dto;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
 import com.fasterxml.jackson.annotation.JsonTypeName;
 import java.net.URI;
 import no.sikt.nva.nvi.common.model.PeriodStatus;
 
 @JsonTypeName(PeriodStatusDto.NVI_PERIOD)
-@JsonTypeInfo(use = Id.NAME, property = "type")
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 public record PeriodStatusDto(
     URI id, PeriodStatus status, String startDate, String reportingDate, String year) {
 
