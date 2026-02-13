@@ -39,6 +39,7 @@ class SectorMigrationServiceTest {
   private CandidateService candidateService;
   private CandidateRepository candidateRepository;
   private IdentityServiceClient identityServiceClient;
+  private SectorMigrationService service;
 
   @BeforeEach
   void setUp() {
@@ -46,6 +47,7 @@ class SectorMigrationServiceTest {
     candidateService = scenario.getCandidateService();
     candidateRepository = scenario.getCandidateRepository();
     identityServiceClient = mock(IdentityServiceClient.class);
+    service = new SectorMigrationService(candidateService, identityServiceClient);
     setupOpenPeriod(scenario, CURRENT_YEAR);
   }
 
@@ -54,8 +56,7 @@ class SectorMigrationServiceTest {
     var dbCandidate = candidateWithInstitutionPointsWithoutSector();
     var candidateIdentifier = createCandidateInRepository(candidateRepository, dbCandidate);
     var institutionsToMockInResponse = getInstitutionPoints(dbCandidate);
-    var service =
-        migrationServiceWithMockedFetchAllCustomersResponse(institutionsToMockInResponse, false);
+    mockFetchAllCustomersResponse(institutionsToMockInResponse, false);
 
     assertThat(dbCandidate.pointCalculation().institutionPoints())
         .allSatisfy(points -> assertThat(points.sector()).isEqualTo(UNKNOWN));
@@ -73,8 +74,7 @@ class SectorMigrationServiceTest {
     var dbCandidate = candidateWithInstitutionPointsWithoutSector();
     var candidateIdentifier = createCandidateInRepository(candidateRepository, dbCandidate);
     var institutionsToMockInResponse = getInstitutionPoints(dbCandidate);
-    var service =
-        migrationServiceWithMockedFetchAllCustomersResponse(institutionsToMockInResponse, true);
+    mockFetchAllCustomersResponse(institutionsToMockInResponse, true);
 
     var candidate = candidateService.getCandidateByIdentifier(candidateIdentifier);
 
@@ -89,7 +89,7 @@ class SectorMigrationServiceTest {
   void shouldSetUnknownSectorWhenInstitutionIsNotPresentInCustomers() {
     var dbCandidate = candidateWithInstitutionPointsWithoutSector();
     var candidateIdentifier = createCandidateInRepository(candidateRepository, dbCandidate);
-    var service = mockMigrationServiceWithoutCustomers();
+    mockMigrationServiceWithoutCustomers();
 
     service.migrateCandidate(candidateIdentifier);
 
@@ -108,20 +108,20 @@ class SectorMigrationServiceTest {
             });
   }
 
-  private SectorMigrationService mockMigrationServiceWithoutCustomers() {
+  private void mockMigrationServiceWithoutCustomers() {
     when(attempt(identityServiceClient::getAllCustomers).orElseThrow())
         .thenReturn(new CustomerList(Collections.emptyList()));
-    return new SectorMigrationService(candidateService, identityServiceClient);
   }
 
   @Test
   void shouldThrowExceptionWhenFailingFetchingCustomers() {
+    var dbCandidate = candidateWithInstitutionPointsWithoutSector();
+    var candidateIdentifier = createCandidateInRepository(candidateRepository, dbCandidate);
+
     when(attempt(identityServiceClient::getAllCustomers).orElseThrow())
         .thenThrow(RuntimeException.class);
 
-    assertThrows(
-        RuntimeException.class,
-        () -> new SectorMigrationService(candidateService, identityServiceClient));
+    assertThrows(RuntimeException.class, () -> service.migrateCandidate(candidateIdentifier));
   }
 
   private static void assertSectorIsPresentForAllInstitutionPoints(CandidateDao migratedCandidate) {
@@ -133,7 +133,7 @@ class SectorMigrationServiceTest {
             });
   }
 
-  private SectorMigrationService migrationServiceWithMockedFetchAllCustomersResponse(
+  private void mockFetchAllCustomersResponse(
       List<DbInstitutionPoints> institutionPointsList, boolean customerSectorIsMatching) {
     var customers =
         institutionPointsList.stream()
@@ -143,7 +143,6 @@ class SectorMigrationServiceTest {
             .toList();
     when(attempt(identityServiceClient::getAllCustomers).orElseThrow())
         .thenReturn(new CustomerList(customers));
-    return new SectorMigrationService(candidateService, identityServiceClient);
   }
 
   private CustomerDto toCustomerWithSector(
