@@ -9,6 +9,7 @@ public record NviOrganization(URI id, NviOrganization topLevelOrganization) {
     return new Builder();
   }
 
+  @Override
   public NviOrganization topLevelOrganization() {
     return Objects.isNull(topLevelOrganization) ? this : topLevelOrganization;
   }
