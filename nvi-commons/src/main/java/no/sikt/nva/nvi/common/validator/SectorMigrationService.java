@@ -71,7 +71,8 @@ public class SectorMigrationService implements MigrationService {
     return attempt(identityServiceClient::getAllCustomers)
         .map(CustomerList::customers)
         .map(SectorMigrationService::collectToCustomerMap)
-        .orElseThrow(failure -> new RuntimeException("Could not fetch customers!"));
+        .orElseThrow(
+            failure -> new RuntimeException("Could not fetch customers!", failure.getException()));
   }
 
   private static Map<URI, CustomerDto> collectToCustomerMap(List<CustomerDto> list) {
