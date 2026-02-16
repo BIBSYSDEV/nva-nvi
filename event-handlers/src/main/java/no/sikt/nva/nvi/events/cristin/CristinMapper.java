@@ -121,25 +121,13 @@ public final class CristinMapper {
             cristinNviReport.instanceType());
     var publicationDetails = toDbPublication(cristinNviReport);
     return DbCandidate.builder()
-        .publicationId(publicationDetails.id())
-        .publicationBucketUri(publicationDetails.publicationBucketUri())
-        .publicationDate(publicationDetails.publicationDate())
         .pointCalculation(pointCalculation)
         .publicationDetails(publicationDetails)
-        .instanceType(cristinNviReport.instanceType())
-        .level(cristinNviReport.getLevel())
         .reportStatus(ReportStatus.REPORTED)
         .applicable(true)
         .createdDate(publicationDetails.modifiedDate())
         .modifiedDate(publicationDetails.modifiedDate())
-        .points(points)
-        .totalPoints(sumPoints(points))
-        .basePoints(extractBasePoints(cristinNviReport))
-        .collaborationFactor(extractCollaborationFactor(cristinNviReport))
-        .internationalCollaboration(isInternationalCollaboration(cristinNviReport))
         .creators(publicationDetails.creators())
-        .channelId(extractChannelId(cristinNviReport))
-        .channelType(extractChannelType(cristinNviReport))
         .build();
   }
 

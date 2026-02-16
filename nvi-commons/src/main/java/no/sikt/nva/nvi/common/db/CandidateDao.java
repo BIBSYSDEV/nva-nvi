@@ -17,7 +17,6 @@ import static no.sikt.nva.nvi.common.DatabaseConstants.SECONDARY_INDEX_YEAR_RANG
 import static no.sikt.nva.nvi.common.DatabaseConstants.SORT_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.VERSION_FIELD;
 import static nva.commons.core.attempt.Try.attempt;
-import static org.apache.commons.lang3.StringUtils.equalsIgnoreCase;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -28,7 +27,6 @@ import java.math.BigDecimal;
 import java.net.URI;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -153,7 +151,7 @@ public final class CandidateDao extends Dao {
   @DynamoDbAttribute(SECONDARY_INDEX_1_HASH_KEY)
   @JsonProperty(SECONDARY_INDEX_1_HASH_KEY)
   public String searchByPublicationIdHashKey() {
-    return nonNull(candidate.publicationId()) ? candidate.publicationId().toString() : null;
+    return nonNull(publicationId()) ? publicationId().toString() : null;
   }
 
   @JacocoGenerated
@@ -161,7 +159,7 @@ public final class CandidateDao extends Dao {
   @DynamoDbAttribute(SECONDARY_INDEX_1_RANGE_KEY)
   @JsonProperty(SECONDARY_INDEX_1_RANGE_KEY)
   public String searchByPublicationIdSortKey() {
-    return nonNull(candidate.publicationId()) ? candidate.publicationId().toString() : null;
+    return nonNull(publicationId()) ? publicationId().toString() : null;
   }
 
   @JacocoGenerated
@@ -250,6 +248,11 @@ public final class CandidateDao extends Dao {
     return !isReported();
   }
 
+  @DynamoDbIgnore
+  public URI publicationId() {
+    return candidate().publicationDetails.id();
+  }
+
   @Deprecated
   private String migratePeriodYear() {
     return isApplicableAndMissingPeriodYear() ? candidate.getPublicationDate().year() : periodYear;
@@ -268,13 +271,6 @@ public final class CandidateDao extends Dao {
     DbLevel(String value) {
 
       this.value = value;
-    }
-
-    public static DbLevel parse(String string) {
-      return Arrays.stream(values())
-          .filter(level -> equalsIgnoreCase(level.getValue(), string))
-          .findFirst()
-          .orElse(NON_CANDIDATE);
     }
 
     @Deprecated
@@ -381,51 +377,13 @@ public final class CandidateDao extends Dao {
     }
   }
 
-  /**
-   * Database representation of an NVI candidate.
-   *
-   * @param publicationId deprecated since 2025-12-15, use publicationDetails.id()
-   * @param publicationBucketUri deprecated since 2025-12-15, use
-   *     publicationDetails.publicationBucketUri()
-   * @param publicationIdentifier deprecated since 2025-12-15, use publicationDetails.identifier()
-   * @param instanceType deprecated since 2025-12-15, use pointCalculation.instanceType()
-   * @param channelType deprecated since 2025-12-15, use
-   *     pointCalculation.publicationChannel().channelType()
-   * @param channelId deprecated since 2025-12-15, use pointCalculation.publicationChannel().id()
-   * @param level deprecated since 2025-12-15, use
-   *     pointCalculation.publicationChannel().scientificValue()
-   * @param publicationDate deprecated since 2025-12-15, use publicationDetails.publicationDate()
-   * @param internationalCollaboration deprecated since 2025-12-15, use
-   *     pointCalculation.internationalCollaboration()
-   * @param collaborationFactor deprecated since 2025-12-15, use
-   *     pointCalculation.collaborationFactor()
-   * @param creatorCount deprecated since 2025-12-15, use pointCalculation.creatorShareCount()
-   * @param creatorShareCount deprecated since 2025-12-15, use pointCalculation.creatorShareCount()
-   * @param basePoints deprecated since 2025-12-15, use pointCalculation.basePoints()
-   * @param points deprecated since 2025-12-15, use pointCalculation.institutionPoints()
-   * @param totalPoints deprecated since 2025-12-15, use pointCalculation.totalPoints()
-   */
+  /** Database representation of an NVI candidate. */
   @DynamoDbImmutable(builder = DbCandidate.Builder.class)
   public record DbCandidate(
-      @Deprecated(since = DEPRECATION_DATE, forRemoval = true) URI publicationId,
-      @Deprecated(since = DEPRECATION_DATE, forRemoval = true) URI publicationBucketUri,
-      @Deprecated(since = DEPRECATION_DATE, forRemoval = true) String publicationIdentifier,
       DbPointCalculation pointCalculation,
       DbPublicationDetails publicationDetails,
       boolean applicable,
-      @Deprecated(since = DEPRECATION_DATE, forRemoval = true) String instanceType,
-      @Deprecated(since = DEPRECATION_DATE, forRemoval = true) String channelType,
-      @Deprecated(since = DEPRECATION_DATE, forRemoval = true) URI channelId,
-      @Deprecated(since = DEPRECATION_DATE, forRemoval = true) DbLevel level,
-      @Deprecated(since = DEPRECATION_DATE, forRemoval = true) DbPublicationDate publicationDate,
-      @Deprecated(since = DEPRECATION_DATE, forRemoval = true) boolean internationalCollaboration,
-      @Deprecated(since = DEPRECATION_DATE, forRemoval = true) BigDecimal collaborationFactor,
-      @Deprecated(since = DEPRECATION_DATE, forRemoval = true) int creatorCount,
-      @Deprecated(since = DEPRECATION_DATE, forRemoval = true) int creatorShareCount,
       @DynamoDbConvertedBy(DbCreatorTypeListConverter.class) List<DbCreatorType> creators,
-      @Deprecated(since = DEPRECATION_DATE, forRemoval = true) BigDecimal basePoints,
-      @Deprecated(since = DEPRECATION_DATE, forRemoval = true) List<DbInstitutionPoints> points,
-      @Deprecated(since = DEPRECATION_DATE, forRemoval = true) BigDecimal totalPoints,
       Instant createdDate,
       Instant modifiedDate,
       ReportStatus reportStatus) {
@@ -437,25 +395,10 @@ public final class CandidateDao extends Dao {
     @DynamoDbIgnore
     public Builder copy() {
       return builder()
-          .publicationId(publicationId)
-          .publicationBucketUri(publicationBucketUri)
-          .publicationIdentifier(publicationIdentifier)
-          .pointCalculation(pointCalculation)
-          .publicationDetails(publicationDetails)
+          .pointCalculation(pointCalculation.copy().build())
+          .publicationDetails(publicationDetails.copy().build())
           .applicable(applicable)
-          .instanceType(instanceType)
-          .channelType(channelType)
-          .channelId(channelId)
-          .level(level)
-          .publicationDate(publicationDate)
-          .internationalCollaboration(internationalCollaboration)
-          .collaborationFactor(collaborationFactor)
-          .creatorCount(creatorCount)
-          .creatorShareCount(creatorShareCount)
           .creators(creators.stream().map(DbCreatorType::copy).toList())
-          .basePoints(basePoints)
-          .points(points.stream().map(DbInstitutionPoints::copy).toList())
-          .totalPoints(totalPoints)
           .createdDate(createdDate)
           .modifiedDate(modifiedDate)
           .reportStatus(reportStatus);
@@ -463,54 +406,20 @@ public final class CandidateDao extends Dao {
 
     @DynamoDbIgnore
     public DbPublicationDate getPublicationDate() {
-      if (nonNull(publicationDetails) && nonNull(publicationDetails.publicationDate())) {
-        return publicationDetails.publicationDate();
-      }
-      return publicationDate;
+      return publicationDetails.publicationDate();
     }
 
-    @SuppressWarnings("PMD.TooManyFields")
     public static final class Builder {
 
-      private URI builderPublicationId;
-      private URI builderPublicationBucketUri;
-      private String builderPublicationIdentifier;
       private DbPointCalculation builderPointCalculation;
       private DbPublicationDetails builderPublicationDetails;
       private boolean builderApplicable;
-      private String builderInstanceType;
-      private String builderChannelType;
-      private URI builderChannelId;
-      private DbLevel builderLevel;
-      private DbPublicationDate builderPublicationDate;
-      private boolean builderInternationalCollaboration;
-      private BigDecimal builderCollaborationFactor;
-      private int builderCreatorCount;
-      private int builderCreatorShareCount;
       private List<DbCreatorType> builderCreators;
-      private BigDecimal builderBasePoints;
-      private List<DbInstitutionPoints> builderPoints;
-      private BigDecimal builderTotalPoints;
       private Instant builderCreatedDate;
       private Instant builderModifiedDate;
       private ReportStatus builderReportStatus;
 
       private Builder() {}
-
-      public Builder publicationId(URI publicationId) {
-        this.builderPublicationId = publicationId;
-        return this;
-      }
-
-      public Builder publicationBucketUri(URI publicationBucketUri) {
-        this.builderPublicationBucketUri = publicationBucketUri;
-        return this;
-      }
-
-      public Builder publicationIdentifier(String publicationIdentifier) {
-        this.builderPublicationIdentifier = publicationIdentifier;
-        return this;
-      }
 
       public Builder pointCalculation(DbPointCalculation pointCalculation) {
         this.builderPointCalculation = pointCalculation;
@@ -527,68 +436,8 @@ public final class CandidateDao extends Dao {
         return this;
       }
 
-      public Builder instanceType(String instanceType) {
-        this.builderInstanceType = instanceType;
-        return this;
-      }
-
-      public Builder channelType(String channelType) {
-        this.builderChannelType = channelType;
-        return this;
-      }
-
-      public Builder channelId(URI channelId) {
-        this.builderChannelId = channelId;
-        return this;
-      }
-
-      public Builder level(DbLevel level) {
-        this.builderLevel = level;
-        return this;
-      }
-
-      public Builder publicationDate(DbPublicationDate publicationDate) {
-        this.builderPublicationDate = publicationDate;
-        return this;
-      }
-
-      public Builder internationalCollaboration(boolean internationalCollaboration) {
-        this.builderInternationalCollaboration = internationalCollaboration;
-        return this;
-      }
-
-      public Builder collaborationFactor(BigDecimal collaborationFactor) {
-        this.builderCollaborationFactor = collaborationFactor;
-        return this;
-      }
-
-      public Builder creatorCount(int creatorCount) {
-        this.builderCreatorCount = creatorCount;
-        return this;
-      }
-
-      public Builder creatorShareCount(int creatorShareCount) {
-        this.builderCreatorShareCount = creatorShareCount;
-        return this;
-      }
-
       public Builder creators(List<DbCreatorType> creators) {
         this.builderCreators = creators;
-        return this;
-      }
-
-      public Builder basePoints(BigDecimal basePoints) {
-        this.builderBasePoints = basePoints;
-        return this;
-      }
-
-      public Builder points(List<DbInstitutionPoints> points) {
-        this.builderPoints = points;
-        return this;
-      }
-
-      public Builder totalPoints(BigDecimal totalPoints) {
-        this.builderTotalPoints = totalPoints;
         return this;
       }
 
@@ -609,25 +458,10 @@ public final class CandidateDao extends Dao {
 
       public DbCandidate build() {
         return new DbCandidate(
-            builderPublicationId,
-            builderPublicationBucketUri,
-            builderPublicationIdentifier,
             builderPointCalculation,
             builderPublicationDetails,
             builderApplicable,
-            builderInstanceType,
-            builderChannelType,
-            builderChannelId,
-            builderLevel,
-            builderPublicationDate,
-            builderInternationalCollaboration,
-            builderCollaborationFactor,
-            builderCreatorCount,
-            builderCreatorShareCount,
             builderCreators,
-            builderBasePoints,
-            builderPoints,
-            builderTotalPoints,
             builderCreatedDate,
             builderModifiedDate,
             builderReportStatus);

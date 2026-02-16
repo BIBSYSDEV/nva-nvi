@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.common.dto;
 
 import static java.util.Collections.emptyList;
 import static no.sikt.nva.nvi.test.TestUtils.randomInstitutionName;
+import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 
 import java.net.URI;
@@ -37,6 +38,11 @@ public final class CustomerDtoFixtures {
   }
 
   public static CustomerDto createCustomer(URI organizationId, boolean isNviInstitution) {
+    return createCustomer(organizationId, isNviInstitution, randomElement(Sector.values()));
+  }
+
+  public static CustomerDto createCustomer(
+      URI organizationId, boolean isNviInstitution, Sector sector) {
     return new CustomerDto(
         randomUri(),
         null,
@@ -51,6 +57,6 @@ public final class CustomerDtoFixtures {
         emptyList(),
         null,
         false,
-        Sector.UNKNOWN.toString());
+        sector.toString());
   }
 }

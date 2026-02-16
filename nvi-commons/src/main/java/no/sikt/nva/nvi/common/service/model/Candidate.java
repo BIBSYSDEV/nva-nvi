@@ -38,8 +38,6 @@ import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.NoteDao;
 import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
@@ -104,7 +102,7 @@ public record Candidate(
         .withApprovals(mapToApprovalsMap(approvals))
         .withNotes(mapToNotesMap(notes))
         .withPeriod(period)
-        .withPointCalculation(PointCalculation.from(candidateDao))
+        .withPointCalculation(PointCalculation.from(dbCandidate.pointCalculation()))
         .withPublicationDetails(PublicationDetails.from(candidateDao))
         .withCreatedDate(dbCandidate.createdDate())
         .withModifiedDate(dbCandidate.modifiedDate())
@@ -178,30 +176,15 @@ public record Candidate(
 
   public CandidateDao toDao() {
     var dbPublication = publicationDetails.toDbPublication();
-    var dbChannel = pointCalculation.channel().toDbPublicationChannel();
     var dbCandidate =
         DbCandidate.builder()
             .pointCalculation(pointCalculation.toDbPointCalculation())
             .publicationDetails(dbPublication)
             .applicable(applicable)
             .creators(dbPublication.creators())
-            .creatorShareCount(getCreatorShareCount())
-            .channelType(dbChannel.channelType())
-            .channelId(dbChannel.id())
-            .level(DbLevel.parse(dbChannel.scientificValue()))
-            .instanceType(pointCalculation.instanceType().getValue())
-            .publicationDate(dbPublication.publicationDate())
-            .internationalCollaboration(pointCalculation.isInternationalCollaboration())
-            .collaborationFactor(getCollaborationFactor())
-            .basePoints(getBasePoints())
-            .points(mapToPoints(getInstitutionPoints()))
-            .totalPoints(getTotalPoints())
             .createdDate(createdDate)
             .modifiedDate(modifiedDate)
             .reportStatus(reportStatus)
-            .publicationBucketUri(dbPublication.publicationBucketUri())
-            .publicationId(dbPublication.id())
-            .publicationIdentifier(dbPublication.identifier())
             .build();
     var periodYear = getPeriod().map(NviPeriod::publishingYear).map(Object::toString).orElse(null);
     var daoVersion = getVersion().map(Object::toString).orElse(null);
@@ -519,10 +502,6 @@ public record Candidate(
       resetApprovals.add(newApproval);
     }
     return resetApprovals;
-  }
-
-  private static List<DbInstitutionPoints> mapToPoints(Collection<InstitutionPoints> points) {
-    return points.stream().map(DbInstitutionPoints::from).toList();
   }
 
   private Set<URI> getVerifiedNviCreatorIds() {

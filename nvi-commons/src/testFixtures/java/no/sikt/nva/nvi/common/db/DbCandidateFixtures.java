@@ -15,7 +15,6 @@ import java.util.List;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.model.DbPointCalculation;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDetails;
@@ -41,10 +40,7 @@ public class DbCandidateFixtures {
     var publicationDate = new DbPublicationDate(year, null, null);
     var publicationDetails =
         randomPublicationBuilder(organizationId).publicationDate(publicationDate).build();
-    return randomCandidateBuilder(organizationId, publicationDetails)
-        .publicationDate(publicationDate)
-        .applicable(true)
-        .build();
+    return randomCandidateBuilder(organizationId, publicationDetails).applicable(true).build();
   }
 
   public static DbCandidate.Builder randomCandidateBuilder(
@@ -60,23 +56,11 @@ public class DbCandidateFixtures {
       DbPointCalculation pointCalculation) {
     var creatorId = randomUri();
     return DbCandidate.builder()
-        .publicationId(publicationDetails.id())
-        .publicationBucketUri(publicationDetails.publicationBucketUri())
-        .publicationIdentifier(publicationDetails.identifier())
         .pointCalculation(pointCalculation)
         .publicationDetails(publicationDetails)
         .applicable(true)
-        .instanceType(pointCalculation.instanceType())
-        .points(pointCalculation.institutionPoints())
-        .level(DbLevel.LEVEL_ONE)
-        .channelType(pointCalculation.publicationChannel().channelType())
-        .channelId(pointCalculation.publicationChannel().id())
-        .publicationDate(publicationDetails.publicationDate())
-        .internationalCollaboration(pointCalculation.internationalCollaboration())
-        .creatorCount(pointCalculation.creatorShareCount())
         .createdDate(Instant.now())
         .modifiedDate(Instant.now())
-        .totalPoints(pointCalculation.totalPoints())
         .creators(
             List.of(
                 DbCreator.builder()
@@ -101,27 +85,12 @@ public class DbCandidateFixtures {
     var dbCreators = mapToDbCreators(request.verifiedCreators(), request.unverifiedCreators());
     var dbPointCalculation = getExpectedPointCalculation(request);
     var dbPublicationDetails = getExpectedPublicationDetails(request);
-    var dbChannel = dbPointCalculation.publicationChannel();
     var dbCandidate =
         DbCandidate.builder()
-            .publicationId(request.publicationId())
-            .publicationIdentifier(dbPublicationDetails.identifier())
-            .publicationBucketUri(request.publicationBucketUri())
             .pointCalculation(dbPointCalculation)
             .publicationDetails(dbPublicationDetails)
-            .publicationDate(dbPublicationDetails.publicationDate())
             .applicable(dtoPublicationDetails.isApplicable())
-            .instanceType(dbPointCalculation.instanceType())
-            .channelType(dbChannel.channelType())
-            .channelId(dbChannel.id())
-            .level(DbLevel.parse(dbChannel.scientificValue()))
-            .basePoints(dbPointCalculation.basePoints())
-            .internationalCollaboration(dbPointCalculation.internationalCollaboration())
-            .collaborationFactor(dbPointCalculation.collaborationFactor())
             .creators(dbCreators)
-            .creatorShareCount(dbPointCalculation.creatorShareCount())
-            .points(dbPointCalculation.institutionPoints())
-            .totalPoints(dbPointCalculation.totalPoints())
             .createdDate(createdDate)
             .build();
     return CandidateDao.builder()

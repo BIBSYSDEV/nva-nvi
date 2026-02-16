@@ -81,8 +81,8 @@ public class CristinNviReportEventConsumer implements RequestHandler<SQSEvent, V
     var historicalCandidate =
         attempt(() -> cristinMapper.toDbCandidate(cristinNviReport))
             .orElseThrow(CristinConversionException::fromFailure);
-    var publication =
-        publicationLoader.extractAndTransform(historicalCandidate.publicationBucketUri());
+    var bucketUri = historicalCandidate.publicationDetails().publicationBucketUri();
+    var publication = publicationLoader.extractAndTransform(bucketUri);
     return createUpdatedDbCandidate(historicalCandidate, publication);
   }
 

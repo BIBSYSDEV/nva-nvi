@@ -2,9 +2,11 @@ package no.sikt.nva.nvi.common;
 
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.createCandidateInRepository;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidateBuilder;
+import static no.sikt.nva.nvi.common.db.DbPublicationDetailsFixtures.randomPublicationBuilder;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.model.ContributorFixtures.mapToContributorDto;
 import static no.sikt.nva.nvi.common.model.NviCreatorFixtures.verifiedNviCreatorFrom;
+import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationId;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_NORWAY;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -23,6 +25,7 @@ import no.sikt.nva.nvi.test.SampleExpandedPublication;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+@Deprecated(forRemoval = true)
 class CandidateMigrationServiceTest {
 
   private TestScenario scenario;
@@ -82,12 +85,12 @@ class CandidateMigrationServiceTest {
   private UUID createLegacyCandidate(
       SampleExpandedPublication publication,
       Function<DbCandidate.Builder, DbCandidate.Builder> customizer) {
-    var publicationBucketUri = scenario.setupExpandedPublicationInS3(publication);
+    scenario.setupExpandedPublicationInS3(publication);
+    var topLevelInstitution = randomOrganizationId();
+    var dbDetails = randomPublicationBuilder(publication.identifier(), topLevelInstitution);
     var builder =
-        randomCandidateBuilder(true)
-            .reportStatus(ReportStatus.REPORTED)
-            .publicationId(publication.id())
-            .publicationBucketUri(publicationBucketUri);
+        randomCandidateBuilder(topLevelInstitution, dbDetails.build())
+            .reportStatus(ReportStatus.REPORTED);
     var dbCandidate = customizer.apply(builder).build();
     return createCandidateInRepository(candidateRepository, dbCandidate);
   }
