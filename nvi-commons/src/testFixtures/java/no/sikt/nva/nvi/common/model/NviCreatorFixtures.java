@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.common.model;
 
-import static no.sikt.nva.nvi.common.model.ContributorFixtures.STATUS_UNVERIFIED;
 import static no.sikt.nva.nvi.common.model.ContributorFixtures.STATUS_VERIFIED;
 import static no.sikt.nva.nvi.test.TestUtils.randomUriWithSuffix;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
