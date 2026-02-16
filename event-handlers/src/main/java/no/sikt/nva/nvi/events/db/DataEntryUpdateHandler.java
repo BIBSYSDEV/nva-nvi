@@ -49,7 +49,7 @@ public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
 
   @Override
   public Void handleRequest(SQSEvent input, Context context) {
-    input.getRecords().stream().forEach(this::processSqsMessage);
+    input.getRecords().forEach(this::processSqsMessage);
     return null;
   }
 

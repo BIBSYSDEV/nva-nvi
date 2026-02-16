@@ -38,7 +38,7 @@ public record Organization(
         .withCountryCode(dbOrganization.countryCode())
         .withPartOf(mapIfNotEmpty(dbOrganization.parentOrganizations(), Organization::from))
         .withHasPart(mapIfNotEmpty(dbOrganization.subOrganizations(), Organization::from))
-        .withLabels(Optional.ofNullable(dbOrganization.labels()).orElse(null))
+        .withLabels(dbOrganization.labels())
         .build();
   }
 
@@ -48,7 +48,7 @@ public record Organization(
         .countryCode(organization.countryCode())
         .parentOrganizations(mapIfNotEmpty(organization.partOf(), Organization::toDbOrganization))
         .subOrganizations(mapIfNotEmpty(organization.hasPart(), Organization::toDbOrganization))
-        .labels(Optional.ofNullable(organization.labels()).orElse(null))
+        .labels(organization.labels())
         .build();
   }
 

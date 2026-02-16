@@ -1,8 +1,8 @@
 package no.sikt.nva.nvi.common.service.dto.problem;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public record UnverifiedCreatorFromOrganizationProblem(
     String title, String scope, String detail, Set<String> contributors)
@@ -16,10 +16,6 @@ or receive NVI points for it, until the contributor is verified or removed from 
 """;
 
   public UnverifiedCreatorFromOrganizationProblem(Collection<String> contributors) {
-    this(
-        DEFAULT_TITLE,
-        ORGANIZATION_SCOPE,
-        DEFAULT_DESCRIPTION,
-        contributors.stream().collect(Collectors.toSet()));
+    this(DEFAULT_TITLE, ORGANIZATION_SCOPE, DEFAULT_DESCRIPTION, new HashSet<>(contributors));
   }
 }
