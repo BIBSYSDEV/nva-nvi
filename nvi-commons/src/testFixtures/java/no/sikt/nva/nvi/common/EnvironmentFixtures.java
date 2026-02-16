@@ -7,7 +7,6 @@ import nva.commons.core.paths.UriWrapper;
  * Utility to set up fake environment variables for testing purposes. Keep this in sync with the
  * actual environment variables defined in template.yaml.
  */
-@SuppressWarnings("PMD.ExcessivePublicCount")
 public enum EnvironmentFixtures {
   // Global environment variables
   API_HOST("api.fake.nva.aws.unit.no"),
@@ -32,7 +31,6 @@ public enum EnvironmentFixtures {
   // Other handler-specific environment variables
   ALLOWED_ORIGIN("*"),
   BATCH_JOB_QUEUE_URL("http://localhost:3000/batch-job-queue"),
-  CANDIDATE_QUEUE_URL("http://localhost:3000/candidate-queue"),
   COGNITO_HOST("not-actually-in-use-but-exists-in-template"),
   DB_EVENTS_QUEUE_URL("http://localhost:3000/db-events-queue"),
   PERSISTED_INDEX_DOCUMENT_QUEUE_URL("http://localhost:3000/index-document-queue"),
@@ -87,31 +85,7 @@ public enum EnvironmentFixtures {
   public static FakeEnvironment getEvaluateNviCandidateHandlerEnvironment() {
     return getDefaultEnvironmentBuilder()
         .with(EXPANDED_RESOURCES_BUCKET)
-        .with(CANDIDATE_QUEUE_URL)
         .with(EVALUATION_DLQ_URL)
-        .build();
-  }
-
-  public static FakeEnvironment getEventBasedBatchScanHandlerEnvironment() {
-    return getDefaultEnvironmentBuilder()
-        .with(EXPANDED_RESOURCES_BUCKET)
-        .with(BATCH_SCAN_RECOVERY_QUEUE)
-        .with(EVENT_BUS_NAME)
-        .build();
-  }
-
-  public static FakeEnvironment getBatchScanRecoveryHandlerEnvironment() {
-    return getDefaultEnvironmentBuilder()
-        .with(EXPANDED_RESOURCES_BUCKET)
-        .with(BATCH_SCAN_RECOVERY_QUEUE)
-        .build();
-  }
-
-  public static FakeEnvironment getRedriveUpsertDlqHandlerEnvironment() {
-    return getDefaultEnvironmentBuilder()
-        .with(EXPANDED_RESOURCES_BUCKET)
-        .with(UPSERT_CANDIDATE_DLQ_QUEUE_URL)
-        .with(PERSISTED_RESOURCE_QUEUE_URL)
         .build();
   }
 
@@ -125,10 +99,6 @@ public enum EnvironmentFixtures {
 
   public static FakeEnvironment getCristinNviReportEventConsumerEnvironment() {
     return getDefaultEnvironmentBuilder().with(EXPANDED_RESOURCES_BUCKET).build();
-  }
-
-  public static FakeEnvironment getUpsertNviCandidateHandlerEnvironment() {
-    return getDefaultEnvironmentBuilder().with(UPSERT_CANDIDATE_DLQ_QUEUE_URL).build();
   }
 
   public static FakeEnvironment getDynamoDbEventToQueueHandlerEnvironment() {
