@@ -249,8 +249,7 @@
         }
       }
     },
-    "status": "PUBLISHED",
-    "identifier" : "01888b283f29-cae193c7-80fa-4f92-a164-c73b02c19f2d"
+    "status": "PUBLISHED"
   },
   "consumptionAttributes" : {
     "index" : "resources",
