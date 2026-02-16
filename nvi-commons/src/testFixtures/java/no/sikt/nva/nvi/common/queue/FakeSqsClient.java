@@ -15,10 +15,7 @@ import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.QueueServiceTestUtils;
 import software.amazon.awssdk.services.sqs.model.BatchResultErrorEntry;
 import software.amazon.awssdk.services.sqs.model.DeleteMessageRequest;
-import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.MessageAttributeValue;
-import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest;
-import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequest;
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequestEntry;
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchResponse;
@@ -27,7 +24,6 @@ import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 import software.amazon.awssdk.services.sqs.model.SqsException;
 
-@SuppressWarnings("PMD.CouplingBetweenObjects")
 public class FakeSqsClient implements QueueClient {
 
   private static final String CANDIDATE_IDENTIFIER = "candidateIdentifier";
@@ -38,8 +34,6 @@ public class FakeSqsClient implements QueueClient {
   private final List<SendMessageRequest> sentMessages = new ArrayList<>();
 
   private final List<SendMessageBatchRequest> sentBatches = new ArrayList<>();
-
-  private final List<ReceiveMessageRequest> receivedMessages = new ArrayList<>();
 
   private final List<DeleteMessageRequest> deleteMessages = new ArrayList<>();
 
@@ -145,38 +139,10 @@ public class FakeSqsClient implements QueueClient {
     destinationQueuesThatShouldFail.add(queueUrl);
   }
 
-  /**
-   * Removes the exception throwing behavior from a queue destination.
-   *
-   * @param queueUrl the URL of the queue to enable
-   */
-  public void enableDestinationQueue(String queueUrl) {
-    destinationQueuesThatShouldFail.remove(queueUrl);
-  }
-
   private void validateQueueUrl(String queueUrl) {
     if (destinationQueuesThatShouldFail.contains(queueUrl)) {
       throw SqsException.builder().message("Queue is disabled").build();
     }
-  }
-
-  private ReceiveMessageRequest createReceiveRequest(String queueUrl, int maxNumberOfMessages) {
-    return ReceiveMessageRequest.builder()
-        .queueUrl(queueUrl)
-        .maxNumberOfMessages(maxNumberOfMessages)
-        .build();
-  }
-
-  private NviReceiveMessageResponse createResponse(ReceiveMessageResponse receiveMessageResponse) {
-    return new NviReceiveMessageResponse(
-        receiveMessageResponse.messages().stream()
-            .map(FakeSqsClient::mapToNviReceiveMessage)
-            .toList());
-  }
-
-  private static NviReceiveMessage mapToNviReceiveMessage(Message m) {
-    return new NviReceiveMessage(
-        m.body(), m.messageId(), m.attributesAsStrings(), m.receiptHandle());
   }
 
   private SendMessageBatchRequest createBatchRequest(Collection<String> messages, String queueUrl) {

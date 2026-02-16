@@ -62,6 +62,7 @@ public class UpsertNviCandidateHandler implements RequestHandler<SQSEvent, Void>
         .orElseThrow(failure -> new InvalidNviMessageException(INVALID_NVI_CANDIDATE_MESSAGE));
   }
 
+  @SuppressWarnings("PMD.AvoidCatchingGenericException")
   private void upsertNviCandidate(CandidateEvaluatedMessage evaluatedCandidate) {
     var publicationId = evaluatedCandidate.publicationId();
     LOGGER.info("Processing publication: {}", publicationId);
