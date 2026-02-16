@@ -41,14 +41,4 @@ public class NviCreatorFixtures {
         List.of(affiliations),
         List.of(topLevelOrganization));
   }
-
-  public static NviCreator unverifiedNviCreatorFrom(
-      Organization topLevelOrganization, URI... affiliations) {
-    return new NviCreator(
-        null,
-        randomString(),
-        STATUS_UNVERIFIED,
-        List.of(affiliations),
-        List.of(topLevelOrganization));
-  }
 }
