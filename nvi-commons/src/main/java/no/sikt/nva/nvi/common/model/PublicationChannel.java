@@ -3,7 +3,7 @@ package no.sikt.nva.nvi.common.model;
 import static java.util.Objects.nonNull;
 
 import java.net.URI;
-import no.sikt.nva.nvi.common.db.CandidateDao;
+import java.util.Optional;
 import no.sikt.nva.nvi.common.db.model.DbPublicationChannel;
 import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
 
@@ -24,22 +24,6 @@ public record PublicationChannel(URI id, ChannelType channelType, ScientificValu
         dtoChannel.id(), dtoChannel.channelType(), dtoChannel.scientificValue());
   }
 
-  /**
-   * @deprecated Temporary method while migrating data.
-   */
-  @Deprecated(since = "2025-05-05", forRemoval = true)
-  public static PublicationChannel from(CandidateDao candidateDao) {
-    var dbPointCalculation = candidateDao.candidate().pointCalculation();
-    if (nonNull(dbPointCalculation) && nonNull(dbPointCalculation.publicationChannel())) {
-      return from(dbPointCalculation.publicationChannel());
-    }
-
-    var scientificValue = ScientificValue.parse(candidateDao.candidate().level().getValue());
-    var channelType = ChannelType.parse(candidateDao.candidate().channelType());
-    return new PublicationChannel(
-        candidateDao.candidate().channelId(), channelType, scientificValue);
-  }
-
   public static PublicationChannel from(DbPublicationChannel dbPublicationChannel) {
     var dbScientificValue = dbPublicationChannel.scientificValue();
     var scientificValue =
@@ -52,8 +36,9 @@ public record PublicationChannel(URI id, ChannelType channelType, ScientificValu
   public DbPublicationChannel toDbPublicationChannel() {
     return DbPublicationChannel.builder()
         .id(id)
-        .channelType(channelType.getValue())
-        .scientificValue(scientificValue.getValue())
+        .channelType(Optional.ofNullable(channelType).map(ChannelType::getValue).orElse(null))
+        .scientificValue(
+            Optional.ofNullable(scientificValue).map(ScientificValue::getValue).orElse(null))
         .build();
   }
 }

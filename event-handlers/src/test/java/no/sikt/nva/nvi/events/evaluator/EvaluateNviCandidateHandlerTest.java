@@ -2,12 +2,14 @@ package no.sikt.nva.nvi.events.evaluator;
 
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
-import static no.sikt.nva.nvi.common.EnvironmentFixtures.getEvaluateNviCandidateHandlerEnvironment;
+import static java.util.Collections.emptyList;
+import static no.sikt.nva.nvi.common.EnvironmentFixtures.EVALUATION_DLQ_URL;
 import static no.sikt.nva.nvi.common.SampleExpandedPublicationFactory.mapOrganizationToAffiliation;
 import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.setupReportedCandidate;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeriod;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
+import static no.sikt.nva.nvi.common.dto.CustomerDtoFixtures.getDefaultCustomers;
 import static no.sikt.nva.nvi.common.model.ChannelType.JOURNAL;
 import static no.sikt.nva.nvi.common.model.ChannelType.SERIES;
 import static no.sikt.nva.nvi.common.model.ContributorFixtures.ROLE_CREATOR;
@@ -18,73 +20,46 @@ import static no.sikt.nva.nvi.common.model.ContributorFixtures.verifiedCreatorFr
 import static no.sikt.nva.nvi.common.model.InstanceType.ACADEMIC_COMMENTARY;
 import static no.sikt.nva.nvi.common.model.InstanceType.ACADEMIC_LITERATURE_REVIEW;
 import static no.sikt.nva.nvi.common.model.InstanceType.ACADEMIC_MONOGRAPH;
-import static no.sikt.nva.nvi.common.model.OrganizationFixtures.mockOrganizationResponseForAffiliation;
 import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublicationDate;
 import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublicationDateInYear;
 import static no.sikt.nva.nvi.events.evaluator.TestUtils.createEvent;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_NORWAY;
-import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_SWEDEN;
-import static no.sikt.nva.nvi.test.TestConstants.CRISTIN_NVI_ORG_SUB_UNIT_ID;
 import static no.sikt.nva.nvi.test.TestConstants.CRISTIN_NVI_ORG_TOP_LEVEL_ID;
-import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_CREATOR_ID;
 import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_PUBLICATION_ID;
+import static no.sikt.nva.nvi.test.TestConstants.THIS_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
-import static no.sikt.nva.nvi.test.TestUtils.createResponse;
-import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
-import static nva.commons.core.attempt.Try.attempt;
-import static nva.commons.core.ioutils.IoUtils.stringFromResources;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.Arguments.argumentSet;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.doThrow;
 
-import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
-import java.net.URLEncoder;
-import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.SampleExpandedPublicationFactory;
 import no.sikt.nva.nvi.common.client.model.Organization;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
-import no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures;
-import no.sikt.nva.nvi.common.dto.PointCalculationDto;
-import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
-import no.sikt.nva.nvi.common.dto.PublicationDetailsDto;
-import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
-import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
-import no.sikt.nva.nvi.common.model.ChannelType;
 import no.sikt.nva.nvi.common.model.InstanceType;
 import no.sikt.nva.nvi.common.model.NviCreator;
 import no.sikt.nva.nvi.common.model.PublicationChannel;
 import no.sikt.nva.nvi.common.model.PublicationDate;
 import no.sikt.nva.nvi.common.model.ScientificValue;
+import no.sikt.nva.nvi.common.queue.NviReceiveMessage;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
+import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
-import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
-import no.sikt.nva.nvi.events.evaluator.calculator.CreatorVerificationUtil;
-import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.sikt.nva.nvi.test.SampleExpandedContributor;
 import no.sikt.nva.nvi.test.SampleExpandedPublication;
-import nva.commons.core.ioutils.IoUtils;
+import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
 import nva.commons.logutils.LogUtils;
@@ -96,16 +71,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-// Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
-@SuppressWarnings("PMD.CouplingBetweenObjects")
 class EvaluateNviCandidateHandlerTest extends EvaluationTest {
 
-  public static final PublicationDateDto HARDCODED_PUBLICATION_DATE =
-      new PublicationDateDto("2023", null, null);
   public static final URI HARDCODED_PUBLICATION_CHANNEL_ID =
       URI.create("https://api.dev.nva.aws.unit.no/publication-channels/series/490845/2023");
-  public static final URI SIKT_CRISTIN_ORG_ID =
-      URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0");
   private static final String ACADEMIC_CHAPTER_PATH = "evaluator/candidate_academicChapter.json";
 
   private static final String ACADEMIC_LITERATURE_REVIEW_JSON_PATH =
@@ -115,27 +84,16 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
   private static final String ACADEMIC_COMMENTARY_JSON_PATH =
       "evaluator/candidate_academicCommentary.json";
   private static final String ACADEMIC_ARTICLE_PATH = "evaluator/candidate_academicArticle.json";
-  private static final String ACADEMIC_ARTICLE =
-      stringFromResources(Path.of(ACADEMIC_ARTICLE_PATH))
-          .replace("__REPLACE_WITH_PUBLICATION_ID__", HARDCODED_PUBLICATION_ID.toString());
-  private static final URI CUSTOMER_API_CRISTIN_NVI_ORG_TOP_LEVEL =
-      URI.create(
-          "https://api.fake.nva.aws.unit.no/customer/cristinId/https%3A%2F%2Fapi"
-              + ".dev.nva.aws.unit.no%2Fcristin%2Forganization%2F194.0.0.0");
-  private static final String NON_NVI_CUSTOMER_PATH = "nonNviCustomerResponse.json";
+  private static final String ACADEMIC_ARTICLE = getPublicationFromFile(ACADEMIC_ARTICLE_PATH);
 
   @Test
-  void shouldCreateNewCandidateEventOnValidCandidate() throws IOException {
-    when(authorizedBackendUriRetriever.fetchResponse(any(), any()))
-        .thenReturn(Optional.of(okResponse));
-    mockOrganizationResponseForAffiliation(SIKT_CRISTIN_ORG_ID, null, uriRetriever);
-    var path = "evaluator/candidate.json";
-    var content = IoUtils.inputStreamFromResources(path);
-    var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
-    var event = createEvent(new PersistedResourceMessage(fileUri));
-    handler.handleRequest(event, CONTEXT);
-    var candidate = (UpsertNviCandidateRequest) getMessageBody().candidate();
-    assertEquals(candidate.publicationBucketUri(), fileUri);
+  void shouldCreateNewCandidateForApplicablePublication() {
+    var publication = getPublicationFromFile("evaluator/candidate.json");
+
+    handleEvaluation(publication);
+
+    var candidate = candidateService.getCandidateByPublicationId(HARDCODED_PUBLICATION_ID);
+    assertThat(candidate.isApplicable()).isTrue();
   }
 
   @ParameterizedTest
@@ -153,359 +111,322 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
 
   private static Stream<Arguments> invalidPublicationProvider() {
     var documentWithMalformedDate =
-        stringFromResources(Path.of("evaluator/candidate_publicationDate_replace_year.json"))
+        getPublicationFromFile("evaluator/candidate_publicationDate_replace_year.json")
             .replace("__REPLACE_YEAR__", "1948-1997");
-    var documentWithMissingDate =
-        stringFromResources(Path.of("expandedPublications/invalidDraft.json"));
+    var documentWithMissingDate = getPublicationFromFile("expandedPublications/invalidDraft.json");
     return Stream.of(
         argumentSet("Malformed publication year", documentWithMalformedDate),
         argumentSet("Missing publication date", documentWithMissingDate));
   }
 
   @Test
-  void shouldEvaluateExistingCandidateInOpenPeriod() throws IOException {
-    mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-    var year = LocalDateTime.now().getYear();
-    var resourceFileUri = setupCandidate(year);
-    periodRepository = PeriodRepositoryFixtures.periodRepositoryReturningOpenedPeriod(year);
-    setupEvaluatorService(periodRepository);
+  void shouldEvaluateExistingCandidateInOpenPeriod() {
+    setupOpenPeriod(scenario, THIS_YEAR);
+    var publication = createApplicablePublication(THIS_YEAR);
+    var candidate = setupExistingCandidateForPublication(publication);
 
-    handler =
-        new EvaluateNviCandidateHandler(
-            evaluatorService, queueClient, getEvaluateNviCandidateHandlerEnvironment());
-    var event = createEvent(new PersistedResourceMessage(resourceFileUri));
-    handler.handleRequest(event, CONTEXT);
-    var candidate = (UpsertNviCandidateRequest) getMessageBody().candidate();
-    assertEquals(candidate.publicationBucketUri(), resourceFileUri);
+    var updatedAbstract = randomString();
+    var updatedPublication =
+        publication.getExpandedPublicationBuilder().withAbstract(updatedAbstract).build();
+    handleEvaluation(updatedPublication.toJsonString());
+
+    var updatedCandidate = candidateService.getCandidateByPublicationId(updatedPublication.id());
+    assertThat(updatedCandidate.publicationDetails().abstractText()).isEqualTo(updatedAbstract);
+    assertThat(updatedCandidate.modifiedDate()).isAfter(candidate.modifiedDate());
   }
 
   @Test
-  void shouldEvaluateStrippedCandidate() throws IOException {
-    when(authorizedBackendUriRetriever.fetchResponse(any(), any()))
-        .thenReturn(Optional.of(okResponse));
-    mockOrganizationResponseForAffiliation(SIKT_CRISTIN_ORG_ID, null, uriRetriever);
-    var path = "evaluator/candidate_stripped.json";
-    var content = IoUtils.inputStreamFromResources(path);
-    var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
-    var event = createEvent(new PersistedResourceMessage(fileUri));
-    handler.handleRequest(event, CONTEXT);
-    var candidate = (UpsertNviCandidateRequest) getMessageBody().candidate();
-    assertEquals(candidate.publicationBucketUri(), fileUri);
+  void shouldEvaluateStrippedCandidate() {
+    var publication = getPublicationFromFile("evaluator/candidate_stripped.json");
+
+    handleEvaluation(publication);
+
+    var candidate = candidateService.getCandidateByPublicationId(HARDCODED_PUBLICATION_ID);
+    assertThat(candidate.isApplicable()).isTrue();
   }
 
   @Test
-  void shouldCreateNewCandidateWithPointsOnlyForNviInstitutions() throws IOException {
-    mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-    mockCristinResponseAndCustomerApiResponseForNonNviInstitution();
-    var content =
-        IoUtils.inputStreamFromResources(
-            "evaluator/candidate_verifiedCreator_with_nonNviInstitution.json");
-    var fileUri =
-        s3Driver.insertFile(
-            UnixPath.of("evaluator/candidate_verifiedCreator_with_nonNviInstitution.json"),
-            content);
-    var event = createEvent(new PersistedResourceMessage(fileUri));
-    handler.handleRequest(event, CONTEXT);
-    var messageBody = getMessageBody();
-    var candidate = (UpsertNviCandidateRequest) messageBody.candidate();
-    assertEquals(1, candidate.pointCalculation().institutionPoints().size());
-    assertNotNull(getPointsForInstitution(candidate, CRISTIN_NVI_ORG_TOP_LEVEL_ID));
+  void shouldCreateNewCandidateWithPointsOnlyForNviInstitutions() {
+    var publication =
+        getPublicationFromFile("evaluator/candidate_verifiedCreator_with_nonNviInstitution.json");
+
+    handleEvaluation(publication);
+
+    var candidate = candidateService.getCandidateByPublicationId(HARDCODED_PUBLICATION_ID);
+    assertThat(candidate.getInstitutionPoints())
+        .singleElement()
+        .extracting(InstitutionPoints::institutionId)
+        .isEqualTo(CRISTIN_NVI_ORG_TOP_LEVEL_ID);
   }
 
   @Test
-  void shouldCreateNewCandidateEventOnValidAcademicArticle() throws IOException {
-    mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-    var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH), ACADEMIC_ARTICLE);
-    var event = createEvent(new PersistedResourceMessage(fileUri));
-    handler.handleRequest(event, CONTEXT);
-    var messageBody = getMessageBody();
-    var expectedPoints = BigDecimal.valueOf(1).setScale(SCALE, ROUNDING_MODE);
-    var expectedEvaluatedMessage =
-        getExpectedEvaluatedMessage(
-            InstanceType.ACADEMIC_ARTICLE, expectedPoints, fileUri, JOURNAL, ONE, expectedPoints);
-    assertThatEvaluatedMessageEqualsExpectedMessage(expectedEvaluatedMessage, messageBody);
+  void shouldCreateNewCandidateEventOnValidAcademicArticle() {
+    handleEvaluation(ACADEMIC_ARTICLE);
+
+    var candidate = candidateService.getCandidateByPublicationId(HARDCODED_PUBLICATION_ID);
+
+    var expectedPoints = ONE.setScale(SCALE, ROUNDING_MODE);
+    assertThat(candidate)
+        .extracting(
+            Candidate::isApplicable,
+            Candidate::getPublicationType,
+            Candidate::getTotalPoints,
+            Candidate::getBasePoints)
+        .containsExactly(true, InstanceType.ACADEMIC_ARTICLE, expectedPoints, expectedPoints);
+    assertThat(candidate.getPublicationChannel().channelType()).isEqualTo(JOURNAL);
+    assertThat(candidate.getPublicationChannel().scientificValue())
+        .isEqualTo(ScientificValue.LEVEL_ONE);
   }
 
   @Test
-  void shouldCreateNewCandidateEventWithCorrectDataOnValidAcademicChapter() throws IOException {
-    mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-    var content = IoUtils.inputStreamFromResources(ACADEMIC_CHAPTER_PATH);
-    var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_CHAPTER_PATH), content);
-    var event = createEvent(new PersistedResourceMessage(fileUri));
-    handler.handleRequest(event, CONTEXT);
-    var messageBody = getMessageBody();
-    var expectedPoints = BigDecimal.valueOf(1).setScale(SCALE, ROUNDING_MODE);
-    var expectedEvaluatedMessage =
-        getExpectedEvaluatedMessage(
-            InstanceType.ACADEMIC_CHAPTER, expectedPoints, fileUri, SERIES, ONE, expectedPoints);
-    assertThatEvaluatedMessageEqualsExpectedMessage(expectedEvaluatedMessage, messageBody);
+  void shouldCreateNewCandidateForValidAcademicChapter() {
+    var publication = getPublicationFromFile(ACADEMIC_CHAPTER_PATH);
+
+    handleEvaluation(publication);
+
+    var candidate = candidateService.getCandidateByPublicationId(HARDCODED_PUBLICATION_ID);
+    var expectedPoints = ONE.setScale(SCALE, ROUNDING_MODE);
+    assertThat(candidate)
+        .extracting(
+            Candidate::isApplicable,
+            Candidate::getPublicationType,
+            Candidate::getTotalPoints,
+            Candidate::getBasePoints)
+        .containsExactly(true, InstanceType.ACADEMIC_CHAPTER, expectedPoints, expectedPoints);
+    assertThat(candidate.getPublicationChannel().channelType()).isEqualTo(SERIES);
+    assertThat(candidate.getPublicationChannel().scientificValue())
+        .isEqualTo(ScientificValue.LEVEL_ONE);
   }
 
   @Test
-  void shouldCreateNewCandidateEventWithCorrectDataOnValidAcademicMonograph() throws IOException {
-    mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-    var content = IoUtils.inputStreamFromResources(ACADEMIC_MONOGRAPH_JSON_PATH);
-    var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_MONOGRAPH_JSON_PATH), content);
-    var event = createEvent(new PersistedResourceMessage(fileUri));
-    handler.handleRequest(event, CONTEXT);
-    var messageBody = getMessageBody();
+  void shouldCreateNewCandidateForValidAcademicMonograph() {
+    var publication = getPublicationFromFile(ACADEMIC_MONOGRAPH_JSON_PATH);
+
+    handleEvaluation(publication);
+
+    var candidate = candidateService.getCandidateByPublicationId(HARDCODED_PUBLICATION_ID);
     var expectedPoints = BigDecimal.valueOf(5).setScale(SCALE, ROUNDING_MODE);
-    var expectedEvaluatedMessage =
-        getExpectedEvaluatedMessage(
-            ACADEMIC_MONOGRAPH,
-            expectedPoints,
-            fileUri,
-            SERIES,
-            BigDecimal.valueOf(5),
-            expectedPoints);
-    assertThatEvaluatedMessageEqualsExpectedMessage(expectedEvaluatedMessage, messageBody);
+    assertThat(candidate)
+        .extracting(
+            Candidate::isApplicable,
+            Candidate::getPublicationType,
+            Candidate::getTotalPoints,
+            Candidate::getBasePoints)
+        .containsExactly(true, ACADEMIC_MONOGRAPH, expectedPoints, expectedPoints);
+    assertThat(candidate.getPublicationChannel().channelType()).isEqualTo(SERIES);
+    assertThat(candidate.getPublicationChannel().scientificValue())
+        .isEqualTo(ScientificValue.LEVEL_ONE);
   }
 
   @Test
-  void shouldCreateNewCandidateEventWithCorrectDataOnValidAcademicCommentary() throws IOException {
-    mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-    var content = IoUtils.inputStreamFromResources(ACADEMIC_COMMENTARY_JSON_PATH);
-    var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_COMMENTARY_JSON_PATH), content);
-    var event = createEvent(new PersistedResourceMessage(fileUri));
-    handler.handleRequest(event, CONTEXT);
-    var messageBody = getMessageBody();
+  void shouldCreateNewCandidateForValidAcademicCommentary() {
+    var publication = getPublicationFromFile(ACADEMIC_COMMENTARY_JSON_PATH);
+
+    handleEvaluation(publication);
+
+    var candidate = candidateService.getCandidateByPublicationId(HARDCODED_PUBLICATION_ID);
     var expectedPoints = BigDecimal.valueOf(5).setScale(SCALE, ROUNDING_MODE);
-    var expectedEvaluatedMessage =
-        getExpectedEvaluatedMessage(
-            ACADEMIC_COMMENTARY,
-            expectedPoints,
-            fileUri,
-            SERIES,
-            BigDecimal.valueOf(5),
-            expectedPoints);
-    assertThatEvaluatedMessageEqualsExpectedMessage(expectedEvaluatedMessage, messageBody);
+    assertThat(candidate)
+        .extracting(
+            Candidate::isApplicable,
+            Candidate::getPublicationType,
+            Candidate::getTotalPoints,
+            Candidate::getBasePoints)
+        .containsExactly(true, ACADEMIC_COMMENTARY, expectedPoints, expectedPoints);
+    assertThat(candidate.getPublicationChannel().channelType()).isEqualTo(SERIES);
+    assertThat(candidate.getPublicationChannel().scientificValue())
+        .isEqualTo(ScientificValue.LEVEL_ONE);
   }
 
   @Test
-  void shouldCreateNewCandidateEventWithCorrectDataOnValidAcademicLiteratureReview()
-      throws IOException {
-    mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-    var content = IoUtils.inputStreamFromResources(ACADEMIC_LITERATURE_REVIEW_JSON_PATH);
-    var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_LITERATURE_REVIEW_JSON_PATH), content);
-    var event = createEvent(new PersistedResourceMessage(fileUri));
-    handler.handleRequest(event, CONTEXT);
-    var messageBody = getMessageBody();
+  void shouldCreateNewCandidateForValidAcademicLiteratureReview() {
+    var publication = getPublicationFromFile(ACADEMIC_LITERATURE_REVIEW_JSON_PATH);
+
+    handleEvaluation(publication);
+
+    var candidate = candidateService.getCandidateByPublicationId(HARDCODED_PUBLICATION_ID);
     var expectedPoints = BigDecimal.valueOf(1).setScale(SCALE, ROUNDING_MODE);
-    var expectedEvaluatedMessage =
-        getExpectedEvaluatedMessage(
-            ACADEMIC_LITERATURE_REVIEW, expectedPoints, fileUri, JOURNAL, ONE, expectedPoints);
-    assertThatEvaluatedMessageEqualsExpectedMessage(expectedEvaluatedMessage, messageBody);
+    assertThat(candidate)
+        .extracting(
+            Candidate::isApplicable,
+            Candidate::getPublicationType,
+            Candidate::getTotalPoints,
+            Candidate::getBasePoints)
+        .containsExactly(true, ACADEMIC_LITERATURE_REVIEW, expectedPoints, expectedPoints);
+    assertThat(candidate.getPublicationChannel().channelType()).isEqualTo(JOURNAL);
+    assertThat(candidate.getPublicationChannel().scientificValue())
+        .isEqualTo(ScientificValue.LEVEL_ONE);
   }
 
   @Test
-  void shouldCalculatePointsOnValidAcademicArticle() throws IOException {
-    mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-    var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH), ACADEMIC_ARTICLE);
-    var event = createEvent(new PersistedResourceMessage(fileUri));
-    handler.handleRequest(event, CONTEXT);
-    var messageBody = getMessageBody();
-    var candidate = (UpsertNviCandidateRequest) messageBody.candidate();
-    assertNotNull(candidate.pointCalculation().institutionPoints());
-    assertEquals(
-        getPointsForInstitution(candidate, CRISTIN_NVI_ORG_TOP_LEVEL_ID),
-        BigDecimal.valueOf(1).setScale(4, RoundingMode.HALF_UP));
+  void shouldCalculatePointsOnValidAcademicArticle() {
+    handleEvaluation(ACADEMIC_ARTICLE);
+
+    var candidate = candidateService.getCandidateByPublicationId(HARDCODED_PUBLICATION_ID);
+    assertThat(candidate.getInstitutionPoints()).isNotEmpty();
+    assertThat(candidate.getPointValueForInstitution(CRISTIN_NVI_ORG_TOP_LEVEL_ID))
+        .isEqualTo(BigDecimal.valueOf(1).setScale(4, RoundingMode.HALF_UP));
   }
 
   @Test
-  void shouldCreateInstitutionApprovalsForTopLevelInstitutions() throws IOException {
-    mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-    var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH), ACADEMIC_ARTICLE);
-    var event = createEvent(new PersistedResourceMessage(fileUri));
-    handler.handleRequest(event, CONTEXT);
-    var messageBody = getMessageBody();
-    var candidate = (UpsertNviCandidateRequest) messageBody.candidate();
-    assertNotNull(candidate.pointCalculation().institutionPoints());
-    assertNotNull(getPointsForInstitution(candidate, CRISTIN_NVI_ORG_TOP_LEVEL_ID));
+  void shouldCreateInstitutionApprovalsForTopLevelInstitutions() {
+    handleEvaluation(ACADEMIC_ARTICLE);
+
+    var candidate = candidateService.getCandidateByPublicationId(HARDCODED_PUBLICATION_ID);
+    assertThat(candidate.getInstitutionPoints()).isNotEmpty();
+    assertThat(candidate.getPointValueForInstitution(CRISTIN_NVI_ORG_TOP_LEVEL_ID)).isNotNull();
+    assertThat(candidate.approvals()).containsKey(CRISTIN_NVI_ORG_TOP_LEVEL_ID);
   }
 
   @Test
   void
-      shouldCreateNewCandidateEventOnValidAcademicChapterWithSeriesLevelUnassignedWithPublisherLevel()
-          throws IOException {
-    mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-    var path = "evaluator/candidate_academicChapter_seriesLevelUnassignedPublisherLevelOne.json";
-    var content = IoUtils.inputStreamFromResources(path);
-    var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
-    var event = createEvent(new PersistedResourceMessage(fileUri));
-    handler.handleRequest(event, CONTEXT);
-    var candidate = (UpsertNviCandidateRequest) getMessageBody().candidate();
-    assertEquals(candidate.publicationBucketUri(), fileUri);
+      shouldCreateNewCandidateEventOnValidAcademicChapterWithSeriesLevelUnassignedWithPublisherLevel() {
+    var publication =
+        getPublicationFromFile(
+            "evaluator/candidate_academicChapter_seriesLevelUnassignedPublisherLevelOne.json");
+
+    handleEvaluation(publication);
+
+    var candidate = candidateService.getCandidateByPublicationId(HARDCODED_PUBLICATION_ID);
+    assertThat(candidate.isApplicable()).isTrue();
   }
 
   @Test
   void
-      shouldCreateNewCandidateEventOnValidAcademicMonographWithSeriesLevelUnassignedWithPublisherLevel()
-          throws IOException {
-    mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-    var path = "evaluator/candidate_academicMonograph_seriesLevelUnassignedPublisherLevelOne.json";
-    var content = IoUtils.inputStreamFromResources(path);
-    var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
-    var event = createEvent(new PersistedResourceMessage(fileUri));
+      shouldCreateNewCandidateEventOnValidAcademicMonographWithSeriesLevelUnassignedWithPublisherLevel() {
+    var publication =
+        getPublicationFromFile(
+            "evaluator/candidate_academicMonograph_seriesLevelUnassignedPublisherLevelOne.json");
+
+    handleEvaluation(publication);
+
+    var candidate = candidateService.getCandidateByPublicationId(HARDCODED_PUBLICATION_ID);
+    assertThat(candidate.isApplicable()).isTrue();
+  }
+
+  @Test
+  void
+      shouldCreateNewCandidateEventOnValidAcademicCommentaryWithoutSeriesLevelWithPublisherLevel() {
+    var publication =
+        getPublicationFromFile("evaluator/candidate_academicCommentary_withoutSeries.json");
+
+    handleEvaluation(publication);
+
+    var candidate = candidateService.getCandidateByPublicationId(HARDCODED_PUBLICATION_ID);
+    assertThat(candidate.isApplicable()).isTrue();
+  }
+
+  @Test
+  void shouldCreateNewCandidateEventOnValidAcademicMonograph() {
+    var publication = getPublicationFromFile(ACADEMIC_MONOGRAPH_JSON_PATH);
+
+    handleEvaluation(publication);
+
+    var candidate = candidateService.getCandidateByPublicationId(HARDCODED_PUBLICATION_ID);
+    assertThat(candidate.isApplicable()).isTrue();
+    assertThat(candidate.getPublicationType()).isEqualTo(ACADEMIC_MONOGRAPH);
+  }
+
+  @Test
+  void shouldCreateNewCandidateEventOnValidAcademicLiteratureReview() {
+    var publication = getPublicationFromFile(ACADEMIC_LITERATURE_REVIEW_JSON_PATH);
+
+    handleEvaluation(publication);
+
+    var candidate = candidateService.getCandidateByPublicationId(HARDCODED_PUBLICATION_ID);
+    assertThat(candidate.isApplicable()).isTrue();
+    assertThat(candidate.getPublicationType()).isEqualTo(ACADEMIC_LITERATURE_REVIEW);
+  }
+
+  @ParameterizedTest
+  @MethodSource("nonApplicablePublicationProvider")
+  void shouldNotCreateCandidateForNonApplicablePublication(String filePath) {
+    var publication = getPublicationFromFile(filePath);
+
+    handleEvaluation(publication);
+
+    assertThrows(
+        CandidateNotFoundException.class,
+        () -> candidateService.getCandidateByPublicationId(HARDCODED_PUBLICATION_ID));
+  }
+
+  private static Stream<Arguments> nonApplicablePublicationProvider() {
+    return Stream.of(
+        argumentSet(
+            "AcademicChapter in series with level zero",
+            "evaluator/nonCandidate_academicChapter_seriesLevelZero.json"),
+        argumentSet(
+            "AcademicCommentary in series with level zero",
+            "evaluator/nonCandidate_academicCommentary_seriesLevelZero.json"),
+        argumentSet(
+            "AcademicMonograph in series with level zero",
+            "evaluator/nonCandidate_notValidMonographArticle.json"),
+        argumentSet("Publication status is DRAFT", "evaluator/nonCandidate_notPublished.json"),
+        argumentSet(
+            "Publication type is MusicPerformance", "evaluator/nonCandidate_musicalArts.json"));
+  }
+
+  @Test
+  void shouldPlaceSqsMessageWithExceptionDetailOnDlqWhenEvaluationFails() {
+    var originalMessage = new PersistedResourceMessage(UriWrapper.fromUri("s3://dummy").getUri());
+    var event = createEvent(originalMessage);
+
     handler.handleRequest(event, CONTEXT);
-    var candidate = (UpsertNviCandidateRequest) getMessageBody().candidate();
-    assertEquals(candidate.publicationBucketUri(), fileUri);
+
+    var dlqMessage = fetchMessageFromDlq();
+    assertThat(dlqMessage.body()).isEqualToIgnoringWhitespace(originalMessage.toJsonString());
+    assertThat(dlqMessage.messageAttributes().get("errorMessage")).isNotBlank();
+    assertThat(dlqMessage.messageAttributes().get("errorType")).isNotBlank();
+    assertThat(dlqMessage.messageAttributes().get("stackTrace")).isNotBlank();
   }
 
   @Test
-  void shouldCreateNewCandidateEventOnValidAcademicCommentaryWithoutSeriesLevelWithPublisherLevel()
-      throws IOException {
-    mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-    var path = "evaluator/candidate_academicCommentary_withoutSeries.json";
-    var content = IoUtils.inputStreamFromResources(path);
-    var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
-    var event = createEvent(new PersistedResourceMessage(fileUri));
-    handler.handleRequest(event, CONTEXT);
-    var candidate = (UpsertNviCandidateRequest) getMessageBody().candidate();
-    assertEquals(candidate.publicationBucketUri(), fileUri);
+  void shouldNotCreateCandidateWhenPublicationHasZeroNviInstitutions() {
+    mockGetAllCustomersResponse(emptyList());
+
+    handleEvaluation(ACADEMIC_ARTICLE);
+
+    assertThrows(
+        CandidateNotFoundException.class,
+        () -> candidateService.getCandidateByPublicationId(HARDCODED_PUBLICATION_ID));
   }
 
   @Test
-  void shouldCreateNewCandidateEventOnValidAcademicMonograph() throws IOException {
-    mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-    var content = IoUtils.inputStreamFromResources(ACADEMIC_MONOGRAPH_JSON_PATH);
-    var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_MONOGRAPH_JSON_PATH), content);
-    var event = createEvent(new PersistedResourceMessage(fileUri));
-    handler.handleRequest(event, CONTEXT);
-    var candidate = (UpsertNviCandidateRequest) getMessageBody().candidate();
-    assertEquals(candidate.publicationBucketUri(), fileUri);
-  }
-
-  @Test
-  void shouldCreateNewCandidateEventOnValidAcademicLiteratureReview() throws IOException {
-    mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-    var content = IoUtils.inputStreamFromResources(ACADEMIC_LITERATURE_REVIEW_JSON_PATH);
-    var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_LITERATURE_REVIEW_JSON_PATH), content);
-    var event = createEvent(new PersistedResourceMessage(fileUri));
-    handler.handleRequest(event, CONTEXT);
-    var candidate = (UpsertNviCandidateRequest) getMessageBody().candidate();
-    assertEquals(candidate.publicationBucketUri(), fileUri);
-  }
-
-  @Test
-  void shouldCreateNonCandidateEventOnAcademicChapterWithSeriesLevelZero() throws IOException {
-    var path = "evaluator/nonCandidate_academicChapter_seriesLevelZero.json";
-    var content = IoUtils.inputStreamFromResources(path);
-    var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
-    var event = createEvent(new PersistedResourceMessage(fileUri));
-    handler.handleRequest(event, CONTEXT);
-    var nonCandidate = (UpsertNonNviCandidateRequest) getMessageBody().candidate();
-    assertEquals(HARDCODED_PUBLICATION_ID, nonCandidate.publicationId());
-  }
-
-  @Test
-  void shouldCreateNonCandidateEventOnAcademicCommentaryWithSeriesLevelZero() throws IOException {
-    var path = "evaluator/nonCandidate_academicCommentary_seriesLevelZero.json";
-    var content = IoUtils.inputStreamFromResources(path);
-    var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
-    var event = createEvent(new PersistedResourceMessage(fileUri));
-    handler.handleRequest(event, CONTEXT);
-    var nonCandidate = (UpsertNonNviCandidateRequest) getMessageBody().candidate();
-    assertEquals(HARDCODED_PUBLICATION_ID, nonCandidate.publicationId());
-  }
-
-  @Test
-  void shouldCreateNonCandidateEventWhenIdentityIsNotVerified() throws IOException {
-    var path = "evaluator/nonCandidate_nonVerified.json";
-    var content = IoUtils.inputStreamFromResources(path);
-    var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
-    var event = createEvent(new PersistedResourceMessage(fileUri));
-    handler.handleRequest(event, CONTEXT);
-    var nonCandidate = (UpsertNonNviCandidateRequest) getMessageBody().candidate();
-    assertEquals(HARDCODED_PUBLICATION_ID, nonCandidate.publicationId());
-  }
-
-  @Test
-  void shouldCreateNonCandidateEventWhenPublicationIsNotPublished() throws IOException {
-    var path = "evaluator/nonCandidate_notPublished.json";
-    var content = IoUtils.inputStreamFromResources(path);
-    var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
-    var event = createEvent(new PersistedResourceMessage(fileUri));
-    handler.handleRequest(event, CONTEXT);
-    var nonCandidate = (UpsertNonNviCandidateRequest) getMessageBody().candidate();
-    assertEquals(HARDCODED_PUBLICATION_ID, nonCandidate.publicationId());
-  }
-
-  @Test
-  void shouldCreateNonCandidateForMusicalArts() throws IOException {
-    var path = "evaluator/nonCandidate_musicalArts.json";
-    var content = IoUtils.inputStreamFromResources(path);
-    var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
-    var event = createEvent(new PersistedResourceMessage(fileUri));
-    handler.handleRequest(event, CONTEXT);
-    var nonCandidate = (UpsertNonNviCandidateRequest) getMessageBody().candidate();
-    assertEquals(HARDCODED_PUBLICATION_ID, nonCandidate.publicationId());
-  }
-
-  @Test
-  void shouldCreateNonCandidateIfSeriesInMonographHasNviLevelZero() throws IOException {
-    var path = "evaluator/nonCandidate_notValidMonographArticle.json";
-    var content = IoUtils.inputStreamFromResources(path);
-    var fileUri = s3Driver.insertFile(UnixPath.of(path), content);
-    var event = createEvent(new PersistedResourceMessage(fileUri));
-    handler.handleRequest(event, CONTEXT);
-    var nonCandidate = (UpsertNonNviCandidateRequest) getMessageBody().candidate();
-    assertEquals(HARDCODED_PUBLICATION_ID, nonCandidate.publicationId());
-  }
-
-  @Test
-  void shouldThrowExceptionIfFileDoesntExist() {
-    var event =
-        createEvent(new PersistedResourceMessage(UriWrapper.fromUri("s3://dummy").getUri()));
-    assertThrows(RuntimeException.class, () -> handler.handleRequest(event, CONTEXT));
-  }
-
-  @Test
-  void shouldCreateNonCandidateEventWhenZeroNviInstitutions() throws IOException {
-    mockCristinResponseAndCustomerApiResponseForNviInstitution(notFoundResponse);
+  void shouldSendMessageToDlqWhenProblemsFetchingCustomer()
+      throws IOException, ApiGatewayException {
+    var errorMessage = "Internal server error";
+    doThrow(new RuntimeException(errorMessage)).when(identityServiceClient).getAllCustomers();
     var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH), ACADEMIC_ARTICLE);
-    var event = createEvent(new PersistedResourceMessage(fileUri));
+    var originalMessage = new PersistedResourceMessage(fileUri);
+    var event = createEvent(originalMessage);
+
     handler.handleRequest(event, CONTEXT);
-    var nonCandidate = (UpsertNonNviCandidateRequest) getMessageBody().candidate();
-    assertEquals(HARDCODED_PUBLICATION_ID, nonCandidate.publicationId());
+
+    var dlqMessage = fetchMessageFromDlq();
+    assertThat(dlqMessage.body()).isEqualToIgnoringWhitespace(originalMessage.toJsonString());
+    assertThat(dlqMessage.messageAttributes().get("errorMessage")).contains(errorMessage);
+  }
+
+  private NviReceiveMessage fetchMessageFromDlq() {
+    return queueClient.receiveMessage(EVALUATION_DLQ_URL.getValue(), 1).messages().getFirst();
   }
 
   @Test
-  void shouldThrowExceptionWhenProblemsFetchingCustomerOrganization() throws IOException {
-    when(uriRetriever.fetchResponse(any(), any()))
-        .thenReturn(Optional.of(internalServerErrorResponse));
-    var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH), ACADEMIC_ARTICLE);
-    var event = createEvent(new PersistedResourceMessage(fileUri));
-    assertThrows(RuntimeException.class, () -> handler.handleRequest(event, CONTEXT));
-  }
+  void shouldCreateNewCandidateEventWhenAffiliationAreNviInstitutions() {
+    handleEvaluation(ACADEMIC_ARTICLE);
 
-  @Test
-  void shouldThrowExceptionWhenProblemsFetchingCustomer() throws IOException {
-    mockCristinResponseAndCustomerApiResponseForNviInstitution(internalServerErrorResponse);
-    var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH), ACADEMIC_ARTICLE);
-    var event = createEvent(new PersistedResourceMessage(fileUri));
-    var appender = LogUtils.getTestingAppenderForRootLogger();
-    assertThrows(RuntimeException.class, () -> handler.handleRequest(event, CONTEXT));
-    assertThat(appender.getMessages()).contains("status code: 500");
-  }
-
-  @Test
-  void shouldCreateNewCandidateEventWhenAffiliationAreNviInstitutions() throws IOException {
-    mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-    var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH), ACADEMIC_ARTICLE);
-    var event = createEvent(new PersistedResourceMessage(fileUri));
-    handler.handleRequest(event, CONTEXT);
-    var candidate = (UpsertNviCandidateRequest) getMessageBody().candidate();
-    assertEquals(candidate.publicationBucketUri(), fileUri);
+    var candidate = candidateService.getCandidateByPublicationId(HARDCODED_PUBLICATION_ID);
+    assertThat(candidate.isApplicable()).isTrue();
   }
 
   @Test
   @Deprecated
   void shouldHandleSeriesWithMultipleTypes() {
-    mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-    var path = "evaluator/candidate_academicMonograph_series_multiple_types.json";
-    var candidate =
-        evaluatePublicationAndGetPersistedCandidate(
-            HARDCODED_PUBLICATION_ID, stringFromResources(Path.of(path)));
+    var publication =
+        getPublicationFromFile("evaluator/candidate_academicMonograph_series_multiple_types.json");
+    handleEvaluation(publication);
+
+    var candidate = candidateService.getCandidateByPublicationId(HARDCODED_PUBLICATION_ID);
     var expectedChannel =
         new PublicationChannel(HARDCODED_PUBLICATION_CHANNEL_ID, SERIES, ScientificValue.LEVEL_ONE);
     assertThat(candidate)
@@ -524,11 +445,12 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
   @Test
   @Deprecated
   void shouldHandleJournalWithMultipleTypes() {
-    mockCristinResponseAndCustomerApiResponseForNviInstitution(okResponse);
-    var path = "evaluator/candidate_academicArticle_journal_multiple_types.json";
-    var candidate =
-        evaluatePublicationAndGetPersistedCandidate(
-            HARDCODED_PUBLICATION_ID, stringFromResources(Path.of(path)));
+    var publication =
+        getPublicationFromFile("evaluator/candidate_academicArticle_journal_multiple_types.json");
+
+    handleEvaluation(publication);
+
+    var candidate = candidateService.getCandidateByPublicationId(HARDCODED_PUBLICATION_ID);
     var expectedChannel =
         new PublicationChannel(
             HARDCODED_PUBLICATION_CHANNEL_ID, JOURNAL, ScientificValue.LEVEL_ONE);
@@ -545,179 +467,6 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
             ONE.setScale(SCALE, ROUNDING_MODE));
   }
 
-  private static CandidateEvaluatedMessage getExpectedEvaluatedMessage(
-      InstanceType instanceType,
-      BigDecimal points,
-      URI bucketUri,
-      ChannelType publicationChannel,
-      BigDecimal basePoints,
-      BigDecimal totalPoints) {
-    return CandidateEvaluatedMessage.builder()
-        .withCandidateType(
-            createExpectedCandidate(
-                instanceType,
-                Map.of(CRISTIN_NVI_ORG_TOP_LEVEL_ID, points.setScale(SCALE, RoundingMode.HALF_UP)),
-                publicationChannel,
-                ScientificValue.LEVEL_ONE.getValue(),
-                basePoints,
-                totalPoints,
-                bucketUri))
-        .build();
-  }
-
-  private static UpsertNviCandidateRequest createExpectedCandidate(
-      InstanceType instanceType,
-      Map<URI, BigDecimal> institutionPoints,
-      ChannelType channelType,
-      String level,
-      BigDecimal basePoints,
-      BigDecimal totalPoints,
-      URI publicationBucketUri) {
-    var channelForLevel =
-        PublicationChannelDto.builder()
-            .withId(HARDCODED_PUBLICATION_CHANNEL_ID)
-            .withChannelType(channelType)
-            .withScientificValue(ScientificValue.parse(level))
-            .build();
-    var publicationDetails =
-        createExpectedPublicationDetails(HARDCODED_PUBLICATION_ID, HARDCODED_PUBLICATION_DATE);
-    var verifiedCreator =
-        new VerifiedNviCreatorDto(HARDCODED_CREATOR_ID, null, List.of(CRISTIN_NVI_ORG_SUB_UNIT_ID));
-    var expectedInstitutionPoints =
-        institutionPoints.entrySet().stream()
-            .map(
-                entry ->
-                    new InstitutionPoints(
-                        entry.getKey(),
-                        entry.getValue(),
-                        List.of(
-                            new CreatorAffiliationPoints(
-                                HARDCODED_CREATOR_ID,
-                                CRISTIN_NVI_ORG_SUB_UNIT_ID,
-                                entry.getValue()))))
-            .toList();
-    var pointCalculation =
-        new PointCalculationDto(
-            instanceType,
-            channelForLevel,
-            false,
-            ONE.setScale(1, ROUNDING_MODE),
-            basePoints,
-            countCreatorShares(List.of(verifiedCreator)),
-            expectedInstitutionPoints,
-            totalPoints);
-    return UpsertNviCandidateRequest.builder()
-        .withPublicationBucketUri(publicationBucketUri)
-        .withPointCalculation(pointCalculation)
-        .withPublicationDetails(publicationDetails)
-        .withNviCreators(List.of(verifiedCreator))
-        .build();
-  }
-
-  private static PublicationDetailsDto createExpectedPublicationDetails(
-      URI publicationId, PublicationDateDto publicationDate) {
-    return new PublicationDetailsDto(
-        publicationId, null, null, "PUBLISHED", null, null, null, publicationDate, true, 1, null);
-  }
-
-  private static int countCreatorShares(List<VerifiedNviCreatorDto> nviCreators) {
-    return nviCreators.stream().mapToInt(creator -> creator.affiliations().size()).sum();
-  }
-
-  private void setupEvaluatorService(PeriodRepository periodRepository) {
-    var environment = getEvaluateNviCandidateHandlerEnvironment();
-    var calculator = new CreatorVerificationUtil(authorizedBackendUriRetriever, environment);
-    evaluatorService =
-        new EvaluatorService(
-            scenario.getS3StorageReaderForExpandedResourcesBucket(),
-            calculator,
-            candidateRepository,
-            periodRepository);
-  }
-
-  private URI setupCandidate(int year) throws IOException {
-    var upsertCandidateRequest =
-        randomUpsertRequestBuilder()
-            .withPublicationDate(new PublicationDateDto(String.valueOf(year), null, null))
-            .build();
-    Candidate.upsert(upsertCandidateRequest, candidateRepository, periodRepository);
-    var candidateInClosedPeriod =
-        Candidate.fetchByPublicationId(
-            upsertCandidateRequest::publicationId, candidateRepository, periodRepository);
-    var content =
-        stringFromResources(Path.of(ACADEMIC_ARTICLE_PATH))
-            .replace(
-                "__REPLACE_WITH_PUBLICATION_ID__",
-                candidateInClosedPeriod.getPublicationId().toString());
-    return s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH), content);
-  }
-
-  private CandidateEvaluatedMessage getMessageBody() {
-    var sentMessages = queueClient.getSentMessages();
-    assertThat(sentMessages).hasSize(1);
-
-    var message = sentMessages.getFirst();
-    return attempt(
-            () -> objectMapper.readValue(message.messageBody(), CandidateEvaluatedMessage.class))
-        .orElseThrow();
-  }
-
-  private HttpResponse<String> getNonNviCustomerResponseBody() {
-    var body = stringFromResources(Path.of(NON_NVI_CUSTOMER_PATH));
-    return createResponse(200, body);
-  }
-
-  private void mockCristinResponseAndCustomerApiResponseForNonNviInstitution() {
-    var cristinOrgNonNviSubUnit =
-        URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/150.50.50.0");
-    var cristinOrgNonNviTopLevel =
-        URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/150.0.0.0");
-    var customerApiEndpoint = URI.create("https://api.dev.nva.aws.unit.no/customer/cristinId");
-    var cristinOrgNonNviTopLevelCustomerApiUri =
-        URI.create(
-            customerApiEndpoint
-                + "/"
-                + URLEncoder.encode(cristinOrgNonNviTopLevel.toString(), StandardCharsets.UTF_8));
-    var expectedResponse = getNonNviCustomerResponseBody();
-    when(authorizedBackendUriRetriever.fetchResponse(
-            eq(cristinOrgNonNviTopLevelCustomerApiUri), any()))
-        .thenReturn(Optional.of(expectedResponse));
-    mockOrganizationResponseForAffiliation(
-        cristinOrgNonNviTopLevel, cristinOrgNonNviSubUnit, uriRetriever);
-  }
-
-  private void mockCristinResponseAndCustomerApiResponseForNviInstitution(
-      HttpResponse<String> httpResponse) {
-    mockOrganizationResponseForAffiliation(
-        CRISTIN_NVI_ORG_TOP_LEVEL_ID, CRISTIN_NVI_ORG_SUB_UNIT_ID, uriRetriever);
-    when(authorizedBackendUriRetriever.fetchResponse(
-            eq(CUSTOMER_API_CRISTIN_NVI_ORG_TOP_LEVEL), any()))
-        .thenReturn(Optional.of(httpResponse));
-  }
-
-  /**
-   * Asserts that the evaluated message equals the expected message, ignoring certain fields. These
-   * fields are ignored because the static test data used here is outdated and the fields may be
-   * missing, so we cannot easily construct an expected message with the correct values.
-   */
-  private static void assertThatEvaluatedMessageEqualsExpectedMessage(
-      CandidateEvaluatedMessage expectedEvaluatedMessage, CandidateEvaluatedMessage messageBody) {
-    assertThat(messageBody)
-        .usingRecursiveComparison()
-        .ignoringFields(
-            "candidate.topLevelNviOrganizations",
-            "candidate.publicationChannelForLevel.name",
-            "candidate.publicationDetails.identifier",
-            "candidate.publicationDetails.contributors",
-            "candidate.publicationDetails.modifiedDate",
-            "candidate.publicationDetails.pageCount",
-            "candidate.publicationDetails.publicationChannels",
-            "candidate.publicationDetails.title",
-            "candidate.publicationDetails.topLevelOrganizations")
-        .ignoringCollectionOrder()
-        .isEqualTo(expectedEvaluatedMessage);
-  }
-
   @Nested
   @DisplayName("Test cases with dynamic test data")
   class evaluateNviCandidatesWithDynamicTestData {
@@ -728,18 +477,22 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     @BeforeEach
     void setup() {
       publicationDate = randomPublicationDate();
-      factory = new SampleExpandedPublicationFactory(scenario).withPublicationDate(publicationDate);
+      factory =
+          new SampleExpandedPublicationFactory(getDefaultCustomers())
+              .withPublicationDate(publicationDate);
       nviOrganization = factory.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, true);
+      mockGetAllCustomersResponse(factory.getCustomerOrganizations());
     }
 
     @Test
     void shouldIdentifyCandidateWithOnlyVerifiedNviCreators() {
       setupOpenPeriod(scenario, publicationDate.year());
-      var publication =
-          factory.withContributor(verifiedCreatorFrom(nviOrganization)).getExpandedPublication();
-      var candidate = evaluatePublicationAndGetPersistedCandidate(publication);
-      var publicationDetails = candidate.getPublicationDetails();
+      var publication = factory.withContributor(verifiedCreatorFrom(nviOrganization));
 
+      handleEvaluation(publication);
+
+      var candidate = candidateService.getCandidateByPublicationId(publication.getPublicationId());
+      var publicationDetails = candidate.publicationDetails();
       assertThat(candidate)
           .extracting(Candidate::isApplicable, Candidate::getCreatorShareCount)
           .containsExactly(true, 1);
@@ -751,11 +504,13 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     @Test
     void shouldIdentifyCandidateWithOnlyUnverifiedNviCreators() {
       setupOpenPeriod(scenario, publicationDate.year());
-      var publication =
-          factory.withContributor(unverifiedCreatorFrom(nviOrganization)).getExpandedPublication();
-      var candidate = evaluatePublicationAndGetPersistedCandidate(publication);
-      var publicationDetails = candidate.getPublicationDetails();
+      var publication = factory.withContributor(unverifiedCreatorFrom(nviOrganization));
 
+      handleEvaluation(publication);
+
+      var candidate = candidateService.getCandidateByPublicationId(publication.getPublicationId());
+
+      var publicationDetails = candidate.publicationDetails();
       assertThat(candidate)
           .extracting(Candidate::isApplicable, Candidate::getTotalPoints)
           .containsExactly(true, ZERO.setScale(SCALE, ROUNDING_MODE));
@@ -768,8 +523,11 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     void shouldIdentifyCandidateWithUnnamedVerifiedAuthor() {
       setupOpenPeriod(scenario, publicationDate.year());
       var verifiedContributor = randomContributorDtoBuilder(nviOrganization).withName(null).build();
-      var publication = factory.withContributor(verifiedContributor).getExpandedPublication();
-      var candidate = evaluatePublicationAndGetPersistedCandidate(publication);
+      var publication = factory.withContributor(verifiedContributor);
+
+      handleEvaluation(publication);
+
+      var candidate = candidateService.getCandidateByPublicationId(publication.getPublicationId());
 
       assertThat(candidate)
           .extracting(Candidate::isApplicable, Candidate::getTotalPoints)
@@ -787,21 +545,22 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
               .build();
       var publication = factory.withContributor(unnamedContributor).getExpandedPublication();
 
-      handler.handleRequest(createEvaluationEvent(publication), CONTEXT);
-      var messageBody = getMessageBody();
+      handleEvaluation(publication.toJsonString());
 
-      assertThat(messageBody.candidate()).isInstanceOf(UpsertNonNviCandidateRequest.class);
+      assertThrows(
+          CandidateNotFoundException.class,
+          () -> candidateService.getCandidateByPublicationId(publication.id()));
     }
 
     @Test
     void shouldHandleUnverifiedAuthorsWithMultipleNames() {
       setupOpenPeriod(scenario, publicationDate.year());
-      var publication =
-          factory.withContributor(createUnverifiedCreatorWithTwoNames()).getExpandedPublication();
+      var publication = factory.withContributor(createUnverifiedCreatorWithTwoNames());
 
-      var candidate = evaluatePublicationAndGetPersistedCandidate(publication);
-      var publicationDetails = candidate.getPublicationDetails();
+      handleEvaluation(publication);
 
+      var candidate = candidateService.getCandidateByPublicationId(publication.getPublicationId());
+      var publicationDetails = candidate.publicationDetails();
       assertThat(candidate)
           .extracting(Candidate::isApplicable, Candidate::getTotalPoints)
           .containsExactly(true, ZERO.setScale(SCALE, ROUNDING_MODE));
@@ -828,11 +587,13 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       var publication =
           factory
               .withContributor(verifiedCreatorFrom(nviOrganization))
-              .withContributor(unverifiedCreatorFrom(nviOrganization))
-              .getExpandedPublication();
-      var candidate = evaluatePublicationAndGetPersistedCandidate(publication);
-      var publicationDetails = candidate.getPublicationDetails();
+              .withContributor(unverifiedCreatorFrom(nviOrganization));
 
+      handleEvaluation(publication);
+
+      var candidate = candidateService.getCandidateByPublicationId(publication.getPublicationId());
+
+      var publicationDetails = candidate.publicationDetails();
       var expectedTotalPoints = BigDecimal.valueOf(0.7071).setScale(SCALE, ROUNDING_MODE);
       assertThat(candidate)
           .extracting(
@@ -846,14 +607,33 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     }
 
     @Test
+    void shouldUpdateExistingNviCandidateWhenUnverifiedCreatorIsAdded() {
+      setupOpenPeriod(scenario, publicationDate.year());
+      var publication = factory.withContributor(verifiedCreatorFrom(nviOrganization));
+      handleEvaluation(publication);
+
+      var unverifiedCreator = unverifiedCreatorFrom(nviOrganization);
+      var updatedPublication = publication.withContributor(unverifiedCreator);
+      handleEvaluation(updatedPublication);
+
+      var candidate = candidateService.getCandidateByPublicationId(publication.getPublicationId());
+      var publicationDetails = candidate.publicationDetails();
+      assertThat(publicationDetails.nviCreators())
+          .hasSize(2)
+          .extracting(NviCreator::name)
+          .contains(unverifiedCreator.name());
+    }
+
+    @Test
     void shouldIdentifyCandidateWithMissingCountryCode() {
       setupOpenPeriod(scenario, publicationDate.year());
       var organizationWithoutCountryCode = factory.setupTopLevelOrganization(null, true);
       var publication =
-          factory
-              .withContributor(verifiedCreatorFrom(organizationWithoutCountryCode))
-              .getExpandedPublication();
-      var candidate = evaluatePublicationAndGetPersistedCandidate(publication);
+          factory.withContributor(verifiedCreatorFrom(organizationWithoutCountryCode));
+
+      handleEvaluation(publication);
+
+      var candidate = candidateService.getCandidateByPublicationId(publication.getPublicationId());
 
       assertThat(candidate.getCreatorShareCount()).isEqualTo(1);
       assertThat(candidate.getTotalPoints()).isPositive();
@@ -861,18 +641,16 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
     }
 
     @Test
-    void shouldRejectCandidateWithOnlySwedishCountryCode() {
+    void shouldRejectCandidateWithOnlyNonNviCustomers() {
       setupOpenPeriod(scenario, publicationDate.year());
-      var swedishOrganization = factory.setupTopLevelOrganization(COUNTRY_CODE_SWEDEN, true);
-      var publication =
-          factory
-              .withContributor(verifiedCreatorFrom(swedishOrganization))
-              .getExpandedPublication();
+      var nonNviOrganization = factory.setupTopLevelOrganization(COUNTRY_CODE_NORWAY, false);
+      var publication = factory.withContributor(verifiedCreatorFrom(nonNviOrganization));
 
-      handler.handleRequest(createEvaluationEvent(publication), CONTEXT);
-      var messageBody = getMessageBody();
+      handleEvaluation(publication);
 
-      assertThat(messageBody.candidate()).isInstanceOf(UpsertNonNviCandidateRequest.class);
+      assertThrows(
+          CandidateNotFoundException.class,
+          () -> candidateService.getCandidateByPublicationId(publication.getPublicationId()));
     }
 
     @Test
@@ -882,31 +660,12 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       // When the publication is evaluated
       // Then it should be evaluated as a Candidate
       setupOpenPeriod(scenario, publicationDate.year());
-      var publication =
-          factory.withContributor(verifiedCreatorFrom(nviOrganization)).getExpandedPublication();
+      var publication = factory.withContributor(verifiedCreatorFrom(nviOrganization));
 
-      var candidate = evaluatePublicationAndGetPersistedCandidate(publication);
-      var publicationDetails = candidate.getPublicationDetails();
+      handleEvaluation(publication);
 
-      assertThat(candidate.getTotalPoints()).isPositive();
-      assertThat(candidate.isApplicable()).isTrue();
-      assertThat(publicationDetails.publicationDate()).isEqualTo(publicationDate);
-    }
-
-    @Test
-    void shouldEvaluateExistingCandidateInClosedPeriod() {
-      // Given a publication that has been evaluated as an applicable Candidate
-      // And the publication is published in a closed period
-      // When the publication is evaluated
-      // Then it should be evaluated as a Candidate
-      setupClosedPeriod(scenario, publicationDate.year());
-      var publication =
-          factory.withContributor(verifiedCreatorFrom(nviOrganization)).getExpandedPublication();
-      setupCandidateMatchingPublication(publication);
-
-      var candidate = evaluatePublicationAndGetPersistedCandidate(publication);
-      var publicationDetails = candidate.getPublicationDetails();
-
+      var candidate = candidateService.getCandidateByPublicationId(publication.getPublicationId());
+      var publicationDetails = candidate.publicationDetails();
       assertThat(candidate.getTotalPoints()).isPositive();
       assertThat(candidate.isApplicable()).isTrue();
       assertThat(publicationDetails.publicationDate()).isEqualTo(publicationDate);
@@ -918,16 +677,16 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       // And the publication is published in a closed period
       // When the publication is updated to be no longer applicable
       // Then it should be re-evaluated as a NonCandidate
-      setupClosedPeriod(scenario, publicationDate.year());
+      setupOpenPeriod(scenario, publicationDate.year());
       var publicationFactory = factory.withContributor(verifiedCreatorFrom(nviOrganization));
       setupCandidateMatchingPublication(publicationFactory.getExpandedPublication());
+      setupClosedPeriod(scenario, publicationDate.year());
 
-      var updatedPublication =
-          publicationFactory.withPublicationType("ComicBook").getExpandedPublication();
-      handler.handleRequest(createEvaluationEvent(updatedPublication), CONTEXT);
-      var messageBody = getMessageBody();
+      var publication = publicationFactory.withPublicationType("ComicBook");
+      handleEvaluation(publication);
 
-      assertThat(messageBody.candidate()).isInstanceOf(UpsertNonNviCandidateRequest.class);
+      var candidate = candidateService.getCandidateByPublicationId(publication.getPublicationId());
+      assertThat(candidate.isApplicable()).isFalse();
     }
 
     @Test
@@ -939,13 +698,11 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       // When the publication is evaluated
       // Then it should be evaluated as a NonCandidate
       setupClosedPeriod(scenario, publicationDate.year());
-      var publication =
-          factory.withContributor(verifiedCreatorFrom(nviOrganization)).getExpandedPublication();
+      var publication = factory.withContributor(verifiedCreatorFrom(nviOrganization));
 
-      handler.handleRequest(createEvaluationEvent(publication), CONTEXT);
-      var messageBody = getMessageBody();
+      handleEvaluation(publication);
 
-      assertThat(messageBody.candidate()).isInstanceOf(UpsertNonNviCandidateRequest.class);
+      assertThatNoCandidateExistsForPublication(publication.getPublicationId());
     }
 
     @Test
@@ -959,15 +716,11 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       var publication =
           factory
               .withContributor(verifiedCreatorFrom(nviOrganization))
-              .withPublicationDate(historicalDate)
-              .getExpandedPublication();
+              .withPublicationDate(historicalDate);
 
-      handler.handleRequest(createEvaluationEvent(publication), CONTEXT);
-      var messageBody = getMessageBody();
-      var nviPeriod = periodRepository.findByPublishingYear(historicalDate.year());
+      handleEvaluation(publication);
 
-      assertThat(messageBody.candidate()).isInstanceOf(UpsertNonNviCandidateRequest.class);
-      assertTrue(nviPeriod.isEmpty());
+      assertThatNoCandidateExistsForPublication(publication.getPublicationId());
     }
 
     @Test
@@ -980,17 +733,22 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       // And the Candidate entry in the database should not be updated
       setupClosedPeriod(scenario, publicationDate.year());
       var existingCandidateDao =
-          setupReportedCandidate(candidateRepository, publicationDate.year());
+          setupReportedCandidate(scenario.getCandidateRepository(), publicationDate.year());
+      var publicationId = existingCandidateDao.publicationId();
       var publication =
           factory
               .withContributor(verifiedCreatorFrom(nviOrganization))
               .getExpandedPublicationBuilder()
-              .withId(existingCandidateDao.candidate().publicationId())
+              .withId(publicationId)
               .build();
+      var fileUri = scenario.setupExpandedPublicationInS3(publication.toJsonString());
+      var event = createEvent(new PersistedResourceMessage(fileUri));
 
-      handler.handleRequest(createEvaluationEvent(publication), CONTEXT);
+      handler.handleRequest(event, CONTEXT);
 
+      var candidate = candidateService.getCandidateByPublicationId(publicationId);
       assertEquals(0, queueClient.getSentMessages().size());
+      assertThat(candidate.isReported()).isTrue();
     }
 
     @Test
@@ -1008,12 +766,10 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
               .withPublicationDate(openPeriod);
       setupCandidateMatchingPublication(publicationFactory.getExpandedPublication());
 
-      var updatedPublication =
-          publicationFactory.withPublicationDate(nonPeriod).getExpandedPublication();
-      handler.handleRequest(createEvaluationEvent(updatedPublication), CONTEXT);
-      var messageBody = getMessageBody();
+      var updatedPublication = publicationFactory.withPublicationDate(nonPeriod);
+      handleEvaluation(updatedPublication);
 
-      assertThat(messageBody.candidate()).isInstanceOf(UpsertNonNviCandidateRequest.class);
+      assertThatPublicationIsNonCandidate(updatedPublication.getPublicationId());
     }
 
     @Test
@@ -1028,49 +784,39 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       var newPeriod = randomPublicationDateInYear(CURRENT_YEAR + 1);
       setupOpenPeriod(scenario, openPeriod.year());
       setupOpenPeriod(scenario, newPeriod.year());
-      var publicationFactory = factory.withContributor(verifiedCreatorFrom(nviOrganization));
 
       var originalPublication =
-          publicationFactory.withPublicationDate(openPeriod).getExpandedPublication();
-      evaluatePublicationAndPersistResult(originalPublication.toJsonString());
+          factory
+              .withContributor(verifiedCreatorFrom(nviOrganization))
+              .withPublicationDate(openPeriod);
+      handleEvaluation(originalPublication);
 
-      var updatedPublication =
-          publicationFactory.withPublicationDate(nonPeriod).getExpandedPublication();
-      evaluatePublicationAndPersistResult(updatedPublication.toJsonString());
+      handleEvaluation(originalPublication.withPublicationDate(nonPeriod));
 
-      var finalPublication =
-          publicationFactory.withPublicationDate(newPeriod).getExpandedPublication();
-      var updatedCandidate = evaluatePublicationAndGetPersistedCandidate(finalPublication);
-      var publicationDetails = updatedCandidate.getPublicationDetails();
+      handleEvaluation(originalPublication.withPublicationDate(newPeriod));
 
+      var updatedCandidate =
+          candidateService.getCandidateByPublicationId(factory.getPublicationId());
+      var publicationDetails = updatedCandidate.publicationDetails();
       assertThat(updatedCandidate.isApplicable()).isTrue();
       assertThat(publicationDetails.publicationDate()).isEqualTo(newPeriod);
     }
 
-    private SQSEvent createEvaluationEvent(SampleExpandedPublication publication) {
-      try {
-        var fileUri = addPublicationToS3(publication);
-        return createEvent(new PersistedResourceMessage(fileUri));
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-    }
-
-    private URI addPublicationToS3(SampleExpandedPublication publication) throws IOException {
-
-      return s3Driver.insertFile(
-          UnixPath.of(publication.identifier().toString()), publication.toJsonString());
-    }
-
     private void setupCandidateMatchingPublication(
         SampleExpandedPublication sampleExpandedPublication) {
-      var year = sampleExpandedPublication.publicationDate().year();
       var upsertCandidateRequest =
           randomUpsertRequestBuilder()
-              .withPublicationDate(new PublicationDateDto(year, null, null))
+              .withPublicationDate(getPublicationDateDto(sampleExpandedPublication))
               .withPublicationId(sampleExpandedPublication.id())
               .build();
-      Candidate.upsert(upsertCandidateRequest, candidateRepository, periodRepository);
+      candidateService.upsertCandidate(upsertCandidateRequest);
     }
+  }
+
+  private static PublicationDateDto getPublicationDateDto(
+      SampleExpandedPublication sampleExpandedPublication) {
+    var publicationDate = sampleExpandedPublication.publicationDate();
+    return new PublicationDateDto(
+        publicationDate.year(), publicationDate.month(), publicationDate.day());
   }
 }

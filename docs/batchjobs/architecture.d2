@@ -1,0 +1,99 @@
+direction: right
+
+title: Batch job architecture {
+  near: top-center
+  shape: text
+  style.font-size: 48
+  style.bold: true
+}
+
+# Phase 1: Load work queue
+phase1: Phase 1 - Load {
+  style.fill: "#f5f5f5"
+  style.stroke: "#ccc"
+
+  console: AWS Console {
+    shape: rectangle
+    style.fill: "#fff9c4"
+  }
+
+  start: StartBatchJobHandler {
+    shape: rectangle
+    style.fill: "#f9f0ff"
+  }
+
+  eventbridge: EventBridge {
+    shape: hexagon
+    style.fill: "#f3e5f5"
+  }
+
+  console -> start: trigger with\njobType + filter
+  start -> eventbridge: self-invoke\n(pagination)
+  eventbridge -> start: next page {
+    style.stroke-dash: 3
+  }
+}
+
+db: DynamoDB {
+  shape: cylinder
+  style.fill: "#fce4ec"
+}
+
+s3: S3\n(publications) {
+  shape: cylinder
+  style.fill: "#e8f5e9"
+}
+
+queue: BatchJobWorkQueue {
+  shape: queue
+  style.fill: "#fff3e0"
+}
+
+dlq: BatchJobDLQ {
+  shape: queue
+  style.fill: "#ffebee"
+}
+
+# Phase 2: Process items
+phase2: Phase 2 - Process {
+  style.fill: "#f5f5f5"
+  style.stroke: "#ccc"
+
+  process: ProcessBatchJobHandler {
+    shape: rectangle
+    style.fill: "#e8f5e9"
+  }
+
+  services: Service methods {
+    style.fill: "#e3f2fd"
+
+    refresh_candidate: CandidateService.refreshCandidate()
+    migrate_candidate: CandidateService.migrateCandidate()
+    refresh_period: NviPeriodService.refreshPeriod()
+  }
+
+  process -> services: pattern match\non message type
+}
+
+# Connections
+phase1.start -> db: scan {
+  style.stroke-dash: 3
+}
+phase1.start -> queue: enqueue messages\n(1 per record)
+
+queue -> phase2.process: SQS trigger\n(batch of 1-10)
+
+phase2.process -> dlq: failed items {
+  style.stroke-dash: 3
+}
+dlq -> queue: redrive {
+  style.stroke-dash: 3
+  style.stroke: "#888"
+}
+
+phase2.services.refresh_candidate -> db: read + write
+phase2.services.migrate_candidate -> db: read + write
+phase2.services.migrate_candidate -> s3: fetch publication {
+  style.stroke-dash: 3
+}
+phase2.services.refresh_period -> db: read + write

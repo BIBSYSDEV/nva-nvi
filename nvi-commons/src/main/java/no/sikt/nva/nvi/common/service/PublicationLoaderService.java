@@ -38,8 +38,9 @@ public class PublicationLoaderService {
 
     logger.info("Extracting publication from S3 ({})", publicationBucketUri);
     var content = extractContentFromStorage(publicationBucketUri);
-    var graph = extractNvaGraph(content);
+    var graph = extractNvaGraph(ExpandedDocumentTool.prepareJsonNodeForModel(content));
     var resultJson = extractNviData(graph).toJsonLd();
+    logger.info("Parsing publication with SPARQL query ({})", publicationBucketUri);
     try {
       logger.info("Transforming JSON-LD to PublicationDto ({})", publicationBucketUri);
       return PublicationDto.from(resultJson);

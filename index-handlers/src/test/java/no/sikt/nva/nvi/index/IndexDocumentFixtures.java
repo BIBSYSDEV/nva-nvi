@@ -10,6 +10,7 @@ import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomPages;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomPublicationChannel;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
+import static no.sikt.nva.nvi.test.TestUtils.randomTitle;
 import static no.sikt.nva.nvi.test.TestUtils.randomUriWithSuffix;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -18,18 +19,21 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import com.fasterxml.jackson.core.type.TypeReference;
 import java.net.URI;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
-import java.util.stream.IntStream;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
-import no.sikt.nva.nvi.index.model.document.Approval;
+import no.sikt.nva.nvi.index.model.ApprovalFactory;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
+import no.sikt.nva.nvi.index.model.document.ApprovalView;
 import no.sikt.nva.nvi.index.model.document.ContributorType;
-import no.sikt.nva.nvi.index.model.document.InstitutionPoints;
-import no.sikt.nva.nvi.index.model.document.InstitutionPoints.CreatorAffiliationPoints;
+import no.sikt.nva.nvi.index.model.document.InstitutionPointsView;
+import no.sikt.nva.nvi.index.model.document.InstitutionPointsView.CreatorAffiliationPointsView;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument.Builder;
 import no.sikt.nva.nvi.index.model.document.PublicationDetails;
@@ -48,8 +52,8 @@ public final class IndexDocumentFixtures {
 
   public static List<NviCandidateIndexDocument> createRandomIndexDocuments(
       URI userTopLevelOrganization, int year, int count) {
-    return IntStream.range(0, count)
-        .mapToObj(i -> createRandomIndexDocument(userTopLevelOrganization, year))
+    return Stream.generate(() -> createRandomIndexDocument(userTopLevelOrganization, year))
+        .limit(count)
         .toList();
   }
 
@@ -75,16 +79,18 @@ public final class IndexDocumentFixtures {
             .withPublicationDate(randomPublicationDateDtoInYear(year))
             .withContributors(List.of(contributor))
             .build();
-    return randomIndexDocumentBuilder(details);
+    var approvals = new ArrayList<>(randomApprovalList());
+    approvals.add(randomApproval(randomString(), userTopLevelOrganization));
+    return randomIndexDocumentBuilder(details, approvals);
   }
 
   public static NviCandidateIndexDocument.Builder randomIndexDocumentBuilder() {
-    return randomIndexDocumentBuilder(randomPublicationDetailsBuilder().build());
+    return randomIndexDocumentBuilder(
+        randomPublicationDetailsBuilder().build(), randomApprovalList());
   }
 
   public static NviCandidateIndexDocument.Builder randomIndexDocumentBuilder(
-      PublicationDetails publicationDetails) {
-    var approvals = randomApprovalList();
+      PublicationDetails publicationDetails, List<ApprovalView> approvals) {
     var publicationYear = publicationDetails.publicationDate().year();
     var reportingPeriod = new ReportingPeriod(publicationYear);
     var candidateId = randomUUID();
@@ -94,11 +100,19 @@ public final class IndexDocumentFixtures {
         .withIsApplicable(true)
         .withPublicationDetails(publicationDetails)
         .withApprovals(approvals)
+        .withGlobalApprovalStatus(getGlobalApprovalStatus(approvals))
         .withNumberOfApprovals(approvals.size())
         .withPoints(randomBigDecimal())
         .withReportingPeriod(reportingPeriod)
         .withCreatedDate(Instant.now())
         .withModifiedDate(Instant.now());
+  }
+
+  private static GlobalApprovalStatus getGlobalApprovalStatus(Collection<ApprovalView> approvals) {
+    return approvals.stream()
+        .map(ApprovalView::globalApprovalStatus)
+        .findFirst()
+        .orElse(GlobalApprovalStatus.PENDING);
   }
 
   public static PublicationDetails.Builder randomPublicationDetailsBuilder(
@@ -115,7 +129,7 @@ public final class IndexDocumentFixtures {
     var publicationId = randomUriWithSuffix(randomUUID().toString());
     return PublicationDetails.builder()
         .withId(publicationId.toString())
-        .withTitle(randomString())
+        .withTitle(randomTitle())
         .withAbstract(randomString())
         .withPublicationDate(randomPublicationDateDtoInYear(DEFAULT_YEAR))
         .withPublicationChannel(randomPublicationChannel())
@@ -123,25 +137,26 @@ public final class IndexDocumentFixtures {
         .withContributors(List.of(randomNviContributor(randomOrganizationId())));
   }
 
-  private static List<Approval> randomApprovalList() {
-    return IntStream.range(0, 5).boxed().map(i -> randomApproval()).toList();
+  public static List<ApprovalView> randomApprovalList() {
+    return Stream.generate(IndexDocumentFixtures::randomApproval).limit(5).toList();
   }
 
-  private static Approval randomApproval() {
+  public static ApprovalView randomApproval() {
     return randomApprovalBuilder(randomOrganizationId()).build();
   }
 
-  public static Approval randomApproval(String assignee, URI topLevelOrganization) {
+  public static ApprovalView randomApproval(String assignee, URI topLevelOrganization) {
     return randomApprovalBuilder(topLevelOrganization).withAssignee(assignee).build();
   }
 
-  public static Approval.Builder randomApprovalBuilder(URI topLevelOrganization) {
+  public static ApprovalView.Builder randomApprovalBuilder(URI topLevelOrganization) {
     var creatorAffiliation = randomOrganizationId();
     var creatorPoint =
-        new CreatorAffiliationPoints(randomUri(), creatorAffiliation, randomBigDecimal(SCALE));
+        new CreatorAffiliationPointsView(randomUri(), creatorAffiliation, randomBigDecimal(SCALE));
     var institutionPoints =
-        new InstitutionPoints(topLevelOrganization, randomBigDecimal(SCALE), List.of(creatorPoint));
-    return Approval.builder()
+        new InstitutionPointsView(
+            topLevelOrganization, randomBigDecimal(SCALE), List.of(creatorPoint));
+    return ApprovalView.builder()
         .withInstitutionId(topLevelOrganization)
         .withLabels(emptyMap())
         .withAssignee(randomString())
@@ -160,5 +175,66 @@ public final class IndexDocumentFixtures {
 
   public static GlobalApprovalStatus randomGlobalApprovalStatus() {
     return randomElement(GlobalApprovalStatus.values());
+  }
+
+  public static NviCandidateIndexDocument documentWithApprovals(ApprovalView... approvals) {
+    var allApprovals = List.of(approvals);
+    var topLevelOrganizations = allApprovals.stream().map(ApprovalView::institutionId).toList();
+    var details = randomPublicationDetailsBuilder(topLevelOrganizations).build();
+    return randomIndexDocumentBuilder(details, allApprovals).build();
+  }
+
+  public static NviCandidateIndexDocument documentWithApprovals(
+      String title, ApprovalView... approvals) {
+    var approvalStatuses =
+        Stream.of(approvals).map(ApprovalView::approvalStatus).collect(Collectors.toSet());
+    var globalStatus = deriveGlobalApprovalStatus(approvalStatuses);
+    return documentWithApprovals(title, globalStatus, approvals);
+  }
+
+  public static NviCandidateIndexDocument documentWithApprovals(
+      String title, GlobalApprovalStatus globalStatus, ApprovalView... approvals) {
+    var allApprovals = List.of(approvals);
+    var topLevelOrganizations = allApprovals.stream().map(ApprovalView::institutionId).toList();
+    var details = randomPublicationDetailsBuilder(topLevelOrganizations).withTitle(title).build();
+    return randomIndexDocumentBuilder(details, randomApprovalList())
+        .withGlobalApprovalStatus(globalStatus)
+        .withApprovals(allApprovals)
+        .withNumberOfApprovals(allApprovals.size())
+        .build();
+  }
+
+  public static List<NviCandidateIndexDocument> documentsForAllStatusCombinations(
+      URI topLevelOrganization, URI creatorAffiliation) {
+    var documents = new ArrayList<NviCandidateIndexDocument>();
+    var approvalFactory = new ApprovalFactory(topLevelOrganization);
+    for (var status : ApprovalStatus.values()) {
+      for (var globalStatus : GlobalApprovalStatus.values()) {
+        var approval =
+            approvalFactory
+                .copy()
+                .withApprovalStatus(status)
+                .withGlobalApprovalStatus(globalStatus)
+                .withCreatorAffiliation(creatorAffiliation)
+                .build();
+        documents.add(documentWithApprovals(approval));
+      }
+    }
+    return documents;
+  }
+
+  public static GlobalApprovalStatus deriveGlobalApprovalStatus(
+      Collection<ApprovalStatus> approvalStatuses) {
+    var statusSet = Set.copyOf(approvalStatuses);
+    if (statusSet.equals(Set.of(ApprovalStatus.APPROVED))) {
+      return GlobalApprovalStatus.APPROVED;
+    }
+    if (statusSet.equals(Set.of(ApprovalStatus.REJECTED))) {
+      return GlobalApprovalStatus.REJECTED;
+    }
+    if (statusSet.containsAll(Set.of(ApprovalStatus.APPROVED, ApprovalStatus.REJECTED))) {
+      return GlobalApprovalStatus.DISPUTE;
+    }
+    return GlobalApprovalStatus.PENDING;
   }
 }

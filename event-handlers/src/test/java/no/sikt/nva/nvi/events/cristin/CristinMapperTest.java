@@ -10,7 +10,6 @@ import static org.assertj.core.api.Assertions.tuple;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.emptyIterable;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -22,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import com.fasterxml.jackson.databind.MappingIterator;
 import com.fasterxml.jackson.dataformat.csv.CsvMapper;
 import com.fasterxml.jackson.dataformat.csv.CsvSchema;
+import java.io.IOException;
 import java.io.StringReader;
 import java.math.BigDecimal;
 import java.math.MathContext;
@@ -93,7 +93,8 @@ class CristinMapperTest {
         cristinReportFromCristinLocalesAndScientificResource(cristinLocale, scientificResource);
     var dbCandidate = cristinMapper.toDbCandidate(report.build());
 
-    var institutionId = dbCandidate.points().getFirst().institutionId();
+    var dbPoints = dbCandidate.pointCalculation().institutionPoints();
+    var institutionId = dbPoints.getFirst().institutionId();
     var expectedInstitutionId = CristinIdWrapper.from(cristinLocale).getGroupId();
     var expectedPointsForInstitution =
         POINTS_PER_CONTRIBUTOR
@@ -102,7 +103,7 @@ class CristinMapperTest {
                 new MathContext(CALCULATION_PRECISION, RoundingMode.HALF_UP))
             .setScale(SCALE, RoundingMode.HALF_UP);
 
-    assertEquals(dbCandidate.points().getFirst().points(), expectedPointsForInstitution);
+    assertEquals(dbPoints.getFirst().points(), expectedPointsForInstitution);
     assertEquals(institutionId, expectedInstitutionId);
   }
 
@@ -119,9 +120,10 @@ class CristinMapperTest {
         cristinReportFromCristinLocalesAndScientificResource(cristinLocale, scientificResource);
     var dbCandidate = cristinMapper.toDbCandidate(report.build());
 
+    var dbPoints = dbCandidate.pointCalculation();
     var expectedBasePoints =
         new BigDecimal(BASE_POINTS_CRISTIN_ENTRY).setScale(SCALE, RoundingMode.HALF_UP);
-    assertEquals(dbCandidate.basePoints(), expectedBasePoints);
+    assertEquals(dbPoints.basePoints(), expectedBasePoints);
   }
 
   @Test
@@ -142,8 +144,9 @@ class CristinMapperTest {
         new BigDecimal(INTERNATIONAL_COLLABORATION_FACTOR_CRISTIN_ENTRY)
             .setScale(SCALE, RoundingMode.HALF_UP);
 
-    assertEquals(dbCandidate.collaborationFactor(), expectedCollaborationFactor);
-    assertTrue(dbCandidate.internationalCollaboration());
+    var pointCalculation = dbCandidate.pointCalculation();
+    assertEquals(pointCalculation.collaborationFactor(), expectedCollaborationFactor);
+    assertTrue(pointCalculation.internationalCollaboration());
   }
 
   @Test
@@ -165,8 +168,9 @@ class CristinMapperTest {
         new BigDecimal(NO_INTERNATIONAL_COLLABORATION_FACTOR_CRISTIN_ENTRY)
             .setScale(SCALE, RoundingMode.HALF_UP);
 
-    assertEquals(dbCandidate.collaborationFactor(), expectedCollaborationFactor);
-    assertFalse(dbCandidate.internationalCollaboration());
+    var pointCalculation = dbCandidate.pointCalculation();
+    assertEquals(pointCalculation.collaborationFactor(), expectedCollaborationFactor);
+    assertFalse(pointCalculation.internationalCollaboration());
   }
 
   @Test
@@ -193,13 +197,13 @@ class CristinMapperTest {
                 POINTS_PER_CONTRIBUTOR,
                 new MathContext(CALCULATION_PRECISION, RoundingMode.HALF_UP))
             .setScale(SCALE, RoundingMode.HALF_UP);
-    assertEquals(dbCandidate.totalPoints(), expectedTotalPoints);
+    assertEquals(dbCandidate.pointCalculation().totalPoints(), expectedTotalPoints);
   }
 
   @Test
   void shouldExtractChannelIdFromAcademicArticle() {
     var academicArticleReference =
-        """
+"""
                 {
   "type" : "Reference",
   "publicationContext" : {
@@ -227,7 +231,7 @@ class CristinMapperTest {
   @Test
   void shouldExtractChannelIdFromAcademicLiteratureReview() {
     var academicArticleReference =
-        """
+"""
 {
       "type" : "Reference",
       "publicationContext" : {
@@ -255,7 +259,7 @@ class CristinMapperTest {
   @Test
   void shouldExtractChannelIdFromAcademicMonographFromSeries() {
     var academicArticleReference =
-        """
+"""
 {
       "type" : "Reference",
       "publicationContext" : {
@@ -292,7 +296,7 @@ class CristinMapperTest {
   @Test
   void shouldExtractChannelIdFromAcademicMonographFromPublisher() {
     var academicArticleReference =
-        """
+"""
 {
       "type" : "Reference",
       "publicationContext" : {
@@ -319,7 +323,7 @@ class CristinMapperTest {
   @Test
   void shouldExtractChannelIdFromAcademicChapterWhenSeriesIsPresent() {
     var academicArticleReference =
-        """
+"""
                                                  {
   "type": "Reference",
   "publicationContext": {
@@ -369,7 +373,7 @@ class CristinMapperTest {
   @Test
   void shouldExtractChannelIdFromAcademicChapter() {
     var academicArticleReference =
-        """
+"""
                           {
   "type": "Reference",
   "publicationContext": {
@@ -410,7 +414,7 @@ class CristinMapperTest {
   @Test
   void shouldNotExtractChannelIdAndChannelTypeWhenUnsupportedInstanceTypeInReference() {
     var academicArticleReference =
-        """
+"""
                           {
 
   "type": "Reference",
@@ -428,14 +432,15 @@ class CristinMapperTest {
         nviReportWithInstanceTypeAndReference("AcademicChapter", academicArticleReference);
     var dbCandidate = cristinMapper.toDbCandidate(nviReport);
 
-    assertNull(dbCandidate.channelId());
-    assertNull(dbCandidate.channelType());
+    var dbChannel = dbCandidate.pointCalculation().publicationChannel();
+    assertNull(dbChannel.id());
+    assertNull(dbChannel.channelType());
   }
 
   @Test
   void shouldNotExtractChannelIdAndChannelTypeWhenUnsupportedInstanceType() {
     var academicArticleReference =
-        """
+"""
                           {
   "type": "Reference",
   "publicationContext": {
@@ -452,8 +457,9 @@ class CristinMapperTest {
         nviReportWithInstanceTypeAndReference("UnsupportedType", academicArticleReference);
     var dbCandidate = cristinMapper.toDbCandidate(nviReport);
 
-    assertNull(dbCandidate.channelId());
-    assertNull(dbCandidate.channelType());
+    var dbChannel = dbCandidate.pointCalculation().publicationChannel();
+    assertNull(dbChannel.id());
+    assertNull(dbChannel.channelType());
   }
 
   @Test
@@ -466,8 +472,8 @@ class CristinMapperTest {
         cristinReportFromCristinLocalesAndScientificResource(cristinLocale, scientificResource);
     var dbCandidate = cristinMapper.toDbCandidate(report.build());
 
-    var pointsPerAffiliation =
-        dbCandidate.points().getFirst().creatorAffiliationPoints().getFirst();
+    var dbPoints = dbCandidate.pointCalculation().institutionPoints();
+    var pointsPerAffiliation = dbPoints.getFirst().creatorAffiliationPoints().getFirst();
 
     var expectedCreatorPoints = POINTS_PER_CONTRIBUTOR.setScale(SCALE, RoundingMode.HALF_UP);
     assertEquals(expectedCreatorPoints, pointsPerAffiliation.points());
@@ -485,7 +491,7 @@ class CristinMapperTest {
         cristinReportFromCristinLocalesAndScientificResource(cristinLocale, scientificResource);
     var dbCandidate = cristinMapper.toDbCandidate(report.build());
 
-    var institutionPoints = dbCandidate.points().getFirst();
+    var institutionPoints = dbCandidate.pointCalculation().institutionPoints().getFirst();
     var expectedSingleCreatorPoints = POINTS_PER_CONTRIBUTOR.setScale(SCALE, RoundingMode.HALF_UP);
     var expectedCreator = expectedCreatorId(firstCreator);
 
@@ -503,15 +509,10 @@ class CristinMapperTest {
         cristinReportFromCristinLocalesAndScientificResource(cristinLocale, scientificResource);
     var dbCandidate = cristinMapper.toDbCandidate(report.build());
 
-    var institutionPointsId = dbCandidate.points().getFirst().institutionId().toString();
+    var dbPoints = dbCandidate.pointCalculation().institutionPoints();
+    var institutionPointsId = dbPoints.getFirst().institutionId().toString();
     var affiliationForInstitutionPoints =
-        dbCandidate
-            .points()
-            .getFirst()
-            .creatorAffiliationPoints()
-            .getFirst()
-            .affiliationId()
-            .toString();
+        dbPoints.getFirst().creatorAffiliationPoints().getFirst().affiliationId().toString();
 
     assertThat(institutionPointsId, containsString("2057"));
     assertThat(affiliationForInstitutionPoints, containsString("305"));
@@ -526,7 +527,8 @@ class CristinMapperTest {
             (CristinLocale) null, scientificResource);
     var dbCandidate = cristinMapper.toDbCandidate(report.build());
 
-    assertThat(dbCandidate.points(), is(emptyIterable()));
+    var dbPoints = dbCandidate.pointCalculation().institutionPoints();
+    assertThat(dbPoints, is(emptyIterable()));
   }
 
   @Test
@@ -580,7 +582,8 @@ class CristinMapperTest {
             .build();
     var nviCandidate = cristinMapper.toDbCandidate(report);
 
-    assertThat(nviCandidate.level(), is(equalTo(DbLevel.LEVEL_TWO)));
+    var dbChannel = nviCandidate.pointCalculation().publicationChannel();
+    Assertions.assertThat(dbChannel.scientificValue()).isEqualTo(DbLevel.LEVEL_TWO.getValue());
   }
 
   @Test
@@ -716,8 +719,8 @@ class CristinMapperTest {
                           Path.of("src/main/resources/cristin_transfer_departments.csv"))));
 
       return iterator.readAll();
-    } catch (Exception e) {
-      throw new RuntimeException();
+    } catch (IOException exception) {
+      throw new RuntimeException(exception);
     }
   }
 
@@ -727,7 +730,8 @@ class CristinMapperTest {
 
   private static void assertThatChannelHasExpectedIdAndType(
       DbCandidate actualCandidate, URI expectedChannelId, ChannelType expectedChannelType) {
-    assertEquals(expectedChannelId, actualCandidate.channelId());
-    assertEquals(expectedChannelType.getValue(), actualCandidate.channelType());
+    var dbChannel = actualCandidate.pointCalculation().publicationChannel();
+    assertEquals(expectedChannelId, dbChannel.id());
+    assertEquals(expectedChannelType.getValue(), dbChannel.channelType());
   }
 }

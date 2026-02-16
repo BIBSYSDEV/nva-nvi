@@ -2,14 +2,10 @@ package no.sikt.nva.nvi.rest.fetch;
 
 import static com.google.common.net.HttpHeaders.ACCEPT;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.Is.is;
-import static org.hamcrest.core.IsEqual.equalTo;
-import static org.hamcrest.core.StringContains.containsString;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -17,6 +13,7 @@ import java.net.HttpURLConnection;
 import java.util.Map;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.rest.EnvironmentFixtures;
 import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.GatewayResponse;
@@ -28,7 +25,6 @@ import org.zalando.problem.Problem;
 
 class FetchNviCandidateContextHandlerTest {
 
-  public static final ObjectMapper MAPPER = dtoObjectMapper;
   private static final String TEXT_ANY = "text/*";
   private static final String TEXT_HTML = "text/html";
   private static final String APPLICATION_XHTML = "application/xhtml+xml";
@@ -44,7 +40,9 @@ class FetchNviCandidateContextHandlerTest {
   @BeforeEach
   void setUp() {
     output = new ByteArrayOutputStream();
-    fetchNviCandidateContextHandler = new FetchNviCandidateContextHandler();
+    fetchNviCandidateContextHandler =
+        new FetchNviCandidateContextHandler(
+            EnvironmentFixtures.FETCH_NVI_CANDIDATE_CONTEXT_HANDLER);
   }
 
   @Test
@@ -52,9 +50,16 @@ class FetchNviCandidateContextHandlerTest {
     var request = generateHandlerRequest(Map.of(ACCEPT, APPLICATION_JSON));
     fetchNviCandidateContextHandler.handleRequest(request, output, context);
     var response = GatewayResponse.fromOutputStream(output, String.class);
-    var expectedContext = "{\"@context\":" + Candidate.getJsonLdContext() + "}";
-    var expected = formatJson(expectedContext);
-    assertThat(response.getBody(), is(equalTo(expected)));
+    var expectedContext = Candidate.getJsonLdContext();
+    assertThat(response.getBody()).isEqualToIgnoringWhitespace(expectedContext);
+  }
+
+  @Test
+  void shouldOnlyHaveOneContextNodeInResponse() throws IOException {
+    var request = generateHandlerRequest(Map.of(ACCEPT, APPLICATION_JSON));
+    fetchNviCandidateContextHandler.handleRequest(request, output, context);
+    var response = GatewayResponse.fromOutputStream(output, String.class);
+    assertThat(response.getBody()).containsOnlyOnce("@context");
   }
 
   @ParameterizedTest(name = "mediaType {0} is invalid")
@@ -64,9 +69,9 @@ class FetchNviCandidateContextHandlerTest {
     var request = generateHandlerRequest(Map.of(ACCEPT, mediaType));
     fetchNviCandidateContextHandler.handleRequest(request, output, context);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
-    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNSUPPORTED_TYPE)));
+    assertThat(response.getStatusCode()).isEqualTo(HttpURLConnection.HTTP_UNSUPPORTED_TYPE);
     var problem = response.getBodyObject(Problem.class);
-    assertThat(problem.getDetail(), is(containsString(UNSUPPORTED_ACCEPT_HEADER_MESSAGE)));
+    assertThat(problem.getDetail()).contains(UNSUPPORTED_ACCEPT_HEADER_MESSAGE);
   }
 
   @ParameterizedTest(name = "mediaType {0} is valid")
@@ -76,11 +81,7 @@ class FetchNviCandidateContextHandlerTest {
     var request = generateHandlerRequest(Map.of(ACCEPT, mediaType));
     fetchNviCandidateContextHandler.handleRequest(request, output, context);
     var response = GatewayResponse.fromOutputStream(output, String.class);
-    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_OK)));
-  }
-
-  private static String formatJson(String json) throws JsonProcessingException {
-    return MAPPER.writeValueAsString(MAPPER.readTree(json));
+    assertThat(response.getStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
   }
 
   private static Stream<String> unsupportedMediaTypes() {

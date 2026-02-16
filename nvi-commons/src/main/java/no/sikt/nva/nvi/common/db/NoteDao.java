@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.common.db;
 
+import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.DatabaseConstants.DATA_FIELD;
 import static no.sikt.nva.nvi.common.DatabaseConstants.HASH_KEY;
 import static no.sikt.nva.nvi.common.DatabaseConstants.IDENTIFIER_FIELD;
@@ -14,6 +15,7 @@ import no.sikt.nva.nvi.common.db.NoteDao.Builder;
 import no.sikt.nva.nvi.common.db.model.Username;
 import nva.commons.core.JacocoGenerated;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
+import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbIgnore;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbImmutable;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
@@ -49,6 +51,17 @@ public final class NoteDao extends Dao {
 
   public static Builder builder() {
     return new Builder();
+  }
+
+  @DynamoDbIgnore
+  public Builder copy() {
+    return new Builder().identifier(identifier).note(note).version(version);
+  }
+
+  @Override
+  @DynamoDbIgnore
+  public NoteDao withMutatedVersion() {
+    return copy().version(randomUUID().toString()).build();
   }
 
   @Override

@@ -15,10 +15,7 @@ import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.QueueServiceTestUtils;
 import software.amazon.awssdk.services.sqs.model.BatchResultErrorEntry;
 import software.amazon.awssdk.services.sqs.model.DeleteMessageRequest;
-import software.amazon.awssdk.services.sqs.model.Message;
 import software.amazon.awssdk.services.sqs.model.MessageAttributeValue;
-import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest;
-import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequest;
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequestEntry;
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchResponse;
@@ -27,19 +24,16 @@ import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 import software.amazon.awssdk.services.sqs.model.SqsException;
 
-@SuppressWarnings("PMD.CouplingBetweenObjects")
 public class FakeSqsClient implements QueueClient {
 
-  public static final String MESSAGE_ATTRIBUTE_CANDIDATE_IDENTIFIER_QUEUE = "candidateIdentifier";
-  public static final String DATA_TYPE_STRING = "String";
+  private static final String CANDIDATE_IDENTIFIER = "candidateIdentifier";
+  private static final String DATA_TYPE_STRING = "String";
 
   private final Set<String> destinationQueuesThatShouldFail = new HashSet<>();
 
   private final List<SendMessageRequest> sentMessages = new ArrayList<>();
 
   private final List<SendMessageBatchRequest> sentBatches = new ArrayList<>();
-
-  private final List<ReceiveMessageRequest> receivedMessages = new ArrayList<>();
 
   private final List<DeleteMessageRequest> deleteMessages = new ArrayList<>();
 
@@ -76,6 +70,15 @@ public class FakeSqsClient implements QueueClient {
   }
 
   @Override
+  public NviSendMessageResponse sendMessage(QueueMessage message, String queueUrl) {
+    validateQueueUrl(queueUrl);
+    var request = createRequest(message, queueUrl);
+    sentMessages.add(request);
+    return createResponse(
+        SendMessageResponse.builder().messageId(UUID.randomUUID().toString()).build());
+  }
+
+  @Override
   public NviSendMessageResponse sendMessage(
       String message, String queueUrl, UUID candidateIdentifier) {
     validateQueueUrl(queueUrl);
@@ -100,9 +103,10 @@ public class FakeSqsClient implements QueueClient {
   @Override
   public NviReceiveMessageResponse receiveMessage(String queueUrl, int maxNumberOfMessages) {
     validateQueueUrl(queueUrl);
-    var numberOfMessages = Math.min(maxNumberOfMessages, sentMessages.size());
     return new NviReceiveMessageResponse(
-        sentMessages.subList(0, numberOfMessages).stream()
+        sentMessages.stream()
+            .filter(message -> queueUrl.equals(message.queueUrl()))
+            .limit(maxNumberOfMessages)
             .map(
                 sendMessageRequest ->
                     new NviReceiveMessage(
@@ -135,38 +139,10 @@ public class FakeSqsClient implements QueueClient {
     destinationQueuesThatShouldFail.add(queueUrl);
   }
 
-  /**
-   * Removes the exception throwing behavior from a queue destination.
-   *
-   * @param queueUrl the URL of the queue to enable
-   */
-  public void enableDestinationQueue(String queueUrl) {
-    destinationQueuesThatShouldFail.remove(queueUrl);
-  }
-
   private void validateQueueUrl(String queueUrl) {
     if (destinationQueuesThatShouldFail.contains(queueUrl)) {
       throw SqsException.builder().message("Queue is disabled").build();
     }
-  }
-
-  private ReceiveMessageRequest createReceiveRequest(String queueUrl, int maxNumberOfMessages) {
-    return ReceiveMessageRequest.builder()
-        .queueUrl(queueUrl)
-        .maxNumberOfMessages(maxNumberOfMessages)
-        .build();
-  }
-
-  private NviReceiveMessageResponse createResponse(ReceiveMessageResponse receiveMessageResponse) {
-    return new NviReceiveMessageResponse(
-        receiveMessageResponse.messages().stream()
-            .map(FakeSqsClient::mapToNviReceiveMessage)
-            .toList());
-  }
-
-  private static NviReceiveMessage mapToNviReceiveMessage(Message m) {
-    return new NviReceiveMessage(
-        m.body(), m.messageId(), m.attributesAsStrings(), m.receiptHandle());
   }
 
   private SendMessageBatchRequest createBatchRequest(Collection<String> messages, String queueUrl) {
@@ -191,12 +167,20 @@ public class FakeSqsClient implements QueueClient {
     return SendMessageBatchRequestEntry.builder().messageBody(message).build();
   }
 
+  private SendMessageRequest createRequest(QueueMessage message, String queueUrl) {
+    return SendMessageRequest.builder()
+        .queueUrl(queueUrl)
+        .messageBody(message.body().toJsonString())
+        .messageAttributes(message.attributes())
+        .build();
+  }
+
   private SendMessageRequest createRequest(String body, String queueUrl, UUID candidateIdentifier) {
     return SendMessageRequest.builder()
         .queueUrl(queueUrl)
         .messageAttributes(
             Map.of(
-                MESSAGE_ATTRIBUTE_CANDIDATE_IDENTIFIER_QUEUE,
+                CANDIDATE_IDENTIFIER,
                 MessageAttributeValue.builder()
                     .stringValue(candidateIdentifier.toString())
                     .dataType(DATA_TYPE_STRING)

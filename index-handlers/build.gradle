@@ -2,8 +2,8 @@ plugins {
     id 'nva.nvi.java-conventions'
 }
 dependencies {
-    implementation libs.aws.sdk2.regions
-    implementation libs.aws.sdk2.sqs
+    implementation nvaCatalog.aws.sdk2.regions
+    implementation nvaCatalog.aws.sdk2.sqs
     implementation libs.nva.language
     implementation nvaCatalog.aws.apache.client
     implementation nvaCatalog.aws.java.sdk.core
@@ -20,7 +20,7 @@ dependencies {
     implementation nvaCatalog.jackson.databind
     implementation nvaCatalog.jena.core
     implementation nvaCatalog.opensearch.java
-    implementation nvaCatalog.opensearch.rest.client
+    implementation nvaCatalog.httpclient5
     implementation nvaLibs.apigateway
     implementation nvaLibs.auth
     implementation nvaLibs.clients
@@ -30,11 +30,13 @@ dependencies {
     implementation nvaLibs.s3
     implementation nvaLibs.secrets
     implementation project(':nvi-commons')
-    testImplementation libs.dynamodDbLocal
+    testFixturesAnnotationProcessor nvaCatalog.errorprone
+    testImplementation nvaCatalog.aws.sdk2.dynamodblocal
     testImplementation nvaCatalog.assertj.core
     testImplementation nvaCatalog.bundles.testing.cucumber
     testImplementation nvaCatalog.bundles.testing.junit
     testImplementation nvaCatalog.bundles.testing.testcontainers
+    testImplementation nvaCatalog.datafaker
     testImplementation nvaCatalog.hamcrest
     testImplementation nvaCatalog.mockito.core
     testImplementation nvaCatalog.opencsv

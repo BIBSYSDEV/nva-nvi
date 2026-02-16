@@ -1,48 +1,22 @@
 package no.sikt.nva.nvi.events.evaluator.calculator;
 
-import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
-import static nva.commons.core.StringUtils.isBlank;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import java.net.HttpURLConnection;
 import java.net.URI;
-import java.net.URLEncoder;
-import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.List;
-import java.util.Optional;
+import java.util.Map;
+import java.util.function.Predicate;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.dto.ContributorDto;
 import no.sikt.nva.nvi.common.dto.PublicationDto;
-import no.sikt.nva.nvi.events.evaluator.model.CustomerResponse;
+import no.sikt.nva.nvi.common.model.Customer;
 import no.sikt.nva.nvi.events.evaluator.model.NviCreator;
 import no.sikt.nva.nvi.events.evaluator.model.NviOrganization;
 import no.sikt.nva.nvi.events.evaluator.model.UnverifiedNviCreator;
 import no.sikt.nva.nvi.events.evaluator.model.VerifiedNviCreator;
-import no.unit.nva.auth.uriretriever.AuthorizedBackendUriRetriever;
-import nva.commons.core.Environment;
-import nva.commons.core.paths.UriWrapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-public class CreatorVerificationUtil {
+public final class CreatorVerificationUtil {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(CreatorVerificationUtil.class);
-  private static final String CONTENT_TYPE = "application/json";
-  private static final String FAILED_TO_FETCH_CUSTOMER_MESSAGE =
-      "Failed to fetch customer for %s (status code: %d)";
-  private static final String CUSTOMER = "customer";
-  private static final String CRISTIN_ID = "cristinId";
-  private static final String COUNTRY_CODE_NORWAY = "NO";
-  private final String baseApiHostName;
-  private final AuthorizedBackendUriRetriever authorizedBackendUriRetriever;
-
-  public CreatorVerificationUtil(
-      AuthorizedBackendUriRetriever authorizedBackendUriRetriever, Environment environment) {
-    this.authorizedBackendUriRetriever = authorizedBackendUriRetriever;
-    this.baseApiHostName = environment.readEnv("API_HOST");
-  }
+  private CreatorVerificationUtil() {}
 
   public static List<VerifiedNviCreator> getVerifiedCreators(Collection<NviCreator> creators) {
     return creators.stream()
@@ -58,25 +32,14 @@ public class CreatorVerificationUtil {
         .toList();
   }
 
-  public List<NviCreator> getNviCreatorsWithNviInstitutions(PublicationDto publication) {
+  public static List<NviCreator> getNviCreatorsWithNviInstitutions(
+      Map<URI, Customer> customers, PublicationDto publication) {
     return publication.contributors().stream()
         .filter(ContributorDto::isCreator)
         .filter(CreatorVerificationUtil::isValidContributor)
-        .map(this::toNviCreator)
+        .map(creator -> toNviCreator(customers, creator))
         .filter(CreatorVerificationUtil::isAffiliatedWithNviOrganization)
         .toList();
-  }
-
-  private URI createCustomerApiUri(String institutionId) {
-    var getCustomerEndpoint =
-        UriWrapper.fromHost(baseApiHostName).addChild(CUSTOMER).addChild(CRISTIN_ID).getUri();
-    // Note: This is an odd way to encode the URI, but it may be necessary because of how this is
-    // parsed
-    // by the GetCustomerByCristinIdHandler in nva-identity-service. Check that it still works in
-    // prod if
-    // this is changed.
-    return URI.create(
-        getCustomerEndpoint + "/" + URLEncoder.encode(institutionId, StandardCharsets.UTF_8));
   }
 
   private static boolean isValidContributor(ContributorDto contributorDto) {
@@ -87,14 +50,6 @@ public class CreatorVerificationUtil {
     return !creator.nviAffiliations().isEmpty();
   }
 
-  private static boolean isHttpOk(HttpResponse<String> response) {
-    return response.statusCode() == HttpURLConnection.HTTP_OK;
-  }
-
-  private static boolean isNotFound(HttpResponse<String> response) {
-    return response.statusCode() == HttpURLConnection.HTTP_NOT_FOUND;
-  }
-
   private static NviOrganization toNviOrganization(Organization organization) {
     return NviOrganization.builder()
         .withId(organization.id())
@@ -103,78 +58,42 @@ public class CreatorVerificationUtil {
         .build();
   }
 
-  private static boolean hasRelevantCountryCode(Organization organization) {
-    // We only need to check the affiliation if the country code is set to `NO` or missing.
-    // Otherwise, we can skip it and not check if it is an NVI institution, saving us a network
-    // call.
-    return isBlank(organization.countryCode())
-        || COUNTRY_CODE_NORWAY.equalsIgnoreCase(organization.countryCode());
-  }
-
-  private NviCreator toNviCreator(ContributorDto contributor) {
+  private static NviCreator toNviCreator(Map<URI, Customer> customers, ContributorDto contributor) {
+    var nviAffiliations = getNviAffiliationsIfExist(customers, contributor);
     if (contributor.isVerified()) {
-      return toVerifiedNviCreator(contributor);
+      return toVerifiedNviCreator(contributor, nviAffiliations);
     }
-    return toUnverifiedNviCreator(contributor);
+    return toUnverifiedNviCreator(contributor, nviAffiliations);
   }
 
-  private VerifiedNviCreator toVerifiedNviCreator(ContributorDto contributor) {
+  private static VerifiedNviCreator toVerifiedNviCreator(
+      ContributorDto contributor, List<NviOrganization> nviAffiliations) {
     return VerifiedNviCreator.builder()
         .withId(contributor.id())
-        .withNviAffiliations(getNviAffiliationsIfExist(contributor))
+        .withNviAffiliations(nviAffiliations)
         .build();
   }
 
-  private UnverifiedNviCreator toUnverifiedNviCreator(ContributorDto contributor) {
+  private static UnverifiedNviCreator toUnverifiedNviCreator(
+      ContributorDto contributor, List<NviOrganization> nviAffiliations) {
     return UnverifiedNviCreator.builder()
         .withName(contributor.name())
-        .withNviAffiliations(getNviAffiliationsIfExist(contributor))
+        .withNviAffiliations(nviAffiliations)
         .build();
   }
 
-  private List<NviOrganization> getNviAffiliationsIfExist(ContributorDto contributor) {
+  private static List<NviOrganization> getNviAffiliationsIfExist(
+      Map<URI, Customer> customers, ContributorDto contributor) {
     return contributor.affiliations().stream()
-        .filter(CreatorVerificationUtil::hasRelevantCountryCode)
-        .filter(this::topLevelOrgIsNviInstitution)
+        .filter(isNviInstitution(customers))
         .map(CreatorVerificationUtil::toNviOrganization)
         .toList();
   }
 
-  private boolean topLevelOrgIsNviInstitution(Organization organization) {
-    return isNviInstitution(organization.getTopLevelOrg().id());
-  }
-
-  private static boolean mapToNviInstitutionValue(HttpResponse<String> response) {
-    var body = response.body();
-    try {
-      var customerResponse = dtoObjectMapper.readValue(body, CustomerResponse.class);
-      return customerResponse.nviInstitution();
-    } catch (JsonProcessingException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  private boolean isNviInstitution(URI institutionId) {
-    var customerApiUri = createCustomerApiUri(institutionId.toString());
-    var response = getResponse(customerApiUri);
-    if (isHttpOk(response)) {
-      return mapToNviInstitutionValue(response);
-    }
-    if (isNotFound(response)) {
-      return false;
-    }
-    var message =
-        String.format(FAILED_TO_FETCH_CUSTOMER_MESSAGE, customerApiUri, response.statusCode());
-    LOGGER.error(message);
-    throw new RuntimeException(message);
-  }
-
-  private HttpResponse<String> getResponse(URI uri) {
-    return Optional.ofNullable(authorizedBackendUriRetriever.fetchResponse(uri, CONTENT_TYPE))
-        .stream()
-        .filter(Optional::isPresent)
-        .map(Optional::get)
-        .findAny()
-        .orElseThrow();
+  private static Predicate<Organization> isNviInstitution(Map<URI, Customer> customers) {
+    return organization -> {
+      var topLevelId = organization.getTopLevelOrg().id();
+      return customers.containsKey(topLevelId) && customers.get(topLevelId).nviInstitution();
+    };
   }
 }

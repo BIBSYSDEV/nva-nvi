@@ -1,17 +1,21 @@
 package no.sikt.nva.nvi.rest.fetch;
 
 import java.net.URI;
+import java.util.Objects;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
+import no.sikt.nva.nvi.common.service.model.NviPeriod;
 
 public record ReportStatusDto(
     URI publicationId, StatusWithDescriptionDto reportStatus, String period) {
 
   public static ReportStatusDto fromCandidate(Candidate candidate) {
+    var publishingYear =
+        candidate.getPeriod().map(NviPeriod::publishingYear).map(Objects::toString).orElse(null);
     return new ReportStatusDto(
         candidate.getPublicationId(),
         StatusWithDescriptionDto.fromStatus(getStatus(candidate)),
-        candidate.getPeriod().year());
+        publishingYear);
   }
 
   public static Builder builder() {
@@ -19,24 +23,25 @@ public record ReportStatusDto(
   }
 
   private static StatusDto getStatus(Candidate candidate) {
+    var isOpenPeriod = candidate.getPeriod().filter(NviPeriod::isOpen).isPresent();
     if (!candidate.isApplicable()) {
       return StatusDto.NOT_CANDIDATE;
     } else if (candidate.isReported()) {
       return StatusDto.REPORTED;
     } else if (candidate.isPendingReview()) {
       return StatusDto.PENDING_REVIEW;
-    } else if (GlobalApprovalStatus.REJECTED.equals(candidate.getGlobalApprovalStatus())
-        && candidate.getPeriod().isOpen()) {
+    } else if (candidate.getGlobalApprovalStatus() == GlobalApprovalStatus.REJECTED
+        && isOpenPeriod) {
       return StatusDto.REJECTED;
-    } else if (GlobalApprovalStatus.APPROVED.equals(candidate.getGlobalApprovalStatus())
-        && candidate.getPeriod().isOpen()) {
+    } else if (candidate.getGlobalApprovalStatus() == GlobalApprovalStatus.APPROVED
+        && isOpenPeriod) {
       return StatusDto.APPROVED;
     } else if (candidate.isUnderReview()) {
       return StatusDto.UNDER_REVIEW;
     } else if (candidate.isNotReportedInClosedPeriod()) {
       return StatusDto.NOT_REPORTED;
     } else {
-      throw new IllegalStateException("Unable to determine report status for candidate");
+      return StatusDto.UNKNOWN;
     }
   }
 
@@ -47,7 +52,8 @@ public record ReportStatusDto(
     REJECTED("Rejected by all involved institutions in open period"),
     REPORTED("Reported in closed period"),
     NOT_REPORTED("Not reported in closed period"),
-    NOT_CANDIDATE("Not a candidate");
+    NOT_CANDIDATE("Not a candidate"),
+    UNKNOWN("Unknown status");
     private final String description;
 
     StatusDto(String description) {

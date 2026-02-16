@@ -1,8 +1,6 @@
 package no.sikt.nva.nvi.common.db;
 
-import nva.commons.core.JacocoGenerated;
-
-@JacocoGenerated
+@FunctionalInterface
 public interface Typed {
 
   String TYPE_FIELD = "type";

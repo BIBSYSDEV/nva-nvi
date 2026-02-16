@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.index;
 
-import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
 import static no.sikt.nva.nvi.common.utils.ExceptionUtils.getStackTrace;
 import static no.sikt.nva.nvi.index.aws.S3StorageWriter.GZIP_ENDING;
 import static nva.commons.core.StringUtils.isBlank;
@@ -16,11 +15,10 @@ import java.util.UUID;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.StorageWriter;
-import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.queue.DynamoDbChangeMessage;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
+import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.index.aws.S3StorageWriter;
 import no.sikt.nva.nvi.index.model.PersistedIndexDocumentMessage;
@@ -53,8 +51,7 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
       "An unexpected error occurred with a blank message passed to error handler.";
   private final StorageReader<URI> storageReader;
   private final StorageWriter<IndexDocumentWithConsumptionAttributes> storageWriter;
-  private final CandidateRepository candidateRepository;
-  private final PeriodRepository periodRepository;
+  private final CandidateService candidateService;
   private final UriRetriever uriRetriever;
   private final QueueClient sqsClient;
   private final String queueUrl;
@@ -66,8 +63,7 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
         new S3StorageReader(new Environment().readEnv(EXPANDED_RESOURCES_BUCKET)),
         new S3StorageWriter(new Environment().readEnv(EXPANDED_RESOURCES_BUCKET)),
         new NviQueueClient(),
-        new CandidateRepository(defaultDynamoClient()),
-        new PeriodRepository(defaultDynamoClient()),
+        CandidateService.defaultCandidateService(),
         new UriRetriever(),
         new Environment());
   }
@@ -76,15 +72,13 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
       StorageReader<URI> storageReader,
       StorageWriter<IndexDocumentWithConsumptionAttributes> storageWriter,
       QueueClient sqsClient,
-      CandidateRepository candidateRepository,
-      PeriodRepository periodRepository,
+      CandidateService candidateService,
       UriRetriever uriRetriever,
       Environment environment) {
     this.storageReader = storageReader;
     this.storageWriter = storageWriter;
     this.sqsClient = sqsClient;
-    this.candidateRepository = candidateRepository;
-    this.periodRepository = periodRepository;
+    this.candidateService = candidateService;
     this.uriRetriever = uriRetriever;
     this.queueUrl = environment.readEnv(QUEUE_URL);
     this.dlqUrl = environment.readEnv(INDEX_DLQ);
@@ -124,7 +118,7 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
     attempt(
             () ->
                 sqsClient.sendMessage(
-                    new PersistedIndexDocumentMessage(uri).asJsonString(), queueUrl))
+                    new PersistedIndexDocumentMessage(uri).toJsonString(), queueUrl))
         .orElse(
             failure -> {
               handleFailure(
@@ -156,8 +150,7 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
   }
 
   private Candidate fetchCandidate(UUID candidateIdentifier) {
-    return attempt(
-            () -> Candidate.fetch(() -> candidateIdentifier, candidateRepository, periodRepository))
+    return attempt(() -> candidateService.getCandidateByIdentifier(candidateIdentifier))
         .orElse(
             failure -> {
               handleFailure(
@@ -171,7 +164,7 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
 
   private PersistedResource fetchPersistedResource(Candidate candidate) {
     return PersistedResource.fromUri(
-        candidate.getPublicationDetails().publicationBucketUri(), storageReader);
+        candidate.publicationDetails().publicationBucketUri(), storageReader);
   }
 
   private IndexDocumentWithConsumptionAttributes generateIndexDocument(
@@ -218,16 +211,16 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
     }
   }
 
-  private void handleFailure(Failure<?> failure, String messageArgument) {
-    validateErrorMessage(messageArgument);
-    logFailure(FAILED_TO_PARSE_EVENT_MESSAGE, messageArgument, failure.getException());
-    sqsClient.sendMessage(failure.getException().getMessage(), dlqUrl);
+  private void handleFailure(Failure<?> failure, String messageBody) {
+    validateErrorMessage(messageBody);
+    logFailure(FAILED_TO_PARSE_EVENT_MESSAGE, messageBody, failure.getException());
+    sqsClient.sendMessage(getStackTrace(failure.getException()), dlqUrl);
   }
 
   private void handleFailure(
-      Failure<?> failure, String message, String messageArgument, UUID candidateIdentifier) {
+      Failure<?> failure, String errorMessage, String messageArgument, UUID candidateIdentifier) {
     validateErrorMessage(messageArgument);
-    logFailure(message, messageArgument, failure.getException());
-    sqsClient.sendMessage(failure.getException().getMessage(), dlqUrl, candidateIdentifier);
+    logFailure(errorMessage, messageArgument, failure.getException());
+    sqsClient.sendMessage(getStackTrace(failure.getException()), dlqUrl, candidateIdentifier);
   }
 }

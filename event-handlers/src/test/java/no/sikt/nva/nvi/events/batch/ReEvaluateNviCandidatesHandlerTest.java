@@ -4,8 +4,11 @@ import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.createNumberOfCandi
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.getYearIndexStartMarker;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.setupReportedCandidate;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.sortByIdentifier;
+import static no.sikt.nva.nvi.common.model.CandidateFixtures.setupNumberOfCandidatesForYear;
+import static no.sikt.nva.nvi.test.TestConstants.THIS_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.randomIntBetween;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
+import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -28,9 +31,10 @@ import java.util.List;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
+import no.sikt.nva.nvi.common.db.CandidateRepository;
+import no.sikt.nva.nvi.common.db.model.DbPublicationDetails;
 import no.sikt.nva.nvi.common.model.ListingResult;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
-import no.sikt.nva.nvi.common.utils.BatchScanUtil;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.sikt.nva.nvi.events.model.ReEvaluateRequest;
 import no.unit.nva.events.models.AwsEventBridgeEvent;
@@ -62,15 +66,10 @@ class ReEvaluateNviCandidatesHandlerTest {
     scenario = new TestScenario();
     outputStream = new ByteArrayOutputStream();
     sqsClient = new FakeSqsClient();
-    var nviService =
-        new BatchScanUtil(
-            scenario.getCandidateRepository(),
-            scenario.getS3StorageReaderForExpandedResourcesBucket(),
-            new FakeSqsClient(),
-            environment);
     this.eventBridgeClient = new FakeEventBridgeClient();
     handler =
-        new ReEvaluateNviCandidatesHandler(nviService, sqsClient, environment, eventBridgeClient);
+        new ReEvaluateNviCandidatesHandler(
+            scenario.getCandidateRepository(), sqsClient, environment, eventBridgeClient);
   }
 
   @Test
@@ -84,7 +83,7 @@ class ReEvaluateNviCandidatesHandlerTest {
   void shouldInitializeWithDefaultPageSizeIfRequestedPageSizeIsBiggerThanMaxPageSize() {
     var year = randomYear();
     var pageSizeBiggerThanMaxPageSize = MAX_PAGE_SIZE + randomIntBetween(1, 100);
-    var mockedNviService = mock(BatchScanUtil.class);
+    var mockedNviService = mock(CandidateRepository.class);
     when(mockedNviService.fetchCandidatesByYear(year, false, DEFAULT_PAGE_SIZE, null))
         .thenReturn(new ListingResult<>(false, null, 0, List.of()));
     var handler =
@@ -129,12 +128,13 @@ class ReEvaluateNviCandidatesHandlerTest {
     var expectedCandidates =
         sortByIdentifier(candidates, BATCH_SIZE).stream()
             .map(CandidateDao::candidate)
-            .map(DbCandidate::publicationBucketUri)
+            .map(DbCandidate::publicationDetails)
+            .map(DbPublicationDetails::publicationBucketUri)
             .toList();
     var actualCandidates =
         batch.entries().stream()
             .map(SendMessageBatchRequestEntry::messageBody)
-            .map(PersistedResourceMessage::fromJson)
+            .map(ReEvaluateNviCandidatesHandlerTest::fromJson)
             .map(PersistedResourceMessage::resourceFileUri)
             .toList();
     assertEquals(expectedCandidates, actualCandidates);
@@ -142,7 +142,8 @@ class ReEvaluateNviCandidatesHandlerTest {
 
   @Test
   void shouldConsumeEventsFromEventBridgeTopic() {
-    pushInitialEntryInEventBridge(createRequest(randomYear()));
+    setupNumberOfCandidatesForYear(scenario, THIS_YEAR, BATCH_SIZE + 1);
+    pushInitialEntryInEventBridge(createRequest(THIS_YEAR, BATCH_SIZE));
     while (thereAreMoreEventsInEventBridge()) {
       var currentRequest = consumeLatestEmittedEvent();
       handler.handleRequest(eventToInputStream(currentRequest), outputStream, context);
@@ -174,6 +175,11 @@ class ReEvaluateNviCandidatesHandlerTest {
     handler.handleRequest(eventStream(createRequest(year, pageSize)), outputStream, context);
     var emittedEvents = eventBridgeClient.getRequestEntries();
     assertEquals(0, emittedEvents.size());
+  }
+
+  private static PersistedResourceMessage fromJson(String body) {
+    return attempt(() -> dtoObjectMapper.readValue(body, PersistedResourceMessage.class))
+        .orElseThrow();
   }
 
   private static ReEvaluateRequest emptyRequest() {

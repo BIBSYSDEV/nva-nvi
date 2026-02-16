@@ -6,7 +6,7 @@ import static no.sikt.nva.nvi.common.db.DbPointCalculationFixtures.randomPointCa
 import static no.sikt.nva.nvi.common.db.DbPublicationDetailsFixtures.getExpectedPublicationDetails;
 import static no.sikt.nva.nvi.common.db.DbPublicationDetailsFixtures.randomPublicationBuilder;
 import static no.sikt.nva.nvi.common.model.NviCreatorFixtures.mapToDbCreators;
-import static no.unit.nva.testutils.RandomDataGenerator.randomString;
+import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 
 import java.net.URI;
@@ -15,7 +15,6 @@ import java.util.List;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
-import no.sikt.nva.nvi.common.db.CandidateDao.DbLevel;
 import no.sikt.nva.nvi.common.db.model.DbPointCalculation;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
 import no.sikt.nva.nvi.common.db.model.DbPublicationDetails;
@@ -37,12 +36,10 @@ public class DbCandidateFixtures {
     return randomCandidateBuilder(organizationId, publicationDetails).applicable(applicable);
   }
 
-  public static DbCandidate randomCandidateWithYear(String year) {
-    var organizationId = randomUri();
+  public static DbCandidate randomCandidateWithYear(URI organizationId, String year) {
+    var publicationDate = new DbPublicationDate(year, null, null);
     var publicationDetails =
-        randomPublicationBuilder(organizationId)
-            .publicationDate(new DbPublicationDate(year, null, null))
-            .build();
+        randomPublicationBuilder(organizationId).publicationDate(publicationDate).build();
     return randomCandidateBuilder(organizationId, publicationDetails).applicable(true).build();
   }
 
@@ -59,23 +56,11 @@ public class DbCandidateFixtures {
       DbPointCalculation pointCalculation) {
     var creatorId = randomUri();
     return DbCandidate.builder()
-        .publicationId(publicationDetails.id())
-        .publicationBucketUri(publicationDetails.publicationBucketUri())
-        .publicationIdentifier(publicationDetails.identifier())
         .pointCalculation(pointCalculation)
         .publicationDetails(publicationDetails)
         .applicable(true)
-        .instanceType(pointCalculation.instanceType())
-        .points(pointCalculation.institutionPoints())
-        .level(DbLevel.LEVEL_ONE)
-        .channelType(pointCalculation.publicationChannel().channelType())
-        .channelId(pointCalculation.publicationChannel().id())
-        .publicationDate(publicationDetails.publicationDate())
-        .internationalCollaboration(pointCalculation.internationalCollaboration())
-        .creatorCount(pointCalculation.creatorShareCount())
         .createdDate(Instant.now())
         .modifiedDate(Instant.now())
-        .totalPoints(pointCalculation.totalPoints())
         .creators(
             List.of(
                 DbCreator.builder()
@@ -84,13 +69,9 @@ public class DbCandidateFixtures {
                     .build()));
   }
 
-  public static DbCandidate getExpectedNewDbCandidate(UpsertNviCandidateRequest request) {
-    return getExpectedDbCandidate(randomUUID(), Instant.now(), request);
-  }
-
   public static DbCandidate getExpectedUpdatedDbCandidate(
       Candidate candidate, UpsertNviCandidateRequest request) {
-    return getExpectedDbCandidate(candidate.getIdentifier(), candidate.getCreatedDate(), request);
+    return getExpectedDbCandidate(candidate.identifier(), candidate.createdDate(), request);
   }
 
   public static DbCandidate getExpectedDbCandidate(
@@ -104,29 +85,19 @@ public class DbCandidateFixtures {
     var dbCreators = mapToDbCreators(request.verifiedCreators(), request.unverifiedCreators());
     var dbPointCalculation = getExpectedPointCalculation(request);
     var dbPublicationDetails = getExpectedPublicationDetails(request);
-    var dbChannel = dbPointCalculation.publicationChannel();
     var dbCandidate =
         DbCandidate.builder()
-            .publicationId(request.publicationId())
-            .publicationIdentifier(dbPublicationDetails.identifier())
-            .publicationBucketUri(request.publicationBucketUri())
             .pointCalculation(dbPointCalculation)
             .publicationDetails(dbPublicationDetails)
-            .publicationDate(dbPublicationDetails.publicationDate())
             .applicable(dtoPublicationDetails.isApplicable())
-            .instanceType(dbPointCalculation.instanceType())
-            .channelType(dbChannel.channelType())
-            .channelId(dbChannel.id())
-            .level(DbLevel.parse(dbChannel.scientificValue()))
-            .basePoints(dbPointCalculation.basePoints())
-            .internationalCollaboration(dbPointCalculation.internationalCollaboration())
-            .collaborationFactor(dbPointCalculation.collaborationFactor())
             .creators(dbCreators)
-            .creatorShareCount(dbPointCalculation.creatorShareCount())
-            .points(dbPointCalculation.institutionPoints())
-            .totalPoints(dbPointCalculation.totalPoints())
             .createdDate(createdDate)
             .build();
-    return new CandidateDao(candidateIdentifier, dbCandidate, randomString(), randomString());
+    return CandidateDao.builder()
+        .identifier(candidateIdentifier)
+        .candidate(dbCandidate)
+        .version(randomUUID().toString())
+        .periodYear(randomYear())
+        .build();
   }
 }

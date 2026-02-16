@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.common.service;
 
+import static no.sikt.nva.nvi.common.EnvironmentFixtures.getGlobalEnvironment;
 import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.dto.NviCreatorDtoFixtures.verifiedNviCreatorDtoFrom;
@@ -15,7 +16,6 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.unit.nva.auth.uriretriever.UriRetriever;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,15 +24,17 @@ public class CandidateTestSetup {
 
   protected static final int EXPECTED_SCALE = 4;
   protected static final RoundingMode EXPECTED_ROUNDING_MODE = RoundingMode.HALF_UP;
-  private static final Environment ENVIRONMENT = new Environment();
+  private static final Environment ENVIRONMENT = getGlobalEnvironment();
   private static final String BASE_PATH = ENVIRONMENT.readEnv("CUSTOM_DOMAIN_BASE_PATH");
   private static final String API_DOMAIN = ENVIRONMENT.readEnv("API_HOST");
   public static final URI CONTEXT_URI =
       UriWrapper.fromHost(API_DOMAIN).addChild(BASE_PATH, "context").getUri();
   protected TestScenario scenario;
+  protected CandidateService candidateService;
+  protected ApprovalService approvalService;
+  protected NoteService noteService;
   protected CandidateRepository candidateRepository;
   protected PeriodRepository periodRepository;
-  protected UriRetriever mockUriRetriever;
 
   protected static UpsertNviCandidateRequest createUpsertRequestWithDecimalScale(
       int scale, URI institutionId) {
@@ -58,7 +60,9 @@ public class CandidateTestSetup {
     scenario = new TestScenario();
     candidateRepository = scenario.getCandidateRepository();
     periodRepository = scenario.getPeriodRepository();
-    mockUriRetriever = scenario.getMockedUriRetriever();
+    candidateService = new CandidateService(ENVIRONMENT, periodRepository, candidateRepository);
+    approvalService = new ApprovalService(candidateRepository);
+    noteService = new NoteService(candidateRepository);
     setupOpenPeriod(scenario, CURRENT_YEAR);
   }
 
@@ -68,6 +72,6 @@ public class CandidateTestSetup {
    * randomly generated data.
    */
   protected static URI getAnyOrganizationId(Candidate candidate) {
-    return candidate.getInstitutionPoints().getFirst().institutionId();
+    return candidate.getInstitutionPoints().iterator().next().institutionId();
   }
 }

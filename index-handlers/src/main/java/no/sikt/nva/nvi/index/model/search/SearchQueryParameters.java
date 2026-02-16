@@ -10,7 +10,6 @@ public final class SearchQueryParameters {
   public static final String QUERY_PARAM_YEAR = "year";
   public static final String QUERY_PARAM_AFFILIATIONS = "affiliations";
   public static final String QUERY_PARAM_CATEGORY = "category";
-  public static final String QUERY_PARAM_CONTRIBUTOR = "contributor";
   public static final String QUERY_PARAM_ASSIGNEE = "assignee";
   public static final String QUERY_PARAM_EXCLUDE_UNASSIGNED = "excludeUnassigned";
   public static final String QUERY_PARAM_STATUS = "status";

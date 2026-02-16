@@ -3,24 +3,47 @@ info:
   title: NVA Scientific Index API
   version: 1.0.1
   description: Public API for scientific index candidates in NVA.
+  contact:
+    email: kontakt@sikt.no
+    url: https://nva.sikt.no
+servers:
+  - url: https://api.nva.unit.no/scientific-index
+    description: Production API
 x-amazon-apigateway-request-validators:
   validate_body:
     validateRequestBody: true
     validateRequestParameters: false
+tags:
+  - name: Context
+    description: JSON-LD context operations
+  - name: Period
+    description: NVI reporting period management
+  - name: Candidate
+    description: NVI candidate operations
+  - name: Report
+    description: Institution reports and aggregations
+
+x-authenticated-security: &authenticated
+  - CognitoUserPool:
+      - "https://api.nva.unit.no/scopes/backend"
+      - "https://api.nva.unit.no/scopes/frontend"
+
 paths:
   /context:
     get:
+      tags:
+        - Context
       description: Get JSON-LD context for NVI
       summary: Get JSON-LD context
       operationId: getNviContext
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchNviCandidateContextHandler.Arn}:live/invocations
-        responses: { }
+        responses: {}
         httpMethod: POST
         type: AWS_PROXY
       responses:
-        '200':
+        "200":
           description: OK
           content:
             application/json:
@@ -29,13 +52,13 @@ paths:
             application/ld+json:
               schema:
                 $ref: "#/components/schemas/NviCandidateContext"
-        '415':
+        "415":
           description: Unsupported Media Type
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Problem"
-        '500':
+        "500":
           description: "Internal Server Error"
           content:
             application/json:
@@ -43,6 +66,8 @@ paths:
                 $ref: "#/components/schemas/Problem"
   /period:
     post:
+      tags:
+        - Period
       description: Create NVI period
       summary: Create period
       operationId: createNviPeriod
@@ -51,82 +76,82 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/NviPeriod'
-      security:
-        - CognitoUserPool: [
-          'https://api.nva.unit.no/scopes/backend',
-          'https://api.nva.unit.no/scopes/frontend',
-          'aws.cognito.signin.user.admin',
-        ]
+              $ref: "#/components/schemas/NviPeriod"
+      security: *authenticated
       x-amazon-apigateway-request-validator: validate_body
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CreateNviPeriodHandler.Arn}:live/invocations
-        responses: { }
+        responses: {}
         httpMethod: POST
         type: AWS_PROXY
       responses:
-        '201':
+        "201":
           description: "Period created"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/NviPeriod"
-        '400':
+        "400":
           description: "Bad request"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Problem"
-        '401':
+        "401":
           description: "Unauthorized"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Problem"
-        '500':
+        "409":
+          description: "Conflict"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "500":
           description: "Internal Server Error"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Problem"
     get:
+      tags:
+        - Period
       description: List NVI periods
       summary: List periods
       operationId: listNviPeriods
-      security:
-        - CognitoUserPool: [
-          'https://api.nva.unit.no/scopes/backend',
-          'https://api.nva.unit.no/scopes/frontend',
-          'aws.cognito.signin.user.admin',
-        ]
+      security: *authenticated
       x-amazon-apigateway-request-validator: validate_body
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchNviPeriodsHandler.Arn}:live/invocations
-        responses: { }
+        responses: {}
         httpMethod: POST
         type: AWS_PROXY
       responses:
-        '200':
+        "200":
           description: "Periods fetched"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/NviPeriods"
-        '401':
+        "401":
           description: "Unauthorized"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Problem"
-        '500':
+        "500":
           description: "Internal Server Error"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Problem"
     put:
+      tags:
+        - Period
       description: Update NVI period
       summary: Update period
       operationId: updateNviPeriod
@@ -135,46 +160,41 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/NviPeriod'
-      security:
-        - CognitoUserPool: [
-          'https://api.nva.unit.no/scopes/backend',
-          'https://api.nva.unit.no/scopes/frontend',
-          'aws.cognito.signin.user.admin',
-        ]
+              $ref: "#/components/schemas/NviPeriod"
+      security: *authenticated
       x-amazon-apigateway-request-validator: validate_body
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${UpdateNviPeriodHandler.Arn}:live/invocations
-        responses: { }
+        responses: {}
         httpMethod: POST
         type: AWS_PROXY
       responses:
-        '200':
+        "200":
           description: "Period updated"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/NviPeriod"
-        '401':
+        "401":
           description: "Unauthorized"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Problem"
-        '404':
+        "404":
           description: "Not found - period to update does not exist"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Problem"
-        '409':
-          description: "Conflict - new values are not supported values"
+        "409":
+          description: "Conflict"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Problem"
-        '500':
+        "500":
           description: "Internal Server Error"
           content:
             application/json:
@@ -183,6 +203,8 @@ paths:
 
   /period/{periodIdentifier}:
     get:
+      tags:
+        - Period
       description: Get NVI period
       summary: Get period
       operationId: getNviPeriod
@@ -197,23 +219,23 @@ paths:
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchNviPeriodHandler.Arn}:live/invocations
-        responses: { }
+        responses: {}
         httpMethod: POST
         type: AWS_PROXY
       responses:
-        '200':
+        "200":
           description: "Period fetched successfully"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/NviPeriod"
-        '404':
+        "404":
           description: "Period not found"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Problem"
-        '502':
+        "502":
           description: "Internal Server Error"
           content:
             application/json:
@@ -222,6 +244,8 @@ paths:
 
   /candidate:
     get:
+      tags:
+        - Candidate
       description: Search for NVI candidates
       summary: Search for candidates
       operationId: searchNviCandidate
@@ -245,10 +269,10 @@ paths:
           examples:
             single:
               summary: Single affiliation
-              value: [ "20754.1.0.0" ]
+              value: ["20754.1.0.0"]
             multiple:
               summary: One of multiple affiliations
-              value: [ "20754.1.0.0", "20754.2.2.0" ]
+              value: ["20754.1.0.0", "20754.2.2.0"]
         - in: query
           name: excludeSubUnits
           description: |
@@ -279,14 +303,14 @@ paths:
             type: array
             items:
               type: string
-              enum: [ pending, approved, rejected ]
+              enum: [pending, approved, rejected]
           examples:
             single:
               summary: Single approval status
-              value: [ "pending" ]
+              value: ["pending"]
             multiple:
               summary: One of multiple statuses
-              value: [ "pending", "approved" ]
+              value: ["pending", "approved"]
         - in: query
           name: globalStatus
           description: Filter by global approval status that matches one of the given values.
@@ -296,14 +320,14 @@ paths:
             type: array
             items:
               type: string
-              enum: [ pending, approved, rejected, dispute ]
+              enum: [pending, approved, rejected, dispute]
           examples:
             single:
               summary: Single global status
-              value: [ "dispute" ]
+              value: ["dispute"]
             multiple:
               summary: One of multiple global statuses
-              value: [ "dispute", "rejected" ]
+              value: ["dispute", "rejected"]
         - in: query
           name: filter
           description: |
@@ -311,7 +335,7 @@ paths:
             * `rejectedByOthers` - Show candidates rejected by other organizations
             * `approvedByOthers` - Show candidates approved by other organizations
             * `collaboration` - Show candidates with multiple NVI organizations involved
-            
+
             DEPRECATED - These filters are marked for deprecation and will be removed:
             * `pending`
             * `pendingCollaboration`
@@ -345,7 +369,7 @@ paths:
           name: year
           schema:
             type: string
-            pattern: '^[0-9]{4}$'
+            pattern: "^[0-9]{4}$"
           description: Filters by publication year
         - in: query
           name: category
@@ -378,33 +402,28 @@ paths:
           schema:
             type: string
             description: Order by field
-            enum: [ "createdDate" ]
+            enum: ["createdDate"]
         - in: query
           name: sortOrder
           schema:
             type: string
             description: Order direction
-            enum: [ "asc", "desc" ]
-      security:
-        - CognitoUserPool: [
-          'https://api.nva.unit.no/scopes/backend',
-          'https://api.nva.unit.no/scopes/frontend',
-          'aws.cognito.signin.user.admin',
-        ]
+            enum: ["asc", "desc"]
+      security: *authenticated
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SearchNviCandidatesHandler.Arn}:live/invocations
-        responses: { }
+        responses: {}
         httpMethod: POST
         type: AWS_PROXY
       responses:
-        '200':
+        "200":
           description: "OK"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/CandidateSearchResponse"
-        '500':
+        "500":
           description: "Internal Server Error"
           content:
             application/json:
@@ -412,6 +431,8 @@ paths:
                 $ref: "#/components/schemas/Problem"
   /candidate/{candidateIdentifier}:
     get:
+      tags:
+        - Candidate
       description: Get NVI candidate
       summary: Get candidate
       operationId: getNviCandidate
@@ -422,75 +443,67 @@ paths:
           required: true
           schema:
             type: string
-      security:
-        - CognitoUserPool: [
-          'https://api.nva.unit.no/scopes/backend',
-          'https://api.nva.unit.no/scopes/frontend',
-          'aws.cognito.signin.user.admin',
-        ]
+      security: *authenticated
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchNviCandidateHandler.Arn}:live/invocations
-        responses: { }
+        responses: {}
         httpMethod: POST
         type: AWS_PROXY
       responses:
-        '200':
+        "200":
           description: "OK"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/NviCandidateResponse"
-        '404':
+        "404":
           description: "Candidate not found"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Problem"
-        '500':
+        "500":
           description: "Internal Server Error"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Problem"
-  /candidate/publication/{candidatePublicationId+}:
+  /candidate/publication/{candidatePublicationId}:
     get:
+      tags:
+        - Candidate
       description: Get NVI candidate by publication identifier
       summary: Get candidate by publication identifier
       operationId: getNviCandidateByPublicationIdentifier
       parameters:
         - in: path
-          name: candidatePublicationId+
+          name: candidatePublicationId
           description: The publication identifier the candidate, this must be URI UTF-8 encoded
           required: true
           schema:
             type: string
-      security:
-        - CognitoUserPool: [
-          'https://api.nva.unit.no/scopes/backend',
-          'https://api.nva.unit.no/scopes/frontend',
-          'aws.cognito.signin.user.admin',
-        ]
+      security: *authenticated
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchNviCandidateByPublicationIdHandler.Arn}:live/invocations
-        responses: { }
+        responses: {}
         httpMethod: POST
         type: AWS_PROXY
       responses:
-        '200':
+        "200":
           description: "OK"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/NviCandidateResponse"
-        '404':
+        "404":
           description: "Candidate not found"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Problem"
-        '500':
+        "500":
           description: "Internal Server Error"
           content:
             application/json:
@@ -498,6 +511,8 @@ paths:
                 $ref: "#/components/schemas/Problem"
   /candidate/{candidateIdentifier}/status:
     put:
+      tags:
+        - Candidate
       description: Update Candidate Approval Status
       summary: Update Candidate Approval Status
       operationId: updateNviCandidateApprovalStatus
@@ -513,40 +528,41 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ApprovalStatusRequest'
-      security:
-        - CognitoUserPool: [
-          'https://api.nva.unit.no/scopes/backend',
-          'https://api.nva.unit.no/scopes/frontend',
-          'aws.cognito.signin.user.admin',
-        ]
+              $ref: "#/components/schemas/ApprovalStatusRequest"
+      security: *authenticated
       x-amazon-apigateway-request-validator: validate_body
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${UpdateNviCandidateStatusHandler.Arn}:live/invocations
-        responses: { }
+        responses: {}
         httpMethod: POST
         type: AWS_PROXY
       responses:
-        '200':
+        "200":
           description: "Approval status updated"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/NviCandidateResponse"
-        '401':
+        "401":
           description: "Unauthorized"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Problem"
-        '404':
+        "404":
           description: "Not found - approval to update does not exist"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Problem"
-        '500':
+        "409":
+          description: "Conflict"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "500":
           description: "Internal Server Error"
           content:
             application/json:
@@ -554,6 +570,8 @@ paths:
                 $ref: "#/components/schemas/Problem"
   /candidate/{candidateIdentifier}/assignee:
     put:
+      tags:
+        - Candidate
       description: Update Candidate Assignee
       summary: Update Candidate Assignee
       operationId: updateNviCandidateAssignee
@@ -569,40 +587,41 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AssigneeRequest'
-      security:
-        - CognitoUserPool: [
-          'https://api.nva.unit.no/scopes/backend',
-          'https://api.nva.unit.no/scopes/frontend',
-          'aws.cognito.signin.user.admin',
-        ]
+              $ref: "#/components/schemas/AssigneeRequest"
+      security: *authenticated
       x-amazon-apigateway-request-validator: validate_body
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${UpsertAssigneeHandler.Arn}:live/invocations
-        responses: { }
+        responses: {}
         httpMethod: POST
         type: AWS_PROXY
       responses:
-        '200':
+        "200":
           description: "Assignee updated"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/NviCandidateResponse"
-        '401':
+        "401":
           description: "Unauthorized"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Problem"
-        '404':
+        "404":
           description: "Not found - candidate to update does not exist"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Problem"
-        '500':
+        "409":
+          description: "Conflict"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "500":
           description: "Internal Server Error"
           content:
             application/json:
@@ -610,6 +629,8 @@ paths:
                 $ref: "#/components/schemas/Problem"
   /candidate/{candidateIdentifier}/note:
     post:
+      tags:
+        - Candidate
       description: Create note on NVI candidate
       summary: Create note on candidate
       operationId: createNviCandidateNotes
@@ -625,40 +646,41 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateNoteRequest'
-      security:
-        - CognitoUserPool: [
-          'https://api.nva.unit.no/scopes/backend',
-          'https://api.nva.unit.no/scopes/frontend',
-          'aws.cognito.signin.user.admin',
-        ]
+              $ref: "#/components/schemas/CreateNoteRequest"
+      security: *authenticated
       x-amazon-apigateway-request-validator: validate_body
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CreateNoteHandler.Arn}:live/invocations
-        responses: { }
+        responses: {}
         httpMethod: POST
         type: AWS_PROXY
       responses:
-        '200':
+        "200":
           description: "Note added"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/NviCandidateResponse"
-        '401':
+        "401":
           description: "Unauthorized"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Problem"
-        '404':
+        "404":
           description: "Not found - candidate to update does not exist"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Problem"
-        '500':
+        "409":
+          description: "Conflict"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "500":
           description: "Internal Server Error"
           content:
             application/json:
@@ -666,6 +688,8 @@ paths:
                 $ref: "#/components/schemas/Problem"
   /candidate/{candidateIdentifier}/note/{noteIdentifier}:
     delete:
+      tags:
+        - Candidate
       description: Delete note on NVI candidate
       summary: Delete note
       operationId: deleteNviCandidateNote
@@ -682,39 +706,34 @@ paths:
           required: true
           schema:
             type: string
-      security:
-        - CognitoUserPool: [
-          'https://api.nva.unit.no/scopes/backend',
-          'https://api.nva.unit.no/scopes/frontend',
-          'aws.cognito.signin.user.admin',
-        ]
+      security: *authenticated
       x-amazon-apigateway-request-validator: validate_body
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${RemoveNoteHandler.Arn}:live/invocations
-        responses: { }
+        responses: {}
         httpMethod: POST
         type: AWS_PROXY
       responses:
-        '200':
+        "200":
           description: "Note deleted"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/NviCandidateResponse"
-        '401':
+        "401":
           description: "Unauthorized"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Problem"
-        '404':
+        "404":
           description: "Not found - candidate to update does not exist"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Problem"
-        '500':
+        "500":
           description: "Internal Server Error"
           content:
             application/json:
@@ -722,6 +741,8 @@ paths:
                 $ref: "#/components/schemas/Problem"
   /institution-report/{year}:
     get:
+      tags:
+        - Report
       description: Get organization approval aggregations for a given year
       summary: Get requesting users organization approval aggregations for a given year
       operationId: getNviOrganizationAggregationsByYear
@@ -732,32 +753,27 @@ paths:
           required: true
           schema:
             type: string
-      security:
-        - CognitoUserPool: [
-          'https://api.nva.unit.no/scopes/backend',
-          'https://api.nva.unit.no/scopes/frontend',
-          'aws.cognito.signin.user.admin',
-        ]
+      security: *authenticated
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchInstitutionStatusAggregationHandler.Arn}:live/invocations
-        responses: { }
+        responses: {}
         httpMethod: POST
         type: AWS_PROXY
       responses:
-        '200':
+        "200":
           description: "OK"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/NviInstitutionReportResponse"
-        '401':
+        "401":
           description: "Unauthorized"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Problem"
-        '500':
+        "500":
           description: "Internal Server Error"
           content:
             application/json:
@@ -765,6 +781,8 @@ paths:
                 $ref: "#/components/schemas/Problem"
   /institution-approval-report/{year}:
     get:
+      tags:
+        - Report
       description: Get NVI report for a given year
       summary: Get requesting users top level organizations NVI report for given year
       operationId: getNviReportByYear
@@ -775,20 +793,15 @@ paths:
           required: true
           schema:
             type: string
-      security:
-        - CognitoUserPool: [
-          'https://api.nva.unit.no/scopes/backend',
-          'https://api.nva.unit.no/scopes/frontend',
-          'aws.cognito.signin.user.admin',
-        ]
+      security: *authenticated
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchInstitutionReportHandler.Arn}:live/invocations
-        responses: { }
+        responses: {}
         httpMethod: POST
         type: AWS_PROXY
       responses:
-        '200':
+        "200":
           description: "OK"
           content:
             application/vnd.ms-excel:
@@ -797,13 +810,13 @@ paths:
             application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
               schema:
                 format: binary
-        '401':
+        "401":
           description: "Unauthorized"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Problem"
-        '500':
+        "500":
           description: "Internal Server Error"
           content:
             application/json:
@@ -811,6 +824,8 @@ paths:
                 $ref: "#/components/schemas/Problem"
   /publication/{publicationId}/report-status:
     get:
+      tags:
+        - Report
       description: Get report status by publication id
       summary: Get report status by publication id
       operationId: getReportStatusByPublicationId
@@ -824,25 +839,222 @@ paths:
       x-amazon-apigateway-integration:
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchReportStatusByPublicationIdHandler.Arn}:live/invocations
-        responses: { }
+        responses: {}
         httpMethod: POST
         type: AWS_PROXY
       responses:
-        '200':
+        "200":
           description: "OK"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ReportStatus"
-              example: {
-                "publicationId": "https://api.nva.no/publication/123",
-                "reportStatus": {
-                  "status": "PENDING_REVIEW",
-                  "description": "Pending review. Awaiting approval from all institutions"
-                },
-                "period": "2023"
-              }
-        '500':
+              example:
+                {
+                  "publicationId": "https://api.nva.no/publication/123",
+                  "reportStatus":
+                    {
+                      "status": "PENDING_REVIEW",
+                      "description": "Pending review. Awaiting approval from all institutions",
+                    },
+                  "period": "2023",
+                }
+        "500":
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+  /reports:
+    get:
+      tags:
+        - Report
+      description: Get report for all periods
+      operationId: getAllPeriodsReport
+      security: *authenticated
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchReportHandler.Arn}:live/invocations
+        responses: {}
+        httpMethod: POST
+        type: AWS_PROXY
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AllPeriodsReport"
+              examples:
+                allPeriodsReport:
+                  summary: List of reports for all the periods
+                  value:
+                    type: "AllPeriodsReport"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "500":
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+
+  /reports/{period}:
+    get:
+      tags:
+        - Report
+      description: Get report for a specific period
+      operationId: getPeriodReport
+      parameters:
+        - in: path
+          name: period
+          required: true
+          schema:
+            type: string
+            pattern: '^\d{4}$'
+          example: "2025"
+      security: *authenticated
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchReportHandler.Arn}:live/invocations
+        responses: {}
+        httpMethod: POST
+        type: AWS_PROXY
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PeriodReport"
+              examples:
+                periodReport:
+                  value:
+                    type: "PeriodReport"
+
+        "400":
+          description: "Bad Request - Invalid period format"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "500":
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+
+  /reports/{period}/institutions:
+    get:
+      tags:
+        - Report
+      description: Get all institutions report for a specific period
+      operationId: getAllInstitutionsReport
+      parameters:
+        - in: path
+          name: period
+          required: true
+          schema:
+            type: string
+            pattern: '^\d{4}$'
+          example: "2025"
+      security: *authenticated
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchReportHandler.Arn}:live/invocations
+        responses: {}
+        httpMethod: POST
+        type: AWS_PROXY
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AllInstitutionsReportResponse"
+        "400":
+          description: "Bad Request - Invalid period format"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "500":
+          description: "Internal Server Error"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+
+  /reports/{period}/institutions/{institution}:
+    get:
+      tags:
+        - Report
+      description: Get specific institution report for a specific period
+      operationId: getInstitutionReport
+      parameters:
+        - in: path
+          name: period
+          required: true
+          schema:
+            type: string
+            pattern: '^\d{4}$'
+          example: "2025"
+        - in: path
+          name: institution
+          required: true
+          schema:
+            type: string
+            pattern: '^\d+\.\d+\.\d+\.\d+$'
+          example: "1.0.0.0"
+        - in: query
+          name: includeSubunits
+          schema:
+            type: boolean
+            default: false
+      security: *authenticated
+      x-amazon-apigateway-integration:
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchReportHandler.Arn}:live/invocations
+        responses: {}
+        httpMethod: POST
+        type: AWS_PROXY
+      responses:
+        "200":
+          description: "OK"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InstitutionReportResponse"
+        "400":
+          description: "Bad Request - Invalid period or institution format"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "401":
+          description: "Unauthorized"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Problem"
+        "500":
           description: "Internal Server Error"
           content:
             application/json:
@@ -867,12 +1079,12 @@ components:
     NviPeriods:
       type: array
       items:
-        $ref: '#/components/schemas/NviPeriod'
+        $ref: "#/components/schemas/NviPeriod"
     ReportStatus:
       type: object
       properties:
         publicationId:
-          $ref: '#/components/schemas/Id'
+          $ref: "#/components/schemas/Id"
         reportStatus:
           type: object
           properties:
@@ -893,10 +1105,10 @@ components:
     CandidateSearchResponse:
       type: object
       properties:
-        '@context':
-          $ref: '#/components/schemas/Context'
+        "@context":
+          $ref: "#/components/schemas/Context"
         id:
-          $ref: '#/components/schemas/Id'
+          $ref: "#/components/schemas/Id"
         totalHits:
           type: integer
         nextResults:
@@ -910,7 +1122,7 @@ components:
         hits:
           type: array
           items:
-            $ref: '#/components/schemas/CandidateIndexDocument'
+            $ref: "#/components/schemas/CandidateIndexDocument"
     CandidateIndexDocument:
       type: object
       properties:
@@ -961,21 +1173,21 @@ components:
       type: object
       properties:
         id:
-          $ref: '#/components/schemas/Id'
+          $ref: "#/components/schemas/Id"
         publicationId:
-          $ref: '#/components/schemas/Id'
+          $ref: "#/components/schemas/Id"
         approvalStatus:
           type: array
           items:
-            $ref: '#/components/schemas/ApprovalStatus'
+            $ref: "#/components/schemas/ApprovalStatus"
         points:
           type: array
           items:
-            $ref: '#/components/schemas/InstitutionPoints'
+            $ref: "#/components/schemas/InstitutionPoints"
         notes:
           type: array
           items:
-            $ref: '#/components/schemas/Note'
+            $ref: "#/components/schemas/Note"
         periodStatus:
           type: object
           properties:
@@ -1010,104 +1222,168 @@ components:
             candidate, or other candidate-specific errors.
             This is a work in progress and does not include all possible problems yet.
           items:
-            $ref: '#/components/schemas/CandidateProblem'
+            $ref: "#/components/schemas/CandidateProblem"
 
     NviInstitutionReportResponse:
       type: object
-      description: OpenSearch aggregation
-      example: {
-        "someOrgId": {
-          "docCount": 8,
-          "dispute": {
-            "docCount": 2
-          },
-          "points": {
-            "value": 7.6865
-          },
-          "status": {
-            "New": {
-              "docCount": 5
-            },
-            "Approved": {
-              "docCount": 2
-            },
-            "Rejected": {
-              "docCount": 1
-            }
-          }
-        },
-        "someOtherOrgId": {
-          "docCount": 8,
-          "dispute": {
-            "docCount": 2
-          },
-          "points": {
-            "value": 7.6865
-          },
-          "status": {
-            "New": {
-              "docCount": 5
-            },
-            "Approved": {
-              "docCount": 2
-            },
-            "Rejected": {
-              "docCount": 1
-            }
-          }
-        }
-      }
+      description: >
+        Status report for a top-level organization for a given year.
+        Approvals and points are aggregated by organizational unit based on directly affiliated creators.
+      required:
+        - year
+        - topLevelOrganizationId
+        - totals
+        - byOrganization
       properties:
-        institutionId:
+        year:
+          type: string
+          description: The NVI reporting period year
+          example: "2025"
+        topLevelOrganizationId:
+          type: string
+          format: uri
+          description: URI of the top-level organization
+          example: "https://api.nva.unit.no/cristin/organization/123.0.0.0"
+        totals:
+          $ref: "#/components/schemas/TopLevelAggregation"
+        byOrganization:
           type: object
+          description: Aggregated status for each organization, keyed by organization URI
+          additionalProperties:
+            $ref: "#/components/schemas/DirectAffiliationAggregation"
+          example:
+            "https://api.nva.unit.no/cristin/organization/123.0.0.0":
+              type: DirectAffiliationAggregation
+              candidateCount: 16
+              points: 27.3953
+              globalApprovalStatus:
+                Dispute: 2
+                Pending: 8
+                Rejected: 3
+                Approved: 3
+              approvalStatus:
+                New: 4
+                Pending: 4
+                Approved: 4
+                Rejected: 4
+            "https://api.nva.unit.no/cristin/organization/123.456.0.0":
+              type: DirectAffiliationAggregation
+              candidateCount: 4
+              points: 1.2345
+              globalApprovalStatus:
+                Dispute: 0
+                Pending: 2
+                Rejected: 1
+                Approved: 1
+              approvalStatus:
+                New: 1
+                Pending: 1
+                Approved: 1
+                Rejected: 1
+
+    OrganizationStatusAggregationBase:
+      type: object
+      description: Base schema for organization status aggregations
+      required:
+        - candidateCount
+        - points
+        - globalApprovalStatus
+        - approvalStatus
+      properties:
+        candidateCount:
+          type: integer
+          description: Number of NVI candidates
+          example: 20
+        points:
+          type: number
+          description: Total NVI points from creators
+          example: 31.1234
+        globalApprovalStatus:
+          $ref: "#/components/schemas/GlobalApprovalStatusCounts"
+        approvalStatus:
+          $ref: "#/components/schemas/ApprovalStatusCounts"
+
+    TopLevelAggregation:
+      description: >
+        Aggregation representing totals for a top-level organization.
+        Includes transitive points from all sub-organizations.
+      allOf:
+        - $ref: "#/components/schemas/OrganizationStatusAggregationBase"
+        - type: object
+          required:
+            - type
           properties:
-            docCount:
-              type: integer
-            dispute:
-              type: object
-              properties:
-                docCount:
-                  type: integer
-            points:
-              type: object
-              properties:
-                value:
-                  type: number
-            status:
-              type: object
-              properties:
-                New:
-                  type: object
-                  properties:
-                    docCount:
-                      type: integer
-                Approved:
-                  type: object
-                  properties:
-                    docCount:
-                      type: integer
-                Rejected:
-                  type: object
-                  properties:
-                    docCount:
-                      type: integer
+            type:
+              type: string
+              enum: [TopLevelAggregation]
+              example: TopLevelAggregation
+
+    DirectAffiliationAggregation:
+      description: >
+        Aggregation based on direct creator affiliations to a specific organization.
+        Points are calculated only from creators directly affiliated with this organization.
+      allOf:
+        - $ref: "#/components/schemas/OrganizationStatusAggregationBase"
+        - type: object
+          required:
+            - type
+          properties:
+            type:
+              type: string
+              enum: [DirectAffiliationAggregation]
+              example: DirectAffiliationAggregation
+
+    GlobalApprovalStatusCounts:
+      type: object
+      description: Count of candidates by global approval status
+      required:
+        - Dispute
+        - Pending
+        - Rejected
+        - Approved
+      properties:
+        Dispute:
+          type: integer
+        Pending:
+          type: integer
+        Rejected:
+          type: integer
+        Approved:
+          type: integer
+    ApprovalStatusCounts:
+      type: object
+      description: Count of candidates by approval status
+      required:
+        - New
+        - Pending
+        - Approved
+        - Rejected
+      properties:
+        New:
+          type: integer
+        Pending:
+          type: integer
+        Approved:
+          type: integer
+        Rejected:
+          type: integer
     ApprovalStatus:
       type: object
       properties:
         institutionId:
-          $ref: '#/components/schemas/Id'
+          $ref: "#/components/schemas/Id"
         status:
           type: string
-          enum: [ 'Approved','Pending','Rejected' ]
+          enum: ["Approved", "Pending", "Rejected"]
         finalizedBy:
-          $ref: '#/components/schemas/Username'
+          $ref: "#/components/schemas/Username"
         finalizedDate:
           type: string
     Note:
       type: object
       properties:
         user:
-          $ref: '#/components/schemas/Username'
+          $ref: "#/components/schemas/Username"
         text:
           type: string
         createdDate:
@@ -1141,18 +1417,18 @@ components:
           description: Human-readable title of the issue.
         scope:
           type: string
-          description: > 
+          description: >
             The scope of the issue, indicating whether it is a general issue ("Global") or only 
             affects the organization of the current user.
-          enum: [ 'Organization','Global' ]
+          enum: ["Organization", "Global"]
         detail:
           type: string
           description: Additional details about the issue and potential solutions.
         contributors:
-            type: array
-            items:
-                type: string
-            description: List of contributors that cause or are affected by the issue, if relevant.
+          type: array
+          items:
+            type: string
+          description: List of contributors that cause or are affected by the issue, if relevant.
     Problem:
       type: object
       description: NVA error reporting object
@@ -1183,17 +1459,17 @@ components:
       type: object
       properties:
         institutionId:
-          $ref: '#/components/schemas/Id'
+          $ref: "#/components/schemas/Id"
         points:
           type: number
     ApprovalStatusRequest:
       type: object
       properties:
         institutionId:
-          $ref: '#/components/schemas/Id'
+          $ref: "#/components/schemas/Id"
         status:
           type: string
-          enum: [ 'Approved','Pending','Rejected' ]
+          enum: ["Approved", "Pending", "Rejected"]
         reason:
           type: string
           maxLength: 500
@@ -1204,7 +1480,7 @@ components:
       type: object
       properties:
         institutionId:
-          $ref: '#/components/schemas/Id'
+          $ref: "#/components/schemas/Id"
         assignee:
           type: string
       required:
@@ -1218,6 +1494,182 @@ components:
     NviCandidateContext:
       type: object
       description: NVI Candidate context
+    AllPeriodsReport:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum: [AllPeriodsReport]
+    PeriodReport:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          enum: [PeriodReport]
+
+    AllInstitutionsReportResponse:
+      type: object
+      required:
+        - type
+        - id
+        - period
+        - institutions
+      properties:
+        type:
+          type: string
+          enum: [AllInstitutionsReport]
+        id:
+          type: string
+          format: uri
+        period:
+          type: string
+          pattern: '^(200[2-9]|20[1-9]\d|2[1-9]\d{2}|[3-9]\d{3})$'
+        institutions:
+          type: array
+          items:
+            $ref: "#/components/schemas/InstitutionSummary"
+
+    InstitutionReportResponse:
+      type: object
+      required:
+        - type
+        - id
+        - period
+        - institution
+        - summary
+        - units
+      properties:
+        type:
+          type: string
+          enum: [InstitutionReport]
+        id:
+          type: string
+          format: uri
+        period:
+          type: string
+          pattern: '^(200[2-9]|20[1-9]\d|2[1-9]\d{2}|[3-9]\d{3})$'
+        institution:
+          type: string
+          format: uri
+        summary:
+          $ref: "#/components/schemas/ReportSummary"
+        units:
+          type: array
+          items:
+            $ref: "#/components/schemas/UnitReport"
+
+    InstitutionSummary:
+      type: object
+      required:
+        - type
+        - id
+        - name
+        - sector
+        - candidateCount
+        - totalPoints
+        - globalApprovalStatus
+        - approvalStatus
+      properties:
+        type:
+          type: string
+          enum: [InstitutionReport]
+        id:
+          type: string
+          format: uri
+        name:
+          type: string
+        sector:
+          type: string
+          enum: [UHI, HEALTH, INSTITUTE, OTHER]
+        candidateCount:
+          type: integer
+          minimum: 0
+        totalPoints:
+          type: number
+          format: double
+          minimum: 0
+        globalApprovalStatus:
+          $ref: "#/components/schemas/GlobalApprovalStatus"
+        approvalStatus:
+          $ref: "#/components/schemas/ApprovalStatus"
+
+    ReportSummary:
+      type: object
+      required:
+        - candidateCount
+        - totalPoints
+        - globalApprovalStatus
+        - approvalStatus
+      properties:
+        candidateCount:
+          type: integer
+          minimum: 0
+        totalPoints:
+          type: number
+          format: double
+          minimum: 0
+        globalApprovalStatus:
+          $ref: "#/components/schemas/GlobalApprovalStatus"
+        approvalStatus:
+          $ref: "#/components/schemas/ApprovalStatus"
+
+    UnitReport:
+      type: object
+      required:
+        - type
+        - id
+        - candidateCount
+        - totalPoints
+        - globalApprovalStatus
+        - approvalStatus
+      properties:
+        type:
+          type: string
+          enum: [UnitReport]
+        id:
+          type: string
+          format: uri
+        candidateCount:
+          type: integer
+          minimum: 0
+        totalPoints:
+          type: number
+          format: double
+          minimum: 0
+        globalApprovalStatus:
+          $ref: "#/components/schemas/GlobalApprovalStatus"
+        approvalStatus:
+          $ref: "#/components/schemas/ApprovalStatus"
+
+    GlobalApprovalStatus:
+      type: object
+      required:
+        - type
+        - dispute
+        - pending
+        - rejected
+        - approved
+      properties:
+        type:
+          type: string
+          enum: [GlobalApprovalStatus]
+        dispute:
+          type: integer
+          minimum: 0
+        pending:
+          type: integer
+          minimum: 0
+        rejected:
+          type: integer
+          minimum: 0
+        approved:
+          type: integer
+          minimum: 0
+
   securitySchemes:
     CognitoUserPool:
       type: apiKey

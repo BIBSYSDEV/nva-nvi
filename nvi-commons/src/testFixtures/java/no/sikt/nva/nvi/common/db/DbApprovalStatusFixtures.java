@@ -1,6 +1,6 @@
 package no.sikt.nva.nvi.common.db;
 
-import static no.sikt.nva.nvi.common.db.UsernameFixtures.randomUsername;
+import static no.sikt.nva.nvi.common.db.UsernameFixtures.randomDbUsername;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInstant;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -13,17 +13,6 @@ import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
 
 public class DbApprovalStatusFixtures {
 
-  private static ApprovalStatusDao randomPendingApprovalDao() {
-    return new ApprovalStatusDao(
-        UUID.randomUUID(),
-        new DbApprovalStatus(randomUri(), DbStatus.PENDING, null, null, null, null),
-        UUID.randomUUID().toString());
-  }
-
-  public static ApprovalStatusDao randomApprovalDao() {
-    return new ApprovalStatusDao(UUID.randomUUID(), randomApproval(), UUID.randomUUID().toString());
-  }
-
   public static DbApprovalStatus randomApproval() {
     return randomApproval(randomUri());
   }
@@ -32,9 +21,20 @@ public class DbApprovalStatusFixtures {
     return new DbApprovalStatus(
         institutionId,
         randomElement(DbStatus.values()),
-        randomUsername(),
-        randomUsername(),
+        randomDbUsername(),
+        randomDbUsername(),
         randomInstant(),
         randomString());
+  }
+
+  public static ApprovalStatusDao randomApprovalDao(UUID candidateIdentifier, URI institutionId) {
+    return new DbApprovalStatus(
+            institutionId,
+            randomElement(DbStatus.values()),
+            randomDbUsername(),
+            randomDbUsername(),
+            randomInstant(),
+            randomString())
+        .toDao(candidateIdentifier);
   }
 }

@@ -22,12 +22,17 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import no.sikt.nva.nvi.common.FakeEnvironment;
+import no.sikt.nva.nvi.common.exceptions.TransactionException;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
+import no.sikt.nva.nvi.common.service.ApprovalServiceThrowingTransactionExceptions;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.validator.FakeViewingScopeValidator;
 import no.sikt.nva.nvi.rest.BaseCandidateRestHandlerTest;
+import no.sikt.nva.nvi.rest.EnvironmentFixtures;
 import no.sikt.nva.nvi.rest.model.UpsertAssigneeRequest;
 import no.unit.nva.clients.IdentityServiceClient;
 import no.unit.nva.clients.UserDto;
@@ -37,13 +42,14 @@ import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.GatewayResponse;
 import nva.commons.apigateway.exceptions.NotFoundException;
+import org.assertj.core.api.Assertions;
 import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.zalando.problem.Problem;
 
 class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
-  private Candidate candidate;
+  private UUID candidateIdentifier;
 
   private static final IdentityServiceClient mockIdentityServiceClient =
       mock(IdentityServiceClient.class);
@@ -51,17 +57,23 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
   @Override
   protected ApiGatewayHandler<UpsertAssigneeRequest, CandidateDto> createHandler() {
     return new UpsertAssigneeHandler(
-        scenario.getCandidateRepository(),
-        scenario.getPeriodRepository(),
+        candidateService,
+        approvalService,
         mockIdentityServiceClient,
         mockViewingScopeValidator,
-        ENVIRONMENT);
+        environment);
+  }
+
+  @Override
+  protected FakeEnvironment getHandlerEnvironment() {
+    return EnvironmentFixtures.UPSERT_ASSIGNEE_HANDLER;
   }
 
   @BeforeEach
   void setUp() {
     resourcePathParameter = "candidateIdentifier";
-    candidate = setupValidCandidate();
+    var candidate = setupValidCandidate();
+    candidateIdentifier = candidate.identifier();
   }
 
   @Test
@@ -84,7 +96,7 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
   void shouldReturnUnauthorizedWhenAssigningToUserWithoutAccessRight() throws IOException {
     var assignee = randomString();
     mockNoAccessForUser(assignee);
-    handler.handleRequest(createRequest(candidate, assignee), output, CONTEXT);
+    handler.handleRequest(createRequest(candidateIdentifier, assignee), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
 
     assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
@@ -96,12 +108,12 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
     var viewingScopeValidatorReturningFalse = new FakeViewingScopeValidator(false);
     handler =
         new UpsertAssigneeHandler(
-            scenario.getCandidateRepository(),
-            scenario.getPeriodRepository(),
+            candidateService,
+            approvalService,
             mockIdentityServiceClient,
             viewingScopeValidatorReturningFalse,
-            ENVIRONMENT);
-    handler.handleRequest(createRequest(candidate, assignee), output, CONTEXT);
+            environment);
+    handler.handleRequest(createRequest(candidateIdentifier, assignee), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
     assertThat(
         response.getStatusCode(), is(CoreMatchers.equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
@@ -122,7 +134,7 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
     var assignee = randomString();
     mockNviCuratorAccessForUser(assignee);
     setupClosedPeriod(scenario, CURRENT_YEAR);
-    handler.handleRequest(createRequest(candidate, assignee), output, CONTEXT);
+    handler.handleRequest(createRequest(candidateIdentifier, assignee), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
     assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_CONFLICT)));
@@ -134,7 +146,7 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
     var assignee = randomString();
     mockNviCuratorAccessForUser(assignee);
     setupFuturePeriod(scenario, CURRENT_YEAR);
-    handler.handleRequest(createRequest(candidate, assignee), output, CONTEXT);
+    handler.handleRequest(createRequest(candidateIdentifier, assignee), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
     assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_CONFLICT)));
@@ -144,7 +156,7 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
   void shouldUpdateAssigneeWhenAssigneeIsNotPresent() throws IOException {
     var assignee = randomString();
     mockNviCuratorAccessForUser(assignee);
-    handler.handleRequest(createRequest(candidate, assignee), output, CONTEXT);
+    handler.handleRequest(createRequest(candidateIdentifier, assignee), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
 
     assertThat(
@@ -155,7 +167,7 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldRemoveAssigneeWhenAssigneeIsPresent() throws IOException {
-    handler.handleRequest(createRequest(candidate, null), output, CONTEXT);
+    handler.handleRequest(createRequest(candidateIdentifier, null), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
 
     assertThat(
@@ -169,7 +181,7 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
     var newAssignee = randomString();
     mockNviCuratorAccessForUser(newAssignee);
     var newCandidate = candidateWithFinalizedApproval(newAssignee);
-    handler.handleRequest(createRequest(newCandidate, newAssignee), output, CONTEXT);
+    handler.handleRequest(createRequest(newCandidate.identifier(), newAssignee), output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
 
     assertThat(
@@ -181,7 +193,7 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
   void shouldIncludeAllowedOperations() throws IOException {
     var assignee = randomString();
     mockNviCuratorAccessForUser(assignee);
-    var request = createRequest(candidate, assignee);
+    var request = createRequest(candidateIdentifier, assignee);
     var candidateDto = handleRequest(request);
 
     var actualAllowedOperations = candidateDto.allowedOperations();
@@ -189,14 +201,38 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
         actualAllowedOperations, containsInAnyOrder(CURATOR_CAN_FINALIZE_APPROVAL.toArray()));
   }
 
-  private Candidate candidateWithFinalizedApproval(String newAssignee) {
-    candidate.updateApprovalAssignee(
-        new UpdateAssigneeRequest(topLevelOrganizationId, newAssignee));
-    scenario.updateApprovalStatus(candidate, ApprovalStatus.APPROVED, topLevelOrganizationId);
-    return candidate;
+  @Test
+  void shouldReturnConflictErrorWhenTransactionFailsDueToConflict() throws IOException {
+    var assignee = randomString();
+    mockNviCuratorAccessForUser(assignee);
+    var request = createRequest(candidateIdentifier, assignee);
+
+    var failingHandler = setupHandlerThatFailsWithTransactionConflict();
+    var response = handleRequestExpectingProblem(failingHandler, request);
+
+    Assertions.assertThat(response.getStatus().getStatusCode())
+        .isEqualTo(HttpURLConnection.HTTP_CONFLICT);
+    Assertions.assertThat(response.getDetail()).isEqualTo(TransactionException.USER_MESSAGE);
   }
 
-  private InputStream createRequest(Candidate candidate, String newAssignee)
+  private UpsertAssigneeHandler setupHandlerThatFailsWithTransactionConflict() {
+    return new UpsertAssigneeHandler(
+        candidateService,
+        new ApprovalServiceThrowingTransactionExceptions(scenario.getCandidateRepository()),
+        mockIdentityServiceClient,
+        mockViewingScopeValidator,
+        environment);
+  }
+
+  private Candidate candidateWithFinalizedApproval(String newAssignee) {
+    var updateRequest = new UpdateAssigneeRequest(topLevelOrganizationId, newAssignee);
+    var candidate = candidateService.getCandidateByIdentifier(candidateIdentifier);
+    approvalService.updateApproval(candidate, updateRequest, curatorUser);
+    return scenario.updateApprovalStatus(
+        candidateIdentifier, ApprovalStatus.APPROVED, topLevelOrganizationId);
+  }
+
+  private InputStream createRequest(UUID candidateIdentifier, String newAssignee)
       throws JsonProcessingException {
     var requestBody = new UpsertAssigneeRequest(newAssignee, topLevelOrganizationId);
     return new HandlerRequestBuilder<UpsertAssigneeRequest>(JsonUtils.dtoObjectMapper)
@@ -205,7 +241,7 @@ class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
         .withAccessRights(requestBody.institutionId(), AccessRight.MANAGE_NVI_CANDIDATES)
         .withUserName(randomString())
         .withBody(requestBody)
-        .withPathParameters(Map.of(resourcePathParameter, candidate.getIdentifier().toString()))
+        .withPathParameters(Map.of(resourcePathParameter, candidateIdentifier.toString()))
         .build();
   }
 

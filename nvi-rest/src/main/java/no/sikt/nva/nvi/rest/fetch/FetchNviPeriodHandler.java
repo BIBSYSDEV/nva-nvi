@@ -6,6 +6,7 @@ import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.net.HttpURLConnection;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.dto.NviPeriodDto;
 import no.sikt.nva.nvi.common.service.exception.PeriodNotFoundException;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
@@ -25,17 +26,19 @@ public class FetchNviPeriodHandler extends ApiGatewayHandler<Void, NviPeriodDto>
   private static final Logger LOGGER = LoggerFactory.getLogger(FetchNviPeriodHandler.class);
   private static final String PERIOD_IDENTIFIER = "periodIdentifier";
   private static final String BAD_GATEWAY_EXCEPTION_MESSAGE =
-      "Something went wrong! Contact application " + "administrator.";
-  private final PeriodRepository periodRepository;
+      "Something went wrong! Contact application administrator.";
+  private final NviPeriodService nviPeriodService;
 
   @JacocoGenerated
   public FetchNviPeriodHandler() {
-    this(new PeriodRepository(defaultDynamoClient()), new Environment());
+    this(
+        new NviPeriodService(new Environment(), new PeriodRepository(defaultDynamoClient())),
+        new Environment());
   }
 
-  public FetchNviPeriodHandler(PeriodRepository periodRepository, Environment environment) {
+  public FetchNviPeriodHandler(NviPeriodService nviPeriodService, Environment environment) {
     super(Void.class, environment);
-    this.periodRepository = periodRepository;
+    this.nviPeriodService = nviPeriodService;
   }
 
   @Override
@@ -46,7 +49,7 @@ public class FetchNviPeriodHandler extends ApiGatewayHandler<Void, NviPeriodDto>
   protected NviPeriodDto processInput(Void input, RequestInfo requestInfo, Context context)
       throws ApiGatewayException {
     return attempt(() -> requestInfo.getPathParameter(PERIOD_IDENTIFIER))
-        .map(period -> NviPeriod.fetchByPublishingYear(period, periodRepository))
+        .map(nviPeriodService::getByPublishingYear)
         .map(NviPeriod::toDto)
         .orElseThrow(this::mapException);
   }

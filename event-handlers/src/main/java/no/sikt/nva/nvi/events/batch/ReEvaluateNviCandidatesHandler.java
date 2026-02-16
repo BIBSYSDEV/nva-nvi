@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.events.batch;
 
 import static java.util.Objects.isNull;
+import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
 import static nva.commons.core.attempt.Try.attempt;
 
 import com.amazonaws.services.lambda.runtime.Context;
@@ -11,10 +12,11 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
+import no.sikt.nva.nvi.common.db.CandidateRepository;
+import no.sikt.nva.nvi.common.db.model.DbPublicationDetails;
 import no.sikt.nva.nvi.common.model.ListingResult;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
-import no.sikt.nva.nvi.common.utils.BatchScanUtil;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.sikt.nva.nvi.events.model.ReEvaluateRequest;
 import no.unit.nva.events.handlers.EventHandler;
@@ -43,7 +45,7 @@ public class ReEvaluateNviCandidatesHandler extends EventHandler<ReEvaluateReque
   private static final String PUT_EVENT_RESPONSE_MESSAGE = "Put event response: {}";
   private static final String MESSAGES_SENT_MESSAGE = "Sent {} messages to queue. Failures: {}";
   private final QueueClient queueClient;
-  private final BatchScanUtil batchScanUtil;
+  private final CandidateRepository candidateRepository;
   private final String queueUrl;
   private final String eventBusName;
   private final String topic;
@@ -52,19 +54,19 @@ public class ReEvaluateNviCandidatesHandler extends EventHandler<ReEvaluateReque
   @JacocoGenerated
   public ReEvaluateNviCandidatesHandler() {
     this(
-        BatchScanUtil.defaultNviService(),
+        new CandidateRepository(defaultDynamoClient()),
         new NviQueueClient(),
         new Environment(),
         defaultEventBridgeClient());
   }
 
   public ReEvaluateNviCandidatesHandler(
-      BatchScanUtil batchScanUtil,
+      CandidateRepository candidateRepository,
       QueueClient queueClient,
       Environment environment,
       EventBridgeClient eventBridgeClient) {
     super(ReEvaluateRequest.class);
-    this.batchScanUtil = batchScanUtil;
+    this.candidateRepository = candidateRepository;
     this.queueClient = queueClient;
     this.queueUrl = environment.readEnv(PERSISTED_RESOURCE_QUEUE_URL);
     this.eventBusName = environment.readEnv(EVENT_BUS_NAME);
@@ -103,7 +105,8 @@ public class ReEvaluateNviCandidatesHandler extends EventHandler<ReEvaluateReque
   private static List<URI> mapToFileUris(ListingResult<CandidateDao> result) {
     return result.getDatabaseEntries().stream()
         .map(CandidateDao::candidate)
-        .map(DbCandidate::publicationBucketUri)
+        .map(DbCandidate::publicationDetails)
+        .map(DbPublicationDetails::publicationBucketUri)
         .toList();
   }
 
@@ -125,7 +128,7 @@ public class ReEvaluateNviCandidatesHandler extends EventHandler<ReEvaluateReque
   private ListingResult<CandidateDao> getListingResultWithNonReportedCandidates(
       ReEvaluateRequest input) {
     var includeReportedCandidates = false;
-    return batchScanUtil.fetchCandidatesByYear(
+    return candidateRepository.fetchCandidatesByYear(
         input.year(), includeReportedCandidates, input.pageSize(), input.startMarker());
   }
 

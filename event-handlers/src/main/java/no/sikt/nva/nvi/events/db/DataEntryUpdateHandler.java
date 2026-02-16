@@ -58,8 +58,8 @@ public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
     try {
       var dbChangeMessage = DynamoDbChangeMessage.from(body);
       publishUpdateMessage(dbChangeMessage);
-    } catch (Exception e) {
-      sendToDlq(body, e);
+    } catch (JsonProcessingException exception) {
+      sendToDlq(body, exception);
     }
   }
 
@@ -77,7 +77,7 @@ public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
   }
 
   private static boolean isUnknownOperationType(OperationType operationType) {
-    return OperationType.UNKNOWN_TO_SDK_VERSION.equals(operationType);
+    return operationType == OperationType.UNKNOWN_TO_SDK_VERSION;
   }
 
   private void sendToDlq(String body, Exception exception) {

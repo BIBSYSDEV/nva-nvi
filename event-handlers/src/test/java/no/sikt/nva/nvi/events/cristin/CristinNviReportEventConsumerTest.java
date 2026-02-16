@@ -33,13 +33,13 @@ import java.util.UUID;
 import no.sikt.nva.nvi.common.SampleExpandedPublicationFactory;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.client.model.Organization;
-import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.model.NviCreator;
+import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails;
 import no.sikt.nva.nvi.events.cristin.CristinNviReport.Builder;
 import no.unit.nva.events.models.EventReference;
@@ -56,18 +56,18 @@ class CristinNviReportEventConsumerTest {
   private static final Context CONTEXT = mock(Context.class);
   private TestScenario scenario;
   private CristinNviReportEventConsumer handler;
-  private CandidateRepository candidateRepository;
-  private PeriodRepository periodRepository;
+  private CandidateService candidateService;
   private S3Driver s3Driver;
 
   @BeforeEach
   void setup() {
     scenario = new TestScenario();
-    candidateRepository = scenario.getCandidateRepository();
-    periodRepository = scenario.getPeriodRepository();
+    var candidateRepository = scenario.getCandidateRepository();
     var s3Client = scenario.getS3Client();
     s3Driver = new S3Driver(s3Client, CRISTIN_IMPORT_BUCKET);
     var environment = getCristinNviReportEventConsumerEnvironment();
+    candidateService =
+        new CandidateService(environment, scenario.getPeriodRepository(), candidateRepository);
     handler = new CristinNviReportEventConsumer(candidateRepository, s3Client, environment);
   }
 
@@ -144,7 +144,7 @@ class CristinNviReportEventConsumerTest {
             .map(CristinIdWrapper::from)
             .map(CristinIdWrapper::getInstitutionId)
             .toList();
-    assertThat(nviCandidate.getPublicationDetails().topLevelOrganizations())
+    assertThat(nviCandidate.publicationDetails().topLevelOrganizations())
         .extracting(Organization::id)
         .containsExactlyInAnyOrderElementsOf(expectedTopLevelOrganizationIds);
   }
@@ -162,7 +162,7 @@ class CristinNviReportEventConsumerTest {
     var nviCandidate = getByPublicationIdOf(cristinNviReport);
 
     var actualCreatorIds =
-        nviCandidate.getPublicationDetails().nviCreators().stream().map(NviCreator::id).toList();
+        nviCandidate.publicationDetails().nviCreators().stream().map(NviCreator::id).toList();
     var expectedCreatorIds =
         cristinNviReport.getCreators().stream().map(CristinTestUtils::expectedCreatorId).toList();
     assertThat(actualCreatorIds).containsExactlyInAnyOrderElementsOf(expectedCreatorIds);
@@ -204,7 +204,7 @@ class CristinNviReportEventConsumerTest {
         .extracting(Candidate::isApplicable, Candidate::isReported)
         .containsOnly(true);
 
-    assertThat(nviCandidate.getPublicationDetails().topLevelOrganizations()).isEmpty();
+    assertThat(nviCandidate.publicationDetails().topLevelOrganizations()).isEmpty();
   }
 
   @Test
@@ -226,7 +226,7 @@ class CristinNviReportEventConsumerTest {
             .map(ScientificPerson::getCristinPersonIdentifier)
             .toList();
 
-    assertThat(nviCandidate.getPublicationDetails().nviCreators())
+    assertThat(nviCandidate.publicationDetails().nviCreators())
         .extracting(NviCreator::id)
         .map(UriWrapper::fromUri)
         .map(UriWrapper::getLastPathElement)
@@ -245,8 +245,7 @@ class CristinNviReportEventConsumerTest {
 
   private Candidate getByPublicationIdOf(CristinNviReport cristinNviReport) {
     var publicationId = expectedPublicationId(cristinNviReport);
-    return Candidate.fetchByPublicationId(
-        () -> publicationId, candidateRepository, periodRepository);
+    return candidateService.getCandidateByPublicationId(publicationId);
   }
 
   private void assertThatNviCandidateHasExpectedValues(
@@ -257,37 +256,39 @@ class CristinNviReportEventConsumerTest {
             .map(CristinIdWrapper::from)
             .map(CristinIdWrapper::getInstitutionId)
             .toList();
-    assertThat(candidate.getApprovals().keySet().stream().toList())
+    assertThat(candidate.approvals().keySet().stream().toList())
         .containsExactlyInAnyOrderElementsOf(expectedApprovalIds);
+
+    var actualPeriodYear = candidate.getPeriod().map(NviPeriod::publishingYear).orElseThrow();
+    var expectedPeriodYear = cristinNviReport.getYearReportedFromHistoricalData().orElseThrow();
+    assertThat(actualPeriodYear.toString()).isEqualTo(expectedPeriodYear);
 
     assertThat(candidate)
         .extracting(
             Candidate::getPublicationId,
             Candidate::isApplicable,
-            actual -> actual.getPeriod().year(),
             actual -> actual.getPublicationType().getValue(),
             actual -> actual.getPublicationChannel().scientificValue().getValue())
         .containsExactly(
             expectedPublicationId(cristinNviReport),
             true,
-            cristinNviReport.getYearReportedFromHistoricalData().orElseThrow(),
             cristinNviReport.instanceType(),
             "LevelOne");
 
     var expectedPublicationBucketUri =
         getExpectedPublicationBucketUri(cristinNviReport.publicationIdentifier());
-    assertThat(candidate.getPublicationDetails())
+    assertThat(candidate.publicationDetails())
         .extracting(PublicationDetails::publicationDate, PublicationDetails::publicationBucketUri)
         .containsExactlyInAnyOrder(
             cristinNviReport.publicationDate(), expectedPublicationBucketUri);
 
-    assertThat(candidate.getPublicationDetails().allCreators())
+    assertThat(candidate.publicationDetails().allCreators())
         .usingRecursiveComparison()
         .ignoringCollectionOrder()
         .isEqualTo(expectedCreators(cristinNviReport));
 
-    assertThat(candidate.getApprovals().values())
-        .extracting(Approval::getStatus)
+    assertThat(candidate.approvals().values())
+        .extracting(Approval::status)
         .containsOnly(ApprovalStatus.APPROVED);
   }
 

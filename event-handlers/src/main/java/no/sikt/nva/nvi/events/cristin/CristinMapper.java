@@ -34,6 +34,7 @@ import no.sikt.nva.nvi.common.db.model.DbPublicationDetails;
 import no.sikt.nva.nvi.common.db.model.Username;
 import no.sikt.nva.nvi.common.model.ChannelType;
 import no.sikt.nva.nvi.common.model.InstanceType;
+import no.sikt.nva.nvi.common.model.Sector;
 import no.sikt.nva.nvi.events.cristin.InstitutionPoints.CreatorPoints;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
@@ -120,25 +121,13 @@ public final class CristinMapper {
             cristinNviReport.instanceType());
     var publicationDetails = toDbPublication(cristinNviReport);
     return DbCandidate.builder()
-        .publicationId(publicationDetails.id())
-        .publicationBucketUri(publicationDetails.publicationBucketUri())
-        .publicationDate(publicationDetails.publicationDate())
         .pointCalculation(pointCalculation)
         .publicationDetails(publicationDetails)
-        .instanceType(cristinNviReport.instanceType())
-        .level(cristinNviReport.getLevel())
         .reportStatus(ReportStatus.REPORTED)
         .applicable(true)
         .createdDate(publicationDetails.modifiedDate())
         .modifiedDate(publicationDetails.modifiedDate())
-        .points(points)
-        .totalPoints(sumPoints(points))
-        .basePoints(extractBasePoints(cristinNviReport))
-        .collaborationFactor(extractCollaborationFactor(cristinNviReport))
-        .internationalCollaboration(isInternationalCollaboration(cristinNviReport))
         .creators(publicationDetails.creators())
-        .channelId(extractChannelId(cristinNviReport))
-        .channelType(extractChannelType(cristinNviReport))
         .build();
   }
 
@@ -301,6 +290,7 @@ public final class CristinMapper {
     return new DbInstitutionPoints(
         institutionPoints.institutionId(),
         institutionPoints.points(),
+        Sector.UNKNOWN,
         toCreatorPoints(institutionPoints));
   }
 

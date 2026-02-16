@@ -1,0 +1,3 @@
+# Configuration for linting of .md files which should be picked up by Codacy automatically
+MD013:
+  line_length: 120

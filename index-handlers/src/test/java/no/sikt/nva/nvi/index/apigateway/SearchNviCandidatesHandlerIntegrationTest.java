@@ -6,10 +6,10 @@ import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizati
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.createRandomIndexDocument;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.createRandomIndexDocumentBuilder;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.createRandomIndexDocuments;
+import static no.sikt.nva.nvi.index.IndexDocumentFixtures.deriveGlobalApprovalStatus;
+import static no.sikt.nva.nvi.index.IndexDocumentFixtures.documentWithApprovals;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomApproval;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomApprovalBuilder;
-import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomIndexDocumentBuilder;
-import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomPublicationDetailsBuilder;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.APPROVED;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.NEW;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.PENDING;
@@ -28,7 +28,6 @@ import static org.assertj.core.api.Assertions.tuple;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.params.provider.Arguments.argumentSet;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.util.ArrayList;
@@ -36,13 +35,11 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.index.OpenSearchContainerContext;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
-import no.sikt.nva.nvi.index.model.document.Approval;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.document.ReportingPeriod;
@@ -460,30 +457,9 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
       assertEquals(expectedCount, actualCount);
     }
 
-    @ParameterizedTest
-    @MethodSource("organizationApprovalStatusAggregationProvider")
-    void shouldAggregateByOrganizationStatusOnlyWhenSet(
-        String aggregationField, int expectedCount) {
-      var response = handleRequest(Map.of("aggregationType", "organizationApprovalStatuses"));
-
-      var ourApprovals = getOrganizationSummary(response);
-      var actualCount = ourApprovals.at(aggregationField).asInt();
-      assertEquals(expectedCount, actualCount);
-    }
-
     private static int getAggregationCount(
         PaginatedSearchResult<NviCandidateIndexDocument> response, String field) {
       return response.getAggregations().get(field).get("docCount").asInt();
-    }
-
-    private static JsonNode getOrganizationSummary(
-        PaginatedSearchResult<NviCandidateIndexDocument> response) {
-      return response
-          .getAggregations()
-          .get("organizationApprovalStatuses")
-          .get(OUR_ORGANIZATION.toString())
-          .get("organizations")
-          .get(OUR_ORGANIZATION.toString());
     }
 
     private static Stream<Arguments> defaultAggregationCountProvider() {
@@ -494,17 +470,6 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
           Arguments.of("dispute", 2),
           Arguments.of("completed", 10),
           Arguments.of("totalCount", 20));
-    }
-
-    private static Stream<Arguments> organizationApprovalStatusAggregationProvider() {
-      return Stream.of(
-          Arguments.of("/docCount", 20),
-          Arguments.of("/dispute/docCount", 2),
-          Arguments.of("/points/docCount", 15),
-          Arguments.of("/status/New/docCount", 5),
-          Arguments.of("/status/Pending/docCount", 5),
-          Arguments.of("/status/Approved/docCount", 5),
-          Arguments.of("/status/Rejected/docCount", 5));
     }
 
     /**
@@ -532,7 +497,7 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
 
     private static NviCandidateIndexDocument docWithOneOrganization(
         URI organizationId, ApprovalStatus status) {
-      var globalStatus = expectedGlobalApprovalStatus(List.of(status));
+      var globalStatus = deriveGlobalApprovalStatus(List.of(status));
       var title = String.format("%s -> %s", status, globalStatus);
       var approval =
           randomApprovalBuilder(organizationId)
@@ -544,7 +509,7 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
 
     private static NviCandidateIndexDocument docWithTwoOrganizations(
         ApprovalStatus ourStatus, ApprovalStatus theirStatus) {
-      var globalStatus = expectedGlobalApprovalStatus(List.of(ourStatus, theirStatus));
+      var globalStatus = deriveGlobalApprovalStatus(List.of(ourStatus, theirStatus));
       var title = String.format("%s + %s -> %s", ourStatus, theirStatus, globalStatus);
       var ourApproval =
           randomApprovalBuilder(OUR_ORGANIZATION)
@@ -627,40 +592,5 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
         .ignoringCollectionOrder()
         .ignoringFields("publicationDetails.contributors")
         .isEqualTo(expectedDocuments);
-  }
-
-  private static NviCandidateIndexDocument documentWithApprovals(
-      String title, Approval... approvals) {
-    var approvalStatuses =
-        Stream.of(approvals).map(Approval::approvalStatus).collect(Collectors.toSet());
-    var globalStatus = expectedGlobalApprovalStatus(approvalStatuses);
-    return documentWithApprovals(title, globalStatus, approvals);
-  }
-
-  private static GlobalApprovalStatus expectedGlobalApprovalStatus(
-      Collection<ApprovalStatus> approvalStatuses) {
-    var statusSet = Set.copyOf(approvalStatuses);
-    if (statusSet.equals(Set.of(APPROVED))) {
-      return GlobalApprovalStatus.APPROVED;
-    }
-    if (statusSet.equals(Set.of(REJECTED))) {
-      return GlobalApprovalStatus.REJECTED;
-    }
-    if (statusSet.containsAll(Set.of(APPROVED, REJECTED))) {
-      return GlobalApprovalStatus.DISPUTE;
-    }
-    return GlobalApprovalStatus.PENDING;
-  }
-
-  private static NviCandidateIndexDocument documentWithApprovals(
-      String title, GlobalApprovalStatus globalStatus, Approval... approvals) {
-    var allApprovals = List.of(approvals);
-    var topLevelOrganizations = allApprovals.stream().map(Approval::institutionId).toList();
-    var details = randomPublicationDetailsBuilder(topLevelOrganizations).withTitle(title).build();
-    return randomIndexDocumentBuilder(details)
-        .withGlobalApprovalStatus(globalStatus)
-        .withApprovals(allApprovals)
-        .withNumberOfApprovals(allApprovals.size())
-        .build();
   }
 }

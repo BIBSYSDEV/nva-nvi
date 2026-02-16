@@ -10,8 +10,8 @@ import static no.sikt.nva.nvi.common.DynamoDbTestUtils.eventWithDao;
 import static no.sikt.nva.nvi.common.DynamoDbTestUtils.randomEventWithNumberOfDynamoRecords;
 import static no.sikt.nva.nvi.common.QueueServiceTestUtils.invalidSqsMessage;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.randomApplicableCandidateDao;
-import static no.sikt.nva.nvi.common.db.DbNviPeriodFixtures.randomPeriodDao;
 import static no.sikt.nva.nvi.common.db.NoteDaoFixtures.randomNoteDao;
+import static no.sikt.nva.nvi.common.model.NviPeriodFixtures.openPeriod;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -267,7 +267,8 @@ class DynamoDbUpdateEventTest {
   public static Stream<Arguments> otherDaoInsertEventProvider() {
     var randomUniquenessEntry = new CandidateUniquenessEntryDao(randomUUID().toString());
     return Stream.of(
-        argumentSet("Create period", eventWithDao(null, randomPeriodDao(), OperationType.INSERT)),
+        argumentSet(
+            "Create period", eventWithDao(null, openPeriod().toDao(), OperationType.INSERT)),
         argumentSet("Create note", eventWithDao(null, randomNoteDao(), OperationType.INSERT)),
         argumentSet(
             "Update note", eventWithDao(randomNoteDao(), randomNoteDao(), OperationType.MODIFY)),
@@ -286,7 +287,10 @@ class DynamoDbUpdateEventTest {
 
   public static DynamodbEvent createCandidateEventWithEmptyPointsList() {
     var oldImage = randomApplicableCandidateDao();
-    var invalidDbCandidate = oldImage.candidate().copy().points(emptyList()).build();
+    var pointCalculationWithEmptyList =
+        oldImage.candidate().pointCalculation().copy().institutionPoints(emptyList()).build();
+    var invalidDbCandidate =
+        oldImage.candidate().copy().pointCalculation(pointCalculationWithEmptyList).build();
     var newImage =
         oldImage.copy().version(randomUUID().toString()).candidate(invalidDbCandidate).build();
     return eventWithDao(oldImage, newImage, OperationType.MODIFY);

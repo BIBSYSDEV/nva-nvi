@@ -2,7 +2,7 @@ AWSTemplateFormatVersion: 2010-09-09
 Transform: AWS::Serverless-2016-10-31
 Description: >
   AWS
-  
+
   SAM Template for NVA NVI API
 Globals:
   Function:
@@ -14,8 +14,8 @@ Globals:
     Environment:
       Variables:
         BACKEND_CLIENT_AUTH_URL: !Ref CognitoAuthorizationUri
-        BACKEND_CLIENT_SECRET_NAME: 'BackendCognitoClientCredentials'
-        COGNITO_AUTHORIZER_URLS: !Join [ ",", !Ref CognitoAuthorizerUrls ]
+        BACKEND_CLIENT_SECRET_NAME: "BackendCognitoClientCredentials"
+        COGNITO_AUTHORIZER_URLS: !Join [",", !Ref CognitoAuthorizerUrls]
         NVI_TABLE_NAME: !Ref NvaNviTable
         SEARCH_INFRASTRUCTURE_API_HOST: !Ref SearchInfrastructureApiHost
         SEARCH_INFRASTRUCTURE_AUTH_URI: !Ref SearchInfrastructureAuthUri
@@ -30,18 +30,18 @@ Globals:
 
 Parameters:
   CognitoAuthorizerArn:
-    Type: 'AWS::SSM::Parameter::Value<String>'
+    Type: "AWS::SSM::Parameter::Value<String>"
     Description: Reference to Cognito UserPool for the stage
     Default: CognitoAuthorizerArn
   CognitoAuthorizerUrls:
-    Type: 'AWS::SSM::Parameter::Value<List<String>>'
+    Type: "AWS::SSM::Parameter::Value<List<String>>"
     Description: Combined URLs of the providers of the Amazon Cognito user pools
     Default: CognitoAuthorizerUrls
   CognitoAuthorizationUri:
-    Type: 'AWS::SSM::Parameter::Value<String>'
-    Default: '/NVA/CognitoUri'
+    Type: "AWS::SSM::Parameter::Value<String>"
+    Default: "/NVA/CognitoUri"
   ApiDomain:
-    Type: 'AWS::SSM::Parameter::Value<String>'
+    Type: "AWS::SSM::Parameter::Value<String>"
     Description: The Api domain
     Default: /NVA/ApiDomain
   EventBusName:
@@ -67,22 +67,22 @@ Parameters:
   SearchInfrastructureApiHost:
     Type: String
     Description: Host of external search infrastructure API (SWS).
-    Default: 'https://api.sws.aws.sikt.no'
+    Default: "https://api.sws.aws.sikt.no"
   SearchInfrastructureAuthUri:
     Type: String
     Description: URI to auth for external search infrastructure API (SWS).
-    Default: 'https://sws-auth.auth.eu-west-1.amazoncognito.com'
+    Default: "https://sws-auth.auth.eu-west-1.amazoncognito.com"
   CustomDomainBasePath:
     Type: String
     Description: Base path mapping in CustomDomain
     Default: scientific-index
   Suffix:
     Type: String
-    Default: ''
+    Default: ""
     Description: Suffix used for naming resources for feature branches to avoid conflicts.
   SlackSnsArn:
     Type: AWS::SSM::Parameter::Value<String>
-    Default: '/NVA/Monitoring/SlackSnsArn'
+    Default: "/NVA/Monitoring/SlackSnsArn"
   NviDataEntryUpdateCandidateInsertTopicName:
     Type: String
     Default: nvi-data-entry-update-candidate-insert
@@ -107,24 +107,23 @@ Parameters:
   AllowedOrigins:
     Type: String
     Description: comma separated list of external clients that are allowed to contact the HTTP APIs, "*" indicates that all origins are allowed
-    Default: '*'
+    Default: "*"
   DefaultTimeoutForParsingLambdas:
     Type: Number
     Description: Timeout in seconds for functions that parse JSON-LD documents. These need a high timeout in order to handle unusually large documents.
     Default: 300 # 5 minutes
 
 Conditions:
-  WithSuffix: !Not [ !Equals [ !Ref Suffix, '' ] ]
+  WithSuffix: !Not [!Equals [!Ref Suffix, ""]]
 
 Resources:
-
   ApiAccessLogGroup:
     Type: AWS::Logs::LogGroup
 
   InternalBus:
     Type: AWS::Events::EventBus
     Properties:
-      Name: !Join [ '',[ 'nvi-internal-bus',!Ref Suffix ] ]
+      Name: !Join ["", ["nvi-internal-bus", !Ref Suffix]]
 
   #=============================== SNS topics ======================================================
   NviDataEntryUpdateCandidateInsertTopic:
@@ -240,7 +239,6 @@ Resources:
       TopicArn: !Ref NviDataEntryUpdateApprovalRemoveTopic
       RawMessageDelivery: true
 
-
   #=============================== SQSs ============================================================
   #=============================== For event handling ==============================================
   ResourceEvaluationQueue:
@@ -261,10 +259,6 @@ Resources:
     Type: AWS::SQS::Queue
     Properties:
       MessageRetentionPeriod: 1209600 #14 days
-  BatchScanDLQ:
-    Type: AWS::SQS::Queue
-    Properties:
-      MessageRetentionPeriod: 1209600 #14 days
   EvaluationDLQ:
     Type: AWS::SQS::Queue
     Properties:
@@ -277,10 +271,21 @@ Resources:
     Type: AWS::SQS::Queue
     Properties:
       MessageRetentionPeriod: 1209600 #14 days
-  BatchScanRecoveryQueue:
+
+  #=============================== For batch job processing ======================================
+  BatchJobDLQ:
     Type: AWS::SQS::Queue
     Properties:
-      MessageRetentionPeriod: 1209600 #14 days
+      MessageRetentionPeriod: 1209600 # 14 days
+
+  BatchJobWorkQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      VisibilityTimeout: 360 # Should be 6x the function timeout
+      MessageRetentionPeriod: 1209600 # 14 days
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt BatchJobDLQ.Arn
+        maxReceiveCount: 3
 
   #=============================== For database events ============================================
   DbEventQueue:
@@ -356,8 +361,8 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              Service: [ lambda.amazonaws.com ]
-            Action: [ 'sts:AssumeRole' ]
+              Service: [lambda.amazonaws.com]
+            Action: ["sts:AssumeRole"]
       Policies:
         - PolicyName: writeLog
           PolicyDocument:
@@ -368,7 +373,7 @@ Resources:
                   - logs:CreateLogGroup
                   - logs:CreateLogStream
                   - logs:PutLogEvents
-                Resource: !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*:*'
+                Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*:*"
   DeletePersistedDocumentRole:
     Type: AWS::IAM::Role
     Properties:
@@ -377,8 +382,8 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              Service: [ lambda.amazonaws.com ]
-            Action: [ 'sts:AssumeRole' ]
+              Service: [lambda.amazonaws.com]
+            Action: ["sts:AssumeRole"]
       Policies:
         - PolicyName: DeletePersistedDocument
           PolicyDocument:
@@ -387,10 +392,10 @@ Resources:
               - Effect: Allow
                 Action:
                   - s3:DeleteObject
-                Resource: '*'
+                Resource: "*"
         - PolicyName: sqs
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -404,7 +409,7 @@ Resources:
                   - !GetAtt DeletePersistedIndexDocumentQueue.Arn
         - PolicyName: subscribeOnSnsTopic
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -420,7 +425,7 @@ Resources:
                   - logs:CreateLogGroup
                   - logs:CreateLogStream
                   - logs:PutLogEvents
-                Resource: !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*:*'
+                Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*:*"
   NvaNviRole:
     Type: AWS::IAM::Role
     Properties:
@@ -429,8 +434,8 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              Service: [ lambda.amazonaws.com ]
-            Action: [ 'sts:AssumeRole' ]
+              Service: [lambda.amazonaws.com]
+            Action: ["sts:AssumeRole"]
       Policies:
         - PolicyName: S3Access
           PolicyDocument:
@@ -442,10 +447,10 @@ Resources:
                   - s3:List*
                   - s3:PutObject
                   - secretsmanager:*
-                Resource: '*'
+                Resource: "*"
         - PolicyName: Events
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -462,10 +467,10 @@ Resources:
                   - logs:CreateLogGroup
                   - logs:CreateLogStream
                   - logs:PutLogEvents
-                Resource: !Sub 'arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*:*'
+                Resource: !Sub "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*:*"
         - PolicyName: readSqs
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -483,7 +488,6 @@ Resources:
                   - !GetAtt RemoveDocumentFromIndexQueue.Arn
                   - !GetAtt RemoveDocumentFromIndexDLQ.Arn
                   - !GetAtt EvaluationDLQ.Arn
-                  - !GetAtt BatchScanDLQ.Arn
                   - !GetAtt UpdateIndexDLQ.Arn
                   - !GetAtt UpsertCandidateDLQ.Arn
                   - !GetAtt ReEvaluateDLQ.Arn
@@ -494,11 +498,12 @@ Resources:
                   - !GetAtt DeletePersistedIndexDocumentDLQ.Arn
                   - !GetAtt DeletePersistedIndexDocumentQueue.Arn
                   - !GetAtt QueuePersistedResourceDLQ.Arn
-                  - !GetAtt BatchScanRecoveryQueue.Arn
                   - !Ref CristinImportNviQueueArn
+                  - !GetAtt BatchJobWorkQueue.Arn
+                  - !GetAtt BatchJobDLQ.Arn
         - PolicyName: publishToSnsTopic
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -513,7 +518,7 @@ Resources:
                   - !Ref NviDataEntryUpdateApprovalRemoveTopic
         - PolicyName: subscribeOnSnsTopic
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -529,7 +534,7 @@ Resources:
               - Effect: Allow
                 Action:
                   - secretsmanager:GetSecretValue
-                Resource: '*'
+                Resource: "*"
         - PolicyName: invokeFunction
           PolicyDocument:
             Version: 2012-10-17
@@ -537,7 +542,7 @@ Resources:
               - Effect: Allow
                 Action:
                   - lambda:InvokeFunction
-                Resource: '*'
+                Resource: "*"
         - PolicyName: crudDynamodb
           PolicyDocument:
             Version: 2012-10-17
@@ -546,6 +551,7 @@ Resources:
                 Action:
                   - dynamodb:BatchGetItem
                   - dynamodb:BatchWriteItem
+                  - dynamodb:ConditionCheckItem
                   - dynamodb:DeleteItem
                   - dynamodb:DescribeLimits
                   - dynamodb:DescribeReservedCapacity
@@ -562,7 +568,7 @@ Resources:
                   - !GetAtt NvaNviTable.Arn
         - PolicyName: crudDynamoDbIndex
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -571,7 +577,7 @@ Resources:
                   - !Sub arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/nva-nvi-${AWS::StackName}/index/*
         - PolicyName: DynamoDbStreamAccessPolicy
           PolicyDocument:
-            Version: '2012-10-17'
+            Version: "2012-10-17"
             Statement:
               - Effect: Allow
                 Action:
@@ -580,18 +586,18 @@ Resources:
                   - dynamodb:ListStreams
                   - dynamodb:GetRecords
                 Resource:
-                  - !Sub 'arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${NvaNviTable}/stream/*'
+                  - !Sub "arn:aws:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${NvaNviTable}/stream/*"
 
   GenerateIndexDocumentQueuePolicy:
     Type: AWS::SQS::QueuePolicy
     Properties:
       PolicyDocument:
         Id: MyQueuePolicy
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Sid: Allow-SNS-SendMessage
             Effect: Allow
-            Principal: '*'
+            Principal: "*"
             Action: sqs:SendMessage
             Resource:
               - !GetAtt GenerateIndexDocumentQueue.Arn
@@ -611,11 +617,11 @@ Resources:
     Properties:
       PolicyDocument:
         Id: MyQueuePolicy
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Sid: Allow-SNS-SendMessage
             Effect: Allow
-            Principal: '*'
+            Principal: "*"
             Action: sqs:SendMessage
             Resource:
               - !GetAtt RemoveDocumentFromIndexQueue.Arn
@@ -632,11 +638,11 @@ Resources:
     Properties:
       PolicyDocument:
         Id: MyQueuePolicy
-        Version: '2012-10-17'
+        Version: "2012-10-17"
         Statement:
           - Sid: Allow-SNS-SendMessage
             Effect: Allow
-            Principal: '*'
+            Principal: "*"
             Action: sqs:SendMessage
             Resource:
               - !GetAtt DeletePersistedIndexDocumentQueue.Arn
@@ -671,7 +677,7 @@ Resources:
       EndpointConfiguration:
         Type: REGIONAL
       DefinitionBody:
-        'Fn::Transform':
+        "Fn::Transform":
           Name: AWS::Include
           Parameters:
             Location: ./docs/openapi.yaml
@@ -690,23 +696,6 @@ Resources:
       DomainName: !Ref ApiDomain
       RestApiId: !Ref ScientificIndexApi
       Stage: !Ref ScientificIndexApi.Stage
-
-  #============================= Button Handlers ======================================================
-  BatchScanRecoveryHandler:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: event-handlers
-      Handler: no.sikt.nva.nvi.events.batch.BatchScanRecoveryHandler::handleRequest
-      Role: !GetAtt NvaNviRole.Arn
-      Timeout: 900
-      MemorySize: 1536
-      AutoPublishAlias: live
-      SnapStart:
-        ApplyOn: PublishedVersions
-      Environment:
-        Variables:
-          EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
-          BATCH_SCAN_RECOVERY_QUEUE: !Ref BatchScanRecoveryQueue
 
   #============================= Event Handlers ======================================================
   QueuePersistedResourceHandler:
@@ -733,7 +722,7 @@ Resources:
                 - Lambda Function Invocation Result - Success
               detail:
                 responsePayload:
-                  topic: [ "PublicationService.ExpandedEntry.Persisted" ]
+                  topic: ["PublicationService.ExpandedEntry.Persisted"]
       EventInvokeConfig:
         DestinationConfig:
           OnFailure:
@@ -755,6 +744,7 @@ Resources:
         Variables:
           EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
           CANDIDATE_QUEUE_URL: !Ref EvaluatedCandidateQueue
+          EVALUATION_DLQ_URL: !Ref EvaluationDLQ
       Events:
         SqsEvent:
           Type: SQS
@@ -945,32 +935,6 @@ Resources:
             Type: SQS
             Destination: !GetAtt DeletePersistedIndexDocumentDLQ.Arn
 
-  NviEventBasedBatchScanHandler:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: event-handlers
-      Handler: no.sikt.nva.nvi.events.batch.EventBasedBatchScanHandler::handleRequest
-      Role: !GetAtt NvaNviRole.Arn
-      Timeout: 900
-      Environment:
-        Variables:
-          EVENT_BUS_NAME: !GetAtt InternalBus.Name
-          EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
-          BATCH_SCAN_RECOVERY_QUEUE: !Ref BatchScanRecoveryQueue
-      Events:
-        EventBridgeEvent:
-          Type: EventBridgeRule
-          Properties:
-            EventBusName: !GetAtt InternalBus.Name
-            Pattern:
-              detail:
-                topic: [ "NviService.BatchScan" ]
-      EventInvokeConfig:
-        DestinationConfig:
-          OnFailure:
-            Type: SQS
-            Destination: !GetAtt BatchScanDLQ.Arn
-
   CristinNviEventConsumer:
     Type: AWS::Serverless::Function
     Properties:
@@ -1007,19 +971,6 @@ Resources:
       Handler: no.sikt.nva.nvi.index.DeleteNviIndexHandler::handleRequest
       Role: !GetAtt NvaNviRole.Arn
 
-  NviBatchScanStartHandler:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: event-handlers
-      Handler: no.sikt.nva.nvi.events.batch.BatchScanStartHandler::handleRequest
-      Timeout: 60
-      Role: !GetAtt NvaNviRole.Arn
-      AutoPublishAlias: live
-      Environment:
-        Variables:
-          EVENT_BUS_NAME: !GetAtt InternalBus.Name
-          OUTPUT_EVENT_TOPIC: 'NviService.BatchScan'
-
   NviRequeueDlqHandler:
     Type: AWS::Serverless::Function
     Properties:
@@ -1035,6 +986,24 @@ Resources:
         Variables:
           DLQ_QUEUE_URL: !Ref IndexDLQ
 
+  NviRedriveUpsertDlqHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: >
+        Lambda that reprocesses messages from UpsertCandidateDLQ by re-evaluating the publications.
+        Needs to be run manually from aws console. Run with count as parameter to 
+        limit number of messages to process. Default is 10, max is 100.
+      CodeUri: event-handlers
+      Handler: no.sikt.nva.nvi.events.batch.RedriveUpsertDlqHandler::handleRequest
+      Role: !GetAtt NvaNviRole.Arn
+      AutoPublishAlias: live
+      Timeout: 300
+      Environment:
+        Variables:
+          UPSERT_CANDIDATE_DLQ_QUEUE_URL: !Ref UpsertCandidateDLQ
+          PERSISTED_RESOURCE_QUEUE_URL: !Ref ResourceEvaluationQueue
+          EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
+
   BatchReEvaluateNviCandidatesHandler:
     Type: AWS::Serverless::Function
     Properties:
@@ -1046,7 +1015,7 @@ Resources:
       Environment:
         Variables:
           EVENT_BUS_NAME: !GetAtt InternalBus.Name
-          TOPIC_REEVALUATE_CANDIDATES: 'NviService.ReEvaluate'
+          TOPIC_REEVALUATE_CANDIDATES: "NviService.ReEvaluate"
           PERSISTED_RESOURCE_QUEUE_URL: !Ref ResourceEvaluationQueue
           EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
       Events:
@@ -1056,12 +1025,69 @@ Resources:
             EventBusName: !GetAtt InternalBus.Name
             Pattern:
               detail:
-                topic: [ "NviService.ReEvaluate" ]
+                topic: ["NviService.ReEvaluate"]
       EventInvokeConfig:
         DestinationConfig:
           OnFailure:
             Type: SQS
             Destination: !GetAtt ReEvaluateDLQ.Arn
+
+  StartBatchJobHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: >
+        Lambda that initiates batch job processing. Triggered manually from AWS Console with a
+        StartBatchJobRequest payload. Supports REFRESH_CANDIDATES, MIGRATE_CANDIDATES, and
+        REFRESH_PERIODS job types.
+      CodeUri: event-handlers
+      Handler: no.sikt.nva.nvi.events.batch.StartBatchJobHandler::handleRequest
+      Role: !GetAtt NvaNviRole.Arn
+      Timeout: 900
+      AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
+      Environment:
+        Variables:
+          BATCH_JOB_QUEUE_URL: !Ref BatchJobWorkQueue
+          EVENT_BUS_NAME: !GetAtt InternalBus.Name
+          PROCESSING_ENABLED: "true"
+      Events:
+        EventBridgeEvent:
+          Type: EventBridgeRule
+          Properties:
+            EventBusName: !GetAtt InternalBus.Name
+            Pattern:
+              detail-type:
+                - NviService.BatchJob.StartBatchJob
+
+  ProcessBatchJobHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: >
+        Lambda that processes individual batch job items from the work queue.
+        Uses transactional service methods with optimistic locking to update/refresh database records.
+      CodeUri: event-handlers
+      Handler: no.sikt.nva.nvi.events.batch.ProcessBatchJobHandler::handleRequest
+      Role: !GetAtt NvaNviRole.Arn
+      Timeout: 60
+      MemorySize: 1024
+      AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
+      Environment:
+        Variables:
+          EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
+      Events:
+        SQSEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt BatchJobWorkQueue.Arn
+            BatchSize: 10
+            MaximumBatchingWindowInSeconds: 10
+            ScalingConfig:
+              MaximumConcurrency: 4
+            FunctionResponseTypes:
+              - ReportBatchItemFailures # Only retry failed messages, not the entire batch
 
   # ======================= API HANDLERS ========================
 
@@ -1245,6 +1271,46 @@ Resources:
             Method: get
             RestApiId: !Ref ScientificIndexApi
 
+  FetchReportHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: index-handlers
+      Handler: no.sikt.nva.nvi.index.apigateway.FetchReportHandler::handleRequest
+      Role: !GetAtt NvaNviRole.Arn
+      Timeout: 20
+      MemorySize: 1536
+      AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
+      Environment:
+        Variables:
+          ALLOWED_ORIGIN: !Ref AllowedOrigins
+      Events:
+        AllPeriodsReport:
+          Type: Api
+          Properties:
+            Path: /reports
+            Method: get
+            RestApiId: !Ref ScientificIndexApi
+        PeriodReport:
+          Type: Api
+          Properties:
+            Path: /reports/{period}
+            Method: get
+            RestApiId: !Ref ScientificIndexApi
+        AllInstitutionsReport:
+          Type: Api
+          Properties:
+            Path: /reports/{period}/institutions
+            Method: get
+            RestApiId: !Ref ScientificIndexApi
+        InstitutionReport:
+          Type: Api
+          Properties:
+            Path: /reports/{period}/institutions/{institution}
+            Method: get
+            RestApiId: !Ref ScientificIndexApi
+
   FetchInstitutionReportHandler:
     Type: AWS::Serverless::Function
     Properties:
@@ -1409,7 +1475,7 @@ Resources:
     UpdateReplacePolicy: Retain
     DeletionPolicy: Delete
     Properties:
-      TableName: !Sub 'nva-nvi-${AWS::StackName}'
+      TableName: !Sub "nva-nvi-${AWS::StackName}"
       PointInTimeRecoverySpecification:
         PointInTimeRecoveryEnabled: true
       BillingMode: PAY_PER_REQUEST
@@ -1452,27 +1518,9 @@ Resources:
         StreamViewType: NEW_AND_OLD_IMAGES
       Tags:
         - Key: IncludedInBackup
-          Value: 'true'
+          Value: "true"
 
   #============================= Alarms =========================================================
-
-  BatchScanDLQAlarm:
-    Type: AWS::CloudWatch::Alarm
-    Properties:
-      AlarmName: NVI BatchScan failed
-      AlarmDescription: If this alarm is triggered, then check sqs messages on BatchScanDLQ. Batch scan of database has failed.
-      MetricName: ApproximateNumberOfMessagesVisible
-      Namespace: AWS/SQS
-      Statistic: Sum
-      Dimensions:
-        - Name: QueueName
-          Value: !GetAtt BatchScanDLQ.QueueName
-      Period: 300
-      EvaluationPeriods: 1
-      Threshold: 1
-      ComparisonOperator: GreaterThanOrEqualToThreshold
-      AlarmActions:
-        - !Ref SlackSnsArn
 
   EvaluationDLQAlarm:
     Type: AWS::CloudWatch::Alarm
@@ -1600,17 +1648,35 @@ Resources:
       AlarmActions:
         - !Ref SlackSnsArn
 
-  BatchScanRecoveryQueueAlarm:
+  StartBatchJobErrorAlarm:
     Type: AWS::CloudWatch::Alarm
     Properties:
-      AlarmName: NVI BatchScan Recovery failed
-      AlarmDescription: If this alarm is triggered, then check sqs messages on BatchScanRecoveryQueue.
+      AlarmName: NVI StartBatchJob error
+      AlarmDescription: Errors in StartBatchJobHandler. Check logs.
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Statistic: Sum
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref StartBatchJobHandler
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      AlarmActions:
+        - !Ref SlackSnsArn
+
+  BatchJobDLQAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: NVI BatchJob failed
+      AlarmDescription: Failures during batch job processing. Check messages on BatchJobDLQ.
       MetricName: ApproximateNumberOfMessagesVisible
       Namespace: AWS/SQS
       Statistic: Sum
       Dimensions:
         - Name: QueueName
-          Value: !GetAtt BatchScanRecoveryQueue.QueueName
+          Value: !GetAtt BatchJobDLQ.QueueName
       Period: 300
       EvaluationPeriods: 1
       Threshold: 1

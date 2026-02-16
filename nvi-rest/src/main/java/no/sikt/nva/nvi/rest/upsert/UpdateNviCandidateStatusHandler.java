@@ -1,17 +1,17 @@
 package no.sikt.nva.nvi.rest.upsert;
 
 import static java.net.HttpURLConnection.HTTP_OK;
-import static no.sikt.nva.nvi.common.db.DynamoRepository.defaultDynamoClient;
 import static no.sikt.nva.nvi.common.utils.RequestUtil.hasAccessRight;
 import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateHandler.CANDIDATE_IDENTIFIER;
 import static nva.commons.core.attempt.Try.attempt;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
 import no.sikt.nva.nvi.common.model.UserInstance;
+import no.sikt.nva.nvi.common.service.ApprovalService;
 import no.sikt.nva.nvi.common.service.CandidateResponseFactory;
+import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.utils.ExceptionMapper;
@@ -30,27 +30,27 @@ import nva.commons.core.JacocoGenerated;
 public class UpdateNviCandidateStatusHandler
     extends ApiGatewayHandler<NviStatusRequest, CandidateDto> implements ViewingScopeHandler {
 
-  private final CandidateRepository candidateRepository;
-  private final PeriodRepository periodRepository;
+  private final CandidateService candidateService;
+  private final ApprovalService approvalService;
   private final ViewingScopeValidator viewingScopeValidator;
 
   @JacocoGenerated
   public UpdateNviCandidateStatusHandler() {
     this(
-        new CandidateRepository(defaultDynamoClient()),
-        new PeriodRepository(defaultDynamoClient()),
+        CandidateService.defaultCandidateService(),
+        ApprovalService.defaultApprovalService(),
         ViewingScopeHandler.defaultViewingScopeValidator(),
         new Environment());
   }
 
   public UpdateNviCandidateStatusHandler(
-      CandidateRepository candidateRepository,
-      PeriodRepository periodRepository,
+      CandidateService candidateService,
+      ApprovalService approvalService,
       ViewingScopeValidator viewingScopeValidator,
       Environment environment) {
     super(NviStatusRequest.class, environment);
-    this.candidateRepository = candidateRepository;
-    this.periodRepository = periodRepository;
+    this.candidateService = candidateService;
+    this.approvalService = approvalService;
     this.viewingScopeValidator = viewingScopeValidator;
   }
 
@@ -69,10 +69,9 @@ public class UpdateNviCandidateStatusHandler
     var updateRequest = input.toUpdateRequest(username.value());
     var userInstance = UserInstance.fromRequestInfo(requestInfo);
 
-    return attempt(
-            () -> Candidate.fetch(() -> candidateIdentifier, candidateRepository, periodRepository))
+    return attempt(() -> candidateService.getCandidateByIdentifier(candidateIdentifier))
         .map(candidate -> validateViewingScope(viewingScopeValidator, username, candidate))
-        .map(candidate -> candidate.updateApprovalStatus(updateRequest, userInstance))
+        .map(candidate -> updateAndRefetch(candidate, updateRequest, userInstance))
         .map(candidate -> CandidateResponseFactory.create(candidate, userInstance))
         .orElseThrow(ExceptionMapper::map);
   }
@@ -80,6 +79,12 @@ public class UpdateNviCandidateStatusHandler
   @Override
   protected Integer getSuccessStatusCode(NviStatusRequest input, CandidateDto output) {
     return HTTP_OK;
+  }
+
+  private Candidate updateAndRefetch(
+      Candidate candidate, UpdateStatusRequest updateRequest, UserInstance userInstance) {
+    approvalService.updateApproval(candidate, updateRequest, userInstance);
+    return candidateService.getCandidateByIdentifier(candidate.identifier());
   }
 
   private static void validateCustomerAndAccessRight(

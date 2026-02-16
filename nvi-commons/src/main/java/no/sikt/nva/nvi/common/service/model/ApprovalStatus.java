@@ -8,6 +8,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Set;
+import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
 
 public enum ApprovalStatus {
   APPROVED("Approved"),
@@ -34,12 +35,34 @@ public enum ApprovalStatus {
   }
 
   @JsonIgnore
+  public boolean isFinalized() {
+    return this == APPROVED || this == REJECTED;
+  }
+
+  @JsonIgnore
   public Set<ApprovalStatus> getValidTransitions() {
     return switch (this) {
       case APPROVED -> EnumSet.of(PENDING, REJECTED);
       case PENDING -> EnumSet.of(APPROVED, REJECTED);
       case REJECTED -> EnumSet.of(PENDING, APPROVED);
       case NONE -> emptySet();
+    };
+  }
+
+  @JsonIgnore
+  public void validateStateTransition(ApprovalStatus newStatus) {
+    var validTransitions = getValidTransitions();
+    if (!validTransitions.contains(newStatus)) {
+      throw new IllegalArgumentException("Illegal state transition attempted");
+    }
+  }
+
+  @JsonIgnore
+  public static ApprovalStatusDao.DbStatus toDbStatus(ApprovalStatus approvalStatus) {
+    return switch (approvalStatus) {
+      case APPROVED -> ApprovalStatusDao.DbStatus.APPROVED;
+      case REJECTED -> ApprovalStatusDao.DbStatus.REJECTED;
+      case PENDING, NONE -> ApprovalStatusDao.DbStatus.PENDING;
     };
   }
 }

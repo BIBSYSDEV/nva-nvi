@@ -2,55 +2,113 @@ package no.sikt.nva.nvi.common.service.model;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static java.util.UUID.randomUUID;
+import static java.util.function.Predicate.not;
+import static no.sikt.nva.nvi.common.service.model.ApprovalStatus.toDbStatus;
+import static nva.commons.core.StringUtils.isBlank;
 
 import java.net.URI;
 import java.time.Instant;
-import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao;
 import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbApprovalStatus;
-import no.sikt.nva.nvi.common.db.ApprovalStatusDao.DbStatus;
-import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.model.UpdateApprovalRequest;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
-import nva.commons.core.JacocoGenerated;
+import nva.commons.core.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class Approval {
+public record Approval(
+    UUID identifier,
+    URI institutionId,
+    ApprovalStatus status,
+    Username assignee,
+    Username finalizedBy,
+    Instant finalizedDate,
+    String reason,
+    Long revision) {
 
-  public static final String ERROR_MSG_USERNAME_NULL = "Username cannot be null";
-  private static final String UNKNOWN_REQUEST_TYPE_MESSAGE = "Unknown request type";
+  private static final Logger LOGGER = LoggerFactory.getLogger(Approval.class);
+  private static final String ERROR_MSG_USERNAME_NULL = "Username cannot be null";
   private static final String ERROR_MISSING_REJECTION_REASON =
       "Cannot reject approval status without reason.";
   private static final String ERROR_MSG_MISSING_ORGANIZATION_ID =
       "Request is missing required organization ID";
-  private final CandidateRepository repository;
-  private final UUID identifier;
-  private final URI institutionId;
-  private final ApprovalStatus status;
-  private final Username assignee;
-  private final Username finalizedBy;
-  private final Instant finalizedDate;
-  private final String reason;
+  private static final String ERROR_MSG_MISMATCHED_IDS = "Mismatched organization IDs";
 
-  public Approval(
-      CandidateRepository repository, UUID identifier, ApprovalStatusDao dbApprovalStatus) {
-    this.repository = repository;
-    this.identifier = identifier;
-    this.institutionId = dbApprovalStatus.approvalStatus().institutionId();
-    this.status = ApprovalStatus.parse(dbApprovalStatus.approvalStatus().status().getValue());
-    this.assignee = Username.fromUserName(dbApprovalStatus.approvalStatus().assignee());
-    this.finalizedBy = Username.fromUserName(dbApprovalStatus.approvalStatus().finalizedBy());
-    this.finalizedDate = dbApprovalStatus.approvalStatus().finalizedDate();
-    this.reason = dbApprovalStatus.approvalStatus().reason();
+  public static Approval fromDao(ApprovalStatusDao approval) {
+    return new Approval(
+        approval.identifier(),
+        approval.approvalStatus().institutionId(),
+        ApprovalStatus.parse(approval.approvalStatus().status().getValue()),
+        Username.fromUserName(approval.approvalStatus().assignee()),
+        Username.fromUserName(approval.approvalStatus().finalizedBy()),
+        approval.approvalStatus().finalizedDate(),
+        approval.approvalStatus().reason(),
+        approval.revision());
   }
 
-  public URI getInstitutionId() {
-    return institutionId;
+  public static Approval createNewApproval(UUID candidateIdentifier, URI institutionId) {
+    return new Approval(
+        candidateIdentifier, institutionId, ApprovalStatus.PENDING, null, null, null, null, null);
   }
 
-  public ApprovalStatus getStatus() {
-    return status;
+  public Approval resetApproval() {
+    return new Approval(
+        identifier, institutionId, ApprovalStatus.PENDING, assignee, null, null, null, revision);
+  }
+
+  public Approval withAssignee(UpdateAssigneeRequest request) {
+    LOGGER.info("Updating assignee for candidateId={}: {}", identifier, request);
+    validateUpdateAssigneeRequest(request);
+
+    var newAssignee =
+        Optional.ofNullable(request.username())
+            .filter(not(StringUtils::isBlank))
+            .map(Username::fromString)
+            .orElse(null);
+
+    LOGGER.info(
+        "Updating assignee for institutionId={}: {} -> {}", institutionId, assignee, newAssignee);
+    return new Approval(
+        identifier,
+        institutionId,
+        status,
+        newAssignee,
+        finalizedBy,
+        finalizedDate,
+        reason,
+        revision);
+  }
+
+  public Approval withStatus(UpdateStatusRequest request) {
+    LOGGER.info("Updating approval status for candidateId={}: {}", identifier, request);
+    validateUpdateStatusRequest(request);
+
+    var username = Username.fromString(request.username());
+    var updatedStatus = request.approvalStatus();
+    var updatedReason = updatedStatus == ApprovalStatus.REJECTED ? request.reason() : null;
+
+    LOGGER.info("Updating approval status: {} -> {}", status, updatedStatus);
+    return new Approval(
+        identifier,
+        institutionId,
+        updatedStatus,
+        isAssigned() ? assignee : username,
+        updatedStatus.isFinalized() ? username : null,
+        updatedStatus.isFinalized() ? Instant.now() : null,
+        updatedReason,
+        revision);
+  }
+
+  public ApprovalStatusDao toDao() {
+    return ApprovalStatusDao.builder()
+        .identifier(identifier)
+        .approvalStatus(createCopyOfCurrentStatus())
+        .revision(revision)
+        .version(randomUUID().toString())
+        .build();
   }
 
   public String getAssigneeUsername() {
@@ -61,149 +119,46 @@ public class Approval {
     return isNull(finalizedBy) ? null : finalizedBy.value();
   }
 
-  public Instant getFinalizedDate() {
-    return finalizedDate;
-  }
-
-  public String getReason() {
-    return reason;
-  }
-
   public boolean isAssigned() {
     return nonNull(assignee) && nonNull(assignee.value());
   }
 
   public boolean isPendingAndUnassigned() {
-    return ApprovalStatus.PENDING.equals(status) && !isAssigned();
+    return status == ApprovalStatus.PENDING && !isAssigned();
   }
 
-  public Approval update(UpdateApprovalRequest input) {
-    if (input instanceof UpdateAssigneeRequest request) {
-      var newDao = repository.updateApprovalStatusDao(identifier, updateAssignee(request));
-      return new Approval(repository, identifier, newDao);
-    } else if (input instanceof UpdateStatusRequest request) {
-      validateUpdateStatusRequest(request);
-      var newDao = repository.updateApprovalStatusDao(identifier, updateStatus(request));
-      return new Approval(repository, identifier, newDao);
-    } else {
-      throw new IllegalArgumentException(UNKNOWN_REQUEST_TYPE_MESSAGE);
-    }
-  }
-
-  @Override
-  @JacocoGenerated
-  public int hashCode() {
-    return Objects.hash(
-        identifier, institutionId, status, assignee, finalizedBy, finalizedDate, reason);
-  }
-
-  @Override
-  @JacocoGenerated
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    Approval approval = (Approval) o;
-    return Objects.equals(identifier, approval.identifier)
-        && Objects.equals(institutionId, approval.institutionId)
-        && Objects.equals(status, approval.status)
-        && Objects.equals(assignee, approval.assignee)
-        && Objects.equals(finalizedBy, approval.finalizedBy)
-        && Objects.equals(finalizedDate, approval.finalizedDate)
-        && Objects.equals(reason, approval.reason);
-  }
-
-  @Override
-  @JacocoGenerated
-  public String toString() {
-    return "Approval{"
-        + "identifier="
-        + identifier
-        + ", institutionId="
-        + institutionId
-        + ", status="
-        + status
-        + ", assignee="
-        + assignee
-        + ", finalizedBy="
-        + finalizedBy
-        + ", finalizedDate="
-        + finalizedDate
-        + ", reason='"
-        + reason
-        + '\''
-        + '}';
-  }
-
-  private DbApprovalStatus updateAssignee(UpdateAssigneeRequest request) {
+  private DbApprovalStatus createCopyOfCurrentStatus() {
     return new DbApprovalStatus(
         institutionId,
-        DbStatus.parse(status.getValue()),
-        no.sikt.nva.nvi.common.db.model.Username.fromString(request.username()),
+        toDbStatus(status),
+        no.sikt.nva.nvi.common.db.model.Username.fromUserName(assignee),
         no.sikt.nva.nvi.common.db.model.Username.fromUserName(finalizedBy),
         finalizedDate,
         reason);
   }
 
-  private DbApprovalStatus updateStatus(UpdateStatusRequest request) {
-    return switch (request.approvalStatus()) {
-      case APPROVED -> finalizeApprovedStatus(request);
-      case REJECTED -> finalizeRejectedStatus(request);
-      case PENDING, NONE -> resetStatus();
-    };
-  }
-
-  private DbApprovalStatus resetStatus() {
-    return new DbApprovalStatus(
-        institutionId,
-        DbStatus.PENDING,
-        no.sikt.nva.nvi.common.db.model.Username.fromUserName(assignee),
-        null,
-        null,
-        null);
-  }
-
-  private DbApprovalStatus finalizeApprovedStatus(UpdateStatusRequest request) {
-    var username = no.sikt.nva.nvi.common.db.model.Username.fromString(request.username());
-    return new DbApprovalStatus(
-        institutionId,
-        DbStatus.APPROVED,
-        assigneeOrUsername(username),
-        username,
-        Instant.now(),
-        null);
-  }
-
-  private DbApprovalStatus finalizeRejectedStatus(UpdateStatusRequest request) {
-    if (isNull(request.reason())) {
-      throw new UnsupportedOperationException(ERROR_MISSING_REJECTION_REASON);
+  private void validateUpdateAssigneeRequest(UpdateAssigneeRequest request) {
+    if (isNull(request.institutionId())) {
+      throw new IllegalArgumentException(ERROR_MSG_MISSING_ORGANIZATION_ID);
     }
-    var username = no.sikt.nva.nvi.common.db.model.Username.fromString(request.username());
-    return new DbApprovalStatus(
-        institutionId,
-        DbStatus.REJECTED,
-        assigneeOrUsername(username),
-        username,
-        Instant.now(),
-        request.reason());
+    if (!institutionId.equals(request.institutionId())) {
+      throw new IllegalArgumentException(ERROR_MSG_MISMATCHED_IDS);
+    }
   }
 
-  private no.sikt.nva.nvi.common.db.model.Username assigneeOrUsername(
-      no.sikt.nva.nvi.common.db.model.Username username) {
-    return isAssigned()
-        ? no.sikt.nva.nvi.common.db.model.Username.fromUserName(assignee)
-        : username;
-  }
-
-  public static void validateUpdateStatusRequest(UpdateStatusRequest input) {
-    if (isNull(input.username())) {
+  private void validateUpdateStatusRequest(UpdateStatusRequest request) {
+    status.validateStateTransition(request.approvalStatus());
+    if (isNull(request.institutionId())) {
+      throw new IllegalArgumentException(ERROR_MSG_MISSING_ORGANIZATION_ID);
+    }
+    if (!institutionId.equals(request.institutionId())) {
+      throw new IllegalArgumentException(ERROR_MSG_MISMATCHED_IDS);
+    }
+    if (isBlank(request.username())) {
       throw new IllegalArgumentException(ERROR_MSG_USERNAME_NULL);
     }
-    if (isNull(input.institutionId())) {
-      throw new IllegalArgumentException(ERROR_MSG_MISSING_ORGANIZATION_ID);
+    if (request.approvalStatus() == ApprovalStatus.REJECTED && isBlank(request.reason())) {
+      throw new IllegalArgumentException(ERROR_MISSING_REJECTION_REASON);
     }
   }
 }

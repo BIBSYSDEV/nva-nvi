@@ -28,6 +28,10 @@
       "@id": "hasPart",
       "@container": "@set"
     },
+    "isbnList": {
+      "@id": "isbn",
+      "@container": "@set"
+    },
     "labels": {
       "@id": "label",
       "@container": "@language"
@@ -54,6 +58,9 @@
       "@container": "@set"
     },
     "publicationType": {
+      "@type": "@vocab"
+    },
+    "parentPublicationType": {
       "@type": "@vocab"
     },
     "role": {

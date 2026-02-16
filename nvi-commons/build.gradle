@@ -1,13 +1,11 @@
 plugins {
     id 'nva.nvi.java-conventions'
-    id 'java-library'
-    id 'java-test-fixtures'
 }
 
 dependencies {
-    implementation libs.aws.sdk2.dynamodbenhanced
-    implementation libs.aws.sdk2.sns
-    implementation libs.aws.sdk2.sqs
+    implementation nvaCatalog.aws.sdk2.dynamodbenhanced
+    implementation nvaCatalog.aws.sdk2.sns
+    implementation nvaCatalog.aws.sdk2.sqs
     implementation libs.jena.shaql
     implementation nvaCatalog.aws.apache.client
     implementation nvaCatalog.aws.lambda.events
@@ -24,26 +22,30 @@ dependencies {
     implementation nvaLibs.json
     implementation nvaLibs.s3
     testFixturesAnnotationProcessor nvaCatalog.errorprone
-    testFixturesImplementation libs.aws.sdk2.sqs
-    testFixturesImplementation libs.dynamodDbLocal
+    testFixturesImplementation nvaCatalog.aws.sdk2.sqs
+    testFixturesImplementation nvaCatalog.aws.sdk2.dynamodblocal
     testFixturesImplementation nvaCatalog.aws.lambda.events
     testFixturesImplementation nvaCatalog.aws.sdk2.s3
     testFixturesImplementation nvaCatalog.bundles.testing.cucumber
     testFixturesImplementation nvaCatalog.bundles.testing.junit
+    testFixturesImplementation nvaCatalog.datafaker
     testFixturesImplementation nvaCatalog.hamcrest
     testFixturesImplementation nvaCatalog.mockito.core
     testFixturesImplementation nvaLibs.apigateway
     testFixturesImplementation nvaLibs.auth
     testFixturesImplementation nvaLibs.core
+    testFixturesImplementation nvaLibs.clients
+    testFixturesImplementation nvaLibs.identifiers
     testFixturesImplementation nvaLibs.json
     testFixturesImplementation nvaLibs.s3
     testFixturesImplementation nvaLibs.testutils
     testFixturesImplementation project(':nvi-test')
-    testImplementation libs.dynamodDbLocal
-    testImplementation libs.junit.platform.suite
+    testImplementation nvaCatalog.aws.sdk2.dynamodblocal
+    testImplementation nvaCatalog.junit.platform.suite
     testImplementation nvaCatalog.assertj.core
     testImplementation nvaCatalog.bundles.testing.cucumber
     testImplementation nvaCatalog.bundles.testing.junit
+    testImplementation nvaCatalog.datafaker
     testImplementation nvaCatalog.hamcrest
     testImplementation nvaCatalog.mockito.core
     testImplementation nvaLibs.logutils

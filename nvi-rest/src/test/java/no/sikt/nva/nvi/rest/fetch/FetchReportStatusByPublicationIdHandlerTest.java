@@ -22,16 +22,15 @@ import java.util.Map;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.UpsertRequestBuilder;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
-import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
+import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.rest.EnvironmentFixtures;
 import no.sikt.nva.nvi.rest.fetch.ReportStatusDto.StatusDto;
 import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.GatewayResponse;
-import nva.commons.core.Environment;
 import org.apache.hc.core5.http.ContentType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,12 +38,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 class FetchReportStatusByPublicationIdHandlerTest {
-  private static final Environment ENVIRONMENT = new Environment();
   private static final String PATH_PARAM_PUBLICATION_ID = "publicationId";
   private Context context;
   private ByteArrayOutputStream output;
   private CandidateRepository candidateRepository;
-  private PeriodRepository periodRepository;
+  private CandidateService candidateService;
   private TestScenario scenario;
   private FetchReportStatusByPublicationIdHandler handler;
 
@@ -53,19 +51,18 @@ class FetchReportStatusByPublicationIdHandlerTest {
     scenario = new TestScenario();
     setupOpenPeriod(scenario, CURRENT_YEAR);
     candidateRepository = scenario.getCandidateRepository();
-    periodRepository = scenario.getPeriodRepository();
+    candidateService = scenario.getCandidateService();
     output = new ByteArrayOutputStream();
     context = new FakeContext();
-    handler =
-        new FetchReportStatusByPublicationIdHandler(
-            candidateRepository, periodRepository, ENVIRONMENT);
+    var environment = EnvironmentFixtures.FETCH_REPORT_STATUS_BY_PUBLICATION_ID_HANDLER;
+    handler = new FetchReportStatusByPublicationIdHandler(candidateService, environment);
   }
 
   @Test
   void shouldReturnReportedYearWhenPublicationIsReportedInClosedPeriod() throws IOException {
     var dao = setupReportedCandidate(candidateRepository, String.valueOf(CURRENT_YEAR));
-    var reportedCandidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
     setupClosedPeriod(scenario, CURRENT_YEAR);
+    var reportedCandidate = candidateService.getCandidateByIdentifier(dao.identifier());
 
     handler.handleRequest(createRequest(reportedCandidate.getPublicationId()), output, context);
 
@@ -111,8 +108,8 @@ class FetchReportStatusByPublicationIdHandlerTest {
     var institution1 = randomUri();
     var involvedInstitutions = new URI[] {institution1, randomUri()};
     var upsertCandidateRequest = createUpsertCandidateRequest(involvedInstitutions).build();
-    var candidate = upsert(upsertCandidateRequest);
-    scenario.updateApprovalStatus(candidate, ApprovalStatus.REJECTED, institution1);
+    var candidate = scenario.upsertCandidate(upsertCandidateRequest);
+    scenario.updateApprovalStatus(candidate.identifier(), approvalStatus, institution1);
 
     handler.handleRequest(createRequest(candidate.getPublicationId()), output, context);
 
@@ -134,8 +131,10 @@ class FetchReportStatusByPublicationIdHandlerTest {
     var organization2 = randomTopLevelOrganization();
     var request = createUpsertCandidateRequest(organization1, organization2).build();
     var candidate = scenario.upsertCandidate(request);
-    scenario.updateApprovalStatus(candidate, ApprovalStatus.APPROVED, organization1.id());
-    scenario.updateApprovalStatus(candidate, ApprovalStatus.APPROVED, organization2.id());
+    scenario.updateApprovalStatus(
+        candidate.identifier(), ApprovalStatus.APPROVED, organization1.id());
+    scenario.updateApprovalStatus(
+        candidate.identifier(), ApprovalStatus.APPROVED, organization2.id());
 
     handler.handleRequest(createRequest(candidate.getPublicationId()), output, context);
 
@@ -157,8 +156,10 @@ class FetchReportStatusByPublicationIdHandlerTest {
     var organization2 = randomTopLevelOrganization();
     var request = createUpsertCandidateRequest(organization1, organization2).build();
     var candidate = scenario.upsertCandidate(request);
-    scenario.updateApprovalStatus(candidate, ApprovalStatus.REJECTED, organization1.id());
-    scenario.updateApprovalStatus(candidate, ApprovalStatus.REJECTED, organization2.id());
+    scenario.updateApprovalStatus(
+        candidate.identifier(), ApprovalStatus.REJECTED, organization1.id());
+    scenario.updateApprovalStatus(
+        candidate.identifier(), ApprovalStatus.REJECTED, organization2.id());
 
     handler.handleRequest(createRequest(candidate.getPublicationId()), output, context);
 
@@ -198,7 +199,7 @@ class FetchReportStatusByPublicationIdHandlerTest {
   void shouldReturnNotCandidateWhenPublicationIsNotApplicableCandidate() throws IOException {
     var pendingCandidate = setupCandidateWithPublicationYear(CURRENT_YEAR);
     var upsertRequest = createUpsertNonCandidateRequest(pendingCandidate.getPublicationId());
-    Candidate.updateNonCandidate(upsertRequest, candidateRepository);
+    candidateService.updateCandidate(upsertRequest);
 
     handler.handleRequest(createRequest(pendingCandidate.getPublicationId()), output, context);
 
@@ -242,12 +243,6 @@ class FetchReportStatusByPublicationIdHandlerTest {
         UpsertRequestBuilder.randomUpsertRequestBuilder()
             .withPublicationDate(new PublicationDateDto(String.valueOf(year), null, null))
             .build();
-    return upsert(request);
-  }
-
-  private Candidate upsert(UpsertNviCandidateRequest request) {
-    Candidate.upsert(request, candidateRepository, periodRepository);
-    return Candidate.fetchByPublicationId(
-        request::publicationId, candidateRepository, periodRepository);
+    return scenario.upsertCandidate(request);
   }
 }

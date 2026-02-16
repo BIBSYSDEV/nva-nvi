@@ -1,40 +1,39 @@
 package no.sikt.nva.nvi.events.batch;
 
-import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.createCandidateDao;
+import static java.util.Collections.emptyList;
+import static java.util.UUID.randomUUID;
+import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.createCandidateInRepository;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidateBuilder;
 import static no.sikt.nva.nvi.common.db.DbPointCalculationFixtures.randomPointCalculationBuilder;
 import static no.sikt.nva.nvi.common.db.DbPublicationDetailsFixtures.randomPublicationBuilder;
-import static no.sikt.nva.nvi.events.batch.RequeueDlqTestUtils.generateMessages;
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
+import static no.sikt.nva.nvi.common.model.CandidateFixtures.setupRandomApplicableCandidate;
+import static no.sikt.nva.nvi.events.batch.RequeueDlqTestUtils.generateMessageForCandidate;
 import static no.sikt.nva.nvi.events.batch.RequeueDlqTestUtils.setupSqsClient;
+import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
+import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import java.util.Collection;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.stream.IntStream;
+import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.db.CandidateDao;
-import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.model.DbPublicationChannel;
 import no.sikt.nva.nvi.common.model.ScientificValue;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
+import no.sikt.nva.nvi.common.service.CandidateService;
 import no.unit.nva.commons.json.JsonUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.Message;
-import software.amazon.awssdk.services.sqs.model.MessageAttributeValue;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageRequest;
 import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 
@@ -43,219 +42,210 @@ class RequeueDlqHandlerTest {
   public static final Context CONTEXT = mock(Context.class);
   private static final String DLQ_URL = "https://some-sqs-url";
   private static final String FIRST_BATCH = "firstBatch";
+  private static final int DEFAULT_BATCH_SIZE = 10;
+  private static final int MAX_RETRY_ATTEMPTS = 5;
   private RequeueDlqHandler handler;
   private SqsClient sqsClient;
-  private NviQueueClient client;
-  private CandidateRepository candidateRepository;
-  private PeriodRepository periodRepository;
-  private String messageId;
+  private CandidateService candidateService;
+  private TestScenario scenario;
 
   @BeforeEach
   void setUp() {
+    scenario = new TestScenario();
     sqsClient = setupSqsClient();
-    client = new NviQueueClient(sqsClient);
-    candidateRepository = setupCandidateRepository();
-    periodRepository = mock(PeriodRepository.class);
-    handler = new RequeueDlqHandler(client, DLQ_URL, candidateRepository, periodRepository);
-    messageId = UUID.randomUUID().toString();
+    candidateService = scenario.getCandidateService();
+    handler = new RequeueDlqHandler(new NviQueueClient(sqsClient), DLQ_URL, candidateService);
+    setupOpenPeriod(scenario, CURRENT_YEAR);
   }
 
   @Test
   void shouldRequeueSingleBatch() {
-    when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class)))
-        .thenReturn(
-            ReceiveMessageResponse.builder().messages(generateMessages(1, FIRST_BATCH)).build())
-        .thenReturn(ReceiveMessageResponse.builder().messages(List.of()).build());
+    var batch = createCandidateMessages(FIRST_BATCH, 1);
+    setupMockEvents(batch);
 
     var response = handler.handleRequest(new RequeueDlqInput(1), CONTEXT);
 
-    assertEquals(1, getSuccessCount(response));
-    assertEquals(0, response.failedBatchesCount());
+    assertThat(getSuccessCount(response)).isOne();
+    assertThat(response.failedBatchesCount()).isZero();
   }
 
   @Test
   void shouldWriteToDynamodbWhenProcessing() {
-    when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class)))
-        .thenReturn(
-            ReceiveMessageResponse.builder().messages(generateMessages(1, FIRST_BATCH)).build())
-        .thenReturn(ReceiveMessageResponse.builder().messages(List.of()).build());
+    var candidate = setupRandomApplicableCandidate(scenario);
+    var message = generateMessageForCandidate(randomString(), candidate.identifier());
+    setupMockEvents(List.of(message));
 
     handler.handleRequest(new RequeueDlqInput(1), CONTEXT);
 
-    verify(candidateRepository, times(1)).updateCandidate(any());
+    var updatedCandidate = candidateService.getCandidateByIdentifier(candidate.identifier());
+    assertThat(updatedCandidate.revision()).isNotEqualTo(candidate.revision());
   }
 
   @Test
   void shouldRequeueMultipleBatches() {
-    when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class)))
-        .thenAnswer(
-            new Answer<ReceiveMessageResponse>() {
-              private int count;
-
-              @Override
-              public ReceiveMessageResponse answer(InvocationOnMock invocation) {
-                var arg = invocation.getArgument(0, ReceiveMessageRequest.class);
-                return ReceiveMessageResponse.builder()
-                    .messages(generateMessages(arg.maxNumberOfMessages(), count++ + " batch"))
-                    .build();
-              }
-            });
+    var firstBatch = createCandidateMessages("batch1", DEFAULT_BATCH_SIZE);
+    var secondBatch = createCandidateMessages("batch2", DEFAULT_BATCH_SIZE);
+    var thirdBatch = createCandidateMessages("batch3", 3);
+    setupMockEvents(firstBatch, secondBatch, thirdBatch);
 
     var response = handler.handleRequest(new RequeueDlqInput(23), CONTEXT);
 
-    assertEquals(23, getSuccessCount(response));
-    assertEquals(0, response.failedBatchesCount());
+    assertThat(getSuccessCount(response)).isEqualTo(23);
+    assertThat(response.failedBatchesCount()).isZero();
   }
 
   @Test
   void shouldHandleEmptyResult() {
-    when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class)))
-        .thenReturn(ReceiveMessageResponse.builder().messages(List.of()).build());
+    setupMockEvents(emptyList());
 
     var response = handler.handleRequest(new RequeueDlqInput(100), CONTEXT);
 
-    assertEquals(0, getSuccessCount(response));
-    assertEquals(0, response.failedBatchesCount());
+    assertThat(getSuccessCount(response)).isZero();
+    assertThat(response.failedBatchesCount()).isZero();
   }
 
   @Test
   void emptyInputShouldDefaultTo10() {
-    when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class)))
-        .thenReturn(
-            ReceiveMessageResponse.builder().messages(generateMessages(10, FIRST_BATCH)).build())
-        .thenReturn(ReceiveMessageResponse.builder().messages(List.of()).build());
+    var batch = createCandidateMessages(FIRST_BATCH, DEFAULT_BATCH_SIZE);
+    setupMockEvents(batch);
 
     var response = handler.handleRequest(new RequeueDlqInput(), CONTEXT);
 
-    assertEquals(10, getSuccessCount(response));
-    assertEquals(0, response.failedBatchesCount());
+    assertThat(getSuccessCount(response)).isEqualTo(DEFAULT_BATCH_SIZE);
+    assertThat(response.failedBatchesCount()).isZero();
   }
 
   @Test
   void shouldIgnoreDuplicates() {
-    var message =
-        Message.builder()
-            .messageId(messageId)
-            .receiptHandle(messageId)
-            .messageAttributes(
-                Map.of(
-                    "candidateIdentifier",
-                    MessageAttributeValue.builder()
-                        .stringValue(UUID.randomUUID().toString())
-                        .build()))
-            .build();
-
-    when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class)))
-        .thenReturn(ReceiveMessageResponse.builder().messages(List.of(message)).build())
-        .thenReturn(ReceiveMessageResponse.builder().messages(List.of(message)).build());
+    var candidate = setupRandomApplicableCandidate(scenario);
+    var candidateMessage = generateMessageForCandidate(FIRST_BATCH + 1, candidate.identifier());
+    setupMockEvents(List.of(candidateMessage), List.of(candidateMessage));
 
     var response = handler.handleRequest(new RequeueDlqInput(100), CONTEXT);
 
-    assertEquals(1, getSuccessCount(response));
-    assertEquals(5, response.failedBatchesCount());
+    assertThat(getSuccessCount(response)).isEqualTo(1);
+    assertThat(response.failedBatchesCount()).isEqualTo(MAX_RETRY_ATTEMPTS);
   }
 
   @Test
   void missingCustomAttributeShouldFail() {
+    var messageId = randomUUID().toString();
     var message = Message.builder().messageId(messageId).receiptHandle(messageId).build();
-
-    when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class)))
-        .thenReturn(ReceiveMessageResponse.builder().messages(List.of(message)).build())
-        .thenReturn(ReceiveMessageResponse.builder().messages(List.of()).build());
+    setupMockEvents(List.of(message), emptyList());
 
     var response = handler.handleRequest(new RequeueDlqInput(100), CONTEXT);
 
-    assertEquals(1, getFailureCount(response));
-
-    var error =
-        response.messages().stream().filter(a -> !a.success()).findFirst().get().error().get();
-    assertTrue(error.contains("Could not process message"));
+    assertThat(response.messages())
+        .filteredOn(result -> !result.success())
+        .hasSize(1)
+        .first()
+        .extracting(NviProcessMessageResult::error)
+        .asString()
+        .contains("Could not process message");
   }
 
   @Test
   void shouldStopRepeatedErrors() {
+    var messageId = randomUUID().toString();
     var message = Message.builder().messageId(messageId).receiptHandle(messageId).build();
-
-    when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class)))
-        .thenReturn(ReceiveMessageResponse.builder().messages(List.of(message)).build());
+    setupMockEvents(List.of(message));
 
     var response = handler.handleRequest(new RequeueDlqInput(100), CONTEXT);
 
-    assertEquals(0, getSuccessCount(response));
-    assertEquals(5, response.failedBatchesCount());
+    assertThat(getSuccessCount(response)).isZero();
+    assertThat(response.failedBatchesCount()).isEqualTo(MAX_RETRY_ATTEMPTS);
   }
 
   @Test
   void outputShouldPassMessage() {
-    when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class)))
-        .thenReturn(
-            ReceiveMessageResponse.builder().messages(generateMessages(1, "myInput")).build());
+    var messages = createCandidateMessages("myInput", 1);
+    setupMockEvents(messages);
 
     var response = handler.handleRequest(new RequeueDlqInput(100), CONTEXT);
 
-    var message =
-        response.messages().stream()
-            .filter(NviProcessMessageResult::success)
-            .findFirst()
-            .get()
-            .message()
-            .messageId();
-
-    assertTrue(message.contains("myInput"));
+    assertThat(response.messages())
+        .filteredOn(NviProcessMessageResult::success)
+        .extracting(result -> result.message().messageId())
+        .anySatisfy(messageId -> assertThat(messageId).contains("myInput"));
   }
 
   @Test
   void shouldHandleFailureToWriteUpdatedCandidate() {
-    when(candidateRepository.findCandidateById(any())).thenReturn(Optional.empty());
-
-    when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class)))
-        .thenReturn(
-            ReceiveMessageResponse.builder().messages(generateMessages(1, "somPrefix")).build())
-        .thenReturn(ReceiveMessageResponse.builder().messages(List.of()).build());
+    var nonExistentCandidateId = randomUUID();
+    var message = generateMessageForCandidate(FIRST_BATCH + 1, nonExistentCandidateId);
+    setupMockEvents(List.of(message), emptyList());
 
     var response = handler.handleRequest(new RequeueDlqInput(100), CONTEXT);
-    assertEquals(1, response.failedBatchesCount());
+    assertThat(response.failedBatchesCount()).isOne();
   }
 
   @Test
-  void testMissingInputCount() throws JsonProcessingException {
+  void shouldUseDefaultBatchSizeForEmptyInput() throws JsonProcessingException {
     var input = JsonUtils.dtoObjectMapper.readValue("{}", RequeueDlqInput.class);
-    assertEquals(10, input.count());
+    assertThat(input.count()).isEqualTo(DEFAULT_BATCH_SIZE);
   }
 
   @Test
   void shouldHandleCandidateWithoutChannelType() {
     // This is not a valid state for candidates created in nva-nvi, but it may occur for candidates
-    // imported via
-    // Cristin.
-    var handlerWithoutChannelType = setupHandlerReceivingCandidateWithoutChannelType();
+    // imported via Cristin.
+    var candidate = candidateMissingChannelType();
+    var repository = scenario.getCandidateRepository();
+    var candidateIdentifier = createCandidateInRepository(repository, candidate);
 
-    var response = handlerWithoutChannelType.handleRequest(new RequeueDlqInput(1), CONTEXT);
+    var candidateMessage = generateMessageForCandidate(FIRST_BATCH + 1, candidateIdentifier);
+    setupMockEvents(List.of(candidateMessage), emptyList());
 
-    assertEquals(0, response.failedBatchesCount());
+    var response = handler.handleRequest(new RequeueDlqInput(100), CONTEXT);
+
+    assertThat(getSuccessCount(response)).isOne();
+    assertThat(response.failedBatchesCount()).isZero();
   }
 
-  private static CandidateRepository setupCandidateRepository() {
-    var repo = mock(CandidateRepository.class);
+  @Test
+  void shouldRequeueCandidateWithoutLossOfInformation() {
+    var candidate = setupRandomApplicableCandidate(scenario);
+    var message = generateMessageForCandidate(randomString(), candidate.identifier());
+    setupMockEvents(List.of(message), emptyList());
 
-    var candidate = createDefaultCandidateDao();
+    handler.handleRequest(new RequeueDlqInput(1), CONTEXT);
+    var actualCandidate = candidateService.getCandidateByIdentifier(candidate.identifier());
+    assertThat(actualCandidate)
+        .usingRecursiveComparison()
+        .ignoringFields("version", "revision", "lastWrittenAt", "approvals")
+        .ignoringCollectionOrder()
+        .isEqualTo(candidate);
+    assertThat(actualCandidate.approvals().values())
+        .usingRecursiveComparison()
+        .ignoringFields("revision")
+        .ignoringCollectionOrder()
+        .isEqualTo(candidate.approvals().values());
+  }
 
-    when(repo.findByPublicationId(any())).thenReturn(Optional.of(candidate));
+  private Message createCandidateMessage(String messageId) {
+    var candidate = setupRandomApplicableCandidate(scenario);
+    return generateMessageForCandidate(messageId, candidate.identifier());
+  }
 
-    when(repo.findCandidateById(any())).thenReturn(Optional.of(candidate));
+  private List<Message> createCandidateMessages(String batchPrefix, int count) {
+    return IntStream.rangeClosed(1, count)
+        .mapToObj(i -> createCandidateMessage(batchPrefix + i))
+        .toList();
+  }
 
-    return repo;
+  @SafeVarargs
+  private void setupMockEvents(Collection<Message>... batches) {
+    var stub = when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class)));
+    for (var batch : batches) {
+      stub = stub.thenReturn(ReceiveMessageResponse.builder().messages(batch).build());
+    }
   }
 
   private static long getSuccessCount(RequeueDlqOutput response) {
     return response.messages().stream().filter(NviProcessMessageResult::success).count();
   }
 
-  private static long getFailureCount(RequeueDlqOutput response) {
-    return response.messages().stream().filter(a -> !a.success()).count();
-  }
-
-  private static CandidateDao candidateMissingChannelType() {
+  private static CandidateDao.DbCandidate candidateMissingChannelType() {
     var organizationId = randomUri();
     var channel = new DbPublicationChannel(randomUri(), null, ScientificValue.LEVEL_ONE.getValue());
     var publicationDetails = randomPublicationBuilder(organizationId).build();
@@ -263,27 +253,8 @@ class RequeueDlqHandlerTest {
         randomPointCalculationBuilder(randomUri(), organizationId)
             .publicationChannel(channel)
             .build();
-    var candidate =
-        randomCandidateBuilder(organizationId, publicationDetails, pointCalculation)
-            .applicable(true)
-            .build();
-    return createCandidateDao(candidate);
-  }
-
-  private static CandidateDao createDefaultCandidateDao() {
-    var candidate = randomCandidateBuilder(true).build();
-    return createCandidateDao(candidate);
-  }
-
-  private RequeueDlqHandler setupHandlerReceivingCandidateWithoutChannelType() {
-    var repo = mock(CandidateRepository.class);
-    var candidate = candidateMissingChannelType();
-    when(repo.findByPublicationId(any())).thenReturn(Optional.of(candidate));
-    when(repo.findCandidateById(any())).thenReturn(Optional.of(candidate));
-    when(sqsClient.receiveMessage(any(ReceiveMessageRequest.class)))
-        .thenReturn(
-            ReceiveMessageResponse.builder().messages(generateMessages(1, FIRST_BATCH)).build())
-        .thenReturn(ReceiveMessageResponse.builder().messages(List.of()).build());
-    return new RequeueDlqHandler(client, DLQ_URL, repo, periodRepository);
+    return randomCandidateBuilder(organizationId, publicationDetails, pointCalculation)
+        .applicable(true)
+        .build();
   }
 }

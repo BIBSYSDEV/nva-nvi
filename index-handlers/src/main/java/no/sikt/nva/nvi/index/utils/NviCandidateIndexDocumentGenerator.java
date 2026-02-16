@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.index.utils;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static java.util.function.Predicate.not;
 import static no.sikt.nva.nvi.common.utils.GraphUtils.PART_OF_PROPERTY;
 import static no.sikt.nva.nvi.common.utils.GraphUtils.createModel;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_POINTER_JOURNAL_PISSN;
@@ -39,6 +40,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,22 +54,24 @@ import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.model.ChannelType;
 import no.sikt.nva.nvi.common.model.ScientificValue;
+import no.sikt.nva.nvi.common.model.Sector;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
+import no.sikt.nva.nvi.index.model.document.ApprovalView;
 import no.sikt.nva.nvi.index.model.document.Contributor;
 import no.sikt.nva.nvi.index.model.document.ContributorType;
-import no.sikt.nva.nvi.index.model.document.InstitutionPoints;
+import no.sikt.nva.nvi.index.model.document.InstitutionPointsView;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.document.NviContributor;
 import no.sikt.nva.nvi.index.model.document.NviOrganization;
 import no.sikt.nva.nvi.index.model.document.Organization;
 import no.sikt.nva.nvi.index.model.document.OrganizationType;
 import no.sikt.nva.nvi.index.model.document.Pages;
-import no.sikt.nva.nvi.index.model.document.Pages.Builder;
 import no.sikt.nva.nvi.index.model.document.PublicationChannel;
 import no.sikt.nva.nvi.index.model.document.PublicationDetails;
 import no.sikt.nva.nvi.index.model.document.ReportingPeriod;
@@ -103,14 +107,6 @@ public final class NviCandidateIndexDocumentGenerator {
     return buildDocument(approvals, expandedPublicationDetails);
   }
 
-  private static no.sikt.nva.nvi.common.client.model.Organization toOrganization(String response) {
-    return attempt(
-            () ->
-                dtoObjectMapper.readValue(
-                    response, no.sikt.nva.nvi.common.client.model.Organization.class))
-        .orElseThrow();
-  }
-
   private static NviOrganization buildNviOrganization(URI id, List<URI> partOf) {
     return NviOrganization.builder().withId(id).withPartOf(partOf).build();
   }
@@ -118,7 +114,7 @@ public final class NviCandidateIndexDocumentGenerator {
   private static ApprovalStatus getApprovalStatus(Approval approval) {
     return approval.isPendingAndUnassigned()
         ? ApprovalStatus.NEW
-        : ApprovalStatus.parse(approval.getStatus().getValue());
+        : ApprovalStatus.parse(approval.status().getValue());
   }
 
   private static Set<URI> extractInvolvedOrganizations(
@@ -127,7 +123,7 @@ public final class NviCandidateIndexDocumentGenerator {
         .filter(NviContributor.class::isInstance)
         .map(NviContributor.class::cast)
         .flatMap(
-            contributor -> contributor.getOrganizationsPartOf(approval.getInstitutionId()).stream())
+            contributor -> contributor.getOrganizationsPartOf(approval.institutionId()).stream())
         .collect(Collectors.toSet());
   }
 
@@ -147,26 +143,24 @@ public final class NviCandidateIndexDocumentGenerator {
   private static Optional<Map<String, String>> extractLabels(
       Approval approval, JsonNode topLevelOrganizations) {
     return streamNode(topLevelOrganizations)
-        .filter(organization -> isOrgWithInstitutionId(organization, approval.getInstitutionId()))
+        .filter(organization -> isOrgWithInstitutionId(organization, approval.institutionId()))
         .findFirst()
         .map(org -> org.at(JSON_PTR_LABELS))
         .flatMap(NviCandidateIndexDocumentGenerator::readAsStringMap);
   }
 
-  private Map<String, String> extractLabels(Approval approval) {
-    return extractLabelsFromExpandedResource(expandedResource, approval)
-        .orElse(fetchOrganization(approval.getInstitutionId()).labels());
+  private Optional<Map<String, String>> extractLabels(Approval approval) {
+    return extractLabelsFromExpandedResource(expandedResource, approval);
   }
 
   private NviCandidateIndexDocument buildDocument(
-      List<no.sikt.nva.nvi.index.model.document.Approval> approvals,
-      PublicationDetails expandedPublicationDetails) {
+      List<ApprovalView> approvals, PublicationDetails expandedPublicationDetails) {
     return NviCandidateIndexDocument.builder()
         .withId(candidate.getId())
-        .withContext(Candidate.getContextUri())
+        .withContext(candidate.getContextUri())
         .withIsApplicable(candidate.isApplicable())
-        .withIdentifier(candidate.getIdentifier())
-        .withReportingPeriod(new ReportingPeriod(candidate.getPeriod().year()))
+        .withIdentifier(candidate.identifier())
+        .withReportingPeriod(ReportingPeriod.fromCandidate(candidate))
         .withReported(candidate.isReported())
         .withApprovals(approvals)
         .withPublicationDetails(expandedPublicationDetails)
@@ -176,21 +170,21 @@ public final class NviCandidateIndexDocumentGenerator {
         .withGlobalApprovalStatus(candidate.getGlobalApprovalStatus())
         .withCreatorShareCount(candidate.getCreatorShareCount())
         .withInternationalCollaborationFactor(candidate.getCollaborationFactor())
-        .withCreatedDate(candidate.getCreatedDate())
-        .withModifiedDate(candidate.getModifiedDate())
+        .withCreatedDate(candidate.createdDate())
+        .withModifiedDate(candidate.modifiedDate())
         .build();
   }
 
-  private InstitutionPoints getInstitutionPoints(Approval approval) {
+  private InstitutionPointsView getInstitutionPoints(Approval approval) {
     return candidate
-        .getInstitutionPoints(approval.getInstitutionId())
-        .map(InstitutionPoints::from)
+        .getInstitutionPoints(approval.institutionId())
+        .map(InstitutionPointsView::from)
         .orElse(null);
   }
 
   private PublicationDetails expandPublicationDetails(List<ContributorType> contributors) {
     return PublicationDetails.builder()
-        .withId(candidate.getPublicationDetails().publicationId().toString())
+        .withId(candidate.publicationDetails().publicationId().toString())
         .withContributors(contributors)
         .withType(extractInstanceType())
         .withPublicationDate(extractPublicationDate())
@@ -218,17 +212,17 @@ public final class NviCandidateIndexDocumentGenerator {
     return pagesBuilder.build();
   }
 
-  private void extractNumberOfPagesIfPresent(Builder pagesBuilder) {
+  private void extractNumberOfPagesIfPresent(Pages.Builder pagesBuilder) {
     var pages = extractOptJsonNodeTextValue(expandedResource, JSON_PTR_PAGES_NUMBER);
     pages.ifPresent(pagesBuilder::withNumberOfPages);
   }
 
-  private void extractPagesEndIfPresent(Builder pagesBuilder) {
+  private void extractPagesEndIfPresent(Pages.Builder pagesBuilder) {
     var end = extractOptJsonNodeTextValue(expandedResource, JSON_PRT_PAGES_END);
     end.ifPresent(pagesBuilder::withEnd);
   }
 
-  private void extractPagesBeginIfPresent(Builder pagesBuilder) {
+  private void extractPagesBeginIfPresent(Pages.Builder pagesBuilder) {
     var begin = extractOptJsonNodeTextValue(expandedResource, JSON_PTR_PAGES_BEGIN);
     begin.ifPresent(pagesBuilder::withBegin);
   }
@@ -293,9 +287,8 @@ public final class NviCandidateIndexDocumentGenerator {
     return approvals.values().stream();
   }
 
-  private List<no.sikt.nva.nvi.index.model.document.Approval> createApprovals(
-      List<ContributorType> expandedContributors) {
-    return streamValues(candidate.getApprovals())
+  private List<ApprovalView> createApprovals(List<ContributorType> expandedContributors) {
+    return streamValues(candidate.approvals())
         .map(approval -> toApproval(approval, expandedContributors))
         .toList();
   }
@@ -308,23 +301,26 @@ public final class NviCandidateIndexDocumentGenerator {
         : extractLabels(approval, topLevelOrganizations);
   }
 
-  private no.sikt.nva.nvi.common.client.model.Organization fetchOrganization(URI institutionId) {
-    return getRawContentFromUriCached(institutionId)
-        .map(NviCandidateIndexDocumentGenerator::toOrganization)
-        .orElseThrow();
-  }
-
-  private no.sikt.nva.nvi.index.model.document.Approval toApproval(
-      Approval approval, List<ContributorType> expandedContributors) {
-    return no.sikt.nva.nvi.index.model.document.Approval.builder()
-        .withInstitutionId(approval.getInstitutionId())
-        .withLabels(extractLabels(approval))
+  private ApprovalView toApproval(Approval approval, List<ContributorType> expandedContributors) {
+    return ApprovalView.builder()
+        .withInstitutionId(approval.institutionId())
+        .withLabels(extractLabels(approval).orElse(Collections.emptyMap()))
         .withApprovalStatus(getApprovalStatus(approval))
         .withPoints(getInstitutionPoints(approval))
         .withInvolvedOrganizations(extractInvolvedOrganizations(approval, expandedContributors))
         .withAssignee(extractAssignee(approval))
         .withGlobalApprovalStatus(candidate.getGlobalApprovalStatus())
+        .withSector(extractSector(approval.institutionId(), candidate))
         .build();
+  }
+
+  public static String extractSector(URI institutionId, Candidate candidate) {
+    return candidate
+        .getInstitutionPoints(institutionId)
+        .map(InstitutionPoints::sector)
+        .filter(not(Sector.UNKNOWN::equals))
+        .map(Sector::toString)
+        .orElse(null);
   }
 
   private String extractAssignee(Approval approval) {
@@ -339,7 +335,7 @@ public final class NviCandidateIndexDocumentGenerator {
 
   public static Optional<VerifiedNviCreatorDto> getVerifiedNviCreatorIfPresent(
       JsonNode contributor, Candidate candidate) {
-    return candidate.getPublicationDetails().verifiedCreators().stream()
+    return candidate.publicationDetails().verifiedCreators().stream()
         .filter(
             creator -> creator.id().toString().equals(extractId(contributor.at(JSON_PTR_IDENTITY))))
         .findFirst();
@@ -347,7 +343,7 @@ public final class NviCandidateIndexDocumentGenerator {
 
   public static Optional<UnverifiedNviCreatorDto> getUnverifiedNviCreatorIfPresent(
       JsonNode contributor, Candidate candidate) {
-    return candidate.getPublicationDetails().unverifiedCreators().stream()
+    return candidate.publicationDetails().unverifiedCreators().stream()
         .filter(creator -> creator.name().equals(extractName(contributor.at(JSON_PTR_IDENTITY))))
         .findFirst();
   }

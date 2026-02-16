@@ -23,7 +23,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.dto.PointCalculationDto;
 import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
+import no.sikt.nva.nvi.common.model.Customer;
 import no.sikt.nva.nvi.common.model.InstanceType;
+import no.sikt.nva.nvi.common.model.Sector;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints.CreatorAffiliationPoints;
 import no.sikt.nva.nvi.events.evaluator.model.NviCreator;
@@ -41,13 +43,15 @@ public class PointCalculator {
   private final int creatorShareCount;
   private final Collection<VerifiedNviCreator> verifiedNviCreators;
   private final Collection<UnverifiedNviCreator> unverifiedNviCreators;
+  private final Map<URI, Customer> customerMap;
 
   public PointCalculator(
       PublicationChannelDto publicationChannel,
       InstanceType instanceType,
       Collection<NviCreator> nviCreators,
       boolean isInternationalCollaboration,
-      int creatorShareCount) {
+      int creatorShareCount,
+      Map<URI, Customer> customers) {
     this.publicationChannel = publicationChannel;
     this.instanceType = instanceType;
     this.verifiedNviCreators = getVerifiedCreators(nviCreators);
@@ -56,6 +60,7 @@ public class PointCalculator {
     this.collaborationFactor = getInternationalCollaborationFactor(isInternationalCollaboration);
     this.basePoints = getInstanceTypeAndLevelPoints(instanceType, publicationChannel);
     this.creatorShareCount = creatorShareCount;
+    this.customerMap = customers;
   }
 
   public PointCalculationDto calculatePoints() {
@@ -138,8 +143,8 @@ public class PointCalculator {
     var institutionContributorFraction = getInstitutionContributorFraction(creatorCount);
     var institutionPoints = executeNviFormula(institutionContributorFraction);
     var creatorPoints = calculateAffiliationPoints(institutionCreatorCount, institutionPoints);
-
-    return new InstitutionPoints(institution, institutionPoints, creatorPoints);
+    var sector = Sector.fromString(customerMap.get(institution).sector()).orElse(Sector.UNKNOWN);
+    return new InstitutionPoints(institution, institutionPoints, sector, creatorPoints);
   }
 
   private BigDecimal getInstitutionContributorFraction(Long institutionCreatorCount) {

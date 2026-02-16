@@ -1,40 +1,51 @@
 package no.sikt.nva.nvi.common.db;
 
+import static java.util.Collections.emptyList;
 import static java.util.Objects.nonNull;
+import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.EXPANDED_RESOURCES_BUCKET;
 import static no.sikt.nva.nvi.common.SampleExpandedPublicationFactory.defaultExpandedPublicationFactory;
+import static no.sikt.nva.nvi.common.db.DbApprovalStatusFixtures.randomApprovalDao;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidate;
-import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidateBuilder;
+import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidateWithYear;
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
+import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationId;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
-import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 
 import java.net.URI;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCandidate;
-import no.sikt.nva.nvi.common.db.model.DbPublicationDate;
 import nva.commons.core.paths.UriWrapper;
 
 public class CandidateDaoFixtures {
   private static final String UUID_SEPARATOR = "-";
 
   public static CandidateDao randomApplicableCandidateDao() {
-    return new CandidateDao(
-        UUID.randomUUID(), randomCandidate(), UUID.randomUUID().toString(), randomYear());
+    return CandidateDao.builder()
+        .identifier(randomUUID())
+        .candidate(randomCandidate())
+        .version(randomUUID().toString())
+        .periodYear(randomYear())
+        .build();
   }
 
   public static List<CandidateDao> createNumberOfCandidatesForYear(
-      String year, int number, TestScenario scenario) {
+      String year, int candidateCount, TestScenario scenario) {
+    setupOpenPeriod(scenario, year);
     var candidates =
-        IntStream.range(0, number)
-            .mapToObj(i -> DbCandidateFixtures.randomCandidateWithYear(year))
-            .map(candidate -> createCandidateDao(scenario.getCandidateRepository(), candidate))
+        Stream.generate(() -> randomCandidateWithYear(randomOrganizationId(), year))
+            .limit(candidateCount)
+            .map(CandidateDaoFixtures::createCandidateDao)
             .toList();
+
+    var candidateRepository = scenario.getCandidateRepository();
     for (var candidate : candidates) {
+      candidateRepository.create(candidate, emptyList());
       createMatchingPublicationInS3(candidate, scenario);
     }
     return candidates;
@@ -42,22 +53,30 @@ public class CandidateDaoFixtures {
 
   private static void createMatchingPublicationInS3(
       CandidateDao candidateDao, TestScenario scenario) {
+    var publicationDetails = candidateDao.candidate().publicationDetails();
     var publication =
-        defaultExpandedPublicationFactory(scenario)
+        defaultExpandedPublicationFactory()
             .getExpandedPublicationBuilder()
-            .withId(candidateDao.candidate().publicationId())
-            .withIdentifier(UUID.fromString(candidateDao.candidate().publicationIdentifier()))
+            .withId(publicationDetails.id())
+            .withIdentifier(UUID.fromString(publicationDetails.identifier()))
             .build();
     scenario.setupExpandedPublicationInS3(publication);
   }
 
-  public static CandidateDao createCandidateDao(
+  public static UUID createCandidateInRepository(
       CandidateRepository repository, DbCandidate candidate) {
-    return repository.create(candidate, List.of());
+    var candidateDao = createCandidateDao(candidate);
+    repository.create(candidateDao, emptyList());
+    return candidateDao.identifier();
   }
 
   public static CandidateDao createCandidateDao(DbCandidate candidate) {
-    return CandidateDao.builder().identifier(UUID.randomUUID()).candidate(candidate).build();
+    var periodYear = candidate.getPublicationDate().year();
+    return CandidateDao.builder()
+        .identifier(randomUUID())
+        .candidate(candidate)
+        .periodYear(periodYear)
+        .build();
   }
 
   public static List<CandidateDao> sortByIdentifier(List<CandidateDao> candidates, Integer limit) {
@@ -77,13 +96,7 @@ public class CandidateDaoFixtures {
    */
   @Deprecated
   public static CandidateDao setupReportedCandidate(CandidateRepository repository, String year) {
-    var institutionId = randomUri();
-    return repository.create(
-        randomCandidateBuilder(true, institutionId)
-            .publicationDate(DbPublicationDate.builder().year(year).build())
-            .reportStatus(ReportStatus.REPORTED)
-            .build(),
-        List.of(DbApprovalStatusFixtures.randomApproval(institutionId)));
+    return setupReportedCandidate(repository, year, randomOrganizationId());
   }
 
   /*
@@ -92,12 +105,15 @@ public class CandidateDaoFixtures {
   @Deprecated
   public static CandidateDao setupReportedCandidate(
       CandidateRepository repository, String year, URI organizationId) {
-    return repository.create(
-        randomCandidateBuilder(true, organizationId)
-            .publicationDate(DbPublicationDate.builder().year(year).build())
+    var dbCandidate =
+        randomCandidateWithYear(organizationId, year)
+            .copy()
             .reportStatus(ReportStatus.REPORTED)
-            .build(),
-        List.of(DbApprovalStatusFixtures.randomApproval(organizationId)));
+            .build();
+    var candidateDao = createCandidateDao(dbCandidate);
+    var approvals = List.of(randomApprovalDao(candidateDao.identifier(), organizationId));
+    repository.create(candidateDao, approvals);
+    return repository.findCandidateById(candidateDao.identifier()).orElseThrow();
   }
 
   public static Map<String, String> getYearIndexStartMarker(CandidateDao dao) {

@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.common.service.model;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.nonNull;
 import static java.util.function.Predicate.not;
+import static no.sikt.nva.nvi.common.utils.CollectionUtils.copyOfNullable;
 
 import java.net.URI;
 import java.time.Instant;
@@ -40,6 +41,11 @@ public record PublicationDetails(
     Collection<Organization> topLevelOrganizations,
     Instant modifiedDate) {
 
+  public PublicationDetails {
+    nviCreators = copyOfNullable(nviCreators);
+    topLevelOrganizations = copyOfNullable(topLevelOrganizations);
+  }
+
   public static PublicationDetails from(UpsertNviCandidateRequest upsertRequest) {
     var publicationDto = upsertRequest.publicationDetails();
     var publicationChannel = PublicationChannel.from(upsertRequest.pointCalculation().channel());
@@ -72,6 +78,25 @@ public record PublicationDetails(
     return new Builder();
   }
 
+  public Builder copy() {
+    return new Builder()
+        .withId(publicationId)
+        .withPublicationBucketUri(publicationBucketUri)
+        .withIdentifier(publicationIdentifier)
+        .withTitle(title)
+        .withStatus(status)
+        .withLanguage(language)
+        .withAbstract(abstractText)
+        .withPageCount(pageCount)
+        .withPublicationChannel(publicationChannel)
+        .withPublicationDate(publicationDate)
+        .withIsApplicable(isApplicable)
+        .withNviCreators(nviCreators)
+        .withCreatorCount(creatorCount)
+        .withTopLevelOrganizations(topLevelOrganizations)
+        .withModifiedDate(modifiedDate);
+  }
+
   public static PublicationDetails from(CandidateDao candidateDao) {
     var dbCandidate = candidateDao.candidate();
     var dbDetails = dbCandidate.publicationDetails();
@@ -81,20 +106,21 @@ public record PublicationDetails(
         dbCandidate.creators().stream()
             .map(creator -> NviCreator.from(creator, topLevelOrganizations))
             .toList();
+    var dbChannel = dbCandidate.pointCalculation().publicationChannel();
     var builder =
         builder()
-            .withId(dbCandidate.publicationId())
-            .withPublicationBucketUri(dbCandidate.publicationBucketUri())
+            .withId(candidateDao.publicationId())
+            .withPublicationBucketUri(dbDetails.publicationBucketUri())
             .withPublicationDate(PublicationDate.from(dbCandidate.getPublicationDate()))
             .withIsApplicable(dbCandidate.applicable())
-            .withPublicationChannel(PublicationChannel.from(candidateDao))
+            .withPublicationChannel(PublicationChannel.from(dbChannel))
             .withNviCreators(nviCreators)
             .withTopLevelOrganizations(topLevelOrganizations);
 
     if (nonNull(dbDetails)) {
       return getPublicationDetailsWithMigratedFields(dbDetails, builder);
     }
-    return builder().build();
+    return builder.build();
   }
 
   public DbPublicationDetails toDbPublication() {
@@ -201,9 +227,9 @@ public record PublicationDetails(
     private PublicationDate publicationDate;
     private boolean isApplicable;
     private PublicationChannel publicationChannel;
-    private List<NviCreator> nviCreators = emptyList();
+    private Collection<NviCreator> nviCreators;
     private int creatorCount;
-    private List<Organization> topLevelOrganizations = emptyList();
+    private Collection<Organization> topLevelOrganizations;
     private Instant modifiedDate;
 
     private Builder() {}
@@ -220,6 +246,11 @@ public record PublicationDetails(
 
     public Builder withIdentifier(String identifier) {
       this.identifier = new SortableIdentifier(identifier);
+      return this;
+    }
+
+    public Builder withIdentifier(SortableIdentifier identifier) {
+      this.identifier = identifier;
       return this;
     }
 
@@ -264,7 +295,7 @@ public record PublicationDetails(
     }
 
     public Builder withNviCreators(Collection<NviCreator> nviCreators) {
-      this.nviCreators = List.copyOf(nviCreators);
+      this.nviCreators = nviCreators;
       return this;
     }
 
@@ -274,7 +305,7 @@ public record PublicationDetails(
     }
 
     public Builder withTopLevelOrganizations(Collection<Organization> topLevelOrganizations) {
-      this.topLevelOrganizations = List.copyOf(topLevelOrganizations);
+      this.topLevelOrganizations = topLevelOrganizations;
       return this;
     }
 

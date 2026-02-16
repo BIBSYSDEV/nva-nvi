@@ -74,7 +74,18 @@
                   "sameAs" : "https://kanalregister-test.hkdir.no/publiseringskanaler/info/tidsskrift?pid=65CF2101-E6CE-437F-9DDD-07FC3DB6B119",
                   "scientificValue" : "LevelOne",
                   "year" : "2017"
-                }
+                },
+                "isbnList": [
+                  "isbn_ignored_for_validation"
+                ],
+                "additionalIdentifiers" : [ {
+                  "type" : "AdditionalIdentifier",
+                  "sourceName" : "ISBN",
+                  "value" : "additional_identifier_isbn_ignored_for_validation"
+                } ]
+              },
+              "publicationInstance" : {
+                "type": "BookAnthology"
               }
             }
           }

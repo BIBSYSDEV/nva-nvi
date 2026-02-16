@@ -1,9 +1,13 @@
 package no.sikt.nva.nvi.common;
 
+import java.net.URI;
+import nva.commons.core.paths.UriWrapper;
+
 /**
  * Utility to set up fake environment variables for testing purposes. Keep this in sync with the
  * actual environment variables defined in template.yaml.
  */
+@SuppressWarnings("PMD.ExcessivePublicCount")
 public enum EnvironmentFixtures {
   // Global environment variables
   API_HOST("api.fake.nva.aws.unit.no"),
@@ -27,6 +31,7 @@ public enum EnvironmentFixtures {
 
   // Other handler-specific environment variables
   ALLOWED_ORIGIN("*"),
+  BATCH_JOB_QUEUE_URL("http://localhost:3000/batch-job-queue"),
   CANDIDATE_QUEUE_URL("http://localhost:3000/candidate-queue"),
   COGNITO_HOST("not-actually-in-use-but-exists-in-template"),
   DB_EVENTS_QUEUE_URL("http://localhost:3000/db-events-queue"),
@@ -35,7 +40,10 @@ public enum EnvironmentFixtures {
   INDEX_DLQ("http://localhost:3000/index-dlq"),
   UPSERT_CANDIDATE_DLQ_QUEUE_URL("http://localhost:3000/upsert-candidate-dlq"),
   EVENT_BUS_NAME("bus-name"),
-  BATCH_SCAN_RECOVERY_QUEUE("recover-queue");
+  BATCH_SCAN_RECOVERY_QUEUE("recover-queue"),
+  PERSISTED_RESOURCE_QUEUE_URL("persisted-resource"),
+  PROCESSING_ENABLED("true"),
+  EVALUATION_DLQ_URL("evaluation-dlq");
 
   private final String value;
 
@@ -51,6 +59,10 @@ public enum EnvironmentFixtures {
     return value;
   }
 
+  public static FakeEnvironment getGlobalEnvironment() {
+    return getDefaultEnvironmentBuilder().build();
+  }
+
   public static FakeEnvironment.Builder getDefaultEnvironmentBuilder() {
     return FakeEnvironment.builder()
         .with(API_HOST)
@@ -64,10 +76,19 @@ public enum EnvironmentFixtures {
         .with(SEARCH_INFRASTRUCTURE_AUTH_URI);
   }
 
+  public static FakeEnvironment getHandlerEnvironment(EnvironmentFixtures... environmentVariables) {
+    var builder = getDefaultEnvironmentBuilder();
+    for (var variable : environmentVariables) {
+      builder.with(variable);
+    }
+    return builder.build();
+  }
+
   public static FakeEnvironment getEvaluateNviCandidateHandlerEnvironment() {
     return getDefaultEnvironmentBuilder()
         .with(EXPANDED_RESOURCES_BUCKET)
         .with(CANDIDATE_QUEUE_URL)
+        .with(EVALUATION_DLQ_URL)
         .build();
   }
 
@@ -83,6 +104,22 @@ public enum EnvironmentFixtures {
     return getDefaultEnvironmentBuilder()
         .with(EXPANDED_RESOURCES_BUCKET)
         .with(BATCH_SCAN_RECOVERY_QUEUE)
+        .build();
+  }
+
+  public static FakeEnvironment getRedriveUpsertDlqHandlerEnvironment() {
+    return getDefaultEnvironmentBuilder()
+        .with(EXPANDED_RESOURCES_BUCKET)
+        .with(UPSERT_CANDIDATE_DLQ_QUEUE_URL)
+        .with(PERSISTED_RESOURCE_QUEUE_URL)
+        .build();
+  }
+
+  public static FakeEnvironment getStartBatchJobHandlerEnvironment() {
+    return getDefaultEnvironmentBuilder()
+        .with(BATCH_JOB_QUEUE_URL)
+        .with(EVENT_BUS_NAME)
+        .with(PROCESSING_ENABLED)
         .build();
   }
 
@@ -122,5 +159,15 @@ public enum EnvironmentFixtures {
 
   public static FakeEnvironment getSearchNviCandidatesHandlerEnvironment() {
     return getDefaultEnvironmentBuilder().with(ALLOWED_ORIGIN).with(COGNITO_HOST).build();
+  }
+
+  public static FakeEnvironment getFetchInstitutionStatusAggregationHandlerEnvironment() {
+    return getDefaultEnvironmentBuilder().with(ALLOWED_ORIGIN).build();
+  }
+
+  public static URI getCandidateContextUri() {
+    return UriWrapper.fromHost(API_HOST.getValue())
+        .addChild(CUSTOM_DOMAIN_BASE_PATH.getValue(), "context")
+        .getUri();
   }
 }

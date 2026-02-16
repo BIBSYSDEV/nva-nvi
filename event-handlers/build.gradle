@@ -1,12 +1,11 @@
 plugins {
     id 'nva.nvi.java-conventions'
-    id 'java-test-fixtures'
 }
 
 dependencies {
-    implementation libs.aws.sdk2.sns
-    implementation libs.aws.sdk2.sqs
-    implementation libs.jackson.csv
+    implementation nvaCatalog.aws.sdk2.sns
+    implementation nvaCatalog.aws.sdk2.sqs
+    implementation nvaCatalog.jackson.dataformat.csv
     implementation nvaCatalog.aws.java.sdk.core
     implementation nvaCatalog.aws.lambda.core
     implementation nvaCatalog.aws.lambda.events
@@ -21,15 +20,17 @@ dependencies {
     implementation nvaCatalog.com.auth0.jwt
     implementation nvaCatalog.jackson.core
     implementation nvaCatalog.jackson.databind
+    implementation nvaLibs.apigateway
     implementation nvaLibs.auth
     implementation nvaLibs.core
+    implementation nvaLibs.clients
     implementation nvaLibs.eventhandlers
     implementation nvaLibs.json
     implementation nvaLibs.s3
     implementation nvaLibs.secrets
     implementation project(':nvi-commons')
     testFixturesAnnotationProcessor nvaCatalog.errorprone
-    testFixturesImplementation libs.aws.sdk2.sns
+    testFixturesImplementation nvaCatalog.aws.sdk2.sns
     testFixturesImplementation nvaCatalog.aws.lambda.core
     testFixturesImplementation nvaCatalog.aws.lambda.events
     testFixturesImplementation nvaCatalog.bundles.testing.cucumber
@@ -38,16 +39,18 @@ dependencies {
     testFixturesImplementation nvaCatalog.hamcrest
     testFixturesImplementation nvaCatalog.mockito.core
     testFixturesImplementation nvaLibs.core
+    testFixturesImplementation nvaLibs.json
     testFixturesImplementation nvaLibs.testutils
     testFixturesImplementation project(':nvi-test')
     testFixturesImplementation(testFixtures(project(":nvi-commons")))
-    testImplementation libs.dynamodDbLocal
+    testImplementation nvaCatalog.aws.sdk2.dynamodblocal
     testImplementation nvaCatalog.assertj.core
     testImplementation nvaCatalog.bundles.testing.cucumber
     testImplementation nvaCatalog.bundles.testing.junit
     testImplementation nvaCatalog.hamcrest
     testImplementation nvaCatalog.jackson.datatype.jsr310
     testImplementation nvaCatalog.mockito.core
+    testImplementation nvaLibs.identifiers
     testImplementation nvaLibs.logutils
     testImplementation nvaLibs.testutils
     testImplementation project(':nvi-test')
@@ -69,6 +72,7 @@ test {
     environment("PERSISTED_RESOURCE_QUEUE_URL", "PersistedResourceQueue")
     environment("DB_EVENTS_QUEUE_URL", "DbEventsQueue")
     environment("INDEX_DLQ", "IndexDlq")
+    environment("EVALUATION_DLQ_URL", "EvaluationDlq")
     environment("EXPANDED_RESOURCES_BUCKET", "ignoredBucket")
     environment("BACKEND_CLIENT_AUTH_URL", "My url")
     environment("BACKEND_CLIENT_SECRET_NAME", "My secret name")

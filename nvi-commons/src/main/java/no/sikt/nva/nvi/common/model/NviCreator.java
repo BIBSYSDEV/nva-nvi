@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.common.model;
 
-import static java.util.Collections.emptyList;
 import static java.util.Objects.nonNull;
+import static no.sikt.nva.nvi.common.utils.CollectionUtils.copyOfNullable;
 import static no.sikt.nva.nvi.common.utils.Validator.shouldNotBeNull;
 import static nva.commons.core.StringUtils.isBlank;
 
@@ -9,7 +9,6 @@ import java.net.URI;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.Predicate;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbCreator;
@@ -50,7 +49,8 @@ public record NviCreator(
   private static final Logger LOGGER = LoggerFactory.getLogger(NviCreator.class);
 
   public NviCreator {
-    nviAffiliations = Optional.ofNullable(nviAffiliations).orElse(emptyList());
+    nviAffiliations = copyOfNullable(nviAffiliations);
+    topLevelNviOrganizations = copyOfNullable(topLevelNviOrganizations);
     if (isBlank(name)) {
       shouldNotBeNull(id, "Both 'id' and 'name' is null, one of these fields must be set");
     }

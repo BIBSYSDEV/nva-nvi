@@ -17,12 +17,12 @@ public class BaseStrategy {
   }
 
   protected boolean hasCreatorFromUserOrganization() {
-    return candidate.getPublicationDetails().nviCreators().stream()
+    return candidate.publicationDetails().nviCreators().stream()
         .anyMatch(isAffiliatedWithTopLevelOrganization(userInstance.topLevelOrganizationId()));
   }
 
   protected boolean hasUnverifiedCreatorFromUserOrganization() {
-    return candidate.getPublicationDetails().nviCreators().stream()
+    return candidate.publicationDetails().nviCreators().stream()
         .filter(not(NviCreator::isVerified))
         .anyMatch(isAffiliatedWithTopLevelOrganization(userInstance.topLevelOrganizationId()));
   }

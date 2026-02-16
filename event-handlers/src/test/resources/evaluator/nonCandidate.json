@@ -188,6 +188,7 @@
       }
     },
     "id" : "https://api.dev.nva.aws.unit.no/publication/0187a2a4a349-0a3faca9-b627-4edb-bed2-b7a98d1af180",
+    "identifier" : "0187a2a4a349-0a3faca9-b627-4edb-bed2-b7a98d1af180",
     "associatedArtifacts" : [ {
       "id" : "https://www.adressa.no/nyheter/trondelag/i/66j00e/en-bedrift-i-sorg",
       "type" : "AssociatedLink"

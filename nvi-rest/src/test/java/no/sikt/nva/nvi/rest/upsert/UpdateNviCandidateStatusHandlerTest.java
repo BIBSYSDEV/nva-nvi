@@ -22,16 +22,21 @@ import java.net.URI;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
+import no.sikt.nva.nvi.common.FakeEnvironment;
+import no.sikt.nva.nvi.common.exceptions.TransactionException;
+import no.sikt.nva.nvi.common.service.ApprovalServiceThrowingTransactionExceptions;
 import no.sikt.nva.nvi.common.service.dto.ApprovalStatusDto;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.validator.FakeViewingScopeValidator;
 import no.sikt.nva.nvi.rest.BaseCandidateRestHandlerTest;
+import no.sikt.nva.nvi.rest.EnvironmentFixtures;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.GatewayResponse;
+import org.assertj.core.api.Assertions;
 import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -63,10 +68,12 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
   @Override
   protected ApiGatewayHandler<NviStatusRequest, CandidateDto> createHandler() {
     return new UpdateNviCandidateStatusHandler(
-        scenario.getCandidateRepository(),
-        scenario.getPeriodRepository(),
-        mockViewingScopeValidator,
-        ENVIRONMENT);
+        candidateService, approvalService, mockViewingScopeValidator, environment);
+  }
+
+  @Override
+  protected FakeEnvironment getHandlerEnvironment() {
+    return EnvironmentFixtures.UPDATE_NVI_CANDIDATE_STATUS_HANDLER;
   }
 
   @BeforeEach
@@ -98,13 +105,13 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
   void shouldReturnUnauthorizedWhenCandidateIsNotInUsersViewingScope() throws IOException {
     var candidate = setupValidCandidate();
     var request =
-        createRequest(candidate.getIdentifier(), topLevelOrganizationId, ApprovalStatus.APPROVED);
+        createRequest(candidate.identifier(), topLevelOrganizationId, ApprovalStatus.APPROVED);
     handler =
         new UpdateNviCandidateStatusHandler(
-            scenario.getCandidateRepository(),
-            scenario.getPeriodRepository(),
+            scenario.getCandidateService(),
+            approvalService,
             new FakeViewingScopeValidator(false),
-            ENVIRONMENT);
+            environment);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
     assertThat(
@@ -114,9 +121,8 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
   private InputStream createRequest(
       UUID candidateIdentifier, URI institutionId, ApprovalStatus status)
       throws JsonProcessingException {
-    var requestBody =
-        new NviStatusRequest(
-            institutionId, status, ApprovalStatus.REJECTED.equals(status) ? randomString() : null);
+    var reason = status == ApprovalStatus.REJECTED ? randomString() : null;
+    var requestBody = new NviStatusRequest(institutionId, status, reason);
     return createRequest(candidateIdentifier, institutionId, requestBody);
   }
 
@@ -137,7 +143,7 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
     var otherInstitutionId = randomUri();
     var candidate = setupValidCandidate();
     var requestBody = new NviStatusRequest(topLevelOrganizationId, ApprovalStatus.PENDING, null);
-    var request = createRequest(candidate.getIdentifier(), otherInstitutionId, requestBody);
+    var request = createRequest(candidate.identifier(), otherInstitutionId, requestBody);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
@@ -146,10 +152,10 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldReturnConflictWhenUpdatingStatusAndReportingPeriodIsClosed() throws IOException {
-    setupClosedPeriod(scenario, CURRENT_YEAR);
     var candidate = setupValidCandidate();
+    setupClosedPeriod(scenario, CURRENT_YEAR);
     var request =
-        createRequest(candidate.getIdentifier(), topLevelOrganizationId, ApprovalStatus.APPROVED);
+        createRequest(candidate.identifier(), topLevelOrganizationId, ApprovalStatus.APPROVED);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
@@ -164,7 +170,7 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
   void shouldReturnConflictWhenUpdatingStatusAndSubInstitutionHasUnverifiedCreators(
       ApprovalStatus newStatus) throws IOException {
     var candidate = setupCandidateWithUnverifiedCreator();
-    var request = createRequest(candidate.getIdentifier(), topLevelOrganizationId, newStatus);
+    var request = createRequest(candidate.identifier(), topLevelOrganizationId, newStatus);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
@@ -173,10 +179,10 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
 
   @Test
   void shouldReturnConflictWhenUpdatingStatusAndNotOpenedPeriod() throws IOException {
-    setupFuturePeriod(scenario, CURRENT_YEAR);
     var candidate = setupValidCandidate();
+    setupFuturePeriod(scenario, CURRENT_YEAR);
     var request =
-        createRequest(candidate.getIdentifier(), topLevelOrganizationId, ApprovalStatus.APPROVED);
+        createRequest(candidate.identifier(), topLevelOrganizationId, ApprovalStatus.APPROVED);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
@@ -184,9 +190,31 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
   }
 
   @Test
+  void shouldReturnConflictErrorWhenTransactionFailsDueToConflict() throws IOException {
+    var candidate = setupValidCandidate();
+    var request =
+        createRequest(candidate.identifier(), topLevelOrganizationId, ApprovalStatus.APPROVED);
+
+    var failingHandler = setupHandlerThatFailsWithTransactionConflict();
+    var response = handleRequestExpectingProblem(failingHandler, request);
+
+    Assertions.assertThat(response.getStatus().getStatusCode())
+        .isEqualTo(HttpURLConnection.HTTP_CONFLICT);
+    Assertions.assertThat(response.getDetail()).isEqualTo(TransactionException.USER_MESSAGE);
+  }
+
+  private UpdateNviCandidateStatusHandler setupHandlerThatFailsWithTransactionConflict() {
+    return new UpdateNviCandidateStatusHandler(
+        candidateService,
+        new ApprovalServiceThrowingTransactionExceptions(scenario.getCandidateRepository()),
+        mockViewingScopeValidator,
+        environment);
+  }
+
+  @Test
   void shouldReturnBadRequestIfRejectionDoesNotContainReason() throws IOException {
     var candidate = setupValidCandidate();
-    var request = createRequestWithoutReason(candidate.getIdentifier(), topLevelOrganizationId);
+    var request = createRequestWithoutReason(candidate.identifier(), topLevelOrganizationId);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
@@ -205,8 +233,8 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
   void shouldUpdateApprovalStatus(ApprovalStatus oldStatus, ApprovalStatus newStatus)
       throws IOException {
     var candidate = setupValidCandidate();
-    scenario.updateApprovalStatus(candidate, oldStatus, topLevelOrganizationId);
-    var request = createRequest(candidate.getIdentifier(), topLevelOrganizationId, newStatus);
+    scenario.updateApprovalStatus(candidate.identifier(), oldStatus, topLevelOrganizationId);
+    var request = createRequest(candidate.identifier(), topLevelOrganizationId, newStatus);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
     var candidateResponse = response.getBodyObject(CandidateDto.class);
@@ -232,9 +260,9 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
   void shouldResetFinalizedValuesWhenUpdatingStatusToPending(ApprovalStatus oldStatus)
       throws IOException {
     var candidate = setupValidCandidate();
-    scenario.updateApprovalStatus(candidate, oldStatus, topLevelOrganizationId);
+    scenario.updateApprovalStatus(candidate.identifier(), oldStatus, topLevelOrganizationId);
     var newStatus = ApprovalStatus.PENDING;
-    var request = createRequest(candidate.getIdentifier(), topLevelOrganizationId, newStatus);
+    var request = createRequest(candidate.identifier(), topLevelOrganizationId, newStatus);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
     var candidateResponse = response.getBodyObject(CandidateDto.class);
@@ -250,13 +278,12 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
       names = {STATUS_PENDING, STATUS_APPROVED})
   void shouldUpdateApprovalStatusToRejectedWithReason(ApprovalStatus oldStatus) throws IOException {
     var candidate = setupValidCandidate();
-    scenario.updateApprovalStatus(candidate, oldStatus, topLevelOrganizationId);
+    scenario.updateApprovalStatus(candidate.identifier(), oldStatus, topLevelOrganizationId);
     var rejectionReason = randomString();
     var requestBody =
         new NviStatusRequest(topLevelOrganizationId, ApprovalStatus.REJECTED, rejectionReason);
     var request =
-        createRequest(
-            candidate.getIdentifier(), topLevelOrganizationId, requestBody, randomString());
+        createRequest(candidate.identifier(), topLevelOrganizationId, requestBody, randomString());
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
     var candidateResponse = response.getBodyObject(CandidateDto.class);
@@ -285,10 +312,11 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
   void shouldRemoveReasonWhenUpdatingStatusFromRejected(ApprovalStatus newStatus)
       throws IOException {
     var candidate = setupValidCandidate();
-    scenario.updateApprovalStatus(candidate, ApprovalStatus.REJECTED, topLevelOrganizationId);
+    scenario.updateApprovalStatus(
+        candidate.identifier(), ApprovalStatus.REJECTED, topLevelOrganizationId);
     var request =
         createRequest(
-            candidate.getIdentifier(),
+            candidate.identifier(),
             topLevelOrganizationId,
             ApprovalStatus.parse(newStatus.getValue()));
     handler.handleRequest(request, output, CONTEXT);
@@ -306,7 +334,7 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
     var assignee = randomString();
     var requestBody = new NviStatusRequest(topLevelOrganizationId, ApprovalStatus.APPROVED, null);
     var request =
-        createRequest(candidate.getIdentifier(), topLevelOrganizationId, requestBody, assignee);
+        createRequest(candidate.identifier(), topLevelOrganizationId, requestBody, assignee);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
     var candidateResponse = response.getBodyObject(CandidateDto.class);
@@ -320,7 +348,7 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
     var assignee = randomString();
     var requestBody = new NviStatusRequest(topLevelOrganizationId, ApprovalStatus.PENDING, null);
     var request =
-        createRequest(candidate.getIdentifier(), topLevelOrganizationId, requestBody, assignee);
+        createRequest(candidate.identifier(), topLevelOrganizationId, requestBody, assignee);
 
     var candidateDto = handleRequest(request);
 

@@ -49,6 +49,8 @@ import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICA
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLISHED_YEAR;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.REPORTING_YEAR;
 import static no.sikt.nva.nvi.index.query.SearchAggregation.TOTAL_COUNT_AGGREGATION_AGG;
+import static no.sikt.nva.nvi.test.TestConstants.THIS_YEAR;
+import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -74,13 +76,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
-import java.time.Year;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.index.apigateway.utils.ExcelWorkbookUtil;
@@ -101,17 +101,15 @@ import nva.commons.apigateway.AccessRight;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
 import nva.commons.logutils.LogUtils;
-import org.apache.hc.core5.http.ProtocolVersion;
-import org.apache.hc.core5.http.message.StatusLine;
-import org.apache.http.HttpVersion;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.opensearch.client.Response;
-import org.opensearch.client.ResponseException;
+import org.opensearch.client.opensearch._types.ErrorCause;
+import org.opensearch.client.opensearch._types.ErrorResponse;
+import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.zalando.problem.Problem;
@@ -121,20 +119,18 @@ import org.zalando.problem.Problem;
 class FetchInstitutionReportHandlerTest {
 
   private static final String YEAR = "year";
-  private static final int CURRENT_YEAR = Year.now().getValue();
   private static final Context CONTEXT = mock(Context.class);
   protected static final Environment ENVIRONMENT = new Environment();
   private static final int PAGE_SIZE =
       Integer.parseInt(new Environment().readEnv("INSTITUTION_REPORT_SEARCH_PAGE_SIZE"));
   private static final String NESTED_FIELD_CONTRIBUTORS = "publicationDetails.contributors";
-  private static final int HTTP_REQUEST_ENTITY_TOO_LARGE = 413;
   private static final String EXPECTED_SORT_ORDER = SortOrder.Asc.jsonValue();
   private static SearchClient<NviCandidateIndexDocument> openSearchClient;
   private ByteArrayOutputStream output;
   private FetchInstitutionReportHandler handler;
 
   @BeforeEach
-  public void setUp() {
+  void setUp() {
     output = new ByteArrayOutputStream();
     openSearchClient = mock(OpenSearchClient.class);
     handler = new FetchInstitutionReportHandler(openSearchClient, ENVIRONMENT);
@@ -144,9 +140,7 @@ class FetchInstitutionReportHandlerTest {
   void shouldReturnUnauthorizedWhenUserDoesNotHaveSufficientAccessRight() throws IOException {
     var institutionId = randomUri();
     var request =
-        createRequest(
-                institutionId, AccessRight.MANAGE_DOI, Map.of(YEAR, String.valueOf(CURRENT_YEAR)))
-            .build();
+        createRequest(institutionId, AccessRight.MANAGE_DOI, Map.of(YEAR, THIS_YEAR)).build();
     handler.handleRequest(request, output, CONTEXT);
     var response = fromOutputStream(output, Problem.class);
 
@@ -266,7 +260,7 @@ class FetchInstitutionReportHandlerTest {
         Base64.getDecoder().decode(fromOutputStream(output, String.class).getBody());
     var actual = fromInputStream(new ByteArrayInputStream(decodedResponse));
 
-    assertEquals(institutionPoints.creatorAffiliationPoints(), emptyList());
+    assertEquals(emptyList(), institutionPoints.creatorAffiliationPoints());
     assertEquals(expected, actual);
   }
 
@@ -403,8 +397,8 @@ class FetchInstitutionReportHandlerTest {
     var topLevelCristinOrg = randomCristinOrgUri();
     var numberOfDocuments = 6;
     var indexDocuments =
-        IntStream.range(0, numberOfDocuments)
-            .mapToObj(i -> randomIndexDocumentWith(CURRENT_YEAR, topLevelCristinOrg))
+        Stream.generate(() -> randomIndexDocumentWith(CURRENT_YEAR, topLevelCristinOrg))
+            .limit(numberOfDocuments)
             .toList();
     mockOpenSearchResponseThrowingOnSecondRequest(indexDocuments, topLevelCristinOrg);
     var expected = getExpectedReport(indexDocuments, topLevelCristinOrg);
@@ -439,10 +433,10 @@ class FetchInstitutionReportHandlerTest {
         .thenReturn(
             createSearchResponseWithTotal(
                 indexDocuments.stream().limit(PAGE_SIZE).toList(), indexDocuments.size()));
-    var responseException = mockResponseException();
+    var openSearchException = createRequestEntityTooLargeException();
     var secondSearchRequest =
         buildRequest(topLevelCristinOrg, searchResultParams(PAGE_SIZE, PAGE_SIZE)).build();
-    when(openSearchClient.search(eq(secondSearchRequest))).thenThrow(responseException);
+    when(openSearchClient.search(eq(secondSearchRequest))).thenThrow(openSearchException);
     var secondSearchRequestWithReducedPageSize =
         buildRequest(topLevelCristinOrg, searchResultParams(PAGE_SIZE / 2, PAGE_SIZE)).build();
     when(openSearchClient.search(eq(secondSearchRequestWithReducedPageSize)))
@@ -459,20 +453,14 @@ class FetchInstitutionReportHandlerTest {
         .build();
   }
 
-  private static ResponseException mockResponseException() {
-    var httpVersion = HttpVersion.HTTP_1_1;
-    var statusLine =
-        new StatusLine(
-            new ProtocolVersion(
-                httpVersion.getProtocol(), httpVersion.getMajor(), httpVersion.getMinor()),
-            HTTP_REQUEST_ENTITY_TOO_LARGE,
-            "null");
-
-    var response = mock(Response.class);
-    when(response.getStatusLine()).thenReturn(statusLine);
-    var responseException = mock(ResponseException.class);
-    when(responseException.getResponse()).thenReturn(response);
-    return responseException;
+  private static OpenSearchException createRequestEntityTooLargeException() {
+    var errorCause = new ErrorCause.Builder().type("request_entity_too_large").reason("").build();
+    var errorResponse =
+        new ErrorResponse.Builder()
+            .status(HttpURLConnection.HTTP_ENTITY_TOO_LARGE)
+            .error(errorCause)
+            .build();
+    return new OpenSearchException(errorResponse);
   }
 
   private static List<NviCandidateIndexDocument> mockCandidateWithoutApprovals(
@@ -533,7 +521,7 @@ class FetchInstitutionReportHandlerTest {
   private static CandidateSearchParameters.Builder buildRequest(
       URI topLevelCristinOrg, SearchResultParameters resultParameters) {
     return CandidateSearchParameters.builder()
-        .withYear(String.valueOf(CURRENT_YEAR))
+        .withYear(THIS_YEAR)
         .withTopLevelCristinOrg(topLevelCristinOrg)
         .withAffiliations(List.of(extractIdentifier(topLevelCristinOrg)))
         .withSearchResultParameters(resultParameters)
@@ -589,8 +577,7 @@ class FetchInstitutionReportHandlerTest {
 
   private static InputStream requestWithMediaType(String mediaType, URI topLevelCristinOrg)
       throws JsonProcessingException {
-    return createRequest(
-            topLevelCristinOrg, MANAGE_NVI_CANDIDATES, Map.of(YEAR, String.valueOf(CURRENT_YEAR)))
+    return createRequest(topLevelCristinOrg, MANAGE_NVI_CANDIDATES, Map.of(YEAR, THIS_YEAR))
         .withHeaders(Map.of(ACCEPT, mediaType))
         .build();
   }

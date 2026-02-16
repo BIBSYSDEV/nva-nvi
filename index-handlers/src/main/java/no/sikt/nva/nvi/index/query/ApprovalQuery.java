@@ -31,12 +31,16 @@ public record ApprovalQuery(
     String topLevelOrganization,
     String assignee,
     boolean excludeUnassigned,
-    Set<ApprovalStatus> allowedStatuses) {
+    Set<ApprovalStatus> allowedStatuses,
+    List<String> affiliationIdentifiers) {
 
   public Optional<Query> toQuery() {
     var subQueries = getSubQueries();
     if (subQueries.isEmpty()) {
-      return Optional.empty();
+      if (affiliationIdentifiers.isEmpty()) {
+        return Optional.empty();
+      }
+      return Optional.of(nestedQuery(APPROVALS, approvalBelongsTo(topLevelOrganization)));
     }
     return Optional.of(
         nestedQuery(

@@ -4,10 +4,9 @@ import static no.sikt.nva.nvi.common.QueueServiceTestUtils.createEvent;
 import static no.sikt.nva.nvi.common.QueueServiceTestUtils.createEventWithOneInvalidRecord;
 import static no.sikt.nva.nvi.common.QueueServiceTestUtils.createEventWithOneRecordMissingIdentifier;
 import static no.sikt.nva.nvi.common.QueueServiceTestUtils.createEventWithOnlyOneRecordMissingIdentifier;
-import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidate;
+import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.randomApplicableCandidateDao;
 import static no.sikt.nva.nvi.index.aws.S3StorageWriter.GZIP_ENDING;
 import static no.sikt.nva.nvi.index.aws.S3StorageWriter.NVI_CANDIDATES_FOLDER;
-import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static nva.commons.core.attempt.Try.attempt;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -53,7 +52,7 @@ class DeletePersistedIndexDocumentHandlerTest {
 
   @Test
   void shouldDeletePersistedIndexDocumentFromBucketWhenReceivingEvent() {
-    var dao = randomCandidateDao();
+    var dao = randomApplicableCandidateDao();
     setUpExistingDocumentInS3(dao);
     var event = createEvent(dao, dao, OperationType.REMOVE);
     handler.handleRequest(event, null);
@@ -63,7 +62,7 @@ class DeletePersistedIndexDocumentHandlerTest {
 
   @Test
   void shouldSendMessageToDlqWhenFailingToDeletePersistedIndexDocument() {
-    var dao = randomCandidateDao();
+    var dao = randomApplicableCandidateDao();
     var event = createEvent(dao, dao, OperationType.REMOVE);
     handler =
         new DeletePersistedIndexDocumentHandler(
@@ -76,8 +75,8 @@ class DeletePersistedIndexDocumentHandlerTest {
 
   @Test
   void shouldNotFailForWholeBatchWhenFailingToDeletePersistedIndexDocument() {
-    var daoToFail = randomCandidateDao();
-    var event = createEvent(randomCandidateDao().identifier(), daoToFail.identifier());
+    var daoToFail = randomApplicableCandidateDao();
+    var event = createEvent(randomApplicableCandidateDao().identifier(), daoToFail.identifier());
     handler =
         new DeletePersistedIndexDocumentHandler(
             new S3StorageWriter(setupFailingS3Client(daoToFail.identifier()), BUCKET_NAME),
@@ -88,14 +87,14 @@ class DeletePersistedIndexDocumentHandlerTest {
 
   @Test
   void shouldSendMessageToDlqWhenFailingToParseEvent() {
-    var eventWithOneInvalidRecord = createEventWithOneInvalidRecord(randomCandidateDao());
+    var eventWithOneInvalidRecord = createEventWithOneInvalidRecord(randomApplicableCandidateDao());
     handler.handleRequest(eventWithOneInvalidRecord, null);
     assertEquals(1, sqsClient.getSentMessages().size());
   }
 
   @Test
   void shouldNotFailForWholeBatchWhenFailingToParseOneEvent() {
-    var candidateToSucceed = randomCandidateDao();
+    var candidateToSucceed = randomApplicableCandidateDao();
     setUpExistingDocumentInS3(candidateToSucceed);
     var eventWithOneInvalidRecord = createEventWithOneInvalidRecord(candidateToSucceed);
     handler.handleRequest(eventWithOneInvalidRecord, null);
@@ -112,17 +111,12 @@ class DeletePersistedIndexDocumentHandlerTest {
 
   @Test
   void shouldNotFailForWholeBatchWhenFailingToExtractIdentifierFromRecord() {
-    var daoToSucceed = randomCandidateDao();
+    var daoToSucceed = randomApplicableCandidateDao();
     setUpExistingDocumentInS3(daoToSucceed);
     var event = createEventWithOneRecordMissingIdentifier(daoToSucceed);
     handler.handleRequest(event, null);
     assertEquals(
         0, s3Driver.listAllFiles(UnixPath.fromString(PERSISTED_NVI_CANDIDATES_FOLDER)).size());
-  }
-
-  private static CandidateDao randomCandidateDao() {
-    return new CandidateDao(
-        UUID.randomUUID(), randomCandidate(), UUID.randomUUID().toString(), randomString());
   }
 
   private static DeleteObjectRequest getDeleteObjectRequest(UUID identifier) {

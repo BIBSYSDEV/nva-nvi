@@ -3,9 +3,10 @@ plugins {
 }
 
 dependencies {
-    testImplementation libs.aws.sdk2.sns
-    testImplementation libs.aws.sdk2.sqs
-    testImplementation libs.junit.platform.suite
+    testFixturesAnnotationProcessor nvaCatalog.errorprone
+    testImplementation nvaCatalog.aws.sdk2.sns
+    testImplementation nvaCatalog.aws.sdk2.sqs
+    testImplementation nvaCatalog.junit.platform.suite
     testImplementation nvaCatalog.assertj.core
     testImplementation nvaCatalog.aws.java.sdk.core
     testImplementation nvaCatalog.aws.lambda.core
@@ -17,8 +18,10 @@ dependencies {
     testImplementation nvaCatalog.bundles.testing.junit
     testImplementation nvaCatalog.com.auth0.jwt
     testImplementation nvaCatalog.mockito.core
+    testImplementation nvaLibs.apigateway
     testImplementation nvaLibs.auth
     testImplementation nvaLibs.core
+    testImplementation nvaLibs.clients
     testImplementation nvaLibs.json
     testImplementation nvaLibs.s3
     testImplementation nvaLibs.testutils

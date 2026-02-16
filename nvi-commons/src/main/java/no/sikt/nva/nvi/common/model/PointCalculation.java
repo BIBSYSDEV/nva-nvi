@@ -1,14 +1,13 @@
 package no.sikt.nva.nvi.common.model;
 
 import static java.util.Collections.emptyList;
-import static java.util.Objects.nonNull;
+import static no.sikt.nva.nvi.common.utils.CollectionUtils.copyOfNullable;
 import static no.sikt.nva.nvi.common.utils.DecimalUtils.adjustScaleAndRoundingMode;
 import static no.sikt.nva.nvi.common.utils.Validator.hasElements;
 
 import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.List;
-import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.db.model.DbPointCalculation;
 import no.sikt.nva.nvi.common.dto.PointCalculationDto;
@@ -22,44 +21,30 @@ public record PointCalculation(
     BigDecimal collaborationFactor,
     BigDecimal basePoints,
     int creatorShareCount,
-    List<InstitutionPoints> institutionPoints,
+    Collection<InstitutionPoints> institutionPoints,
     BigDecimal totalPoints) {
+
+  public PointCalculation {
+    institutionPoints = copyOfNullable(institutionPoints);
+    collaborationFactor = adjustScaleAndRoundingMode(collaborationFactor);
+    basePoints = adjustScaleAndRoundingMode(basePoints);
+    totalPoints = adjustScaleAndRoundingMode(totalPoints);
+  }
 
   public static PointCalculation from(PointCalculationDto dto) {
     return new PointCalculation(
         dto.instanceType(),
         PublicationChannel.from(dto.channel()),
         dto.isInternationalCollaboration(),
-        adjustScaleAndRoundingMode(dto.collaborationFactor()),
-        adjustScaleAndRoundingMode(dto.basePoints()),
+        dto.collaborationFactor(),
+        dto.basePoints(),
         dto.creatorShareCount(),
         dto.institutionPoints(),
-        adjustScaleAndRoundingMode(dto.totalPoints()));
+        dto.totalPoints());
   }
 
   public static PointCalculation from(UpsertNviCandidateRequest request) {
     return from(request.pointCalculation());
-  }
-
-  /**
-   * @deprecated Temporary method while migrating data.
-   */
-  @Deprecated(since = "2025-05-05", forRemoval = true)
-  public static PointCalculation from(CandidateDao candidateDao) {
-    var dbCandidate = candidateDao.candidate();
-    var dbPointCalculation = dbCandidate.pointCalculation();
-    if (nonNull(dbPointCalculation)) {
-      return from(dbPointCalculation);
-    }
-    return new PointCalculation(
-        InstanceType.parse(dbCandidate.instanceType()),
-        PublicationChannel.from(candidateDao),
-        dbCandidate.internationalCollaboration(),
-        dbCandidate.collaborationFactor(),
-        dbCandidate.basePoints(),
-        dbCandidate.creatorShareCount(),
-        mapToInstitutionPoints(dbCandidate.points()),
-        dbCandidate.totalPoints());
   }
 
   public static PointCalculation from(DbPointCalculation dbPointCalculation) {
@@ -95,7 +80,7 @@ public record PointCalculation(
   }
 
   private static List<DbInstitutionPoints> mapToDbInstitutionPoints(
-      List<InstitutionPoints> points) {
+      Collection<InstitutionPoints> points) {
     return points.stream().map(DbInstitutionPoints::from).toList();
   }
 }

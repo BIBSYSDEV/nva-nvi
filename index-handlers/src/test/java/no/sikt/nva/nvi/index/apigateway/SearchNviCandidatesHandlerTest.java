@@ -21,14 +21,12 @@ import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PAR
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_TITLE;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
-import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.apigateway.RestRequestHandler.COMMA;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.mock;
@@ -41,7 +39,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.validator.FakeViewingScopeValidator;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
 import no.sikt.nva.nvi.index.aws.SearchClient;
@@ -232,9 +230,10 @@ class SearchNviCandidatesHandlerTest extends SearchNviCandidatesHandlerTestBase 
               }
             }
           }
-        }""";
-    assertEquals(
-        expectedNestedAggregation, objectMapper.writeValueAsString(actualNestedAggregation));
+        }
+        """;
+    assertThat(actualNestedAggregation.toString())
+        .isEqualToIgnoringWhitespace(expectedNestedAggregation);
   }
 
   @Test
@@ -386,8 +385,10 @@ class SearchNviCandidatesHandlerTest extends SearchNviCandidatesHandlerTestBase 
         .getUri();
   }
 
-  private List<NviCandidateIndexDocument> generateNumberOfIndexDocuments(int number) {
-    return IntStream.range(0, number).boxed().map(i -> singleNviCandidateIndexDocument()).toList();
+  private List<NviCandidateIndexDocument> generateNumberOfIndexDocuments(int documentCount) {
+    return Stream.generate(SearchNviCandidatesHandlerTest::singleNviCandidateIndexDocument)
+        .limit(documentCount)
+        .toList();
   }
 
   private String randomSiktSubUnit() {

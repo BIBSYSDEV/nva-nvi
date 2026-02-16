@@ -1,7 +1,6 @@
 package no.sikt.nva.nvi.index.apigateway;
 
 import static no.sikt.nva.nvi.common.utils.RequestUtil.hasAccessRight;
-import static no.sikt.nva.nvi.index.query.Aggregations.APPROVAL_ORGANIZATIONS_AGGREGATION;
 import static no.sikt.nva.nvi.index.query.SearchAggregation.ORGANIZATION_APPROVAL_STATUS_AGGREGATION;
 import static nva.commons.apigateway.AccessRight.MANAGE_NVI_CANDIDATES;
 import static nva.commons.core.attempt.Try.attempt;
@@ -9,10 +8,10 @@ import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.net.HttpURLConnection;
 import java.net.URI;
-import java.util.Map;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
+import no.sikt.nva.nvi.index.model.report.InstitutionStatusAggregationReport;
+import no.sikt.nva.nvi.index.model.report.InstitutionStatusAggregationReportMapper;
 import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
-import no.sikt.nva.nvi.index.utils.AggregationFormatter;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
@@ -21,10 +20,10 @@ import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 
-public class FetchInstitutionStatusAggregationHandler extends ApiGatewayHandler<Void, String> {
+public class FetchInstitutionStatusAggregationHandler
+    extends ApiGatewayHandler<Void, InstitutionStatusAggregationReport> {
 
   public static final String PATH_PARAM_YEAR = "year";
-  public static final String DELIMITER = "/";
   public static final String AGGREGATION =
       ORGANIZATION_APPROVAL_STATUS_AGGREGATION.getAggregationName();
   private final OpenSearchClient openSearchClient;
@@ -47,24 +46,17 @@ public class FetchInstitutionStatusAggregationHandler extends ApiGatewayHandler<
   }
 
   @Override
-  protected String processInput(Void input, RequestInfo requestInfo, Context context) {
+  protected InstitutionStatusAggregationReport processInput(
+      Void input, RequestInfo requestInfo, Context context) {
     var topLevelOrg = requestInfo.getTopLevelOrgCristinId().orElseThrow();
     var year = requestInfo.getPathParameter(PATH_PARAM_YEAR);
-    var result = getAggregate(year, topLevelOrg);
-    return format(result, topLevelOrg);
+    var aggregate = getAggregate(year, topLevelOrg);
+    return InstitutionStatusAggregationReportMapper.fromAggregation(aggregate, year, topLevelOrg);
   }
 
   @Override
-  protected Integer getSuccessStatusCode(Void input, String output) {
+  protected Integer getSuccessStatusCode(Void input, InstitutionStatusAggregationReport output) {
     return HttpURLConnection.HTTP_OK;
-  }
-
-  private static String format(Aggregate aggregate, URI topLevelOrg) {
-    return AggregationFormatter.format(Map.of(AGGREGATION, aggregate))
-        .at(DELIMITER + AGGREGATION)
-        .get(topLevelOrg.toString())
-        .at(DELIMITER + APPROVAL_ORGANIZATIONS_AGGREGATION)
-        .toPrettyString();
   }
 
   private static void validateAccessRight(RequestInfo requestInfo) throws UnauthorizedException {

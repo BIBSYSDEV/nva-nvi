@@ -3,34 +3,33 @@ package no.sikt.nva.nvi.test;
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.test.TestConstants.ONE;
 import static no.sikt.nva.nvi.test.TestConstants.TYPE_FIELD;
+import static no.unit.nva.testutils.RandomDataGenerator.FAKER;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
+import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static nva.commons.core.StringUtils.isNotBlank;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
-import java.net.http.HttpResponse;
 import java.time.LocalDate;
 import java.time.Year;
+import java.time.ZoneId;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import nva.commons.core.paths.UriWrapper;
 
-// Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
-@SuppressWarnings({"PMD.CouplingBetweenObjects", "PMD.GodClass"})
 public final class TestUtils {
 
   public static final int SCALE = 4;
   public static final BigDecimal MIN_BIG_DECIMAL = BigDecimal.ZERO;
   public static final BigDecimal MAX_BIG_DECIMAL = BigDecimal.TEN;
-  public static final int CURRENT_YEAR = Year.now().getValue();
+  public static final int CURRENT_YEAR = getCurrentYear();
   public static final Random RANDOM = new Random();
   public static final AtomicInteger ID_COUNTER = new AtomicInteger(100);
 
@@ -65,7 +64,17 @@ public final class TestUtils {
   }
 
   public static String randomYear() {
-    return String.valueOf(randomIntBetween(START_DATE.getYear(), LocalDate.now().getYear()));
+    return String.valueOf(randomIntBetween(START_DATE.getYear(), CURRENT_YEAR));
+  }
+
+  public static String randomTitle() {
+    return String.format("%s %d", FAKER.book().title(), randomInteger(CURRENT_YEAR));
+  }
+
+  public static String randomInstitutionName() {
+    var baseUnits = List.of("University of", "Institute for");
+    var base = FAKER.options().option(baseUnits.toArray(String[]::new));
+    return String.join(" ", base, FAKER.word().adjective(), FAKER.word().noun());
   }
 
   public static URI randomUriWithSuffix(String suffix) {
@@ -84,13 +93,6 @@ public final class TestUtils {
         MIN_BIG_DECIMAL.add(
             BigDecimal.valueOf(Math.random()).multiply(MAX_BIG_DECIMAL.subtract(MIN_BIG_DECIMAL)));
     return randomBigDecimal.setScale(scale, RoundingMode.HALF_UP);
-  }
-
-  public static HttpResponse<String> createResponse(int status, String body) {
-    var response = (HttpResponse<String>) mock(HttpResponse.class);
-    when(response.statusCode()).thenReturn(status);
-    when(response.body()).thenReturn(body);
-    return response;
   }
 
   public static ObjectNode createNodeWithType(String type) {
@@ -130,5 +132,16 @@ public final class TestUtils {
         putIfNotBlank(node, field, values.iterator().next());
       }
     }
+  }
+
+  public static void putAsArray(ObjectNode node, String field, Collection<String> values) {
+    var arrayNode = objectMapper.createArrayNode();
+    values.forEach(arrayNode::add);
+    node.set(field, arrayNode);
+  }
+
+  @SuppressWarnings("TimeInStaticInitializer")
+  private static int getCurrentYear() {
+    return Year.now(ZoneId.systemDefault()).getValue();
   }
 }

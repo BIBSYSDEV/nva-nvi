@@ -1,7 +1,12 @@
 package no.sikt.nva.nvi.common.dto;
 
 import static java.util.Objects.requireNonNull;
+import static no.sikt.nva.nvi.common.model.InstanceType.ACADEMIC_CHAPTER;
+import static no.sikt.nva.nvi.common.model.InstanceType.ACADEMIC_COMMENTARY;
+import static no.sikt.nva.nvi.common.model.InstanceType.ACADEMIC_MONOGRAPH;
+import static no.sikt.nva.nvi.common.utils.CollectionUtils.copyOfNullable;
 import static no.sikt.nva.nvi.common.utils.Validator.shouldBeTrue;
+import static no.sikt.nva.nvi.common.utils.Validator.shouldNotBeEmpty;
 import static no.sikt.nva.nvi.common.utils.Validator.shouldNotBeNull;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 
@@ -12,9 +17,14 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
 import java.time.Instant;
 import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
 import no.sikt.nva.nvi.common.client.model.Organization;
+import no.sikt.nva.nvi.common.exceptions.ValidationException;
 import no.sikt.nva.nvi.common.model.InstanceType;
 
+// TODO Refactor to remove warnings NP-49938
+@SuppressWarnings("PMD.TooManyFields")
 @JsonSerialize
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonTypeName("Publication")
@@ -28,27 +38,55 @@ public record PublicationDto(
     PageCountDto pageCount,
     PublicationDateDto publicationDate,
     InstanceType publicationType,
+    InstanceType parentPublicationType,
     boolean isApplicable,
     boolean isInternationalCollaboration,
     Collection<PublicationChannelDto> publicationChannels,
     Collection<ContributorDto> contributors,
     Collection<Organization> topLevelOrganizations,
+    Collection<String> isbnList,
     Instant modifiedDate) {
+
+  public static final List<InstanceType> PUBLICATION_INSTANCE_TYPES_REQUIRING_ISBN =
+      List.of(ACADEMIC_CHAPTER, ACADEMIC_COMMENTARY, ACADEMIC_MONOGRAPH);
+  private static final List<InstanceType> INVALID_PARENT_PUBLICATION_TYPES_FOR_ACADEMIC_CHAPTER =
+      List.of(ACADEMIC_COMMENTARY, ACADEMIC_MONOGRAPH);
 
   public PublicationDto {
     requireNonNull(id, "Required field 'id' is null");
     requireNonNull(status, "Required field 'status' is null");
+
+    publicationChannels = copyOfNullable(publicationChannels);
+    contributors = copyOfNullable(contributors);
+    topLevelOrganizations = copyOfNullable(topLevelOrganizations);
+    isbnList = copyOfNullable(isbnList);
   }
 
   public void validate() {
     shouldNotBeNull(publicationDate, "Required field 'publicationDate' is null");
     shouldNotBeNull(publicationType, "Required field 'publicationType' is null");
-    shouldNotBeNull(publicationChannels, "Required field 'publicationChannels' is null");
-    shouldNotBeNull(contributors, "Required field 'contributors' is null");
-    shouldNotBeNull(topLevelOrganizations, "Required field 'topLevelOrganizations' is null");
+    shouldNotBeEmpty(publicationChannels, "Required field 'publicationChannels' is empty");
+    shouldNotBeEmpty(contributors, "Required field 'contributors' is empty");
+    shouldNotBeEmpty(topLevelOrganizations, "Required field 'topLevelOrganizations' is empty");
 
     shouldBeTrue(publicationType().isValid(), "Required field 'publicationType' is invalid");
+    validateIsbnWhenRequired();
+    validateParentPublicationType();
     contributors.forEach(ContributorDto::validate);
+  }
+
+  private void validateParentPublicationType() {
+    if (publicationType() == ACADEMIC_CHAPTER && parentPublicationTypeIsNotSupported()) {
+      throw new ValidationException(
+          "AcademicChapter is not valid nvi candidate when it is part of %s"
+              .formatted(parentPublicationType()));
+    }
+  }
+
+  private boolean parentPublicationTypeIsNotSupported() {
+    return Optional.ofNullable(parentPublicationType())
+        .map(INVALID_PARENT_PUBLICATION_TYPES_FOR_ACADEMIC_CHAPTER::contains)
+        .orElse(false);
   }
 
   public static PublicationDto from(String json) throws JsonProcessingException {
@@ -57,6 +95,15 @@ public record PublicationDto(
 
   public static Builder builder() {
     return new Builder();
+  }
+
+  private void validateIsbnWhenRequired() {
+    if (PUBLICATION_INSTANCE_TYPES_REQUIRING_ISBN.contains(publicationType())) {
+      shouldNotBeEmpty(
+          isbnList(),
+          "Required field 'isbnList' must not be empty for %s"
+              .formatted(publicationType().getValue()));
+    }
   }
 
   public static final class Builder {
@@ -70,11 +117,13 @@ public record PublicationDto(
     private PageCountDto pageCount;
     private PublicationDateDto publicationDate;
     private InstanceType publicationType;
+    private InstanceType parentPublicationType;
     private boolean isApplicable;
     private boolean isInternationalCollaboration;
     private Collection<PublicationChannelDto> publicationChannels;
     private Collection<ContributorDto> contributors;
     private Collection<Organization> topLevelOrganizations;
+    private Collection<String> isbnList;
     private Instant modifiedDate;
 
     private Builder() {}
@@ -119,6 +168,11 @@ public record PublicationDto(
       return this;
     }
 
+    public Builder withParentPublicationType(InstanceType parentPublicationType) {
+      this.parentPublicationType = parentPublicationType;
+      return this;
+    }
+
     public Builder withLanguage(String language) {
       this.language = language;
       return this;
@@ -149,6 +203,11 @@ public record PublicationDto(
       return this;
     }
 
+    public Builder withIsbnList(Collection<String> isbnList) {
+      this.isbnList = isbnList;
+      return this;
+    }
+
     public Builder withModifiedDate(Instant modifiedDate) {
       this.modifiedDate = modifiedDate;
       return this;
@@ -165,11 +224,13 @@ public record PublicationDto(
           pageCount,
           publicationDate,
           publicationType,
+          parentPublicationType,
           isApplicable,
           isInternationalCollaboration,
           publicationChannels,
           contributors,
           topLevelOrganizations,
+          isbnList,
           modifiedDate);
     }
   }

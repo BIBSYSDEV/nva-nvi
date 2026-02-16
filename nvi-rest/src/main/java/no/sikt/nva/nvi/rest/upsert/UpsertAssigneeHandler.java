@@ -7,12 +7,11 @@ import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.net.HttpURLConnection;
 import java.util.UUID;
-import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.db.DynamoRepository;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.model.UpdateAssigneeRequest;
 import no.sikt.nva.nvi.common.model.UserInstance;
+import no.sikt.nva.nvi.common.service.ApprovalService;
 import no.sikt.nva.nvi.common.service.CandidateResponseFactory;
+import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.utils.ExceptionMapper;
@@ -35,30 +34,30 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<UpsertAssigneeReque
     implements ViewingScopeHandler {
 
   public static final String CANDIDATE_IDENTIFIER = "candidateIdentifier";
-  private final CandidateRepository candidateRepository;
-  private final PeriodRepository periodRepository;
+  private final CandidateService candidateService;
+  private final ApprovalService approvalService;
   private final IdentityServiceClient identityServiceClient;
   private final ViewingScopeValidator viewingScopeValidator;
 
   @JacocoGenerated
   public UpsertAssigneeHandler() {
     this(
-        new CandidateRepository(DynamoRepository.defaultDynamoClient()),
-        new PeriodRepository(DynamoRepository.defaultDynamoClient()),
+        CandidateService.defaultCandidateService(),
+        ApprovalService.defaultApprovalService(),
         IdentityServiceClient.prepare(),
         ViewingScopeHandler.defaultViewingScopeValidator(),
         new Environment());
   }
 
   public UpsertAssigneeHandler(
-      CandidateRepository candidateRepository,
-      PeriodRepository periodRepository,
+      CandidateService candidateService,
+      ApprovalService approvalService,
       IdentityServiceClient identityServiceClient,
       ViewingScopeValidator viewingScopeValidator,
       Environment environment) {
     super(UpsertAssigneeRequest.class, environment);
-    this.candidateRepository = candidateRepository;
-    this.periodRepository = periodRepository;
+    this.candidateService = candidateService;
+    this.approvalService = approvalService;
     this.identityServiceClient = identityServiceClient;
     this.viewingScopeValidator = viewingScopeValidator;
   }
@@ -75,26 +74,28 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<UpsertAssigneeReque
       UpsertAssigneeRequest input, RequestInfo requestInfo, Context context)
       throws ApiGatewayException {
     var candidateIdentifier = UUID.fromString(requestInfo.getPathParameter(CANDIDATE_IDENTIFIER));
+    var user = UserInstance.fromRequestInfo(requestInfo);
+
     var institutionId = input.institutionId();
     var assignee = input.assignee();
-    var userInstance = UserInstance.fromRequestInfo(requestInfo);
-    return attempt(
-            () -> Candidate.fetch(() -> candidateIdentifier, candidateRepository, periodRepository))
-        .map(
-            candidate ->
-                validateViewingScope(
-                    viewingScopeValidator, RequestUtil.getUsername(requestInfo), candidate))
-        .map(
-            candidate ->
-                candidate.updateApprovalAssignee(
-                    new UpdateAssigneeRequest(institutionId, assignee)))
-        .map(candidate -> CandidateResponseFactory.create(candidate, userInstance))
+    var updateRequest = new UpdateAssigneeRequest(institutionId, assignee);
+
+    return attempt(() -> candidateService.getCandidateByIdentifier(candidateIdentifier))
+        .map(candidate -> validateViewingScope(viewingScopeValidator, user.userName(), candidate))
+        .map(candidate -> updateAndRefetch(candidate, updateRequest, user))
+        .map(candidate -> CandidateResponseFactory.create(candidate, user))
         .orElseThrow(ExceptionMapper::map);
   }
 
   @Override
   protected Integer getSuccessStatusCode(UpsertAssigneeRequest input, CandidateDto output) {
     return HttpURLConnection.HTTP_OK;
+  }
+
+  private Candidate updateAndRefetch(
+      Candidate candidate, UpdateAssigneeRequest updateRequest, UserInstance user) {
+    approvalService.updateApproval(candidate, updateRequest, user);
+    return candidateService.getCandidateByIdentifier(candidate.identifier());
   }
 
   private static void hasSameCustomer(UpsertAssigneeRequest input, RequestInfo requestInfo)

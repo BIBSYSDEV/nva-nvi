@@ -12,12 +12,14 @@ import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidate
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertNonCandidateRequest;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.createCandidateDao;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.setupReportedCandidate;
-import static no.sikt.nva.nvi.common.db.DbApprovalStatusFixtures.randomApproval;
+import static no.sikt.nva.nvi.common.db.DbApprovalStatusFixtures.randomApprovalDao;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidateBuilder;
 import static no.sikt.nva.nvi.common.db.DbPointCalculationFixtures.randomPointCalculationBuilder;
 import static no.sikt.nva.nvi.common.db.DbPublicationChannelFixtures.randomDbPublicationChannelBuilder;
 import static no.sikt.nva.nvi.common.db.DbPublicationDetailsFixtures.randomPublicationBuilder;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
+import static no.sikt.nva.nvi.common.model.CandidateFixtures.setupRandomApplicableCandidate;
+import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationId;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_AFFILIATIONS;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_BODY;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_TYPE;
@@ -33,7 +35,6 @@ import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_NORWEGIAN_LABEL;
 import static no.sikt.nva.nvi.test.TestConstants.LABELS_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.NB_FIELD;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
-import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.s3.S3Driver.S3_SCHEME;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
@@ -61,6 +62,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpResponse;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -68,19 +70,19 @@ import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
-import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.db.model.DbPublicationChannel;
 import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
-import no.sikt.nva.nvi.common.model.CandidateFixtures;
 import no.sikt.nva.nvi.common.model.ChannelType;
 import no.sikt.nva.nvi.common.model.ScientificValue;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
+import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.index.aws.S3StorageWriter;
 import no.sikt.nva.nvi.index.model.PersistedIndexDocumentMessage;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
+import no.sikt.nva.nvi.index.model.document.ApprovalView;
 import no.sikt.nva.nvi.index.model.document.ConsumptionAttributes;
 import no.sikt.nva.nvi.index.model.document.IndexDocumentWithConsumptionAttributes;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
@@ -129,11 +131,12 @@ class IndexDocumentHandlerTest {
   private final S3Client s3Client = new FakeS3Client();
   private IndexDocumentHandler handler;
   private CandidateRepository candidateRepository;
-  private PeriodRepository periodRepository;
+  private CandidateService candidateService;
   private S3Driver s3Reader;
   private S3Driver s3Writer;
   private UriRetriever uriRetriever;
   private FakeSqsClient sqsClient;
+  private TestScenario scenario;
 
   public static Stream<Arguments> channelTypeIssnProvider() {
     return Stream.of(
@@ -145,10 +148,10 @@ class IndexDocumentHandlerTest {
 
   @BeforeEach
   void setup() {
-    var scenario = new TestScenario();
+    scenario = new TestScenario();
     setupOpenPeriod(scenario, CURRENT_YEAR);
     candidateRepository = scenario.getCandidateRepository();
-    periodRepository = scenario.getPeriodRepository();
+    candidateService = scenario.getCandidateService();
 
     s3Reader = new S3Driver(s3Client, BUCKET_NAME);
     s3Writer = new S3Driver(s3Client, BUCKET_NAME);
@@ -159,8 +162,7 @@ class IndexDocumentHandlerTest {
             new S3StorageReader(s3Client, BUCKET_NAME),
             new S3StorageWriter(s3Client, BUCKET_NAME),
             sqsClient,
-            candidateRepository,
-            periodRepository,
+            candidateService,
             uriRetriever,
             ENVIRONMENT);
   }
@@ -170,7 +172,7 @@ class IndexDocumentHandlerTest {
     var candidate = randomApplicableCandidate(HARD_CODED_TOP_LEVEL_ORG, randomUri());
     var expectedIndexDocument =
         setupExistingResourceInS3AndGenerateExpectedDocument(candidate).indexDocument();
-    var event = createEvent(candidate.getIdentifier());
+    var event = createEvent(candidate.identifier());
     mockUriRetrieverOrgResponse(candidate);
     handler.handleRequest(event, CONTEXT);
     var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
@@ -184,7 +186,7 @@ class IndexDocumentHandlerTest {
         setupExistingResourceInS3AndGenerateExpectedDocument(candidate).indexDocument();
     mockUriRetrieverOrgResponse(candidate);
 
-    handler.handleRequest(createEvent(candidate.getIdentifier()), CONTEXT);
+    handler.handleRequest(createEvent(candidate.identifier()), CONTEXT);
 
     var actualNviContributors =
         parseJson(s3Writer.getFile(createPath(candidate)))
@@ -203,15 +205,15 @@ class IndexDocumentHandlerTest {
     // candidates imported via
     // Cristin
     var institutionId = randomUri();
-    var dao =
-        candidateRepository.create(
-            createDbCandidateWithoutChannelIdOrType(institutionId),
-            List.of(randomApproval(institutionId)));
-    var candidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
+    var dao = createCandidateDao(createDbCandidateWithoutChannelIdOrType(institutionId));
+    var approvals = List.of(randomApprovalDao(dao.identifier(), institutionId));
+    candidateRepository.create(dao, approvals);
+
+    var candidate = candidateService.getCandidateByIdentifier(dao.identifier());
     var expectedIndexDocument =
         setupExistingResourceInS3AndGenerateExpectedDocument(candidate).indexDocument();
     mockUriRetrieverOrgResponse(candidate);
-    handler.handleRequest(createEvent(candidate.getIdentifier()), CONTEXT);
+    handler.handleRequest(createEvent(candidate.identifier()), CONTEXT);
     var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
     assertContentIsEqual(expectedIndexDocument, actualIndexDocument);
   }
@@ -236,15 +238,13 @@ class IndexDocumentHandlerTest {
             .withAffiliations(List.of(institutionId))
             .build();
     var request = randomUpsertRequestBuilder().withNviCreators(unverifiedCreator).build();
-    Candidate.upsert(request, candidateRepository, periodRepository);
-    var candidate =
-        Candidate.fetchByPublicationId(
-            request::publicationId, candidateRepository, periodRepository);
+    candidateService.upsertCandidate(request);
+    var candidate = candidateService.getCandidateByPublicationId(request.publicationId());
     var expectedIndexDocument =
         setupExistingResourceInS3AndGenerateExpectedDocument(candidate).indexDocument();
 
     mockUriRetrieverOrgResponse(candidate);
-    handler.handleRequest(createEvent(candidate.getIdentifier()), CONTEXT);
+    handler.handleRequest(createEvent(candidate.identifier()), CONTEXT);
     var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
     assertContentIsEqual(expectedIndexDocument, actualIndexDocument);
   }
@@ -254,7 +254,7 @@ class IndexDocumentHandlerTest {
     var candidate = randomApplicableCandidate(HARD_CODED_TOP_LEVEL_ORG, HARD_CODED_TOP_LEVEL_ORG);
     var expectedIndexDocument =
         setupExistingResourceInS3AndGenerateExpectedDocument(candidate).indexDocument();
-    var event = createEvent(candidate.getIdentifier());
+    var event = createEvent(candidate.identifier());
     mockUriResponseForTopLevelAffiliation(candidate);
     handler.handleRequest(event, CONTEXT);
     var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
@@ -265,7 +265,7 @@ class IndexDocumentHandlerTest {
   void topLevelAffiliationShouldNotHavePartOf() {
     var candidate = randomApplicableCandidate(HARD_CODED_TOP_LEVEL_ORG, HARD_CODED_TOP_LEVEL_ORG);
     setupExistingResourceInS3AndGenerateExpectedDocument(candidate);
-    var event = createEvent(candidate.getIdentifier());
+    var event = createEvent(candidate.identifier());
     mockUriResponseForTopLevelAffiliation(candidate);
     handler.handleRequest(event, CONTEXT);
     var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
@@ -278,7 +278,7 @@ class IndexDocumentHandlerTest {
     var subUnitAffiliation = randomUri();
     var candidate = randomApplicableCandidate(HARD_CODED_TOP_LEVEL_ORG, subUnitAffiliation);
     setupExistingResourceInS3AndGenerateExpectedDocument(candidate);
-    var event = createEvent(candidate.getIdentifier());
+    var event = createEvent(candidate.identifier());
     mockUriRetrieverOrgResponse(candidate);
     handler.handleRequest(event, CONTEXT);
     var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
@@ -293,11 +293,11 @@ class IndexDocumentHandlerTest {
     // Using repository to create reported candidate because setting Candidate as reported is not
     // implemented yet
     // TODO: Use Candidate.setReported when implemented
-    var dao = setupReportedCandidate(candidateRepository, randomYear());
-    var candidate = Candidate.fetch(dao::identifier, candidateRepository, periodRepository);
+    var dao = setupReportedCandidate(candidateRepository, String.valueOf(CURRENT_YEAR));
+    var candidate = candidateService.getCandidateByIdentifier(dao.identifier());
     var expectedIndexDocument =
         setupExistingResourceInS3AndGenerateExpectedDocument(candidate).indexDocument();
-    var event = createEvent(candidate.getIdentifier());
+    var event = createEvent(candidate.identifier());
     mockUriRetrieverOrgResponse(candidate);
     handler.handleRequest(event, CONTEXT);
     var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
@@ -305,8 +305,7 @@ class IndexDocumentHandlerTest {
   }
 
   @Test
-  void
-      shouldFetchOrganizationLabelsFromCristinApiWhenExpandedResourceIsMissingTopLevelOrganization() {
+  void shouldReturnEmptyLabelsWhenExpandedResourceIsMissingTopLevelOrganization() {
     var candidate = randomApplicableCandidate(HARD_CODED_TOP_LEVEL_ORG, randomUri());
     var expandedResource =
         ExpandedResourceGenerator.builder()
@@ -314,43 +313,22 @@ class IndexDocumentHandlerTest {
             .build()
             .createExpandedResource();
     setupResourceMissingTopLevelOrganizationsInS3(expandedResource, candidate);
-    var expectedIndexDocument =
-        IndexDocumentWithConsumptionAttributes.from(
-                createExpectedNviIndexDocument(expandedResource, candidate))
-            .indexDocument();
-    var event = createEvent(candidate.getIdentifier());
+    var event = createEvent(candidate.identifier());
     mockUriRetrieverOrgResponse(candidate);
     handler.handleRequest(event, CONTEXT);
     var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
-    assertContentIsEqual(expectedIndexDocument, actualIndexDocument);
-  }
-
-  @Test
-  void shouldFetchOrganizationLabelsFromCristinApiWhenTopLevelOrgNodeIsInvalid() {
-    var candidate = randomApplicableCandidate(HARD_CODED_TOP_LEVEL_ORG, randomUri());
-    var expandedResource =
-        ExpandedResourceGenerator.builder()
-            .withCandidate(candidate)
-            .build()
-            .createExpandedResource();
-    setupResourceWithInvalidObjectInS3(expandedResource, candidate);
-    var expectedIndexDocument =
-        IndexDocumentWithConsumptionAttributes.from(
-                createExpectedNviIndexDocument(expandedResource, candidate))
-            .indexDocument();
-    var event = createEvent(candidate.getIdentifier());
-    mockUriRetrieverOrgResponse(candidate);
-    handler.handleRequest(event, CONTEXT);
-    var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
-    assertContentIsEqual(expectedIndexDocument, actualIndexDocument);
+    Assertions.assertThat(actualIndexDocument.approvals())
+        .hasSizeGreaterThanOrEqualTo(1)
+        .extracting(ApprovalView::labels)
+        .allMatch(Map::isEmpty);
   }
 
   @Test
   void shouldBuildIndexDocumentWithConsumptionAttributes() {
-    var candidate = randomApplicableCandidate();
+    var candidate = setupRandomApplicableCandidate(scenario);
     var expectedConsumptionAttributes =
         setupExistingResourceInS3AndGenerateExpectedDocument(candidate).consumptionAttributes();
-    var event = createEvent(candidate.getIdentifier());
+    var event = createEvent(candidate.identifier());
     mockUriRetrieverOrgResponse(candidate);
     handler.handleRequest(event, CONTEXT);
     var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate)));
@@ -362,7 +340,7 @@ class IndexDocumentHandlerTest {
     var institutionId = randomUri();
     var candidate = randomApplicableCandidate(institutionId, institutionId);
     setupExistingResourceInS3AndGenerateExpectedDocument(candidate);
-    var event = createEvent(candidate.getIdentifier());
+    var event = createEvent(candidate.identifier());
     mockUriRetrieverOrgResponse(candidate);
     handler.handleRequest(event, CONTEXT);
     var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
@@ -373,21 +351,23 @@ class IndexDocumentHandlerTest {
 
   @Test
   void shouldNotBuildIndexDocumentForNonApplicableCandidate() {
-    var institutionId = randomUri();
-    var nonApplicableCandidate = setupNonApplicableCandidate(institutionId);
-    var event = createEvent(nonApplicableCandidate.getIdentifier());
-    mockUriRetrieverOrgResponse(nonApplicableCandidate);
+    var request = createUpsertCandidateRequest(randomOrganizationId()).build();
+    candidateService.upsertCandidate(request);
+    var candidate = candidateService.getCandidateByPublicationId(request.publicationId());
+    mockUriRetrieverOrgResponse(candidate);
+
+    candidateService.updateCandidate(createUpsertNonCandidateRequest(candidate.getPublicationId()));
+    var event = createEvent(candidate.identifier());
     handler.handleRequest(event, CONTEXT);
-    assertThrows(
-        NoSuchKeyException.class, () -> s3Writer.getFile(createPath(nonApplicableCandidate)));
+    assertThrows(NoSuchKeyException.class, () -> s3Writer.getFile(createPath(candidate)));
   }
 
   @Test
   void shouldNotExpandAffiliationsWhenContributorIsNotNviCreator() {
-    var candidate = randomApplicableCandidate();
+    var candidate = setupRandomApplicableCandidate(scenario);
     var expectedConsumptionAttributes =
         setupExistingResourceWithNonNviCreatorAffiliations(candidate);
-    var event = createEvent(candidate.getIdentifier());
+    var event = createEvent(candidate.identifier());
     mockUriRetrieverOrgResponse(candidate);
     handler.handleRequest(event, CONTEXT);
     var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate)));
@@ -406,7 +386,7 @@ class IndexDocumentHandlerTest {
             .createExpandedResource();
     insertInS3(expandedResource, extractResourceIdentifier(candidate));
     var expectedIndexDocument = createExpectedNviIndexDocument(expandedResource, candidate);
-    var event = createEvent(candidate.getIdentifier());
+    var event = createEvent(candidate.identifier());
     mockUriRetrieverOrgResponse(candidate);
     handler.handleRequest(event, CONTEXT);
     var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
@@ -426,7 +406,7 @@ class IndexDocumentHandlerTest {
             .createExpandedResource();
     insertInS3(expandedResource, extractResourceIdentifier(candidate));
     var expectedIndexDocument = createExpectedNviIndexDocument(expandedResource, candidate);
-    var event = createEvent(candidate.getIdentifier());
+    var event = createEvent(candidate.identifier());
     mockUriRetrieverOrgResponse(candidate);
     handler.handleRequest(event, CONTEXT);
     var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
@@ -447,7 +427,7 @@ class IndexDocumentHandlerTest {
             .createExpandedResource();
     insertInS3(expandedResource, extractResourceIdentifier(candidate));
     var expectedIndexDocument = createExpectedNviIndexDocument(expandedResource, candidate);
-    var event = createEvent(candidate.getIdentifier());
+    var event = createEvent(candidate.identifier());
     mockUriRetrieverOrgResponse(candidate);
     handler.handleRequest(event, CONTEXT);
     var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
@@ -466,7 +446,7 @@ class IndexDocumentHandlerTest {
             .createExpandedResource();
     insertInS3(expandedResource, extractResourceIdentifier(candidate));
     var expectedIndexDocument = createExpectedNviIndexDocument(expandedResource, candidate);
-    var event = createEvent(candidate.getIdentifier());
+    var event = createEvent(candidate.identifier());
     mockUriRetrieverOrgResponse(candidate);
     handler.handleRequest(event, CONTEXT);
     var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
@@ -475,9 +455,9 @@ class IndexDocumentHandlerTest {
 
   @Test
   void shouldProduceIndexDocumentWithTypeInfo() throws JsonProcessingException {
-    var candidate = randomApplicableCandidate();
+    var candidate = setupRandomApplicableCandidate(scenario);
     setupExistingResourceInS3AndGenerateExpectedDocument(candidate);
-    var event = createEvent(candidate.getIdentifier());
+    var event = createEvent(candidate.identifier());
     mockUriRetrieverOrgResponse(candidate);
     handler.handleRequest(event, CONTEXT);
     var actualIndexDocument =
@@ -502,10 +482,10 @@ class IndexDocumentHandlerTest {
 
   @Test
   void shouldSendSqsEventWhenIndexDocumentIsPersisted() {
-    var candidate = randomApplicableCandidate();
+    var candidate = setupRandomApplicableCandidate(scenario);
     setupExistingResourceInS3(candidate);
     mockUriRetrieverOrgResponse(candidate);
-    handler.handleRequest(createEvent(candidate.getIdentifier()), CONTEXT);
+    handler.handleRequest(createEvent(candidate.identifier()), CONTEXT);
     var expectedEvent = createExpectedEventMessageBody(candidate);
     var actualEvent = sqsClient.getSentMessages().getFirst().messageBody();
     assertEquals(expectedEvent, actualEvent);
@@ -513,12 +493,12 @@ class IndexDocumentHandlerTest {
 
   @Test
   void shouldSendMessageToDlqWhenFailingToProcessEvent() {
-    var candidate = randomApplicableCandidate();
+    var candidate = setupRandomApplicableCandidate(scenario);
     setupExistingResourceInS3(candidate);
     mockUriRetrieverOrgResponse(candidate);
     sqsClient.disableDestinationQueue(OUTPUT_QUEUE_URL);
 
-    var event = createEvent(candidate.getIdentifier());
+    var event = createEvent(candidate.identifier());
     handler.handleRequest(event, CONTEXT);
 
     var dlqMessages = sqsClient.getAllSentSqsEvents(INDEX_DLQ_URL);
@@ -527,8 +507,8 @@ class IndexDocumentHandlerTest {
 
   @Test
   void shouldNotFailForWholeBatchWhenFailingToSendEventForOneCandidate() {
-    var candidateToFail = randomApplicableCandidate();
-    var candidateToSucceed = randomApplicableCandidate();
+    var candidateToFail = setupRandomApplicableCandidate(scenario);
+    var candidateToSucceed = setupRandomApplicableCandidate(scenario);
     setupExistingResourceInS3(candidateToSucceed);
     setupExistingResourceInS3(candidateToFail);
     mockUriRetrieverOrgResponse(candidateToSucceed);
@@ -539,21 +519,20 @@ class IndexDocumentHandlerTest {
             new S3StorageReader(s3Client, BUCKET_NAME),
             new S3StorageWriter(s3Client, BUCKET_NAME),
             mockedSqsClient,
-            candidateRepository,
-            periodRepository,
+            candidateService,
             uriRetriever,
             ENVIRONMENT);
-    var event = createEvent(candidateToFail.getIdentifier(), candidateToSucceed.getIdentifier());
+    var event = createEvent(candidateToFail.identifier(), candidateToSucceed.identifier());
     assertDoesNotThrow(() -> handler.handleRequest(event, CONTEXT));
   }
 
   @Test
   void shouldNotFailForWholeBatchWhenFailingToReadOneResourceFromStorage() {
-    var candidateToFail = randomApplicableCandidate();
-    var candidateToSucceed = randomApplicableCandidate();
+    var candidateToFail = setupRandomApplicableCandidate(scenario);
+    var candidateToSucceed = setupRandomApplicableCandidate(scenario);
     var expectedIndexDocument =
         setupExistingResourceInS3AndGenerateExpectedDocument(candidateToSucceed);
-    var event = createEvent(candidateToFail.getIdentifier(), candidateToSucceed.getIdentifier());
+    var event = createEvent(candidateToFail.identifier(), candidateToSucceed.identifier());
     mockUriRetrieverOrgResponse(candidateToSucceed);
     handler.handleRequest(event, CONTEXT);
     var actualIndexDocument = parseJson(s3Reader.getFile(createPath(candidateToSucceed)));
@@ -562,12 +541,12 @@ class IndexDocumentHandlerTest {
 
   @Test
   void shouldNotFailForWholeBatchWhenFailingToGenerateDocumentForOneCandidate() {
-    var candidateToFail = randomApplicableCandidate();
-    var candidateToSucceed = randomApplicableCandidate();
+    var candidateToFail = setupRandomApplicableCandidate(scenario);
+    var candidateToSucceed = setupRandomApplicableCandidate(scenario);
     setupExistingResourceInS3AndGenerateExpectedDocument(candidateToFail);
     mockUriRetrieverFailure(candidateToFail);
     mockUriRetrieverOrgResponse(candidateToSucceed);
-    var event = createEvent(candidateToFail.getIdentifier(), candidateToSucceed.getIdentifier());
+    var event = createEvent(candidateToFail.identifier(), candidateToSucceed.identifier());
     var expectedIndexDocument =
         setupExistingResourceInS3AndGenerateExpectedDocument(candidateToSucceed);
     handler.handleRequest(event, CONTEXT);
@@ -577,9 +556,9 @@ class IndexDocumentHandlerTest {
 
   @Test
   void shouldNotFailForWholeBatchWhenFailingToPersistDocumentForOneCandidate() throws IOException {
-    var candidateToFail = randomApplicableCandidate();
-    var candidateToSucceed = randomApplicableCandidate();
-    var event = createEvent(candidateToFail.getIdentifier(), candidateToSucceed.getIdentifier());
+    var candidateToFail = setupRandomApplicableCandidate(scenario);
+    var candidateToSucceed = setupRandomApplicableCandidate(scenario);
+    var event = createEvent(candidateToFail.identifier(), candidateToSucceed.identifier());
     mockUriRetrieverOrgResponse(candidateToSucceed);
     mockUriRetrieverOrgResponse(candidateToFail);
     var s3Writer = mockS3WriterFailingForOneCandidate(candidateToSucceed, candidateToFail);
@@ -588,8 +567,7 @@ class IndexDocumentHandlerTest {
             new S3StorageReader(s3Client, BUCKET_NAME),
             s3Writer,
             sqsClient,
-            candidateRepository,
-            periodRepository,
+            candidateService,
             uriRetriever,
             ENVIRONMENT);
     assertDoesNotThrow(() -> handler.handleRequest(event, CONTEXT));
@@ -600,7 +578,7 @@ class IndexDocumentHandlerTest {
     var candidateToSucceed = randomApplicableCandidate(HARD_CODED_TOP_LEVEL_ORG, randomUri());
     var expectedIndexDocument =
         setupExistingResourceInS3AndGenerateExpectedDocument(candidateToSucceed);
-    var event = createEvent(UUID.randomUUID(), candidateToSucceed.getIdentifier());
+    var event = createEvent(UUID.randomUUID(), candidateToSucceed.identifier());
     mockUriRetrieverOrgResponse(candidateToSucceed);
     handler.handleRequest(event, CONTEXT);
     var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidateToSucceed)));
@@ -612,7 +590,7 @@ class IndexDocumentHandlerTest {
     var candidateToSucceed = randomApplicableCandidate(HARD_CODED_TOP_LEVEL_ORG, randomUri());
     var expectedIndexDocument =
         setupExistingResourceInS3AndGenerateExpectedDocument(candidateToSucceed);
-    var event = createEventWithOneInvalidRecord(candidateToSucceed.getIdentifier());
+    var event = createEventWithOneInvalidRecord(candidateToSucceed.identifier());
     mockUriRetrieverOrgResponse(candidateToSucceed);
     handler.handleRequest(event, CONTEXT);
     var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidateToSucceed)));
@@ -625,12 +603,11 @@ class IndexDocumentHandlerTest {
     // When the candidate is processed for indexing
     // Then an index document is created successfully
     var candidateDao = setupReportedCandidateWithInvalidProperties();
-    var candidate =
-        Candidate.fetch(candidateDao::identifier, candidateRepository, periodRepository);
+    var candidate = candidateService.getCandidateByIdentifier(candidateDao.identifier());
     var expectedIndexDocument =
         setupExistingResourceInS3AndGenerateExpectedDocument(candidate).indexDocument();
 
-    var event = createEvent(candidate.getIdentifier());
+    var event = createEvent(candidate.identifier());
     mockUriRetrieverOrgResponse(candidate);
     handler.handleRequest(event, CONTEXT);
 
@@ -655,7 +632,8 @@ class IndexDocumentHandlerTest {
             .pointCalculation(pointCalculation)
             .reportStatus(ReportStatus.REPORTED)
             .build();
-    var candidateDao = createCandidateDao(candidateRepository, dbCandidate);
+    var candidateDao = createCandidateDao(dbCandidate);
+    candidateRepository.create(candidateDao, emptyList());
     return candidateDao;
   }
 
@@ -686,7 +664,7 @@ class IndexDocumentHandlerTest {
 
   private static FakeSqsClient setupFailingSqsClient(Candidate candidate) {
     var expectedFailingMessage =
-        new PersistedIndexDocumentMessage(generateBucketUri(candidate)).asJsonString();
+        new PersistedIndexDocumentMessage(generateBucketUri(candidate)).toJsonString();
     var mockedSqsClient = mock(FakeSqsClient.class);
     var sqsException = SqsException.builder().message("Some exception message").build();
     when(mockedSqsClient.sendMessage(eq(expectedFailingMessage), anyString()))
@@ -695,12 +673,12 @@ class IndexDocumentHandlerTest {
   }
 
   private static URI extractOneAffiliation(Candidate candidateToFail) {
-    return candidateToFail.getPublicationDetails().getNviCreatorAffiliations().getFirst();
+    return candidateToFail.publicationDetails().getNviCreatorAffiliations().getFirst();
   }
 
   private static UnixPath createPath(Candidate candidate) {
     return UnixPath.of(NVI_CANDIDATES_FOLDER)
-        .addChild(candidate.getIdentifier().toString() + GZIP_ENDING);
+        .addChild(candidate.identifier().toString() + GZIP_ENDING);
   }
 
   private static URI generateBucketUri(Candidate candidate) {
@@ -754,7 +732,7 @@ class IndexDocumentHandlerTest {
   }
 
   private static String extractResourceIdentifier(Candidate persistedCandidate) {
-    return persistedCandidate.getPublicationDetails().publicationIdentifier().toString();
+    return persistedCandidate.publicationDetails().publicationIdentifier().toString();
   }
 
   private static ObjectNode orgWithThreeLevels(URI affiliationId) {
@@ -771,22 +749,11 @@ class IndexDocumentHandlerTest {
     return lowLevel;
   }
 
-  private Candidate setupNonApplicableCandidate(URI institutionId) {
-    var request = createUpsertCandidateRequest(institutionId).build();
-    Candidate.upsert(request, candidateRepository, periodRepository);
-    var candidate =
-        Candidate.fetchByPublicationId(
-            request::publicationId, candidateRepository, periodRepository);
-    return Candidate.updateNonCandidate(
-            createUpsertNonCandidateRequest(candidate.getPublicationId()), candidateRepository)
-        .orElseThrow();
-  }
-
   private void mockUriResponseForTopLevelAffiliation(Candidate candidate) {
-    candidate.getPublicationDetails().getNviCreatorAffiliations().stream()
+    candidate.publicationDetails().getNviCreatorAffiliations().stream()
         .forEach(this::mockTopLevelResponse);
 
-    candidate.getApprovals().keySet().forEach(this::mockTopLevelResponse);
+    candidate.approvals().keySet().forEach(this::mockTopLevelResponse);
   }
 
   private void mockTopLevelResponse(URI affiliationId) {
@@ -839,7 +806,7 @@ class IndexDocumentHandlerTest {
   }
 
   private String createExpectedEventMessageBody(Candidate candidate) {
-    return new PersistedIndexDocumentMessage(generateBucketUri(candidate)).asJsonString();
+    return new PersistedIndexDocumentMessage(generateBucketUri(candidate)).toJsonString();
   }
 
   private void mockUriRetrieverFailure(Candidate candidate) {
@@ -857,7 +824,7 @@ class IndexDocumentHandlerTest {
     when(mockedS3Writer.write(argThat(matchesDocumentIdOf(expectedIndexDocumentToFail))))
         .thenThrow(new IOException("Some exception message"));
     when(mockedS3Writer.write(argThat(matchesDocumentIdOf(expectedIndexDocument))))
-        .thenReturn(s3BucketUri().addChild(candidateToSucceed.getIdentifier().toString()).getUri());
+        .thenReturn(s3BucketUri().addChild(candidateToSucceed.identifier().toString()).getUri());
     return mockedS3Writer;
   }
 
@@ -872,10 +839,10 @@ class IndexDocumentHandlerTest {
   }
 
   private void mockUriRetrieverOrgResponse(Candidate candidate) {
-    candidate.getPublicationDetails().getNviCreatorAffiliations().stream()
+    candidate
+        .publicationDetails()
+        .getNviCreatorAffiliations()
         .forEach(this::mockOrganizationResponse);
-
-    candidate.getApprovals().keySet().forEach(this::mockOrganizationResponse);
   }
 
   private void mockOrganizationResponse(URI affiliationId) {
@@ -924,34 +891,30 @@ class IndexDocumentHandlerTest {
       JsonNode expandedResource, Candidate candidate) {
     var expandedPublicationDetails = expandPublicationDetails(candidate, expandedResource);
     return NviCandidateIndexDocument.builder()
-        .withContext(Candidate.getContextUri())
+        .withContext(candidate.getContextUri())
         .withId(candidate.getId())
         .withIsApplicable(candidate.isApplicable())
-        .withIdentifier(candidate.getIdentifier())
-        .withApprovals(expandApprovals(candidate, expandedPublicationDetails.contributors()))
+        .withIdentifier(candidate.identifier())
+        .withApprovals(
+            expandApprovals(candidate, expandedPublicationDetails.contributors(), expandedResource))
         .withPoints(candidate.getTotalPoints())
         .withPublicationDetails(expandedPublicationDetails)
-        .withNumberOfApprovals(candidate.getApprovals().size())
+        .withNumberOfApprovals(candidate.approvals().size())
         .withCreatorShareCount(candidate.getCreatorShareCount())
         .withReported(candidate.isReported())
         .withGlobalApprovalStatus(candidate.getGlobalApprovalStatus())
         .withPublicationTypeChannelLevelPoints(candidate.getBasePoints())
         .withInternationalCollaborationFactor(candidate.getCollaborationFactor())
-        .withCreatedDate(candidate.getCreatedDate())
-        .withModifiedDate(candidate.getModifiedDate())
-        .withReportingPeriod(new ReportingPeriod(candidate.getPeriod().year()))
+        .withCreatedDate(candidate.createdDate())
+        .withModifiedDate(candidate.modifiedDate())
+        .withReportingPeriod(ReportingPeriod.fromCandidate(candidate))
         .build();
-  }
-
-  private Candidate randomApplicableCandidate() {
-    return CandidateFixtures.setupRandomApplicableCandidate(candidateRepository, periodRepository);
   }
 
   private Candidate randomApplicableCandidate(URI topLevelOrg, URI affiliation) {
     var request = createUpsertCandidateRequestWithSingleAffiliation(topLevelOrg, affiliation);
-    Candidate.upsert(request, candidateRepository, periodRepository);
-    return Candidate.fetchByPublicationId(
-        request::publicationId, candidateRepository, periodRepository);
+    candidateService.upsertCandidate(request);
+    return candidateService.getCandidateByPublicationId(request.publicationId());
   }
 
   private Candidate randomApplicableCandidate(ChannelType channelType) {
@@ -962,9 +925,8 @@ class IndexDocumentHandlerTest {
             .withScientificValue(ScientificValue.LEVEL_ONE)
             .build();
     var request = randomUpsertRequestBuilder().withPublicationChannel(channel).build();
-    Candidate.upsert(request, candidateRepository, periodRepository);
-    return Candidate.fetchByPublicationId(
-        request::publicationId, candidateRepository, periodRepository);
+    candidateService.upsertCandidate(request);
+    return candidateService.getCandidateByPublicationId(request.publicationId());
   }
 
   private void assertContentIsEqual(

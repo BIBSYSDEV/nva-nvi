@@ -4,8 +4,10 @@ import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBui
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertNonCandidateRequest;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
+import static no.sikt.nva.nvi.common.dto.NviCreatorDtoFixtures.unverifiedNviCreatorDtoFrom;
 import static no.sikt.nva.nvi.common.dto.NviCreatorDtoFixtures.verifiedNviCreatorDtoFrom;
-import static no.sikt.nva.nvi.common.model.OrganizationFixtures.mockOrganizationResponseForAffiliation;
+import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomTopLevelOrganization;
+import static no.sikt.nva.nvi.common.model.UserInstanceFixtures.createCuratorUserInstance;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -21,15 +23,18 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.util.Collection;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import no.sikt.nva.nvi.common.FakeEnvironment;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.UpsertRequestBuilder;
 import no.sikt.nva.nvi.common.client.model.Organization;
-import no.sikt.nva.nvi.common.dto.NviCreatorDtoFixtures;
 import no.sikt.nva.nvi.common.model.CandidateFixtures;
-import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
+import no.sikt.nva.nvi.common.model.UserInstance;
+import no.sikt.nva.nvi.common.service.ApprovalService;
+import no.sikt.nva.nvi.common.service.CandidateService;
+import no.sikt.nva.nvi.common.service.NoteService;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
@@ -37,7 +42,6 @@ import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.validator.FakeViewingScopeValidator;
 import no.sikt.nva.nvi.common.validator.ViewingScopeValidator;
-import no.unit.nva.auth.uriretriever.UriRetriever;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
@@ -45,6 +49,7 @@ import nva.commons.apigateway.GatewayResponse;
 import nva.commons.core.Environment;
 import org.apache.hc.core5.http.ContentType;
 import org.junit.jupiter.api.BeforeEach;
+import org.zalando.problem.Problem;
 
 /** Base test class for handlers that return a CandidateDto. */
 @SuppressWarnings("PMD.CouplingBetweenObjects")
@@ -52,8 +57,7 @@ public abstract class BaseCandidateRestHandlerTest {
   protected static final ViewingScopeValidator mockViewingScopeValidator =
       new FakeViewingScopeValidator(true);
   protected static final Context CONTEXT = mock(Context.class);
-  protected static final Environment ENVIRONMENT = new Environment();
-  protected UriRetriever mockUriRetriever;
+  protected Environment environment;
   protected String resourcePathParameter;
   protected List<Organization> topLevelOrganizations;
   protected Organization topLevelOrganization;
@@ -62,47 +66,42 @@ public abstract class BaseCandidateRestHandlerTest {
   protected ByteArrayOutputStream output;
   protected ApiGatewayHandler<?, CandidateDto> handler;
   protected TestScenario scenario;
+  protected CandidateService candidateService;
+  protected NoteService noteService;
+  protected ApprovalService approvalService;
+  protected UserInstance curatorUser;
 
   @BeforeEach
   protected void commonSetup() {
+    environment = getHandlerEnvironment();
     scenario = new TestScenario();
     setupOpenPeriod(scenario, CURRENT_YEAR);
-    topLevelOrganization = scenario.getDefaultOrganization();
+    topLevelOrganization = randomTopLevelOrganization();
     topLevelOrganizations = List.of(topLevelOrganization);
     topLevelOrganizationId = topLevelOrganization.id();
     subOrganizationId = topLevelOrganization.hasPart().getFirst().id();
-    mockUriRetriever = scenario.getMockedUriRetriever();
+    curatorUser = createCuratorUserInstance(topLevelOrganizationId);
+
+    var candidateRepository = scenario.getCandidateRepository();
+    candidateService =
+        new CandidateService(environment, scenario.getPeriodRepository(), candidateRepository);
+    noteService = new NoteService(candidateRepository);
+    approvalService = new ApprovalService(candidateRepository);
 
     output = new ByteArrayOutputStream();
     handler = createHandler();
   }
 
+  protected abstract FakeEnvironment getHandlerEnvironment();
+
   protected abstract ApiGatewayHandler<?, CandidateDto> createHandler();
 
-  protected VerifiedNviCreatorDto setupVerifiedCreator(
-      Collection<URI> affiliations, URI topLevelInstitutionId) {
-    affiliations.forEach(
-        affiliation ->
-            mockOrganizationResponseForAffiliation(
-                topLevelInstitutionId, affiliation, mockUriRetriever));
-    return verifiedNviCreatorDtoFrom(affiliations);
-  }
-
   protected VerifiedNviCreatorDto setupDefaultVerifiedCreator() {
-    return setupVerifiedCreator(List.of(subOrganizationId), topLevelOrganizationId);
+    return verifiedNviCreatorDtoFrom(List.of(subOrganizationId));
   }
 
   protected UnverifiedNviCreatorDto setupDefaultUnverifiedCreator() {
-    return setupUnverifiedCreator(List.of(subOrganizationId), topLevelOrganizationId);
-  }
-
-  protected UnverifiedNviCreatorDto setupUnverifiedCreator(
-      Collection<URI> affiliations, URI topLevelOrganizationId) {
-    affiliations.forEach(
-        affiliation ->
-            mockOrganizationResponseForAffiliation(
-                topLevelOrganizationId, affiliation, mockUriRetriever));
-    return NviCreatorDtoFixtures.unverifiedNviCreatorDtoFrom(affiliations);
+    return unverifiedNviCreatorDtoFrom(List.of(subOrganizationId));
   }
 
   protected UpsertRequestBuilder upsertRequestWithUnverifiedCreator() {
@@ -125,10 +124,8 @@ public abstract class BaseCandidateRestHandlerTest {
 
   protected Candidate setupNonApplicableCandidate(URI institutionId) {
     var candidate = scenario.upsertCandidate(createUpsertCandidateRequest(institutionId).build());
-    return Candidate.updateNonCandidate(
-            createUpsertNonCandidateRequest(candidate.getPublicationId()),
-            scenario.getCandidateRepository())
-        .orElseThrow();
+    candidateService.updateCandidate(createUpsertNonCandidateRequest(candidate.getPublicationId()));
+    return candidate;
   }
 
   protected Candidate setupCandidateWithUnverifiedCreator() {
@@ -138,14 +135,13 @@ public abstract class BaseCandidateRestHandlerTest {
   protected Candidate setupCandidateWithApproval() {
     var candidate = setupValidCandidate();
     return scenario.updateApprovalStatus(
-        candidate, ApprovalStatus.APPROVED, topLevelOrganizationId);
+        candidate.identifier(), ApprovalStatus.APPROVED, topLevelOrganizationId);
   }
 
   protected Candidate setupCandidateWithUnverifiedCreatorFromAnotherInstitution() {
     var verifiedCreator = setupDefaultVerifiedCreator();
-    var otherOrganization = scenario.setupTopLevelOrganizationWithSubUnits();
-    var unverifiedCreator =
-        setupUnverifiedCreator(List.of(otherOrganization.id()), otherOrganization.id());
+    var otherOrganization = randomTopLevelOrganization();
+    var unverifiedCreator = unverifiedNviCreatorDtoFrom(otherOrganization.id());
 
     return CandidateFixtures.setupRandomApplicableCandidate(
         scenario,
@@ -156,23 +152,25 @@ public abstract class BaseCandidateRestHandlerTest {
             List.of(unverifiedCreator)));
   }
 
-  protected UpdateStatusRequest createStatusRequest(ApprovalStatus status) {
-    return UpdateStatusRequest.builder()
-        .withInstitutionId(topLevelOrganizationId)
-        .withApprovalStatus(status)
-        .withUsername(randomString())
-        .withReason(ApprovalStatus.REJECTED.equals(status) ? randomString() : null)
-        .build();
-  }
-
   protected CandidateDto handleRequest(InputStream request) throws IOException {
     handler.handleRequest(request, output, CONTEXT);
     return getGatewayResponse().getBodyObject(CandidateDto.class);
   }
 
+  protected Problem handleRequestExpectingProblem(
+      ApiGatewayHandler<?, CandidateDto> handlerUnderTest, InputStream request) {
+    try {
+      handlerUnderTest.handleRequest(request, output, CONTEXT);
+      var response = GatewayResponse.fromOutputStream(output, Problem.class);
+      return dtoObjectMapper.readValue(response.getBody(), Problem.class);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   protected GatewayResponse<CandidateDto> getGatewayResponse() throws JsonProcessingException {
     return dtoObjectMapper.readValue(
-        output.toString(),
+        output.toString(StandardCharsets.UTF_8),
         dtoObjectMapper
             .getTypeFactory()
             .constructParametricType(GatewayResponse.class, CandidateDto.class));

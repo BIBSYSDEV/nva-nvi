@@ -186,7 +186,8 @@
         "@container": "@set"
       }
     },
-    "id": "https://api.dev.nva.aws.unit.no/publication/0188beb8f346-330c9426-4757-4e36-b08f-4d698d295bb4",
+    "id": "__REPLACE_WITH_PUBLICATION_ID__",
+    "identifier": "__REPLACE_WITH_PUBLICATION_IDENTIFIER__",
     "entityDescription": {
       "type": "EntityDescription",
       "alternativeAbstracts": {},
@@ -276,7 +277,8 @@
                   "id": "https://api.dev.nva.aws.unit.no/publication-channels/583d74c4-ba08-485f-9e79-c640f5d223ba",
                   "type": "Series",
                   "scientificValue": "Unassigned"
-                }
+                },
+                "isbnList": [ "isbn_ignored_for_validation" ]
               }
             }
           }

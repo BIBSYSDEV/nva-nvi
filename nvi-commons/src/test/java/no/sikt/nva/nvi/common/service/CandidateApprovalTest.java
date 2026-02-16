@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.common.service;
 
 import static java.util.Collections.emptyList;
-import static java.util.Collections.emptySet;
+import static no.sikt.nva.nvi.common.RequestFixtures.randomAssigneeRequest;
 import static no.sikt.nva.nvi.common.UpsertRequestBuilder.fromRequest;
 import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpdateStatusRequest;
@@ -17,21 +17,15 @@ import static no.sikt.nva.nvi.common.dto.NviCreatorDtoFixtures.verifiedNviCreato
 import static no.sikt.nva.nvi.common.model.CandidateFixtures.randomApplicableCandidateRequestBuilder;
 import static no.sikt.nva.nvi.common.model.CandidateFixtures.setupRandomApplicableCandidate;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.createOrganizationWithSubUnit;
-import static no.sikt.nva.nvi.common.model.OrganizationFixtures.mockOrganizationResponseForAffiliation;
+import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomTopLevelOrganization;
 import static no.sikt.nva.nvi.common.model.UserInstanceFixtures.createCuratorUserInstance;
+import static no.sikt.nva.nvi.common.model.UsernameFixtures.randomUsername;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.nullValue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -41,6 +35,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.UpsertRequestBuilder;
 import no.sikt.nva.nvi.common.client.model.Organization;
@@ -60,6 +55,8 @@ import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.problem.UnverifiedCreatorFromOrganizationProblem;
 import no.sikt.nva.nvi.common.service.dto.problem.UnverifiedCreatorProblem;
+import no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException;
+import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
@@ -73,8 +70,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
-// Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
-@SuppressWarnings("PMD.CouplingBetweenObjects")
 class CandidateApprovalTest extends CandidateTestSetup {
 
   private static final String APPROVED = "APPROVED";
@@ -93,6 +88,8 @@ class CandidateApprovalTest extends CandidateTestSetup {
       createCuratorUserInstance(HARDCODED_INSTITUTION_ID);
   private Organization topLevelOrganization;
   private URI topLevelOrganizationId;
+  private Candidate initialCandidate;
+  private UUID candidateIdentifier;
 
   private static Stream<Arguments> statusProvider() {
     return Stream.of(
@@ -106,26 +103,22 @@ class CandidateApprovalTest extends CandidateTestSetup {
 
   @BeforeEach
   void setUp() {
-    topLevelOrganization = scenario.setupTopLevelOrganizationWithSubUnits();
+    topLevelOrganization = randomTopLevelOrganization();
     topLevelOrganizationId = topLevelOrganization.id();
-    mockOrganizationResponseForAffiliation(
-        HARDCODED_INSTITUTION_ID, HARDCODED_SUBUNIT_ID, mockUriRetriever);
+
+    var upsertCandidateRequest = createUpsertCandidateRequest(HARDCODED_INSTITUTION_ID).build();
+    initialCandidate = scenario.upsertCandidate(upsertCandidateRequest);
+    candidateIdentifier = initialCandidate.identifier();
   }
 
   @ParameterizedTest(name = "Should update from old status {0} to new status {1}")
   @MethodSource("statusProvider")
   void shouldUpdateStatusWhenUpdateStatusRequestValid(
       ApprovalStatus oldStatus, ApprovalStatus newStatus) {
-    var upsertCandidateRequest = createUpsertCandidateRequest(HARDCODED_INSTITUTION_ID).build();
-    scenario.upsertCandidate(upsertCandidateRequest);
-    var existingCandidate =
-        Candidate.fetchByPublicationId(
-            upsertCandidateRequest::publicationId, candidateRepository, periodRepository);
-    existingCandidate = updateApprovalStatus(existingCandidate, oldStatus);
-
-    var updatedCandidate = updateApprovalStatus(existingCandidate, newStatus);
-    var actualNewStatus = updatedCandidate.getApprovals().get(HARDCODED_INSTITUTION_ID).getStatus();
-    assertThat(actualNewStatus, is(equalTo(newStatus)));
+    updateApprovalStatus(candidateIdentifier, oldStatus);
+    var updatedCandidate = updateApprovalStatus(candidateIdentifier, newStatus);
+    var actualNewStatus = updatedCandidate.approvals().get(HARDCODED_INSTITUTION_ID).status();
+    assertThat(actualNewStatus).isEqualTo(newStatus);
   }
 
   @ParameterizedTest(name = "Should reset approval when changing to pending from {0}")
@@ -133,45 +126,43 @@ class CandidateApprovalTest extends CandidateTestSetup {
       value = ApprovalStatus.class,
       names = {"REJECTED", APPROVED})
   void shouldResetApprovalWhenChangingToPending(ApprovalStatus oldStatus) {
-    var upsertCandidateRequest = createUpsertCandidateRequest(HARDCODED_INSTITUTION_ID).build();
-    var candidate = scenario.upsertCandidate(upsertCandidateRequest);
     var assignee = randomString();
-    candidate.updateApprovalAssignee(new UpdateAssigneeRequest(HARDCODED_INSTITUTION_ID, assignee));
-    updateApprovalStatus(candidate, oldStatus);
+    var request = new UpdateAssigneeRequest(HARDCODED_INSTITUTION_ID, assignee);
+    approvalService.updateApproval(initialCandidate, request, CURATOR_USER);
+    updateApprovalStatus(candidateIdentifier, oldStatus);
 
-    updateApprovalStatus(candidate, ApprovalStatus.PENDING);
-    var approvalStatus = candidate.getApprovals().get(HARDCODED_INSTITUTION_ID);
-    assertThat(approvalStatus.getStatus(), is(equalTo(ApprovalStatus.PENDING)));
-    assertThat(approvalStatus.getAssigneeUsername(), is(assignee));
-    assertThat(approvalStatus.getFinalizedByUserName(), is(nullValue()));
-    assertThat(approvalStatus.getFinalizedDate(), is(nullValue()));
+    var updatedCandidate = updateApprovalStatus(candidateIdentifier, ApprovalStatus.PENDING);
+    var approvalStatus = updatedCandidate.approvals().get(HARDCODED_INSTITUTION_ID);
+
+    assertThat(approvalStatus)
+        .extracting(
+            Approval::status,
+            Approval::getAssigneeUsername,
+            Approval::getFinalizedByUserName,
+            Approval::finalizedDate)
+        .containsExactly(ApprovalStatus.PENDING, assignee, null, null);
   }
 
   @Test
   void shouldCreatePendingApprovalsForNewCandidate() {
-    var upsertCandidateRequest = createUpsertCandidateRequest(HARDCODED_INSTITUTION_ID).build();
-    var candidate = scenario.upsertCandidate(upsertCandidateRequest);
-    assertThat(candidate.getApprovals().size(), is(equalTo(1)));
-    assertThat(
-        candidate.getApprovals().get(HARDCODED_INSTITUTION_ID).getStatus(),
-        is(equalTo(ApprovalStatus.PENDING)));
+    var candidate = scenario.getCandidateByIdentifier(candidateIdentifier);
+    assertThat(candidate.approvals())
+        .hasSize(1)
+        .extractingByKey(HARDCODED_INSTITUTION_ID)
+        .extracting(Approval::status)
+        .isEqualTo(ApprovalStatus.PENDING);
   }
 
-  @ParameterizedTest(name = "shouldThrowUnsupportedOperationWhenRejectingWithoutReason {0}")
+  @ParameterizedTest(name = "shouldThrowIllegalArgumentExceptionWhenRejectingWithoutReason {0}")
   @EnumSource(
       value = ApprovalStatus.class,
       names = {"PENDING", APPROVED})
   void shouldThrowUnsupportedOperationWhenRejectingWithoutReason(ApprovalStatus oldStatus) {
-    var createRequest = createUpsertCandidateRequest(HARDCODED_INSTITUTION_ID).build();
-    scenario.upsertCandidate(createRequest);
-    var candidate =
-        Candidate.fetchByPublicationId(
-            createRequest::publicationId, candidateRepository, periodRepository);
-    var updatedCandidate = updateApprovalStatus(candidate, oldStatus);
+    var updatedCandidate = updateApprovalStatus(candidateIdentifier, oldStatus);
     var updateRequest = createRejectionRequestWithoutReason(randomString());
     assertThrows(
-        UnsupportedOperationException.class,
-        () -> updatedCandidate.updateApprovalStatus(updateRequest, CURATOR_USER));
+        IllegalArgumentException.class,
+        () -> approvalService.updateApproval(updatedCandidate, updateRequest, CURATOR_USER));
   }
 
   @ParameterizedTest(name = "Should remove reason when updating from rejection status to {0}")
@@ -179,38 +170,30 @@ class CandidateApprovalTest extends CandidateTestSetup {
       value = ApprovalStatus.class,
       names = {"PENDING", APPROVED})
   void shouldRemoveReasonWhenUpdatingFromRejectionStatusToNewStatus(ApprovalStatus newStatus) {
-    var createRequest = createUpsertCandidateRequest(HARDCODED_INSTITUTION_ID).build();
-    scenario.upsertCandidate(createRequest);
-    var rejectedCandidate =
-        Candidate.fetchByPublicationId(
-                createRequest::publicationId, candidateRepository, periodRepository)
-            .updateApprovalStatus(
-                createUpdateStatusRequest(
-                    ApprovalStatus.REJECTED, HARDCODED_INSTITUTION_ID, randomString()),
-                CURATOR_USER);
+    var rejection =
+        createUpdateStatusRequest(
+            ApprovalStatus.REJECTED, HARDCODED_INSTITUTION_ID, randomString());
+    scenario.updateApprovalStatus(candidateIdentifier, rejection, CURATOR_USER);
 
-    var updatedCandidate = updateApprovalStatus(rejectedCandidate, newStatus);
-    assertThat(updatedCandidate.getApprovals().size(), is(equalTo(1)));
-    assertThat(
-        updatedCandidate.getApprovals().get(HARDCODED_INSTITUTION_ID).getStatus(),
-        is(equalTo(newStatus)));
-    assertThat(
-        updatedCandidate.getApprovals().get(HARDCODED_INSTITUTION_ID).getReason(), is(nullValue()));
+    var updatedCandidate = updateApprovalStatus(candidateIdentifier, newStatus);
+    assertThat(updatedCandidate.approvals())
+        .hasSize(1)
+        .extractingByKey(HARDCODED_INSTITUTION_ID)
+        .extracting(Approval::status, Approval::reason)
+        .containsExactly(newStatus, null);
   }
 
   @ParameterizedTest(
       name = "shouldThrowIllegalArgumentExceptionWhenUpdateStatusWithoutUsername {0}")
   @EnumSource(
       value = ApprovalStatus.class,
-      names = {"PENDING", APPROVED, "REJECTED"})
+      names = {APPROVED, "REJECTED"})
   void shouldThrowIllegalArgumentExceptionWhenUpdateStatusWithoutUsername(
       ApprovalStatus newStatus) {
-    var createRequest = createUpsertCandidateRequest(HARDCODED_INSTITUTION_ID).build();
-    var candidate = scenario.upsertCandidate(createRequest);
     var invalidRequest = createUpdateStatusRequest(newStatus, HARDCODED_INSTITUTION_ID, null);
     assertThrows(
         IllegalArgumentException.class,
-        () -> candidate.updateApprovalStatus(invalidRequest, CURATOR_USER));
+        () -> approvalService.updateApproval(initialCandidate, invalidRequest, CURATOR_USER));
   }
 
   @Test
@@ -219,27 +202,27 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var deleteInstitutionId = randomUri();
     var createCandidateRequest =
         createUpsertCandidateRequest(keepInstitutionId, deleteInstitutionId, randomUri()).build();
-    Candidate.upsert(createCandidateRequest, candidateRepository, periodRepository);
+    scenario.upsertCandidate(createCandidateRequest);
+
     var updateRequest =
         fromRequest(createCandidateRequest)
             .withPoints(List.of(new InstitutionPoints(keepInstitutionId, randomBigDecimal(), null)))
             .build();
     var updatedCandidate = scenario.upsertCandidate(updateRequest);
-    var approvalMap = updatedCandidate.getApprovals();
 
-    assertThat(approvalMap.containsKey(deleteInstitutionId), is(false));
-    assertThat(approvalMap.containsKey(keepInstitutionId), is(true));
-    assertThat(approvalMap.size(), is(1));
+    assertThat(updatedCandidate.approvals()).hasSize(1).containsOnlyKeys(keepInstitutionId);
   }
 
   @Test
   void shouldRemoveApprovalsWhenBecomingNonCandidate() {
     var candidate = setupRandomApplicableCandidate(scenario);
     var updateRequest = createUpsertNonCandidateRequest(candidate.getPublicationId());
+    candidateService.updateCandidate(updateRequest);
     var updatedCandidate =
-        Candidate.updateNonCandidate(updateRequest, candidateRepository).orElseThrow();
-    assertThat(updatedCandidate.getIdentifier(), is(equalTo(candidate.getIdentifier())));
-    assertThat(updatedCandidate.getApprovals().size(), is(equalTo(0)));
+        candidateService.getCandidateByPublicationId(candidate.getPublicationId());
+
+    assertThat(updatedCandidate.identifier()).isEqualTo(candidate.identifier());
+    assertThat(updatedCandidate.approvals()).isEmpty();
   }
 
   @Test
@@ -251,89 +234,88 @@ class CandidateApprovalTest extends CandidateTestSetup {
             .withInstanceType(null)
             .build();
     assertThrows(
-        InvalidNviCandidateException.class,
-        () -> Candidate.upsert(updateRequest, candidateRepository, periodRepository));
+        InvalidNviCandidateException.class, () -> candidateService.upsertCandidate(updateRequest));
   }
 
   @Test
   void shouldPersistStatusChangeWhenRequestingAndUpdate() {
-    var upsertCandidateRequest = createUpsertCandidateRequest(HARDCODED_INSTITUTION_ID).build();
-    var candidate = scenario.upsertCandidate(upsertCandidateRequest);
-    updateApprovalStatus(candidate, ApprovalStatus.APPROVED);
+    var updatedCandidate = updateApprovalStatus(candidateIdentifier, ApprovalStatus.APPROVED);
 
-    var status =
-        Candidate.fetch(candidate::getIdentifier, candidateRepository, periodRepository)
-            .getApprovals()
-            .get(HARDCODED_INSTITUTION_ID)
-            .getStatus();
-    assertThat(status, is(equalTo(ApprovalStatus.APPROVED)));
+    assertThat(updatedCandidate.approvals())
+        .extractingByKey(HARDCODED_INSTITUTION_ID)
+        .extracting(Approval::status)
+        .isEqualTo(ApprovalStatus.APPROVED);
   }
 
   @Test
   void shouldNotOverrideAssigneeWhenAssigneeAlreadyIsSet() {
-    var assignee = randomString();
-    var request = createUpsertCandidateRequest(HARDCODED_INSTITUTION_ID).build();
-    scenario.upsertCandidate(request);
-    var candidate =
-        Candidate.fetchByPublicationId(
-                request::publicationId, candidateRepository, periodRepository)
-            .updateApprovalAssignee(new UpdateAssigneeRequest(HARDCODED_INSTITUTION_ID, assignee));
-    candidate = updateApprovalStatus(candidate, ApprovalStatus.APPROVED);
-    candidate = updateApprovalStatus(candidate, ApprovalStatus.REJECTED);
+    var request =
+        new UpdateAssigneeRequest(HARDCODED_INSTITUTION_ID, CURATOR_USER.userName().toString());
+    approvalService.updateApproval(initialCandidate, request, CURATOR_USER);
 
-    var updatedApproval = candidate.getApprovals().get(HARDCODED_INSTITUTION_ID);
-    assertThat(updatedApproval.getAssigneeUsername(), is(equalTo(assignee)));
-    assertThat(updatedApproval.getFinalizedByUserName(), is(not(equalTo(assignee))));
+    var user1 = createCuratorUserInstance(HARDCODED_INSTITUTION_ID);
+    updateApprovalStatus(candidateIdentifier, ApprovalStatus.APPROVED, user1);
+
+    var user2 = createCuratorUserInstance(HARDCODED_INSTITUTION_ID);
+    updateApprovalStatus(candidateIdentifier, ApprovalStatus.REJECTED, user2);
+
+    var updatedCandidate = scenario.getCandidateByIdentifier(candidateIdentifier);
+
+    assertThat(updatedCandidate.approvals())
+        .extractingByKey(HARDCODED_INSTITUTION_ID)
+        .extracting(Approval::getAssigneeUsername, Approval::getFinalizedByUserName)
+        .containsExactly(CURATOR_USER.userName().toString(), user2.userName().toString());
   }
 
   @Test
   void shouldChangeAssigneeWhenValidUpdateAssigneeRequest() {
     var upsertCandidateRequest = createUpsertCandidateRequest(HARDCODED_INSTITUTION_ID).build();
     var candidate = scenario.upsertCandidate(upsertCandidateRequest);
-    var newUsername = randomString();
-    candidate.updateApprovalAssignee(
-        new UpdateAssigneeRequest(HARDCODED_INSTITUTION_ID, newUsername));
+    var newUsername = randomUsername().toString();
+    var request = new UpdateAssigneeRequest(HARDCODED_INSTITUTION_ID, newUsername);
+    approvalService.updateApproval(candidate, request, CURATOR_USER);
 
-    var updatedCandidate =
-        Candidate.fetch(candidate::getIdentifier, candidateRepository, periodRepository);
-    var updatedApproval = updatedCandidate.getApprovals().get(HARDCODED_INSTITUTION_ID);
-    assertThat(updatedApproval.getAssigneeUsername(), is(equalTo(newUsername)));
+    var updatedCandidate = candidateService.getCandidateByIdentifier(candidate.identifier());
+    var updatedApproval = updatedCandidate.approvals().get(HARDCODED_INSTITUTION_ID);
+    assertThat(updatedApproval.getAssigneeUsername()).isEqualTo(newUsername);
   }
 
   @Test
   void shouldNotAllowUpdatingApprovalAssigneeWhenCandidateIsInClosedPeriod() {
-    setupClosedPeriod(scenario, CURRENT_YEAR);
     var candidate = setupRandomApplicableCandidate(scenario);
-    var updateAssigneeRequest = new UpdateAssigneeRequest(randomUri(), randomString());
+    setupClosedPeriod(scenario, CURRENT_YEAR);
+    var request = randomAssigneeRequest();
     assertThrows(
-        IllegalStateException.class, () -> candidate.updateApprovalAssignee(updateAssigneeRequest));
+        IllegalCandidateUpdateException.class,
+        () -> approvalService.updateApproval(candidate, request, CURATOR_USER));
   }
 
   @Test
   void shouldNotAllowUpdatingApprovalAssigneeWhenCandidateIsInPendingPeriod() {
-    setupFuturePeriod(scenario, CURRENT_YEAR);
     var candidate = setupRandomApplicableCandidate(scenario);
-    var updateAssigneeRequest = new UpdateAssigneeRequest(randomUri(), randomString());
+    setupFuturePeriod(scenario, CURRENT_YEAR);
+    var request = randomAssigneeRequest();
     assertThrows(
-        IllegalStateException.class, () -> candidate.updateApprovalAssignee(updateAssigneeRequest));
+        IllegalCandidateUpdateException.class,
+        () -> approvalService.updateApproval(candidate, request, CURATOR_USER));
   }
 
   @Test
   void shouldNotResetApprovalsWhenUpdatingCandidateFieldsNotEffectingApprovals() {
     var upsertCandidateRequest = createUpsertCandidateRequest(HARDCODED_INSTITUTION_ID).build();
     var candidate = scenario.upsertCandidate(upsertCandidateRequest);
-    candidate = updateApprovalStatus(candidate, ApprovalStatus.APPROVED);
-    var approval = candidate.getApprovals().get(HARDCODED_INSTITUTION_ID);
+    candidate = updateApprovalStatus(candidate.identifier(), ApprovalStatus.APPROVED);
+    var approval = candidate.approvals().get(HARDCODED_INSTITUTION_ID);
     var newUpsertRequest = createNewUpsertRequestNotAffectingApprovals(upsertCandidateRequest);
     var updatedCandidate = scenario.upsertCandidate(newUpsertRequest);
-    var updatedApproval = updatedCandidate.getApprovals().get(HARDCODED_INSTITUTION_ID);
+    var updatedApproval = updatedCandidate.approvals().get(HARDCODED_INSTITUTION_ID);
 
-    assertThat(updatedApproval, is(equalTo(approval)));
+    assertThat(updatedApproval).isEqualTo(approval);
   }
 
   @Test
   void shouldNotResetApprovalsWhenCreatorAffiliationChangesWithinSameInstitution() {
-    var organization = scenario.getDefaultOrganization();
+    var organization = randomTopLevelOrganization();
     var creator = createVerifiedCreator(organization);
     Map<Organization, Collection<NviCreatorDto>> creatorMap =
         Map.of(organization, List.of(creator));
@@ -346,18 +328,25 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var updatedRequest = requestBuilder.withCreatorsAndPoints(creatorMap).build();
     var updatedCandidate = scenario.upsertCandidate(updatedRequest);
 
-    var updatedApprovals = updatedCandidate.getApprovals();
-    var updatedApproval = updatedApprovals.get(organization.id());
-    assertThat(creator.affiliations(), is(not(equalTo(updatedCreator.affiliations()))));
-    assertThat(ApprovalStatus.APPROVED, is(equalTo(updatedApproval.getStatus())));
-    assertThat(1, is(equalTo(updatedApprovals.size())));
+    var updatedApprovals = updatedCandidate.approvals();
+
+    assertThat(updatedApprovals)
+        .hasSize(1)
+        .extractingByKey(organization.id())
+        .extracting(Approval::status)
+        .isEqualTo(ApprovalStatus.APPROVED);
+
+    var actualAffiliations = updatedCandidate.getNviCreatorAffiliations();
+    assertThat(actualAffiliations)
+        .contains(otherSubUnitId)
+        .doesNotContain(creator.affiliations().getFirst());
   }
 
   @Test
   void shouldNotResetApprovalWhenOtherCreatorBecomesVerified() {
-    var organization = scenario.setupTopLevelOrganizationWithSubUnits();
+    var organization = randomTopLevelOrganization();
     var creator = verifiedNviCreatorDtoFrom(organization);
-    var otherOrganization = scenario.setupTopLevelOrganizationWithSubUnits();
+    var otherOrganization = randomTopLevelOrganization();
     var otherCreator = unverifiedNviCreatorDtoFrom(otherOrganization);
 
     Map<Organization, Collection<NviCreatorDto>> creatorMap =
@@ -368,15 +357,16 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var updatedRequest = requestBuilder.withCreatorsAndPoints(creatorMap).build();
     var updatedCandidate = scenario.upsertCandidate(updatedRequest);
 
-    var updatedApprovals = updatedCandidate.getApprovals();
-    var updatedApproval = updatedApprovals.get(organization.id());
-    assertThat(ApprovalStatus.APPROVED, is(equalTo(updatedApproval.getStatus())));
-    assertThat(2, is(equalTo(updatedApprovals.size())));
+    assertThat(updatedCandidate.approvals())
+        .hasSize(2)
+        .extractingByKey(organization.id())
+        .extracting(Approval::status)
+        .isEqualTo(ApprovalStatus.APPROVED);
   }
 
   @Test
   void shouldResetApprovalWhenCreatorBecomesUnverified() {
-    var organization = scenario.getDefaultOrganization();
+    var organization = randomTopLevelOrganization();
     var creator = createVerifiedCreator(organization);
     var requestBuilder =
         setupApprovedCandidateAndReturnRequestBuilder(
@@ -387,22 +377,23 @@ class CandidateApprovalTest extends CandidateTestSetup {
         requestBuilder.withCreatorsAndPoints(Map.of(organization, List.of(updatedCreator))).build();
     var updatedCandidate = scenario.upsertCandidate(updatedRequest);
 
-    var updatedApprovals = updatedCandidate.getApprovals();
-    var updatedApproval = updatedApprovals.get(organization.id());
-    assertThat(ApprovalStatus.PENDING, is(equalTo(updatedApproval.getStatus())));
-    assertThat(1, is(equalTo(updatedApprovals.size())));
+    assertThat(updatedCandidate.approvals())
+        .hasSize(1)
+        .extractingByKey(organization.id())
+        .extracting(Approval::status)
+        .isEqualTo(ApprovalStatus.PENDING);
   }
 
   @Test
   void shouldResetApprovalWhenTopLevelAffiliationChanges() {
-    var organization = scenario.getDefaultOrganization();
+    var organization = randomTopLevelOrganization();
     var creator = createVerifiedCreator(organization);
     Map<Organization, Collection<NviCreatorDto>> creatorMap =
         Map.of(organization, List.of(creator));
     var requestBuilder =
         setupApprovedCandidateAndReturnRequestBuilder(organization.id(), creatorMap);
 
-    var otherOrganization = scenario.setupTopLevelOrganizationWithSubUnits();
+    var otherOrganization = randomTopLevelOrganization();
     var updatedCreator =
         verifiedNviCreatorDtoCopiedFrom(creator, otherOrganization.hasPart().getFirst());
     var updatedRequest =
@@ -411,10 +402,11 @@ class CandidateApprovalTest extends CandidateTestSetup {
             .build();
     var updatedCandidate = scenario.upsertCandidate(updatedRequest);
 
-    var updatedApprovals = updatedCandidate.getApprovals();
-    var updatedApproval = updatedApprovals.get(otherOrganization.id());
-    assertThat(ApprovalStatus.PENDING, is(equalTo(updatedApproval.getStatus())));
-    assertThat(1, is(equalTo(updatedApprovals.size())));
+    assertThat(updatedCandidate.approvals())
+        .hasSize(1)
+        .extractingByKey(otherOrganization.id())
+        .extracting(Approval::status)
+        .isEqualTo(ApprovalStatus.PENDING);
   }
 
   private VerifiedNviCreatorDto createVerifiedCreator(Organization topLevelOrg) {
@@ -425,7 +417,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
       URI approvedByOrg, Map<Organization, Collection<NviCreatorDto>> creatorsPerOrganization) {
     var requestBuilder = randomApplicableCandidateRequestBuilder(creatorsPerOrganization);
     var candidate = scenario.upsertCandidate(requestBuilder.build());
-    scenario.updateApprovalStatus(candidate, ApprovalStatus.APPROVED, approvedByOrg);
+    scenario.updateApprovalStatus(candidate.identifier(), ApprovalStatus.APPROVED, approvedByOrg);
     return requestBuilder;
   }
 
@@ -433,11 +425,10 @@ class CandidateApprovalTest extends CandidateTestSetup {
   void shouldNotResetApprovalsWhenUpsertRequestContainsSameDecimalsWithAnotherScale() {
     var upsertCandidateRequest = createUpsertRequestWithDecimalScale(0, HARDCODED_INSTITUTION_ID);
     var candidate = scenario.upsertCandidate(upsertCandidateRequest);
-    candidate.updateApprovalStatus(
-        new UpdateStatusRequest(
-            HARDCODED_INSTITUTION_ID, ApprovalStatus.APPROVED, randomString(), randomString()),
-        CURATOR_USER);
-    var approval = candidate.getApprovals().get(HARDCODED_INSTITUTION_ID);
+    candidateIdentifier = candidate.identifier();
+
+    candidate = updateApprovalStatus(candidateIdentifier, ApprovalStatus.APPROVED);
+    var approval = candidate.approvals().get(HARDCODED_INSTITUTION_ID);
     var samePointsWithDifferentScale =
         upsertCandidateRequest.pointCalculation().institutionPoints().stream()
             .map(
@@ -455,7 +446,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var newUpsertRequest =
         fromRequest(upsertCandidateRequest).withPointCalculation(updatedPointCalculation).build();
     var updatedCandidate = scenario.upsertCandidate(newUpsertRequest);
-    var updatedApproval = updatedCandidate.getApprovals().get(HARDCODED_INSTITUTION_ID);
+    var updatedApproval = updatedCandidate.approvals().get(HARDCODED_INSTITUTION_ID);
 
     assertEquals(approval, updatedApproval);
   }
@@ -464,17 +455,17 @@ class CandidateApprovalTest extends CandidateTestSetup {
   void shouldResetApprovalsWhenNonCandidateBecomesCandidate() {
     var upsertCandidateRequest = createUpsertCandidateRequest(HARDCODED_INSTITUTION_ID).build();
     var candidate = scenario.upsertCandidate(upsertCandidateRequest);
-    var nonCandidate =
-        Candidate.updateNonCandidate(
-                createUpsertNonCandidateRequest(candidate.getPublicationId()), candidateRepository)
-            .orElseThrow();
-    assertFalse(nonCandidate.isApplicable());
+    candidateService.updateCandidate(createUpsertNonCandidateRequest(candidate.getPublicationId()));
+
     var updatedCandidate =
         scenario.upsertCandidate(
             createNewUpsertRequestNotAffectingApprovals(upsertCandidateRequest));
 
     assertTrue(updatedCandidate.isApplicable());
-    assertThat(updatedCandidate.getApprovals().size(), is(greaterThan(0)));
+    assertThat(updatedCandidate.approvals().values())
+        .isNotEmpty()
+        .extracting(Approval::status)
+        .containsOnly(ApprovalStatus.PENDING);
   }
 
   @ParameterizedTest(name = "Should reset approvals when {0}")
@@ -483,11 +474,9 @@ class CandidateApprovalTest extends CandidateTestSetup {
   void shouldResetApprovalsWhenUpdatingFieldsEffectingApprovals(
       CandidateResetCauseArgument arguments) {
     var upsertCandidateRequest = getUpsertCandidateRequestWithHardcodedValues();
-    var topLevelOrganization =
-        upsertCandidateRequest.topLevelNviOrganizations().stream().findFirst().orElseThrow();
 
     var candidate = scenario.upsertCandidate(upsertCandidateRequest);
-    updateApprovalStatus(candidate, ApprovalStatus.APPROVED);
+    updateApprovalStatus(candidate.identifier(), ApprovalStatus.APPROVED);
     var channel =
         PublicationChannelDto.builder()
             .withId(arguments.channel().id())
@@ -504,8 +493,8 @@ class CandidateApprovalTest extends CandidateTestSetup {
             .build();
 
     var updatedCandidate = scenario.upsertCandidate(newUpsertRequest);
-    var updatedApproval = updatedCandidate.getApprovals().get(topLevelOrganization.id());
-    assertThat(updatedApproval.getStatus(), is(equalTo(ApprovalStatus.PENDING)));
+    var updatedApproval = updatedCandidate.approvals().get(HARDCODED_INSTITUTION_ID);
+    assertThat(updatedApproval.status()).isEqualTo(ApprovalStatus.PENDING);
   }
 
   @Test
@@ -517,8 +506,8 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var candidateDto = CandidateResponseFactory.create(candidate, userInstance);
 
     var actualAllowedOperations = candidateDto.allowedOperations();
-    assertThat(
-        actualAllowedOperations, containsInAnyOrder(CURATOR_CAN_FINALIZE_APPROVAL.toArray()));
+    assertThat(actualAllowedOperations)
+        .containsExactlyInAnyOrderElementsOf(CURATOR_CAN_FINALIZE_APPROVAL);
   }
 
   @Test
@@ -534,8 +523,8 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var candidateDto = CandidateResponseFactory.create(candidate, userInstance);
 
     var actualAllowedOperations = candidateDto.allowedOperations();
-    assertThat(
-        actualAllowedOperations, containsInAnyOrder(CURATOR_CANNOT_UPDATE_APPROVAL.toArray()));
+    assertThat(actualAllowedOperations)
+        .containsExactlyInAnyOrderElementsOf(CURATOR_CANNOT_UPDATE_APPROVAL);
   }
 
   @Test
@@ -546,9 +535,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var userInstance = createCuratorUserInstance(topLevelOrganizationId);
     var candidateDto = CandidateResponseFactory.create(candidate, userInstance);
 
-    var actualProblems = candidateDto.problems();
-    var expectedProblems = emptySet();
-    assertEquals(expectedProblems, actualProblems);
+    assertThat(candidateDto.problems()).isEmpty();
   }
 
   @Test
@@ -567,8 +554,8 @@ class CandidateApprovalTest extends CandidateTestSetup {
         Set.of(
             new UnverifiedCreatorProblem(),
             new UnverifiedCreatorFromOrganizationProblem(List.of(unverifiedCreator.name())));
-    var actualProblems = candidateDto.problems();
-    assertEquals(expectedProblems, actualProblems);
+
+    assertThat(candidateDto.problems()).containsExactlyInAnyOrderElementsOf(expectedProblems);
   }
 
   private static UpdateStatusRequest createRejectionRequestWithoutReason(String username) {
@@ -622,9 +609,15 @@ class CandidateApprovalTest extends CandidateTestSetup {
                     .build())));
   }
 
-  private Candidate updateApprovalStatus(Candidate candidate, ApprovalStatus status) {
-    var updateRequest = createUpdateStatusRequest(status, HARDCODED_INSTITUTION_ID, randomString());
-    return candidate.updateApprovalStatus(updateRequest, CURATOR_USER);
+  private Candidate updateApprovalStatus(UUID candidateIdentifier, ApprovalStatus status) {
+    return updateApprovalStatus(candidateIdentifier, status, CURATOR_USER);
+  }
+
+  private Candidate updateApprovalStatus(
+      UUID candidateIdentifier, ApprovalStatus status, UserInstance user) {
+    var username = user.userName().toString();
+    var updateRequest = createUpdateStatusRequest(status, HARDCODED_INSTITUTION_ID, username);
+    return scenario.updateApprovalStatus(candidateIdentifier, updateRequest, user);
   }
 
   private UpsertNviCandidateRequest getUpsertCandidateRequestWithHardcodedValues() {

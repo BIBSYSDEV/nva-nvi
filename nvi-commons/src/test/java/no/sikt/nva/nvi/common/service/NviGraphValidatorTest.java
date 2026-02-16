@@ -854,13 +854,13 @@ class NviGraphValidatorTest {
 
   private String addQuery(String targetClass, String addProperty, Object value) {
     return """
-           PREFIX : <%s>
-           CONSTRUCT {
-             ?subject :%s %s .
-           } WHERE {
-             ?subject a :%s .
-           }
-           """
+    PREFIX : <%s>
+    CONSTRUCT {
+      ?subject :%s %s .
+    } WHERE {
+      ?subject a :%s .
+    }
+    """
         .formatted(NVA_ONTOLOGY, addProperty, createObject(value), targetClass);
   }
 
@@ -1140,15 +1140,15 @@ class NviGraphValidatorTest {
 
   private String addPublicationDateAsIriQuery() {
     return """
-           PREFIX : <%s>
-           CONSTRUCT {
-             ?subject :publicationDate <https://example.com/publicationDate> .
-             <https://example.com/publicationDate> a :PublicationDate ;
-               :year "2025" .
-           } WHERE {
-             ?subject a :Publication .
-           }
-           """
+    PREFIX : <%s>
+    CONSTRUCT {
+      ?subject :publicationDate <https://example.com/publicationDate> .
+      <https://example.com/publicationDate> a :PublicationDate ;
+        :year "2025" .
+    } WHERE {
+      ?subject a :Publication .
+    }
+    """
         .formatted(NVA_ONTOLOGY);
   }
 
@@ -1210,7 +1210,7 @@ class NviGraphValidatorTest {
   private Model addPublicationChannel(Model model) {
     var uuid = UUID.randomUUID().toString();
     var query =
-        """
+"""
 PREFIX : <%s>
 CONSTRUCT {
   ?subject :publicationChannel <https://api.sandbox.nva.aws.unit.no/publication-channels-v2/serial-publication/%s/1973> .
@@ -1403,29 +1403,29 @@ CONSTRUCT {
 
   private String removeQuery(String type, String property) {
     return """
-           PREFIX : <%s>
-           CONSTRUCT {
-             ?subject :%s ?object .
-             ?object ?b ?c .
-           } WHERE {
-             ?subject a :%s ;
-                      :%s ?object .
-             OPTIONAL { ?object ?b ?c }
-           }
-           """
+    PREFIX : <%s>
+    CONSTRUCT {
+      ?subject :%s ?object .
+      ?object ?b ?c .
+    } WHERE {
+      ?subject a :%s ;
+               :%s ?object .
+      OPTIONAL { ?object ?b ?c }
+    }
+    """
         .formatted(NVA_ONTOLOGY, property, type, property);
   }
 
   private String additionalValueQuery(String type, String property, String addition) {
     return """
-             PREFIX : <%s>
-             CONSTRUCT {
-               ?subject :%s :%s .
-             } WHERE {
-               ?subject a :%s ;
-                        :%s [] .
-             }
-           """
+      PREFIX : <%s>
+      CONSTRUCT {
+        ?subject :%s :%s .
+      } WHERE {
+        ?subject a :%s ;
+                 :%s [] .
+      }
+    """
         .formatted(NVA_ONTOLOGY, property, addition, type, property);
   }
 }

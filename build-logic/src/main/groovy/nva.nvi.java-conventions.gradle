@@ -1,6 +1,7 @@
 plugins {
     id 'nva.nvi.common-conventions'
     id 'java-library'
+    id 'java-test-fixtures'
     id 'jacoco'
     id 'pmd'
     id 'net.ltgt.errorprone'
@@ -22,7 +23,7 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 pmd {
-    toolVersion = '7.11.0'
+    toolVersion = '7.20.0'
     ruleSetConfig = rootProject.resources.text.fromFile('config/pmd/ruleset.xml')
     ruleSets = []
     ignoreFailures = false
