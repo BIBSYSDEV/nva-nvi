@@ -4,7 +4,6 @@
       <env name="API_HOST" value="api.fake.nva.aws.unit.no" />
       <env name="BACKEND_CLIENT_AUTH_URL" value="api.fake.nva.aws.unit.no/auth" />
       <env name="CANDIDATE_DLQ_URL" value="http://localhost:3000/candidate-DLQ" />
-      <env name="CANDIDATE_QUEUE_URL" value="http://localhost:3000/candidate-queue" />
       <env name="COGNITO_AUTHORIZER_URLS" value="api.fake.nva.aws.unit.no/auth" />
       <env name="CUSTOM_DOMAIN_BASE_PATH" value="scientific-index" />
       <env name="EXPANDED_RESOURCES_BUCKET" value="testBucket" />

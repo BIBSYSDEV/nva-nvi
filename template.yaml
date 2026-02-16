@@ -248,17 +248,8 @@ Resources:
       RedrivePolicy:
         deadLetterTargetArn: !GetAtt EvaluationDLQ.Arn
         maxReceiveCount: 5
-  EvaluatedCandidateQueue:
-    Type: AWS::SQS::Queue
-    Properties:
-      RedrivePolicy:
-        deadLetterTargetArn: !GetAtt UpsertCandidateDLQ.Arn
-        maxReceiveCount: 5
+
   #=============================== Event handling DLQs =============================================
-  UpsertCandidateDLQ:
-    Type: AWS::SQS::Queue
-    Properties:
-      MessageRetentionPeriod: 1209600 #14 days
   EvaluationDLQ:
     Type: AWS::SQS::Queue
     Properties:
@@ -481,7 +472,6 @@ Resources:
                   - sqs:ChangeMessageVisibility
                 Resource:
                   - !GetAtt ResourceEvaluationQueue.Arn
-                  - !GetAtt EvaluatedCandidateQueue.Arn
                   - !GetAtt DbEventQueue.Arn
                   - !GetAtt PersistedIndexDocumentQueue.Arn
                   - !GetAtt GenerateIndexDocumentQueue.Arn
@@ -489,7 +479,6 @@ Resources:
                   - !GetAtt RemoveDocumentFromIndexDLQ.Arn
                   - !GetAtt EvaluationDLQ.Arn
                   - !GetAtt UpdateIndexDLQ.Arn
-                  - !GetAtt UpsertCandidateDLQ.Arn
                   - !GetAtt ReEvaluateDLQ.Arn
                   - !GetAtt IndexDLQ.Arn
                   - !GetAtt DynamoDbEventToQueueDLQ.Arn
@@ -743,7 +732,6 @@ Resources:
       Environment:
         Variables:
           EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
-          CANDIDATE_QUEUE_URL: !Ref EvaluatedCandidateQueue
           EVALUATION_DLQ_URL: !Ref EvaluationDLQ
       Events:
         SqsEvent:
@@ -758,26 +746,6 @@ Resources:
           OnFailure:
             Type: SQS
             Destination: !GetAtt EvaluationDLQ.Arn
-
-  UpsertNviCandidateHandler:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: event-handlers
-      Handler: no.sikt.nva.nvi.events.persist.UpsertNviCandidateHandler::handleRequest
-      Timeout: 30
-      MemorySize: 1536
-      Role: !GetAtt NvaNviRole.Arn
-      AutoPublishAlias: live
-      SnapStart:
-        ApplyOn: PublishedVersions
-      Environment:
-        Variables:
-          UPSERT_CANDIDATE_DLQ_QUEUE_URL: !Ref UpsertCandidateDLQ
-      Events:
-        SqsEvent:
-          Type: SQS
-          Properties:
-            Queue: !GetAtt EvaluatedCandidateQueue.Arn
 
   DynamoDbEventToQueueHandler:
     Type: AWS::Serverless::Function
@@ -985,24 +953,6 @@ Resources:
       Environment:
         Variables:
           DLQ_QUEUE_URL: !Ref IndexDLQ
-
-  NviRedriveUpsertDlqHandler:
-    Type: AWS::Serverless::Function
-    Properties:
-      Description: >
-        Lambda that reprocesses messages from UpsertCandidateDLQ by re-evaluating the publications.
-        Needs to be run manually from aws console. Run with count as parameter to 
-        limit number of messages to process. Default is 10, max is 100.
-      CodeUri: event-handlers
-      Handler: no.sikt.nva.nvi.events.batch.RedriveUpsertDlqHandler::handleRequest
-      Role: !GetAtt NvaNviRole.Arn
-      AutoPublishAlias: live
-      Timeout: 300
-      Environment:
-        Variables:
-          UPSERT_CANDIDATE_DLQ_QUEUE_URL: !Ref UpsertCandidateDLQ
-          PERSISTED_RESOURCE_QUEUE_URL: !Ref ResourceEvaluationQueue
-          EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
 
   BatchReEvaluateNviCandidatesHandler:
     Type: AWS::Serverless::Function
@@ -1551,24 +1501,6 @@ Resources:
       Dimensions:
         - Name: QueueName
           Value: !GetAtt UpdateIndexDLQ.QueueName
-      Period: 300
-      EvaluationPeriods: 1
-      Threshold: 1
-      ComparisonOperator: GreaterThanOrEqualToThreshold
-      AlarmActions:
-        - !Ref SlackSnsArn
-
-  UpsertCandidateDLQAlarm:
-    Type: AWS::CloudWatch::Alarm
-    Properties:
-      AlarmName: NVI persisting candidate failed
-      AlarmDescription: If this alarm is triggered, then check sqs messages on UpsertCandidateDLQ. Persisting NVI candidate to database has failed.
-      MetricName: ApproximateNumberOfMessagesVisible
-      Namespace: AWS/SQS
-      Statistic: Sum
-      Dimensions:
-        - Name: QueueName
-          Value: !GetAtt UpsertCandidateDLQ.QueueName
       Period: 300
       EvaluationPeriods: 1
       Threshold: 1
