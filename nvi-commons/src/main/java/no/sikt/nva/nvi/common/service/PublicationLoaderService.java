@@ -53,7 +53,7 @@ public class PublicationLoaderService {
 
     logger.info("Extracting publication from S3 ({})", publicationBucketUri);
     var content = extractContentFromStorage(publicationBucketUri);
-    var inputModel = createModel(content);
+    var inputModel = createModel(ExpandedDocumentTool.prepareJsonNodeForModel(content));
 
     logger.info("Parsing publication with SPARQL query ({})", publicationBucketUri);
     var resultJson = parseInputModelToJsonLd(inputModel);
