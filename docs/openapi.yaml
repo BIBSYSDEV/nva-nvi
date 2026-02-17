@@ -1359,9 +1359,9 @@ components:
                 Approved: 1
                 Rejected: 1
 
-    StatusAggregation:
+    OrganizationStatusAggregationBase:
       type: object
-      description: Base schema for status aggregations
+      description: Base schema for organization status aggregations
       required:
         - candidateCount
         - points
@@ -1370,14 +1370,13 @@ components:
       properties:
         candidateCount:
           type: integer
-          description: Total number of NVI candidates
+          description: Number of NVI candidates
           minimum: 0
           example: 20
         points:
           type: number
-          description: Sum of expected or reported NVI points
+          description: Total NVI points from creators
           format: double
-          minimum: 0
           example: 31.1234
         globalApprovalStatus:
           $ref: "#/components/schemas/GlobalApprovalStatusCounts"
@@ -1389,7 +1388,7 @@ components:
         Aggregation representing totals for a top-level organization.
         Includes transitive points from all sub-organizations.
       allOf:
-        - $ref: "#/components/schemas/StatusAggregation"
+        - $ref: "#/components/schemas/OrganizationStatusAggregationBase"
         - type: object
           required:
             - type
@@ -1404,7 +1403,7 @@ components:
         Aggregation based on direct creator affiliations to a specific organization.
         Points are calculated only from creators directly affiliated with this organization.
       allOf:
-        - $ref: "#/components/schemas/StatusAggregation"
+        - $ref: "#/components/schemas/OrganizationStatusAggregationBase"
         - type: object
           required:
             - type
