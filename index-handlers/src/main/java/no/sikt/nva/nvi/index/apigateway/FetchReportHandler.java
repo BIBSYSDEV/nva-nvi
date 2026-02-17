@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.index.apigateway;
 import static java.net.HttpURLConnection.HTTP_OK;
 
 import com.amazonaws.services.lambda.runtime.Context;
+import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.index.apigateway.requests.ReportRequestFactory;
 import no.sikt.nva.nvi.index.model.report.ReportResponse;
 import nva.commons.apigateway.AccessRight;
@@ -15,13 +16,16 @@ import nva.commons.core.JacocoGenerated;
 
 public class FetchReportHandler extends ApiGatewayHandler<Void, ReportResponse> {
 
+  private final ReportResponseFactory reportResponseFactory;
+
   @JacocoGenerated
   public FetchReportHandler() {
-    this(new Environment());
+    this(new Environment(), NviPeriodService.defaultNviPeriodService());
   }
 
-  public FetchReportHandler(Environment environment) {
+  public FetchReportHandler(Environment environment, NviPeriodService nviPeriodService) {
     super(Void.class, environment);
+    this.reportResponseFactory = new ReportResponseFactory(nviPeriodService);
   }
 
   @Override
@@ -36,7 +40,7 @@ public class FetchReportHandler extends ApiGatewayHandler<Void, ReportResponse> 
   protected ReportResponse processInput(Void unused, RequestInfo requestInfo, Context context)
       throws ApiGatewayException {
     var reportRequest = ReportRequestFactory.getRequest(requestInfo, environment);
-    return ReportResponseFactory.getResponse(reportRequest);
+    return reportResponseFactory.getResponse(reportRequest);
   }
 
   @Override

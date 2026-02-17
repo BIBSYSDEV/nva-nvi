@@ -5,5 +5,5 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 @JsonSerialize
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
-public record InstitutionSummary(
-    InstitutionTotals totals, UndisputedCandidatesByLocalApprovalStatus byLocalApprovalStatus) {}
+public record CandidatesByGlobalApprovalStatus(
+    int dispute, int pending, int rejected, int approved) {}

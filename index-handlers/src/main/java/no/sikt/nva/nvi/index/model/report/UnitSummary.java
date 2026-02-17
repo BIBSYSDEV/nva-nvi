@@ -2,10 +2,13 @@ package no.sikt.nva.nvi.index.model.report;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import java.net.URI;
-import nva.commons.core.JacocoGenerated;
+import java.util.List;
+import no.sikt.nva.nvi.common.client.model.Organization;
 
-@JacocoGenerated // FIXME: Not in use yet
 @JsonSerialize
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
-public record UnitSummary(URI id, DirectAffiliationAggregation statistics) {}
+public record UnitSummary(
+    Organization unit,
+    UnitTotals totals,
+    UndisputedCandidatesByLocalApprovalStatus byLocalApprovalStatus,
+    List<UnitSummary> units) {}

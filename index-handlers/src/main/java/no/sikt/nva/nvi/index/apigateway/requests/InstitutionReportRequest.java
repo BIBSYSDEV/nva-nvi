@@ -11,6 +11,7 @@ import nva.commons.core.paths.UriWrapper;
 
 public record InstitutionReportRequest(URI queryId, String period, URI institutionId)
     implements ReportRequest {
+
   private static final String CRISTIN_PATH_SEGMENT = "cristin";
   private static final String ORGANIZATION_PATH_SEGMENT = "organization";
 

@@ -32,7 +32,7 @@ x-example-data:
   org-20754-2-1-0: &org-20754-2-1-0
     id: https://api.nva.unit.no/cristin/organization/20754.2.1.0
     type: Organization
-    countryCode: "NO"
+    country: "NO"
     labels:
       nb: "Seksjon for testdata"
       en: "Section for Placeholder Data"
@@ -42,7 +42,7 @@ x-example-data:
   org-20754-2-0-0: &org-20754-2-0-0
     id: https://api.nva.unit.no/cristin/organization/20754.2.0.0
     type: Organization
-    countryCode: "NO"
+    country: "NO"
     labels:
       nb: "Divisjon forsknings- og kunnskapsressurser"
       en: "The Research and Education Resources Division"
@@ -54,7 +54,7 @@ x-example-data:
   org-20754-0-0-0: &org-20754-0-0-0
     id: https://api.nva.unit.no/cristin/organization/20754.0.0.0
     type: Organization
-    countryCode: "NO"
+    country: "NO"
     labels:
       nb: "Sikt – Kunnskapssektorens tjenesteleverandør"
       en: "Sikt - Norwegian Agency for Shared Services in Education and Research"
@@ -1624,7 +1624,7 @@ components:
           format: uri
           example: https://api.nva.unit.no/scientific-index/reports/2025
         period:
-          $ref: "#/components/schemas/PeriodReference"
+          $ref: "#/components/schemas/NviPeriod"
         totals:
           $ref: "#/components/schemas/PeriodTotals"
         byGlobalApprovalStatus:
@@ -1648,7 +1648,7 @@ components:
           format: uri
           example: https://api.nva.unit.no/scientific-index/reports/2025/institutions
         period:
-          $ref: "#/components/schemas/PeriodReference"
+          $ref: "#/components/schemas/NviPeriod"
         institutions:
           type: array
           items:
@@ -1676,7 +1676,7 @@ components:
           format: uri
           example: https://api.nva.unit.no/scientific-index/reports/2025/institutions/20754.0.0.0
         period:
-          $ref: "#/components/schemas/PeriodReference"
+          $ref: "#/components/schemas/NviPeriod"
         sector:
           type: string
           enum: [UHI, HEALTH, INSTITUTE, OTHER]
@@ -1689,22 +1689,6 @@ components:
           description: Per-unit breakdown. Only included when requesting a specific institution report.
           items:
             $ref: "#/components/schemas/UnitSummary"
-
-    PeriodReference:
-      type: object
-      description: Reference to an NVI reporting period.
-      required:
-        - id
-        - year
-      properties:
-        id:
-          type: string
-          format: uri
-          example: https://api.nva.unit.no/scientific-index/period/2025
-        year:
-          type: string
-          pattern: '^\d{4}$'
-          example: "2025"
 
     Organization:
       type: object
@@ -1719,7 +1703,7 @@ components:
         type:
           type: string
           enum: [Organization]
-        countryCode:
+        country:
           type: string
         labels:
           type: object
