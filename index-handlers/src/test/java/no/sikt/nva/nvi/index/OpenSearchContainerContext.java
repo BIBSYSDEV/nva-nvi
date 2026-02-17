@@ -5,6 +5,7 @@ import java.net.URI;
 import java.util.Collection;
 import java.util.List;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
+import no.sikt.nva.nvi.index.aws.OpenSearchClientFactory;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import org.apache.hc.core5.http.HttpHost;
 import org.opensearch.client.opensearch._types.OpenSearchException;
@@ -24,7 +25,9 @@ public class OpenSearchContainerContext implements Startable {
   public void start() {
     container.start();
     var httpHost = HttpHost.create(URI.create(container.getHttpHostAddress()));
-    openSearchClient = new OpenSearchClient(httpHost, FakeCachedJwtProvider.setup());
+    var fakeJwtProvider = FakeCachedJwtProvider.setup();
+    var nativeClient = OpenSearchClientFactory.createClient(httpHost, fakeJwtProvider);
+    openSearchClient = new OpenSearchClient(nativeClient);
   }
 
   @Override
