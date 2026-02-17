@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.common.model;
 
-import static no.sikt.nva.nvi.common.model.ContributorFixtures.STATUS_UNVERIFIED;
 import static no.sikt.nva.nvi.common.model.ContributorFixtures.STATUS_VERIFIED;
 import static no.sikt.nva.nvi.test.TestUtils.randomUriWithSuffix;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -38,16 +37,6 @@ public class NviCreatorFixtures {
         creatorId,
         randomString(),
         STATUS_VERIFIED,
-        List.of(affiliations),
-        List.of(topLevelOrganization));
-  }
-
-  public static NviCreator unverifiedNviCreatorFrom(
-      Organization topLevelOrganization, URI... affiliations) {
-    return new NviCreator(
-        null,
-        randomString(),
-        STATUS_UNVERIFIED,
         List.of(affiliations),
         List.of(topLevelOrganization));
   }

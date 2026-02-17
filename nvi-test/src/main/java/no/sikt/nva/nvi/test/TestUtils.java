@@ -15,6 +15,7 @@ import java.math.RoundingMode;
 import java.net.URI;
 import java.time.LocalDate;
 import java.time.Year;
+import java.time.ZoneId;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -28,11 +29,10 @@ public final class TestUtils {
   public static final int SCALE = 4;
   public static final BigDecimal MIN_BIG_DECIMAL = BigDecimal.ZERO;
   public static final BigDecimal MAX_BIG_DECIMAL = BigDecimal.TEN;
-  public static final int CURRENT_YEAR = Year.now().getValue();
+  public static final int CURRENT_YEAR = getCurrentYear();
   public static final Random RANDOM = new Random();
   public static final AtomicInteger ID_COUNTER = new AtomicInteger(100);
 
-  private static final String BUCKET_HOST = "example.org";
   private static final LocalDate START_DATE = LocalDate.of(1970, 1, 1);
   private static final String PUBLICATION_API_PATH = "publication";
   private static final String API_HOST = "example.com";
@@ -51,10 +51,6 @@ public final class TestUtils {
     return String.valueOf(generateUniqueId());
   }
 
-  public static URI generateS3BucketUri(UUID identifier) {
-    return UriWrapper.fromHost(BUCKET_HOST).addChild(identifier.toString()).getUri();
-  }
-
   public static URI generatePublicationId(UUID identifier) {
     return UriWrapper.fromHost(API_HOST)
         .addChild(PUBLICATION_API_PATH)
@@ -63,7 +59,7 @@ public final class TestUtils {
   }
 
   public static String randomYear() {
-    return String.valueOf(randomIntBetween(START_DATE.getYear(), LocalDate.now().getYear()));
+    return String.valueOf(randomIntBetween(START_DATE.getYear(), CURRENT_YEAR));
   }
 
   public static String randomTitle() {
@@ -137,5 +133,10 @@ public final class TestUtils {
     var arrayNode = objectMapper.createArrayNode();
     values.forEach(arrayNode::add);
     node.set(field, arrayNode);
+  }
+
+  @SuppressWarnings("TimeInStaticInitializer")
+  private static int getCurrentYear() {
+    return Year.now(ZoneId.systemDefault()).getValue();
   }
 }

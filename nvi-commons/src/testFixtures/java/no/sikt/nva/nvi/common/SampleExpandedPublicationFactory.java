@@ -38,8 +38,6 @@ import no.sikt.nva.nvi.test.SampleExpandedPublicationContext;
 import no.sikt.nva.nvi.test.SampleExpandedPublicationDate;
 import no.unit.nva.clients.CustomerDto;
 
-// TODO Refactor to remove warnings NP-49938
-@SuppressWarnings("PMD.CouplingBetweenObjects")
 public class SampleExpandedPublicationFactory {
   private static final String ROLE_CREATOR = "Creator";
   private static final String ROLE_OTHER = "SomeOtherRole";

@@ -38,7 +38,6 @@ test {
     environment("API_HOST", "api.fake.nva.aws.unit.no")
     environment("BACKEND_CLIENT_AUTH_URL", "api.fake.nva.aws.unit.no/auth")
     environment("CANDIDATE_DLQ_URL", "http://localhost:3000/candidate-DLQ")
-    environment("CANDIDATE_QUEUE_URL", "http://localhost:3000/candidate-queue")
     environment("COGNITO_AUTHORIZER_URLS", "http://localhost:3000")
     environment("CUSTOM_DOMAIN_BASE_PATH", "scientific-index")
     environment("EXPANDED_RESOURCES_BUCKET", "testBucket")

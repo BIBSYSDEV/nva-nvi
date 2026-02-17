@@ -8,6 +8,7 @@ import com.amazonaws.services.lambda.runtime.events.DynamodbEvent.DynamodbStream
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.MessageAttribute;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -129,7 +130,7 @@ public final class QueueServiceTestUtils {
     var message = new SQSMessage();
     try {
       message.setBody(body.toJsonString());
-    } catch (Exception e) {
+    } catch (JsonProcessingException e) {
       throw new RuntimeException(e);
     }
     return message;

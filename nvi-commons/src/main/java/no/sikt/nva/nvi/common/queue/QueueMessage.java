@@ -19,7 +19,6 @@ import software.amazon.awssdk.services.sqs.model.MessageAttributeValue;
 public record QueueMessage(JsonSerializable body, Map<String, MessageAttributeValue> attributes) {
 
   private static final String CANDIDATE_IDENTIFIER = "candidateIdentifier";
-  private static final String PUBLICATION_ID = "publicationId";
   private static final String PUBLICATION_BUCKET_URI = "publicationBucketUri";
   private static final String ERROR_MESSAGE = "errorMessage";
   private static final String ERROR_TYPE = "errorType";
@@ -69,10 +68,6 @@ public record QueueMessage(JsonSerializable body, Map<String, MessageAttributeVa
 
     public Builder withCandidateIdentifier(UUID candidateIdentifier) {
       return withAttribute(CANDIDATE_IDENTIFIER, candidateIdentifier.toString());
-    }
-
-    public Builder withPublicationId(URI publicationId) {
-      return withAttribute(PUBLICATION_ID, publicationId.toString());
     }
 
     public Builder withPublicationBucketUri(URI publicationBucketUri) {
