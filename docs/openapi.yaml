@@ -28,6 +28,39 @@ x-authenticated-security: &authenticated
       - "https://api.nva.unit.no/scopes/backend"
       - "https://api.nva.unit.no/scopes/frontend"
 
+x-example-data:
+  org-20754-2-1-0: &org-20754-2-1-0
+    id: https://api.nva.unit.no/cristin/organization/20754.2.1.0
+    type: Organization
+    countryCode: "NO"
+    labels:
+      nb: "Seksjon for testdata"
+      en: "Section for Placeholder Data"
+    partOf:
+      - id: https://api.nva.unit.no/cristin/organization/20754.2.0.0
+
+  org-20754-2-0-0: &org-20754-2-0-0
+    id: https://api.nva.unit.no/cristin/organization/20754.2.0.0
+    type: Organization
+    countryCode: "NO"
+    labels:
+      nb: "Divisjon forsknings- og kunnskapsressurser"
+      en: "The Research and Education Resources Division"
+    partOf:
+      - id: https://api.nva.unit.no/cristin/organization/20754.0.0.0
+    hasPart:
+      - *org-20754-2-1-0
+
+  org-20754-0-0-0: &org-20754-0-0-0
+    id: https://api.nva.unit.no/cristin/organization/20754.0.0.0
+    type: Organization
+    countryCode: "NO"
+    labels:
+      nb: "Sikt – Kunnskapssektorens tjenesteleverandør"
+      en: "Sikt - Norwegian Agency for Shared Services in Education and Research"
+    hasPart:
+      - *org-20754-2-0-0
+
 paths:
   /context:
     get:
@@ -972,7 +1005,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AllInstitutionsReportResponse"
+                $ref: "#/components/schemas/AllInstitutionsReport"
         "400":
           description: "Bad Request - Invalid period format"
           content:
@@ -1031,7 +1064,62 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/InstitutionReportResponse"
+                $ref: "#/components/schemas/InstitutionReport"
+              examples:
+                topLevelInstitution:
+                  summary: Institution with organization tree (top-level with child and grandchild)
+                  value:
+                    type: InstitutionReport
+                    id: https://api.nva.unit.no/scientific-index/reports/2025/institutions/20754.0.0.0
+                    period:
+                      id: https://api.nva.unit.no/scientific-index/period/2025
+                      year: "2025"
+                    sector: UHI
+                    institution: *org-20754-0-0-0
+                    institutionSummary:
+                      type: InstitutionSummary
+                      totals:
+                        type: InstitutionTotals
+                        validPoints: 12.3456
+                        disputedCount: 4
+                        undisputedProcessedCount: 4
+                        undisputedTotalCount: 6
+                      byLocalApprovalStatus:
+                        type: UndisputedCandidatesByLocalApprovalStatus
+                        new: 1
+                        pending: 1
+                        approved: 2
+                        rejected: 2
+                    units:
+                      - type: UnitSummary
+                        unit: *org-20754-2-0-0
+                        totals:
+                          type: UnitTotals
+                          validPoints: 8.3456
+                          disputedCount: 2
+                          undisputedProcessedCount: 1
+                          undisputedTotalCount: 2
+                        byLocalApprovalStatus:
+                          type: UndisputedCandidatesByLocalApprovalStatus
+                          new: 1
+                          pending: 0
+                          approved: 1
+                          rejected: 0
+                        units:
+                          - type: UnitSummary
+                            unit: *org-20754-2-1-0
+                            totals:
+                              type: UnitTotals
+                              validPoints: 0.0
+                              disputedCount: 0
+                              undisputedProcessedCount: 1
+                              undisputedTotalCount: 1
+                            byLocalApprovalStatus:
+                              type: UndisputedCandidatesByLocalApprovalStatus
+                              new: 0
+                              pending: 0
+                              approved: 0
+                              rejected: 1
         "400":
           description: "Bad Request - Invalid period or institution format"
           content:
@@ -1498,12 +1586,11 @@ components:
 
     AllPeriodsReport:
       type: object
-      description: >
-        Overview of all available NVI reporting periods.
-        NOTE: Placeholder model, not implemented yet.
+      description: Overview of all NVI reporting periods.
       required:
         - type
         - id
+        - periods
       properties:
         type:
           type: string
@@ -1511,17 +1598,22 @@ components:
         id:
           type: string
           description: Query ID for this report
-          example: https://api.nva.unit.no/scientific-index/reports
           format: uri
+          example: https://api.nva.unit.no/scientific-index/reports
+        periods:
+          type: array
+          items:
+            $ref: "#/components/schemas/PeriodReport"
 
     PeriodReport:
       type: object
-      description: >
-        Report for a specific NVI reporting period.
-        NOTE: Placeholder model, not implemented yet.
+      description: Report for a specific NVI reporting period, summarizing all candidates in the period.
       required:
         - type
         - id
+        - period
+        - totals
+        - byGlobalApprovalStatus
       properties:
         type:
           type: string
@@ -1529,13 +1621,18 @@ components:
         id:
           type: string
           description: Query ID for this report
-          example: https://api.nva.unit.no/scientific-index/reports/2025
           format: uri
+          example: https://api.nva.unit.no/scientific-index/reports/2025
+        period:
+          $ref: "#/components/schemas/PeriodReference"
+        totals:
+          $ref: "#/components/schemas/PeriodTotals"
+        byGlobalApprovalStatus:
+          $ref: "#/components/schemas/CandidatesByGlobalApprovalStatus"
 
-    AllInstitutionsReportResponse:
+    AllInstitutionsReport:
       type: object
-      description: >
-        Report listing all institutions with NVI candidates for a given period, including per-institution statistics.
+      description: Report listing all institutions with NVI candidates for a given period.
       required:
         - type
         - id
@@ -1548,27 +1645,27 @@ components:
         id:
           type: string
           description: Query ID for this report
-          example: https://api.nva.unit.no/scientific-index/reports/2025/institutions
           format: uri
+          example: https://api.nva.unit.no/scientific-index/reports/2025/institutions
         period:
-          type: string
-          pattern: '^(200[2-9]|20[1-9]\d|2[1-9]\d{2}|[3-9]\d{3})$'
-          example: "2025"
+          $ref: "#/components/schemas/PeriodReference"
         institutions:
           type: array
           items:
-            $ref: "#/components/schemas/InstitutionSummary"
+            $ref: "#/components/schemas/InstitutionReport"
 
-    InstitutionReportResponse:
+    InstitutionReport:
       type: object
       description: >
-        Detailed report for a single institution in a given period, including overall statistics and a per-unit breakdown.
+        Report for a single institution in a given period, summarizing candidates
+        affiliated with the institution directly or through its sub-units.
       required:
         - type
         - id
         - period
+        - sector
         - institution
-        - units
+        - institutionSummary
       properties:
         type:
           type: string
@@ -1579,61 +1676,241 @@ components:
           format: uri
           example: https://api.nva.unit.no/scientific-index/reports/2025/institutions/20754.0.0.0
         period:
+          $ref: "#/components/schemas/PeriodReference"
+        sector:
           type: string
-          pattern: '^(200[2-9]|20[1-9]\d|2[1-9]\d{2}|[3-9]\d{3})$'
-          example: "2025"
+          enum: [UHI, HEALTH, INSTITUTE, OTHER]
         institution:
+          $ref: "#/components/schemas/Organization"
+        institutionSummary:
           $ref: "#/components/schemas/InstitutionSummary"
         units:
           type: array
+          description: Per-unit breakdown. Only included when requesting a specific institution report.
           items:
             $ref: "#/components/schemas/UnitSummary"
 
-    InstitutionSummary:
-      description: >
-        Summary of NVI candidates and points for an institution.
-        This is based on publications with creators affiliated with any unit of the institution.
+    PeriodReference:
       type: object
+      description: Reference to an NVI reporting period.
+      required:
+        - id
+        - year
+      properties:
+        id:
+          type: string
+          format: uri
+          example: https://api.nva.unit.no/scientific-index/period/2025
+        year:
+          type: string
+          pattern: '^\d{4}$'
+          example: "2025"
+
+    Organization:
+      type: object
+      description: An organization (institution or unit).
+      required:
+        - id
+        - type
+      properties:
+        id:
+          type: string
+          format: uri
+        type:
+          type: string
+          enum: [Organization]
+        countryCode:
+          type: string
+        labels:
+          type: object
+          additionalProperties:
+            type: string
+        hasPart:
+          type: array
+          items:
+            $ref: "#/components/schemas/Organization"
+        partOf:
+          type: array
+          items:
+            $ref: "#/components/schemas/Organization"
+      example: *org-20754-0-0-0
+
+    TotalsBase:
+      type: object
+      description: >
+        Base totals for NVI candidates. Points and undisputed counts exclude
+        candidates with global approval status Dispute.
+      required:
+        - validPoints
+        - disputedCount
+        - undisputedProcessedCount
+        - undisputedTotalCount
+      properties:
+        validPoints:
+          type: number
+          format: double
+          description: Sum of NVI points for undisputed candidates
+        disputedCount:
+          type: integer
+          minimum: 0
+          description: Number of candidates with global approval status Dispute
+        undisputedProcessedCount:
+          type: integer
+          minimum: 0
+          description: Number of undisputed candidates that have been fully processed
+        undisputedTotalCount:
+          type: integer
+          minimum: 0
+          description: Total number of undisputed candidates
+      example:
+        validPoints: 12.3456
+        disputedCount: 4
+        undisputedProcessedCount: 2
+        undisputedTotalCount: 6
+
+    PeriodTotals:
+      description: Aggregate totals for an NVI period.
+      allOf:
+        - $ref: "#/components/schemas/TotalsBase"
+        - type: object
+          required:
+            - type
+          properties:
+            type:
+              type: string
+              enum: [PeriodTotals]
+
+    InstitutionTotals:
+      description: Aggregate totals for an institution.
+      allOf:
+        - $ref: "#/components/schemas/TotalsBase"
+        - type: object
+          required:
+            - type
+          properties:
+            type:
+              type: string
+              enum: [InstitutionTotals]
+
+    UnitTotals:
+      description: Aggregate totals for an organizational unit.
+      allOf:
+        - $ref: "#/components/schemas/TotalsBase"
+        - type: object
+          required:
+            - type
+          properties:
+            type:
+              type: string
+              enum: [UnitTotals]
+
+    CandidatesByGlobalApprovalStatus:
+      type: object
+      description: Count of candidates by global approval status (includes all candidates).
       required:
         - type
-        - id
-        - sector
-        - statistics
+        - dispute
+        - pending
+        - rejected
+        - approved
+      properties:
+        type:
+          type: string
+          enum: [CandidatesByGlobalApprovalStatus]
+        dispute:
+          type: integer
+          minimum: 0
+        pending:
+          type: integer
+          minimum: 0
+        rejected:
+          type: integer
+          minimum: 0
+        approved:
+          type: integer
+          minimum: 0
+      example:
+        type: CandidatesByGlobalApprovalStatus
+        dispute: 4
+        pending: 4
+        rejected: 1
+        approved: 1
+
+    UndisputedCandidatesByLocalApprovalStatus:
+      type: object
+      description: >
+        Count of undisputed candidates by local approval status.
+        Only includes candidates where global approval status is not Dispute.
+      required:
+        - type
+        - new
+        - pending
+        - approved
+        - rejected
+      properties:
+        type:
+          type: string
+          enum: [UndisputedCandidatesByLocalApprovalStatus]
+        new:
+          type: integer
+          minimum: 0
+        pending:
+          type: integer
+          minimum: 0
+        approved:
+          type: integer
+          minimum: 0
+        rejected:
+          type: integer
+          minimum: 0
+      example:
+        type: UndisputedCandidatesByLocalApprovalStatus
+        new: 1
+        pending: 1
+        approved: 2
+        rejected: 2
+
+    InstitutionSummary:
+      type: object
+      description: Summary statistics for an institution's NVI candidates.
+      required:
+        - type
+        - totals
+        - byLocalApprovalStatus
       properties:
         type:
           type: string
           enum: [InstitutionSummary]
-        id:
-          type: string
-          description: ID of the institution
-          format: uri
-          example: https://api.nva.unit.no/cristin/organization/20754.0.0.0
-        sector:
-          type: string
-          enum: [UHI, HEALTH, INSTITUTE, OTHER]
-        statistics:
-          $ref: "#/components/schemas/TopLevelAggregation"
+        totals:
+          $ref: "#/components/schemas/InstitutionTotals"
+        byLocalApprovalStatus:
+          $ref: "#/components/schemas/UndisputedCandidatesByLocalApprovalStatus"
 
     UnitSummary:
-      description: >
-        Summary of NVI candidates and points for an organizational unit of an institution.
-        This is based on publications with creators affiliated with this unit directly.
       type: object
+      description: >
+        Summary for an organizational unit, based on candidates with direct
+        creator affiliation to the unit.
       required:
         - type
-        - id
-        - statistics
+        - unit
+        - totals
+        - byLocalApprovalStatus
       properties:
         type:
           type: string
           enum: [UnitSummary]
-        id:
-          type: string
-          description: ID of the unit
-          format: uri
-          example: https://api.nva.unit.no/cristin/organization/20754.1.0.0
-        statistics:
-          $ref: "#/components/schemas/DirectAffiliationAggregation"
+        unit:
+          $ref: "#/components/schemas/Organization"
+        totals:
+          $ref: "#/components/schemas/UnitTotals"
+        byLocalApprovalStatus:
+          $ref: "#/components/schemas/UndisputedCandidatesByLocalApprovalStatus"
+        units:
+          type: array
+          description: Nested sub-unit summaries
+          items:
+            $ref: "#/components/schemas/UnitSummary"
 
   securitySchemes:
     CognitoUserPool:
