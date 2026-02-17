@@ -1,7 +1,8 @@
-package no.sikt.nva.nvi.index.model.report;
+package no.sikt.nva.nvi.index.report.response;
 
 import java.net.URI;
 import no.sikt.nva.nvi.common.service.dto.NviPeriodDto;
+import no.sikt.nva.nvi.index.model.report.CandidatesByGlobalApprovalStatus;
 
 public record PeriodReport(
     URI id,

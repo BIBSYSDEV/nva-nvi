@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.index.apigateway;
+package no.sikt.nva.nvi.index.report.response;
 
 import static java.util.Collections.emptyList;
 
@@ -8,23 +8,12 @@ import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.model.Sector;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.dto.NviPeriodDto;
-import no.sikt.nva.nvi.index.apigateway.requests.AllInstitutionsReportRequest;
-import no.sikt.nva.nvi.index.apigateway.requests.AllPeriodsReportRequest;
-import no.sikt.nva.nvi.index.apigateway.requests.InstitutionReportRequest;
-import no.sikt.nva.nvi.index.apigateway.requests.PeriodReportRequest;
-import no.sikt.nva.nvi.index.apigateway.requests.ReportRequest;
-import no.sikt.nva.nvi.index.model.report.AllInstitutionsReport;
-import no.sikt.nva.nvi.index.model.report.AllPeriodsReport;
 import no.sikt.nva.nvi.index.model.report.CandidatesByGlobalApprovalStatus;
-import no.sikt.nva.nvi.index.model.report.InstitutionReport;
-import no.sikt.nva.nvi.index.model.report.InstitutionSummary;
-import no.sikt.nva.nvi.index.model.report.InstitutionTotals;
-import no.sikt.nva.nvi.index.model.report.PeriodReport;
-import no.sikt.nva.nvi.index.model.report.PeriodTotals;
-import no.sikt.nva.nvi.index.model.report.ReportResponse;
-import no.sikt.nva.nvi.index.model.report.UndisputedCandidatesByLocalApprovalStatus;
-import no.sikt.nva.nvi.index.model.report.UnitSummary;
-import no.sikt.nva.nvi.index.model.report.UnitTotals;
+import no.sikt.nva.nvi.index.report.request.AllInstitutionsReportRequest;
+import no.sikt.nva.nvi.index.report.request.AllPeriodsReportRequest;
+import no.sikt.nva.nvi.index.report.request.InstitutionReportRequest;
+import no.sikt.nva.nvi.index.report.request.PeriodReportRequest;
+import no.sikt.nva.nvi.index.report.request.ReportRequest;
 
 public class ReportResponseFactory {
 

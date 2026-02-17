@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.index.apigateway.requests;
+package no.sikt.nva.nvi.index.report.request;
 
 public sealed interface ReportRequest
     permits AllPeriodsReportRequest,
