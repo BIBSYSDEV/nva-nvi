@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.index.model.report;
+package no.sikt.nva.nvi.index.report.response;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;

@@ -8,7 +8,6 @@ import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.model.Sector;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.dto.NviPeriodDto;
-import no.sikt.nva.nvi.index.model.report.CandidatesByGlobalApprovalStatus;
 import no.sikt.nva.nvi.index.report.request.AllInstitutionsReportRequest;
 import no.sikt.nva.nvi.index.report.request.AllPeriodsReportRequest;
 import no.sikt.nva.nvi.index.report.request.InstitutionReportRequest;
