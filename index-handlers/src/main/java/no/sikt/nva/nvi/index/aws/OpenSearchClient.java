@@ -2,36 +2,18 @@ package no.sikt.nva.nvi.index.aws;
 
 import static no.sikt.nva.nvi.index.utils.SearchConstants.MAPPINGS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.NVI_CANDIDATES_INDEX;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.SEARCH_INFRASTRUCTURE_API_HOST;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.SEARCH_INFRASTRUCTURE_AUTH_URI;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.SEARCH_INFRASTRUCTURE_CREDENTIALS;
 import static nva.commons.core.attempt.Try.attempt;
-import static org.apache.http.HttpHeaders.AUTHORIZATION;
 
-import com.auth0.jwt.interfaces.DecodedJWT;
 import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.time.Clock;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Function;
-import no.sikt.nva.nvi.common.model.UsernamePasswordWrapper;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
 import no.sikt.nva.nvi.index.model.search.SearchResultParameters;
 import no.sikt.nva.nvi.index.query.Aggregations;
 import no.sikt.nva.nvi.index.utils.SearchConstants;
-import no.unit.nva.auth.CachedJwtProvider;
-import no.unit.nva.auth.CachedValueProvider;
-import no.unit.nva.auth.CognitoAuthenticator;
-import no.unit.nva.auth.CognitoCredentials;
 import nva.commons.core.JacocoGenerated;
-import nva.commons.secrets.SecretsReader;
-import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder;
-import org.apache.hc.core5.http.HttpHost;
-import org.apache.hc.core5.http.message.BasicHeader;
-import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch._types.FieldSort;
 import org.opensearch.client.opensearch._types.FieldSort.Builder;
 import org.opensearch.client.opensearch._types.OpenSearchException;
@@ -49,14 +31,11 @@ import org.opensearch.client.opensearch.indices.CreateIndexRequest;
 import org.opensearch.client.opensearch.indices.DeleteIndexRequest;
 import org.opensearch.client.opensearch.indices.GetIndexRequest;
 import org.opensearch.client.opensearch.indices.RefreshRequest;
-import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBuilder;
 import org.opensearch.client.util.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @JacocoGenerated
-// Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
-@SuppressWarnings("PMD.CouplingBetweenObjects")
 public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument> {
 
   private static final String INDEX_NOT_FOUND_EXCEPTION = "index_not_found_exception";
@@ -65,25 +44,13 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
       "Error while creating index: " + NVI_CANDIDATES_INDEX;
   private static final int MAX_QUERY_SIZE = 150;
   private final org.opensearch.client.opensearch.OpenSearchClient client;
-  private final CachedValueProvider<DecodedJWT> cachedJwtProvider;
 
-  public OpenSearchClient(HttpHost httpHost, CachedValueProvider<DecodedJWT> cachedValueProvider) {
-    this.cachedJwtProvider = cachedValueProvider;
-    var transport =
-        ApacheHttpClient5TransportBuilder.builder(httpHost)
-            .setMapper(new JacksonJsonpMapper())
-            .setHttpClientConfigCallback(this::configureHttpClient)
-            .build();
-    this.client = new org.opensearch.client.opensearch.OpenSearchClient(transport);
+  public OpenSearchClient(org.opensearch.client.opensearch.OpenSearchClient client) {
+    this.client = client;
   }
 
   public static OpenSearchClient defaultOpenSearchClient() {
-    var cognitoAuthenticator =
-        new CognitoAuthenticator(
-            HttpClient.newHttpClient(), createCognitoCredentials(new SecretsReader()));
-    var cachedJwtProvider = new CachedJwtProvider(cognitoAuthenticator, Clock.systemDefaultZone());
-    var httpHost = HttpHost.create(URI.create(SEARCH_INFRASTRUCTURE_API_HOST));
-    return new OpenSearchClient(httpHost, cachedJwtProvider);
+    return new OpenSearchClient(OpenSearchClientFactory.createAuthenticatedClient());
   }
 
   @Override
@@ -163,16 +130,6 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
         .orElseThrow(failure -> handleFailure("Failed to refresh index", failure.getException()));
   }
 
-  private HttpAsyncClientBuilder configureHttpClient(HttpAsyncClientBuilder builder) {
-    return builder
-        .disableContentCompression()
-        .addRequestInterceptorFirst(
-            (request, entity, context) -> {
-              var token = cachedJwtProvider.getValue().getToken();
-              request.setHeader(new BasicHeader(AUTHORIZATION, token));
-            });
-  }
-
   private static DeleteRequest contructDeleteRequest(UUID identifier) {
     return new DeleteRequest.Builder()
         .index(NVI_CANDIDATES_INDEX)
@@ -187,16 +144,6 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
         .id(indexDocument.identifier().toString())
         .document(indexDocument)
         .build();
-  }
-
-  private static CognitoCredentials createCognitoCredentials(SecretsReader secretsReader) {
-    var credentials =
-        secretsReader.fetchClassSecret(
-            SEARCH_INFRASTRUCTURE_CREDENTIALS, UsernamePasswordWrapper.class);
-    return new CognitoCredentials(
-        credentials::getUsername,
-        credentials::getPassword,
-        URI.create(SEARCH_INFRASTRUCTURE_AUTH_URI));
   }
 
   private static CreateIndexRequest getCreateIndexRequest() {
