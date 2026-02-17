@@ -1,8 +1,8 @@
 package no.sikt.nva.nvi.index.report.request;
 
-import static no.sikt.nva.nvi.index.utils.ReportConstants.API_HOST_KEY;
-import static no.sikt.nva.nvi.index.utils.ReportConstants.BASE_PATH_KEY;
-import static no.sikt.nva.nvi.index.utils.ReportConstants.REPORTS_PATH_SEGMENT;
+import static no.sikt.nva.nvi.index.report.ReportConstants.API_HOST_KEY;
+import static no.sikt.nva.nvi.index.report.ReportConstants.BASE_PATH_KEY;
+import static no.sikt.nva.nvi.index.report.ReportConstants.REPORTS_PATH_SEGMENT;
 
 import java.net.URI;
 import nva.commons.core.Environment;

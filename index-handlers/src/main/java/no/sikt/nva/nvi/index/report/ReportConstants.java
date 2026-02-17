@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.index.utils;
+package no.sikt.nva.nvi.index.report;
 
 public final class ReportConstants {
   public static final String API_HOST_KEY = "API_HOST";
