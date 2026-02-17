@@ -29,6 +29,11 @@ public record Organization(
     @JsonProperty("@context") Object context)
     implements JsonSerializable {
 
+  @JsonProperty("type")
+  public String type() {
+    return "Organization";
+  }
+
   public static Organization from(String json) throws JsonProcessingException {
     return dtoObjectMapper.readValue(json, Organization.class);
   }
