@@ -711,7 +711,16 @@ Resources:
                 - Lambda Function Invocation Result - Success
               detail:
                 responsePayload:
-                  topic: ["PublicationService.ExpandedEntry.Persisted"]
+                  topic: [ "PublicationService.ExpandedEntry.Persisted" ]
+                  $or:
+                    - oldType: [ "AcademicCommentary", "AcademicMonograph", "AcademicChapter", "AcademicArticle", "AcademicLiteratureReview" ]
+                      oldStatus: [ "PUBLISHED" ]
+                    - oldType: [ "AcademicCommentary", "AcademicMonograph", "AcademicChapter", "AcademicArticle", "AcademicLiteratureReview" ]
+                      newStatus: [ "PUBLISHED" ]
+                    - newType: [ "AcademicCommentary", "AcademicMonograph", "AcademicChapter", "AcademicArticle", "AcademicLiteratureReview" ]
+                      oldStatus: [ "PUBLISHED" ]
+                    - newType: [ "AcademicCommentary", "AcademicMonograph", "AcademicChapter", "AcademicArticle", "AcademicLiteratureReview" ]
+                      newStatus: [ "PUBLISHED" ]
       EventInvokeConfig:
         DestinationConfig:
           OnFailure:
