@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.test;
 
 import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.test.TestConstants.ABSTRACT_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.ACADEMIC_ARTICLE;
 import static no.sikt.nva.nvi.test.TestConstants.ACADEMIC_CHAPTER;
@@ -136,7 +137,9 @@ public record SampleExpandedPublication(
     putIfNotBlank(node, ABSTRACT_FIELD, abstractText);
     node.put(MAIN_TITLE_FIELD, mainTitle);
     node.set(CONTRIBUTORS_FIELD, createContributorsNode());
-    node.set(PUBLICATION_DATE_FIELD, publicationDate.asObjectNode());
+    if (nonNull(publicationDate)) {
+      node.set(PUBLICATION_DATE_FIELD, publicationDate.asObjectNode());
+    }
     node.set(REFERENCE_FIELD, createReferenceNode());
     return node;
   }
