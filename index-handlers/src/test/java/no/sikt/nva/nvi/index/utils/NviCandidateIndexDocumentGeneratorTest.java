@@ -109,7 +109,7 @@ class NviCandidateIndexDocumentGeneratorTest {
 
   private List<URI> extractHandlesFromAdditionalIdentifiers(JsonNode expandedResource) {
     return StreamSupport.stream(
-            expandedResource.withArray("additionalIdentifiers").spliterator(), false)
+            expandedResource.withArray(ADDITIONAL_IDENTIFIERS_FIELD).spliterator(), false)
         .filter(node -> HANDLE_IDENTIFIER_TYPE_FIELD.equals(node.path(TYPE_FIELD).asText()))
         .map(node -> node.path(VALUE_FIELD).textValue())
         .filter(Objects::nonNull)

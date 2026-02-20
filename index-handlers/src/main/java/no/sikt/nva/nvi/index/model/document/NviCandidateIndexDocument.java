@@ -44,6 +44,7 @@ import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -91,6 +92,7 @@ public record NviCandidateIndexDocument(
   private static final String REPORT_PENDING_VALUE = "?";
   private static final String REPORT_APPROVED_VALUE = "J";
   private static final String REPORT_DISPUTED_VALUE = "T";
+  private static final String UNKNOWN = "N/A";
 
   public static NviCandidateIndexDocument from(
       JsonNode expandedResource, Candidate candidate, UriRetriever uriRetriever) {
@@ -175,7 +177,10 @@ public record NviCandidateIndexDocument(
     keyValueMap.put(
         PUBLICATION_CHANNEL_LEVEL_POINTS, publicationTypeChannelLevelPoints().toString());
     keyValueMap.put(
-        INTERNATIONAL_COLLABORATION_FACTOR, internationalCollaborationFactor().toString());
+        INTERNATIONAL_COLLABORATION_FACTOR,
+        Optional.ofNullable(internationalCollaborationFactor())
+            .map(String::valueOf)
+            .orElse(UNKNOWN));
     keyValueMap.put(CREATOR_SHARE_COUNT, String.valueOf(creatorShareCount()));
     keyValueMap.put(
         POINTS_FOR_AFFILIATION,
