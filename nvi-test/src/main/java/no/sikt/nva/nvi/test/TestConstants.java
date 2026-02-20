@@ -99,6 +99,10 @@ public final class TestConstants {
   public static final String SERIES_TYPE = "Series";
   public static final String LEVEL_UNASSIGNED = "Unassigned";
   public static final String LEVEL_ONE = "LevelOne";
+  public static final String HANDLE_FIELD = "handle";
+  public static final String VALUE_FIELD = "value";
+  public static final String ADDITIONAL_IDENTIFIERS_FIELD = "additionalIdentifiers";
+  public static final String HANDLE_IDENTIFIER_TYPE_FIELD = "HandleIdentifier";
 
   public static final String PERSISTED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
 

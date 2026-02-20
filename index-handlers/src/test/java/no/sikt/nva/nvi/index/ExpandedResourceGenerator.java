@@ -2,10 +2,13 @@ package no.sikt.nva.nvi.index;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
+import static no.sikt.nva.nvi.test.TestConstants.ADDITIONAL_IDENTIFIERS_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.AFFILIATIONS_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.CONTRIBUTORS_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.ENTITY_DESCRIPTION_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.EN_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.HANDLE_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.HANDLE_IDENTIFIER_TYPE_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_ENGLISH_LABEL;
 import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_NORWEGIAN_LABEL;
 import static no.sikt.nva.nvi.test.TestConstants.IDENTIFIER_FIELD;
@@ -25,6 +28,7 @@ import static no.sikt.nva.nvi.test.TestConstants.REFERENCE_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.ROLE_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.TOP_LEVEL_ORGANIZATIONS_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.TYPE_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.VALUE_FIELD;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -40,6 +44,7 @@ import no.sikt.nva.nvi.common.model.NviCreator;
 import no.sikt.nva.nvi.common.model.PublicationDate;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.utils.JsonUtils;
+import nva.commons.core.paths.UriWrapper;
 
 public final class ExpandedResourceGenerator {
 
@@ -146,13 +151,25 @@ public final class ExpandedResourceGenerator {
 
     root.set(ENTITY_DESCRIPTION_FIELD, entityDescription);
 
-    root.put(IDENTIFIER_FIELD, candidate.identifier().toString());
+    root.put(
+        IDENTIFIER_FIELD, UriWrapper.fromUri(candidate.getPublicationId()).getLastPathElement());
 
     var topLevelOrganizations = createAndPopulateTopLevelOrganizations(candidate);
 
     root.set(TOP_LEVEL_ORGANIZATIONS_FIELD, topLevelOrganizations);
+    root.put(HANDLE_FIELD, randomUri().toString());
+    root.set(ADDITIONAL_IDENTIFIERS_FIELD, additionalIdentifiers());
 
     return root;
+  }
+
+  private ArrayNode additionalIdentifiers() {
+    var identifiers = no.unit.nva.commons.json.JsonUtils.dtoObjectMapper.createArrayNode();
+    identifiers
+        .addObject()
+        .put(TYPE_FIELD, HANDLE_IDENTIFIER_TYPE_FIELD)
+        .put(VALUE_FIELD, randomUri().toString());
+    return identifiers;
   }
 
   private static ObjectNode createAndPopulatePublicationInstance(Candidate candidate) {
