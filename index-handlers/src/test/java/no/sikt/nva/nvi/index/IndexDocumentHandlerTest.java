@@ -29,11 +29,16 @@ import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.HARD_CODED_TOP_LEVEL_
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.NVI_CANDIDATES_FOLDER;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.expandApprovals;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.expandPublicationDetails;
+import static no.sikt.nva.nvi.test.TestConstants.ADDITIONAL_IDENTIFIERS_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.EN_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.HANDLE_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.HANDLE_IDENTIFIER_TYPE_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_ENGLISH_LABEL;
 import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_NORWEGIAN_LABEL;
 import static no.sikt.nva.nvi.test.TestConstants.LABELS_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.NB_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.TYPE_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.VALUE_FIELD;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.s3.S3Driver.S3_SCHEME;
@@ -63,9 +68,13 @@ import java.net.URI;
 import java.net.http.HttpResponse;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.db.CandidateDao;
@@ -908,7 +917,31 @@ class IndexDocumentHandlerTest {
         .withCreatedDate(candidate.createdDate())
         .withModifiedDate(candidate.modifiedDate())
         .withReportingPeriod(ReportingPeriod.fromCandidate(candidate))
+        .withHandles(extractHandles(expandedResource))
         .build();
+  }
+
+  private static Set<URI> extractHandles(JsonNode expandedResource) {
+    return Stream.concat(
+            extractHandlesFromAdditionalIdentifiers(expandedResource).stream(),
+            extractHandle(expandedResource).stream())
+        .collect(Collectors.toSet());
+  }
+
+  private static List<URI> extractHandlesFromAdditionalIdentifiers(JsonNode expandedResource) {
+    return StreamSupport.stream(
+            expandedResource.withArray(ADDITIONAL_IDENTIFIERS_FIELD).spliterator(), false)
+        .filter(node -> HANDLE_IDENTIFIER_TYPE_FIELD.equals(node.path(TYPE_FIELD).asText()))
+        .map(node -> node.path(VALUE_FIELD).textValue())
+        .filter(Objects::nonNull)
+        .map(URI::create)
+        .toList();
+  }
+
+  private static Optional<URI> extractHandle(JsonNode expandedResource) {
+    return Optional.ofNullable(expandedResource.get(HANDLE_FIELD))
+        .map(JsonNode::textValue)
+        .map(URI::create);
   }
 
   private Candidate randomApplicableCandidate(URI topLevelOrg, URI affiliation) {
