@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.events.cristin;
 
-import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.utils.CollectionUtils.copyOfNullable;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
@@ -28,6 +27,7 @@ public record CristinNviReport(
     implements JsonSerializable {
 
   public CristinNviReport {
+    scientificResources = copyOfNullable(scientificResources);
     cristinLocales = copyOfNullable(cristinLocales);
   }
 
@@ -38,10 +38,6 @@ public record CristinNviReport(
         .map(DbLevel::fromDeprecatedValue)
         .findFirst()
         .orElseThrow();
-  }
-
-  public List<ScientificResource> scientificResources() {
-    return nonNull(scientificResources) ? scientificResources : List.of();
   }
 
   @JsonIgnore
