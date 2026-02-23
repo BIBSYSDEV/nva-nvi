@@ -6,6 +6,7 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import java.net.URI;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
@@ -20,7 +21,7 @@ public class NviCreatorDtoFixtures {
 
   public static VerifiedNviCreatorDto verifiedNviCreatorDtoCopiedFrom(
       VerifiedNviCreatorDto originalCreator, Organization... newAffiliations) {
-    var affiliationIds = List.of(newAffiliations).stream().map(Organization::id).toList();
+    var affiliationIds = Stream.of(newAffiliations).map(Organization::id).toList();
     return new VerifiedNviCreatorDto(originalCreator.id(), originalCreator.name(), affiliationIds);
   }
 
@@ -35,7 +36,7 @@ public class NviCreatorDtoFixtures {
 
   public static VerifiedNviCreatorDto verifiedNviCreatorDtoFrom(Organization... affiliations) {
     var creatorId = randomUriWithSuffix("creatorId");
-    var affiliationIds = List.of(affiliations).stream().map(Organization::id).toList();
+    var affiliationIds = Stream.of(affiliations).map(Organization::id).toList();
     return new VerifiedNviCreatorDto(creatorId, randomString(), affiliationIds);
   }
 
@@ -48,7 +49,7 @@ public class NviCreatorDtoFixtures {
   }
 
   public static UnverifiedNviCreatorDto unverifiedNviCreatorDtoFrom(Organization... affiliations) {
-    var affiliationIds = List.of(affiliations).stream().map(Organization::id).toList();
+    var affiliationIds = Stream.of(affiliations).map(Organization::id).toList();
     return unverifiedNviCreatorDtoFrom(affiliationIds);
   }
 }

@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.model.InstanceType;
 import no.sikt.nva.nvi.common.model.Sector;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
@@ -101,7 +102,7 @@ public class PointCalculationDtoBuilder {
   public PointCalculationDtoBuilder withAdditionalPointFor(
       URI topLeveOrganizationId, URI affiliationId, BigDecimal pointValue, URI... creatorIds) {
     var creatorPoints =
-        List.of(creatorIds).stream()
+        Stream.of(creatorIds)
             .map(creatorId -> new CreatorAffiliationPoints(creatorId, affiliationId, pointValue))
             .toList();
     var institutionPoint = new InstitutionPoints(topLeveOrganizationId, pointValue, creatorPoints);
