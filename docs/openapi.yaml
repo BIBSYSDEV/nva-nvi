@@ -901,7 +901,7 @@ paths:
   /reports:
     get:
       tags:
-        - Report
+        - Report (not implemented yet)
       description: Get report for all periods
       operationId: getAllPeriodsReport
       security: *authenticated
@@ -934,7 +934,7 @@ paths:
   /reports/{period}:
     get:
       tags:
-        - Report
+        - Report (not implemented yet)
       description: Get report for a specific period
       operationId: getPeriodReport
       parameters:
@@ -981,7 +981,7 @@ paths:
   /reports/{period}/institutions:
     get:
       tags:
-        - Report
+        - Report (not implemented yet)
       description: Get all institutions report for a specific period
       operationId: getAllInstitutionsReport
       parameters:
@@ -1028,7 +1028,7 @@ paths:
   /reports/{period}/institutions/{institution}:
     get:
       tags:
-        - Report
+        - Report (not implemented yet)
       description: Get specific institution report for a specific period
       operationId: getInstitutionReport
       parameters:
