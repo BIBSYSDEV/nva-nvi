@@ -73,8 +73,7 @@ public class EvaluationSteps {
       case CLOSED_PERIOD -> setupClosedPeriod(scenario, publicationYear);
       case OPEN_PERIOD -> setupOpenPeriod(scenario, publicationYear);
       case FUTURE_PERIOD -> setupFuturePeriod(scenario, publicationYear);
-      case null, default ->
-          throw new IllegalArgumentException("Invalid period state: " + periodState);
+      default -> throw new IllegalArgumentException("Invalid period state: " + periodState);
     }
   }
 
