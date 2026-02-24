@@ -1614,20 +1614,20 @@ components:
       type: object
       description: Report for a specific NVI reporting period, summarizing all candidates in the period.
       required:
-        - type
         - id
+        - type
         - period
         - totals
         - byGlobalApprovalStatus
       properties:
-        type:
-          type: string
-          enum: [PeriodReport]
         id:
           type: string
           description: Query ID for this report
           format: uri
           example: https://api.nva.unit.no/scientific-index/reports/2025
+        type:
+          type: string
+          enum: [PeriodReport]
         period:
           $ref: "#/components/schemas/NviPeriod"
         totals:
@@ -1639,19 +1639,19 @@ components:
       type: object
       description: Report listing all institutions with NVI candidates for a given period.
       required:
-        - type
         - id
+        - type
         - period
         - institutions
       properties:
-        type:
-          type: string
-          enum: [AllInstitutionsReport]
         id:
           type: string
           description: Query ID for this report
           format: uri
           example: https://api.nva.unit.no/scientific-index/reports/2025/institutions
+        type:
+          type: string
+          enum: [AllInstitutionsReport]
         period:
           $ref: "#/components/schemas/NviPeriod"
         institutions:
@@ -1665,21 +1665,21 @@ components:
         Report for a single institution in a given period, summarizing candidates
         affiliated with the institution directly or through its sub-units.
       required:
-        - type
         - id
+        - type
         - period
         - sector
         - institution
         - institutionSummary
       properties:
-        type:
-          type: string
-          enum: [InstitutionReport]
         id:
           type: string
           description: Query ID for this report
           format: uri
           example: https://api.nva.unit.no/scientific-index/reports/2025/institutions/20754.0.0.0
+        type:
+          type: string
+          enum: [InstitutionReport]
         period:
           $ref: "#/components/schemas/NviPeriod"
         sector:
