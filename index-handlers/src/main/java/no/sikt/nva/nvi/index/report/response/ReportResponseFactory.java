@@ -70,7 +70,7 @@ public class ReportResponseFactory {
     return new InstitutionReport(
         request.queryId(),
         periodDto,
-        Sector.UNKNOWN.toString(),
+        Sector.UNKNOWN,
         organization,
         institutionSummary,
         List.of(unitSummary));
