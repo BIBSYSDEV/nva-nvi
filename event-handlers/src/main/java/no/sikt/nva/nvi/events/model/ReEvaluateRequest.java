@@ -16,7 +16,7 @@ public record ReEvaluateRequest(
     @JsonProperty(TOPIC_FIELD) String topic) {
 
   public static final String PAGE_SIZE_FIELD = "pageSize";
-  public static final String START_MARKER_FIELD = "lastEvaluatedKey";
+  public static final String START_MARKER_FIELD = "startMarker";
   public static final String YEAR_FIELD = "year";
   public static final String TOPIC_FIELD = "topic";
   public static final int DEFAULT_PAGE_SIZE = 500;
