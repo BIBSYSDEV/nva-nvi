@@ -135,8 +135,7 @@ public final class TestUtils {
     node.set(field, arrayNode);
   }
 
-  @SuppressWarnings("TimeInStaticInitializer")
   private static int getCurrentYear() {
-    return Year.now(ZoneId.systemDefault()).getValue();
+    return Year.now(ZoneId.of("Europe/Oslo")).getValue();
   }
 }

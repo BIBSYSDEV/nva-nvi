@@ -62,7 +62,6 @@ public final class CandidateDao extends Dao {
 
   public static final String TYPE = "CANDIDATE";
   public static final String PERIOD_YEAR_FIELD = "periodYear";
-  private static final String DEPRECATION_DATE = "2025-12-15";
 
   @JsonProperty(IDENTIFIER_FIELD)
   private final UUID identifier;

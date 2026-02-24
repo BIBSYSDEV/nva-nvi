@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.index.aws;
 
+import static no.sikt.nva.nvi.common.utils.ApplicationConstants.DEFAULT_TIME_ZONE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.MAPPINGS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.NVI_CANDIDATES_INDEX;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.SEARCH_INFRASTRUCTURE_API_HOST;
@@ -81,7 +82,8 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
     var cognitoAuthenticator =
         new CognitoAuthenticator(
             HttpClient.newHttpClient(), createCognitoCredentials(new SecretsReader()));
-    var cachedJwtProvider = new CachedJwtProvider(cognitoAuthenticator, Clock.systemDefaultZone());
+    var cachedJwtProvider =
+        new CachedJwtProvider(cognitoAuthenticator, Clock.system(DEFAULT_TIME_ZONE));
     var httpHost = HttpHost.create(URI.create(SEARCH_INFRASTRUCTURE_API_HOST));
     return new OpenSearchClient(httpHost, cachedJwtProvider);
   }

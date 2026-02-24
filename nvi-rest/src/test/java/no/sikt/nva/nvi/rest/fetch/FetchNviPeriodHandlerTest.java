@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.rest.fetch;
 
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupFuturePeriod;
 import static no.sikt.nva.nvi.rest.EnvironmentFixtures.FETCH_NVI_PERIOD_HANDLER;
+import static no.sikt.nva.nvi.test.TestConstants.THIS_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -13,7 +14,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
-import java.time.ZonedDateTime;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.dto.NviPeriodDto;
@@ -57,7 +57,7 @@ class FetchNviPeriodHandlerTest {
 
   @Test
   void shouldReturnPeriodSuccessfully() throws IOException {
-    var publishingYear = String.valueOf(ZonedDateTime.now().getYear());
+    var publishingYear = THIS_YEAR;
     var expectedPeriod = setupFuturePeriod(scenario, publishingYear).toDto();
     handler.handleRequest(createRequestForPeriod(publishingYear), output, context);
     var response = GatewayResponse.fromOutputStream(output, NviPeriodDto.class);

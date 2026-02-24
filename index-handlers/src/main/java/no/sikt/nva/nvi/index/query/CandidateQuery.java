@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.index.query;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
 import static java.util.Objects.nonNull;
+import static no.sikt.nva.nvi.common.utils.ApplicationConstants.getCurrentYear;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.jsonPathOf;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.APPROVED;
 import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.NEW;
@@ -37,7 +38,6 @@ import static no.sikt.nva.nvi.index.utils.SearchConstants.TITLE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.TYPE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.YEAR;
 
-import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -106,7 +106,7 @@ public record CandidateQuery(
   private static Query yearQuery(String year) {
     return fieldValueQuery(
         jsonPathOf(REPORTING_PERIOD, YEAR, KEYWORD),
-        nonNull(year) ? year : String.valueOf(ZonedDateTime.now().getYear()));
+        nonNull(year) ? year : getCurrentYear().toString());
   }
 
   private static Query categoryQuery(String optionalCategory) {
