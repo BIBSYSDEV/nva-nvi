@@ -22,6 +22,8 @@ tags:
     description: NVI candidate operations
   - name: Report
     description: Institution reports and aggregations
+  - name: Report (not implemented yet)
+    description: Report endpoints that are not fully implemented yet
 
 x-authenticated-security: &authenticated
   - CognitoUserPool:
@@ -1072,6 +1074,7 @@ paths:
                     type: InstitutionReport
                     id: https://api.nva.unit.no/scientific-index/reports/2025/institutions/20754.0.0.0
                     period:
+                      type: NviPeriod
                       id: https://api.nva.unit.no/scientific-index/period/2025
                       year: "2025"
                     sector: UHI
@@ -1144,6 +1147,9 @@ components:
     NviPeriod:
       type: object
       properties:
+        type:
+          type: string
+          enum: [NviPeriod]
         publishingYear:
           type: string
         reportingDate:
