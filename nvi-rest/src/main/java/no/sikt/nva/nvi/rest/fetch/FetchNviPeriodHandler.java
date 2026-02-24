@@ -59,7 +59,7 @@ public class FetchNviPeriodHandler extends ApiGatewayHandler<Void, NviPeriodDto>
     return HttpURLConnection.HTTP_OK;
   }
 
-  private <T> ApiGatewayException mapException(Failure<NviPeriodDto> failure) {
+  private ApiGatewayException mapException(Failure<NviPeriodDto> failure) {
     var exception = failure.getException();
     if (exception instanceof PeriodNotFoundException periodNotFoundException) {
       return new NotFoundException(periodNotFoundException.getMessage());
