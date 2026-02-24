@@ -19,7 +19,7 @@ public record CandidateScanRequest(
   @JsonIgnore
   public Optional<CandidateScanRequest> getNextRequest(ListingResult<UUID> scanResult) {
     var nextPage = paginationState.createUpdatedPaginationState(scanResult);
-    if (nextPage.hasCapacity() && scanResult.shouldContinueScan()) {
+    if (nextPage.hasCapacity() && scanResult.hasNextPage()) {
       return Optional.of(new CandidateScanRequest(jobType, segment, totalSegments, nextPage));
     }
     return Optional.empty();

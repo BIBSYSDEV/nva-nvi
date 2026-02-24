@@ -27,7 +27,7 @@ public record CandidatesByYearRequest(
   public Optional<CandidatesByYearRequest> getNextRequest(ListingResult<UUID> scanResult) {
     var nextPage = paginationState.createUpdatedPaginationState(scanResult);
 
-    if (nextPage.hasCapacity() && scanResult.shouldContinueScan()) {
+    if (nextPage.hasCapacity() && scanResult.hasNextPage()) {
       return Optional.of(new CandidatesByYearRequest(jobType, yearFilter, nextPage));
     }
 

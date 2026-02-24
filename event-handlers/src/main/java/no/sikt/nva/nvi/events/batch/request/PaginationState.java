@@ -21,8 +21,8 @@ public record PaginationState(
   }
 
   public PaginationState createUpdatedPaginationState(ListingResult<UUID> scanResult) {
-    var updatedTotal = itemsProcessed + scanResult.getTotalItemCount();
-    var updatedStartMarker = scanResult.shouldContinueScan() ? scanResult.getStartMarker() : null;
+    var updatedTotal = itemsProcessed + scanResult.itemCount();
+    var updatedStartMarker = scanResult.hasNextPage() ? scanResult.lastEvaluatedKey() : null;
     return new PaginationState(updatedTotal, maxBatchSize, maxItems, updatedStartMarker);
   }
 
