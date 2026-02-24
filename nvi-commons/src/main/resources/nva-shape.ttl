@@ -3,6 +3,9 @@
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
+# This document constrains what is considered a valid NVA expanded resource from the perspective of NVI.
+
+
 :PublicationNodeExistsShape a sh:NodeShape ;
   sh:name "Publication exists in document shape" ;
   sh:description "Validates that there is one and only one type Publication in the document" ;
@@ -45,7 +48,7 @@
 :ContributorShape a sh:NodeShape ;
   sh:targetClass :Contributor ;
   sh:property [
-    sh:severity sh:Violation ;
+    sh:severity sh:Info ;
     sh:message "Contributor affiliation is missing" ;
     sh:path :affiliation ;
     sh:minCount 1 ;
@@ -85,7 +88,7 @@
 :IdentityShape a sh:NodeShape ;
   sh:targetClass :Identity ;
   sh:property [
-      sh:severity sh:Violation ;
+      sh:severity sh:Info ;
       sh:message "Contributor name is missing" ;
       sh:path :name ;
       sh:minCount 1 ;
@@ -118,7 +121,7 @@
     ) .
 
 :OrganizationNotNorwayShape a sh:NodeShape ;
-  sh:severity sh:Violation ;
+  sh:severity sh:Info ;
   sh:message "Organization country is not equal to 'NO'" ;
   sh:targetClass :Organization ;
   # Validate the country if and only if it is present
@@ -250,11 +253,11 @@
     sh:maxCount 1 ;
   ] ;
   sh:property [
-    sh:severity sh:Violation ;
-    sh:message "Publication channel scientificValue is not a string matching (LevelOne, LevelTwo)" ;
+    sh:severity sh:Info ;
+    sh:message "Publication channel scientificValue is not a string matching (Unassigned, LevelZero, LevelOne, LevelTwo)" ;
     sh:path :scientificValue ;
     sh:datatype xsd:string ;
-    sh:in ( "LevelOne" "LevelTwo" )
+    sh:in ( "Unassigned" "LevelZero" "LevelOne" "LevelTwo" )
   ] ;
   sh:property [
     sh:severity sh:Violation ;
