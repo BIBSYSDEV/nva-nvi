@@ -3,7 +3,7 @@
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
-# This document constrains what is considered a valid NVA expanded resource from the perspective of NVI.
+# This document constrains what is considered a valid NVA expanded resource.
 
 
 :PublicationNodeExistsShape a sh:NodeShape ;

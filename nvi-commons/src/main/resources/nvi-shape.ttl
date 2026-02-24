@@ -3,6 +3,8 @@
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
+# This document constrains what is considered a valid NVA expanded resource from the perspective of NVI.
+
 :PublicationNodeExistsShape a sh:NodeShape ;
   sh:name "Publication exists in document shape" ;
   sh:description "Validates that there is at least one type Publication in the document" ;
@@ -130,7 +132,7 @@
     sh:datatype xsd:boolean
   ] ;
   sh:property [
-    sh:severity sh:Violation ;
+    sh:severity sh:Info ;
     sh:message "Publication applicability is not TRUE" ;
     sh:path :isApplicable ;
     sh:in ( "true"^^xsd:boolean )
@@ -177,7 +179,6 @@
     ] ;
   ] ;
 
-  # We want to check the validity of the page count? What are the criteria for validity?
   sh:property [
     sh:severity sh:Warning ;
     sh:message "Publication page count is missing" ;
@@ -212,7 +213,7 @@
         SELECT $this
         WHERE {
           ?this <https://nva.sikt.no/ontology/publication#publicationChannel> ?publicationChannel .
-          FILTER (!REGEX(STR(?publicationChannel), "^https://api.(dev.|e2e.|sandbox.|test.)?nva(.aws)?.unit.no/publication-channels-v2/(serial-publication|publisher)/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/[0-9]{4}$"))
+          FILTER (!REGEX(STR(?publicationChannel), "^https://api.([a-z0-9-]+.)?nva(.aws)?.unit.no/publication-channels-v2/(serial-publication|publisher)/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/[0-9]{4}$"))
         }
       """ ;
     ] ;
@@ -307,19 +308,19 @@
 :ContributorShape a sh:NodeShape ;
   sh:targetClass :Contributor ;
   sh:property [
-    sh:severity sh:Violation ;
+    sh:severity sh:Warning ;
     sh:message "Contributor affiliation is missing" ;
     sh:path :affiliation ;
     sh:minCount 1
   ] ;
   sh:property [
-    sh:severity sh:Violation ;
+    sh:severity sh:Warning ;
     sh:message "Contributor affiliation is invalid" ;
     sh:path :affiliation ;
     sh:nodeKind sh:IRI
   ] ;
   sh:property [
-    sh:severity sh:Violation ;
+    sh:severity sh:Warning ;
     sh:message "Contributor name is missing" ;
     sh:path :name ;
     sh:minCount 1
@@ -447,7 +448,7 @@
     sh:datatype xsd:string
   ] ;
   sh:property [
-    sh:severity sh:Violation ;
+    sh:severity sh:Warning ;
     sh:message "Publication channel scientific value is not one of [ LevelOne, LevelTwo ]" ;
     sh:path :scientificValue ;
     sh:in ( "LevelOne" "LevelTwo" )
