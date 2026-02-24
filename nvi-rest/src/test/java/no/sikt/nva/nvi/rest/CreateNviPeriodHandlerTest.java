@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.rest;
 
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupFuturePeriod;
 import static no.sikt.nva.nvi.rest.EnvironmentFixtures.CREATE_NVI_PERIOD_HANDLER;
+import static no.sikt.nva.nvi.test.TestConstants.THIS_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -119,7 +120,7 @@ class CreateNviPeriodHandlerTest {
 
   private InputStream createRequestWithoutAccessRights() throws JsonProcessingException {
     return new HandlerRequestBuilder<UpsertNviPeriodRequest>(dtoObjectMapper)
-        .withBody(upsertRequest(String.valueOf(ZonedDateTime.now().getYear())))
+        .withBody(upsertRequest(THIS_YEAR))
         .build();
   }
 
