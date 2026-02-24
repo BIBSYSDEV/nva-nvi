@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
@@ -72,7 +73,7 @@ public class UpsertRequestFixtures {
 
   public static UpsertRequestBuilder createUpsertCandidateRequest(URI... organizations) {
     var topLevelOrganizations =
-        List.of(organizations).stream()
+        Stream.of(organizations)
             .map(Organization.builder()::withId)
             .map(Organization.Builder::build)
             .toList();

@@ -33,7 +33,6 @@ public final class TestUtils {
   public static final Random RANDOM = new Random();
   public static final AtomicInteger ID_COUNTER = new AtomicInteger(100);
 
-  private static final String BUCKET_HOST = "example.org";
   private static final LocalDate START_DATE = LocalDate.of(1970, 1, 1);
   private static final String PUBLICATION_API_PATH = "publication";
   private static final String API_HOST = "example.com";
@@ -50,10 +49,6 @@ public final class TestUtils {
 
   public static String generateUniqueIdAsString() {
     return String.valueOf(generateUniqueId());
-  }
-
-  public static URI generateS3BucketUri(UUID identifier) {
-    return UriWrapper.fromHost(BUCKET_HOST).addChild(identifier.toString()).getUri();
   }
 
   public static URI generatePublicationId(UUID identifier) {
@@ -140,8 +135,7 @@ public final class TestUtils {
     node.set(field, arrayNode);
   }
 
-  @SuppressWarnings("TimeInStaticInitializer")
   private static int getCurrentYear() {
-    return Year.now(ZoneId.systemDefault()).getValue();
+    return Year.now(ZoneId.of("Europe/Oslo")).getValue();
   }
 }

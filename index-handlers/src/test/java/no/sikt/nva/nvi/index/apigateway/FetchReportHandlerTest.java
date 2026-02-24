@@ -1,6 +1,9 @@
 package no.sikt.nva.nvi.index.apigateway;
 
 import static java.util.Collections.emptyMap;
+import static no.sikt.nva.nvi.common.EnvironmentFixtures.ALLOWED_ORIGIN;
+import static no.sikt.nva.nvi.common.EnvironmentFixtures.getHandlerEnvironment;
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationIdentifier;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
@@ -16,15 +19,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.util.Map;
-import no.sikt.nva.nvi.index.model.report.AllInstitutionsReport;
-import no.sikt.nva.nvi.index.model.report.AllPeriodsReport;
-import no.sikt.nva.nvi.index.model.report.InstitutionReport;
-import no.sikt.nva.nvi.index.model.report.PeriodReport;
-import no.sikt.nva.nvi.index.model.report.ReportResponse;
+import no.sikt.nva.nvi.common.TestScenario;
+import no.sikt.nva.nvi.index.report.FetchReportHandler;
+import no.sikt.nva.nvi.index.report.response.AllInstitutionsReport;
+import no.sikt.nva.nvi.index.report.response.AllPeriodsReport;
+import no.sikt.nva.nvi.index.report.response.InstitutionReport;
+import no.sikt.nva.nvi.index.report.response.PeriodReport;
+import no.sikt.nva.nvi.index.report.response.ReportResponse;
 import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
-import nva.commons.core.Environment;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.zalando.problem.Problem;
@@ -44,8 +48,11 @@ class FetchReportHandlerTest {
 
   @BeforeEach
   void setUp() {
+    var scenario = new TestScenario();
+    setupOpenPeriod(scenario, PERIOD_FOR_QUERY);
     output = new ByteArrayOutputStream();
-    handler = new FetchReportHandler(new Environment());
+    handler =
+        new FetchReportHandler(getHandlerEnvironment(ALLOWED_ORIGIN), scenario.getPeriodService());
   }
 
   @Test

@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.index.aws;
 
+import static no.sikt.nva.nvi.common.utils.ApplicationConstants.DEFAULT_TIME_ZONE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.SEARCH_INFRASTRUCTURE_API_HOST;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.SEARCH_INFRASTRUCTURE_AUTH_URI;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.SEARCH_INFRASTRUCTURE_CREDENTIALS;
@@ -43,7 +44,7 @@ public final class OpenSearchClientFactory {
   private static CachedJwtProvider createCachedJwtProvider() {
     var cognitoCredentials = createCognitoCredentials();
     var authenticator = new CognitoAuthenticator(HttpClient.newHttpClient(), cognitoCredentials);
-    return new CachedJwtProvider(authenticator, Clock.systemDefaultZone());
+    return new CachedJwtProvider(authenticator, Clock.system(DEFAULT_TIME_ZONE));
   }
 
   @JacocoGenerated

@@ -750,8 +750,7 @@ class IndexDocumentHandlerTest {
   }
 
   private void mockUriResponseForTopLevelAffiliation(Candidate candidate) {
-    candidate.publicationDetails().getNviCreatorAffiliations().stream()
-        .forEach(this::mockTopLevelResponse);
+    candidate.publicationDetails().getNviCreatorAffiliations().forEach(this::mockTopLevelResponse);
 
     candidate.approvals().keySet().forEach(this::mockTopLevelResponse);
   }
