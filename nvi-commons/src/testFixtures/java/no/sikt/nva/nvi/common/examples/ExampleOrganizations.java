@@ -39,13 +39,11 @@ public class ExampleOrganizations {
           "nb", "Norges teknisk-naturvitenskapelige universitet",
           "en", "Norwegian University of Science and Technology");
 
-  private static final String TYPE_ORGANIZATION = "Organization";
   public static final Organization TOP_LEVEL_ORGANIZATION_NTNU =
       Organization.builder()
           .withId(NTNU_ID)
           .withCountryCode(COUNTRY_CODE_NORWAY)
           .withLabels(NTNU_LABELS)
-          .withType(TYPE_ORGANIZATION)
           .build();
 
   public static final Organization TOP_LEVEL_ORGANIZATION_SIKT =
@@ -53,14 +51,12 @@ public class ExampleOrganizations {
           .withId(SIKT_ID)
           .withCountryCode(COUNTRY_CODE_NORWAY)
           .withLabels(SIKT_LABELS)
-          .withType(TYPE_ORGANIZATION)
           .withHasPart(
               List.of(
                   Organization.builder()
                       .withId(SIKT_SUBUNIT_ID)
                       .withCountryCode(COUNTRY_CODE_NORWAY)
                       .withLabels(SIKT_SUBUNIT_LABELS)
-                      .withType(TYPE_ORGANIZATION)
                       .withPartOf(List.of(Organization.builder().withId(SIKT_ID).build()))
                       .build()))
           .build();
@@ -70,14 +66,12 @@ public class ExampleOrganizations {
           .withId(SIKT_SUBUNIT_ID)
           .withCountryCode(COUNTRY_CODE_NORWAY)
           .withLabels(SIKT_SUBUNIT_LABELS)
-          .withType(TYPE_ORGANIZATION)
           .withPartOf(
               List.of(
                   Organization.builder()
                       .withId(SIKT_ID)
                       .withCountryCode(COUNTRY_CODE_NORWAY)
                       .withLabels(SIKT_LABELS)
-                      .withType(TYPE_ORGANIZATION)
                       .withHasPart(List.of(Organization.builder().withId(SIKT_SUBUNIT_ID).build()))
                       .build()))
           .build();
@@ -87,7 +81,6 @@ public class ExampleOrganizations {
           .withId(
               URI.create("https://api.sandbox.nva.aws.unit.no/cristin/organization/35900068.0.0.0"))
           .withCountryCode("ZA")
-          .withType(TYPE_ORGANIZATION)
           .withLabels(Map.of("nb", "University of Cape Town"))
           .build();
 }

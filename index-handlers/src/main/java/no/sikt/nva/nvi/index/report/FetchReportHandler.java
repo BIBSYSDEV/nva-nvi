@@ -1,9 +1,12 @@
-package no.sikt.nva.nvi.index.apigateway;
+package no.sikt.nva.nvi.index.report;
 
 import static java.net.HttpURLConnection.HTTP_OK;
 
 import com.amazonaws.services.lambda.runtime.Context;
-import no.sikt.nva.nvi.index.model.report.ReportResponse;
+import no.sikt.nva.nvi.common.service.NviPeriodService;
+import no.sikt.nva.nvi.index.report.request.ReportRequestFactory;
+import no.sikt.nva.nvi.index.report.response.ReportResponse;
+import no.sikt.nva.nvi.index.report.response.ReportResponseFactory;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
@@ -14,13 +17,16 @@ import nva.commons.core.JacocoGenerated;
 
 public class FetchReportHandler extends ApiGatewayHandler<Void, ReportResponse> {
 
+  private final ReportResponseFactory reportResponseFactory;
+
   @JacocoGenerated
   public FetchReportHandler() {
-    this(new Environment());
+    this(new Environment(), NviPeriodService.defaultNviPeriodService());
   }
 
-  public FetchReportHandler(Environment environment) {
+  public FetchReportHandler(Environment environment, NviPeriodService nviPeriodService) {
     super(Void.class, environment);
+    this.reportResponseFactory = new ReportResponseFactory(nviPeriodService);
   }
 
   @Override
@@ -34,8 +40,8 @@ public class FetchReportHandler extends ApiGatewayHandler<Void, ReportResponse> 
   @Override
   protected ReportResponse processInput(Void unused, RequestInfo requestInfo, Context context)
       throws ApiGatewayException {
-    var reportRequest = ReportRequest.from(requestInfo);
-    return ReportResponseFactory.getResponse(reportRequest);
+    var reportRequest = ReportRequestFactory.getRequest(requestInfo, environment);
+    return reportResponseFactory.getResponse(reportRequest);
   }
 
   @Override
