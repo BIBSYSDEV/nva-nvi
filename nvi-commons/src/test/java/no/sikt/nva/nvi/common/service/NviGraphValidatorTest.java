@@ -38,6 +38,7 @@ class NviGraphValidatorTest {
   private static final String PUBLICATION = "Publication";
   private static final String YEAR_PROPERTY = "year";
   private static final String PUBLICATION_DATE_CLASS = "PublicationDate";
+  private static final String IDENTITY_CLASS = "Identity";
   private static final String CONTRIBUTOR_CLASS = "Contributor";
   private static final String PUBLICATION_CHANNEL_CLASS = "PublicationChannel";
   private static final String NAME_PROPERTY = "name";
@@ -1028,7 +1029,7 @@ class NviGraphValidatorTest {
   }
 
   private Model removeContributorVerificationStatus(Model model) {
-    return removeTriples(model, removeQuery(CONTRIBUTOR_CLASS, "verificationStatus"));
+    return removeTriples(model, removeQuery(IDENTITY_CLASS, "verificationStatus"));
   }
 
   private Model addContributorVerificationStatus(Model model) {
@@ -1038,7 +1039,7 @@ class NviGraphValidatorTest {
         CONSTRUCT {
           ?subject :verificationStatus ?object .
         } WHERE {
-          ?subject a :Contributor ;
+          ?subject a :Identity ;
                    :verificationStatus ?current .
           BIND(IF(?current = "Verified", "NotVerified", "Verified") AS ?object)
         }
@@ -1048,10 +1049,10 @@ class NviGraphValidatorTest {
   }
 
   private Model replaceContributorVerificationStatusWithInvalidValue(Model model) {
-    var removeTriples = removeTriples(model, removeQuery(CONTRIBUTOR_CLASS, "verificationStatus"));
+    var removeTriples = removeTriples(model, removeQuery(IDENTITY_CLASS, "verificationStatus"));
     return addTriples(
         removeTriples,
-        addQuery(CONTRIBUTOR_CLASS, "verificationStatus", "Some string that is not a class"));
+        addQuery(IDENTITY_CLASS, "verificationStatus", "Some string that is not a class"));
   }
 
   private Model removeContributorRole(Model model) {
@@ -1069,16 +1070,16 @@ class NviGraphValidatorTest {
   }
 
   private Model replaceContributorNameWithInvalidValue(Model model) {
-    var removeTriples = removeTriples(model, removeQuery(CONTRIBUTOR_CLASS, NAME_PROPERTY));
-    return addTriples(removeTriples, addQuery(CONTRIBUTOR_CLASS, NAME_PROPERTY, 222));
+    var removeTriples = removeTriples(model, removeQuery(IDENTITY_CLASS, NAME_PROPERTY));
+    return addTriples(removeTriples, addQuery(IDENTITY_CLASS, NAME_PROPERTY, 222));
   }
 
   private Model addContributorName(Model model) {
-    return addTriples(model, addQuery(CONTRIBUTOR_CLASS, NAME_PROPERTY, "Hockey McWilson"));
+    return addTriples(model, addQuery(IDENTITY_CLASS, NAME_PROPERTY, "Hockey McWilson"));
   }
 
   private Model removeContributorName(Model model) {
-    return removeTriples(model, removeQuery(CONTRIBUTOR_CLASS, NAME_PROPERTY));
+    return removeTriples(model, removeQuery(IDENTITY_CLASS, NAME_PROPERTY));
   }
 
   private Model replaceContributorAffiliationWithInvalidData(Model model) {

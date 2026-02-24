@@ -320,24 +320,6 @@
     sh:nodeKind sh:IRI
   ] ;
   sh:property [
-    sh:severity sh:Warning ;
-    sh:message "Contributor name is missing" ;
-    sh:path :name ;
-    sh:minCount 1
-  ] ;
-  sh:property [
-    sh:severity sh:Violation ;
-    sh:message "Contributor name is repeated" ;
-    sh:path :name ;
-    sh:maxCount 1
-  ] ;
-  sh:property [
-    sh:severity sh:Violation ;
-    sh:message "Contributor name is invalid" ;
-    sh:path :name ;
-    sh:datatype xsd:string
-  ] ;
-  sh:property [
     sh:severity sh:Violation ;
     sh:message "Contributor role is missing" ;
     sh:path :role ;
@@ -354,6 +336,27 @@
     sh:message "Contributor role is invalid" ;
     sh:path :role ;
     sh:in (:Creator)
+  ] .
+
+:IdentityShape a sh:NodeShape ;
+  sh:targetClass :Identity ;
+  sh:property [
+    sh:severity sh:Warning ;
+    sh:message "Contributor name is missing" ;
+    sh:path :name ;
+    sh:minCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Contributor name is repeated" ;
+    sh:path :name ;
+    sh:maxCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Contributor name is invalid" ;
+    sh:path :name ;
+    sh:datatype xsd:string
   ] ;
   sh:property [
     sh:severity sh:Violation ;

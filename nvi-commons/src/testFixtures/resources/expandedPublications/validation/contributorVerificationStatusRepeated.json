@@ -30,12 +30,6 @@
         }, {
           "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0",
           "type" : "Organization",
-          "contributorCristinIds" : [ {
-            "id" : "https://api.sandbox.nva.aws.unit.no/cristin/person/1215176",
-            "type" : "Identity",
-            "name" : "Ola Nordmann",
-            "verificationStatus" : [ "Verified", "Unverified" ]
-          } ],
           "countryCode" : "NO",
           "labels" : {
             "nn" : "Noregs teknisk-naturvitskaplege universitet",
@@ -48,7 +42,7 @@
           "id" : "https://api.sandbox.nva.aws.unit.no/cristin/person/1215176",
           "type" : "Identity",
           "name" : "Ola Nordmann",
-          "verificationStatus" : "Verified"
+          "verificationStatus" : [ "Verified", "NotVerified" ]
         },
         "role" : {
           "type" : "Creator"
@@ -83,48 +77,7 @@
       },
       "tags" : [ "testing", "test" ],
       "contributorsCount" : 1,
-      "contributorsPreview" : [ {
-        "type" : "Contributor",
-        "affiliations" : [ {
-          "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.2.0.0",
-          "type" : "Organization",
-          "countryCode" : "NO",
-          "labels" : {
-            "nn" : "Divisjon for forskings- og kunnskapsressursar",
-            "nb" : "Divisjon forsknings- og kunnskapsressurser",
-            "en" : "The Research and Education Resources Division"
-          },
-          "partOf" : [ {
-            "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.0.0.0"
-          } ]
-        }, {
-          "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0",
-          "type" : "Organization",
-          "contributorCristinIds" : [ {
-            "id" : "https://api.sandbox.nva.aws.unit.no/cristin/person/1215176",
-            "type" : "Identity",
-            "name" : "Ola Nordmann",
-            "verificationStatus" : "Verified"
-          } ],
-          "countryCode" : "NO",
-          "labels" : {
-            "nn" : "Noregs teknisk-naturvitskaplege universitet",
-            "nb" : "Norges teknisk-naturvitenskapelige universitet",
-            "en" : "Norwegian University of Science and Technology"
-          }
-        } ],
-        "correspondingAuthor" : "false",
-        "identity" : {
-          "id" : "https://api.sandbox.nva.aws.unit.no/cristin/person/1215176",
-          "type" : "Identity",
-          "name" : "Ola Nordmann",
-          "verificationStatus" : "Verified"
-        },
-        "role" : {
-          "type" : "Creator"
-        },
-        "sequence" : "1"
-      } ]
+      "contributorsPreview" : [ ]
     },
     "identifier" : "0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5",
     "modelVersion" : "0.23.3",

@@ -6,12 +6,12 @@ dependencies {
     implementation nvaCatalog.aws.sdk2.dynamodbenhanced
     implementation nvaCatalog.aws.sdk2.sns
     implementation nvaCatalog.aws.sdk2.sqs
-    implementation libs.jena.shaql
     implementation nvaCatalog.aws.apache.client
     implementation nvaCatalog.aws.lambda.events
     implementation nvaCatalog.aws.sdk2.dynamo
     implementation nvaCatalog.aws.sdk2.s3
     implementation nvaCatalog.aws.sdk2.urlconnection
+    implementation nvaCatalog.jena.shacl
     implementation nvaCatalog.bundles.jena
     implementation nvaCatalog.jackson.databind
     implementation nvaLibs.apigateway

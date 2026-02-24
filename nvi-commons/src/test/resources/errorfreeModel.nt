@@ -1,9 +1,11 @@
-<https://api.sandbox.nva.aws.unit.no/cristin/person/1215176> <https://nva.sikt.no/ontology/publication#affiliation> <https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0> .
+<https://api.sandbox.nva.aws.unit.no/cristin/person/1215176> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>  <https://nva.sikt.no/ontology/publication#Identity> .
 <https://api.sandbox.nva.aws.unit.no/cristin/person/1215176> <https://nva.sikt.no/ontology/publication#name> "Ola Nordmann" .
 <https://api.sandbox.nva.aws.unit.no/cristin/person/1215176> <https://nva.sikt.no/ontology/publication#verificationStatus> "Verified" .
-<https://api.sandbox.nva.aws.unit.no/cristin/person/1215176> <https://nva.sikt.no/ontology/publication#role> <https://nva.sikt.no/ontology/publication#Creator> .
 <https://api.sandbox.nva.aws.unit.no/cristin/person/1215176> <https://nva.sikt.no/ontology/publication#affiliation> <https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.2.0.0> .
-<https://api.sandbox.nva.aws.unit.no/cristin/person/1215176> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://nva.sikt.no/ontology/publication#Contributor> .
+_:b0contributor <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://nva.sikt.no/ontology/publication#Contributor> .
+_:b0contributor <https://nva.sikt.no/ontology/publication#affiliation> <https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0> .
+_:b0contributor <https://nva.sikt.no/ontology/publication#identity> <https://api.sandbox.nva.aws.unit.no/cristin/person/1215176> .
+_:b0contributor <https://nva.sikt.no/ontology/publication#role> <https://nva.sikt.no/ontology/publication#Creator> .
 <https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0> <https://nva.sikt.no/ontology/publication#label> "Noregs teknisk-naturvitskaplege universitet"@nn .
 <https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0> <https://nva.sikt.no/ontology/publication#label> "Norges teknisk-naturvitenskapelige universitet"@nb .
 <https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0> <https://nva.sikt.no/ontology/publication#label> "Norwegian University of Science and Technology"@en .
@@ -33,7 +35,7 @@ _:B84581d1f2b5caf904b177e6c0ebde078 <http://www.w3.org/1999/02/22-rdf-syntax-ns#
 _:Bd381351fa9ada018f1a732cdab5e142c <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <https://nva.sikt.no/ontology/publication#PageCount> .
 <https://api.sandbox.nva.aws.unit.no/publication/0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5> <https://nva.sikt.no/ontology/publication#topLevelOrganization> <https://api.sandbox.nva.aws.unit.no/cristin/organization/194.0.0.0> .
 <https://api.sandbox.nva.aws.unit.no/publication/0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5> <https://nva.sikt.no/ontology/publication#topLevelOrganization> <https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.0.0.0> .
-<https://api.sandbox.nva.aws.unit.no/publication/0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5> <https://nva.sikt.no/ontology/publication#contributor> <https://api.sandbox.nva.aws.unit.no/cristin/person/1215176> .
+<https://api.sandbox.nva.aws.unit.no/publication/0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5> <https://nva.sikt.no/ontology/publication#contributor> _:b0Contributor .
 <https://api.sandbox.nva.aws.unit.no/publication/0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5> <https://nva.sikt.no/ontology/publication#isInternationalCollaboration> "false"^^<http://www.w3.org/2001/XMLSchema#boolean> .
 <https://api.sandbox.nva.aws.unit.no/publication/0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5> <https://nva.sikt.no/ontology/publication#isApplicable> "true"^^<http://www.w3.org/2001/XMLSchema#boolean> .
 <https://api.sandbox.nva.aws.unit.no/publication/0195c6f1a431-6290c69b-5488-44ea-b20f-cef3464fb1b5> <https://nva.sikt.no/ontology/publication#publicationChannel> <https://api.sandbox.nva.aws.unit.no/publication-channels-v2/serial-publication/013E7484-327D-4F42-ACA4-8F975CCFF34C/2025> .

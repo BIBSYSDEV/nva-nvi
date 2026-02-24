@@ -67,22 +67,6 @@
     sh:path :role ;
     sh:maxCount 1 ;
     sh:in (:Creator)
-  ] ;
-  sh:property [
-    sh:severity sh:Violation ;
-    sh:message "Contributor verification status is missing" ;
-    sh:path :verificationStatus ;
-    sh:minCount 1 ;
-    sh:datatype xsd:string ;
-    sh:in ( "Verified" "NotVerified" )
-  ] ;
-  sh:property [
-    sh:severity sh:Violation ;
-    sh:message "Contributor verification status is repeated" ;
-    sh:path :verificationStatus ;
-    sh:maxCount 1 ;
-    sh:datatype xsd:string ;
-    sh:in ( "Verified" "NotVerified" )
   ] .
 
 :IdentityShape a sh:NodeShape ;
@@ -100,6 +84,22 @@
     sh:path :name ;
     sh:maxCount 1 ;
     sh:datatype xsd:string
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Contributor verification status is missing" ;
+    sh:path :verificationStatus ;
+    sh:minCount 1 ;
+    sh:datatype xsd:string ;
+    sh:in ( "Verified" "NotVerified" )
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Contributor verification status is repeated" ;
+    sh:path :verificationStatus ;
+    sh:maxCount 1 ;
+    sh:datatype xsd:string ;
+    sh:in ( "Verified" "NotVerified" )
   ] .
 
 :OrganizationCountryRepeatedShape a sh:NodeShape ;

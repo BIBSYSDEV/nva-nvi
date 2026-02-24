@@ -328,7 +328,7 @@ class PublicationLoaderServiceTest {
     var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
     assertDoesNotThrow(
         () -> parseExampleDocument(ExamplePublications.CONTRIBUTOR_VERIFICATION_STATUS_MISSING));
-    assertThat(logAppender.getMessages()).contains("Contributor role is missing");
+    assertThat(logAppender.getMessages()).contains("Contributor verification status is missing");
   }
 
   // In this case, it is an NVA test
@@ -337,7 +337,7 @@ class PublicationLoaderServiceTest {
     var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
     assertDoesNotThrow(
         () -> parseExampleDocument(ExamplePublications.CONTRIBUTOR_VERIFICATION_STATUS_REPEATED));
-    assertThat(logAppender.getMessages()).contains("Contributor role is repeated");
+    assertThat(logAppender.getMessages()).contains("Contributor verification status is repeated");
   }
 
   // In this case, it is an NVA test

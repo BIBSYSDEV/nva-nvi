@@ -1,7 +1,5 @@
 [versions]
 nvaLanguage = { strictly = '1.2.1' }
-jena = { strictly = '5.6.0' }
 
 [libraries]
 nva-language = { group = 'com.github.bibsysdev', name = 'nva-language', version.ref = 'nvaLanguage' }
-jena-shaql = { group = 'org.apache.jena', name = 'jena-shacl', version.ref = 'jena'}
