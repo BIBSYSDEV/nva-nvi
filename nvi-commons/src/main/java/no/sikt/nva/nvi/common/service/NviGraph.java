@@ -9,6 +9,7 @@ import com.apicatalog.jsonld.document.JsonDocument;
 import java.io.ByteArrayOutputStream;
 import java.io.StringReader;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import no.sikt.nva.nvi.common.exceptions.ParsingException;
 import org.apache.jena.query.QueryExecutionFactory;
@@ -51,7 +52,7 @@ public class NviGraph implements GraphValidable {
   private static StringReader toJsonReader(Model resultModel) {
     var outputStream = new ByteArrayOutputStream();
     RDFDataMgr.write(outputStream, resultModel, Lang.JSONLD);
-    return new StringReader(outputStream.toString(Charset.defaultCharset()));
+    return new StringReader(outputStream.toString(StandardCharsets.UTF_8));
   }
 
   private static JsonDocument getOutputFramingContext() {
