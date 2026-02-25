@@ -85,7 +85,7 @@ class CandidateRepositoryTest {
 
     var scanRequest = new TableScanRequest(0, 1, 500, null);
     var candidatesInDb = candidateRepository.weaklyConsistentCandidateScan(scanRequest);
-    Assertions.assertThat(candidatesInDb.getDatabaseEntries()).hasSize(1);
+    Assertions.assertThat(candidatesInDb.items()).hasSize(1);
   }
 
   @Test
