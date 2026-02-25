@@ -170,7 +170,7 @@ class NviGraphValidatorTest {
   }
 
   @Test
-  void shouldReportWhenPublicationisNotString() {
+  void shouldReportWhenPublicationIsNotString() {
     var model = createModelWithNoErrors();
     var uri = URI.create("https://example.org/publication/" + UUID.randomUUID());
     var validation =
