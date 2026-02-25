@@ -419,7 +419,7 @@ class NviGraphValidatorTest {
   }
 
   @Test
-  void shouldNotReportWhenPublicationDateIsInvalid() {
+  void shouldReportWhenPublicationDateIsInvalid() {
     var model = createModelWithNoErrors();
     var validation = nviGraphValidator.validate(addInvalidPublicationDate(model));
     assertThat(validation.generateReport())
