@@ -103,7 +103,7 @@ public class ExamplePublications {
       "expandedPublications/validation/organizationRepeatedCountry.json";
   public static final String ORGANIZATION_HAS_PART_NOT_URI =
       "expandedPublications/validation/organizationHasPartNotUri.json";
-  public static final String ORGANIZATION_PART_OOF_NOT_URI =
+  public static final String ORGANIZATION_PART_OF_NOT_URI =
       "expandedPublications/validation/organizationPartOfNotUri.json";
   public static final String ORGANIZATION_LABEL_INVALID =
       "expandedPublications/validation/organizationLabelInvalid.json";
