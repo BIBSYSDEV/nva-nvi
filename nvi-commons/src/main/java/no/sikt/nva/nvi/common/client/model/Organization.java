@@ -7,6 +7,7 @@ import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
 import java.util.ArrayDeque;
 import java.util.Collection;
@@ -18,15 +19,20 @@ import no.sikt.nva.nvi.common.db.model.DbOrganization;
 import no.unit.nva.commons.json.JsonSerializable;
 import nva.commons.core.SingletonCollector;
 
+@JsonSerialize
 public record Organization(
     @JsonProperty("id") URI id,
     @JsonProperty("country") String countryCode,
     @JsonProperty("partOf") List<Organization> partOf,
     @JsonProperty("hasPart") List<Organization> hasPart,
     @JsonProperty("labels") Map<String, String> labels,
-    @JsonProperty("type") String type,
     @JsonProperty("@context") Object context)
     implements JsonSerializable {
+
+  @JsonProperty("type")
+  public String type() {
+    return "Organization";
+  }
 
   public static Organization from(String json) throws JsonProcessingException {
     return dtoObjectMapper.readValue(json, Organization.class);
@@ -101,7 +107,6 @@ public record Organization(
     private List<Organization> parentOrganizations;
     private List<Organization> subOrganizations;
     private Map<String, String> labels;
-    private String type;
     private Object context;
 
     private Builder() {}
@@ -131,11 +136,6 @@ public record Organization(
       return this;
     }
 
-    public Builder withType(String type) {
-      this.type = type;
-      return this;
-    }
-
     public Builder withContext(Object context) {
       this.context = context;
       return this;
@@ -143,7 +143,7 @@ public record Organization(
 
     public Organization build() {
       return new Organization(
-          id, countryCode, parentOrganizations, subOrganizations, labels, type, context);
+          id, countryCode, parentOrganizations, subOrganizations, labels, context);
     }
   }
 }
