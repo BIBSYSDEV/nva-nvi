@@ -9,8 +9,6 @@ import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.model.Sector;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.dto.NviPeriodDto;
-import no.sikt.nva.nvi.common.service.model.NviPeriod;
-import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.report.ReportAggregationClient;
 import no.sikt.nva.nvi.index.report.model.InstitutionAggregationResult;
 import no.sikt.nva.nvi.index.report.query.AllInstitutionsQuery;
@@ -20,8 +18,6 @@ import no.sikt.nva.nvi.index.report.request.AllPeriodsReportRequest;
 import no.sikt.nva.nvi.index.report.request.InstitutionReportRequest;
 import no.sikt.nva.nvi.index.report.request.PeriodReportRequest;
 import no.sikt.nva.nvi.index.report.request.ReportRequest;
-import nva.commons.apigateway.exceptions.ApiGatewayException;
-import nva.commons.apigateway.exceptions.BadGatewayException;
 import nva.commons.core.paths.UriWrapper;
 
 public class ReportResponseFactory {
@@ -35,7 +31,7 @@ public class ReportResponseFactory {
     this.reportAggregationClient = reportAggregationClient;
   }
 
-  public ReportResponse getResponse(ReportRequest reportRequest) throws ApiGatewayException {
+  public ReportResponse getResponse(ReportRequest reportRequest) throws IOException {
     return switch (reportRequest) {
       case AllPeriodsReportRequest request -> placeholderAllPeriodsReport(request);
       case PeriodReportRequest request -> placeholderPeriodReport(request);
@@ -51,7 +47,7 @@ public class ReportResponseFactory {
 
   // FIXME: Temporary placeholder
   private PeriodReport placeholderPeriodReport(PeriodReportRequest request) {
-    var periodDto = getPeriodDto(request.period());
+    var periodDto = nviPeriodService.getByPublishingYear(request.period()).toDto();
     return new PeriodReport(
         request.queryId(),
         periodDto,
@@ -60,38 +56,29 @@ public class ReportResponseFactory {
   }
 
   private AllInstitutionsReport allInstitutionsReport(AllInstitutionsReportRequest request)
-      throws BadGatewayException {
-    var period = getPeriod(request.period());
+      throws IOException {
+    var period = nviPeriodService.getByPublishingYear(request.period());
     var periodDto = period.toDto();
-    try {
-      var results = reportAggregationClient.executeQuery(new AllInstitutionsQuery(period));
-      var institutionReports =
-          results.stream()
-              .map(
-                  result -> {
-                    var queryId = institutionQueryId(request.queryId(), result.institutionId());
-                    return toInstitutionReport(queryId, periodDto, result);
-                  })
-              .toList();
-      return new AllInstitutionsReport(request.queryId(), periodDto, institutionReports);
-    } catch (IOException e) {
-      throw new BadGatewayException("Failed to execute aggregation query");
-    }
+    var results = reportAggregationClient.executeQuery(new AllInstitutionsQuery(period));
+    var institutionReports =
+        results.stream()
+            .map(
+                result -> {
+                  var queryId = institutionQueryId(request.queryId(), result.institutionId());
+                  return toInstitutionReport(queryId, periodDto, result);
+                })
+            .toList();
+    return new AllInstitutionsReport(request.queryId(), periodDto, institutionReports);
   }
 
-  private InstitutionReport institutionReport(InstitutionReportRequest request)
-      throws BadGatewayException {
-    var period = getPeriod(request.period());
+  private InstitutionReport institutionReport(InstitutionReportRequest request) throws IOException {
+    var period = nviPeriodService.getByPublishingYear(request.period());
     var periodDto = period.toDto();
     var query = new InstitutionQuery(period, request.institutionId());
-    try {
-      return reportAggregationClient
-          .executeQuery(query)
-          .map(result -> toInstitutionReport(request.queryId(), periodDto, result))
-          .orElseThrow();
-    } catch (IOException e) {
-      throw new BadGatewayException("Failed to execute aggregation query");
-    }
+    return reportAggregationClient
+        .executeQuery(query)
+        .map(result -> toInstitutionReport(request.queryId(), periodDto, result))
+        .orElseThrow();
   }
 
   private static InstitutionReport toInstitutionReport(
@@ -99,34 +86,20 @@ public class ReportResponseFactory {
     var organization =
         Organization.builder().withId(result.institutionId()).withLabels(result.labels()).build();
     var sector = Sector.fromString(result.sector()).orElse(Sector.UNKNOWN);
-    var totals =
-        new InstitutionTotals(
-            result.validPoints(),
-            result.disputedCount(),
-            result.undisputedProcessedCount(),
-            result.undisputedTotalCount());
-    var undisputed = result.undisputed();
-    var byLocalApprovalStatus =
-        new UndisputedCandidatesByLocalApprovalStatus(
-            undisputed.forStatus(ApprovalStatus.NEW).candidateCount(),
-            undisputed.forStatus(ApprovalStatus.PENDING).candidateCount(),
-            undisputed.forStatus(ApprovalStatus.APPROVED).candidateCount(),
-            undisputed.forStatus(ApprovalStatus.REJECTED).candidateCount());
-    var institutionSummary = new InstitutionSummary(totals, byLocalApprovalStatus);
+    var totals = InstitutionTotals.from(result);
+    var byLocalApprovalStatus = UndisputedCandidatesByLocalApprovalStatus.from(result.undisputed());
     return new InstitutionReport(
-        queryId, periodDto, sector, organization, institutionSummary, emptyList());
+        queryId,
+        periodDto,
+        sector,
+        organization,
+        new InstitutionSummary(totals, byLocalApprovalStatus),
+        emptyList() // TODO: Implemented later (NP-50858)
+        );
   }
 
   private static URI institutionQueryId(URI allInstitutionsQueryId, URI institutionId) {
     var identifier = UriWrapper.fromUri(institutionId).getLastPathElement();
     return UriWrapper.fromUri(allInstitutionsQueryId).addChild(identifier).getUri();
-  }
-
-  private NviPeriod getPeriod(String publishingYear) {
-    return nviPeriodService.getByPublishingYear(publishingYear);
-  }
-
-  private NviPeriodDto getPeriodDto(String publishingYear) {
-    return getPeriod(publishingYear).toDto();
   }
 }

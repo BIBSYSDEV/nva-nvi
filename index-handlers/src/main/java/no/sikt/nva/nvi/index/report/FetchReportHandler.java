@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.index.report;
 import static java.net.HttpURLConnection.HTTP_OK;
 
 import com.amazonaws.services.lambda.runtime.Context;
+import java.io.IOException;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.index.report.request.ReportRequestFactory;
 import no.sikt.nva.nvi.index.report.response.ReportResponse;
@@ -11,12 +12,16 @@ import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
+import nva.commons.apigateway.exceptions.BadGatewayException;
 import nva.commons.apigateway.exceptions.ForbiddenException;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class FetchReportHandler extends ApiGatewayHandler<Void, ReportResponse> {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(FetchReportHandler.class);
   private final ReportResponseFactory reportResponseFactory;
 
   @JacocoGenerated
@@ -48,7 +53,12 @@ public class FetchReportHandler extends ApiGatewayHandler<Void, ReportResponse> 
   protected ReportResponse processInput(Void unused, RequestInfo requestInfo, Context context)
       throws ApiGatewayException {
     var reportRequest = ReportRequestFactory.getRequest(requestInfo, environment);
-    return reportResponseFactory.getResponse(reportRequest);
+    try {
+      return reportResponseFactory.getResponse(reportRequest);
+    } catch (IOException exception) {
+      LOGGER.error("Failed to execute query request: {}", reportRequest, exception);
+      throw new BadGatewayException("Something went wrong! Contact application administrator.");
+    }
   }
 
   @Override
