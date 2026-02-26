@@ -13,7 +13,8 @@ public final class AllowedOperationFixtures {
       Set.of(APPROVAL_APPROVE, APPROVAL_REJECT, NOTE_CREATE);
   public static final Set<CandidateOperation> CURATOR_CAN_RESET_APPROVAL =
       Set.of(APPROVAL_REJECT, APPROVAL_PENDING, NOTE_CREATE);
-  public static final Set<CandidateOperation> CURATOR_CANNOT_UPDATE_APPROVAL = Set.of(NOTE_CREATE);
+  public static final Set<CandidateOperation> CURATOR_CAN_ONLY_REJECT =
+      Set.of(APPROVAL_REJECT, NOTE_CREATE);
 
   private AllowedOperationFixtures() {
     // Utility class

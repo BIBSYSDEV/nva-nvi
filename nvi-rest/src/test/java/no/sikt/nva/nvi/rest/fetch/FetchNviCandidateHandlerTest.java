@@ -2,8 +2,8 @@ package no.sikt.nva.nvi.rest.fetch;
 
 import static java.util.Collections.emptySet;
 import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
-import static no.sikt.nva.nvi.common.dto.AllowedOperationFixtures.CURATOR_CANNOT_UPDATE_APPROVAL;
 import static no.sikt.nva.nvi.common.dto.AllowedOperationFixtures.CURATOR_CAN_FINALIZE_APPROVAL;
+import static no.sikt.nva.nvi.common.dto.AllowedOperationFixtures.CURATOR_CAN_ONLY_REJECT;
 import static no.sikt.nva.nvi.common.dto.AllowedOperationFixtures.CURATOR_CAN_RESET_APPROVAL;
 import static no.sikt.nva.nvi.common.dto.NviCreatorDtoFixtures.verifiedNviCreatorDtoFrom;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.createOrganizationHierarchy;
@@ -198,15 +198,14 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
   }
 
   @Test
-  void shouldNotAllowFinalizingNewCandidateWithUnverifiedCreator() throws IOException {
+  void shouldAllowRejectingButNotApprovingCandidateWithUnverifiedCreator() throws IOException {
     var candidate = setupCandidateWithUnverifiedCreator();
     var request = createRequestWithCuratorAccess(candidate.identifier().toString());
 
     var candidateDto = handleRequest(request);
 
     var actualAllowedOperations = candidateDto.allowedOperations();
-    assertThat(
-        actualAllowedOperations, containsInAnyOrder(CURATOR_CANNOT_UPDATE_APPROVAL.toArray()));
+    assertThat(actualAllowedOperations, containsInAnyOrder(CURATOR_CAN_ONLY_REJECT.toArray()));
   }
 
   @Test
