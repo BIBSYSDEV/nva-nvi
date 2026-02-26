@@ -2,8 +2,8 @@ package no.sikt.nva.nvi.index.report.query;
 
 import static no.sikt.nva.nvi.index.report.aggregation.AllInstitutionsAggregationQuery.BY_GLOBAL_STATUS;
 import static no.sikt.nva.nvi.index.report.aggregation.AllInstitutionsAggregationQuery.BY_LOCAL_STATUS;
-import static no.sikt.nva.nvi.index.report.aggregation.AllInstitutionsAggregationQuery.BY_SECTOR;
 import static no.sikt.nva.nvi.index.report.aggregation.AllInstitutionsAggregationQuery.INSTITUTION;
+import static no.sikt.nva.nvi.index.report.aggregation.AllInstitutionsAggregationQuery.INSTITUTION_DETAILS;
 import static no.sikt.nva.nvi.index.report.aggregation.AllInstitutionsAggregationQuery.PER_INSTITUTION;
 import static no.sikt.nva.nvi.index.report.aggregation.AllInstitutionsAggregationQuery.POINTS_SUM;
 
@@ -15,6 +15,7 @@ import java.util.Map;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
+import no.sikt.nva.nvi.index.model.document.ApprovalView;
 import no.sikt.nva.nvi.index.report.aggregation.AllInstitutionsAggregationQuery;
 import no.sikt.nva.nvi.index.report.model.CandidateTotal;
 import no.sikt.nva.nvi.index.report.model.InstitutionAggregationResult;
@@ -74,20 +75,24 @@ public record AllInstitutionsQuery(NviPeriod period)
 
   private InstitutionAggregationResult parseInstitutionBucket(StringTermsBucket bucket) {
     var institutionId = URI.create(bucket.key());
-    var sector = parseSector(bucket);
+    var details = parseInstitutionDetails(bucket);
     var byGlobalStatus = parseGlobalStatusBuckets(bucket);
     var undisputed = computeUndisputed(byGlobalStatus);
 
     return new InstitutionAggregationResult(
-        institutionId, period, sector, byGlobalStatus, undisputed);
+        institutionId, period, details.sector(), details.labels(), byGlobalStatus, undisputed);
   }
 
-  private static String parseSector(StringTermsBucket institutionBucket) {
-    var sectorBuckets = institutionBucket.aggregations().get(BY_SECTOR).sterms().buckets().array();
-    if (sectorBuckets.isEmpty()) {
-      return null;
-    }
-    return sectorBuckets.getFirst().key();
+  private static ApprovalView parseInstitutionDetails(StringTermsBucket institutionBucket) {
+    return institutionBucket
+        .aggregations()
+        .get(INSTITUTION_DETAILS)
+        .topHits()
+        .hits()
+        .hits()
+        .getFirst()
+        .source()
+        .to(ApprovalView.class);
   }
 
   private Map<GlobalApprovalStatus, LocalStatusSummary> parseGlobalStatusBuckets(

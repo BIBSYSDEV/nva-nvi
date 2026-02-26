@@ -13,6 +13,7 @@ public record InstitutionAggregationResult(
     URI institutionId,
     NviPeriod period,
     String sector,
+    Map<String, String> labels,
     Map<GlobalApprovalStatus, LocalStatusSummary> byGlobalStatus,
     LocalStatusSummary undisputed) {
 

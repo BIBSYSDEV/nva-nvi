@@ -188,10 +188,12 @@ class FetchReportHandlerIntegrationTest {
     var institutionA =
         new ApprovalFactory(INSTITUTION_A.id())
             .withCreatorAffiliation(organizationIdFromIdentifier(IDENTIFIER_UNIT_A))
+            .withLabels(INSTITUTION_A.labels())
             .withSector(Sector.UHI);
     var institutionB =
         new ApprovalFactory(INSTITUTION_B.id())
             .withCreatorAffiliation(INSTITUTION_B.id())
+            .withLabels(INSTITUTION_B.labels())
             .withSector(Sector.HEALTH);
 
     documentsForLastYear = documentsForLastYear(institutionA, institutionB);
@@ -297,8 +299,14 @@ class FetchReportHandlerIntegrationTest {
 
     private static Stream<Arguments> institutionsWithSector() {
       return Stream.of(
-          argumentSet("Institution A", IDENTIFIER_INSTITUTION_A, Sector.UHI),
-          argumentSet("Institution B", IDENTIFIER_INSTITUTION_B, Sector.HEALTH));
+          argumentSet(IDENTIFIER_INSTITUTION_A, IDENTIFIER_INSTITUTION_A, Sector.UHI),
+          argumentSet(IDENTIFIER_INSTITUTION_B, IDENTIFIER_INSTITUTION_B, Sector.HEALTH));
+    }
+
+    private static Stream<Arguments> institutionsWithLabels() {
+      return Stream.of(
+          argumentSet(IDENTIFIER_INSTITUTION_A, IDENTIFIER_INSTITUTION_A, INSTITUTION_A.labels()),
+          argumentSet(IDENTIFIER_INSTITUTION_B, IDENTIFIER_INSTITUTION_B, INSTITUTION_B.labels()));
     }
 
     @Test
@@ -330,7 +338,15 @@ class FetchReportHandlerIntegrationTest {
       assertThat(report.sector()).isEqualTo(expectedSector);
     }
 
-    // TODO: Add test for organization node/tree
+    @ParameterizedTest
+    @MethodSource("institutionsWithLabels")
+    void shouldHaveExpectedLabels(
+        String institutionIdentifier, Map<String, String> expectedLabels) {
+      var report = getInstitutionReport(THIS_YEAR, institutionIdentifier);
+      assertThat(report.institution().labels()).isEqualTo(expectedLabels);
+    }
+
+    // TODO: Add test for organization tree (NP-50858)
 
     // TODO: Add tests for List<UnitSummary> units (NP-50858)
 

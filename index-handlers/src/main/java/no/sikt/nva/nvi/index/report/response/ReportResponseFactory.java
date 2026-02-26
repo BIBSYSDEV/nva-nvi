@@ -112,7 +112,8 @@ public class ReportResponseFactory {
 
   private static InstitutionReport toInstitutionReport(
       URI queryId, NviPeriodDto periodDto, InstitutionAggregationResult result) {
-    var organization = Organization.builder().withId(result.institutionId()).build();
+    var organization =
+        Organization.builder().withId(result.institutionId()).withLabels(result.labels()).build();
     var sector = Sector.fromString(result.sector()).orElse(Sector.UNKNOWN);
     var totals =
         new InstitutionTotals(
