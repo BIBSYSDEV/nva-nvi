@@ -88,26 +88,10 @@ public class ReportResponseFactory {
       return reportAggregationClient
           .executeQuery(query)
           .map(result -> toInstitutionReport(request.queryId(), periodDto, result))
-          .orElseGet(() -> emptyInstitutionReport(request, periodDto));
+          .orElseThrow();
     } catch (IOException e) {
       throw new BadGatewayException("Failed to execute aggregation query");
     }
-  }
-
-  private static InstitutionReport emptyInstitutionReport(
-      InstitutionReportRequest request, NviPeriodDto periodDto) {
-    var organization = Organization.builder().withId(request.institutionId()).build();
-    var institutionSummary =
-        new InstitutionSummary(
-            new InstitutionTotals(BigDecimal.ZERO, 0, 0, 0),
-            new UndisputedCandidatesByLocalApprovalStatus(0, 0, 0, 0));
-    return new InstitutionReport(
-        request.queryId(),
-        periodDto,
-        Sector.UNKNOWN,
-        organization,
-        institutionSummary,
-        emptyList());
   }
 
   private static InstitutionReport toInstitutionReport(

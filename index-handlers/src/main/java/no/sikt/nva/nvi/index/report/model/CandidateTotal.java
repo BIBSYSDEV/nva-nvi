@@ -4,13 +4,6 @@ import static no.sikt.nva.nvi.common.utils.DecimalUtils.adjustScaleAndRoundingMo
 
 import java.math.BigDecimal;
 
-/**
- * Result of an aggregation query, containing the number of matching candidates and their combined
- * points total.
- *
- * @param candidateCount number of candidates in this aggregation (non-negative)
- * @param totalPoints sum of points for the candidates (non-negative, rounded to 4 decimals)
- */
 public record CandidateTotal(int candidateCount, BigDecimal totalPoints) {
 
   public static final CandidateTotal ZERO = new CandidateTotal(0, BigDecimal.ZERO);
