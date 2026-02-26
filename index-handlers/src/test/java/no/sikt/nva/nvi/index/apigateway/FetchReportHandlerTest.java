@@ -4,6 +4,8 @@ import static java.util.Collections.emptyMap;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.ALLOWED_ORIGIN;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.getHandlerEnvironment;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
+import static no.sikt.nva.nvi.index.report.ReportConstants.PERIOD_PATH_PARAM;
+import static no.sikt.nva.nvi.index.report.ReportConstants.REPORTS_PATH_SEGMENT;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -34,11 +36,10 @@ import org.zalando.problem.Problem;
 
 class FetchReportHandlerTest {
 
-  private static final String PERIOD = "period";
   private static final Context CONTEXT = new FakeContext();
   private static final String PERIOD_FOR_QUERY = randomYear();
-  private static final String REPORTS_PATH = "reports";
   private static final String PATH = "path";
+  private ReportAggregationClient mockAggregationClient;
   private FetchReportHandler handler;
   private ByteArrayOutputStream output;
 
@@ -47,7 +48,7 @@ class FetchReportHandlerTest {
     var scenario = new TestScenario();
     setupOpenPeriod(scenario, PERIOD_FOR_QUERY);
     output = new ByteArrayOutputStream();
-    var mockAggregationClient = mock(ReportAggregationClient.class);
+    mockAggregationClient = mock(ReportAggregationClient.class);
     handler =
         new FetchReportHandler(
             getHandlerEnvironment(ALLOWED_ORIGIN),
@@ -57,7 +58,7 @@ class FetchReportHandlerTest {
 
   @Test
   void shouldReturnOkOnSuccess() throws IOException {
-    handler.handleRequest(createRequest(emptyMap(), REPORTS_PATH), output, CONTEXT);
+    handler.handleRequest(createRequest(emptyMap(), REPORTS_PATH_SEGMENT), output, CONTEXT);
 
     var statusCode = fromOutputStream(output, ReportResponse.class).getStatusCode();
 
@@ -75,7 +76,7 @@ class FetchReportHandlerTest {
 
   @Test
   void shouldReturnAllPeriodsReportWhenNoPathParametersAreProvided() {
-    var request = createRequest(emptyMap(), REPORTS_PATH);
+    var request = createRequest(emptyMap(), REPORTS_PATH_SEGMENT);
 
     var response = handleRequest(request);
 
@@ -84,7 +85,7 @@ class FetchReportHandlerTest {
 
   @Test
   void shouldReturnPeriodReportWhenPeriodIsProvidedInPathParameters() {
-    var request = createRequest(Map.of(PERIOD, PERIOD_FOR_QUERY), REPORTS_PATH);
+    var request = createRequest(Map.of(PERIOD_PATH_PARAM, PERIOD_FOR_QUERY), REPORTS_PATH_SEGMENT);
 
     var response = handleRequest(request);
 

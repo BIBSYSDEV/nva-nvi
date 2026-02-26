@@ -11,6 +11,7 @@ import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.createOrganizationWithSubUnit;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.organizationIdFromIdentifier;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationId;
+import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationIdentifier;
 import static no.sikt.nva.nvi.common.utils.CollectionUtils.mergeCollections;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.documentForYear;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.documentsForAllStatusCombinations;
@@ -25,6 +26,7 @@ import static no.sikt.nva.nvi.test.TestConstants.LAST_YEAR;
 import static no.sikt.nva.nvi.test.TestConstants.NEXT_YEAR;
 import static no.sikt.nva.nvi.test.TestConstants.THIS_YEAR;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
+import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.apigateway.GatewayResponse.fromOutputStream;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,6 +40,7 @@ import java.io.InputStream;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import java.math.BigDecimal;
+import java.net.HttpURLConnection;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -57,6 +60,7 @@ import no.sikt.nva.nvi.index.report.response.ReportResponse;
 import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
+import nva.commons.apigateway.GatewayResponse;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
@@ -66,6 +70,8 @@ import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.zalando.problem.Problem;
+import org.zalando.problem.StatusType;
 
 /**
  * This test suite sets up a complex scenario with a mix of documents for multiple
@@ -219,6 +225,17 @@ class FetchReportHandlerIntegrationTest {
     }
   }
 
+  private Problem handleRequestExpectingProblem(InputStream request) {
+    var output = new ByteArrayOutputStream();
+    try {
+      handler.handleRequest(request, output, CONTEXT);
+      var response = GatewayResponse.fromOutputStream(output, Problem.class);
+      return objectMapper.readValue(response.getBody(), Problem.class);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   private InstitutionReport getInstitutionReport(String period, String institutionIdentifier) {
     var request = createInstitutionRequest(period, institutionIdentifier);
     return (InstitutionReport) handleRequest(request);
@@ -329,6 +346,16 @@ class FetchReportHandlerIntegrationTest {
     void shouldHaveExpectedPeriod() {
       var report = getInstitutionReport(THIS_YEAR, IDENTIFIER_INSTITUTION_A);
       assertThat(report.period().publishingYear()).isEqualTo(THIS_YEAR);
+    }
+
+    @Test
+    void shouldReturnNotFoundErrorForInstitutionWithNoCandidates() {
+      var request = createInstitutionRequest(THIS_YEAR, randomOrganizationIdentifier());
+      var response = handleRequestExpectingProblem(request);
+      assertThat(response)
+          .extracting(Problem::getStatus)
+          .extracting(StatusType::getStatusCode)
+          .isEqualTo(HttpURLConnection.HTTP_NOT_FOUND);
     }
 
     @ParameterizedTest
