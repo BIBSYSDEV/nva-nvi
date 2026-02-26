@@ -325,7 +325,7 @@ class FetchReportHandlerIntegrationTest {
 
     // TODO: Add test for organization node/tree
 
-    // TODO: Add test for List<UnitSummary> units
+    // TODO: Add tests for List<UnitSummary> units (NP-50858)
 
     @ParameterizedTest
     @MethodSource("institutionsWithDocumentsForThisYear")
