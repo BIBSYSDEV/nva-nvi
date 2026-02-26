@@ -1,6 +1,11 @@
 package no.sikt.nva.nvi.index.report.query;
 
+import static no.sikt.nva.nvi.index.report.aggregation.AllInstitutionsAggregationQuery.BY_GLOBAL_STATUS;
+import static no.sikt.nva.nvi.index.report.aggregation.AllInstitutionsAggregationQuery.BY_LOCAL_STATUS;
+import static no.sikt.nva.nvi.index.report.aggregation.AllInstitutionsAggregationQuery.BY_SECTOR;
+import static no.sikt.nva.nvi.index.report.aggregation.AllInstitutionsAggregationQuery.INSTITUTION;
 import static no.sikt.nva.nvi.index.report.aggregation.AllInstitutionsAggregationQuery.PER_INSTITUTION;
+import static no.sikt.nva.nvi.index.report.aggregation.AllInstitutionsAggregationQuery.POINTS_SUM;
 
 import java.math.BigDecimal;
 import java.net.URI;
@@ -16,30 +21,40 @@ import no.sikt.nva.nvi.index.report.model.InstitutionAggregationResult;
 import no.sikt.nva.nvi.index.report.model.LocalStatusSummary;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
+import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.TermQuery;
 import org.opensearch.client.opensearch.core.SearchResponse;
 
-// TODO: Change how we handle reported filtering. Should have a filter to either include everything
-// (open/pending period) or only reported results (closed period).
 public record AllInstitutionsQuery(NviPeriod period)
     implements ReportAggregationQuery<List<InstitutionAggregationResult>> {
 
   private static final String REPORTING_PERIOD_YEAR = "reportingPeriod.year";
-  private static final String INSTITUTION = "institution";
-  private static final String BY_GLOBAL_STATUS = "by_global_status";
-  private static final String BY_LOCAL_STATUS = "by_local_status";
-  private static final String POINTS = "points";
-
-  // TODO: Build query more cleanly, by composing a filter with each of the aggregation queries in
-  // one operation?
+  private static final String REPORTED = "reported";
 
   @Override
   public Query query() {
+    var yearFilter = yearFilter();
+    if (period.isClosed()) {
+      var reportedFilter = reportedFilter();
+      return new BoolQuery.Builder().filter(yearFilter, reportedFilter).build().toQuery();
+    }
+    return yearFilter;
+  }
+
+  private Query yearFilter() {
     var year = String.valueOf(period.publishingYear());
     return new TermQuery.Builder()
         .field(REPORTING_PERIOD_YEAR)
         .value(v -> v.stringValue(year))
+        .build()
+        .toQuery();
+  }
+
+  private static Query reportedFilter() {
+    return new TermQuery.Builder()
+        .field(REPORTED)
+        .value(v -> v.booleanValue(true))
         .build()
         .toQuery();
   }
@@ -59,13 +74,20 @@ public record AllInstitutionsQuery(NviPeriod period)
 
   private InstitutionAggregationResult parseInstitutionBucket(StringTermsBucket bucket) {
     var institutionId = URI.create(bucket.key());
+    var sector = parseSector(bucket);
     var byGlobalStatus = parseGlobalStatusBuckets(bucket);
-    var reportedTotals = computeReportedTotals(byGlobalStatus);
     var undisputed = computeUndisputed(byGlobalStatus);
 
-    // FIXME: Add sector
     return new InstitutionAggregationResult(
-        institutionId, period, null, reportedTotals, byGlobalStatus, undisputed);
+        institutionId, period, sector, byGlobalStatus, undisputed);
+  }
+
+  private static String parseSector(StringTermsBucket institutionBucket) {
+    var sectorBuckets = institutionBucket.aggregations().get(BY_SECTOR).sterms().buckets().array();
+    if (sectorBuckets.isEmpty()) {
+      return null;
+    }
+    return sectorBuckets.getFirst().key();
   }
 
   private Map<GlobalApprovalStatus, LocalStatusSummary> parseGlobalStatusBuckets(
@@ -86,19 +108,12 @@ public record AllInstitutionsQuery(NviPeriod period)
     var totalsByStatus = new EnumMap<ApprovalStatus, CandidateTotal>(ApprovalStatus.class);
     for (var localBucket : localBuckets) {
       var localStatus = ApprovalStatus.parse(localBucket.key());
-      var candidateCount = (int) localBucket.docCount();
-      var pointsValue = BigDecimal.valueOf(localBucket.aggregations().get(POINTS).sum().value());
+      var candidateCount = Math.toIntExact(localBucket.docCount());
+      var pointsValue =
+          BigDecimal.valueOf(localBucket.aggregations().get(POINTS_SUM).sum().value());
       totalsByStatus.put(localStatus, new CandidateTotal(candidateCount, pointsValue));
     }
     return new LocalStatusSummary(Map.copyOf(totalsByStatus));
-  }
-
-  // FIXME: This is wrong
-  private CandidateTotal computeReportedTotals(
-      Map<GlobalApprovalStatus, LocalStatusSummary> byGlobalStatus) {
-    return byGlobalStatus.values().stream()
-        .map(LocalStatusSummary::total)
-        .reduce(CandidateTotal.ZERO, CandidateTotal::add);
   }
 
   private LocalStatusSummary computeUndisputed(

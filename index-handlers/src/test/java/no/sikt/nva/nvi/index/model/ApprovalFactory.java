@@ -53,6 +53,10 @@ public class ApprovalFactory {
     this.sector = sector;
   }
 
+  public ApprovalView toApproval(GlobalApprovalStatus globalStatus, ApprovalStatus localStatus) {
+    return getBuilder().build();
+  }
+
   public ApprovalView build() {
     return getBuilder().build();
   }

@@ -1,20 +1,16 @@
 package no.sikt.nva.nvi.index.apigateway;
 
-import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.ALLOWED_ORIGIN;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.getHandlerEnvironment;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
-import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationIdentifier;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.apigateway.GatewayResponse.fromOutputStream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -26,9 +22,7 @@ import java.util.Map;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.index.report.FetchReportHandler;
 import no.sikt.nva.nvi.index.report.ReportAggregationClient;
-import no.sikt.nva.nvi.index.report.response.AllInstitutionsReport;
 import no.sikt.nva.nvi.index.report.response.AllPeriodsReport;
-import no.sikt.nva.nvi.index.report.response.InstitutionReport;
 import no.sikt.nva.nvi.index.report.response.PeriodReport;
 import no.sikt.nva.nvi.index.report.response.ReportResponse;
 import no.unit.nva.stubs.FakeContext;
@@ -41,23 +35,19 @@ import org.zalando.problem.Problem;
 class FetchReportHandlerTest {
 
   private static final String PERIOD = "period";
-  private static final String INSTITUTION = "institution";
   private static final Context CONTEXT = new FakeContext();
   private static final String PERIOD_FOR_QUERY = randomYear();
   private static final String REPORTS_PATH = "reports";
-  private static final String REPORTS_INSTITUTIONS_PATH =
-      "reports/%s/institutions".formatted(PERIOD_FOR_QUERY);
   private static final String PATH = "path";
   private FetchReportHandler handler;
   private ByteArrayOutputStream output;
 
   @BeforeEach
-  void setUp() throws IOException {
+  void setUp() {
     var scenario = new TestScenario();
     setupOpenPeriod(scenario, PERIOD_FOR_QUERY);
     output = new ByteArrayOutputStream();
     var mockAggregationClient = mock(ReportAggregationClient.class);
-    when(mockAggregationClient.executeQuery(any())).thenReturn(emptyList());
     handler =
         new FetchReportHandler(
             getHandlerEnvironment(ALLOWED_ORIGIN),
@@ -99,28 +89,6 @@ class FetchReportHandlerTest {
     var response = handleRequest(request);
 
     assertInstanceOf(PeriodReport.class, response);
-  }
-
-  @Test
-  void
-      shouldReturnAllInstitutionsReportWhenPeriodIsProvidedInPathParametersAndInstitutionIsPresentInPathParameters() {
-    var request = createRequest(Map.of(PERIOD, PERIOD_FOR_QUERY), REPORTS_INSTITUTIONS_PATH);
-
-    var response = handleRequest(request);
-
-    assertInstanceOf(AllInstitutionsReport.class, response);
-  }
-
-  @Test
-  void shouldReturnInstitutionsReportWhenPeriodAndInstitutionAreProvidedInPathParameters() {
-    var request =
-        createRequest(
-            Map.of(PERIOD, PERIOD_FOR_QUERY, INSTITUTION, randomOrganizationIdentifier()),
-            REPORTS_INSTITUTIONS_PATH);
-
-    var response = handleRequest(request);
-
-    assertInstanceOf(InstitutionReport.class, response);
   }
 
   private static InputStream createRequest(Map<String, String> pathParameters, String path) {

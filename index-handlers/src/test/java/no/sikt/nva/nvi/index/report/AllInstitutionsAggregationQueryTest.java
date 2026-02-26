@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.index.report;
 
+import static java.util.Collections.emptyList;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeriod;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupFuturePeriod;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
@@ -12,13 +13,11 @@ import static no.sikt.nva.nvi.test.TestConstants.LAST_YEAR;
 import static no.sikt.nva.nvi.test.TestConstants.NEXT_YEAR;
 import static no.sikt.nva.nvi.test.TestConstants.THIS_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
-import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -31,8 +30,8 @@ import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.index.OpenSearchContainerContext;
 import no.sikt.nva.nvi.index.model.ApprovalFactory;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
+import no.sikt.nva.nvi.index.model.document.ApprovalView;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
-import no.sikt.nva.nvi.index.report.model.CandidateTotal;
 import no.sikt.nva.nvi.index.report.model.InstitutionAggregationResult;
 import no.sikt.nva.nvi.index.report.query.AllInstitutionsQuery;
 import org.junit.jupiter.api.AfterAll;
@@ -127,17 +126,12 @@ class AllInstitutionsAggregationQueryTest {
 
     @Test
     void shouldIncludeExpectedPeriodInReport() {
-      assertTrue(institutionReport.period().hasPublishingYear(THIS_YEAR));
+      assertThat(institutionReport.period().hasPublishingYear(THIS_YEAR)).isTrue();
     }
 
     @Test
     void shouldIncludeExpectedSectorInReport() {
       assertThat(institutionReport.sector()).isEqualTo(SECTOR.toString());
-    }
-
-    @Test
-    void shouldHaveNoReportedTotals() {
-      assertThat(institutionReport.reportedTotals()).isEqualTo(CandidateTotal.ZERO);
     }
 
     @Test
@@ -148,9 +142,9 @@ class AllInstitutionsAggregationQueryTest {
     }
 
     @Test
-    void shouldHaveZeroPointsForRejectedStatus() {
-      var approvedSummary = institutionReport.byGlobalStatus().get(GlobalApprovalStatus.REJECTED);
-      assertThat(approvedSummary.totalPoints()).isZero();
+    void shouldHaveExpectedCandidateCountForRejectedStatus() {
+      var rejectedSummary = institutionReport.byGlobalStatus().get(GlobalApprovalStatus.REJECTED);
+      assertThat(rejectedSummary.totalCount()).isEqualTo(CANDIDATES_PER_GLOBAL_STATUS);
     }
 
     @Test
@@ -173,13 +167,13 @@ class AllInstitutionsAggregationQueryTest {
       var expectedCountPerStatus = 3;
 
       var undisputedByLocalStatus = institutionReport.undisputed();
-      assertThat(undisputedByLocalStatus.forStatus(ApprovalStatus.NEW))
+      assertThat(undisputedByLocalStatus.forStatus(ApprovalStatus.NEW).candidateCount())
           .isEqualTo(expectedCountPerStatus);
-      assertThat(undisputedByLocalStatus.forStatus(ApprovalStatus.PENDING))
+      assertThat(undisputedByLocalStatus.forStatus(ApprovalStatus.PENDING).candidateCount())
           .isEqualTo(expectedCountPerStatus);
-      assertThat(undisputedByLocalStatus.forStatus(ApprovalStatus.REJECTED))
+      assertThat(undisputedByLocalStatus.forStatus(ApprovalStatus.REJECTED).candidateCount())
           .isEqualTo(expectedCountPerStatus);
-      assertThat(undisputedByLocalStatus.forStatus(ApprovalStatus.APPROVED))
+      assertThat(undisputedByLocalStatus.forStatus(ApprovalStatus.APPROVED).candidateCount())
           .isEqualTo(expectedCountPerStatus);
     }
   }
@@ -223,6 +217,89 @@ class AllInstitutionsAggregationQueryTest {
         candidate(factory, GlobalApprovalStatus.PENDING, ApprovalStatus.REJECTED),
         candidate(factory, GlobalApprovalStatus.APPROVED, ApprovalStatus.APPROVED),
         candidate(factory, GlobalApprovalStatus.REJECTED, ApprovalStatus.REJECTED));
+  }
+
+  /**
+   * Creates one candidate for each legal combination of global and local approval status:
+   *
+   * <ul>
+   *   <li>NEW => Pending
+   *   <li>DISPUTE + PENDING
+   *   <li>DISPUTE + APPROVED
+   *   <li>DISPUTE + REJECTED
+   *   <li>PENDING + NEW
+   *   <li>PENDING + PENDING
+   *   <li>PENDING + APPROVED
+   *   <li>PENDING + REJECTED
+   *   <li>APPROVED + APPROVED
+   *   <li>REJECTED + REJECTED
+   * </ul>
+   */
+  public static List<NviCandidateIndexDocument> candidatesForSingleInstitution(
+      ApprovalFactory institution) {
+    var documents = new ArrayList<NviCandidateIndexDocument>();
+    var approvals = legalApprovalStatusCombinationsForSingleInstitution(institution);
+    for (var globalStatus : GlobalApprovalStatus.values()) {
+      for (var status : ApprovalStatus.values()) {
+        var approval =
+            institution
+                .copy()
+                .withApprovalStatus(status)
+                .withGlobalApprovalStatus(globalStatus)
+                .build();
+        documents.add(documentWithApprovals(approval));
+      }
+    }
+    return documents;
+  }
+
+  private static List<ApprovalView> legalApprovalStatusCombinationsForSingleInstitution(
+      ApprovalFactory institution) {
+    return List.of(
+        approval(institution, GlobalApprovalStatus.PENDING, ApprovalStatus.NEW),
+        approval(institution, GlobalApprovalStatus.PENDING, ApprovalStatus.PENDING),
+        approval(institution, GlobalApprovalStatus.APPROVED, ApprovalStatus.APPROVED),
+        approval(institution, GlobalApprovalStatus.REJECTED, ApprovalStatus.REJECTED));
+  }
+
+  private static List<ApprovalView> legalApprovalStatusCombinationsForCollaborations(
+      ApprovalFactory institution) {
+    return List.of(
+        approval(institution, GlobalApprovalStatus.PENDING, ApprovalStatus.NEW),
+        approval(institution, GlobalApprovalStatus.PENDING, ApprovalStatus.PENDING),
+        approval(institution, GlobalApprovalStatus.APPROVED, ApprovalStatus.APPROVED),
+        approval(institution, GlobalApprovalStatus.REJECTED, ApprovalStatus.REJECTED));
+  }
+
+  public static ApprovalView approval(
+      ApprovalFactory institutionApproval,
+      GlobalApprovalStatus globalStatus,
+      ApprovalStatus approvalStatus) {
+    return institutionApproval
+        .copy()
+        .withGlobalApprovalStatus(globalStatus)
+        .withApprovalStatus(approvalStatus)
+        .build();
+  }
+
+  /**
+   * Creates one candidate for each legal combination of global and local approval status:
+   *
+   * <ul>
+   *   <li>DISPUTE + NEW
+   *   <li>DISPUTE + PENDING
+   *   <li>DISPUTE + APPROVED
+   *   <li>DISPUTE + REJECTED
+   *   <li>PENDING + NEW
+   *   <li>PENDING + PENDING
+   *   <li>PENDING + APPROVED
+   *   <li>PENDING + REJECTED
+   *   <li>APPROVED + APPROVED
+   *   <li>REJECTED + REJECTED
+   * </ul>
+   */
+  public static List<NviCandidateIndexDocument> candidatesForCollaboration() {
+    return emptyList();
   }
 
   private List<NviCandidateIndexDocument> createCollaborationCandidates(

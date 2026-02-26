@@ -13,7 +13,6 @@ public record InstitutionAggregationResult(
     URI institutionId,
     NviPeriod period,
     String sector,
-    CandidateTotal reportedTotals,
     Map<GlobalApprovalStatus, LocalStatusSummary> byGlobalStatus,
     LocalStatusSummary undisputed) {
 
@@ -22,28 +21,11 @@ public record InstitutionAggregationResult(
     return isNull(disputeSummary) ? 0 : disputeSummary.totalCount();
   }
 
-  /**
-   * Returns the total points that should be counted for this institution, depending on the period
-   * state:
-   *
-   * <ul>
-   *   <li>Unopened – all undisputed points
-   *   <li>Open – only globally approved points
-   *   <li>Closed – only explicitly reported points
-   * </ul>
-   *
-   * // TODO: Update this when period state is implemented: // - Open and closed state => globally
-   * approved points // - New "reported" state => all reported points
-   */
   public BigDecimal validPoints() {
-    // FIXME: Replace with switch case when period state is implemented
     if (period.isUnopened()) {
       return undisputed.totalPoints();
     }
-    if (period.isClosed() || period.isOpen()) {
-      return approvedPoints();
-    }
-    return reportedTotals().totalPoints();
+    return approvedPoints();
   }
 
   public int undisputedTotalCount() {

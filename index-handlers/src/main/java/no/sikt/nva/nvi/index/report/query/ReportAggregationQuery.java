@@ -5,7 +5,7 @@ import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.SearchResponse;
 
-public sealed interface ReportAggregationQuery<T> permits AllInstitutionsQuery {
+public sealed interface ReportAggregationQuery<T> permits AllInstitutionsQuery, InstitutionQuery {
 
   Query query();
 
