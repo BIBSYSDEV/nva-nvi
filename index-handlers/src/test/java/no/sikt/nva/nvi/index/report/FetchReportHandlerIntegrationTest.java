@@ -1,5 +1,7 @@
 package no.sikt.nva.nvi.index.report;
 
+import static java.lang.annotation.ElementType.METHOD;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static java.util.function.Predicate.not;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.ALLOWED_ORIGIN;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.getHandlerEnvironment;
@@ -33,6 +35,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
@@ -261,17 +265,11 @@ class FetchReportHandlerIntegrationTest {
   @Nested
   class InstitutionReportTests {
 
-    private static Stream<Arguments> institutionsWithDocumentsForLastYear() {
-      return Stream.of(
-          argumentSet(
-              IDENTIFIER_INSTITUTION_A,
-              IDENTIFIER_INSTITUTION_A,
-              getRelevantDocuments(documentsForLastYear, INSTITUTION_A.id())),
-          argumentSet(
-              IDENTIFIER_INSTITUTION_B,
-              IDENTIFIER_INSTITUTION_B,
-              getRelevantDocuments(documentsForLastYear, INSTITUTION_B.id())));
-    }
+    @Target(METHOD)
+    @Retention(RUNTIME)
+    @ParameterizedTest
+    @MethodSource("institutionsWithDocumentsForThisYear")
+    @interface PerInstitutionForThisYear {}
 
     private static Stream<Arguments> institutionsWithDocumentsForThisYear() {
       return Stream.of(
@@ -283,6 +281,18 @@ class FetchReportHandlerIntegrationTest {
               IDENTIFIER_INSTITUTION_B,
               IDENTIFIER_INSTITUTION_B,
               getRelevantDocuments(documentsForThisYear, INSTITUTION_B.id())));
+    }
+
+    private static Stream<Arguments> institutionsWithDocumentsForLastYear() {
+      return Stream.of(
+          argumentSet(
+              IDENTIFIER_INSTITUTION_A,
+              IDENTIFIER_INSTITUTION_A,
+              getRelevantDocuments(documentsForLastYear, INSTITUTION_A.id())),
+          argumentSet(
+              IDENTIFIER_INSTITUTION_B,
+              IDENTIFIER_INSTITUTION_B,
+              getRelevantDocuments(documentsForLastYear, INSTITUTION_B.id())));
     }
 
     private static Stream<Arguments> institutionsWithDocumentsForNextYear() {
@@ -350,8 +360,7 @@ class FetchReportHandlerIntegrationTest {
 
     // TODO: Add tests for List<UnitSummary> units (NP-50858)
 
-    @ParameterizedTest
-    @MethodSource("institutionsWithDocumentsForThisYear")
+    @PerInstitutionForThisYear
     void shouldHaveExpectedPointsForOpenPeriod(
         String institutionIdentifier, List<NviCandidateIndexDocument> relevantDocs) {
       var report = getInstitutionReport(THIS_YEAR, institutionIdentifier);
@@ -403,8 +412,7 @@ class FetchReportHandlerIntegrationTest {
       assertThat(totals.validPoints()).isEqualTo(expectedPoints);
     }
 
-    @ParameterizedTest
-    @MethodSource("institutionsWithDocumentsForThisYear")
+    @PerInstitutionForThisYear
     void shouldHaveExpectedDisputedCount(
         String institutionIdentifier, List<NviCandidateIndexDocument> relevantDocs) {
       var report = getInstitutionReport(THIS_YEAR, institutionIdentifier);
@@ -415,8 +423,7 @@ class FetchReportHandlerIntegrationTest {
       assertThat(totals.disputedCount()).isEqualTo(expectedCount);
     }
 
-    @ParameterizedTest
-    @MethodSource("institutionsWithDocumentsForThisYear")
+    @PerInstitutionForThisYear
     void shouldHaveExpectedUndisputedProcessedCount(
         String institutionIdentifier, List<NviCandidateIndexDocument> relevantDocs) {
       var report = getInstitutionReport(THIS_YEAR, institutionIdentifier);
@@ -433,8 +440,7 @@ class FetchReportHandlerIntegrationTest {
       assertThat(totals.undisputedProcessedCount()).isEqualTo(expectedCount);
     }
 
-    @ParameterizedTest
-    @MethodSource("institutionsWithDocumentsForThisYear")
+    @PerInstitutionForThisYear
     void shouldHaveExpectedUndisputedNewCount(
         String institutionIdentifier, List<NviCandidateIndexDocument> relevantDocs) {
       var report = getInstitutionReport(THIS_YEAR, institutionIdentifier);
@@ -449,8 +455,7 @@ class FetchReportHandlerIntegrationTest {
       assertThat(candidatesByStatus.newCount()).isEqualTo(expectedCount);
     }
 
-    @ParameterizedTest
-    @MethodSource("institutionsWithDocumentsForThisYear")
+    @PerInstitutionForThisYear
     void shouldHaveExpectedUndisputedPendingCount(
         String institutionIdentifier, List<NviCandidateIndexDocument> relevantDocs) {
       var report = getInstitutionReport(THIS_YEAR, institutionIdentifier);
@@ -465,8 +470,7 @@ class FetchReportHandlerIntegrationTest {
       assertThat(candidatesByStatus.pendingCount()).isEqualTo(expectedCount);
     }
 
-    @ParameterizedTest
-    @MethodSource("institutionsWithDocumentsForThisYear")
+    @PerInstitutionForThisYear
     void shouldHaveExpectedUndisputedApprovedCount(
         String institutionIdentifier, List<NviCandidateIndexDocument> relevantDocs) {
       var report = getInstitutionReport(THIS_YEAR, institutionIdentifier);
@@ -481,8 +485,7 @@ class FetchReportHandlerIntegrationTest {
       assertThat(candidatesByStatus.approvedCount()).isEqualTo(expectedCount);
     }
 
-    @ParameterizedTest
-    @MethodSource("institutionsWithDocumentsForThisYear")
+    @PerInstitutionForThisYear
     void shouldHaveExpectedUndisputedRejectedCount(
         String institutionIdentifier, List<NviCandidateIndexDocument> relevantDocs) {
       var report = getInstitutionReport(THIS_YEAR, institutionIdentifier);
