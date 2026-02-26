@@ -206,16 +206,21 @@ public final class IndexDocumentFixtures {
 
   public static List<NviCandidateIndexDocument> documentsForAllStatusCombinations(
       URI topLevelOrganization, URI creatorAffiliation) {
+    var approvalFactory =
+        new ApprovalFactory(topLevelOrganization).withCreatorAffiliation(creatorAffiliation);
+    return documentsForAllStatusCombinations(approvalFactory);
+  }
+
+  public static List<NviCandidateIndexDocument> documentsForAllStatusCombinations(
+      ApprovalFactory approvalFactory) {
     var documents = new ArrayList<NviCandidateIndexDocument>();
-    var approvalFactory = new ApprovalFactory(topLevelOrganization);
-    for (var status : ApprovalStatus.values()) {
-      for (var globalStatus : GlobalApprovalStatus.values()) {
+    for (var globalStatus : GlobalApprovalStatus.values()) {
+      for (var status : ApprovalStatus.values()) {
         var approval =
             approvalFactory
                 .copy()
                 .withApprovalStatus(status)
                 .withGlobalApprovalStatus(globalStatus)
-                .withCreatorAffiliation(creatorAffiliation)
                 .build();
         documents.add(documentWithApprovals(approval));
       }

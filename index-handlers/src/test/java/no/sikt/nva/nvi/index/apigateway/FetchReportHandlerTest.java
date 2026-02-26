@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.index.apigateway;
 
+import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.ALLOWED_ORIGIN;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.getHandlerEnvironment;
@@ -11,6 +12,9 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.apigateway.GatewayResponse.fromOutputStream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -21,6 +25,7 @@ import java.net.HttpURLConnection;
 import java.util.Map;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.index.report.FetchReportHandler;
+import no.sikt.nva.nvi.index.report.ReportAggregationClient;
 import no.sikt.nva.nvi.index.report.response.AllInstitutionsReport;
 import no.sikt.nva.nvi.index.report.response.AllPeriodsReport;
 import no.sikt.nva.nvi.index.report.response.InstitutionReport;
@@ -47,12 +52,17 @@ class FetchReportHandlerTest {
   private ByteArrayOutputStream output;
 
   @BeforeEach
-  void setUp() {
+  void setUp() throws IOException {
     var scenario = new TestScenario();
     setupOpenPeriod(scenario, PERIOD_FOR_QUERY);
     output = new ByteArrayOutputStream();
+    var mockAggregationClient = mock(ReportAggregationClient.class);
+    when(mockAggregationClient.executeQuery(any())).thenReturn(emptyList());
     handler =
-        new FetchReportHandler(getHandlerEnvironment(ALLOWED_ORIGIN), scenario.getPeriodService());
+        new FetchReportHandler(
+            getHandlerEnvironment(ALLOWED_ORIGIN),
+            scenario.getPeriodService(),
+            mockAggregationClient);
   }
 
   @Test

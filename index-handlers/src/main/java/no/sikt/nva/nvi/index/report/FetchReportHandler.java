@@ -21,12 +21,19 @@ public class FetchReportHandler extends ApiGatewayHandler<Void, ReportResponse> 
 
   @JacocoGenerated
   public FetchReportHandler() {
-    this(new Environment(), NviPeriodService.defaultNviPeriodService());
+    this(
+        new Environment(),
+        NviPeriodService.defaultNviPeriodService(),
+        ReportAggregationClient.defaultClient());
   }
 
-  public FetchReportHandler(Environment environment, NviPeriodService nviPeriodService) {
+  public FetchReportHandler(
+      Environment environment,
+      NviPeriodService nviPeriodService,
+      ReportAggregationClient reportAggregationClient) {
     super(Void.class, environment);
-    this.reportResponseFactory = new ReportResponseFactory(nviPeriodService);
+    this.reportResponseFactory =
+        new ReportResponseFactory(nviPeriodService, reportAggregationClient);
   }
 
   @Override
