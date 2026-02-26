@@ -39,7 +39,6 @@ class FetchReportHandlerTest {
   private static final Context CONTEXT = new FakeContext();
   private static final String PERIOD_FOR_QUERY = randomYear();
   private static final String PATH = "path";
-  private ReportAggregationClient mockAggregationClient;
   private FetchReportHandler handler;
   private ByteArrayOutputStream output;
 
@@ -48,12 +47,11 @@ class FetchReportHandlerTest {
     var scenario = new TestScenario();
     setupOpenPeriod(scenario, PERIOD_FOR_QUERY);
     output = new ByteArrayOutputStream();
-    mockAggregationClient = mock(ReportAggregationClient.class);
     handler =
         new FetchReportHandler(
             getHandlerEnvironment(ALLOWED_ORIGIN),
             scenario.getPeriodService(),
-            mockAggregationClient);
+            mock(ReportAggregationClient.class));
   }
 
   @Test

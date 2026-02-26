@@ -60,7 +60,6 @@ import no.sikt.nva.nvi.index.report.response.ReportResponse;
 import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
-import nva.commons.apigateway.GatewayResponse;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
@@ -229,7 +228,7 @@ class FetchReportHandlerIntegrationTest {
     var output = new ByteArrayOutputStream();
     try {
       handler.handleRequest(request, output, CONTEXT);
-      var response = GatewayResponse.fromOutputStream(output, Problem.class);
+      var response = fromOutputStream(output, Problem.class);
       return objectMapper.readValue(response.getBody(), Problem.class);
     } catch (IOException e) {
       throw new RuntimeException(e);
