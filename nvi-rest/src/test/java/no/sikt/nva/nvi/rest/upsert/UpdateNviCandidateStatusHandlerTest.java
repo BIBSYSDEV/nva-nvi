@@ -162,19 +162,26 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
     assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_CONFLICT)));
   }
 
-  @ParameterizedTest(
-      name = "Should not allow status {0} if sub-organization has unverified creators")
-  @EnumSource(
-      value = ApprovalStatus.class,
-      names = {STATUS_APPROVED, STATUS_REJECTED})
-  void shouldReturnConflictWhenUpdatingStatusAndSubInstitutionHasUnverifiedCreators(
-      ApprovalStatus newStatus) throws IOException {
+  @Test
+  void shouldReturnConflictWhenApprovingCandidateWithUnverifiedCreators() throws IOException {
     var candidate = setupCandidateWithUnverifiedCreator();
-    var request = createRequest(candidate.identifier(), topLevelOrganizationId, newStatus);
+    var request =
+        createRequest(candidate.identifier(), topLevelOrganizationId, ApprovalStatus.APPROVED);
     handler.handleRequest(request, output, CONTEXT);
     var response = GatewayResponse.fromOutputStream(output, Problem.class);
 
     assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_CONFLICT)));
+  }
+
+  @Test
+  void shouldAllowRejectingCandidateWithUnverifiedCreators() throws IOException {
+    var candidate = setupCandidateWithUnverifiedCreator();
+    var request =
+        createRequest(candidate.identifier(), topLevelOrganizationId, ApprovalStatus.REJECTED);
+    handler.handleRequest(request, output, CONTEXT);
+    var response = GatewayResponse.fromOutputStream(output, CandidateDto.class);
+
+    assertThat(response.getStatusCode(), is(equalTo(HttpURLConnection.HTTP_OK)));
   }
 
   @Test
