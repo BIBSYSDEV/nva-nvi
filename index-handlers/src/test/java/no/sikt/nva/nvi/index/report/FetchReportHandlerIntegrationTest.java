@@ -6,7 +6,9 @@ import static no.sikt.nva.nvi.common.EnvironmentFixtures.getHandlerEnvironment;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeriod;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupFuturePeriod;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
+import static no.sikt.nva.nvi.common.model.OrganizationFixtures.createOrganizationWithSubUnit;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.organizationIdFromIdentifier;
+import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationId;
 import static no.sikt.nva.nvi.common.utils.CollectionUtils.mergeCollections;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.documentForYear;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.documentsForAllStatusCombinations;
@@ -32,11 +34,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
-import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.TestScenario;
+import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.model.Sector;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.index.OpenSearchContainerContext;
@@ -74,11 +76,13 @@ class FetchReportHandlerIntegrationTest {
   private static final String IDENTIFIER_INSTITUTION_A = "123.0.0.0";
   private static final String IDENTIFIER_INSTITUTION_B = "456.0.0.0";
   private static final String IDENTIFIER_UNIT_A = "123.1.2.3";
-  private static final String PATH = "path";
-  private static final TestScenario SCENARIO = new TestScenario();
-  private static final URI INSTITUTION_A = organizationIdFromIdentifier(IDENTIFIER_INSTITUTION_A);
-  private static final URI INSTITUTION_B = organizationIdFromIdentifier(IDENTIFIER_INSTITUTION_B);
-  private static final URI UNIT_A = organizationIdFromIdentifier(IDENTIFIER_UNIT_A);
+  private static final Organization INSTITUTION_A =
+      createOrganizationWithSubUnit(
+          organizationIdFromIdentifier(IDENTIFIER_INSTITUTION_A),
+          organizationIdFromIdentifier(IDENTIFIER_UNIT_A));
+  private static final Organization INSTITUTION_B =
+      createOrganizationWithSubUnit(
+          organizationIdFromIdentifier(IDENTIFIER_INSTITUTION_B), randomOrganizationId());
   private static List<NviCandidateIndexDocument> documentsForLastYear;
   private static List<NviCandidateIndexDocument> documentsForThisYear;
   private static List<NviCandidateIndexDocument> documentsForNextYear;
@@ -88,14 +92,15 @@ class FetchReportHandlerIntegrationTest {
   void setup() {
     CONTAINER.start();
 
-    setupClosedPeriod(SCENARIO, LAST_YEAR);
-    setupOpenPeriod(SCENARIO, THIS_YEAR);
-    setupFuturePeriod(SCENARIO, NEXT_YEAR);
+    var scenario = new TestScenario();
+    setupClosedPeriod(scenario, LAST_YEAR);
+    setupOpenPeriod(scenario, THIS_YEAR);
+    setupFuturePeriod(scenario, NEXT_YEAR);
 
     handler =
         new FetchReportHandler(
             getHandlerEnvironment(ALLOWED_ORIGIN),
-            SCENARIO.getPeriodService(),
+            scenario.getPeriodService(),
             CONTAINER.getReportAggregationClient());
 
     CONTAINER.createIndex();
@@ -110,7 +115,7 @@ class FetchReportHandlerIntegrationTest {
   private static InputStream createRequest(Map<String, String> pathParameters, String path) {
     try {
       return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
-          .withOtherProperties(Map.of(PATH, path))
+          .withOtherProperties(Map.of("path", path))
           .withPathParameters(pathParameters)
           .withAccessRights(randomUri(), AccessRight.MANAGE_NVI)
           .build();
@@ -181,10 +186,12 @@ class FetchReportHandlerIntegrationTest {
 
   private void createIndexDocuments() {
     var institutionA =
-        new ApprovalFactory(INSTITUTION_A).withCreatorAffiliation(UNIT_A).withSector(Sector.UHI);
+        new ApprovalFactory(INSTITUTION_A.id())
+            .withCreatorAffiliation(organizationIdFromIdentifier(IDENTIFIER_UNIT_A))
+            .withSector(Sector.UHI);
     var institutionB =
-        new ApprovalFactory(INSTITUTION_B)
-            .withCreatorAffiliation(INSTITUTION_B)
+        new ApprovalFactory(INSTITUTION_B.id())
+            .withCreatorAffiliation(INSTITUTION_B.id())
             .withSector(Sector.HEALTH);
 
     documentsForLastYear = documentsForLastYear(institutionA, institutionB);
@@ -255,37 +262,37 @@ class FetchReportHandlerIntegrationTest {
     private static Stream<Arguments> institutionsWithDocumentsForLastYear() {
       return Stream.of(
           argumentSet(
-              "Institution A",
               IDENTIFIER_INSTITUTION_A,
-              getRelevantDocuments(documentsForLastYear, INSTITUTION_A)),
+              IDENTIFIER_INSTITUTION_A,
+              getRelevantDocuments(documentsForLastYear, INSTITUTION_A.id())),
           argumentSet(
-              "Institution B",
               IDENTIFIER_INSTITUTION_B,
-              getRelevantDocuments(documentsForLastYear, INSTITUTION_B)));
+              IDENTIFIER_INSTITUTION_B,
+              getRelevantDocuments(documentsForLastYear, INSTITUTION_B.id())));
     }
 
     private static Stream<Arguments> institutionsWithDocumentsForThisYear() {
       return Stream.of(
           argumentSet(
-              "Institution A",
               IDENTIFIER_INSTITUTION_A,
-              getRelevantDocuments(documentsForThisYear, INSTITUTION_A)),
+              IDENTIFIER_INSTITUTION_A,
+              getRelevantDocuments(documentsForThisYear, INSTITUTION_A.id())),
           argumentSet(
-              "Institution B",
               IDENTIFIER_INSTITUTION_B,
-              getRelevantDocuments(documentsForThisYear, INSTITUTION_B)));
+              IDENTIFIER_INSTITUTION_B,
+              getRelevantDocuments(documentsForThisYear, INSTITUTION_B.id())));
     }
 
     private static Stream<Arguments> institutionsWithDocumentsForNextYear() {
       return Stream.of(
           argumentSet(
-              "Institution A",
               IDENTIFIER_INSTITUTION_A,
-              getRelevantDocuments(documentsForNextYear, INSTITUTION_A)),
+              IDENTIFIER_INSTITUTION_A,
+              getRelevantDocuments(documentsForNextYear, INSTITUTION_A.id())),
           argumentSet(
-              "Institution B",
               IDENTIFIER_INSTITUTION_B,
-              getRelevantDocuments(documentsForNextYear, INSTITUTION_B)));
+              IDENTIFIER_INSTITUTION_B,
+              getRelevantDocuments(documentsForNextYear, INSTITUTION_B.id())));
     }
 
     private static Stream<Arguments> institutionsWithSector() {
