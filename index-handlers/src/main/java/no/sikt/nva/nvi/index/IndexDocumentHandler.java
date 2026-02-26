@@ -13,18 +13,16 @@ import java.net.URI;
 import java.util.Objects;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.S3StorageReader;
-import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.StorageWriter;
 import no.sikt.nva.nvi.common.queue.DynamoDbChangeMessage;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.common.service.CandidateService;
+import no.sikt.nva.nvi.common.service.PublicationLoaderService;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.index.aws.S3StorageWriter;
 import no.sikt.nva.nvi.index.model.PersistedIndexDocumentMessage;
-import no.sikt.nva.nvi.index.model.PersistedResource;
 import no.sikt.nva.nvi.index.model.document.IndexDocumentWithConsumptionAttributes;
-import no.unit.nva.auth.uriretriever.UriRetriever;
 import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.attempt.Failure;
@@ -49,10 +47,9 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
       "Failed to generate index document for candidate with identifier: {}";
   private static final String BLANK_ERROR_MESSAGE_PASSED_TO_ERROR_HANDLER =
       "An unexpected error occurred with a blank message passed to error handler.";
-  private final StorageReader<URI> storageReader;
   private final StorageWriter<IndexDocumentWithConsumptionAttributes> storageWriter;
   private final CandidateService candidateService;
-  private final UriRetriever uriRetriever;
+  private final PublicationLoaderService publicationLoaderService;
   private final QueueClient sqsClient;
   private final String queueUrl;
   private final String dlqUrl;
@@ -60,26 +57,24 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
   @JacocoGenerated
   public IndexDocumentHandler() {
     this(
-        new S3StorageReader(new Environment().readEnv(EXPANDED_RESOURCES_BUCKET)),
         new S3StorageWriter(new Environment().readEnv(EXPANDED_RESOURCES_BUCKET)),
         new NviQueueClient(),
         CandidateService.defaultCandidateService(),
-        new UriRetriever(),
+        new PublicationLoaderService(
+            new S3StorageReader(new Environment().readEnv(EXPANDED_RESOURCES_BUCKET))),
         new Environment());
   }
 
   public IndexDocumentHandler(
-      StorageReader<URI> storageReader,
       StorageWriter<IndexDocumentWithConsumptionAttributes> storageWriter,
       QueueClient sqsClient,
       CandidateService candidateService,
-      UriRetriever uriRetriever,
+      PublicationLoaderService publicationLoaderService,
       Environment environment) {
-    this.storageReader = storageReader;
     this.storageWriter = storageWriter;
     this.sqsClient = sqsClient;
     this.candidateService = candidateService;
-    this.uriRetriever = uriRetriever;
+    this.publicationLoaderService = publicationLoaderService;
     this.queueUrl = environment.readEnv(QUEUE_URL);
     this.dlqUrl = environment.readEnv(INDEX_DLQ);
   }
@@ -162,11 +157,6 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
             });
   }
 
-  private PersistedResource fetchPersistedResource(Candidate candidate) {
-    return PersistedResource.fromUri(
-        candidate.publicationDetails().publicationBucketUri(), storageReader);
-  }
-
   private IndexDocumentWithConsumptionAttributes generateIndexDocument(
       DynamoDbChangeMessage message) {
     var identifier = message.candidateIdentifier();
@@ -200,8 +190,9 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
 
   private IndexDocumentWithConsumptionAttributes generateIndexDocumentWithConsumptionAttributes(
       Candidate candidate) {
-    var persistedResource = fetchPersistedResource(candidate);
-    return IndexDocumentWithConsumptionAttributes.from(candidate, persistedResource, uriRetriever);
+    var publicationBucketUri = candidate.publicationDetails().publicationBucketUri();
+    var publicationDto = publicationLoaderService.extractAndTransform(publicationBucketUri);
+    return IndexDocumentWithConsumptionAttributes.from(candidate, publicationDto);
   }
 
   private void validateErrorMessage(String message) {

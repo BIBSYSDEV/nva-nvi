@@ -159,7 +159,7 @@ public class CandidateToIndexDocumentMapper {
     for (var topLevelOrg : candidate.publicationDetails().topLevelOrganizations()) {
       if (topLevelOrg.isTopLevelOrganizationOf(affiliationUri)) {
         if (topLevelOrg.id().equals(affiliationUri)) {
-          return List.of();
+          return List.of(); // FIXME: Include parent here?
         }
         var ancestors = findAncestorsInTree(topLevelOrg, affiliationUri, new ArrayList<>());
         if (ancestors.isPresent()) {
