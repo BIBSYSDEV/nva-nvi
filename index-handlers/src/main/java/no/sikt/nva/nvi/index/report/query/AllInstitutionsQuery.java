@@ -16,12 +16,10 @@ public record AllInstitutionsQuery(NviPeriod period)
 
   @Override
   public Query query() {
-    var yearFilter = ReportAggregationQuery.yearFilter(period);
-    if (period.isClosed()) {
-      var reportedFilter = ReportAggregationQuery.reportedFilter();
-      return new BoolQuery.Builder().filter(yearFilter, reportedFilter).build().toQuery();
-    }
-    return yearFilter;
+    return new BoolQuery.Builder()
+        .filter(ReportAggregationQuery.baseFilters(period))
+        .build()
+        .toQuery();
   }
 
   @Override

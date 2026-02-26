@@ -11,7 +11,7 @@ import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 
 public final class ReportTestUtils {
 
-  ReportTestUtils() {}
+  private ReportTestUtils() {}
 
   public static Predicate<NviCandidateIndexDocument> hasGlobalStatus(GlobalApprovalStatus status) {
     return document -> document.globalApprovalStatus() == status;

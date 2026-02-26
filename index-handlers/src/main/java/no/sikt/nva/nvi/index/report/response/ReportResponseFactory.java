@@ -5,8 +5,8 @@ import static java.util.Collections.emptyList;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.URI;
+import java.util.NoSuchElementException;
 import no.sikt.nva.nvi.common.client.model.Organization;
-import no.sikt.nva.nvi.common.model.Sector;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.dto.NviPeriodDto;
 import no.sikt.nva.nvi.index.report.ReportAggregationClient;
@@ -78,20 +78,23 @@ public class ReportResponseFactory {
     return reportAggregationClient
         .executeQuery(query)
         .map(result -> toInstitutionReport(request.queryId(), periodDto, result))
-        .orElseThrow();
+        .orElseThrow(
+            () ->
+                new NoSuchElementException(
+                    "No report found for institution %s in period %s"
+                        .formatted(request.institutionId(), request.period())));
   }
 
   private static InstitutionReport toInstitutionReport(
       URI queryId, NviPeriodDto periodDto, InstitutionAggregationResult result) {
     var organization =
         Organization.builder().withId(result.institutionId()).withLabels(result.labels()).build();
-    var sector = Sector.fromString(result.sector()).orElse(Sector.UNKNOWN);
     var totals = InstitutionTotals.from(result);
     var byLocalApprovalStatus = UndisputedCandidatesByLocalApprovalStatus.from(result.undisputed());
     return new InstitutionReport(
         queryId,
         periodDto,
-        sector,
+        result.sector(),
         organization,
         new InstitutionSummary(totals, byLocalApprovalStatus),
         emptyList() // TODO: Implemented later (NP-50858)

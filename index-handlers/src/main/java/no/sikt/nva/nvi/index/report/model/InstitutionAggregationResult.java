@@ -5,6 +5,7 @@ import static java.util.Objects.isNull;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.util.Map;
+import no.sikt.nva.nvi.common.model.Sector;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
@@ -12,7 +13,7 @@ import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 public record InstitutionAggregationResult(
     URI institutionId,
     NviPeriod period,
-    String sector,
+    Sector sector,
     Map<String, String> labels,
     Map<GlobalApprovalStatus, LocalStatusSummary> byGlobalStatus,
     LocalStatusSummary undisputed) {

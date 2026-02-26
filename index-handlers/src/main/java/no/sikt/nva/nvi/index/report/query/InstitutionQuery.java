@@ -8,6 +8,7 @@ import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVALS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.INSTITUTION_ID;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
@@ -22,15 +23,9 @@ public record InstitutionQuery(NviPeriod period, URI institutionId)
 
   @Override
   public Query query() {
-    var yearFilter = ReportAggregationQuery.yearFilter(period);
-    var institutionFilter = institutionFilter();
-    if (period.isClosed()) {
-      return new BoolQuery.Builder()
-          .filter(yearFilter, ReportAggregationQuery.reportedFilter(), institutionFilter)
-          .build()
-          .toQuery();
-    }
-    return new BoolQuery.Builder().filter(yearFilter, institutionFilter).build().toQuery();
+    var filters = new ArrayList<>(ReportAggregationQuery.baseFilters(period));
+    filters.add(institutionFilter());
+    return new BoolQuery.Builder().filter(filters).build().toQuery();
   }
 
   @Override

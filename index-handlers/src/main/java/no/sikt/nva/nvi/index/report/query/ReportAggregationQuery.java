@@ -1,5 +1,7 @@
 package no.sikt.nva.nvi.index.report.query;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
@@ -17,6 +19,15 @@ public sealed interface ReportAggregationQuery<T> permits AllInstitutionsQuery, 
   Map<String, Aggregation> aggregations();
 
   T parseResponse(SearchResponse<Void> response);
+
+  static List<Query> baseFilters(NviPeriod period) {
+    var filters = new ArrayList<Query>();
+    filters.add(yearFilter(period));
+    if (period.isClosed()) {
+      filters.add(reportedFilter());
+    }
+    return filters;
+  }
 
   static Query yearFilter(NviPeriod period) {
     var year = String.valueOf(period.publishingYear());

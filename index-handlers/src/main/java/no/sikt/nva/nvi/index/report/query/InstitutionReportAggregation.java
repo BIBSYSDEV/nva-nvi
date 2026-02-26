@@ -15,6 +15,7 @@ import java.net.URI;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import no.sikt.nva.nvi.common.model.Sector;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
@@ -36,7 +37,7 @@ public final class InstitutionReportAggregation {
   public static final String INSTITUTION_DETAILS = "institution_details";
   public static final String BY_LOCAL_STATUS = "by_local_status";
   public static final String POINTS_SUM = "points";
-  private static final int MAX_INSTITUTIONS = 500;
+  private static final int MAX_INSTITUTIONS = 1000;
 
   private final NviPeriod period;
 
@@ -79,11 +80,12 @@ public final class InstitutionReportAggregation {
   private InstitutionAggregationResult parseInstitutionBucket(StringTermsBucket bucket) {
     var institutionId = URI.create(bucket.key());
     var details = parseInstitutionDetails(bucket);
+    var sector = Sector.fromString(details.sector()).orElse(Sector.UNKNOWN);
     var byGlobalStatus = parseGlobalStatusBuckets(bucket);
     var undisputed = computeUndisputed(byGlobalStatus);
 
     return new InstitutionAggregationResult(
-        institutionId, period, details.sector(), details.labels(), byGlobalStatus, undisputed);
+        institutionId, period, sector, details.labels(), byGlobalStatus, undisputed);
   }
 
   private static ApprovalView parseInstitutionDetails(StringTermsBucket institutionBucket) {
