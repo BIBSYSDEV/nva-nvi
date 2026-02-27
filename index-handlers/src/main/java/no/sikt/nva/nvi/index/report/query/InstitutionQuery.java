@@ -1,7 +1,6 @@
 package no.sikt.nva.nvi.index.report.query;
 
 import static no.sikt.nva.nvi.common.utils.JsonUtils.jsonPathOf;
-import static no.sikt.nva.nvi.index.report.query.InstitutionReportAggregation.PER_INSTITUTION;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.fieldValueQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.nestedQuery;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVALS;
@@ -30,12 +29,12 @@ public record InstitutionQuery(NviPeriod period, URI institutionId)
 
   @Override
   public Map<String, Aggregation> aggregations() {
-    return Map.of(PER_INSTITUTION, InstitutionReportAggregation.aggregation());
+    return Map.ofEntries(InstitutionReportAggregation.perInstitutionAggregation());
   }
 
   @Override
   public Optional<InstitutionAggregationResult> parseResponse(SearchResponse<Void> response) {
-    return new InstitutionReportAggregation(period)
+    return new InstitutionReportAggregation(period) // FIXME: Does this need period?
         .parseResponse(response).stream()
             .filter(result -> result.institutionId().equals(institutionId))
             .findFirst();

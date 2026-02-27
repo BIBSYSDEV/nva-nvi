@@ -31,12 +31,12 @@ import org.opensearch.client.opensearch.core.SearchResponse;
 
 public final class InstitutionReportAggregation {
 
-  public static final String PER_INSTITUTION = "per_institution";
-  public static final String INSTITUTION = "institution";
-  public static final String BY_GLOBAL_STATUS = "by_global_status";
-  public static final String INSTITUTION_DETAILS = "institution_details";
-  public static final String BY_LOCAL_STATUS = "by_local_status";
-  public static final String POINTS_SUM = "points";
+  private static final String PER_INSTITUTION = "per_institution";
+  private static final String INSTITUTION = "institution";
+  private static final String BY_GLOBAL_STATUS = "by_global_status";
+  private static final String INSTITUTION_DETAILS = "institution_details";
+  private static final String BY_LOCAL_STATUS = "by_local_status";
+  private static final String POINTS_SUM = "points";
   private static final int MAX_INSTITUTIONS = 1000;
 
   private final NviPeriod period;
@@ -68,6 +68,10 @@ public final class InstitutionReportAggregation {
                 INSTITUTION_DETAILS, institutionDetails));
 
     return nestedAggregation(APPROVALS, Map.of(INSTITUTION, institutionAggregation));
+  }
+
+  public static Map.Entry<String, Aggregation> perInstitutionAggregation() {
+    return Map.entry(PER_INSTITUTION, aggregation());
   }
 
   public List<InstitutionAggregationResult> parseResponse(SearchResponse<Void> response) {

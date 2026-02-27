@@ -1,7 +1,5 @@
 package no.sikt.nva.nvi.index.report.query;
 
-import static no.sikt.nva.nvi.index.report.query.InstitutionReportAggregation.PER_INSTITUTION;
-
 import java.util.List;
 import java.util.Map;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
@@ -24,7 +22,7 @@ public record AllInstitutionsQuery(NviPeriod period)
 
   @Override
   public Map<String, Aggregation> aggregations() {
-    return Map.of(PER_INSTITUTION, InstitutionReportAggregation.aggregation());
+    return Map.ofEntries(InstitutionReportAggregation.perInstitutionAggregation());
   }
 
   @Override
