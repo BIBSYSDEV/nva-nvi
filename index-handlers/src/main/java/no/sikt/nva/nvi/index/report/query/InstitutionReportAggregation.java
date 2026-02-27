@@ -1,5 +1,7 @@
 package no.sikt.nva.nvi.index.report.query;
 
+import static java.util.Objects.nonNull;
+import static java.util.Objects.requireNonNull;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.jsonPathOf;
 import static no.sikt.nva.nvi.index.utils.AggregationFunctions.nestedAggregation;
 import static no.sikt.nva.nvi.index.utils.AggregationFunctions.sumAggregation;
@@ -41,33 +43,37 @@ public final class InstitutionReportAggregation {
 
   private InstitutionReportAggregation() {}
 
-  public static Aggregation aggregation() {
-    var pointsSum = sumAggregation(APPROVALS, POINTS, INSTITUTION_POINTS);
+  public static Map.Entry<String, Aggregation> perInstitutionAggregation() {
+    return Map.entry(PER_INSTITUTION, createInstitutionAggregation());
+  }
 
-    var byLocalStatus =
-        termsAggregationWithSubs(
-            jsonPathOf(APPROVALS, APPROVAL_STATUS), Map.of(POINTS_SUM, pointsSum));
-
-    var byGlobalStatus =
-        termsAggregationWithSubs(
-            jsonPathOf(APPROVALS, GLOBAL_APPROVAL_STATUS), Map.of(BY_LOCAL_STATUS, byLocalStatus));
-
-    var institutionDetails =
-        new Aggregation.Builder().topHits(new TopHitsAggregation.Builder().size(1).build()).build();
-
+  private static Aggregation createInstitutionAggregation() {
     var institutionAggregation =
         termsAggregationWithSubs(
             jsonPathOf(APPROVALS, INSTITUTION_ID),
             MAX_INSTITUTIONS,
             Map.of(
-                BY_GLOBAL_STATUS, byGlobalStatus,
-                INSTITUTION_DETAILS, institutionDetails));
-
+                BY_GLOBAL_STATUS, createByGlobalStatusAggregation(),
+                INSTITUTION_DETAILS, createInstitutionDetailsFromFirstHit()));
     return nestedAggregation(APPROVALS, Map.of(INSTITUTION, institutionAggregation));
   }
 
-  public static Map.Entry<String, Aggregation> perInstitutionAggregation() {
-    return Map.entry(PER_INSTITUTION, aggregation());
+  private static Aggregation createInstitutionDetailsFromFirstHit() {
+    return new Aggregation.Builder()
+        .topHits(new TopHitsAggregation.Builder().size(1).build())
+        .build();
+  }
+
+  private static Aggregation createByGlobalStatusAggregation() {
+    return termsAggregationWithSubs(
+        jsonPathOf(APPROVALS, GLOBAL_APPROVAL_STATUS),
+        Map.of(BY_LOCAL_STATUS, createByLocalStatusAggregation()));
+  }
+
+  private static Aggregation createByLocalStatusAggregation() {
+    return termsAggregationWithSubs(
+        jsonPathOf(APPROVALS, APPROVAL_STATUS),
+        Map.of(POINTS_SUM, sumAggregation(APPROVALS, POINTS, INSTITUTION_POINTS)));
   }
 
   public static List<InstitutionAggregationResult> parseResponse(
@@ -93,15 +99,17 @@ public final class InstitutionReportAggregation {
   }
 
   private static ApprovalView parseInstitutionDetails(StringTermsBucket institutionBucket) {
-    return institutionBucket
-        .aggregations()
-        .get(INSTITUTION_DETAILS)
-        .topHits()
-        .hits()
-        .hits()
-        .getFirst()
-        .source()
-        .to(ApprovalView.class);
+    var institutionDetails =
+        institutionBucket
+            .aggregations()
+            .get(INSTITUTION_DETAILS)
+            .topHits()
+            .hits()
+            .hits()
+            .getFirst()
+            .source();
+    requireNonNull(institutionDetails);
+    return institutionDetails.to(ApprovalView.class);
   }
 
   private static Map<GlobalApprovalStatus, LocalStatusSummary> parseGlobalStatusBuckets(
@@ -123,11 +131,17 @@ public final class InstitutionReportAggregation {
     for (var localBucket : localBuckets) {
       var localStatus = ApprovalStatus.parse(localBucket.key());
       var candidateCount = Math.toIntExact(localBucket.docCount());
-      var pointsValue =
-          BigDecimal.valueOf(localBucket.aggregations().get(POINTS_SUM).sum().value());
+      var pointsValue = getPointsValue(localBucket);
       totalsByStatus.put(localStatus, new CandidateTotal(candidateCount, pointsValue));
     }
     return new LocalStatusSummary(Map.copyOf(totalsByStatus));
+  }
+
+  private static BigDecimal getPointsValue(StringTermsBucket localBucket) {
+    var aggregatedPoints = localBucket.aggregations().get(POINTS_SUM).sum();
+    return nonNull(aggregatedPoints.value())
+        ? BigDecimal.valueOf(aggregatedPoints.value())
+        : BigDecimal.ZERO;
   }
 
   private static LocalStatusSummary computeUndisputed(
