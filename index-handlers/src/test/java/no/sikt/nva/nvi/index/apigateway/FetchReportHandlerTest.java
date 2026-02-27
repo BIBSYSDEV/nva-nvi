@@ -22,7 +22,7 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.util.Map;
 import no.sikt.nva.nvi.common.TestScenario;
-import no.sikt.nva.nvi.index.report.FetchReportHandler;
+import no.sikt.nva.nvi.index.report.FetchReportHandlerV3;
 import no.sikt.nva.nvi.index.report.ReportAggregationClient;
 import no.sikt.nva.nvi.index.report.response.AllPeriodsReport;
 import no.sikt.nva.nvi.index.report.response.PeriodReport;
@@ -39,7 +39,7 @@ class FetchReportHandlerTest {
   private static final Context CONTEXT = new FakeContext();
   private static final String PERIOD_FOR_QUERY = randomYear();
   private static final String PATH = "path";
-  private FetchReportHandler handler;
+  private FetchReportHandlerV3 handler;
   private ByteArrayOutputStream output;
 
   @BeforeEach
@@ -48,7 +48,7 @@ class FetchReportHandlerTest {
     setupOpenPeriod(scenario, PERIOD_FOR_QUERY);
     output = new ByteArrayOutputStream();
     handler =
-        new FetchReportHandler(
+        new FetchReportHandlerV3(
             getHandlerEnvironment(ALLOWED_ORIGIN),
             scenario.getPeriodService(),
             mock(ReportAggregationClient.class));

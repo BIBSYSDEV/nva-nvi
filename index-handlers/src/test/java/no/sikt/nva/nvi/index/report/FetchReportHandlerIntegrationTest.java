@@ -95,7 +95,7 @@ class FetchReportHandlerIntegrationTest {
   private static List<NviCandidateIndexDocument> documentsForLastYear;
   private static List<NviCandidateIndexDocument> documentsForThisYear;
   private static List<NviCandidateIndexDocument> documentsForNextYear;
-  private FetchReportHandler handler;
+  private FetchReportHandlerV3 handler;
 
   @BeforeAll
   void setup() {
@@ -107,7 +107,7 @@ class FetchReportHandlerIntegrationTest {
     setupFuturePeriod(scenario, NEXT_YEAR);
 
     handler =
-        new FetchReportHandler(
+        new FetchReportHandlerV3(
             getHandlerEnvironment(ALLOWED_ORIGIN),
             scenario.getPeriodService(),
             CONTAINER.getReportAggregationClient());
