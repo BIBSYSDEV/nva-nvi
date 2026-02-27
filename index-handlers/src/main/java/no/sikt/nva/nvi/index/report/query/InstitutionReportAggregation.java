@@ -1,0 +1,155 @@
+package no.sikt.nva.nvi.index.report.query;
+
+import static java.util.Objects.nonNull;
+import static java.util.Objects.requireNonNull;
+import static no.sikt.nva.nvi.common.utils.JsonUtils.jsonPathOf;
+import static no.sikt.nva.nvi.index.utils.AggregationFunctions.nestedAggregation;
+import static no.sikt.nva.nvi.index.utils.AggregationFunctions.sumAggregation;
+import static no.sikt.nva.nvi.index.utils.AggregationFunctions.termsAggregationWithSubAggregations;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVALS;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVAL_STATUS;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.GLOBAL_APPROVAL_STATUS;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.INSTITUTION_ID;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.INSTITUTION_POINTS;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.POINTS;
+
+import java.math.BigDecimal;
+import java.net.URI;
+import java.util.EnumMap;
+import java.util.List;
+import java.util.Map;
+import no.sikt.nva.nvi.common.model.Sector;
+import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
+import no.sikt.nva.nvi.common.service.model.NviPeriod;
+import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
+import no.sikt.nva.nvi.index.model.document.ApprovalView;
+import no.sikt.nva.nvi.index.report.model.CandidateTotal;
+import no.sikt.nva.nvi.index.report.model.InstitutionAggregationResult;
+import no.sikt.nva.nvi.index.report.model.LocalStatusSummary;
+import org.opensearch.client.opensearch._types.aggregations.Aggregation;
+import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
+import org.opensearch.client.opensearch._types.aggregations.TopHitsAggregation;
+import org.opensearch.client.opensearch.core.SearchResponse;
+
+public final class InstitutionReportAggregation {
+
+  private static final String PER_INSTITUTION = "per_institution";
+  private static final String INSTITUTION = "institution";
+  private static final String BY_GLOBAL_STATUS = "by_global_status";
+  private static final String INSTITUTION_DETAILS = "institution_details";
+  private static final String BY_LOCAL_STATUS = "by_local_status";
+  private static final String POINTS_SUM = "points";
+
+  private InstitutionReportAggregation() {}
+
+  public static Map.Entry<String, Aggregation> perInstitutionAggregation() {
+    return Map.entry(PER_INSTITUTION, createInstitutionAggregation());
+  }
+
+  private static Aggregation createInstitutionAggregation() {
+    var institutionAggregation =
+        termsAggregationWithSubAggregations(
+            jsonPathOf(APPROVALS, INSTITUTION_ID),
+            Map.of(
+                BY_GLOBAL_STATUS, createByGlobalStatusAggregation(),
+                INSTITUTION_DETAILS, createInstitutionDetailsFromFirstHit()));
+    return nestedAggregation(APPROVALS, Map.of(INSTITUTION, institutionAggregation));
+  }
+
+  private static Aggregation createInstitutionDetailsFromFirstHit() {
+    return new Aggregation.Builder()
+        .topHits(new TopHitsAggregation.Builder().size(1).build())
+        .build();
+  }
+
+  private static Aggregation createByGlobalStatusAggregation() {
+    return termsAggregationWithSubAggregations(
+        jsonPathOf(APPROVALS, GLOBAL_APPROVAL_STATUS),
+        Map.of(BY_LOCAL_STATUS, createByLocalStatusAggregation()));
+  }
+
+  private static Aggregation createByLocalStatusAggregation() {
+    return termsAggregationWithSubAggregations(
+        jsonPathOf(APPROVALS, APPROVAL_STATUS),
+        Map.of(POINTS_SUM, sumAggregation(APPROVALS, POINTS, INSTITUTION_POINTS)));
+  }
+
+  public static List<InstitutionAggregationResult> parseResponse(
+      NviPeriod period, SearchResponse<Void> response) {
+    var perInstitution = response.aggregations().get(PER_INSTITUTION);
+    var institutionBuckets =
+        perInstitution.nested().aggregations().get(INSTITUTION).sterms().buckets().array();
+    return institutionBuckets.stream()
+        .map(bucket -> parseInstitutionBucket(period, bucket))
+        .toList();
+  }
+
+  private static InstitutionAggregationResult parseInstitutionBucket(
+      NviPeriod period, StringTermsBucket bucket) {
+    var institutionId = URI.create(bucket.key());
+    var details = parseInstitutionDetails(bucket);
+    var sector = Sector.fromString(details.sector()).orElse(Sector.UNKNOWN);
+    var byGlobalStatus = parseGlobalStatusBuckets(bucket);
+    var undisputed = computeUndisputed(byGlobalStatus);
+
+    return new InstitutionAggregationResult(
+        institutionId, period, sector, details.labels(), byGlobalStatus, undisputed);
+  }
+
+  private static ApprovalView parseInstitutionDetails(StringTermsBucket institutionBucket) {
+    var institutionDetails =
+        institutionBucket
+            .aggregations()
+            .get(INSTITUTION_DETAILS)
+            .topHits()
+            .hits()
+            .hits()
+            .getFirst()
+            .source();
+    requireNonNull(institutionDetails);
+    return institutionDetails.to(ApprovalView.class);
+  }
+
+  private static Map<GlobalApprovalStatus, LocalStatusSummary> parseGlobalStatusBuckets(
+      StringTermsBucket institutionBucket) {
+    var globalBuckets =
+        institutionBucket.aggregations().get(BY_GLOBAL_STATUS).sterms().buckets().array();
+    var result = new EnumMap<GlobalApprovalStatus, LocalStatusSummary>(GlobalApprovalStatus.class);
+    for (var globalBucket : globalBuckets) {
+      var globalStatus = GlobalApprovalStatus.parse(globalBucket.key());
+      var localStatusSummary = parseLocalStatusBuckets(globalBucket);
+      result.put(globalStatus, localStatusSummary);
+    }
+    return Map.copyOf(result);
+  }
+
+  private static LocalStatusSummary parseLocalStatusBuckets(StringTermsBucket globalBucket) {
+    var localBuckets = globalBucket.aggregations().get(BY_LOCAL_STATUS).sterms().buckets().array();
+    var totalsByStatus = new EnumMap<ApprovalStatus, CandidateTotal>(ApprovalStatus.class);
+    for (var localBucket : localBuckets) {
+      var localStatus = ApprovalStatus.parse(localBucket.key());
+      var candidateCount = Math.toIntExact(localBucket.docCount());
+      var pointsValue = getPointsValue(localBucket);
+      totalsByStatus.put(localStatus, new CandidateTotal(candidateCount, pointsValue));
+    }
+    return new LocalStatusSummary(Map.copyOf(totalsByStatus));
+  }
+
+  private static BigDecimal getPointsValue(StringTermsBucket localBucket) {
+    var aggregatedPoints = localBucket.aggregations().get(POINTS_SUM).sum();
+    return nonNull(aggregatedPoints.value())
+        ? BigDecimal.valueOf(aggregatedPoints.value())
+        : BigDecimal.ZERO;
+  }
+
+  private static LocalStatusSummary computeUndisputed(
+      Map<GlobalApprovalStatus, LocalStatusSummary> byGlobalStatus) {
+    var undisputedTotals = new EnumMap<ApprovalStatus, CandidateTotal>(ApprovalStatus.class);
+    byGlobalStatus.entrySet().stream()
+        .filter(entry -> entry.getKey() != GlobalApprovalStatus.DISPUTE)
+        .flatMap(entry -> entry.getValue().totalsByStatus().entrySet().stream())
+        .forEach(
+            entry -> undisputedTotals.merge(entry.getKey(), entry.getValue(), CandidateTotal::add));
+    return new LocalStatusSummary(Map.copyOf(undisputedTotals));
+  }
+}

@@ -2,32 +2,41 @@ package no.sikt.nva.nvi.index.report.response;
 
 import static java.util.Collections.emptyList;
 
+import java.io.IOException;
 import java.math.BigDecimal;
-import java.util.List;
+import java.net.URI;
+import java.util.NoSuchElementException;
 import no.sikt.nva.nvi.common.client.model.Organization;
-import no.sikt.nva.nvi.common.model.Sector;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.dto.NviPeriodDto;
+import no.sikt.nva.nvi.index.report.ReportAggregationClient;
+import no.sikt.nva.nvi.index.report.model.InstitutionAggregationResult;
+import no.sikt.nva.nvi.index.report.query.AllInstitutionsQuery;
+import no.sikt.nva.nvi.index.report.query.InstitutionQuery;
 import no.sikt.nva.nvi.index.report.request.AllInstitutionsReportRequest;
 import no.sikt.nva.nvi.index.report.request.AllPeriodsReportRequest;
 import no.sikt.nva.nvi.index.report.request.InstitutionReportRequest;
 import no.sikt.nva.nvi.index.report.request.PeriodReportRequest;
 import no.sikt.nva.nvi.index.report.request.ReportRequest;
+import nva.commons.core.paths.UriWrapper;
 
 public class ReportResponseFactory {
 
   private final NviPeriodService nviPeriodService;
+  private final ReportAggregationClient reportAggregationClient;
 
-  public ReportResponseFactory(NviPeriodService nviPeriodService) {
+  public ReportResponseFactory(
+      NviPeriodService nviPeriodService, ReportAggregationClient reportAggregationClient) {
     this.nviPeriodService = nviPeriodService;
+    this.reportAggregationClient = reportAggregationClient;
   }
 
-  public ReportResponse getResponse(ReportRequest reportRequest) {
+  public ReportResponse getResponse(ReportRequest reportRequest) throws IOException {
     return switch (reportRequest) {
       case AllPeriodsReportRequest request -> placeholderAllPeriodsReport(request);
       case PeriodReportRequest request -> placeholderPeriodReport(request);
-      case AllInstitutionsReportRequest request -> placeholderAllInstitutionsReport(request);
-      case InstitutionReportRequest request -> placeholderInstitutionReport(request);
+      case AllInstitutionsReportRequest request -> allInstitutionsReport(request);
+      case InstitutionReportRequest request -> institutionReport(request);
     };
   }
 
@@ -38,7 +47,7 @@ public class ReportResponseFactory {
 
   // FIXME: Temporary placeholder
   private PeriodReport placeholderPeriodReport(PeriodReportRequest request) {
-    var periodDto = getPeriodDto(request.period());
+    var periodDto = nviPeriodService.getByPublishingYear(request.period()).toDto();
     return new PeriodReport(
         request.queryId(),
         periodDto,
@@ -46,37 +55,57 @@ public class ReportResponseFactory {
         new CandidatesByGlobalApprovalStatus(0, 0, 0, 0));
   }
 
-  // FIXME: Temporary placeholder
-  private AllInstitutionsReport placeholderAllInstitutionsReport(
-      AllInstitutionsReportRequest request) {
-    var periodDto = getPeriodDto(request.period());
-    return new AllInstitutionsReport(request.queryId(), periodDto, emptyList());
+  private AllInstitutionsReport allInstitutionsReport(AllInstitutionsReportRequest request)
+      throws IOException {
+    var period = nviPeriodService.getByPublishingYear(request.period());
+    var periodDto = period.toDto();
+    var institutionReports =
+        reportAggregationClient.executeQuery(new AllInstitutionsQuery(period)).stream()
+            .map(result -> toInstitutionReport(request, periodDto, result))
+            .toList();
+    return new AllInstitutionsReport(request.queryId(), periodDto, institutionReports);
   }
 
-  // FIXME: Temporary placeholder
-  private InstitutionReport placeholderInstitutionReport(InstitutionReportRequest request) {
-    var periodDto = getPeriodDto(request.period());
-    var organization = Organization.builder().withId(request.institutionId()).build();
-    var institutionSummary =
-        new InstitutionSummary(
-            new InstitutionTotals(BigDecimal.ZERO, 0, 0, 0),
-            new UndisputedCandidatesByLocalApprovalStatus(0, 0, 0, 0));
-    var unitSummary =
-        new UnitSummary(
-            organization,
-            new UnitTotals(BigDecimal.ZERO, 0, 0, 0),
-            new UndisputedCandidatesByLocalApprovalStatus(0, 0, 0, 0),
-            emptyList());
+  private InstitutionReport institutionReport(InstitutionReportRequest request) throws IOException {
+    var period = nviPeriodService.getByPublishingYear(request.period());
+    var periodDto = period.toDto();
+    var query = new InstitutionQuery(period, request.institutionId());
+    return reportAggregationClient
+        .executeQuery(query)
+        .map(result -> toInstitutionReport(request.queryId(), periodDto, result))
+        .orElseThrow(
+            () ->
+                new NoSuchElementException(
+                    "No report found for institution %s in period %s"
+                        .formatted(request.institutionId(), request.period())));
+  }
+
+  private static InstitutionReport toInstitutionReport(
+      AllInstitutionsReportRequest request,
+      NviPeriodDto periodDto,
+      InstitutionAggregationResult result) {
+    var queryId = institutionQueryId(request.queryId(), result.institutionId());
+    return toInstitutionReport(queryId, periodDto, result);
+  }
+
+  private static InstitutionReport toInstitutionReport(
+      URI queryId, NviPeriodDto periodDto, InstitutionAggregationResult result) {
+    var organization =
+        Organization.builder().withId(result.institutionId()).withLabels(result.labels()).build();
+    var totals = InstitutionTotals.from(result);
+    var byLocalApprovalStatus = UndisputedCandidatesByLocalApprovalStatus.from(result.undisputed());
     return new InstitutionReport(
-        request.queryId(),
+        queryId,
         periodDto,
-        Sector.UNKNOWN,
+        result.sector(),
         organization,
-        institutionSummary,
-        List.of(unitSummary));
+        new InstitutionSummary(totals, byLocalApprovalStatus),
+        emptyList() // TODO: Implemented later (NP-50858)
+        );
   }
 
-  private NviPeriodDto getPeriodDto(String publishingYear) {
-    return nviPeriodService.getByPublishingYear(publishingYear).toDto();
+  private static URI institutionQueryId(URI allInstitutionsQueryId, URI institutionId) {
+    var identifier = UriWrapper.fromUri(institutionId).getLastPathElement();
+    return UriWrapper.fromUri(allInstitutionsQueryId).addChild(identifier).getUri();
   }
 }

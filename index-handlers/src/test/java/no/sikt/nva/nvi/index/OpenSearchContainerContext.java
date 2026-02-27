@@ -5,7 +5,9 @@ import java.net.URI;
 import java.util.Collection;
 import java.util.List;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
+import no.sikt.nva.nvi.index.aws.OpenSearchClientFactory;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
+import no.sikt.nva.nvi.index.report.ReportAggregationClient;
 import org.apache.hc.core5.http.HttpHost;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.testcontainers.OpenSearchContainer;
@@ -18,13 +20,17 @@ public class OpenSearchContainerContext implements Startable {
   private static final OpenSearchContainer<?> container =
       new OpenSearchContainer<>(OPEN_SEARCH_IMAGE);
   private static OpenSearchClient openSearchClient;
+  private static ReportAggregationClient reportAggregationClient;
   private final Logger logger = LoggerFactory.getLogger(OpenSearchContainerContext.class);
 
   @Override
   public void start() {
     container.start();
     var httpHost = HttpHost.create(URI.create(container.getHttpHostAddress()));
-    openSearchClient = new OpenSearchClient(httpHost, FakeCachedJwtProvider.setup());
+    var fakeJwtProvider = FakeCachedJwtProvider.setup();
+    var nativeClient = OpenSearchClientFactory.createClient(httpHost, fakeJwtProvider);
+    openSearchClient = new OpenSearchClient(nativeClient);
+    reportAggregationClient = new ReportAggregationClient(nativeClient);
   }
 
   @Override
@@ -53,6 +59,10 @@ public class OpenSearchContainerContext implements Startable {
 
   public OpenSearchClient getOpenSearchClient() {
     return openSearchClient;
+  }
+
+  public ReportAggregationClient getReportAggregationClient() {
+    return reportAggregationClient;
   }
 
   public void addDocumentsToIndex(Collection<NviCandidateIndexDocument> documents) {

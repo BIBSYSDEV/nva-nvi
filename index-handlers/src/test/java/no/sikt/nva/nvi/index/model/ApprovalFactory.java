@@ -13,8 +13,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import no.sikt.nva.nvi.common.model.Sector;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.ApprovalView;
@@ -30,6 +32,8 @@ public class ApprovalFactory {
   private final URI topLevelOrganization;
   private ApprovalStatus approvalStatus;
   private GlobalApprovalStatus globalApprovalStatus;
+  private Map<String, String> labels = emptyMap();
+  private Sector sector = Sector.UNKNOWN;
 
   public ApprovalFactory(URI topLevelOrganization) {
     this.topLevelOrganization = topLevelOrganization;
@@ -42,11 +46,15 @@ public class ApprovalFactory {
       URI topLevelOrganization,
       List<InstitutionPointsView.CreatorAffiliationPointsView> affiliationPoints,
       ApprovalStatus approvalStatus,
-      GlobalApprovalStatus globalApprovalStatus) {
+      GlobalApprovalStatus globalApprovalStatus,
+      Map<String, String> labels,
+      Sector sector) {
     this.topLevelOrganization = topLevelOrganization;
     this.creatorAffiliationPoints = new ArrayList<>(affiliationPoints);
     this.approvalStatus = approvalStatus;
     this.globalApprovalStatus = globalApprovalStatus;
+    this.labels = labels;
+    this.sector = sector;
   }
 
   public ApprovalView build() {
@@ -56,17 +64,23 @@ public class ApprovalFactory {
   public ApprovalView.Builder getBuilder() {
     return ApprovalView.builder()
         .withInstitutionId(topLevelOrganization)
-        .withLabels(emptyMap())
+        .withLabels(labels)
         .withAssignee(randomString())
         .withApprovalStatus(approvalStatus)
         .withGlobalApprovalStatus(globalApprovalStatus)
         .withInvolvedOrganizations(getInvolvedOrganizations())
+        .withSector(sector.toString())
         .withPoints(getInstitutionPoints());
   }
 
   public ApprovalFactory copy() {
     return new ApprovalFactory(
-        topLevelOrganization, creatorAffiliationPoints, approvalStatus, globalApprovalStatus);
+        topLevelOrganization,
+        creatorAffiliationPoints,
+        approvalStatus,
+        globalApprovalStatus,
+        labels,
+        sector);
   }
 
   public ApprovalFactory withApprovalStatus(ApprovalStatus approvalStatus) {
@@ -86,6 +100,16 @@ public class ApprovalFactory {
   public ApprovalFactory withCreatorAffiliation(URI affiliation, BigDecimal points) {
     this.creatorAffiliationPoints.add(
         new InstitutionPointsView.CreatorAffiliationPointsView(randomUri(), affiliation, points));
+    return this;
+  }
+
+  public ApprovalFactory withLabels(Map<String, String> labels) {
+    this.labels = labels;
+    return this;
+  }
+
+  public ApprovalFactory withSector(Sector sector) {
+    this.sector = sector;
     return this;
   }
 
