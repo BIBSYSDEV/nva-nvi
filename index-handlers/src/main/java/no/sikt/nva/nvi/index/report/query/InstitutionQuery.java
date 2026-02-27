@@ -34,10 +34,9 @@ public record InstitutionQuery(NviPeriod period, URI institutionId)
 
   @Override
   public Optional<InstitutionAggregationResult> parseResponse(SearchResponse<Void> response) {
-    return new InstitutionReportAggregation(period) // FIXME: Does this need period?
-        .parseResponse(response).stream()
-            .filter(result -> result.institutionId().equals(institutionId))
-            .findFirst();
+    return InstitutionReportAggregation.parseResponse(period, response).stream()
+        .filter(result -> result.institutionId().equals(institutionId))
+        .findFirst();
   }
 
   private Query institutionFilter() {

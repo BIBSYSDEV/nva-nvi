@@ -27,6 +27,6 @@ public record AllInstitutionsQuery(NviPeriod period)
 
   @Override
   public List<InstitutionAggregationResult> parseResponse(SearchResponse<Void> response) {
-    return new InstitutionReportAggregation(period).parseResponse(response);
+    return InstitutionReportAggregation.parseResponse(period, response);
   }
 }

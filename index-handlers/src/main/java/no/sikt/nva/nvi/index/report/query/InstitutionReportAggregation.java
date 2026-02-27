@@ -39,11 +39,7 @@ public final class InstitutionReportAggregation {
   private static final String POINTS_SUM = "points";
   private static final int MAX_INSTITUTIONS = 1000;
 
-  private final NviPeriod period;
-
-  public InstitutionReportAggregation(NviPeriod period) {
-    this.period = period;
-  }
+  private InstitutionReportAggregation() {}
 
   public static Aggregation aggregation() {
     var pointsSum = sumAggregation(APPROVALS, POINTS, INSTITUTION_POINTS);
@@ -74,14 +70,18 @@ public final class InstitutionReportAggregation {
     return Map.entry(PER_INSTITUTION, aggregation());
   }
 
-  public List<InstitutionAggregationResult> parseResponse(SearchResponse<Void> response) {
+  public static List<InstitutionAggregationResult> parseResponse(
+      NviPeriod period, SearchResponse<Void> response) {
     var perInstitution = response.aggregations().get(PER_INSTITUTION);
     var institutionBuckets =
         perInstitution.nested().aggregations().get(INSTITUTION).sterms().buckets().array();
-    return institutionBuckets.stream().map(this::parseInstitutionBucket).toList();
+    return institutionBuckets.stream()
+        .map(bucket -> parseInstitutionBucket(period, bucket))
+        .toList();
   }
 
-  private InstitutionAggregationResult parseInstitutionBucket(StringTermsBucket bucket) {
+  private static InstitutionAggregationResult parseInstitutionBucket(
+      NviPeriod period, StringTermsBucket bucket) {
     var institutionId = URI.create(bucket.key());
     var details = parseInstitutionDetails(bucket);
     var sector = Sector.fromString(details.sector()).orElse(Sector.UNKNOWN);
@@ -104,7 +104,7 @@ public final class InstitutionReportAggregation {
         .to(ApprovalView.class);
   }
 
-  private Map<GlobalApprovalStatus, LocalStatusSummary> parseGlobalStatusBuckets(
+  private static Map<GlobalApprovalStatus, LocalStatusSummary> parseGlobalStatusBuckets(
       StringTermsBucket institutionBucket) {
     var globalBuckets =
         institutionBucket.aggregations().get(BY_GLOBAL_STATUS).sterms().buckets().array();
@@ -117,7 +117,7 @@ public final class InstitutionReportAggregation {
     return Map.copyOf(result);
   }
 
-  private LocalStatusSummary parseLocalStatusBuckets(StringTermsBucket globalBucket) {
+  private static LocalStatusSummary parseLocalStatusBuckets(StringTermsBucket globalBucket) {
     var localBuckets = globalBucket.aggregations().get(BY_LOCAL_STATUS).sterms().buckets().array();
     var totalsByStatus = new EnumMap<ApprovalStatus, CandidateTotal>(ApprovalStatus.class);
     for (var localBucket : localBuckets) {
@@ -130,7 +130,7 @@ public final class InstitutionReportAggregation {
     return new LocalStatusSummary(Map.copyOf(totalsByStatus));
   }
 
-  private LocalStatusSummary computeUndisputed(
+  private static LocalStatusSummary computeUndisputed(
       Map<GlobalApprovalStatus, LocalStatusSummary> byGlobalStatus) {
     var undisputedTotals = new EnumMap<ApprovalStatus, CandidateTotal>(ApprovalStatus.class);
     byGlobalStatus.entrySet().stream()
