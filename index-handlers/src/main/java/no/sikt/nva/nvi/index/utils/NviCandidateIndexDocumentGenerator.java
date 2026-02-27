@@ -88,6 +88,10 @@ public final class NviCandidateIndexDocumentGenerator {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(NviCandidateIndexDocumentGenerator.class);
   private static final TypeReference<Map<String, String>> TYPE_REF = new TypeReference<>() {};
+  private static final String HANDLE_IDENTIFIER_TYPE = "HandleIdentifier";
+  private static final String HANDLE_FIELD = "handle";
+  private static final String TYPE = "type";
+  private static final String VALUE = "value";
   private final OrganizationRetriever organizationRetriever;
   private final JsonNode expandedResource;
   private final Candidate candidate;
@@ -172,7 +176,31 @@ public final class NviCandidateIndexDocumentGenerator {
         .withInternationalCollaborationFactor(candidate.getCollaborationFactor())
         .withCreatedDate(candidate.createdDate())
         .withModifiedDate(candidate.modifiedDate())
+        .withHandles(extractHandles(expandedResource))
         .build();
+  }
+
+  private static Set<URI> extractHandles(JsonNode expandedResource) {
+    return Stream.concat(
+            extractHandlesFromAdditionalIdentifiers(expandedResource).stream(),
+            extractHandle(expandedResource).stream())
+        .collect(Collectors.toSet());
+  }
+
+  private static List<URI> extractHandlesFromAdditionalIdentifiers(JsonNode expandedResource) {
+    return StreamSupport.stream(
+            expandedResource.withArray("additionalIdentifiers").spliterator(), false)
+        .filter(node -> HANDLE_IDENTIFIER_TYPE.equals(node.path(TYPE).asText()))
+        .map(node -> node.path(VALUE).textValue())
+        .filter(Objects::nonNull)
+        .map(URI::create)
+        .toList();
+  }
+
+  private static Optional<URI> extractHandle(JsonNode expandedResource) {
+    return Optional.ofNullable(expandedResource.get(HANDLE_FIELD))
+        .map(JsonNode::textValue)
+        .map(URI::create);
   }
 
   private InstitutionPointsView getInstitutionPoints(Approval approval) {

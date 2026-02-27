@@ -39,10 +39,13 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.EnumMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.service.model.Candidate;
@@ -77,7 +80,8 @@ public record NviCandidateIndexDocument(
     boolean reported,
     String createdDate,
     String modifiedDate,
-    String indexDocumentCreatedAt)
+    String indexDocumentCreatedAt,
+    Set<URI> handles)
     implements JsonSerializable {
 
   private static final Logger logger = LoggerFactory.getLogger(NviCandidateIndexDocument.class);
@@ -263,6 +267,7 @@ public record NviCandidateIndexDocument(
     private boolean reported;
     private String createdDate;
     private String modifiedDate;
+    private Set<URI> handles;
 
     private Builder() {}
 
@@ -348,6 +353,11 @@ public record NviCandidateIndexDocument(
       return this;
     }
 
+    public Builder withHandles(Collection<URI> handles) {
+      this.handles = new HashSet<>(handles);
+      return this;
+    }
+
     public NviCandidateIndexDocument build() {
       return new NviCandidateIndexDocument(
           context,
@@ -367,7 +377,8 @@ public record NviCandidateIndexDocument(
           reported,
           createdDate,
           modifiedDate,
-          Instant.now().toString());
+          Instant.now().toString(),
+          handles);
     }
   }
 }
