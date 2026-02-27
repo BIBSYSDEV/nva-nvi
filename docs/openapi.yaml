@@ -909,7 +909,7 @@ paths:
       security: *authenticated
       x-amazon-apigateway-integration:
         uri:
-          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchReportHandlerV3.Arn}:live/invocations
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchReportHandler.Arn}:live/invocations
         responses: {}
         httpMethod: POST
         type: AWS_PROXY
@@ -950,7 +950,7 @@ paths:
       security: *authenticated
       x-amazon-apigateway-integration:
         uri:
-          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchReportHandlerV3.Arn}:live/invocations
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchReportHandler.Arn}:live/invocations
         responses: {}
         httpMethod: POST
         type: AWS_PROXY
@@ -997,7 +997,7 @@ paths:
       security: *authenticated
       x-amazon-apigateway-integration:
         uri:
-          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchReportHandlerV3.Arn}:live/invocations
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchReportHandler.Arn}:live/invocations
         responses: {}
         httpMethod: POST
         type: AWS_PROXY
@@ -1056,7 +1056,7 @@ paths:
       security: *authenticated
       x-amazon-apigateway-integration:
         uri:
-          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchReportHandlerV3.Arn}:live/invocations
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${FetchReportHandler.Arn}:live/invocations
         responses: {}
         httpMethod: POST
         type: AWS_PROXY

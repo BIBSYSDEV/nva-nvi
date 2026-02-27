@@ -1221,11 +1221,11 @@ Resources:
             Method: get
             RestApiId: !Ref ScientificIndexApi
 
-  FetchReportHandlerV3:
+  FetchReportHandler:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: index-handlers
-      Handler: no.sikt.nva.nvi.index.report.FetchReportHandlerV3::handleRequest
+      Handler: no.sikt.nva.nvi.index.report.FetchReportHandler::handleRequest
       Role: !GetAtt NvaNviRole.Arn
       Timeout: 20
       MemorySize: 1536

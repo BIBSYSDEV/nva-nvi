@@ -21,20 +21,20 @@ import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class FetchReportHandlerV3 extends ApiGatewayHandler<Void, ReportResponse> {
+public class FetchReportHandler extends ApiGatewayHandler<Void, ReportResponse> {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(FetchReportHandlerV3.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(FetchReportHandler.class);
   private final ReportResponseFactory reportResponseFactory;
 
   @JacocoGenerated
-  public FetchReportHandlerV3() {
+  public FetchReportHandler() {
     this(
         new Environment(),
         NviPeriodService.defaultNviPeriodService(),
         ReportAggregationClient.defaultClient());
   }
 
-  public FetchReportHandlerV3(
+  public FetchReportHandler(
       Environment environment,
       NviPeriodService nviPeriodService,
       ReportAggregationClient reportAggregationClient) {
