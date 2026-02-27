@@ -6,7 +6,7 @@ import java.math.BigDecimal;
 
 public record CandidateTotal(int candidateCount, BigDecimal totalPoints) {
 
-  public static final CandidateTotal ZERO = new CandidateTotal(0, BigDecimal.ZERO);
+  public static final CandidateTotal EMPTY_CANDIDATE_TOTAL = new CandidateTotal(0, BigDecimal.ZERO);
 
   public CandidateTotal {
     validateCandidateCount(candidateCount);

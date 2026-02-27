@@ -7,11 +7,12 @@ import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 public record LocalStatusSummary(Map<ApprovalStatus, CandidateTotal> totalsByStatus) {
 
   public CandidateTotal total() {
-    return totalsByStatus.values().stream().reduce(CandidateTotal.ZERO, CandidateTotal::add);
+    return totalsByStatus.values().stream()
+        .reduce(CandidateTotal.EMPTY_CANDIDATE_TOTAL, CandidateTotal::add);
   }
 
   public CandidateTotal forStatus(ApprovalStatus status) {
-    return totalsByStatus.getOrDefault(status, CandidateTotal.ZERO);
+    return totalsByStatus.getOrDefault(status, CandidateTotal.EMPTY_CANDIDATE_TOTAL);
   }
 
   public int totalCount() {
