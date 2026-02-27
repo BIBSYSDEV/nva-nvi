@@ -4,6 +4,13 @@ import static no.sikt.nva.nvi.common.utils.DecimalUtils.adjustScaleAndRoundingMo
 
 import java.math.BigDecimal;
 
+/**
+ * Represents the number of candidates and their combined points for a given bucket in an
+ * aggregation.
+ *
+ * @param candidateCount the number of candidates, must be non-negative
+ * @param totalPoints the sum of NVI points for the candidates, must be non-negative
+ */
 public record CandidateTotal(int candidateCount, BigDecimal totalPoints) {
 
   public static final CandidateTotal EMPTY_CANDIDATE_TOTAL = new CandidateTotal(0, BigDecimal.ZERO);
