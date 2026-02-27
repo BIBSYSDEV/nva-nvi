@@ -81,6 +81,11 @@ public record PublicationDetails(
       return this;
     }
 
+    public Builder withContributorsCount(int contributorsCount) {
+      this.contributorsCount = contributorsCount;
+      return this;
+    }
+
     public Builder withPublicationChannel(PublicationChannel publicationChannel) {
       this.publicationChannel = publicationChannel;
       return this;
