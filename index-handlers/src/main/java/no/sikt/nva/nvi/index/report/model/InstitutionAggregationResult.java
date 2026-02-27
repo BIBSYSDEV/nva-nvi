@@ -33,11 +33,20 @@ public record InstitutionAggregationResult(
     Map<GlobalApprovalStatus, LocalStatusSummary> byGlobalStatus,
     LocalStatusSummary undisputed) {
 
+  /** Returns the total number of candidates that are in dispute. */
   public int disputedCount() {
     var disputeSummary = byGlobalStatus.get(GlobalApprovalStatus.DISPUTE);
     return isNull(disputeSummary) ? 0 : disputeSummary.totalCount();
   }
 
+  /**
+   * Returns the NVI points considered valid for this institution. For unopened periods, this is the
+   * total undisputed points. For open and closed periods, only globally approved points are
+   * counted.
+   *
+   * <p>TODO: Return reported points in "reported periods" when reporting period cycle is
+   * implemented (NP-49541)
+   */
   public BigDecimal validPoints() {
     if (period.isUnopened()) {
       return undisputed.totalPoints();
@@ -45,10 +54,12 @@ public record InstitutionAggregationResult(
     return approvedPoints();
   }
 
+  /** Returns the total number of undisputed candidates across all local statuses. */
   public int undisputedTotalCount() {
     return undisputed.totalCount();
   }
 
+  /** Returns the number of undisputed candidates that have been locally approved or rejected. */
   public int undisputedProcessedCount() {
     var approved = undisputed.forStatus(ApprovalStatus.APPROVED).candidateCount();
     var rejected = undisputed.forStatus(ApprovalStatus.REJECTED).candidateCount();

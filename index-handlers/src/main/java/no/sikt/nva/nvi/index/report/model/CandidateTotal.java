@@ -20,6 +20,7 @@ public record CandidateTotal(int candidateCount, BigDecimal totalPoints) {
     totalPoints = validateAndAdjustPoints(totalPoints);
   }
 
+  /** Returns a new {@link CandidateTotal} with the counts and points of both totals combined. */
   public CandidateTotal add(CandidateTotal other) {
     return new CandidateTotal(
         candidateCount + other.candidateCount, totalPoints.add(other.totalPoints));
