@@ -96,6 +96,7 @@ import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
 import no.sikt.nva.nvi.index.model.search.SearchResultParameters;
 import no.sikt.nva.nvi.index.xlsx.ExcelWorkbookGenerator;
 import no.unit.nva.language.LanguageMapper;
+import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.core.Environment;
@@ -119,7 +120,7 @@ import org.zalando.problem.Problem;
 class FetchInstitutionReportHandlerTest {
 
   private static final String YEAR = "year";
-  private static final Context CONTEXT = mock(Context.class);
+  private static final Context CONTEXT = new FakeContext();
   protected static final Environment ENVIRONMENT = new Environment();
   private static final int PAGE_SIZE =
       Integer.parseInt(new Environment().readEnv("INSTITUTION_REPORT_SEARCH_PAGE_SIZE"));

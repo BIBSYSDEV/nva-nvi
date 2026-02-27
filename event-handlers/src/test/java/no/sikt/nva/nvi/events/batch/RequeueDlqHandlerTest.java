@@ -15,7 +15,6 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.amazonaws.services.lambda.runtime.Context;
@@ -30,6 +29,7 @@ import no.sikt.nva.nvi.common.model.ScientificValue;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.service.CandidateService;
 import no.unit.nva.commons.json.JsonUtils;
+import no.unit.nva.stubs.FakeContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.sqs.SqsClient;
@@ -39,7 +39,7 @@ import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 
 class RequeueDlqHandlerTest {
 
-  public static final Context CONTEXT = mock(Context.class);
+  public static final Context CONTEXT = new FakeContext();
   private static final String DLQ_URL = "https://some-sqs-url";
   private static final String FIRST_BATCH = "firstBatch";
   private static final int DEFAULT_BATCH_SIZE = 10;
