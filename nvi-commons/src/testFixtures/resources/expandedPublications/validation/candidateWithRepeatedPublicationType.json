@@ -1,0 +1,174 @@
+{
+  "body" : {
+    "type" : "Publication",
+    "publicationContextUris" : [ ],
+    "id" : "https://api.sandbox.nva.aws.unit.no/publication/01961fbe4a94-6eb30f7c-836d-49ef-9acf-dc5d62fe9092",
+    "associatedArtifacts" : [ {
+      "type" : "NullAssociatedArtifact"
+    } ],
+    "contributorOrganizations" : [ "https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.2.0.0", "https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.0.0.0" ],
+    "createdDate" : "2025-04-10T12:48:06.804909647Z",
+    "curatingInstitutions" : [ "https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.0.0.0" ],
+    "entityDescription" : {
+      "type" : "EntityDescription",
+      "alternativeAbstracts" : { },
+      "contributors" : [ {
+        "type" : "Contributor",
+        "affiliations" : [ {
+          "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.2.0.0",
+          "type" : "Organization",
+          "countryCode" : "NO",
+          "labels" : {
+            "nn" : "Divisjon for forskings- og kunnskapsressursar",
+            "nb" : "Divisjon forsknings- og kunnskapsressurser",
+            "en" : "The Research and Education Resources Division"
+          },
+          "partOf" : [ {
+            "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.0.0.0"
+          } ]
+        } ],
+        "correspondingAuthor" : "false",
+        "identity" : {
+          "id" : "https://api.sandbox.nva.aws.unit.no/cristin/person/1215176",
+          "type" : "Identity",
+          "name" : "Ola Nordmann",
+          "verificationStatus" : "Verified"
+        },
+        "role" : {
+          "type" : "Creator"
+        },
+        "sequence" : "1"
+      } ],
+      "mainTitle" : "2025-04-10 - Test av NVI",
+      "npiSubjectHeading" : "1017",
+      "publicationDate" : {
+        "type" : "PublicationDate",
+        "year" : "2025"
+      },
+      "reference" : {
+        "type" : "Reference",
+        "publicationContext" : {
+          "id" : "https://api.sandbox.nva.aws.unit.no/publication/01961fad368d-06405861-36fe-421a-9404-17a969c6edef",
+          "type" : "Anthology",
+          "entityDescription" : {
+            "type" : "EntityDescription",
+            "contributors" : [ {
+              "type" : "Contributor",
+              "identity" : {
+                "type" : "Identity",
+                "name" : "Sveinn H Gudmundsson"
+              }
+            } ],
+            "mainTitle" : "Big Head hos revevalp",
+            "reference" : {
+              "type" : "Reference",
+              "publicationContext" : {
+                "type" : "Report",
+                "series" : {
+                  "id" : "https://api.sandbox.nva.aws.unit.no/publication-channels-v2/serial-publication/65CF2101-E6CE-437F-9DDD-07FC3DB6B119/2017",
+                  "type" : [ "Series", "Journal" ],
+                  "identifier" : "65CF2101-E6CE-437F-9DDD-07FC3DB6B119",
+                  "name" : "Norsk veterinærtidsskrift",
+                  "onlineIssn" : "2704-0410",
+                  "printIssn" : "0332-5741",
+                  "sameAs" : "https://kanalregister-test.hkdir.no/publiseringskanaler/info/tidsskrift?pid=65CF2101-E6CE-437F-9DDD-07FC3DB6B119",
+                  "scientificValue" : "LevelOne",
+                  "year" : "2017"
+                }
+              }
+            }
+          }
+        },
+        "publicationInstance" : {
+          "type" : ["AcademicChapter", "AcademicArticle"],
+          "pages": {
+            "type": "Range",
+            "begin": "474",
+            "end": "482"
+          }
+        }
+      },
+      "contributorsCount" : 1,
+      "contributorsPreview" : [ {
+        "type" : "Contributor",
+        "affiliations" : [ {
+          "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.2.0.0",
+          "type" : "Organization",
+          "countryCode" : "NO",
+          "labels" : {
+            "nn" : "Divisjon for forskings- og kunnskapsressursar",
+            "nb" : "Divisjon forsknings- og kunnskapsressurser",
+            "en" : "The Research and Education Resources Division"
+          },
+          "partOf" : [ {
+            "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.0.0.0"
+          } ]
+        } ],
+        "correspondingAuthor" : "false",
+        "identity" : {
+          "id" : "https://api.sandbox.nva.aws.unit.no/cristin/person/1215176",
+          "type" : "Identity",
+          "name" : "Ola Nordmann",
+          "verificationStatus" : "Verified"
+        },
+        "role" : {
+          "type" : "Creator"
+        },
+        "sequence" : "1"
+      } ]
+    },
+    "identifier" : "01961fbe4a94-6eb30f7c-836d-49ef-9acf-dc5d62fe9092",
+    "modelVersion" : "0.23.3",
+    "modifiedDate" : ["2025-04-10T12:50:05.920945837Z", "2025-04-10T12:50:10.120945837Z" ],
+    "pendingOpenFileCount" : "0",
+    "publishedDate" : "2025-04-10T12:50:05.895051265Z",
+    "publisher" : {
+      "id" : "https://api.sandbox.nva.aws.unit.no/customer/0baf8fcb-b18d-4c09-88bb-956b4f659103",
+      "type" : "Organization"
+    },
+    "resourceOwner" : {
+      "owner" : "1215176@20754.0.0.0",
+      "ownerAffiliation" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.0.0.0"
+    },
+    "scientificIndex" : { },
+    "status" : "PUBLISHED",
+    "topLevelOrganizations" : [ {
+      "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.0.0.0",
+      "type" : "Organization",
+      "contributorCristinIds" : [ {
+        "id" : "https://api.sandbox.nva.aws.unit.no/cristin/person/1215176",
+        "type" : "Identity",
+        "name" : "Ola Nordmann",
+        "verificationStatus" : "Verified"
+      } ],
+      "countryCode" : "NO",
+      "hasPart" : [ {
+        "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.2.0.0",
+        "type" : "Organization",
+        "countryCode" : "NO",
+        "labels" : {
+          "nn" : "Divisjon for forskings- og kunnskapsressursar",
+          "nb" : "Divisjon forsknings- og kunnskapsressurser",
+          "en" : "The Research and Education Resources Division"
+        },
+        "partOf" : [ {
+          "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.0.0.0"
+        } ]
+      } ],
+      "labels" : {
+        "nb" : "Sikt – Kunnskapssektorens tjenesteleverandør",
+        "en" : "Sikt - Norwegian Agency for Shared Services in Education and Research"
+      }
+    } ],
+    "@context" : "https://api.sandbox.nva.aws.unit.no/publication/context",
+    "filesStatus" : "noFiles",
+    "joinField" : {
+      "name" : "partOf",
+      "parent" : "01961fad368d-06405861-36fe-421a-9404-17a969c6edef"
+    }
+  },
+  "consumptionAttributes" : {
+    "index" : "resources",
+    "documentIdentifier" : "01961fbe4a94-6eb30f7c-836d-49ef-9acf-dc5d62fe9092"
+  }
+}

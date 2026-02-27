@@ -1,0 +1,547 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix : <https://nva.sikt.no/ontology/publication#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# This document constrains what is considered a valid NVA expanded resource from the perspective of NVI.
+
+:PublicationNodeExistsShape a sh:NodeShape ;
+  sh:name "Publication exists in document shape" ;
+  sh:description "Validates that there is at least one type Publication in the document" ;
+  sh:targetNode rdf:nil ;  # Target the dataset as a whole
+  sh:sparql [
+    a sh:SPARQLConstraint ;
+    sh:select """
+      SELECT (COUNT(?publication) AS ?count)
+      WHERE {
+        ?publication a <https://nva.sikt.no/ontology/publication#Publication> .
+      }
+      HAVING (?count = 0)
+    """ ;
+    sh:message "Publication is missing"
+  ] .
+
+:PublicationNodeDuplicatedShape a sh:NodeShape ;
+  sh:name "Publication is not duplicated shape" ;
+  sh:description "Validates that there is not more than one type Publication in the document" ;
+  sh:targetNode rdf:nil ;  # Target the dataset as a whole
+  sh:sparql [
+    a sh:SPARQLConstraint ;
+    sh:select """
+      SELECT (COUNT(?publication) AS ?count)
+      WHERE {
+        ?publication a <https://nva.sikt.no/ontology/publication#Publication> .
+      }
+      HAVING (?count > 1)
+    """ ;
+    sh:message "The graph contains more than one node with type Publication"
+  ] .
+
+:PublicationShape a sh:NodeShape ;
+  sh:name "Publication shape" ;
+  sh:description "Validates direct properties of the node that is a Publication" ;
+  sh:targetClass :Publication ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication does not have at least one verified or unverified contributor" ;
+    sh:path :contributor ;
+    sh:minCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication contributor is not a value of correct type" ;
+    sh:path :contributor ;
+    sh:nodeKind sh:BlankNodeOrIRI
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication identifier is missing" ;
+    sh:path :identifier ;
+    sh:minCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication identifier is repeated" ;
+    sh:path :identifier ;
+    sh:maxCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication identifier is not a string" ;
+    sh:path :identifier ;
+    sh:datatype xsd:string
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication identifier is invalid" ;
+    sh:path :identifier ;
+    sh:pattern "^(?:[0-9a-fA-F]{12}-)?[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication modified date is missing" ;
+    sh:path :modifiedDate ;
+    sh:minCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication modified date is repeated" ;
+    sh:path :modifiedDate ;
+    sh:maxCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication modified date is invalid" ;
+    sh:path :modifiedDate ;
+    sh:datatype xsd:dateTime
+  ] ;
+  sh:property [
+    sh:severity sh:Warning ;
+    sh:message "Publication abstract is missing" ;
+    sh:path :abstractText ;
+    sh:minCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Warning ;
+    sh:message "Publication abstract is repeated" ;
+    sh:path :abstractText ;
+    sh:maxCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication abstract is invalid" ;
+    sh:path :abstractText ;
+    sh:datatype xsd:string
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication applicability is missing" ;
+    sh:path :isApplicable ;
+    sh:minCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication applicability is repeated" ;
+    sh:path :isApplicable ;
+    sh:maxCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication applicability is not a boolean" ;
+    sh:path :isApplicable ;
+    sh:datatype xsd:boolean
+  ] ;
+  sh:property [
+    sh:severity sh:Info ;
+    sh:message "Publication applicability is not TRUE" ;
+    sh:path :isApplicable ;
+    sh:in ( "true"^^xsd:boolean )
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication international collaboration is missing" ;
+    sh:path :isInternationalCollaboration ;
+    sh:minCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication international collaboration is repeated" ;
+    sh:path :isInternationalCollaboration ;
+    sh:maxCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication international collaboration is not a boolean" ;
+    sh:path :isInternationalCollaboration ;
+    sh:datatype xsd:boolean
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication language is repeated" ;
+    sh:path :language ;
+    sh:minCount 0 ;
+    sh:maxCount 1 ;
+    sh:nodeKind sh:IRI
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication language is not a valid IRI" ;
+    sh:path :language ;
+    sh:nodeKind sh:IRI ;
+    sh:sparql [
+    sh:select """
+        SELECT $this
+        WHERE {
+          ?this <https://nva.sikt.no/ontology/publication#language> ?language .
+          FILTER (!REGEX(STR(?language), "^http://lexvo.org/id/iso639-[35]/[a-z]{3}$"))
+        }
+      """ ;
+    ] ;
+  ] ;
+
+  sh:property [
+    sh:severity sh:Warning ;
+    sh:message "Publication page count is missing" ;
+    sh:path :pageCount ;
+    sh:minCount 1 ;
+  ] ;
+  sh:property [
+    sh:severity sh:Warning ;
+    sh:message "Publication page count is repeated" ;
+    sh:path :pageCount ;
+    sh:maxCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication channel is missing" ;
+    sh:path :publicationChannel ;
+    sh:minCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication channel is repeated more than twice" ;
+    sh:path :publicationChannel ;
+    sh:maxCount 2
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication channel IRI is invalid" ;
+    sh:path :publicationChannel ;
+    sh:nodeKind sh:IRI ;
+    sh:sparql [
+    sh:select """
+        SELECT $this
+        WHERE {
+          ?this <https://nva.sikt.no/ontology/publication#publicationChannel> ?publicationChannel .
+          FILTER (!REGEX(STR(?publicationChannel), "^https://api.([a-z0-9-]+.)?nva(.aws)?.unit.no/publication-channels-v2/(serial-publication|publisher)/[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/[0-9]{4}$"))
+        }
+      """ ;
+    ] ;
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication date is missing" ;
+    sh:path :publicationDate ;
+    sh:minCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication date is repeated" ;
+    sh:path :publicationDate ;
+    sh:maxCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication date is not a blank node" ;
+    sh:path :publicationDate ;
+    sh:nodeKind sh:BlankNode
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication type is missing" ;
+    sh:path :publicationType ;
+    sh:minCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication type is repeated" ;
+    sh:path :publicationType ;
+    sh:maxCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication type is not one of the allowed types" ;
+    sh:path :publicationType ;
+    sh:nodeKind sh:IRI ;
+    sh:in ( :AcademicMonograph :AcademicCommentary :AcademicChapter :AcademicArticle :AcademicLiteratureReview )
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication status is missing" ;
+    sh:path :status ;
+    sh:minCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication status is repeated" ;
+    sh:path :status ;
+    sh:maxCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication status is not required type PUBLISHED" ;
+    sh:path :status ;
+    sh:nodeKind sh:IRI ;
+    sh:in ( :PUBLISHED )
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication title is missing" ;
+    sh:path :title ;
+    sh:minCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication title is repeated" ;
+    sh:path :title ;
+    sh:maxCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication title is invalid" ;
+    sh:path :title ;
+    sh:datatype xsd:string
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication top-level organization is missing" ;
+    sh:path :topLevelOrganization ;
+    sh:minCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication top-level organization is invalid" ;
+    sh:path :topLevelOrganization ;
+    sh:nodeKind sh:IRI
+  ] .
+
+:ContributorShape a sh:NodeShape ;
+  sh:targetClass :Contributor ;
+  sh:property [
+    sh:severity sh:Warning ;
+    sh:message "Contributor affiliation is missing" ;
+    sh:path :affiliation ;
+    sh:minCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Warning ;
+    sh:message "Contributor affiliation is invalid" ;
+    sh:path :affiliation ;
+    sh:nodeKind sh:IRI
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Contributor role is missing" ;
+    sh:path :role ;
+    sh:minCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Contributor role is repeated" ;
+    sh:path :role ;
+    sh:maxCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Contributor role is invalid" ;
+    sh:path :role ;
+    sh:in (:Creator)
+  ] .
+
+:IdentityShape a sh:NodeShape ;
+  sh:targetClass :Identity ;
+  sh:property [
+    sh:severity sh:Warning ;
+    sh:message "Contributor name is missing" ;
+    sh:path :name ;
+    sh:minCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Contributor name is repeated" ;
+    sh:path :name ;
+    sh:maxCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Contributor name is invalid" ;
+    sh:path :name ;
+    sh:datatype xsd:string
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Contributor verification status is missing" ;
+    sh:path :verificationStatus ;
+    sh:minCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Contributor verification status is repeated" ;
+    sh:path :verificationStatus ;
+    sh:maxCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Contributor verification status is invalid" ;
+    sh:path :verificationStatus ;
+    sh:datatype xsd:string ;
+    sh:in ( "Verified" "NotVerified" )
+  ] .
+
+:PublicationChannelShape a sh:NodeShape ;
+  sh:targetClass :PublicationChannel ;
+  sh:property [
+    sh:severity sh:Warning ;
+    sh:message "Publication channel print ISSN is missing" ;
+    sh:path :printIssn ;
+    sh:minCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication channel print ISSN is repeated" ;
+    sh:path :printIssn ;
+    sh:maxCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication channel print ISSN is invalid" ;
+    sh:path :printIssn ;
+    sh:datatype xsd:string ;
+    sh:pattern "^[0-9]{4}-[0-9]{3}[0-9X]$"
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication channel year is missing" ;
+    sh:path :year ;
+    sh:minCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication channel year is repeated" ;
+    sh:path :year ;
+    sh:maxCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication channel year is invalid" ;
+    sh:path :year ;
+    sh:datatype xsd:string ;
+    sh:pattern "^[0-9]{4}$"
+  ] ;
+  sh:sparql [
+    a sh:SPARQLConstraint ;
+    sh:severity sh:Violation ;
+    sh:message "Publication channel year does not match IRI" ;
+    sh:select """
+      SELECT (COUNT(?publicationChannel) AS ?count)
+      WHERE {
+        ?publicationChannel a <https://nva.sikt.no/ontology/publication#PublicationChannel> .
+        OPTIONAL { ?publicationChannel <https://nva.sikt.no/ontology/publication#year> ?year }
+        FILTER(!BOUND(?year) || STRENDS(STR(?publicationChannel), ?year))
+      }
+      HAVING (?count = 0)
+    """
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication channel scientific value is missing" ;
+    sh:path :scientificValue ;
+    sh:minCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication channel scientific value is repeated" ;
+    sh:path :scientificValue ;
+    sh:maxCount 1 ;
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication channel scientific value is not a string" ;
+    sh:path :scientificValue ;
+    sh:datatype xsd:string
+  ] ;
+  sh:property [
+    sh:severity sh:Warning ;
+    sh:message "Publication channel scientific value is not one of [ LevelOne, LevelTwo ]" ;
+    sh:path :scientificValue ;
+    sh:in ( "LevelOne" "LevelTwo" )
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication channel identifier is missing" ;
+    sh:path :identifier ;
+    sh:minCount 1 ;
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication channel identifier has multiple values" ;
+    sh:path :identifier ;
+    sh:maxCount 1 ;
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication channel identifier is not a string" ;
+    sh:path :identifier ;
+    sh:datatype xsd:string
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication channel name is missing" ;
+    sh:path :name ;
+    sh:minCount 1 ;
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication channel name is repeated" ;
+    sh:path :name ;
+    sh:maxCount 1 ;
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication channel name is not a string" ;
+    sh:path :name ;
+    sh:datatype xsd:string
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication channel type is missing" ;
+    sh:path :channelType ;
+    sh:minCount 1 ;
+  ] ;
+  sh:property [
+    sh:severity sh:Warning ;
+    sh:message "Publication channel type is repeated" ;
+    sh:path :channelType ;
+    sh:maxCount 1 ;
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication channel type is not a valid URI" ;
+    sh:path :channelType ;
+    sh:nodeKind sh:IRI ;
+    sh:in ( :Journal :Publisher :Series )
+  ] .
+
+:PublicationDateShape a sh:NodeShape ;
+  sh:targetObjectsOf :publicationDate ;
+  sh:sparql [
+    sh:severity sh:Violation ;
+    sh:message "Publication date type is undefined" ;
+    a sh:SPARQLConstraint ;
+    sh:select """
+      SELECT (COUNT(?publication) AS ?count)
+      WHERE {
+        ?publication a <https://nva.sikt.no/ontology/publication#PublicationDate> .
+      }
+      HAVING (?count = 0)
+    """
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication date year is missing" ;
+    sh:path :year ;
+    sh:minCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication date year is repeated" ;
+    sh:path :year ;
+    sh:maxCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication date year is invalid" ;
+    sh:path :year ;
+    sh:datatype xsd:string ;
+    sh:pattern "^[0-9]{4}$"
+  ] ;

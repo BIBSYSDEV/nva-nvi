@@ -1,0 +1,280 @@
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix : <https://nva.sikt.no/ontology/publication#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# This document constrains what is considered a valid NVA expanded resource.
+
+
+:PublicationNodeExistsShape a sh:NodeShape ;
+  sh:name "Publication exists in document shape" ;
+  sh:description "Validates that there is one and only one type Publication in the document" ;
+  sh:targetNode rdf:nil ;  # Target the dataset as a whole
+  sh:sparql [
+    a sh:SPARQLConstraint ;
+    sh:select """
+      SELECT (COUNT(?publication) AS ?count)
+      WHERE {
+        ?publication a <https://nva.sikt.no/ontology/publication#Publication> .
+      }
+      HAVING (?count != 1)
+    """ ;
+    sh:message "Publication is missing or duplicated"
+  ] .
+
+
+:PublicationDateShape a sh:NodeShape ;
+  sh:severity sh:Violation ;
+  sh:message "PublicationDate year is missing or repeated" ;
+  sh:targetClass :PublicationDate ;
+  sh:property [
+    sh:message "Publication date year is missing" ;
+    sh:path :year ;
+    sh:minCount 1
+  ] ;
+  sh:property [
+    sh:message "Publication date year is repeated" ;
+    sh:path :year ;
+    sh:maxCount 1
+  ] ;
+  sh:property [
+    sh:message "Publication date year is does not match expectations for type and structure" ;
+    sh:path :year ;
+    sh:datatype xsd:string ;
+    sh:pattern "^[0-9]{4}"
+  ] .
+
+
+:ContributorShape a sh:NodeShape ;
+  sh:targetClass :Contributor ;
+  sh:property [
+    sh:severity sh:Info ;
+    sh:message "Contributor affiliation is missing" ;
+    sh:path :affiliation ;
+    sh:minCount 1 ;
+    sh:nodeKind sh:IRI
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Contributor role is missing" ;
+    sh:path :role ;
+    sh:minCount 1 ;
+    sh:in (:Creator)
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Contributor role is repeated" ;
+    sh:path :role ;
+    sh:maxCount 1 ;
+    sh:in (:Creator)
+  ] .
+
+:IdentityShape a sh:NodeShape ;
+  sh:targetClass :Identity ;
+  sh:property [
+      sh:severity sh:Info ;
+      sh:message "Contributor name is missing" ;
+      sh:path :name ;
+      sh:minCount 1 ;
+      sh:datatype xsd:string
+    ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Contributor name is repeated" ;
+    sh:path :name ;
+    sh:maxCount 1 ;
+    sh:datatype xsd:string
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Contributor verification status is missing" ;
+    sh:path :verificationStatus ;
+    sh:minCount 1 ;
+    sh:datatype xsd:string ;
+    sh:in ( "Verified" "NotVerified" )
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Contributor verification status is repeated" ;
+    sh:path :verificationStatus ;
+    sh:maxCount 1 ;
+    sh:datatype xsd:string ;
+    sh:in ( "Verified" "NotVerified" )
+  ] .
+
+:OrganizationCountryRepeatedShape a sh:NodeShape ;
+  sh:severity sh:Violation ;
+  sh:message "Organization country is repeated" ;
+  sh:targetClass :Organization ;
+  # Validate the country if and only if it is present
+    sh:or (
+      [
+        sh:path :country ;
+        sh:maxCount 0 ;
+      ]
+      [
+        sh:path :country ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:datatype xsd:string ;
+      ]
+    ) .
+
+:OrganizationNotNorwayShape a sh:NodeShape ;
+  sh:severity sh:Info ;
+  sh:message "Organization country is not equal to 'NO'" ;
+  sh:targetClass :Organization ;
+  # Validate the country if and only if it is present
+    sh:or (
+      [
+        sh:path :country ;
+        sh:maxCount 0
+      ]
+      [
+        sh:path :country ;
+        sh:severity sh:Violation ;
+        sh:datatype xsd:string ;
+        sh:in ( "NO" )
+      ]
+    ) .
+
+:OrganizationLabelShape a sh:NodeShape ;
+  sh:targetClass :Organization ;
+  sh:severity sh:Violation ;
+  sh:message "Organization label is not a unique language literal from [en, nb, nn]" ;
+  sh:or (
+    [
+      sh:path :country ;
+      sh:maxCount 0]
+    [
+      sh:path :country ;
+      sh:minCount 1 ;
+      sh:datatype rdf:langString ;
+      sh:languageIn ( "en" "nb" "nn" ) ;
+      sh:uniqueLang true
+    ]
+  ) .
+
+:OrganizationShape a sh:NodeShape ;
+  sh:targetClass :Organization ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Organization hasPart is not IRI" ;
+    sh:path :hasPart ;
+    sh:nodeKind sh:IRI
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Organization partOf is not IRI" ;
+    sh:path :partOf ;
+    sh:nodeKind sh:IRI
+  ] .
+
+:PublicationChannelShape a sh:NodeShape ;
+  sh:targetObjectsOf :publicationContext ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication channel is not an IRI of type (Journal, Publisher, Series)" ;
+    sh:path rdf:type ;
+    sh:nodeKind sh:IRI ;
+    sh:in (:Journal :Series :Publisher)
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication channel type has multiple values" ;
+    sh:path rdf:type ;
+    sh:maxCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication channel identifier is missing" ;
+    sh:path :identifier ;
+    sh:minCount 1 ;
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication channel identifier has multiple values" ;
+    sh:path :identifier ;
+    sh:maxCount 1 ;
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication channel identifier is not a string" ;
+    sh:path :identifier ;
+    sh:datatype xsd:string
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication channel name is missing" ;
+    sh:path :name ;
+    sh:minCount 1 ;
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication channel name is repeated" ;
+    sh:path :name ;
+    sh:maxCount 1 ;
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication channel name is not a string" ;
+    sh:path :name ;
+    sh:datatype xsd:string
+  ] ;
+  sh:property [
+    sh:severity sh:Warning ;
+    sh:message "Publication channel print ISSN is missing" ;
+    sh:path :printIssn ;
+    sh:minCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication channel print ISSN is repeated" ;
+    sh:path :printIssn ;
+    sh:maxCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication channel print ISSN is not a string matching regex" ;
+    sh:path :printIssn ;
+    sh:datatype xsd:string ;
+    sh:pattern "^[0-9]{4}-[0-9]{3}[0-9X]$"
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication channel scientificValue is missing" ;
+    sh:path :scientificValue ;
+    sh:minCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication channel scientificValue is repeated" ;
+    sh:path :scientificValue ;
+    sh:maxCount 1 ;
+  ] ;
+  sh:property [
+    sh:severity sh:Info ;
+    sh:message "Publication channel scientificValue is not a string matching (Unassigned, LevelZero, LevelOne, LevelTwo)" ;
+    sh:path :scientificValue ;
+    sh:datatype xsd:string ;
+    sh:in ( "Unassigned" "LevelZero" "LevelOne" "LevelTwo" )
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication channel year is missing" ;
+    sh:path :year ;
+    sh:minCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication channel year is repeated " ;
+    sh:path :year ;
+    sh:maxCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication channel year is not a string matching year regex" ;
+    sh:path :year ;
+    sh:datatype xsd:string ;
+    sh:pattern "^[0-9]{4}$"
+  ] .

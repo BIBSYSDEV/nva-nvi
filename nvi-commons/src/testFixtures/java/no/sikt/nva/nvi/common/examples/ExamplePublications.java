@@ -38,7 +38,97 @@ public class ExamplePublications {
   public static final String EXAMPLE_INVALID_DRAFT = "expandedPublications/invalidDraft.json";
   public static final String EXAMPLE_WITH_DUPLICATE_DATE =
       "expandedPublications/nonCandidateWithDuplicateDate.json";
-
+  public static final String EXAMPLE_WITH_TWO_TITLES =
+      "expandedPublications/applicableAcademicChapterWithTwoTitles.json";
+  public static final String EXAMPLE_WITH_NO_TITLE =
+      "expandedPublications/validation/nonCandidateWithNoTitle.json";
+  public static final String EXAMPLE_NO_PUBLICATION_TYPE =
+      "expandedPublications/validation/no-publication-type.json";
+  public static final String EMPTY_BODY = "expandedPublications/emptyBody.json";
+  public static final String EXAMPLE_NO_CONTRIBUTORS =
+      "expandedPublications/validation/nonCandidateWithNoContributors.json";
+  public static final String EXAMPLE_NO_IDENTIFIER =
+      "expandedPublications/validation/nonCandidateWithNoPublicationIdentifier.json";
+  public static final String EXAMPLE_REPEATED_IDENTIFIER =
+      "expandedPublications/validation/nonCandidateWithRepeatedPublicationIdentifier.json";
+  public static final String EXAMPLE_NO_ABSTRACT =
+      "expandedPublications/validation/candidateWithNoPublicationAbstract.json";
+  public static final String EXAMPLE_REPEATED_ABSTRACT =
+      "expandedPublications/validation/candidateWithRepeatedPublicationAbstract.json";
+  public static final String EXAMPLE_NO_MODIFIED_DATE =
+      "expandedPublications/validation/candidateWithNoModifiedDate.json";
+  public static final String EXAMPLE_REPEATED_MODIFIED_DATE =
+      "expandedPublications/validation/candidateWithRepeatedModifiedDate.json";
+  public static final String MULTIPLE_LANGUAGES =
+      "expandedPublications/validation/candidateWithMultipleLanguages.json";
+  public static final String MISSING_PAGE_COUNT =
+      "expandedPublications/validation/candidateWithMissingPageCount.json";
+  public static final String REPEATED_PAGE_COUNT =
+      "expandedPublications/validation/candidateWithRepeatedPageCount.json";
+  public static final String MISSING_PUBLICATION_CHANNEL =
+      "expandedPublications/validation/candidateWithMissingPublicationChannel.json";
+  public static final String THREE_REPEATED_PUBLICATION_CHANNELS =
+      "expandedPublications/validation/candidateWithThreePublicationChannels.json";
+  public static final String MISSING_PUBLICATION_DATE =
+      "expandedPublications/validation/candidateWithMissingPublicationDate.json";
+  public static final String REPEATED_PUBLICATION_DATE =
+      "expandedPublications/validation/candidateWithRepeatedPublicationDate.json";
+  public static final String REPEATED_PUBLICATION_TYPE =
+      "expandedPublications/validation/candidateWithRepeatedPublicationType.json";
+  public static final String MISSING_TOP_LEVEL_ORGANIZATION =
+      "expandedPublications/validation/candidateWithMissingTopLevelOrganization.json";
+  public static final String MISSING_PUBLICATION_DATE_YEAR =
+      "expandedPublications/validation/candidateWithMissingPublicationDateYear.json";
+  public static final String REPEATED_PUBLICATION_DATE_YEAR =
+      "expandedPublications/validation/candidateWithRepeatedPublicationDateYear.json";
+  public static final String PUBLICATION_DATE_YEAR_TEMPLATE =
+      "expandedPublications/validation/candidatePublicationDateYearTemplate.json_template";
+  public static final String CONTRIBUTOR_NO_AFFILIATION =
+      "expandedPublications/validation/contributorNoAffiliation.json";
+  public static final String CONTRIBUTOR_NO_NAME =
+      "expandedPublications/validation/contributorNoName.json";
+  public static final String CONTRIBUTOR_REPEATED_NAME =
+      "expandedPublications/validation/contributorRepeatedName.json";
+  public static final String CONTRIBUTOR_ROLE_MISSING =
+      "expandedPublications/validation/contributorRoleMissing.json";
+  public static final String CONTRIBUTOR_ROLE_REPEATED =
+      "expandedPublications/validation/contributorRoleRepeated.json";
+  public static final String CONTRIBUTOR_VERIFICATION_STATUS_MISSING =
+      "expandedPublications/validation/contributorVerificationStatusMissing.json";
+  public static final String CONTRIBUTOR_VERIFICATION_STATUS_REPEATED =
+      "expandedPublications/validation/contributorVerificationStatusRepeated.json";
+  public static final String ORGANIZATION_UNKNOWN_COUNTRY =
+      "expandedPublications/validation/organizationUnknownCountry.json";
+  public static final String ORGANIZATION_REPEATED_COUNTRY =
+      "expandedPublications/validation/organizationRepeatedCountry.json";
+  public static final String ORGANIZATION_HAS_PART_NOT_URI =
+      "expandedPublications/validation/organizationHasPartNotUri.json";
+  public static final String ORGANIZATION_PART_OF_NOT_URI =
+      "expandedPublications/validation/organizationPartOfNotUri.json";
+  public static final String ORGANIZATION_LABEL_INVALID =
+      "expandedPublications/validation/organizationLabelInvalid.json";
+  public static final String PUBLICATION_CHANNEL_INVALID_TYPE =
+      "expandedPublications/validation/publicationChannelInvalidType.json";
+  public static final String PUBLICATION_CHANNEL_REPEATED =
+      "expandedPublications/validation/publicationChannelTypeRepeated.json";
+  public static final String PUBLICATION_CHANNEL_IDENTIFIER_MISSING =
+      "expandedPublications/validation/publicationChannelIdentifierMissing.json";
+  public static final String PUBLICATION_CHANNEL_IDENTIFIER_REPEATED =
+      "expandedPublications/validation/publicationChannelIdentifierRepeated.json";
+  public static final String PUBLICATION_CHANNEL_IDENTIFIER_NOT_STRING =
+      "expandedPublications/validation/publicationChannelIdentifierNotString.json";
+  public static final String PUBLICATION_CHANNEL_NAME_MISSING =
+      "expandedPublications/validation/publicationChannelNameMissing.json";
+  public static final String PUBLICATION_CHANNEL_NAME_REPEATED =
+      "expandedPublications/validation/publicationChannelNameRepeated.json";
+  public static final String PUBLICATION_CHANNEL_NAME_NOT_STRING =
+      "expandedPublications/validation/publicationChannelNameNotString.json";
+  public static final String PUBLICATION_CHANNEL_PISSN_MISSING =
+      "expandedPublications/validation/publicationChannelPissnMissing.json";
+  public static final String PUBLICATION_CHANNEL_PISSN_REPEATED =
+      "expandedPublications/validation/publicationChannelPissnRepeated.json";
+  public static final String PUBLICATION_CHANNEL_PISSN_NOT_STRING =
+      "expandedPublications/validation/publicationChannelPissnNotString.json";
   public static final PublicationDto EXAMPLE_PUBLICATION_1 =
       PublicationDto.builder()
           .withId(
