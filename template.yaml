@@ -1221,7 +1221,7 @@ Resources:
             Method: get
             RestApiId: !Ref ScientificIndexApi
 
-  FetchReportHandler:
+  FetchReportHandlerV2:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: index-handlers
