@@ -59,14 +59,9 @@ public class ReportResponseFactory {
       throws IOException {
     var period = nviPeriodService.getByPublishingYear(request.period());
     var periodDto = period.toDto();
-    var results = reportAggregationClient.executeQuery(new AllInstitutionsQuery(period));
     var institutionReports =
-        results.stream()
-            .map(
-                result -> {
-                  var queryId = institutionQueryId(request.queryId(), result.institutionId());
-                  return toInstitutionReport(queryId, periodDto, result);
-                })
+        reportAggregationClient.executeQuery(new AllInstitutionsQuery(period)).stream()
+            .map(result -> toInstitutionReport(request, periodDto, result))
             .toList();
     return new AllInstitutionsReport(request.queryId(), periodDto, institutionReports);
   }
@@ -83,6 +78,14 @@ public class ReportResponseFactory {
                 new NoSuchElementException(
                     "No report found for institution %s in period %s"
                         .formatted(request.institutionId(), request.period())));
+  }
+
+  private static InstitutionReport toInstitutionReport(
+      AllInstitutionsReportRequest request,
+      NviPeriodDto periodDto,
+      InstitutionAggregationResult result) {
+    var queryId = institutionQueryId(request.queryId(), result.institutionId());
+    return toInstitutionReport(queryId, periodDto, result);
   }
 
   private static InstitutionReport toInstitutionReport(
