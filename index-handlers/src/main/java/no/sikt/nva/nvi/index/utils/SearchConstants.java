@@ -57,6 +57,7 @@ public final class SearchConstants {
   public static final String GLOBAL_APPROVAL_STATUS = "globalApprovalStatus";
   public static final String POINTS = "points";
   public static final String INSTITUTION_POINTS = "institutionPoints";
+  public static final String SECTOR = "sector";
   public static final String ORGANIZATION_SUMMARIES = "organizationSummaries";
   public static final String CREATED_DATE = "createdDate";
   public static final String IDENTIFIER = "identifier";
@@ -123,7 +124,8 @@ public final class SearchConstants {
         APPROVAL_STATUS, keywordProperty(),
         ORGANIZATION_SUMMARIES, organizationSummaryProperties(),
         POINTS, pointsProperties(),
-        GLOBAL_APPROVAL_STATUS, keywordProperty());
+        GLOBAL_APPROVAL_STATUS, keywordProperty(),
+        SECTOR, keywordProperty());
   }
 
   private static Property organizationSummaryProperties() {
