@@ -23,7 +23,7 @@ public record ScanCandidatesJob(CandidateService candidateService, CandidateScan
   }
 
   private List<BatchJobMessage> toMessages(ListingResult<UUID> listingResult) {
-    return listingResult.getDatabaseEntries().stream().map(this::createMessage).toList();
+    return listingResult.items().stream().map(this::createMessage).toList();
   }
 
   private BatchJobMessage createMessage(UUID identifier) {

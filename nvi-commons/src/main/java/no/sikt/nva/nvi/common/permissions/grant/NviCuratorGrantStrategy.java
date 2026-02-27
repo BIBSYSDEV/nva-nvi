@@ -42,7 +42,7 @@ public class NviCuratorGrantStrategy extends BaseStrategy implements GrantStrate
 
   private Set<ApprovalStatus> getValidApprovalStates() {
     return hasUnverifiedCreatorFromUserOrganization()
-        ? EnumSet.of(PENDING)
+        ? EnumSet.of(PENDING, REJECTED)
         : EnumSet.of(PENDING, APPROVED, REJECTED);
   }
 
