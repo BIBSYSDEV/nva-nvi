@@ -5,6 +5,7 @@ import static java.util.Objects.requireNonNull;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.jsonPathOf;
 import static no.sikt.nva.nvi.index.utils.AggregationFunctions.nestedAggregation;
 import static no.sikt.nva.nvi.index.utils.AggregationFunctions.sumAggregation;
+import static no.sikt.nva.nvi.index.utils.AggregationFunctions.termsAggregationWithSubAggregations;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVALS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVAL_STATUS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.GLOBAL_APPROVAL_STATUS;
@@ -27,7 +28,6 @@ import no.sikt.nva.nvi.index.report.model.InstitutionAggregationResult;
 import no.sikt.nva.nvi.index.report.model.LocalStatusSummary;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
-import org.opensearch.client.opensearch._types.aggregations.TermsAggregation;
 import org.opensearch.client.opensearch._types.aggregations.TopHitsAggregation;
 import org.opensearch.client.opensearch.core.SearchResponse;
 
@@ -39,7 +39,6 @@ public final class InstitutionReportAggregation {
   private static final String INSTITUTION_DETAILS = "institution_details";
   private static final String BY_LOCAL_STATUS = "by_local_status";
   private static final String POINTS_SUM = "points";
-  private static final int MAX_INSTITUTIONS = 1000;
 
   private InstitutionReportAggregation() {}
 
@@ -49,9 +48,8 @@ public final class InstitutionReportAggregation {
 
   private static Aggregation createInstitutionAggregation() {
     var institutionAggregation =
-        termsAggregationWithSubs(
+        termsAggregationWithSubAggregations(
             jsonPathOf(APPROVALS, INSTITUTION_ID),
-            MAX_INSTITUTIONS,
             Map.of(
                 BY_GLOBAL_STATUS, createByGlobalStatusAggregation(),
                 INSTITUTION_DETAILS, createInstitutionDetailsFromFirstHit()));
@@ -65,13 +63,13 @@ public final class InstitutionReportAggregation {
   }
 
   private static Aggregation createByGlobalStatusAggregation() {
-    return termsAggregationWithSubs(
+    return termsAggregationWithSubAggregations(
         jsonPathOf(APPROVALS, GLOBAL_APPROVAL_STATUS),
         Map.of(BY_LOCAL_STATUS, createByLocalStatusAggregation()));
   }
 
   private static Aggregation createByLocalStatusAggregation() {
-    return termsAggregationWithSubs(
+    return termsAggregationWithSubAggregations(
         jsonPathOf(APPROVALS, APPROVAL_STATUS),
         Map.of(POINTS_SUM, sumAggregation(APPROVALS, POINTS, INSTITUTION_POINTS)));
   }
@@ -153,21 +151,5 @@ public final class InstitutionReportAggregation {
         .forEach(
             entry -> undisputedTotals.merge(entry.getKey(), entry.getValue(), CandidateTotal::add));
     return new LocalStatusSummary(Map.copyOf(undisputedTotals));
-  }
-
-  private static Aggregation termsAggregationWithSubs(
-      String field, Map<String, Aggregation> subAggregations) {
-    return new Aggregation.Builder()
-        .terms(new TermsAggregation.Builder().field(field).build())
-        .aggregations(subAggregations)
-        .build();
-  }
-
-  private static Aggregation termsAggregationWithSubs(
-      String field, int size, Map<String, Aggregation> subAggregations) {
-    return new Aggregation.Builder()
-        .terms(new TermsAggregation.Builder().field(field).size(size).build())
-        .aggregations(subAggregations)
-        .build();
   }
 }
