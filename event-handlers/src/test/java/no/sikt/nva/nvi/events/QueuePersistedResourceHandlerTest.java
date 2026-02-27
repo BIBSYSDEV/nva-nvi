@@ -6,7 +6,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.mock;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import java.io.ByteArrayOutputStream;
@@ -14,6 +13,7 @@ import java.io.IOException;
 import java.net.URI;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
+import no.unit.nva.stubs.FakeContext;
 import nva.commons.core.Environment;
 import nva.commons.logutils.LogUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,7 +25,7 @@ class QueuePersistedResourceHandlerTest {
 
   private static final Environment environment = new Environment();
   private static final String queueUrl = environment.readEnv("PERSISTED_RESOURCE_QUEUE_URL");
-  private final Context context = mock(Context.class);
+  private final Context context = new FakeContext();
   private QueuePersistedResourceHandler handler;
   private ByteArrayOutputStream output;
   private FakeSqsClient sqsClient;

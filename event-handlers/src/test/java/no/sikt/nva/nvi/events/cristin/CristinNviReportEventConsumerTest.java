@@ -18,7 +18,6 @@ import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.mock;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent;
@@ -44,6 +43,7 @@ import no.sikt.nva.nvi.common.service.model.PublicationDetails;
 import no.sikt.nva.nvi.events.cristin.CristinNviReport.Builder;
 import no.unit.nva.events.models.EventReference;
 import no.unit.nva.s3.S3Driver;
+import no.unit.nva.stubs.FakeContext;
 import nva.commons.core.paths.UnixPath;
 import nva.commons.core.paths.UriWrapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,7 +53,7 @@ import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 class CristinNviReportEventConsumerTest {
 
   private static final String CRISTIN_IMPORT_BUCKET = "not-important";
-  private static final Context CONTEXT = mock(Context.class);
+  private static final Context CONTEXT = new FakeContext();
   private TestScenario scenario;
   private CristinNviReportEventConsumer handler;
   private CandidateService candidateService;
