@@ -20,10 +20,11 @@ import no.sikt.nva.nvi.test.SampleExpandedPublication;
 import no.unit.nva.clients.CustomerDto;
 import no.unit.nva.clients.CustomerList;
 import no.unit.nva.clients.IdentityServiceClient;
+import no.unit.nva.stubs.FakeContext;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 
 public class EvaluationContext {
-  private static final Context EVALUATION_HANDLER_CONTEXT = mock(Context.class);
+  private static final Context EVALUATION_HANDLER_CONTEXT = new FakeContext();
 
   private final EvaluateNviCandidateHandler evaluateNviCandidateHandler;
   private final IdentityServiceClient identityServiceClient;

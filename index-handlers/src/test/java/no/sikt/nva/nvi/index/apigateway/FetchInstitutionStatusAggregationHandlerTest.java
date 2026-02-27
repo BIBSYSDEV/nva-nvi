@@ -13,7 +13,6 @@ import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.FAKER;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -40,6 +39,7 @@ import no.sikt.nva.nvi.index.model.report.DirectAffiliationAggregation;
 import no.sikt.nva.nvi.index.model.report.InstitutionStatusAggregationReport;
 import no.sikt.nva.nvi.index.model.report.TopLevelAggregation;
 import no.unit.nva.commons.json.JsonUtils;
+import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
@@ -57,7 +57,7 @@ import org.zalando.problem.StatusType;
 class FetchInstitutionStatusAggregationHandlerTest {
 
   private static final OpenSearchContainerContext CONTAINER = new OpenSearchContainerContext();
-  private static final Context CONTEXT = mock(Context.class);
+  private static final Context CONTEXT = new FakeContext();
   private static final Environment ENVIRONMENT =
       getFetchInstitutionStatusAggregationHandlerEnvironment();
   private String username;
