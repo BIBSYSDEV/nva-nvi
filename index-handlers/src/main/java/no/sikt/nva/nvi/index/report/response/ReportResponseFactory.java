@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.util.NoSuchElementException;
+import java.util.function.Supplier;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.dto.NviPeriodDto;
@@ -73,11 +74,15 @@ public class ReportResponseFactory {
     return reportAggregationClient
         .executeQuery(query)
         .map(result -> toInstitutionReport(request.queryId(), periodDto, result))
-        .orElseThrow(
-            () ->
-                new NoSuchElementException(
-                    "No report found for institution %s in period %s"
-                        .formatted(request.institutionId(), request.period())));
+        .orElseThrow(noSuchElementException(request));
+  }
+
+  private static Supplier<NoSuchElementException> noSuchElementException(
+      InstitutionReportRequest request) {
+    return () ->
+        new NoSuchElementException(
+            "No report found for institution %s in period %s"
+                .formatted(request.institutionId(), request.period()));
   }
 
   private static InstitutionReport toInstitutionReport(
