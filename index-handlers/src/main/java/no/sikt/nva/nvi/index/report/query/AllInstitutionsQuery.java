@@ -22,7 +22,7 @@ public record AllInstitutionsQuery(NviPeriod period)
 
   @Override
   public Map<String, Aggregation> aggregations() {
-    return Map.ofEntries(InstitutionReportAggregation.perInstitutionAggregation());
+    return Map.ofEntries(InstitutionReportAggregation.namedAggregationEntry());
   }
 
   @Override

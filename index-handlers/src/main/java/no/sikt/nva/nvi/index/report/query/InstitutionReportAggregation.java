@@ -42,7 +42,12 @@ public final class InstitutionReportAggregation {
 
   private InstitutionReportAggregation() {}
 
-  public static Map.Entry<String, Aggregation> perInstitutionAggregation() {
+  /**
+   * Returns a named aggregation entry for use in an OpenSearch search request. The aggregation
+   * groups candidates by institution, then by global and local approval status, summing points at
+   * the lowest level. Use {@link #parseResponse} to extract results from the search response.
+   */
+  public static Map.Entry<String, Aggregation> namedAggregationEntry() {
     return Map.entry(PER_INSTITUTION, createInstitutionAggregation());
   }
 
