@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.index;
 
+import static java.util.Objects.isNull;
 import static no.sikt.nva.nvi.common.utils.ExceptionUtils.getStackTrace;
 import static no.sikt.nva.nvi.index.aws.S3StorageWriter.GZIP_ENDING;
 import static nva.commons.core.StringUtils.isBlank;
@@ -175,7 +176,7 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
   private IndexDocumentWithConsumptionAttributes generateIndexDocumentWithConsumptionAttributes(
       UUID candidateIdentifier) {
     var candidate = fetchCandidate(candidateIdentifier);
-    if (candidate == null) {
+    if (isNull(candidate)) {
       LOGGER.info("Candidate is null, skipping index document generation");
       return null;
     }

@@ -26,6 +26,7 @@ import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_AFFILIATIONS;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_BODY;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_TYPE;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.GZIP_ENDING;
+import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.HARD_CODED_INTERMEDIATE_ORGANIZATION;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.HARD_CODED_TOP_LEVEL_ORG;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.NVI_CANDIDATES_FOLDER;
 import static no.sikt.nva.nvi.test.TestConstants.EN_FIELD;
@@ -38,8 +39,6 @@ import static no.unit.nva.s3.S3Driver.S3_SCHEME;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.core.attempt.Try.attempt;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -247,16 +246,14 @@ class IndexDocumentHandlerTest {
   @Test
   void subUnitAffiliationShouldHavePartOf() {
     var subUnitAffiliation = randomUri();
-    var candidate = randomApplicableCandidate(HARD_CODED_TOP_LEVEL_ORG, subUnitAffiliation);
+    var candidate = randomApplicableCandidateWithThreeLevelHierarchy(subUnitAffiliation);
     setupPublicationLoaderMockAndGenerateExpectedDocument(candidate);
     var event = createEvent(candidate.identifier());
     handler.handleRequest(event, CONTEXT);
     var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
-    var expectedPartOf =
-        List.of(HARD_CODED_TOP_LEVEL_ORG); // FIXME: This seems like a regression? Missing a level?
-    assertThat(
-        extractPartOfAffiliation(actualIndexDocument, subUnitAffiliation),
-        containsInAnyOrder(expectedPartOf.toArray()));
+    var expectedPartOf = List.of(HARD_CODED_TOP_LEVEL_ORG, HARD_CODED_INTERMEDIATE_ORGANIZATION);
+    Assertions.assertThat(extractPartOfAffiliation(actualIndexDocument, subUnitAffiliation))
+        .containsExactlyInAnyOrderElementsOf(expectedPartOf);
   }
 
   @Test
@@ -631,6 +628,26 @@ class IndexDocumentHandlerTest {
 
   private Candidate randomApplicableCandidate(URI topLevelOrg, URI affiliation) {
     var request = createUpsertCandidateRequestWithSingleAffiliation(topLevelOrg, affiliation);
+    candidateService.upsertCandidate(request);
+    return candidateService.getCandidateByPublicationId(request.publicationId());
+  }
+
+  private Candidate randomApplicableCandidateWithThreeLevelHierarchy(URI subUnitAffiliation) {
+    var intermediateOrganization =
+        Organization.builder()
+            .withId(HARD_CODED_INTERMEDIATE_ORGANIZATION)
+            .withHasPart(List.of(Organization.builder().withId(subUnitAffiliation).build()))
+            .build();
+    var topLevelOrganization =
+        Organization.builder()
+            .withId(HARD_CODED_TOP_LEVEL_ORG)
+            .withHasPart(List.of(intermediateOrganization))
+            .build();
+    var verifiedCreator = verifiedNviCreatorDtoFrom(subUnitAffiliation);
+    var request =
+        randomUpsertRequestBuilder()
+            .withCreatorsAndPoints(Map.of(topLevelOrganization, List.of(verifiedCreator)))
+            .build();
     candidateService.upsertCandidate(request);
     return candidateService.getCandidateByPublicationId(request.publicationId());
   }

@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.dto.ContributorDto;
 import no.sikt.nva.nvi.common.dto.PageCountDto;
@@ -444,9 +445,7 @@ class CandidateToIndexDocumentMapperTest {
     var institutionIds = topLevelOrgs.stream().map(Organization::id).toList();
     var approvals =
         institutionIds.stream()
-            .collect(
-                java.util.stream.Collectors.toMap(
-                    id -> id, id -> Approval.createNewApproval(candidateId, id)));
+            .collect(Collectors.toMap(id -> id, id -> Approval.createNewApproval(candidateId, id)));
     return buildCandidate(candidateId, approvals, nviCreators, topLevelOrgs);
   }
 

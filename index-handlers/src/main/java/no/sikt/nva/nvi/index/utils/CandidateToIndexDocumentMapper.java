@@ -2,7 +2,7 @@ package no.sikt.nva.nvi.index.utils;
 
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
-import static no.sikt.nva.nvi.index.utils.NviCandidateIndexDocumentGenerator.extractSector;
+import static java.util.function.Predicate.not;
 
 import java.net.URI;
 import java.util.ArrayList;
@@ -18,11 +18,13 @@ import no.sikt.nva.nvi.common.dto.ContributorDto;
 import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
 import no.sikt.nva.nvi.common.dto.PublicationDto;
 import no.sikt.nva.nvi.common.model.ScientificValue;
+import no.sikt.nva.nvi.common.model.Sector;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.PageCount;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.ApprovalView;
@@ -101,25 +103,25 @@ public class CandidateToIndexDocumentMapper {
     return NviContributor.builder()
         .withId(creatorId)
         .withName(nviCreator.name())
-        .withOrcid(null)
+        .withOrcid(null) // TODO: Populate ORCID from publication or candidate
         .withRole(getContributorRole(contributorDto))
         .withAffiliations(buildNviAffiliations(contributorDto, nviCreator))
         .build();
   }
 
-  // TODO: Remove when non-NVI contributor data is available on Candidate
+  // TODO: Remove when non-NVI contributor data is available from Candidate
   private ContributorType buildNonNviContributor(ContributorDto contributorDto) {
     var contributorId = nonNull(contributorDto.id()) ? contributorDto.id().toString() : null;
     return Contributor.builder()
         .withId(contributorId)
         .withName(contributorDto.name())
-        .withOrcid(null)
+        .withOrcid(null) // TODO: Populate ORCID from publication or candidate
         .withRole(getContributorRole(contributorDto))
         .withAffiliations(buildSimpleAffiliations(contributorDto))
         .build();
   }
 
-  // TODO: Remove when role is available on Candidate
+  // TODO: Remove when role is available from Candidate
   private static String getContributorRole(ContributorDto contributorDto) {
     return nonNull(contributorDto.role()) ? contributorDto.role().getValue() : null;
   }
@@ -245,6 +247,15 @@ public class CandidateToIndexDocumentMapper {
         .collect(Collectors.toSet());
   }
 
+  private static String extractSector(URI institutionId, Candidate candidate) {
+    return candidate
+        .getInstitutionPoints(institutionId)
+        .map(InstitutionPoints::sector)
+        .filter(not(Sector.UNKNOWN::equals))
+        .map(Sector::toString)
+        .orElse(null);
+  }
+
   // --- Phase C: Assemble document ---
 
   private NviCandidateIndexDocument buildDocument(
@@ -322,12 +333,12 @@ public class CandidateToIndexDocumentMapper {
     return builder.build();
   }
 
-  // TODO: Remove when channel name is available on Candidate
+  // TODO: Remove when channel name is available from Candidate
   private static String getChannelName(PublicationChannelDto channelDto) {
     return channelDto.name();
   }
 
-  // TODO: Remove when channel printIssn is available on Candidate
+  // TODO: Remove when channel printIssn is available from Candidate
   private static String getChannelPrintIssn(PublicationChannelDto channelDto) {
     return channelDto.printIssn();
   }
