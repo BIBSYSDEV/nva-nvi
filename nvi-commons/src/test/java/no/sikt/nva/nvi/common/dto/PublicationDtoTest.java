@@ -78,7 +78,7 @@ class PublicationDtoTest {
   }
 
   @Test
-  void shouldReturnHandlesSetInBuilder() {
+  void shouldReturnHandlesWhenHandlesArePresent() {
     var expectedHandles = List.of(randomUri().toString(), randomUri().toString());
     var publication = randomPublicationDtoBuilder().withHandles(expectedHandles).build();
 

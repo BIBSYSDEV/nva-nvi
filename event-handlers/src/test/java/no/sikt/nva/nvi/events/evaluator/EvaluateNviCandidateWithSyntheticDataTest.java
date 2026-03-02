@@ -139,6 +139,22 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
         .containsExactlyInAnyOrder(handles.toArray(URI[]::new));
   }
 
+  @Test
+  void shouldPersistHandlesFromHandleFieldAndAdditionalIdentifiers() {
+    var handle = randomUri();
+    var additionalIdentifierHandle = randomUri();
+    factory
+        .withContributor(verifiedCreatorFrom(nviOrganization))
+        .withHandle(handle)
+        .withAdditionalIdentifiers(List.of(toHandleIdentifier(additionalIdentifierHandle)));
+
+    handleEvaluation(factory);
+
+    var candidate = candidateService.getCandidateByPublicationId(publicationId);
+    assertThat(candidate.publicationDetails().handles())
+        .containsExactlyInAnyOrder(handle, additionalIdentifierHandle);
+  }
+
   private static SampleAdditionalIdentifier toHandleIdentifier(URI handle) {
     return new SampleAdditionalIdentifier("HandleIdentifier", handle.toString());
   }

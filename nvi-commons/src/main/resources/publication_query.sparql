@@ -26,7 +26,7 @@ CONSTRUCT {
   :topLevelOrganization ?topLevelOrganization ;
   :modifiedDate ?modifiedDate ;
   :isbn ?isbnList ;
-  :handle ?directHandle, ?handleFromAdditionalId .
+  :handle ?handle, ?additionalIdentifierHandle .
 
   # Include page count
   ?pageCount a :PageCount ;
@@ -249,13 +249,11 @@ WHERE {
       )
     }
   } UNION {
-    # Extract direct handle field
-    ?publication :handle ?directHandle .
+    ?publication :handle ?handle .
   } UNION {
-    # Extract handles from additionalIdentifiers
     ?publication :additionalIdentifier ?additionalId .
     ?additionalId a :HandleIdentifier ;
                   :value ?handleValue .
-    BIND(IRI(?handleValue) AS ?handleFromAdditionalId)
+    BIND(IRI(?handleValue) AS ?additionalIdentifierHandle)
   }
 }

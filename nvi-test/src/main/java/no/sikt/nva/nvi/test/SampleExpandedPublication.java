@@ -1,14 +1,17 @@
 package no.sikt.nva.nvi.test;
 
 import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.test.TestConstants.ABSTRACT_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.ACADEMIC_ARTICLE;
 import static no.sikt.nva.nvi.test.TestConstants.ACADEMIC_CHAPTER;
 import static no.sikt.nva.nvi.test.TestConstants.ACADEMIC_LITERATURE_REVIEW;
 import static no.sikt.nva.nvi.test.TestConstants.ACADEMIC_MONOGRAPH;
+import static no.sikt.nva.nvi.test.TestConstants.ADDITIONAL_IDENTIFIERS_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.BODY_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.CONTRIBUTORS_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.ENTITY_DESCRIPTION_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.HANDLE_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.IDENTIFIER_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.ID_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.LANGUAGE_FIELD;
@@ -22,8 +25,10 @@ import static no.sikt.nva.nvi.test.TestConstants.REFERENCE_TYPE;
 import static no.sikt.nva.nvi.test.TestConstants.STATUS_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.TOP_LEVEL_ORGANIZATIONS_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.TYPE_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.VALUE_FIELD;
 import static no.sikt.nva.nvi.test.TestUtils.createNodeWithType;
 import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
+import static no.sikt.nva.nvi.test.TestUtils.hasElements;
 import static no.sikt.nva.nvi.test.TestUtils.putIfNotBlank;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -108,11 +113,11 @@ public record SampleExpandedPublication(
       root.put(IDENTIFIER_FIELD, identifier.toString());
       root.put(STATUS_FIELD, status);
       putIfNotBlank(root, "modifiedDate", modifiedDate);
-      if (handle != null) {
-        root.put("handle", handle.toString());
+      if (nonNull(handle)) {
+        root.put(HANDLE_FIELD, handle.toString());
       }
-      if (additionalIdentifiers != null && !additionalIdentifiers.isEmpty()) {
-        root.set("additionalIdentifiers", createAdditionalIdentifiersNode());
+      if (hasElements(additionalIdentifiers)) {
+        root.set(ADDITIONAL_IDENTIFIERS_FIELD, createAdditionalIdentifiersNode());
       }
 
       root.set(ENTITY_DESCRIPTION_FIELD, createEntityDescriptionNode());
@@ -129,7 +134,7 @@ public record SampleExpandedPublication(
     for (var additionalIdentifier : additionalIdentifiers) {
       var entry = objectMapper.createObjectNode();
       entry.put(TYPE_FIELD, additionalIdentifier.type());
-      entry.put("value", additionalIdentifier.value());
+      entry.put(VALUE_FIELD, additionalIdentifier.value());
       array.add(entry);
     }
     return array;
