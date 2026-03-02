@@ -26,6 +26,14 @@ public final class AggregationFunctions {
     return new TermsAggregation.Builder().field(jsonPathOf(paths)).build().toAggregation();
   }
 
+  public static Aggregation termsAggregationWithSubAggregations(
+      String field, Map<String, Aggregation> subAggregations) {
+    return new Aggregation.Builder()
+        .terms(new TermsAggregation.Builder().field(field).build())
+        .aggregations(subAggregations)
+        .build();
+  }
+
   public static Aggregation nestedAggregation(
       String path, Map<String, Aggregation> subAggregations) {
     return new Aggregation.Builder()
