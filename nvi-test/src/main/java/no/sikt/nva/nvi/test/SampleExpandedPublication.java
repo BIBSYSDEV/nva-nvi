@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.test;
 
+import static java.util.Collections.emptyList;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.test.TestConstants.ABSTRACT_FIELD;
@@ -39,6 +40,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import no.unit.nva.identifiers.SortableIdentifier;
@@ -277,8 +279,9 @@ public record SampleExpandedPublication(
     }
 
     public Builder withAdditionalIdentifiers(
-        List<SampleAdditionalIdentifier> additionalIdentifiers) {
-      this.additionalIdentifiers = additionalIdentifiers;
+        Collection<SampleAdditionalIdentifier> additionalIdentifiers) {
+      this.additionalIdentifiers =
+          nonNull(additionalIdentifiers) ? additionalIdentifiers.stream().toList() : emptyList();
       return this;
     }
 

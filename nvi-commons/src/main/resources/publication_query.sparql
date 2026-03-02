@@ -26,7 +26,7 @@ CONSTRUCT {
   :topLevelOrganization ?topLevelOrganization ;
   :modifiedDate ?modifiedDate ;
   :isbn ?isbnList ;
-  :handle ?handle, ?additionalIdentifierHandle .
+  :handle ?handle .
 
   # Include page count
   ?pageCount a :PageCount ;
@@ -254,6 +254,6 @@ WHERE {
     ?publication :additionalIdentifier ?additionalId .
     ?additionalId a :HandleIdentifier ;
                   :value ?handleValue .
-    BIND(IRI(?handleValue) AS ?additionalIdentifierHandle)
+    BIND(IRI(?handleValue) AS ?handle)
   }
 }

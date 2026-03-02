@@ -136,7 +136,7 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
 
     var candidate = candidateService.getCandidateByPublicationId(publicationId);
     assertThat(candidate.publicationDetails().handles())
-        .containsExactlyInAnyOrder(handles.toArray(URI[]::new));
+        .containsExactlyInAnyOrderElementsOf(handles);
   }
 
   @Test

@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.common.dto;
 
+import static java.util.Objects.isNull;
 import static java.util.Objects.requireNonNull;
 import static no.sikt.nva.nvi.common.model.InstanceType.ACADEMIC_CHAPTER;
 import static no.sikt.nva.nvi.common.model.InstanceType.ACADEMIC_COMMENTARY;
@@ -17,8 +18,11 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
 import java.time.Instant;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.exceptions.ValidationException;
 import no.sikt.nva.nvi.common.model.InstanceType;
@@ -45,7 +49,7 @@ public record PublicationDto(
     Collection<ContributorDto> contributors,
     Collection<Organization> topLevelOrganizations,
     Collection<String> isbnList,
-    Collection<String> handles,
+    Set<URI> handles,
     Instant modifiedDate) {
 
   public static final List<InstanceType> PUBLICATION_INSTANCE_TYPES_REQUIRING_ISBN =
@@ -126,7 +130,7 @@ public record PublicationDto(
     private Collection<ContributorDto> contributors;
     private Collection<Organization> topLevelOrganizations;
     private Collection<String> isbnList;
-    private Collection<String> handles;
+    private Set<URI> handles;
     private Instant modifiedDate;
 
     private Builder() {}
@@ -211,8 +215,8 @@ public record PublicationDto(
       return this;
     }
 
-    public Builder withHandles(Collection<String> handles) {
-      this.handles = handles;
+    public Builder withHandles(Collection<URI> handles) {
+      this.handles = new HashSet<>(isNull(handles) ? Collections.emptySet() : handles);
       return this;
     }
 

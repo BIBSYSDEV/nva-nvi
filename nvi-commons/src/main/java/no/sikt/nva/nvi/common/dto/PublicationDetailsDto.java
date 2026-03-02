@@ -6,7 +6,7 @@ import static no.sikt.nva.nvi.common.utils.Validator.shouldNotBeNull;
 
 import java.net.URI;
 import java.time.Instant;
-import java.util.Collection;
+import java.util.Set;
 
 public record PublicationDetailsDto(
     URI id,
@@ -20,7 +20,7 @@ public record PublicationDetailsDto(
     boolean isApplicable,
     int creatorCount,
     Instant modifiedDate,
-    Collection<String> handles) {
+    Set<URI> handles) {
 
   public PublicationDetailsDto {
     requireNonNull(id, "Required field 'id' is null");

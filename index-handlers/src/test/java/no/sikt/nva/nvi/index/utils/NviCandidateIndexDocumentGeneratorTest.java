@@ -71,7 +71,7 @@ class NviCandidateIndexDocumentGeneratorTest {
   @Test
   void shouldPopulateHandlesInIndexDocumentFromCandidatePublicationDetails() {
     var expectedHandles = Set.of(randomUri(), randomUri());
-    var publicationDetails = publicationDetalsWithHandles(expectedHandles);
+    var publicationDetails = publicationDetailsWithHandles(expectedHandles);
     var candidate =
         new SampleCandidateGenerator().withPublicationDetails(publicationDetails).build();
 
@@ -81,13 +81,13 @@ class NviCandidateIndexDocumentGeneratorTest {
         .containsExactlyInAnyOrderElementsOf(expectedHandles);
   }
 
-  private static PublicationDetails publicationDetalsWithHandles(Set<URI> expectedHandles) {
+  private static PublicationDetails publicationDetailsWithHandles(Set<URI> handles) {
     return PublicationDetails.builder()
         .withId(randomUri())
         .withTitle(randomString())
         .withPublicationDate(new PublicationDate(randomYear(), null, null))
         .withNviCreators(List.of())
-        .withHandles(expectedHandles)
+        .withHandles(handles)
         .build();
   }
 

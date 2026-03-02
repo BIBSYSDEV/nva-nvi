@@ -1,5 +1,7 @@
 package no.sikt.nva.nvi.index.model.document;
 
+import static no.sikt.nva.nvi.common.utils.CollectionUtils.copyOfNullable;
+
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -25,6 +27,10 @@ public record PublicationDetails(
     Pages pages,
     String language,
     Set<URI> handles) {
+
+  public PublicationDetails {
+    handles = copyOfNullable(handles);
+  }
 
   public static Builder builder() {
     return new Builder();

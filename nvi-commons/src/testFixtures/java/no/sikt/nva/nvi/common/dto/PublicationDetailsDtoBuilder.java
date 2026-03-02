@@ -1,5 +1,7 @@
 package no.sikt.nva.nvi.common.dto;
 
+import static java.util.Collections.emptySet;
+import static java.util.Objects.isNull;
 import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.model.PageCountFixtures.PAGE_RANGE_AS_DTO;
 import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.getRandomDateInCurrentYearAsDto;
@@ -10,6 +12,8 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import java.net.URI;
 import java.time.Instant;
 import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 
 public final class PublicationDetailsDtoBuilder {
 
@@ -24,7 +28,7 @@ public final class PublicationDetailsDtoBuilder {
   private boolean isApplicable;
   private int creatorCount;
   private Instant modifiedDate;
-  private Collection<String> handles;
+  private Set<URI> handles;
 
   public PublicationDetailsDtoBuilder() {}
 
@@ -121,8 +125,8 @@ public final class PublicationDetailsDtoBuilder {
     return this;
   }
 
-  public PublicationDetailsDtoBuilder withHandles(Collection<String> handles) {
-    this.handles = handles;
+  public PublicationDetailsDtoBuilder withHandles(Collection<URI> handles) {
+    this.handles = new HashSet<>(isNull(handles) ? emptySet() : handles);
     return this;
   }
 

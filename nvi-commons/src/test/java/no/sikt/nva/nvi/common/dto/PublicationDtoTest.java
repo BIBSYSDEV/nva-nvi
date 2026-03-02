@@ -10,8 +10,10 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.net.URI;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.exceptions.ValidationException;
@@ -79,17 +81,22 @@ class PublicationDtoTest {
 
   @Test
   void shouldReturnHandlesWhenHandlesArePresent() {
-    var expectedHandles = List.of(randomUri().toString(), randomUri().toString());
+    var expectedHandles = List.of(randomUri(), randomUri());
     var publication = randomPublicationDtoBuilder().withHandles(expectedHandles).build();
 
     assertThat(publication.handles()).containsExactlyInAnyOrderElementsOf(expectedHandles);
   }
 
-  @Test
-  void shouldReturnEmptyCollectionWhenHandlesIsNull() {
-    var publication = randomPublicationDtoBuilder().withHandles(null).build();
+  @ParameterizedTest
+  @MethodSource("emptyAndNullCollectionProvider")
+  void shouldReturnEmptyCollectionWhenHandlesIsNullOrEmpty(Collection<URI> handles) {
+    var publication = randomPublicationDtoBuilder().withHandles(handles).build();
 
     assertThat(publication.handles()).isEmpty();
+  }
+
+  private static Stream<Collection<URI>> emptyAndNullCollectionProvider() {
+    return Stream.of(null, Collections.emptySet());
   }
 
   @Test

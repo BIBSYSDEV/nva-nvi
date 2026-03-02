@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.common.db.model;
 
 import static java.util.Collections.emptyList;
+import static java.util.Objects.isNull;
 
 import java.net.URI;
 import java.time.Instant;
@@ -27,7 +28,7 @@ public record DbPublicationDetails(
     String language,
     String status,
     String title,
-    List<String> handles) {
+    List<URI> handles) {
 
   public DbPublicationDetails {
     creators = Optional.ofNullable(creators).map(List::copyOf).orElse(emptyList());
@@ -74,7 +75,7 @@ public record DbPublicationDetails(
     private String language;
     private String status;
     private String title;
-    private List<String> handles;
+    private List<URI> handles;
 
     private Builder() {}
 
@@ -143,8 +144,8 @@ public record DbPublicationDetails(
       return this;
     }
 
-    public Builder handles(List<String> handles) {
-      this.handles = handles;
+    public Builder handles(List<URI> handles) {
+      this.handles = isNull(handles) ? emptyList() : handles;
       return this;
     }
 
