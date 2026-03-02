@@ -1,16 +1,23 @@
 package no.sikt.nva.nvi.index.utils;
 
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
+import static no.sikt.nva.nvi.test.TestUtils.randomYear;
+import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import java.net.URI;
+import java.util.List;
+import java.util.Set;
+import no.sikt.nva.nvi.common.model.PublicationDate;
 import no.sikt.nva.nvi.common.model.SampleCandidateGenerator;
 import no.sikt.nva.nvi.common.model.Sector;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.service.model.PublicationDetails;
 import no.sikt.nva.nvi.index.ExpandedResourceGenerator;
 import no.sikt.nva.nvi.index.model.document.ApprovalView;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
@@ -59,6 +66,29 @@ class NviCandidateIndexDocumentGeneratorTest {
     var approval = getApprovalView(indexDocument, institutionId);
 
     assertNull(approval.sector());
+  }
+
+  @Test
+  void shouldPopulateHandlesInIndexDocumentFromCandidatePublicationDetails() {
+    var expectedHandles = Set.of(randomUri(), randomUri());
+    var publicationDetails = publicationDetailsWithHandles(expectedHandles);
+    var candidate =
+        new SampleCandidateGenerator().withPublicationDetails(publicationDetails).build();
+
+    var indexDocument = generateIndexDocument(candidate);
+
+    assertThat(indexDocument.publicationDetails().handles())
+        .containsExactlyInAnyOrderElementsOf(expectedHandles);
+  }
+
+  private static PublicationDetails publicationDetailsWithHandles(Set<URI> handles) {
+    return PublicationDetails.builder()
+        .withId(randomUri())
+        .withTitle(randomString())
+        .withPublicationDate(new PublicationDate(randomYear(), null, null))
+        .withNviCreators(List.of())
+        .withHandles(handles)
+        .build();
   }
 
   private static Candidate candidateWithInstitutionSector(URI institutionId, Sector sector) {

@@ -40,6 +40,11 @@ public final class SampleCandidateGenerator {
 
   public SampleCandidateGenerator() {}
 
+  public SampleCandidateGenerator withPublicationDetails(PublicationDetails publicationDetails) {
+    this.publicationDetails = publicationDetails;
+    return this;
+  }
+
   public SampleCandidateGenerator withInstitutionPoints(
       URI institutionId, Sector sector, BigDecimal points) {
     var institutionPoint = new InstitutionPoints(institutionId, points, sector, List.of());
