@@ -45,6 +45,7 @@ import nva.commons.core.ioutils.IoUtils;
  * input documents from `nva-publication-api`.
  */
 @JacocoGenerated
+@SuppressWarnings("PMD.TooManyFields")
 public record SampleExpandedPublication(
     URI id,
     UUID identifier,
@@ -59,7 +60,9 @@ public record SampleExpandedPublication(
     String status,
     String modifiedDate,
     List<SampleExpandedContributor> contributors,
-    List<SampleExpandedOrganization> topLevelOrganizations) {
+    List<SampleExpandedOrganization> topLevelOrganizations,
+    URI handle,
+    List<SampleAdditionalIdentifier> additionalIdentifiers) {
 
   private static final String TEMPLATE_JSON_PATH = "template_publication.json";
 
@@ -105,6 +108,12 @@ public record SampleExpandedPublication(
       root.put(IDENTIFIER_FIELD, identifier.toString());
       root.put(STATUS_FIELD, status);
       putIfNotBlank(root, "modifiedDate", modifiedDate);
+      if (handle != null) {
+        root.put("handle", handle.toString());
+      }
+      if (additionalIdentifiers != null && !additionalIdentifiers.isEmpty()) {
+        root.set("additionalIdentifiers", createAdditionalIdentifiersNode());
+      }
 
       root.set(ENTITY_DESCRIPTION_FIELD, createEntityDescriptionNode());
       root.set(TOP_LEVEL_ORGANIZATIONS_FIELD, createTopLevelOrganizationsNode());
@@ -113,6 +122,17 @@ public record SampleExpandedPublication(
     } catch (IOException e) {
       throw new UncheckedIOException("Template could not be read", e);
     }
+  }
+
+  private ArrayNode createAdditionalIdentifiersNode() {
+    var array = objectMapper.createArrayNode();
+    for (var additionalIdentifier : additionalIdentifiers) {
+      var entry = objectMapper.createObjectNode();
+      entry.put(TYPE_FIELD, additionalIdentifier.type());
+      entry.put("value", additionalIdentifier.value());
+      array.add(entry);
+    }
+    return array;
   }
 
   private JsonNode createTopLevelOrganizationsNode() {
@@ -166,6 +186,8 @@ public record SampleExpandedPublication(
     private List<SampleExpandedContributor> contributors;
     private List<SampleExpandedOrganization> topLevelOrganizations;
     private SampleExpandedPublicationContext publicationContext;
+    private URI handle;
+    private List<SampleAdditionalIdentifier> additionalIdentifiers;
 
     private Builder() {}
 
@@ -244,6 +266,17 @@ public record SampleExpandedPublication(
       return this;
     }
 
+    public Builder withHandle(URI handle) {
+      this.handle = handle;
+      return this;
+    }
+
+    public Builder withAdditionalIdentifiers(
+        List<SampleAdditionalIdentifier> additionalIdentifiers) {
+      this.additionalIdentifiers = additionalIdentifiers;
+      return this;
+    }
+
     public SampleExpandedPublication build() {
       if (isNull(id)) {
         id = generatePublicationId(identifier);
@@ -263,7 +296,9 @@ public record SampleExpandedPublication(
           status,
           modifiedDate,
           contributors,
-          topLevelOrganizations);
+          topLevelOrganizations,
+          handle,
+          additionalIdentifiers);
     }
   }
 }

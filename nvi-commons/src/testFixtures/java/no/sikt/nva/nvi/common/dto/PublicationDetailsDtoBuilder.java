@@ -9,6 +9,7 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 
 import java.net.URI;
 import java.time.Instant;
+import java.util.Collection;
 
 public final class PublicationDetailsDtoBuilder {
 
@@ -23,6 +24,7 @@ public final class PublicationDetailsDtoBuilder {
   private boolean isApplicable;
   private int creatorCount;
   private Instant modifiedDate;
+  private Collection<String> handles;
 
   public PublicationDetailsDtoBuilder() {}
 
@@ -38,6 +40,7 @@ public final class PublicationDetailsDtoBuilder {
     this.isApplicable = other.isApplicable();
     this.creatorCount = other.creatorCount();
     this.modifiedDate = other.modifiedDate();
+    this.handles = other.handles();
   }
 
   public static PublicationDetailsDtoBuilder randomPublicationDetailsDtoBuilder() {
@@ -118,6 +121,11 @@ public final class PublicationDetailsDtoBuilder {
     return this;
   }
 
+  public PublicationDetailsDtoBuilder withHandles(Collection<String> handles) {
+    this.handles = handles;
+    return this;
+  }
+
   public PublicationDetailsDto build() {
     return new PublicationDetailsDto(
         id,
@@ -130,6 +138,7 @@ public final class PublicationDetailsDtoBuilder {
         publicationDate,
         isApplicable,
         creatorCount,
-        modifiedDate);
+        modifiedDate,
+        handles);
   }
 }

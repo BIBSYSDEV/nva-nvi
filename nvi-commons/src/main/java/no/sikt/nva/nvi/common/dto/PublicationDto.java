@@ -45,6 +45,7 @@ public record PublicationDto(
     Collection<ContributorDto> contributors,
     Collection<Organization> topLevelOrganizations,
     Collection<String> isbnList,
+    Collection<String> handles,
     Instant modifiedDate) {
 
   public static final List<InstanceType> PUBLICATION_INSTANCE_TYPES_REQUIRING_ISBN =
@@ -60,6 +61,7 @@ public record PublicationDto(
     contributors = copyOfNullable(contributors);
     topLevelOrganizations = copyOfNullable(topLevelOrganizations);
     isbnList = copyOfNullable(isbnList);
+    handles = copyOfNullable(handles);
   }
 
   public void validate() {
@@ -124,6 +126,7 @@ public record PublicationDto(
     private Collection<ContributorDto> contributors;
     private Collection<Organization> topLevelOrganizations;
     private Collection<String> isbnList;
+    private Collection<String> handles;
     private Instant modifiedDate;
 
     private Builder() {}
@@ -208,6 +211,11 @@ public record PublicationDto(
       return this;
     }
 
+    public Builder withHandles(Collection<String> handles) {
+      this.handles = handles;
+      return this;
+    }
+
     public Builder withModifiedDate(Instant modifiedDate) {
       this.modifiedDate = modifiedDate;
       return this;
@@ -231,6 +239,7 @@ public record PublicationDto(
           contributors,
           topLevelOrganizations,
           isbnList,
+          handles,
           modifiedDate);
     }
   }

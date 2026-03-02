@@ -3,7 +3,9 @@ package no.sikt.nva.nvi.index.model.document;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import java.net.URI;
 import java.util.List;
+import java.util.Set;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import nva.commons.core.paths.UriWrapper;
 
@@ -21,7 +23,8 @@ public record PublicationDetails(
     int contributorsCount,
     PublicationChannel publicationChannel,
     Pages pages,
-    String language) {
+    String language,
+    Set<URI> handles) {
 
   public static Builder builder() {
     return new Builder();
@@ -41,6 +44,7 @@ public record PublicationDetails(
     private PublicationChannel publicationChannel;
     private Pages pages;
     private String language;
+    private Set<URI> handles;
 
     private Builder() {}
 
@@ -96,6 +100,11 @@ public record PublicationDetails(
       return this;
     }
 
+    public Builder withHandles(Set<URI> handles) {
+      this.handles = handles;
+      return this;
+    }
+
     public PublicationDetails build() {
       return new PublicationDetails(
           id,
@@ -109,7 +118,8 @@ public record PublicationDetails(
           contributorsCount,
           publicationChannel,
           pages,
-          language);
+          language,
+          handles);
     }
   }
 }

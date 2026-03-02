@@ -24,6 +24,8 @@ import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.unit.nva.identifiers.SortableIdentifier;
 
+// TODO: Refactor so pmd warning can be removed
+@SuppressWarnings({"PMD.TooManyFields", "PMD.CouplingBetweenObjects"})
 public record PublicationDetails(
     URI publicationId,
     URI publicationBucketUri,
@@ -39,11 +41,13 @@ public record PublicationDetails(
     Collection<NviCreator> nviCreators,
     int creatorCount,
     Collection<Organization> topLevelOrganizations,
-    Instant modifiedDate) {
+    Instant modifiedDate,
+    Collection<URI> handles) {
 
   public PublicationDetails {
     nviCreators = copyOfNullable(nviCreators);
     topLevelOrganizations = copyOfNullable(topLevelOrganizations);
+    handles = copyOfNullable(handles);
   }
 
   public static PublicationDetails from(UpsertNviCandidateRequest upsertRequest) {
@@ -71,6 +75,7 @@ public record PublicationDetails(
         .withCreatorCount(publicationDto.creatorCount())
         .withTopLevelOrganizations(topLevelNviOrganizations)
         .withModifiedDate(publicationDto.modifiedDate())
+        .withHandles(mapHandlesToUris(publicationDto.handles()))
         .build();
   }
 
@@ -94,7 +99,8 @@ public record PublicationDetails(
         .withNviCreators(nviCreators)
         .withCreatorCount(creatorCount)
         .withTopLevelOrganizations(topLevelOrganizations)
-        .withModifiedDate(modifiedDate);
+        .withModifiedDate(modifiedDate)
+        .withHandles(handles);
   }
 
   public static PublicationDetails from(CandidateDao candidateDao) {
@@ -141,6 +147,7 @@ public record PublicationDetails(
         .modifiedDate(modifiedDate)
         .topLevelNviOrganizations(
             topLevelOrganizations.stream().map(Organization::toDbOrganization).toList())
+        .handles(handles.stream().map(URI::toString).toList())
         .build();
   }
 
@@ -194,7 +201,12 @@ public record PublicationDetails(
         .withLanguage(dbDetails.language())
         .withStatus(dbDetails.status())
         .withTitle(dbDetails.title())
+        .withHandles(mapHandlesToUris(dbDetails.handles()))
         .build();
+  }
+
+  private static Collection<URI> mapHandlesToUris(Collection<String> handles) {
+    return Optional.ofNullable(handles).orElse(emptyList()).stream().map(URI::create).toList();
   }
 
   /**
@@ -231,6 +243,7 @@ public record PublicationDetails(
     private int creatorCount;
     private Collection<Organization> topLevelOrganizations;
     private Instant modifiedDate;
+    private Collection<URI> handles;
 
     private Builder() {}
 
@@ -314,6 +327,11 @@ public record PublicationDetails(
       return this;
     }
 
+    public Builder withHandles(Collection<URI> handles) {
+      this.handles = handles;
+      return this;
+    }
+
     public PublicationDetails build() {
       return new PublicationDetails(
           id,
@@ -330,7 +348,8 @@ public record PublicationDetails(
           nviCreators,
           creatorCount,
           topLevelOrganizations,
-          modifiedDate);
+          modifiedDate,
+          handles);
     }
   }
 }
