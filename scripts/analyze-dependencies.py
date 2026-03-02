@@ -4,6 +4,7 @@
 # ///
 """
 Analyze .aws-sam/build handler dependencies to find large and duplicated JARs.
+This is based on build output from SAM and requires `sam build` to be run first.
 
 Usage:
     ./scripts/analyze-dependencies.py            # Top 25 JARs by size (default)
