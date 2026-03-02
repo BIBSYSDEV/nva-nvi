@@ -38,6 +38,7 @@ import static nva.commons.core.attempt.Try.attempt;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.TextNode;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -88,10 +89,11 @@ public final class NviCandidateIndexDocumentGenerator {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(NviCandidateIndexDocumentGenerator.class);
   private static final TypeReference<Map<String, String>> TYPE_REF = new TypeReference<>() {};
-  private static final String HANDLE_IDENTIFIER_TYPE = "HandleIdentifier";
+  private static final TextNode HANDLE_IDENTIFIER_TYPE = TextNode.valueOf("HandleIdentifier");
+  private static final String ADDITIONAL_IDENTIFIERS_FIELD = "additionalIdentifiers";
   private static final String HANDLE_FIELD = "handle";
-  private static final String TYPE = "type";
-  private static final String VALUE = "value";
+  private static final String TYPE_FIELD = "type";
+  private static final String VALUE_FIELD = "value";
   private final OrganizationRetriever organizationRetriever;
   private final JsonNode expandedResource;
   private final Candidate candidate;
@@ -189,12 +191,17 @@ public final class NviCandidateIndexDocumentGenerator {
 
   private static List<URI> extractHandlesFromAdditionalIdentifiers(JsonNode expandedResource) {
     return StreamSupport.stream(
-            expandedResource.withArray("additionalIdentifiers").spliterator(), false)
-        .filter(node -> HANDLE_IDENTIFIER_TYPE.equals(node.path(TYPE).asText()))
-        .map(node -> node.path(VALUE).textValue())
+            expandedResource.withArray(ADDITIONAL_IDENTIFIERS_FIELD).spliterator(), false)
+        .filter(NviCandidateIndexDocumentGenerator::isHandleIdentifier)
+        .map(node -> node.path(VALUE_FIELD))
+        .map(JsonNode::textValue)
         .filter(Objects::nonNull)
         .map(URI::create)
         .toList();
+  }
+
+  private static boolean isHandleIdentifier(JsonNode node) {
+    return HANDLE_IDENTIFIER_TYPE.equals(node.path(TYPE_FIELD));
   }
 
   private static Optional<URI> extractHandle(JsonNode expandedResource) {
