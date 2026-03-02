@@ -12,6 +12,7 @@ import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.sikt.nva.nvi.test.TestUtils.randomTitle;
 import static no.sikt.nva.nvi.test.TestUtils.randomUriWithSuffix;
+import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -65,6 +66,13 @@ public final class IndexDocumentFixtures {
   public static NviCandidateIndexDocument createRandomIndexDocument(
       URI userTopLevelOrganization, String year) {
     return createRandomIndexDocumentBuilder(userTopLevelOrganization, year).build();
+  }
+
+  public static NviCandidateIndexDocument createRandomIndexDocumentWithHandle(URI handle) {
+    return createRandomIndexDocumentBuilder(randomUri(), randomYear())
+        .withPublicationDetails(
+            randomPublicationDetailsBuilder().withHandles(Set.of(handle)).build())
+        .build();
   }
 
   public static Builder createRandomIndexDocumentBuilder(URI userTopLevelOrganization, int year) {

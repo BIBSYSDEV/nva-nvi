@@ -30,6 +30,7 @@ public final class SearchConstants {
   public static final String TYPE = "type";
   public static final String TITLE = "title";
   public static final String ABSTRACT = "abstract";
+  public static final String HANDLES = "handles";
   public static final String KEYWORD = "keyword";
   public static final String APPROVAL_STATUS = "approvalStatus";
   public static final String REPORTING_PERIOD = "reportingPeriod";

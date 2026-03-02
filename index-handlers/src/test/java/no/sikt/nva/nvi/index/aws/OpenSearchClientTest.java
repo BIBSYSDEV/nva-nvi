@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.index.aws;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Predicate.not;
+import static no.sikt.nva.nvi.index.IndexDocumentFixtures.createRandomIndexDocumentWithHandle;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomApproval;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomApprovalList;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomIndexDocumentBuilder;
@@ -695,6 +696,21 @@ class OpenSearchClientTest {
     assertThat(
         documentsFromResponse,
         hasItems(documentsWithApprovalsAtTopLevelOrg.toArray(NviCandidateIndexDocument[]::new)));
+  }
+
+  @Test
+  void shouldReturnHitWhenSearchingForHandleInSearchTermAndDocumentContainsHandle()
+      throws IOException {
+    var handle = randomUri();
+    addDocumentsToIndex(createRandomIndexDocumentWithHandle(handle));
+
+    var searchParameters =
+        CandidateSearchParameters.builder().withSearchTerm(handle.toString()).build();
+    var searchResponse = openSearchClient.search(searchParameters);
+
+    var documentsFromResponse = searchResponse.hits().hits().stream().map(Hit::source).toList();
+
+    assertEquals(1, documentsFromResponse.size());
   }
 
   private static List<NviCandidateIndexDocument>
