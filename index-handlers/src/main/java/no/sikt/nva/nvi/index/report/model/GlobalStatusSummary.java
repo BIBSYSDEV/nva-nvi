@@ -1,5 +1,7 @@
 package no.sikt.nva.nvi.index.report.model;
 
+import static java.util.function.Predicate.not;
+
 import java.util.Map;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 
@@ -17,8 +19,12 @@ public record GlobalStatusSummary(Map<GlobalApprovalStatus, CandidateTotal> tota
 
   public CandidateTotal undisputed() {
     return totalsByStatus.entrySet().stream()
-        .filter(entry -> entry.getKey() != GlobalApprovalStatus.DISPUTE)
+        .filter(not(GlobalStatusSummary::isDisputed))
         .map(Map.Entry::getValue)
         .reduce(CandidateTotal.EMPTY_CANDIDATE_TOTAL, CandidateTotal::add);
+  }
+
+  private static boolean isDisputed(Map.Entry<GlobalApprovalStatus, CandidateTotal> entry) {
+    return entry.getKey() == GlobalApprovalStatus.DISPUTE;
   }
 }
