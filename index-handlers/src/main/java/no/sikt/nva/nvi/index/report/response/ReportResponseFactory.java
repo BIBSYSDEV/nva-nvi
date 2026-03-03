@@ -8,7 +8,6 @@ import java.util.NoSuchElementException;
 import java.util.function.Supplier;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
-import no.sikt.nva.nvi.common.service.dto.NviPeriodDto;
 import no.sikt.nva.nvi.index.report.ReportAggregationClient;
 import no.sikt.nva.nvi.index.report.model.InstitutionAggregationResult;
 import no.sikt.nva.nvi.index.report.query.AllInstitutionsQuery;

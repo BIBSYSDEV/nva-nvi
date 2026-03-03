@@ -12,7 +12,6 @@ import java.util.Map;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.index.report.model.CandidateTotal;
-import no.sikt.nva.nvi.index.report.model.GlobalStatusSummary;
 import no.sikt.nva.nvi.index.report.model.PeriodAggregationResult;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
