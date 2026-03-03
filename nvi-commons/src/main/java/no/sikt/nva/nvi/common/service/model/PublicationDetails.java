@@ -1,6 +1,8 @@
 package no.sikt.nva.nvi.common.service.model;
 
 import static java.util.Collections.emptyList;
+import static java.util.Collections.emptySet;
+import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.function.Predicate.not;
 import static no.sikt.nva.nvi.common.utils.CollectionUtils.copyOfNullable;
@@ -8,6 +10,7 @@ import static no.sikt.nva.nvi.common.utils.CollectionUtils.copyOfNullable;
 import java.net.URI;
 import java.time.Instant;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -24,6 +27,8 @@ import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.unit.nva.identifiers.SortableIdentifier;
 
+// TODO: Refactor so pmd warning can be removed
+@SuppressWarnings("PMD.TooManyFields")
 public record PublicationDetails(
     URI publicationId,
     URI publicationBucketUri,
@@ -39,11 +44,13 @@ public record PublicationDetails(
     Collection<NviCreator> nviCreators,
     int creatorCount,
     Collection<Organization> topLevelOrganizations,
-    Instant modifiedDate) {
+    Instant modifiedDate,
+    Set<URI> handles) {
 
   public PublicationDetails {
     nviCreators = copyOfNullable(nviCreators);
     topLevelOrganizations = copyOfNullable(topLevelOrganizations);
+    handles = copyOfNullable(handles);
   }
 
   public static PublicationDetails from(UpsertNviCandidateRequest upsertRequest) {
@@ -71,6 +78,7 @@ public record PublicationDetails(
         .withCreatorCount(publicationDto.creatorCount())
         .withTopLevelOrganizations(topLevelNviOrganizations)
         .withModifiedDate(publicationDto.modifiedDate())
+        .withHandles(publicationDto.handles())
         .build();
   }
 
@@ -94,7 +102,8 @@ public record PublicationDetails(
         .withNviCreators(nviCreators)
         .withCreatorCount(creatorCount)
         .withTopLevelOrganizations(topLevelOrganizations)
-        .withModifiedDate(modifiedDate);
+        .withModifiedDate(modifiedDate)
+        .withHandles(handles);
   }
 
   public static PublicationDetails from(CandidateDao candidateDao) {
@@ -141,6 +150,7 @@ public record PublicationDetails(
         .modifiedDate(modifiedDate)
         .topLevelNviOrganizations(
             topLevelOrganizations.stream().map(Organization::toDbOrganization).toList())
+        .handles(handles.stream().toList())
         .build();
   }
 
@@ -194,6 +204,7 @@ public record PublicationDetails(
         .withLanguage(dbDetails.language())
         .withStatus(dbDetails.status())
         .withTitle(dbDetails.title())
+        .withHandles(dbDetails.handles())
         .build();
   }
 
@@ -231,6 +242,7 @@ public record PublicationDetails(
     private int creatorCount;
     private Collection<Organization> topLevelOrganizations;
     private Instant modifiedDate;
+    private Set<URI> handles;
 
     private Builder() {}
 
@@ -314,6 +326,11 @@ public record PublicationDetails(
       return this;
     }
 
+    public Builder withHandles(Collection<URI> handles) {
+      this.handles = new HashSet<>(isNull(handles) ? emptySet() : handles);
+      return this;
+    }
+
     public PublicationDetails build() {
       return new PublicationDetails(
           id,
@@ -330,7 +347,8 @@ public record PublicationDetails(
           nviCreators,
           creatorCount,
           topLevelOrganizations,
-          modifiedDate);
+          modifiedDate,
+          handles);
     }
   }
 }

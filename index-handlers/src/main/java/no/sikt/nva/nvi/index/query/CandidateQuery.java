@@ -26,6 +26,7 @@ import static no.sikt.nva.nvi.index.utils.SearchConstants.ABSTRACT;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.AFFILIATIONS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVALS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.CONTRIBUTORS;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.HANDLES;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.IDENTIFIER;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.INSTITUTION_ID;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.KEYWORD;
@@ -124,7 +125,8 @@ public record CandidateQuery(
             jsonPathOf(PUBLICATION_DETAILS, TITLE),
             jsonPathOf(PUBLICATION_DETAILS, CONTRIBUTORS, NAME),
             jsonPathOf(PUBLICATION_DETAILS, NVI_CONTRIBUTORS, NAME),
-            jsonPathOf(PUBLICATION_DETAILS, ABSTRACT))
+            jsonPathOf(PUBLICATION_DETAILS, ABSTRACT),
+            jsonPathOf(PUBLICATION_DETAILS, HANDLES))
         .operator(Operator.And)
         .type(TextQueryType.CrossFields)
         .build()

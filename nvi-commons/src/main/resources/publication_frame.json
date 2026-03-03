@@ -28,6 +28,11 @@
       "@id": "hasPart",
       "@container": "@set"
     },
+    "handles": {
+      "@id": "handle",
+      "@type": "@id",
+      "@container": "@set"
+    },
     "isbnList": {
       "@id": "isbn",
       "@container": "@set"
