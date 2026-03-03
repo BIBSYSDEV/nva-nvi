@@ -1,7 +1,5 @@
 package no.sikt.nva.nvi.index.report.query;
 
-import static no.sikt.nva.nvi.common.utils.JsonUtils.jsonPathOf;
-import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVALS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.GLOBAL_APPROVAL_STATUS;
 
 import java.util.ArrayList;
