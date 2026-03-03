@@ -159,6 +159,13 @@ class FetchReportHandlerIntegrationTest {
 
   private static List<NviCandidateIndexDocument> documentsForLastYear(
       ApprovalFactory institutionA, ApprovalFactory institutionB) {
+    var validDocuments = validDocumentsForLastYear(institutionA, institutionB);
+    var invalidDocuments = invalidDocumentsForLastYear(institutionA, institutionB);
+    return mergeCollections(validDocuments, invalidDocuments);
+  }
+
+  private static List<NviCandidateIndexDocument> validDocumentsForLastYear(
+      ApprovalFactory institutionA, ApprovalFactory institutionB) {
     var approvalForA =
         institutionA
             .withApprovalStatus(ApprovalStatus.APPROVED)
@@ -173,6 +180,29 @@ class FetchReportHandlerIntegrationTest {
         documentForYear(LAST_YEAR, true, approvalForA),
         documentForYear(LAST_YEAR, true, approvalForB),
         documentForYear(LAST_YEAR, true, approvalForA, approvalForB));
+  }
+
+  private static List<NviCandidateIndexDocument> invalidDocumentsForLastYear(
+      ApprovalFactory institutionA, ApprovalFactory institutionB) {
+    var approvalForA =
+        institutionA
+            .withApprovalStatus(ApprovalStatus.APPROVED)
+            .withGlobalApprovalStatus(GlobalApprovalStatus.APPROVED)
+            .build();
+    var disputedByB =
+        institutionB
+            .withApprovalStatus(ApprovalStatus.REJECTED)
+            .withGlobalApprovalStatus(GlobalApprovalStatus.DISPUTE)
+            .build();
+    var rejectedByAll =
+        institutionB
+            .withApprovalStatus(ApprovalStatus.REJECTED)
+            .withGlobalApprovalStatus(GlobalApprovalStatus.REJECTED)
+            .build();
+    return List.of(
+        documentForYear(LAST_YEAR, false, approvalForA),
+        documentForYear(LAST_YEAR, true, disputedByB),
+        documentForYear(LAST_YEAR, true, rejectedByAll));
   }
 
   private static List<NviCandidateIndexDocument> documentsForThisYear(
@@ -195,9 +225,15 @@ class FetchReportHandlerIntegrationTest {
             .withApprovalStatus(ApprovalStatus.NEW)
             .withGlobalApprovalStatus(GlobalApprovalStatus.PENDING)
             .build();
+    var disputedByB =
+        institutionB
+            .withApprovalStatus(ApprovalStatus.REJECTED)
+            .withGlobalApprovalStatus(GlobalApprovalStatus.DISPUTE)
+            .build();
     return List.of(
         documentForYear(NEXT_YEAR, false, approvalForA),
         documentForYear(NEXT_YEAR, false, approvalForB),
+        documentForYear(NEXT_YEAR, false, disputedByB),
         documentForYear(NEXT_YEAR, false, approvalForA, approvalForB));
   }
 
@@ -268,10 +304,14 @@ class FetchReportHandlerIntegrationTest {
     @interface PerPeriod {}
 
     private static Stream<Arguments> periodsWithExpectedDocuments() {
+      var validDocumentsForClosedPeriod =
+          documentsForLastYear.stream()
+              .filter(hasGlobalStatus(GlobalApprovalStatus.APPROVED))
+              .toList();
       return Stream.of(
-          argumentSet("Last year", LAST_YEAR, documentsForLastYear),
-          argumentSet("This year", THIS_YEAR, documentsForThisYear),
-          argumentSet("Next Year", NEXT_YEAR, documentsForNextYear));
+          argumentSet("Closed period", LAST_YEAR, validDocumentsForClosedPeriod),
+          argumentSet("Open period", THIS_YEAR, documentsForThisYear),
+          argumentSet("Pending period", NEXT_YEAR, documentsForNextYear));
     }
 
     @Test
@@ -321,6 +361,7 @@ class FetchReportHandlerIntegrationTest {
       var report = getPeriodReport(NEXT_YEAR);
       var expectedPoints =
           documentsForNextYear.stream()
+              .filter(not(hasGlobalStatus(GlobalApprovalStatus.DISPUTE)))
               .map(NviCandidateIndexDocument::points)
               .reduce(BigDecimal.ZERO, BigDecimal::add);
 
@@ -332,7 +373,7 @@ class FetchReportHandlerIntegrationTest {
       var report = getPeriodReport(LAST_YEAR);
       var expectedPoints =
           documentsForLastYear.stream()
-              .filter(NviCandidateIndexDocument::reported)
+              .filter(hasGlobalStatus(GlobalApprovalStatus.APPROVED))
               .map(NviCandidateIndexDocument::points)
               .reduce(BigDecimal.ZERO, BigDecimal::add);
 
@@ -571,6 +612,7 @@ class FetchReportHandlerIntegrationTest {
       var institutionId = report.institution().id();
       var expectedPoints =
           relevantDocs.stream()
+              .filter(not(hasGlobalStatus(GlobalApprovalStatus.DISPUTE)))
               .map(document -> document.getApprovalForInstitution(institutionId))
               .map(ApprovalView::points)
               .map(InstitutionPointsView::institutionPoints)
@@ -588,7 +630,7 @@ class FetchReportHandlerIntegrationTest {
       var institutionId = report.institution().id();
       var expectedPoints =
           relevantDocs.stream()
-              .filter(NviCandidateIndexDocument::reported)
+              .filter(hasGlobalStatus(GlobalApprovalStatus.APPROVED))
               .map(document -> document.getApprovalForInstitution(institutionId))
               .map(ApprovalView::points)
               .map(InstitutionPointsView::institutionPoints)

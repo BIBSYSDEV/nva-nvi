@@ -1,8 +1,13 @@
 package no.sikt.nva.nvi.index.report.query;
 
+import static no.sikt.nva.nvi.common.utils.JsonUtils.jsonPathOf;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVALS;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.GLOBAL_APPROVAL_STATUS;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
@@ -25,7 +30,7 @@ public sealed interface ReportAggregationQuery<T>
     var filters = new ArrayList<Query>();
     filters.add(yearFilter(period));
     if (period.isClosed()) {
-      filters.add(reportedFilter());
+      filters.add(approvedFilter());
     }
     return filters;
   }
@@ -39,10 +44,10 @@ public sealed interface ReportAggregationQuery<T>
         .toQuery();
   }
 
-  static Query reportedFilter() {
+  static Query approvedFilter() {
     return new TermQuery.Builder()
-        .field(REPORTED)
-        .value(v -> v.booleanValue(true))
+        .field(jsonPathOf(APPROVALS, GLOBAL_APPROVAL_STATUS))
+        .value(v -> v.stringValue(GlobalApprovalStatus.APPROVED.getValue()))
         .build()
         .toQuery();
   }
