@@ -294,6 +294,11 @@ class FetchReportHandlerIntegrationTest {
     return (AllInstitutionsReport) handleRequest(request);
   }
 
+  private static long getCountForGlobalStatus(
+      List<NviCandidateIndexDocument> documents, GlobalApprovalStatus globalStatus) {
+    return documents.stream().filter(hasGlobalStatus(globalStatus)).count();
+  }
+
   @Nested
   class PeriodReportTests {
 
@@ -384,8 +389,7 @@ class FetchReportHandlerIntegrationTest {
     void shouldHaveExpectedPendingCount(
         String reportingPeriod, List<NviCandidateIndexDocument> relevantDocs) {
       var report = getPeriodReport(reportingPeriod);
-      var expectedCount =
-          relevantDocs.stream().filter(hasGlobalStatus(GlobalApprovalStatus.PENDING)).count();
+      var expectedCount = getCountForGlobalStatus(relevantDocs, GlobalApprovalStatus.PENDING);
 
       assertThat(report.byGlobalApprovalStatus().pending()).isEqualTo(expectedCount);
     }
@@ -394,8 +398,7 @@ class FetchReportHandlerIntegrationTest {
     void shouldHaveExpectedDisputedCount(
         String reportingPeriod, List<NviCandidateIndexDocument> relevantDocs) {
       var report = getPeriodReport(reportingPeriod);
-      var expectedCount =
-          relevantDocs.stream().filter(hasGlobalStatus(GlobalApprovalStatus.DISPUTE)).count();
+      var expectedCount = getCountForGlobalStatus(relevantDocs, GlobalApprovalStatus.DISPUTE);
 
       assertThat(report.totals().disputedCount()).isEqualTo(expectedCount);
       assertThat(report.byGlobalApprovalStatus().dispute()).isEqualTo(expectedCount);
@@ -405,8 +408,7 @@ class FetchReportHandlerIntegrationTest {
     void shouldHaveExpectedApprovedCount(
         String reportingPeriod, List<NviCandidateIndexDocument> relevantDocs) {
       var report = getPeriodReport(reportingPeriod);
-      var expectedCount =
-          relevantDocs.stream().filter(hasGlobalStatus(GlobalApprovalStatus.APPROVED)).count();
+      var expectedCount = getCountForGlobalStatus(relevantDocs, GlobalApprovalStatus.APPROVED);
 
       assertThat(report.byGlobalApprovalStatus().approved()).isEqualTo(expectedCount);
     }
@@ -415,8 +417,7 @@ class FetchReportHandlerIntegrationTest {
     void shouldHaveExpectedRejectedCount(
         String reportingPeriod, List<NviCandidateIndexDocument> relevantDocs) {
       var report = getPeriodReport(reportingPeriod);
-      var expectedCount =
-          relevantDocs.stream().filter(hasGlobalStatus(GlobalApprovalStatus.REJECTED)).count();
+      var expectedCount = getCountForGlobalStatus(relevantDocs, GlobalApprovalStatus.REJECTED);
 
       assertThat(report.byGlobalApprovalStatus().rejected()).isEqualTo(expectedCount);
     }
