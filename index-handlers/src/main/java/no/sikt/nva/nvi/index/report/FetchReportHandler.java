@@ -6,6 +6,7 @@ import com.amazonaws.services.lambda.runtime.Context;
 import java.io.IOException;
 import java.util.NoSuchElementException;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
+import no.sikt.nva.nvi.common.service.exception.PeriodNotFoundException;
 import no.sikt.nva.nvi.index.report.request.ReportRequestFactory;
 import no.sikt.nva.nvi.index.report.response.ReportResponse;
 import no.sikt.nva.nvi.index.report.response.ReportResponseFactory;
@@ -57,8 +58,8 @@ public class FetchReportHandler extends ApiGatewayHandler<Void, ReportResponse> 
     var reportRequest = ReportRequestFactory.getRequest(requestInfo, environment);
     try {
       return reportResponseFactory.getResponse(reportRequest);
-    } catch (NoSuchElementException exception) {
-      LOGGER.error("No institution found for query request: {}", reportRequest, exception);
+    } catch (NoSuchElementException | PeriodNotFoundException exception) {
+      LOGGER.error("Resource not found for query request: {}", reportRequest, exception);
       throw new NotFoundException(exception.getMessage());
     } catch (IOException exception) {
       LOGGER.error("Failed to execute query request: {}", reportRequest, exception);

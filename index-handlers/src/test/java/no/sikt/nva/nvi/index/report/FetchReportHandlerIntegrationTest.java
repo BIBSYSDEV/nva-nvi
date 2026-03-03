@@ -346,7 +346,7 @@ class FetchReportHandlerIntegrationTest {
       var expectedCount =
           relevantDocs.stream().filter(hasGlobalStatus(GlobalApprovalStatus.PENDING)).count();
 
-      assertThat(report.totals().disputedCount()).isEqualTo(expectedCount);
+      assertThat(report.byGlobalApprovalStatus().pending()).isEqualTo(expectedCount);
     }
 
     @PerPeriod
@@ -357,6 +357,7 @@ class FetchReportHandlerIntegrationTest {
           relevantDocs.stream().filter(hasGlobalStatus(GlobalApprovalStatus.DISPUTE)).count();
 
       assertThat(report.totals().disputedCount()).isEqualTo(expectedCount);
+      assertThat(report.byGlobalApprovalStatus().dispute()).isEqualTo(expectedCount);
     }
 
     @PerPeriod
@@ -366,7 +367,7 @@ class FetchReportHandlerIntegrationTest {
       var expectedCount =
           relevantDocs.stream().filter(hasGlobalStatus(GlobalApprovalStatus.APPROVED)).count();
 
-      assertThat(report.totals().disputedCount()).isEqualTo(expectedCount);
+      assertThat(report.byGlobalApprovalStatus().approved()).isEqualTo(expectedCount);
     }
 
     @PerPeriod
@@ -376,7 +377,7 @@ class FetchReportHandlerIntegrationTest {
       var expectedCount =
           relevantDocs.stream().filter(hasGlobalStatus(GlobalApprovalStatus.REJECTED)).count();
 
-      assertThat(report.totals().disputedCount()).isEqualTo(expectedCount);
+      assertThat(report.byGlobalApprovalStatus().rejected()).isEqualTo(expectedCount);
     }
 
     @PerPeriod
@@ -400,7 +401,7 @@ class FetchReportHandlerIntegrationTest {
       var expectedCount =
           relevantDocs.stream().filter(not(hasGlobalStatus(GlobalApprovalStatus.DISPUTE))).count();
 
-      assertThat(report.totals().undisputedProcessedCount()).isEqualTo(expectedCount);
+      assertThat(report.totals().undisputedTotalCount()).isEqualTo(expectedCount);
     }
   }
 
