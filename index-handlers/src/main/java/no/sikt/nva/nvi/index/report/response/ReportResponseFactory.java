@@ -51,7 +51,7 @@ public class ReportResponseFactory {
     var result = reportAggregationClient.executeQuery(new PeriodQuery(period));
     return new PeriodReport(
         request.queryId(),
-        period.toDto(),
+        result.period().toDto(),
         PeriodTotals.from(result),
         CandidatesByGlobalApprovalStatus.from(result));
   }
@@ -59,21 +59,19 @@ public class ReportResponseFactory {
   private AllInstitutionsReport allInstitutionsReport(AllInstitutionsReportRequest request)
       throws IOException {
     var period = nviPeriodService.getByPublishingYear(request.period());
-    var periodDto = period.toDto();
     var institutionReports =
         reportAggregationClient.executeQuery(new AllInstitutionsQuery(period)).stream()
-            .map(result -> toInstitutionReport(request, periodDto, result))
+            .map(result -> toInstitutionReport(request, result))
             .toList();
-    return new AllInstitutionsReport(request.queryId(), periodDto, institutionReports);
+    return new AllInstitutionsReport(request.queryId(), period.toDto(), institutionReports);
   }
 
   private InstitutionReport institutionReport(InstitutionReportRequest request) throws IOException {
     var period = nviPeriodService.getByPublishingYear(request.period());
-    var periodDto = period.toDto();
     var query = new InstitutionQuery(period, request.institutionId());
     return reportAggregationClient
         .executeQuery(query)
-        .map(result -> toInstitutionReport(request.queryId(), periodDto, result))
+        .map(result -> toInstitutionReport(request.queryId(), result))
         .orElseThrow(noSuchElementException(request));
   }
 
@@ -86,22 +84,20 @@ public class ReportResponseFactory {
   }
 
   private static InstitutionReport toInstitutionReport(
-      AllInstitutionsReportRequest request,
-      NviPeriodDto periodDto,
-      InstitutionAggregationResult result) {
+      AllInstitutionsReportRequest request, InstitutionAggregationResult result) {
     var queryId = institutionQueryId(request.queryId(), result.institutionId());
-    return toInstitutionReport(queryId, periodDto, result);
+    return toInstitutionReport(queryId, result);
   }
 
   private static InstitutionReport toInstitutionReport(
-      URI queryId, NviPeriodDto periodDto, InstitutionAggregationResult result) {
+      URI queryId, InstitutionAggregationResult result) {
     var organization =
         Organization.builder().withId(result.institutionId()).withLabels(result.labels()).build();
     var totals = InstitutionTotals.from(result);
     var byLocalApprovalStatus = UndisputedCandidatesByLocalApprovalStatus.from(result.undisputed());
     return new InstitutionReport(
         queryId,
-        periodDto,
+        result.period().toDto(),
         result.sector(),
         organization,
         new InstitutionSummary(totals, byLocalApprovalStatus),

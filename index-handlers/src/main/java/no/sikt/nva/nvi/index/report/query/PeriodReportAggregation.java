@@ -46,7 +46,7 @@ public final class PeriodReportAggregation {
       var points = getPointsValue(bucket);
       byGlobalStatus.put(status, new CandidateTotal(candidateCount, points));
     }
-    return new PeriodAggregationResult(period, new GlobalStatusSummary(Map.copyOf(byGlobalStatus)));
+    return new PeriodAggregationResult(period, byGlobalStatus);
   }
 
   private static Aggregation createByGlobalStatusAggregation() {

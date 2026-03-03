@@ -10,9 +10,9 @@ public record CandidatesByGlobalApprovalStatus(
 
   public static CandidatesByGlobalApprovalStatus from(PeriodAggregationResult result) {
     return new CandidatesByGlobalApprovalStatus(
-        result.countForStatus(GlobalApprovalStatus.DISPUTE),
-        result.countForStatus(GlobalApprovalStatus.PENDING),
-        result.countForStatus(GlobalApprovalStatus.REJECTED),
-        result.countForStatus(GlobalApprovalStatus.APPROVED));
+        result.forStatus(GlobalApprovalStatus.DISPUTE).candidateCount(),
+        result.forStatus(GlobalApprovalStatus.PENDING).candidateCount(),
+        result.forStatus(GlobalApprovalStatus.REJECTED).candidateCount(),
+        result.forStatus(GlobalApprovalStatus.APPROVED).candidateCount());
   }
 }
