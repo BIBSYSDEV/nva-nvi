@@ -15,7 +15,6 @@ dependencies {
     implementation nvaCatalog.bundles.jacksonjr
     implementation nvaCatalog.bundles.logging
     implementation nvaCatalog.com.auth0.jwt
-    implementation nvaCatalog.guava
     implementation nvaCatalog.jackson.core
     implementation nvaCatalog.jackson.databind
     implementation nvaCatalog.jena.core

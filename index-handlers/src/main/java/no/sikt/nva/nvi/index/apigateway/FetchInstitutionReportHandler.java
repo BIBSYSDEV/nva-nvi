@@ -5,7 +5,6 @@ import static no.sikt.nva.nvi.common.utils.RequestUtil.isNviCurator;
 import static nva.commons.core.attempt.Try.attempt;
 
 import com.amazonaws.services.lambda.runtime.Context;
-import com.google.common.net.MediaType;
 import java.net.HttpURLConnection;
 import java.time.Year;
 import java.util.List;
@@ -14,6 +13,7 @@ import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.utils.InstitutionReportGenerator;
 import nva.commons.apigateway.ApiGatewayHandler;
+import nva.commons.apigateway.MediaType;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.apigateway.exceptions.BadRequestException;
