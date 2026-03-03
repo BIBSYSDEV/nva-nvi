@@ -1,9 +1,6 @@
 package no.sikt.nva.nvi.index.report.model;
 
-import static java.util.Objects.isNull;
-
 import java.math.BigDecimal;
-import java.util.Map;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
 
@@ -14,11 +11,10 @@ import no.sikt.nva.nvi.common.service.model.NviPeriod;
  * @param period the NVI reporting period these results belong to
  * @param byGlobalStatus candidate totals grouped by the candidate's global approval status
  */
-public record PeriodAggregationResult(
-    NviPeriod period, Map<GlobalApprovalStatus, CandidateTotal> byGlobalStatus) {
+public record PeriodAggregationResult(NviPeriod period, GlobalStatusSummary byGlobalStatus) {
 
   public int countForStatus(GlobalApprovalStatus status) {
-    return forStatus(status).candidateCount();
+    return byGlobalStatus.forStatus(status).candidateCount();
   }
 
   public int disputedCount() {
@@ -26,11 +22,7 @@ public record PeriodAggregationResult(
   }
 
   public int undisputedTotalCount() {
-    return byGlobalStatus.entrySet().stream()
-        .filter(entry -> entry.getKey() != GlobalApprovalStatus.DISPUTE)
-        .map(Map.Entry::getValue)
-        .reduce(CandidateTotal.EMPTY_CANDIDATE_TOTAL, CandidateTotal::add)
-        .candidateCount();
+    return byGlobalStatus.undisputed().candidateCount();
   }
 
   public int undisputedProcessedCount() {
@@ -45,20 +37,8 @@ public record PeriodAggregationResult(
    */
   public BigDecimal validPoints() {
     if (period.isUnopened()) {
-      return undisputedTotalPoints();
+      return byGlobalStatus.undisputed().totalPoints();
     }
-    return forStatus(GlobalApprovalStatus.APPROVED).totalPoints();
-  }
-
-  private BigDecimal undisputedTotalPoints() {
-    return byGlobalStatus.entrySet().stream()
-        .filter(entry -> entry.getKey() != GlobalApprovalStatus.DISPUTE)
-        .map(entry -> entry.getValue().totalPoints())
-        .reduce(BigDecimal.ZERO, BigDecimal::add);
-  }
-
-  private CandidateTotal forStatus(GlobalApprovalStatus status) {
-    var total = byGlobalStatus.get(status);
-    return isNull(total) ? CandidateTotal.EMPTY_CANDIDATE_TOTAL : total;
+    return byGlobalStatus.forStatus(GlobalApprovalStatus.APPROVED).totalPoints();
   }
 }
