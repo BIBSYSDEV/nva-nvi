@@ -29,6 +29,7 @@ import java.util.UUID;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.dto.ContributorDto;
 import no.sikt.nva.nvi.common.model.PublicationDate;
+import no.sikt.nva.nvi.test.SampleAdditionalIdentifier;
 import no.sikt.nva.nvi.test.SampleExpandedAffiliation;
 import no.sikt.nva.nvi.test.SampleExpandedContributor;
 import no.sikt.nva.nvi.test.SampleExpandedOrganization;
@@ -38,6 +39,7 @@ import no.sikt.nva.nvi.test.SampleExpandedPublicationContext;
 import no.sikt.nva.nvi.test.SampleExpandedPublicationDate;
 import no.unit.nva.clients.CustomerDto;
 
+@SuppressWarnings({"PMD.CouplingBetweenObjects"})
 public class SampleExpandedPublicationFactory {
   private static final String ROLE_CREATOR = "Creator";
   private static final String ROLE_OTHER = "SomeOtherRole";
@@ -53,6 +55,8 @@ public class SampleExpandedPublicationFactory {
   private PublicationDate publicationDate = randomPublicationDateInCurrentYear();
   private Collection<String> isbnList = List.of(randomIsbn13());
   private String revisionStatus = "Unrevised";
+  private URI handle;
+  private List<SampleAdditionalIdentifier> additionalIdentifiers;
 
   public SampleExpandedPublicationFactory() {
     this.customerOrganizations = new ArrayList<>();
@@ -247,6 +251,17 @@ public class SampleExpandedPublicationFactory {
     return this;
   }
 
+  public SampleExpandedPublicationFactory withHandle(URI handle) {
+    this.handle = handle;
+    return this;
+  }
+
+  public SampleExpandedPublicationFactory withAdditionalIdentifiers(
+      List<SampleAdditionalIdentifier> additionalIdentifiers) {
+    this.additionalIdentifiers = additionalIdentifiers;
+    return this;
+  }
+
   public SampleExpandedPublicationFactory withRevisionStatus(String revisionStatus) {
     this.revisionStatus = revisionStatus;
     return this;
@@ -289,7 +304,9 @@ public class SampleExpandedPublicationFactory {
         .withPublicationDate(expandedDate)
         .withPublicationContext(resolvePublicationContext())
         .withContributors(contributors)
-        .withTopLevelOrganizations(topLevelOrganizations);
+        .withTopLevelOrganizations(topLevelOrganizations)
+        .withHandle(handle)
+        .withAdditionalIdentifiers(additionalIdentifiers);
   }
 
   private SampleExpandedPublicationContext resolvePublicationContext() {

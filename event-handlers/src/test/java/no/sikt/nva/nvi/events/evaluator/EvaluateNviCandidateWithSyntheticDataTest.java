@@ -35,6 +35,7 @@ import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.dto.PageCountDto;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
+import no.sikt.nva.nvi.test.SampleAdditionalIdentifier;
 import no.sikt.nva.nvi.test.SampleExpandedContributor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -107,6 +108,55 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
         .usingRecursiveComparison()
         .ignoringCollectionOrder()
         .isEqualTo(expectedTopLevelOrganizations);
+  }
+
+  @Test
+  void shouldPersistHandleFromHandleField() {
+    var expectedHandle = randomUri();
+    factory.withContributor(verifiedCreatorFrom(nviOrganization)).withHandle(expectedHandle);
+
+    handleEvaluation(factory);
+
+    var candidate = candidateService.getCandidateByPublicationId(publicationId);
+
+    assertThat(candidate.publicationDetails().handles()).containsExactly(expectedHandle);
+  }
+
+  @Test
+  void shouldPersistAllHandlesFromAdditionalIdentifiers() {
+    var handles = List.of(randomUri(), randomUri());
+    factory
+        .withContributor(verifiedCreatorFrom(nviOrganization))
+        .withAdditionalIdentifiers(
+            handles.stream()
+                .map(EvaluateNviCandidateWithSyntheticDataTest::toHandleIdentifier)
+                .toList());
+
+    handleEvaluation(factory);
+
+    var candidate = candidateService.getCandidateByPublicationId(publicationId);
+    assertThat(candidate.publicationDetails().handles())
+        .containsExactlyInAnyOrderElementsOf(handles);
+  }
+
+  @Test
+  void shouldPersistHandlesFromHandleFieldAndAdditionalIdentifiers() {
+    var handle = randomUri();
+    var additionalIdentifierHandle = randomUri();
+    factory
+        .withContributor(verifiedCreatorFrom(nviOrganization))
+        .withHandle(handle)
+        .withAdditionalIdentifiers(List.of(toHandleIdentifier(additionalIdentifierHandle)));
+
+    handleEvaluation(factory);
+
+    var candidate = candidateService.getCandidateByPublicationId(publicationId);
+    assertThat(candidate.publicationDetails().handles())
+        .containsExactlyInAnyOrder(handle, additionalIdentifierHandle);
+  }
+
+  private static SampleAdditionalIdentifier toHandleIdentifier(URI handle) {
+    return new SampleAdditionalIdentifier("HandleIdentifier", handle.toString());
   }
 
   @Test

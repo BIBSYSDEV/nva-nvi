@@ -42,6 +42,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -193,6 +194,7 @@ public final class NviCandidateIndexDocumentGenerator {
         .withPublicationChannel(buildPublicationChannel())
         .withPages(extractPages())
         .withLanguage(extractLanguage())
+        .withHandles(new HashSet<>(candidate.publicationDetails().handles()))
         .build();
   }
 

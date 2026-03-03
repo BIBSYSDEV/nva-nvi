@@ -109,6 +109,7 @@ public final class IndexDocumentTestUtils {
         .withPublicationChannel(getPublicationChannel(expandedResource, candidate))
         .withPages(getPages(expandedResource))
         .withLanguage(extractOptionalLanguage(expandedResource))
+        .withHandles(Collections.emptySet())
         .build();
   }
 

@@ -25,7 +25,8 @@ CONSTRUCT {
   :contributor ?personId ;
   :topLevelOrganization ?topLevelOrganization ;
   :modifiedDate ?modifiedDate ;
-  :isbn ?isbnList .
+  :isbn ?isbnList ;
+  :handle ?handle .
 
   # Include page count
   ?pageCount a :PageCount ;
@@ -247,5 +248,12 @@ WHERE {
       } AS ?isInternationalCollaboration
       )
     }
+  } UNION {
+    ?publication :handle ?handle .
+  } UNION {
+    ?publication :additionalIdentifier ?additionalId .
+    ?additionalId a :HandleIdentifier ;
+                  :value ?handleValue .
+    BIND(IRI(?handleValue) AS ?handle)
   }
 }
