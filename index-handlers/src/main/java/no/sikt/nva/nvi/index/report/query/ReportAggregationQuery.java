@@ -18,7 +18,6 @@ public sealed interface ReportAggregationQuery<T>
     permits AllInstitutionsQuery, InstitutionQuery, PeriodQuery {
 
   String REPORTING_PERIOD_YEAR = "reportingPeriod.year";
-  String REPORTED = "reported";
 
   Query query();
 
@@ -46,7 +45,7 @@ public sealed interface ReportAggregationQuery<T>
 
   static Query approvedFilter() {
     return new TermQuery.Builder()
-        .field(jsonPathOf(APPROVALS, GLOBAL_APPROVAL_STATUS))
+        .field(GLOBAL_APPROVAL_STATUS)
         .value(v -> v.stringValue(GlobalApprovalStatus.APPROVED.getValue()))
         .build()
         .toQuery();
