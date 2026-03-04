@@ -4,7 +4,6 @@ import static java.util.Collections.emptyMap;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.ALLOWED_ORIGIN;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.getHandlerEnvironment;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
-import static no.sikt.nva.nvi.index.report.ReportConstants.PERIOD_PATH_PARAM;
 import static no.sikt.nva.nvi.index.report.ReportConstants.REPORTS_PATH_SEGMENT;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
@@ -25,7 +24,6 @@ import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.index.report.FetchReportHandler;
 import no.sikt.nva.nvi.index.report.ReportAggregationClient;
 import no.sikt.nva.nvi.index.report.response.AllPeriodsReport;
-import no.sikt.nva.nvi.index.report.response.PeriodReport;
 import no.sikt.nva.nvi.index.report.response.ReportResponse;
 import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.testutils.HandlerRequestBuilder;
@@ -79,15 +77,6 @@ class FetchReportHandlerTest {
     var response = handleRequest(request);
 
     assertInstanceOf(AllPeriodsReport.class, response);
-  }
-
-  @Test
-  void shouldReturnPeriodReportWhenPeriodIsProvidedInPathParameters() {
-    var request = createRequest(Map.of(PERIOD_PATH_PARAM, PERIOD_FOR_QUERY), REPORTS_PATH_SEGMENT);
-
-    var response = handleRequest(request);
-
-    assertInstanceOf(PeriodReport.class, response);
   }
 
   private static InputStream createRequest(Map<String, String> pathParameters, String path) {
