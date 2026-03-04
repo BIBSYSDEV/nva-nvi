@@ -20,12 +20,12 @@ import no.sikt.nva.nvi.index.report.request.PeriodReportRequest;
 import no.sikt.nva.nvi.index.report.request.ReportRequest;
 import nva.commons.core.paths.UriWrapper;
 
-public class ReportResponseFactory {
+public class ReportService {
 
   private final NviPeriodService nviPeriodService;
   private final ReportAggregationClient reportAggregationClient;
 
-  public ReportResponseFactory(
+  public ReportService(
       NviPeriodService nviPeriodService, ReportAggregationClient reportAggregationClient) {
     this.nviPeriodService = nviPeriodService;
     this.reportAggregationClient = reportAggregationClient;

@@ -9,7 +9,7 @@ import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.exception.PeriodNotFoundException;
 import no.sikt.nva.nvi.index.report.request.ReportRequestFactory;
 import no.sikt.nva.nvi.index.report.response.ReportResponse;
-import no.sikt.nva.nvi.index.report.response.ReportResponseFactory;
+import no.sikt.nva.nvi.index.report.response.ReportService;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 public class FetchReportHandler extends ApiGatewayHandler<Void, ReportResponse> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FetchReportHandler.class);
-  private final ReportResponseFactory reportResponseFactory;
+  private final ReportService reportService;
 
   @JacocoGenerated
   public FetchReportHandler() {
@@ -40,8 +40,7 @@ public class FetchReportHandler extends ApiGatewayHandler<Void, ReportResponse> 
       NviPeriodService nviPeriodService,
       ReportAggregationClient reportAggregationClient) {
     super(Void.class, environment);
-    this.reportResponseFactory =
-        new ReportResponseFactory(nviPeriodService, reportAggregationClient);
+    this.reportService = new ReportService(nviPeriodService, reportAggregationClient);
   }
 
   @Override
@@ -57,7 +56,7 @@ public class FetchReportHandler extends ApiGatewayHandler<Void, ReportResponse> 
       throws ApiGatewayException {
     var reportRequest = ReportRequestFactory.getRequest(requestInfo, environment);
     try {
-      return reportResponseFactory.getResponse(reportRequest);
+      return reportService.getResponse(reportRequest);
     } catch (NoSuchElementException | PeriodNotFoundException exception) {
       LOGGER.error("Resource not found for query request: {}", reportRequest, exception);
       throw new NotFoundException(exception.getMessage());
