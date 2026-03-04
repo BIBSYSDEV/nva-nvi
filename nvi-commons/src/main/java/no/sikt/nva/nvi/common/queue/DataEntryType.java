@@ -31,9 +31,9 @@ public enum DataEntryType implements ParsableEnum {
 
   @JsonIgnore
   public boolean shouldBeProcessedForIndexing() {
-      return switch (this) {
-          case CANDIDATE, NON_CANDIDATE, APPROVAL_STATUS -> true;
-          default -> false;
-      };
+    return switch (this) {
+      case CANDIDATE, NON_CANDIDATE, APPROVAL_STATUS -> true;
+      default -> false;
+    };
   }
 }
