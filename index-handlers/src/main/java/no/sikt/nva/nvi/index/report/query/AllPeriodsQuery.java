@@ -9,6 +9,7 @@ import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.aggregations.Buckets;
 import org.opensearch.client.opensearch._types.aggregations.FiltersBucket;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
+import org.opensearch.client.opensearch._types.query_dsl.MatchAllQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.SearchResponse;
 
@@ -19,7 +20,7 @@ public record AllPeriodsQuery(List<NviPeriod> periods)
 
   @Override
   public Query query() {
-    return new BoolQuery.Builder().build().toQuery();
+    return new MatchAllQuery.Builder().build().toQuery();
   }
 
   @Override

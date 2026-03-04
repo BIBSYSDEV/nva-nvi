@@ -5,7 +5,6 @@ import java.util.NoSuchElementException;
 import java.util.function.Supplier;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.index.report.ReportAggregationClient;
-import no.sikt.nva.nvi.index.report.model.PeriodAggregationResult;
 import no.sikt.nva.nvi.index.report.query.AllInstitutionsQuery;
 import no.sikt.nva.nvi.index.report.query.AllPeriodsQuery;
 import no.sikt.nva.nvi.index.report.query.InstitutionQuery;
@@ -45,11 +44,6 @@ public class ReportService {
   private PeriodReport periodReport(PeriodReportRequest request) throws IOException {
     var period = nviPeriodService.getByPublishingYear(request.period());
     var result = reportAggregationClient.executeQuery(new PeriodQuery(period));
-    return toPeriodReport(request, result);
-  }
-
-  private static PeriodReport toPeriodReport(
-      PeriodReportRequest request, PeriodAggregationResult result) {
     return PeriodReport.from(request.queryId(), result);
   }
 

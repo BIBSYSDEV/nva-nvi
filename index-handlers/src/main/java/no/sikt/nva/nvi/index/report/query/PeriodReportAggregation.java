@@ -16,7 +16,6 @@ import no.sikt.nva.nvi.index.report.model.PeriodAggregationResult;
 import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
-import org.opensearch.client.opensearch.core.SearchResponse;
 
 public final class PeriodReportAggregation {
 
@@ -28,14 +27,10 @@ public final class PeriodReportAggregation {
   /**
    * Returns a named aggregation entry for use in an OpenSearch search request. The aggregation
    * groups candidates by global approval status, summing points at each level. Use {@link
-   * #parseResponse} to extract results from the search response.
+   * #parseAggregations} to extract results from the search response.
    */
   public static Map.Entry<String, Aggregation> namedAggregationEntry() {
     return Map.entry(BY_GLOBAL_STATUS, createByGlobalStatusAggregation());
-  }
-
-  static PeriodAggregationResult parseResponse(NviPeriod period, SearchResponse<Void> response) {
-    return parseAggregations(period, response.aggregations());
   }
 
   static PeriodAggregationResult parseAggregations(
