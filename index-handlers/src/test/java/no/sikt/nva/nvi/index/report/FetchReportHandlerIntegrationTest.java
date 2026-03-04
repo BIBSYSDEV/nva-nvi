@@ -14,6 +14,7 @@ import static no.sikt.nva.nvi.common.model.OrganizationFixtures.organizationIdFr
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationId;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationIdentifier;
 import static no.sikt.nva.nvi.common.utils.CollectionUtils.mergeCollections;
+import static no.sikt.nva.nvi.common.utils.DecimalUtils.adjustScaleAndRoundingMode;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.documentForYear;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.documentsForAllStatusCombinations;
 import static no.sikt.nva.nvi.index.report.ReportConstants.INSTITUTIONS_PATH_SEGMENT;
@@ -60,6 +61,7 @@ import no.sikt.nva.nvi.index.report.response.AllInstitutionsReport;
 import no.sikt.nva.nvi.index.report.response.AllPeriodsReport;
 import no.sikt.nva.nvi.index.report.response.InstitutionReport;
 import no.sikt.nva.nvi.index.report.response.PeriodReport;
+import no.sikt.nva.nvi.index.report.response.PeriodTotals;
 import no.sikt.nva.nvi.index.report.response.ReportResponse;
 import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.testutils.HandlerRequestBuilder;
@@ -89,6 +91,8 @@ class FetchReportHandlerIntegrationTest {
   private static final String IDENTIFIER_INSTITUTION_A = "123.0.0.0";
   private static final String IDENTIFIER_INSTITUTION_B = "456.0.0.0";
   private static final String IDENTIFIER_UNIT_A = "123.1.2.3";
+  private static final String PERIOD_WITH_NO_CANDIDATES = String.valueOf(CURRENT_YEAR + 2);
+  private static final String PERIOD_NOT_CREATED_YET = String.valueOf(CURRENT_YEAR + 3);
   private static final Organization INSTITUTION_A =
       createOrganizationWithSubUnit(
           organizationIdFromIdentifier(IDENTIFIER_INSTITUTION_A),
@@ -106,6 +110,7 @@ class FetchReportHandlerIntegrationTest {
     CONTAINER.start();
 
     var scenario = new TestScenario();
+    setupClosedPeriod(scenario, PERIOD_WITH_NO_CANDIDATES);
     setupClosedPeriod(scenario, LAST_YEAR);
     setupOpenPeriod(scenario, THIS_YEAR);
     setupFuturePeriod(scenario, NEXT_YEAR);
@@ -310,13 +315,6 @@ class FetchReportHandlerIntegrationTest {
     return documents.stream().filter(hasGlobalStatus(globalStatus)).count();
   }
 
-  private static Stream<Arguments> reportingPeriods() {
-    return Stream.of(
-        argumentSet("Last year", LAST_YEAR),
-        argumentSet("This year", THIS_YEAR),
-        argumentSet("Next year", NEXT_YEAR));
-  }
-
   @Nested
   class AllPeriodsReportTests {
 
@@ -327,14 +325,15 @@ class FetchReportHandlerIntegrationTest {
     }
 
     @Test
-    void shouldContainListOfAllInstitutionReports() {
+    void shouldContainListOfAllPeriodReports() {
       var allPeriodsReport = getAllPeriodsReport();
-      var reportForLastYear = getPeriodReport(LAST_YEAR);
-      var reportForThisYear = getPeriodReport(THIS_YEAR);
-      var reportForNextYear = getPeriodReport(NEXT_YEAR);
 
       assertThat(allPeriodsReport.periods())
-          .containsExactlyInAnyOrder(reportForLastYear, reportForThisYear, reportForNextYear);
+          .containsExactlyInAnyOrder(
+              getPeriodReport(LAST_YEAR),
+              getPeriodReport(THIS_YEAR),
+              getPeriodReport(NEXT_YEAR),
+              getPeriodReport(PERIOD_WITH_NO_CANDIDATES));
     }
   }
 
@@ -371,10 +370,18 @@ class FetchReportHandlerIntegrationTest {
     }
 
     @Test
-    void shouldReturnNotFoundErrorForPeriodWithNoCandidates() {
-      var futureYear = String.valueOf(CURRENT_YEAR + 2);
-      var request = createPeriodRequest(futureYear);
+    void shouldReturnEmptyReportIfPeriodHasNoCandidates() {
+      var report = getPeriodReport(PERIOD_WITH_NO_CANDIDATES);
+      var expectedTotals = new PeriodTotals(adjustScaleAndRoundingMode(BigDecimal.ZERO), 0, 0, 0);
+
+      assertThat(report.totals()).isEqualTo(expectedTotals);
+    }
+
+    @Test
+    void shouldReturnNotFoundErrorIfPeriodDoesNotExist() {
+      var request = createPeriodRequest(PERIOD_NOT_CREATED_YET);
       var response = handleRequestExpectingProblem(request);
+
       assertThat(response)
           .extracting(Problem::getStatus)
           .extracting(StatusType::getStatusCode)

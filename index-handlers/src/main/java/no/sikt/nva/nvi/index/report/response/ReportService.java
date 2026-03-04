@@ -1,12 +1,9 @@
 package no.sikt.nva.nvi.index.report.response;
 
-import static java.util.Collections.emptyList;
-
 import java.io.IOException;
 import java.net.URI;
 import java.util.NoSuchElementException;
 import java.util.function.Supplier;
-import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.index.report.ReportAggregationClient;
 import no.sikt.nva.nvi.index.report.model.InstitutionAggregationResult;
@@ -45,32 +42,28 @@ public class ReportService {
   private AllPeriodsReport allPeriodsReport(AllPeriodsReportRequest request) throws IOException {
     var periods = nviPeriodService.getAll();
     var results = reportAggregationClient.executeQuery(new AllPeriodsQuery(periods));
-    var periodReports =
-        results.stream().map(result -> toPeriodReport(request.queryId(), result)).toList();
+    var periodReports = results.stream().map(result -> toPeriodReport(request, result)).toList();
     return new AllPeriodsReport(request.queryId(), periodReports);
-  }
-
-  private static PeriodReport toPeriodReport(
-      URI allPeriodsQueryId, PeriodAggregationResult result) {
-    var periodQueryId =
-        UriWrapper.fromUri(allPeriodsQueryId)
-            .addChild(String.valueOf(result.period().publishingYear()))
-            .getUri();
-    return new PeriodReport(
-        periodQueryId,
-        result.period().toDto(),
-        PeriodTotals.from(result),
-        CandidatesByGlobalApprovalStatus.from(result));
   }
 
   private PeriodReport periodReport(PeriodReportRequest request) throws IOException {
     var period = nviPeriodService.getByPublishingYear(request.period());
     var result = reportAggregationClient.executeQuery(new PeriodQuery(period));
-    return new PeriodReport(
-        request.queryId(),
-        result.period().toDto(),
-        PeriodTotals.from(result),
-        CandidatesByGlobalApprovalStatus.from(result));
+    return toPeriodReport(request, result);
+  }
+
+  private static PeriodReport toPeriodReport(
+      PeriodReportRequest request, PeriodAggregationResult result) {
+    return PeriodReport.from(request.queryId(), result);
+  }
+
+  private static PeriodReport toPeriodReport(
+      AllPeriodsReportRequest request, PeriodAggregationResult result) {
+    var periodQueryId =
+        UriWrapper.fromUri(request.queryId())
+            .addChild(String.valueOf(result.period().publishingYear()))
+            .getUri();
+    return PeriodReport.from(periodQueryId, result);
   }
 
   private AllInstitutionsReport allInstitutionsReport(AllInstitutionsReportRequest request)
@@ -88,7 +81,7 @@ public class ReportService {
     var query = new InstitutionQuery(period, request.institutionId());
     return reportAggregationClient
         .executeQuery(query)
-        .map(result -> toInstitutionReport(request.queryId(), result))
+        .map(result -> toInstitutionReport(request, result))
         .orElseThrow(noSuchElementException(request));
   }
 
@@ -103,23 +96,12 @@ public class ReportService {
   private static InstitutionReport toInstitutionReport(
       AllInstitutionsReportRequest request, InstitutionAggregationResult result) {
     var queryId = institutionQueryId(request.queryId(), result.institutionId());
-    return toInstitutionReport(queryId, result);
+    return InstitutionReport.from(queryId, result);
   }
 
   private static InstitutionReport toInstitutionReport(
-      URI queryId, InstitutionAggregationResult result) {
-    var organization =
-        Organization.builder().withId(result.institutionId()).withLabels(result.labels()).build();
-    var totals = InstitutionTotals.from(result);
-    var byLocalApprovalStatus = UndisputedCandidatesByLocalApprovalStatus.from(result.undisputed());
-    return new InstitutionReport(
-        queryId,
-        result.period().toDto(),
-        result.sector(),
-        organization,
-        new InstitutionSummary(totals, byLocalApprovalStatus),
-        emptyList() // TODO: Implemented later (NP-50858)
-        );
+      InstitutionReportRequest request, InstitutionAggregationResult result) {
+    return InstitutionReport.from(request.queryId(), result);
   }
 
   private static URI institutionQueryId(URI allInstitutionsQueryId, URI institutionId) {
