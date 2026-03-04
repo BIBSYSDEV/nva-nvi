@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.index.report;
 
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import static java.util.Collections.emptyMap;
 import static java.util.function.Predicate.not;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.ALLOWED_ORIGIN;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.getHandlerEnvironment;
@@ -56,6 +57,7 @@ import no.sikt.nva.nvi.index.model.document.ApprovalView;
 import no.sikt.nva.nvi.index.model.document.InstitutionPointsView;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.report.response.AllInstitutionsReport;
+import no.sikt.nva.nvi.index.report.response.AllPeriodsReport;
 import no.sikt.nva.nvi.index.report.response.InstitutionReport;
 import no.sikt.nva.nvi.index.report.response.PeriodReport;
 import no.sikt.nva.nvi.index.report.response.ReportResponse;
@@ -133,6 +135,10 @@ class FetchReportHandlerIntegrationTest {
     } catch (JsonProcessingException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  private static InputStream createAllPeriodsRequest() {
+    return createRequest(emptyMap(), REPORTS_PATH_SEGMENT);
   }
 
   private static InputStream createPeriodRequest(String period) {
@@ -279,6 +285,11 @@ class FetchReportHandlerIntegrationTest {
     }
   }
 
+  private AllPeriodsReport getAllPeriodsReport() {
+    var request = createAllPeriodsRequest();
+    return (AllPeriodsReport) handleRequest(request);
+  }
+
   private PeriodReport getPeriodReport(String period) {
     var request = createPeriodRequest(period);
     return (PeriodReport) handleRequest(request);
@@ -297,6 +308,34 @@ class FetchReportHandlerIntegrationTest {
   private static long getCountForGlobalStatus(
       List<NviCandidateIndexDocument> documents, GlobalApprovalStatus globalStatus) {
     return documents.stream().filter(hasGlobalStatus(globalStatus)).count();
+  }
+
+  private static Stream<Arguments> reportingPeriods() {
+    return Stream.of(
+        argumentSet("Last year", LAST_YEAR),
+        argumentSet("This year", THIS_YEAR),
+        argumentSet("Next year", NEXT_YEAR));
+  }
+
+  @Nested
+  class AllPeriodsReportTests {
+
+    @Test
+    void shouldHaveExpectedType() {
+      var report = getAllPeriodsReport();
+      assertThat(report).isInstanceOf(AllPeriodsReport.class);
+    }
+
+    @Test
+    void shouldContainListOfAllInstitutionReports() {
+      var allPeriodsReport = getAllPeriodsReport();
+      var reportForLastYear = getPeriodReport(LAST_YEAR);
+      var reportForThisYear = getPeriodReport(THIS_YEAR);
+      var reportForNextYear = getPeriodReport(NEXT_YEAR);
+
+      assertThat(allPeriodsReport.periods())
+          .containsExactlyInAnyOrder(reportForLastYear, reportForThisYear, reportForNextYear);
+    }
   }
 
   @Nested

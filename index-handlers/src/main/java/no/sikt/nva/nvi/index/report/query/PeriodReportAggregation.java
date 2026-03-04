@@ -13,6 +13,7 @@ import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.index.report.model.CandidateTotal;
 import no.sikt.nva.nvi.index.report.model.PeriodAggregationResult;
+import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
 import org.opensearch.client.opensearch.core.SearchResponse;
@@ -33,10 +34,13 @@ public final class PeriodReportAggregation {
     return Map.entry(BY_GLOBAL_STATUS, createByGlobalStatusAggregation());
   }
 
-  public static PeriodAggregationResult parseResponse(
-      NviPeriod period, SearchResponse<Void> response) {
-    var globalStatusBuckets =
-        response.aggregations().get(BY_GLOBAL_STATUS).sterms().buckets().array();
+  static PeriodAggregationResult parseResponse(NviPeriod period, SearchResponse<Void> response) {
+    return parseAggregations(period, response.aggregations());
+  }
+
+  static PeriodAggregationResult parseAggregations(
+      NviPeriod period, Map<String, Aggregate> aggregations) {
+    var globalStatusBuckets = aggregations.get(BY_GLOBAL_STATUS).sterms().buckets().array();
     var byGlobalStatus =
         new EnumMap<GlobalApprovalStatus, CandidateTotal>(GlobalApprovalStatus.class);
     for (var bucket : globalStatusBuckets) {

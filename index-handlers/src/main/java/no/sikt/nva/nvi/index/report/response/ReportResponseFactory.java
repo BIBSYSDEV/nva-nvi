@@ -10,7 +10,9 @@ import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.index.report.ReportAggregationClient;
 import no.sikt.nva.nvi.index.report.model.InstitutionAggregationResult;
+import no.sikt.nva.nvi.index.report.model.PeriodAggregationResult;
 import no.sikt.nva.nvi.index.report.query.AllInstitutionsQuery;
+import no.sikt.nva.nvi.index.report.query.AllPeriodsQuery;
 import no.sikt.nva.nvi.index.report.query.InstitutionQuery;
 import no.sikt.nva.nvi.index.report.query.PeriodQuery;
 import no.sikt.nva.nvi.index.report.request.AllInstitutionsReportRequest;
@@ -33,16 +35,32 @@ public class ReportResponseFactory {
 
   public ReportResponse getResponse(ReportRequest reportRequest) throws IOException {
     return switch (reportRequest) {
-      case AllPeriodsReportRequest request -> placeholderAllPeriodsReport(request);
+      case AllPeriodsReportRequest request -> allPeriodsReport(request);
       case PeriodReportRequest request -> periodReport(request);
       case AllInstitutionsReportRequest request -> allInstitutionsReport(request);
       case InstitutionReportRequest request -> institutionReport(request);
     };
   }
 
-  // FIXME: Temporary placeholder
-  private AllPeriodsReport placeholderAllPeriodsReport(AllPeriodsReportRequest request) {
-    return new AllPeriodsReport(request.queryId(), emptyList());
+  private AllPeriodsReport allPeriodsReport(AllPeriodsReportRequest request) throws IOException {
+    var periods = nviPeriodService.getAll();
+    var results = reportAggregationClient.executeQuery(new AllPeriodsQuery(periods));
+    var periodReports =
+        results.stream().map(result -> toPeriodReport(request.queryId(), result)).toList();
+    return new AllPeriodsReport(request.queryId(), periodReports);
+  }
+
+  private static PeriodReport toPeriodReport(
+      URI allPeriodsQueryId, PeriodAggregationResult result) {
+    var periodQueryId =
+        UriWrapper.fromUri(allPeriodsQueryId)
+            .addChild(String.valueOf(result.period().publishingYear()))
+            .getUri();
+    return new PeriodReport(
+        periodQueryId,
+        result.period().toDto(),
+        PeriodTotals.from(result),
+        CandidatesByGlobalApprovalStatus.from(result));
   }
 
   private PeriodReport periodReport(PeriodReportRequest request) throws IOException {
