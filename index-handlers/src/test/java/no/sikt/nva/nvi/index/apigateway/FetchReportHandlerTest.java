@@ -4,7 +4,6 @@ import static java.util.Collections.emptyMap;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.ALLOWED_ORIGIN;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.getHandlerEnvironment;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
-import static no.sikt.nva.nvi.index.report.ReportConstants.PERIOD_PATH_PARAM;
 import static no.sikt.nva.nvi.index.report.ReportConstants.REPORTS_PATH_SEGMENT;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
@@ -25,13 +24,14 @@ import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.index.report.FetchReportHandler;
 import no.sikt.nva.nvi.index.report.ReportAggregationClient;
 import no.sikt.nva.nvi.index.report.response.AllPeriodsReport;
-import no.sikt.nva.nvi.index.report.response.PeriodReport;
 import no.sikt.nva.nvi.index.report.response.ReportResponse;
 import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.zalando.problem.Problem;
 
 class FetchReportHandlerTest {
@@ -54,17 +54,36 @@ class FetchReportHandlerTest {
             mock(ReportAggregationClient.class));
   }
 
-  @Test
-  void shouldReturnOkOnSuccess() throws IOException {
-    handler.handleRequest(createRequest(emptyMap(), REPORTS_PATH_SEGMENT), output, CONTEXT);
+  @ParameterizedTest
+  @EnumSource(
+      value = AccessRight.class,
+      names = {"MANAGE_NVI_CANDIDATES", "MANAGE_NVI"},
+      mode = EnumSource.Mode.INCLUDE)
+  void shouldReturnOkWhenUserHasNviAccessRight(AccessRight accessRight) throws IOException {
+    handler.handleRequest(
+        createRequest(emptyMap(), REPORTS_PATH_SEGMENT, accessRight), output, CONTEXT);
 
     var statusCode = fromOutputStream(output, ReportResponse.class).getStatusCode();
 
     assertEquals(HttpURLConnection.HTTP_OK, statusCode);
   }
 
+  @ParameterizedTest
+  @EnumSource(
+      value = AccessRight.class,
+      names = {"MANAGE_NVI_CANDIDATES", "MANAGE_NVI"},
+      mode = EnumSource.Mode.EXCLUDE)
+  void shouldReturnForbiddenWhenUserDoesNotHaveNviAccessRight(AccessRight accessRight)
+      throws IOException {
+    handler.handleRequest(createRequestWithAccessRight(accessRight), output, CONTEXT);
+
+    var statusCode = fromOutputStream(output, Problem.class).getStatusCode();
+
+    assertEquals(HttpURLConnection.HTTP_FORBIDDEN, statusCode);
+  }
+
   @Test
-  void shouldThrowForbiddenWhenNonNviAdminMakesRequest() throws IOException {
+  void shouldReturnForbiddenWhenUserHasNoAccessRights() throws IOException {
     handler.handleRequest(requestWithoutAccessRights(), output, CONTEXT);
 
     var statusCode = fromOutputStream(output, Problem.class).getStatusCode();
@@ -74,28 +93,32 @@ class FetchReportHandlerTest {
 
   @Test
   void shouldReturnAllPeriodsReportWhenNoPathParametersAreProvided() {
-    var request = createRequest(emptyMap(), REPORTS_PATH_SEGMENT);
+    var request = createRequest(emptyMap(), REPORTS_PATH_SEGMENT, AccessRight.MANAGE_NVI);
 
     var response = handleRequest(request);
 
     assertInstanceOf(AllPeriodsReport.class, response);
   }
 
-  @Test
-  void shouldReturnPeriodReportWhenPeriodIsProvidedInPathParameters() {
-    var request = createRequest(Map.of(PERIOD_PATH_PARAM, PERIOD_FOR_QUERY), REPORTS_PATH_SEGMENT);
-
-    var response = handleRequest(request);
-
-    assertInstanceOf(PeriodReport.class, response);
-  }
-
-  private static InputStream createRequest(Map<String, String> pathParameters, String path) {
+  private static InputStream createRequest(
+      Map<String, String> pathParameters, String path, AccessRight accessRight) {
     try {
       return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
           .withOtherProperties(Map.of(PATH, path))
           .withPathParameters(pathParameters)
-          .withAccessRights(randomUri(), AccessRight.MANAGE_NVI)
+          .withAccessRights(randomUri(), accessRight)
+          .build();
+    } catch (JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private static InputStream createRequestWithAccessRight(AccessRight accessRight) {
+    try {
+      return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
+          .withOtherProperties(Map.of(PATH, REPORTS_PATH_SEGMENT))
+          .withPathParameters(emptyMap())
+          .withAccessRights(randomUri(), accessRight)
           .build();
     } catch (JsonProcessingException e) {
       throw new RuntimeException(e);

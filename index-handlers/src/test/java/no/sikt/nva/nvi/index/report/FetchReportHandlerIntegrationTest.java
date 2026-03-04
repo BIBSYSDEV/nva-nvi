@@ -25,6 +25,7 @@ import static no.sikt.nva.nvi.index.report.ReportTestUtils.hasLocalStatus;
 import static no.sikt.nva.nvi.test.TestConstants.LAST_YEAR;
 import static no.sikt.nva.nvi.test.TestConstants.NEXT_YEAR;
 import static no.sikt.nva.nvi.test.TestConstants.THIS_YEAR;
+import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -56,6 +57,7 @@ import no.sikt.nva.nvi.index.model.document.InstitutionPointsView;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.report.response.AllInstitutionsReport;
 import no.sikt.nva.nvi.index.report.response.InstitutionReport;
+import no.sikt.nva.nvi.index.report.response.PeriodReport;
 import no.sikt.nva.nvi.index.report.response.ReportResponse;
 import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.testutils.HandlerRequestBuilder;
@@ -133,6 +135,12 @@ class FetchReportHandlerIntegrationTest {
     }
   }
 
+  private static InputStream createPeriodRequest(String period) {
+    var pathParams = Map.of(PERIOD_PATH_PARAM, period);
+    var path = "%s/%s".formatted(REPORTS_PATH_SEGMENT, period);
+    return createRequest(pathParams, path);
+  }
+
   private static InputStream createAllInstitutionsRequest(String period) {
     var pathParams = Map.of(PERIOD_PATH_PARAM, period);
     var path = "%s/%s/%s".formatted(REPORTS_PATH_SEGMENT, period, INSTITUTIONS_PATH_SEGMENT);
@@ -151,6 +159,13 @@ class FetchReportHandlerIntegrationTest {
 
   private static List<NviCandidateIndexDocument> documentsForLastYear(
       ApprovalFactory institutionA, ApprovalFactory institutionB) {
+    var validDocuments = validDocumentsForLastYear(institutionA, institutionB);
+    var invalidDocuments = invalidDocumentsForLastYear(institutionA, institutionB);
+    return mergeCollections(validDocuments, invalidDocuments);
+  }
+
+  private static List<NviCandidateIndexDocument> validDocumentsForLastYear(
+      ApprovalFactory institutionA, ApprovalFactory institutionB) {
     var approvalForA =
         institutionA
             .withApprovalStatus(ApprovalStatus.APPROVED)
@@ -165,6 +180,29 @@ class FetchReportHandlerIntegrationTest {
         documentForYear(LAST_YEAR, true, approvalForA),
         documentForYear(LAST_YEAR, true, approvalForB),
         documentForYear(LAST_YEAR, true, approvalForA, approvalForB));
+  }
+
+  private static List<NviCandidateIndexDocument> invalidDocumentsForLastYear(
+      ApprovalFactory institutionA, ApprovalFactory institutionB) {
+    var approvalForA =
+        institutionA
+            .withApprovalStatus(ApprovalStatus.APPROVED)
+            .withGlobalApprovalStatus(GlobalApprovalStatus.APPROVED)
+            .build();
+    var disputedByB =
+        institutionB
+            .withApprovalStatus(ApprovalStatus.REJECTED)
+            .withGlobalApprovalStatus(GlobalApprovalStatus.DISPUTE)
+            .build();
+    var rejectedByAll =
+        institutionB
+            .withApprovalStatus(ApprovalStatus.REJECTED)
+            .withGlobalApprovalStatus(GlobalApprovalStatus.REJECTED)
+            .build();
+    return List.of(
+        documentForYear(LAST_YEAR, false, approvalForA),
+        documentForYear(LAST_YEAR, true, disputedByB),
+        documentForYear(LAST_YEAR, true, rejectedByAll));
   }
 
   private static List<NviCandidateIndexDocument> documentsForThisYear(
@@ -187,9 +225,15 @@ class FetchReportHandlerIntegrationTest {
             .withApprovalStatus(ApprovalStatus.NEW)
             .withGlobalApprovalStatus(GlobalApprovalStatus.PENDING)
             .build();
+    var disputedByB =
+        institutionB
+            .withApprovalStatus(ApprovalStatus.REJECTED)
+            .withGlobalApprovalStatus(GlobalApprovalStatus.DISPUTE)
+            .build();
     return List.of(
         documentForYear(NEXT_YEAR, false, approvalForA),
         documentForYear(NEXT_YEAR, false, approvalForB),
+        documentForYear(NEXT_YEAR, false, disputedByB),
         documentForYear(NEXT_YEAR, false, approvalForA, approvalForB));
   }
 
@@ -235,6 +279,11 @@ class FetchReportHandlerIntegrationTest {
     }
   }
 
+  private PeriodReport getPeriodReport(String period) {
+    var request = createPeriodRequest(period);
+    return (PeriodReport) handleRequest(request);
+  }
+
   private InstitutionReport getInstitutionReport(String period, String institutionIdentifier) {
     var request = createInstitutionRequest(period, institutionIdentifier);
     return (InstitutionReport) handleRequest(request);
@@ -243,6 +292,159 @@ class FetchReportHandlerIntegrationTest {
   private AllInstitutionsReport getAllInstitutionsReport(String period) {
     var request = createAllInstitutionsRequest(period);
     return (AllInstitutionsReport) handleRequest(request);
+  }
+
+  private static long getCountForGlobalStatus(
+      List<NviCandidateIndexDocument> documents, GlobalApprovalStatus globalStatus) {
+    return documents.stream().filter(hasGlobalStatus(globalStatus)).count();
+  }
+
+  @Nested
+  class PeriodReportTests {
+
+    @Target(METHOD)
+    @Retention(RUNTIME)
+    @ParameterizedTest
+    @MethodSource("periodsWithExpectedDocuments")
+    @interface PerPeriod {}
+
+    private static Stream<Arguments> periodsWithExpectedDocuments() {
+      var validDocumentsForClosedPeriod =
+          documentsForLastYear.stream()
+              .filter(hasGlobalStatus(GlobalApprovalStatus.APPROVED))
+              .toList();
+      return Stream.of(
+          argumentSet("Closed period", LAST_YEAR, validDocumentsForClosedPeriod),
+          argumentSet("Open period", THIS_YEAR, documentsForThisYear),
+          argumentSet("Pending period", NEXT_YEAR, documentsForNextYear));
+    }
+
+    @Test
+    void shouldHaveExpectedType() {
+      var report = getPeriodReport(THIS_YEAR);
+      assertThat(report).isInstanceOf(PeriodReport.class);
+    }
+
+    @Test
+    void shouldHaveExpectedPeriod() {
+      var report = getPeriodReport(THIS_YEAR);
+      assertThat(report.period().publishingYear()).isEqualTo(THIS_YEAR);
+    }
+
+    @Test
+    void shouldReturnNotFoundErrorForPeriodWithNoCandidates() {
+      var futureYear = String.valueOf(CURRENT_YEAR + 2);
+      var request = createPeriodRequest(futureYear);
+      var response = handleRequestExpectingProblem(request);
+      assertThat(response)
+          .extracting(Problem::getStatus)
+          .extracting(StatusType::getStatusCode)
+          .isEqualTo(HttpURLConnection.HTTP_NOT_FOUND);
+    }
+
+    @PerPeriod
+    void shouldHaveExpectedPeriodId(String reportingYear) {
+      var report = getPeriodReport(reportingYear);
+
+      assertThat(report.id().toString()).endsWith(reportingYear);
+    }
+
+    @Test
+    void shouldHaveExpectedPointsForOpenPeriod() {
+      var report = getPeriodReport(THIS_YEAR);
+      var expectedPoints =
+          documentsForThisYear.stream()
+              .filter(hasGlobalStatus(GlobalApprovalStatus.APPROVED))
+              .map(NviCandidateIndexDocument::points)
+              .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+      assertThat(report.totals().validPoints()).isEqualTo(expectedPoints);
+    }
+
+    @Test
+    void shouldHaveExpectedPointsForPendingPeriod() {
+      var report = getPeriodReport(NEXT_YEAR);
+      var expectedPoints =
+          documentsForNextYear.stream()
+              .filter(not(hasGlobalStatus(GlobalApprovalStatus.DISPUTE)))
+              .map(NviCandidateIndexDocument::points)
+              .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+      assertThat(report.totals().validPoints()).isEqualTo(expectedPoints);
+    }
+
+    @Test
+    void shouldHaveExpectedPointsForClosedPeriod() {
+      var report = getPeriodReport(LAST_YEAR);
+      var expectedPoints =
+          documentsForLastYear.stream()
+              .filter(hasGlobalStatus(GlobalApprovalStatus.APPROVED))
+              .map(NviCandidateIndexDocument::points)
+              .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+      assertThat(report.totals().validPoints()).isEqualTo(expectedPoints);
+    }
+
+    @PerPeriod
+    void shouldHaveExpectedPendingCount(
+        String reportingPeriod, List<NviCandidateIndexDocument> relevantDocs) {
+      var report = getPeriodReport(reportingPeriod);
+      var expectedCount = getCountForGlobalStatus(relevantDocs, GlobalApprovalStatus.PENDING);
+
+      assertThat(report.byGlobalApprovalStatus().pending()).isEqualTo(expectedCount);
+    }
+
+    @PerPeriod
+    void shouldHaveExpectedDisputedCount(
+        String reportingPeriod, List<NviCandidateIndexDocument> relevantDocs) {
+      var report = getPeriodReport(reportingPeriod);
+      var expectedCount = getCountForGlobalStatus(relevantDocs, GlobalApprovalStatus.DISPUTE);
+
+      assertThat(report.totals().disputedCount()).isEqualTo(expectedCount);
+      assertThat(report.byGlobalApprovalStatus().dispute()).isEqualTo(expectedCount);
+    }
+
+    @PerPeriod
+    void shouldHaveExpectedApprovedCount(
+        String reportingPeriod, List<NviCandidateIndexDocument> relevantDocs) {
+      var report = getPeriodReport(reportingPeriod);
+      var expectedCount = getCountForGlobalStatus(relevantDocs, GlobalApprovalStatus.APPROVED);
+
+      assertThat(report.byGlobalApprovalStatus().approved()).isEqualTo(expectedCount);
+    }
+
+    @PerPeriod
+    void shouldHaveExpectedRejectedCount(
+        String reportingPeriod, List<NviCandidateIndexDocument> relevantDocs) {
+      var report = getPeriodReport(reportingPeriod);
+      var expectedCount = getCountForGlobalStatus(relevantDocs, GlobalApprovalStatus.REJECTED);
+
+      assertThat(report.byGlobalApprovalStatus().rejected()).isEqualTo(expectedCount);
+    }
+
+    @PerPeriod
+    void shouldHaveExpectedUndisputedProcessedCount(
+        String reportingPeriod, List<NviCandidateIndexDocument> relevantDocs) {
+      var report = getPeriodReport(reportingPeriod);
+      var expectedCount =
+          relevantDocs.stream()
+              .filter(
+                  hasGlobalStatus(GlobalApprovalStatus.APPROVED)
+                      .or(hasGlobalStatus(GlobalApprovalStatus.REJECTED)))
+              .count();
+
+      assertThat(report.totals().undisputedProcessedCount()).isEqualTo(expectedCount);
+    }
+
+    @PerPeriod
+    void shouldHaveExpectedUndisputedTotalCount(
+        String reportingPeriod, List<NviCandidateIndexDocument> relevantDocs) {
+      var report = getPeriodReport(reportingPeriod);
+      var expectedCount =
+          relevantDocs.stream().filter(not(hasGlobalStatus(GlobalApprovalStatus.DISPUTE))).count();
+
+      assertThat(report.totals().undisputedTotalCount()).isEqualTo(expectedCount);
+    }
   }
 
   @Nested
@@ -411,6 +613,7 @@ class FetchReportHandlerIntegrationTest {
       var institutionId = report.institution().id();
       var expectedPoints =
           relevantDocs.stream()
+              .filter(not(hasGlobalStatus(GlobalApprovalStatus.DISPUTE)))
               .map(document -> document.getApprovalForInstitution(institutionId))
               .map(ApprovalView::points)
               .map(InstitutionPointsView::institutionPoints)
@@ -428,7 +631,7 @@ class FetchReportHandlerIntegrationTest {
       var institutionId = report.institution().id();
       var expectedPoints =
           relevantDocs.stream()
-              .filter(NviCandidateIndexDocument::reported)
+              .filter(hasGlobalStatus(GlobalApprovalStatus.APPROVED))
               .map(document -> document.getApprovalForInstitution(institutionId))
               .map(ApprovalView::points)
               .map(InstitutionPointsView::institutionPoints)
@@ -464,6 +667,17 @@ class FetchReportHandlerIntegrationTest {
 
       var totals = report.institutionSummary().totals();
       assertThat(totals.undisputedProcessedCount()).isEqualTo(expectedCount);
+    }
+
+    @PerInstitutionForThisYear
+    void shouldHaveExpectedUndisputedTotalCount(
+        String institutionIdentifier, List<NviCandidateIndexDocument> relevantDocs) {
+      var report = getInstitutionReport(THIS_YEAR, institutionIdentifier);
+      var expectedCount =
+          relevantDocs.stream().filter(not(hasGlobalStatus(GlobalApprovalStatus.DISPUTE))).count();
+
+      var totals = report.institutionSummary().totals();
+      assertThat(totals.undisputedTotalCount()).isEqualTo(expectedCount);
     }
 
     @PerInstitutionForThisYear
