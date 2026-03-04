@@ -1,6 +1,8 @@
 package no.sikt.nva.nvi.index.report;
 
 import static java.net.HttpURLConnection.HTTP_OK;
+import static no.sikt.nva.nvi.common.utils.RequestUtil.isNviAdmin;
+import static no.sikt.nva.nvi.common.utils.RequestUtil.isNviCurator;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import java.io.IOException;
@@ -9,8 +11,7 @@ import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.exception.PeriodNotFoundException;
 import no.sikt.nva.nvi.index.report.request.ReportRequestFactory;
 import no.sikt.nva.nvi.index.report.response.ReportResponse;
-import no.sikt.nva.nvi.index.report.response.ReportResponseFactory;
-import nva.commons.apigateway.AccessRight;
+import no.sikt.nva.nvi.index.report.response.ReportService;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
@@ -25,7 +26,7 @@ import org.slf4j.LoggerFactory;
 public class FetchReportHandler extends ApiGatewayHandler<Void, ReportResponse> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FetchReportHandler.class);
-  private final ReportResponseFactory reportResponseFactory;
+  private final ReportService reportService;
 
   @JacocoGenerated
   public FetchReportHandler() {
@@ -40,14 +41,13 @@ public class FetchReportHandler extends ApiGatewayHandler<Void, ReportResponse> 
       NviPeriodService nviPeriodService,
       ReportAggregationClient reportAggregationClient) {
     super(Void.class, environment);
-    this.reportResponseFactory =
-        new ReportResponseFactory(nviPeriodService, reportAggregationClient);
+    this.reportService = new ReportService(nviPeriodService, reportAggregationClient);
   }
 
   @Override
   protected void validateRequest(Void unused, RequestInfo requestInfo, Context context)
       throws ApiGatewayException {
-    if (!requestInfo.userIsAuthorized(AccessRight.MANAGE_NVI)) {
+    if (!(isNviAdmin(requestInfo) || isNviCurator(requestInfo))) {
       throw new ForbiddenException();
     }
   }
@@ -57,7 +57,7 @@ public class FetchReportHandler extends ApiGatewayHandler<Void, ReportResponse> 
       throws ApiGatewayException {
     var reportRequest = ReportRequestFactory.getRequest(requestInfo, environment);
     try {
-      return reportResponseFactory.getResponse(reportRequest);
+      return reportService.getResponse(reportRequest);
     } catch (NoSuchElementException | PeriodNotFoundException exception) {
       LOGGER.error("Resource not found for query request: {}", reportRequest, exception);
       throw new NotFoundException(exception.getMessage());

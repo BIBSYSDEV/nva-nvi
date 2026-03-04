@@ -34,6 +34,8 @@ import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.zalando.problem.Problem;
 
 class FetchReportHandlerTest {
@@ -56,17 +58,36 @@ class FetchReportHandlerTest {
             getHandlerEnvironment(ALLOWED_ORIGIN), scenario.getPeriodService(), mockClient);
   }
 
-  @Test
-  void shouldReturnOkOnSuccess() throws IOException {
-    handler.handleRequest(createRequest(emptyMap(), REPORTS_PATH_SEGMENT), output, CONTEXT);
+  @ParameterizedTest
+  @EnumSource(
+      value = AccessRight.class,
+      names = {"MANAGE_NVI_CANDIDATES", "MANAGE_NVI"},
+      mode = EnumSource.Mode.INCLUDE)
+  void shouldReturnOkWhenUserHasNviAccessRight(AccessRight accessRight) throws IOException {
+    handler.handleRequest(
+        createRequest(emptyMap(), REPORTS_PATH_SEGMENT, accessRight), output, CONTEXT);
 
     var statusCode = fromOutputStream(output, ReportResponse.class).getStatusCode();
 
     assertEquals(HttpURLConnection.HTTP_OK, statusCode);
   }
 
+  @ParameterizedTest
+  @EnumSource(
+      value = AccessRight.class,
+      names = {"MANAGE_NVI_CANDIDATES", "MANAGE_NVI"},
+      mode = EnumSource.Mode.EXCLUDE)
+  void shouldReturnForbiddenWhenUserDoesNotHaveNviAccessRight(AccessRight accessRight)
+      throws IOException {
+    handler.handleRequest(createRequestWithAccessRight(accessRight), output, CONTEXT);
+
+    var statusCode = fromOutputStream(output, Problem.class).getStatusCode();
+
+    assertEquals(HttpURLConnection.HTTP_FORBIDDEN, statusCode);
+  }
+
   @Test
-  void shouldThrowForbiddenWhenNonNviAdminMakesRequest() throws IOException {
+  void shouldReturnForbiddenWhenUserHasNoAccessRights() throws IOException {
     handler.handleRequest(requestWithoutAccessRights(), output, CONTEXT);
 
     var statusCode = fromOutputStream(output, Problem.class).getStatusCode();
@@ -76,19 +97,32 @@ class FetchReportHandlerTest {
 
   @Test
   void shouldReturnAllPeriodsReportWhenNoPathParametersAreProvided() {
-    var request = createRequest(emptyMap(), REPORTS_PATH_SEGMENT);
+    var request = createRequest(emptyMap(), REPORTS_PATH_SEGMENT, AccessRight.MANAGE_NVI);
 
     var response = handleRequest(request);
 
     assertInstanceOf(AllPeriodsReport.class, response);
   }
 
-  private static InputStream createRequest(Map<String, String> pathParameters, String path) {
+  private static InputStream createRequest(
+      Map<String, String> pathParameters, String path, AccessRight accessRight) {
     try {
       return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
           .withOtherProperties(Map.of(PATH, path))
           .withPathParameters(pathParameters)
-          .withAccessRights(randomUri(), AccessRight.MANAGE_NVI)
+          .withAccessRights(randomUri(), accessRight)
+          .build();
+    } catch (JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private static InputStream createRequestWithAccessRight(AccessRight accessRight) {
+    try {
+      return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
+          .withOtherProperties(Map.of(PATH, REPORTS_PATH_SEGMENT))
+          .withPathParameters(emptyMap())
+          .withAccessRights(randomUri(), accessRight)
           .build();
     } catch (JsonProcessingException e) {
       throw new RuntimeException(e);
