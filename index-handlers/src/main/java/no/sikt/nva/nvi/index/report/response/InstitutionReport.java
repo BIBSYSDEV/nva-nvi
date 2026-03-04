@@ -7,6 +7,7 @@ import java.util.List;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.model.Sector;
 import no.sikt.nva.nvi.common.service.dto.NviPeriodDto;
+import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.index.report.model.InstitutionAggregationResult;
 
 public record InstitutionReport(
@@ -18,14 +19,15 @@ public record InstitutionReport(
     List<UnitSummary> units)
     implements ReportResponse {
 
-  public static InstitutionReport from(URI queryId, InstitutionAggregationResult result) {
+  public static InstitutionReport from(
+      URI queryId, NviPeriod period, InstitutionAggregationResult result) {
     var organization =
         Organization.builder().withId(result.institutionId()).withLabels(result.labels()).build();
     var totals = InstitutionTotals.from(result);
     var byLocalApprovalStatus = UndisputedCandidatesByLocalApprovalStatus.from(result.undisputed());
     return new InstitutionReport(
         queryId,
-        result.period().toDto(),
+        period.toDto(),
         result.sector(),
         organization,
         new InstitutionSummary(totals, byLocalApprovalStatus),

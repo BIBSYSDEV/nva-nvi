@@ -9,6 +9,7 @@ import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.SearchResponse;
 
+// FIXME: No need for period here
 public record AllInstitutionsQuery(NviPeriod period)
     implements ReportAggregationQuery<List<InstitutionAggregationResult>> {
 
