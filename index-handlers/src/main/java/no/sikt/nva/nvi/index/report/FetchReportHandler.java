@@ -1,6 +1,8 @@
 package no.sikt.nva.nvi.index.report;
 
 import static java.net.HttpURLConnection.HTTP_OK;
+import static no.sikt.nva.nvi.common.utils.RequestUtil.isNviAdmin;
+import static no.sikt.nva.nvi.common.utils.RequestUtil.isNviCurator;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import java.io.IOException;
@@ -10,7 +12,6 @@ import no.sikt.nva.nvi.common.service.exception.PeriodNotFoundException;
 import no.sikt.nva.nvi.index.report.request.ReportRequestFactory;
 import no.sikt.nva.nvi.index.report.response.ReportResponse;
 import no.sikt.nva.nvi.index.report.response.ReportService;
-import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
@@ -46,7 +47,7 @@ public class FetchReportHandler extends ApiGatewayHandler<Void, ReportResponse> 
   @Override
   protected void validateRequest(Void unused, RequestInfo requestInfo, Context context)
       throws ApiGatewayException {
-    if (!requestInfo.userIsAuthorized(AccessRight.MANAGE_NVI)) {
+    if (!(isNviAdmin(requestInfo) || isNviCurator(requestInfo))) {
       throw new ForbiddenException();
     }
   }
