@@ -5,6 +5,7 @@ import static java.util.Objects.isNull;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.util.Map;
+import java.util.Optional;
 import no.sikt.nva.nvi.common.model.Sector;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
@@ -33,10 +34,11 @@ public record InstitutionAggregationResult(
     Map<GlobalApprovalStatus, LocalStatusSummary> byGlobalStatus,
     LocalStatusSummary undisputed) {
 
-  /** Returns the total number of candidates that are in dispute. */
-  public int disputedCount() {
-    var disputeSummary = byGlobalStatus.get(GlobalApprovalStatus.DISPUTE);
-    return isNull(disputeSummary) ? 0 : disputeSummary.totalCount();
+  /** Returns the total number of candidates with a given global approval status. */
+  public int globalStatusCount(GlobalApprovalStatus status) {
+    return Optional.ofNullable(byGlobalStatus.get(status))
+        .map(LocalStatusSummary::totalCount)
+        .orElse(0);
   }
 
   /**
