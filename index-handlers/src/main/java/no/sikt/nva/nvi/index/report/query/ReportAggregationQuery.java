@@ -13,7 +13,7 @@ import org.opensearch.client.opensearch._types.query_dsl.TermQuery;
 import org.opensearch.client.opensearch.core.SearchResponse;
 
 public sealed interface ReportAggregationQuery<T>
-    permits AllInstitutionsQuery, InstitutionQuery, PeriodQuery {
+    permits AllInstitutionsQuery, InstitutionQuery, AllPeriodsQuery, PeriodQuery {
 
   String REPORTING_PERIOD_YEAR = "reportingPeriod.year";
 

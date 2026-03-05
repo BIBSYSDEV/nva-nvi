@@ -11,7 +11,9 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.apigateway.GatewayResponse.fromOutputStream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -19,10 +21,12 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.util.List;
 import java.util.Map;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.index.report.FetchReportHandler;
 import no.sikt.nva.nvi.index.report.ReportAggregationClient;
+import no.sikt.nva.nvi.index.report.query.AllPeriodsQuery;
 import no.sikt.nva.nvi.index.report.response.AllPeriodsReport;
 import no.sikt.nva.nvi.index.report.response.ReportResponse;
 import no.unit.nva.stubs.FakeContext;
@@ -43,15 +47,15 @@ class FetchReportHandlerTest {
   private ByteArrayOutputStream output;
 
   @BeforeEach
-  void setUp() {
+  void setUp() throws IOException {
     var scenario = new TestScenario();
     setupOpenPeriod(scenario, PERIOD_FOR_QUERY);
     output = new ByteArrayOutputStream();
+    var mockClient = mock(ReportAggregationClient.class);
+    when(mockClient.executeQuery(any(AllPeriodsQuery.class))).thenReturn(List.of());
     handler =
         new FetchReportHandler(
-            getHandlerEnvironment(ALLOWED_ORIGIN),
-            scenario.getPeriodService(),
-            mock(ReportAggregationClient.class));
+            getHandlerEnvironment(ALLOWED_ORIGIN), scenario.getPeriodService(), mockClient);
   }
 
   @ParameterizedTest
