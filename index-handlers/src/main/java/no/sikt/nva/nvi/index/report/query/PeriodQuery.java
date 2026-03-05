@@ -26,6 +26,6 @@ public record PeriodQuery(NviPeriod period)
 
   @Override
   public PeriodAggregationResult parseResponse(SearchResponse<Void> response) {
-    return PeriodReportAggregation.parseResponse(period, response);
+    return PeriodReportAggregation.parseAggregations(period, response.aggregations());
   }
 }

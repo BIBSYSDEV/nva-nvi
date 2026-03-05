@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.index.report;
 
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
+import static java.util.Collections.emptyMap;
 import static java.util.function.Predicate.not;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.ALLOWED_ORIGIN;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.getHandlerEnvironment;
@@ -13,6 +14,7 @@ import static no.sikt.nva.nvi.common.model.OrganizationFixtures.organizationIdFr
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationId;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationIdentifier;
 import static no.sikt.nva.nvi.common.utils.CollectionUtils.mergeCollections;
+import static no.sikt.nva.nvi.common.utils.DecimalUtils.adjustScaleAndRoundingMode;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.documentForYear;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.documentsForAllStatusCombinations;
 import static no.sikt.nva.nvi.index.report.ReportConstants.INSTITUTIONS_PATH_SEGMENT;
@@ -56,8 +58,10 @@ import no.sikt.nva.nvi.index.model.document.ApprovalView;
 import no.sikt.nva.nvi.index.model.document.InstitutionPointsView;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.report.response.AllInstitutionsReport;
+import no.sikt.nva.nvi.index.report.response.AllPeriodsReport;
 import no.sikt.nva.nvi.index.report.response.InstitutionReport;
 import no.sikt.nva.nvi.index.report.response.PeriodReport;
+import no.sikt.nva.nvi.index.report.response.PeriodTotals;
 import no.sikt.nva.nvi.index.report.response.ReportResponse;
 import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.testutils.HandlerRequestBuilder;
@@ -87,6 +91,8 @@ class FetchReportHandlerIntegrationTest {
   private static final String IDENTIFIER_INSTITUTION_A = "123.0.0.0";
   private static final String IDENTIFIER_INSTITUTION_B = "456.0.0.0";
   private static final String IDENTIFIER_UNIT_A = "123.1.2.3";
+  private static final String PERIOD_WITH_NO_CANDIDATES = String.valueOf(CURRENT_YEAR + 2);
+  private static final String PERIOD_NOT_CREATED_YET = String.valueOf(CURRENT_YEAR + 3);
   private static final Organization INSTITUTION_A =
       createOrganizationWithSubUnit(
           organizationIdFromIdentifier(IDENTIFIER_INSTITUTION_A),
@@ -104,6 +110,7 @@ class FetchReportHandlerIntegrationTest {
     CONTAINER.start();
 
     var scenario = new TestScenario();
+    setupClosedPeriod(scenario, PERIOD_WITH_NO_CANDIDATES);
     setupClosedPeriod(scenario, LAST_YEAR);
     setupOpenPeriod(scenario, THIS_YEAR);
     setupFuturePeriod(scenario, NEXT_YEAR);
@@ -133,6 +140,10 @@ class FetchReportHandlerIntegrationTest {
     } catch (JsonProcessingException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  private static InputStream createAllPeriodsRequest() {
+    return createRequest(emptyMap(), REPORTS_PATH_SEGMENT);
   }
 
   private static InputStream createPeriodRequest(String period) {
@@ -279,6 +290,11 @@ class FetchReportHandlerIntegrationTest {
     }
   }
 
+  private AllPeriodsReport getAllPeriodsReport() {
+    var request = createAllPeriodsRequest();
+    return (AllPeriodsReport) handleRequest(request);
+  }
+
   private PeriodReport getPeriodReport(String period) {
     var request = createPeriodRequest(period);
     return (PeriodReport) handleRequest(request);
@@ -297,6 +313,28 @@ class FetchReportHandlerIntegrationTest {
   private static long getCountForGlobalStatus(
       List<NviCandidateIndexDocument> documents, GlobalApprovalStatus globalStatus) {
     return documents.stream().filter(hasGlobalStatus(globalStatus)).count();
+  }
+
+  @Nested
+  class AllPeriodsReportTests {
+
+    @Test
+    void shouldHaveExpectedType() {
+      var report = getAllPeriodsReport();
+      assertThat(report).isInstanceOf(AllPeriodsReport.class);
+    }
+
+    @Test
+    void shouldContainListOfAllPeriodReports() {
+      var allPeriodsReport = getAllPeriodsReport();
+
+      assertThat(allPeriodsReport.periods())
+          .containsExactlyInAnyOrder(
+              getPeriodReport(LAST_YEAR),
+              getPeriodReport(THIS_YEAR),
+              getPeriodReport(NEXT_YEAR),
+              getPeriodReport(PERIOD_WITH_NO_CANDIDATES));
+    }
   }
 
   @Nested
@@ -332,10 +370,18 @@ class FetchReportHandlerIntegrationTest {
     }
 
     @Test
-    void shouldReturnNotFoundErrorForPeriodWithNoCandidates() {
-      var futureYear = String.valueOf(CURRENT_YEAR + 2);
-      var request = createPeriodRequest(futureYear);
+    void shouldReturnEmptyReportIfPeriodHasNoCandidates() {
+      var report = getPeriodReport(PERIOD_WITH_NO_CANDIDATES);
+      var expectedTotals = new PeriodTotals(adjustScaleAndRoundingMode(BigDecimal.ZERO), 0, 0, 0);
+
+      assertThat(report.totals()).isEqualTo(expectedTotals);
+    }
+
+    @Test
+    void shouldReturnNotFoundErrorIfPeriodDoesNotExist() {
+      var request = createPeriodRequest(PERIOD_NOT_CREATED_YET);
       var response = handleRequestExpectingProblem(request);
+
       assertThat(response)
           .extracting(Problem::getStatus)
           .extracting(StatusType::getStatusCode)
