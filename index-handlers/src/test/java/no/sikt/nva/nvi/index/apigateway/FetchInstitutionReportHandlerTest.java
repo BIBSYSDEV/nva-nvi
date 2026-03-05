@@ -7,6 +7,7 @@ import static com.google.common.net.MediaType.MICROSOFT_EXCEL;
 import static com.google.common.net.MediaType.OOXML_SHEET;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.nonNull;
+import static no.sikt.nva.nvi.common.utils.DecimalUtils.adjustScaleAndRoundingMode;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.indexDocumentMissingApprovals;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.indexDocumentMissingVerifiedCreators;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.indexDocumentWithLanguage;
@@ -74,6 +75,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.util.ArrayList;
@@ -691,14 +693,22 @@ class FetchInstitutionReportHandlerTest {
     expectedRow.add(document.publicationDetails().title());
     expectedRow.add(getExpectedLanguageLabel(document));
     expectedRow.add(getExpectedGlobalApprovalStatus(document.globalApprovalStatus()));
-    expectedRow.add(document.publicationTypeChannelLevelPoints().toString());
-    expectedRow.add(document.internationalCollaborationFactor().toString());
-    expectedRow.add(String.valueOf(document.creatorShareCount()));
+    expectedRow.add(getNormalizedString(document.publicationTypeChannelLevelPoints()));
+    expectedRow.add(getNormalizedString(document.internationalCollaborationFactor()));
+    expectedRow.add(getNormalizedString(document.creatorShareCount()));
     expectedRow.add(
-        document
-            .getPointsForContributorAffiliation(topLevelCristinOrg, nviContributor, affiliation)
-            .toString());
+        getNormalizedString(
+            document.getPointsForContributorAffiliation(
+                topLevelCristinOrg, nviContributor, affiliation)));
     return expectedRow;
+  }
+
+  private String getNormalizedString(int value) {
+    return adjustScaleAndRoundingMode(BigDecimal.valueOf(value)).toString();
+  }
+
+  private String getNormalizedString(BigDecimal value) {
+    return adjustScaleAndRoundingMode(value).toString();
   }
 
   private String getExpectedGlobalApprovalStatus(GlobalApprovalStatus globalApprovalStatus) {
