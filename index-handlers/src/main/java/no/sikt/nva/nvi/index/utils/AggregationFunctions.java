@@ -4,6 +4,7 @@ import static no.sikt.nva.nvi.common.utils.JsonUtils.jsonPathOf;
 
 import java.util.Map;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
+import org.opensearch.client.opensearch._types.aggregations.Buckets;
 import org.opensearch.client.opensearch._types.aggregations.NestedAggregation;
 import org.opensearch.client.opensearch._types.aggregations.SumAggregation;
 import org.opensearch.client.opensearch._types.aggregations.TermsAggregation;
@@ -38,6 +39,14 @@ public final class AggregationFunctions {
       String path, Map<String, Aggregation> subAggregations) {
     return new Aggregation.Builder()
         .nested(new NestedAggregation.Builder().path(path).build())
+        .aggregations(subAggregations)
+        .build();
+  }
+
+  public static Aggregation keyedFiltersAggregation(
+      Map<String, Query> filters, Map<String, Aggregation> subAggregations) {
+    return new Aggregation.Builder()
+        .filters(builder -> builder.filters(Buckets.of(buckets -> buckets.keyed(filters))))
         .aggregations(subAggregations)
         .build();
   }

@@ -13,9 +13,9 @@ import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.index.report.model.CandidateTotal;
 import no.sikt.nva.nvi.index.report.model.PeriodAggregationResult;
+import org.opensearch.client.opensearch._types.aggregations.Aggregate;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
-import org.opensearch.client.opensearch.core.SearchResponse;
 
 public final class PeriodReportAggregation {
 
@@ -27,16 +27,15 @@ public final class PeriodReportAggregation {
   /**
    * Returns a named aggregation entry for use in an OpenSearch search request. The aggregation
    * groups candidates by global approval status, summing points at each level. Use {@link
-   * #parseResponse} to extract results from the search response.
+   * #parseAggregations} to extract results from the search response.
    */
   public static Map.Entry<String, Aggregation> namedAggregationEntry() {
     return Map.entry(BY_GLOBAL_STATUS, createByGlobalStatusAggregation());
   }
 
-  public static PeriodAggregationResult parseResponse(
-      NviPeriod period, SearchResponse<Void> response) {
-    var globalStatusBuckets =
-        response.aggregations().get(BY_GLOBAL_STATUS).sterms().buckets().array();
+  static PeriodAggregationResult parseAggregations(
+      NviPeriod period, Map<String, Aggregate> aggregations) {
+    var globalStatusBuckets = aggregations.get(BY_GLOBAL_STATUS).sterms().buckets().array();
     var byGlobalStatus =
         new EnumMap<GlobalApprovalStatus, CandidateTotal>(GlobalApprovalStatus.class);
     for (var bucket : globalStatusBuckets) {
