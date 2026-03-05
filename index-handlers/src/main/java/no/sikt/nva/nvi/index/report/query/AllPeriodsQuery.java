@@ -1,12 +1,13 @@
 package no.sikt.nva.nvi.index.report.query;
 
+import static no.sikt.nva.nvi.index.utils.AggregationFunctions.keyedFiltersAggregation;
+
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.index.report.model.PeriodAggregationResult;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
-import org.opensearch.client.opensearch._types.aggregations.Buckets;
 import org.opensearch.client.opensearch._types.aggregations.FiltersBucket;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.MatchAllQuery;
@@ -42,16 +43,16 @@ public record AllPeriodsQuery(List<NviPeriod> periods)
   }
 
   private Aggregation buildFiltersAggregation() {
-    var filtersByPeriod =
-        periods.stream()
-            .collect(
-                Collectors.toMap(
-                    period -> String.valueOf(period.publishingYear()), this::periodFilterQuery));
+    var periodFilters = buildPeriodFilters();
     var subAggregations = Map.ofEntries(PeriodReportAggregation.namedAggregationEntry());
-    return new Aggregation.Builder()
-        .filters(f -> f.filters(Buckets.of(b -> b.keyed(filtersByPeriod))))
-        .aggregations(subAggregations)
-        .build();
+    return keyedFiltersAggregation(periodFilters, subAggregations);
+  }
+
+  private Map<String, Query> buildPeriodFilters() {
+    return periods.stream()
+        .collect(
+            Collectors.toMap(
+                period -> String.valueOf(period.publishingYear()), this::periodFilterQuery));
   }
 
   private Query periodFilterQuery(NviPeriod period) {
