@@ -8,7 +8,6 @@ import com.apicatalog.jsonld.JsonLdError;
 import com.apicatalog.jsonld.document.JsonDocument;
 import java.io.ByteArrayOutputStream;
 import java.io.StringReader;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import no.sikt.nva.nvi.common.exceptions.ParsingException;

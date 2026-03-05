@@ -376,7 +376,7 @@ class PublicationLoaderServiceTest {
     var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
     assertThrows(
         ParsingException.class,
-        () -> parseExampleDocument(ExamplePublications.ORGANIZATION_PART_OOF_NOT_URI));
+        () -> parseExampleDocument(ExamplePublications.ORGANIZATION_PART_OF_NOT_URI));
     assertThat(logAppender.getMessages()).contains("Organization partOf is not IRI");
   }
 
