@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.index.apigateway;
 
 import static no.sikt.nva.nvi.common.utils.RequestUtil.isNviAdmin;
+import static no.sikt.nva.nvi.index.apigateway.CristinOrgUriUtil.toCristinOrgUri;
 import static no.sikt.nva.nvi.index.aws.OpenSearchClient.defaultOpenSearchClient;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_AFFILIATIONS;
 import static no.sikt.nva.nvi.index.utils.PaginatedResultConverter.toPaginatedResult;
@@ -37,8 +38,6 @@ import org.slf4j.LoggerFactory;
 public class SearchNviCandidatesHandler
     extends ApiGatewayHandler<Void, PaginatedSearchResult<NviCandidateIndexDocument>> {
 
-  private static final String CRISTIN_PATH = "cristin";
-  private static final String ORGANIZATION_PATH = "organization";
   private final Logger logger = LoggerFactory.getLogger(SearchNviCandidatesHandler.class);
   private final SearchClient<NviCandidateIndexDocument> openSearchClient;
   private final ViewingScopeValidator viewingScopeValidator;
@@ -131,13 +130,6 @@ public class SearchNviCandidatesHandler
     return new HashSet<>(user.viewingScope().includedUnits());
   }
 
-  private URI toCristinOrgUri(String identifier) {
-    return UriWrapper.fromHost(apiHost)
-        .addChild(CRISTIN_PATH, ORGANIZATION_PATH)
-        .addChild(identifier)
-        .getUri();
-  }
-
   private void logAggregationType(CandidateSearchParameters candidateSearchParameters) {
     logger.info(
         "Aggregation type {} requested for topLevelCristinOrg {}",
@@ -164,6 +156,8 @@ public class SearchNviCandidatesHandler
   }
 
   private List<URI> toOrganizationUris(List<String> affiliationIdentifiers) {
-    return affiliationIdentifiers.stream().map(this::toCristinOrgUri).toList();
+    return affiliationIdentifiers.stream()
+        .map(identifier -> toCristinOrgUri(apiHost, identifier))
+        .toList();
   }
 }
