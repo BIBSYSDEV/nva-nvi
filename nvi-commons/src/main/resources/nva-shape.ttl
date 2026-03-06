@@ -147,7 +147,7 @@
       sh:path :country ;
       sh:maxCount 0]
     [
-      sh:path :country ;
+      sh:path :label ;
       sh:minCount 1 ;
       sh:datatype rdf:langString ;
       sh:languageIn ( "en" "nb" "nn" ) ;
