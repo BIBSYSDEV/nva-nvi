@@ -1,12 +1,10 @@
 package no.sikt.nva.nvi.index.xlsx;
 
 import static no.sikt.nva.nvi.common.utils.DecimalUtils.adjustScaleAndRoundingMode;
-import static no.sikt.nva.nvi.index.model.report.InstitutionReportConstants.CELL_TYPE_NUMERIC;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.util.Arrays;
 import java.util.Base64;
 import java.util.Base64.Encoder;
 import java.util.List;
@@ -71,16 +69,14 @@ public final class ExcelWorkbookGenerator {
 
   private static void addCells(Row row, List<String> cells) {
     for (var subCounter = 0; subCounter < cells.size(); subCounter++) {
-      var headerValue = Arrays.asList(InstitutionReportHeader.values()).get(subCounter);
-      var headerType = headerValue.getCellType();
-
-      var cellValue = cells.get(subCounter);
       var currentCell = row.createCell(subCounter);
-      var isHeaderCell = headerValue.getValue().equals(cellValue);
-      if (!isHeaderCell && CELL_TYPE_NUMERIC.equals(headerType)) {
-        var value = Double.parseDouble(cells.get(subCounter));
-        var bigValue = BigDecimal.valueOf(value);
-        var normalizedValue = adjustScaleAndRoundingMode(bigValue);
+      var header = InstitutionReportHeader.getHeader(subCounter);
+      var cellValue = cells.get(subCounter);
+
+      var isHeaderCell = header.getValue().equals(cellValue);
+      if (!isHeaderCell && header.isNumeric()) {
+        var numericValue = Double.parseDouble(cells.get(subCounter));
+        var normalizedValue = adjustScaleAndRoundingMode(BigDecimal.valueOf(numericValue));
         currentCell.setCellValue(normalizedValue.doubleValue());
       } else {
         currentCell.setCellValue(cells.get(subCounter));

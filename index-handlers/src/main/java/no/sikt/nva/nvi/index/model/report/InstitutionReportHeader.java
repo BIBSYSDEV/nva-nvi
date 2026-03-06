@@ -36,6 +36,7 @@ public enum InstitutionReportHeader {
   CREATOR_SHARE_COUNT("FORFATTERDEL", CELL_TYPE_NUMERIC, 25),
   POINTS_FOR_AFFILIATION("FORFATTERVEKT", CELL_TYPE_NUMERIC, 26);
 
+  private static final List<InstitutionReportHeader> VALUES = Arrays.asList(values());
   private final String value;
   private final int order;
   private final String cellType;
@@ -53,12 +54,21 @@ public enum InstitutionReportHeader {
         .toList();
   }
 
+  public static InstitutionReportHeader getHeader(int index) {
+    return VALUES.get(index);
+  }
+
   public String getValue() {
     return value;
   }
 
+
   public String getCellType() {
     return cellType;
+  }
+
+  public boolean isNumeric() {
+    CELL_TYPE_NUMERIC.equals(getCellType());
   }
 
   public int getOrder() {
