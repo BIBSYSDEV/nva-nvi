@@ -110,7 +110,6 @@ public class FetchInstitutionReportHandler extends ApiGatewayHandler<Void, Strin
   private URI resolveInstitutionId(RequestInfo requestInfo) {
     return requestInfo
         .getQueryParameterOpt(QUERY_PARAMETER_INSTITUTION_ID)
-        .filter(ignored -> isPrivilegedClient(requestInfo))
         .map(identifier -> toCristinOrgUri(apiHost, identifier))
         .orElseGet(() -> requestInfo.getTopLevelOrgCristinId().orElseThrow());
   }
