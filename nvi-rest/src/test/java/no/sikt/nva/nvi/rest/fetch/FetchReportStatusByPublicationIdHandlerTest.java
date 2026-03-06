@@ -27,7 +27,6 @@ import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.rest.EnvironmentFixtures;
-import no.sikt.nva.nvi.rest.fetch.ReportStatusDto.StatusDto;
 import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.GatewayResponse;
