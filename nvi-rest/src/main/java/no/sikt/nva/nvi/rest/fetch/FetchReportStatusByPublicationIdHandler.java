@@ -10,7 +10,6 @@ import java.nio.charset.StandardCharsets;
 import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.utils.ExceptionMapper;
-import no.sikt.nva.nvi.rest.fetch.ReportStatusDto.StatusDto;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
