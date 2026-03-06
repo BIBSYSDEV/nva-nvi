@@ -5,3 +5,7 @@ plugins {
 repositories {
     gradlePluginPortal()
 }
+
+dependencies {
+    implementation 'io.github.michael-nestler:gradle-spectral:0.2.0-0'
+}
