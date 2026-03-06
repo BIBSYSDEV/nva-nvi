@@ -819,7 +819,7 @@ paths:
       tags:
         - Report
       description: Get NVI report for a given year. Admins and backend clients can specify an institutionId query parameter to get a report for a specific institution.
-      summary: Get NVI institution approval report for given year
+      summary: Get NVI institution report with points per contributor for a given year
       operationId: getNviReportByYear
       parameters:
         - in: path
