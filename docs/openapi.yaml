@@ -1085,6 +1085,8 @@ paths:
                         type: InstitutionTotals
                         validPoints: 12.3456
                         disputedCount: 4
+                        globalApprovedCount: 3
+                        globalRejectedCount: 1
                         undisputedProcessedCount: 4
                         undisputedTotalCount: 6
                       byLocalApprovalStatus:
@@ -1776,10 +1778,20 @@ components:
         - type: object
           required:
             - type
+            - globalApprovedCount
+            - globalRejectedCount
           properties:
             type:
               type: string
               enum: [InstitutionTotals]
+            globalApprovedCount:
+              type: integer
+              minimum: 0
+              description: Number of candidates with global approval status Approved
+            globalRejectedCount:
+              type: integer
+              minimum: 0
+              description: Number of candidates with global approval status Rejected
 
     UnitTotals:
       description: Aggregate totals for an organizational unit.
