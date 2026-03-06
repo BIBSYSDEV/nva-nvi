@@ -309,7 +309,7 @@ class NviGraphValidatorTest {
   @Test
   void shouldReportWhenPublicationInternationalCollaborationIsRepeated() {
     var model = createModelWithNoErrors();
-    var validation = nviGraphValidator.validate(addIInternationalCollaboration(model));
+    var validation = nviGraphValidator.validate(addInternationalCollaboration(model));
     assertThat(validation.generateReport())
         .containsSequence("Publication international collaboration is repeated")
         .hasSize(1);
@@ -328,7 +328,7 @@ class NviGraphValidatorTest {
   @Test
   void shouldReportWhenPublicationLanguageIsRepeated() {
     var model = createModelWithNoErrors();
-    var validation = nviGraphValidator.validate(addILanguage(model));
+    var validation = nviGraphValidator.validate(addLanguage(model));
     assertThat(validation.generateReport())
         .containsSequence("Publication language is repeated")
         .hasSize(1);
@@ -355,7 +355,7 @@ class NviGraphValidatorTest {
   @Test
   void shouldReportWhenPublicationPageCountIsRepeated() {
     var model = createModelWithNoErrors();
-    var validation = nviGraphValidator.validate(addIPageCount(model));
+    var validation = nviGraphValidator.validate(addPageCount(model));
     assertThat(validation.generateReport())
         .containsSequence("Publication page count is repeated")
         .hasSize(1);
@@ -1234,7 +1234,7 @@ CONSTRUCT {
     return removeTriples(model, removeQuery(PUBLICATION, "pageCount"));
   }
 
-  private Model addIPageCount(Model model) {
+  private Model addPageCount(Model model) {
     var query =
         """
         PREFIX : <%s>
@@ -1253,7 +1253,7 @@ CONSTRUCT {
     return addTriples(model, query);
   }
 
-  private Model addILanguage(Model model) {
+  private Model addLanguage(Model model) {
     var query = addQuery(PUBLICATION, "language", URI.create("http://lexvo.org/id/iso639-3/cym"));
     return addTriples(model, query);
   }
@@ -1269,7 +1269,7 @@ CONSTRUCT {
     return removeTriples(model, removeQuery(PUBLICATION, "isInternationalCollaboration"));
   }
 
-  private Model addIInternationalCollaboration(Model model) {
+  private Model addInternationalCollaboration(Model model) {
     var query =
         """
         PREFIX : <%s>
