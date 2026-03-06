@@ -127,6 +127,13 @@ public record NviCandidateIndexDocument(
     return publicationDetails.nviContributors();
   }
 
+  public List<Map<InstitutionReportHeader, String>> toReportRowsForAllInstitutions() {
+    return approvals.stream()
+        .map(ApprovalView::institutionId)
+        .flatMap(institutionId -> toReportRowsForInstitution(institutionId).stream())
+        .toList();
+  }
+
   public List<Map<InstitutionReportHeader, String>> toReportRowsForInstitution(
       URI topLevelOrganization) {
     if (isNull(getApprovalForInstitution(topLevelOrganization))) {

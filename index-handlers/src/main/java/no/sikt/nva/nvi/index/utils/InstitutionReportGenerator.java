@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.index.utils;
 
+import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.index.query.SearchAggregation.TOTAL_COUNT_AGGREGATION_AGG;
 import static nva.commons.core.attempt.Try.attempt;
 
@@ -10,6 +11,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.IntStream;
@@ -43,25 +45,25 @@ public class InstitutionReportGenerator {
   private final int searchPageSize;
   private final String year;
   private final URI topLevelOrganization;
+  private final String sector;
 
   public InstitutionReportGenerator(
       SearchClient<NviCandidateIndexDocument> searchClient,
       int searchPageSize,
       String year,
-      URI topLevelOrganization) {
+      URI topLevelOrganization,
+      String sector) {
     this.searchClient = searchClient;
     this.searchPageSize = searchPageSize;
     this.year = year;
     this.topLevelOrganization = topLevelOrganization;
+    this.sector = sector;
   }
 
   public ExcelWorkbookGenerator generateReport() {
     var nviCandidates = fetchNviCandidates();
     var data =
-        nviCandidates.stream()
-            .map(candidate -> candidate.toReportRowsForInstitution(topLevelOrganization))
-            .flatMap(this::orderByHeaderOrder)
-            .toList();
+        nviCandidates.stream().map(this::toReportRows).flatMap(this::orderByHeaderOrder).toList();
     return new ExcelWorkbookGenerator(InstitutionReportHeader.getOrderedValues(), data);
   }
 
@@ -187,15 +189,29 @@ public class InstitutionReportGenerator {
     return searchResponse;
   }
 
+  private List<Map<InstitutionReportHeader, String>> toReportRows(
+      NviCandidateIndexDocument document) {
+    return nonNull(topLevelOrganization)
+        ? document.toReportRowsForInstitution(topLevelOrganization)
+        : document.toReportRowsForAllInstitutions();
+  }
+
   private CandidateSearchParameters.Builder buildSearchRequest(int offset, int pageSize) {
-    var topLevelOrganizationIdentifier =
-        UriWrapper.fromUri(topLevelOrganization).getLastPathElement();
     return CandidateSearchParameters.builder()
         .withYear(year)
+        .withSector(sector)
         .withTopLevelCristinOrg(topLevelOrganization)
-        .withAffiliations(List.of(topLevelOrganizationIdentifier))
+        .withAffiliations(getAffiliationIdentifiers())
         .withSearchResultParameters(getSearchRequestParameters(offset, pageSize))
         .withExcludeFields(List.of(EXCLUDE_CONTRIBUTORS_FIELD));
+  }
+
+  private List<String> getAffiliationIdentifiers() {
+    return Optional.ofNullable(topLevelOrganization)
+        .map(UriWrapper::fromUri)
+        .map(UriWrapper::getLastPathElement)
+        .stream()
+        .toList();
   }
 
   private SearchResultParameters getSearchRequestParameters(int offset, int pageSize) {

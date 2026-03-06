@@ -83,6 +83,7 @@ public final class SearchConstants {
         .withYear(params.year())
         .withCategory(params.category())
         .withTitle(params.title())
+        .withSector(params.sector())
         .withAssignee(params.assignee())
         .withExcludeUnassigned(params.excludeUnassigned())
         .withStatuses(params.statuses())

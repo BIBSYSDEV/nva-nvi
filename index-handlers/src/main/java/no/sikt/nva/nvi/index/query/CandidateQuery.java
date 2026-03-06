@@ -35,6 +35,7 @@ import static no.sikt.nva.nvi.index.utils.SearchConstants.NVI_CONTRIBUTORS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.PART_OF_IDENTIFIERS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.PUBLICATION_DETAILS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.REPORTING_PERIOD;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.SECTOR;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.TITLE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.TYPE;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.YEAR;
@@ -65,6 +66,7 @@ public record CandidateQuery(
     String year,
     String category,
     String title,
+    String sector,
     Set<GlobalApprovalStatus> globalStatuses) {
 
   public Query toQuery() {
@@ -141,6 +143,7 @@ public record CandidateQuery(
     var yearQuery = createYearQuery(year);
     var categoryQuery = createCategoryQuery(category);
     var titleQuery = createTitleQuery(title);
+    var sectorQuery = createSectorQuery();
     var globalStatusQuery = createGlobalStatusQuery();
 
     return Stream.of(
@@ -151,6 +154,7 @@ public record CandidateQuery(
             yearQuery,
             categoryQuery,
             titleQuery,
+            sectorQuery,
             globalStatusQuery)
         .filter(Optional::isPresent)
         .map(Optional::get)
@@ -238,6 +242,12 @@ public record CandidateQuery(
                     .toQuery());
   }
 
+  private Optional<Query> createSectorQuery() {
+    return Optional.ofNullable(sector)
+        .map(
+            value -> nestedQuery(APPROVALS, fieldValueQuery(jsonPathOf(APPROVALS, SECTOR), value)));
+  }
+
   private Optional<Query> createGlobalStatusQuery() {
     return globalStatuses.stream()
         .map(QueryFunctions::globalStatusQuery)
@@ -255,6 +265,7 @@ public record CandidateQuery(
     private String year;
     private String category;
     private String title;
+    private String sector;
     private String assignee;
     private boolean excludeUnassigned;
     private Set<ApprovalStatus> statuses = emptySet();
@@ -309,6 +320,11 @@ public record CandidateQuery(
       return this;
     }
 
+    public Builder withSector(String sector) {
+      this.sector = sector;
+      return this;
+    }
+
     public Builder withAssignee(String assignee) {
       this.assignee = assignee;
       return this;
@@ -344,6 +360,7 @@ public record CandidateQuery(
           year,
           category,
           title,
+          sector,
           globalStatuses);
     }
   }

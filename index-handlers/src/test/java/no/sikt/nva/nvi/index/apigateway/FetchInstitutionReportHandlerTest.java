@@ -55,8 +55,10 @@ import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
+import static nva.commons.apigateway.AccessRight.MANAGE_NVI;
 import static nva.commons.apigateway.AccessRight.MANAGE_NVI_CANDIDATES;
 import static nva.commons.apigateway.GatewayResponse.fromOutputStream;
+import static nva.commons.apigateway.RequestInfoConstants.BACKEND_SCOPE_AS_DEFINED_IN_IDENTITY_SERVICE;
 import static nva.commons.core.StringUtils.EMPTY_STRING;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -78,6 +80,7 @@ import java.io.InputStream;
 import java.math.BigDecimal;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashSet;
@@ -122,6 +125,7 @@ import org.zalando.problem.Problem;
 class FetchInstitutionReportHandlerTest {
 
   private static final String YEAR = "year";
+  private static final String INSTITUTION = "institution";
   private static final Context CONTEXT = new FakeContext();
   protected static final Environment ENVIRONMENT = new Environment();
   private static final int PAGE_SIZE =
@@ -148,6 +152,150 @@ class FetchInstitutionReportHandlerTest {
     var response = fromOutputStream(output, Problem.class);
 
     assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
+  }
+
+  @Test
+  void shouldReturnOkWhenUserIsNviAdmin() throws IOException {
+    var institutionId = randomCristinOrgUri();
+    mockCandidatesInOpenSearch(institutionId);
+    var request =
+        createRequest(institutionId, MANAGE_NVI, Map.of(YEAR, THIS_YEAR))
+            .withQueryParameters(Map.of(INSTITUTION, institutionId.toString()))
+            .build();
+    handler.handleRequest(request, output, CONTEXT);
+    var response = fromOutputStream(output, String.class);
+
+    assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_OK)));
+  }
+
+  @Test
+  void shouldReturnUnauthorizedWhenCuratorTriesToQueryOtherInstitution() throws IOException {
+    var curatorOrg = randomCristinOrgUri();
+    var otherOrg = randomCristinOrgUri();
+    var request =
+        createRequest(curatorOrg, MANAGE_NVI_CANDIDATES, Map.of(YEAR, THIS_YEAR))
+            .withQueryParameters(Map.of(INSTITUTION, otherOrg.toString()))
+            .build();
+    handler.handleRequest(request, output, CONTEXT);
+    var response = fromOutputStream(output, Problem.class);
+
+    assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
+  }
+
+  @Test
+  void shouldAllowAdminToQuerySpecificInstitution() throws IOException {
+    var adminOrg = randomCristinOrgUri();
+    var targetOrg = randomCristinOrgUri();
+    var year = THIS_YEAR;
+    when(openSearchClient.search(any()))
+        .thenReturn(aggregationResponse(1))
+        .thenReturn(
+            createSearchResponse(List.of(randomIndexDocumentWith(CURRENT_YEAR, targetOrg))));
+    var request =
+        createRequest(adminOrg, MANAGE_NVI, Map.of(YEAR, year))
+            .withQueryParameters(Map.of(INSTITUTION, targetOrg.toString()))
+            .build();
+    handler.handleRequest(request, output, CONTEXT);
+
+    var expectedSearchParameters =
+        CandidateSearchParameters.builder()
+            .withYear(year)
+            .withTopLevelCristinOrg(targetOrg)
+            .withAffiliations(List.of(extractIdentifier(targetOrg)))
+            .withSearchResultParameters(defaultResultParameters())
+            .withExcludeFields(List.of(NESTED_FIELD_CONTRIBUTORS))
+            .build();
+    verify(openSearchClient, times(1)).search(eq(expectedSearchParameters));
+  }
+
+  @Test
+  void shouldGenerateReportForAllInstitutionsWhenAdminUsesInstitutionAll() throws IOException {
+    var adminOrg = randomCristinOrgUri();
+    var firstInstitution = randomCristinOrgUri();
+    var secondInstitution = randomCristinOrgUri();
+    var document = randomIndexDocumentWithMultipleApprovals(firstInstitution, secondInstitution);
+    when(openSearchClient.search(any()))
+        .thenReturn(aggregationResponse(1))
+        .thenReturn(createSearchResponse(List.of(document)));
+    var request =
+        createRequest(adminOrg, MANAGE_NVI, Map.of(YEAR, THIS_YEAR))
+            .withQueryParameters(Map.of(INSTITUTION, "all"))
+            .build();
+    handler.handleRequest(request, output, CONTEXT);
+    var response = fromOutputStream(output, String.class);
+
+    assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_OK)));
+  }
+
+  @Test
+  void shouldReturnUnauthorizedWhenCuratorTriesToQueryAllInstitutions() throws IOException {
+    var curatorOrg = randomCristinOrgUri();
+    var request =
+        createRequest(curatorOrg, MANAGE_NVI_CANDIDATES, Map.of(YEAR, THIS_YEAR))
+            .withQueryParameters(Map.of(INSTITUTION, "all"))
+            .build();
+    handler.handleRequest(request, output, CONTEXT);
+    var response = fromOutputStream(output, Problem.class);
+
+    assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
+  }
+
+  @Test
+  void shouldReturnOkWhenCalledWithBackendToken() throws IOException {
+    var institutionId = randomCristinOrgUri();
+    when(openSearchClient.search(any()))
+        .thenReturn(aggregationResponse(1))
+        .thenReturn(
+            createSearchResponse(List.of(randomIndexDocumentWith(CURRENT_YEAR, institutionId))));
+    var request =
+        new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
+            .withScope(BACKEND_SCOPE_AS_DEFINED_IN_IDENTITY_SERVICE)
+            .withPathParameters(Map.of(YEAR, THIS_YEAR))
+            .withQueryParameters(Map.of(INSTITUTION, institutionId.toString()))
+            .build();
+    handler.handleRequest(request, output, CONTEXT);
+    var response = fromOutputStream(output, String.class);
+
+    assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_OK)));
+  }
+
+  @Test
+  void shouldFilterBySectorWhenQueryParamProvided() throws IOException {
+    var institutionId = randomCristinOrgUri();
+    var year = THIS_YEAR;
+    when(openSearchClient.search(any()))
+        .thenReturn(aggregationResponse(1))
+        .thenReturn(
+            createSearchResponse(List.of(randomIndexDocumentWith(CURRENT_YEAR, institutionId))));
+    var request =
+        createRequest(institutionId, MANAGE_NVI_CANDIDATES, Map.of(YEAR, year))
+            .withQueryParameters(Map.of("sector", "UHI"))
+            .build();
+    handler.handleRequest(request, output, CONTEXT);
+
+    var expectedSearchParameters =
+        CandidateSearchParameters.builder()
+            .withYear(year)
+            .withTopLevelCristinOrg(institutionId)
+            .withAffiliations(List.of(extractIdentifier(institutionId)))
+            .withSector("UHI")
+            .withSearchResultParameters(defaultResultParameters())
+            .withExcludeFields(List.of(NESTED_FIELD_CONTRIBUTORS))
+            .build();
+    verify(openSearchClient, times(1)).search(eq(expectedSearchParameters));
+  }
+
+  @Test
+  void shouldReturnBadRequestForInvalidSectorValue() throws IOException {
+    var institutionId = randomCristinOrgUri();
+    var request =
+        createRequest(institutionId, MANAGE_NVI_CANDIDATES, Map.of(YEAR, THIS_YEAR))
+            .withQueryParameters(Map.of("sector", "INVALID"))
+            .build();
+    handler.handleRequest(request, output, CONTEXT);
+    var response = fromOutputStream(output, Problem.class);
+
+    assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_BAD_REQUEST)));
   }
 
   @Test
@@ -751,5 +899,31 @@ class FetchInstitutionReportHandlerTest {
         .thenReturn(aggregationResponse(indexDocuments.size()))
         .thenReturn(createSearchResponse(indexDocuments));
     return indexDocuments;
+  }
+
+  private static NviCandidateIndexDocument randomIndexDocumentWithMultipleApprovals(
+      URI firstInstitution, URI secondInstitution) {
+    var firstDoc = randomIndexDocumentWith(CURRENT_YEAR, firstInstitution);
+    var secondDoc = randomIndexDocumentWith(CURRENT_YEAR, secondInstitution);
+    var combinedApprovals = new ArrayList<>(firstDoc.approvals());
+    combinedApprovals.addAll(secondDoc.approvals());
+    return NviCandidateIndexDocument.builder()
+        .withContext(firstDoc.context())
+        .withId(firstDoc.id())
+        .withIsApplicable(true)
+        .withIdentifier(firstDoc.identifier())
+        .withPublicationDetails(firstDoc.publicationDetails())
+        .withApprovals(combinedApprovals)
+        .withNumberOfApprovals(combinedApprovals.size())
+        .withPoints(firstDoc.points())
+        .withPublicationTypeChannelLevelPoints(firstDoc.publicationTypeChannelLevelPoints())
+        .withGlobalApprovalStatus(firstDoc.globalApprovalStatus())
+        .withCreatorShareCount(firstDoc.creatorShareCount())
+        .withInternationalCollaborationFactor(firstDoc.internationalCollaborationFactor())
+        .withReportingPeriod(firstDoc.reportingPeriod())
+        .withReported(firstDoc.reported())
+        .withCreatedDate(Instant.now())
+        .withModifiedDate(Instant.now())
+        .build();
   }
 }

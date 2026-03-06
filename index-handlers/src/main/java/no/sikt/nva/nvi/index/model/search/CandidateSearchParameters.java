@@ -45,6 +45,7 @@ public record CandidateSearchParameters(
     List<String> excludeFields,
     List<String> statuses,
     List<String> globalStatuses,
+    String sector,
     SearchResultParameters searchResultParameters)
     implements JsonSerializable {
 
@@ -204,6 +205,7 @@ public record CandidateSearchParameters(
     private List<String> excludeFields = emptyList();
     private List<String> statuses = emptyList();
     private List<String> globalStatuses = emptyList();
+    private String sector;
     private SearchResultParameters searchResultParameters =
         SearchResultParameters.builder().build();
 
@@ -284,6 +286,11 @@ public record CandidateSearchParameters(
       return this;
     }
 
+    public Builder withSector(String sector) {
+      this.sector = sector;
+      return this;
+    }
+
     public Builder withSearchResultParameters(SearchResultParameters searchResultParameters) {
       this.searchResultParameters = searchResultParameters;
       return this;
@@ -306,6 +313,7 @@ public record CandidateSearchParameters(
           excludeFields,
           statuses,
           globalStatuses,
+          sector,
           searchResultParameters);
     }
   }
