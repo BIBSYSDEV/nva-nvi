@@ -340,14 +340,12 @@ class PublicationLoaderServiceTest {
     assertThat(logAppender.getMessages()).contains("Contributor verification status is repeated");
   }
 
-  // In this case, it is an NVA test
   @Test
-  void shouldLogWhenOrganizationIsNotFromKnownCountry() {
+  void shouldLogWhenNoOrganizationHasNorwegianCountryCode() {
     var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
-    assertThrows(
-        ParsingException.class,
+    assertDoesNotThrow(
         () -> parseExampleDocument(ExamplePublications.ORGANIZATION_UNKNOWN_COUNTRY));
-    assertThat(logAppender.getMessages()).contains("Organization country is not equal to 'NO'");
+    assertThat(logAppender.getMessages()).contains("No organization with country 'NO' found");
   }
 
   // In this case, it is an NVA test

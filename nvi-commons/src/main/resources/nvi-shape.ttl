@@ -544,4 +544,23 @@
     sh:path :year ;
     sh:datatype xsd:string ;
     sh:pattern "^[0-9]{4}$"
-  ] ;
+  ] .
+
+:AtLeastOneNorwegianOrganizationShape a sh:NodeShape ;
+  sh:severity sh:Violation ;
+  sh:message "No organization with country 'NO' found" ;
+  sh:targetNode rdf:nil ;
+  sh:sparql [
+    a sh:SPARQLConstraint ;
+    sh:select """
+      SELECT ?publication
+      WHERE {
+        ?publication a <https://nva.sikt.no/ontology/publication#Publication> .
+        FILTER NOT EXISTS {
+          ?org a <https://nva.sikt.no/ontology/publication#Organization> .
+          ?org <https://nva.sikt.no/ontology/publication#country> "NO" .
+        }
+      }
+    """ ;
+    sh:message "No organization with country 'NO' found"
+  ] .

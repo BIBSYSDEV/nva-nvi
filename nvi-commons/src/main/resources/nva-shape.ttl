@@ -118,24 +118,6 @@
       ]
     ) .
 
-:OrganizationNotNorwayShape a sh:NodeShape ;
-  sh:severity sh:Info ;
-  sh:message "Organization country is not equal to 'NO'" ;
-  sh:targetClass :Organization ;
-  # Validate the country if and only if it is present
-    sh:or (
-      [
-        sh:path :country ;
-        sh:maxCount 0
-      ]
-      [
-        sh:path :country ;
-        sh:severity sh:Violation ;
-        sh:datatype xsd:string ;
-        sh:in ( "NO" )
-      ]
-    ) .
-
 :OrganizationLabelShape a sh:NodeShape ;
   sh:targetClass :Organization ;
   sh:severity sh:Violation ;
