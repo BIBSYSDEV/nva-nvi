@@ -10,8 +10,10 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.io.IOException;
 import java.net.URI;
 import no.sikt.nva.nvi.common.StorageWriter;
+import no.sikt.nva.nvi.common.dto.PublicationDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.index.model.PersistedResource;
+import no.sikt.nva.nvi.index.utils.CandidateToIndexDocumentMapper;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 
 @JsonSerialize
@@ -25,6 +27,14 @@ public record IndexDocumentWithConsumptionAttributes(
   public static IndexDocumentWithConsumptionAttributes from(NviCandidateIndexDocument document) {
     return new IndexDocumentWithConsumptionAttributes(
         document, ConsumptionAttributes.from(document.identifier()));
+  }
+
+  public static IndexDocumentWithConsumptionAttributes from(
+      Candidate candidate, PublicationDto publicationDto) {
+    var indexDocument =
+        new CandidateToIndexDocumentMapper(candidate, publicationDto).toIndexDocument();
+    var consumptionAttributes = ConsumptionAttributes.from(indexDocument.identifier());
+    return new IndexDocumentWithConsumptionAttributes(indexDocument, consumptionAttributes);
   }
 
   public static IndexDocumentWithConsumptionAttributes from(
