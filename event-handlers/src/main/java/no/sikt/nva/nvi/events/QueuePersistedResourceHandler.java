@@ -22,7 +22,6 @@ public class QueuePersistedResourceHandler
   private static final Logger LOGGER = LoggerFactory.getLogger(QueuePersistedResourceHandler.class);
   private static final String QUEUE_PERSISTED_RESOURCE_QUEUE_URL = "PERSISTED_RESOURCE_QUEUE_URL";
   private static final String PERSISTED_RESOURCES_PUBLICATION_FOLDER = "resources";
-  private static final String ERROR_MSG = "Invalid EventReference, missing uri: %s";
   private final QueueClient queueClient;
   private final String queueUrl;
 
@@ -55,7 +54,7 @@ public class QueuePersistedResourceHandler
 
   private static void validateInput(EventReference input) {
     if (isNull(input.getUri())) {
-      LOGGER.error(String.format(ERROR_MSG, input));
+      LOGGER.error(String.format("Invalid EventReference, missing uri: %s", input));
       throw new RuntimeException();
     }
   }
