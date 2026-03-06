@@ -62,13 +62,12 @@ public enum InstitutionReportHeader {
     return value;
   }
 
-
   public String getCellType() {
     return cellType;
   }
 
   public boolean isNumeric() {
-    CELL_TYPE_NUMERIC.equals(getCellType());
+    return CELL_TYPE_NUMERIC.equals(getCellType());
   }
 
   public int getOrder() {
