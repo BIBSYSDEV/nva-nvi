@@ -1,11 +1,15 @@
 package no.sikt.nva.nvi.index.xlsx;
 
+import static no.sikt.nva.nvi.common.utils.DecimalUtils.adjustScaleAndRoundingMode;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.Base64;
 import java.util.Base64.Encoder;
 import java.util.List;
 import java.util.Objects;
+import no.sikt.nva.nvi.index.model.report.InstitutionReportHeader;
 import nva.commons.core.JacocoGenerated;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.streaming.SXSSFSheet;
@@ -66,7 +70,17 @@ public final class ExcelWorkbookGenerator {
   private static void addCells(Row row, List<String> cells) {
     for (var subCounter = 0; subCounter < cells.size(); subCounter++) {
       var currentCell = row.createCell(subCounter);
-      currentCell.setCellValue(cells.get(subCounter));
+      var header = InstitutionReportHeader.getHeader(subCounter);
+      var cellValue = cells.get(subCounter);
+
+      var isHeaderCell = header.getValue().equals(cellValue);
+      if (!isHeaderCell && header.isNumeric()) {
+        var numericValue = Double.parseDouble(cells.get(subCounter));
+        var normalizedValue = adjustScaleAndRoundingMode(BigDecimal.valueOf(numericValue));
+        currentCell.setCellValue(normalizedValue.doubleValue());
+      } else {
+        currentCell.setCellValue(cells.get(subCounter));
+      }
     }
   }
 

@@ -699,6 +699,28 @@ class FetchReportHandlerIntegrationTest {
     }
 
     @PerInstitutionForThisYear
+    void shouldHaveExpectedGlobalApprovedCount(
+        String institutionIdentifier, List<NviCandidateIndexDocument> relevantDocs) {
+      var report = getInstitutionReport(THIS_YEAR, institutionIdentifier);
+      var expectedCount =
+          relevantDocs.stream().filter(hasGlobalStatus(GlobalApprovalStatus.APPROVED)).count();
+
+      var totals = report.institutionSummary().totals();
+      assertThat(totals.globalApprovedCount()).isEqualTo(expectedCount);
+    }
+
+    @PerInstitutionForThisYear
+    void shouldHaveExpectedGlobalRejectedCount(
+        String institutionIdentifier, List<NviCandidateIndexDocument> relevantDocs) {
+      var report = getInstitutionReport(THIS_YEAR, institutionIdentifier);
+      var expectedCount =
+          relevantDocs.stream().filter(hasGlobalStatus(GlobalApprovalStatus.REJECTED)).count();
+
+      var totals = report.institutionSummary().totals();
+      assertThat(totals.globalRejectedCount()).isEqualTo(expectedCount);
+    }
+
+    @PerInstitutionForThisYear
     void shouldHaveExpectedUndisputedProcessedCount(
         String institutionIdentifier, List<NviCandidateIndexDocument> relevantDocs) {
       var report = getInstitutionReport(THIS_YEAR, institutionIdentifier);

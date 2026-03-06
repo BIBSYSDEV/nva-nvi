@@ -2,6 +2,7 @@ plugins {
     id 'nva.nvi.common-conventions'
     id 'jacoco'
     id 'com.github.ben-manes.versions'
+    id 'io.github.michael-nestler.spectral'
 }
 
 tasks.register('testCodeCoverageReport', JacocoReport) {
@@ -97,4 +98,9 @@ tasks.named('dependencyUpdates') {
         // Don't suggest upgrading from a stable version to a non-stable version
         isNonStable(it.candidate.version) && !isNonStable(it.currentVersion)
     }
+}
+
+spectral {
+    documents.from("docs/openapi.yaml")
+    ruleset.set(file('.spectral.yaml'))
 }
