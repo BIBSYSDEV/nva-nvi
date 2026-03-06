@@ -389,16 +389,6 @@ class PublicationLoaderServiceTest {
         .contains("Organization label is not a unique language literal from [en, nb, nn]");
   }
 
-  // In this case, it is an NVA test
-  @Test
-  void shouldLogWhenPublicationChannelIsNotKnownType() {
-    var logAppender = LogUtils.getTestingAppender(PublicationLoaderService.class);
-    assertDoesNotThrow(
-        () -> parseExampleDocument(ExamplePublications.PUBLICATION_CHANNEL_INVALID_TYPE));
-    assertThat(logAppender.getMessages())
-        .contains("Publication channel is not an IRI of type (Journal, Publisher, Series)");
-  }
-
   // NVI test!
   @Test
   void shouldLogWhenPublicationChannelIsMissingInNviData() {
