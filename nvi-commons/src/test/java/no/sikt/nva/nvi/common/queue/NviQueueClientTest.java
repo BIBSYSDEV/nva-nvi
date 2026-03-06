@@ -39,18 +39,18 @@ import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
 class NviQueueClientTest {
 
-  public static final String TEST_PAYLOAD = "{}";
-  public static final String TEST_QUEUE_URL = "url";
-  public static final String TEST_MESSAGE_ID = "some_test_id";
-  public static final String MESSAGE_FAILED_ID = "some_failed_id";
+  private static final String TEST_PAYLOAD = "{}";
+  private static final String TEST_QUEUE_URL = "url";
+  private static final String TEST_MESSAGE_ID = "some_test_id";
+  private static final String MESSAGE_FAILED_ID = "some_failed_id";
   private static final String TEST_RECEIPT_HANDLE = "some_test_receipt_handle";
-  public static final String MESSAGE_ATTRIBUTE_CANDIDATE_IDENTIFIER = "candidateIdentifier";
-  public static final int MAX_NUMBER_OF_MESSAGES = 10;
-  public static final String DATA_TYPE_STRING = "String";
+  private static final String MESSAGE_ATTRIBUTE_CANDIDATE_IDENTIFIER = "candidateIdentifier";
+  private static final int MAX_NUMBER_OF_MESSAGES = 10;
+  private static final String DATA_TYPE_STRING = "String";
   private SqsClient sqsClient;
 
   @BeforeEach
-  public void setUp() {
+  void setUp() {
     sqsClient = mock(SqsClient.class);
   }
 

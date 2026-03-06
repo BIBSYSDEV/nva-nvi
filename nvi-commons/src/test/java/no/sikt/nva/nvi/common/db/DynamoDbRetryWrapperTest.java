@@ -39,7 +39,7 @@ class DynamoDbRetryWrapperTest {
   private DynamoDbRetryWrapper dynamoDbRetryClient;
 
   @BeforeEach
-  public void setUp() {
+  void setUp() {
     dynamodb = mock(DynamoDbClient.class);
     dynamoDbRetryClient =
         DynamoDbRetryWrapper.builder()

@@ -224,7 +224,7 @@ class NviPeriodTest {
     assertEquals(request.createdBy(), actual.createdBy());
   }
 
-  public static Stream<Arguments> periodToPeriodStatusProvider() {
+  private static Stream<Arguments> periodToPeriodStatusProvider() {
     return Stream.of(
         argumentSet("No period", null, PeriodStatus.NONE),
         argumentSet("Open period", openPeriod(), PeriodStatus.OPEN),

@@ -39,7 +39,7 @@ import software.amazon.awssdk.services.sqs.model.ReceiveMessageResponse;
 
 class RequeueDlqHandlerTest {
 
-  public static final Context CONTEXT = new FakeContext();
+  private static final Context CONTEXT = new FakeContext();
   private static final String DLQ_URL = "https://some-sqs-url";
   private static final String FIRST_BATCH = "firstBatch";
   private static final int DEFAULT_BATCH_SIZE = 10;
