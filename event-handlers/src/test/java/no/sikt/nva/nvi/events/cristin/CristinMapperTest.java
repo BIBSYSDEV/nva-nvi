@@ -42,9 +42,9 @@ import org.junit.jupiter.api.Test;
 
 class CristinMapperTest {
 
-  public static final String BASE_POINTS_CRISTIN_ENTRY = "1.0";
-  public static final String INTERNATIONAL_COLLABORATION_FACTOR_CRISTIN_ENTRY = "1.3";
-  public static final String NO_INTERNATIONAL_COLLABORATION_FACTOR_CRISTIN_ENTRY = "1.0";
+  private static final String BASE_POINTS_CRISTIN_ENTRY = "1.0";
+  private static final String INTERNATIONAL_COLLABORATION_FACTOR_CRISTIN_ENTRY = "1.3";
+  private static final String NO_INTERNATIONAL_COLLABORATION_FACTOR_CRISTIN_ENTRY = "1.0";
   private static final String INSTITUTION_IDENTIFIER = randomString();
   private static final BigDecimal POINTS_PER_CONTRIBUTOR = new BigDecimal("2.1398");
   private static final int CALCULATION_PRECISION = 10;

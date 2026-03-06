@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 
 class ExceptionUtilsTest {
 
-  public static final String SOME_EXCEPTION_MESSAGE = "Test exception";
+  private static final String SOME_EXCEPTION_MESSAGE = "Test exception";
 
   @Test
   void shouldReturnStackTraceAsString() {

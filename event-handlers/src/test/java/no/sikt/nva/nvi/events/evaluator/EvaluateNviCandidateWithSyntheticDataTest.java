@@ -55,7 +55,7 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
   private Organization nonNviOrganization;
   private URI publicationId;
 
-  public static Stream<Arguments> isbnRequiringTypeProvider() {
+  private static Stream<Arguments> isbnRequiringTypeProvider() {
     return Stream.of(Arguments.of("AcademicChapter", "AcademicMonograph", "AcademicCommentary"));
   }
 
