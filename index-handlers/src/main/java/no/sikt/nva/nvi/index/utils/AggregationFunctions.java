@@ -12,6 +12,8 @@ import org.opensearch.client.opensearch._types.query_dsl.Query;
 
 public final class AggregationFunctions {
 
+  private static final int MAX_AGGREGATION_SIZE = 1000;
+
   private AggregationFunctions() {}
 
   public static Aggregation filterAggregation(Query filterQuery) {
@@ -30,7 +32,7 @@ public final class AggregationFunctions {
   public static Aggregation termsAggregationWithSubAggregations(
       String field, Map<String, Aggregation> subAggregations) {
     return new Aggregation.Builder()
-        .terms(new TermsAggregation.Builder().field(field).build())
+        .terms(new TermsAggregation.Builder().field(field).size(MAX_AGGREGATION_SIZE).build())
         .aggregations(subAggregations)
         .build();
   }
