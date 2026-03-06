@@ -58,15 +58,13 @@
     sh:severity sh:Violation ;
     sh:message "Contributor role is missing" ;
     sh:path :role ;
-    sh:minCount 1 ;
-    sh:in (:Creator)
+    sh:minCount 1
   ] ;
   sh:property [
     sh:severity sh:Violation ;
     sh:message "Contributor role is repeated" ;
     sh:path :role ;
-    sh:maxCount 1 ;
-    sh:in (:Creator)
+    sh:maxCount 1
   ] .
 
 :IdentityShape a sh:NodeShape ;
@@ -147,7 +145,7 @@
       sh:path :country ;
       sh:maxCount 0]
     [
-      sh:path :country ;
+      sh:path :label ;
       sh:minCount 1 ;
       sh:datatype rdf:langString ;
       sh:languageIn ( "en" "nb" "nn" ) ;
