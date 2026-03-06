@@ -54,7 +54,6 @@ import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentMatcher;
 import org.mockito.Mockito;
 import org.zalando.problem.StatusType;
 
@@ -415,20 +414,5 @@ class SearchNviCandidatesHandlerTest extends SearchNviCandidatesHandlerTestBase 
         QUERY_PARAM_CATEGORY, category,
         QUERY_PARAM_TITLE, title,
         QUERY_PARAM_SEARCH_TERM, searchTerm);
-  }
-
-  public static class CandidateSearchParamsAffiliationMatcher
-      implements ArgumentMatcher<CandidateSearchParameters> {
-
-    private final CandidateSearchParameters source;
-
-    public CandidateSearchParamsAffiliationMatcher(CandidateSearchParameters source) {
-      this.source = source;
-    }
-
-    @Override
-    public boolean matches(CandidateSearchParameters other) {
-      return other.affiliationIdentifiers().equals(source.affiliationIdentifiers());
-    }
   }
 }

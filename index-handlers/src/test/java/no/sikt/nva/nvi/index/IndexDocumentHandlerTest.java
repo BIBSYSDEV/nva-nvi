@@ -139,7 +139,7 @@ class IndexDocumentHandlerTest {
   private FakeSqsClient sqsClient;
   private TestScenario scenario;
 
-  public static Stream<Arguments> channelTypeIssnProvider() {
+  private static Stream<Arguments> channelTypeIssnProvider() {
     return Stream.of(
         Arguments.of(ChannelType.JOURNAL, true),
         Arguments.of(ChannelType.JOURNAL, false),

@@ -370,7 +370,7 @@ class CristinNviReportEventConsumerTest {
         .build();
   }
 
-  public URI setupCristinNviReportInS3(CristinNviReport cristinNviReport) {
+  private URI setupCristinNviReportInS3(CristinNviReport cristinNviReport) {
     var fullPath = UnixPath.of(randomString(), randomString());
     try {
       return s3Driver.insertFile(fullPath, cristinNviReport.toJsonString());
