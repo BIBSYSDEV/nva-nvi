@@ -818,14 +818,20 @@ paths:
     get:
       tags:
         - Report
-      description: Get NVI report for a given year
-      summary: Get requesting users top level organizations NVI report for given year
+      description: Get NVI report for a given year. Admins and backend clients can specify an institutionId query parameter to get a report for a specific institution.
+      summary: Get NVI institution approval report for given year
       operationId: getNviReportByYear
       parameters:
         - in: path
           name: year
           description: The year of the nvi period
           required: true
+          schema:
+            type: string
+        - in: query
+          name: institutionId
+          description: Cristin organization identifier (e.g. 185.90.0.0). Only allowed for admins and backend clients.
+          required: false
           schema:
             type: string
       security: *authenticated

@@ -55,8 +55,10 @@ import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
+import static nva.commons.apigateway.AccessRight.MANAGE_NVI;
 import static nva.commons.apigateway.AccessRight.MANAGE_NVI_CANDIDATES;
 import static nva.commons.apigateway.GatewayResponse.fromOutputStream;
+import static nva.commons.apigateway.RequestInfoConstants.BACKEND_SCOPE_AS_DEFINED_IN_IDENTITY_SERVICE;
 import static nva.commons.core.StringUtils.EMPTY_STRING;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -393,6 +395,69 @@ class FetchInstitutionReportHandlerTest {
         requestWithMediaType(ANY_APPLICATION_TYPE.toString(), topLevelCristinOrg), output, CONTEXT);
     var response = fromOutputStream(output, String.class);
     assertThat(response.getHeaders().get(CONTENT_TYPE), is(OOXML_SHEET.toString()));
+  }
+
+  @Test
+  void shouldReturnOkWhenAdminQueriesSpecificInstitution() throws IOException {
+    var targetInstitutionId = randomCristinOrgUri();
+    mockCandidatesInOpenSearch(targetInstitutionId);
+    var identifier = UriWrapper.fromUri(targetInstitutionId).getLastPathElement();
+    var ownInstitution = randomCristinOrgUri();
+    var request =
+        createRequest(ownInstitution, MANAGE_NVI, Map.of(YEAR, THIS_YEAR))
+            .withQueryParameters(Map.of("institutionId", identifier))
+            .build();
+
+    handler.handleRequest(request, output, CONTEXT);
+
+    var response = fromOutputStream(output, String.class);
+    assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_OK)));
+  }
+
+  @Test
+  void shouldReturnOkWhenBackendTokenQueriesSpecificInstitution() throws IOException {
+    var targetInstitutionId = randomCristinOrgUri();
+    mockCandidatesInOpenSearch(targetInstitutionId);
+    var identifier = UriWrapper.fromUri(targetInstitutionId).getLastPathElement();
+    var request =
+        new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
+            .withScope(BACKEND_SCOPE_AS_DEFINED_IN_IDENTITY_SERVICE)
+            .withUserName(randomString())
+            .withPathParameters(Map.of(YEAR, THIS_YEAR))
+            .withQueryParameters(Map.of("institutionId", identifier))
+            .build();
+
+    handler.handleRequest(request, output, CONTEXT);
+
+    var response = fromOutputStream(output, String.class);
+    assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_OK)));
+  }
+
+  @Test
+  void shouldReturnUnauthorizedWhenCuratorQueriesOtherInstitution() throws IOException {
+    var ownInstitution = randomCristinOrgUri();
+    var otherIdentifier = "185.90.0.0";
+    var request =
+        createRequest(ownInstitution, MANAGE_NVI_CANDIDATES, Map.of(YEAR, THIS_YEAR))
+            .withQueryParameters(Map.of("institutionId", otherIdentifier))
+            .build();
+
+    handler.handleRequest(request, output, CONTEXT);
+
+    var response = fromOutputStream(output, Problem.class);
+    assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
+  }
+
+  @Test
+  void shouldFallBackToOwnInstitutionWhenAdminOmitsInstitutionId() throws IOException {
+    var ownInstitution = randomCristinOrgUri();
+    mockCandidatesInOpenSearch(ownInstitution);
+    var request = createRequest(ownInstitution, MANAGE_NVI, Map.of(YEAR, THIS_YEAR)).build();
+
+    handler.handleRequest(request, output, CONTEXT);
+
+    var response = fromOutputStream(output, String.class);
+    assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_OK)));
   }
 
   @Test
