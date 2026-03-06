@@ -73,7 +73,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 class EvaluateNviCandidateHandlerTest extends EvaluationTest {
 
-  public static final URI HARDCODED_PUBLICATION_CHANNEL_ID =
+  private static final URI HARDCODED_PUBLICATION_CHANNEL_ID =
       URI.create("https://api.dev.nva.aws.unit.no/publication-channels/series/490845/2023");
   private static final String ACADEMIC_CHAPTER_PATH = "evaluator/candidate_academicChapter.json";
 

@@ -26,11 +26,11 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 class PublicationDtoTest {
 
-  public static Stream<Arguments> isbnRequiringTypeProvider() {
+  private static Stream<Arguments> isbnRequiringTypeProvider() {
     return Stream.of(Arguments.of("AcademicChapter", "AcademicMonograph", "AcademicCommentary"));
   }
 
-  public static Stream<Arguments> invalidNestedInstanceTypeProvider() {
+  private static Stream<Arguments> invalidNestedInstanceTypeProvider() {
     return Stream.of(Arguments.of("AcademicMonograph", "AcademicCommentary"));
   }
 

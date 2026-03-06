@@ -264,7 +264,7 @@ class DynamoDbUpdateEventTest {
             EnvironmentFixtures.TOPIC_APPROVAL_REMOVE.getValue()));
   }
 
-  public static Stream<Arguments> otherDaoInsertEventProvider() {
+  private static Stream<Arguments> otherDaoInsertEventProvider() {
     var randomUniquenessEntry = new CandidateUniquenessEntryDao(randomUUID().toString());
     return Stream.of(
         argumentSet(
@@ -285,7 +285,7 @@ class DynamoDbUpdateEventTest {
     return getDbEventMessages().getFirst();
   }
 
-  public static DynamodbEvent createCandidateEventWithEmptyPointsList() {
+  private static DynamodbEvent createCandidateEventWithEmptyPointsList() {
     var oldImage = randomApplicableCandidateDao();
     var pointCalculationWithEmptyList =
         oldImage.candidate().pointCalculation().copy().institutionPoints(emptyList()).build();
@@ -296,7 +296,7 @@ class DynamoDbUpdateEventTest {
     return eventWithDao(oldImage, newImage, OperationType.MODIFY);
   }
 
-  public static DynamodbEvent createDynamoDbEventWithMissingIdentifier() {
+  private static DynamodbEvent createDynamoDbEventWithMissingIdentifier() {
     var streamRecord = new StreamRecord();
     streamRecord.setOldImage(Map.of(randomString(), new AttributeValue(randomString())));
     var dynamoDbEvent = new DynamodbEvent();
