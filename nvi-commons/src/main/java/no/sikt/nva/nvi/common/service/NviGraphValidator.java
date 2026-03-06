@@ -8,10 +8,10 @@ import org.apache.jena.shacl.Shapes;
 public class NviGraphValidator implements GraphValidator {
 
   private static final String NVI_SHAPE_TTL = "nvi-shape.ttl";
+  private static final Shapes NVI_SHAPE = Shapes.parse(RDFDataMgr.loadGraph(NVI_SHAPE_TTL));
 
   @Override
   public GraphValidation validate(Model model) {
-    var shape = Shapes.parse(RDFDataMgr.loadGraph(NVI_SHAPE_TTL));
-    return new GraphValidation(ShaclValidator.get().validate(shape, model.getGraph()));
+    return new GraphValidation(ShaclValidator.get().validate(NVI_SHAPE, model.getGraph()));
   }
 }
