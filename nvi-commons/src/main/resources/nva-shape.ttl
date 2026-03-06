@@ -118,24 +118,6 @@
       ]
     ) .
 
-:OrganizationNotNorwayShape a sh:NodeShape ;
-  sh:severity sh:Info ;
-  sh:message "Organization country is not equal to 'NO'" ;
-  sh:targetClass :Organization ;
-  # Validate the country if and only if it is present
-    sh:or (
-      [
-        sh:path :country ;
-        sh:maxCount 0
-      ]
-      [
-        sh:path :country ;
-        sh:severity sh:Violation ;
-        sh:datatype xsd:string ;
-        sh:in ( "NO" )
-      ]
-    ) .
-
 :OrganizationLabelShape a sh:NodeShape ;
   sh:targetClass :Organization ;
   sh:severity sh:Violation ;
@@ -169,14 +151,9 @@
   ] .
 
 :PublicationChannelShape a sh:NodeShape ;
-  sh:targetObjectsOf :publicationContext ;
-  sh:property [
-    sh:severity sh:Violation ;
-    sh:message "Publication channel is not an IRI of type (Journal, Publisher, Series)" ;
-    sh:path rdf:type ;
-    sh:nodeKind sh:IRI ;
-    sh:in (:Journal :Series :Publisher)
-  ] ;
+  sh:targetClass :Journal ;
+  sh:targetClass :Publisher ;
+  sh:targetClass :Series ;
   sh:property [
     sh:severity sh:Violation ;
     sh:message "Publication channel type has multiple values" ;
@@ -265,7 +242,7 @@
   ] ;
   sh:property [
     sh:severity sh:Violation ;
-    sh:message "Publication channel year is repeated " ;
+    sh:message "Publication channel year is repeated" ;
     sh:path :year ;
     sh:maxCount 1
   ] ;
@@ -275,4 +252,27 @@
     sh:path :year ;
     sh:datatype xsd:string ;
     sh:pattern "^[0-9]{4}$"
+  ] .
+
+:PublicationChannelIssnShape a sh:NodeShape ;
+  sh:targetClass :Journal ;
+  sh:targetClass :Series ;
+  sh:property [
+    sh:severity sh:Warning ;
+    sh:message "Publication channel print ISSN is missing" ;
+    sh:path :printIssn ;
+    sh:minCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication channel print ISSN is repeated" ;
+    sh:path :printIssn ;
+    sh:maxCount 1
+  ] ;
+  sh:property [
+    sh:severity sh:Violation ;
+    sh:message "Publication channel print ISSN is not a string matching regex" ;
+    sh:path :printIssn ;
+    sh:datatype xsd:string ;
+    sh:pattern "^[0-9]{4}-[0-9]{3}[0-9X]$"
   ] .

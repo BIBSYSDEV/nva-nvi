@@ -36,7 +36,7 @@
             "name" : "Ola Nordmann",
             "verificationStatus" : "Verified"
           } ],
-          "countryCode" : "NO",
+          "countryCode" : "GB",
           "labels" : {
             "nn" : "Noregs teknisk-naturvitskaplege universitet",
             "nb" : "Norges teknisk-naturvitenskapelige universitet",
@@ -88,7 +88,7 @@
         "affiliations" : [ {
           "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.2.0.0",
           "type" : "Organization",
-          "countryCode" : "NO",
+          "countryCode" : "GB",
           "labels" : {
             "nn" : "Divisjon for forskings- og kunnskapsressursar",
             "nb" : "Divisjon forsknings- og kunnskapsressurser",
@@ -106,7 +106,7 @@
             "name" : "Ola Nordmann",
             "verificationStatus" : "Verified"
           } ],
-          "countryCode" : "NO",
+          "countryCode" : "GB",
           "labels" : {
             "nn" : "Noregs teknisk-naturvitskaplege universitet",
             "nb" : "Norges teknisk-naturvitenskapelige universitet",
@@ -150,7 +150,7 @@
         "name" : "Ola Nordmann",
         "verificationStatus" : "Verified"
       } ],
-      "countryCode" : "NO",
+      "countryCode" : "GB",
       "labels" : {
         "nn" : "Noregs teknisk-naturvitskaplege universitet",
         "nb" : "Norges teknisk-naturvitenskapelige universitet",
@@ -165,11 +165,11 @@
         "name" : "Ola Nordmann",
         "verificationStatus" : "Verified"
       } ],
-      "countryCode" : "NO",
+      "countryCode" : "GB",
       "hasPart" : [ {
         "id" : "https://api.sandbox.nva.aws.unit.no/cristin/organization/20754.2.0.0",
         "type" : "Organization",
-        "countryCode" : "NO",
+        "countryCode" : "GB",
         "labels" : {
           "nn" : "Divisjon for forskings- og kunnskapsressursar",
           "nb" : "Divisjon forsknings- og kunnskapsressurser",
