@@ -830,7 +830,7 @@ paths:
             type: string
         - in: query
           name: institutionId
-          description: Cristin organization identifier (e.g. 185.90.0.0). Only allowed for admins and backend clients.
+          description: Top level Cristin organization identifier (e.g. 185.90.0.0). Only allowed for admins and backend clients.
           required: false
           schema:
             type: string
