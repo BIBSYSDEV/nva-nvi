@@ -12,16 +12,19 @@ import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomApproval;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.FAKER;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
+import static nva.commons.apigateway.GatewayResponse.fromOutputStream;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.EnumMap;
 import java.util.List;
@@ -30,6 +33,7 @@ import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.model.OrganizationFixtures;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.index.OpenSearchContainerContext;
+import no.sikt.nva.nvi.index.apigateway.utils.ExcelWorkbookUtil;
 import no.sikt.nva.nvi.index.model.ApprovalFactory;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.ApprovalView;
@@ -104,6 +108,7 @@ class FetchInstitutionStatusAggregationHandlerTest {
   @Nested
   @DisplayName("Access control")
   class AccessControlTests {
+
     @Test
     void shouldReturnUnauthorizedWhenUserDoesNotHaveRequiredAccessRight() {
       userAccessRight = AccessRight.MANAGE_OWN_RESOURCES;
@@ -131,6 +136,7 @@ class FetchInstitutionStatusAggregationHandlerTest {
   @Nested
   @DisplayName("Totals for top-level organization")
   class TotalAggregationTests {
+
     @Test
     void shouldIncludeYearAndTopLevelOrganizationInReport() {
       userTopLevelOrg = randomOrganizationId();
@@ -174,6 +180,47 @@ class FetchInstitutionStatusAggregationHandlerTest {
       var expectedTotals = getExpectedTotalAggregation(relevantDocuments);
 
       var response = handleRequest();
+      assertThat(response.totals()).isEqualTo(expectedTotals);
+    }
+
+    @Test
+    void shouldMatchTotalsFromAuthorShareReport() {
+
+      var fetchInstitutionReportHandler =
+          new FetchInstitutionReportHandler(CONTAINER.getOpenSearchClient(), ENVIRONMENT);
+
+      var documentsForTopLevelOrganization =
+          documentsForAllStatusCombinations(OUR_ORGANIZATION, OUR_ORGANIZATION);
+      var documentsForSubOrganization =
+          documentsForAllStatusCombinations(OUR_ORGANIZATION, OUR_SUB_ORGANIZATION);
+      var unrelatedDocuments = createUnrelatedDocuments();
+      CONTAINER.addDocumentsToIndex(
+          mergeCollections(
+              documentsForTopLevelOrganization, documentsForSubOrganization, unrelatedDocuments));
+
+      var relevantDocuments =
+          mergeCollections(documentsForTopLevelOrganization, documentsForSubOrganization);
+      var expectedTotals = getExpectedTotalAggregation(relevantDocuments);
+
+      var response = handleRequest();
+
+      try {
+        var request = createRequest();
+        var output2 = new ByteArrayOutputStream();
+        fetchInstitutionReportHandler.handleRequest(request, output2, CONTEXT);
+        var decodedResponse =
+            Base64.getDecoder().decode(fromOutputStream(output2, String.class).getBody());
+        var actualAffiliationPoints =
+            ExcelWorkbookUtil.extractRowsInPointsForAffiliationColumn(
+                new ByteArrayInputStream(decodedResponse));
+        var actuamSum =
+            actualAffiliationPoints.stream()
+                .map(BigDecimal::new)
+                .reduce(BigDecimal::add)
+                .orElseThrow();
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
       assertThat(response.totals()).isEqualTo(expectedTotals);
     }
 
@@ -222,6 +269,7 @@ class FetchInstitutionStatusAggregationHandlerTest {
   @Nested
   @DisplayName("Aggregated by direct affiliation")
   class DirectAffiliationAggregationTests {
+
     @Test
     void shouldExcludeRejectedCandidatesFromPoints() {
       var approval =

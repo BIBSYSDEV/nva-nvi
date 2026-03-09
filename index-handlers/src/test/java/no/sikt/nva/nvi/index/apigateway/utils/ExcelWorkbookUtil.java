@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.index.apigateway.utils;
 
 import static no.sikt.nva.nvi.common.utils.DecimalUtils.adjustScaleAndRoundingMode;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.INSTITUTION_ID;
+import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.POINTS_FOR_AFFILIATION;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_LANGUAGE;
 
 import java.io.IOException;
@@ -46,6 +47,15 @@ public class ExcelWorkbookUtil {
     try (var workbook = new XSSFWorkbook(inputStream)) {
       var sheet = workbook.getSheetAt(FIRST_SHEET_INDEX);
       return extractHeaderColumn(sheet, PUBLICATION_LANGUAGE);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public static List<String> extractRowsInPointsForAffiliationColumn(InputStream inputStream) {
+    try (var workbook = new XSSFWorkbook(inputStream)) {
+      var sheet = workbook.getSheetAt(FIRST_SHEET_INDEX);
+      return extractHeaderColumn(sheet, POINTS_FOR_AFFILIATION);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
