@@ -62,13 +62,19 @@ public class ExcelWorkbookUtil {
   }
 
   private static List<String> extractHeaderColumn(XSSFSheet sheet, InstitutionReportHeader header) {
-    var institutionIdColumn = new ArrayList<String>();
+    var columnValues = new ArrayList<String>();
     for (var rowCounter = FIRST_DATA_ROW_INDEX; rowCounter <= sheet.getLastRowNum(); rowCounter++) {
       var row = sheet.getRow(rowCounter);
-      var institutionId = row.getCell(header.getOrder()).getStringCellValue();
-      institutionIdColumn.add(institutionId);
+      var cell = row.getCell(header.getOrder());
+      if (cell.getCellType() == CellType.NUMERIC) {
+        var bigValue = BigDecimal.valueOf(cell.getNumericCellValue());
+        var normalizedValue = adjustScaleAndRoundingMode(bigValue);
+        columnValues.add(normalizedValue.toString());
+      } else {
+        columnValues.add(cell.getStringCellValue());
+      }
     }
-    return institutionIdColumn;
+    return columnValues;
   }
 
   private static List<List<String>> extractData(XSSFSheet sheet) {

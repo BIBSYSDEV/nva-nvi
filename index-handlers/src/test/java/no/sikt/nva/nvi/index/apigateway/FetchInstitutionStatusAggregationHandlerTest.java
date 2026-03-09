@@ -1,17 +1,25 @@
 package no.sikt.nva.nvi.index.apigateway;
 
+import static com.google.common.net.HttpHeaders.ACCEPT;
+import static com.google.common.net.MediaType.OOXML_SHEET;
 import static java.util.Collections.emptyMap;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.getFetchInstitutionStatusAggregationHandlerEnvironment;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.organizationIdFromIdentifier;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationId;
 import static no.sikt.nva.nvi.common.utils.CollectionUtils.mergeCollections;
+import static no.sikt.nva.nvi.common.utils.DecimalUtils.adjustScaleAndRoundingMode;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.createRandomIndexDocument;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.documentWithApprovals;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.documentsForAllStatusCombinations;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomApproval;
+import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomIndexDocumentBuilder;
+import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomPublicationDetailsBuilder;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
+import static no.sikt.nva.nvi.test.TestUtils.SCALE;
+import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.unit.nva.testutils.RandomDataGenerator.FAKER;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
+import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.apigateway.GatewayResponse.fromOutputStream;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -29,6 +37,7 @@ import java.util.Collection;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.model.OrganizationFixtures;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
@@ -38,7 +47,10 @@ import no.sikt.nva.nvi.index.model.ApprovalFactory;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.ApprovalView;
 import no.sikt.nva.nvi.index.model.document.InstitutionPointsView;
+import no.sikt.nva.nvi.index.model.document.InstitutionPointsView.CreatorAffiliationPointsView;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
+import no.sikt.nva.nvi.index.model.document.NviContributor;
+import no.sikt.nva.nvi.index.model.document.NviOrganization;
 import no.sikt.nva.nvi.index.model.report.DirectAffiliationAggregation;
 import no.sikt.nva.nvi.index.model.report.InstitutionStatusAggregationReport;
 import no.sikt.nva.nvi.index.model.report.TopLevelAggregation;
@@ -205,23 +217,114 @@ class FetchInstitutionStatusAggregationHandlerTest {
       var response = handleRequest();
 
       try {
-        var request = createRequest();
-        var output2 = new ByteArrayOutputStream();
-        fetchInstitutionReportHandler.handleRequest(request, output2, CONTEXT);
-        var decodedResponse =
-            Base64.getDecoder().decode(fromOutputStream(output2, String.class).getBody());
+        var reportRequest = createReportRequest();
+        var reportOutput = new ByteArrayOutputStream();
+        fetchInstitutionReportHandler.handleRequest(reportRequest, reportOutput, CONTEXT);
+        var reportResponse = fromOutputStream(reportOutput, String.class);
+        assertThat(reportResponse.getStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
+        var decodedResponse = Base64.getDecoder().decode(reportResponse.getBody());
         var actualAffiliationPoints =
             ExcelWorkbookUtil.extractRowsInPointsForAffiliationColumn(
                 new ByteArrayInputStream(decodedResponse));
-        var actuamSum =
+        var actualSum =
             actualAffiliationPoints.stream()
                 .map(BigDecimal::new)
-                .reduce(BigDecimal::add)
-                .orElseThrow();
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        var expectedReportSum = getSumOfAllInstitutionPoints(OUR_ORGANIZATION, relevantDocuments);
+        assertThat(actualSum).isEqualTo(expectedReportSum);
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
       assertThat(response.totals()).isEqualTo(expectedTotals);
+    }
+
+    @Test
+    void shouldShowHigherAggregatedPointsWhenContributorDoesNotMatchCreatorAffiliationPoints() {
+
+      var fetchInstitutionReportHandler =
+          new FetchInstitutionReportHandler(CONTAINER.getOpenSearchClient(), ENVIRONMENT);
+
+      var matchingCreatorPoints = randomBigDecimal(SCALE);
+      var unmatchedCreatorPoints = randomBigDecimal(SCALE);
+
+      var matchingContributorId = randomUri();
+      var unmatchedContributorId = randomUri();
+
+      var matchingAffiliationPoints =
+          new CreatorAffiliationPointsView(
+              matchingContributorId, OUR_ORGANIZATION, matchingCreatorPoints);
+      var unmatchedAffiliationPoints =
+          new CreatorAffiliationPointsView(
+              unmatchedContributorId, OUR_ORGANIZATION, unmatchedCreatorPoints);
+
+      var totalInstitutionPoints = matchingCreatorPoints.add(unmatchedCreatorPoints);
+      var institutionPoints =
+          new InstitutionPointsView(
+              OUR_ORGANIZATION,
+              totalInstitutionPoints,
+              List.of(matchingAffiliationPoints, unmatchedAffiliationPoints));
+
+      var approval =
+          ApprovalView.builder()
+              .withInstitutionId(OUR_ORGANIZATION)
+              .withLabels(Map.of())
+              .withAssignee("test")
+              .withApprovalStatus(ApprovalStatus.APPROVED)
+              .withGlobalApprovalStatus(GlobalApprovalStatus.APPROVED)
+              .withInvolvedOrganizations(Set.of(OUR_ORGANIZATION))
+              .withPoints(institutionPoints)
+              .build();
+
+      var matchingContributor =
+          NviContributor.builder()
+              .withId(matchingContributorId.toString())
+              .withName("Matching Contributor")
+              .withRole("Creator")
+              .withAffiliations(
+                  List.of(
+                      NviOrganization.builder()
+                          .withId(OUR_ORGANIZATION)
+                          .withPartOf(List.of(OUR_ORGANIZATION))
+                          .build()))
+              .build();
+
+      var details =
+          randomPublicationDetailsBuilder().withContributors(List.of(matchingContributor)).build();
+      var document =
+          randomIndexDocumentBuilder(details, List.of(approval))
+              .withGlobalApprovalStatus(GlobalApprovalStatus.APPROVED)
+              .build();
+
+      CONTAINER.addDocumentsToIndex(List.of(document));
+
+      var aggregationResponse = handleRequest();
+
+      try {
+        var reportRequest = createReportRequest();
+        var reportOutput = new ByteArrayOutputStream();
+        fetchInstitutionReportHandler.handleRequest(reportRequest, reportOutput, CONTEXT);
+        var reportResponse = fromOutputStream(reportOutput, String.class);
+        assertThat(reportResponse.getStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
+        var decodedResponse = Base64.getDecoder().decode(reportResponse.getBody());
+        var reportPointsSum =
+            ExcelWorkbookUtil.extractRowsInPointsForAffiliationColumn(
+                    new ByteArrayInputStream(decodedResponse))
+                .stream()
+                .map(BigDecimal::new)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        var aggregatedPoints = aggregationResponse.totals().points();
+        assertThat(aggregatedPoints)
+            .as(
+                "Aggregated points (%s) should be higher than report points (%s) "
+                    + "because one creatorAffiliationPoint has no matching contributor",
+                aggregatedPoints, reportPointsSum)
+            .isGreaterThan(reportPointsSum);
+        assertThat(reportPointsSum).isEqualTo(adjustScaleAndRoundingMode(matchingCreatorPoints));
+        assertThat(aggregatedPoints).isEqualTo(adjustScaleAndRoundingMode(totalInstitutionPoints));
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
     }
 
     @Test
@@ -392,6 +495,20 @@ class FetchInstitutionStatusAggregationHandlerTest {
     }
   }
 
+  private InputStream createReportRequest() {
+    try {
+      return new HandlerRequestBuilder<InputStream>(JsonUtils.dtoObjectMapper)
+          .withTopLevelCristinOrgId(userTopLevelOrg)
+          .withAccessRights(userTopLevelOrg, userAccessRight)
+          .withUserName(username)
+          .withPathParameters(Map.of(YEAR, queryYear))
+          .withHeaders(Map.of(ACCEPT, OOXML_SHEET.toString()))
+          .build();
+    } catch (JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   private DirectAffiliationAggregation getExpectedDirectAffiliationAggregation(
       URI organization, Collection<NviCandidateIndexDocument> relevantDocuments) {
     var expectedTotalPoints = getSumOfCreatorPoints(organization, relevantDocuments);
@@ -409,6 +526,17 @@ class FetchInstitutionStatusAggregationHandlerTest {
         .flatMap(List::stream)
         .filter(approval -> organization.equals(approval.institutionId()))
         .filter(approval -> approval.globalApprovalStatus() == GlobalApprovalStatus.APPROVED)
+        .map(ApprovalView::points)
+        .map(InstitutionPointsView::institutionPoints)
+        .reduce(BigDecimal.ZERO, BigDecimal::add);
+  }
+
+  private BigDecimal getSumOfAllInstitutionPoints(
+      URI organization, Collection<NviCandidateIndexDocument> documents) {
+    return documents.stream()
+        .map(NviCandidateIndexDocument::approvals)
+        .flatMap(List::stream)
+        .filter(approval -> organization.equals(approval.institutionId()))
         .map(ApprovalView::points)
         .map(InstitutionPointsView::institutionPoints)
         .reduce(BigDecimal.ZERO, BigDecimal::add);
