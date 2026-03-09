@@ -53,7 +53,7 @@ class NviGraphValidatorTest {
   private NviGraphValidator nviGraphValidator;
   private Logger logger;
 
-  public static Stream<Named<Object>> invalidPublicationIdentifierProvider() {
+  private static Stream<Named<Object>> invalidPublicationIdentifierProvider() {
     return Stream.of(
         Named.of("UUID with extra numbers", UUID.randomUUID() + "123"),
         Named.of(
