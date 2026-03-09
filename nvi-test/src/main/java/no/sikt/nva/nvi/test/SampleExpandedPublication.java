@@ -163,7 +163,9 @@ public record SampleExpandedPublication(
     putIfNotBlank(node, ABSTRACT_FIELD, abstractText);
     node.put(MAIN_TITLE_FIELD, mainTitle);
     node.set(CONTRIBUTORS_FIELD, createContributorsNode());
-    node.set(PUBLICATION_DATE_FIELD, publicationDate.asObjectNode());
+    if (nonNull(publicationDate)) {
+      node.set(PUBLICATION_DATE_FIELD, publicationDate.asObjectNode());
+    }
     node.set(REFERENCE_FIELD, createReferenceNode());
     return node;
   }
