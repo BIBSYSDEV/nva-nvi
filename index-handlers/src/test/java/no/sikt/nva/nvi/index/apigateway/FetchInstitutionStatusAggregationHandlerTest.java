@@ -7,7 +7,6 @@ import static no.sikt.nva.nvi.common.EnvironmentFixtures.getFetchInstitutionStat
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.organizationIdFromIdentifier;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationId;
 import static no.sikt.nva.nvi.common.utils.CollectionUtils.mergeCollections;
-import static no.sikt.nva.nvi.common.utils.DecimalUtils.adjustScaleAndRoundingMode;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.createRandomIndexDocument;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.documentWithApprovals;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.documentsForAllStatusCombinations;
@@ -239,7 +238,7 @@ class FetchInstitutionStatusAggregationHandlerTest {
     }
 
     @Test
-    void shouldShowHigherAggregatedPointsWhenContributorDoesNotMatchCreatorAffiliationPoints() {
+    void shouldHaveEqualPointsInAggregationAndReport() {
 
       var fetchInstitutionReportHandler =
           new FetchInstitutionReportHandler(CONTAINER.getOpenSearchClient(), ENVIRONMENT);
@@ -314,14 +313,7 @@ class FetchInstitutionStatusAggregationHandlerTest {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         var aggregatedPoints = aggregationResponse.totals().points();
-        assertThat(aggregatedPoints)
-            .as(
-                "Aggregated points (%s) should be higher than report points (%s) "
-                    + "because one creatorAffiliationPoint has no matching contributor",
-                aggregatedPoints, reportPointsSum)
-            .isGreaterThan(reportPointsSum);
-        assertThat(reportPointsSum).isEqualTo(adjustScaleAndRoundingMode(matchingCreatorPoints));
-        assertThat(aggregatedPoints).isEqualTo(adjustScaleAndRoundingMode(totalInstitutionPoints));
+        assertThat(reportPointsSum).isEqualTo(aggregatedPoints);
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
