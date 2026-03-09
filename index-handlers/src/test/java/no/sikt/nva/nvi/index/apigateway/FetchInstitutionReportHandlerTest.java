@@ -7,6 +7,7 @@ import static com.google.common.net.MediaType.MICROSOFT_EXCEL;
 import static com.google.common.net.MediaType.OOXML_SHEET;
 import static java.util.Collections.emptyList;
 import static java.util.Objects.nonNull;
+import static no.sikt.nva.nvi.common.utils.DecimalUtils.adjustScaleAndRoundingMode;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.indexDocumentMissingApprovals;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.indexDocumentMissingVerifiedCreators;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.indexDocumentWithLanguage;
@@ -54,8 +55,10 @@ import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
+import static nva.commons.apigateway.AccessRight.MANAGE_NVI;
 import static nva.commons.apigateway.AccessRight.MANAGE_NVI_CANDIDATES;
 import static nva.commons.apigateway.GatewayResponse.fromOutputStream;
+import static nva.commons.apigateway.RequestInfoConstants.BACKEND_SCOPE_AS_DEFINED_IN_IDENTITY_SERVICE;
 import static nva.commons.core.StringUtils.EMPTY_STRING;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -74,6 +77,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.util.ArrayList;
@@ -96,6 +100,7 @@ import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
 import no.sikt.nva.nvi.index.model.search.SearchResultParameters;
 import no.sikt.nva.nvi.index.xlsx.ExcelWorkbookGenerator;
 import no.unit.nva.language.LanguageMapper;
+import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.core.Environment;
@@ -119,7 +124,7 @@ import org.zalando.problem.Problem;
 class FetchInstitutionReportHandlerTest {
 
   private static final String YEAR = "year";
-  private static final Context CONTEXT = mock(Context.class);
+  private static final Context CONTEXT = new FakeContext();
   protected static final Environment ENVIRONMENT = new Environment();
   private static final int PAGE_SIZE =
       Integer.parseInt(new Environment().readEnv("INSTITUTION_REPORT_SEARCH_PAGE_SIZE"));
@@ -390,6 +395,69 @@ class FetchInstitutionReportHandlerTest {
         requestWithMediaType(ANY_APPLICATION_TYPE.toString(), topLevelCristinOrg), output, CONTEXT);
     var response = fromOutputStream(output, String.class);
     assertThat(response.getHeaders().get(CONTENT_TYPE), is(OOXML_SHEET.toString()));
+  }
+
+  @Test
+  void shouldReturnOkWhenAdminQueriesSpecificInstitution() throws IOException {
+    var targetInstitutionId = randomCristinOrgUri();
+    mockCandidatesInOpenSearch(targetInstitutionId);
+    var identifier = UriWrapper.fromUri(targetInstitutionId).getLastPathElement();
+    var ownInstitution = randomCristinOrgUri();
+    var request =
+        createRequest(ownInstitution, MANAGE_NVI, Map.of(YEAR, THIS_YEAR))
+            .withQueryParameters(Map.of("institutionId", identifier))
+            .build();
+
+    handler.handleRequest(request, output, CONTEXT);
+
+    var response = fromOutputStream(output, String.class);
+    assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_OK)));
+  }
+
+  @Test
+  void shouldReturnOkWhenBackendTokenQueriesSpecificInstitution() throws IOException {
+    var targetInstitutionId = randomCristinOrgUri();
+    mockCandidatesInOpenSearch(targetInstitutionId);
+    var identifier = UriWrapper.fromUri(targetInstitutionId).getLastPathElement();
+    var request =
+        new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
+            .withScope(BACKEND_SCOPE_AS_DEFINED_IN_IDENTITY_SERVICE)
+            .withUserName(randomString())
+            .withPathParameters(Map.of(YEAR, THIS_YEAR))
+            .withQueryParameters(Map.of("institutionId", identifier))
+            .build();
+
+    handler.handleRequest(request, output, CONTEXT);
+
+    var response = fromOutputStream(output, String.class);
+    assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_OK)));
+  }
+
+  @Test
+  void shouldReturnUnauthorizedWhenCuratorQueriesOtherInstitution() throws IOException {
+    var ownInstitution = randomCristinOrgUri();
+    var otherIdentifier = "185.90.0.0";
+    var request =
+        createRequest(ownInstitution, MANAGE_NVI_CANDIDATES, Map.of(YEAR, THIS_YEAR))
+            .withQueryParameters(Map.of("institutionId", otherIdentifier))
+            .build();
+
+    handler.handleRequest(request, output, CONTEXT);
+
+    var response = fromOutputStream(output, Problem.class);
+    assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_UNAUTHORIZED)));
+  }
+
+  @Test
+  void shouldFallBackToOwnInstitutionWhenAdminOmitsInstitutionId() throws IOException {
+    var ownInstitution = randomCristinOrgUri();
+    mockCandidatesInOpenSearch(ownInstitution);
+    var request = createRequest(ownInstitution, MANAGE_NVI, Map.of(YEAR, THIS_YEAR)).build();
+
+    handler.handleRequest(request, output, CONTEXT);
+
+    var response = fromOutputStream(output, String.class);
+    assertThat(response.getStatusCode(), is(Matchers.equalTo(HttpURLConnection.HTTP_OK)));
   }
 
   @Test
@@ -690,14 +758,22 @@ class FetchInstitutionReportHandlerTest {
     expectedRow.add(document.publicationDetails().title());
     expectedRow.add(getExpectedLanguageLabel(document));
     expectedRow.add(getExpectedGlobalApprovalStatus(document.globalApprovalStatus()));
-    expectedRow.add(document.publicationTypeChannelLevelPoints().toString());
-    expectedRow.add(document.internationalCollaborationFactor().toString());
-    expectedRow.add(String.valueOf(document.creatorShareCount()));
+    expectedRow.add(getNormalizedString(document.publicationTypeChannelLevelPoints()));
+    expectedRow.add(getNormalizedString(document.internationalCollaborationFactor()));
+    expectedRow.add(getNormalizedString(document.creatorShareCount()));
     expectedRow.add(
-        document
-            .getPointsForContributorAffiliation(topLevelCristinOrg, nviContributor, affiliation)
-            .toString());
+        getNormalizedString(
+            document.getPointsForContributorAffiliation(
+                topLevelCristinOrg, nviContributor, affiliation)));
     return expectedRow;
+  }
+
+  private String getNormalizedString(int value) {
+    return adjustScaleAndRoundingMode(BigDecimal.valueOf(value)).toString();
+  }
+
+  private String getNormalizedString(BigDecimal value) {
+    return adjustScaleAndRoundingMode(value).toString();
   }
 
   private String getExpectedGlobalApprovalStatus(GlobalApprovalStatus globalApprovalStatus) {

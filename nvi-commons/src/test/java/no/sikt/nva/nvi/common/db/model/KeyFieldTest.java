@@ -14,7 +14,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 class KeyFieldTest {
 
-  public static final String UNKNOWN_VALUE = "ObviouslyUnknownValue";
+  private static final String UNKNOWN_VALUE = "ObviouslyUnknownValue";
 
   @ParameterizedTest(name = "Should accept textual value {0} for enum")
   @ValueSource(strings = {"candidate", "note", "approval_status", "period"})

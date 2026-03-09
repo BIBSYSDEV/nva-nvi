@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.index.aws;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.function.Predicate.not;
+import static no.sikt.nva.nvi.index.IndexDocumentFixtures.createRandomIndexDocumentWithHandle;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomApproval;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomApprovalList;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomIndexDocumentBuilder;
@@ -70,15 +71,15 @@ import org.opensearch.client.opensearch.core.search.Hit;
 
 class OpenSearchClientTest {
 
-  public static final String YEAR = String.valueOf(CURRENT_YEAR);
-  public static final String CATEGORY = "AcademicArticle";
-  public static final String UNEXISTING_FILTER = "unexisting-filter";
-  public static final URI NTNU_INSTITUTION_ID =
+  private static final String YEAR = String.valueOf(CURRENT_YEAR);
+  private static final String CATEGORY = "AcademicArticle";
+  private static final String UNEXISTING_FILTER = "unexisting-filter";
+  private static final URI NTNU_INSTITUTION_ID =
       URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/194.0.0.0");
-  public static final String NTNU_INSTITUTION_IDENTIFIER = "194.0.0.0";
-  public static final URI SIKT_INSTITUTION_ID =
+  private static final String NTNU_INSTITUTION_IDENTIFIER = "194.0.0.0";
+  private static final URI SIKT_INSTITUTION_ID =
       URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0");
-  public static final String SIKT_INSTITUTION_IDENTIFIER = "20754.0.0.0";
+  private static final String SIKT_INSTITUTION_IDENTIFIER = "20754.0.0.0";
   private static final URI ORGANIZATION =
       URI.create("https://api.dev.nva.aws.unit.no/cristin/organization/20754.0.0.0");
   private static final String USERNAME = "user1";
@@ -695,6 +696,21 @@ class OpenSearchClientTest {
     assertThat(
         documentsFromResponse,
         hasItems(documentsWithApprovalsAtTopLevelOrg.toArray(NviCandidateIndexDocument[]::new)));
+  }
+
+  @Test
+  void shouldReturnHitWhenSearchingForHandleInSearchTermAndDocumentContainsHandle()
+      throws IOException {
+    var handle = randomUri();
+    addDocumentsToIndex(createRandomIndexDocumentWithHandle(handle));
+
+    var searchParameters =
+        CandidateSearchParameters.builder().withSearchTerm(handle.toString()).build();
+    var searchResponse = openSearchClient.search(searchParameters);
+
+    var documentsFromResponse = searchResponse.hits().hits().stream().map(Hit::source).toList();
+
+    assertEquals(1, documentsFromResponse.size());
   }
 
   private static List<NviCandidateIndexDocument>

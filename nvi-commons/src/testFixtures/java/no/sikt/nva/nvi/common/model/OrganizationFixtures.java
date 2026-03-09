@@ -48,11 +48,11 @@ public class OrganizationFixtures {
 
   public static Organization createOrganizationWithSubUnit(URI topLevelOrgId, URI subUnitId) {
     var subOrganization =
-        Organization.builder()
+        randomOrganization()
             .withId(subUnitId)
             .withPartOf(List.of(Organization.builder().withId(topLevelOrgId).build()))
             .build();
-    return Organization.builder()
+    return randomOrganization()
         .withId(topLevelOrgId)
         .withHasPart(List.of(subOrganization))
         .withCountryCode(COUNTRY_CODE_NORWAY)

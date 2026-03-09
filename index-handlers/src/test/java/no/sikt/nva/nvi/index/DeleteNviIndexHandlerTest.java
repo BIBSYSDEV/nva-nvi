@@ -6,9 +6,9 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 
-import com.amazonaws.services.lambda.runtime.Context;
 import java.io.IOException;
 import no.sikt.nva.nvi.index.aws.OpenSearchClient;
+import no.unit.nva.stubs.FakeContext;
 import nva.commons.logutils.LogUtils;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -20,7 +20,7 @@ class DeleteNviIndexHandlerTest {
     var appender = LogUtils.getTestingAppenderForRootLogger();
     var searchClient = mock(OpenSearchClient.class);
     var handler = new DeleteNviIndexHandler(searchClient);
-    handler.handleRequest(null, mock(Context.class));
+    handler.handleRequest(null, new FakeContext());
     assertThat(appender.getMessages(), containsString(FINISHED));
   }
 
@@ -29,6 +29,6 @@ class DeleteNviIndexHandlerTest {
     var openSearchClient = mock(OpenSearchClient.class);
     Mockito.doThrow(new IOException()).when(openSearchClient).deleteIndex();
     var handler = new DeleteNviIndexHandler(openSearchClient);
-    assertThrows(RuntimeException.class, () -> handler.handleRequest(null, mock(Context.class)));
+    assertThrows(RuntimeException.class, () -> handler.handleRequest(null, new FakeContext()));
   }
 }

@@ -23,7 +23,6 @@ import org.slf4j.LoggerFactory;
 public class RequeueDlqHandler implements RequestHandler<RequeueDlqInput, RequeueDlqOutput> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(RequeueDlqHandler.class);
-  private static final String DUPLICATE_MESSAGE_FOUND_IN_DLQ = "Duplicate message found in DLQ: %s";
   private static final String DLQ_QUEUE_URL_ENV_NAME = "DLQ_QUEUE_URL";
   private static final String HANDLER_FINISH_REPORT_LOG =
       "Requeue DLQ finished. In total {} messages processed. Success count: {}. "
@@ -33,9 +32,6 @@ public class RequeueDlqHandler implements RequestHandler<RequeueDlqInput, Requeu
   private static final String DELETING_MESSAGE_FROM_DLQ_LOG = "Deleting message from DLQ: {}";
   private static final String PROCESSING_MESSAGE_LOG = "Processing message: {}";
   private static final String CANDIDATE_IDENTIFIER_ATTRIBUTE_NAME = "candidateIdentifier";
-  private static final String COULD_NOT_UPDATE_CANDIDATE = "Could not update candidate: %s";
-  private static final String COULD_NOT_PROCESS_MESSAGE_LOG =
-      "Could not process message: %s. Missing message " + "attribute 'candidateIdentifier'";
   private static final int MAX_FAILURES = 5;
   private static final int MAX_SQS_MESSAGE_COUNT_LIMIT = 10;
   private final QueueClient queueClient;
@@ -96,7 +92,7 @@ public class RequeueDlqHandler implements RequestHandler<RequeueDlqInput, Requeu
       Set<String> messageIds, NviReceiveMessage message) {
     var isUnique = messageIds.add(message.messageId());
     if (!isUnique) {
-      var warning = String.format(DUPLICATE_MESSAGE_FOUND_IN_DLQ, message.messageId());
+      var warning = String.format("Duplicate message found in DLQ: %s", message.messageId());
       LOGGER.warn(warning);
       return new NviProcessMessageResult(message, false, Optional.of(warning));
     }
@@ -145,10 +141,13 @@ public class RequeueDlqHandler implements RequestHandler<RequeueDlqInput, Requeu
         return new NviProcessMessageResult(
             input.message(),
             false,
-            Optional.of(String.format(COULD_NOT_UPDATE_CANDIDATE, identifier)));
+            Optional.of(String.format("Could not update candidate: %s", identifier)));
       }
     } else {
-      var message = String.format(COULD_NOT_PROCESS_MESSAGE_LOG, input.message().body());
+      var message =
+          String.format(
+              "Could not process message: %s. Missing message attribute 'candidateIdentifier'",
+              input.message().body());
       LOGGER.error(message);
       return new NviProcessMessageResult(input.message(), false, Optional.of(message));
     }

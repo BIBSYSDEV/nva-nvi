@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.test;
 
+import static java.util.Collections.emptyList;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.test.TestConstants.ABSTRACT_FIELD;
@@ -7,9 +8,11 @@ import static no.sikt.nva.nvi.test.TestConstants.ACADEMIC_ARTICLE;
 import static no.sikt.nva.nvi.test.TestConstants.ACADEMIC_CHAPTER;
 import static no.sikt.nva.nvi.test.TestConstants.ACADEMIC_LITERATURE_REVIEW;
 import static no.sikt.nva.nvi.test.TestConstants.ACADEMIC_MONOGRAPH;
+import static no.sikt.nva.nvi.test.TestConstants.ADDITIONAL_IDENTIFIERS_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.BODY_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.CONTRIBUTORS_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.ENTITY_DESCRIPTION_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.HANDLE_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.IDENTIFIER_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.ID_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.LANGUAGE_FIELD;
@@ -23,8 +26,10 @@ import static no.sikt.nva.nvi.test.TestConstants.REFERENCE_TYPE;
 import static no.sikt.nva.nvi.test.TestConstants.STATUS_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.TOP_LEVEL_ORGANIZATIONS_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.TYPE_FIELD;
+import static no.sikt.nva.nvi.test.TestConstants.VALUE_FIELD;
 import static no.sikt.nva.nvi.test.TestUtils.createNodeWithType;
 import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
+import static no.sikt.nva.nvi.test.TestUtils.hasElements;
 import static no.sikt.nva.nvi.test.TestUtils.putIfNotBlank;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -35,6 +40,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URI;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import no.unit.nva.identifiers.SortableIdentifier;
@@ -46,6 +52,7 @@ import nva.commons.core.ioutils.IoUtils;
  * input documents from `nva-publication-api`.
  */
 @JacocoGenerated
+@SuppressWarnings("PMD.TooManyFields")
 public record SampleExpandedPublication(
     URI id,
     UUID identifier,
@@ -60,7 +67,9 @@ public record SampleExpandedPublication(
     String status,
     String modifiedDate,
     List<SampleExpandedContributor> contributors,
-    List<SampleExpandedOrganization> topLevelOrganizations) {
+    List<SampleExpandedOrganization> topLevelOrganizations,
+    URI handle,
+    List<SampleAdditionalIdentifier> additionalIdentifiers) {
 
   private static final String TEMPLATE_JSON_PATH = "template_publication.json";
 
@@ -106,6 +115,12 @@ public record SampleExpandedPublication(
       root.put(IDENTIFIER_FIELD, identifier.toString());
       root.put(STATUS_FIELD, status);
       putIfNotBlank(root, "modifiedDate", modifiedDate);
+      if (nonNull(handle)) {
+        root.put(HANDLE_FIELD, handle.toString());
+      }
+      if (hasElements(additionalIdentifiers)) {
+        root.set(ADDITIONAL_IDENTIFIERS_FIELD, createAdditionalIdentifiersNode());
+      }
 
       root.set(ENTITY_DESCRIPTION_FIELD, createEntityDescriptionNode());
       root.set(TOP_LEVEL_ORGANIZATIONS_FIELD, createTopLevelOrganizationsNode());
@@ -114,6 +129,17 @@ public record SampleExpandedPublication(
     } catch (IOException e) {
       throw new UncheckedIOException("Template could not be read", e);
     }
+  }
+
+  private ArrayNode createAdditionalIdentifiersNode() {
+    var array = objectMapper.createArrayNode();
+    for (var additionalIdentifier : additionalIdentifiers) {
+      var entry = objectMapper.createObjectNode();
+      entry.put(TYPE_FIELD, additionalIdentifier.type());
+      entry.put(VALUE_FIELD, additionalIdentifier.value());
+      array.add(entry);
+    }
+    return array;
   }
 
   private JsonNode createTopLevelOrganizationsNode() {
@@ -169,6 +195,8 @@ public record SampleExpandedPublication(
     private List<SampleExpandedContributor> contributors;
     private List<SampleExpandedOrganization> topLevelOrganizations;
     private SampleExpandedPublicationContext publicationContext;
+    private URI handle;
+    private List<SampleAdditionalIdentifier> additionalIdentifiers;
 
     private Builder() {}
 
@@ -247,6 +275,18 @@ public record SampleExpandedPublication(
       return this;
     }
 
+    public Builder withHandle(URI handle) {
+      this.handle = handle;
+      return this;
+    }
+
+    public Builder withAdditionalIdentifiers(
+        Collection<SampleAdditionalIdentifier> additionalIdentifiers) {
+      this.additionalIdentifiers =
+          nonNull(additionalIdentifiers) ? additionalIdentifiers.stream().toList() : emptyList();
+      return this;
+    }
+
     public SampleExpandedPublication build() {
       if (isNull(id)) {
         id = generatePublicationId(identifier);
@@ -266,7 +306,9 @@ public record SampleExpandedPublication(
           status,
           modifiedDate,
           contributors,
-          topLevelOrganizations);
+          topLevelOrganizations,
+          handle,
+          additionalIdentifiers);
     }
   }
 }

@@ -9,8 +9,8 @@ import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidate
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertNonCandidateRequest;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeriod;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupFuturePeriod;
-import static no.sikt.nva.nvi.common.dto.AllowedOperationFixtures.CURATOR_CANNOT_UPDATE_APPROVAL;
 import static no.sikt.nva.nvi.common.dto.AllowedOperationFixtures.CURATOR_CAN_FINALIZE_APPROVAL;
+import static no.sikt.nva.nvi.common.dto.AllowedOperationFixtures.CURATOR_CAN_ONLY_REJECT;
 import static no.sikt.nva.nvi.common.dto.NviCreatorDtoFixtures.unverifiedNviCreatorDtoFrom;
 import static no.sikt.nva.nvi.common.dto.NviCreatorDtoFixtures.verifiedNviCreatorDtoCopiedFrom;
 import static no.sikt.nva.nvi.common.dto.NviCreatorDtoFixtures.verifiedNviCreatorDtoFrom;
@@ -511,7 +511,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
   }
 
   @Test
-  void shouldNotAllowFinalizingNewCandidateWithUnverifiedCreator() {
+  void shouldAllowRejectingButNotApprovingCandidateWithUnverifiedCreator() {
     var unverifiedCreator = unverifiedNviCreatorDtoFrom(topLevelOrganization);
     var request =
         createUpsertCandidateRequest(topLevelOrganizationId)
@@ -524,7 +524,29 @@ class CandidateApprovalTest extends CandidateTestSetup {
 
     var actualAllowedOperations = candidateDto.allowedOperations();
     assertThat(actualAllowedOperations)
-        .containsExactlyInAnyOrderElementsOf(CURATOR_CANNOT_UPDATE_APPROVAL);
+        .containsExactlyInAnyOrderElementsOf(CURATOR_CAN_ONLY_REJECT);
+  }
+
+  @Test
+  void shouldSuccessfullyRejectCandidateWithUnverifiedCreator() {
+    var unverifiedCreator = unverifiedNviCreatorDtoFrom(topLevelOrganization);
+    var request =
+        createUpsertCandidateRequest(topLevelOrganizationId)
+            .withCreatorsAndPoints(Map.of(topLevelOrganization, List.of(unverifiedCreator)))
+            .build();
+    var candidate = scenario.upsertCandidate(request);
+
+    var userInstance = createCuratorUserInstance(topLevelOrganizationId);
+    var rejectionRequest =
+        createUpdateStatusRequest(
+            ApprovalStatus.REJECTED, topLevelOrganizationId, userInstance.userName().toString());
+    approvalService.updateApproval(candidate, rejectionRequest, userInstance);
+
+    var updatedCandidate = candidateService.getCandidateByIdentifier(candidate.identifier());
+    assertThat(updatedCandidate.approvals())
+        .extractingByKey(topLevelOrganizationId)
+        .extracting(Approval::status)
+        .isEqualTo(ApprovalStatus.REJECTED);
   }
 
   @Test

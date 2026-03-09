@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.common.db.model;
 
 import static java.util.Collections.emptyList;
+import static java.util.Objects.isNull;
 
 import java.net.URI;
 import java.time.Instant;
@@ -26,12 +27,14 @@ public record DbPublicationDetails(
     String identifier,
     String language,
     String status,
-    String title) {
+    String title,
+    List<URI> handles) {
 
   public DbPublicationDetails {
     creators = Optional.ofNullable(creators).map(List::copyOf).orElse(emptyList());
     topLevelNviOrganizations =
         Optional.ofNullable(topLevelNviOrganizations).map(List::copyOf).orElse(emptyList());
+    handles = Optional.ofNullable(handles).map(List::copyOf).orElse(emptyList());
   }
 
   public static Builder builder() {
@@ -53,7 +56,8 @@ public record DbPublicationDetails(
         .identifier(this.identifier)
         .language(this.language)
         .status(this.status)
-        .title(this.title);
+        .title(this.title)
+        .handles(this.handles);
   }
 
   public static final class Builder {
@@ -71,6 +75,7 @@ public record DbPublicationDetails(
     private String language;
     private String status;
     private String title;
+    private List<URI> handles;
 
     private Builder() {}
 
@@ -139,6 +144,11 @@ public record DbPublicationDetails(
       return this;
     }
 
+    public Builder handles(List<URI> handles) {
+      this.handles = isNull(handles) ? emptyList() : handles;
+      return this;
+    }
+
     public DbPublicationDetails build() {
       return new DbPublicationDetails(
           id,
@@ -153,7 +163,8 @@ public record DbPublicationDetails(
           identifier,
           language,
           status,
-          title);
+          title,
+          handles);
     }
   }
 }

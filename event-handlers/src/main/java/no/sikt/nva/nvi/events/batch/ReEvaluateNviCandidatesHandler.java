@@ -41,7 +41,7 @@ public class ReEvaluateNviCandidatesHandler extends EventHandler<ReEvaluateReque
   private static final String INVALID_INPUT_MESSAGE = "Invalid request. Field year is required";
   private static final String QUERY_STARTING_POINT_MESSAGE = "Query starting point: {}";
   private static final String RESULT_MESSAGE =
-      "Batch result startMarker: {}, totalItemCount: {}, " + "shouldContinueScan: {}";
+      "Batch result lastEvaluatedKey: {}, itemCount: {}, " + "hasNextPage: {}";
   private static final String PUT_EVENT_RESPONSE_MESSAGE = "Put event response: {}";
   private static final String MESSAGES_SENT_MESSAGE = "Sent {} messages to queue. Failures: {}";
   private final QueueClient queueClient;
@@ -83,7 +83,7 @@ public class ReEvaluateNviCandidatesHandler extends EventHandler<ReEvaluateReque
     logResult(result);
     splitIntoBatches(mapToFileUris(result))
         .forEach(fileUriList -> sendBatch(createMessages(fileUriList)));
-    if (result.shouldContinueScan()) {
+    if (result.hasNextPage()) {
       sendEventToInvokeNewReEvaluateExecution(input, context, result);
     }
     return null;
@@ -91,10 +91,7 @@ public class ReEvaluateNviCandidatesHandler extends EventHandler<ReEvaluateReque
 
   private static void logResult(ListingResult<CandidateDao> result) {
     LOGGER.info(
-        RESULT_MESSAGE,
-        result.getStartMarker(),
-        result.getTotalItemCount(),
-        result.shouldContinueScan());
+        RESULT_MESSAGE, result.lastEvaluatedKey(), result.itemCount(), result.hasNextPage());
   }
 
   @JacocoGenerated
@@ -103,7 +100,7 @@ public class ReEvaluateNviCandidatesHandler extends EventHandler<ReEvaluateReque
   }
 
   private static List<URI> mapToFileUris(ListingResult<CandidateDao> result) {
-    return result.getDatabaseEntries().stream()
+    return result.items().stream()
         .map(CandidateDao::candidate)
         .map(DbCandidate::publicationDetails)
         .map(DbPublicationDetails::publicationBucketUri)
@@ -114,7 +111,7 @@ public class ReEvaluateNviCandidatesHandler extends EventHandler<ReEvaluateReque
       ReEvaluateRequest request, Context context, ListingResult<CandidateDao> result) {
     var newEvent =
         request
-            .newReEvaluateRequest(result.getStartMarker(), topic)
+            .newReEvaluateRequest(result.lastEvaluatedKey(), topic)
             .createNewEventEntry(eventBusName, context.getInvokedFunctionArn());
     sendEvent(newEvent);
   }

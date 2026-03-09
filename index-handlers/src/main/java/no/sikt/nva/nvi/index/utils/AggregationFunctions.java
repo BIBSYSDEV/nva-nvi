@@ -4,12 +4,15 @@ import static no.sikt.nva.nvi.common.utils.JsonUtils.jsonPathOf;
 
 import java.util.Map;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
+import org.opensearch.client.opensearch._types.aggregations.Buckets;
 import org.opensearch.client.opensearch._types.aggregations.NestedAggregation;
 import org.opensearch.client.opensearch._types.aggregations.SumAggregation;
 import org.opensearch.client.opensearch._types.aggregations.TermsAggregation;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 
 public final class AggregationFunctions {
+
+  private static final int MAX_AGGREGATION_SIZE = 1000;
 
   private AggregationFunctions() {}
 
@@ -26,10 +29,26 @@ public final class AggregationFunctions {
     return new TermsAggregation.Builder().field(jsonPathOf(paths)).build().toAggregation();
   }
 
+  public static Aggregation termsAggregationWithSubAggregations(
+      String field, Map<String, Aggregation> subAggregations) {
+    return new Aggregation.Builder()
+        .terms(new TermsAggregation.Builder().field(field).size(MAX_AGGREGATION_SIZE).build())
+        .aggregations(subAggregations)
+        .build();
+  }
+
   public static Aggregation nestedAggregation(
       String path, Map<String, Aggregation> subAggregations) {
     return new Aggregation.Builder()
         .nested(new NestedAggregation.Builder().path(path).build())
+        .aggregations(subAggregations)
+        .build();
+  }
+
+  public static Aggregation keyedFiltersAggregation(
+      Map<String, Query> filters, Map<String, Aggregation> subAggregations) {
+    return new Aggregation.Builder()
+        .filters(builder -> builder.filters(Buckets.of(buckets -> buckets.keyed(filters))))
         .aggregations(subAggregations)
         .build();
   }

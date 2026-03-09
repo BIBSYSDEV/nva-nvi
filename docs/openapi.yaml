@@ -818,14 +818,20 @@ paths:
     get:
       tags:
         - Report
-      description: Get NVI report for a given year
-      summary: Get requesting users top level organizations NVI report for given year
+      description: Get NVI report for a given year. Admins and backend clients can specify an institutionId query parameter to get a report for a specific institution.
+      summary: Get NVI institution report with points per contributor for a given year
       operationId: getNviReportByYear
       parameters:
         - in: path
           name: year
           description: The year of the nvi period
           required: true
+          schema:
+            type: string
+        - in: query
+          name: institutionId
+          description: Top level Cristin organization identifier (e.g. 185.90.0.0). Only allowed for admins and backend clients.
+          required: false
           schema:
             type: string
       security: *authenticated
@@ -1085,6 +1091,8 @@ paths:
                         type: InstitutionTotals
                         validPoints: 12.3456
                         disputedCount: 4
+                        globalApprovedCount: 3
+                        globalRejectedCount: 1
                         undisputedProcessedCount: 4
                         undisputedTotalCount: 6
                       byLocalApprovalStatus:
@@ -1776,10 +1784,20 @@ components:
         - type: object
           required:
             - type
+            - globalApprovedCount
+            - globalRejectedCount
           properties:
             type:
               type: string
               enum: [InstitutionTotals]
+            globalApprovedCount:
+              type: integer
+              minimum: 0
+              description: Number of candidates with global approval status Approved
+            globalRejectedCount:
+              type: integer
+              minimum: 0
+              description: Number of candidates with global approval status Rejected
 
     UnitTotals:
       description: Aggregate totals for an organizational unit.

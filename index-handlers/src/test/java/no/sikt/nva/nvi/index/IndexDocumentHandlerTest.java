@@ -91,6 +91,7 @@ import no.sikt.nva.nvi.index.model.document.OrganizationType;
 import no.sikt.nva.nvi.index.model.document.ReportingPeriod;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import no.unit.nva.s3.S3Driver;
+import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UnixPath;
@@ -120,7 +121,7 @@ class IndexDocumentHandlerTest {
   private static final String ORGANIZATION_CONTEXT =
       "https://bibsysdev.github.io/src/organization-context.json";
   private static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
-  private static final Context CONTEXT = mock(Context.class);
+  private static final Context CONTEXT = new FakeContext();
   private static final String BUCKET_NAME = ENVIRONMENT.readEnv(EXPANDED_RESOURCES_BUCKET);
   private static final String INDEX_DLQ = "INDEX_DLQ";
   private static final String INDEX_DLQ_URL = ENVIRONMENT.readEnv(INDEX_DLQ);
@@ -138,7 +139,7 @@ class IndexDocumentHandlerTest {
   private FakeSqsClient sqsClient;
   private TestScenario scenario;
 
-  public static Stream<Arguments> channelTypeIssnProvider() {
+  private static Stream<Arguments> channelTypeIssnProvider() {
     return Stream.of(
         Arguments.of(ChannelType.JOURNAL, true),
         Arguments.of(ChannelType.JOURNAL, false),

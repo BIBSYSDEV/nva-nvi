@@ -12,6 +12,7 @@ import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.sikt.nva.nvi.test.TestUtils.randomTitle;
 import static no.sikt.nva.nvi.test.TestUtils.randomUriWithSuffix;
+import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -65,6 +66,13 @@ public final class IndexDocumentFixtures {
   public static NviCandidateIndexDocument createRandomIndexDocument(
       URI userTopLevelOrganization, String year) {
     return createRandomIndexDocumentBuilder(userTopLevelOrganization, year).build();
+  }
+
+  public static NviCandidateIndexDocument createRandomIndexDocumentWithHandle(URI handle) {
+    return createRandomIndexDocumentBuilder(randomUri(), randomYear())
+        .withPublicationDetails(
+            randomPublicationDetailsBuilder().withHandles(Set.of(handle)).build())
+        .build();
   }
 
   public static Builder createRandomIndexDocumentBuilder(URI userTopLevelOrganization, int year) {
@@ -204,20 +212,59 @@ public final class IndexDocumentFixtures {
         .build();
   }
 
+  public static NviCandidateIndexDocument documentForYear(
+      String year, boolean reported, ApprovalView... approvals) {
+    var allApprovals = List.of(approvals);
+    var topLevelOrganizations = allApprovals.stream().map(ApprovalView::institutionId).toList();
+    var details =
+        randomPublicationDetailsBuilder(topLevelOrganizations)
+            .withPublicationDate(randomPublicationDateDtoInYear(year))
+            .build();
+    return randomIndexDocumentBuilder(details, allApprovals).withReported(reported).build();
+  }
+
   public static List<NviCandidateIndexDocument> documentsForAllStatusCombinations(
       URI topLevelOrganization, URI creatorAffiliation) {
+    var approvalFactory =
+        new ApprovalFactory(topLevelOrganization).withCreatorAffiliation(creatorAffiliation);
+    return documentsForAllStatusCombinations(approvalFactory);
+  }
+
+  public static List<NviCandidateIndexDocument> documentsForAllStatusCombinations(
+      ApprovalFactory approvalFactory) {
     var documents = new ArrayList<NviCandidateIndexDocument>();
-    var approvalFactory = new ApprovalFactory(topLevelOrganization);
     for (var status : ApprovalStatus.values()) {
-      for (var globalStatus : GlobalApprovalStatus.values()) {
-        var approval =
-            approvalFactory
+      var globalStatus = deriveGlobalApprovalStatus(List.of(status));
+      var approval =
+          approvalFactory
+              .copy()
+              .withApprovalStatus(status)
+              .withGlobalApprovalStatus(globalStatus)
+              .build();
+      documents.add(documentWithApprovals(approval));
+    }
+    return documents;
+  }
+
+  public static List<NviCandidateIndexDocument> documentsForAllStatusCombinations(
+      ApprovalFactory institutionA, ApprovalFactory institutionB) {
+    var documents = new ArrayList<NviCandidateIndexDocument>();
+    for (var statusA : ApprovalStatus.values()) {
+      for (var statusB : ApprovalStatus.values()) {
+        var globalStatus = deriveGlobalApprovalStatus(List.of(statusA, statusB));
+        var approvalA =
+            institutionA
                 .copy()
-                .withApprovalStatus(status)
+                .withApprovalStatus(statusA)
                 .withGlobalApprovalStatus(globalStatus)
-                .withCreatorAffiliation(creatorAffiliation)
                 .build();
-        documents.add(documentWithApprovals(approval));
+        var approvalB =
+            institutionB
+                .copy()
+                .withApprovalStatus(statusB)
+                .withGlobalApprovalStatus(globalStatus)
+                .build();
+        documents.add(documentWithApprovals(approvalA, approvalB));
       }
     }
     return documents;

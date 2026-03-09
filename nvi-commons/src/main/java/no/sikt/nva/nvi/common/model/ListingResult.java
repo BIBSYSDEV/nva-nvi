@@ -1,90 +1,24 @@
 package no.sikt.nva.nvi.common.model;
 
-import static java.util.Objects.nonNull;
+import static no.sikt.nva.nvi.common.utils.CollectionUtils.copyOfNullable;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import nva.commons.core.JacocoGenerated;
 
-@JsonSerialize
-@JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
-public class ListingResult<T> {
+/**
+ * A single page from a paginated DynamoDB scan or query.
+ *
+ * @param hasNextPage whether more pages are available after this one
+ * @param lastEvaluatedKey the primary key of the last item evaluated, used as the exclusive start
+ *     key for the next page, or null if this is the last page
+ * @param itemCount the number of items in this page
+ * @param items the items returned in this page
+ * @param <T> the type of items in the result
+ */
+public record ListingResult<T>(
+    boolean hasNextPage, Map<String, String> lastEvaluatedKey, int itemCount, List<T> items) {
 
-  public static final String MORE_ITEMS_TO_SCAN = "moreItemsToScan";
-  public static final String START_MARKER = "startMarker";
-  public static final String ITEM_COUNT = "totalItemCount";
-  public static final String DATABASE_ENTRIES = "dataBaseEntries";
-  private final boolean moreItemsToScan;
-  private final Map<String, String> startMarker;
-  private final int totalItemCount;
-  private final List<T> databaseEntries;
-
-  @JsonCreator
-  public ListingResult(
-      @JsonProperty(MORE_ITEMS_TO_SCAN) boolean moreItemsToScan,
-      @JsonProperty(START_MARKER) Map<String, String> startMarker,
-      @JsonProperty(ITEM_COUNT) int totalItemCount,
-      @JsonProperty(DATABASE_ENTRIES) List<T> databaseEntries) {
-    this.moreItemsToScan = moreItemsToScan;
-    this.startMarker = startMarker;
-    this.totalItemCount = totalItemCount;
-    this.databaseEntries = databaseEntries;
-  }
-
-  public boolean shouldContinueScan() {
-    return moreItemsToScan;
-  }
-
-  public List<T> getDatabaseEntries() {
-    return nonNull(databaseEntries) ? databaseEntries : Collections.emptyList();
-  }
-
-  public Map<String, String> getStartMarker() {
-    return startMarker;
-  }
-
-  public int getTotalItemCount() {
-    return totalItemCount;
-  }
-
-  @Override
-  @JacocoGenerated
-  public int hashCode() {
-    return Objects.hash(moreItemsToScan, startMarker, totalItemCount, databaseEntries);
-  }
-
-  @Override
-  @JacocoGenerated
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-    ListingResult<?> that = (ListingResult<?>) o;
-    return moreItemsToScan == that.moreItemsToScan
-        && totalItemCount == that.totalItemCount
-        && Objects.equals(startMarker, that.startMarker)
-        && Objects.equals(databaseEntries, that.databaseEntries);
-  }
-
-  @Override
-  @JacocoGenerated
-  public String toString() {
-    return "ListingResult{"
-        + "moreItemsToScan="
-        + moreItemsToScan
-        + ", startMarker="
-        + startMarker
-        + ", totalItemCount="
-        + totalItemCount
-        + '}';
+  public ListingResult {
+    items = copyOfNullable(items);
   }
 }

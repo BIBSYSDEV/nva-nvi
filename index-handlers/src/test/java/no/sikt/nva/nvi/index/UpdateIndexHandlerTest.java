@@ -39,6 +39,7 @@ import no.sikt.nva.nvi.index.model.document.IndexDocumentWithConsumptionAttribut
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.unit.nva.commons.json.JsonUtils;
 import no.unit.nva.s3.S3Driver;
+import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
@@ -49,13 +50,13 @@ import software.amazon.awssdk.services.s3.S3Client;
 
 class UpdateIndexHandlerTest {
 
-  public static final Context CONTEXT = mock(Context.class);
-  public static final Environment ENVIRONMENT = new Environment();
-  public static final String INDEX_DLQ = "INDEX_DLQ";
-  public static final String INDEX_DLQ_URL = ENVIRONMENT.readEnv(INDEX_DLQ);
+  private static final Context CONTEXT = new FakeContext();
+  private static final Environment ENVIRONMENT = new Environment();
+  private static final String INDEX_DLQ = "INDEX_DLQ";
+  private static final String INDEX_DLQ_URL = ENVIRONMENT.readEnv(INDEX_DLQ);
   private static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
   private static final String BUCKET_NAME = ENVIRONMENT.readEnv(EXPANDED_RESOURCES_BUCKET);
-  public static final String EXCEPTION = "exception";
+  private static final String EXCEPTION = "exception";
   private final S3Client s3Client = new FakeS3Client();
   private S3Driver s3Driver;
   private UpdateIndexHandler handler;

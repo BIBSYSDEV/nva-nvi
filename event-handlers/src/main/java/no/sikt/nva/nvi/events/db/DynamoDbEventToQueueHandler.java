@@ -37,7 +37,6 @@ public class DynamoDbEventToQueueHandler implements RequestHandler<DynamodbEvent
   private static final int BATCH_SIZE = 10;
   private static final String DB_EVENTS_QUEUE_URL = "DB_EVENTS_QUEUE_URL";
   private static final String DLQ_URL = "INDEX_DLQ";
-  private static final String DLQ_MESSAGE = "Failed to process record %s. Exception: %s ";
   private static final String FAILURE_MESSAGE = "Failure while sending database events to queue";
   private static final String FAILED_RECORDS_MESSAGE = "Failed records: {}";
   private static final String SKIPPING_EVENT_MESSAGE =
@@ -128,7 +127,10 @@ public class DynamoDbEventToQueueHandler implements RequestHandler<DynamodbEvent
   }
 
   private void sendToDlq(DynamodbStreamRecord streamRecord, Exception exception) {
-    var message = String.format(DLQ_MESSAGE, streamRecord.toString(), getStackTrace(exception));
+    var message =
+        String.format(
+            "Failed to process record %s. Exception: %s ",
+            streamRecord.toString(), getStackTrace(exception));
     extractIdFromRecord(streamRecord)
         .ifPresentOrElse(
             id -> queueClient.sendMessage(message, dlqUrl, id),

@@ -13,8 +13,8 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 class DynamoDbUtilsTest {
 
-  public static final String SOME_FIELD_NAME = "fieldWithNullValue";
-  public static final String IDENTIFIER = "identifier";
+  private static final String SOME_FIELD_NAME = "fieldWithNullValue";
+  private static final String IDENTIFIER = "identifier";
 
   private static Map<String, AttributeValue> randomAttributeValueMap() {
     return Map.of(
