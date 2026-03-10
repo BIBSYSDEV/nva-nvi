@@ -826,6 +826,10 @@ Resources:
           Type: SQS
           Properties:
             Queue: !GetAtt GenerateIndexDocumentQueue.Arn
+            BatchSize: 10
+            MaximumBatchingWindowInSeconds: 1
+            FunctionResponseTypes:
+              - ReportBatchItemFailures # Only retry failed messages, not the entire batch
       EventInvokeConfig:
         DestinationConfig:
           OnFailure:
