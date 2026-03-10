@@ -109,6 +109,8 @@ public final class IndexDocumentFixtures {
         .withPublicationDetails(publicationDetails)
         .withApprovals(approvals)
         .withGlobalApprovalStatus(getGlobalApprovalStatus(approvals))
+        .withPublicationTypeChannelLevelPoints(randomBigDecimal())
+        .withInternationalCollaborationFactor(randomBigDecimal())
         .withNumberOfApprovals(approvals.size())
         .withPoints(randomBigDecimal())
         .withReportingPeriod(reportingPeriod)

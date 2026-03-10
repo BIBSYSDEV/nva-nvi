@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.NoSuchElementException;
 import java.util.function.Supplier;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
+import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.index.report.ReportAggregationClient;
 import no.sikt.nva.nvi.index.report.query.AllInstitutionsQuery;
 import no.sikt.nva.nvi.index.report.query.AllPeriodsQuery;
@@ -56,11 +57,26 @@ public class ReportService {
 
   private InstitutionReport institutionReport(InstitutionReportRequest request) throws IOException {
     var period = nviPeriodService.getByPublishingYear(request.period());
-    var query = new InstitutionQuery(period, request.institutionId());
+    var query =
+        new InstitutionQuery(period, request.institutionId(), request.isXlsxReportRequest());
+    return request.isXlsxReportRequest()
+        ? createXlsxReport(request, query)
+        : createJsonReport(request, query, period);
+  }
+
+  private InstitutionJsonReport createJsonReport(
+      InstitutionReportRequest request, InstitutionQuery query, NviPeriod period)
+      throws IOException {
     return reportAggregationClient
         .executeQuery(query)
-        .map(result -> InstitutionReport.from(request.queryId(), period, result))
+        .map(result -> InstitutionJsonReport.from(request.queryId(), period, result))
         .orElseThrow(noSuchElementException(request));
+  }
+
+  private InstitutionXlsxReport createXlsxReport(
+      InstitutionReportRequest request, InstitutionQuery query) {
+    var content = reportAggregationClient.executeXlsxReport(query);
+    return new InstitutionXlsxReport(request.queryId(), content);
   }
 
   private static Supplier<NoSuchElementException> noSuchElementException(

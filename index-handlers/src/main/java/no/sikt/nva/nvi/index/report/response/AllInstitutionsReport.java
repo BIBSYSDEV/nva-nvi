@@ -9,7 +9,8 @@ import no.sikt.nva.nvi.index.report.model.InstitutionAggregationResult;
 import nva.commons.core.paths.UriWrapper;
 
 public record AllInstitutionsReport(
-    URI id, NviPeriodDto period, List<InstitutionReport> institutions) implements ReportResponse {
+    URI id, NviPeriodDto period, List<InstitutionJsonReport> institutions)
+    implements ReportResponse {
 
   public static AllInstitutionsReport from(
       URI queryId, NviPeriod period, Collection<InstitutionAggregationResult> results) {
@@ -20,10 +21,10 @@ public record AllInstitutionsReport(
     return new AllInstitutionsReport(queryId, period.toDto(), institutionReports);
   }
 
-  private static InstitutionReport getInstitutionReport(
+  private static InstitutionJsonReport getInstitutionReport(
       URI queryId, InstitutionAggregationResult institutionResult) {
     var institutionQueryId = institutionQueryId(queryId, institutionResult.institutionId());
-    return InstitutionReport.from(
+    return InstitutionJsonReport.from(
         institutionQueryId, institutionResult.period(), institutionResult);
   }
 

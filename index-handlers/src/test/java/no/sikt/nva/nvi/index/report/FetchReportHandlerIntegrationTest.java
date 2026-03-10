@@ -32,6 +32,7 @@ import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.apigateway.GatewayResponse.fromOutputStream;
+import static org.apache.http.HttpHeaders.ACCEPT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.params.provider.Arguments.argumentSet;
 
@@ -44,6 +45,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import java.math.BigDecimal;
 import java.net.HttpURLConnection;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -59,13 +61,14 @@ import no.sikt.nva.nvi.index.model.document.InstitutionPointsView;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.report.response.AllInstitutionsReport;
 import no.sikt.nva.nvi.index.report.response.AllPeriodsReport;
-import no.sikt.nva.nvi.index.report.response.InstitutionReport;
+import no.sikt.nva.nvi.index.report.response.InstitutionJsonReport;
 import no.sikt.nva.nvi.index.report.response.PeriodReport;
 import no.sikt.nva.nvi.index.report.response.PeriodTotals;
 import no.sikt.nva.nvi.index.report.response.ReportResponse;
 import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
+import nva.commons.apigateway.MediaType;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
@@ -166,6 +169,27 @@ class FetchReportHandlerIntegrationTest {
             .formatted(
                 REPORTS_PATH_SEGMENT, period, INSTITUTIONS_PATH_SEGMENT, institutionIdentifier);
     return createRequest(pathParams, path);
+  }
+
+  private static InputStream createXlsInstitutionRequest(
+      String period, String institutionIdentifier) {
+    var pathParams =
+        Map.of(PERIOD_PATH_PARAM, period, INSTITUTION_PATH_PARAM, institutionIdentifier);
+    var path =
+        "%s/%s/%s/%s"
+            .formatted(
+                REPORTS_PATH_SEGMENT, period, INSTITUTIONS_PATH_SEGMENT, institutionIdentifier);
+    var headers = Map.of(ACCEPT, MediaType.OOXML_SHEET.toString());
+    try {
+      return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
+          .withOtherProperties(Map.of("path", path))
+          .withPathParameters(pathParams)
+          .withAccessRights(randomUri(), AccessRight.MANAGE_NVI)
+          .withHeaders(headers)
+          .build();
+    } catch (JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   private static List<NviCandidateIndexDocument> documentsForLastYear(
@@ -300,9 +324,9 @@ class FetchReportHandlerIntegrationTest {
     return (PeriodReport) handleRequest(request);
   }
 
-  private InstitutionReport getInstitutionReport(String period, String institutionIdentifier) {
+  private InstitutionJsonReport getInstitutionReport(String period, String institutionIdentifier) {
     var request = createInstitutionRequest(period, institutionIdentifier);
-    return (InstitutionReport) handleRequest(request);
+    return (InstitutionJsonReport) handleRequest(request);
   }
 
   private AllInstitutionsReport getAllInstitutionsReport(String period) {
@@ -586,7 +610,7 @@ class FetchReportHandlerIntegrationTest {
     @Test
     void shouldHaveExpectedType() {
       var report = getInstitutionReport(THIS_YEAR, IDENTIFIER_INSTITUTION_A);
-      assertThat(report).isInstanceOf(InstitutionReport.class);
+      assertThat(report).isInstanceOf(InstitutionJsonReport.class);
     }
 
     @Test
@@ -806,6 +830,21 @@ class FetchReportHandlerIntegrationTest {
 
       var candidatesByStatus = report.institutionSummary().byLocalApprovalStatus();
       assertThat(candidatesByStatus.rejectedCount()).isEqualTo(expectedCount);
+    }
+
+    @Test
+    void shouldReturnXlsxReportWhenRequested() throws IOException {
+      var request = createXlsInstitutionRequest(THIS_YEAR, IDENTIFIER_INSTITUTION_A);
+      var output = new ByteArrayOutputStream();
+
+      handler.handleRequest(request, output, CONTEXT);
+
+      var response = fromOutputStream(output, String.class);
+      assertThat(response.getStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
+      var content = response.getBodyObject(String.class);
+
+      assertThat(content).isNotEmpty();
+      assertThat(Base64.getDecoder().decode(content)).isNotEmpty();
     }
   }
 }

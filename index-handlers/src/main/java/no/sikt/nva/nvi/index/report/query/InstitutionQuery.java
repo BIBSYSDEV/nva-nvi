@@ -17,7 +17,7 @@ import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.SearchResponse;
 
-public record InstitutionQuery(NviPeriod period, URI institutionId)
+public record InstitutionQuery(NviPeriod period, URI institutionId, boolean isXlsxReportRequest)
     implements ReportAggregationQuery<Optional<InstitutionAggregationResult>> {
 
   @Override
