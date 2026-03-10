@@ -4,4 +4,4 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 
 @JsonSubTypes({@JsonSubTypes.Type(value = InstitutionJsonReport.class, name = "InstitutionReport")})
 public sealed interface InstitutionReport extends ReportResponse
-    permits InstitutionJsonReport, InstitutionsXlsReport {}
+    permits InstitutionJsonReport, InstitutionXlsxReport {}

@@ -10,7 +10,7 @@ import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
 
 public record InstitutionReportRequest(
-    URI queryId, String period, URI institutionId, boolean isXmlReportRequest)
+    URI queryId, String period, URI institutionId, boolean isXlsxReportRequest)
     implements ReportRequest {
 
   private static final String CRISTIN_PATH_SEGMENT = "cristin";

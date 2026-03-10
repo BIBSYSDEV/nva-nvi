@@ -26,7 +26,7 @@ public final class ReportRequestFactory {
     }
     if (nonNull(institutionIdentifier)) {
       return InstitutionReportRequest.from(
-          environment, period, institutionIdentifier, isXmlReportRequest(requestInfo));
+          environment, period, institutionIdentifier, isXlsxReportRequest(requestInfo));
     }
     if (path.contains(INSTITUTIONS_PATH_SEGMENT)) {
       return AllInstitutionsReportRequest.from(environment, period);
@@ -34,7 +34,7 @@ public final class ReportRequestFactory {
     return PeriodReportRequest.from(environment, period);
   }
 
-  public static boolean isXmlReportRequest(RequestInfo requestInfo) {
+  public static boolean isXlsxReportRequest(RequestInfo requestInfo) {
     return requestInfo
         .getHeaderOptional(CONTENT_TYPE)
         .map(value -> value.equals(OOXML_SHEET.toString()))

@@ -76,7 +76,8 @@ public class FetchReportHandler extends ApiGatewayHandler<Void, ReportResponse> 
   }
 
   private void addAdditionalHeaders(ReportRequest reportRequest) {
-    if (reportRequest instanceof InstitutionReportRequest request && request.isXmlReportRequest()) {
+    if (reportRequest instanceof InstitutionReportRequest request
+        && request.isXlsxReportRequest()) {
       addAdditionalHeaders(() -> Map.of(CONTENT_TYPE, OOXML_SHEET.toString()));
     }
   }

@@ -833,7 +833,7 @@ class FetchReportHandlerIntegrationTest {
     }
 
     @Test
-    void shouldReturnXlsReportWhenRequested() throws IOException {
+    void shouldReturnXlsxReportWhenRequested() throws IOException {
       var request = createXlsInstitutionRequest(THIS_YEAR, IDENTIFIER_INSTITUTION_A);
       var output = new ByteArrayOutputStream();
 

@@ -57,11 +57,11 @@ public class ReportService {
 
   private InstitutionReport institutionReport(InstitutionReportRequest request) throws IOException {
     var period = nviPeriodService.getByPublishingYear(request.period());
-    var query = new InstitutionQuery(period, request.institutionId(), request.isXmlReportRequest());
-    if (request.isXmlReportRequest()) {
-      return createXlsReport(request, query);
-    }
-    return createJsonReport(request, query, period);
+    var query =
+        new InstitutionQuery(period, request.institutionId(), request.isXlsxReportRequest());
+    return request.isXlsxReportRequest()
+        ? createXlsxReport(request, query)
+        : createJsonReport(request, query, period);
   }
 
   private InstitutionJsonReport createJsonReport(
@@ -73,10 +73,10 @@ public class ReportService {
         .orElseThrow(noSuchElementException(request));
   }
 
-  private InstitutionsXlsReport createXlsReport(
+  private InstitutionXlsxReport createXlsxReport(
       InstitutionReportRequest request, InstitutionQuery query) {
-    var content = reportAggregationClient.executeXlsReport(query);
-    return new InstitutionsXlsReport(request.queryId(), content);
+    var content = reportAggregationClient.executeXlsxReport(query);
+    return new InstitutionXlsxReport(request.queryId(), content);
   }
 
   private static Supplier<NoSuchElementException> noSuchElementException(

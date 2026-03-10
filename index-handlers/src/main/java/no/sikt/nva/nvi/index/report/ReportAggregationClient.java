@@ -50,10 +50,10 @@ public class ReportAggregationClient {
     return processQuery(query);
   }
 
-  public String executeXlsReport(InstitutionQuery query) {
-    LOGGER.info("Executing XLS report query: {}", query);
+  public String executeXlsxReport(InstitutionQuery query) {
+    LOGGER.info("Executing XLSX report query: {}", query);
     var data =
-        fetchNviCandidatesScroll(query.query()).stream()
+        fetchCandidates(query.query()).stream()
             .map(candidate -> candidate.toReportRowsForInstitution(query.institutionId()))
             .flatMap(this::orderByHeaderOrder)
             .toList();
@@ -86,7 +86,7 @@ public class ReportAggregationClient {
         .toList();
   }
 
-  private List<NviCandidateIndexDocument> fetchNviCandidatesScroll(Query query) {
+  private List<NviCandidateIndexDocument> fetchCandidates(Query query) {
     var candidates = new ArrayList<NviCandidateIndexDocument>();
     var scrollId = initializeScroll(candidates, query);
     try {
@@ -103,7 +103,7 @@ public class ReportAggregationClient {
             .index(NVI_CANDIDATES_INDEX)
             .size(SCROLL_PAGE_SIZE)
             .query(query)
-            .scroll(s -> s.time(SCROLL_TIMEOUT))
+            .scroll(builder -> builder.time(SCROLL_TIMEOUT))
             .build();
     var response = searchWithScroll(request);
     addHitsToListOfCandidates(response.hits(), candidates);
