@@ -1,7 +1,5 @@
 package no.sikt.nva.nvi.index;
 
-import static java.util.Objects.nonNull;
-
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
 import com.amazonaws.services.lambda.runtime.events.SQSBatchResponse;
@@ -95,10 +93,8 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, SQSBatchRe
   private void createIndexDocument(UUID candidateIdentifier) {
     try {
       var document = generateIndexDocumentWithConsumptionAttributes(candidateIdentifier);
-      if (nonNull(document)) {
-        var docUri = document.persist(storageWriter);
-        sqsClient.sendMessage(new PersistedIndexDocumentMessage(docUri).toJsonString(), queueUrl);
-      }
+      var docUri = document.persist(storageWriter);
+      sqsClient.sendMessage(new PersistedIndexDocumentMessage(docUri).toJsonString(), queueUrl);
     } catch (Exception exception) {
       handleFailure(exception, candidateIdentifier);
     }
