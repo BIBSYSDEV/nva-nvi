@@ -5,6 +5,8 @@ import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.index.report.ReportConstants.INSTITUTIONS_PATH_SEGMENT;
 import static no.sikt.nva.nvi.index.report.ReportConstants.INSTITUTION_PATH_PARAM;
 import static no.sikt.nva.nvi.index.report.ReportConstants.PERIOD_PATH_PARAM;
+import static nva.commons.apigateway.MediaType.OOXML_SHEET;
+import static org.apache.http.HttpHeaders.CONTENT_TYPE;
 
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.core.Environment;
@@ -23,11 +25,19 @@ public final class ReportRequestFactory {
       return AllPeriodsReportRequest.from(environment);
     }
     if (nonNull(institutionIdentifier)) {
-      return InstitutionReportRequest.from(environment, period, institutionIdentifier);
+      return InstitutionReportRequest.from(
+          environment, period, institutionIdentifier, isXmlReportRequest(requestInfo));
     }
     if (path.contains(INSTITUTIONS_PATH_SEGMENT)) {
       return AllInstitutionsReportRequest.from(environment, period);
     }
     return PeriodReportRequest.from(environment, period);
+  }
+
+  public static boolean isXmlReportRequest(RequestInfo requestInfo) {
+    return requestInfo
+        .getHeaderOptional(CONTENT_TYPE)
+        .map(value -> value.equals(OOXML_SHEET.toString()))
+        .orElse(Boolean.FALSE);
   }
 }

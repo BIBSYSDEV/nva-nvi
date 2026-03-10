@@ -9,17 +9,21 @@ import java.net.URI;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
 
-public record InstitutionReportRequest(URI queryId, String period, URI institutionId)
+public record InstitutionReportRequest(
+    URI queryId, String period, URI institutionId, boolean isXmlReportRequest)
     implements ReportRequest {
 
   private static final String CRISTIN_PATH_SEGMENT = "cristin";
   private static final String ORGANIZATION_PATH_SEGMENT = "organization";
 
   public static InstitutionReportRequest from(
-      Environment environment, String period, String institutionIdentifier) {
+      Environment environment,
+      String period,
+      String institutionIdentifier,
+      boolean isXmlReportRequest) {
     var queryId = getQueryId(environment, period, institutionIdentifier);
     var institutionId = getInstitutionId(environment, institutionIdentifier);
-    return new InstitutionReportRequest(queryId, period, institutionId);
+    return new InstitutionReportRequest(queryId, period, institutionId, isXmlReportRequest);
   }
 
   private static URI getQueryId(

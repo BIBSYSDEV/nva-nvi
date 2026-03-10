@@ -3,12 +3,17 @@ package no.sikt.nva.nvi.index.report;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static no.sikt.nva.nvi.common.utils.RequestUtil.isNviAdmin;
 import static no.sikt.nva.nvi.common.utils.RequestUtil.isNviCurator;
+import static nva.commons.apigateway.MediaType.OOXML_SHEET;
+import static org.apache.http.HttpHeaders.CONTENT_TYPE;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import java.io.IOException;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.exception.PeriodNotFoundException;
+import no.sikt.nva.nvi.index.report.request.InstitutionReportRequest;
+import no.sikt.nva.nvi.index.report.request.ReportRequest;
 import no.sikt.nva.nvi.index.report.request.ReportRequestFactory;
 import no.sikt.nva.nvi.index.report.response.ReportResponse;
 import no.sikt.nva.nvi.index.report.response.ReportService;
@@ -52,11 +57,14 @@ public class FetchReportHandler extends ApiGatewayHandler<Void, ReportResponse> 
     }
   }
 
+  @JacocoGenerated
   @Override
   protected ReportResponse processInput(Void unused, RequestInfo requestInfo, Context context)
       throws ApiGatewayException {
     var reportRequest = ReportRequestFactory.getRequest(requestInfo, environment);
     try {
+      addAdditionalHeaders(reportRequest);
+
       return reportService.getResponse(reportRequest);
     } catch (NoSuchElementException | PeriodNotFoundException exception) {
       LOGGER.error("Resource not found for query request: {}", reportRequest, exception);
@@ -64,6 +72,12 @@ public class FetchReportHandler extends ApiGatewayHandler<Void, ReportResponse> 
     } catch (IOException exception) {
       LOGGER.error("Failed to execute query request: {}", reportRequest, exception);
       throw new BadGatewayException("Something went wrong! Contact application administrator.");
+    }
+  }
+
+  private void addAdditionalHeaders(ReportRequest reportRequest) {
+    if (reportRequest instanceof InstitutionReportRequest request && request.isXmlReportRequest()) {
+      addAdditionalHeaders(() -> Map.of(CONTENT_TYPE, OOXML_SHEET.toString()));
     }
   }
 
