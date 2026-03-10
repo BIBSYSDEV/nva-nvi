@@ -1,6 +1,8 @@
 package no.sikt.nva.nvi.index.apigateway;
 
+import static com.google.common.net.MediaType.JSON_UTF_8;
 import static com.google.common.net.MediaType.OOXML_SHEET;
+import static java.net.HttpURLConnection.HTTP_OK;
 import static java.util.Collections.emptyMap;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.ALLOWED_ORIGIN;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.getHandlerEnvironment;
@@ -77,7 +79,7 @@ class FetchReportHandlerTest {
 
     var statusCode = fromOutputStream(output, ReportResponse.class).getStatusCode();
 
-    assertEquals(HttpURLConnection.HTTP_OK, statusCode);
+    assertEquals(HTTP_OK, statusCode);
   }
 
   @ParameterizedTest
@@ -133,9 +135,8 @@ class FetchReportHandlerTest {
   }
 
   @Test
-  void
-      shouldReturnReportMediaTypeApplicationJsonWhenRequestedNonInstitutionReportButXlsxIsRequested()
-          throws IOException {
+  void shouldReturnBadRequestWhenRequestedNonInstitutionReportWithAcceptHeaderXlsxIsRequested()
+      throws IOException {
     var headers = Map.of(ACCEPT, MediaType.OOXML_SHEET.toString());
     var request = createRequestWithHeader(Map.of(), EMPTY_STRING, headers);
 
@@ -144,6 +145,18 @@ class FetchReportHandlerTest {
     var response = fromOutputStream(output, Problem.class);
 
     assertEquals(BAD_REQUEST, response.getStatusCode());
+  }
+
+  @Test
+  void shouldReturnOkWhenRequestedNonInstitutionReportWithAcceptHeaderJson() throws IOException {
+    var headers = Map.of(ACCEPT, JSON_UTF_8.toString());
+    var request = createRequestWithHeader(Map.of(), EMPTY_STRING, headers);
+
+    handler.handleRequest(request, output, CONTEXT);
+
+    var response = fromOutputStream(output, Void.class);
+
+    assertEquals(HTTP_OK, response.getStatusCode());
   }
 
   private static InputStream createRequest(
