@@ -1059,6 +1059,15 @@ paths:
           schema:
             type: boolean
             default: false
+        - in: header
+          name: Accept
+          required: false
+          schema:
+            type: string
+            enum:
+              - application/json
+              - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+            default: application/json
       security: *authenticated
       x-amazon-apigateway-integration:
         uri:
@@ -1131,6 +1140,11 @@ paths:
                               pending: 0
                               approved: 0
                               rejected: 1
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+                description: Base64-encoded Excel (.xlsx) file
         "400":
           description: "Bad Request - Invalid period or institution format"
           content:

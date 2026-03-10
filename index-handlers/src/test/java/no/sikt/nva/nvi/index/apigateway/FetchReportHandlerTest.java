@@ -21,7 +21,8 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static software.amazon.awssdk.http.Header.CONTENT_TYPE;
+import static software.amazon.awssdk.http.Header.ACCEPT;
+import static software.amazon.awssdk.http.HttpStatusCode.BAD_REQUEST;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -115,7 +116,7 @@ class FetchReportHandlerTest {
   @Test
   void shouldReturnReportMediaTypeOpenXmlOfficeDocumentWhenRequestedForInstitutionReport()
       throws IOException {
-    var headers = Map.of(CONTENT_TYPE, MediaType.OOXML_SHEET.toString());
+    var headers = Map.of(ACCEPT, MediaType.OOXML_SHEET.toString());
     var pathParams =
         Map.of(PERIOD_PATH_PARAM, randomYear(), INSTITUTION_PATH_PARAM, randomString());
     var path =
@@ -132,17 +133,17 @@ class FetchReportHandlerTest {
   }
 
   @Test
-  void shouldReturnReportMediaTypeApplicationJsonWhenRequestedNonInstitutionReportButXlsIsRequest()
-      throws IOException {
-    var headers = Map.of(CONTENT_TYPE, MediaType.OOXML_SHEET.toString());
+  void
+      shouldReturnReportMediaTypeApplicationJsonWhenRequestedNonInstitutionReportButXlsxIsRequested()
+          throws IOException {
+    var headers = Map.of(ACCEPT, MediaType.OOXML_SHEET.toString());
     var request = createRequestWithHeader(Map.of(), EMPTY_STRING, headers);
 
     handler.handleRequest(request, output, CONTEXT);
 
-    var response = fromOutputStream(output, ReportResponse.class);
+    var response = fromOutputStream(output, Problem.class);
 
-    assertThat(
-        response.getHeaders().get(HttpHeaders.CONTENT_TYPE), is(MediaType.JSON_UTF_8.toString()));
+    assertEquals(BAD_REQUEST, response.getStatusCode());
   }
 
   private static InputStream createRequest(

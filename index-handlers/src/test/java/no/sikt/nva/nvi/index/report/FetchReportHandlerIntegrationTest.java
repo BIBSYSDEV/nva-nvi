@@ -32,7 +32,7 @@ import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.apigateway.GatewayResponse.fromOutputStream;
-import static org.apache.http.HttpHeaders.CONTENT_TYPE;
+import static org.apache.http.HttpHeaders.ACCEPT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.params.provider.Arguments.argumentSet;
 
@@ -179,7 +179,7 @@ class FetchReportHandlerIntegrationTest {
         "%s/%s/%s/%s"
             .formatted(
                 REPORTS_PATH_SEGMENT, period, INSTITUTIONS_PATH_SEGMENT, institutionIdentifier);
-    var headers = Map.of(CONTENT_TYPE, MediaType.OOXML_SHEET.toString());
+    var headers = Map.of(ACCEPT, MediaType.OOXML_SHEET.toString());
     try {
       return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
           .withOtherProperties(Map.of("path", path))

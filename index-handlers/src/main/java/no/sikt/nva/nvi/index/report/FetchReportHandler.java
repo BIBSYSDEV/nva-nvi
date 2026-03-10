@@ -3,11 +3,14 @@ package no.sikt.nva.nvi.index.report;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static no.sikt.nva.nvi.common.utils.RequestUtil.isNviAdmin;
 import static no.sikt.nva.nvi.common.utils.RequestUtil.isNviCurator;
+import static nva.commons.apigateway.MediaType.JSON_UTF_8;
 import static nva.commons.apigateway.MediaType.OOXML_SHEET;
+import static org.apache.http.HttpHeaders.ACCEPT;
 import static org.apache.http.HttpHeaders.CONTENT_TYPE;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
@@ -18,9 +21,11 @@ import no.sikt.nva.nvi.index.report.request.ReportRequestFactory;
 import no.sikt.nva.nvi.index.report.response.ReportResponse;
 import no.sikt.nva.nvi.index.report.response.ReportService;
 import nva.commons.apigateway.ApiGatewayHandler;
+import nva.commons.apigateway.MediaType;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.apigateway.exceptions.BadGatewayException;
+import nva.commons.apigateway.exceptions.BadRequestException;
 import nva.commons.apigateway.exceptions.ForbiddenException;
 import nva.commons.apigateway.exceptions.NotFoundException;
 import nva.commons.core.Environment;
@@ -50,6 +55,11 @@ public class FetchReportHandler extends ApiGatewayHandler<Void, ReportResponse> 
   }
 
   @Override
+  protected List<MediaType> listSupportedMediaTypes() {
+    return List.of(JSON_UTF_8, OOXML_SHEET);
+  }
+
+  @Override
   protected void validateRequest(Void unused, RequestInfo requestInfo, Context context)
       throws ApiGatewayException {
     if (!(isNviAdmin(requestInfo) || isNviCurator(requestInfo))) {
@@ -63,7 +73,7 @@ public class FetchReportHandler extends ApiGatewayHandler<Void, ReportResponse> 
       throws ApiGatewayException {
     var reportRequest = ReportRequestFactory.getRequest(requestInfo, environment);
     try {
-      addAdditionalHeaders(reportRequest);
+      addAdditionalHeaders(requestInfo, reportRequest);
 
       return reportService.getResponse(reportRequest);
     } catch (NoSuchElementException | PeriodNotFoundException exception) {
@@ -75,10 +85,16 @@ public class FetchReportHandler extends ApiGatewayHandler<Void, ReportResponse> 
     }
   }
 
-  private void addAdditionalHeaders(ReportRequest reportRequest) {
+  private void addAdditionalHeaders(RequestInfo requestInfo, ReportRequest reportRequest)
+      throws BadRequestException {
     if (reportRequest instanceof InstitutionReportRequest request
         && request.isXlsxReportRequest()) {
       addAdditionalHeaders(() -> Map.of(CONTENT_TYPE, OOXML_SHEET.toString()));
+    } else if (requestInfo
+        .getHeaderOptional(ACCEPT)
+        .map(value -> value.equals(OOXML_SHEET.toString()))
+        .isPresent()) {
+      throw new BadRequestException("XLSX is not supported for that type of report!");
     }
   }
 

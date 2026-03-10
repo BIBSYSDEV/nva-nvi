@@ -6,7 +6,7 @@ import static no.sikt.nva.nvi.index.report.ReportConstants.INSTITUTIONS_PATH_SEG
 import static no.sikt.nva.nvi.index.report.ReportConstants.INSTITUTION_PATH_PARAM;
 import static no.sikt.nva.nvi.index.report.ReportConstants.PERIOD_PATH_PARAM;
 import static nva.commons.apigateway.MediaType.OOXML_SHEET;
-import static org.apache.http.HttpHeaders.CONTENT_TYPE;
+import static org.apache.http.HttpHeaders.ACCEPT;
 
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.core.Environment;
@@ -36,7 +36,7 @@ public final class ReportRequestFactory {
 
   public static boolean isXlsxReportRequest(RequestInfo requestInfo) {
     return requestInfo
-        .getHeaderOptional(CONTENT_TYPE)
+        .getHeaderOptional(ACCEPT)
         .map(value -> value.equals(OOXML_SHEET.toString()))
         .orElse(Boolean.FALSE);
   }
