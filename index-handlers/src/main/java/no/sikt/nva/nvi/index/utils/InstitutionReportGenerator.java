@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.index.utils;
 
+import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.index.query.SearchAggregation.TOTAL_COUNT_AGGREGATION_AGG;
 import static nva.commons.core.attempt.Try.attempt;
 
@@ -29,6 +30,7 @@ import org.opensearch.client.opensearch.core.search.HitsMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@SuppressWarnings({"PMD.UnusedLocalVariable"})
 public class InstitutionReportGenerator {
 
   private static final Logger logger = LoggerFactory.getLogger(InstitutionReportGenerator.class);
@@ -56,7 +58,7 @@ public class InstitutionReportGenerator {
   }
 
   public ExcelWorkbookGenerator generateReport() {
-    var nviCandidates = fetchNviCandidates();
+    var nviCandidates = fetchNviCandidatesScroll();
     var data =
         nviCandidates.stream()
             .map(candidate -> candidate.toReportRowsForInstitution(topLevelOrganization))
@@ -111,6 +113,45 @@ public class InstitutionReportGenerator {
     var candidates = fetchCandidatesAsync(numberOfBatches, total);
     logNumberOfCandidatesFound(candidates);
     return candidates;
+  }
+
+  private List<NviCandidateIndexDocument> fetchNviCandidatesScroll() {
+    var candidates = new ArrayList<NviCandidateIndexDocument>();
+    var scrollId = initializeScroll(candidates);
+    try {
+      scrollId = fetchRemainingPages(candidates, scrollId);
+    } finally {
+      clearScroll(scrollId);
+    }
+    logNumberOfCandidatesFound(candidates);
+    return candidates;
+  }
+
+  private String initializeScroll(List<NviCandidateIndexDocument> candidates) {
+    var searchParameters = buildSearchRequest(NO_OFFSET, searchPageSize).build();
+    var response = searchClient.searchWithScroll(searchParameters);
+    addHitsToListOfCandidates(response.hits(), candidates);
+    return response.scrollId();
+  }
+
+  private String fetchRemainingPages(List<NviCandidateIndexDocument> candidates, String scrollId) {
+    String currentScrollId = scrollId;
+    while (true) {
+      var scrollResponse = searchClient.scroll(currentScrollId);
+      var hits = scrollResponse.hits();
+      if (hits.hits().isEmpty()) {
+        break;
+      }
+      addHitsToListOfCandidates(hits, candidates);
+      currentScrollId = scrollResponse.scrollId();
+    }
+    return currentScrollId;
+  }
+
+  private void clearScroll(String scrollId) {
+    if (nonNull(scrollId)) {
+      searchClient.clearScroll(scrollId);
+    }
   }
 
   private List<NviCandidateIndexDocument> fetchCandidatesAsync(int numberOfBatches, long total) {
@@ -193,7 +234,7 @@ public class InstitutionReportGenerator {
     return CandidateSearchParameters.builder()
         .withYear(year)
         .withTopLevelCristinOrg(topLevelOrganization)
-        .withAffiliations(List.of(topLevelOrganizationIdentifier))
+        //        .withAffiliations(List.of(topLevelOrganizationIdentifier))
         .withSearchResultParameters(getSearchRequestParameters(offset, pageSize))
         .withExcludeFields(List.of(EXCLUDE_CONTRIBUTORS_FIELD));
   }

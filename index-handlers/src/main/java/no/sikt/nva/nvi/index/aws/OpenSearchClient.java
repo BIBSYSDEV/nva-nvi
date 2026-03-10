@@ -19,10 +19,13 @@ import org.opensearch.client.opensearch._types.FieldSort.Builder;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.SortOptions;
 import org.opensearch.client.opensearch._types.SortOrder;
+import org.opensearch.client.opensearch._types.Time;
+import org.opensearch.client.opensearch.core.ClearScrollRequest;
 import org.opensearch.client.opensearch.core.DeleteRequest;
 import org.opensearch.client.opensearch.core.DeleteResponse;
 import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.core.IndexResponse;
+import org.opensearch.client.opensearch.core.ScrollRequest;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.search.SourceConfig;
@@ -38,6 +41,7 @@ import org.slf4j.LoggerFactory;
 @JacocoGenerated
 public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument> {
 
+  private static final String SCROLL_TIMEOUT = "1m";
   private static final String INDEX_NOT_FOUND_EXCEPTION = "index_not_found_exception";
   private static final Logger LOGGER = LoggerFactory.getLogger(OpenSearchClient.class);
   private static final String ERROR_MSG_CREATE_INDEX =
@@ -82,7 +86,7 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
   @Override
   public SearchResponse<NviCandidateIndexDocument> search(
       CandidateSearchParameters candidateSearchParameters) throws IOException {
-    var query = constructSearchRequest(candidateSearchParameters);
+    var query = constructSearchRequest(candidateSearchParameters).build();
     logQueryDetails(query);
     return client.search(query, NviCandidateIndexDocument.class);
   }
@@ -104,6 +108,36 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
   @Override
   public void deleteIndex() throws IOException {
     client.indices().delete(new DeleteIndexRequest.Builder().index(NVI_CANDIDATES_INDEX).build());
+  }
+
+  @Override
+  public SearchResponse<NviCandidateIndexDocument> searchWithScroll(
+      CandidateSearchParameters candidateSearchParameters) {
+    var query =
+        constructSearchRequest(candidateSearchParameters)
+            .scroll(Time.of(t -> t.time(SCROLL_TIMEOUT)))
+            .build();
+    logQueryDetails(query);
+    return attempt(() -> client.search(query, NviCandidateIndexDocument.class))
+        .orElseThrow(failure -> new RuntimeException("Could not search!"));
+  }
+
+  @Override
+  public SearchResponse<NviCandidateIndexDocument> scroll(String scrollIdentifier) {
+    var request =
+        ScrollRequest.of(
+            builder ->
+                builder.scrollId(scrollIdentifier).scroll(build -> build.time(SCROLL_TIMEOUT)));
+    return attempt(() -> client.scroll(request, NviCandidateIndexDocument.class))
+        .orElseThrow(failure -> new RuntimeException("Scroll failed!"));
+  }
+
+  @Override
+  public void clearScroll(String scrollIdentifier) {
+    attempt(
+        () ->
+            client.clearScroll(
+                ClearScrollRequest.of(builder -> builder.scrollId(scrollIdentifier))));
   }
 
   public boolean indexExists() {
@@ -184,7 +218,7 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
     return new RuntimeException(exception.getMessage());
   }
 
-  private SearchRequest constructSearchRequest(CandidateSearchParameters parameters) {
+  private SearchRequest.Builder constructSearchRequest(CandidateSearchParameters parameters) {
     var query = SearchConstants.constructQuery(parameters);
     var resultParameters = parameters.searchResultParameters();
     var sortOptions = getSortOptions(parameters);
@@ -200,7 +234,6 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
                 parameters.topLevelOrgUriAsString()))
         .from(resultParameters.offset())
         .size(resultParameters.size())
-        .source(sourceConfig)
-        .build();
+        .source(sourceConfig);
   }
 }
