@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.index.xlsx;
 
+import static java.util.Objects.isNull;
 import static no.sikt.nva.nvi.common.utils.DecimalUtils.adjustScaleAndRoundingMode;
 
 import java.io.ByteArrayOutputStream;
@@ -64,22 +65,20 @@ public class FastExcelXlsxGenerator implements XlsxGenerator {
   }
 
   private static void addCells(Worksheet sheet, int rowIndex, List<String> cells) {
-    for (int colIndex = 0; colIndex < cells.size(); colIndex++) {
-      var header = InstitutionReportHeader.getHeader(colIndex);
-      var cellValue = cells.get(colIndex);
+    for (int columnIndex = 0; columnIndex < cells.size(); columnIndex++) {
+      var header = InstitutionReportHeader.getHeader(columnIndex);
+      var cellValue = cells.get(columnIndex);
 
-      if (cellValue == null) {
-        sheet.value(rowIndex, colIndex, StringUtils.EMPTY_STRING);
+      if (isNull(cellValue)) {
+        sheet.value(rowIndex, columnIndex, StringUtils.EMPTY_STRING);
         continue;
       }
-
-      var isHeaderCell = header.getValue().equals(cellValue);
-      if (!isHeaderCell && header.isNumeric()) {
+      if (!header.getValue().equals(cellValue) && header.isNumeric()) {
         var numericValue = Double.parseDouble(cellValue);
         var normalizedValue = adjustScaleAndRoundingMode(BigDecimal.valueOf(numericValue));
-        sheet.value(rowIndex, colIndex, normalizedValue.doubleValue());
+        sheet.value(rowIndex, columnIndex, normalizedValue.doubleValue());
       } else {
-        sheet.value(rowIndex, colIndex, cellValue);
+        sheet.value(rowIndex, columnIndex, cellValue);
       }
     }
   }
