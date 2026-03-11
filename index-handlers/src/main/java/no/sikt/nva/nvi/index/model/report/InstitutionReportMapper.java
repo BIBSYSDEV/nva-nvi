@@ -14,6 +14,7 @@ import no.sikt.nva.nvi.index.model.document.InstitutionPointsView.CreatorAffilia
 import no.sikt.nva.nvi.index.model.document.NviContributor;
 import no.sikt.nva.nvi.index.model.document.NviOrganization;
 import no.sikt.nva.nvi.index.model.document.Pages;
+import no.unit.nva.language.LanguageDescription;
 import no.unit.nva.language.LanguageMapper;
 import nva.commons.core.paths.UriWrapper;
 import org.slf4j.Logger;
@@ -32,22 +33,18 @@ public final class InstitutionReportMapper {
 
   private InstitutionReportMapper() {}
 
-  public static Stream<InstitutionReportRow> mapReportDocumentToRows(
-      NviCandidateReportDocument document, URI institutionId) {
+  public static Stream<InstitutionReportRow> mapToRows(ReportDocument document, URI institutionId) {
     var approval = findApproval(document, institutionId);
     if (approval.isEmpty()) {
       LOGGER.warn(NO_APPROVAL_MESSAGE, institutionId, document.identifier());
       return Stream.empty();
     }
-    LOGGER.info("Processing candidate={} for institution={}", document.identifier(), institutionId);
     return document.publicationDetails().nviContributors().stream()
-        .flatMap(
-            contributor ->
-                mapReportDocumentToRows(document, approval.get(), contributor, institutionId));
+        .flatMap(contributor -> mapToRows(document, approval.get(), contributor, institutionId));
   }
 
-  private static Stream<InstitutionReportRow> mapReportDocumentToRows(
-      NviCandidateReportDocument document,
+  private static Stream<InstitutionReportRow> mapToRows(
+      ReportDocument document,
       ReportApproval approval,
       NviContributor contributor,
       URI institutionId) {
@@ -57,7 +54,7 @@ public final class InstitutionReportMapper {
   }
 
   private static InstitutionReportRow toRow(
-      NviCandidateReportDocument document,
+      ReportDocument document,
       ReportApproval approval,
       NviContributor contributor,
       NviOrganization affiliation) {
@@ -87,11 +84,15 @@ public final class InstitutionReportMapper {
         languageLabel(document.publicationDetails().language()),
         mapGlobalStatus(document.globalApprovalStatus()),
         document.publicationTypeChannelLevelPoints().toString(),
-        Optional.ofNullable(document.internationalCollaborationFactor())
-            .map(String::valueOf)
-            .orElse(UNKNOWN),
+        getInternationalCollaborationFactor(document),
         String.valueOf(document.creatorShareCount()),
         getPointsForAffiliation(approval, contributor, affiliation).toString());
+  }
+
+  private static String getInternationalCollaborationFactor(ReportDocument document) {
+    return Optional.ofNullable(document.internationalCollaborationFactor())
+        .map(String::valueOf)
+        .orElse(UNKNOWN);
   }
 
   public static BigDecimal getPointsForAffiliation(
@@ -104,10 +105,9 @@ public final class InstitutionReportMapper {
         .orElse(BigDecimal.ZERO);
   }
 
-  private static Optional<ReportApproval> findApproval(
-      NviCandidateReportDocument document, URI institutionId) {
+  private static Optional<ReportApproval> findApproval(ReportDocument document, URI institutionId) {
     return document.approvals().stream()
-        .filter(a -> a.institutionId().equals(institutionId))
+        .filter(approval -> approval.institutionId().equals(institutionId))
         .findAny();
   }
 
@@ -129,9 +129,11 @@ public final class InstitutionReportMapper {
   }
 
   private static String languageLabel(String language) {
-    return nonNull(language)
-        ? LanguageMapper.getLanguageByUri(URI.create(language)).getNob()
-        : EMPTY_STRING;
+    return Optional.ofNullable(language)
+        .map(URI::create)
+        .map(LanguageMapper::getLanguageByUri)
+        .map(LanguageDescription::getNob)
+        .orElse(EMPTY_STRING);
   }
 
   private static String pageField(Pages pages, Function<Pages, String> getter) {
@@ -140,6 +142,6 @@ public final class InstitutionReportMapper {
   }
 
   private static String orEmpty(String value) {
-    return nonNull(value) ? value : EMPTY_STRING;
+    return Optional.ofNullable(value).orElse(EMPTY_STRING);
   }
 }

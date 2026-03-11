@@ -36,7 +36,7 @@ class InstitutionReportMapperTest {
     var points = new BigDecimal("0.7500");
     var document = documentWithContributorAndApproval(points);
 
-    var rows = InstitutionReportMapper.mapReportDocumentToRows(document, INSTITUTION_ID).toList();
+    var rows = InstitutionReportMapper.mapToRows(document, INSTITUTION_ID).toList();
 
     assertThat(rows).hasSize(1);
     var row = rows.getFirst();
@@ -52,10 +52,7 @@ class InstitutionReportMapperTest {
   void shouldPopulateOrganizationIdentifiersFromAffiliation() {
     var document = documentWithContributorAndApproval(BigDecimal.ONE);
 
-    var row =
-        InstitutionReportMapper.mapReportDocumentToRows(document, INSTITUTION_ID)
-            .findFirst()
-            .orElseThrow();
+    var row = InstitutionReportMapper.mapToRows(document, INSTITUTION_ID).findFirst().orElseThrow();
 
     assertThat(row.institutionId()).isEqualTo("185");
     assertThat(row.facultyId()).isEqualTo("15");
@@ -76,10 +73,7 @@ class InstitutionReportMapperTest {
             .build();
     var document = documentWithChannel(channel);
 
-    var row =
-        InstitutionReportMapper.mapReportDocumentToRows(document, INSTITUTION_ID)
-            .findFirst()
-            .orElseThrow();
+    var row = InstitutionReportMapper.mapToRows(document, INSTITUTION_ID).findFirst().orElseThrow();
 
     assertThat(row.publicationChannel()).isEqualTo(channelId.toString());
     assertThat(row.publicationChannelType()).isEqualTo("Journal");
@@ -93,8 +87,7 @@ class InstitutionReportMapperTest {
     var otherInstitutionId = URI.create("https://example.org/organization/999");
     var document = documentWithContributorAndApproval(BigDecimal.ONE);
 
-    var rows =
-        InstitutionReportMapper.mapReportDocumentToRows(document, otherInstitutionId).toList();
+    var rows = InstitutionReportMapper.mapToRows(document, otherInstitutionId).toList();
 
     assertThat(rows).isEmpty();
   }
@@ -130,13 +123,13 @@ class InstitutionReportMapperTest {
             .withAffiliations(List.of(affiliation2))
             .build();
 
-    var cap1 =
+    var creatorAffiliationPointsView1 =
         CreatorAffiliationPointsView.builder()
             .withNviCreator(CONTRIBUTOR_ID)
             .withAffiliationId(AFFILIATION_ID)
             .withPoints(points1)
             .build();
-    var cap2 =
+    var creatorAffiliationPointsView2 =
         CreatorAffiliationPointsView.builder()
             .withNviCreator(secondContributorId)
             .withAffiliationId(secondAffiliationId)
@@ -146,7 +139,8 @@ class InstitutionReportMapperTest {
         InstitutionPointsView.builder()
             .withInstitutionId(INSTITUTION_ID)
             .withInstitutionPoints(new BigDecimal("0.7000"))
-            .withCreatorAffiliationPoints(List.of(cap1, cap2))
+            .withCreatorAffiliationPoints(
+                List.of(creatorAffiliationPointsView1, creatorAffiliationPointsView2))
             .build();
 
     var approval = new ReportApproval(INSTITUTION_ID, ApprovalStatus.APPROVED, institutionPoints);
@@ -162,7 +156,7 @@ class InstitutionReportMapperTest {
             null);
 
     var document =
-        new NviCandidateReportDocument(
+        new ReportDocument(
             UUID.randomUUID(),
             new ReportingPeriod(REPORTING_YEAR),
             GlobalApprovalStatus.APPROVED,
@@ -172,7 +166,7 @@ class InstitutionReportMapperTest {
             publicationDetails,
             List.of(approval));
 
-    var rows = InstitutionReportMapper.mapReportDocumentToRows(document, INSTITUTION_ID).toList();
+    var rows = InstitutionReportMapper.mapToRows(document, INSTITUTION_ID).toList();
 
     assertThat(rows).hasSize(2);
     assertThat(rows)
@@ -215,12 +209,9 @@ class InstitutionReportMapperTest {
             defaultChannel(),
             null,
             null);
-    var document = documentWith(publicationDetails, ApprovalStatus.APPROVED, BigDecimal.ONE);
+    var document = documentWith(publicationDetails, ApprovalStatus.APPROVED);
 
-    var row =
-        InstitutionReportMapper.mapReportDocumentToRows(document, INSTITUTION_ID)
-            .findFirst()
-            .orElseThrow();
+    var row = InstitutionReportMapper.mapToRows(document, INSTITUTION_ID).findFirst().orElseThrow();
 
     assertThat(row.pageBegin()).isEmpty();
     assertThat(row.pageEnd()).isEmpty();
@@ -230,7 +221,7 @@ class InstitutionReportMapperTest {
   @Test
   void shouldReturnUnknownWhenInternationalCollaborationFactorIsNull() {
     var document =
-        new NviCandidateReportDocument(
+        new ReportDocument(
             UUID.randomUUID(),
             new ReportingPeriod(REPORTING_YEAR),
             GlobalApprovalStatus.APPROVED,
@@ -240,18 +231,13 @@ class InstitutionReportMapperTest {
             defaultPublicationDetails(),
             List.of(defaultApproval(ApprovalStatus.APPROVED, BigDecimal.ONE)));
 
-    var row =
-        InstitutionReportMapper.mapReportDocumentToRows(document, INSTITUTION_ID)
-            .findFirst()
-            .orElseThrow();
+    var row = InstitutionReportMapper.mapToRows(document, INSTITUTION_ID).findFirst().orElseThrow();
 
     assertThat(row.internationalCollaborationFactor()).isEqualTo("N/A");
   }
 
-  // --- helpers ---
-
-  private NviCandidateReportDocument documentWithContributorAndApproval(BigDecimal points) {
-    return new NviCandidateReportDocument(
+  private ReportDocument documentWithContributorAndApproval(BigDecimal points) {
+    return new ReportDocument(
         UUID.randomUUID(),
         new ReportingPeriod(REPORTING_YEAR),
         GlobalApprovalStatus.APPROVED,
@@ -262,7 +248,7 @@ class InstitutionReportMapperTest {
         List.of(defaultApproval(ApprovalStatus.APPROVED, points)));
   }
 
-  private NviCandidateReportDocument documentWithChannel(PublicationChannel channel) {
+  private ReportDocument documentWithChannel(PublicationChannel channel) {
     var publicationDetails =
         new ReportPublicationDetails(
             PUBLICATION_ID_PREFIX + UUID.randomUUID(),
@@ -273,14 +259,12 @@ class InstitutionReportMapperTest {
             channel,
             defaultPages(),
             null);
-    return documentWith(publicationDetails, ApprovalStatus.APPROVED, BigDecimal.ONE);
+    return documentWith(publicationDetails, ApprovalStatus.APPROVED);
   }
 
-  private NviCandidateReportDocument documentWith(
-      ReportPublicationDetails publicationDetails,
-      ApprovalStatus approvalStatus,
-      BigDecimal points) {
-    return new NviCandidateReportDocument(
+  private ReportDocument documentWith(
+      ReportPublicationDetails publicationDetails, ApprovalStatus approvalStatus) {
+    return new ReportDocument(
         UUID.randomUUID(),
         new ReportingPeriod(REPORTING_YEAR),
         GlobalApprovalStatus.APPROVED,
@@ -288,20 +272,19 @@ class InstitutionReportMapperTest {
         INTERNATIONAL_COLLABORATION_FACTOR,
         1,
         publicationDetails,
-        List.of(defaultApproval(approvalStatus, points)));
+        List.of(defaultApproval(approvalStatus, BigDecimal.ONE)));
   }
 
   private InstitutionReportRow rowWithApprovalStatus(ApprovalStatus approvalStatus) {
-    return InstitutionReportMapper.mapReportDocumentToRows(
-            documentWith(defaultPublicationDetails(), approvalStatus, BigDecimal.ONE),
-            INSTITUTION_ID)
+    return InstitutionReportMapper.mapToRows(
+            documentWith(defaultPublicationDetails(), approvalStatus), INSTITUTION_ID)
         .findFirst()
         .orElseThrow();
   }
 
   private InstitutionReportRow rowWithGlobalStatus(GlobalApprovalStatus globalStatus) {
     var document =
-        new NviCandidateReportDocument(
+        new ReportDocument(
             UUID.randomUUID(),
             new ReportingPeriod(REPORTING_YEAR),
             globalStatus,
@@ -310,9 +293,7 @@ class InstitutionReportMapperTest {
             1,
             defaultPublicationDetails(),
             List.of(defaultApproval(ApprovalStatus.APPROVED, BigDecimal.ONE)));
-    return InstitutionReportMapper.mapReportDocumentToRows(document, INSTITUTION_ID)
-        .findFirst()
-        .orElseThrow();
+    return InstitutionReportMapper.mapToRows(document, INSTITUTION_ID).findFirst().orElseThrow();
   }
 
   private ReportPublicationDetails defaultPublicationDetails() {
@@ -341,7 +322,7 @@ class InstitutionReportMapperTest {
   }
 
   private ReportApproval defaultApproval(ApprovalStatus approvalStatus, BigDecimal points) {
-    var cap =
+    var creatorAffiliationPointsView =
         CreatorAffiliationPointsView.builder()
             .withNviCreator(CONTRIBUTOR_ID)
             .withAffiliationId(AFFILIATION_ID)
@@ -351,7 +332,7 @@ class InstitutionReportMapperTest {
         InstitutionPointsView.builder()
             .withInstitutionId(INSTITUTION_ID)
             .withInstitutionPoints(points)
-            .withCreatorAffiliationPoints(List.of(cap))
+            .withCreatorAffiliationPoints(List.of(creatorAffiliationPointsView))
             .build();
     return new ReportApproval(INSTITUTION_ID, approvalStatus, institutionPoints);
   }

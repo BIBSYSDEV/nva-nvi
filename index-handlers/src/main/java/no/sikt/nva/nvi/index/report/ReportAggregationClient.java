@@ -8,10 +8,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import no.sikt.nva.nvi.index.aws.OpenSearchClientFactory;
-import no.sikt.nva.nvi.index.model.report.InstitutionReportHeader;
 import no.sikt.nva.nvi.index.model.report.InstitutionReportMapper;
 import no.sikt.nva.nvi.index.model.report.InstitutionReportRow;
-import no.sikt.nva.nvi.index.model.report.NviCandidateReportDocument;
+import no.sikt.nva.nvi.index.model.report.ReportDocument;
 import no.sikt.nva.nvi.index.report.query.InstitutionQuery;
 import no.sikt.nva.nvi.index.report.query.ReportAggregationQuery;
 import nva.commons.core.JacocoGenerated;
@@ -63,7 +62,7 @@ public class ReportAggregationClient {
                                   "approvals.points.institutionId",
                                   "approvals.points.institutionPoints"))));
   private static final ReportGenerator<InstitutionReportRow> reportGenerator =
-      new ReportGenerator<>(InstitutionReportHeader.getOrderedValues());
+      new ReportGenerator<>(InstitutionReportRow.class);
   private final OpenSearchClient client;
 
   public ReportAggregationClient(OpenSearchClient client) {
@@ -85,10 +84,7 @@ public class ReportAggregationClient {
     var reportDocuments = fetchReportDocuments(query.query());
     var rows =
         reportDocuments.stream()
-            .flatMap(
-                document ->
-                    InstitutionReportMapper.mapReportDocumentToRows(
-                        document, query.institutionId()))
+            .flatMap(document -> InstitutionReportMapper.mapToRows(document, query.institutionId()))
             .toList();
     return reportGenerator.generate(rows);
   }
@@ -105,8 +101,8 @@ public class ReportAggregationClient {
     return query.parseResponse(response);
   }
 
-  private List<NviCandidateReportDocument> fetchReportDocuments(Query query) {
-    var candidates = new ArrayList<NviCandidateReportDocument>();
+  private List<ReportDocument> fetchReportDocuments(Query query) {
+    var candidates = new ArrayList<ReportDocument>();
     var scrollId = initializeScroll(candidates, query);
     try {
       scrollId = fetchRemainingPages(candidates, scrollId);
@@ -116,7 +112,7 @@ public class ReportAggregationClient {
     return candidates;
   }
 
-  private String initializeScroll(List<NviCandidateReportDocument> candidates, Query query) {
+  private String initializeScroll(List<ReportDocument> candidates, Query query) {
     var request =
         new SearchRequest.Builder()
             .index(NVI_CANDIDATES_INDEX)
@@ -130,11 +126,11 @@ public class ReportAggregationClient {
     return response.scrollId();
   }
 
-  private SearchResponse<NviCandidateReportDocument> searchWithScroll(SearchRequest request) {
-    return attempt(() -> client.search(request, NviCandidateReportDocument.class)).orElseThrow();
+  private SearchResponse<ReportDocument> searchWithScroll(SearchRequest request) {
+    return attempt(() -> client.search(request, ReportDocument.class)).orElseThrow();
   }
 
-  private String fetchRemainingPages(List<NviCandidateReportDocument> candidates, String scrollId) {
+  private String fetchRemainingPages(List<ReportDocument> candidates, String scrollId) {
     var scrollResponse = scroll(scrollId);
     var hits = scrollResponse.hits();
     if (hits.hits().isEmpty()) {
@@ -144,11 +140,11 @@ public class ReportAggregationClient {
     return fetchRemainingPages(candidates, scrollResponse.scrollId());
   }
 
-  private SearchResponse<NviCandidateReportDocument> scroll(String scrollId) {
+  private SearchResponse<ReportDocument> scroll(String scrollId) {
     var request =
         ScrollRequest.of(
             builder -> builder.scrollId(scrollId).scroll(build -> build.time(SCROLL_TIMEOUT)));
-    return attempt(() -> client.scroll(request, NviCandidateReportDocument.class)).orElseThrow();
+    return attempt(() -> client.scroll(request, ReportDocument.class)).orElseThrow();
   }
 
   private void clearScroll(String scrollId) {
@@ -159,8 +155,7 @@ public class ReportAggregationClient {
   }
 
   private static void addHitsToListOfCandidates(
-      HitsMetadata<NviCandidateReportDocument> hits,
-      List<NviCandidateReportDocument> fetchedCandidates) {
+      HitsMetadata<ReportDocument> hits, List<ReportDocument> fetchedCandidates) {
     hits.hits().stream().map(Hit::source).forEach(fetchedCandidates::add);
   }
 }
