@@ -11,16 +11,19 @@ import java.util.List;
 import java.util.Objects;
 import no.sikt.nva.nvi.index.model.report.InstitutionReportHeader;
 import nva.commons.core.JacocoGenerated;
+import nva.commons.core.StringUtils;
 import org.dhatim.fastexcel.Workbook;
 import org.dhatim.fastexcel.Worksheet;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class FastExcelXlsxGenerator implements XlsxGenerator {
 
-  private static final Logger logger =
-      org.slf4j.LoggerFactory.getLogger(FastExcelXlsxGenerator.class);
+  private static final Logger logger = LoggerFactory.getLogger(FastExcelXlsxGenerator.class);
   private static final String LINE_BREAK = "\n";
   private static final Encoder ENCODER = Base64.getEncoder();
+  private static final String NVI = "NVI";
+  private static final String FAST_EXCEL_SHEET = "fast-excel-sheet";
   private final List<String> headers;
   private final List<List<String>> data;
 
@@ -66,7 +69,7 @@ public class FastExcelXlsxGenerator implements XlsxGenerator {
       var cellValue = cells.get(colIndex);
 
       if (cellValue == null) {
-        sheet.value(rowIndex, colIndex, "");
+        sheet.value(rowIndex, colIndex, StringUtils.EMPTY_STRING);
         continue;
       }
 
@@ -83,8 +86,8 @@ public class FastExcelXlsxGenerator implements XlsxGenerator {
 
   private byte[] toWorkbookByteArray() {
     var byteArrayOutputStream = new ByteArrayOutputStream();
-    try (var workbook = new Workbook(byteArrayOutputStream, "NVI", "1.0")) {
-      var sheet = workbook.newWorksheet("Sheet1");
+    try (var workbook = new Workbook(byteArrayOutputStream, NVI, null)) {
+      var sheet = workbook.newWorksheet(FAST_EXCEL_SHEET);
       addHeaders(sheet);
       addData(sheet);
     } catch (IOException e) {
