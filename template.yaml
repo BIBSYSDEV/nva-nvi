@@ -1227,7 +1227,7 @@ Resources:
       CodeUri: index-handlers
       Handler: no.sikt.nva.nvi.index.report.FetchReportHandler::handleRequest
       Role: !GetAtt NvaNviRole.Arn
-      Timeout: 20
+      Timeout: 600
       MemorySize: 1536
       AutoPublishAlias: live
       SnapStart:

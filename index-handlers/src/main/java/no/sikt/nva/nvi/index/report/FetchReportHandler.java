@@ -90,12 +90,16 @@ public class FetchReportHandler extends ApiGatewayHandler<Void, ReportResponse> 
     if (reportRequest instanceof InstitutionReportRequest request
         && request.isXlsxReportRequest()) {
       addAdditionalHeaders(() -> Map.of(CONTENT_TYPE, OOXML_SHEET.toString()));
-    } else if (requestInfo
-        .getHeaderOptional(ACCEPT)
-        .filter(value -> value.equals(OOXML_SHEET.toString()))
-        .isPresent()) {
+    } else if (hasXlsxAcceptHeader(requestInfo)) {
       throw new BadRequestException("XLSX is not supported for that type of report!");
     }
+  }
+
+  private static boolean hasXlsxAcceptHeader(RequestInfo requestInfo) {
+    return requestInfo
+        .getHeaderOptional(ACCEPT)
+        .filter(value -> value.equals(OOXML_SHEET.toString()))
+        .isPresent();
   }
 
   @Override
