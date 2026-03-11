@@ -16,7 +16,7 @@ import org.apache.poi.xssf.streaming.SXSSFSheet;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.slf4j.Logger;
 
-public final class ExcelWorkbookGenerator {
+public final class ExcelWorkbookGenerator implements XlsxGenerator {
 
   private static final Logger logger =
       org.slf4j.LoggerFactory.getLogger(ExcelWorkbookGenerator.class);
@@ -33,6 +33,7 @@ public final class ExcelWorkbookGenerator {
     this.data = data;
   }
 
+  @Override
   public String toBase64EncodedString() {
     return ENCODER.encodeToString(this.toXssfWorkbookByteArray());
   }

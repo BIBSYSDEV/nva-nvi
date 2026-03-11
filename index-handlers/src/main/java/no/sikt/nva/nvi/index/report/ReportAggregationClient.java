@@ -16,7 +16,7 @@ import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.report.InstitutionReportHeader;
 import no.sikt.nva.nvi.index.report.query.InstitutionQuery;
 import no.sikt.nva.nvi.index.report.query.ReportAggregationQuery;
-import no.sikt.nva.nvi.index.xlsx.ExcelWorkbookGenerator;
+import no.sikt.nva.nvi.index.xlsx.FastExcelXlsxGenerator;
 import nva.commons.core.JacocoGenerated;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
@@ -57,7 +57,7 @@ public class ReportAggregationClient {
             .map(candidate -> candidate.toReportRowsForInstitution(query.institutionId()))
             .flatMap(this::orderByHeaderOrder)
             .toList();
-    return new ExcelWorkbookGenerator(InstitutionReportHeader.getOrderedValues(), data)
+    return new FastExcelXlsxGenerator(InstitutionReportHeader.getOrderedValues(), data)
         .toBase64EncodedString();
   }
 
