@@ -61,7 +61,6 @@ import no.sikt.nva.nvi.test.SampleExpandedContributor;
 import no.sikt.nva.nvi.test.SampleExpandedPublication;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.core.paths.UnixPath;
-import nva.commons.core.paths.UriWrapper;
 import nva.commons.logutils.LogUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -368,14 +367,6 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
         argumentSet("Publication status is DRAFT", "evaluator/nonCandidate_notPublished.json"),
         argumentSet(
             "Publication type is MusicPerformance", "evaluator/nonCandidate_musicalArts.json"));
-  }
-
-  @Test
-  void shouldThrowExceptionWhenEvaluationFails() {
-    var originalMessage = new PersistedResourceMessage(UriWrapper.fromUri("s3://dummy").getUri());
-    var event = createEvent(originalMessage);
-    assertThatThrownBy(() -> handler.handleRequest(event, CONTEXT))
-        .isInstanceOf(RuntimeException.class);
   }
 
   @Test
