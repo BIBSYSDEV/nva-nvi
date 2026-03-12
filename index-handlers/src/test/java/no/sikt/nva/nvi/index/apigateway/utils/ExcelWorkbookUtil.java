@@ -11,6 +11,8 @@ import java.util.ArrayList;
 import java.util.List;
 import no.sikt.nva.nvi.index.model.report.InstitutionReportHeader;
 import no.sikt.nva.nvi.index.xlsx.ExcelWorkbookGenerator;
+import no.sikt.nva.nvi.index.xlsx.FastExcelXlsxGenerator;
+import no.sikt.nva.nvi.index.xlsx.XlsxGenerator;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
@@ -22,12 +24,23 @@ public class ExcelWorkbookUtil {
   private static final int FIRST_ROW_INDEX = 0;
   private static final int FIRST_DATA_ROW_INDEX = 1;
 
-  public static ExcelWorkbookGenerator fromInputStream(InputStream inputStream) {
+  public static XlsxGenerator fromInputStream(InputStream inputStream) {
     try (var workbook = new XSSFWorkbook(inputStream)) {
       var sheet = workbook.getSheetAt(FIRST_SHEET_INDEX);
       var headers = extractHeaders(sheet);
       var data = extractData(sheet);
       return new ExcelWorkbookGenerator(headers, data);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public static XlsxGenerator xlsxGeneratorFromInputStream(InputStream inputStream) {
+    try (var workbook = new XSSFWorkbook(inputStream)) {
+      var sheet = workbook.getSheetAt(FIRST_SHEET_INDEX);
+      var headers = extractHeaders(sheet);
+      var data = extractData(sheet);
+      return new FastExcelXlsxGenerator(headers, data);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
