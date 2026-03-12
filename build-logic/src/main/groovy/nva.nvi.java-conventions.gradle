@@ -17,8 +17,7 @@ java {
 
 tasks.withType(JavaCompile).configureEach {
     options.errorprone {
-        // Suppress build failures from lint errors (remove this if possible)
-        allErrorsAsWarnings = true
+        allSuggestionsAsWarnings = true
     }
 }
 
