@@ -22,7 +22,6 @@ import java.nio.file.Path;
 import java.util.List;
 import no.sikt.nva.nvi.common.SampleExpandedPublicationFactory;
 import no.sikt.nva.nvi.common.TestScenario;
-import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.model.Candidate;
@@ -46,7 +45,6 @@ class EvaluationTest {
   protected S3Driver s3Driver;
   protected EvaluateNviCandidateHandler handler;
   protected IdentityServiceClient identityServiceClient;
-  protected FakeSqsClient queueClient;
   protected CandidateService candidateService;
 
   protected static String getPublicationFromFile(String path, URI publicationId) {
@@ -63,7 +61,6 @@ class EvaluationTest {
   @BeforeEach
   void commonSetup() {
     scenario = new TestScenario();
-    queueClient = new FakeSqsClient();
     s3Driver = scenario.getS3DriverForExpandedResourcesBucket();
     identityServiceClient = mock(IdentityServiceClient.class);
 
@@ -78,9 +75,7 @@ class EvaluationTest {
             identityServiceClient,
             scenario.getS3StorageReaderForExpandedResourcesBucket(),
             candidateService);
-    handler =
-        new EvaluateNviCandidateHandler(
-            candidateService, evaluatorService, queueClient, evaluationEnvironment);
+    handler = new EvaluateNviCandidateHandler(candidateService, evaluatorService);
 
     mockGetAllCustomersResponse(getDefaultCustomers());
     setupOpenPeriod(scenario, HARDCODED_JSON_PUBLICATION_DATE.year());

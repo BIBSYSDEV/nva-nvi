@@ -10,56 +10,35 @@ import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.dto.UpsertNonNviCandidateRequest;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
-import no.sikt.nva.nvi.common.queue.NviQueueClient;
-import no.sikt.nva.nvi.common.queue.QueueClient;
-import no.sikt.nva.nvi.common.queue.QueueMessage;
 import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.events.model.CandidateEvaluatedMessage;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
-import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
-import nva.commons.core.attempt.Failure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class EvaluateNviCandidateHandler implements RequestHandler<SQSEvent, Void> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(EvaluateNviCandidateHandler.class);
-  private static final String EVALUATION_DLQ_URL = "EVALUATION_DLQ_URL";
   private final CandidateService candidateService;
   private final EvaluatorService evaluatorService;
-  private final QueueClient queueClient;
-  private final String evaluationDlqUrl;
 
   @JacocoGenerated
   public EvaluateNviCandidateHandler() {
-    this(
-        CandidateService.defaultCandidateService(),
-        EvaluatorService.defaultEvaluatorService(),
-        new NviQueueClient(),
-        new Environment());
+    this(CandidateService.defaultCandidateService(), EvaluatorService.defaultEvaluatorService());
   }
 
   public EvaluateNviCandidateHandler(
-      CandidateService candidateService,
-      EvaluatorService evaluatorService,
-      QueueClient queueClient,
-      Environment environment) {
+      CandidateService candidateService, EvaluatorService evaluatorService) {
     this.candidateService = candidateService;
     this.evaluatorService = evaluatorService;
-    this.queueClient = queueClient;
-    this.evaluationDlqUrl = environment.readEnv(EVALUATION_DLQ_URL);
   }
 
   @Override
-  public Void handleRequest(SQSEvent input, Context context) {
-    attempt(
-            () -> {
-              evaluateCandidacy(extractPersistedResourceMessage(input))
-                  .ifPresent(this::persistResult);
-              return null;
-            })
-        .orElse(failure -> handleFailure(input, failure));
+  public Void handleRequest(SQSEvent event, Context context) {
+    LOGGER.info("Processing event with {} messages", event.getRecords().size());
+    evaluateCandidacy(extractPersistedResourceMessage(event)).ifPresent(this::persistResult);
+    LOGGER.info("Event processed successfully");
     return null;
   }
 
@@ -74,17 +53,6 @@ public class EvaluateNviCandidateHandler implements RequestHandler<SQSEvent, Voi
       case UpsertNonNviCandidateRequest nonNviCandidateRequest ->
           candidateService.updateCandidate(nonNviCandidateRequest);
     }
-  }
-
-  private Void handleFailure(SQSEvent input, Failure<?> failure) {
-    LOGGER.error("Failed to process event: {}", input.toString(), failure.getException());
-    var message =
-        QueueMessage.builder()
-            .withBody(extractPersistedResourceMessage(input))
-            .withErrorContext(failure.getException())
-            .build();
-    queueClient.sendMessage(message, evaluationDlqUrl);
-    return null;
   }
 
   private static PersistedResourceMessage parseBody(String body) {
