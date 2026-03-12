@@ -2,7 +2,7 @@ package no.sikt.nva.nvi.index.report;
 
 import java.util.Arrays;
 import java.util.List;
-import no.sikt.nva.nvi.index.xlsx.ExcelWorkbookGenerator;
+import no.sikt.nva.nvi.index.xlsx.FastExcelXlsxGenerator;
 
 public class ReportGenerator<T extends ReportRow> {
 
@@ -15,7 +15,7 @@ public class ReportGenerator<T extends ReportRow> {
   public String generate(List<T> rows) {
     var headers = headersFor(rowClass);
     var data = rows.stream().map(ReportRow::toRow).toList();
-    return new ExcelWorkbookGenerator(headers, data).toBase64EncodedString();
+    return new FastExcelXlsxGenerator(headers, data).toBase64EncodedString();
   }
 
   private static <T extends ReportRow> List<String> headersFor(Class<T> clazz) {
