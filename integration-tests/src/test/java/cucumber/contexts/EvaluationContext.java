@@ -1,6 +1,5 @@
 package cucumber.contexts;
 
-import static no.sikt.nva.nvi.common.EnvironmentFixtures.getEvaluateNviCandidateHandlerEnvironment;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -12,7 +11,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import java.time.Instant;
 import java.util.List;
 import no.sikt.nva.nvi.common.TestScenario;
-import no.sikt.nva.nvi.common.queue.FakeSqsClient;
+import no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException;
 import no.sikt.nva.nvi.events.evaluator.EvaluateNviCandidateHandler;
 import no.sikt.nva.nvi.events.evaluator.EvaluatorService;
 import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
@@ -22,25 +21,26 @@ import no.unit.nva.clients.CustomerList;
 import no.unit.nva.clients.IdentityServiceClient;
 import no.unit.nva.stubs.FakeContext;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class EvaluationContext {
+
+  private static final Logger LOGGER = LoggerFactory.getLogger(EvaluationContext.class);
   private static final Context EVALUATION_HANDLER_CONTEXT = new FakeContext();
 
   private final EvaluateNviCandidateHandler evaluateNviCandidateHandler;
   private final IdentityServiceClient identityServiceClient;
-  private final FakeSqsClient evaluationOutputQueue;
   private final TestScenario scenario;
   private Instant lastEvaluationStartedAt;
 
   public EvaluationContext(TestScenario scenario) {
     this.scenario = scenario;
     identityServiceClient = mock(IdentityServiceClient.class);
-    evaluationOutputQueue = new FakeSqsClient();
     evaluateNviCandidateHandler = createEvaluateNviCandidateHandler();
   }
 
   private EvaluateNviCandidateHandler createEvaluateNviCandidateHandler() {
-    var environment = getEvaluateNviCandidateHandlerEnvironment();
     var candidateService = scenario.getCandidateService();
     var evaluatorService =
         new EvaluatorService(
@@ -48,8 +48,7 @@ public class EvaluationContext {
             scenario.getS3StorageReaderForExpandedResourcesBucket(),
             candidateService);
 
-    return new EvaluateNviCandidateHandler(
-        candidateService, evaluatorService, evaluationOutputQueue, environment);
+    return new EvaluateNviCandidateHandler(candidateService, evaluatorService);
   }
 
   public void mockGetAllCustomersResponse(List<CustomerDto> customers) {
@@ -62,6 +61,18 @@ public class EvaluationContext {
 
   public void evaluatePublicationAndPersistResult(SampleExpandedPublication publication) {
     evaluatePublicationAndPersistResult(publication.toJsonString());
+  }
+
+  /**
+   * FIXME: Ignoring failures because validation rules are inconsistent. Cannot be fixed until
+   * reporting period lifecycle is implemented (NP-49541).
+   */
+  public void evaluatePublicationIgnoringFailure(SampleExpandedPublication publication) {
+    try {
+      evaluatePublicationAndPersistResult(publication);
+    } catch (IllegalCandidateUpdateException exception) {
+      LOGGER.info("Evaluation failed: {}", exception.getMessage());
+    }
   }
 
   public void evaluatePublicationAndPersistResult(String publicationJson) {

@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.events.evaluator;
 
-import static no.sikt.nva.nvi.common.EnvironmentFixtures.EVALUATION_DLQ_URL;
 import static no.sikt.nva.nvi.common.SampleExpandedPublicationFactory.mapOrganizationToAffiliation;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.model.ContributorFixtures.ROLE_CREATOR;
@@ -23,6 +22,7 @@ import static no.sikt.nva.nvi.test.TestConstants.SERIES_TYPE;
 import static no.unit.nva.testutils.RandomDataGenerator.randomIsbn13;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.junit.jupiter.params.provider.Arguments.argumentSet;
 
 import java.net.URI;
@@ -265,20 +265,15 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
   }
 
   @Test
-  void shouldSendMessageToDlqWhenWhenChannelIsMalformed() {
+  void shouldThrowExceptionWhenChannelIsMalformed() {
     var publication =
         factory
             .withPublicationChannel(JOURNAL_TYPE, LEVEL_ONE)
             .withPublicationChannel(JOURNAL_TYPE, null);
 
-    handleEvaluation(publication);
-
-    var dlqMessage =
-        queueClient.receiveMessage(EVALUATION_DLQ_URL.getValue(), 1).messages().getFirst();
-
-    assertThat(dlqMessage.messageAttributes().get("errorType")).contains("ParsingException");
-    assertThat(dlqMessage.messageAttributes().get("errorMessage"))
-        .contains("Required field 'scientificValue' is null");
+    assertThat(catchThrowable(() -> handleEvaluation(publication)))
+        .isInstanceOf(RuntimeException.class)
+        .hasMessageContaining("Required field 'scientificValue' is null");
   }
 
   @ParameterizedTest

@@ -9,6 +9,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.params.provider.Arguments.argumentSet;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -19,8 +20,13 @@ import static org.mockito.Mockito.when;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Stream;
+import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentMatcher;
 import software.amazon.awssdk.http.SdkHttpResponse;
 import software.amazon.awssdk.services.sqs.SqsClient;
@@ -77,17 +83,28 @@ class NviQueueClientTest {
     assertThat(result.messageId(), is(equalTo(TEST_MESSAGE_ID)));
   }
 
-  @Test
-  void shouldSendCorrectMessageRequestForCustomQueueMessage() {
-    when(sqsClient.sendMessage(any(SendMessageRequest.class)))
-        .thenReturn(SendMessageResponse.builder().messageId(TEST_MESSAGE_ID).build());
-    var client = new NviQueueClient(sqsClient);
-
-    var message =
+  private static Stream<Arguments> queueMessageProvider() {
+    var messageWithIdentifier =
         QueueMessage.builder()
             .withBody(randomOrganization().build())
             .withCandidateIdentifier(UUID.randomUUID())
             .build();
+    var messageWithErrorContext =
+        QueueMessage.builder()
+            .withBody(randomOrganization().build())
+            .withErrorContext(new CandidateNotFoundException())
+            .build();
+    return Stream.of(
+        argumentSet("With candidateIdentifier", messageWithIdentifier),
+        argumentSet("With error context", messageWithErrorContext));
+  }
+
+  @ParameterizedTest
+  @MethodSource("queueMessageProvider")
+  void shouldSendCorrectMessageRequestForCustomQueueMessage(QueueMessage message) {
+    when(sqsClient.sendMessage(any(SendMessageRequest.class)))
+        .thenReturn(SendMessageResponse.builder().messageId(TEST_MESSAGE_ID).build());
+    var client = new NviQueueClient(sqsClient);
 
     client.sendMessage(message, TEST_QUEUE_URL);
 

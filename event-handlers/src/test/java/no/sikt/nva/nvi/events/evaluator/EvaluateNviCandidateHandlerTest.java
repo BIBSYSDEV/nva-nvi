@@ -3,7 +3,7 @@ package no.sikt.nva.nvi.events.evaluator;
 import static java.math.BigDecimal.ONE;
 import static java.math.BigDecimal.ZERO;
 import static java.util.Collections.emptyList;
-import static no.sikt.nva.nvi.common.EnvironmentFixtures.EVALUATION_DLQ_URL;
+import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.SampleExpandedPublicationFactory.mapOrganizationToAffiliation;
 import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.setupReportedCandidate;
@@ -28,9 +28,10 @@ import static no.sikt.nva.nvi.test.TestConstants.CRISTIN_NVI_ORG_TOP_LEVEL_ID;
 import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_PUBLICATION_ID;
 import static no.sikt.nva.nvi.test.TestConstants.THIS_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
+import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.Arguments.argumentSet;
@@ -50,7 +51,6 @@ import no.sikt.nva.nvi.common.model.NviCreator;
 import no.sikt.nva.nvi.common.model.PublicationChannel;
 import no.sikt.nva.nvi.common.model.PublicationDate;
 import no.sikt.nva.nvi.common.model.ScientificValue;
-import no.sikt.nva.nvi.common.queue.NviReceiveMessage;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
@@ -61,7 +61,6 @@ import no.sikt.nva.nvi.test.SampleExpandedContributor;
 import no.sikt.nva.nvi.test.SampleExpandedPublication;
 import nva.commons.apigateway.exceptions.ApiGatewayException;
 import nva.commons.core.paths.UnixPath;
-import nva.commons.core.paths.UriWrapper;
 import nva.commons.logutils.LogUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -98,25 +97,29 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
 
   @ParameterizedTest
   @MethodSource("invalidPublicationProvider")
-  void shouldSkipEvaluationAndLogWarningOnPublicationWithInvalidYear(String content)
-      throws IOException {
+  void shouldSkipEvaluationAndLogWarningOnPublicationWithInvalidYear(
+      String content, URI publicationId) throws IOException {
     var fileUri = s3Driver.insertFile(UnixPath.of(randomString()), content);
     var event = createEvent(new PersistedResourceMessage(fileUri));
     final var logAppender = LogUtils.getTestingAppender(EvaluatorService.class);
     handler.handleRequest(event, CONTEXT);
     var expectedLogMessage = "Skipping evaluation due to invalid year format";
     assertTrue(logAppender.getMessages().contains(expectedLogMessage));
-    assertEquals(0, queueClient.getSentMessages().size());
+    assertThatThrownBy(() -> scenario.getCandidateByPublicationId(publicationId))
+        .isInstanceOf(CandidateNotFoundException.class);
   }
 
   private static Stream<Arguments> invalidPublicationProvider() {
+    var publicationId = generatePublicationId(randomUUID());
     var documentWithMalformedDate =
-        getPublicationFromFile("evaluator/candidate_publicationDate_replace_year.json")
+        getPublicationFromFile(
+                "evaluator/candidate_publicationDate_replace_year.json", publicationId)
             .replace("__REPLACE_YEAR__", "1948-1997");
-    var documentWithMissingDate = getPublicationFromFile("expandedPublications/invalidDraft.json");
+    var documentWithMissingDate =
+        getPublicationFromFile("expandedPublications/invalidDraft.json", publicationId);
     return Stream.of(
-        argumentSet("Malformed publication year", documentWithMalformedDate),
-        argumentSet("Missing publication date", documentWithMissingDate));
+        argumentSet("Malformed publication year", documentWithMalformedDate, publicationId),
+        argumentSet("Missing publication date", documentWithMissingDate, publicationId));
   }
 
   @Test
@@ -367,48 +370,25 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
   }
 
   @Test
-  void shouldPlaceSqsMessageWithExceptionDetailOnDlqWhenEvaluationFails() {
-    var originalMessage = new PersistedResourceMessage(UriWrapper.fromUri("s3://dummy").getUri());
-    var event = createEvent(originalMessage);
-
-    handler.handleRequest(event, CONTEXT);
-
-    var dlqMessage = fetchMessageFromDlq();
-    assertThat(dlqMessage.body()).isEqualToIgnoringWhitespace(originalMessage.toJsonString());
-    assertThat(dlqMessage.messageAttributes().get("errorMessage")).isNotBlank();
-    assertThat(dlqMessage.messageAttributes().get("errorType")).isNotBlank();
-    assertThat(dlqMessage.messageAttributes().get("stackTrace")).isNotBlank();
-  }
-
-  @Test
   void shouldNotCreateCandidateWhenPublicationHasZeroNviInstitutions() {
     mockGetAllCustomersResponse(emptyList());
 
     handleEvaluation(ACADEMIC_ARTICLE);
 
-    assertThrows(
-        CandidateNotFoundException.class,
-        () -> candidateService.getCandidateByPublicationId(HARDCODED_PUBLICATION_ID));
+    assertThatThrownBy(() -> candidateService.getCandidateByPublicationId(HARDCODED_PUBLICATION_ID))
+        .isInstanceOf(CandidateNotFoundException.class);
   }
 
   @Test
-  void shouldSendMessageToDlqWhenProblemsFetchingCustomer()
-      throws IOException, ApiGatewayException {
+  void shouldThrowExceptionWhenProblemsFetchingCustomer() throws ApiGatewayException, IOException {
     var errorMessage = "Internal server error";
     doThrow(new RuntimeException(errorMessage)).when(identityServiceClient).getAllCustomers();
     var fileUri = s3Driver.insertFile(UnixPath.of(ACADEMIC_ARTICLE_PATH), ACADEMIC_ARTICLE);
-    var originalMessage = new PersistedResourceMessage(fileUri);
-    var event = createEvent(originalMessage);
+    var event = createEvent(new PersistedResourceMessage(fileUri));
 
-    handler.handleRequest(event, CONTEXT);
-
-    var dlqMessage = fetchMessageFromDlq();
-    assertThat(dlqMessage.body()).isEqualToIgnoringWhitespace(originalMessage.toJsonString());
-    assertThat(dlqMessage.messageAttributes().get("errorMessage")).contains(errorMessage);
-  }
-
-  private NviReceiveMessage fetchMessageFromDlq() {
-    return queueClient.receiveMessage(EVALUATION_DLQ_URL.getValue(), 1).messages().getFirst();
+    assertThatThrownBy(() -> handler.handleRequest(event, CONTEXT))
+        .isInstanceOf(RuntimeException.class)
+        .hasMessageContaining(errorMessage);
   }
 
   @Test
@@ -747,8 +727,9 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       handler.handleRequest(event, CONTEXT);
 
       var candidate = candidateService.getCandidateByPublicationId(publicationId);
-      assertEquals(0, queueClient.getSentMessages().size());
       assertThat(candidate.isReported()).isTrue();
+      assertThat(candidate.modifiedDate())
+          .isEqualTo(existingCandidateDao.candidate().modifiedDate());
     }
 
     @Test
