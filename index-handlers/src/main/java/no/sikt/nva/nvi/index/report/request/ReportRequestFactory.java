@@ -29,7 +29,8 @@ public final class ReportRequestFactory {
           environment, period, institutionIdentifier, isXlsxReportRequest(requestInfo));
     }
     if (path.contains(INSTITUTIONS_PATH_SEGMENT)) {
-      return AllInstitutionsReportRequest.from(environment, period);
+      return AllInstitutionsReportRequest.from(
+          environment, period, isXlsxReportRequest(requestInfo));
     }
     return PeriodReportRequest.from(environment, period);
   }
