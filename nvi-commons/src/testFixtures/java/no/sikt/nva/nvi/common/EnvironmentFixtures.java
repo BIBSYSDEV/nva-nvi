@@ -40,8 +40,7 @@ public enum EnvironmentFixtures {
   EVENT_BUS_NAME("bus-name"),
   BATCH_SCAN_RECOVERY_QUEUE("recover-queue"),
   PERSISTED_RESOURCE_QUEUE_URL("persisted-resource"),
-  PROCESSING_ENABLED("true"),
-  EVALUATION_DLQ_URL("evaluation-dlq");
+  PROCESSING_ENABLED("true");
 
   private final String value;
 
@@ -83,10 +82,7 @@ public enum EnvironmentFixtures {
   }
 
   public static FakeEnvironment getEvaluateNviCandidateHandlerEnvironment() {
-    return getDefaultEnvironmentBuilder()
-        .with(EXPANDED_RESOURCES_BUCKET)
-        .with(EVALUATION_DLQ_URL)
-        .build();
+    return getDefaultEnvironmentBuilder().with(EXPANDED_RESOURCES_BUCKET).build();
   }
 
   public static FakeEnvironment getStartBatchJobHandlerEnvironment() {

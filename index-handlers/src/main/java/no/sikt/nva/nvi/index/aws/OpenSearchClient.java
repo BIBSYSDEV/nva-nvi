@@ -15,7 +15,6 @@ import no.sikt.nva.nvi.index.query.Aggregations;
 import no.sikt.nva.nvi.index.utils.SearchConstants;
 import nva.commons.core.JacocoGenerated;
 import org.opensearch.client.opensearch._types.FieldSort;
-import org.opensearch.client.opensearch._types.FieldSort.Builder;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.SortOptions;
 import org.opensearch.client.opensearch._types.SortOrder;
@@ -157,7 +156,7 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
         .build();
   }
 
-  private static Function<Builder, ObjectBuilder<FieldSort>> fieldSortBuilderFunction(
+  private static Function<FieldSort.Builder, ObjectBuilder<FieldSort>> fieldSortBuilderFunction(
       SearchResultParameters resultParameters) {
     return builder ->
         builder.field(resultParameters.orderBy()).order(getSortOrder(resultParameters.sortOrder()));
