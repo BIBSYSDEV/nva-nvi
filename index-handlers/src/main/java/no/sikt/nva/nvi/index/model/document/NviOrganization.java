@@ -10,6 +10,7 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
 import java.util.List;
+import java.util.regex.Pattern;
 import nva.commons.core.paths.UriWrapper;
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
@@ -27,7 +28,7 @@ public record NviOrganization(
   private static final int INDEX_FACULTY_IDENTIFIER = 1;
   private static final int INDEX_DEPARTMENT_IDENTIFIER = 2;
   private static final int INDEX_GROUP_IDENTIFIER = 3;
-  private static final String IDENTIFIER_DELIMITER = "\\.";
+  private static final Pattern IDENTIFIER_DELIMITER = Pattern.compile("\\.");
 
   public static Builder builder() {
     return new Builder();
@@ -40,22 +41,26 @@ public record NviOrganization(
 
   @JsonIgnore
   public String getInstitutionIdentifier() {
-    return identifier.split(IDENTIFIER_DELIMITER)[INDEX_INSTITUTION_IDENTIFIER];
+    return identifierPart(INDEX_INSTITUTION_IDENTIFIER);
   }
 
   @JsonIgnore
   public String getFacultyIdentifier() {
-    return identifier.split(IDENTIFIER_DELIMITER)[INDEX_FACULTY_IDENTIFIER];
+    return identifierPart(INDEX_FACULTY_IDENTIFIER);
   }
 
   @JsonIgnore
   public String getDepartmentIdentifier() {
-    return identifier.split(IDENTIFIER_DELIMITER)[INDEX_DEPARTMENT_IDENTIFIER];
+    return identifierPart(INDEX_DEPARTMENT_IDENTIFIER);
   }
 
   @JsonIgnore
   public String getGroupIdentifier() {
-    return identifier.split(IDENTIFIER_DELIMITER)[INDEX_GROUP_IDENTIFIER];
+    return identifierPart(INDEX_GROUP_IDENTIFIER);
+  }
+
+  private String identifierPart(int index) {
+    return IDENTIFIER_DELIMITER.split(identifier, -1)[index];
   }
 
   public static final class Builder {
