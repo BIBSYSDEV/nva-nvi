@@ -1,5 +1,7 @@
 [versions]
 nvaLanguage = { strictly = '1.2.1' }
+fastExccel = { strictly = '0.20.0'}
 
 [libraries]
 nva-language = { group = 'com.github.bibsysdev', name = 'nva-language', version.ref = 'nvaLanguage' }
+fast-excel = { group = 'org.dhatim', name = 'fastexcel', version.ref = 'fastExccel' }
