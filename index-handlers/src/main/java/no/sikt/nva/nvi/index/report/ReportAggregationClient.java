@@ -14,8 +14,10 @@ import java.util.stream.Stream;
 import no.sikt.nva.nvi.index.aws.OpenSearchClientFactory;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.report.InstitutionReportHeader;
+import no.sikt.nva.nvi.index.report.query.AllInstitutionsQuery;
 import no.sikt.nva.nvi.index.report.query.InstitutionQuery;
 import no.sikt.nva.nvi.index.report.query.ReportAggregationQuery;
+import no.sikt.nva.nvi.index.report.query.XlsxReportQuery;
 import no.sikt.nva.nvi.index.xlsx.FastExcelXlsxGenerator;
 import nva.commons.core.JacocoGenerated;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -50,15 +52,37 @@ public class ReportAggregationClient {
     return processQuery(query);
   }
 
-  public String executeXlsxReport(InstitutionQuery query) {
+  public String executeXlsxReport(XlsxReportQuery query) {
     LOGGER.info("Executing XLSX report query: {}", query);
+    return switch (query) {
+      case InstitutionQuery institutionQuery -> createXlsxForInstitution(institutionQuery);
+      case AllInstitutionsQuery allInstitutionsQuery ->
+          createXlsxReportForAllInstitutions(allInstitutionsQuery);
+    };
+  }
+
+  private String createXlsxForInstitution(InstitutionQuery institutionQuery) {
     var data =
-        fetchCandidates(query.query()).stream()
-            .map(candidate -> candidate.toReportRowsForInstitution(query.institutionId()))
+        fetchCandidates(institutionQuery.query()).stream()
+            .map(
+                candidate -> candidate.toReportRowsForInstitution(institutionQuery.institutionId()))
             .flatMap(this::orderByHeaderOrder)
             .toList();
     return new FastExcelXlsxGenerator(InstitutionReportHeader.getOrderedValues(), data)
         .toBase64EncodedString();
+  }
+
+  private String createXlsxReportForAllInstitutions(AllInstitutionsQuery query) {
+    var data = fetchCandidates(query.query()).stream().flatMap(this::toReportRows).toList();
+
+    return new FastExcelXlsxGenerator(InstitutionReportHeader.getOrderedValues(), data)
+        .toBase64EncodedString();
+  }
+
+  private Stream<List<String>> toReportRows(NviCandidateIndexDocument candidate) {
+    return candidate.approvals().stream()
+        .map(approval -> candidate.toReportRowsForInstitution(approval.institutionId()))
+        .flatMap(this::orderByHeaderOrder);
   }
 
   private <T> T processQuery(ReportAggregationQuery<T> query) throws IOException {
