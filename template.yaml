@@ -732,7 +732,6 @@ Resources:
       Environment:
         Variables:
           EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
-          EVALUATION_DLQ_URL: !Ref EvaluationDLQ
       Events:
         SqsEvent:
           Type: SQS

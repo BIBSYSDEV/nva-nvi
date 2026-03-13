@@ -192,6 +192,21 @@ class FetchReportHandlerIntegrationTest {
     }
   }
 
+  private static InputStream createAllInstitutionsXlsxRequest(String period) {
+    try {
+      var pathParams = Map.of(PERIOD_PATH_PARAM, period);
+      var path = "%s/%s/%s".formatted(REPORTS_PATH_SEGMENT, period, INSTITUTIONS_PATH_SEGMENT);
+      return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
+          .withOtherProperties(Map.of("path", path))
+          .withPathParameters(pathParams)
+          .withAccessRights(randomUri(), AccessRight.MANAGE_NVI)
+          .withHeaders(Map.of(ACCEPT, MediaType.OOXML_SHEET.toString()))
+          .build();
+    } catch (JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   private static List<NviCandidateIndexDocument> documentsForLastYear(
       ApprovalFactory institutionA, ApprovalFactory institutionB) {
     var validDocuments = validDocumentsForLastYear(institutionA, institutionB);
@@ -547,6 +562,21 @@ class FetchReportHandlerIntegrationTest {
       var reportForB = getInstitutionReport(THIS_YEAR, IDENTIFIER_INSTITUTION_B);
       assertThat(allInstitutionsReport.institutions())
           .containsExactlyInAnyOrder(reportForA, reportForB);
+    }
+
+    @Test
+    void shouldReturnAllInstitutionsXlsxReportWhenRequested() throws IOException {
+      var request = createAllInstitutionsXlsxRequest(THIS_YEAR);
+      var output = new ByteArrayOutputStream();
+
+      handler.handleRequest(request, output, CONTEXT);
+
+      var response = fromOutputStream(output, String.class);
+      assertThat(response.getStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
+      var content = response.getBodyObject(String.class);
+
+      assertThat(content).isNotEmpty();
+      assertThat(Base64.getDecoder().decode(content)).isNotEmpty();
     }
   }
 

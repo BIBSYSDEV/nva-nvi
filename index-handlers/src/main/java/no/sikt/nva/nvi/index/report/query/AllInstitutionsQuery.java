@@ -10,7 +10,7 @@ import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.SearchResponse;
 
 public record AllInstitutionsQuery(NviPeriod period)
-    implements ReportAggregationQuery<List<InstitutionAggregationResult>> {
+    implements ReportAggregationQuery<List<InstitutionAggregationResult>>, XlsxReportQuery {
 
   @Override
   public Query query() {

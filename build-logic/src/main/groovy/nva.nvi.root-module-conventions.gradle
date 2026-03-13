@@ -3,6 +3,7 @@ plugins {
     id 'jacoco'
     id 'com.github.ben-manes.versions'
     id 'io.github.michael-nestler.spectral'
+    id 'com.autonomousapps.dependency-analysis'
 }
 
 tasks.register('testCodeCoverageReport', JacocoReport) {

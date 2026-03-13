@@ -135,6 +135,21 @@ class FetchReportHandlerTest {
   }
 
   @Test
+  void shouldReturnReportMediaTypeOpenXmlOfficeDocumentWhenRequestedForAllInstitutionsReportReport()
+      throws IOException {
+    var headers = Map.of(ACCEPT, MediaType.OOXML_SHEET.toString());
+    var pathParams = Map.of(PERIOD_PATH_PARAM, randomYear());
+    var path = "%s/%s/%s".formatted(REPORTS_PATH_SEGMENT, randomYear(), INSTITUTIONS_PATH_SEGMENT);
+    var request = createRequestWithHeader(pathParams, path, headers);
+
+    handler.handleRequest(request, output, CONTEXT);
+
+    var response = fromOutputStream(output, ReportResponse.class);
+
+    assertThat(response.getHeaders().get(HttpHeaders.CONTENT_TYPE), is(OOXML_SHEET.toString()));
+  }
+
+  @Test
   void shouldReturnBadRequestWhenRequestedNonInstitutionReportWithAcceptHeaderXlsxIsRequested()
       throws IOException {
     var headers = Map.of(ACCEPT, MediaType.OOXML_SHEET.toString());

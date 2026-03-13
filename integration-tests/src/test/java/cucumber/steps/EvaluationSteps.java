@@ -106,7 +106,7 @@ public class EvaluationSteps {
             .withTitle(randomString())
             .withModifiedDate(Instant.now().toString())
             .build();
-    evaluationContext.evaluatePublicationAndPersistResult(updatedPublication);
+    evaluationContext.evaluatePublicationIgnoringFailure(updatedPublication);
   }
 
   @When("the Publication is updated to be non-applicable")

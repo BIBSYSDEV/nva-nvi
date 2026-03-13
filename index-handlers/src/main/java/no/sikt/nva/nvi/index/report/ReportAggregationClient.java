@@ -11,8 +11,10 @@ import no.sikt.nva.nvi.index.aws.OpenSearchClientFactory;
 import no.sikt.nva.nvi.index.model.report.InstitutionReportMapper;
 import no.sikt.nva.nvi.index.model.report.InstitutionReportRow;
 import no.sikt.nva.nvi.index.model.report.ReportDocument;
+import no.sikt.nva.nvi.index.report.query.AllInstitutionsQuery;
 import no.sikt.nva.nvi.index.report.query.InstitutionQuery;
 import no.sikt.nva.nvi.index.report.query.ReportAggregationQuery;
+import no.sikt.nva.nvi.index.report.query.XlsxReportQuery;
 import nva.commons.core.JacocoGenerated;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
@@ -79,12 +81,35 @@ public class ReportAggregationClient {
     return processQuery(query);
   }
 
-  public String executeXlsxReport(InstitutionQuery query) {
+  public String executeXlsxReport(XlsxReportQuery query) {
     LOGGER.info("Executing XLSX report query: {}", query);
-    var reportDocuments = fetchReportDocuments(query.query());
+    return switch (query) {
+      case InstitutionQuery institutionQuery -> createXlsxForInstitution(institutionQuery);
+      case AllInstitutionsQuery allInstitutionsQuery ->
+          createXlsxReportForAllInstitutions(allInstitutionsQuery);
+    };
+  }
+
+  private String createXlsxForInstitution(InstitutionQuery institutionQuery) {
     var rows =
-        reportDocuments.stream()
-            .flatMap(document -> InstitutionReportMapper.mapToRows(document, query.institutionId()))
+        fetchReportDocuments(institutionQuery.query()).stream()
+            .flatMap(
+                document ->
+                    InstitutionReportMapper.mapToRows(document, institutionQuery.institutionId()))
+            .toList();
+    return reportGenerator.generate(rows);
+  }
+
+  private String createXlsxReportForAllInstitutions(AllInstitutionsQuery query) {
+    var rows =
+        fetchReportDocuments(query.query()).stream()
+            .flatMap(
+                document ->
+                    document.approvals().stream()
+                        .flatMap(
+                            approval ->
+                                InstitutionReportMapper.mapToRows(
+                                    document, approval.institutionId())))
             .toList();
     return reportGenerator.generate(rows);
   }
