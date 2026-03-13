@@ -18,6 +18,7 @@ import no.sikt.nva.nvi.common.client.model.Organization;
 public record ContributorDto(
     URI id,
     String name,
+    String orcid,
     VerificationStatus verificationStatus,
     ContributorRole role,
     Collection<Organization> affiliations) {
@@ -61,6 +62,7 @@ public record ContributorDto(
 
     private URI id;
     private String name;
+    private String orcid;
     private VerificationStatus verificationStatus;
     private ContributorRole role;
     private List<Organization> affiliations;
@@ -74,6 +76,11 @@ public record ContributorDto(
 
     public Builder withName(String name) {
       this.name = name;
+      return this;
+    }
+
+    public Builder withOrcid(String orcid) {
+      this.orcid = orcid;
       return this;
     }
 
@@ -93,7 +100,7 @@ public record ContributorDto(
     }
 
     public ContributorDto build() {
-      return new ContributorDto(id, name, verificationStatus, role, affiliations);
+      return new ContributorDto(id, name, orcid, verificationStatus, role, affiliations);
     }
   }
 }

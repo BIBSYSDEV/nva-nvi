@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.common.client.model;
 
+import static java.util.Objects.nonNull;
 import static java.util.function.Predicate.not;
 import static no.sikt.nva.nvi.common.utils.Validator.hasElements;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
@@ -10,6 +11,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -75,6 +77,18 @@ public record Organization(
       }
     }
     return false;
+  }
+
+  @JsonIgnore
+  public List<URI> flattenPartOfChain() {
+    var result = new ArrayList<URI>();
+    var current = partOf();
+    while (nonNull(current) && !current.isEmpty()) {
+      var parent = current.getFirst();
+      result.add(parent.id());
+      current = parent.partOf();
+    }
+    return result;
   }
 
   @JsonIgnore
