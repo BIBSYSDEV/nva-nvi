@@ -112,6 +112,9 @@ Parameters:
     Type: Number
     Description: Timeout in seconds for functions that parse JSON-LD documents. These need a high timeout in order to handle unusually large documents.
     Default: 300 # 5 minutes
+  ReportsBucketName:
+    Type: String
+    Default: "reports"
 
 Conditions:
   WithSuffix: !Not [!Equals [!Ref Suffix, ""]]
@@ -437,6 +440,10 @@ Resources:
                   - s3:Get*
                   - s3:List*
                   - s3:PutObject
+                  - s3:CreateMultipartUpload
+                  - s3:UploadPart
+                  - s3:CompleteMultipartUpload
+                  - s3:AbortMultipartUpload
                   - secretsmanager:*
                 Resource: "*"
         - PolicyName: Events
@@ -1234,6 +1241,7 @@ Resources:
       Environment:
         Variables:
           ALLOWED_ORIGIN: !Ref AllowedOrigins
+          NVI_REPORTS_BUCKET: !Ref ReportsBucketName
       Events:
         AllPeriodsReport:
           Type: Api
@@ -1614,3 +1622,18 @@ Resources:
       ComparisonOperator: GreaterThanOrEqualToThreshold
       AlarmActions:
         - !Ref SlackSnsArn
+
+  ReportsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: Private
+      BucketName: !Sub "${ReportsBucketName}-${AWS::AccountId}"
+      LifecycleConfiguration:
+      Rules:
+        - Id: DeleteContentAfter3Days
+          Status: Enabled
+          ExpirationInDays: 3
+        - Id: AbortIncompleteMultipartUploads
+          Status: Enabled
+          AbortIncompleteMultipartUpload:
+            DaysAfterInitiation: 1

@@ -1,8 +1,7 @@
 package no.sikt.nva.nvi.index.report.response;
 
-import static no.sikt.nva.nvi.index.report.request.ReportType.CSV;
-
 import java.io.IOException;
+import java.net.URI;
 import java.util.NoSuchElementException;
 import java.util.function.Supplier;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
@@ -17,16 +16,21 @@ import no.sikt.nva.nvi.index.report.request.AllPeriodsReportRequest;
 import no.sikt.nva.nvi.index.report.request.InstitutionReportRequest;
 import no.sikt.nva.nvi.index.report.request.PeriodReportRequest;
 import no.sikt.nva.nvi.index.report.request.ReportRequest;
+import nva.commons.apigateway.MediaType;
 
 public class ReportService {
 
   private final NviPeriodService nviPeriodService;
   private final ReportAggregationClient reportAggregationClient;
+  private final ReportUploader reportUploader;
 
   public ReportService(
-      NviPeriodService nviPeriodService, ReportAggregationClient reportAggregationClient) {
+      NviPeriodService nviPeriodService,
+      ReportAggregationClient reportAggregationClient,
+      ReportUploader reportUploader) {
     this.nviPeriodService = nviPeriodService;
     this.reportAggregationClient = reportAggregationClient;
+    this.reportUploader = reportUploader;
   }
 
   public ReportResponse getResponse(ReportRequest reportRequest) throws IOException {
@@ -54,14 +58,31 @@ public class ReportService {
       throws IOException {
     var period = nviPeriodService.getByPublishingYear(request.period());
     var query = new AllInstitutionsQuery(period);
-    return CSV == request.reportType()
-        ? new CsvReport(request.queryId(), reportAggregationClient.executeCsvReport(query))
-        : createAllInstitutionsJsonReport(request, query, period);
+    return switch (request.reportType()) {
+      case CSV -> createCsvReport(request, query);
+      case XLSX -> createXlsxReport(request, query);
+      case JSON -> createAllInstitutionsJsonReport(request, query, period);
+    };
+  }
+
+  private CsvReport createCsvReport(
+      AllInstitutionsReportRequest request, AllInstitutionsQuery query) {
+    var base64Content = reportAggregationClient.executeCsvReport(query);
+    var uri = upload(base64Content, "csv", MediaType.CSV_UTF_8.toString());
+    return new CsvReport(request.queryId(), uri);
+  }
+
+  private CsvReport createXlsxReport(
+      AllInstitutionsReportRequest request, AllInstitutionsQuery query) {
+    var base64Content = reportAggregationClient.executeXlsxExport(query);
+    var uri = upload(base64Content, "xlsx", MediaType.CSV_UTF_8.toString());
+    return new CsvReport(request.queryId(), uri);
   }
 
   private CsvReport createCsvReport(ReportRequest request, InstitutionQuery query) {
-    var content = reportAggregationClient.executeCsvReport(query);
-    return new CsvReport(request.queryId(), content);
+    var bytes = reportAggregationClient.executeCsvReport(query);
+    var uri = upload(bytes, "csv", MediaType.CSV_UTF_8.toString());
+    return new CsvReport(request.queryId(), uri);
   }
 
   private AllInstitutionsReport createAllInstitutionsJsonReport(
@@ -91,8 +112,13 @@ public class ReportService {
   }
 
   private XlsxReport createXlsxReport(ReportRequest request, InstitutionQuery query) {
-    var content = reportAggregationClient.executeXlsxReport(query);
-    return new XlsxReport(request.queryId(), content);
+    var base64Content = reportAggregationClient.executeXlsxReport(query);
+    var uri = upload(base64Content, "xlsx", MediaType.OOXML_SHEET.toString());
+    return new XlsxReport(request.queryId(), uri);
+  }
+
+  private URI upload(byte[] bytes, String extension, String contentType) {
+    return reportUploader.upload(bytes, extension, contentType);
   }
 
   private static Supplier<NoSuchElementException> noSuchElementException(

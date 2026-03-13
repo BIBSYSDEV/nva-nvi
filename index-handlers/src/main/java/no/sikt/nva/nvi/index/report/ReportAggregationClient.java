@@ -21,6 +21,7 @@ import no.sikt.nva.nvi.index.report.query.AllInstitutionsQuery;
 import no.sikt.nva.nvi.index.report.query.InstitutionQuery;
 import no.sikt.nva.nvi.index.report.query.ReportAggregationQuery;
 import no.sikt.nva.nvi.index.xlsx.CsvGenerator;
+import no.sikt.nva.nvi.index.xlsx.FastExcelXlsxGenerator;
 import nva.commons.core.JacocoGenerated;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
@@ -86,18 +87,17 @@ public class ReportAggregationClient {
     return processQuery(query);
   }
 
-  public String executeCsvReport(InstitutionQuery query) {
+  public byte[] executeCsvReport(InstitutionQuery query) {
     LOGGER.info("Executing CSV report query: {}", query);
     var data =
         fetchCandidates(query.query()).stream()
             .map(candidate -> candidate.toReportRowsForInstitution(query.institutionId()))
             .flatMap(this::orderByHeaderOrder)
             .toList();
-    return new CsvGenerator(InstitutionReportHeader.getOrderedValues(), data)
-        .toBase64EncodedString();
+    return new CsvGenerator(InstitutionReportHeader.getOrderedValues(), data).toCsvBytes();
   }
 
-  public String executeCsvReport(AllInstitutionsQuery query) {
+  public byte[] executeCsvReport(AllInstitutionsQuery query) {
     LOGGER.info("Executing CSV report query: {}", query);
     var data =
         fetchCandidates(query.query()).stream()
@@ -109,11 +109,26 @@ public class ReportAggregationClient {
                                 candidate.toReportRowsForInstitution(approval.institutionId()))
                         .flatMap(this::orderByHeaderOrder))
             .toList();
-    return new CsvGenerator(InstitutionReportHeader.getOrderedValues(), data)
-        .toBase64EncodedString();
+    return new CsvGenerator(InstitutionReportHeader.getOrderedValues(), data).toCsvBytes();
   }
 
-  public String executeXlsxReport(InstitutionQuery query) {
+  public byte[] executeXlsxExport(AllInstitutionsQuery query) {
+    LOGGER.info("Executing CSV report query: {}", query);
+    var data =
+        fetchCandidates(query.query()).stream()
+            .flatMap(
+                candidate ->
+                    candidate.approvals().stream()
+                        .map(
+                            approval ->
+                                candidate.toReportRowsForInstitution(approval.institutionId()))
+                        .flatMap(this::orderByHeaderOrder))
+            .toList();
+    return new FastExcelXlsxGenerator(InstitutionReportHeader.getOrderedValues(), data)
+        .toWorkbookByteArray();
+  }
+
+  public byte[] executeXlsxReport(InstitutionQuery query) {
     LOGGER.info("Executing XLSX report query: {}", query);
     var rows =
         fetchReportDocuments(query.query()).stream()

@@ -83,7 +83,7 @@ public class FastExcelXlsxGenerator implements ReportGenerator {
     }
   }
 
-  private byte[] toWorkbookByteArray() {
+  public byte[] toWorkbookByteArray() {
     var byteArrayOutputStream = new ByteArrayOutputStream();
     try (var workbook = new Workbook(byteArrayOutputStream, NVI, null)) {
       var sheet = workbook.newWorksheet(FAST_EXCEL_SHEET);
