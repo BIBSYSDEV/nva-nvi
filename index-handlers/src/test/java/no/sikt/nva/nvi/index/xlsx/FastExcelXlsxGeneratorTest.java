@@ -28,7 +28,7 @@ class FastExcelXlsxGeneratorTest {
     assertThat(actual).isEqualTo(new FastExcelXlsxGenerator(HEADERS, data));
   }
 
-  private static XlsxGenerator generateAndParseBack(List<List<String>> data) {
+  private static ReportGenerator generateAndParseBack(List<List<String>> data) {
     var bytes =
         Base64.getDecoder()
             .decode(new FastExcelXlsxGenerator(HEADERS, data).toBase64EncodedString());

@@ -10,20 +10,21 @@ import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
 
 public record InstitutionReportRequest(
-    URI queryId, String period, URI institutionId, boolean isXlsxReportRequest)
-    implements ReportRequest {
+    URI queryId, String period, URI institutionId, ReportType reportType) implements ReportRequest {
 
   private static final String CRISTIN_PATH_SEGMENT = "cristin";
   private static final String ORGANIZATION_PATH_SEGMENT = "organization";
 
   public static InstitutionReportRequest from(
-      Environment environment,
-      String period,
-      String institutionIdentifier,
-      boolean isXmlReportRequest) {
+      Environment environment, String period, String institutionIdentifier, ReportType reportType) {
     var queryId = getQueryId(environment, period, institutionIdentifier);
     var institutionId = getInstitutionId(environment, institutionIdentifier);
-    return new InstitutionReportRequest(queryId, period, institutionId, isXmlReportRequest);
+    return new InstitutionReportRequest(queryId, period, institutionId, reportType);
+  }
+
+  @Override
+  public boolean hasSupportedReportType() {
+    return true;
   }
 
   private static URI getQueryId(

@@ -12,7 +12,7 @@ import java.util.List;
 import no.sikt.nva.nvi.index.model.report.InstitutionReportHeader;
 import no.sikt.nva.nvi.index.xlsx.ExcelWorkbookGenerator;
 import no.sikt.nva.nvi.index.xlsx.FastExcelXlsxGenerator;
-import no.sikt.nva.nvi.index.xlsx.XlsxGenerator;
+import no.sikt.nva.nvi.index.xlsx.ReportGenerator;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
@@ -24,7 +24,7 @@ public class ExcelWorkbookUtil {
   private static final int FIRST_ROW_INDEX = 0;
   private static final int FIRST_DATA_ROW_INDEX = 1;
 
-  public static XlsxGenerator fromInputStream(InputStream inputStream) {
+  public static ReportGenerator fromInputStream(InputStream inputStream) {
     try (var workbook = new XSSFWorkbook(inputStream)) {
       var sheet = workbook.getSheetAt(FIRST_SHEET_INDEX);
       var headers = extractHeaders(sheet);
@@ -35,7 +35,7 @@ public class ExcelWorkbookUtil {
     }
   }
 
-  public static XlsxGenerator xlsxGeneratorFromInputStream(InputStream inputStream) {
+  public static ReportGenerator xlsxGeneratorFromInputStream(InputStream inputStream) {
     try (var workbook = new XSSFWorkbook(inputStream)) {
       var sheet = workbook.getSheetAt(FIRST_SHEET_INDEX);
       var headers = extractHeaders(sheet);

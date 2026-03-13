@@ -17,7 +17,7 @@ import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.slf4j.Logger;
 
 // TODO: Remove this class and POI library
-public final class ExcelWorkbookGenerator implements XlsxGenerator {
+public final class ExcelWorkbookGenerator implements ReportGenerator {
 
   private static final Logger logger =
       org.slf4j.LoggerFactory.getLogger(ExcelWorkbookGenerator.class);

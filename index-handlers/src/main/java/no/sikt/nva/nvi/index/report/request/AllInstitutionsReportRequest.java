@@ -4,18 +4,26 @@ import static no.sikt.nva.nvi.index.report.ReportConstants.API_HOST_KEY;
 import static no.sikt.nva.nvi.index.report.ReportConstants.BASE_PATH_KEY;
 import static no.sikt.nva.nvi.index.report.ReportConstants.INSTITUTIONS_PATH_SEGMENT;
 import static no.sikt.nva.nvi.index.report.ReportConstants.REPORTS_PATH_SEGMENT;
+import static no.sikt.nva.nvi.index.report.request.ReportType.CSV;
+import static no.sikt.nva.nvi.index.report.request.ReportType.JSON;
 
 import java.net.URI;
+import java.util.List;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
 
-public record AllInstitutionsReportRequest(URI queryId, String period, boolean isXlsxReportRequest)
+public record AllInstitutionsReportRequest(URI queryId, String period, ReportType reportType)
     implements ReportRequest {
 
   public static AllInstitutionsReportRequest from(
-      Environment environment, String period, boolean isXlsxReportRequest) {
+      Environment environment, String period, ReportType reportType) {
     var queryId = getQueryId(environment, period);
-    return new AllInstitutionsReportRequest(queryId, period, isXlsxReportRequest);
+    return new AllInstitutionsReportRequest(queryId, period, reportType);
+  }
+
+  @Override
+  public boolean hasSupportedReportType() {
+    return List.of(JSON, CSV).contains(reportType);
   }
 
   private static URI getQueryId(Environment environment, String period) {

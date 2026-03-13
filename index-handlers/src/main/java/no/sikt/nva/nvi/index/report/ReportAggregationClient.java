@@ -6,22 +6,27 @@ import static nva.commons.core.attempt.Try.attempt;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.stream.Stream;
 import no.sikt.nva.nvi.index.aws.OpenSearchClientFactory;
+import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
+import no.sikt.nva.nvi.index.model.report.InstitutionReportHeader;
 import no.sikt.nva.nvi.index.model.report.InstitutionReportMapper;
 import no.sikt.nva.nvi.index.model.report.InstitutionReportRow;
 import no.sikt.nva.nvi.index.model.report.ReportDocument;
 import no.sikt.nva.nvi.index.report.query.AllInstitutionsQuery;
 import no.sikt.nva.nvi.index.report.query.InstitutionQuery;
 import no.sikt.nva.nvi.index.report.query.ReportAggregationQuery;
-import no.sikt.nva.nvi.index.report.query.XlsxReportQuery;
+import no.sikt.nva.nvi.index.xlsx.CsvGenerator;
 import nva.commons.core.JacocoGenerated;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.ClearScrollRequest;
 import org.opensearch.client.opensearch.core.ScrollRequest;
 import org.opensearch.client.opensearch.core.SearchRequest;
-import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.core.search.HitsMetadata;
 import org.opensearch.client.opensearch.core.search.SourceConfig;
@@ -81,35 +86,38 @@ public class ReportAggregationClient {
     return processQuery(query);
   }
 
-  public String executeXlsxReport(XlsxReportQuery query) {
-    LOGGER.info("Executing XLSX report query: {}", query);
-    return switch (query) {
-      case InstitutionQuery institutionQuery -> createXlsxForInstitution(institutionQuery);
-      case AllInstitutionsQuery allInstitutionsQuery ->
-          createXlsxReportForAllInstitutions(allInstitutionsQuery);
-    };
-  }
-
-  private String createXlsxForInstitution(InstitutionQuery institutionQuery) {
-    var rows =
-        fetchReportDocuments(institutionQuery.query()).stream()
-            .flatMap(
-                document ->
-                    InstitutionReportMapper.mapToRows(document, institutionQuery.institutionId()))
+  public String executeCsvReport(InstitutionQuery query) {
+    LOGGER.info("Executing CSV report query: {}", query);
+    var data =
+        fetchCandidates(query.query()).stream()
+            .map(candidate -> candidate.toReportRowsForInstitution(query.institutionId()))
+            .flatMap(this::orderByHeaderOrder)
             .toList();
-    return reportGenerator.generate(rows);
+    return new CsvGenerator(InstitutionReportHeader.getOrderedValues(), data)
+        .toBase64EncodedString();
   }
 
-  private String createXlsxReportForAllInstitutions(AllInstitutionsQuery query) {
+  public String executeCsvReport(AllInstitutionsQuery query) {
+    LOGGER.info("Executing CSV report query: {}", query);
+    var data =
+        fetchCandidates(query.query()).stream()
+            .flatMap(
+                candidate ->
+                    candidate.approvals().stream()
+                        .map(
+                            approval ->
+                                candidate.toReportRowsForInstitution(approval.institutionId()))
+                        .flatMap(this::orderByHeaderOrder))
+            .toList();
+    return new CsvGenerator(InstitutionReportHeader.getOrderedValues(), data)
+        .toBase64EncodedString();
+  }
+
+  public String executeXlsxReport(InstitutionQuery query) {
+    LOGGER.info("Executing XLSX report query: {}", query);
     var rows =
         fetchReportDocuments(query.query()).stream()
-            .flatMap(
-                document ->
-                    document.approvals().stream()
-                        .flatMap(
-                            approval ->
-                                InstitutionReportMapper.mapToRows(
-                                    document, approval.institutionId())))
+            .flatMap(document -> InstitutionReportMapper.mapToRows(document, query.institutionId()))
             .toList();
     return reportGenerator.generate(rows);
   }
@@ -126,18 +134,78 @@ public class ReportAggregationClient {
     return query.parseResponse(response);
   }
 
-  private List<ReportDocument> fetchReportDocuments(Query query) {
-    var candidates = new ArrayList<ReportDocument>();
-    var scrollId = initializeScroll(candidates, query);
+  private Stream<List<String>> orderByHeaderOrder(
+      List<Map<InstitutionReportHeader, String>> reportRows) {
+    return reportRows.stream().map(ReportAggregationClient::sortValuesByHeaderOrder);
+  }
+
+  private static List<String> sortValuesByHeaderOrder(
+      Map<InstitutionReportHeader, String> keyValueMap) {
+    return keyValueMap.entrySet().stream()
+        .sorted(Comparator.comparing(entry -> entry.getKey().getOrder()))
+        .map(Entry::getValue)
+        .toList();
+  }
+
+  private List<NviCandidateIndexDocument> fetchCandidates(Query query) {
+    var candidates = new ArrayList<NviCandidateIndexDocument>();
+    var scrollId = initializeCandidateScroll(candidates, query);
     try {
-      scrollId = fetchRemainingPages(candidates, scrollId);
+      scrollId = fetchRemainingCandidatePages(candidates, scrollId);
     } finally {
       clearScroll(scrollId);
     }
     return candidates;
   }
 
-  private String initializeScroll(List<ReportDocument> candidates, Query query) {
+  private String initializeCandidateScroll(
+      List<NviCandidateIndexDocument> candidates, Query query) {
+    var request =
+        new SearchRequest.Builder()
+            .index(NVI_CANDIDATES_INDEX)
+            .size(SCROLL_PAGE_SIZE)
+            .query(query)
+            .scroll(builder -> builder.time(SCROLL_TIMEOUT))
+            .build();
+    var response =
+        attempt(() -> client.search(request, NviCandidateIndexDocument.class)).orElseThrow();
+    addHitsToListOfCandidates(response.hits(), candidates);
+    return response.scrollId();
+  }
+
+  private String fetchRemainingCandidatePages(
+      List<NviCandidateIndexDocument> candidates, String scrollId) {
+    var request =
+        ScrollRequest.of(
+            builder -> builder.scrollId(scrollId).scroll(build -> build.time(SCROLL_TIMEOUT)));
+    var scrollResponse =
+        attempt(() -> client.scroll(request, NviCandidateIndexDocument.class)).orElseThrow();
+    var hits = scrollResponse.hits();
+    if (hits.hits().isEmpty()) {
+      return scrollId;
+    }
+    addHitsToListOfCandidates(hits, candidates);
+    return fetchRemainingCandidatePages(candidates, scrollResponse.scrollId());
+  }
+
+  private static void addHitsToListOfCandidates(
+      HitsMetadata<NviCandidateIndexDocument> hits,
+      List<NviCandidateIndexDocument> fetchedCandidates) {
+    hits.hits().stream().map(Hit::source).forEach(fetchedCandidates::add);
+  }
+
+  private List<ReportDocument> fetchReportDocuments(Query query) {
+    var documents = new ArrayList<ReportDocument>();
+    var scrollId = initializeScroll(documents, query);
+    try {
+      scrollId = fetchRemainingPages(documents, scrollId);
+    } finally {
+      clearScroll(scrollId);
+    }
+    return documents;
+  }
+
+  private String initializeScroll(List<ReportDocument> documents, Query query) {
     var request =
         new SearchRequest.Builder()
             .index(NVI_CANDIDATES_INDEX)
@@ -146,30 +214,27 @@ public class ReportAggregationClient {
             .source(REPORT_SOURCE_FILTER)
             .scroll(builder -> builder.time(SCROLL_TIMEOUT))
             .build();
-    var response = searchWithScroll(request);
-    addHitsToListOfCandidates(response.hits(), candidates);
+    var response = attempt(() -> client.search(request, ReportDocument.class)).orElseThrow();
+    addHitsToListOfDocuments(response.hits(), documents);
     return response.scrollId();
   }
 
-  private SearchResponse<ReportDocument> searchWithScroll(SearchRequest request) {
-    return attempt(() -> client.search(request, ReportDocument.class)).orElseThrow();
-  }
-
-  private String fetchRemainingPages(List<ReportDocument> candidates, String scrollId) {
-    var scrollResponse = scroll(scrollId);
+  private String fetchRemainingPages(List<ReportDocument> documents, String scrollId) {
+    var request =
+        ScrollRequest.of(
+            builder -> builder.scrollId(scrollId).scroll(build -> build.time(SCROLL_TIMEOUT)));
+    var scrollResponse = attempt(() -> client.scroll(request, ReportDocument.class)).orElseThrow();
     var hits = scrollResponse.hits();
     if (hits.hits().isEmpty()) {
       return scrollId;
     }
-    addHitsToListOfCandidates(hits, candidates);
-    return fetchRemainingPages(candidates, scrollResponse.scrollId());
+    addHitsToListOfDocuments(hits, documents);
+    return fetchRemainingPages(documents, scrollResponse.scrollId());
   }
 
-  private SearchResponse<ReportDocument> scroll(String scrollId) {
-    var request =
-        ScrollRequest.of(
-            builder -> builder.scrollId(scrollId).scroll(build -> build.time(SCROLL_TIMEOUT)));
-    return attempt(() -> client.scroll(request, ReportDocument.class)).orElseThrow();
+  private static void addHitsToListOfDocuments(
+      HitsMetadata<ReportDocument> hits, List<ReportDocument> documents) {
+    hits.hits().stream().map(Hit::source).forEach(documents::add);
   }
 
   private void clearScroll(String scrollId) {
@@ -177,10 +242,5 @@ public class ReportAggregationClient {
       attempt(
           () -> client.clearScroll(ClearScrollRequest.of(builder -> builder.scrollId(scrollId))));
     }
-  }
-
-  private static void addHitsToListOfCandidates(
-      HitsMetadata<ReportDocument> hits, List<ReportDocument> fetchedCandidates) {
-    hits.hits().stream().map(Hit::source).forEach(fetchedCandidates::add);
   }
 }
