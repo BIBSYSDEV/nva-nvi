@@ -1241,7 +1241,7 @@ Resources:
       Environment:
         Variables:
           ALLOWED_ORIGIN: !Ref AllowedOrigins
-          NVI_REPORTS_BUCKET: !Ref ReportsBucketName
+          NVI_REPORTS_BUCKET: !Ref ReportsBucket
       Events:
         AllPeriodsReport:
           Type: Api
