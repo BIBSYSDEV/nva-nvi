@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.index.report.response;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -12,12 +13,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.CompleteMultipartUploadRequest;
-import software.amazon.awssdk.services.s3.model.CompleteMultipartUploadResponse;
 import software.amazon.awssdk.services.s3.model.CreateMultipartUploadRequest;
-import software.amazon.awssdk.services.s3.model.CreateMultipartUploadResponse;
-import software.amazon.awssdk.services.s3.model.UploadPartRequest;
-import software.amazon.awssdk.services.s3.model.UploadPartResponse;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
@@ -43,34 +41,23 @@ class ReportUploaderTest {
   }
 
   @Test
-  void shouldCreateMultipartUpload() {
-    mockMultipartUpload();
+  void shouldPersistReport() {
+    when(s3Client.putObject(any(PutObjectRequest.class), any(RequestBody.class)))
+        .thenReturn(PutObjectResponse.builder().build());
 
-    uploader.upload(largeContent(), "xlsx", "application/xlsx");
+    uploader.upload(new byte[ONE_MB], "xlsx", "application/xlsx");
 
-    verify(s3Client).createMultipartUpload(any(CreateMultipartUploadRequest.class));
-    verify(s3Client).completeMultipartUpload(any(CompleteMultipartUploadRequest.class));
+    verify(s3Client).putObject(any(PutObjectRequest.class), any(RequestBody.class));
+    verify(s3Client, never()).createMultipartUpload(any(CreateMultipartUploadRequest.class));
   }
 
   @Test
   void shouldReturnPresignedUrl() {
-    mockMultipartUpload();
+    when(s3Client.putObject(any(PutObjectRequest.class), any(RequestBody.class)))
+        .thenReturn(PutObjectResponse.builder().build());
 
-    var uri = uploader.upload(largeContent(), "xlsx", "application/xlsx");
+    var uri = uploader.upload(new byte[ONE_MB], "xlsx", "application/xlsx");
 
     assertNotNull(uri);
-  }
-
-  private void mockMultipartUpload() {
-    when(s3Client.createMultipartUpload(any(CreateMultipartUploadRequest.class)))
-        .thenReturn(CreateMultipartUploadResponse.builder().uploadId("upload-id").build());
-    when(s3Client.uploadPart(any(UploadPartRequest.class), any(RequestBody.class)))
-        .thenReturn(UploadPartResponse.builder().eTag("etag").build());
-    when(s3Client.completeMultipartUpload(any(CompleteMultipartUploadRequest.class)))
-        .thenReturn(CompleteMultipartUploadResponse.builder().build());
-  }
-
-  private static byte[] largeContent() {
-    return new byte[ONE_MB + 1];
   }
 }

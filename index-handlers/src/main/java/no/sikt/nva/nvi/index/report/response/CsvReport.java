@@ -4,4 +4,4 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import java.net.URI;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NONE)
-public record CsvReport(URI id, URI content) implements ReportResponse {}
+public record CsvReport(URI id, URI uri) implements ReportResponse {}

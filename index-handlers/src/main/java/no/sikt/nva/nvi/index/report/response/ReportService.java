@@ -75,7 +75,7 @@ public class ReportService {
   private CsvReport createXlsxReport(
       AllInstitutionsReportRequest request, AllInstitutionsQuery query) {
     var bytes = reportAggregationClient.executeXlsxExport(query);
-    var uri = upload(bytes, "xlsx", MediaType.CSV_UTF_8.toString());
+    var uri = upload(bytes, "xlsx", MediaType.OOXML_SHEET.toString());
     return new CsvReport(request.queryId(), uri);
   }
 

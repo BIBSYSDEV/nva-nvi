@@ -64,7 +64,7 @@ public class CsvGenerator implements ReportGenerator {
       writer.flush();
       return byteStream.toByteArray();
     } catch (IOException e) {
-      throw new IllegalStateException("Failed to write CSV content", e);
+      throw new IllegalStateException("Failed to write CSV uri", e);
     }
   }
 
