@@ -74,8 +74,8 @@ public class ReportService {
 
   private CsvReport createXlsxReport(
       AllInstitutionsReportRequest request, AllInstitutionsQuery query) {
-    var base64Content = reportAggregationClient.executeXlsxExport(query);
-    var uri = upload(base64Content, "xlsx", MediaType.CSV_UTF_8.toString());
+    var bytes = reportAggregationClient.executeXlsxExport(query);
+    var uri = upload(bytes, "xlsx", MediaType.CSV_UTF_8.toString());
     return new CsvReport(request.queryId(), uri);
   }
 
@@ -102,6 +102,12 @@ public class ReportService {
     };
   }
 
+  private XlsxReport createXlsxReport(ReportRequest request, InstitutionQuery query) {
+    var bytes = reportAggregationClient.executeXlsxReport(query);
+    var uri = upload(bytes, "xlsx", MediaType.OOXML_SHEET.toString());
+    return new XlsxReport(request.queryId(), uri);
+  }
+
   private InstitutionJsonReport createInstitutionJsonReport(
       InstitutionReportRequest request, InstitutionQuery query, NviPeriod period)
       throws IOException {
@@ -111,21 +117,15 @@ public class ReportService {
         .orElseThrow(noSuchElementException(request));
   }
 
-  private XlsxReport createXlsxReport(ReportRequest request, InstitutionQuery query) {
-    var base64Content = reportAggregationClient.executeXlsxReport(query);
-    var uri = upload(base64Content, "xlsx", MediaType.OOXML_SHEET.toString());
-    return new XlsxReport(request.queryId(), uri);
-  }
-
-  private URI upload(byte[] bytes, String extension, String contentType) {
-    return reportUploader.upload(bytes, extension, contentType);
-  }
-
   private static Supplier<NoSuchElementException> noSuchElementException(
       InstitutionReportRequest request) {
     return () ->
         new NoSuchElementException(
             "No report found for institution %s in period %s"
                 .formatted(request.institutionId(), request.period()));
+  }
+
+  private URI upload(byte[] bytes, String extension, String contentType) {
+    return reportUploader.upload(bytes, extension, contentType);
   }
 }

@@ -1629,11 +1629,11 @@ Resources:
       AccessControl: Private
       BucketName: !Sub "${ReportsBucketName}-${AWS::AccountId}"
       LifecycleConfiguration:
-      Rules:
-        - Id: DeleteContentAfter3Days
-          Status: Enabled
-          ExpirationInDays: 3
-        - Id: AbortIncompleteMultipartUploads
-          Status: Enabled
-          AbortIncompleteMultipartUpload:
-            DaysAfterInitiation: 1
+        Rules:
+          - Id: DeleteContentAfter3Days
+            Status: Enabled
+            ExpirationInDays: 3
+          - Id: AbortIncompleteMultipartUploads
+            Status: Enabled
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 1
