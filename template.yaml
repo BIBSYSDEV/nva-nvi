@@ -1626,7 +1626,6 @@ Resources:
   ReportsBucket:
     Type: AWS::S3::Bucket
     Properties:
-      AccessControl: Private
       BucketName: !Sub "${ReportsBucketName}-${AWS::AccountId}"
       LifecycleConfiguration:
         Rules:
