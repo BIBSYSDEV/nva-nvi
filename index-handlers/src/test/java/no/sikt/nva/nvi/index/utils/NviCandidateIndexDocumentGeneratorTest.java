@@ -1,5 +1,6 @@
 package no.sikt.nva.nvi.index.utils;
 
+import static java.util.Collections.emptyList;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -11,7 +12,6 @@ import static org.mockito.Mockito.mock;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import java.net.URI;
-import java.util.List;
 import java.util.Set;
 import no.sikt.nva.nvi.common.model.PublicationDate;
 import no.sikt.nva.nvi.common.model.SampleCandidateGenerator;
@@ -86,7 +86,7 @@ class NviCandidateIndexDocumentGeneratorTest {
         .withId(randomUri())
         .withTitle(randomString())
         .withPublicationDate(new PublicationDate(randomYear(), null, null))
-        .withNviCreators(List.of())
+        .withNviCreators(emptyList())
         .withHandles(handles)
         .build();
   }

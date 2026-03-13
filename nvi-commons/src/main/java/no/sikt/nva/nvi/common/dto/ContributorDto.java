@@ -10,7 +10,6 @@ import static nva.commons.core.StringUtils.isNotBlank;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.net.URI;
-import java.util.Collection;
 import java.util.List;
 import no.sikt.nva.nvi.common.client.model.Organization;
 
@@ -18,9 +17,10 @@ import no.sikt.nva.nvi.common.client.model.Organization;
 public record ContributorDto(
     URI id,
     String name,
+    String orcid,
     VerificationStatus verificationStatus,
-    ContributorRole role,
-    Collection<Organization> affiliations) {
+    List<ContributorRole> roles,
+    List<Organization> affiliations) {
 
   public ContributorDto {
     if (isNull(affiliations)) {
@@ -39,7 +39,7 @@ public record ContributorDto(
 
   @JsonIgnore
   public boolean isCreator() {
-    return role.isCreator();
+    return roles.stream().anyMatch(ContributorRole::isCreator);
   }
 
   @JsonIgnore
@@ -61,8 +61,9 @@ public record ContributorDto(
 
     private URI id;
     private String name;
+    private String orcid;
     private VerificationStatus verificationStatus;
-    private ContributorRole role;
+    private List<ContributorRole> roles;
     private List<Organization> affiliations;
 
     private Builder() {}
@@ -77,13 +78,23 @@ public record ContributorDto(
       return this;
     }
 
+    public Builder withOrcid(String orcid) {
+      this.orcid = orcid;
+      return this;
+    }
+
     public Builder withVerificationStatus(VerificationStatus verificationStatus) {
       this.verificationStatus = verificationStatus;
       return this;
     }
 
     public Builder withRole(ContributorRole role) {
-      this.role = role;
+      this.roles = List.of(role);
+      return this;
+    }
+
+    public Builder withRole(List<ContributorRole> roles) {
+      this.roles = roles;
       return this;
     }
 
@@ -93,7 +104,7 @@ public record ContributorDto(
     }
 
     public ContributorDto build() {
-      return new ContributorDto(id, name, verificationStatus, role, affiliations);
+      return new ContributorDto(id, name, orcid, verificationStatus, roles, affiliations);
     }
   }
 }

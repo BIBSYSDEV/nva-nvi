@@ -48,6 +48,9 @@
       "@id": "modifiedDate",
       "@type": "xsd:dateTime"
     },
+    "orcid": {
+      "@id": "orcid"
+    },
     "organization": {
       "@id": "organization",
       "@type": "@id",
@@ -68,8 +71,10 @@
     "parentPublicationType": {
       "@type": "@vocab"
     },
-    "role": {
-      "@type": "@vocab"
+    "roles": {
+      "@id": "role",
+      "@type": "@vocab",
+      "@container": "@set"
     },
     "status": {
       "@type": "@vocab"

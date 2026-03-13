@@ -186,7 +186,7 @@ public class SampleExpandedPublicationFactory {
         SampleExpandedContributor.builder()
             .withId(contributor.id())
             .withNames(names)
-            .withRole(contributor.role().getValue())
+            .withRole(contributor.roles().getFirst().getValue())
             .withOrcId(randomString())
             .withVerificationStatus(contributor.verificationStatus().getValue())
             .withAffiliations(expandedAffiliations)
