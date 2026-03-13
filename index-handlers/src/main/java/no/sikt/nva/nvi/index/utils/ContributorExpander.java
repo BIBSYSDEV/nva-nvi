@@ -108,7 +108,7 @@ final class ContributorExpander {
       Collection<no.sikt.nva.nvi.common.client.model.Organization> affiliations) {
     return affiliations.stream()
         .filter(org -> nonNull(org.id()))
-        .map(org -> (OrganizationType) Organization.builder().withId(org.id()).build())
+        .<OrganizationType>map(org -> Organization.builder().withId(org.id()).build())
         .toList();
   }
 }

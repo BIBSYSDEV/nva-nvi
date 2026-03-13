@@ -1,5 +1,8 @@
 package no.sikt.nva.nvi.index.utils;
 
+import static java.util.Collections.emptyList;
+import static java.util.Objects.isNull;
+import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.model.ContributorFixtures.ROLE_CREATOR;
 import static no.sikt.nva.nvi.common.model.ContributorFixtures.ROLE_OTHER;
 import static no.sikt.nva.nvi.common.model.ContributorFixtures.STATUS_VERIFIED;
@@ -77,7 +80,7 @@ class CandidateIndexDocumentGeneratorTest {
             .withId(randomUri())
             .withTitle(randomString())
             .withPublicationDate(new PublicationDate(randomYear(), null, null))
-            .withNviCreators(List.of())
+            .withNviCreators(emptyList())
             .withHandles(expectedHandles)
             .build();
     var candidate =
@@ -295,8 +298,8 @@ class CandidateIndexDocumentGeneratorTest {
                 candidate.publicationDetails().publicationDate().toDtoPublicationDate())
             .withPublicationType(candidate.getPublicationType())
             .withPublicationChannels(List.of(publicationChannelDto))
-            .withContributors(List.of())
-            .withTopLevelOrganizations(List.of())
+            .withContributors(emptyList())
+            .withTopLevelOrganizations(emptyList())
             .build();
 
     var document =
@@ -401,7 +404,7 @@ class CandidateIndexDocumentGeneratorTest {
             .withId(randomUri())
             .withTitle(randomString())
             .withPublicationDate(new PublicationDate(randomYear(), null, null))
-            .withNviCreators(List.of())
+            .withNviCreators(emptyList())
             .withPageCount(pageCount)
             .build();
     var candidate =
@@ -415,6 +418,20 @@ class CandidateIndexDocumentGeneratorTest {
     assertEquals(expectedBegin, pages.begin());
     assertEquals(expectedEnd, pages.end());
     assertEquals(expectedTotal, pages.numberOfPages());
+  }
+
+  @Test
+  void shouldBuildEmptyPagesWhenPageCountIsNull() {
+    var candidate = minimalCandidate();
+    var publicationDto = minimalPublicationDto(candidate);
+
+    var document =
+        new CandidateIndexDocumentGenerator(candidate, publicationDto).generateDocument();
+
+    var pages = document.publicationDetails().pages();
+    assertNull(pages.begin());
+    assertNull(pages.end());
+    assertNull(pages.numberOfPages());
   }
 
   @Test
@@ -550,7 +567,7 @@ class CandidateIndexDocumentGeneratorTest {
             .withId(randomUri())
             .withTitle(randomString())
             .withPublicationDate(new PublicationDate(randomYear(), null, null))
-            .withNviCreators(List.of())
+            .withNviCreators(emptyList())
             .build();
 
     var candidate =
@@ -617,40 +634,21 @@ class CandidateIndexDocumentGeneratorTest {
   }
 
   private static PublicationDto minimalPublicationDto(Candidate candidate) {
-    var channel = candidate.getPublicationChannel();
-    var channels =
-        java.util.Objects.nonNull(channel.id()) && java.util.Objects.nonNull(channel.channelType())
-            ? List.of(
-                PublicationChannelDto.builder()
-                    .withId(channel.id())
-                    .withChannelType(channel.channelType())
-                    .withScientificValue(channel.scientificValue())
-                    .build())
-            : List.<PublicationChannelDto>of();
-    return PublicationDto.builder()
-        .withId(candidate.getPublicationId())
-        .withStatus("PUBLISHED")
-        .withPublicationDate(
-            candidate.publicationDetails().publicationDate().toDtoPublicationDate())
-        .withPublicationType(candidate.getPublicationType())
-        .withPublicationChannels(channels)
-        .withContributors(List.of())
-        .withTopLevelOrganizations(List.of())
-        .build();
+    return createPublicationDto(candidate, emptyList());
   }
 
   private static PublicationDto createPublicationDto(
       Candidate candidate, List<ContributorDto> contributors) {
     var channel = candidate.getPublicationChannel();
-    var channels =
-        java.util.Objects.nonNull(channel.id()) && java.util.Objects.nonNull(channel.channelType())
+    List<PublicationChannelDto> channels =
+        nonNull(channel.id()) && nonNull(channel.channelType())
             ? List.of(
                 PublicationChannelDto.builder()
                     .withId(channel.id())
                     .withChannelType(channel.channelType())
                     .withScientificValue(channel.scientificValue())
                     .build())
-            : List.<PublicationChannelDto>of();
+            : emptyList();
     return PublicationDto.builder()
         .withId(candidate.getPublicationId())
         .withStatus("PUBLISHED")
@@ -659,7 +657,7 @@ class CandidateIndexDocumentGeneratorTest {
         .withPublicationType(candidate.getPublicationType())
         .withPublicationChannels(channels)
         .withContributors(contributors)
-        .withTopLevelOrganizations(List.of())
+        .withTopLevelOrganizations(emptyList())
         .build();
   }
 
@@ -689,10 +687,10 @@ class CandidateIndexDocumentGeneratorTest {
   private static Organization buildAffiliationWithPartOfChain(URI affiliationId, URI... parentIds) {
     Organization current = null;
     for (var i = parentIds.length - 1; i >= 0; i--) {
-      var partOf = java.util.Objects.isNull(current) ? List.<Organization>of() : List.of(current);
+      var partOf = isNull(current) ? List.<Organization>of() : List.of(current);
       current = Organization.builder().withId(parentIds[i]).withPartOf(partOf).build();
     }
-    var partOf = java.util.Objects.isNull(current) ? List.<Organization>of() : List.of(current);
+    var partOf = isNull(current) ? List.<Organization>of() : List.of(current);
     return Organization.builder().withId(affiliationId).withPartOf(partOf).build();
   }
 }

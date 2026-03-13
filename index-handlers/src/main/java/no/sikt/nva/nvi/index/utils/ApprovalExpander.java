@@ -6,7 +6,6 @@ import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.model.Sector;
@@ -78,7 +77,7 @@ final class ApprovalExpander {
   }
 
   private static String extractAssignee(Approval approval) {
-    return Optional.of(approval).map(Approval::getAssigneeUsername).orElse(null);
+    return approval.getAssigneeUsername();
   }
 
   private String extractSector(URI institutionId) {
