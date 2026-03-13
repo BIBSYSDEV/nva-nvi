@@ -52,12 +52,12 @@ public class ContributorFixtures {
   public static ContributorDto verifiedCreatorFrom(Organization... affiliations) {
     var creatorId = randomUriWithSuffix("creatorId");
     return new ContributorDto(
-        creatorId, randomString(), STATUS_VERIFIED, ROLE_CREATOR, List.of(affiliations));
+        creatorId, randomString(), null, STATUS_VERIFIED, ROLE_CREATOR, List.of(affiliations));
   }
 
   public static ContributorDto unverifiedCreatorFrom(Organization... affiliations) {
     return new ContributorDto(
-        null, randomString(), STATUS_UNVERIFIED, ROLE_CREATOR, List.of(affiliations));
+        null, randomString(), null, STATUS_UNVERIFIED, ROLE_CREATOR, List.of(affiliations));
   }
 
   public static ContributorDto mapToContributorDto(NviCreator nviCreator) {
@@ -68,6 +68,7 @@ public class ContributorFixtures {
     return new ContributorDto(
         nviCreator.id(),
         nviCreator.name(),
+        null,
         nviCreator.verificationStatus(),
         ROLE_CREATOR,
         affiliations);
@@ -111,7 +112,7 @@ public class ContributorFixtures {
     }
 
     public ContributorDto build() {
-      return new ContributorDto(id, name, verificationStatus, role, affiliations);
+      return new ContributorDto(id, name, null, verificationStatus, role, affiliations);
     }
   }
 }
