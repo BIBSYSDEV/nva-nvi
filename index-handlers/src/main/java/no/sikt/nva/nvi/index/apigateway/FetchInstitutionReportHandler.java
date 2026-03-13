@@ -11,7 +11,7 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.time.Year;
 import java.util.List;
-import no.sikt.nva.nvi.index.aws.OpenSearchClient;
+import no.sikt.nva.nvi.index.aws.CandidateSearchClient;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.utils.InstitutionReportGenerator;
@@ -39,7 +39,7 @@ public class FetchInstitutionReportHandler extends ApiGatewayHandler<Void, Strin
 
   @JacocoGenerated
   public FetchInstitutionReportHandler() {
-    this(OpenSearchClient.defaultOpenSearchClient(), new Environment());
+    this(CandidateSearchClient.defaultOpenSearchClient(), new Environment());
   }
 
   public FetchInstitutionReportHandler(

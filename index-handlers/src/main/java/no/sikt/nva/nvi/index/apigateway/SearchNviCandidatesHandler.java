@@ -2,7 +2,7 @@ package no.sikt.nva.nvi.index.apigateway;
 
 import static no.sikt.nva.nvi.common.utils.RequestUtil.isNviAdmin;
 import static no.sikt.nva.nvi.index.apigateway.CristinOrgUriUtil.toCristinOrgUri;
-import static no.sikt.nva.nvi.index.aws.OpenSearchClient.defaultOpenSearchClient;
+import static no.sikt.nva.nvi.index.aws.CandidateSearchClient.defaultOpenSearchClient;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_AFFILIATIONS;
 import static no.sikt.nva.nvi.index.utils.PaginatedResultConverter.toPaginatedResult;
 import static nva.commons.core.attempt.Try.attempt;
@@ -39,7 +39,7 @@ public class SearchNviCandidatesHandler
     extends ApiGatewayHandler<Void, PaginatedSearchResult<NviCandidateIndexDocument>> {
 
   private final Logger logger = LoggerFactory.getLogger(SearchNviCandidatesHandler.class);
-  private final SearchClient<NviCandidateIndexDocument> openSearchClient;
+  private final SearchClient<NviCandidateIndexDocument> searchClient;
   private final ViewingScopeValidator viewingScopeValidator;
   private final IdentityServiceClient identityServiceClient;
   private final String apiHost;
@@ -54,12 +54,12 @@ public class SearchNviCandidatesHandler
   }
 
   public SearchNviCandidatesHandler(
-      SearchClient<NviCandidateIndexDocument> openSearchClient,
+      SearchClient<NviCandidateIndexDocument> searchClient,
       ViewingScopeValidator viewingScopeValidator,
       IdentityServiceClient identityServiceClient,
       Environment environment) {
     super(Void.class, environment);
-    this.openSearchClient = openSearchClient;
+    this.searchClient = searchClient;
     this.viewingScopeValidator = viewingScopeValidator;
     this.identityServiceClient = identityServiceClient;
     this.apiHost = environment.readEnv("API_HOST");
@@ -79,7 +79,7 @@ public class SearchNviCandidatesHandler
     var candidateSearchParameters =
         CandidateSearchParameters.fromRequestInfo(requestInfo, affiliations);
     logAggregationType(candidateSearchParameters);
-    return attempt(() -> openSearchClient.search(candidateSearchParameters))
+    return attempt(() -> searchClient.search(candidateSearchParameters))
         .map(searchResponse -> toPaginatedResult(searchResponse, candidateSearchParameters))
         .orElseThrow();
   }

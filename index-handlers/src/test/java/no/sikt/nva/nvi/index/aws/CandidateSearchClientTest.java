@@ -73,7 +73,7 @@ import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch.core.SearchResponse;
 import org.opensearch.client.opensearch.core.search.Hit;
 
-class OpenSearchClientTest {
+class CandidateSearchClientTest {
 
   private static final String YEAR = String.valueOf(CURRENT_YEAR);
   private static final String CATEGORY = "AcademicArticle";
@@ -94,12 +94,12 @@ class OpenSearchClientTest {
       "document_with_contributor_from_ntnu_subunit.json";
   private static final OpenSearchContainerContext CONTAINER = new OpenSearchContainerContext();
   private static final int DEFAULT_CANDIDATE_COUNT = 5;
-  private static OpenSearchClient openSearchClient;
+  private static CandidateSearchClient searchClient;
 
   @BeforeAll
   static void beforeAll() {
     CONTAINER.start();
-    openSearchClient = CONTAINER.getOpenSearchClient();
+    searchClient = CONTAINER.getOpenSearchClient();
   }
 
   @AfterAll
@@ -131,7 +131,7 @@ class OpenSearchClientTest {
             .withYear(YEAR)
             .withSearchResultParameters(getSearchResultParameters(offset, size))
             .build();
-    var searchResponse = openSearchClient.search(searchParameters);
+    var searchResponse = searchClient.search(searchParameters);
 
     assertThat(extractTotalNumberOfHits(searchResponse), is(equalTo(totalNumberOfDocuments)));
 
@@ -153,7 +153,7 @@ class OpenSearchClientTest {
                     .withOrderBy(OrderByFields.CREATED_DATE.getValue())
                     .build())
             .build();
-    var searchResponse = openSearchClient.search(searchParameters);
+    var searchResponse = searchClient.search(searchParameters);
     var hits = searchResponse.hits().hits();
     var expectedFirst =
         "asc".equals(sortOrder) ? createdFirst.createdDate() : createdSecond.createdDate();
@@ -167,25 +167,25 @@ class OpenSearchClientTest {
   void shouldDeleteIndexAndThrowExceptionWhenSearchingInNonExistentIndex() throws IOException {
     var document = randomIndexDocumentBuilder().build();
     addDocumentsToIndex(document);
-    openSearchClient.deleteIndex();
+    searchClient.deleteIndex();
     var searchParameters = defaultSearchParameters().build();
-    assertThrows(OpenSearchException.class, () -> openSearchClient.search(searchParameters));
+    assertThrows(OpenSearchException.class, () -> searchClient.search(searchParameters));
   }
 
   @Test
   void shouldThrowWhenUsingUndefinedFilterName() {
     var searchParameters = defaultSearchParameters().withFilter(UNEXISTING_FILTER).build();
-    assertThrows(IllegalArgumentException.class, () -> openSearchClient.search(searchParameters));
+    assertThrows(IllegalArgumentException.class, () -> searchClient.search(searchParameters));
   }
 
   @Test
   void shouldRemoveDocumentFromIndex() throws IOException {
     var document = randomIndexDocumentBuilder().build();
     addDocumentsToIndex(document);
-    openSearchClient.removeDocumentFromIndex(document.identifier());
+    searchClient.removeDocumentFromIndex(document.identifier());
     CONTAINER.refreshIndex();
     var searchParameters = defaultSearchParameters().build();
-    var searchResponse = openSearchClient.search(searchParameters);
+    var searchResponse = searchClient.search(searchParameters);
     var nviCandidateIndexDocument = searchResponse.hits().hits();
 
     assertThat(nviCandidateIndexDocument, hasSize(0));
@@ -194,7 +194,7 @@ class OpenSearchClientTest {
   @Test
   void shouldReturnDefaultAggregationsWhenAggregationTypeAll() throws IOException {
     var searchParameters = CandidateSearchParameters.builder().withAggregationType("all").build();
-    var searchResponse = openSearchClient.search(searchParameters);
+    var searchResponse = searchClient.search(searchParameters);
     var aggregations = searchResponse.aggregations();
     var expectedAggregations =
         Arrays.stream(SearchAggregation.values())
@@ -213,7 +213,7 @@ class OpenSearchClientTest {
             .withTopLevelCristinOrg(ORGANIZATION)
             .withAggregationType(requestedAggregation)
             .build();
-    var searchResponse = openSearchClient.search(searchParameters);
+    var searchResponse = searchClient.search(searchParameters);
     var aggregations = searchResponse.aggregations();
     assertEquals(1, aggregations.size());
     assertEquals(requestedAggregation, aggregations.keySet().iterator().next());
@@ -231,7 +231,7 @@ class OpenSearchClientTest {
             .withAffiliations(List.of(SIKT_INSTITUTION_IDENTIFIER))
             .withTopLevelCristinOrg(SIKT_INSTITUTION_ID)
             .build();
-    var searchResponse = openSearchClient.search(searchParameters);
+    var searchResponse = searchClient.search(searchParameters);
 
     assertThat(searchResponse.hits().hits(), hasSize(1));
   }
@@ -246,7 +246,7 @@ class OpenSearchClientTest {
             .withAffiliations(List.of(NTNU_INSTITUTION_IDENTIFIER))
             .withTopLevelCristinOrg(NTNU_INSTITUTION_ID)
             .build();
-    var searchResponse = openSearchClient.search(searchParameters);
+    var searchResponse = searchClient.search(searchParameters);
 
     assertThat(searchResponse.hits().hits(), hasSize(1));
   }
@@ -265,7 +265,7 @@ class OpenSearchClientTest {
             .withTopLevelCristinOrg(NTNU_INSTITUTION_ID)
             .withAffiliations(List.of(NTNU_INSTITUTION_IDENTIFIER))
             .build();
-    var searchResponse = openSearchClient.search(searchParameters);
+    var searchResponse = searchClient.search(searchParameters);
 
     assertThat(searchResponse.hits().hits(), hasSize(2));
   }
@@ -285,7 +285,7 @@ class OpenSearchClientTest {
             .withTopLevelCristinOrg(NTNU_INSTITUTION_ID)
             .withExcludeSubUnits(true)
             .build();
-    var searchResponse = openSearchClient.search(searchParameters);
+    var searchResponse = searchClient.search(searchParameters);
 
     assertThat(searchResponse.hits().hits(), hasSize(1));
   }
@@ -312,7 +312,7 @@ class OpenSearchClientTest {
             .withFilter(entry.getKey())
             .build();
 
-    var searchResponse = openSearchClient.search(searchParameters);
+    var searchResponse = searchClient.search(searchParameters);
     assertThat(searchResponse.hits().hits(), hasSize(entry.getValue()));
   }
 
@@ -325,7 +325,7 @@ class OpenSearchClientTest {
     var searchParameters =
         defaultSearchParameters().withFilter(QueryFilterType.DISPUTED_AGG.getValue()).build();
 
-    var searchResponse = openSearchClient.search(searchParameters);
+    var searchResponse = searchClient.search(searchParameters);
     assertThat(searchResponse.hits().hits(), hasSize(1));
     assertTrue(
         requireNonNull(searchResponse.hits().hits().getFirst().source()).approvals().stream()
@@ -340,7 +340,7 @@ class OpenSearchClientTest {
     addDocumentsToIndex(indexDocuments.toArray(new NviCandidateIndexDocument[0]));
     var searchTerm = indexDocuments.get(2).publicationDetails().identifier();
     var searchParameters = defaultSearchParameters().withSearchTerm(searchTerm).build();
-    var searchResponse = openSearchClient.search(searchParameters);
+    var searchResponse = searchClient.search(searchParameters);
     assertThat(searchResponse.hits().hits(), hasSize(1));
     assertEquals(searchTerm, getFirstHit(searchResponse).publicationDetails().identifier());
   }
@@ -351,7 +351,7 @@ class OpenSearchClientTest {
     addDocumentsToIndex(indexDocuments.toArray(new NviCandidateIndexDocument[0]));
     var searchTerm = indexDocuments.get(2).identifier().toString();
     var searchParameters = defaultSearchParameters().withSearchTerm(searchTerm).build();
-    var searchResponse = openSearchClient.search(searchParameters);
+    var searchResponse = searchClient.search(searchParameters);
     assertThat(searchResponse.hits().hits(), hasSize(1));
     assertEquals(searchTerm, getFirstHit(searchResponse).identifier().toString());
   }
@@ -362,7 +362,7 @@ class OpenSearchClientTest {
     addDocumentsToIndex(indexDocuments.toArray(new NviCandidateIndexDocument[0]));
     var searchTerm = indexDocuments.get(2).publicationDetails().title();
     var searchParameters = defaultSearchParameters().withSearchTerm(searchTerm).build();
-    var searchResponse = openSearchClient.search(searchParameters);
+    var searchResponse = searchClient.search(searchParameters);
     assertThat(searchResponse.hits().hits(), hasSize(1));
     assertEquals(searchTerm, getFirstHit(searchResponse).publicationDetails().title());
   }
@@ -380,7 +380,7 @@ class OpenSearchClientTest {
     addDocumentsToIndex(indexDocuments.toArray(new NviCandidateIndexDocument[0]));
     var searchTerm = "lorem ipsum";
     var searchParameters = defaultSearchParameters().withSearchTerm(searchTerm).build();
-    var searchResponse = openSearchClient.search(searchParameters);
+    var searchResponse = searchClient.search(searchParameters);
     assertThat(searchResponse.hits().hits(), hasSize(2));
     assertThat(
         searchResponse.hits().hits().stream()
@@ -396,7 +396,7 @@ class OpenSearchClientTest {
     var expectedHit = indexDocuments.get(2);
     var searchTerm = expectedHit.publicationDetails().contributors().getFirst().name();
     var searchParameters = defaultSearchParameters().withSearchTerm(searchTerm).build();
-    var searchResponse = openSearchClient.search(searchParameters);
+    var searchResponse = searchClient.search(searchParameters);
     assertThat(searchResponse.hits().hits(), hasSize(1));
     assertEquals(expectedHit.identifier(), getFirstHit(searchResponse).identifier());
   }
@@ -407,7 +407,7 @@ class OpenSearchClientTest {
     addDocumentsToIndex(indexDocuments.toArray(new NviCandidateIndexDocument[0]));
     var searchTerm = indexDocuments.get(2).publicationDetails().abstractText();
     var searchParameters = defaultSearchParameters().withSearchTerm(searchTerm).build();
-    var searchResponse = openSearchClient.search(searchParameters);
+    var searchResponse = searchClient.search(searchParameters);
     assertThat(searchResponse.hits().hits(), hasSize(1));
     assertEquals(searchTerm, getFirstHit(searchResponse).publicationDetails().abstractText());
   }
@@ -417,7 +417,7 @@ class OpenSearchClientTest {
     var indexDocuments = generateNumberOfCandidates();
     addDocumentsToIndex(indexDocuments.toArray(new NviCandidateIndexDocument[0]));
     var searchParameters = defaultSearchParameters().build();
-    var searchResponse = openSearchClient.search(searchParameters);
+    var searchResponse = searchClient.search(searchParameters);
     assertThat(searchResponse.hits().hits(), hasSize(DEFAULT_CANDIDATE_COUNT));
   }
 
@@ -430,7 +430,7 @@ class OpenSearchClientTest {
         List.of(expectedHit, indexDocumentWithTitle(someTitleIncludingPartsOfSearchTerm));
     addDocumentsToIndex(indexDocuments.toArray(new NviCandidateIndexDocument[0]));
     var searchParameters = defaultSearchParameters().withSearchTerm(searchTerm).build();
-    var searchResponse = openSearchClient.search(searchParameters);
+    var searchResponse = searchClient.search(searchParameters);
     assertThat(searchResponse.hits().hits(), hasSize(1));
     assertEquals(expectedHit.identifier(), getFirstHit(searchResponse).identifier());
   }
@@ -452,7 +452,7 @@ class OpenSearchClientTest {
             .withYear(year)
             .build();
 
-    var searchResponse = openSearchClient.search(searchParameters);
+    var searchResponse = searchClient.search(searchParameters);
 
     assertThat(searchResponse.hits().hits(), hasSize(1));
   }
@@ -475,7 +475,7 @@ class OpenSearchClientTest {
             .withYear(YEAR)
             .build();
 
-    var searchResponse = openSearchClient.search(searchParameters);
+    var searchResponse = searchClient.search(searchParameters);
 
     assertThat(searchResponse.hits().hits(), hasSize(1));
   }
@@ -502,7 +502,7 @@ class OpenSearchClientTest {
             .withFilter(entry.getKey())
             .withAffiliations(List.of(NTNU_INSTITUTION_IDENTIFIER))
             .build();
-    var searchResponse = openSearchClient.search(searchParameters);
+    var searchResponse = searchClient.search(searchParameters);
     assertThat(searchResponse.hits().hits(), hasSize(entry.getValue()));
   }
 
@@ -518,7 +518,7 @@ class OpenSearchClientTest {
             .withAffiliations(List.of(NTNU_INSTITUTION_IDENTIFIER))
             .build();
 
-    var searchResponse = openSearchClient.search(searchParameters);
+    var searchResponse = searchClient.search(searchParameters);
 
     assertThat(searchResponse.hits().hits(), hasSize(1));
   }
@@ -530,7 +530,7 @@ class OpenSearchClientTest {
             .withUsername(randomString())
             .withFilter("pending")
             .build();
-    assertDoesNotThrow(() -> openSearchClient.search(searchParameters));
+    assertDoesNotThrow(() -> searchClient.search(searchParameters));
   }
 
   @Test
@@ -541,7 +541,7 @@ class OpenSearchClientTest {
         documentFromString("document_with_contributor_from_sikt.json"));
 
     var searchParameters = CandidateSearchParameters.builder().build();
-    var searchResponse = openSearchClient.search(searchParameters);
+    var searchResponse = searchClient.search(searchParameters);
 
     assertThat(searchResponse.hits().hits(), hasSize(2));
   }
@@ -554,7 +554,7 @@ class OpenSearchClientTest {
         defaultSearchParameters()
             .withExcludeFields(List.of("publicationDetails.contributors"))
             .build();
-    var searchResponse = openSearchClient.search(searchParameters);
+    var searchResponse = searchClient.search(searchParameters);
     var firstHit = getFirstHit(searchResponse);
     assertNull(requireNonNull(firstHit).publicationDetails().contributors());
   }
@@ -569,7 +569,7 @@ class OpenSearchClientTest {
 
     // When a query is made with reporting year as the year parameter
     var searchParameters = defaultSearchParameters().withYear(reportedYear).build();
-    var searchResponse = openSearchClient.search(searchParameters);
+    var searchResponse = searchClient.search(searchParameters);
     assertThat(searchResponse.hits().hits(), hasSize(1));
 
     // Then the returned document has the expected publication date and reporting period
@@ -587,7 +587,7 @@ class OpenSearchClientTest {
 
     // When a query is made with reporting year as the year parameter
     var searchParameters = defaultSearchParameters().withYear(reportedYear).build();
-    var searchResponse = openSearchClient.search(searchParameters);
+    var searchResponse = searchClient.search(searchParameters);
     assertThat(searchResponse.hits().hits(), hasSize(1));
 
     // Then the returned document has the expected publication date and reporting period
@@ -608,7 +608,7 @@ class OpenSearchClientTest {
 
     // When a query is made with publication year as the year parameter
     var searchParameters = defaultSearchParameters().withYear(publicationYear).build();
-    var searchResponse = openSearchClient.search(searchParameters);
+    var searchResponse = searchClient.search(searchParameters);
 
     // Then the response does not include the document
     assertThat(searchResponse.hits().hits(), hasSize(0));
@@ -624,7 +624,7 @@ class OpenSearchClientTest {
     // And with the publication title as the search term
     var expectedTitle = expectedDocument.publicationDetails().title();
     var searchParameters = defaultSearchParameters().withTitle(expectedTitle).build();
-    var searchResponse = openSearchClient.search(searchParameters);
+    var searchResponse = searchClient.search(searchParameters);
 
     // Then the response includes the document
     assertThat(searchResponse.hits().hits(), hasSize(1));
@@ -642,7 +642,7 @@ class OpenSearchClientTest {
 
     // When a query is made with search term "smith"
     var searchParameters = defaultSearchParameters().withSearchTerm("smith").build();
-    var searchResponse = openSearchClient.search(searchParameters);
+    var searchResponse = searchClient.search(searchParameters);
 
     // Then the response includes the document
     assertThat(searchResponse.hits().hits(), hasSize(1));
@@ -658,7 +658,7 @@ class OpenSearchClientTest {
 
     var expectedTitle = expectedDocument.publicationDetails().title();
     var searchParameters = defaultSearchParameters().withTitle(expectedTitle).build();
-    var searchResponse = openSearchClient.search(searchParameters);
+    var searchResponse = searchClient.search(searchParameters);
 
     var actualDocument = getFirstHit(searchResponse);
     var actualTimestamp = Instant.parse(actualDocument.indexDocumentCreatedAt());
@@ -677,7 +677,7 @@ class OpenSearchClientTest {
             .withAffiliations(List.of(randomString()))
             .withTopLevelCristinOrg(randomUri())
             .build();
-    var searchResponse = openSearchClient.search(searchParameters);
+    var searchResponse = searchClient.search(searchParameters);
 
     assertThat(searchResponse.hits().hits(), is(emptyIterable()));
   }
@@ -693,7 +693,7 @@ class OpenSearchClientTest {
 
     var searchParameters =
         CandidateSearchParameters.builder().withTopLevelCristinOrg(SIKT_INSTITUTION_ID).build();
-    var searchResponse = openSearchClient.search(searchParameters);
+    var searchResponse = searchClient.search(searchParameters);
 
     var documentsFromResponse = searchResponse.hits().hits().stream().map(Hit::source).toList();
 
@@ -710,7 +710,7 @@ class OpenSearchClientTest {
 
     var searchParameters =
         CandidateSearchParameters.builder().withSearchTerm(handle.toString()).build();
-    var searchResponse = openSearchClient.search(searchParameters);
+    var searchResponse = searchClient.search(searchParameters);
 
     var documentsFromResponse = searchResponse.hits().hits().stream().map(Hit::source).toList();
 
@@ -719,13 +719,13 @@ class OpenSearchClientTest {
 
   @Test
   void shouldReturnTrueWhenIndexExists() {
-    assertTrue(openSearchClient.indexExists());
+    assertTrue(searchClient.indexExists());
   }
 
   @Test
   void shouldReturnFalseWhenIndexDoesNotExist() throws IOException {
-    openSearchClient.deleteIndex();
-    assertFalse(openSearchClient.indexExists());
+    searchClient.deleteIndex();
+    assertFalse(searchClient.indexExists());
   }
 
   @Test
@@ -760,11 +760,11 @@ class OpenSearchClientTest {
     assertThrows(RuntimeException.class, deadClient::indexExists);
   }
 
-  private static OpenSearchClient createClientWithUnreachableHost() {
+  private static CandidateSearchClient createClientWithUnreachableHost() {
     var unreachableHost = new HttpHost("http", "localhost", 1);
     var fakeJwtProvider = FakeCachedJwtProvider.setup();
     var nativeClient = OpenSearchClientFactory.createClient(unreachableHost, fakeJwtProvider);
-    return new OpenSearchClient(nativeClient);
+    return new CandidateSearchClient(nativeClient);
   }
 
   private static List<NviCandidateIndexDocument>
