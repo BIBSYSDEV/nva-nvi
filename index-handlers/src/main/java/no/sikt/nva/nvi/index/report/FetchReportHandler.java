@@ -15,6 +15,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.exception.PeriodNotFoundException;
+import no.sikt.nva.nvi.index.report.request.AllInstitutionsReportRequest;
 import no.sikt.nva.nvi.index.report.request.InstitutionReportRequest;
 import no.sikt.nva.nvi.index.report.request.ReportRequest;
 import no.sikt.nva.nvi.index.report.request.ReportRequestFactory;
@@ -88,6 +89,9 @@ public class FetchReportHandler extends ApiGatewayHandler<Void, ReportResponse> 
   private void addAdditionalHeaders(RequestInfo requestInfo, ReportRequest reportRequest)
       throws BadRequestException {
     if (reportRequest instanceof InstitutionReportRequest request
+        && request.isXlsxReportRequest()) {
+      addAdditionalHeaders(() -> Map.of(CONTENT_TYPE, OOXML_SHEET.toString()));
+    } else if (reportRequest instanceof AllInstitutionsReportRequest request
         && request.isXlsxReportRequest()) {
       addAdditionalHeaders(() -> Map.of(CONTENT_TYPE, OOXML_SHEET.toString()));
     } else if (hasXlsxAcceptHeader(requestInfo)) {

@@ -9,11 +9,13 @@ import java.net.URI;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
 
-public record AllInstitutionsReportRequest(URI queryId, String period) implements ReportRequest {
+public record AllInstitutionsReportRequest(URI queryId, String period, boolean isXlsxReportRequest)
+    implements ReportRequest {
 
-  public static AllInstitutionsReportRequest from(Environment environment, String period) {
+  public static AllInstitutionsReportRequest from(
+      Environment environment, String period, boolean isXlsxReportRequest) {
     var queryId = getQueryId(environment, period);
-    return new AllInstitutionsReportRequest(queryId, period);
+    return new AllInstitutionsReportRequest(queryId, period, isXlsxReportRequest);
   }
 
   private static URI getQueryId(Environment environment, String period) {

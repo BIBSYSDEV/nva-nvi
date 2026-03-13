@@ -5,5 +5,4 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import java.net.URI;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NONE)
-public record InstitutionXlsxReport(URI id, @JsonValue String content)
-    implements ReportResponse, InstitutionReport {}
+public record XlsxReport(URI id, @JsonValue String content) implements ReportResponse {}

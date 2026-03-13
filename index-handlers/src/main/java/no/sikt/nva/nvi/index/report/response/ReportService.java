@@ -10,6 +10,7 @@ import no.sikt.nva.nvi.index.report.query.AllInstitutionsQuery;
 import no.sikt.nva.nvi.index.report.query.AllPeriodsQuery;
 import no.sikt.nva.nvi.index.report.query.InstitutionQuery;
 import no.sikt.nva.nvi.index.report.query.PeriodQuery;
+import no.sikt.nva.nvi.index.report.query.XlsxReportQuery;
 import no.sikt.nva.nvi.index.report.request.AllInstitutionsReportRequest;
 import no.sikt.nva.nvi.index.report.request.AllPeriodsReportRequest;
 import no.sikt.nva.nvi.index.report.request.InstitutionReportRequest;
@@ -48,23 +49,32 @@ public class ReportService {
     return PeriodReport.from(request.queryId(), result);
   }
 
-  private AllInstitutionsReport allInstitutionsReport(AllInstitutionsReportRequest request)
+  private ReportResponse allInstitutionsReport(AllInstitutionsReportRequest request)
       throws IOException {
     var period = nviPeriodService.getByPublishingYear(request.period());
-    var results = reportAggregationClient.executeQuery(new AllInstitutionsQuery(period));
+    var query = new AllInstitutionsQuery(period);
+    return request.isXlsxReportRequest()
+        ? createXlsxReport(request, query)
+        : createAllInstitutionsJsonReport(request, query, period);
+  }
+
+  private AllInstitutionsReport createAllInstitutionsJsonReport(
+      AllInstitutionsReportRequest request, AllInstitutionsQuery query, NviPeriod period)
+      throws IOException {
+    var results = reportAggregationClient.executeQuery(query);
     return AllInstitutionsReport.from(request.queryId(), period, results);
   }
 
-  private InstitutionReport institutionReport(InstitutionReportRequest request) throws IOException {
+  private ReportResponse institutionReport(InstitutionReportRequest request) throws IOException {
     var period = nviPeriodService.getByPublishingYear(request.period());
     var query =
         new InstitutionQuery(period, request.institutionId(), request.isXlsxReportRequest());
     return request.isXlsxReportRequest()
         ? createXlsxReport(request, query)
-        : createJsonReport(request, query, period);
+        : createInstitutionJsonReport(request, query, period);
   }
 
-  private InstitutionJsonReport createJsonReport(
+  private InstitutionJsonReport createInstitutionJsonReport(
       InstitutionReportRequest request, InstitutionQuery query, NviPeriod period)
       throws IOException {
     return reportAggregationClient
@@ -73,10 +83,9 @@ public class ReportService {
         .orElseThrow(noSuchElementException(request));
   }
 
-  private InstitutionXlsxReport createXlsxReport(
-      InstitutionReportRequest request, InstitutionQuery query) {
+  private XlsxReport createXlsxReport(ReportRequest request, XlsxReportQuery query) {
     var content = reportAggregationClient.executeXlsxReport(query);
-    return new InstitutionXlsxReport(request.queryId(), content);
+    return new XlsxReport(request.queryId(), content);
   }
 
   private static Supplier<NoSuchElementException> noSuchElementException(
