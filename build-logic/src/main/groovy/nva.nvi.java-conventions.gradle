@@ -31,7 +31,7 @@ pmd {
 
 tasks.named('test', Test) {
     useJUnitPlatform()
-    failFast = false
+    failFast = true
     testLogging {
         events = ['skipped', 'passed', 'failed']
         showCauses = true
