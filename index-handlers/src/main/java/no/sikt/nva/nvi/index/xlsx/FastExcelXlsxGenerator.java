@@ -18,7 +18,7 @@ import org.dhatim.fastexcel.Worksheet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class FastExcelXlsxGenerator implements XlsxGenerator {
+public class FastExcelXlsxGenerator implements ReportGenerator {
 
   private static final Logger logger = LoggerFactory.getLogger(FastExcelXlsxGenerator.class);
   private static final String LINE_BREAK = "\n";

@@ -171,15 +171,15 @@ class FetchReportHandlerIntegrationTest {
     return createRequest(pathParams, path);
   }
 
-  private static InputStream createXlsInstitutionRequest(
-      String period, String institutionIdentifier) {
+  private static InputStream createInstitutionRequestWithMediaType(
+      String period, String institutionIdentifier, MediaType mediaType) {
     var pathParams =
         Map.of(PERIOD_PATH_PARAM, period, INSTITUTION_PATH_PARAM, institutionIdentifier);
     var path =
         "%s/%s/%s/%s"
             .formatted(
                 REPORTS_PATH_SEGMENT, period, INSTITUTIONS_PATH_SEGMENT, institutionIdentifier);
-    var headers = Map.of(ACCEPT, MediaType.OOXML_SHEET.toString());
+    var headers = Map.of(ACCEPT, mediaType.toString());
     try {
       return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
           .withOtherProperties(Map.of("path", path))
@@ -192,7 +192,7 @@ class FetchReportHandlerIntegrationTest {
     }
   }
 
-  private static InputStream createAllInstitutionsXlsxRequest(String period) {
+  private static InputStream createAllInstitutionsCsvRequest(String period) {
     try {
       var pathParams = Map.of(PERIOD_PATH_PARAM, period);
       var path = "%s/%s/%s".formatted(REPORTS_PATH_SEGMENT, period, INSTITUTIONS_PATH_SEGMENT);
@@ -200,7 +200,7 @@ class FetchReportHandlerIntegrationTest {
           .withOtherProperties(Map.of("path", path))
           .withPathParameters(pathParams)
           .withAccessRights(randomUri(), AccessRight.MANAGE_NVI)
-          .withHeaders(Map.of(ACCEPT, MediaType.OOXML_SHEET.toString()))
+          .withHeaders(Map.of(ACCEPT, MediaType.CSV_UTF_8.toString()))
           .build();
     } catch (JsonProcessingException e) {
       throw new RuntimeException(e);
@@ -565,8 +565,8 @@ class FetchReportHandlerIntegrationTest {
     }
 
     @Test
-    void shouldReturnAllInstitutionsXlsxReportWhenRequested() throws IOException {
-      var request = createAllInstitutionsXlsxRequest(THIS_YEAR);
+    void shouldReturnAllInstitutionsCsvReportWhenRequested() throws IOException {
+      var request = createAllInstitutionsCsvRequest(THIS_YEAR);
       var output = new ByteArrayOutputStream();
 
       handler.handleRequest(request, output, CONTEXT);
@@ -864,7 +864,26 @@ class FetchReportHandlerIntegrationTest {
 
     @Test
     void shouldReturnXlsxReportWhenRequested() throws IOException {
-      var request = createXlsInstitutionRequest(THIS_YEAR, IDENTIFIER_INSTITUTION_A);
+      var request =
+          createInstitutionRequestWithMediaType(
+              THIS_YEAR, IDENTIFIER_INSTITUTION_A, MediaType.OOXML_SHEET);
+      var output = new ByteArrayOutputStream();
+
+      handler.handleRequest(request, output, CONTEXT);
+
+      var response = fromOutputStream(output, String.class);
+      assertThat(response.getStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
+      var content = response.getBodyObject(String.class);
+
+      assertThat(content).isNotEmpty();
+      assertThat(Base64.getDecoder().decode(content)).isNotEmpty();
+    }
+
+    @Test
+    void shouldReturnCsvReportWhenRequested() throws IOException {
+      var request =
+          createInstitutionRequestWithMediaType(
+              THIS_YEAR, IDENTIFIER_INSTITUTION_A, MediaType.CSV_UTF_8);
       var output = new ByteArrayOutputStream();
 
       handler.handleRequest(request, output, CONTEXT);

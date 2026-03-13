@@ -9,4 +9,8 @@ public sealed interface ReportRequest
         InstitutionReportRequest {
 
   URI queryId();
+
+  ReportType reportType();
+
+  boolean hasSupportedReportType();
 }

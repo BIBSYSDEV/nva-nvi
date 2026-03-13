@@ -39,7 +39,7 @@ dependencies {
     testImplementation nvaCatalog.datafaker
     testImplementation nvaCatalog.hamcrest
     testImplementation nvaCatalog.mockito.core
-    testImplementation nvaCatalog.opencsv
+    implementation nvaCatalog.opencsv
     testImplementation nvaCatalog.zalando
     testImplementation nvaLibs.identifiers
     testImplementation nvaLibs.logutils
