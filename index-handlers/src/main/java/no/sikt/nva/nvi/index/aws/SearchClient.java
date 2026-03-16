@@ -16,4 +16,10 @@ public interface SearchClient<T> {
   SearchResponse<T> search(CandidateSearchParameters candidateSearchParameters) throws IOException;
 
   void deleteIndex() throws IOException;
+
+  SearchResponse<T> searchWithScroll(CandidateSearchParameters candidateSearchParameters);
+
+  SearchResponse<T> scroll(String scrollIdentifier);
+
+  void clearScroll(String scrollIdentifier);
 }

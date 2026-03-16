@@ -37,6 +37,8 @@ import no.sikt.nva.nvi.index.model.document.InstitutionPointsView;
 import no.sikt.nva.nvi.index.model.document.InstitutionPointsView.CreatorAffiliationPointsView;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument.Builder;
+import no.sikt.nva.nvi.index.model.document.NviContributor;
+import no.sikt.nva.nvi.index.model.document.NviOrganization;
 import no.sikt.nva.nvi.index.model.document.PublicationDetails;
 import no.sikt.nva.nvi.index.model.document.ReportingPeriod;
 import no.unit.nva.commons.pagination.PaginatedSearchResult;
@@ -113,6 +115,9 @@ public final class IndexDocumentFixtures {
         .withInternationalCollaborationFactor(randomBigDecimal())
         .withNumberOfApprovals(approvals.size())
         .withPoints(randomBigDecimal())
+        .withPublicationTypeChannelLevelPoints(randomBigDecimal())
+        .withInternationalCollaborationFactor(randomBigDecimal())
+        .withCreatorShareCount(new Random().nextInt(1, 10))
         .withReportingPeriod(reportingPeriod)
         .withCreatedDate(Instant.now())
         .withModifiedDate(Instant.now());
@@ -189,8 +194,8 @@ public final class IndexDocumentFixtures {
 
   public static NviCandidateIndexDocument documentWithApprovals(ApprovalView... approvals) {
     var allApprovals = List.of(approvals);
-    var topLevelOrganizations = allApprovals.stream().map(ApprovalView::institutionId).toList();
-    var details = randomPublicationDetailsBuilder(topLevelOrganizations).build();
+    var contributors = extractContributorsFromApprovals(allApprovals);
+    var details = randomPublicationDetailsBuilder().withContributors(contributors).build();
     return randomIndexDocumentBuilder(details, allApprovals).build();
   }
 
@@ -285,5 +290,34 @@ public final class IndexDocumentFixtures {
       return GlobalApprovalStatus.DISPUTE;
     }
     return GlobalApprovalStatus.PENDING;
+  }
+
+  private static List<ContributorType> extractContributorsFromApprovals(
+      List<ApprovalView> approvals) {
+    return approvals.stream()
+        .flatMap(
+            approval ->
+                approval.points().creatorAffiliationPoints().stream()
+                    .map(
+                        creatorPoints ->
+                            buildContributorFromAffiliationPoints(
+                                creatorPoints, approval.institutionId())))
+        .map(ContributorType.class::cast)
+        .toList();
+  }
+
+  private static NviContributor buildContributorFromAffiliationPoints(
+      CreatorAffiliationPointsView creatorPoints, URI institutionId) {
+    var affiliation =
+        NviOrganization.builder()
+            .withId(creatorPoints.affiliationId())
+            .withPartOf(List.of(institutionId))
+            .build();
+    return NviContributor.builder()
+        .withId(creatorPoints.nviCreator().toString())
+        .withName(randomString())
+        .withRole(randomString())
+        .withAffiliations(List.of(affiliation))
+        .build();
   }
 }

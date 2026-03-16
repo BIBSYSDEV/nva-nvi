@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.index.apigateway.utils;
 
 import static no.sikt.nva.nvi.common.utils.DecimalUtils.adjustScaleAndRoundingMode;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.INSTITUTION_ID;
+import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.POINTS_FOR_AFFILIATION;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_LANGUAGE;
 
 import java.io.IOException;
@@ -64,14 +65,29 @@ public class ExcelWorkbookUtil {
     }
   }
 
+  public static List<String> extractRowsInPointsForAffiliationColumn(InputStream inputStream) {
+    try (var workbook = new XSSFWorkbook(inputStream)) {
+      var sheet = workbook.getSheetAt(FIRST_SHEET_INDEX);
+      return extractHeaderColumn(sheet, POINTS_FOR_AFFILIATION);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   private static List<String> extractHeaderColumn(XSSFSheet sheet, InstitutionReportHeader header) {
-    var institutionIdColumn = new ArrayList<String>();
+    var columnValues = new ArrayList<String>();
     for (var rowCounter = FIRST_DATA_ROW_INDEX; rowCounter <= sheet.getLastRowNum(); rowCounter++) {
       var row = sheet.getRow(rowCounter);
-      var institutionId = row.getCell(header.getOrder()).getStringCellValue();
-      institutionIdColumn.add(institutionId);
+      var cell = row.getCell(header.getOrder());
+      if (cell.getCellType() == CellType.NUMERIC) {
+        var bigValue = BigDecimal.valueOf(cell.getNumericCellValue());
+        var normalizedValue = adjustScaleAndRoundingMode(bigValue);
+        columnValues.add(normalizedValue.toString());
+      } else {
+        columnValues.add(cell.getStringCellValue());
+      }
     }
-    return institutionIdColumn;
+    return columnValues;
   }
 
   private static List<List<String>> extractData(XSSFSheet sheet) {
