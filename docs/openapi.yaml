@@ -338,7 +338,7 @@ paths:
             type: array
             items:
               type: string
-              enum: [pending, approved, rejected]
+              enum: [new, pending, approved, rejected]
           examples:
             single:
               summary: Single approval status

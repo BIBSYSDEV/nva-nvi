@@ -531,18 +531,20 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
           argumentSet(
               "status=pending,approved,rejected",
               List.of(PENDING, APPROVED, REJECTED),
+              List.of(PENDING, APPROVED, REJECTED)),
+          argumentSet(
+              "status=new,pending,approved,rejected",
+              List.of(NEW, PENDING, APPROVED, REJECTED),
               allStatuses),
-          argumentSet("status=pending", List.of(PENDING), List.of(NEW, PENDING)),
+          argumentSet("status=new", List.of(NEW), List.of(NEW)),
+          argumentSet("status=pending", List.of(PENDING), List.of(PENDING)),
+          argumentSet("status=new,pending", List.of(NEW, PENDING), List.of(NEW, PENDING)),
           argumentSet("status=approved", List.of(APPROVED), List.of(APPROVED)),
           argumentSet("status=rejected", List.of(REJECTED), List.of(REJECTED)),
           argumentSet(
-              "status=pending,approved",
-              List.of(PENDING, APPROVED),
-              List.of(NEW, PENDING, APPROVED)),
+              "status=pending,approved", List.of(PENDING, APPROVED), List.of(PENDING, APPROVED)),
           argumentSet(
-              "status=pending,rejected",
-              List.of(PENDING, REJECTED),
-              List.of(NEW, PENDING, REJECTED)),
+              "status=pending,rejected", List.of(PENDING, REJECTED), List.of(PENDING, REJECTED)),
           argumentSet(
               "status=approved,rejected",
               List.of(APPROVED, REJECTED),
