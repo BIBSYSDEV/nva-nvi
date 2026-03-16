@@ -1,53 +1,57 @@
 package no.sikt.nva.nvi.index.xlsx;
 
-import static no.sikt.nva.nvi.index.apigateway.utils.ExcelWorkbookUtil.xlsxGeneratorFromInputStream;
-import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.getOrderedValues;
-import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.ByteArrayInputStream;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.Collections;
+import java.io.IOException;
 import java.util.List;
-import no.sikt.nva.nvi.index.model.report.InstitutionReportHeader;
-import nva.commons.core.StringUtils;
+import no.sikt.nva.nvi.index.report.Column;
+import no.sikt.nva.nvi.index.report.ReportRow;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.jupiter.api.Test;
 
 class FastExcelXlsxGeneratorTest {
 
-  private static final List<String> HEADERS = getOrderedValues();
+  record TestRow(
+      @Column(header = "NAME") String name, @Column(header = "SCORE", numeric = true) String score)
+      implements ReportRow {}
 
   @Test
-  void shouldRoundTripHeadersAndStringData() {
-    var data = List.of(randomRow(), randomRow(), randomRow());
+  void shouldWriteHeadersToFirstRow() throws IOException {
+    var row = new TestRow(randomString(), "1.5");
+    var bytes = new FastExcelXlsxGenerator<>(TestRow.class, List.of(row)).toWorkbookByteArray();
 
-    var actual = generateAndParseBack(data);
-
-    assertThat(actual).isEqualTo(new FastExcelXlsxGenerator(HEADERS, data));
+    try (var workbook = new XSSFWorkbook(new ByteArrayInputStream(bytes))) {
+      var sheet = workbook.getSheetAt(0);
+      var headerRow = sheet.getRow(0);
+      assertThat(headerRow.getCell(0).getStringCellValue()).isEqualTo("NAME");
+      assertThat(headerRow.getCell(1).getStringCellValue()).isEqualTo("SCORE");
+    }
   }
 
-  private static ReportGenerator generateAndParseBack(List<List<String>> data) {
-    var bytes =
-        Base64.getDecoder()
-            .decode(new FastExcelXlsxGenerator(HEADERS, data).toBase64EncodedString());
-    return xlsxGeneratorFromInputStream(new ByteArrayInputStream(bytes));
+  @Test
+  void shouldWriteStringValuesForNonNumericColumns() throws IOException {
+    var name = randomString();
+    var row = new TestRow(name, "2.0");
+    var bytes = new FastExcelXlsxGenerator<>(TestRow.class, List.of(row)).toWorkbookByteArray();
+
+    try (var workbook = new XSSFWorkbook(new ByteArrayInputStream(bytes))) {
+      var sheet = workbook.getSheetAt(0);
+      var dataRow = sheet.getRow(1);
+      assertThat(dataRow.getCell(0).getStringCellValue()).isEqualTo(name);
+    }
   }
 
-  private static List<String> randomRow() {
-    var row = new ArrayList<>(Collections.nCopies(HEADERS.size(), StringUtils.EMPTY_STRING));
-    row.set(InstitutionReportHeader.REPORTING_YEAR.getOrder(), randomString());
-    row.set(InstitutionReportHeader.PUBLICATION_IDENTIFIER.getOrder(), randomString());
-    row.set(
-        InstitutionReportHeader.PUBLICATION_CHANNEL_LEVEL_POINTS.getOrder(),
-        randomBigDecimal().toString());
-    row.set(
-        InstitutionReportHeader.INTERNATIONAL_COLLABORATION_FACTOR.getOrder(),
-        randomBigDecimal().toString());
-    row.set(InstitutionReportHeader.CREATOR_SHARE_COUNT.getOrder(), randomBigDecimal().toString());
-    row.set(
-        InstitutionReportHeader.POINTS_FOR_AFFILIATION.getOrder(), randomBigDecimal().toString());
-    return row;
+  @Test
+  void shouldWriteNumericValuesForNumericColumns() throws IOException {
+    var row = new TestRow(randomString(), "3.14");
+    var bytes = new FastExcelXlsxGenerator<>(TestRow.class, List.of(row)).toWorkbookByteArray();
+
+    try (var workbook = new XSSFWorkbook(new ByteArrayInputStream(bytes))) {
+      var sheet = workbook.getSheetAt(0);
+      var dataRow = sheet.getRow(1);
+      assertThat(dataRow.getCell(1).getNumericCellValue()).isEqualTo(3.14);
+    }
   }
 }

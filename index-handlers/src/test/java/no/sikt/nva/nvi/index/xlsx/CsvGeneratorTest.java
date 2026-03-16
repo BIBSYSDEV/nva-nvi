@@ -13,7 +13,6 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import no.sikt.nva.nvi.index.model.report.InstitutionReportHeader;
@@ -87,7 +86,7 @@ class CsvGeneratorTest {
   }
 
   private static List<List<String>> parseCsv(CsvGenerator generator) {
-    var csvBytes = Base64.getDecoder().decode(generator.toBase64EncodedString());
+    var csvBytes = generator.toWorkbookByteArray();
     try (var reader =
         new CSVReaderBuilder(
                 new InputStreamReader(new ByteArrayInputStream(csvBytes), StandardCharsets.UTF_8))

@@ -89,7 +89,7 @@ public class ReportAggregationClient {
             .flatMap(document -> InstitutionReportMapper.mapToRows(document, query.institutionId()))
             .map(ReportRow::toRow)
             .toList();
-    return new CsvGenerator(InstitutionReportHeader.getOrderedValues(), data).toCsvBytes();
+    return new CsvGenerator(InstitutionReportHeader.getOrderedValues(), data).toWorkbookByteArray();
   }
 
   public byte[] executeCsvReport(AllInstitutionsQuery query) {
@@ -99,7 +99,7 @@ public class ReportAggregationClient {
             .flatMap(ReportAggregationClient::toReportRows)
             .map(ReportRow::toRow)
             .toList();
-    return new CsvGenerator(InstitutionReportHeader.getOrderedValues(), data).toCsvBytes();
+    return new CsvGenerator(InstitutionReportHeader.getOrderedValues(), data).toWorkbookByteArray();
   }
 
   private static Stream<InstitutionReportRow> toReportRows(ReportDocument document) {
