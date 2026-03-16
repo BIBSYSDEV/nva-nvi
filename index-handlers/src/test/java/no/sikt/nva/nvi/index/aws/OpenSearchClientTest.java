@@ -25,6 +25,7 @@ import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -40,9 +41,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.Random;
+import java.util.UUID;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
+import no.sikt.nva.nvi.index.FakeCachedJwtProvider;
 import no.sikt.nva.nvi.index.OpenSearchContainerContext;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.document.PublicationDetails;
@@ -54,6 +57,7 @@ import no.sikt.nva.nvi.index.query.QueryFilterType;
 import no.sikt.nva.nvi.index.query.SearchAggregation;
 import nva.commons.core.ioutils.IoUtils;
 import nva.commons.core.paths.UriWrapper;
+import org.apache.hc.core5.http.HttpHost;
 import org.assertj.core.api.Assertions;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterAll;
@@ -711,6 +715,56 @@ class OpenSearchClientTest {
     var documentsFromResponse = searchResponse.hits().hits().stream().map(Hit::source).toList();
 
     assertEquals(1, documentsFromResponse.size());
+  }
+
+  @Test
+  void shouldReturnTrueWhenIndexExists() {
+    assertTrue(openSearchClient.indexExists());
+  }
+
+  @Test
+  void shouldReturnFalseWhenIndexDoesNotExist() throws IOException {
+    openSearchClient.deleteIndex();
+    assertFalse(openSearchClient.indexExists());
+  }
+
+  @Test
+  void shouldThrowRuntimeExceptionWhenAddDocumentToIndexFails() {
+    var deadClient = createClientWithUnreachableHost();
+    var document = randomIndexDocumentBuilder().build();
+    assertThrows(RuntimeException.class, () -> deadClient.addDocumentToIndex(document));
+  }
+
+  @Test
+  void shouldThrowRuntimeExceptionWhenRemoveDocumentFromIndexFails() {
+    var deadClient = createClientWithUnreachableHost();
+    assertThrows(
+        RuntimeException.class, () -> deadClient.removeDocumentFromIndex(UUID.randomUUID()));
+  }
+
+  @Test
+  void shouldThrowRuntimeExceptionWhenCreateIndexFails() {
+    var deadClient = createClientWithUnreachableHost();
+    assertThrows(RuntimeException.class, deadClient::createIndex);
+  }
+
+  @Test
+  void shouldThrowRuntimeExceptionWhenRefreshIndexFails() {
+    var deadClient = createClientWithUnreachableHost();
+    assertThrows(RuntimeException.class, deadClient::refreshIndex);
+  }
+
+  @Test
+  void shouldThrowRuntimeExceptionWhenIndexExistsEncountersIOException() {
+    var deadClient = createClientWithUnreachableHost();
+    assertThrows(RuntimeException.class, deadClient::indexExists);
+  }
+
+  private static OpenSearchClient createClientWithUnreachableHost() {
+    var unreachableHost = new HttpHost("http", "localhost", 1);
+    var fakeJwtProvider = FakeCachedJwtProvider.setup();
+    var nativeClient = OpenSearchClientFactory.createClient(unreachableHost, fakeJwtProvider);
+    return new OpenSearchClient(nativeClient);
   }
 
   private static List<NviCandidateIndexDocument>
