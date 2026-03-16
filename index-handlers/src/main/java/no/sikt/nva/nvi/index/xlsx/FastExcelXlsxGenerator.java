@@ -73,21 +73,16 @@ public class FastExcelXlsxGenerator<T extends ReportRow> implements ReportGenera
             });
   }
 
-private void setCellValue(Worksheet sheet, int row, int col, String value) {
-    var cellValue = resolveValue(value);
-    sheet.value(row, col, cellValue);
-}
-
-private Object resolveValue(String value) {
-    var coalesced = isNull(value) ? StringUtils.EMPTY_STRING : value;
-    return parseNumeric(coalesced).map(BigDecimal::doubleValue).orElse(coalesced);
-}
-
-private Optional<BigDecimal> parseNumeric(String value) {
-    try {
-        return Optional.of(adjustScaleAndRoundingMode(new BigDecimal(value)));
-    } catch (NumberFormatException e) {
-        return Optional.empty();
+  private void setCellValue(Worksheet sheet, int row, int col, boolean numeric, String value) {
+    if (isNull(value)) {
+      sheet.value(row, col, StringUtils.EMPTY_STRING);
+    } else if (numeric) {
+      sheet.value(
+          row,
+          col,
+          adjustScaleAndRoundingMode(BigDecimal.valueOf(Double.parseDouble(value))).doubleValue());
+    } else {
+      sheet.value(row, col, value);
     }
-}
+  }
 }
