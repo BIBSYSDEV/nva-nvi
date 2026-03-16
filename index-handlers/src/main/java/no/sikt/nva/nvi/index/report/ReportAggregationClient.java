@@ -6,13 +6,9 @@ import static nva.commons.core.attempt.Try.attempt;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.index.aws.OpenSearchClientFactory;
-import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.report.InstitutionReportHeader;
 import no.sikt.nva.nvi.index.model.report.InstitutionReportMapper;
 import no.sikt.nva.nvi.index.model.report.InstitutionReportRow;
@@ -36,7 +32,7 @@ import org.slf4j.LoggerFactory;
 public class ReportAggregationClient {
 
   private static final String SCROLL_TIMEOUT = "1m";
-  private static final int SCROLL_PAGE_SIZE = 300;
+  private static final int SCROLL_PAGE_SIZE = 800;
   private static final Logger LOGGER = LoggerFactory.getLogger(ReportAggregationClient.class);
   private static final SourceConfig REPORT_SOURCE_FILTER =
       SourceConfig.of(
@@ -86,34 +82,41 @@ public class ReportAggregationClient {
     return processQuery(query);
   }
 
-  public String executeCsvReport(InstitutionQuery query) {
+  public byte[] executeCsvReport(InstitutionQuery query) {
     LOGGER.info("Executing CSV report query: {}", query);
     var data =
-        fetchCandidates(query.query()).stream()
-            .map(candidate -> candidate.toReportRowsForInstitution(query.institutionId()))
-            .flatMap(this::orderByHeaderOrder)
+        fetchReportDocuments(query.query()).stream()
+            .flatMap(document -> InstitutionReportMapper.mapToRows(document, query.institutionId()))
+            .map(ReportRow::toRow)
             .toList();
-    return new CsvGenerator(InstitutionReportHeader.getOrderedValues(), data)
-        .toBase64EncodedString();
+    return new CsvGenerator(InstitutionReportHeader.getOrderedValues(), data).toCsvBytes();
   }
 
-  public String executeCsvReport(AllInstitutionsQuery query) {
+  public byte[] executeCsvReport(AllInstitutionsQuery query) {
     LOGGER.info("Executing CSV report query: {}", query);
     var data =
-        fetchCandidates(query.query()).stream()
-            .flatMap(
-                candidate ->
-                    candidate.approvals().stream()
-                        .map(
-                            approval ->
-                                candidate.toReportRowsForInstitution(approval.institutionId()))
-                        .flatMap(this::orderByHeaderOrder))
+        fetchReportDocuments(query.query()).stream()
+            .flatMap(ReportAggregationClient::toReportRows)
+            .map(ReportRow::toRow)
             .toList();
-    return new CsvGenerator(InstitutionReportHeader.getOrderedValues(), data)
-        .toBase64EncodedString();
+    return new CsvGenerator(InstitutionReportHeader.getOrderedValues(), data).toCsvBytes();
   }
 
-  public String executeXlsxReport(InstitutionQuery query) {
+  private static Stream<InstitutionReportRow> toReportRows(ReportDocument document) {
+    return document.approvals().stream()
+        .flatMap(approval -> InstitutionReportMapper.mapToRows(document, approval.institutionId()));
+  }
+
+  public byte[] executeXlsxExport(AllInstitutionsQuery query) {
+    LOGGER.info("Executing XLSX report query: {}", query);
+    var rows =
+        fetchReportDocuments(query.query()).stream()
+            .flatMap(ReportAggregationClient::toReportRows)
+            .toList();
+    return reportGenerator.generate(rows);
+  }
+
+  public byte[] executeXlsxReport(InstitutionQuery query) {
     LOGGER.info("Executing XLSX report query: {}", query);
     var rows =
         fetchReportDocuments(query.query()).stream()
@@ -132,66 +135,6 @@ public class ReportAggregationClient {
             .build();
     var response = client.search(searchRequest, Void.class);
     return query.parseResponse(response);
-  }
-
-  private Stream<List<String>> orderByHeaderOrder(
-      List<Map<InstitutionReportHeader, String>> reportRows) {
-    return reportRows.stream().map(ReportAggregationClient::sortValuesByHeaderOrder);
-  }
-
-  private static List<String> sortValuesByHeaderOrder(
-      Map<InstitutionReportHeader, String> keyValueMap) {
-    return keyValueMap.entrySet().stream()
-        .sorted(Comparator.comparing(entry -> entry.getKey().getOrder()))
-        .map(Entry::getValue)
-        .toList();
-  }
-
-  private List<NviCandidateIndexDocument> fetchCandidates(Query query) {
-    var candidates = new ArrayList<NviCandidateIndexDocument>();
-    var scrollId = initializeCandidateScroll(candidates, query);
-    try {
-      scrollId = fetchRemainingCandidatePages(candidates, scrollId);
-    } finally {
-      clearScroll(scrollId);
-    }
-    return candidates;
-  }
-
-  private String initializeCandidateScroll(
-      List<NviCandidateIndexDocument> candidates, Query query) {
-    var request =
-        new SearchRequest.Builder()
-            .index(NVI_CANDIDATES_INDEX)
-            .size(SCROLL_PAGE_SIZE)
-            .query(query)
-            .scroll(builder -> builder.time(SCROLL_TIMEOUT))
-            .build();
-    var response =
-        attempt(() -> client.search(request, NviCandidateIndexDocument.class)).orElseThrow();
-    addHitsToListOfCandidates(response.hits(), candidates);
-    return response.scrollId();
-  }
-
-  private String fetchRemainingCandidatePages(
-      List<NviCandidateIndexDocument> candidates, String scrollId) {
-    var request =
-        ScrollRequest.of(
-            builder -> builder.scrollId(scrollId).scroll(build -> build.time(SCROLL_TIMEOUT)));
-    var scrollResponse =
-        attempt(() -> client.scroll(request, NviCandidateIndexDocument.class)).orElseThrow();
-    var hits = scrollResponse.hits();
-    if (hits.hits().isEmpty()) {
-      return scrollId;
-    }
-    addHitsToListOfCandidates(hits, candidates);
-    return fetchRemainingCandidatePages(candidates, scrollResponse.scrollId());
-  }
-
-  private static void addHitsToListOfCandidates(
-      HitsMetadata<NviCandidateIndexDocument> hits,
-      List<NviCandidateIndexDocument> fetchedCandidates) {
-    hits.hits().stream().map(Hit::source).forEach(fetchedCandidates::add);
   }
 
   private List<ReportDocument> fetchReportDocuments(Query query) {

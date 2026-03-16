@@ -16,7 +16,6 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
-import java.util.zip.GZIPInputStream;
 import no.sikt.nva.nvi.index.model.report.InstitutionReportHeader;
 import nva.commons.core.StringUtils;
 import org.junit.jupiter.api.Test;
@@ -88,12 +87,12 @@ class CsvGeneratorTest {
   }
 
   private static List<List<String>> parseCsv(CsvGenerator generator) {
-    var gzippedBytes = Base64.getDecoder().decode(generator.toBase64EncodedString());
-    try (var gzip = new GZIPInputStream(new ByteArrayInputStream(gzippedBytes));
-        var reader =
-            new CSVReaderBuilder(new InputStreamReader(gzip, StandardCharsets.UTF_8))
-                .withCSVParser(new CSVParserBuilder().withSeparator(';').build())
-                .build()) {
+    var csvBytes = Base64.getDecoder().decode(generator.toBase64EncodedString());
+    try (var reader =
+        new CSVReaderBuilder(
+                new InputStreamReader(new ByteArrayInputStream(csvBytes), StandardCharsets.UTF_8))
+            .withCSVParser(new CSVParserBuilder().withSeparator(';').build())
+            .build()) {
       var rows = reader.readAll();
       if (!rows.isEmpty() && rows.getFirst()[0].startsWith("\uFEFF")) {
         rows.getFirst()[0] = rows.getFirst()[0].substring(1);
