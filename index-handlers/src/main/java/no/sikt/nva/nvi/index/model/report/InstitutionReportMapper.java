@@ -12,8 +12,6 @@ import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.InstitutionPointsView.CreatorAffiliationPointsView;
 import no.sikt.nva.nvi.index.model.document.NviContributor;
 import no.sikt.nva.nvi.index.model.document.NviOrganization;
-import no.unit.nva.language.LanguageDescription;
-import no.unit.nva.language.LanguageMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,7 +76,6 @@ public final class InstitutionReportMapper {
         contributor.name(),
         contributor.name(),
         document.publicationDetails().title(),
-        languageLabel(document.publicationDetails().language()),
         mapApprovalStatus(approval.approvalStatus()),
         globalStatus,
         document.publicationTypeChannelLevelPoints().toString(),
@@ -129,14 +126,6 @@ public final class InstitutionReportMapper {
       case PENDING -> PENDING_VALUE;
       case DISPUTE -> DISPUTED_VALUE;
     };
-  }
-
-  private static String languageLabel(String language) {
-    return Optional.ofNullable(language)
-        .map(URI::create)
-        .map(LanguageMapper::getLanguageByUri)
-        .map(LanguageDescription::getNob)
-        .orElse(EMPTY_STRING);
   }
 
   private static String orEmpty(String value) {

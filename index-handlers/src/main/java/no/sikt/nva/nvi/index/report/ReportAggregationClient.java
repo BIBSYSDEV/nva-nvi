@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 public class ReportAggregationClient {
 
   private static final String SCROLL_TIMEOUT = "1m";
-  private static final int SCROLL_PAGE_SIZE = 800;
+  private static final int SCROLL_PAGE_SIZE = 1000;
   private static final Logger LOGGER = LoggerFactory.getLogger(ReportAggregationClient.class);
   private static final SourceConfig REPORT_SOURCE_FILTER =
       SourceConfig.of(
