@@ -34,7 +34,6 @@ import org.opensearch.client.util.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@JacocoGenerated
 public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument> {
 
   private static final String INDEX_NOT_FOUND_EXCEPTION = "index_not_found_exception";
@@ -48,6 +47,7 @@ public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument>
     this.client = client;
   }
 
+  @JacocoGenerated
   public static OpenSearchClient defaultOpenSearchClient() {
     return new OpenSearchClient(OpenSearchClientFactory.createAuthenticatedClient());
   }
