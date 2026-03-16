@@ -13,7 +13,6 @@ import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
 import no.sikt.nva.nvi.index.model.search.SearchResultParameters;
 import no.sikt.nva.nvi.index.query.Aggregations;
 import no.sikt.nva.nvi.index.utils.SearchConstants;
-import nva.commons.core.JacocoGenerated;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.FieldSort;
 import org.opensearch.client.opensearch._types.OpenSearchException;
@@ -48,7 +47,6 @@ public class CandidateSearchClient implements SearchClient<NviCandidateIndexDocu
     this.client = client;
   }
 
-  @JacocoGenerated
   public static CandidateSearchClient defaultOpenSearchClient() {
     return new CandidateSearchClient(OpenSearchClientFactory.createAuthenticatedClient());
   }
