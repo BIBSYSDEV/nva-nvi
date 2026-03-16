@@ -40,7 +40,7 @@ public class ReportUploader {
     var presignRequest =
         GetObjectPresignRequest.builder()
             .signatureDuration(PRESIGN_DURATION)
-            .getObjectRequest(r -> r.bucket(bucketName).key(key))
+            .getObjectRequest(request -> request.bucket(bucketName).key(key))
             .build();
     return URI.create(s3Presigner.presignGetObject(presignRequest).url().toString());
   }
