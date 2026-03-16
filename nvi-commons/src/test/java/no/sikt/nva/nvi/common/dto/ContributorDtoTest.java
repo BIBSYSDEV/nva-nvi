@@ -58,7 +58,7 @@ class ContributorDtoTest {
     var contributor =
         ContributorDto.builder()
             .withName("Test Person")
-            .withRole(expectedRoles)
+            .withRoles(expectedRoles)
             .withVerificationStatus(STATUS_VERIFIED)
             .build();
     assertEquals(expectedRoles, contributor.roles());

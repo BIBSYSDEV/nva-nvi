@@ -93,7 +93,7 @@ public record ContributorDto(
       return this;
     }
 
-    public Builder withRole(List<ContributorRole> roles) {
+    public Builder withRoles(List<ContributorRole> roles) {
       this.roles = roles;
       return this;
     }
