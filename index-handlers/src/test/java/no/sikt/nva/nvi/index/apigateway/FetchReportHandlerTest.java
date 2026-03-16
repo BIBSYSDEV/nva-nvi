@@ -39,6 +39,7 @@ import no.sikt.nva.nvi.index.report.FetchReportHandler;
 import no.sikt.nva.nvi.index.report.ReportAggregationClient;
 import no.sikt.nva.nvi.index.report.query.AllPeriodsQuery;
 import no.sikt.nva.nvi.index.report.response.AllPeriodsReport;
+import no.sikt.nva.nvi.index.report.response.FakeReportUploader;
 import no.sikt.nva.nvi.index.report.response.ReportResponse;
 import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.testutils.HandlerRequestBuilder;
@@ -66,7 +67,10 @@ class FetchReportHandlerTest {
     when(mockClient.executeQuery(any(AllPeriodsQuery.class))).thenReturn(List.of());
     handler =
         new FetchReportHandler(
-            getHandlerEnvironment(ALLOWED_ORIGIN), mock(NviPeriodService.class), mockClient);
+            getHandlerEnvironment(ALLOWED_ORIGIN),
+            mock(NviPeriodService.class),
+            mockClient,
+            new FakeReportUploader());
   }
 
   @ParameterizedTest
@@ -117,8 +121,7 @@ class FetchReportHandlerTest {
   }
 
   @Test
-  void shouldReturnReportMediaTypeOpenXmlOfficeDocumentWhenRequestedForInstitutionReport()
-      throws IOException {
+  void shouldReturnReportMediaTypeJsonWhenXlsxRequestedForInstitutionReport() throws IOException {
     var headers = Map.of(ACCEPT, OOXML_SHEET);
     var pathParams =
         Map.of(PERIOD_PATH_PARAM, randomYear(), INSTITUTION_PATH_PARAM, randomString());
@@ -132,12 +135,12 @@ class FetchReportHandlerTest {
 
     var response = fromOutputStream(output, ReportResponse.class);
 
-    assertThat(response.getHeaders().get(HttpHeaders.CONTENT_TYPE), is(OOXML_SHEET));
+    assertThat(
+        response.getHeaders().get(HttpHeaders.CONTENT_TYPE), is(MediaType.JSON_UTF_8.toString()));
   }
 
   @Test
-  void shouldReturnReportMediaTypeCsvOfficeDocumentWhenRequestedForInstitutionReport()
-      throws IOException {
+  void shouldReturnReportMediaTypeJsonWhenCsvRequestedForInstitutionReport() throws IOException {
     var headers = Map.of(ACCEPT, CSV_UTF_8);
     var pathParams =
         Map.of(PERIOD_PATH_PARAM, randomYear(), INSTITUTION_PATH_PARAM, randomString());
@@ -151,11 +154,11 @@ class FetchReportHandlerTest {
 
     var response = fromOutputStream(output, ReportResponse.class);
 
-    assertThat(response.getHeaders().get(HttpHeaders.CONTENT_TYPE), is(CSV_UTF_8));
+    assertThat(response.getHeaders().get(HttpHeaders.CONTENT_TYPE), is(JSON_UTF_8.toString()));
   }
 
   @Test
-  void shouldReturnReportMediaTypeCsvOfficeDocumentWhenRequestedForAllInstitutionsReportReport()
+  void shouldReturnReportMediaTypeJsonWhenXlsxRequestedForAllInstitutionsReport()
       throws IOException {
     var headers = Map.of(ACCEPT, CSV_UTF_8);
     var pathParams = Map.of(PERIOD_PATH_PARAM, randomYear());
@@ -166,29 +169,14 @@ class FetchReportHandlerTest {
 
     var response = fromOutputStream(output, ReportResponse.class);
 
-    assertThat(response.getHeaders().get(HttpHeaders.CONTENT_TYPE), is(CSV_UTF_8));
+    assertThat(
+        response.getHeaders().get(HttpHeaders.CONTENT_TYPE), is(MediaType.JSON_UTF_8.toString()));
   }
 
   @Test
-  void shouldReturnBadRequestWhenRequestedNonInstitutionReportWithAcceptHeaderXlsxIsRequested()
-      throws IOException {
-    var headers = Map.of(ACCEPT, OOXML_SHEET);
-    var request = createRequestWithHeader(Map.of(), EMPTY_STRING, headers);
-
-    handler.handleRequest(request, output, CONTEXT);
-
-    var response = fromOutputStream(output, Problem.class);
-
-    assertEquals(BAD_REQUEST, response.getStatusCode());
-  }
-
-  @Test
-  void shouldReturnBadRequestWhenOpenXmlOfficeReportRequestedForAllInstitutionsReportReport()
-      throws IOException {
-    var headers = Map.of(ACCEPT, OOXML_SHEET);
-    var pathParams = Map.of(PERIOD_PATH_PARAM, randomYear());
-    var path = "%s/%s/%s".formatted(REPORTS_PATH_SEGMENT, randomYear(), INSTITUTIONS_PATH_SEGMENT);
-    var request = createRequestWithHeader(pathParams, path, headers);
+  void shouldReturnBadRequestWhenCsvReportRequestedFoAllPeriodsReport() throws IOException {
+    var headers = Map.of(ACCEPT, CSV_UTF_8);
+    var request = createRequestWithHeader(Map.of(), REPORTS_PATH_SEGMENT, headers);
 
     handler.handleRequest(request, output, CONTEXT);
 
@@ -215,18 +203,6 @@ class FetchReportHandlerTest {
   void shouldReturnBadRequestWhenOpenXmlOfficeReportRequestedFoAllPeriodsReport()
       throws IOException {
     var headers = Map.of(ACCEPT, OOXML_SHEET);
-    var request = createRequestWithHeader(Map.of(), REPORTS_PATH_SEGMENT, headers);
-
-    handler.handleRequest(request, output, CONTEXT);
-
-    var response = fromOutputStream(output, Problem.class);
-
-    assertEquals(BAD_REQUEST, response.getStatusCode());
-  }
-
-  @Test
-  void shouldReturnBadRequestWhenCsvReportRequestedFoAllPeriodsReport() throws IOException {
-    var headers = Map.of(ACCEPT, CSV_UTF_8);
     var request = createRequestWithHeader(Map.of(), REPORTS_PATH_SEGMENT, headers);
 
     handler.handleRequest(request, output, CONTEXT);

@@ -11,7 +11,6 @@ import java.util.Base64.Encoder;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.zip.GZIPOutputStream;
 import nva.commons.core.JacocoGenerated;
 
 public class CsvGenerator implements ReportGenerator {
@@ -29,7 +28,7 @@ public class CsvGenerator implements ReportGenerator {
 
   @Override
   public String toBase64EncodedString() {
-    return ENCODER.encodeToString(toGzippedBytes());
+    return ENCODER.encodeToString(toCsvBytes());
   }
 
   @JacocoGenerated
@@ -47,10 +46,9 @@ public class CsvGenerator implements ReportGenerator {
     return Objects.equals(headers, that.headers) && Objects.equals(data, that.data);
   }
 
-  private byte[] toGzippedBytes() {
+  public byte[] toCsvBytes() {
     try (var byteStream = new ByteArrayOutputStream();
-        var gzip = new GZIPOutputStream(byteStream);
-        var outputStreamWriter = new OutputStreamWriter(gzip, StandardCharsets.UTF_8);
+        var outputStreamWriter = new OutputStreamWriter(byteStream, StandardCharsets.UTF_8);
         var writer =
             new CSVWriter(
                 outputStreamWriter,
@@ -64,10 +62,9 @@ public class CsvGenerator implements ReportGenerator {
         writer.writeNext(toAlignedRow(row));
       }
       writer.flush();
-      gzip.finish();
       return byteStream.toByteArray();
     } catch (IOException e) {
-      throw new IllegalStateException("Failed to write CSV content", e);
+      throw new IllegalStateException("Failed to write CSV uri", e);
     }
   }
 

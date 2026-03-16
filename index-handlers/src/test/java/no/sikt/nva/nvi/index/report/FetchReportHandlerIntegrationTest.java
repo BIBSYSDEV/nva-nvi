@@ -45,7 +45,6 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import java.math.BigDecimal;
 import java.net.HttpURLConnection;
-import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -61,6 +60,7 @@ import no.sikt.nva.nvi.index.model.document.InstitutionPointsView;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.report.response.AllInstitutionsReport;
 import no.sikt.nva.nvi.index.report.response.AllPeriodsReport;
+import no.sikt.nva.nvi.index.report.response.FakeReportUploader;
 import no.sikt.nva.nvi.index.report.response.InstitutionJsonReport;
 import no.sikt.nva.nvi.index.report.response.PeriodReport;
 import no.sikt.nva.nvi.index.report.response.PeriodTotals;
@@ -91,6 +91,7 @@ class FetchReportHandlerIntegrationTest {
 
   private static final Context CONTEXT = new FakeContext();
   private static final OpenSearchContainerContext CONTAINER = new OpenSearchContainerContext();
+  private static final FakeReportUploader REPORT_UPLOADER = new FakeReportUploader();
   private static final String IDENTIFIER_INSTITUTION_A = "123.0.0.0";
   private static final String IDENTIFIER_INSTITUTION_B = "456.0.0.0";
   private static final String IDENTIFIER_UNIT_A = "123.1.2.3";
@@ -122,7 +123,8 @@ class FetchReportHandlerIntegrationTest {
         new FetchReportHandler(
             getHandlerEnvironment(ALLOWED_ORIGIN),
             scenario.getPeriodService(),
-            CONTAINER.getReportAggregationClient());
+            CONTAINER.getReportAggregationClient(),
+            REPORT_UPLOADER);
 
     CONTAINER.createIndex();
     createIndexDocuments();
@@ -192,7 +194,7 @@ class FetchReportHandlerIntegrationTest {
     }
   }
 
-  private static InputStream createAllInstitutionsCsvRequest(String period) {
+  private static InputStream createAllInstitutionsCsvRequest(String period, MediaType mediaType) {
     try {
       var pathParams = Map.of(PERIOD_PATH_PARAM, period);
       var path = "%s/%s/%s".formatted(REPORTS_PATH_SEGMENT, period, INSTITUTIONS_PATH_SEGMENT);
@@ -200,7 +202,7 @@ class FetchReportHandlerIntegrationTest {
           .withOtherProperties(Map.of("path", path))
           .withPathParameters(pathParams)
           .withAccessRights(randomUri(), AccessRight.MANAGE_NVI)
-          .withHeaders(Map.of(ACCEPT, MediaType.CSV_UTF_8.toString()))
+          .withHeaders(Map.of(ACCEPT, mediaType.toString()))
           .build();
     } catch (JsonProcessingException e) {
       throw new RuntimeException(e);
@@ -566,17 +568,26 @@ class FetchReportHandlerIntegrationTest {
 
     @Test
     void shouldReturnAllInstitutionsCsvReportWhenRequested() throws IOException {
-      var request = createAllInstitutionsCsvRequest(THIS_YEAR);
+      var request = createAllInstitutionsCsvRequest(THIS_YEAR, MediaType.CSV_UTF_8);
       var output = new ByteArrayOutputStream();
 
       handler.handleRequest(request, output, CONTEXT);
 
       var response = fromOutputStream(output, String.class);
       assertThat(response.getStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
-      var content = response.getBodyObject(String.class);
+      assertThat(response.getBody()).contains(FakeReportUploader.PRESIGNED_URI.toString());
+    }
 
-      assertThat(content).isNotEmpty();
-      assertThat(Base64.getDecoder().decode(content)).isNotEmpty();
+    @Test
+    void shouldReturnAllInstitutionsXlsxReportWhenRequested() throws IOException {
+      var request = createAllInstitutionsCsvRequest(THIS_YEAR, MediaType.OOXML_SHEET);
+      var output = new ByteArrayOutputStream();
+
+      handler.handleRequest(request, output, CONTEXT);
+
+      var response = fromOutputStream(output, String.class);
+      assertThat(response.getStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
+      assertThat(response.getBody()).contains(FakeReportUploader.PRESIGNED_URI.toString());
     }
   }
 
@@ -873,10 +884,7 @@ class FetchReportHandlerIntegrationTest {
 
       var response = fromOutputStream(output, String.class);
       assertThat(response.getStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
-      var content = response.getBodyObject(String.class);
-
-      assertThat(content).isNotEmpty();
-      assertThat(Base64.getDecoder().decode(content)).isNotEmpty();
+      assertThat(response.getBody()).contains(FakeReportUploader.PRESIGNED_URI.toString());
     }
 
     @Test
@@ -890,10 +898,7 @@ class FetchReportHandlerIntegrationTest {
 
       var response = fromOutputStream(output, String.class);
       assertThat(response.getStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
-      var content = response.getBodyObject(String.class);
-
-      assertThat(content).isNotEmpty();
-      assertThat(Base64.getDecoder().decode(content)).isNotEmpty();
+      assertThat(response.getBody()).contains(FakeReportUploader.PRESIGNED_URI.toString());
     }
   }
 }
