@@ -14,7 +14,7 @@ import org.junit.jupiter.api.Test;
 class FastExcelXlsxGeneratorTest {
 
   record TestRow(
-      @Column(header = "NAME") String name, @Column(header = "SCORE", numeric = true) String score)
+      @Column(header = "NAME") String name, @Column(header = "VALUE", numeric = true) String value)
       implements ReportRow {}
 
   @Test
@@ -26,7 +26,7 @@ class FastExcelXlsxGeneratorTest {
       var sheet = workbook.getSheetAt(0);
       var headerRow = sheet.getRow(0);
       assertThat(headerRow.getCell(0).getStringCellValue()).isEqualTo("NAME");
-      assertThat(headerRow.getCell(1).getStringCellValue()).isEqualTo("SCORE");
+      assertThat(headerRow.getCell(1).getStringCellValue()).isEqualTo("VALUE");
     }
   }
 

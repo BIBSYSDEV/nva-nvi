@@ -10,6 +10,7 @@ import java.lang.reflect.RecordComponent;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.IntStream;
 import no.sikt.nva.nvi.index.report.Column;
 import no.sikt.nva.nvi.index.report.ReportRow;
 import nva.commons.core.StringUtils;
@@ -48,35 +49,40 @@ public class FastExcelXlsxGenerator<T extends ReportRow> implements ReportGenera
 
   private List<RecordComponent> annotatedColumns() {
     return Arrays.stream(rowClass.getRecordComponents())
-        .filter(c -> c.isAnnotationPresent(Column.class))
+        .filter(component -> component.isAnnotationPresent(Column.class))
         .toList();
   }
 
   private void addHeaders(Worksheet sheet, List<RecordComponent> columns) {
-    for (int i = 0; i < columns.size(); i++) {
-      sheet.value(0, i, columns.get(i).getAnnotation(Column.class).header());
-    }
+    IntStream.range(0, columns.size())
+        .forEach(i -> sheet.value(0, i, columns.get(i).getAnnotation(Column.class).header()));
   }
 
   private void addData(Worksheet sheet, List<RecordComponent> columns) {
-    for (int rowIndex = 0; rowIndex < rows.size(); rowIndex++) {
-      addRow(sheet, rowIndex + 1, rows.get(rowIndex), columns);
-    }
+    IntStream.range(0, rows.size())
+        .forEach(rowIndex -> addRow(sheet, rowIndex + 1, rows.get(rowIndex), columns));
   }
 
   private void addRow(Worksheet sheet, int rowIndex, T row, List<RecordComponent> columns) {
-    for (int columnIndex = 0; columnIndex < columns.size(); columnIndex++) {
-      var column = columns.get(columnIndex);
-      var cellValue = attempt(() -> (String) column.getAccessor().invoke(row)).orElseThrow();
-      if (isNull(cellValue)) {
-        sheet.value(rowIndex, columnIndex, StringUtils.EMPTY_STRING);
-      } else if (column.getAnnotation(Column.class).numeric()) {
-        var numericValue = Double.parseDouble(cellValue);
-        var normalizedValue = adjustScaleAndRoundingMode(BigDecimal.valueOf(numericValue));
-        sheet.value(rowIndex, columnIndex, normalizedValue.doubleValue());
-      } else {
-        sheet.value(rowIndex, columnIndex, cellValue);
-      }
+    IntStream.range(0, columns.size())
+        .forEach(
+            i -> {
+              var column = columns.get(i);
+              var value = attempt(() -> (String) column.getAccessor().invoke(row)).orElseThrow();
+              setCellValue(sheet, rowIndex, i, column.getAnnotation(Column.class).numeric(), value);
+            });
+  }
+
+  private void setCellValue(Worksheet sheet, int row, int col, boolean numeric, String value) {
+    if (isNull(value)) {
+      sheet.value(row, col, StringUtils.EMPTY_STRING);
+    } else if (numeric) {
+      sheet.value(
+          row,
+          col,
+          adjustScaleAndRoundingMode(BigDecimal.valueOf(Double.parseDouble(value))).doubleValue());
+    } else {
+      sheet.value(row, col, value);
     }
   }
 }
