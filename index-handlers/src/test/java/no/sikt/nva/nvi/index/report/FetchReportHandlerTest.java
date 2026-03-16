@@ -33,6 +33,7 @@ import no.sikt.nva.nvi.index.IndexDocumentFixtures;
 import no.sikt.nva.nvi.index.OpenSearchContainerContext;
 import no.sikt.nva.nvi.index.report.response.AllInstitutionsReport;
 import no.sikt.nva.nvi.index.report.response.AllPeriodsReport;
+import no.sikt.nva.nvi.index.report.response.FakeReportUploader;
 import no.sikt.nva.nvi.index.report.response.ReportResponse;
 import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.testutils.HandlerRequestBuilder;
@@ -67,7 +68,8 @@ class FetchReportHandlerTest {
         new FetchReportHandler(
             getHandlerEnvironment(ALLOWED_ORIGIN),
             scenario.getPeriodService(),
-            CONTAINER.getReportAggregationClient());
+            CONTAINER.getReportAggregationClient(),
+            new FakeReportUploader());
   }
 
   @AfterEach
