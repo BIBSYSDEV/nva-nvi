@@ -17,9 +17,10 @@ import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.exception.PeriodNotFoundException;
 import no.sikt.nva.nvi.index.report.request.ReportRequest;
 import no.sikt.nva.nvi.index.report.request.ReportRequestFactory;
-import no.sikt.nva.nvi.index.report.request.ReportType;
 import no.sikt.nva.nvi.index.report.response.ReportResponse;
 import no.sikt.nva.nvi.index.report.response.ReportService;
+import no.sikt.nva.nvi.index.report.response.ReportUploader;
+import no.unit.nva.s3.S3Driver;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.MediaType;
 import nva.commons.apigateway.RequestInfo;
@@ -32,10 +33,12 @@ import nva.commons.core.Environment;
 import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 
 public class FetchReportHandler extends ApiGatewayHandler<Void, ReportResponse> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FetchReportHandler.class);
+  private static final String NVI_REPORTS_BUCKET = "NVI_REPORTS_BUCKET";
   private final ReportService reportService;
 
   @JacocoGenerated
@@ -43,15 +46,21 @@ public class FetchReportHandler extends ApiGatewayHandler<Void, ReportResponse> 
     this(
         new Environment(),
         NviPeriodService.defaultNviPeriodService(),
-        ReportAggregationClient.defaultClient());
+        ReportAggregationClient.defaultClient(),
+        new ReportUploader(
+            S3Driver.defaultS3Client().build(),
+            S3Presigner.builder().build(),
+            new Environment().readEnv(NVI_REPORTS_BUCKET)));
   }
 
   public FetchReportHandler(
       Environment environment,
       NviPeriodService nviPeriodService,
-      ReportAggregationClient reportAggregationClient) {
+      ReportAggregationClient reportAggregationClient,
+      ReportUploader reportUploader) {
     super(Void.class, environment);
-    this.reportService = new ReportService(nviPeriodService, reportAggregationClient);
+    this.reportService =
+        new ReportService(nviPeriodService, reportAggregationClient, reportUploader);
   }
 
   @Override
@@ -86,16 +95,10 @@ public class FetchReportHandler extends ApiGatewayHandler<Void, ReportResponse> 
   }
 
   private void addAdditionalHeaders(ReportRequest reportRequest) throws BadRequestException {
-    var reportType = reportRequest.reportType();
     if (!reportRequest.hasSupportedReportType()) {
       throw new BadRequestException("This report does not support provided media type");
     }
-    if (ReportType.CSV == reportType) {
-      addAdditionalHeaders(() -> Map.of(CONTENT_TYPE, CSV_UTF_8.toString()));
-    }
-    if (ReportType.XLSX == reportType) {
-      addAdditionalHeaders(() -> Map.of(CONTENT_TYPE, OOXML_SHEET.toString()));
-    }
+    addAdditionalHeaders(() -> Map.of(CONTENT_TYPE, JSON_UTF_8.toString()));
   }
 
   @Override

@@ -24,7 +24,7 @@ public class FastExcelXlsxGenerator implements ReportGenerator {
   private static final String LINE_BREAK = "\n";
   private static final Encoder ENCODER = Base64.getEncoder();
   private static final String NVI = "NVI";
-  private static final String FAST_EXCEL_SHEET = "fast-excel-sheet";
+  private static final String REPORT = "report";
   private final List<String> headers;
   private final List<List<String>> data;
 
@@ -83,10 +83,10 @@ public class FastExcelXlsxGenerator implements ReportGenerator {
     }
   }
 
-  private byte[] toWorkbookByteArray() {
+  public byte[] toWorkbookByteArray() {
     var byteArrayOutputStream = new ByteArrayOutputStream();
     try (var workbook = new Workbook(byteArrayOutputStream, NVI, null)) {
-      var sheet = workbook.newWorksheet(FAST_EXCEL_SHEET);
+      var sheet = workbook.newWorksheet(REPORT);
       addHeaders(sheet);
       addData(sheet);
     } catch (IOException e) {

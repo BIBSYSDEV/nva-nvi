@@ -12,10 +12,10 @@ public class ReportGenerator<T extends ReportRow> {
     this.rowClass = rowClass;
   }
 
-  public String generate(List<T> rows) {
+  public byte[] generate(List<T> rows) {
     var headers = headersFor(rowClass);
     var data = rows.stream().map(ReportRow::toRow).toList();
-    return new FastExcelXlsxGenerator(headers, data).toBase64EncodedString();
+    return new FastExcelXlsxGenerator(headers, data).toWorkbookByteArray();
   }
 
   private static <T extends ReportRow> List<String> headersFor(Class<T> clazz) {
