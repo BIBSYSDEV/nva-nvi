@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 
 import java.io.IOException;
-import no.sikt.nva.nvi.index.aws.OpenSearchClient;
+import no.sikt.nva.nvi.index.aws.CandidateSearchClient;
 import no.unit.nva.stubs.FakeContext;
 import nva.commons.logutils.LogUtils;
 import org.junit.jupiter.api.Test;
@@ -18,7 +18,7 @@ class DeleteNviIndexHandlerTest {
   @Test
   void shouldDeleteIndex() {
     var appender = LogUtils.getTestingAppenderForRootLogger();
-    var searchClient = mock(OpenSearchClient.class);
+    var searchClient = mock(CandidateSearchClient.class);
     var handler = new DeleteNviIndexHandler(searchClient);
     handler.handleRequest(null, new FakeContext());
     assertThat(appender.getMessages(), containsString(FINISHED));
@@ -26,9 +26,9 @@ class DeleteNviIndexHandlerTest {
 
   @Test
   void shouldThrowExceptionAndLogWhenIndexDeletionFails() throws IOException {
-    var openSearchClient = mock(OpenSearchClient.class);
-    Mockito.doThrow(new IOException()).when(openSearchClient).deleteIndex();
-    var handler = new DeleteNviIndexHandler(openSearchClient);
+    var searchClient = mock(CandidateSearchClient.class);
+    Mockito.doThrow(new IOException()).when(searchClient).deleteIndex();
+    var handler = new DeleteNviIndexHandler(searchClient);
     assertThrows(RuntimeException.class, () -> handler.handleRequest(null, new FakeContext()));
   }
 }
