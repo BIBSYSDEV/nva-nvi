@@ -8,7 +8,9 @@ import java.io.IOException;
 import java.util.List;
 import java.util.stream.IntStream;
 import no.sikt.nva.nvi.index.report.model.Cell;
+import no.sikt.nva.nvi.index.report.model.NumericCell;
 import no.sikt.nva.nvi.index.report.model.Row;
+import no.sikt.nva.nvi.index.report.model.StringCell;
 import org.dhatim.fastexcel.Workbook;
 import org.dhatim.fastexcel.Worksheet;
 import org.slf4j.Logger;
@@ -39,6 +41,11 @@ public class FastExcelXlsxGenerator implements ReportGenerator {
     return byteArrayOutputStream.toByteArray();
   }
 
+  private static void setValue(Worksheet sheet, int row, int col, NumericCell numericCell) {
+    var value = numericCell.value();
+    sheet.value(row, col, isNull(value) ? 0.0 : adjustScaleAndRoundingMode(value).doubleValue());
+  }
+
   private void addHeaders(Worksheet sheet) {
     if (rows.isEmpty()) {
       return;
@@ -57,11 +64,9 @@ public class FastExcelXlsxGenerator implements ReportGenerator {
   }
 
   private void setCellValue(Worksheet sheet, int row, int col, Cell cell) {
-    if (cell.isNumeric()) {
-      var value = cell.numericValue();
-      sheet.value(row, col, isNull(value) ? 0.0 : adjustScaleAndRoundingMode(value).doubleValue());
-    } else {
-      sheet.value(row, col, cell.stringValue());
+    switch (cell) {
+      case NumericCell numericCell -> setValue(sheet, row, col, numericCell);
+      case StringCell stringCell -> sheet.value(row, col, stringCell.string());
     }
   }
 }

@@ -7,7 +7,7 @@ import java.util.List;
 public record Row(List<Cell> cells) {
 
   public List<String> values() {
-    return cells().stream().map(Cell::stringValue).toList();
+    return cells().stream().map(Cell::string).toList();
   }
 
   public List<String> headers() {
@@ -22,6 +22,8 @@ public record Row(List<Cell> cells) {
 
   public static final class Builder {
     private final List<Cell> cells = new ArrayList<>();
+
+    private Builder() {}
 
     public Builder withCell(Cell cell) {
       cells.add(cell);

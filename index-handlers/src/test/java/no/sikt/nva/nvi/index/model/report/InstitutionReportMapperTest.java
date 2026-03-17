@@ -241,9 +241,9 @@ class InstitutionReportMapperTest {
 
   private static String cellValue(Row row, Header header) {
     return row.cells().stream()
-        .filter(c -> c.header() == header)
+        .filter(cell -> cell.header() == header)
         .findFirst()
-        .map(Cell::stringValue)
+        .map(Cell::string)
         .orElseThrow(() -> new AssertionError("No cell for header " + header));
   }
 
