@@ -14,6 +14,7 @@ import no.sikt.nva.nvi.index.model.search.SearchResultParameters;
 import no.sikt.nva.nvi.index.query.Aggregations;
 import no.sikt.nva.nvi.index.utils.SearchConstants;
 import nva.commons.core.JacocoGenerated;
+import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.FieldSort;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.SortOptions;
@@ -34,22 +35,22 @@ import org.opensearch.client.util.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class OpenSearchClient implements SearchClient<NviCandidateIndexDocument> {
+public class CandidateSearchClient implements SearchClient<NviCandidateIndexDocument> {
 
   private static final String INDEX_NOT_FOUND_EXCEPTION = "index_not_found_exception";
-  private static final Logger LOGGER = LoggerFactory.getLogger(OpenSearchClient.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(CandidateSearchClient.class);
   private static final String ERROR_MSG_CREATE_INDEX =
       "Error while creating index: " + NVI_CANDIDATES_INDEX;
   private static final int MAX_QUERY_SIZE = 150;
-  private final org.opensearch.client.opensearch.OpenSearchClient client;
+  private final OpenSearchClient client;
 
-  public OpenSearchClient(org.opensearch.client.opensearch.OpenSearchClient client) {
+  public CandidateSearchClient(OpenSearchClient client) {
     this.client = client;
   }
 
   @JacocoGenerated
-  public static OpenSearchClient defaultOpenSearchClient() {
-    return new OpenSearchClient(OpenSearchClientFactory.createAuthenticatedClient());
+  public static CandidateSearchClient defaultOpenSearchClient() {
+    return new CandidateSearchClient(OpenSearchClientFactory.createAuthenticatedClient());
   }
 
   @Override

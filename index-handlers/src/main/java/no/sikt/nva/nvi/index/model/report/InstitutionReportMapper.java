@@ -6,17 +6,12 @@ import static nva.commons.core.StringUtils.EMPTY_STRING;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.InstitutionPointsView.CreatorAffiliationPointsView;
 import no.sikt.nva.nvi.index.model.document.NviContributor;
 import no.sikt.nva.nvi.index.model.document.NviOrganization;
-import no.sikt.nva.nvi.index.model.document.Pages;
-import no.unit.nva.language.LanguageDescription;
-import no.unit.nva.language.LanguageMapper;
-import nva.commons.core.paths.UriWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,34 +54,39 @@ public final class InstitutionReportMapper {
       NviContributor contributor,
       NviOrganization affiliation) {
     var channel = document.publicationDetails().publicationChannel();
+    var pointsForAffiliation =
+        getPointsForAffiliation(approval, contributor, affiliation).toString();
+    var globalStatus = mapGlobalStatus(document.globalApprovalStatus());
     return new InstitutionReportRow(
         document.reportingPeriod().year(),
-        UriWrapper.fromUri(document.publicationDetails().id()).getLastPathElement(),
-        document.publicationDetails().publicationDate().year(),
-        mapApprovalStatus(approval.approvalStatus()),
+        document.publicationDetails().id(),
         document.publicationDetails().type(),
         nonNull(channel.id()) ? channel.id().toString() : EMPTY_STRING,
         orEmpty(channel.type()),
         orEmpty(channel.printIssn()),
+        orEmpty(channel.name()),
         channel.scientificValue().getValue(),
         contributor.id(),
+        affiliation.identifier(),
+        affiliation.id().toString(),
         affiliation.getInstitutionIdentifier(),
         affiliation.getFacultyIdentifier(),
         affiliation.getDepartmentIdentifier(),
         affiliation.getGroupIdentifier(),
         contributor.name(),
         contributor.name(),
-        orEmpty(channel.name()),
-        pageField(document.publicationDetails().pages(), Pages::begin),
-        pageField(document.publicationDetails().pages(), Pages::end),
-        pageField(document.publicationDetails().pages(), Pages::numberOfPages),
         document.publicationDetails().title(),
-        languageLabel(document.publicationDetails().language()),
-        mapGlobalStatus(document.globalApprovalStatus()),
+        mapApprovalStatus(approval.approvalStatus()),
+        globalStatus,
         document.publicationTypeChannelLevelPoints().toString(),
         getInternationalCollaborationFactor(document),
         String.valueOf(document.creatorShareCount()),
-        getPointsForAffiliation(approval, contributor, affiliation).toString());
+        pointsForAffiliation,
+        getPublishingPoints(pointsForAffiliation, globalStatus));
+  }
+
+  private static String getPublishingPoints(String pointsForAffiliation, String globalStatus) {
+    return APPROVED_VALUE.equals(globalStatus) ? pointsForAffiliation : BigDecimal.ZERO.toString();
   }
 
   private static String getInternationalCollaborationFactor(ReportDocument document) {
@@ -126,19 +126,6 @@ public final class InstitutionReportMapper {
       case PENDING -> PENDING_VALUE;
       case DISPUTE -> DISPUTED_VALUE;
     };
-  }
-
-  private static String languageLabel(String language) {
-    return Optional.ofNullable(language)
-        .map(URI::create)
-        .map(LanguageMapper::getLanguageByUri)
-        .map(LanguageDescription::getNob)
-        .orElse(EMPTY_STRING);
-  }
-
-  private static String pageField(Pages pages, Function<Pages, String> getter) {
-    var value = nonNull(pages) ? getter.apply(pages) : null;
-    return nonNull(value) ? value : EMPTY_STRING;
   }
 
   private static String orEmpty(String value) {

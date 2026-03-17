@@ -6,8 +6,6 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Base64;
-import java.util.Base64.Encoder;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -15,7 +13,6 @@ import nva.commons.core.JacocoGenerated;
 
 public class CsvGenerator implements ReportGenerator {
 
-  private static final Encoder ENCODER = Base64.getEncoder();
   private static final char SEPARATOR = ';';
   private static final String UTF8_BOM = "\uFEFF";
   private final List<String> headers;
@@ -24,11 +21,6 @@ public class CsvGenerator implements ReportGenerator {
   public CsvGenerator(List<String> headers, List<List<String>> data) {
     this.headers = headers;
     this.data = data;
-  }
-
-  @Override
-  public String toBase64EncodedString() {
-    return ENCODER.encodeToString(toCsvBytes());
   }
 
   @JacocoGenerated
@@ -46,7 +38,8 @@ public class CsvGenerator implements ReportGenerator {
     return Objects.equals(headers, that.headers) && Objects.equals(data, that.data);
   }
 
-  public byte[] toCsvBytes() {
+  @Override
+  public byte[] toWorkbookByteArray() {
     try (var byteStream = new ByteArrayOutputStream();
         var outputStreamWriter = new OutputStreamWriter(byteStream, StandardCharsets.UTF_8);
         var writer =

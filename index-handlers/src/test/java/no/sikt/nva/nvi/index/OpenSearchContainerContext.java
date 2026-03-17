@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Collection;
 import java.util.List;
-import no.sikt.nva.nvi.index.aws.OpenSearchClient;
+import no.sikt.nva.nvi.index.aws.CandidateSearchClient;
 import no.sikt.nva.nvi.index.aws.OpenSearchClientFactory;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.report.ReportAggregationClient;
@@ -19,7 +19,7 @@ public class OpenSearchContainerContext implements Startable {
   private static final String OPEN_SEARCH_IMAGE = "opensearchproject/opensearch:2.11.1";
   private static final OpenSearchContainer<?> container =
       new OpenSearchContainer<>(OPEN_SEARCH_IMAGE);
-  private static OpenSearchClient openSearchClient;
+  private static CandidateSearchClient searchClient;
   private static ReportAggregationClient reportAggregationClient;
   private final Logger logger = LoggerFactory.getLogger(OpenSearchContainerContext.class);
 
@@ -29,7 +29,7 @@ public class OpenSearchContainerContext implements Startable {
     var httpHost = HttpHost.create(URI.create(container.getHttpHostAddress()));
     var fakeJwtProvider = FakeCachedJwtProvider.setup();
     var nativeClient = OpenSearchClientFactory.createClient(httpHost, fakeJwtProvider);
-    openSearchClient = new OpenSearchClient(nativeClient);
+    searchClient = new CandidateSearchClient(nativeClient);
     reportAggregationClient = new ReportAggregationClient(nativeClient);
   }
 
@@ -39,12 +39,12 @@ public class OpenSearchContainerContext implements Startable {
   }
 
   public void createIndex() {
-    openSearchClient.createIndex();
+    searchClient.createIndex();
   }
 
   public void deleteIndex() {
     try {
-      openSearchClient.deleteIndex();
+      searchClient.deleteIndex();
     } catch (OpenSearchException | IOException e) {
       logger.warn("Could not delete index: {}", e.getMessage());
     }
@@ -54,11 +54,11 @@ public class OpenSearchContainerContext implements Startable {
    * Refreshes all indices to make sure that new documents are searchable before tests are executed.
    */
   public void refreshIndex() {
-    openSearchClient.refreshIndex();
+    searchClient.refreshIndex();
   }
 
-  public OpenSearchClient getOpenSearchClient() {
-    return openSearchClient;
+  public CandidateSearchClient getOpenSearchClient() {
+    return searchClient;
   }
 
   public ReportAggregationClient getReportAggregationClient() {
@@ -66,7 +66,7 @@ public class OpenSearchContainerContext implements Startable {
   }
 
   public void addDocumentsToIndex(Collection<NviCandidateIndexDocument> documents) {
-    documents.forEach(openSearchClient::addDocumentToIndex);
+    documents.forEach(searchClient::addDocumentToIndex);
     refreshIndex();
   }
 

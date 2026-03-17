@@ -41,7 +41,6 @@ class InstitutionReportMapperTest {
     assertThat(rows).hasSize(1);
     var row = rows.getFirst();
     assertThat(row.reportingYear()).isEqualTo(REPORTING_YEAR);
-    assertThat(row.publishedYear()).isEqualTo(PUBLICATION_YEAR);
     assertThat(row.institutionApprovalStatus()).isEqualTo("J");
     assertThat(row.globalStatus()).isEqualTo("J");
     assertThat(row.contributorIdentifier()).isEqualTo(CONTRIBUTOR_ID.toString());
@@ -54,7 +53,7 @@ class InstitutionReportMapperTest {
 
     var row = InstitutionReportMapper.mapToRows(document, INSTITUTION_ID).findFirst().orElseThrow();
 
-    assertThat(row.institutionId()).isEqualTo("185");
+    assertThat(row.institutionIdentifier()).isEqualTo("185");
     assertThat(row.facultyId()).isEqualTo("15");
     assertThat(row.departmentId()).isEqualTo("10");
     assertThat(row.groupId()).isEqualTo("5");
@@ -195,27 +194,6 @@ class InstitutionReportMapperTest {
     assertThat(rowWithGlobalStatus(GlobalApprovalStatus.REJECTED).globalStatus()).isEqualTo("N");
     assertThat(rowWithGlobalStatus(GlobalApprovalStatus.PENDING).globalStatus()).isEqualTo("?");
     assertThat(rowWithGlobalStatus(GlobalApprovalStatus.DISPUTE).globalStatus()).isEqualTo("T");
-  }
-
-  @Test
-  void shouldReturnEmptyPagesWhenPagesIsNull() {
-    var publicationDetails =
-        new ReportPublicationDetails(
-            PUBLICATION_ID_PREFIX + UUID.randomUUID(),
-            PUBLICATION_TYPE,
-            "A Title",
-            new PublicationDateDto(PUBLICATION_YEAR, null, null),
-            List.of(defaultContributor()),
-            defaultChannel(),
-            null,
-            null);
-    var document = documentWith(publicationDetails, ApprovalStatus.APPROVED);
-
-    var row = InstitutionReportMapper.mapToRows(document, INSTITUTION_ID).findFirst().orElseThrow();
-
-    assertThat(row.pageBegin()).isEmpty();
-    assertThat(row.pageEnd()).isEmpty();
-    assertThat(row.pageCount()).isEmpty();
   }
 
   @Test
