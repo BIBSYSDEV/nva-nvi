@@ -10,4 +10,6 @@ import java.lang.annotation.Target;
 public @interface Column {
 
   String header();
+
+  boolean numeric() default false;
 }
