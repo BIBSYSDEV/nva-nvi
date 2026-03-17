@@ -49,7 +49,8 @@
       "@type": "xsd:dateTime"
     },
     "orcid": {
-      "@id": "orcid"
+      "@id": "orcid",
+      "@type": "@id"
     },
     "organization": {
       "@id": "organization",
