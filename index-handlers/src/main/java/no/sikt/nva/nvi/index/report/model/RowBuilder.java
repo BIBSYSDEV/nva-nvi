@@ -2,11 +2,9 @@ package no.sikt.nva.nvi.index.report.model;
 
 import java.util.List;
 
-public interface Row {
-
-  List<String> values();
-
-  List<String> headers();
+public sealed interface RowBuilder permits ReportRowBuilder {
 
   List<Cell> cells();
+
+  Row build();
 }

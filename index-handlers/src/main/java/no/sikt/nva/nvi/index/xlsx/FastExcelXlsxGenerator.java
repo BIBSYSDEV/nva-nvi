@@ -50,7 +50,7 @@ public class FastExcelXlsxGenerator implements ReportGenerator {
     if (rows.isEmpty()) {
       return;
     }
-    var cells = rows.getFirst().cells();
+    List<Cell> cells = rows.getFirst().cells();
     IntStream.range(0, cells.size()).forEach(i -> sheet.value(0, i, cells.get(i).header().name()));
   }
 
