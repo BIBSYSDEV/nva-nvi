@@ -30,6 +30,7 @@ import static no.sikt.nva.nvi.test.TestConstants.THIS_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.generatePublicationId;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
+import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -555,7 +556,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
           .withId(null)
           .withNames(List.of("Ignacio N. Kognito", "I.N. Kognito"))
           .withRole(ROLE_CREATOR.getValue())
-          .withOrcId(randomString())
+          .withOrcId(randomUri())
           .withVerificationStatus(STATUS_UNVERIFIED.getValue())
           .withAffiliations(expandedAffiliations)
           .build();

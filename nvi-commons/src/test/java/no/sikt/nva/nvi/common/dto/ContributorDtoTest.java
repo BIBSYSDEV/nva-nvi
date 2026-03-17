@@ -8,6 +8,7 @@ import static no.sikt.nva.nvi.common.examples.ExampleContributors.EXAMPLE_2_CONT
 import static no.sikt.nva.nvi.common.model.ContributorFixtures.ROLE_CREATOR;
 import static no.sikt.nva.nvi.common.model.ContributorFixtures.ROLE_OTHER;
 import static no.sikt.nva.nvi.common.model.ContributorFixtures.STATUS_VERIFIED;
+import static no.sikt.nva.nvi.test.TestUtils.randomUriWithSuffix;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -41,7 +42,7 @@ class ContributorDtoTest {
 
   @Test
   void shouldPreserveOrcidWhenBuildingContributorDto() {
-    var expectedOrcid = "0000-0001-2345-6789";
+    var expectedOrcid = randomUriWithSuffix("0000-0001-2345-6789");
     var contributor =
         ContributorDto.builder()
             .withName("Test Person")
