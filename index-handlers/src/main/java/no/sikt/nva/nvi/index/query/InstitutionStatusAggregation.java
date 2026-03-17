@@ -9,6 +9,7 @@ import static no.sikt.nva.nvi.index.utils.AggregationFunctions.sumAggregation;
 import static no.sikt.nva.nvi.index.utils.AggregationFunctions.termsAggregation;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.fieldValueQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.mustMatch;
+import static no.sikt.nva.nvi.index.utils.QueryFunctions.mustNotMatch;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVALS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.APPROVAL_STATUS;
 import static no.sikt.nva.nvi.index.utils.SearchConstants.GLOBAL_APPROVAL_STATUS;
@@ -93,7 +94,13 @@ public final class InstitutionStatusAggregation {
 
   public static Aggregation filterByTopLevelOrganization(
       String topLevelOrganizationId, Map<String, Aggregation> subAggregations) {
-    return filterAggregation(mustMatch(approvalBelongsTo(topLevelOrganizationId)), subAggregations);
+    var notDisputed =
+        mustNotMatch(
+            fieldValueQuery(
+                jsonPathOf(APPROVALS, GLOBAL_APPROVAL_STATUS),
+                GlobalApprovalStatus.DISPUTE.getValue()));
+    return filterAggregation(
+        mustMatch(approvalBelongsTo(topLevelOrganizationId), notDisputed), subAggregations);
   }
 
   private static Aggregation aggregateApprovedTopLevelPoints() {
