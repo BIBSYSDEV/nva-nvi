@@ -17,7 +17,7 @@ import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.slf4j.Logger;
 
 // TODO: Remove this class and POI library
-public final class ExcelWorkbookGenerator implements ReportGenerator {
+public final class ExcelWorkbookGenerator {
 
   private static final Logger logger =
       org.slf4j.LoggerFactory.getLogger(ExcelWorkbookGenerator.class);
@@ -34,7 +34,6 @@ public final class ExcelWorkbookGenerator implements ReportGenerator {
     this.data = data;
   }
 
-  @Override
   public String toBase64EncodedString() {
     return ENCODER.encodeToString(this.toXssfWorkbookByteArray());
   }
