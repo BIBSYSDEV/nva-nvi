@@ -33,7 +33,7 @@ import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.sikt.nva.nvi.index.aws.OpenSearchClient;
+import no.sikt.nva.nvi.index.aws.CandidateSearchClient;
 import no.sikt.nva.nvi.index.model.PersistedIndexDocumentMessage;
 import no.sikt.nva.nvi.index.model.document.IndexDocumentWithConsumptionAttributes;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
@@ -60,7 +60,7 @@ class UpdateIndexHandlerTest {
   private final S3Client s3Client = new FakeS3Client();
   private S3Driver s3Driver;
   private UpdateIndexHandler handler;
-  private OpenSearchClient openSearchClient;
+  private CandidateSearchClient searchClient;
   private QueueClient sqsClient;
   private TestScenario scenario;
 
@@ -68,10 +68,10 @@ class UpdateIndexHandlerTest {
   void setUp() {
     scenario = new TestScenario();
     s3Driver = new S3Driver(s3Client, BUCKET_NAME);
-    openSearchClient = mock(OpenSearchClient.class);
+    searchClient = mock(CandidateSearchClient.class);
     sqsClient = new FakeSqsClient();
     var storageReader = new S3StorageReader(s3Client, BUCKET_NAME);
-    handler = new UpdateIndexHandler(openSearchClient, storageReader, sqsClient);
+    handler = new UpdateIndexHandler(searchClient, storageReader, sqsClient);
     setupOpenPeriod(scenario, CURRENT_YEAR);
   }
 
@@ -80,7 +80,7 @@ class UpdateIndexHandlerTest {
     var candidate = setupRandomApplicableCandidate(scenario);
     var expectedIndexDocument = setupExistingIndexDocumentInBucket(candidate).indexDocument();
     handler.handleRequest(createUpdateIndexEvent(List.of(candidate)), CONTEXT);
-    verify(openSearchClient, times(1)).addDocumentToIndex(expectedIndexDocument);
+    verify(searchClient, times(1)).addDocumentToIndex(expectedIndexDocument);
   }
 
   @Test
@@ -88,8 +88,7 @@ class UpdateIndexHandlerTest {
     var candidate = setupRandomApplicableCandidate(scenario);
     var expectedIndexDocument = setupExistingIndexDocumentInBucket(candidate).indexDocument();
     var event = createUpdateIndexEvent(List.of(candidate));
-    when(openSearchClient.addDocumentToIndex(expectedIndexDocument))
-        .thenThrow(new RuntimeException());
+    when(searchClient.addDocumentToIndex(expectedIndexDocument)).thenThrow(new RuntimeException());
     handler.handleRequest(event, CONTEXT);
     assertEquals(1, sqsClient.receiveMessage(INDEX_DLQ_URL, 1).messages().size());
   }
@@ -99,8 +98,7 @@ class UpdateIndexHandlerTest {
     var candidate = setupRandomApplicableCandidate(scenario);
     var expectedIndexDocument = setupExistingIndexDocumentInBucket(candidate).indexDocument();
     var event = createUpdateIndexEvent(List.of(candidate));
-    when(openSearchClient.addDocumentToIndex(expectedIndexDocument))
-        .thenThrow(new RuntimeException());
+    when(searchClient.addDocumentToIndex(expectedIndexDocument)).thenThrow(new RuntimeException());
     handler.handleRequest(event, CONTEXT);
     var dlqMessage = sqsClient.receiveMessage(INDEX_DLQ_URL, 1).messages().getFirst();
 
@@ -115,7 +113,7 @@ class UpdateIndexHandlerTest {
     var event = createUpdateIndexEvent(List.of(candidate));
     var mockedStorageReader = mock(S3StorageReader.class);
     when(mockedStorageReader.read(any())).thenThrow(new RuntimeException());
-    new UpdateIndexHandler(openSearchClient, mockedStorageReader, sqsClient)
+    new UpdateIndexHandler(searchClient, mockedStorageReader, sqsClient)
         .handleRequest(event, CONTEXT);
     var dlqMessage = sqsClient.receiveMessage(INDEX_DLQ_URL, 1).messages().getFirst();
 
@@ -138,11 +136,11 @@ class UpdateIndexHandlerTest {
     var candidateToFail = setupRandomApplicableCandidate(scenario);
     var storageReader =
         setupStorageReaderFailingForOneCandidate(candidateToSucceed, candidateToFail);
-    handler = new UpdateIndexHandler(openSearchClient, storageReader, sqsClient);
+    handler = new UpdateIndexHandler(searchClient, storageReader, sqsClient);
     var event = createUpdateIndexEvent(List.of(candidateToSucceed, candidateToFail));
     handler.handleRequest(event, CONTEXT);
-    verify(openSearchClient, times(0)).addDocumentToIndex(eq(null));
-    verify(openSearchClient, times(1)).addDocumentToIndex(any(NviCandidateIndexDocument.class));
+    verify(searchClient, times(0)).addDocumentToIndex(eq(null));
+    verify(searchClient, times(1)).addDocumentToIndex(any(NviCandidateIndexDocument.class));
   }
 
   @Test
@@ -150,7 +148,7 @@ class UpdateIndexHandlerTest {
     var candidate = setupRandomApplicableCandidate(scenario);
     var expectedIndexDocument = setupExistingIndexDocumentInBucket(candidate).indexDocument();
     var event = createUpdateIndexEvent(List.of(candidate));
-    when(openSearchClient.addDocumentToIndex(expectedIndexDocument))
+    when(searchClient.addDocumentToIndex(expectedIndexDocument))
         .thenThrow(OpenSearchException.class);
     handler.handleRequest(event, CONTEXT);
     assertDoesNotThrow(() -> handler.handleRequest(event, CONTEXT));

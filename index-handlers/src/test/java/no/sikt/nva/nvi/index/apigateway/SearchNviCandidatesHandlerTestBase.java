@@ -43,18 +43,18 @@ public class SearchNviCandidatesHandlerTestBase {
   protected URI currentOrganization;
   protected AccessRight currentAccessRight;
 
-  protected void createHandler(SearchClient<NviCandidateIndexDocument> openSearchClient) {
+  protected void createHandler(SearchClient<NviCandidateIndexDocument> searchClient) {
     var viewingScopeValidator = new FakeViewingScopeValidator(true);
-    createHandler(openSearchClient, viewingScopeValidator);
+    createHandler(searchClient, viewingScopeValidator);
   }
 
   protected void createHandler(
-      SearchClient<NviCandidateIndexDocument> openSearchClient,
+      SearchClient<NviCandidateIndexDocument> searchClient,
       ViewingScopeValidator viewingScopeValidator) {
     output = new ByteArrayOutputStream();
     handler =
         new SearchNviCandidatesHandler(
-            openSearchClient, viewingScopeValidator, identityServiceClient, ENVIRONMENT);
+            searchClient, viewingScopeValidator, identityServiceClient, ENVIRONMENT);
   }
 
   protected PaginatedSearchResult<NviCandidateIndexDocument> handleRequest(

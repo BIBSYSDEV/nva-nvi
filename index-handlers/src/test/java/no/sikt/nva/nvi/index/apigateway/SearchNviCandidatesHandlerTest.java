@@ -41,7 +41,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.validator.FakeViewingScopeValidator;
-import no.sikt.nva.nvi.index.aws.OpenSearchClient;
+import no.sikt.nva.nvi.index.aws.CandidateSearchClient;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.document.PublicationDetails;
@@ -64,7 +64,7 @@ class SearchNviCandidatesHandlerTest extends SearchNviCandidatesHandlerTestBase 
   private static final String QUERY_ENCODED_COMMA = "%2C";
   private static final Environment ENVIRONMENT = getSearchNviCandidatesHandlerEnvironment();
   private static final String CANDIDATE_PATH = "candidate";
-  private static SearchClient<NviCandidateIndexDocument> openSearchClient;
+  private static SearchClient<NviCandidateIndexDocument> searchClient;
 
   @BeforeEach
   void beforeEach() {
@@ -73,8 +73,8 @@ class SearchNviCandidatesHandlerTest extends SearchNviCandidatesHandlerTestBase 
     currentAccessRight = AccessRight.MANAGE_NVI_CANDIDATES;
     mockIdentityService(currentUsername, currentOrganization);
 
-    openSearchClient = mock(OpenSearchClient.class);
-    createHandler(openSearchClient);
+    searchClient = mock(CandidateSearchClient.class);
+    createHandler(searchClient);
   }
 
   @Test
@@ -178,7 +178,7 @@ class SearchNviCandidatesHandlerTest extends SearchNviCandidatesHandlerTestBase 
     var documents = generateNumberOfIndexDocuments(10);
     var aggregationName = randomString();
     var docCount = randomInteger();
-    when(openSearchClient.search(any()))
+    when(searchClient.search(any()))
         .thenReturn(createSearchResponse(documents, aggregationName, filterAggregate(docCount)));
     var paginatedResult = handleRequest(emptyMap());
 
@@ -189,7 +189,7 @@ class SearchNviCandidatesHandlerTest extends SearchNviCandidatesHandlerTestBase 
   void shouldUseCamelCaseOnDocCount() throws IOException {
     var documents = generateNumberOfIndexDocuments(1);
     var aggregationName = "someAggregation";
-    when(openSearchClient.search(any()))
+    when(searchClient.search(any()))
         .thenReturn(createSearchResponse(documents, aggregationName, filterAggregate(1)));
     var paginatedResult = handleRequest(emptyMap());
     var aggregations = paginatedResult.getAggregations();
@@ -203,7 +203,7 @@ class SearchNviCandidatesHandlerTest extends SearchNviCandidatesHandlerTestBase 
     var userName = randomString();
     mockIdentityService(userName);
     var aggregationName = "someNestedAggregation";
-    when(openSearchClient.search(any()))
+    when(searchClient.search(any()))
         .thenReturn(
             createSearchResponse(
                 documents,
@@ -237,7 +237,7 @@ class SearchNviCandidatesHandlerTest extends SearchNviCandidatesHandlerTestBase 
 
   @Test
   void shouldThrowExceptionWhenSearchFails() throws IOException {
-    when(openSearchClient.search(any())).thenThrow(RuntimeException.class);
+    when(searchClient.search(any())).thenThrow(RuntimeException.class);
     var problem = handleBadRequest(emptyMap());
 
     assertThat(problem)
@@ -262,7 +262,7 @@ class SearchNviCandidatesHandlerTest extends SearchNviCandidatesHandlerTestBase 
   @Test
   void shouldReturnForbiddenForAffiliationOutsideOfCustomersScope() {
     var validatorReturningFalse = new FakeViewingScopeValidator(false);
-    createHandler(openSearchClient, validatorReturningFalse);
+    createHandler(searchClient, validatorReturningFalse);
 
     var request =
         Map.of(
@@ -284,7 +284,7 @@ class SearchNviCandidatesHandlerTest extends SearchNviCandidatesHandlerTestBase 
   void shouldUseDefaultSerializationWhenFormatterFormatsUnsupportedAggregationVariant()
       throws IOException {
     var aggregateName = randomString();
-    when(openSearchClient.search(any()))
+    when(searchClient.search(any()))
         .thenReturn(createSearchResponse(List.of(), aggregateName, getGlobalAggregate()));
     var userName = randomString();
     mockIdentityService(userName);
@@ -300,7 +300,7 @@ class SearchNviCandidatesHandlerTest extends SearchNviCandidatesHandlerTestBase 
     var expectedExcludeFields = List.of("publicationDetails.contributors");
     mockIdentityService(userName);
     handleRequest(emptyMap());
-    Mockito.verify(openSearchClient, times(1))
+    Mockito.verify(searchClient, times(1))
         .search(argThat(argument -> argument.excludeFields().equals(expectedExcludeFields)));
   }
 
@@ -322,7 +322,7 @@ class SearchNviCandidatesHandlerTest extends SearchNviCandidatesHandlerTestBase 
     var matcher =
         new CandidateSearchParamsAffiliationMatcher(
             CandidateSearchParameters.builder().withAffiliations(usersViewingScope).build());
-    when(openSearchClient.search(argThat(matcher)))
+    when(searchClient.search(argThat(matcher)))
         .thenReturn(createSearchResponse(singleNviCandidateIndexDocument()));
   }
 
@@ -338,7 +338,7 @@ class SearchNviCandidatesHandlerTest extends SearchNviCandidatesHandlerTestBase 
 
   private static void mockOpenSearchClient() {
     try {
-      when(openSearchClient.search(any()))
+      when(searchClient.search(any()))
           .thenReturn(createSearchResponse(singleNviCandidateIndexDocument()));
     } catch (IOException e) {
       throw new RuntimeException(e);

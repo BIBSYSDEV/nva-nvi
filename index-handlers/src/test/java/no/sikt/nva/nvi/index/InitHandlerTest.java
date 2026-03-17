@@ -5,36 +5,36 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import no.sikt.nva.nvi.index.aws.OpenSearchClient;
+import no.sikt.nva.nvi.index.aws.CandidateSearchClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class InitHandlerTest {
 
-  private OpenSearchClient openSearchClient;
+  private CandidateSearchClient searchClient;
   private InitHandler handler;
 
   @BeforeEach
   void setup() {
-    openSearchClient = mock(OpenSearchClient.class);
-    handler = new InitHandler(openSearchClient);
+    searchClient = mock(CandidateSearchClient.class);
+    handler = new InitHandler(searchClient);
   }
 
   @Test
   void shouldCreateIndexWhenNotExisting() {
-    when(openSearchClient.indexExists()).thenReturn(false);
+    when(searchClient.indexExists()).thenReturn(false);
 
     handler.handleRequest(null, null);
 
-    verify(openSearchClient).createIndex();
+    verify(searchClient).createIndex();
   }
 
   @Test
   void shouldNotCreateIndexWhenExisting() {
-    when(openSearchClient.indexExists()).thenReturn(true);
+    when(searchClient.indexExists()).thenReturn(true);
 
     handler.handleRequest(null, null);
 
-    verify(openSearchClient, never()).createIndex();
+    verify(searchClient, never()).createIndex();
   }
 }
