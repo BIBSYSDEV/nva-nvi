@@ -1,5 +1,20 @@
 package no.sikt.nva.nvi.index.model.report;
 
+import static no.sikt.nva.nvi.index.report.model.Header.ARSTALL;
+import static no.sikt.nva.nvi.index.report.model.Header.AVDNR;
+import static no.sikt.nva.nvi.index.report.model.Header.FAKTORTALL_SAMARBEID;
+import static no.sikt.nva.nvi.index.report.model.Header.GRUPPENR;
+import static no.sikt.nva.nvi.index.report.model.Header.INSTITUSJONSNR;
+import static no.sikt.nva.nvi.index.report.model.Header.KVALITETSNIVAKODE;
+import static no.sikt.nva.nvi.index.report.model.Header.PERSONLOPENR;
+import static no.sikt.nva.nvi.index.report.model.Header.PRINT_ISSN;
+import static no.sikt.nva.nvi.index.report.model.Header.PUBLISERINGSKANAL;
+import static no.sikt.nva.nvi.index.report.model.Header.PUBLISERINGSKANALNAVN;
+import static no.sikt.nva.nvi.index.report.model.Header.PUBLISERINGSKANALTYPE;
+import static no.sikt.nva.nvi.index.report.model.Header.RAPPORTSTATUS;
+import static no.sikt.nva.nvi.index.report.model.Header.STATUS_KONTROLLERT;
+import static no.sikt.nva.nvi.index.report.model.Header.TENTATIVE_PUBLISERINGSPOENG;
+import static no.sikt.nva.nvi.index.report.model.Header.UNDAVDNR;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.math.BigDecimal;
@@ -17,6 +32,9 @@ import no.sikt.nva.nvi.index.model.document.NviOrganization;
 import no.sikt.nva.nvi.index.model.document.Pages;
 import no.sikt.nva.nvi.index.model.document.PublicationChannel;
 import no.sikt.nva.nvi.index.model.document.ReportingPeriod;
+import no.sikt.nva.nvi.index.report.model.Cell;
+import no.sikt.nva.nvi.index.report.model.Header;
+import no.sikt.nva.nvi.index.report.model.Row;
 import org.junit.jupiter.api.Test;
 
 class InstitutionReportMapperTest {
@@ -36,27 +54,28 @@ class InstitutionReportMapperTest {
     var points = new BigDecimal("0.7500");
     var document = documentWithContributorAndApproval(points);
 
-    var rows = InstitutionReportMapper.mapToRows(document, INSTITUTION_ID).toList();
+    var rows = InstitutionReportMapper.mapToReportRows(document, INSTITUTION_ID).toList();
 
     assertThat(rows).hasSize(1);
     var row = rows.getFirst();
-    assertThat(row.reportingYear()).isEqualTo(REPORTING_YEAR);
-    assertThat(row.institutionApprovalStatus()).isEqualTo("J");
-    assertThat(row.globalStatus()).isEqualTo("J");
-    assertThat(row.contributorIdentifier()).isEqualTo(CONTRIBUTOR_ID.toString());
-    assertThat(row.pointsForAffiliation()).isEqualTo(points.toString());
+    assertThat(cellValue(row, ARSTALL)).isEqualTo(REPORTING_YEAR);
+    assertThat(cellValue(row, STATUS_KONTROLLERT)).isEqualTo("J");
+    assertThat(cellValue(row, RAPPORTSTATUS)).isEqualTo("J");
+    assertThat(cellValue(row, PERSONLOPENR)).isEqualTo(CONTRIBUTOR_ID.toString());
+    assertThat(cellValue(row, TENTATIVE_PUBLISERINGSPOENG)).isEqualTo(points.toPlainString());
   }
 
   @Test
   void shouldPopulateOrganizationIdentifiersFromAffiliation() {
     var document = documentWithContributorAndApproval(BigDecimal.ONE);
 
-    var row = InstitutionReportMapper.mapToRows(document, INSTITUTION_ID).findFirst().orElseThrow();
+    var row =
+        InstitutionReportMapper.mapToReportRows(document, INSTITUTION_ID).findFirst().orElseThrow();
 
-    assertThat(row.institutionIdentifier()).isEqualTo("185");
-    assertThat(row.facultyId()).isEqualTo("15");
-    assertThat(row.departmentId()).isEqualTo("10");
-    assertThat(row.groupId()).isEqualTo("5");
+    assertThat(cellValue(row, INSTITUSJONSNR)).isEqualTo("185");
+    assertThat(cellValue(row, AVDNR)).isEqualTo("15");
+    assertThat(cellValue(row, UNDAVDNR)).isEqualTo("10");
+    assertThat(cellValue(row, GRUPPENR)).isEqualTo("5");
   }
 
   @Test
@@ -72,13 +91,14 @@ class InstitutionReportMapperTest {
             .build();
     var document = documentWithChannel(channel);
 
-    var row = InstitutionReportMapper.mapToRows(document, INSTITUTION_ID).findFirst().orElseThrow();
+    var row =
+        InstitutionReportMapper.mapToReportRows(document, INSTITUTION_ID).findFirst().orElseThrow();
 
-    assertThat(row.publicationChannel()).isEqualTo(channelId.toString());
-    assertThat(row.publicationChannelType()).isEqualTo("Journal");
-    assertThat(row.publicationChannelPissn()).isEqualTo("1234-5678");
-    assertThat(row.publicationChannelLevel()).isEqualTo(ScientificValue.LEVEL_ONE.getValue());
-    assertThat(row.publicationChannelName()).isEqualTo("Some Journal");
+    assertThat(cellValue(row, PUBLISERINGSKANAL)).isEqualTo(channelId.toString());
+    assertThat(cellValue(row, PUBLISERINGSKANALTYPE)).isEqualTo("Journal");
+    assertThat(cellValue(row, PRINT_ISSN)).isEqualTo("1234-5678");
+    assertThat(cellValue(row, KVALITETSNIVAKODE)).isEqualTo(ScientificValue.LEVEL_ONE.getValue());
+    assertThat(cellValue(row, PUBLISERINGSKANALNAVN)).isEqualTo("Some Journal");
   }
 
   @Test
@@ -86,7 +106,7 @@ class InstitutionReportMapperTest {
     var otherInstitutionId = URI.create("https://example.org/organization/999");
     var document = documentWithContributorAndApproval(BigDecimal.ONE);
 
-    var rows = InstitutionReportMapper.mapToRows(document, otherInstitutionId).toList();
+    var rows = InstitutionReportMapper.mapToReportRows(document, otherInstitutionId).toList();
 
     assertThat(rows).isEmpty();
   }
@@ -165,35 +185,39 @@ class InstitutionReportMapperTest {
             publicationDetails,
             List.of(approval));
 
-    var rows = InstitutionReportMapper.mapToRows(document, INSTITUTION_ID).toList();
+    var rows = InstitutionReportMapper.mapToReportRows(document, INSTITUTION_ID).toList();
 
     assertThat(rows).hasSize(2);
     assertThat(rows)
-        .extracting(InstitutionReportRow::contributorIdentifier)
+        .extracting(row -> cellValue(row, PERSONLOPENR))
         .containsExactlyInAnyOrder(CONTRIBUTOR_ID.toString(), secondContributorId.toString());
     assertThat(rows)
-        .extracting(InstitutionReportRow::pointsForAffiliation)
-        .containsExactlyInAnyOrder(points1.toString(), points2.toString());
+        .extracting(row -> cellValue(row, TENTATIVE_PUBLISERINGSPOENG))
+        .containsExactlyInAnyOrder(points1.toPlainString(), points2.toPlainString());
   }
 
   @Test
   void shouldMapApprovalStatusCorrectly() {
-    assertThat(rowWithApprovalStatus(ApprovalStatus.APPROVED).institutionApprovalStatus())
+    assertThat(cellValue(rowWithApprovalStatus(ApprovalStatus.APPROVED), STATUS_KONTROLLERT))
         .isEqualTo("J");
-    assertThat(rowWithApprovalStatus(ApprovalStatus.REJECTED).institutionApprovalStatus())
+    assertThat(cellValue(rowWithApprovalStatus(ApprovalStatus.REJECTED), STATUS_KONTROLLERT))
         .isEqualTo("N");
-    assertThat(rowWithApprovalStatus(ApprovalStatus.PENDING).institutionApprovalStatus())
+    assertThat(cellValue(rowWithApprovalStatus(ApprovalStatus.PENDING), STATUS_KONTROLLERT))
         .isEqualTo("?");
-    assertThat(rowWithApprovalStatus(ApprovalStatus.NEW).institutionApprovalStatus())
+    assertThat(cellValue(rowWithApprovalStatus(ApprovalStatus.NEW), STATUS_KONTROLLERT))
         .isEqualTo("?");
   }
 
   @Test
   void shouldMapGlobalApprovalStatusCorrectly() {
-    assertThat(rowWithGlobalStatus(GlobalApprovalStatus.APPROVED).globalStatus()).isEqualTo("J");
-    assertThat(rowWithGlobalStatus(GlobalApprovalStatus.REJECTED).globalStatus()).isEqualTo("N");
-    assertThat(rowWithGlobalStatus(GlobalApprovalStatus.PENDING).globalStatus()).isEqualTo("?");
-    assertThat(rowWithGlobalStatus(GlobalApprovalStatus.DISPUTE).globalStatus()).isEqualTo("T");
+    assertThat(cellValue(rowWithGlobalStatus(GlobalApprovalStatus.APPROVED), RAPPORTSTATUS))
+        .isEqualTo("J");
+    assertThat(cellValue(rowWithGlobalStatus(GlobalApprovalStatus.REJECTED), RAPPORTSTATUS))
+        .isEqualTo("N");
+    assertThat(cellValue(rowWithGlobalStatus(GlobalApprovalStatus.PENDING), RAPPORTSTATUS))
+        .isEqualTo("?");
+    assertThat(cellValue(rowWithGlobalStatus(GlobalApprovalStatus.DISPUTE), RAPPORTSTATUS))
+        .isEqualTo("T");
   }
 
   @Test
@@ -209,9 +233,18 @@ class InstitutionReportMapperTest {
             defaultPublicationDetails(),
             List.of(defaultApproval(ApprovalStatus.APPROVED, BigDecimal.ONE)));
 
-    var row = InstitutionReportMapper.mapToRows(document, INSTITUTION_ID).findFirst().orElseThrow();
+    var row =
+        InstitutionReportMapper.mapToReportRows(document, INSTITUTION_ID).findFirst().orElseThrow();
 
-    assertThat(row.internationalCollaborationFactor()).isEqualTo("N/A");
+    assertThat(cellValue(row, FAKTORTALL_SAMARBEID)).isEqualTo("N/A");
+  }
+
+  private static String cellValue(Row row, Header header) {
+    return row.cells().stream()
+        .filter(c -> c.header() == header)
+        .findFirst()
+        .map(Cell::stringValue)
+        .orElseThrow(() -> new AssertionError("No cell for header " + header));
   }
 
   private ReportDocument documentWithContributorAndApproval(BigDecimal points) {
@@ -253,14 +286,14 @@ class InstitutionReportMapperTest {
         List.of(defaultApproval(approvalStatus, BigDecimal.ONE)));
   }
 
-  private InstitutionReportRow rowWithApprovalStatus(ApprovalStatus approvalStatus) {
-    return InstitutionReportMapper.mapToRows(
+  private Row rowWithApprovalStatus(ApprovalStatus approvalStatus) {
+    return InstitutionReportMapper.mapToReportRows(
             documentWith(defaultPublicationDetails(), approvalStatus), INSTITUTION_ID)
         .findFirst()
         .orElseThrow();
   }
 
-  private InstitutionReportRow rowWithGlobalStatus(GlobalApprovalStatus globalStatus) {
+  private Row rowWithGlobalStatus(GlobalApprovalStatus globalStatus) {
     var document =
         new ReportDocument(
             UUID.randomUUID(),
@@ -271,7 +304,9 @@ class InstitutionReportMapperTest {
             1,
             defaultPublicationDetails(),
             List.of(defaultApproval(ApprovalStatus.APPROVED, BigDecimal.ONE)));
-    return InstitutionReportMapper.mapToRows(document, INSTITUTION_ID).findFirst().orElseThrow();
+    return InstitutionReportMapper.mapToReportRows(document, INSTITUTION_ID)
+        .findFirst()
+        .orElseThrow();
   }
 
   private ReportPublicationDetails defaultPublicationDetails() {

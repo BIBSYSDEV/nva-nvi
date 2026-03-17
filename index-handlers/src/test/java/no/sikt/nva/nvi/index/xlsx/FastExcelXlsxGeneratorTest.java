@@ -5,53 +5,53 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.List;
-import no.sikt.nva.nvi.index.report.Column;
-import no.sikt.nva.nvi.index.report.ReportRow;
+import no.sikt.nva.nvi.index.report.model.Cell;
+import no.sikt.nva.nvi.index.report.model.Header;
+import no.sikt.nva.nvi.index.report.model.Row;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.jupiter.api.Test;
 
 class FastExcelXlsxGeneratorTest {
 
-  record TestRow(
-      @Column(header = "NAME") String name, @Column(header = "VALUE", numeric = true) String value)
-      implements ReportRow {}
-
   @Test
   void shouldWriteHeadersToFirstRow() throws IOException {
-    var row = new TestRow(randomString(), "1.5");
-    var bytes = new FastExcelXlsxGenerator<>(TestRow.class, List.of(row)).toWorkbookByteArray();
+    var row =
+        Row.builder()
+            .withCell(Cell.of(Header.ARSTALL, "2024"))
+            .withCell(Cell.of(Header.VEKTINGSTALL, BigDecimal.ONE))
+            .build();
+    var bytes = new FastExcelXlsxGenerator(List.of(row)).toWorkbookByteArray();
 
     try (var workbook = new XSSFWorkbook(new ByteArrayInputStream(bytes))) {
       var sheet = workbook.getSheetAt(0);
       var headerRow = sheet.getRow(0);
-      assertThat(headerRow.getCell(0).getStringCellValue()).isEqualTo("NAME");
-      assertThat(headerRow.getCell(1).getStringCellValue()).isEqualTo("VALUE");
+      assertThat(headerRow.getCell(0).getStringCellValue()).isEqualTo("ARSTALL");
+      assertThat(headerRow.getCell(1).getStringCellValue()).isEqualTo("VEKTINGSTALL");
     }
   }
 
   @Test
-  void shouldWriteStringValuesForNonNumericColumns() throws IOException {
+  void shouldWriteStringValuesForStringCells() throws IOException {
     var name = randomString();
-    var row = new TestRow(name, "2.0");
-    var bytes = new FastExcelXlsxGenerator<>(TestRow.class, List.of(row)).toWorkbookByteArray();
+    var row = Row.builder().withCell(Cell.of(Header.TITTEL, name)).build();
+    var bytes = new FastExcelXlsxGenerator(List.of(row)).toWorkbookByteArray();
 
     try (var workbook = new XSSFWorkbook(new ByteArrayInputStream(bytes))) {
       var sheet = workbook.getSheetAt(0);
-      var dataRow = sheet.getRow(1);
-      assertThat(dataRow.getCell(0).getStringCellValue()).isEqualTo(name);
+      assertThat(sheet.getRow(1).getCell(0).getStringCellValue()).isEqualTo(name);
     }
   }
 
   @Test
-  void shouldWriteNumericValuesForNumericColumns() throws IOException {
-    var row = new TestRow(randomString(), "3.14");
-    var bytes = new FastExcelXlsxGenerator<>(TestRow.class, List.of(row)).toWorkbookByteArray();
+  void shouldWriteNumericValuesForNumericCells() throws IOException {
+    var row = Row.builder().withCell(Cell.of(Header.VEKTINGSTALL, new BigDecimal("3.14"))).build();
+    var bytes = new FastExcelXlsxGenerator(List.of(row)).toWorkbookByteArray();
 
     try (var workbook = new XSSFWorkbook(new ByteArrayInputStream(bytes))) {
       var sheet = workbook.getSheetAt(0);
-      var dataRow = sheet.getRow(1);
-      assertThat(dataRow.getCell(1).getNumericCellValue()).isEqualTo(3.14);
+      assertThat(sheet.getRow(1).getCell(0).getNumericCellValue()).isEqualTo(3.14);
     }
   }
 }

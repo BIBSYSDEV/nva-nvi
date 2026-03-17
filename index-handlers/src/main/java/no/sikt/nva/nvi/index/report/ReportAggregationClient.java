@@ -9,14 +9,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.index.aws.OpenSearchClientFactory;
-import no.sikt.nva.nvi.index.model.report.InstitutionReportHeader;
 import no.sikt.nva.nvi.index.model.report.InstitutionReportMapper;
-import no.sikt.nva.nvi.index.model.report.InstitutionReportRow;
 import no.sikt.nva.nvi.index.model.report.ReportDocument;
+import no.sikt.nva.nvi.index.report.model.Row;
 import no.sikt.nva.nvi.index.report.query.AllInstitutionsQuery;
 import no.sikt.nva.nvi.index.report.query.InstitutionQuery;
 import no.sikt.nva.nvi.index.report.query.ReportAggregationQuery;
 import no.sikt.nva.nvi.index.xlsx.CsvGenerator;
+import no.sikt.nva.nvi.index.xlsx.FastExcelXlsxGenerator;
 import nva.commons.core.JacocoGenerated;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
@@ -64,8 +64,6 @@ public class ReportAggregationClient {
                                   "publicationDetails.nviContributors.affiliations.partOfIdentifiers",
                                   "approvals.points.institutionId",
                                   "approvals.points.institutionPoints"))));
-  private static final ReportGenerator<InstitutionReportRow> reportGenerator =
-      new ReportGenerator<>(InstitutionReportRow.class);
   private final OpenSearchClient client;
 
   public ReportAggregationClient(OpenSearchClient client) {
@@ -84,27 +82,29 @@ public class ReportAggregationClient {
 
   public byte[] executeCsvReport(InstitutionQuery query) {
     LOGGER.info("Executing CSV report query: {}", query);
-    var data =
+    var rows =
         fetchReportDocuments(query.query()).stream()
-            .flatMap(document -> InstitutionReportMapper.mapToRows(document, query.institutionId()))
-            .map(ReportRow::toRow)
+            .flatMap(
+                document ->
+                    InstitutionReportMapper.mapToReportRows(document, query.institutionId()))
             .toList();
-    return new CsvGenerator(InstitutionReportHeader.getOrderedValues(), data).toWorkbookByteArray();
+    return new CsvGenerator(rows).toWorkbookByteArray();
   }
 
   public byte[] executeCsvReport(AllInstitutionsQuery query) {
     LOGGER.info("Executing CSV report query: {}", query);
-    var data =
+    var rows =
         fetchReportDocuments(query.query()).stream()
             .flatMap(ReportAggregationClient::toReportRows)
-            .map(ReportRow::toRow)
             .toList();
-    return new CsvGenerator(InstitutionReportHeader.getOrderedValues(), data).toWorkbookByteArray();
+    return new CsvGenerator(rows).toWorkbookByteArray();
   }
 
-  private static Stream<InstitutionReportRow> toReportRows(ReportDocument document) {
+  private static Stream<Row> toReportRows(ReportDocument document) {
     return document.approvals().stream()
-        .flatMap(approval -> InstitutionReportMapper.mapToRows(document, approval.institutionId()));
+        .flatMap(
+            approval ->
+                InstitutionReportMapper.mapToReportRows(document, approval.institutionId()));
   }
 
   public byte[] executeXlsxExport(AllInstitutionsQuery query) {
@@ -113,16 +113,18 @@ public class ReportAggregationClient {
         fetchReportDocuments(query.query()).stream()
             .flatMap(ReportAggregationClient::toReportRows)
             .toList();
-    return reportGenerator.generate(rows);
+    return new FastExcelXlsxGenerator(rows).toWorkbookByteArray();
   }
 
   public byte[] executeXlsxReport(InstitutionQuery query) {
     LOGGER.info("Executing XLSX report query: {}", query);
     var rows =
         fetchReportDocuments(query.query()).stream()
-            .flatMap(document -> InstitutionReportMapper.mapToRows(document, query.institutionId()))
+            .flatMap(
+                document ->
+                    InstitutionReportMapper.mapToReportRows(document, query.institutionId()))
             .toList();
-    return reportGenerator.generate(rows);
+    return new FastExcelXlsxGenerator(rows).toWorkbookByteArray();
   }
 
   private <T> T processQuery(ReportAggregationQuery<T> query) throws IOException {
