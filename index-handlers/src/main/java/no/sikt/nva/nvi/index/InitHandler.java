@@ -2,7 +2,7 @@ package no.sikt.nva.nvi.index;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
-import no.sikt.nva.nvi.index.aws.OpenSearchClient;
+import no.sikt.nva.nvi.index.aws.CandidateSearchClient;
 import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,14 +10,14 @@ import org.slf4j.LoggerFactory;
 public class InitHandler implements RequestHandler<Object, String> {
   public static final String SUCCESS = "SUCCESS";
   private static final Logger LOGGER = LoggerFactory.getLogger(InitHandler.class);
-  private final OpenSearchClient indexingClient;
+  private final CandidateSearchClient indexingClient;
 
   @JacocoGenerated
   public InitHandler() {
-    this(OpenSearchClient.defaultOpenSearchClient());
+    this(CandidateSearchClient.defaultOpenSearchClient());
   }
 
-  public InitHandler(OpenSearchClient indexingClient) {
+  public InitHandler(CandidateSearchClient indexingClient) {
     this.indexingClient = indexingClient;
   }
 

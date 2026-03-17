@@ -39,7 +39,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.index.OpenSearchContainerContext;
-import no.sikt.nva.nvi.index.aws.OpenSearchClient;
+import no.sikt.nva.nvi.index.aws.CandidateSearchClient;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.document.ReportingPeriod;
@@ -103,7 +103,7 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
     @Test
     @Disabled
     void shouldNotProduceExtremelyNestedQuery() {
-      var logAppender = LogUtils.getTestingAppender(OpenSearchClient.class);
+      var logAppender = LogUtils.getTestingAppender(CandidateSearchClient.class);
 
       handleRequest(emptyMap());
       var messages = logAppender.getMessages();
