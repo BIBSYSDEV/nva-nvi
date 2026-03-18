@@ -5,12 +5,17 @@ import static no.sikt.nva.nvi.common.examples.ExampleContributors.EXAMPLE_2_CONT
 import static no.sikt.nva.nvi.common.examples.ExampleContributors.EXAMPLE_2_CONTRIBUTOR_2;
 import static no.sikt.nva.nvi.common.examples.ExampleContributors.EXAMPLE_2_CONTRIBUTOR_3;
 import static no.sikt.nva.nvi.common.examples.ExampleContributors.EXAMPLE_2_CONTRIBUTOR_5;
+import static no.sikt.nva.nvi.common.model.ContributorFixtures.ROLE_CREATOR;
+import static no.sikt.nva.nvi.common.model.ContributorFixtures.ROLE_OTHER;
+import static no.sikt.nva.nvi.common.model.ContributorFixtures.STATUS_VERIFIED;
+import static no.sikt.nva.nvi.test.TestUtils.randomUriWithSuffix;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.Arguments.argumentSet;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -33,6 +38,31 @@ class ContributorDtoTest {
     var json = dtoObjectMapper.writeValueAsString(contributor);
     var roundTripped = dtoObjectMapper.readValue(json, ContributorDto.class);
     assertEquals(contributor, roundTripped);
+  }
+
+  @Test
+  void shouldPreserveOrcidWhenBuildingContributorDto() {
+    var expectedOrcid = randomUriWithSuffix("0000-0001-2345-6789");
+    var contributor =
+        ContributorDto.builder()
+            .withName("Test Person")
+            .withOrcid(expectedOrcid)
+            .withRole(ROLE_CREATOR)
+            .withVerificationStatus(STATUS_VERIFIED)
+            .build();
+    assertEquals(expectedOrcid, contributor.orcid());
+  }
+
+  @Test
+  void shouldPreserveMultipleRolesWhenBuildingContributorDto() {
+    var expectedRoles = List.of(ROLE_CREATOR, ROLE_OTHER);
+    var contributor =
+        ContributorDto.builder()
+            .withName("Test Person")
+            .withRoles(expectedRoles)
+            .withVerificationStatus(STATUS_VERIFIED)
+            .build();
+    assertEquals(expectedRoles, contributor.roles());
   }
 
   private static Stream<Arguments> exampleContributorProvider() {

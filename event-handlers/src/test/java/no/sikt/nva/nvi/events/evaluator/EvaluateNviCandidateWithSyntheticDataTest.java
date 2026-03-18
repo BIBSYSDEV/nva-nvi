@@ -221,6 +221,7 @@ class EvaluateNviCandidateWithSyntheticDataTest extends EvaluationTest {
     var contributorBuilder =
         SampleExpandedContributor.builder()
             .withId(randomUri())
+            .withOrcId(randomUri())
             .withVerificationStatus("Verified")
             .withAffiliations(expandedAffiliations);
     var creator = contributorBuilder.withRole("Creator").build();
