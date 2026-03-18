@@ -1,6 +1,7 @@
-package no.sikt.nva.nvi.index.report.model;
+package no.sikt.nva.nvi.report.model;
 
-import static no.sikt.nva.nvi.index.report.model.RowFixtures.completeReportRow;
+import static no.sikt.nva.nvi.report.model.RowFixtures.completeReportRow;
+import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -29,7 +30,7 @@ class RowTest {
 
   @Test
   void shouldContainCellForEachReportHeader() {
-    var row = completeReportRow();
+    var row = completeReportRow(randomString());
     var headers = row.headers();
     var allHeaders = Arrays.stream(ReportHeader.values()).map(Enum::name).toList();
 

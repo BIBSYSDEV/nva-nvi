@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.index.report.model;
+package no.sikt.nva.nvi.report.model;
 
 public interface Header {
 

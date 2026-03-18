@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.index.xlsx;
+package no.sikt.nva.nvi.report.generators;
 
 import com.opencsv.CSVWriter;
 import java.io.ByteArrayOutputStream;
@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import no.sikt.nva.nvi.index.report.model.Row;
+import no.sikt.nva.nvi.report.model.Row;
 import nva.commons.core.JacocoGenerated;
 
 public class CsvGenerator implements ReportGenerator {
@@ -18,11 +18,6 @@ public class CsvGenerator implements ReportGenerator {
   private static final String UTF8_BOM = "\uFEFF";
   private final List<String> headers;
   private final List<List<String>> data;
-
-  public CsvGenerator(List<String> headers, List<List<String>> data) {
-    this.headers = headers;
-    this.data = data;
-  }
 
   public CsvGenerator(List<Row> rows) {
     this.headers = rows.isEmpty() ? Collections.emptyList() : rows.getFirst().headers();

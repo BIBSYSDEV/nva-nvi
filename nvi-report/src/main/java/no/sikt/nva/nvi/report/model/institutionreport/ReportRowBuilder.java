@@ -1,6 +1,8 @@
-package no.sikt.nva.nvi.index.report.model;
+package no.sikt.nva.nvi.report.model.institutionreport;
 
 import java.math.BigDecimal;
+import no.sikt.nva.nvi.report.model.Cell;
+import no.sikt.nva.nvi.report.model.RowBuilder;
 
 public final class ReportRowBuilder extends RowBuilder {
 

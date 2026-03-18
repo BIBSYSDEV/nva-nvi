@@ -1,4 +1,6 @@
-package no.sikt.nva.nvi.index.report.model;
+package no.sikt.nva.nvi.report.model.institutionreport;
+
+import no.sikt.nva.nvi.report.model.Header;
 
 public enum ReportHeader implements Header {
   ARSTALL,
