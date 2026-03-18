@@ -9,7 +9,7 @@ public final class RowFixtures {
   private RowFixtures() {}
 
   public static Row completeReportRow() {
-    return ReportRow.builder()
+    return new ReportRowBuilder()
         .withYear(randomString())
         .withPublicationId(randomString())
         .withPublicationType(randomString())

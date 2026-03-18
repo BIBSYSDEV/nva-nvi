@@ -1,18 +1,16 @@
 package no.sikt.nva.nvi.index.report.model;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
 
-public final class ReportRowBuilder implements RowBuilder {
+public final class ReportRowBuilder extends RowBuilder {
 
-  private final List<Cell> cells;
-  private final RowValidator validator;
+  public ReportRowBuilder() {
+    super();
+  }
 
-  public ReportRowBuilder(RowValidator validator) {
-    this.validator = validator;
-    this.cells = new ArrayList<>();
+  @Override
+  protected void validate() {
+    DefaultValidator.create().validate(this::cells);
   }
 
   public ReportRowBuilder withYear(String value) {
@@ -143,27 +141,5 @@ public final class ReportRowBuilder implements RowBuilder {
   public ReportRowBuilder withPublishingPoints(BigDecimal value) {
     withCell(Cell.of(ReportHeader.PUBLISERINGSPOENG, value));
     return this;
-  }
-
-  @Override
-  public List<Cell> cells() {
-    return cells;
-  }
-
-  @Override
-  public ReportRow build() {
-    var row = new ReportRow(sortCells());
-    validator.validate(row);
-    return row;
-  }
-
-  private void withCell(Cell cell) {
-    cells.add(cell);
-  }
-
-  private List<Cell> sortCells() {
-    return cells().stream()
-        .sorted(Comparator.comparingInt(cell -> cell.header().ordinal()))
-        .toList();
   }
 }

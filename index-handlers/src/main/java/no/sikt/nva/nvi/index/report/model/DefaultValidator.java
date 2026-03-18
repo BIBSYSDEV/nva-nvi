@@ -10,6 +10,8 @@ public class DefaultValidator implements RowValidator {
 
   private static final String DUPLICATED_HEADERS_ERROR_MESSAGE =
       "Duplicate headers found in a row: ";
+  private static final String DELIMITER = ", ";
+  private static final String MISSING_HEADERS_MESSAGE = "Missing headers: ";
 
   public static RowValidator create() {
     return new DefaultValidator();
@@ -29,7 +31,7 @@ public class DefaultValidator implements RowValidator {
     var duplicates = findDuplicates(headers);
     if (!duplicates.isEmpty()) {
       throw new IllegalArgumentException(
-          DUPLICATED_HEADERS_ERROR_MESSAGE + String.join(", ", duplicates));
+          DUPLICATED_HEADERS_ERROR_MESSAGE + String.join(DELIMITER, duplicates));
     }
   }
 
@@ -47,7 +49,7 @@ public class DefaultValidator implements RowValidator {
             .filter(not(headers::contains))
             .toList();
     if (!missing.isEmpty()) {
-      throw new IllegalStateException("Missing headers: " + String.join(", ", missing));
+      throw new IllegalStateException(MISSING_HEADERS_MESSAGE + String.join(DELIMITER, missing));
     }
   }
 }

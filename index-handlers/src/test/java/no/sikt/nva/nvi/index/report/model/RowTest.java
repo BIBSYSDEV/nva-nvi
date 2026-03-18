@@ -16,7 +16,7 @@ class RowTest {
         assertThrows(
             IllegalArgumentException.class,
             () ->
-                ReportRow.builder()
+                new ReportRowBuilder()
                     .withYear("2024")
                     .withYear("2024")
                     .withFacultyNumber("1")
@@ -38,7 +38,7 @@ class RowTest {
   void shouldThrowIllegalStateExceptionWhenReportRowIsMissingHeaders() {
     var executable =
         assertThrows(
-            IllegalStateException.class, () -> ReportRow.builder().withYear("2024").build());
+            IllegalStateException.class, () -> new ReportRowBuilder().withYear("2024").build());
     assertThat(executable.getMessage()).startsWith("Missing headers: ");
   }
 }

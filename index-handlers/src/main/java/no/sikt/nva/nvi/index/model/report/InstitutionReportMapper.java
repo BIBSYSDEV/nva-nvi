@@ -15,7 +15,7 @@ import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.InstitutionPointsView.CreatorAffiliationPointsView;
 import no.sikt.nva.nvi.index.model.document.NviContributor;
 import no.sikt.nva.nvi.index.model.document.NviOrganization;
-import no.sikt.nva.nvi.index.report.model.ReportRow;
+import no.sikt.nva.nvi.index.report.model.ReportRowBuilder;
 import no.sikt.nva.nvi.index.report.model.Row;
 import no.unit.nva.commons.json.JsonUtils;
 import nva.commons.core.ioutils.IoUtils;
@@ -89,7 +89,7 @@ public final class InstitutionReportMapper {
     var pointsForAffiliation = getPointsForAffiliation(approval, contributor, affiliation);
     var globalStatus = mapGlobalStatus(document.globalApprovalStatus());
     var institutionIdentifier = affiliation.getInstitutionIdentifier();
-    return ReportRow.builder()
+    return new ReportRowBuilder()
         .withYear(document.year())
         .withPublicationId(document.publicationId())
         .withPublicationType(document.publicationType())

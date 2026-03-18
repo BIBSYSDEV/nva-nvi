@@ -25,7 +25,7 @@ public class CsvGenerator implements ReportGenerator {
   }
 
   public CsvGenerator(List<Row> rows) {
-    this.headers = rows.isEmpty() ? List.of() : rows.getFirst().headers();
+    this.headers = rows.isEmpty() ? Collections.emptyList() : rows.getFirst().headers();
     this.data = rows.stream().map(Row::values).toList();
   }
 
