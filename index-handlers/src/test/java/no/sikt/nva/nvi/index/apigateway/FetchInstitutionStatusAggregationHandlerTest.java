@@ -224,12 +224,7 @@ class FetchInstitutionStatusAggregationHandlerTest {
   class DirectAffiliationAggregationTests {
     @Test
     void shouldExcludeRejectedCandidatesFromPoints() {
-      var approval =
-          new ApprovalFactory(OUR_ORGANIZATION)
-              .withCreatorAffiliation(OUR_SUB_ORGANIZATION)
-              .withApprovalStatus(ApprovalStatus.REJECTED)
-              .build();
-      CONTAINER.addDocumentsToIndex(documentWithApprovals(approval, randomApproval()));
+      CONTAINER.addDocumentsToIndex(getRejectedCandidate());
 
       var response = handleRequest();
 
@@ -242,12 +237,7 @@ class FetchInstitutionStatusAggregationHandlerTest {
 
     @Test
     void shouldIncludeRejectedCandidatesInCount() {
-      var approval =
-          new ApprovalFactory(OUR_ORGANIZATION)
-              .withCreatorAffiliation(OUR_SUB_ORGANIZATION)
-              .withApprovalStatus(ApprovalStatus.REJECTED)
-              .build();
-      CONTAINER.addDocumentsToIndex(documentWithApprovals(approval, randomApproval()));
+      CONTAINER.addDocumentsToIndex(getRejectedCandidate());
 
       var response = handleRequest();
 
@@ -298,6 +288,50 @@ class FetchInstitutionStatusAggregationHandlerTest {
       var approval =
           new ApprovalFactory(OUR_ORGANIZATION).withCreatorAffiliations(affiliations).build();
       CONTAINER.addDocumentsToIndex(documentWithApprovals(approval, randomApproval()));
+    }
+
+    @Test
+    void shouldExcludeDisputedCandidates() {
+      CONTAINER.addDocumentsToIndex(getRejectedCandidate(), getDisputedCandidate());
+
+      var response = handleRequest();
+
+      var organizationAggregation = response.byOrganization().get(OUR_SUB_ORGANIZATION);
+      assertThat(organizationAggregation.points()).isZero();
+      assertThat(organizationAggregation.candidateCount()).isOne();
+      assertThat(organizationAggregation.approvalStatus())
+          .extractingByKey(ApprovalStatus.APPROVED)
+          .isEqualTo(0);
+    }
+
+    private NviCandidateIndexDocument getRejectedCandidate() {
+      var ourApproval =
+          new ApprovalFactory(OUR_ORGANIZATION)
+              .withCreatorAffiliation(OUR_SUB_ORGANIZATION)
+              .withApprovalStatus(ApprovalStatus.REJECTED)
+              .withGlobalApprovalStatus(GlobalApprovalStatus.REJECTED)
+              .build();
+      var otherApproval =
+          new ApprovalFactory(randomOrganizationId())
+              .withApprovalStatus(ApprovalStatus.REJECTED)
+              .withGlobalApprovalStatus(GlobalApprovalStatus.REJECTED)
+              .build();
+      return documentWithApprovals(ourApproval, otherApproval);
+    }
+
+    private NviCandidateIndexDocument getDisputedCandidate() {
+      var ourApproval =
+          new ApprovalFactory(OUR_ORGANIZATION)
+              .withCreatorAffiliation(OUR_SUB_ORGANIZATION)
+              .withApprovalStatus(ApprovalStatus.APPROVED)
+              .withGlobalApprovalStatus(GlobalApprovalStatus.DISPUTE)
+              .build();
+      var otherApproval =
+          new ApprovalFactory(randomOrganizationId())
+              .withApprovalStatus(ApprovalStatus.REJECTED)
+              .withGlobalApprovalStatus(GlobalApprovalStatus.DISPUTE)
+              .build();
+      return documentWithApprovals(ourApproval, otherApproval);
     }
   }
 

@@ -89,7 +89,7 @@ import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.index.apigateway.utils.ExcelWorkbookUtil;
 import no.sikt.nva.nvi.index.apigateway.utils.LanguageLabelUtil;
-import no.sikt.nva.nvi.index.aws.OpenSearchClient;
+import no.sikt.nva.nvi.index.aws.CandidateSearchClient;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
@@ -130,15 +130,15 @@ class FetchInstitutionReportHandlerTest {
       Integer.parseInt(new Environment().readEnv("INSTITUTION_REPORT_SEARCH_PAGE_SIZE"));
   private static final String NESTED_FIELD_CONTRIBUTORS = "publicationDetails.contributors";
   private static final String EXPECTED_SORT_ORDER = SortOrder.Asc.jsonValue();
-  private static SearchClient<NviCandidateIndexDocument> openSearchClient;
+  private static SearchClient<NviCandidateIndexDocument> searchClient;
   private ByteArrayOutputStream output;
   private FetchInstitutionReportHandler handler;
 
   @BeforeEach
   void setUp() {
     output = new ByteArrayOutputStream();
-    openSearchClient = mock(OpenSearchClient.class);
-    handler = new FetchInstitutionReportHandler(openSearchClient, ENVIRONMENT);
+    searchClient = mock(CandidateSearchClient.class);
+    handler = new FetchInstitutionReportHandler(searchClient, ENVIRONMENT);
   }
 
   @Test
@@ -223,9 +223,9 @@ class FetchInstitutionReportHandlerTest {
     var firstExpectedResultParameters = defaultResultParameters();
     var secondExpectedResultParameters = searchResultParams(PAGE_SIZE, PAGE_SIZE);
 
-    verify(openSearchClient, times(1))
+    verify(searchClient, times(1))
         .search(eq(buildRequest(topLevelCristinOrg, firstExpectedResultParameters).build()));
-    verify(openSearchClient, times(1))
+    verify(searchClient, times(1))
         .search(eq(buildRequest(topLevelCristinOrg, secondExpectedResultParameters).build()));
     var decodedResponse =
         Base64.getDecoder().decode(fromOutputStream(output, String.class).getBody());
@@ -275,7 +275,7 @@ class FetchInstitutionReportHandlerTest {
     var year = "2021";
     var request =
         createRequest(topLevelCristinOrg, MANAGE_NVI_CANDIDATES, Map.of(YEAR, year)).build();
-    when(openSearchClient.search(any()))
+    when(searchClient.search(any()))
         .thenReturn(aggregationResponse(1))
         .thenReturn(
             createSearchResponse(
@@ -290,7 +290,7 @@ class FetchInstitutionReportHandlerTest {
             .withSearchResultParameters(defaultResultParameters())
             .withExcludeFields(List.of(NESTED_FIELD_CONTRIBUTORS))
             .build();
-    verify(openSearchClient, times(1)).search(eq(expectedSearchParameters));
+    verify(searchClient, times(1)).search(eq(expectedSearchParameters));
   }
 
   @Test
@@ -299,7 +299,7 @@ class FetchInstitutionReportHandlerTest {
     var year = "2021";
     var request =
         createRequest(topLevelCristinOrg, MANAGE_NVI_CANDIDATES, Map.of(YEAR, year)).build();
-    when(openSearchClient.search(any()))
+    when(searchClient.search(any()))
         .thenReturn(aggregationResponse(1))
         .thenReturn(
             createSearchResponse(
@@ -314,7 +314,7 @@ class FetchInstitutionReportHandlerTest {
             .withSearchResultParameters(defaultResultParameters())
             .withExcludeFields(List.of("publicationDetails.contributors"))
             .build();
-    verify(openSearchClient, times(1)).search(eq(expectedSearchParameters));
+    verify(searchClient, times(1)).search(eq(expectedSearchParameters));
   }
 
   @Test
@@ -337,7 +337,7 @@ class FetchInstitutionReportHandlerTest {
   void shouldLogCandidateIdOnFailure() throws IOException {
     var topLevelCristinOrg = randomCristinOrgUri();
     var indexDocument = indexDocumentMissingApprovals(CURRENT_YEAR, topLevelCristinOrg);
-    when(openSearchClient.search(any()))
+    when(searchClient.search(any()))
         .thenReturn(aggregationResponse(1))
         .thenReturn(createSearchResponse(indexDocument));
     var appender = LogUtils.getTestingAppender(NviCandidateIndexDocument.class);
@@ -493,21 +493,21 @@ class FetchInstitutionReportHandlerTest {
         buildRequest(topLevelCristinOrg, searchResultParams(0, 0))
             .withAggregationType(TOTAL_COUNT_AGGREGATION_AGG.getAggregationName())
             .build();
-    when(openSearchClient.search(eq(aggregationRequest)))
+    when(searchClient.search(eq(aggregationRequest)))
         .thenReturn(aggregationResponse(indexDocuments.size()));
     var firstSearchRequest =
         buildRequest(topLevelCristinOrg, searchResultParams(PAGE_SIZE, 0)).build();
-    when(openSearchClient.search(eq(firstSearchRequest)))
+    when(searchClient.search(eq(firstSearchRequest)))
         .thenReturn(
             createSearchResponseWithTotal(
                 indexDocuments.stream().limit(PAGE_SIZE).toList(), indexDocuments.size()));
     var openSearchException = createRequestEntityTooLargeException();
     var secondSearchRequest =
         buildRequest(topLevelCristinOrg, searchResultParams(PAGE_SIZE, PAGE_SIZE)).build();
-    when(openSearchClient.search(eq(secondSearchRequest))).thenThrow(openSearchException);
+    when(searchClient.search(eq(secondSearchRequest))).thenThrow(openSearchException);
     var secondSearchRequestWithReducedPageSize =
         buildRequest(topLevelCristinOrg, searchResultParams(PAGE_SIZE / 2, PAGE_SIZE)).build();
-    when(openSearchClient.search(eq(secondSearchRequestWithReducedPageSize)))
+    when(searchClient.search(eq(secondSearchRequestWithReducedPageSize)))
         .thenReturn(
             createSearchResponseWithTotal(
                 indexDocuments.stream().skip(PAGE_SIZE).toList(), indexDocuments.size()));
@@ -539,7 +539,7 @@ class FetchInstitutionReportHandlerTest {
         List.of(
             indexDocumentMissingApprovals,
             randomIndexDocumentWith(CURRENT_YEAR, topLevelCristinOrg));
-    when(openSearchClient.search(any()))
+    when(searchClient.search(any()))
         .thenReturn(aggregationResponse(candidatesInIndex.size()))
         .thenReturn(createSearchResponse(candidatesInIndex));
     return candidatesInIndex;
@@ -568,7 +568,7 @@ class FetchInstitutionReportHandlerTest {
       throws IOException {
     var candidatesInIndex =
         List.of(indexDocumentWithLanguage(CURRENT_YEAR, topLevelCristinOrg, languageUri));
-    when(openSearchClient.search(any()))
+    when(searchClient.search(any()))
         .thenReturn(aggregationResponse(candidatesInIndex.size()))
         .thenReturn(createSearchResponse(candidatesInIndex));
   }
@@ -578,7 +578,7 @@ class FetchInstitutionReportHandlerTest {
     var firstDocument = randomIndexDocumentWith(CURRENT_YEAR, topLevelCristinOrg);
     var secondDocument = randomIndexDocumentWith(CURRENT_YEAR, topLevelCristinOrg);
     var candidatesInIndex = List.of(firstDocument, secondDocument);
-    when(openSearchClient.search(any()))
+    when(searchClient.search(any()))
         .thenReturn(aggregationResponse(candidatesInIndex.size()))
         .thenReturn(createSearchResponseWithTotal(List.of(firstDocument), candidatesInIndex.size()))
         .thenReturn(
@@ -812,7 +812,7 @@ class FetchInstitutionReportHandlerTest {
 
   private List<NviCandidateIndexDocument> mockCandidatesInOpenSearch(
       List<NviCandidateIndexDocument> indexDocuments) throws IOException {
-    when(openSearchClient.search(any()))
+    when(searchClient.search(any()))
         .thenReturn(aggregationResponse(indexDocuments.size()))
         .thenReturn(createSearchResponse(indexDocuments));
     return indexDocuments;
