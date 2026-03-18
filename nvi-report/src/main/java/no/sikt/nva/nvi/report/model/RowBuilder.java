@@ -1,10 +1,10 @@
-package no.sikt.nva.nvi.index.report.model;
+package no.sikt.nva.nvi.report.model;
 
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
-public abstract sealed class RowBuilder permits ReportRowBuilder {
+public abstract class RowBuilder {
 
   private final List<Cell> cells;
 

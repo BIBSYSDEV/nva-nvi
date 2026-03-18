@@ -1,19 +1,18 @@
-package no.sikt.nva.nvi.index.report.model;
+package no.sikt.nva.nvi.report.model;
 
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 
 import java.math.BigDecimal;
-import no.sikt.nva.nvi.report.model.Row;
 import no.sikt.nva.nvi.report.model.institutionreport.ReportRowBuilder;
 
 public final class RowFixtures {
 
   private RowFixtures() {}
 
-  public static Row completeReportRow() {
+  public static Row completeReportRow(String publicationId) {
     return new ReportRowBuilder()
         .withYear(randomString())
-        .withPublicationId(randomString())
+        .withPublicationId(publicationId)
         .withPublicationType(randomString())
         .withPublicationChannel(randomString())
         .withPublicationChannelType(randomString())

@@ -1,10 +1,12 @@
-package no.sikt.nva.nvi.index.report.model;
+package no.sikt.nva.nvi.report.model.institutionreport;
 
 import static java.util.function.Predicate.not;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import no.sikt.nva.nvi.report.model.Row;
+import no.sikt.nva.nvi.report.model.RowValidator;
 
 public class DefaultValidator implements RowValidator {
 

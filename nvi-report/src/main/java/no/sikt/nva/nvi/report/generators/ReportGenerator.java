@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.index.xlsx;
+package no.sikt.nva.nvi.report.generators;
 
 @FunctionalInterface
 public interface ReportGenerator {

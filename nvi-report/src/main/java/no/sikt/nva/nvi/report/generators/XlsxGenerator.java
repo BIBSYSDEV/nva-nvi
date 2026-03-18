@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.index.xlsx;
+package no.sikt.nva.nvi.report.generators;
 
 import static java.util.Objects.isNull;
 import static no.sikt.nva.nvi.common.utils.DecimalUtils.adjustScaleAndRoundingMode;
@@ -7,23 +7,23 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.List;
 import java.util.stream.IntStream;
-import no.sikt.nva.nvi.index.report.model.Cell;
-import no.sikt.nva.nvi.index.report.model.NumericCell;
-import no.sikt.nva.nvi.index.report.model.Row;
-import no.sikt.nva.nvi.index.report.model.StringCell;
+import no.sikt.nva.nvi.report.model.Cell;
+import no.sikt.nva.nvi.report.model.NumericCell;
+import no.sikt.nva.nvi.report.model.Row;
+import no.sikt.nva.nvi.report.model.StringCell;
 import org.dhatim.fastexcel.Workbook;
 import org.dhatim.fastexcel.Worksheet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class FastExcelXlsxGenerator implements ReportGenerator {
+public class XlsxGenerator implements ReportGenerator {
 
-  private static final Logger logger = LoggerFactory.getLogger(FastExcelXlsxGenerator.class);
+  private static final Logger logger = LoggerFactory.getLogger(XlsxGenerator.class);
   private static final String NVI = "NVI";
   private static final String REPORT = "report";
   private final List<Row> rows;
 
-  public FastExcelXlsxGenerator(List<Row> rows) {
+  public XlsxGenerator(List<Row> rows) {
     this.rows = rows;
   }
 

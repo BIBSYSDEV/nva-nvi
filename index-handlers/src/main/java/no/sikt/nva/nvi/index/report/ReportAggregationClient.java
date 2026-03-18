@@ -11,12 +11,12 @@ import java.util.stream.Stream;
 import no.sikt.nva.nvi.index.aws.OpenSearchClientFactory;
 import no.sikt.nva.nvi.index.model.report.InstitutionReportMapper;
 import no.sikt.nva.nvi.index.model.report.ReportDocument;
-import no.sikt.nva.nvi.index.report.model.Row;
 import no.sikt.nva.nvi.index.report.query.AllInstitutionsQuery;
 import no.sikt.nva.nvi.index.report.query.InstitutionQuery;
 import no.sikt.nva.nvi.index.report.query.ReportAggregationQuery;
-import no.sikt.nva.nvi.index.xlsx.CsvGenerator;
-import no.sikt.nva.nvi.index.xlsx.FastExcelXlsxGenerator;
+import no.sikt.nva.nvi.report.generators.CsvGenerator;
+import no.sikt.nva.nvi.report.generators.XlsxGenerator;
+import no.sikt.nva.nvi.report.model.Row;
 import nva.commons.core.JacocoGenerated;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
@@ -113,7 +113,7 @@ public class ReportAggregationClient {
         fetchReportDocuments(query.query()).stream()
             .flatMap(ReportAggregationClient::toReportRows)
             .toList();
-    return new FastExcelXlsxGenerator(rows).toWorkbookByteArray();
+    return new XlsxGenerator(rows).toWorkbookByteArray();
   }
 
   public byte[] executeXlsxReport(InstitutionQuery query) {
@@ -124,7 +124,7 @@ public class ReportAggregationClient {
                 document ->
                     InstitutionReportMapper.mapToReportRows(document, query.institutionId()))
             .toList();
-    return new FastExcelXlsxGenerator(rows).toWorkbookByteArray();
+    return new XlsxGenerator(rows).toWorkbookByteArray();
   }
 
   private <T> T processQuery(ReportAggregationQuery<T> query) throws IOException {

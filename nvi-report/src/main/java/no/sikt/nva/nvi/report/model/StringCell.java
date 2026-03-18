@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.index.report.model;
+package no.sikt.nva.nvi.report.model;
 
 import static java.util.Objects.nonNull;
 import static nva.commons.core.StringUtils.EMPTY_STRING;

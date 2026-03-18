@@ -1,0 +1,20 @@
+plugins {
+    id 'nva.nvi.java-conventions'
+}
+
+dependencies {
+    implementation project(':nvi-commons')
+    implementation nvaCatalog.bundles.logging
+    implementation nvaCatalog.opencsv
+    implementation nvaLibs.core
+    implementation libs.fast.excel
+
+    testImplementation nvaLibs.testutils
+    testImplementation libs.fast.excel.reader
+    testImplementation nvaCatalog.bundles.testing.junit
+    testImplementation nvaCatalog.assertj.core
+}
+
+test {
+    useJUnitPlatform()
+}
