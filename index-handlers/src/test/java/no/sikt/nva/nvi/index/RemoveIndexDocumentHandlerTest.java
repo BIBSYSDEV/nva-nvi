@@ -10,20 +10,20 @@ import static org.mockito.Mockito.when;
 
 import no.sikt.nva.nvi.common.QueueServiceTestUtils;
 import no.sikt.nva.nvi.common.db.CandidateDao;
-import no.sikt.nva.nvi.index.aws.OpenSearchClient;
+import no.sikt.nva.nvi.index.aws.CandidateSearchClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.dynamodb.model.OperationType;
 
 class RemoveIndexDocumentHandlerTest {
 
-  private OpenSearchClient openSearchClient;
+  private CandidateSearchClient searchClient;
   private RemoveIndexDocumentHandler handler;
 
   @BeforeEach
   void setUp() {
-    openSearchClient = mock(OpenSearchClient.class);
-    handler = new RemoveIndexDocumentHandler(openSearchClient);
+    searchClient = mock(CandidateSearchClient.class);
+    handler = new RemoveIndexDocumentHandler(searchClient);
   }
 
   @Test
@@ -31,7 +31,7 @@ class RemoveIndexDocumentHandlerTest {
     var candidate = randomApplicableCandidateDao();
     var event = createEvent(candidate, candidate, OperationType.REMOVE);
     handler.handleRequest(event, null);
-    verify(openSearchClient, times(1)).removeDocumentFromIndex(candidate.identifier());
+    verify(searchClient, times(1)).removeDocumentFromIndex(candidate.identifier());
   }
 
   @Test
@@ -41,7 +41,7 @@ class RemoveIndexDocumentHandlerTest {
     var event = createEvent(candidateToSucceed.identifier(), candidateToFail.identifier());
     mockOpenSearchFailure(candidateToFail);
     handler.handleRequest(event, null);
-    verify(openSearchClient, times(1)).removeDocumentFromIndex(candidateToSucceed.identifier());
+    verify(searchClient, times(1)).removeDocumentFromIndex(candidateToSucceed.identifier());
   }
 
   @Test
@@ -49,7 +49,7 @@ class RemoveIndexDocumentHandlerTest {
     var candidate = randomApplicableCandidateDao();
     var eventWithOneInvalidRecord = createEventWithOneInvalidRecord(candidate);
     handler.handleRequest(eventWithOneInvalidRecord, null);
-    verify(openSearchClient, times(1)).removeDocumentFromIndex(candidate.identifier());
+    verify(searchClient, times(1)).removeDocumentFromIndex(candidate.identifier());
   }
 
   @Test
@@ -58,11 +58,11 @@ class RemoveIndexDocumentHandlerTest {
     var eventWithOneInvalidRecord =
         QueueServiceTestUtils.createEventWithOneRecordMissingIdentifier(candidate);
     handler.handleRequest(eventWithOneInvalidRecord, null);
-    verify(openSearchClient, times(1)).removeDocumentFromIndex(candidate.identifier());
+    verify(searchClient, times(1)).removeDocumentFromIndex(candidate.identifier());
   }
 
   private void mockOpenSearchFailure(CandidateDao candidateToFail) {
-    when(openSearchClient.removeDocumentFromIndex(candidateToFail.identifier()))
+    when(searchClient.removeDocumentFromIndex(candidateToFail.identifier()))
         .thenThrow(RuntimeException.class);
   }
 }

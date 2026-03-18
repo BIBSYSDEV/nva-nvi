@@ -1,6 +1,6 @@
 package no.sikt.nva.nvi.index;
 
-import static no.sikt.nva.nvi.index.aws.OpenSearchClient.defaultOpenSearchClient;
+import static no.sikt.nva.nvi.index.aws.CandidateSearchClient.defaultOpenSearchClient;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
@@ -16,7 +16,7 @@ public class DeleteNviIndexHandler implements RequestHandler<Object, String> {
   public static final String FINISHED = "FINISHED";
   public static final String INDEX_DELETION_FAILED_MESSAGE = "Index deletion failed";
   private static final Logger LOGGER = LoggerFactory.getLogger(DeleteNviIndexHandler.class);
-  private final SearchClient<NviCandidateIndexDocument> openSearchClient;
+  private final SearchClient<NviCandidateIndexDocument> searchClient;
 
   @JacocoGenerated
   public DeleteNviIndexHandler() {
@@ -24,13 +24,13 @@ public class DeleteNviIndexHandler implements RequestHandler<Object, String> {
   }
 
   public DeleteNviIndexHandler(SearchClient<NviCandidateIndexDocument> indexingClient) {
-    this.openSearchClient = indexingClient;
+    this.searchClient = indexingClient;
   }
 
   @Override
   public String handleRequest(Object input, Context context) {
     try {
-      openSearchClient.deleteIndex();
+      searchClient.deleteIndex();
     } catch (IOException e) {
       LOGGER.error(INDEX_DELETION_FAILED_MESSAGE);
       throw new RuntimeException(e);
