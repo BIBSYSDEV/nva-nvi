@@ -1,0 +1,12 @@
+package no.sikt.nva.nvi.index.report.model;
+
+import static java.util.Objects.nonNull;
+import static nva.commons.core.StringUtils.EMPTY_STRING;
+
+public record StringCell(Header header, String value) implements Cell {
+
+  @Override
+  public String string() {
+    return nonNull(value) ? value : EMPTY_STRING;
+  }
+}

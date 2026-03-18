@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import no.sikt.nva.nvi.index.report.model.Row;
 import nva.commons.core.JacocoGenerated;
 
 public class CsvGenerator implements ReportGenerator {
@@ -21,6 +22,11 @@ public class CsvGenerator implements ReportGenerator {
   public CsvGenerator(List<String> headers, List<List<String>> data) {
     this.headers = headers;
     this.data = data;
+  }
+
+  public CsvGenerator(List<Row> rows) {
+    this.headers = rows.isEmpty() ? Collections.emptyList() : rows.getFirst().headers();
+    this.data = rows.stream().map(Row::values).toList();
   }
 
   @JacocoGenerated

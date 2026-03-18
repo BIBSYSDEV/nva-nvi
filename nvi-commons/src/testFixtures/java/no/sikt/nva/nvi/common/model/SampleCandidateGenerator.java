@@ -76,7 +76,7 @@ public final class SampleCandidateGenerator {
     return randomElement(ChannelType.values());
   }
 
-  private static ScientificValue randomScientificValue() {
+  public static ScientificValue randomScientificValue() {
     return randomElement(ScientificValue.values());
   }
 
