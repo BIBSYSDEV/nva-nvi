@@ -73,6 +73,21 @@ public final class ReportRowBuilder extends RowBuilder {
     return this;
   }
 
+  public ReportRowBuilder withNsdInstitutionCode(String value) {
+    withCell(Cell.of(ReportHeader.NSDSTEDKODE, value));
+    return this;
+  }
+
+  public ReportRowBuilder withSector(String value) {
+    withCell(Cell.of(ReportHeader.SEKTORKODE, value));
+    return this;
+  }
+
+  public ReportRowBuilder withRboStatus(String value) {
+    withCell(Cell.of(ReportHeader.STATUS_RBO, value));
+    return this;
+  }
+
   public ReportRowBuilder withInstitutionNumber(String value) {
     withCell(Cell.of(ReportHeader.INSTITUSJONSNR, value));
     return this;

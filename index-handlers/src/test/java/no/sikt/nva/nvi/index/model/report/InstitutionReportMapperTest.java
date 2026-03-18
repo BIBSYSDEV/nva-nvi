@@ -16,6 +16,7 @@ import static no.sikt.nva.nvi.index.report.model.ReportHeader.INSTITUSJON;
 import static no.sikt.nva.nvi.index.report.model.ReportHeader.INSTITUSJONSNR;
 import static no.sikt.nva.nvi.index.report.model.ReportHeader.INSTITUSJON_ID;
 import static no.sikt.nva.nvi.index.report.model.ReportHeader.KVALITETSNIVAKODE;
+import static no.sikt.nva.nvi.index.report.model.ReportHeader.NSDSTEDKODE;
 import static no.sikt.nva.nvi.index.report.model.ReportHeader.NVAID;
 import static no.sikt.nva.nvi.index.report.model.ReportHeader.PERSONLOPENR;
 import static no.sikt.nva.nvi.index.report.model.ReportHeader.PRINT_ISSN;
@@ -25,7 +26,9 @@ import static no.sikt.nva.nvi.index.report.model.ReportHeader.PUBLISERINGSKANALN
 import static no.sikt.nva.nvi.index.report.model.ReportHeader.PUBLISERINGSKANALTYPE;
 import static no.sikt.nva.nvi.index.report.model.ReportHeader.PUBLISERINGSPOENG;
 import static no.sikt.nva.nvi.index.report.model.ReportHeader.RAPPORTSTATUS;
+import static no.sikt.nva.nvi.index.report.model.ReportHeader.SEKTORKODE;
 import static no.sikt.nva.nvi.index.report.model.ReportHeader.STATUS_KONTROLLERT;
+import static no.sikt.nva.nvi.index.report.model.ReportHeader.STATUS_RBO;
 import static no.sikt.nva.nvi.index.report.model.ReportHeader.TENTATIVE_PUBLISERINGSPOENG;
 import static no.sikt.nva.nvi.index.report.model.ReportHeader.TITTEL;
 import static no.sikt.nva.nvi.index.report.model.ReportHeader.UNDAVDNR;
@@ -65,10 +68,34 @@ class InstitutionReportMapperTest {
   private static final String ORGANIZATION_PRESENT_IN_HKDIR = "194.0.0.0";
 
   @Test
-  void shouldMapInstitutionIdentifierToHkdirInstitutionCode() {
+  void shouldHandleMissingInstitutionFromUHInstitutions() {
     var document = randomDocument("1.1.1.1");
     var row = toRow(document);
     assertThat(cellValue(row, HKDIR_INSTITUSJONSKODE)).isEqualTo(EMPTY_STRING);
+    assertThat(cellValue(row, STATUS_RBO)).isEqualTo(EMPTY_STRING);
+    assertThat(cellValue(row, NSDSTEDKODE)).isEqualTo(EMPTY_STRING);
+    assertThat(cellValue(row, SEKTORKODE)).isEqualTo(EMPTY_STRING);
+  }
+
+  @Test
+  void shouldMapInstitutionIdentifierToNsdInstitutionCode() {
+    var document = randomDocument(ORGANIZATION_PRESENT_IN_HKDIR);
+    var row = toRow(document);
+    assertThat(cellValue(row, NSDSTEDKODE)).isEqualTo("000000");
+  }
+
+  @Test
+  void shouldMapInstitutionIdentifierToRboStatus() {
+    var document = randomDocument(ORGANIZATION_PRESENT_IN_HKDIR);
+    var row = toRow(document);
+    assertThat(cellValue(row, STATUS_RBO)).isEqualTo("J");
+  }
+
+  @Test
+  void shouldMapInstitutionIdentifierToSector() {
+    var document = randomDocument(ORGANIZATION_PRESENT_IN_HKDIR);
+    var row = toRow(document);
+    assertThat(cellValue(row, SEKTORKODE)).isEqualTo("UH");
   }
 
   @Test

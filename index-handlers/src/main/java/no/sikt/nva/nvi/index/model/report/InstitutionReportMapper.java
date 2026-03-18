@@ -28,13 +28,14 @@ public final class InstitutionReportMapper {
   private static final String NO_APPROVAL_MESSAGE =
       "No approval found for institution: {}. Cannot convert "
           + "candidate with id {} to report rows";
-  private static final String APPROVED_VALUE = "J";
-  private static final String REJECTED_VALUE = "N";
+  private static final String J = "J";
+  private static final String N = "N";
   private static final String PENDING_VALUE = "?";
   private static final String DISPUTED_VALUE = "T";
   private static final String UNKNOWN = "N/A";
-  private static final String HKDIR_INSTITUTIONS_JSON = "hkdir_institutions.json";
-  private static final Map<String, String> HKDIR_INSTITUTIONS = loadInstitutionCodes();
+  private static final String UH_INSTITUTIONS_JSON = "uh_institutions.json";
+  private static final Map<String, InstitutionAdditionalFields> HKDIR_INSTITUTIONS =
+      loadInstitutionCodes();
 
   private InstitutionReportMapper() {}
 
@@ -59,12 +60,12 @@ public final class InstitutionReportMapper {
         .orElse(BigDecimal.ZERO);
   }
 
-  private static TypeReference<Map<String, String>> getTypeReference() {
+  private static TypeReference<Map<String, InstitutionAdditionalFields>> getTypeReference() {
     return new TypeReference<>() {};
   }
 
-  private static Map<String, String> loadInstitutionCodes() {
-    return attempt(() -> HKDIR_INSTITUTIONS_JSON)
+  private static Map<String, InstitutionAdditionalFields> loadInstitutionCodes() {
+    return attempt(() -> UH_INSTITUTIONS_JSON)
         .map(IoUtils::inputStreamFromResources)
         .map(inputStream -> JsonUtils.dtoObjectMapper.readValue(inputStream, getTypeReference()))
         .orElseThrow();
@@ -102,6 +103,9 @@ public final class InstitutionReportMapper {
         .withAffiliationIdentifier(affiliation.identifier())
         .withAffiliationId(affiliation.id().toString())
         .withHkdirInstitutionCode(getHkdirInstitutionCodeFor(institutionIdentifier))
+        .withNsdInstitutionCode(getNsdInstitutionCodeFor(institutionIdentifier))
+        .withSector(getSector(institutionIdentifier))
+        .withRboStatus(getRboStatus(institutionIdentifier))
         .withInstitutionNumber(institutionIdentifier)
         .withFacultyNumber(affiliation.getFacultyIdentifier())
         .withDepartmentNumber(affiliation.getDepartmentIdentifier())
@@ -120,12 +124,38 @@ public final class InstitutionReportMapper {
   }
 
   private static String getHkdirInstitutionCodeFor(String institutionIdentifier) {
-    return HKDIR_INSTITUTIONS.getOrDefault(institutionIdentifier, EMPTY_STRING);
+    return getInstitutionAdditionalFields(institutionIdentifier)
+        .map(InstitutionAdditionalFields::hkdirIdentifier)
+        .orElse(EMPTY_STRING);
+  }
+
+  private static String getNsdInstitutionCodeFor(String institutionIdentifier) {
+    return getInstitutionAdditionalFields(institutionIdentifier)
+        .map(InstitutionAdditionalFields::nsdInstitutionIdentifier)
+        .orElse(EMPTY_STRING);
+  }
+
+  private static String getSector(String institutionIdentifier) {
+    return getInstitutionAdditionalFields(institutionIdentifier)
+        .map(InstitutionAdditionalFields::sector)
+        .orElse(EMPTY_STRING);
+  }
+
+  private static String getRboStatus(String institutionIdentifier) {
+    return getInstitutionAdditionalFields(institutionIdentifier)
+        .map(InstitutionAdditionalFields::isRbo)
+        .map(value -> value ? J : N)
+        .orElse(EMPTY_STRING);
+  }
+
+  private static Optional<InstitutionAdditionalFields> getInstitutionAdditionalFields(
+      String institutionIdentifier) {
+    return Optional.ofNullable(HKDIR_INSTITUTIONS.get(institutionIdentifier));
   }
 
   private static BigDecimal getPublishingPoints(
       BigDecimal pointsForAffiliation, String globalStatus) {
-    return APPROVED_VALUE.equals(globalStatus) ? pointsForAffiliation : BigDecimal.ZERO;
+    return J.equals(globalStatus) ? pointsForAffiliation : BigDecimal.ZERO;
   }
 
   private static String getInternationalCollaborationFactor(ReportDocument document) {
@@ -142,16 +172,16 @@ public final class InstitutionReportMapper {
 
   private static String mapApprovalStatus(ApprovalStatus status) {
     return switch (status) {
-      case APPROVED -> APPROVED_VALUE;
-      case REJECTED -> REJECTED_VALUE;
+      case APPROVED -> J;
+      case REJECTED -> N;
       case NEW, PENDING -> PENDING_VALUE;
     };
   }
 
   private static String mapGlobalStatus(GlobalApprovalStatus status) {
     return switch (status) {
-      case APPROVED -> APPROVED_VALUE;
-      case REJECTED -> REJECTED_VALUE;
+      case APPROVED -> J;
+      case REJECTED -> N;
       case PENDING -> PENDING_VALUE;
       case DISPUTE -> DISPUTED_VALUE;
     };
