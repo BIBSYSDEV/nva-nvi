@@ -1277,6 +1277,7 @@ Resources:
         Variables:
           ALLOWED_ORIGIN: !Ref AllowedOrigins
 #          NVI_REPORTS_BUCKET: !Ref ReportsBucket
+          NVI_REPORTS_BUCKET: !Ref ResourcesBucket
           REPORT_QUEUE: !Ref ReportQueue
       Events:
         AllPeriodsReport:
