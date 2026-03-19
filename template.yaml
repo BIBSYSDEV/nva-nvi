@@ -1659,6 +1659,24 @@ Resources:
       AlarmActions:
         - !Ref SlackSnsArn
 
+  ReportQueueDLQAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: NVI report generation failed
+      AlarmDescription: Report generation failed. Check messages on ReportQueueDLQ.
+      MetricName: ApproximateNumberOfMessagesVisible
+      Namespace: AWS/SQS
+      Statistic: Sum
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt ReportQueueDLQ.QueueName
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      AlarmActions:
+        - !Ref SlackSnsArn
+
   ReportsBucket:
     Type: AWS::S3::Bucket
     Properties:
