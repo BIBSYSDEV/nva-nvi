@@ -13,14 +13,16 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import no.sikt.nva.nvi.common.queue.NviQueueClient;
+import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.exception.PeriodNotFoundException;
 import no.sikt.nva.nvi.index.report.request.ReportRequest;
 import no.sikt.nva.nvi.index.report.request.ReportRequestFactory;
+import no.sikt.nva.nvi.index.report.response.PresignReportService;
 import no.sikt.nva.nvi.index.report.response.ReportResponse;
 import no.sikt.nva.nvi.index.report.response.ReportService;
-import no.sikt.nva.nvi.index.report.response.ReportUploader;
-import no.unit.nva.s3.S3Driver;
+import no.sikt.nva.nvi.report.presigner.ReportPresigner;
 import nva.commons.apigateway.ApiGatewayHandler;
 import nva.commons.apigateway.MediaType;
 import nva.commons.apigateway.RequestInfo;
@@ -47,20 +49,23 @@ public class FetchReportHandler extends ApiGatewayHandler<Void, ReportResponse> 
         new Environment(),
         NviPeriodService.defaultNviPeriodService(),
         ReportAggregationClient.defaultClient(),
-        new ReportUploader(
-            S3Driver.defaultS3Client().build(),
-            S3Presigner.builder().build(),
-            new Environment().readEnv(NVI_REPORTS_BUCKET)));
+        new ReportPresigner(
+            S3Presigner.builder().build(), new Environment().readEnv(NVI_REPORTS_BUCKET)),
+        new NviQueueClient());
   }
 
   public FetchReportHandler(
       Environment environment,
       NviPeriodService nviPeriodService,
       ReportAggregationClient reportAggregationClient,
-      ReportUploader reportUploader) {
+      ReportPresigner reportPresigner,
+      QueueClient queueClient) {
     super(Void.class, environment);
     this.reportService =
-        new ReportService(nviPeriodService, reportAggregationClient, reportUploader);
+        new ReportService(
+            nviPeriodService,
+            reportAggregationClient,
+            new PresignReportService(reportPresigner, queueClient, environment));
   }
 
   @Override

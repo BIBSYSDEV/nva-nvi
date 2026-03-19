@@ -4,6 +4,7 @@ import static com.google.common.net.MediaType.JSON_UTF_8;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static java.util.Collections.emptyMap;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.ALLOWED_ORIGIN;
+import static no.sikt.nva.nvi.common.EnvironmentFixtures.REPORT_QUEUE;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.getHandlerEnvironment;
 import static no.sikt.nva.nvi.index.report.ReportConstants.INSTITUTIONS_PATH_SEGMENT;
 import static no.sikt.nva.nvi.index.report.ReportConstants.INSTITUTION_PATH_PARAM;
@@ -34,12 +35,13 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.util.List;
 import java.util.Map;
+import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.index.report.FetchReportHandler;
 import no.sikt.nva.nvi.index.report.ReportAggregationClient;
 import no.sikt.nva.nvi.index.report.query.AllPeriodsQuery;
 import no.sikt.nva.nvi.index.report.response.AllPeriodsReport;
-import no.sikt.nva.nvi.index.report.response.FakeReportUploader;
+import no.sikt.nva.nvi.index.report.response.FakeReportPresigner;
 import no.sikt.nva.nvi.index.report.response.ReportResponse;
 import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.testutils.HandlerRequestBuilder;
@@ -67,10 +69,11 @@ class FetchReportHandlerTest {
     when(mockClient.executeQuery(any(AllPeriodsQuery.class))).thenReturn(List.of());
     handler =
         new FetchReportHandler(
-            getHandlerEnvironment(ALLOWED_ORIGIN),
+            getHandlerEnvironment(ALLOWED_ORIGIN, REPORT_QUEUE),
             mock(NviPeriodService.class),
             mockClient,
-            new FakeReportUploader());
+            new FakeReportPresigner(),
+            mock(QueueClient.class));
   }
 
   @ParameterizedTest
