@@ -950,8 +950,8 @@ Resources:
       Role: !GetAtt NvaNviRole.Arn
       Timeout: 900
       MemorySize: 1536
-      Environment:
-        Variables:
+#      Environment:
+#        Variables:
 #          NVI_REPORTS_BUCKET: !Ref ReportsBucket
       Events:
         SQSEvent:
