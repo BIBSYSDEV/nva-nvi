@@ -8,6 +8,7 @@ import no.sikt.nva.nvi.index.aws.CandidateSearchClient;
 import no.sikt.nva.nvi.index.aws.OpenSearchClientFactory;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.report.ReportAggregationClient;
+import no.sikt.nva.nvi.index.report.ReportDocumentClient;
 import org.apache.hc.core5.http.HttpHost;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.testcontainers.OpenSearchContainer;
@@ -21,6 +22,7 @@ public class OpenSearchContainerContext implements Startable {
       new OpenSearchContainer<>(OPEN_SEARCH_IMAGE);
   private static CandidateSearchClient searchClient;
   private static ReportAggregationClient reportAggregationClient;
+  private static ReportDocumentClient reportDocumentClient;
   private final Logger logger = LoggerFactory.getLogger(OpenSearchContainerContext.class);
 
   @Override
@@ -31,6 +33,7 @@ public class OpenSearchContainerContext implements Startable {
     var nativeClient = OpenSearchClientFactory.createClient(httpHost, fakeJwtProvider);
     searchClient = new CandidateSearchClient(nativeClient);
     reportAggregationClient = new ReportAggregationClient(nativeClient);
+    reportDocumentClient = new ReportDocumentClient(nativeClient);
   }
 
   @Override
@@ -63,6 +66,10 @@ public class OpenSearchContainerContext implements Startable {
 
   public ReportAggregationClient getReportAggregationClient() {
     return reportAggregationClient;
+  }
+
+  public ReportDocumentClient getReportDocumentClient() {
+    return reportDocumentClient;
   }
 
   public void addDocumentsToIndex(Collection<NviCandidateIndexDocument> documents) {

@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.index.report;
 
 import static java.util.Collections.emptyMap;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.ALLOWED_ORIGIN;
+import static no.sikt.nva.nvi.common.EnvironmentFixtures.REPORT_QUEUE;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.getHandlerEnvironment;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeriod;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupFuturePeriod;
@@ -29,11 +30,12 @@ import java.util.Map;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.TestScenario;
+import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import no.sikt.nva.nvi.index.IndexDocumentFixtures;
 import no.sikt.nva.nvi.index.OpenSearchContainerContext;
 import no.sikt.nva.nvi.index.report.response.AllInstitutionsReport;
 import no.sikt.nva.nvi.index.report.response.AllPeriodsReport;
-import no.sikt.nva.nvi.index.report.response.FakeReportUploader;
+import no.sikt.nva.nvi.index.report.response.FakeReportPresigner;
 import no.sikt.nva.nvi.index.report.response.ReportResponse;
 import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.testutils.HandlerRequestBuilder;
@@ -66,10 +68,11 @@ class FetchReportHandlerTest {
     setupFuturePeriod(scenario, NEXT_YEAR);
     handler =
         new FetchReportHandler(
-            getHandlerEnvironment(ALLOWED_ORIGIN),
+            getHandlerEnvironment(ALLOWED_ORIGIN, REPORT_QUEUE),
             scenario.getPeriodService(),
             CONTAINER.getReportAggregationClient(),
-            new FakeReportUploader());
+            new FakeReportPresigner(),
+            new FakeSqsClient());
   }
 
   @AfterEach
