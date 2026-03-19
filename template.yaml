@@ -112,9 +112,9 @@ Parameters:
     Type: Number
     Description: Timeout in seconds for functions that parse JSON-LD documents. These need a high timeout in order to handle unusually large documents.
     Default: 300 # 5 minutes
-#  ReportsBucketName:
-#    Type: String
-#    Default: "reports"
+  ReportsBucketName:
+    Type: String
+    Default: "reports"
 
 Conditions:
   WithSuffix: !Not [!Equals [!Ref Suffix, ""]]
@@ -950,9 +950,9 @@ Resources:
       Role: !GetAtt NvaNviRole.Arn
       Timeout: 900
       MemorySize: 1536
-#      Environment:
-#        Variables:
-#          NVI_REPORTS_BUCKET: !Ref ReportsBucket
+      Environment:
+        Variables:
+          NVI_REPORTS_BUCKET: !Ref ReportsBucket
       Events:
         SQSEvent:
           Type: SQS
@@ -1276,8 +1276,7 @@ Resources:
       Environment:
         Variables:
           ALLOWED_ORIGIN: !Ref AllowedOrigins
-#          NVI_REPORTS_BUCKET: !Ref ReportsBucket
-          NVI_REPORTS_BUCKET: !Ref ResourcesBucket
+          NVI_REPORTS_BUCKET: !Ref ReportsBucket
           REPORT_QUEUE: !Ref ReportQueue
       Events:
         AllPeriodsReport:
@@ -1660,16 +1659,16 @@ Resources:
       AlarmActions:
         - !Ref SlackSnsArn
 
-#  ReportsBucket:
-#    Type: AWS::S3::Bucket
-#    Properties:
-#      BucketName: !Sub "${ReportsBucketName}-${AWS::AccountId}"
-#      LifecycleConfiguration:
-#        Rules:
-#          - Id: DeleteContentAfter3Days
-#            Status: Enabled
-#            ExpirationInDays: 3
-#          - Id: AbortIncompleteMultipartUploads
-#            Status: Enabled
-#            AbortIncompleteMultipartUpload:
-#              DaysAfterInitiation: 1
+  ReportsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${ReportsBucketName}-${AWS::AccountId}"
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteContentAfter3Days
+            Status: Enabled
+            ExpirationInDays: 3
+          - Id: AbortIncompleteMultipartUploads
+            Status: Enabled
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 1
