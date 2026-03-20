@@ -291,6 +291,7 @@ public final class CristinMapper {
         institutionPoints.institutionId(),
         institutionPoints.points(),
         Sector.UNKNOWN,
+        false,
         toCreatorPoints(institutionPoints));
   }
 

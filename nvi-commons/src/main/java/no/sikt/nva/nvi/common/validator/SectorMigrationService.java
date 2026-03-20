@@ -104,6 +104,7 @@ public class SectorMigrationService implements MigrationService {
         institutionPoints.institutionId(),
         institutionPoints.institutionPoints(),
         sectorDifferFromCustomerSector(institutionPoints) ? sector : institutionPoints.sector(),
+        institutionPoints.rboInstitution(),
         institutionPoints.creatorAffiliationPoints());
   }
 
