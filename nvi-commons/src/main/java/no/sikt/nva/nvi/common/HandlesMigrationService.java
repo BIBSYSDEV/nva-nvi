@@ -13,6 +13,8 @@ import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+// TODO: Remove service
+@Deprecated(forRemoval = true)
 public final class HandlesMigrationService implements MigrationService {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(HandlesMigrationService.class);

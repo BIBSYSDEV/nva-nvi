@@ -43,6 +43,11 @@ public final class CustomerDtoFixtures {
 
   public static CustomerDto createCustomer(
       URI organizationId, boolean isNviInstitution, Sector sector) {
+    return createCustomer(organizationId, isNviInstitution, false, sector);
+  }
+
+  public static CustomerDto createCustomer(
+      URI organizationId, boolean isNviInstitution, boolean rboInstitution, Sector sector) {
     return new CustomerDto(
         randomUri(),
         null,
@@ -52,7 +57,7 @@ public final class CustomerDtoFixtures {
         organizationId,
         null,
         isNviInstitution,
-        false,
+        rboInstitution,
         false,
         emptyList(),
         null,
