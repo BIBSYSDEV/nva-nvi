@@ -30,6 +30,7 @@ public enum EnvironmentFixtures {
 
   // Other handler-specific environment variables
   ALLOWED_ORIGIN("*"),
+  REPORT_QUEUE("report-queue"),
   BATCH_JOB_QUEUE_URL("http://localhost:3000/batch-job-queue"),
   COGNITO_HOST("not-actually-in-use-but-exists-in-template"),
   DB_EVENTS_QUEUE_URL("http://localhost:3000/db-events-queue"),

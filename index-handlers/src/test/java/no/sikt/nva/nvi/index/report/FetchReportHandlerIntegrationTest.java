@@ -5,6 +5,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 import static java.util.Collections.emptyMap;
 import static java.util.function.Predicate.not;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.ALLOWED_ORIGIN;
+import static no.sikt.nva.nvi.common.EnvironmentFixtures.REPORT_QUEUE;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.getHandlerEnvironment;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeriod;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupFuturePeriod;
@@ -51,6 +52,7 @@ import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.model.Sector;
+import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.index.OpenSearchContainerContext;
 import no.sikt.nva.nvi.index.model.ApprovalFactory;
@@ -60,7 +62,7 @@ import no.sikt.nva.nvi.index.model.document.InstitutionPointsView;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.report.response.AllInstitutionsReport;
 import no.sikt.nva.nvi.index.report.response.AllPeriodsReport;
-import no.sikt.nva.nvi.index.report.response.FakeReportUploader;
+import no.sikt.nva.nvi.index.report.response.FakeReportPresigner;
 import no.sikt.nva.nvi.index.report.response.InstitutionJsonReport;
 import no.sikt.nva.nvi.index.report.response.PeriodReport;
 import no.sikt.nva.nvi.index.report.response.PeriodTotals;
@@ -91,7 +93,6 @@ class FetchReportHandlerIntegrationTest {
 
   private static final Context CONTEXT = new FakeContext();
   private static final OpenSearchContainerContext CONTAINER = new OpenSearchContainerContext();
-  private static final FakeReportUploader REPORT_UPLOADER = new FakeReportUploader();
   private static final String IDENTIFIER_INSTITUTION_A = "123.0.0.0";
   private static final String IDENTIFIER_INSTITUTION_B = "456.0.0.0";
   private static final String IDENTIFIER_UNIT_A = "123.1.2.3";
@@ -121,10 +122,11 @@ class FetchReportHandlerIntegrationTest {
 
     handler =
         new FetchReportHandler(
-            getHandlerEnvironment(ALLOWED_ORIGIN),
+            getHandlerEnvironment(ALLOWED_ORIGIN, REPORT_QUEUE),
             scenario.getPeriodService(),
             CONTAINER.getReportAggregationClient(),
-            REPORT_UPLOADER);
+            new FakeReportPresigner(),
+            new FakeSqsClient());
 
     CONTAINER.createIndex();
     createIndexDocuments();
@@ -567,7 +569,7 @@ class FetchReportHandlerIntegrationTest {
     }
 
     @Test
-    void shouldReturnAllInstitutionsCsvReportWhenRequested() throws IOException {
+    void shouldReturnReportPresignedUrlForCsvReportWhenRequested() throws IOException {
       var request = createAllInstitutionsCsvRequest(THIS_YEAR, MediaType.CSV_UTF_8);
       var output = new ByteArrayOutputStream();
 
@@ -575,11 +577,11 @@ class FetchReportHandlerIntegrationTest {
 
       var response = fromOutputStream(output, String.class);
       assertThat(response.getStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
-      assertThat(response.getBody()).contains(FakeReportUploader.PRESIGNED_URI.toString());
+      assertThat(response.getBody()).contains(FakeReportPresigner.PRESIGNED_URI.toString());
     }
 
     @Test
-    void shouldReturnAllInstitutionsXlsxReportWhenRequested() throws IOException {
+    void shouldReturnReportPresignedUrlForXlsxReportWhenRequested() throws IOException {
       var request = createAllInstitutionsCsvRequest(THIS_YEAR, MediaType.OOXML_SHEET);
       var output = new ByteArrayOutputStream();
 
@@ -587,7 +589,7 @@ class FetchReportHandlerIntegrationTest {
 
       var response = fromOutputStream(output, String.class);
       assertThat(response.getStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
-      assertThat(response.getBody()).contains(FakeReportUploader.PRESIGNED_URI.toString());
+      assertThat(response.getBody()).contains(FakeReportPresigner.PRESIGNED_URI.toString());
     }
   }
 
@@ -874,7 +876,7 @@ class FetchReportHandlerIntegrationTest {
     }
 
     @Test
-    void shouldReturnXlsxReportWhenRequested() throws IOException {
+    void shouldReturnReportPresignedUrlForXlsxReportWhenRequested() throws IOException {
       var request =
           createInstitutionRequestWithMediaType(
               THIS_YEAR, IDENTIFIER_INSTITUTION_A, MediaType.OOXML_SHEET);
@@ -884,11 +886,11 @@ class FetchReportHandlerIntegrationTest {
 
       var response = fromOutputStream(output, String.class);
       assertThat(response.getStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
-      assertThat(response.getBody()).contains(FakeReportUploader.PRESIGNED_URI.toString());
+      assertThat(response.getBody()).contains(FakeReportPresigner.PRESIGNED_URI.toString());
     }
 
     @Test
-    void shouldReturnCsvReportWhenRequested() throws IOException {
+    void shouldReturnReportPresignedUrlForCsvReportWhenRequested() throws IOException {
       var request =
           createInstitutionRequestWithMediaType(
               THIS_YEAR, IDENTIFIER_INSTITUTION_A, MediaType.CSV_UTF_8);
@@ -898,7 +900,7 @@ class FetchReportHandlerIntegrationTest {
 
       var response = fromOutputStream(output, String.class);
       assertThat(response.getStatusCode()).isEqualTo(HttpURLConnection.HTTP_OK);
-      assertThat(response.getBody()).contains(FakeReportUploader.PRESIGNED_URI.toString());
+      assertThat(response.getBody()).contains(FakeReportPresigner.PRESIGNED_URI.toString());
     }
   }
 }
