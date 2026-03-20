@@ -17,6 +17,7 @@ public record InstitutionPoints(
     URI institutionId,
     BigDecimal institutionPoints,
     Sector sector,
+    boolean rboInstitution,
     Collection<CreatorAffiliationPoints> creatorAffiliationPoints) {
 
   public InstitutionPoints {
@@ -28,7 +29,7 @@ public record InstitutionPoints(
       URI institutionId,
       BigDecimal institutionPoints,
       Collection<CreatorAffiliationPoints> creatorAffiliationPoints) {
-    this(institutionId, institutionPoints, null, creatorAffiliationPoints);
+    this(institutionId, institutionPoints, null, false, creatorAffiliationPoints);
   }
 
   public static InstitutionPoints from(DbInstitutionPoints dbInstitutionPoints) {
@@ -40,6 +41,7 @@ public record InstitutionPoints(
         dbInstitutionPoints.institutionId(),
         dbInstitutionPoints.points(),
         dbInstitutionPoints.sector(),
+        dbInstitutionPoints.rboInstitution(),
         creatorAffiliationPoints);
   }
 

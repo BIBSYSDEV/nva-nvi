@@ -2,6 +2,7 @@ package no.sikt.nva.nvi.common.dto;
 
 import static no.sikt.nva.nvi.common.examples.ExamplePublicationChannels.JOURNAL_OF_TESTING;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
+import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 
@@ -42,7 +43,8 @@ public class PointCalculationDtoBuilder {
   public static PointCalculationDtoBuilder randomPointCalculationDtoBuilder() {
     var creatorPoint = new CreatorAffiliationPoints(randomUri(), randomUri(), randomBigDecimal());
     var institutionPoint =
-        new InstitutionPoints(randomUri(), randomBigDecimal(), Sector.OTHER, List.of(creatorPoint));
+        new InstitutionPoints(
+            randomUri(), randomBigDecimal(), Sector.OTHER, randomBoolean(), List.of(creatorPoint));
     return builder()
         .withInstanceType(InstanceType.ACADEMIC_ARTICLE)
         .withChannel(JOURNAL_OF_TESTING)
