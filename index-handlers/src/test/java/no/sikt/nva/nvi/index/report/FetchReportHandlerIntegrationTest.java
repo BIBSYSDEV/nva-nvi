@@ -296,12 +296,14 @@ class FetchReportHandlerIntegrationTest {
         new ApprovalFactory(INSTITUTION_A.id())
             .withCreatorAffiliation(organizationIdFromIdentifier(IDENTIFIER_UNIT_A))
             .withLabels(INSTITUTION_A.labels())
-            .withSector(Sector.UHI);
+            .withSector(Sector.UHI)
+            .withRboInstitution(true);
     var institutionB =
         new ApprovalFactory(INSTITUTION_B.id())
             .withCreatorAffiliation(INSTITUTION_B.id())
             .withLabels(INSTITUTION_B.labels())
-            .withSector(Sector.HEALTH);
+            .withSector(Sector.HEALTH)
+            .withRboInstitution(false);
 
     documentsForLastYear = documentsForLastYear(institutionA, institutionB);
     documentsForThisYear = documentsForThisYear(institutionA, institutionB);

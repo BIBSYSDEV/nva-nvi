@@ -34,6 +34,7 @@ public class ApprovalFactory {
   private GlobalApprovalStatus globalApprovalStatus;
   private Map<String, String> labels = emptyMap();
   private Sector sector = Sector.UNKNOWN;
+  private boolean rboInstitution;
 
   public ApprovalFactory(URI topLevelOrganization) {
     this.topLevelOrganization = topLevelOrganization;
@@ -48,13 +49,15 @@ public class ApprovalFactory {
       ApprovalStatus approvalStatus,
       GlobalApprovalStatus globalApprovalStatus,
       Map<String, String> labels,
-      Sector sector) {
+      Sector sector,
+      boolean rboInstitution) {
     this.topLevelOrganization = topLevelOrganization;
     this.creatorAffiliationPoints = new ArrayList<>(affiliationPoints);
     this.approvalStatus = approvalStatus;
     this.globalApprovalStatus = globalApprovalStatus;
     this.labels = labels;
     this.sector = sector;
+    this.rboInstitution = rboInstitution;
   }
 
   public ApprovalView build() {
@@ -70,6 +73,7 @@ public class ApprovalFactory {
         .withGlobalApprovalStatus(globalApprovalStatus)
         .withInvolvedOrganizations(getInvolvedOrganizations())
         .withSector(sector.toString())
+        .withRboInstitution(rboInstitution)
         .withPoints(getInstitutionPoints());
   }
 
@@ -80,7 +84,8 @@ public class ApprovalFactory {
         approvalStatus,
         globalApprovalStatus,
         labels,
-        sector);
+        sector,
+        rboInstitution);
   }
 
   public ApprovalFactory withApprovalStatus(ApprovalStatus approvalStatus) {
@@ -110,6 +115,11 @@ public class ApprovalFactory {
 
   public ApprovalFactory withSector(Sector sector) {
     this.sector = sector;
+    return this;
+  }
+
+  public ApprovalFactory withRboInstitution(boolean rboInstitution) {
+    this.rboInstitution = rboInstitution;
     return this;
   }
 

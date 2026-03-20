@@ -48,8 +48,13 @@ public final class SampleCandidateGenerator {
 
   public SampleCandidateGenerator withInstitutionPoints(
       URI institutionId, Sector sector, BigDecimal points) {
+    return withInstitutionPoints(institutionId, sector, randomBoolean(), points);
+  }
+
+  public SampleCandidateGenerator withInstitutionPoints(
+      URI institutionId, Sector sector, boolean rboInstitution, BigDecimal points) {
     var institutionPoint =
-        new InstitutionPoints(institutionId, points, sector, randomBoolean(), List.of());
+        new InstitutionPoints(institutionId, points, sector, rboInstitution, List.of());
     this.institutionPoints.add(institutionPoint);
     this.approvals.put(
         institutionId, Approval.createNewApproval(candidateIdentifier, institutionId));
