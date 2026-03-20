@@ -74,7 +74,6 @@ class InstitutionReportMapperTest {
     assertThat(cellValue(row, HKDIR_INSTITUSJONSKODE)).isEqualTo(EMPTY_STRING);
     assertThat(cellValue(row, STATUS_RBO)).isEqualTo(EMPTY_STRING);
     assertThat(cellValue(row, NSDSTEDKODE)).isEqualTo(EMPTY_STRING);
-    assertThat(cellValue(row, SEKTORKODE)).isEqualTo(EMPTY_STRING);
   }
 
   @Test
@@ -92,10 +91,11 @@ class InstitutionReportMapperTest {
   }
 
   @Test
-  void shouldMapInstitutionIdentifierToSector() {
+  void shouldMapApprovalSectorToSector() {
     var document = randomDocument(ORGANIZATION_PRESENT_IN_HKDIR);
+    var sector = document.approvals().getFirst().sector();
     var row = toRow(document);
-    assertThat(cellValue(row, SEKTORKODE)).isEqualTo("UH");
+    assertThat(cellValue(row, SEKTORKODE)).isEqualTo(sector);
   }
 
   @Test
@@ -540,7 +540,8 @@ class InstitutionReportMapperTest {
             .withInstitutionId(INSTITUTION_ID)
             .withInstitutionPoints(total)
             .withCreatorAffiliationPoints(points)
-            .build());
+            .build(),
+        randomString());
   }
 
   private static CreatorAffiliationPointsView newCreatorAffiliationPoints(

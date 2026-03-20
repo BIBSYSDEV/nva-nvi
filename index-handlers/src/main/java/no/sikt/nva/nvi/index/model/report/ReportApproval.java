@@ -9,4 +9,7 @@ import no.sikt.nva.nvi.index.model.document.InstitutionPointsView;
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 @JsonSerialize
 public record ReportApproval(
-    URI institutionId, ApprovalStatus approvalStatus, InstitutionPointsView points) {}
+    URI institutionId,
+    ApprovalStatus approvalStatus,
+    InstitutionPointsView points,
+    String sector) {}

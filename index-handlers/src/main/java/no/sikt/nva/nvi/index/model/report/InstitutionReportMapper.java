@@ -104,7 +104,7 @@ public final class InstitutionReportMapper {
         .withAffiliationId(affiliation.id().toString())
         .withHkdirInstitutionCode(getHkdirInstitutionCodeFor(institutionIdentifier))
         .withNsdInstitutionCode(getNsdInstitutionCodeFor(institutionIdentifier))
-        .withSector(getSector(institutionIdentifier))
+        .withSector(approval.sector())
         .withRboStatus(getRboStatus(institutionIdentifier))
         .withInstitutionNumber(institutionIdentifier)
         .withFacultyNumber(affiliation.getFacultyIdentifier())
@@ -132,12 +132,6 @@ public final class InstitutionReportMapper {
   private static String getNsdInstitutionCodeFor(String institutionIdentifier) {
     return getInstitutionAdditionalFields(institutionIdentifier)
         .map(InstitutionAdditionalFields::nsdInstitutionIdentifier)
-        .orElse(EMPTY_STRING);
-  }
-
-  private static String getSector(String institutionIdentifier) {
-    return getInstitutionAdditionalFields(institutionIdentifier)
-        .map(InstitutionAdditionalFields::sector)
         .orElse(EMPTY_STRING);
   }
 
