@@ -101,11 +101,13 @@ class InstitutionReportMapperTest {
 
   @Test
   void
-      shouldMapInstitutionIdentifierToFirstDbhEntryMatchingTopLevelIdentifierWhenNoMatchForFullIdentifier() {
+      shouldMapInstitutionIdentifierToTopLeveDbhEntryMatchingTopLevelIdentifierWhenNoMatchForFullIdentifier() {
     var document = randomDocument("203.a.b.c");
     var row = toRow(document);
 
     assertThat(cellValue(row, DBH_INSTITUSJONSKODE)).isNotEmpty();
+    assertThat(cellValue(row, DBH_FAKULTETSKODE)).isEmpty();
+    assertThat(cellValue(row, DBH_AVDELINGSKODE)).isEmpty();
   }
 
   @ParameterizedTest

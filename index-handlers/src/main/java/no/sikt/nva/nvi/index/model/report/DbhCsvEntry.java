@@ -4,6 +4,8 @@ import com.opencsv.bean.CsvBindByName;
 
 public class DbhCsvEntry {
 
+  private static final String TOP_LEVEL = "top_level";
+
   @CsvBindByName(column = "Institusjonskode")
   private String institution;
 
@@ -18,6 +20,9 @@ public class DbhCsvEntry {
 
   @CsvBindByName(column = "NVA_ID")
   private String fullNvaIdentifier;
+
+  @CsvBindByName(column = "Match")
+  private String match;
 
   public DbhCsvEntry() {}
 
@@ -39,5 +44,13 @@ public class DbhCsvEntry {
 
   public String fullNvaIdentifier() {
     return fullNvaIdentifier;
+  }
+
+  public String match() {
+    return match;
+  }
+
+  public boolean isTopLevel() {
+    return TOP_LEVEL.equals(match());
   }
 }

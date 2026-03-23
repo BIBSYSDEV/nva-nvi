@@ -144,7 +144,19 @@ public final class InstitutionReportMapper {
       String institutionIdentifier, String institutionNumber) {
     return Optional.ofNullable(INSTITUTIONS.get(institutionNumber))
         .flatMap(list -> getInstitutionWithSpecificIdentifier(institutionIdentifier, list))
-        .or(() -> Optional.ofNullable(INSTITUTIONS.get(institutionNumber)).map(List::getFirst));
+        .or(() -> getTopLevelDbhEntry(institutionNumber))
+        .or(() -> getAnyDbhEntryWithInstitutionNumber(institutionNumber));
+  }
+
+  private static Optional<DbhCsvEntry> getTopLevelDbhEntry(String institutionNumber) {
+    return Optional.ofNullable(INSTITUTIONS.get(institutionNumber))
+        .map(list -> list.stream().filter(DbhCsvEntry::isTopLevel).toList())
+        .map(List::getFirst);
+  }
+
+  private static Optional<DbhCsvEntry> getAnyDbhEntryWithInstitutionNumber(
+      String institutionNumber) {
+    return Optional.ofNullable(INSTITUTIONS.get(institutionNumber)).map(List::getFirst);
   }
 
   private static Optional<DbhCsvEntry> getInstitutionWithSpecificIdentifier(
