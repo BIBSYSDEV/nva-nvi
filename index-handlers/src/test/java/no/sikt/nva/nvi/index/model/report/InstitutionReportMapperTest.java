@@ -6,17 +6,18 @@ import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomPages;
 import static no.sikt.nva.nvi.index.IndexDocumentTestUtils.randomPublicationChannel;
 import static no.sikt.nva.nvi.report.model.institutionreport.ReportHeader.ARSTALL;
 import static no.sikt.nva.nvi.report.model.institutionreport.ReportHeader.AVDNR;
+import static no.sikt.nva.nvi.report.model.institutionreport.ReportHeader.DBH_AVDELINGSKODE;
+import static no.sikt.nva.nvi.report.model.institutionreport.ReportHeader.DBH_FAKULTETSKODE;
+import static no.sikt.nva.nvi.report.model.institutionreport.ReportHeader.DBH_INSTITUSJONSKODE;
 import static no.sikt.nva.nvi.report.model.institutionreport.ReportHeader.ETTERNAVN;
 import static no.sikt.nva.nvi.report.model.institutionreport.ReportHeader.FAKTORTALL_SAMARBEID;
 import static no.sikt.nva.nvi.report.model.institutionreport.ReportHeader.FORFATTERDEL;
 import static no.sikt.nva.nvi.report.model.institutionreport.ReportHeader.FORNAVN;
 import static no.sikt.nva.nvi.report.model.institutionreport.ReportHeader.GRUPPENR;
-import static no.sikt.nva.nvi.report.model.institutionreport.ReportHeader.HKDIR_INSTITUSJONSKODE;
 import static no.sikt.nva.nvi.report.model.institutionreport.ReportHeader.INSTITUSJON;
 import static no.sikt.nva.nvi.report.model.institutionreport.ReportHeader.INSTITUSJONSNR;
 import static no.sikt.nva.nvi.report.model.institutionreport.ReportHeader.INSTITUSJON_ID;
 import static no.sikt.nva.nvi.report.model.institutionreport.ReportHeader.KVALITETSNIVAKODE;
-import static no.sikt.nva.nvi.report.model.institutionreport.ReportHeader.NSDSTEDKODE;
 import static no.sikt.nva.nvi.report.model.institutionreport.ReportHeader.NVAID;
 import static no.sikt.nva.nvi.report.model.institutionreport.ReportHeader.PERSONLOPENR;
 import static no.sikt.nva.nvi.report.model.institutionreport.ReportHeader.PRINT_ISSN;
@@ -66,22 +67,47 @@ import org.junit.jupiter.params.provider.ValueSource;
 class InstitutionReportMapperTest {
 
   private static final URI INSTITUTION_ID =
-      URI.create("https://example.org/cristin/organization/185");
-  private static final String ORGANIZATION_PRESENT_IN_HKDIR = "194.0.0.0";
+      URI.create("https://example.org/cristin/organization/203.0.0.0");
+  private static final String ORGANIZATION_PRESENT_IN_DBH = "203.14.5.0";
 
   @Test
   void shouldHandleMissingInstitutionFromUHInstitutions() {
     var document = randomDocument("1.1.1.1");
     var row = toRow(document);
-    assertThat(cellValue(row, HKDIR_INSTITUSJONSKODE)).isEqualTo(EMPTY_STRING);
-    assertThat(cellValue(row, NSDSTEDKODE)).isEqualTo(EMPTY_STRING);
+    assertThat(cellValue(row, DBH_INSTITUSJONSKODE)).isEqualTo(EMPTY_STRING);
+    assertThat(cellValue(row, DBH_FAKULTETSKODE)).isEqualTo(EMPTY_STRING);
   }
 
   @Test
-  void shouldMapInstitutionIdentifierToNsdInstitutionCode() {
-    var document = randomDocument(ORGANIZATION_PRESENT_IN_HKDIR);
+  void shouldMapInstitutionIdentifierToDbhInstitutionIdentifier() {
+    var document = randomDocument(ORGANIZATION_PRESENT_IN_DBH);
     var row = toRow(document);
-    assertThat(cellValue(row, NSDSTEDKODE)).isEqualTo("000000");
+    assertThat(cellValue(row, DBH_INSTITUSJONSKODE)).isEqualTo("238");
+  }
+
+  @Test
+  void shouldMapInstitutionIdentifierToDbhFacultyIdentifier() {
+    var document = randomDocument(ORGANIZATION_PRESENT_IN_DBH);
+    var row = toRow(document);
+    assertThat(cellValue(row, DBH_FAKULTETSKODE)).isEqualTo("250");
+  }
+
+  @Test
+  void shouldMapInstitutionIdentifierToDbhDepartmentIdentifier() {
+    var document = randomDocument(ORGANIZATION_PRESENT_IN_DBH);
+    var row = toRow(document);
+    assertThat(cellValue(row, DBH_AVDELINGSKODE)).isEqualTo("250350");
+  }
+
+  @Test
+  void
+      shouldMapInstitutionIdentifierToTopLeveDbhEntryMatchingTopLevelIdentifierWhenNoMatchForFullIdentifier() {
+    var document = randomDocument("203.a.b.c");
+    var row = toRow(document);
+
+    assertThat(cellValue(row, DBH_INSTITUSJONSKODE)).isNotEmpty();
+    assertThat(cellValue(row, DBH_FAKULTETSKODE)).isEmpty();
+    assertThat(cellValue(row, DBH_AVDELINGSKODE)).isEmpty();
   }
 
   @ParameterizedTest
@@ -94,43 +120,43 @@ class InstitutionReportMapperTest {
 
   @Test
   void shouldMapApprovalSectorToSector() {
-    var document = randomDocument(ORGANIZATION_PRESENT_IN_HKDIR);
+    var document = randomDocument(ORGANIZATION_PRESENT_IN_DBH);
     var sector = document.approvals().getFirst().sector();
     var row = toRow(document);
     assertThat(cellValue(row, SEKTORKODE)).isEqualTo(sector);
   }
 
   @Test
-  void shouldReturnNullForHkdirInstitutionCodeWhenNoPresent() {
-    var document = randomDocument(ORGANIZATION_PRESENT_IN_HKDIR);
+  void shouldReturnEmptyStringForDbhInstitutionCodeWhenNoPresent() {
+    var document = randomDocument("1.1.1.1");
     var row = toRow(document);
-    assertThat(cellValue(row, HKDIR_INSTITUSJONSKODE)).isEqualTo("1150");
+    assertThat(cellValue(row, DBH_INSTITUSJONSKODE)).isEmpty();
   }
 
   @Test
   void shouldMapYear() {
-    var document = randomDocument(ORGANIZATION_PRESENT_IN_HKDIR);
+    var document = randomDocument(ORGANIZATION_PRESENT_IN_DBH);
     var row = toRow(document);
     assertThat(cellValue(row, ARSTALL)).isEqualTo(document.reportingPeriod().year());
   }
 
   @Test
   void shouldMapPublicationId() {
-    var document = randomDocument(ORGANIZATION_PRESENT_IN_HKDIR);
+    var document = randomDocument(ORGANIZATION_PRESENT_IN_DBH);
     var row = toRow(document);
     assertThat(cellValue(row, NVAID)).isEqualTo(document.publicationDetails().id());
   }
 
   @Test
   void shouldMapPublicationType() {
-    var document = randomDocument(ORGANIZATION_PRESENT_IN_HKDIR);
+    var document = randomDocument(ORGANIZATION_PRESENT_IN_DBH);
     var row = toRow(document);
     assertThat(cellValue(row, PUBLIKASJONSFORM)).isEqualTo(document.publicationDetails().type());
   }
 
   @Test
   void shouldMapPublicationChannel() {
-    var document = randomDocument(ORGANIZATION_PRESENT_IN_HKDIR);
+    var document = randomDocument(ORGANIZATION_PRESENT_IN_DBH);
     var row = toRow(document);
     assertThat(cellValue(row, PUBLISERINGSKANAL))
         .isEqualTo(document.publicationDetails().publicationChannel().id().toString());
@@ -138,7 +164,7 @@ class InstitutionReportMapperTest {
 
   @Test
   void shouldMapPublicationChannelType() {
-    var document = randomDocument(ORGANIZATION_PRESENT_IN_HKDIR);
+    var document = randomDocument(ORGANIZATION_PRESENT_IN_DBH);
     var row = toRow(document);
     assertThat(cellValue(row, PUBLISERINGSKANALTYPE))
         .isEqualTo(document.publicationDetails().publicationChannel().type());
@@ -146,7 +172,7 @@ class InstitutionReportMapperTest {
 
   @Test
   void shouldMapPrintIssn() {
-    var document = randomDocument(ORGANIZATION_PRESENT_IN_HKDIR);
+    var document = randomDocument(ORGANIZATION_PRESENT_IN_DBH);
     var row = toRow(document);
     assertThat(cellValue(row, PRINT_ISSN))
         .isEqualTo(document.publicationDetails().publicationChannel().printIssn());
@@ -154,7 +180,7 @@ class InstitutionReportMapperTest {
 
   @Test
   void shouldMapPublicationChannelName() {
-    var document = randomDocument(ORGANIZATION_PRESENT_IN_HKDIR);
+    var document = randomDocument(ORGANIZATION_PRESENT_IN_DBH);
     var row = toRow(document);
     assertThat(cellValue(row, PUBLISERINGSKANALNAVN))
         .isEqualTo(document.publicationDetails().publicationChannel().name());
@@ -162,7 +188,7 @@ class InstitutionReportMapperTest {
 
   @Test
   void shouldMapScientificValue() {
-    var document = randomDocument(ORGANIZATION_PRESENT_IN_HKDIR);
+    var document = randomDocument(ORGANIZATION_PRESENT_IN_DBH);
     var row = toRow(document);
     assertThat(cellValue(row, KVALITETSNIVAKODE))
         .isEqualTo(document.publicationDetails().publicationChannel().scientificValue().getValue());
@@ -170,21 +196,21 @@ class InstitutionReportMapperTest {
 
   @Test
   void shouldMapContributorId() {
-    var document = randomDocument(ORGANIZATION_PRESENT_IN_HKDIR);
+    var document = randomDocument(ORGANIZATION_PRESENT_IN_DBH);
     var row = toRow(document);
     assertThat(cellValue(row, PERSONLOPENR)).isEqualTo(firstContributor(document).id());
   }
 
   @Test
   void shouldMapAffiliationIdentifier() {
-    var document = randomDocument(ORGANIZATION_PRESENT_IN_HKDIR);
+    var document = randomDocument(ORGANIZATION_PRESENT_IN_DBH);
     var row = toRow(document);
     assertThat(cellValue(row, INSTITUSJON)).isEqualTo(firstAffiliation(document).identifier());
   }
 
   @Test
   void shouldMapAffiliationId() {
-    var document = randomDocument(ORGANIZATION_PRESENT_IN_HKDIR);
+    var document = randomDocument(ORGANIZATION_PRESENT_IN_DBH);
     var row = toRow(document);
     assertThat(cellValue(row, INSTITUSJON_ID))
         .isEqualTo(firstAffiliation(document).id().toString());
@@ -192,7 +218,7 @@ class InstitutionReportMapperTest {
 
   @Test
   void shouldMapInstitutionNumber() {
-    var document = randomDocument(ORGANIZATION_PRESENT_IN_HKDIR);
+    var document = randomDocument(ORGANIZATION_PRESENT_IN_DBH);
     var row = toRow(document);
     assertThat(cellValue(row, INSTITUSJONSNR))
         .isEqualTo(firstAffiliation(document).getInstitutionIdentifier());
@@ -200,14 +226,14 @@ class InstitutionReportMapperTest {
 
   @Test
   void shouldMapFacultyNumber() {
-    var document = randomDocument(ORGANIZATION_PRESENT_IN_HKDIR);
+    var document = randomDocument(ORGANIZATION_PRESENT_IN_DBH);
     var row = toRow(document);
     assertThat(cellValue(row, AVDNR)).isEqualTo(firstAffiliation(document).getFacultyIdentifier());
   }
 
   @Test
   void shouldMapDepartmentNumber() {
-    var document = randomDocument(ORGANIZATION_PRESENT_IN_HKDIR);
+    var document = randomDocument(ORGANIZATION_PRESENT_IN_DBH);
     var row = toRow(document);
     assertThat(cellValue(row, UNDAVDNR))
         .isEqualTo(firstAffiliation(document).getDepartmentIdentifier());
@@ -215,28 +241,28 @@ class InstitutionReportMapperTest {
 
   @Test
   void shouldMapGroupNumber() {
-    var document = randomDocument(ORGANIZATION_PRESENT_IN_HKDIR);
+    var document = randomDocument(ORGANIZATION_PRESENT_IN_DBH);
     var row = toRow(document);
     assertThat(cellValue(row, GRUPPENR)).isEqualTo(firstAffiliation(document).getGroupIdentifier());
   }
 
   @Test
   void shouldMapLastName() {
-    var document = randomDocument(ORGANIZATION_PRESENT_IN_HKDIR);
+    var document = randomDocument(ORGANIZATION_PRESENT_IN_DBH);
     var row = toRow(document);
     assertThat(cellValue(row, ETTERNAVN)).isEqualTo(firstContributor(document).name());
   }
 
   @Test
   void shouldMapFirstName() {
-    var document = randomDocument(ORGANIZATION_PRESENT_IN_HKDIR);
+    var document = randomDocument(ORGANIZATION_PRESENT_IN_DBH);
     var row = toRow(document);
     assertThat(cellValue(row, FORNAVN)).isEqualTo(firstContributor(document).name());
   }
 
   @Test
   void shouldMapTitle() {
-    var document = randomDocument(ORGANIZATION_PRESENT_IN_HKDIR);
+    var document = randomDocument(ORGANIZATION_PRESENT_IN_DBH);
     var row = toRow(document);
     assertThat(cellValue(row, TITTEL)).isEqualTo(document.publicationDetails().title());
   }
@@ -259,7 +285,7 @@ class InstitutionReportMapperTest {
 
   @Test
   void shouldMapInternationalCollaborationFactor() {
-    var document = randomDocument(ORGANIZATION_PRESENT_IN_HKDIR);
+    var document = randomDocument(ORGANIZATION_PRESENT_IN_DBH);
     var row = toRow(document);
     assertThat(cellValue(row, FAKTORTALL_SAMARBEID))
         .isEqualTo(String.valueOf(document.internationalCollaborationFactor()));
@@ -274,7 +300,7 @@ class InstitutionReportMapperTest {
 
   @Test
   void shouldMapPublicationTypeChannelLevelPoints() {
-    var document = randomDocument(ORGANIZATION_PRESENT_IN_HKDIR);
+    var document = randomDocument(ORGANIZATION_PRESENT_IN_DBH);
     var row = toRow(document);
     assertThat(cellValue(row, VEKTINGSTALL))
         .isEqualTo(document.publicationTypeChannelLevelPoints().toPlainString());
@@ -282,7 +308,7 @@ class InstitutionReportMapperTest {
 
   @Test
   void shouldMapCreatorShareCount() {
-    var document = randomDocument(ORGANIZATION_PRESENT_IN_HKDIR);
+    var document = randomDocument(ORGANIZATION_PRESENT_IN_DBH);
     var row = toRow(document);
     assertThat(cellValue(row, FORFATTERDEL))
         .isEqualTo(BigDecimal.valueOf(document.creatorShareCount()).toPlainString());
@@ -290,7 +316,7 @@ class InstitutionReportMapperTest {
 
   @Test
   void shouldMapTentativePublishingPoints() {
-    var document = randomDocument(ORGANIZATION_PRESENT_IN_HKDIR);
+    var document = randomDocument(ORGANIZATION_PRESENT_IN_DBH);
     var row = toRow(document);
     assertThat(cellValue(row, TENTATIVE_PUBLISERINGSPOENG))
         .isEqualTo(firstAffiliationPoints(document).toPlainString());
@@ -298,7 +324,7 @@ class InstitutionReportMapperTest {
 
   @Test
   void shouldMapPublishingPointsEqualToTentativeWhenApproved() {
-    var document = randomDocument(ORGANIZATION_PRESENT_IN_HKDIR);
+    var document = randomDocument(ORGANIZATION_PRESENT_IN_DBH);
     var row = toRow(document);
     assertThat(cellValue(row, PUBLISERINGSPOENG))
         .isEqualTo(firstAffiliationPoints(document).toPlainString());
@@ -316,7 +342,7 @@ class InstitutionReportMapperTest {
     var otherInstitutionId = URI.create("https://example.org/organization/999");
     assertThat(
             InstitutionReportMapper.mapToReportRows(
-                randomDocument(ORGANIZATION_PRESENT_IN_HKDIR), otherInstitutionId))
+                randomDocument(ORGANIZATION_PRESENT_IN_DBH), otherInstitutionId))
         .isEmpty();
   }
 

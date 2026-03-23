@@ -70,13 +70,18 @@ public final class ReportRowBuilder extends RowBuilder {
     return this;
   }
 
-  public ReportRowBuilder withHkdirInstitutionCode(String value) {
-    withCell(Cell.of(ReportHeader.HKDIR_INSTITUSJONSKODE, value));
+  public ReportRowBuilder withDbhInstitutionCode(String value) {
+    withCell(Cell.of(ReportHeader.DBH_INSTITUSJONSKODE, value));
     return this;
   }
 
-  public ReportRowBuilder withNsdInstitutionCode(String value) {
-    withCell(Cell.of(ReportHeader.NSDSTEDKODE, value));
+  public ReportRowBuilder withDbhFacultyCode(String value) {
+    withCell(Cell.of(ReportHeader.DBH_FAKULTETSKODE, value));
+    return this;
+  }
+
+  public ReportRowBuilder withDbhDepartmentCode(String value) {
+    withCell(Cell.of(ReportHeader.DBH_AVDELINGSKODE, value));
     return this;
   }
 

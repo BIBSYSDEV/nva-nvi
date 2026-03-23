@@ -36,8 +36,9 @@ public final class RowFixtures {
         .withCreatorShareCount(BigDecimal.ONE)
         .withTentativePublishingPoints(BigDecimal.ONE)
         .withPublishingPoints(BigDecimal.ONE)
-        .withHkdirInstitutionCode(randomString())
-        .withNsdInstitutionCode(randomString())
+        .withDbhInstitutionCode(randomString())
+        .withDbhFacultyCode(randomString())
+        .withDbhDepartmentCode(randomString())
         .withRboStatus("J")
         .withSector(randomString())
         .build();
