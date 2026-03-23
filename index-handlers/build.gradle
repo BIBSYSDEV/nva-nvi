@@ -17,6 +17,7 @@ dependencies {
     implementation nvaCatalog.com.auth0.jwt
     implementation nvaCatalog.jackson.core
     implementation nvaCatalog.jackson.databind
+    implementation nvaCatalog.opencsv
     implementation nvaCatalog.jena.core
     implementation nvaCatalog.opensearch.java
     implementation nvaCatalog.httpclient5

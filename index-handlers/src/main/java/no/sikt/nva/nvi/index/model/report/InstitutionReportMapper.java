@@ -4,11 +4,16 @@ import static java.util.Objects.nonNull;
 import static nva.commons.core.StringUtils.EMPTY_STRING;
 import static nva.commons.core.attempt.Try.attempt;
 
-import com.fasterxml.jackson.core.type.TypeReference;
+import com.opencsv.bean.CsvToBeanBuilder;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
@@ -17,7 +22,6 @@ import no.sikt.nva.nvi.index.model.document.NviContributor;
 import no.sikt.nva.nvi.index.model.document.NviOrganization;
 import no.sikt.nva.nvi.report.model.Row;
 import no.sikt.nva.nvi.report.model.institutionreport.ReportRowBuilder;
-import no.unit.nva.commons.json.JsonUtils;
 import nva.commons.core.ioutils.IoUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,9 +37,9 @@ public final class InstitutionReportMapper {
   private static final String PENDING_VALUE = "?";
   private static final String DISPUTED_VALUE = "T";
   private static final String UNKNOWN = "N/A";
-  private static final String UH_INSTITUTIONS_JSON = "uh_institutions.json";
-  private static final Map<String, InstitutionAdditionalFields> HKDIR_INSTITUTIONS =
-      loadInstitutionCodes();
+  private static final String DBH_INSTITUTIONS = "dbh_institutions.csv";
+  private static final Map<String, List<DbhCsvEntry>> INSTITUTIONS = loadInstitutions();
+  private static final char CSV_DELIMITER = ';';
 
   private InstitutionReportMapper() {}
 
@@ -60,15 +64,22 @@ public final class InstitutionReportMapper {
         .orElse(BigDecimal.ZERO);
   }
 
-  private static TypeReference<Map<String, InstitutionAdditionalFields>> getTypeReference() {
-    return new TypeReference<>() {};
+  private static Map<String, List<DbhCsvEntry>> loadInstitutions() {
+    return attempt(() -> IoUtils.inputStreamFromResources(DBH_INSTITUTIONS))
+        .map(InstitutionReportMapper::parseToCsv)
+        .orElseThrow();
   }
 
-  private static Map<String, InstitutionAdditionalFields> loadInstitutionCodes() {
-    return attempt(() -> UH_INSTITUTIONS_JSON)
-        .map(IoUtils::inputStreamFromResources)
-        .map(inputStream -> JsonUtils.dtoObjectMapper.readValue(inputStream, getTypeReference()))
-        .orElseThrow();
+  private static Map<String, List<DbhCsvEntry>> parseToCsv(InputStream inputStream) {
+    return new CsvToBeanBuilder<DbhCsvEntry>(
+            new InputStreamReader(inputStream, StandardCharsets.UTF_8))
+            .withType(DbhCsvEntry.class)
+            .withSeparator(CSV_DELIMITER)
+            .withIgnoreLeadingWhiteSpace(true)
+            .build()
+            .parse()
+            .stream()
+            .collect(Collectors.groupingBy(DbhCsvEntry::nvaTopLevelIdentifier));
   }
 
   private static Stream<Row> mapToReportRows(
@@ -90,6 +101,7 @@ public final class InstitutionReportMapper {
     var pointsForAffiliation = getPointsForAffiliation(approval, contributor, affiliation);
     var globalStatus = mapGlobalStatus(document.globalApprovalStatus());
     var institutionIdentifier = affiliation.getInstitutionIdentifier();
+    var dbhCsvEntry = getDbhCsvEntry(affiliation.identifier(), institutionIdentifier);
     return new ReportRowBuilder()
         .withYear(document.year())
         .withPublicationId(document.publicationId())
@@ -102,8 +114,9 @@ public final class InstitutionReportMapper {
         .withContributorId(contributor.id())
         .withAffiliationIdentifier(affiliation.identifier())
         .withAffiliationId(affiliation.id().toString())
-        .withHkdirInstitutionCode(getHkdirInstitutionCodeFor(institutionIdentifier))
-        .withNsdInstitutionCode(getNsdInstitutionCodeFor(institutionIdentifier))
+        .withDbhInstitutionCode(dbhCsvEntry.map(DbhCsvEntry::institution).orElse(EMPTY_STRING))
+        .withDbhFacultyCode(dbhCsvEntry.map(DbhCsvEntry::faculty).orElse(EMPTY_STRING))
+        .withDbhDepartmentCode(dbhCsvEntry.map(DbhCsvEntry::department).orElse(EMPTY_STRING))
         .withSector(approval.sector())
         .withRboStatus(getRboStatus(approval.rboInstitution()))
         .withInstitutionNumber(institutionIdentifier)
@@ -123,25 +136,22 @@ public final class InstitutionReportMapper {
         .build();
   }
 
-  private static String getHkdirInstitutionCodeFor(String institutionIdentifier) {
-    return getInstitutionAdditionalFields(institutionIdentifier)
-        .map(InstitutionAdditionalFields::hkdirIdentifier)
-        .orElse(EMPTY_STRING);
-  }
-
-  private static String getNsdInstitutionCodeFor(String institutionIdentifier) {
-    return getInstitutionAdditionalFields(institutionIdentifier)
-        .map(InstitutionAdditionalFields::nsdInstitutionIdentifier)
-        .orElse(EMPTY_STRING);
-  }
-
   private static String getRboStatus(boolean rboInstitution) {
     return rboInstitution ? J : N;
   }
 
-  private static Optional<InstitutionAdditionalFields> getInstitutionAdditionalFields(
-      String institutionIdentifier) {
-    return Optional.ofNullable(HKDIR_INSTITUTIONS.get(institutionIdentifier));
+  private static Optional<DbhCsvEntry> getDbhCsvEntry(
+      String institutionIdentifier, String institutionNumber) {
+    return Optional.ofNullable(INSTITUTIONS.get(institutionNumber))
+        .flatMap(list -> getInstitutionWithSpecificIdentifier(institutionIdentifier, list))
+        .or(() -> Optional.ofNullable(INSTITUTIONS.get(institutionNumber)).map(List::getFirst));
+  }
+
+  private static Optional<DbhCsvEntry> getInstitutionWithSpecificIdentifier(
+      String institutionIdentifier, List<DbhCsvEntry> list) {
+    return list.stream()
+        .filter(entry -> entry.fullNvaIdentifier().equals(institutionIdentifier))
+        .findFirst();
   }
 
   private static BigDecimal getPublishingPoints(
