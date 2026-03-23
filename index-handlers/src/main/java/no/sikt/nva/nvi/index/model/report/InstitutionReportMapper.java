@@ -105,7 +105,7 @@ public final class InstitutionReportMapper {
         .withHkdirInstitutionCode(getHkdirInstitutionCodeFor(institutionIdentifier))
         .withNsdInstitutionCode(getNsdInstitutionCodeFor(institutionIdentifier))
         .withSector(approval.sector())
-        .withRboStatus(getRboStatus(institutionIdentifier))
+        .withRboStatus(getRboStatus(approval.rboInstitution()))
         .withInstitutionNumber(institutionIdentifier)
         .withFacultyNumber(affiliation.getFacultyIdentifier())
         .withDepartmentNumber(affiliation.getDepartmentIdentifier())
@@ -135,11 +135,8 @@ public final class InstitutionReportMapper {
         .orElse(EMPTY_STRING);
   }
 
-  private static String getRboStatus(String institutionIdentifier) {
-    return getInstitutionAdditionalFields(institutionIdentifier)
-        .map(InstitutionAdditionalFields::isRbo)
-        .map(value -> value ? J : N)
-        .orElse(EMPTY_STRING);
+  private static String getRboStatus(boolean rboInstitution) {
+    return rboInstitution ? J : N;
   }
 
   private static Optional<InstitutionAdditionalFields> getInstitutionAdditionalFields(
