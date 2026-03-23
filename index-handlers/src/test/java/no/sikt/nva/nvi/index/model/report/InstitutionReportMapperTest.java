@@ -35,6 +35,7 @@ import static no.sikt.nva.nvi.report.model.institutionreport.ReportHeader.UNDAVD
 import static no.sikt.nva.nvi.report.model.institutionreport.ReportHeader.VEKTINGSTALL;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
+import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInteger;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
@@ -59,6 +60,7 @@ import no.sikt.nva.nvi.report.model.Row;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 @SuppressWarnings("PMD.GodClass")
 class InstitutionReportMapperTest {
@@ -72,7 +74,6 @@ class InstitutionReportMapperTest {
     var document = randomDocument("1.1.1.1");
     var row = toRow(document);
     assertThat(cellValue(row, HKDIR_INSTITUSJONSKODE)).isEqualTo(EMPTY_STRING);
-    assertThat(cellValue(row, STATUS_RBO)).isEqualTo(EMPTY_STRING);
     assertThat(cellValue(row, NSDSTEDKODE)).isEqualTo(EMPTY_STRING);
   }
 
@@ -83,11 +84,12 @@ class InstitutionReportMapperTest {
     assertThat(cellValue(row, NSDSTEDKODE)).isEqualTo("000000");
   }
 
-  @Test
-  void shouldMapInstitutionIdentifierToRboStatus() {
-    var document = randomDocument(ORGANIZATION_PRESENT_IN_HKDIR);
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  void shouldMapApprovalRboInstitutionToRboStatus(boolean rboInstitution) {
+    var document = randomDocumentWithApprovalRboInstitution(rboInstitution);
     var row = toRow(document);
-    assertThat(cellValue(row, STATUS_RBO)).isEqualTo("J");
+    assertThat(cellValue(row, STATUS_RBO)).isEqualTo(rboInstitution ? "J" : "N");
   }
 
   @Test
@@ -338,7 +340,8 @@ class InstitutionReportMapperTest {
                     ApprovalStatus.APPROVED,
                     List.of(
                         newCreatorAffiliationPoints(contributorId1, affiliationId),
-                        newCreatorAffiliationPoints(contributorId2, affiliationId)))));
+                        newCreatorAffiliationPoints(contributorId2, affiliationId)),
+                    randomBoolean())));
 
     var rows = InstitutionReportMapper.mapToReportRows(document, INSTITUTION_ID).toList();
 
@@ -366,7 +369,8 @@ class InstitutionReportMapperTest {
                     ApprovalStatus.APPROVED,
                     List.of(
                         newCreatorAffiliationPoints(contributorId, affiliationId1),
-                        newCreatorAffiliationPoints(contributorId, affiliationId2)))));
+                        newCreatorAffiliationPoints(contributorId, affiliationId2)),
+                    randomBoolean())));
 
     var rows = InstitutionReportMapper.mapToReportRows(document, INSTITUTION_ID).toList();
 
@@ -418,7 +422,8 @@ class InstitutionReportMapperTest {
         List.of(
             newApproval(
                 ApprovalStatus.APPROVED,
-                List.of(newCreatorAffiliationPoints(contributorId, affiliationId, points)))));
+                List.of(newCreatorAffiliationPoints(contributorId, affiliationId, points)),
+                randomBoolean())));
   }
 
   private ReportDocument randomDocumentWithApprovalStatus(ApprovalStatus approvalStatus) {
@@ -432,7 +437,8 @@ class InstitutionReportMapperTest {
         List.of(
             newApproval(
                 approvalStatus,
-                List.of(newCreatorAffiliationPoints(contributorId, affiliationId)))));
+                List.of(newCreatorAffiliationPoints(contributorId, affiliationId)),
+                randomBoolean())));
   }
 
   private ReportDocument randomDocumentWithGlobalStatus(GlobalApprovalStatus globalStatus) {
@@ -446,10 +452,15 @@ class InstitutionReportMapperTest {
         List.of(
             newApproval(
                 ApprovalStatus.APPROVED,
-                List.of(newCreatorAffiliationPoints(contributorId, affiliationId)))));
+                List.of(newCreatorAffiliationPoints(contributorId, affiliationId)),
+                randomBoolean())));
   }
 
   private ReportDocument randomDocumentWithNullCollaborationFactor() {
+    return randomDocumentWithApprovalRboInstitution(randomBoolean());
+  }
+
+  private ReportDocument randomDocumentWithApprovalRboInstitution(boolean rboInstitution) {
     var contributorId = randomUri();
     var affiliationId = randomOrganizationId();
     return new ReportDocument(
@@ -463,7 +474,8 @@ class InstitutionReportMapperTest {
         List.of(
             newApproval(
                 ApprovalStatus.APPROVED,
-                List.of(newCreatorAffiliationPoints(contributorId, affiliationId)))));
+                List.of(newCreatorAffiliationPoints(contributorId, affiliationId)),
+                rboInstitution)));
   }
 
   private static ReportDocument reportDocument(
@@ -528,7 +540,9 @@ class InstitutionReportMapperTest {
   }
 
   private static ReportApproval newApproval(
-      ApprovalStatus approvalStatus, List<CreatorAffiliationPointsView> points) {
+      ApprovalStatus approvalStatus,
+      List<CreatorAffiliationPointsView> points,
+      boolean rboInstitution) {
     var total =
         points.stream()
             .map(CreatorAffiliationPointsView::points)
@@ -541,7 +555,8 @@ class InstitutionReportMapperTest {
             .withInstitutionPoints(total)
             .withCreatorAffiliationPoints(points)
             .build(),
-        randomString());
+        randomString(),
+        rboInstitution);
   }
 
   private static CreatorAffiliationPointsView newCreatorAffiliationPoints(

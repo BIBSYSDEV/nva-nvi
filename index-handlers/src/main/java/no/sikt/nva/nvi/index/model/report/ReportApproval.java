@@ -12,4 +12,5 @@ public record ReportApproval(
     URI institutionId,
     ApprovalStatus approvalStatus,
     InstitutionPointsView points,
-    String sector) {}
+    String sector,
+    boolean rboInstitution) {}
