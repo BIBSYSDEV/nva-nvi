@@ -1,107 +1,13 @@
 plugins {
-    id 'nva.nvi.common-conventions'
-    id 'jacoco'
-    id 'com.github.ben-manes.versions'
-    id 'io.github.michael-nestler.spectral'
-    id 'com.autonomousapps.dependency-analysis'
+    id 'nva.root-module-conventions'
 }
 
-tasks.register('testCodeCoverageReport', JacocoReport) {
-    group = "test coverage"
-    description = "Aggregate test coverage from all subprojects"
-    dependsOn(tasks.named('test'))
-    dependsOn subprojects.collect { it.tasks.named('test') }
-
-    executionData fileTree(rootDir) {
-        include '**/build/jacoco/test.exec', '**/build/jacoco/test.exec'
+nva {
+    dependencyAnalysis {
+        enforced = false
     }
-
-    // Collect all classes and sources from subprojects
-    def mainOutputs = subprojects.collect { it.sourceSets.main.output }
-    def mainSources = subprojects.collect { it.sourceSets.main.allSource.srcDirs }
-
-    classDirectories.from(mainOutputs)
-    sourceDirectories.from(mainSources)
-
-    reports {
-        xml.required = true
-        html.required = true
+    spectral {
+        documents = ['docs/*.yaml']
+        rulesetFile = file('.spectral.yaml')
     }
-}
-
-// Verify that all classes and methods are covered by tests
-tasks.register('verifyCoverage', JacocoCoverageVerification) {
-    group = "test coverage"
-    description = "Verify test coverage"
-    dependsOn tasks.named('testCodeCoverageReport', JacocoReport)
-
-    executionData = testCodeCoverageReport.executionData
-    sourceDirectories = testCodeCoverageReport.sourceDirectories
-    classDirectories = testCodeCoverageReport.classDirectories
-
-    violationRules {
-
-        rule {
-            limit {
-                counter = 'METHOD'
-                value = 'COVEREDRATIO'
-                minimum = 1.000
-            }
-        }
-
-        rule {
-            limit {
-                counter = 'CLASS'
-                value = 'COVEREDRATIO'
-                minimum = 1.000
-            }
-        }
-    }
-}
-
-tasks.register('showCoverageReport') {
-    group = "test coverage"
-    description = "Show clickable link to test coverage report"
-    dependsOn tasks.named('testCodeCoverageReport', JacocoReport)
-    outputs.upToDateWhen { false }
-    def reportDirPath = "reports/jacoco/testCodeCoverageReport/html"
-    def reportDir = layout.buildDirectory.dir(reportDirPath).get().asFile
-
-    doLast {
-        logger.quiet("Combined coverage report:")
-        logger.quiet("file://${reportDir}/index.html")
-    }
-}
-
-tasks.named('check') {
-    dependsOn tasks.named('verifyCoverage', JacocoCoverageVerification)
-    finalizedBy tasks.named('showCoverageReport')
-}
-
-tasks.named('verifyCoverage', JacocoCoverageVerification) {
-    finalizedBy tasks.named('showCoverageReport')
-}
-
-def isNonStable(String version) {
-    def stableKeyword = ['RELEASE', 'FINAL', 'GA'].any { version.toUpperCase().contains(it) }
-
-    // Stable version patterns: digits/dots/v/hyphens optionally ending with -r/-jre
-    def stableVersionPattern = /^[0-9,.v-]+(-r|-jre)?$/
-    return !stableKeyword && !(version ==~ stableVersionPattern)
-}
-
-tasks.named('dependencyUpdates') {
-    checkForGradleUpdate = true
-    outputDir = 'build/dependencyUpdates'
-    reportfileName = 'report'
-    gradleReleaseChannel = 'current'
-    rejectVersionIf {
-        // Don't suggest upgrading from a stable version to a non-stable version
-        isNonStable(it.candidate.version) && !isNonStable(it.currentVersion)
-    }
-}
-
-spectral {
-    documents.from("docs/openapi.yaml")
-    ruleset.set(file('.spectral.yaml'))
 }
