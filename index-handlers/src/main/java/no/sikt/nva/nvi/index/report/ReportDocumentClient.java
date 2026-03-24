@@ -43,7 +43,9 @@ public class ReportDocumentClient {
                                   "publicationDetails.language",
                                   "approvals.institutionId",
                                   "approvals.approvalStatus",
-                                  "approvals.points"))
+                                  "approvals.points",
+                                  "approvals.sector",
+                                  "approvals.rboInstitution"))
                           .excludes(
                               List.of(
                                   "publicationDetails.nviContributors.role",
