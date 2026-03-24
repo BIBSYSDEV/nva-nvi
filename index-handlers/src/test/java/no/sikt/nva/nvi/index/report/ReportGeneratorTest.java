@@ -2,12 +2,15 @@ package no.sikt.nva.nvi.index.report;
 
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationId;
+import static no.sikt.nva.nvi.index.IndexDocumentFixtures.createRandomIndexDocument;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.documentForYear;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.documentWithApprovals;
 import static no.sikt.nva.nvi.index.IndexDocumentFixtures.randomApproval;
+import static no.sikt.nva.nvi.report.generators.utils.CsvReader.parseCsvToRows;
 import static no.sikt.nva.nvi.test.TestConstants.THIS_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URI;
@@ -18,6 +21,7 @@ import no.sikt.nva.nvi.index.report.request.AllInstitutionsReportRequest;
 import no.sikt.nva.nvi.index.report.request.InstitutionReportRequest;
 import no.sikt.nva.nvi.index.report.request.ReportType;
 import no.sikt.nva.nvi.index.report.response.GenerateReportMessage;
+import no.sikt.nva.nvi.report.model.institutionreport.ReportHeader;
 import no.sikt.nva.nvi.report.presigner.Extension;
 import no.sikt.nva.nvi.report.presigner.ReportPresigner.ReportPresignedUrl;
 import no.unit.nva.stubs.FakeS3Client;
@@ -26,6 +30,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
@@ -107,6 +112,55 @@ class ReportGeneratorTest {
     var persistedReport = readPersistedReport(message);
 
     assertTrue(persistedReport.contentLength() > 0);
+  }
+
+  @Test
+  void shouldContainSector() {
+    var institutionId = randomOrganizationId();
+    CONTAINER.addDocumentsToIndex(createRandomIndexDocument(institutionId, THIS_YEAR));
+
+    var message = institutionMessage(institutionId);
+    reportGenerator.generateReport(message);
+
+    var rows = parseCsvToRows(read(message), ReportHeader.class);
+
+    var sector =
+        rows.getLast().cells().stream()
+            .filter(cell -> ReportHeader.SEKTORKODE == cell.header())
+            .findFirst()
+            .orElseThrow();
+
+    assertThat(sector.string()).isNotEmpty();
+  }
+
+  @Test
+  void shouldContainRboInstitution() {
+    var institutionId = randomOrganizationId();
+    CONTAINER.addDocumentsToIndex(createRandomIndexDocument(institutionId, THIS_YEAR));
+
+    var message = institutionMessage(institutionId);
+    reportGenerator.generateReport(message);
+
+    var rows = parseCsvToRows(read(message), ReportHeader.class);
+
+    var rboInstitution =
+        rows.getLast().cells().stream()
+            .filter(cell -> ReportHeader.STATUS_RBO == cell.header())
+            .findFirst()
+            .orElseThrow();
+
+    assertThat(rboInstitution.string()).isNotEmpty();
+  }
+
+  private byte[] read(GenerateReportMessage message) {
+    return s3Client
+        .getObject(
+            GetObjectRequest.builder()
+                .bucket(message.reportPresignedUrl().bucket())
+                .key(message.reportPresignedUrl().key())
+                .build(),
+            ResponseTransformer.toBytes())
+        .asByteArray();
   }
 
   private static ReportType toReportType(Extension extension) {

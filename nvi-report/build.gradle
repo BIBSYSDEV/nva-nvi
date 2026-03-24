@@ -13,6 +13,9 @@ dependencies {
 
     implementation libs.fast.excel
 
+    testFixturesAnnotationProcessor nvaCatalog.errorprone
+    testFixturesImplementation nvaCatalog.opencsv
+    testFixturesImplementation libs.fast.excel.reader
     testImplementation nvaLibs.testutils
     testImplementation libs.fast.excel.reader
     testImplementation nvaCatalog.bundles.testing.junit

@@ -46,6 +46,7 @@ dependencies {
     testImplementation nvaLibs.testutils
     testImplementation project(':nvi-test')
     testImplementation(testFixtures(project(":nvi-commons")))
+    testImplementation(testFixtures(project(":nvi-report")))
 }
 
 test {

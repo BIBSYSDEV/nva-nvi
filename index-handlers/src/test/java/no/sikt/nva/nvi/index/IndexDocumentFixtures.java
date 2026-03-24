@@ -173,7 +173,9 @@ public final class IndexDocumentFixtures {
         .withApprovalStatus(randomStatus())
         .withGlobalApprovalStatus(randomGlobalApprovalStatus())
         .withInvolvedOrganizations(Set.of(topLevelOrganization, creatorAffiliation))
-        .withPoints(institutionPoints);
+        .withSector(randomString())
+        .withPoints(institutionPoints)
+        .withRboInstitution(true);
   }
 
   public static ApprovalStatus randomStatus() {
