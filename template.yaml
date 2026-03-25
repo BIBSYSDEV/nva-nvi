@@ -115,6 +115,10 @@ Parameters:
   ReportsBucketName:
     Type: String
     Default: "reports"
+  NviWriteIndexNames:
+    Type: String
+    Description: Comma-separated list of OpenSearch index names to write to. Used for blue/green deployments.
+    Default: "nvi-candidates"
 
 Conditions:
   WithSuffix: !Not [!Equals [!Ref Suffix, ""]]
@@ -852,6 +856,7 @@ Resources:
         Variables:
           EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
           INDEX_DLQ: !Ref IndexDLQ
+          NVI_WRITE_INDEX_NAMES: !Ref NviWriteIndexNames
       Events:
         SqsEvent:
           Type: SQS
@@ -873,6 +878,9 @@ Resources:
       SnapStart:
         ApplyOn: PublishedVersions
       Timeout: 30
+      Environment:
+        Variables:
+          NVI_WRITE_INDEX_NAMES: !Ref NviWriteIndexNames
       Events:
         SqsEvent:
           Type: SQS
@@ -943,6 +951,17 @@ Resources:
       Description: Lambda that deletes scientific index. Needs to be run manually from Test
       CodeUri: index-handlers
       Handler: no.sikt.nva.nvi.index.DeleteNviIndexHandler::handleRequest
+      Role: !GetAtt NvaNviRole.Arn
+
+  ManageIndexAliasHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      Description: >
+        Lambda that manages OpenSearch index aliases for blue/green deployments.
+        Needs to be run manually from Test tab in AWS console.
+        Input: {"aliasName": "nvi", "targetIndex": "nvi-candidates-v2"}
+      CodeUri: index-handlers
+      Handler: no.sikt.nva.nvi.index.ManageIndexAliasHandler::handleRequest
       Role: !GetAtt NvaNviRole.Arn
 
   NviRequeueDlqHandler:

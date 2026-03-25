@@ -8,9 +8,11 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
 import no.sikt.nva.nvi.common.QueueServiceTestUtils;
 import no.sikt.nva.nvi.common.db.CandidateDao;
 import no.sikt.nva.nvi.index.aws.CandidateSearchClient;
+import no.sikt.nva.nvi.index.aws.MultiIndexWriter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.dynamodb.model.OperationType;
@@ -23,7 +25,8 @@ class RemoveIndexDocumentHandlerTest {
   @BeforeEach
   void setUp() {
     searchClient = mock(CandidateSearchClient.class);
-    handler = new RemoveIndexDocumentHandler(searchClient);
+    var multiIndexWriter = new MultiIndexWriter(List.of(searchClient));
+    handler = new RemoveIndexDocumentHandler(multiIndexWriter);
   }
 
   @Test
