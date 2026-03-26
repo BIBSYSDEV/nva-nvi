@@ -1,7 +1,5 @@
 package no.sikt.nva.nvi.index.report;
 
-import static java.util.Objects.nonNull;
-
 import java.util.List;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
@@ -10,8 +8,12 @@ import no.sikt.nva.nvi.index.model.report.InstitutionReportMapper;
 import no.sikt.nva.nvi.index.model.report.ReportDocument;
 import no.sikt.nva.nvi.index.report.query.AllInstitutionsQuery;
 import no.sikt.nva.nvi.index.report.query.InstitutionQuery;
+import no.sikt.nva.nvi.index.report.query.PeriodQuery;
 import no.sikt.nva.nvi.index.report.query.ReportAggregationQuery;
 import no.sikt.nva.nvi.index.report.request.ReportType;
+import no.sikt.nva.nvi.index.report.response.GenerateAllInstitutionsReportMessage;
+import no.sikt.nva.nvi.index.report.response.GenerateInstitutionReportMessage;
+import no.sikt.nva.nvi.index.report.response.GeneratePeriodReportMessage;
 import no.sikt.nva.nvi.index.report.response.GenerateReportMessage;
 import no.sikt.nva.nvi.report.generators.CsvGenerator;
 import no.sikt.nva.nvi.report.generators.XlsxGenerator;
@@ -96,11 +98,12 @@ public class ReportGenerator {
   }
 
   private ReportAggregationQuery<?> createQuery(GenerateReportMessage message, NviPeriod period) {
-    return nonNull(message.institutionId())
-        ? new InstitutionQuery(
-            period,
-            message.institutionId(),
-            extractReportType(message.reportPresignedUrl().extension()))
-        : new AllInstitutionsQuery(period);
+    return switch (message) {
+      case GenerateInstitutionReportMessage m ->
+          new InstitutionQuery(
+              period, m.institutionId(), extractReportType(m.reportPresignedUrl().extension()));
+      case GenerateAllInstitutionsReportMessage ignored -> new AllInstitutionsQuery(period);
+      case GeneratePeriodReportMessage ignored -> new PeriodQuery(period);
+    };
   }
 }

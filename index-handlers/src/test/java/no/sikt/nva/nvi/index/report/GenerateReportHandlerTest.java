@@ -13,7 +13,10 @@ import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Stream;
 import no.sikt.nva.nvi.index.report.request.AllInstitutionsReportRequest;
+import no.sikt.nva.nvi.index.report.request.InstitutionReportRequest;
+import no.sikt.nva.nvi.index.report.request.PeriodReportRequest;
 import no.sikt.nva.nvi.index.report.request.ReportType;
 import no.sikt.nva.nvi.index.report.response.GenerateReportMessage;
 import no.sikt.nva.nvi.report.presigner.Extension;
@@ -21,6 +24,9 @@ import no.sikt.nva.nvi.report.presigner.ReportPresigner.ReportPresignedUrl;
 import no.unit.nva.stubs.FakeContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 class GenerateReportHandlerTest {
 
@@ -28,6 +34,24 @@ class GenerateReportHandlerTest {
 
   private GenerateReportHandler handler;
   private ReportGenerator reportGenerator;
+
+  private static Stream<Arguments> reportMessageProvider() {
+    var presignedFile = getPresignedFile();
+    return Stream.of(
+        Arguments.of(
+            GenerateReportMessage.create(
+                new AllInstitutionsReportRequest(randomUri(), randomString(), ReportType.CSV),
+                presignedFile)),
+        Arguments.of(
+            GenerateReportMessage.create(
+                new InstitutionReportRequest(
+                    randomUri(), randomString(), randomUri(), ReportType.CSV),
+                presignedFile)),
+        Arguments.of(
+            GenerateReportMessage.create(
+                new PeriodReportRequest(randomUri(), randomString(), ReportType.CSV),
+                presignedFile)));
+  }
 
   @BeforeEach
   void setUp() {
@@ -53,9 +77,10 @@ class GenerateReportHandlerTest {
         RuntimeException.class, () -> handler.handleRequest(sqsEvent(validMessage()), CONTEXT));
   }
 
-  @Test
-  void shouldNotFailOnSuccess() {
-    assertDoesNotThrow(() -> handler.handleRequest(sqsEvent(validMessage()), CONTEXT));
+  @ParameterizedTest
+  @MethodSource("reportMessageProvider")
+  void shouldNotFailOnSuccess(GenerateReportMessage message) {
+    assertDoesNotThrow(() -> handler.handleRequest(sqsEvent(message), CONTEXT));
   }
 
   private static SQSEvent sqsEvent(String body) {
@@ -72,8 +97,11 @@ class GenerateReportHandlerTest {
 
   private GenerateReportMessage validMessage() {
     var request = new AllInstitutionsReportRequest(randomUri(), randomString(), ReportType.CSV);
+    return GenerateReportMessage.create(request, getPresignedFile());
+  }
+
+  private static ReportPresignedUrl getPresignedFile() {
     var key = "%s.csv".formatted(UUID.randomUUID());
-    var presignedFile = new ReportPresignedUrl("bucket", key, Extension.CSV, randomUri());
-    return GenerateReportMessage.create(request, presignedFile);
+    return new ReportPresignedUrl("bucket", key, Extension.CSV, randomUri());
   }
 }

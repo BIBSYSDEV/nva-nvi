@@ -189,7 +189,7 @@ class FetchReportHandlerTest {
   }
 
   @Test
-  void shouldReturnBadRequestWhenOpenXmlOfficeReportRequestedForPeriodReport() throws IOException {
+  void shouldReturnMediaTypeJsonWhenXlsxRequestedForForPeriodReport() throws IOException {
     var headers = Map.of(ACCEPT, OOXML_SHEET);
     var pathParams = Map.of(PERIOD_PATH_PARAM, randomYear());
     var path = "%s/%s".formatted(REPORTS_PATH_SEGMENT, randomYear());
@@ -197,9 +197,10 @@ class FetchReportHandlerTest {
 
     handler.handleRequest(request, output, CONTEXT);
 
-    var response = fromOutputStream(output, Problem.class);
+    var response = fromOutputStream(output, ReportResponse.class);
 
-    assertEquals(BAD_REQUEST, response.getStatusCode());
+    assertThat(
+        response.getHeaders().get(HttpHeaders.CONTENT_TYPE), is(MediaType.JSON_UTF_8.toString()));
   }
 
   @Test

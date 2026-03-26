@@ -47,9 +47,19 @@ public class ReportService {
     return AllPeriodsReport.from(request.queryId(), results);
   }
 
-  private PeriodReport periodReport(PeriodReportRequest request) throws IOException {
+  private ReportResponse periodReport(PeriodReportRequest request) throws IOException {
     var period = nviPeriodService.getByPublishingYear(request.period());
-    var result = reportAggregationClient.executeQuery(new PeriodQuery(period));
+    var query = new PeriodQuery(period);
+    return switch (request.reportType()) {
+      case CSV -> presignReportService.presign(request, Extension.CSV);
+      case XLSX -> presignReportService.presign(request, Extension.XLSX);
+      case JSON -> createPeriodJsonReport(request, query);
+    };
+  }
+
+  private PeriodReport createPeriodJsonReport(PeriodReportRequest request, PeriodQuery query)
+      throws IOException {
+    var result = reportAggregationClient.executeQuery(query);
     return PeriodReport.from(request.queryId(), result);
   }
 
