@@ -5,16 +5,23 @@ import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.index.report.ReportConstants.INSTITUTIONS_PATH_SEGMENT;
 import static no.sikt.nva.nvi.index.report.ReportConstants.INSTITUTION_PATH_PARAM;
 import static no.sikt.nva.nvi.index.report.ReportConstants.PERIOD_PATH_PARAM;
-import static no.sikt.nva.nvi.index.report.request.ReportType.CSV;
 import static no.sikt.nva.nvi.index.report.request.ReportType.JSON;
-import static no.sikt.nva.nvi.index.report.request.ReportType.XLSX;
+import static no.sikt.nva.nvi.index.report.request.ReportType.create;
+import static nva.commons.core.attempt.Try.attempt;
 import static org.apache.http.HttpHeaders.ACCEPT;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
 import nva.commons.apigateway.MediaType;
 import nva.commons.apigateway.RequestInfo;
 import nva.commons.core.Environment;
+import nva.commons.core.StringUtils;
+import nva.commons.core.paths.UriWrapper;
 
 public final class ReportRequestFactory {
+
+  private static final String HEADER_DELIMITER = ";";
 
   private ReportRequestFactory() {}
 
@@ -45,12 +52,21 @@ public final class ReportRequestFactory {
   }
 
   private static ReportType toReportType(String value) {
-    if (MediaType.OOXML_SHEET.toString().equals(value)) {
-      return XLSX;
-    }
-    if (MediaType.CSV_UTF_8.toString().equals(value)) {
-      return CSV;
-    }
-    return JSON;
+    var mediaType = MediaType.parse(value);
+    var profile = extractProfile(value);
+
+    return create(mediaType, profile.orElse(null));
+  }
+
+  private static Optional<String> extractProfile(String value) {
+    return attempt(() -> value.split(HEADER_DELIMITER))
+        .map(Arrays::asList)
+        .map(List::getLast)
+        .map(String::trim)
+        .map(string -> string.replace("profile=", StringUtils.EMPTY_STRING))
+        .map(String::trim)
+        .map(UriWrapper::fromUri)
+        .map(UriWrapper::getLastPathElement)
+        .toOptional();
   }
 }

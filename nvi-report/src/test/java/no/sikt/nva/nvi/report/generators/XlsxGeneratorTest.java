@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.report.generators;
 
-import static no.sikt.nva.nvi.report.model.institutionreport.ReportHeader.ARSTALL;
-import static no.sikt.nva.nvi.report.model.institutionreport.ReportHeader.PUBLISERINGSPOENG;
+import static no.sikt.nva.nvi.report.model.authorshares.ReportHeader.ARSTALL;
+import static no.sikt.nva.nvi.report.model.authorshares.ReportHeader.PUBLISERINGSPOENG;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 
 import java.io.IOException;

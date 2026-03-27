@@ -3,7 +3,7 @@ package no.sikt.nva.nvi.index.report.request;
 import static no.sikt.nva.nvi.index.report.ReportConstants.API_HOST_KEY;
 import static no.sikt.nva.nvi.index.report.ReportConstants.BASE_PATH_KEY;
 import static no.sikt.nva.nvi.index.report.ReportConstants.REPORTS_PATH_SEGMENT;
-import static no.sikt.nva.nvi.index.report.request.ReportType.CSV;
+import static no.sikt.nva.nvi.index.report.request.ReportType.CSV_AUTHOR_SHARES;
 import static no.sikt.nva.nvi.index.report.request.ReportType.JSON;
 
 import java.net.URI;
@@ -22,7 +22,7 @@ public record PeriodReportRequest(URI queryId, String period, ReportType reportT
 
   @Override
   public boolean hasSupportedReportType() {
-    return List.of(JSON, CSV).contains(reportType);
+    return List.of(JSON, CSV_AUTHOR_SHARES).contains(reportType);
   }
 
   private static URI getQueryId(Environment environment, String period) {

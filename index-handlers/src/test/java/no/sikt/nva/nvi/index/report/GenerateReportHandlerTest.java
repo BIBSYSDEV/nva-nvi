@@ -71,7 +71,8 @@ class GenerateReportHandlerTest {
   }
 
   private GenerateReportMessage validMessage() {
-    var request = new AllInstitutionsReportRequest(randomUri(), randomString(), ReportType.CSV);
+    var request =
+        new AllInstitutionsReportRequest(randomUri(), randomString(), ReportType.CSV_AUTHOR_SHARES);
     var key = "%s.csv".formatted(UUID.randomUUID());
     var presignedFile = new ReportPresignedUrl("bucket", key, Extension.CSV, randomUri());
     return GenerateReportMessage.create(request, presignedFile);

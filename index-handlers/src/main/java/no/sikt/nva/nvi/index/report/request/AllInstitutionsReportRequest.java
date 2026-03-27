@@ -4,9 +4,9 @@ import static no.sikt.nva.nvi.index.report.ReportConstants.API_HOST_KEY;
 import static no.sikt.nva.nvi.index.report.ReportConstants.BASE_PATH_KEY;
 import static no.sikt.nva.nvi.index.report.ReportConstants.INSTITUTIONS_PATH_SEGMENT;
 import static no.sikt.nva.nvi.index.report.ReportConstants.REPORTS_PATH_SEGMENT;
-import static no.sikt.nva.nvi.index.report.request.ReportType.CSV;
+import static no.sikt.nva.nvi.index.report.request.ReportType.CSV_AUTHOR_SHARES;
 import static no.sikt.nva.nvi.index.report.request.ReportType.JSON;
-import static no.sikt.nva.nvi.index.report.request.ReportType.XLSX;
+import static no.sikt.nva.nvi.index.report.request.ReportType.XLSX_AUTHOR_SHARES;
 
 import java.net.URI;
 import java.util.List;
@@ -24,7 +24,7 @@ public record AllInstitutionsReportRequest(URI queryId, String period, ReportTyp
 
   @Override
   public boolean hasSupportedReportType() {
-    return List.of(JSON, CSV, XLSX).contains(reportType);
+    return List.of(JSON, CSV_AUTHOR_SHARES, XLSX_AUTHOR_SHARES).contains(reportType);
   }
 
   private static URI getQueryId(Environment environment, String period) {

@@ -1,18 +1,23 @@
 package no.sikt.nva.nvi.index.report;
 
 import static java.util.Objects.nonNull;
+import static nva.commons.core.attempt.Try.attempt;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.index.model.report.InstitutionReportMapper;
+import no.sikt.nva.nvi.index.model.report.PublicationPointsReportMapper;
 import no.sikt.nva.nvi.index.model.report.ReportDocument;
 import no.sikt.nva.nvi.index.report.query.AllInstitutionsQuery;
 import no.sikt.nva.nvi.index.report.query.InstitutionQuery;
 import no.sikt.nva.nvi.index.report.query.ReportAggregationQuery;
 import no.sikt.nva.nvi.index.report.request.ReportType;
+import no.sikt.nva.nvi.index.report.response.AllInstitutionsReport;
 import no.sikt.nva.nvi.index.report.response.GenerateReportMessage;
+import no.sikt.nva.nvi.index.report.response.InstitutionJsonReport;
 import no.sikt.nva.nvi.report.generators.CsvGenerator;
 import no.sikt.nva.nvi.report.generators.XlsxGenerator;
 import no.sikt.nva.nvi.report.model.Row;
@@ -27,14 +32,17 @@ public class ReportGenerator {
   private final NviPeriodService nviPeriodService;
   private final ReportDocumentClient reportDocumentClient;
   private final S3Client s3Client;
+  private final ReportAggregationClient reportAggregationClient;
 
   public ReportGenerator(
       NviPeriodService nviPeriodService,
       ReportDocumentClient reportDocumentClient,
+      ReportAggregationClient reportAggregationClient,
       S3Client s3Client) {
     this.nviPeriodService = nviPeriodService;
     this.reportDocumentClient = reportDocumentClient;
     this.s3Client = s3Client;
+    this.reportAggregationClient = reportAggregationClient;
   }
 
   public void generateReport(GenerateReportMessage message) {
@@ -58,8 +66,37 @@ public class ReportGenerator {
   private List<Row> createReportRows(GenerateReportMessage message) {
     var period = nviPeriodService.getByPublishingYear(message.period());
     var query = createQuery(message, period);
+    if (message.reportType().isPublicationPoints()) {
+      return createRowsForPublicationPointsReport(message, query, period);
+    }
     var documents = reportDocumentClient.fetchDocuments(query.query());
     return createRows(documents, query);
+  }
+
+  private List<Row> createRowsForPublicationPointsReport(
+      GenerateReportMessage message, ReportAggregationQuery<?> query, NviPeriod period) {
+    if (query instanceof InstitutionQuery institutionQuery) {
+      return creatRowsForInstitutionPublicationPointsReport(message, period, institutionQuery);
+    }
+    return createRowsForAllInstitutionsPublicationPointsReport(
+        message, (AllInstitutionsQuery) query, period);
+  }
+
+  private List<Row> creatRowsForInstitutionPublicationPointsReport(
+      GenerateReportMessage message, NviPeriod period, InstitutionQuery institutionQuery) {
+    var report =
+        attempt(() -> reportAggregationClient.executeQuery(institutionQuery))
+            .map(Optional::orElseThrow)
+            .map(result -> InstitutionJsonReport.from(message.queryId(), period, result))
+            .orElseThrow();
+    return PublicationPointsReportMapper.toRows(report);
+  }
+
+  private List<Row> createRowsForAllInstitutionsPublicationPointsReport(
+      GenerateReportMessage message, AllInstitutionsQuery query, NviPeriod period) {
+    var results = attempt(() -> reportAggregationClient.executeQuery(query)).orElseThrow();
+    var report = AllInstitutionsReport.from(message.queryId(), period, results);
+    return report.institutions().stream().map(PublicationPointsReportMapper::toRow).toList();
   }
 
   private static Stream<Row> toReportRows(ReportDocument document) {
@@ -78,8 +115,8 @@ public class ReportGenerator {
 
   private static ReportType extractReportType(Extension extension) {
     return switch (extension) {
-      case XLSX -> ReportType.XLSX;
-      case CSV -> ReportType.CSV;
+      case XLSX -> ReportType.XLSX_AUTHOR_SHARES;
+      case CSV -> ReportType.CSV_AUTHOR_SHARES;
     };
   }
 

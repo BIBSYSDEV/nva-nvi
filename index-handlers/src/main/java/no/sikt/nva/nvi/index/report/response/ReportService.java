@@ -58,8 +58,10 @@ public class ReportService {
     var period = nviPeriodService.getByPublishingYear(request.period());
     var query = new AllInstitutionsQuery(period);
     return switch (request.reportType()) {
-      case CSV -> presignReportService.presign(request, Extension.CSV);
-      case XLSX -> presignReportService.presign(request, Extension.XLSX);
+      case CSV_AUTHOR_SHARES, CSV_PUBLICATION_POINTS ->
+          presignReportService.presign(request, Extension.CSV);
+      case XLSX_AUTHOR_SHARES, XLSX_PUBLICATION_POINTS ->
+          presignReportService.presign(request, Extension.XLSX);
       case JSON -> createAllInstitutionsJsonReport(request, query, period);
     };
   }
@@ -75,8 +77,10 @@ public class ReportService {
     var period = nviPeriodService.getByPublishingYear(request.period());
     var query = new InstitutionQuery(period, request.institutionId(), request.reportType());
     return switch (request.reportType()) {
-      case CSV -> presignReportService.presign(request, Extension.CSV);
-      case XLSX -> presignReportService.presign(request, Extension.XLSX);
+      case CSV_AUTHOR_SHARES, CSV_PUBLICATION_POINTS ->
+          presignReportService.presign(request, Extension.CSV);
+      case XLSX_AUTHOR_SHARES, XLSX_PUBLICATION_POINTS ->
+          presignReportService.presign(request, Extension.XLSX);
       default -> createInstitutionJsonReport(request, query, period);
     };
   }
