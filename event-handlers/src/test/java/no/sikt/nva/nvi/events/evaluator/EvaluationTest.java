@@ -1,11 +1,11 @@
 package no.sikt.nva.nvi.events.evaluator;
 
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.getEvaluateNviCandidateHandlerEnvironment;
+import static no.sikt.nva.nvi.common.EventTestUtils.createEvent;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.updateRequestFromPeriod;
 import static no.sikt.nva.nvi.common.dto.CustomerDtoFixtures.getDefaultCustomers;
 import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublicationDateInYear;
-import static no.sikt.nva.nvi.events.evaluator.TestUtils.createEvent;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_NORWAY;
 import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_JSON_PUBLICATION_DATE;
 import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_PUBLICATION_ID;
@@ -22,10 +22,10 @@ import java.nio.file.Path;
 import java.util.List;
 import no.sikt.nva.nvi.common.SampleExpandedPublicationFactory;
 import no.sikt.nva.nvi.common.TestScenario;
+import no.sikt.nva.nvi.common.model.events.PersistedResourceMessage;
 import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
 import no.sikt.nva.nvi.common.service.model.Candidate;
-import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.unit.nva.clients.CustomerDto;
 import no.unit.nva.clients.CustomerList;
 import no.unit.nva.clients.IdentityServiceClient;
