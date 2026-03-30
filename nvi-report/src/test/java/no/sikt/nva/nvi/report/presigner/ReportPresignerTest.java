@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 
 import java.net.MalformedURLException;
 import java.net.URI;
+import nva.commons.apigateway.MediaType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
@@ -34,21 +35,21 @@ class ReportPresignerTest {
 
   @Test
   void shouldReturnPresignedUrl() {
-    var presignedFile = presigner.presign(Extension.CSV);
+    var presignedFile = presigner.presign(MediaType.CSV_UTF_8);
 
     assertInstanceOf(URI.class, presignedFile.presignedUrl());
   }
 
   @Test
   void shouldReturnKeyWithProvidedExtension() {
-    var presignedFile = presigner.presign(Extension.XLSX);
+    var presignedFile = presigner.presign(MediaType.OOXML_SHEET);
 
     assertTrue(presignedFile.key().endsWith(".xlsx"));
   }
 
   @Test
   void shouldReturnBucketName() {
-    var result = presigner.presign(Extension.CSV);
+    var result = presigner.presign(MediaType.CSV_UTF_8);
 
     assertNotNull(result.bucket());
   }

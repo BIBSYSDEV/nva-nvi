@@ -1,48 +1,31 @@
 package no.sikt.nva.nvi.index.report.request;
 
-import java.util.Optional;
-import nva.commons.apigateway.MediaType;
+import static java.util.Objects.nonNull;
+
+import com.fasterxml.jackson.annotation.JsonValue;
+import java.util.Arrays;
 
 public enum ReportType {
-  JSON(null),
-  XLSX_AUTHOR_SHARES("author-shares"),
-  CSV_AUTHOR_SHARES("author-shares"),
-  XLSX_PUBLICATION_POINTS("publication-points"),
-  CSV_PUBLICATION_POINTS("publication-points");
+  AUTHOR_SHARES("author-shares"),
+  PUBLICATION_POINTS("publication-points"),
+  DEFAULT_REPORT(null);
 
-  private static final String AUTHOR_SHARES = "author-shares";
-  private static final String PUBLICATION_POINTS = "publication-points";
-  private final String profile;
+  private final String value;
 
-  ReportType(String profile) {
-    this.profile = profile;
+  ReportType(String value) {
+    this.value = value;
   }
 
-  public boolean isPublicationPoints() {
-    return PUBLICATION_POINTS.equals(getProfile());
+  @JsonValue
+  public String getValue() {
+    return value;
   }
 
-  public static ReportType create(MediaType mediaType, String profile) {
-    var effectiveMediaType = Optional.ofNullable(mediaType);
-    var effectiveProfile = Optional.ofNullable(profile).orElse(AUTHOR_SHARES);
-
-    if (effectiveMediaType.isEmpty()) {
-      return JSON;
-    }
-    if (MediaType.OOXML_SHEET.equals(effectiveMediaType.get())) {
-      return PUBLICATION_POINTS.equals(effectiveProfile)
-          ? XLSX_PUBLICATION_POINTS
-          : XLSX_AUTHOR_SHARES;
-    }
-    if (MediaType.CSV_UTF_8.equals(effectiveMediaType.get())) {
-      return PUBLICATION_POINTS.equals(effectiveProfile)
-          ? CSV_PUBLICATION_POINTS
-          : CSV_AUTHOR_SHARES;
-    }
-    return JSON;
-  }
-
-  public String getProfile() {
-    return profile;
+  public static ReportType fromValue(String candidate) {
+    return Arrays.stream(values())
+        .filter(value -> nonNull(value.getValue()))
+        .filter(value -> value.getValue().equals(candidate))
+        .findFirst()
+        .orElse(DEFAULT_REPORT);
   }
 }

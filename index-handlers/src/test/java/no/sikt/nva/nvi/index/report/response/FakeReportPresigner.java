@@ -5,8 +5,8 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 
 import java.net.URI;
-import no.sikt.nva.nvi.report.presigner.Extension;
 import no.sikt.nva.nvi.report.presigner.ReportPresigner;
+import nva.commons.apigateway.MediaType;
 
 public class FakeReportPresigner extends ReportPresigner {
 
@@ -17,11 +17,11 @@ public class FakeReportPresigner extends ReportPresigner {
   }
 
   @Override
-  public ReportPresignedUrl presign(Extension extension) {
+  public ReportPresignedUrl presign(MediaType mediaType) {
     return new ReportPresignedUrl(
         randomString(),
-        "%s.%s".formatted(randomUUID(), extension.getValue()),
-        extension,
+        "%s.%s".formatted(randomUUID(), MediaType.CSV_UTF_8.equals(mediaType) ? "csv" : "xlsx"),
+        mediaType,
         PRESIGNED_URI);
   }
 }

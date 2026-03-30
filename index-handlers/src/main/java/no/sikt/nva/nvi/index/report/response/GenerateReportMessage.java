@@ -4,8 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import java.net.URI;
 import no.sikt.nva.nvi.index.report.request.AllInstitutionsReportRequest;
 import no.sikt.nva.nvi.index.report.request.InstitutionReportRequest;
+import no.sikt.nva.nvi.index.report.request.ReportFormat;
 import no.sikt.nva.nvi.index.report.request.ReportRequest;
-import no.sikt.nva.nvi.index.report.request.ReportType;
 import no.sikt.nva.nvi.report.presigner.ReportPresigner.ReportPresignedUrl;
 import no.unit.nva.commons.json.JsonSerializable;
 import no.unit.nva.commons.json.JsonUtils;
@@ -15,7 +15,7 @@ public record GenerateReportMessage(
     URI queryId,
     String period,
     URI institutionId,
-    ReportType reportType)
+    ReportFormat reportType)
     implements JsonSerializable {
 
   public static GenerateReportMessage from(String json) throws JsonProcessingException {

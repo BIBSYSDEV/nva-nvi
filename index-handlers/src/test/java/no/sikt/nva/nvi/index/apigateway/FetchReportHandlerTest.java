@@ -129,8 +129,7 @@ class FetchReportHandlerTest {
   void shouldReturnReportMediaTypeJsonWhenXlsxRequestedForInstitutionReport() throws IOException {
     var headers =
         Map.of(
-            ACCEPT,
-            acceptHeaderWithProfile(OOXML_SHEET, ReportType.XLSX_PUBLICATION_POINTS.getProfile()));
+            ACCEPT, acceptHeaderWithProfile(OOXML_SHEET, ReportType.PUBLICATION_POINTS.getValue()));
     var pathParams =
         Map.of(PERIOD_PATH_PARAM, randomYear(), INSTITUTION_PATH_PARAM, randomString());
     var path =
@@ -150,8 +149,7 @@ class FetchReportHandlerTest {
   @Test
   void shouldReturnReportMediaTypeJsonWhenCsvRequestedForInstitutionReport() throws IOException {
     var headers =
-        Map.of(
-            ACCEPT, acceptHeaderWithProfile(CSV_UTF_8, ReportType.CSV_AUTHOR_SHARES.getProfile()));
+        Map.of(ACCEPT, acceptHeaderWithProfile(CSV_UTF_8, ReportType.AUTHOR_SHARES.getValue()));
     var pathParams =
         Map.of(PERIOD_PATH_PARAM, randomYear(), INSTITUTION_PATH_PARAM, randomString());
     var path =
@@ -171,8 +169,7 @@ class FetchReportHandlerTest {
   void shouldReturnReportMediaTypeJsonWhenXlsxRequestedForAllInstitutionsReport()
       throws IOException {
     var headers =
-        Map.of(
-            ACCEPT, acceptHeaderWithProfile(CSV_UTF_8, ReportType.CSV_AUTHOR_SHARES.getProfile()));
+        Map.of(ACCEPT, acceptHeaderWithProfile(CSV_UTF_8, ReportType.AUTHOR_SHARES.getValue()));
     var pathParams = Map.of(PERIOD_PATH_PARAM, randomYear());
     var path = "%s/%s/%s".formatted(REPORTS_PATH_SEGMENT, randomYear(), INSTITUTIONS_PATH_SEGMENT);
     var request = createRequestWithHeader(pathParams, path, headers);
@@ -188,8 +185,7 @@ class FetchReportHandlerTest {
   @Test
   void shouldReturnBadRequestWhenCsvReportRequestedFoAllPeriodsReport() throws IOException {
     var headers =
-        Map.of(
-            ACCEPT, acceptHeaderWithProfile(CSV_UTF_8, ReportType.CSV_AUTHOR_SHARES.getProfile()));
+        Map.of(ACCEPT, acceptHeaderWithProfile(CSV_UTF_8, ReportType.AUTHOR_SHARES.getValue()));
     var request = createRequestWithHeader(Map.of(), REPORTS_PATH_SEGMENT, headers);
 
     handler.handleRequest(request, output, CONTEXT);
@@ -203,8 +199,7 @@ class FetchReportHandlerTest {
   void shouldReturnBadRequestWhenOpenXmlOfficeReportRequestedForPeriodReport() throws IOException {
     var headers =
         Map.of(
-            ACCEPT,
-            acceptHeaderWithProfile(OOXML_SHEET, ReportType.XLSX_PUBLICATION_POINTS.getProfile()));
+            ACCEPT, acceptHeaderWithProfile(OOXML_SHEET, ReportType.PUBLICATION_POINTS.getValue()));
     var pathParams = Map.of(PERIOD_PATH_PARAM, randomYear());
     var path = "%s/%s".formatted(REPORTS_PATH_SEGMENT, randomYear());
     var request = createRequestWithHeader(pathParams, path, headers);
@@ -221,8 +216,7 @@ class FetchReportHandlerTest {
       throws IOException {
     var headers =
         Map.of(
-            ACCEPT,
-            acceptHeaderWithProfile(OOXML_SHEET, ReportType.XLSX_PUBLICATION_POINTS.getProfile()));
+            ACCEPT, acceptHeaderWithProfile(OOXML_SHEET, ReportType.PUBLICATION_POINTS.getValue()));
     var request = createRequestWithHeader(Map.of(), REPORTS_PATH_SEGMENT, headers);
 
     handler.handleRequest(request, output, CONTEXT);

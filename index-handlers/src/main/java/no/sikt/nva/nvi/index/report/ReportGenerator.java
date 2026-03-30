@@ -1,6 +1,8 @@
 package no.sikt.nva.nvi.index.report;
 
 import static java.util.Objects.nonNull;
+import static nva.commons.apigateway.MediaType.CSV_UTF_8;
+import static nva.commons.apigateway.MediaType.OOXML_SHEET;
 import static nva.commons.core.attempt.Try.attempt;
 
 import java.util.List;
@@ -14,15 +16,14 @@ import no.sikt.nva.nvi.index.model.report.ReportDocument;
 import no.sikt.nva.nvi.index.report.query.AllInstitutionsQuery;
 import no.sikt.nva.nvi.index.report.query.InstitutionQuery;
 import no.sikt.nva.nvi.index.report.query.ReportAggregationQuery;
-import no.sikt.nva.nvi.index.report.request.ReportType;
 import no.sikt.nva.nvi.index.report.response.AllInstitutionsReport;
 import no.sikt.nva.nvi.index.report.response.GenerateReportMessage;
 import no.sikt.nva.nvi.index.report.response.InstitutionJsonReport;
 import no.sikt.nva.nvi.report.generators.CsvGenerator;
 import no.sikt.nva.nvi.report.generators.XlsxGenerator;
 import no.sikt.nva.nvi.report.model.Row;
-import no.sikt.nva.nvi.report.presigner.Extension;
 import no.sikt.nva.nvi.report.presigner.ReportPresigner.ReportPresignedUrl;
+import nva.commons.apigateway.MediaType;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
@@ -47,8 +48,8 @@ public class ReportGenerator {
 
   public void generateReport(GenerateReportMessage message) {
     var rows = createReportRows(message);
-    var extension = message.reportPresignedUrl().extension();
-    var report = generateReport(rows, extension);
+    var mediaType = message.reportPresignedUrl().mediaType();
+    var report = generateReport(rows, mediaType);
     var reportPresignedUrl = message.reportPresignedUrl();
     upload(reportPresignedUrl, report);
   }
@@ -58,7 +59,7 @@ public class ReportGenerator {
         PutObjectRequest.builder()
             .bucket(reportPresignedUrl.bucket())
             .key(reportPresignedUrl.key())
-            .contentType(reportPresignedUrl.extension().getMediaType())
+            .contentType(reportPresignedUrl.mediaType().toString())
             .build(),
         RequestBody.fromBytes(report));
   }
@@ -66,7 +67,7 @@ public class ReportGenerator {
   private List<Row> createReportRows(GenerateReportMessage message) {
     var period = nviPeriodService.getByPublishingYear(message.period());
     var query = createQuery(message, period);
-    if (message.reportType().isPublicationPoints()) {
+    if (message.reportType().isPublicationPointsReport()) {
       return createRowsForPublicationPointsReport(message, query, period);
     }
     var documents = reportDocumentClient.fetchDocuments(query.query());
@@ -106,18 +107,15 @@ public class ReportGenerator {
                 InstitutionReportMapper.mapToReportRows(document, approval.institutionId()));
   }
 
-  private static byte[] generateReport(List<Row> rows, Extension extension) {
-    return switch (extension) {
-      case CSV -> new CsvGenerator(rows).toWorkbookByteArray();
-      case XLSX -> new XlsxGenerator(rows).toWorkbookByteArray();
-    };
-  }
-
-  private static ReportType extractReportType(Extension extension) {
-    return switch (extension) {
-      case XLSX -> ReportType.XLSX_AUTHOR_SHARES;
-      case CSV -> ReportType.CSV_AUTHOR_SHARES;
-    };
+  private static byte[] generateReport(List<Row> rows, MediaType mediaType) {
+    if (CSV_UTF_8.equals(mediaType)) {
+      return new CsvGenerator(rows).toWorkbookByteArray();
+    } else if (OOXML_SHEET.equals(mediaType)) {
+      return new XlsxGenerator(rows).toWorkbookByteArray();
+    } else {
+      throw new IllegalArgumentException(
+          "Unsupported media type for report %s".formatted(mediaType.toString()));
+    }
   }
 
   private List<Row> createRows(List<ReportDocument> documents, ReportAggregationQuery<?> query) {
@@ -134,10 +132,7 @@ public class ReportGenerator {
 
   private ReportAggregationQuery<?> createQuery(GenerateReportMessage message, NviPeriod period) {
     return nonNull(message.institutionId())
-        ? new InstitutionQuery(
-            period,
-            message.institutionId(),
-            extractReportType(message.reportPresignedUrl().extension()))
+        ? new InstitutionQuery(period, message.institutionId(), message.reportType())
         : new AllInstitutionsQuery(period);
   }
 }

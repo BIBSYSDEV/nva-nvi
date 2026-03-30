@@ -1000,6 +1000,16 @@ paths:
             type: string
             pattern: '^\d{4}$'
           example: "2025"
+        - in: header
+          name: Accept
+          required: false
+          schema:
+            type: string
+            enum:
+              - application/json
+              - text/csv; charset=utf-8
+              - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+            default: application/json
       security: *authenticated
       x-amazon-apigateway-integration:
         uri:
@@ -1066,6 +1076,7 @@ paths:
             type: string
             enum:
               - application/json
+              - text/csv; charset=utf-8
               - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
             default: application/json
       security: *authenticated

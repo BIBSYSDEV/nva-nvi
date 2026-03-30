@@ -4,6 +4,7 @@ import static java.util.UUID.randomUUID;
 
 import java.net.URI;
 import java.time.Duration;
+import nva.commons.apigateway.MediaType;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 
@@ -19,12 +20,12 @@ public class ReportPresigner {
     this.bucketName = bucketName;
   }
 
-  public ReportPresignedUrl presign(Extension extension) {
-    var key = createKeyWithExtension(extension);
+  public ReportPresignedUrl presign(MediaType mediaType) {
+    var key = createKeyWithExtension(mediaType);
     var request = createRequest(key);
     var response = s3Presigner.presignGetObject(request);
     var presignedUrl = URI.create(response.url().toString());
-    return new ReportPresignedUrl(bucketName, key, extension, presignedUrl);
+    return new ReportPresignedUrl(bucketName, key, mediaType, presignedUrl);
   }
 
   private GetObjectPresignRequest createRequest(String key) {
@@ -34,10 +35,16 @@ public class ReportPresigner {
         .build();
   }
 
-  private static String createKeyWithExtension(Extension extension) {
-    return "%s.%s".formatted(randomUUID(), extension.getValue());
+  private static String createKeyWithExtension(MediaType mediaType) {
+    if (MediaType.OOXML_SHEET.equals(mediaType)) {
+      return "%s.%s".formatted(randomUUID(), "xlsx");
+    }
+    if (MediaType.CSV_UTF_8.equals(mediaType)) {
+      return "%s.%s".formatted(randomUUID(), "csv");
+    }
+    return randomUUID().toString();
   }
 
   public record ReportPresignedUrl(
-      String bucket, String key, Extension extension, URI presignedUrl) {}
+      String bucket, String key, MediaType mediaType, URI presignedUrl) {}
 }
