@@ -1000,6 +1000,27 @@ paths:
             type: string
             pattern: '^\d{4}$'
           example: "2025"
+        - in: header
+          name: Accept
+          required: false
+          description: >
+            Specifies the desired response format and optional report profile.
+            Supported formats are `application/json`, `text/csv`, and `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` (XLSX).
+            For CSV and XLSX, an optional `profile` parameter determines the report type.
+            Available profiles are `publication-points` and `author-shares`.
+            If no profile is specified, CSV and XLSX responses default to `author-shares`.
+            JSON responses do not support profiles.
+          schema:
+            type: string
+            enum:
+              - application/json
+              - text/csv; charset=utf-8
+              - text/csv; charset=utf-8; profile=https://api.nva.unit.no/report/publication-points
+              - text/csv; charset=utf-8; profile=https://api.nva.unit.no/report/author-shares
+              - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+              - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet; profile=https://api.nva.unit.no/report/publication-points
+              - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet; profile=https://api.nva.unit.no/report/author-shares
+            default: application/json
       security: *authenticated
       x-amazon-apigateway-integration:
         uri:
@@ -1066,6 +1087,7 @@ paths:
             type: string
             enum:
               - application/json
+              - text/csv; charset=utf-8
               - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
             default: application/json
       security: *authenticated

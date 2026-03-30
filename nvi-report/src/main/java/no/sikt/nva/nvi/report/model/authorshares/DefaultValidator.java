@@ -1,10 +1,11 @@
-package no.sikt.nva.nvi.report.model.institutionreport;
+package no.sikt.nva.nvi.report.model.authorshares;
 
 import static java.util.function.Predicate.not;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import no.sikt.nva.nvi.report.model.Header;
 import no.sikt.nva.nvi.report.model.Row;
 import no.sikt.nva.nvi.report.model.RowValidator;
 
@@ -22,7 +23,7 @@ public class DefaultValidator implements RowValidator {
   @Override
   public void validate(Row row) {
     validateForDuplicates(row.headers());
-    validateAllHeadersPresent(row.headers());
+    validateAllHeadersPresent(row);
   }
 
   private static boolean appearsMoreThanOnce(List<String> headers, String header) {
@@ -44,10 +45,11 @@ public class DefaultValidator implements RowValidator {
         .toList();
   }
 
-  private static void validateAllHeadersPresent(List<String> headers) {
+  private static void validateAllHeadersPresent(Row row) {
+    var headers = row.headers();
     var missing =
-        Arrays.stream(ReportHeader.values())
-            .map(ReportHeader::name)
+        Arrays.stream(row.cells().getFirst().header().getClass().getEnumConstants())
+            .map(Header::name)
             .filter(not(headers::contains))
             .toList();
     if (!missing.isEmpty()) {

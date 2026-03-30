@@ -7,8 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.Arrays;
-import no.sikt.nva.nvi.report.model.institutionreport.ReportHeader;
-import no.sikt.nva.nvi.report.model.institutionreport.ReportRowBuilder;
+import no.sikt.nva.nvi.report.model.authorshares.ReportHeader;
+import no.sikt.nva.nvi.report.model.authorshares.ReportRowBuilder;
 import org.junit.jupiter.api.Test;
 
 class RowTest {

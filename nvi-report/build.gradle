@@ -7,6 +7,8 @@ dependencies {
     implementation nvaCatalog.bundles.logging
     implementation nvaCatalog.opencsv
     implementation nvaCatalog.aws.sdk2.s3
+    implementation nvaCatalog.jackson.core
+    implementation nvaCatalog.jackson.databind
 
     implementation nvaLibs.core
     implementation nvaLibs.apigateway

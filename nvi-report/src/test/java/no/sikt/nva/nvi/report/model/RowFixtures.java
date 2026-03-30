@@ -3,7 +3,7 @@ package no.sikt.nva.nvi.report.model;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 
 import java.math.BigDecimal;
-import no.sikt.nva.nvi.report.model.institutionreport.ReportRowBuilder;
+import no.sikt.nva.nvi.report.model.authorshares.ReportRowBuilder;
 
 public final class RowFixtures {
 

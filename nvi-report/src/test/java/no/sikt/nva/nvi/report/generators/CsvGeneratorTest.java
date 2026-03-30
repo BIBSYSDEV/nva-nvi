@@ -2,14 +2,14 @@ package no.sikt.nva.nvi.report.generators;
 
 import static no.sikt.nva.nvi.report.generators.utils.CsvReader.getCell;
 import static no.sikt.nva.nvi.report.generators.utils.CsvReader.parseCsvToRows;
-import static no.sikt.nva.nvi.report.model.institutionreport.ReportHeader.NVAID;
+import static no.sikt.nva.nvi.report.model.authorshares.ReportHeader.NVAID;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static nva.commons.core.StringUtils.EMPTY_STRING;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.List;
 import no.sikt.nva.nvi.report.model.RowFixtures;
-import no.sikt.nva.nvi.report.model.institutionreport.ReportHeader;
+import no.sikt.nva.nvi.report.model.authorshares.ReportHeader;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 

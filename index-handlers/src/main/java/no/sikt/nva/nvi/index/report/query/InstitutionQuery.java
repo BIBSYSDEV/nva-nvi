@@ -12,13 +12,13 @@ import java.util.Map;
 import java.util.Optional;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.index.report.model.InstitutionAggregationResult;
-import no.sikt.nva.nvi.index.report.request.ReportType;
+import no.sikt.nva.nvi.index.report.request.ReportFormat;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.query_dsl.BoolQuery;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.SearchResponse;
 
-public record InstitutionQuery(NviPeriod period, URI institutionId, ReportType reportType)
+public record InstitutionQuery(NviPeriod period, URI institutionId, ReportFormat reportType)
     implements ReportAggregationQuery<Optional<InstitutionAggregationResult>> {
 
   @Override
