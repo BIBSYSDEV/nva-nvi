@@ -230,21 +230,27 @@ class ReportGeneratorTest {
 
   private GenerateReportMessage allInstitutionsMessage(MediaType mediaType) {
     var request =
-        new AllInstitutionsReportRequest(randomUri(), THIS_YEAR, new ReportFormat(mediaType));
+        new AllInstitutionsReportRequest(
+            randomUri(), THIS_YEAR, new ReportFormat(mediaType, ReportType.DEFAULT_REPORT));
     return GenerateReportMessage.create(request, presignedFile(mediaType));
   }
 
   private GenerateReportMessage institutionMessage(MediaType mediaType, URI institutionId) {
     var request =
         new InstitutionReportRequest(
-            randomUri(), THIS_YEAR, institutionId, new ReportFormat(mediaType));
+            randomUri(),
+            THIS_YEAR,
+            institutionId,
+            new ReportFormat(mediaType, ReportType.DEFAULT_REPORT));
     return GenerateReportMessage.create(request, presignedFile(mediaType));
   }
 
   private GenerateReportMessage allInstitutionsPublicationPointsMessage(MediaType mediaType) {
     var request =
         new AllInstitutionsReportRequest(
-            randomUri(), THIS_YEAR, new ReportFormat(mediaType, ReportType.PUBLICATION_POINTS));
+            randomUri(),
+            THIS_YEAR,
+            new ReportFormat(mediaType.toString(), ReportType.PUBLICATION_POINTS));
     return GenerateReportMessage.create(request, presignedFile(mediaType));
   }
 
@@ -255,7 +261,7 @@ class ReportGeneratorTest {
             randomUri(),
             THIS_YEAR,
             institutionId,
-            new ReportFormat(mediaType, ReportType.PUBLICATION_POINTS));
+            new ReportFormat(mediaType.toString(), ReportType.PUBLICATION_POINTS));
     return GenerateReportMessage.create(request, presignedFile(mediaType));
   }
 }

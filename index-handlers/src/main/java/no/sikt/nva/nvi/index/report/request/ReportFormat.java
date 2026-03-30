@@ -22,16 +22,11 @@ public class ReportFormat implements JsonSerializable {
       List.of(JSON_UTF_8, OOXML_SHEET, CSV_UTF_8);
 
   private final MediaType mediaType;
-  private final ReportType type;
-
-  public ReportFormat(MediaType mediaType) {
-    this.mediaType = mediaType;
-    this.type = ReportType.DEFAULT_REPORT;
-  }
+  private final ReportType reportType;
 
   public ReportFormat(MediaType mediaType, ReportType reportType) {
     this.mediaType = assignMediaType(mediaType);
-    this.type = assignReportType(mediaType, reportType);
+    this.reportType = assignReportType(mediaType, reportType);
   }
 
   @JsonCreator
@@ -39,7 +34,7 @@ public class ReportFormat implements JsonSerializable {
       @JsonProperty("mediaType") String mediaType,
       @JsonProperty("reportType") ReportType reportType) {
     this.mediaType = assignMediaType(MediaType.parse(mediaType));
-    this.type = assignReportType(this.mediaType, reportType);
+    this.reportType = assignReportType(this.mediaType, reportType);
   }
 
   public MediaType getMediaType() {
@@ -51,8 +46,8 @@ public class ReportFormat implements JsonSerializable {
     return mediaType.toString();
   }
 
-  public Optional<ReportType> getType() {
-    return Optional.ofNullable(type);
+  public Optional<ReportType> getReportType() {
+    return Optional.ofNullable(reportType);
   }
 
   @JsonIgnore
@@ -67,7 +62,7 @@ public class ReportFormat implements JsonSerializable {
 
   @JsonIgnore
   public boolean isPublicationPointsReport() {
-    return PUBLICATION_POINTS == type;
+    return PUBLICATION_POINTS == reportType;
   }
 
   @JacocoGenerated
@@ -76,13 +71,14 @@ public class ReportFormat implements JsonSerializable {
     if (!(o instanceof ReportFormat that)) {
       return false;
     }
-    return Objects.equals(getMediaType(), that.getMediaType()) && this.type == that.type;
+    return Objects.equals(getMediaType(), that.getMediaType())
+        && this.reportType == that.reportType;
   }
 
   @JacocoGenerated
   @Override
   public int hashCode() {
-    return Objects.hash(getMediaType(), getType());
+    return Objects.hash(getMediaType(), getReportType());
   }
 
   private static ReportType assignReportType(MediaType mediaType, ReportType reportType) {
