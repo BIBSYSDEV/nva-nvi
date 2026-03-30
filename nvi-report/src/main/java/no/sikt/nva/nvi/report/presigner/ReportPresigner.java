@@ -11,6 +11,9 @@ import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignReques
 public class ReportPresigner {
 
   private static final Duration PRESIGN_DURATION = Duration.ofHours(1);
+  private static final String FILE_NAME_FORMAT = "%s.%s";
+  private static final String XLSX = "xlsx";
+  private static final String CSV = "csv";
 
   private final S3Presigner s3Presigner;
   private final String bucketName;
@@ -37,10 +40,10 @@ public class ReportPresigner {
 
   private static String createKeyWithExtension(MediaType mediaType) {
     if (MediaType.OOXML_SHEET.equals(mediaType)) {
-      return "%s.%s".formatted(randomUUID(), "xlsx");
+      return FILE_NAME_FORMAT.formatted(randomUUID(), XLSX);
     }
     if (MediaType.CSV_UTF_8.equals(mediaType)) {
-      return "%s.%s".formatted(randomUUID(), "csv");
+      return FILE_NAME_FORMAT.formatted(randomUUID(), CSV);
     }
     return randomUUID().toString();
   }

@@ -26,16 +26,26 @@ public record GenerateReportMessage(
       ReportRequest request, ReportPresignedUrl reportPresignedUrl) {
     return switch (request) {
       case AllInstitutionsReportRequest report ->
-          new GenerateReportMessage(
-              reportPresignedUrl, report.queryId(), report.period(), null, report.reportType());
+          createGenerateReportMessage(reportPresignedUrl, report);
       case InstitutionReportRequest report ->
-          new GenerateReportMessage(
-              reportPresignedUrl,
-              report.queryId(),
-              report.period(),
-              report.institutionId(),
-              report.reportType());
+          createGenerateReportMessage(reportPresignedUrl, report);
       default -> throw new IllegalArgumentException("Unsupported request type: " + request);
     };
+  }
+
+  private static GenerateReportMessage createGenerateReportMessage(
+      ReportPresignedUrl reportPresignedUrl, AllInstitutionsReportRequest report) {
+    return new GenerateReportMessage(
+        reportPresignedUrl, report.queryId(), report.period(), null, report.reportType());
+  }
+
+  private static GenerateReportMessage createGenerateReportMessage(
+      ReportPresignedUrl reportPresignedUrl, InstitutionReportRequest report) {
+    return new GenerateReportMessage(
+        reportPresignedUrl,
+        report.queryId(),
+        report.period(),
+        report.institutionId(),
+        report.reportType());
   }
 }
