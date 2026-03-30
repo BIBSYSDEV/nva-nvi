@@ -10,14 +10,17 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import no.unit.nva.commons.json.JsonSerializable;
 import nva.commons.apigateway.MediaType;
+import nva.commons.core.JacocoGenerated;
 
 public class ReportFormat implements JsonSerializable {
 
   private static final List<MediaType> SUPPORTED_MEDIA_TYPES =
       List.of(JSON_UTF_8, OOXML_SHEET, CSV_UTF_8);
+
   private final MediaType mediaType;
   private final ReportType type;
 
@@ -26,16 +29,26 @@ public class ReportFormat implements JsonSerializable {
     this.type = ReportType.DEFAULT_REPORT;
   }
 
-  @JsonCreator
-  public ReportFormat(
-      @JsonProperty("mediaType") MediaType mediaType,
-      @JsonProperty("reportType") ReportType reportType) {
+  public ReportFormat(MediaType mediaType, ReportType reportType) {
     this.mediaType = assignMediaType(mediaType);
     this.type = assignReportType(mediaType, reportType);
   }
 
+  @JsonCreator
+  public ReportFormat(
+      @JsonProperty("mediaType") String mediaType,
+      @JsonProperty("reportType") ReportType reportType) {
+    this.mediaType = assignMediaType(MediaType.parse(mediaType));
+    this.type = assignReportType(this.mediaType, reportType);
+  }
+
   public MediaType getMediaType() {
     return mediaType;
+  }
+
+  @JsonProperty("mediaType")
+  public String mediaType() {
+    return mediaType.toString();
   }
 
   public Optional<ReportType> getType() {
@@ -55,6 +68,21 @@ public class ReportFormat implements JsonSerializable {
   @JsonIgnore
   public boolean isPublicationPointsReport() {
     return PUBLICATION_POINTS == type;
+  }
+
+  @JacocoGenerated
+  @Override
+  public boolean equals(Object o) {
+    if (!(o instanceof ReportFormat that)) {
+      return false;
+    }
+    return Objects.equals(getMediaType(), that.getMediaType()) && this.type == that.type;
+  }
+
+  @JacocoGenerated
+  @Override
+  public int hashCode() {
+    return Objects.hash(getMediaType(), getType());
   }
 
   private static ReportType assignReportType(MediaType mediaType, ReportType reportType) {

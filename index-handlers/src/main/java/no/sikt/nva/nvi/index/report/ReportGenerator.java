@@ -114,7 +114,7 @@ public class ReportGenerator {
       return new XlsxGenerator(rows).toWorkbookByteArray();
     } else {
       throw new IllegalArgumentException(
-          "Unsupported media type for report %s".formatted(mediaType.toString()));
+          "Unsupported media type for report %s".formatted(mediaType));
     }
   }
 
