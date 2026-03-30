@@ -215,7 +215,7 @@ class ReportGeneratorTest {
     var key =
         "%s.%s"
             .formatted(UUID.randomUUID(), MediaType.CSV_UTF_8.equals(mediaType) ? "csv" : "xlsx");
-    return new ReportPresignedUrl(BUCKET, key, mediaType, randomUri());
+    return new ReportPresignedUrl(BUCKET, key, randomUri());
   }
 
   private GetObjectResponse readPersistedReport(GenerateReportMessage message) {

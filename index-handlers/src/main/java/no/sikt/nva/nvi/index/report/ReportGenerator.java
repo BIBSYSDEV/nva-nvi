@@ -48,18 +48,18 @@ public class ReportGenerator {
 
   public void generateReport(GenerateReportMessage message) {
     var rows = createReportRows(message);
-    var mediaType = message.reportPresignedUrl().mediaType();
+    var mediaType = message.reportFormat().getMediaType();
     var report = generateReport(rows, mediaType);
     var reportPresignedUrl = message.reportPresignedUrl();
-    upload(reportPresignedUrl, report);
+    upload(reportPresignedUrl, mediaType, report);
   }
 
-  private void upload(ReportPresignedUrl reportPresignedUrl, byte[] report) {
+  private void upload(ReportPresignedUrl reportPresignedUrl, MediaType mediaType, byte[] report) {
     s3Client.putObject(
         PutObjectRequest.builder()
             .bucket(reportPresignedUrl.bucket())
             .key(reportPresignedUrl.key())
-            .contentType(reportPresignedUrl.mediaType().toString())
+            .contentType(mediaType.toString())
             .build(),
         RequestBody.fromBytes(report));
   }
@@ -67,7 +67,7 @@ public class ReportGenerator {
   private List<Row> createReportRows(GenerateReportMessage message) {
     var period = nviPeriodService.getByPublishingYear(message.period());
     var query = createQuery(message, period);
-    if (message.reportType().isPublicationPointsReport()) {
+    if (message.reportFormat().isPublicationPointsReport()) {
       return createRowsForPublicationPointsReport(message, query, period);
     }
     var documents = reportDocumentClient.fetchDocuments(query.query());
@@ -132,7 +132,7 @@ public class ReportGenerator {
 
   private ReportAggregationQuery<?> createQuery(GenerateReportMessage message, NviPeriod period) {
     return nonNull(message.institutionId())
-        ? new InstitutionQuery(period, message.institutionId(), message.reportType())
+        ? new InstitutionQuery(period, message.institutionId(), message.reportFormat())
         : new AllInstitutionsQuery(period);
   }
 }

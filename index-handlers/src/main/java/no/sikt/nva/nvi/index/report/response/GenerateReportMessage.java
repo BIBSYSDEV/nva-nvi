@@ -15,7 +15,7 @@ public record GenerateReportMessage(
     URI queryId,
     String period,
     URI institutionId,
-    ReportFormat reportType)
+    ReportFormat reportFormat)
     implements JsonSerializable {
 
   public static GenerateReportMessage from(String json) throws JsonProcessingException {

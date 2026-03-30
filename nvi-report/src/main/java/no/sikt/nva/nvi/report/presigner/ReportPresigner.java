@@ -28,7 +28,7 @@ public class ReportPresigner {
     var request = createRequest(key);
     var response = s3Presigner.presignGetObject(request);
     var presignedUrl = URI.create(response.url().toString());
-    return new ReportPresignedUrl(bucketName, key, mediaType, presignedUrl);
+    return new ReportPresignedUrl(bucketName, key, presignedUrl);
   }
 
   private GetObjectPresignRequest createRequest(String key) {
@@ -48,6 +48,5 @@ public class ReportPresigner {
     return randomUUID().toString();
   }
 
-  public record ReportPresignedUrl(
-      String bucket, String key, MediaType mediaType, URI presignedUrl) {}
+  public record ReportPresignedUrl(String bucket, String key, URI presignedUrl) {}
 }

@@ -11,7 +11,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import no.unit.nva.commons.json.JsonSerializable;
 import nva.commons.apigateway.MediaType;
 import nva.commons.core.JacocoGenerated;
@@ -22,6 +21,7 @@ public class ReportFormat implements JsonSerializable {
       List.of(JSON_UTF_8, OOXML_SHEET, CSV_UTF_8);
 
   private final MediaType mediaType;
+
   private final ReportType reportType;
 
   public ReportFormat(MediaType mediaType, ReportType reportType) {
@@ -37,6 +37,7 @@ public class ReportFormat implements JsonSerializable {
     this.reportType = assignReportType(this.mediaType, reportType);
   }
 
+  @JsonIgnore
   public MediaType getMediaType() {
     return mediaType;
   }
@@ -46,8 +47,8 @@ public class ReportFormat implements JsonSerializable {
     return mediaType.toString();
   }
 
-  public Optional<ReportType> getReportType() {
-    return Optional.ofNullable(reportType);
+  public ReportType getReportType() {
+    return reportType;
   }
 
   @JsonIgnore

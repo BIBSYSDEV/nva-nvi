@@ -78,7 +78,7 @@ class GenerateReportHandlerTest {
             randomString(),
             new ReportFormat(MediaType.CSV_UTF_8, ReportType.AUTHOR_SHARES));
     var key = "%s.csv".formatted(UUID.randomUUID());
-    var presignedFile = new ReportPresignedUrl("bucket", key, MediaType.CSV_UTF_8, randomUri());
+    var presignedFile = new ReportPresignedUrl("bucket", key, randomUri());
     return GenerateReportMessage.create(request, presignedFile);
   }
 }

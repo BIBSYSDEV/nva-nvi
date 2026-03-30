@@ -21,7 +21,6 @@ public class FakeReportPresigner extends ReportPresigner {
     return new ReportPresignedUrl(
         randomString(),
         "%s.%s".formatted(randomUUID(), MediaType.CSV_UTF_8.equals(mediaType) ? "csv" : "xlsx"),
-        mediaType,
         PRESIGNED_URI);
   }
 }
