@@ -21,7 +21,7 @@ import no.sikt.nva.nvi.index.model.document.InstitutionPointsView.CreatorAffilia
 import no.sikt.nva.nvi.index.model.document.NviContributor;
 import no.sikt.nva.nvi.index.model.document.NviOrganization;
 import no.sikt.nva.nvi.report.model.Row;
-import no.sikt.nva.nvi.report.model.institutionreport.ReportRowBuilder;
+import no.sikt.nva.nvi.report.model.authorshares.ReportRowBuilder;
 import nva.commons.core.ioutils.IoUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

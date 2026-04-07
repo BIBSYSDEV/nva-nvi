@@ -10,7 +10,7 @@ public sealed interface ReportRequest
 
   URI queryId();
 
-  ReportType reportType();
+  ReportFormat reportType();
 
   boolean hasSupportedReportType();
 }

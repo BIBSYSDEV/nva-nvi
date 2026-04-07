@@ -40,6 +40,7 @@ import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.index.report.FetchReportHandler;
 import no.sikt.nva.nvi.index.report.ReportAggregationClient;
 import no.sikt.nva.nvi.index.report.query.AllPeriodsQuery;
+import no.sikt.nva.nvi.index.report.request.ReportType;
 import no.sikt.nva.nvi.index.report.response.AllPeriodsReport;
 import no.sikt.nva.nvi.index.report.response.FakeReportPresigner;
 import no.sikt.nva.nvi.index.report.response.ReportResponse;
@@ -47,6 +48,7 @@ import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.MediaType;
+import nva.commons.core.paths.UriWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -125,7 +127,9 @@ class FetchReportHandlerTest {
 
   @Test
   void shouldReturnReportMediaTypeJsonWhenXlsxRequestedForInstitutionReport() throws IOException {
-    var headers = Map.of(ACCEPT, OOXML_SHEET);
+    var headers =
+        Map.of(
+            ACCEPT, acceptHeaderWithProfile(OOXML_SHEET, ReportType.PUBLICATION_POINTS.getValue()));
     var pathParams =
         Map.of(PERIOD_PATH_PARAM, randomYear(), INSTITUTION_PATH_PARAM, randomString());
     var path =
@@ -144,7 +148,8 @@ class FetchReportHandlerTest {
 
   @Test
   void shouldReturnReportMediaTypeJsonWhenCsvRequestedForInstitutionReport() throws IOException {
-    var headers = Map.of(ACCEPT, CSV_UTF_8);
+    var headers =
+        Map.of(ACCEPT, acceptHeaderWithProfile(CSV_UTF_8, ReportType.AUTHOR_SHARES.getValue()));
     var pathParams =
         Map.of(PERIOD_PATH_PARAM, randomYear(), INSTITUTION_PATH_PARAM, randomString());
     var path =
@@ -163,7 +168,8 @@ class FetchReportHandlerTest {
   @Test
   void shouldReturnReportMediaTypeJsonWhenXlsxRequestedForAllInstitutionsReport()
       throws IOException {
-    var headers = Map.of(ACCEPT, CSV_UTF_8);
+    var headers =
+        Map.of(ACCEPT, acceptHeaderWithProfile(CSV_UTF_8, ReportType.AUTHOR_SHARES.getValue()));
     var pathParams = Map.of(PERIOD_PATH_PARAM, randomYear());
     var path = "%s/%s/%s".formatted(REPORTS_PATH_SEGMENT, randomYear(), INSTITUTIONS_PATH_SEGMENT);
     var request = createRequestWithHeader(pathParams, path, headers);
@@ -178,7 +184,8 @@ class FetchReportHandlerTest {
 
   @Test
   void shouldReturnBadRequestWhenCsvReportRequestedFoAllPeriodsReport() throws IOException {
-    var headers = Map.of(ACCEPT, CSV_UTF_8);
+    var headers =
+        Map.of(ACCEPT, acceptHeaderWithProfile(CSV_UTF_8, ReportType.AUTHOR_SHARES.getValue()));
     var request = createRequestWithHeader(Map.of(), REPORTS_PATH_SEGMENT, headers);
 
     handler.handleRequest(request, output, CONTEXT);
@@ -190,7 +197,9 @@ class FetchReportHandlerTest {
 
   @Test
   void shouldReturnBadRequestWhenOpenXmlOfficeReportRequestedForPeriodReport() throws IOException {
-    var headers = Map.of(ACCEPT, OOXML_SHEET);
+    var headers =
+        Map.of(
+            ACCEPT, acceptHeaderWithProfile(OOXML_SHEET, ReportType.PUBLICATION_POINTS.getValue()));
     var pathParams = Map.of(PERIOD_PATH_PARAM, randomYear());
     var path = "%s/%s".formatted(REPORTS_PATH_SEGMENT, randomYear());
     var request = createRequestWithHeader(pathParams, path, headers);
@@ -205,7 +214,9 @@ class FetchReportHandlerTest {
   @Test
   void shouldReturnBadRequestWhenOpenXmlOfficeReportRequestedFoAllPeriodsReport()
       throws IOException {
-    var headers = Map.of(ACCEPT, OOXML_SHEET);
+    var headers =
+        Map.of(
+            ACCEPT, acceptHeaderWithProfile(OOXML_SHEET, ReportType.PUBLICATION_POINTS.getValue()));
     var request = createRequestWithHeader(Map.of(), REPORTS_PATH_SEGMENT, headers);
 
     handler.handleRequest(request, output, CONTEXT);
@@ -225,6 +236,11 @@ class FetchReportHandlerTest {
     var response = fromOutputStream(output, Void.class);
 
     assertEquals(HTTP_OK, response.getStatusCode());
+  }
+
+  private static String acceptHeaderWithProfile(String mediaType, String profile) {
+    return "%s; profile=%s"
+        .formatted(mediaType, UriWrapper.fromUri(randomUri()).addChild(profile).getUri());
   }
 
   private static InputStream createRequest(

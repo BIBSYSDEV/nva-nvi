@@ -25,6 +25,7 @@ public class GenerateReportHandler implements RequestHandler<SQSEvent, Void> {
         new ReportGenerator(
             NviPeriodService.defaultNviPeriodService(),
             new ReportDocumentClient(OpenSearchClientFactory.createAuthenticatedClient()),
+            ReportAggregationClient.defaultClient(),
             S3Driver.defaultS3Client().build()));
   }
 

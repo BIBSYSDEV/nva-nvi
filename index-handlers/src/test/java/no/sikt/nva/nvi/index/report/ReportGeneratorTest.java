@@ -19,12 +19,13 @@ import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.index.OpenSearchContainerContext;
 import no.sikt.nva.nvi.index.report.request.AllInstitutionsReportRequest;
 import no.sikt.nva.nvi.index.report.request.InstitutionReportRequest;
+import no.sikt.nva.nvi.index.report.request.ReportFormat;
 import no.sikt.nva.nvi.index.report.request.ReportType;
 import no.sikt.nva.nvi.index.report.response.GenerateReportMessage;
-import no.sikt.nva.nvi.report.model.institutionreport.ReportHeader;
-import no.sikt.nva.nvi.report.presigner.Extension;
+import no.sikt.nva.nvi.report.model.authorshares.ReportHeader;
 import no.sikt.nva.nvi.report.presigner.ReportPresigner.ReportPresignedUrl;
 import no.unit.nva.stubs.FakeS3Client;
+import nva.commons.apigateway.MediaType;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -60,7 +61,10 @@ class ReportGeneratorTest {
     s3Client = new FakeS3Client();
     reportGenerator =
         new ReportGenerator(
-            scenario.getPeriodService(), CONTAINER.getReportDocumentClient(), s3Client);
+            scenario.getPeriodService(),
+            CONTAINER.getReportDocumentClient(),
+            CONTAINER.getReportAggregationClient(),
+            s3Client);
   }
 
   @AfterEach
@@ -72,7 +76,7 @@ class ReportGeneratorTest {
   void shouldUploadCsvReportForAllInstitutions() {
     CONTAINER.addDocumentsToIndex(documentForYear(THIS_YEAR, false, randomApproval()));
 
-    var message = allInstitutionsMessage(Extension.CSV);
+    var message = allInstitutionsMessage(MediaType.CSV_UTF_8);
     reportGenerator.generateReport(message);
 
     assertTrue(readPersistedReport(message).contentLength() > 0);
@@ -82,7 +86,7 @@ class ReportGeneratorTest {
   void shouldUploadXlsxReportForAllInstitutions() {
     CONTAINER.addDocumentsToIndex(documentForYear(THIS_YEAR, false, randomApproval()));
 
-    var message = allInstitutionsMessage(Extension.XLSX);
+    var message = allInstitutionsMessage(MediaType.OOXML_SHEET);
     reportGenerator.generateReport(message);
 
     assertTrue(readPersistedReport(message).contentLength() > 0);
@@ -94,7 +98,7 @@ class ReportGeneratorTest {
     var approval = randomApproval(randomString(), institutionId);
     CONTAINER.addDocumentsToIndex(documentWithApprovals(approval));
 
-    var message = institutionMessage(institutionId);
+    var message = institutionMessage(MediaType.OOXML_SHEET, institutionId);
     reportGenerator.generateReport(message);
 
     assertTrue(readPersistedReport(message).contentLength() > 0);
@@ -106,7 +110,7 @@ class ReportGeneratorTest {
     var approval = randomApproval(randomString(), institution);
     CONTAINER.addDocumentsToIndex(documentWithApprovals(approval));
 
-    var message = institutionMessage(Extension.XLSX, institution);
+    var message = institutionMessage(MediaType.OOXML_SHEET, institution);
     reportGenerator.generateReport(message);
 
     var persistedReport = readPersistedReport(message);
@@ -115,11 +119,55 @@ class ReportGeneratorTest {
   }
 
   @Test
+  void shouldUploadCsvPublicationPointsReportForAllInstitutions() {
+    CONTAINER.addDocumentsToIndex(documentForYear(THIS_YEAR, false, randomApproval()));
+
+    var message = allInstitutionsPublicationPointsMessage(MediaType.CSV_UTF_8);
+    reportGenerator.generateReport(message);
+
+    assertTrue(readPersistedReport(message).contentLength() > 0);
+  }
+
+  @Test
+  void shouldUploadXlsxPublicationPointsReportForAllInstitutions() {
+    CONTAINER.addDocumentsToIndex(documentForYear(THIS_YEAR, false, randomApproval()));
+
+    var message = allInstitutionsPublicationPointsMessage(MediaType.OOXML_SHEET);
+    reportGenerator.generateReport(message);
+
+    assertTrue(readPersistedReport(message).contentLength() > 0);
+  }
+
+  @Test
+  void shouldUploadCsvPublicationPointsReportForSpecificInstitution() {
+    var institutionId = randomOrganizationId();
+    var approval = randomApproval(randomString(), institutionId);
+    CONTAINER.addDocumentsToIndex(documentWithApprovals(approval));
+
+    var message = institutionPublicationPointsMessage(MediaType.CSV_UTF_8, institutionId);
+    reportGenerator.generateReport(message);
+
+    assertTrue(readPersistedReport(message).contentLength() > 0);
+  }
+
+  @Test
+  void shouldUploadXlsxPublicationPointsReportForSpecificInstitution() {
+    var institutionId = randomOrganizationId();
+    var approval = randomApproval(randomString(), institutionId);
+    CONTAINER.addDocumentsToIndex(documentWithApprovals(approval));
+
+    var message = institutionPublicationPointsMessage(MediaType.OOXML_SHEET, institutionId);
+    reportGenerator.generateReport(message);
+
+    assertTrue(readPersistedReport(message).contentLength() > 0);
+  }
+
+  @Test
   void shouldContainSector() {
     var institutionId = randomOrganizationId();
     CONTAINER.addDocumentsToIndex(createRandomIndexDocument(institutionId, THIS_YEAR));
 
-    var message = institutionMessage(institutionId);
+    var message = institutionMessage(MediaType.CSV_UTF_8, institutionId);
     reportGenerator.generateReport(message);
 
     var rows = parseCsvToRows(read(message), ReportHeader.class);
@@ -138,7 +186,7 @@ class ReportGeneratorTest {
     var institutionId = randomOrganizationId();
     CONTAINER.addDocumentsToIndex(createRandomIndexDocument(institutionId, THIS_YEAR));
 
-    var message = institutionMessage(institutionId);
+    var message = institutionMessage(MediaType.CSV_UTF_8, institutionId);
     reportGenerator.generateReport(message);
 
     var rows = parseCsvToRows(read(message), ReportHeader.class);
@@ -163,13 +211,11 @@ class ReportGeneratorTest {
         .asByteArray();
   }
 
-  private static ReportType toReportType(Extension extension) {
-    return extension == Extension.CSV ? ReportType.CSV : ReportType.XLSX;
-  }
-
-  private static ReportPresignedUrl presignedFile(Extension extension) {
-    var key = "%s.%s".formatted(UUID.randomUUID(), extension.getValue());
-    return new ReportPresignedUrl(BUCKET, key, extension, randomUri());
+  private static ReportPresignedUrl presignedFile(MediaType mediaType) {
+    var key =
+        "%s.%s"
+            .formatted(UUID.randomUUID(), MediaType.CSV_UTF_8.equals(mediaType) ? "csv" : "xlsx");
+    return new ReportPresignedUrl(BUCKET, key, randomUri());
   }
 
   private GetObjectResponse readPersistedReport(GenerateReportMessage message) {
@@ -182,19 +228,40 @@ class ReportGeneratorTest {
         .response();
   }
 
-  private GenerateReportMessage allInstitutionsMessage(Extension extension) {
-    var request = new AllInstitutionsReportRequest(randomUri(), THIS_YEAR, toReportType(extension));
-    return GenerateReportMessage.create(request, presignedFile(extension));
+  private GenerateReportMessage allInstitutionsMessage(MediaType mediaType) {
+    var request =
+        new AllInstitutionsReportRequest(
+            randomUri(), THIS_YEAR, new ReportFormat(mediaType, ReportType.DEFAULT_REPORT));
+    return GenerateReportMessage.create(request, presignedFile(mediaType));
   }
 
-  private GenerateReportMessage institutionMessage(URI institutionId) {
-    return institutionMessage(Extension.CSV, institutionId);
-  }
-
-  private GenerateReportMessage institutionMessage(Extension extension, URI institutionId) {
+  private GenerateReportMessage institutionMessage(MediaType mediaType, URI institutionId) {
     var request =
         new InstitutionReportRequest(
-            randomUri(), THIS_YEAR, institutionId, toReportType(extension));
-    return GenerateReportMessage.create(request, presignedFile(extension));
+            randomUri(),
+            THIS_YEAR,
+            institutionId,
+            new ReportFormat(mediaType, ReportType.DEFAULT_REPORT));
+    return GenerateReportMessage.create(request, presignedFile(mediaType));
+  }
+
+  private GenerateReportMessage allInstitutionsPublicationPointsMessage(MediaType mediaType) {
+    var request =
+        new AllInstitutionsReportRequest(
+            randomUri(),
+            THIS_YEAR,
+            new ReportFormat(mediaType.toString(), ReportType.PUBLICATION_POINTS));
+    return GenerateReportMessage.create(request, presignedFile(mediaType));
+  }
+
+  private GenerateReportMessage institutionPublicationPointsMessage(
+      MediaType mediaType, URI institutionId) {
+    var request =
+        new InstitutionReportRequest(
+            randomUri(),
+            THIS_YEAR,
+            institutionId,
+            new ReportFormat(mediaType.toString(), ReportType.PUBLICATION_POINTS));
+    return GenerateReportMessage.create(request, presignedFile(mediaType));
   }
 }

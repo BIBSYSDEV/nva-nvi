@@ -1,23 +1,29 @@
 package no.sikt.nva.nvi.index.report;
 
 import static java.util.Objects.nonNull;
+import static nva.commons.apigateway.MediaType.CSV_UTF_8;
+import static nva.commons.apigateway.MediaType.OOXML_SHEET;
+import static nva.commons.core.attempt.Try.attempt;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.index.model.report.InstitutionReportMapper;
+import no.sikt.nva.nvi.index.model.report.PublicationPointsReportMapper;
 import no.sikt.nva.nvi.index.model.report.ReportDocument;
 import no.sikt.nva.nvi.index.report.query.AllInstitutionsQuery;
 import no.sikt.nva.nvi.index.report.query.InstitutionQuery;
 import no.sikt.nva.nvi.index.report.query.ReportAggregationQuery;
-import no.sikt.nva.nvi.index.report.request.ReportType;
+import no.sikt.nva.nvi.index.report.response.AllInstitutionsReport;
 import no.sikt.nva.nvi.index.report.response.GenerateReportMessage;
+import no.sikt.nva.nvi.index.report.response.InstitutionJsonReport;
 import no.sikt.nva.nvi.report.generators.CsvGenerator;
 import no.sikt.nva.nvi.report.generators.XlsxGenerator;
 import no.sikt.nva.nvi.report.model.Row;
-import no.sikt.nva.nvi.report.presigner.Extension;
 import no.sikt.nva.nvi.report.presigner.ReportPresigner.ReportPresignedUrl;
+import nva.commons.apigateway.MediaType;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
@@ -27,30 +33,33 @@ public class ReportGenerator {
   private final NviPeriodService nviPeriodService;
   private final ReportDocumentClient reportDocumentClient;
   private final S3Client s3Client;
+  private final ReportAggregationClient reportAggregationClient;
 
   public ReportGenerator(
       NviPeriodService nviPeriodService,
       ReportDocumentClient reportDocumentClient,
+      ReportAggregationClient reportAggregationClient,
       S3Client s3Client) {
     this.nviPeriodService = nviPeriodService;
     this.reportDocumentClient = reportDocumentClient;
     this.s3Client = s3Client;
+    this.reportAggregationClient = reportAggregationClient;
   }
 
   public void generateReport(GenerateReportMessage message) {
     var rows = createReportRows(message);
-    var extension = message.reportPresignedUrl().extension();
-    var report = generateReport(rows, extension);
+    var mediaType = message.reportFormat().getMediaType();
+    var report = generateReport(rows, mediaType);
     var reportPresignedUrl = message.reportPresignedUrl();
-    upload(reportPresignedUrl, report);
+    upload(reportPresignedUrl, mediaType, report);
   }
 
-  private void upload(ReportPresignedUrl reportPresignedUrl, byte[] report) {
+  private void upload(ReportPresignedUrl reportPresignedUrl, MediaType mediaType, byte[] report) {
     s3Client.putObject(
         PutObjectRequest.builder()
             .bucket(reportPresignedUrl.bucket())
             .key(reportPresignedUrl.key())
-            .contentType(reportPresignedUrl.extension().getMediaType())
+            .contentType(mediaType.toString())
             .build(),
         RequestBody.fromBytes(report));
   }
@@ -58,8 +67,37 @@ public class ReportGenerator {
   private List<Row> createReportRows(GenerateReportMessage message) {
     var period = nviPeriodService.getByPublishingYear(message.period());
     var query = createQuery(message, period);
+    if (message.reportFormat().isPublicationPointsReport()) {
+      return createRowsForPublicationPointsReport(message, query, period);
+    }
     var documents = reportDocumentClient.fetchDocuments(query.query());
     return createRows(documents, query);
+  }
+
+  private List<Row> createRowsForPublicationPointsReport(
+      GenerateReportMessage message, ReportAggregationQuery<?> query, NviPeriod period) {
+    if (query instanceof InstitutionQuery institutionQuery) {
+      return creatRowsForInstitutionPublicationPointsReport(message, period, institutionQuery);
+    }
+    return createRowsForAllInstitutionsPublicationPointsReport(
+        message, (AllInstitutionsQuery) query, period);
+  }
+
+  private List<Row> creatRowsForInstitutionPublicationPointsReport(
+      GenerateReportMessage message, NviPeriod period, InstitutionQuery institutionQuery) {
+    var report =
+        attempt(() -> reportAggregationClient.executeQuery(institutionQuery))
+            .map(Optional::orElseThrow)
+            .map(result -> InstitutionJsonReport.from(message.queryId(), period, result))
+            .orElseThrow();
+    return PublicationPointsReportMapper.toRows(report);
+  }
+
+  private List<Row> createRowsForAllInstitutionsPublicationPointsReport(
+      GenerateReportMessage message, AllInstitutionsQuery query, NviPeriod period) {
+    var results = attempt(() -> reportAggregationClient.executeQuery(query)).orElseThrow();
+    var report = AllInstitutionsReport.from(message.queryId(), period, results);
+    return report.institutions().stream().map(PublicationPointsReportMapper::toRow).toList();
   }
 
   private static Stream<Row> toReportRows(ReportDocument document) {
@@ -69,18 +107,15 @@ public class ReportGenerator {
                 InstitutionReportMapper.mapToReportRows(document, approval.institutionId()));
   }
 
-  private static byte[] generateReport(List<Row> rows, Extension extension) {
-    return switch (extension) {
-      case CSV -> new CsvGenerator(rows).toWorkbookByteArray();
-      case XLSX -> new XlsxGenerator(rows).toWorkbookByteArray();
-    };
-  }
-
-  private static ReportType extractReportType(Extension extension) {
-    return switch (extension) {
-      case XLSX -> ReportType.XLSX;
-      case CSV -> ReportType.CSV;
-    };
+  private static byte[] generateReport(List<Row> rows, MediaType mediaType) {
+    if (CSV_UTF_8.equals(mediaType)) {
+      return new CsvGenerator(rows).toWorkbookByteArray();
+    } else if (OOXML_SHEET.equals(mediaType)) {
+      return new XlsxGenerator(rows).toWorkbookByteArray();
+    } else {
+      throw new IllegalArgumentException(
+          "Unsupported media type for report %s".formatted(mediaType));
+    }
   }
 
   private List<Row> createRows(List<ReportDocument> documents, ReportAggregationQuery<?> query) {
@@ -97,10 +132,7 @@ public class ReportGenerator {
 
   private ReportAggregationQuery<?> createQuery(GenerateReportMessage message, NviPeriod period) {
     return nonNull(message.institutionId())
-        ? new InstitutionQuery(
-            period,
-            message.institutionId(),
-            extractReportType(message.reportPresignedUrl().extension()))
+        ? new InstitutionQuery(period, message.institutionId(), message.reportFormat())
         : new AllInstitutionsQuery(period);
   }
 }

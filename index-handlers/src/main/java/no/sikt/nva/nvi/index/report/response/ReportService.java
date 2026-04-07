@@ -15,7 +15,7 @@ import no.sikt.nva.nvi.index.report.request.AllPeriodsReportRequest;
 import no.sikt.nva.nvi.index.report.request.InstitutionReportRequest;
 import no.sikt.nva.nvi.index.report.request.PeriodReportRequest;
 import no.sikt.nva.nvi.index.report.request.ReportRequest;
-import no.sikt.nva.nvi.report.presigner.Extension;
+import nva.commons.apigateway.MediaType;
 
 public class ReportService {
 
@@ -57,11 +57,12 @@ public class ReportService {
       throws IOException {
     var period = nviPeriodService.getByPublishingYear(request.period());
     var query = new AllInstitutionsQuery(period);
-    return switch (request.reportType()) {
-      case CSV -> presignReportService.presign(request, Extension.CSV);
-      case XLSX -> presignReportService.presign(request, Extension.XLSX);
-      case JSON -> createAllInstitutionsJsonReport(request, query, period);
-    };
+    if (request.reportType().isCsvReport()) {
+      return presignReportService.presign(request, MediaType.CSV_UTF_8);
+    } else if (request.reportType().isXlsxReport()) {
+      return presignReportService.presign(request, MediaType.OOXML_SHEET);
+    }
+    return createAllInstitutionsJsonReport(request, query, period);
   }
 
   private AllInstitutionsReport createAllInstitutionsJsonReport(
@@ -74,11 +75,12 @@ public class ReportService {
   private ReportResponse institutionReport(InstitutionReportRequest request) throws IOException {
     var period = nviPeriodService.getByPublishingYear(request.period());
     var query = new InstitutionQuery(period, request.institutionId(), request.reportType());
-    return switch (request.reportType()) {
-      case CSV -> presignReportService.presign(request, Extension.CSV);
-      case XLSX -> presignReportService.presign(request, Extension.XLSX);
-      default -> createInstitutionJsonReport(request, query, period);
-    };
+    if (request.reportType().isCsvReport()) {
+      return presignReportService.presign(request, MediaType.CSV_UTF_8);
+    } else if (request.reportType().isXlsxReport()) {
+      return presignReportService.presign(request, MediaType.OOXML_SHEET);
+    }
+    return createInstitutionJsonReport(request, query, period);
   }
 
   private InstitutionJsonReport createInstitutionJsonReport(

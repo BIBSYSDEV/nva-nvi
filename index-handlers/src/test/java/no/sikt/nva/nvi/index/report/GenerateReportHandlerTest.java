@@ -14,11 +14,12 @@ import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.util.List;
 import java.util.UUID;
 import no.sikt.nva.nvi.index.report.request.AllInstitutionsReportRequest;
+import no.sikt.nva.nvi.index.report.request.ReportFormat;
 import no.sikt.nva.nvi.index.report.request.ReportType;
 import no.sikt.nva.nvi.index.report.response.GenerateReportMessage;
-import no.sikt.nva.nvi.report.presigner.Extension;
 import no.sikt.nva.nvi.report.presigner.ReportPresigner.ReportPresignedUrl;
 import no.unit.nva.stubs.FakeContext;
+import nva.commons.apigateway.MediaType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -71,9 +72,13 @@ class GenerateReportHandlerTest {
   }
 
   private GenerateReportMessage validMessage() {
-    var request = new AllInstitutionsReportRequest(randomUri(), randomString(), ReportType.CSV);
+    var request =
+        new AllInstitutionsReportRequest(
+            randomUri(),
+            randomString(),
+            new ReportFormat(MediaType.CSV_UTF_8, ReportType.AUTHOR_SHARES));
     var key = "%s.csv".formatted(UUID.randomUUID());
-    var presignedFile = new ReportPresignedUrl("bucket", key, Extension.CSV, randomUri());
+    var presignedFile = new ReportPresignedUrl("bucket", key, randomUri());
     return GenerateReportMessage.create(request, presignedFile);
   }
 }

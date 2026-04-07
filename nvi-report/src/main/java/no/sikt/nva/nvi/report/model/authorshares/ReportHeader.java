@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.report.model.institutionreport;
+package no.sikt.nva.nvi.report.model.authorshares;
 
 import no.sikt.nva.nvi.report.model.Header;
 

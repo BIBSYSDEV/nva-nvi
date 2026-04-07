@@ -2,8 +2,8 @@ package no.sikt.nva.nvi.index.report.response;
 
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.index.report.request.ReportRequest;
-import no.sikt.nva.nvi.report.presigner.Extension;
 import no.sikt.nva.nvi.report.presigner.ReportPresigner;
+import nva.commons.apigateway.MediaType;
 import nva.commons.core.Environment;
 
 public class PresignReportService {
@@ -20,8 +20,8 @@ public class PresignReportService {
     this.reportQueueUrl = environment.readEnv(REPORT_QUEUE);
   }
 
-  public PresignedReport presign(ReportRequest request, Extension extension) {
-    var presignedFile = reportPresigner.presign(extension);
+  public PresignedReport presign(ReportRequest request, MediaType mediaType) {
+    var presignedFile = reportPresigner.presign(mediaType);
     queueClient.sendMessage(
         GenerateReportMessage.create(request, presignedFile).toJsonString(), reportQueueUrl);
     return new PresignedReport(request.queryId(), presignedFile.presignedUrl());
