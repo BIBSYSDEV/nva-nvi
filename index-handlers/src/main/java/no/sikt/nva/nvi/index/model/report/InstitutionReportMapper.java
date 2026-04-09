@@ -50,6 +50,7 @@ public final class InstitutionReportMapper {
       return Stream.empty();
     }
     return document.publicationDetails().nviContributors().stream()
+        .filter(nviContributor -> nonNull(nviContributor.id()))
         .flatMap(
             contributor -> mapToReportRows(document, approval.get(), contributor, institutionId));
   }
