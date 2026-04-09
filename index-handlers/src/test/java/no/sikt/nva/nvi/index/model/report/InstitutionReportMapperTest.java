@@ -46,6 +46,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
@@ -338,6 +339,28 @@ class InstitutionReportMapperTest {
   }
 
   @Test
+  void shouldNotCreateRowForContributorWithoutId() {
+    var affiliationId = randomOrganizationId();
+    var contributorWithoutId = randomContributor(null, affiliationId);
+
+    var document =
+        reportDocument(
+            GlobalApprovalStatus.APPROVED,
+            randomBigDecimal(),
+            randomInteger(),
+            randomPublicationDetails(List.of(contributorWithoutId)),
+            List.of(
+                newApproval(
+                    ApprovalStatus.APPROVED,
+                    List.of(newCreatorAffiliationPoints(null, affiliationId)),
+                    randomBoolean())));
+
+    var rows = InstitutionReportMapper.mapToReportRows(document, INSTITUTION_ID).toList();
+
+    assertThat(rows).isEmpty();
+  }
+
+  @Test
   void shouldReturnEmptyStreamWhenNoApprovalExistsForInstitution() {
     var otherInstitutionId = URI.create("https://example.org/organization/999");
     assertThat(
@@ -536,7 +559,7 @@ class InstitutionReportMapperTest {
 
   private static NviContributor randomContributor(URI contributorId, URI affiliationId) {
     return NviContributor.builder()
-        .withId(contributorId.toString())
+        .withId(Optional.ofNullable(contributorId).map(URI::toString).orElse(null))
         .withName(randomString())
         .withAffiliations(
             List.of(
