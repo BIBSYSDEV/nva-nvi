@@ -18,8 +18,7 @@ public sealed interface ReportResponse extends JsonSerializable
         InstitutionJsonReport,
         InstitutionReport,
         PeriodReport,
-        XlsxReport,
-        CsvReport {
+        PresignedReport {
 
   URI id();
 }

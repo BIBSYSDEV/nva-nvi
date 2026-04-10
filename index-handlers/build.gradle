@@ -5,7 +5,6 @@ dependencies {
     implementation nvaCatalog.aws.sdk2.regions
     implementation nvaCatalog.aws.sdk2.sqs
     implementation libs.nva.language
-    implementation libs.fast.excel
     implementation nvaCatalog.aws.apache.client
     implementation nvaCatalog.aws.java.sdk.core
     implementation nvaCatalog.aws.lambda.core
@@ -18,6 +17,7 @@ dependencies {
     implementation nvaCatalog.com.auth0.jwt
     implementation nvaCatalog.jackson.core
     implementation nvaCatalog.jackson.databind
+    implementation nvaCatalog.opencsv
     implementation nvaCatalog.jena.core
     implementation nvaCatalog.opensearch.java
     implementation nvaCatalog.httpclient5
@@ -30,6 +30,7 @@ dependencies {
     implementation nvaLibs.s3
     implementation nvaLibs.secrets
     implementation project(':nvi-commons')
+    implementation project(':nvi-report')
     testFixturesAnnotationProcessor nvaCatalog.errorprone
     testImplementation nvaCatalog.aws.sdk2.dynamodblocal
     testImplementation nvaCatalog.assertj.core
@@ -39,13 +40,13 @@ dependencies {
     testImplementation nvaCatalog.datafaker
     testImplementation nvaCatalog.hamcrest
     testImplementation nvaCatalog.mockito.core
-    implementation nvaCatalog.opencsv
     testImplementation nvaCatalog.zalando
     testImplementation nvaLibs.identifiers
     testImplementation nvaLibs.logutils
     testImplementation nvaLibs.testutils
     testImplementation project(':nvi-test')
     testImplementation(testFixtures(project(":nvi-commons")))
+    testImplementation(testFixtures(project(":nvi-report")))
 }
 
 test {
@@ -66,4 +67,5 @@ test {
     environment("COGNITO_AUTHORIZER_URLS", "http://localhost:3000")
     environment("NVI_WRITE_INDEX_NAMES", "nvi-candidates")
     environment("LOG_LEVEL", "trace")
+    environment("REPORT_QUEUE", "queue")
 }

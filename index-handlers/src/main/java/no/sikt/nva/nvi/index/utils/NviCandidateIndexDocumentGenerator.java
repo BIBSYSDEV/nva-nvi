@@ -313,6 +313,7 @@ public final class NviCandidateIndexDocumentGenerator {
         .withAssignee(extractAssignee(approval))
         .withGlobalApprovalStatus(candidate.getGlobalApprovalStatus())
         .withSector(extractSector(approval.institutionId(), candidate))
+        .withRboInstitution(extractRboInstitution(approval.institutionId(), candidate))
         .build();
   }
 
@@ -323,6 +324,13 @@ public final class NviCandidateIndexDocumentGenerator {
         .filter(not(Sector.UNKNOWN::equals))
         .map(Sector::toString)
         .orElse(null);
+  }
+
+  public static boolean extractRboInstitution(URI institutionId, Candidate candidate) {
+    return candidate
+        .getInstitutionPoints(institutionId)
+        .map(InstitutionPoints::rboInstitution)
+        .orElse(false);
   }
 
   private String extractAssignee(Approval approval) {

@@ -14,4 +14,17 @@ public record ReportDocument(
     BigDecimal internationalCollaborationFactor,
     int creatorShareCount,
     ReportPublicationDetails publicationDetails,
-    List<ReportApproval> approvals) {}
+    List<ReportApproval> approvals) {
+
+  public String year() {
+    return reportingPeriod().year();
+  }
+
+  public String publicationId() {
+    return publicationDetails().id();
+  }
+
+  public String publicationType() {
+    return publicationDetails().type();
+  }
+}

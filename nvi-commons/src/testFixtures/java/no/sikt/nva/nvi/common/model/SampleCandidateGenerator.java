@@ -4,6 +4,7 @@ import static java.time.temporal.ChronoUnit.DAYS;
 import static java.util.Collections.emptyMap;
 import static java.util.Objects.isNull;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
+import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
 import static no.unit.nva.testutils.RandomDataGenerator.randomInstant;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -47,7 +48,13 @@ public final class SampleCandidateGenerator {
 
   public SampleCandidateGenerator withInstitutionPoints(
       URI institutionId, Sector sector, BigDecimal points) {
-    var institutionPoint = new InstitutionPoints(institutionId, points, sector, List.of());
+    return withInstitutionPoints(institutionId, sector, randomBoolean(), points);
+  }
+
+  public SampleCandidateGenerator withInstitutionPoints(
+      URI institutionId, Sector sector, boolean rboInstitution, BigDecimal points) {
+    var institutionPoint =
+        new InstitutionPoints(institutionId, points, sector, rboInstitution, List.of());
     this.institutionPoints.add(institutionPoint);
     this.approvals.put(
         institutionId, Approval.createNewApproval(candidateIdentifier, institutionId));
@@ -76,7 +83,7 @@ public final class SampleCandidateGenerator {
     return randomElement(ChannelType.values());
   }
 
-  private static ScientificValue randomScientificValue() {
+  public static ScientificValue randomScientificValue() {
     return randomElement(ScientificValue.values());
   }
 

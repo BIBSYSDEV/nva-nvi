@@ -25,6 +25,7 @@ import no.unit.nva.auth.uriretriever.UriRetriever;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class NviCandidateIndexDocumentGeneratorTest {
 
@@ -81,6 +82,19 @@ class NviCandidateIndexDocumentGeneratorTest {
         .containsExactlyInAnyOrderElementsOf(expectedHandles);
   }
 
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  void shouldPopulateRboInstitutionInIndexDocumentApprovalView(boolean rboInstitution) {
+    var institutionId = randomUri();
+    var candidate = candidateWithRboInstitution(institutionId, rboInstitution);
+
+    var indexDocument = generateIndexDocument(candidate);
+
+    var approval = getApprovalView(indexDocument, institutionId);
+
+    assertEquals(rboInstitution, approval.rboInstitution());
+  }
+
   private static PublicationDetails publicationDetailsWithHandles(Set<URI> handles) {
     return PublicationDetails.builder()
         .withId(randomUri())
@@ -94,6 +108,12 @@ class NviCandidateIndexDocumentGeneratorTest {
   private static Candidate candidateWithInstitutionSector(URI institutionId, Sector sector) {
     return new SampleCandidateGenerator()
         .withInstitutionPoints(institutionId, sector, randomBigDecimal())
+        .build();
+  }
+
+  private static Candidate candidateWithRboInstitution(URI institutionId, boolean rboInstitution) {
+    return new SampleCandidateGenerator()
+        .withInstitutionPoints(institutionId, Sector.UHI, rboInstitution, randomBigDecimal())
         .build();
   }
 

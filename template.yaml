@@ -349,6 +349,19 @@ Resources:
     Type: AWS::SQS::Queue
     Properties:
       MessageRetentionPeriod: 1209600 #14 days
+  #=============================== For report generation ==========================================
+  ReportQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      VisibilityTimeout: 5400
+      MessageRetentionPeriod: 1209600 #14 days
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt ReportQueueDLQ.Arn
+        maxReceiveCount: 3
+  ReportQueueDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      MessageRetentionPeriod: 1209600 #14 days
 
   #============================= Permissions =======================================================
   BasicWriteLogRole:
@@ -501,6 +514,8 @@ Resources:
                   - !Ref CristinImportNviQueueArn
                   - !GetAtt BatchJobWorkQueue.Arn
                   - !GetAtt BatchJobDLQ.Arn
+                  - !GetAtt ReportQueue.Arn
+                  - !GetAtt ReportQueueDLQ.Arn
         - PolicyName: publishToSnsTopic
           PolicyDocument:
             Version: "2012-10-17"
@@ -935,6 +950,26 @@ Resources:
           Properties:
             Queue: !Ref CristinImportNviQueueArn
 
+  GenerateReportHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: index-handlers
+      Handler: no.sikt.nva.nvi.index.report.GenerateReportHandler::handleRequest
+      Role: !GetAtt NvaNviRole.Arn
+      Timeout: 900
+      MemorySize: 1536
+      Environment:
+        Variables:
+          NVI_REPORTS_BUCKET: !Ref ReportsBucket
+      Events:
+        SQSEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt ReportQueue.Arn
+            BatchSize: 1
+            FunctionResponseTypes:
+              - ReportBatchItemFailures
+
   #==========================Manually triggered functions=============================================
 
   InitHandler:
@@ -1261,6 +1296,7 @@ Resources:
         Variables:
           ALLOWED_ORIGIN: !Ref AllowedOrigins
           NVI_REPORTS_BUCKET: !Ref ReportsBucket
+          REPORT_QUEUE: !Ref ReportQueue
       Events:
         AllPeriodsReport:
           Type: Api
@@ -1635,6 +1671,24 @@ Resources:
       Dimensions:
         - Name: QueueName
           Value: !GetAtt BatchJobDLQ.QueueName
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      AlarmActions:
+        - !Ref SlackSnsArn
+
+  ReportQueueDLQAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: NVI report generation failed
+      AlarmDescription: Report generation failed. Check messages on ReportQueueDLQ.
+      MetricName: ApproximateNumberOfMessagesVisible
+      Namespace: AWS/SQS
+      Statistic: Sum
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt ReportQueueDLQ.QueueName
       Period: 300
       EvaluationPeriods: 1
       Threshold: 1

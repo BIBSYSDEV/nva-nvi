@@ -17,6 +17,7 @@ import static no.sikt.nva.nvi.test.TestConstants.NB_FIELD;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.sikt.nva.nvi.test.TestUtils.randomIntBetween;
 import static no.unit.nva.testutils.RandomDataGenerator.randomElement;
+import static no.unit.nva.testutils.RandomDataGenerator.randomIssn;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 
@@ -214,7 +215,8 @@ public final class IndexDocumentTestUtils {
         .withId(randomUri())
         .withType(randomString())
         .withScientificValue(randomValidScientificValue())
-        .withName(randomString());
+        .withName(randomString())
+        .withPrintIssn(randomIssn());
   }
 
   public static Pages randomPages() {

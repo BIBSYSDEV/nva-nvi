@@ -1,7 +1,6 @@
 package no.sikt.nva.nvi.index.report.response;
 
 import java.io.IOException;
-import java.net.URI;
 import java.util.NoSuchElementException;
 import java.util.function.Supplier;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
@@ -22,15 +21,15 @@ public class ReportService {
 
   private final NviPeriodService nviPeriodService;
   private final ReportAggregationClient reportAggregationClient;
-  private final ReportUploader reportUploader;
+  private final PresignReportService presignReportService;
 
   public ReportService(
       NviPeriodService nviPeriodService,
       ReportAggregationClient reportAggregationClient,
-      ReportUploader reportUploader) {
+      PresignReportService presignReportService) {
     this.nviPeriodService = nviPeriodService;
     this.reportAggregationClient = reportAggregationClient;
-    this.reportUploader = reportUploader;
+    this.presignReportService = presignReportService;
   }
 
   public ReportResponse getResponse(ReportRequest reportRequest) throws IOException {
@@ -58,31 +57,12 @@ public class ReportService {
       throws IOException {
     var period = nviPeriodService.getByPublishingYear(request.period());
     var query = new AllInstitutionsQuery(period);
-    return switch (request.reportType()) {
-      case CSV -> createCsvReport(request, query);
-      case XLSX -> createXlsxReport(request, query);
-      case JSON -> createAllInstitutionsJsonReport(request, query, period);
-    };
-  }
-
-  private CsvReport createCsvReport(
-      AllInstitutionsReportRequest request, AllInstitutionsQuery query) {
-    var base64Content = reportAggregationClient.executeCsvReport(query);
-    var uri = upload(base64Content, "csv", MediaType.CSV_UTF_8.toString());
-    return new CsvReport(request.queryId(), uri);
-  }
-
-  private CsvReport createXlsxReport(
-      AllInstitutionsReportRequest request, AllInstitutionsQuery query) {
-    var bytes = reportAggregationClient.executeXlsxExport(query);
-    var uri = upload(bytes, "xlsx", MediaType.OOXML_SHEET.toString());
-    return new CsvReport(request.queryId(), uri);
-  }
-
-  private CsvReport createCsvReport(ReportRequest request, InstitutionQuery query) {
-    var bytes = reportAggregationClient.executeCsvReport(query);
-    var uri = upload(bytes, "csv", MediaType.CSV_UTF_8.toString());
-    return new CsvReport(request.queryId(), uri);
+    if (request.reportType().isCsvReport()) {
+      return presignReportService.presign(request, MediaType.CSV_UTF_8);
+    } else if (request.reportType().isXlsxReport()) {
+      return presignReportService.presign(request, MediaType.OOXML_SHEET);
+    }
+    return createAllInstitutionsJsonReport(request, query, period);
   }
 
   private AllInstitutionsReport createAllInstitutionsJsonReport(
@@ -95,17 +75,12 @@ public class ReportService {
   private ReportResponse institutionReport(InstitutionReportRequest request) throws IOException {
     var period = nviPeriodService.getByPublishingYear(request.period());
     var query = new InstitutionQuery(period, request.institutionId(), request.reportType());
-    return switch (request.reportType()) {
-      case XLSX -> createXlsxReport(request, query);
-      case CSV -> createCsvReport(request, query);
-      default -> createInstitutionJsonReport(request, query, period);
-    };
-  }
-
-  private XlsxReport createXlsxReport(ReportRequest request, InstitutionQuery query) {
-    var bytes = reportAggregationClient.executeXlsxReport(query);
-    var uri = upload(bytes, "xlsx", MediaType.OOXML_SHEET.toString());
-    return new XlsxReport(request.queryId(), uri);
+    if (request.reportType().isCsvReport()) {
+      return presignReportService.presign(request, MediaType.CSV_UTF_8);
+    } else if (request.reportType().isXlsxReport()) {
+      return presignReportService.presign(request, MediaType.OOXML_SHEET);
+    }
+    return createInstitutionJsonReport(request, query, period);
   }
 
   private InstitutionJsonReport createInstitutionJsonReport(
@@ -123,9 +98,5 @@ public class ReportService {
         new NoSuchElementException(
             "No report found for institution %s in period %s"
                 .formatted(request.institutionId(), request.period()));
-  }
-
-  private URI upload(byte[] bytes, String extension, String contentType) {
-    return reportUploader.upload(bytes, extension, contentType);
   }
 }

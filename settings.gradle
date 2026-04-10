@@ -1,5 +1,17 @@
 pluginManagement {
     includeBuild('build-logic')
+    repositories {
+        mavenCentral()
+        gradlePluginPortal()
+    }
+    // Redirect nva.* plugin IDs to the Maven Central artifact, our plugins aren't published to the Gradle Plugin Portal
+    resolutionStrategy {
+        eachPlugin {
+            if (requested.id.id.startsWith('nva.')) {
+                useModule("com.github.bibsysdev:nva-gradle-plugins:${requested.version}")
+            }
+        }
+    }
 }
 
 dependencyResolutionManagement {
@@ -40,3 +52,4 @@ include 'index-handlers'
 include 'event-handlers'
 include 'nvi-test'
 include 'integration-tests'
+include 'nvi-report'

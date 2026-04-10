@@ -143,8 +143,11 @@ public class PointCalculator {
     var institutionContributorFraction = getInstitutionContributorFraction(creatorCount);
     var institutionPoints = executeNviFormula(institutionContributorFraction);
     var creatorPoints = calculateAffiliationPoints(institutionCreatorCount, institutionPoints);
-    var sector = Sector.fromString(customerMap.get(institution).sector()).orElse(Sector.UNKNOWN);
-    return new InstitutionPoints(institution, institutionPoints, sector, creatorPoints);
+    var customer = customerMap.get(institution);
+    var sector = Sector.fromString(customer.sector()).orElse(Sector.UNKNOWN);
+    var rboInstitution = customer.rboInstitution();
+    return new InstitutionPoints(
+        institution, institutionPoints, sector, rboInstitution, creatorPoints);
   }
 
   private BigDecimal getInstitutionContributorFraction(Long institutionCreatorCount) {

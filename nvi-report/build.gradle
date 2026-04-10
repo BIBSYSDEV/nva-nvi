@@ -1,0 +1,30 @@
+plugins {
+    id 'nva.nvi.java-conventions'
+}
+
+dependencies {
+    implementation project(':nvi-commons')
+    implementation nvaCatalog.bundles.logging
+    implementation nvaCatalog.opencsv
+    implementation nvaCatalog.aws.sdk2.s3
+    implementation nvaCatalog.jackson.core
+    implementation nvaCatalog.jackson.databind
+
+    implementation nvaLibs.core
+    implementation nvaLibs.apigateway
+
+    implementation libs.fast.excel
+
+    testFixturesAnnotationProcessor nvaCatalog.errorprone
+    testFixturesImplementation nvaCatalog.opencsv
+    testFixturesImplementation libs.fast.excel.reader
+    testImplementation nvaLibs.testutils
+    testImplementation libs.fast.excel.reader
+    testImplementation nvaCatalog.bundles.testing.junit
+    testImplementation nvaCatalog.assertj.core
+    testImplementation nvaCatalog.mockito.core
+}
+
+test {
+    useJUnitPlatform()
+}

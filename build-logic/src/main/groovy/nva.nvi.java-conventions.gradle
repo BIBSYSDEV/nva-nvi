@@ -1,53 +1,13 @@
 plugins {
-    id 'nva.nvi.common-conventions'
-    id 'java-library'
+    id 'nva.java-conventions'
     id 'java-test-fixtures'
-    id 'jacoco'
-    id 'pmd'
-    id 'net.ltgt.errorprone'
-    id 'com.autonomousapps.dependency-analysis'
 }
 
-group = 'com.github.bibsysdev'
-
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
+nva {
+    errorprone {
+        allErrorsAsWarnings = true
     }
-}
-
-tasks.withType(JavaCompile).configureEach {
-    options.errorprone {
-        allSuggestionsAsWarnings = true
+    pmd {
+        rulesetFile = rootProject.file('config/pmd/ruleset.xml')
     }
-}
-
-pmd {
-    toolVersion = '7.22.0'
-    ruleSetConfig = rootProject.resources.text.fromFile('config/pmd/ruleset.xml')
-    ruleSets = []
-    ignoreFailures = false
-}
-
-tasks.named('test', Test) {
-    useJUnitPlatform()
-    failFast = false
-    testLogging {
-        events = ['skipped', 'passed', 'failed']
-        showCauses = true
-        exceptionFormat = "full"
-    }
-}
-
-// Do not generate test reports for individual projects
-tasks.named("jacocoTestReport", JacocoReport) {
-    enabled = false
-    reports {
-        xml.required = true
-        html.required = true
-    }
-}
-
-tasks.named('check') {
-    dependsOn tasks.named('test')
 }
