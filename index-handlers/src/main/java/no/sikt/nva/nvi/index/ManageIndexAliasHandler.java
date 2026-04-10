@@ -5,6 +5,7 @@ import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.IOException;
 import java.util.Map;
 import no.sikt.nva.nvi.index.aws.CandidateSearchClient;
@@ -55,7 +56,7 @@ public class ManageIndexAliasHandler implements RequestHandler<Object, String> {
       if (input instanceof String stringInput) {
         return dtoObjectMapper.readValue(stringInput, AliasManagementRequest.class);
       }
-    } catch (Exception e) {
+    } catch (IllegalArgumentException | JsonProcessingException e) {
       throw new IllegalArgumentException("Invalid request format", e);
     }
     throw new IllegalArgumentException("Invalid request format");

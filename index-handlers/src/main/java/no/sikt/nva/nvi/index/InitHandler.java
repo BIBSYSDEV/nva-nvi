@@ -4,6 +4,7 @@ import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import java.util.Map;
 import java.util.function.Function;
 import no.sikt.nva.nvi.index.aws.CandidateSearchClient;
@@ -50,7 +51,7 @@ public class InitHandler implements RequestHandler<Object, String> {
       if (input instanceof String stringInput) {
         return dtoObjectMapper.readValue(stringInput, IndexManagementRequest.class);
       }
-    } catch (Exception e) {
+    } catch (IllegalArgumentException | JsonProcessingException e) {
       LOGGER.info("Could not parse input as IndexManagementRequest, using defaults");
     }
     return new IndexManagementRequest(null);

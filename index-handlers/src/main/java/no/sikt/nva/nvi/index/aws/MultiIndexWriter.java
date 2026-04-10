@@ -58,13 +58,14 @@ public class MultiIndexWriter {
     return clients.getFirst();
   }
 
+  @SuppressWarnings("PMD.AvoidCatchingGenericException")
   private void writeToSecondaryClients(
       java.util.function.Function<CandidateSearchClient, Void> operation,
       String operationDescription) {
     for (var i = 1; i < clients.size(); i++) {
       try {
         operation.apply(clients.get(i));
-      } catch (Exception e) {
+      } catch (RuntimeException e) {
         LOGGER.warn(
             "Failed to {} on secondary write index (index {}): {}",
             operationDescription,

@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
 
 public class CandidateSearchClient implements SearchClient<NviCandidateIndexDocument> {
 
+  private static final int HTTP_NOT_FOUND = 404;
   private static final String INDEX_NOT_FOUND_EXCEPTION = "index_not_found_exception";
   private static final Logger LOGGER = LoggerFactory.getLogger(CandidateSearchClient.class);
   private static final int MAX_QUERY_SIZE = 150;
@@ -126,7 +127,8 @@ public class CandidateSearchClient implements SearchClient<NviCandidateIndexDocu
     } catch (IOException io) {
       throw new RuntimeException(io);
     } catch (OpenSearchException osex) {
-      if (osex.status() == 404 && INDEX_NOT_FOUND_EXCEPTION.equals(osex.error().type())) {
+      if (osex.status() == HTTP_NOT_FOUND
+          && INDEX_NOT_FOUND_EXCEPTION.equals(osex.error().type())) {
         return false;
       }
       throw osex;
@@ -164,7 +166,7 @@ public class CandidateSearchClient implements SearchClient<NviCandidateIndexDocu
                       r -> r.name(aliasName)));
       return new java.util.ArrayList<>(response.result().keySet());
     } catch (OpenSearchException osex) {
-      if (osex.status() == 404) {
+      if (osex.status() == HTTP_NOT_FOUND) {
         return List.of();
       }
       throw osex;
