@@ -7,9 +7,11 @@ import static nva.commons.core.attempt.Try.attempt;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
+import no.sikt.nva.nvi.index.model.document.NviContributor;
 import no.sikt.nva.nvi.index.model.report.InstitutionReportMapper;
 import no.sikt.nva.nvi.index.model.report.PublicationPointsReportMapper;
 import no.sikt.nva.nvi.index.model.report.ReportDocument;
@@ -30,6 +32,9 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 public class ReportGenerator {
 
+  private static final Predicate<NviContributor> ALL_CONTRIBUTORS = contributor -> true;
+  private static final Predicate<NviContributor> CONTRIBUTORS_WITH_ID =
+      contributor -> nonNull(contributor.id());
   private final NviPeriodService nviPeriodService;
   private final ReportDocumentClient reportDocumentClient;
   private final S3Client s3Client;
@@ -71,7 +76,13 @@ public class ReportGenerator {
       return createRowsForPublicationPointsReport(message, query, period);
     }
     var documents = reportDocumentClient.fetchDocuments(query.query());
-    return createRows(documents, query);
+    return createRows(documents, query, applyContributorFilter(message));
+  }
+
+  private static Predicate<NviContributor> applyContributorFilter(GenerateReportMessage message) {
+    return message.reportFormat().isAuthorSharesControlReport()
+        ? ALL_CONTRIBUTORS
+        : CONTRIBUTORS_WITH_ID;
   }
 
   private List<Row> createRowsForPublicationPointsReport(
@@ -100,11 +111,13 @@ public class ReportGenerator {
     return report.institutions().stream().map(PublicationPointsReportMapper::toRow).toList();
   }
 
-  private static Stream<Row> toReportRows(ReportDocument document) {
+  private static Stream<Row> toReportRows(
+      ReportDocument document, Predicate<NviContributor> contributorFilter) {
     return document.approvals().stream()
         .flatMap(
             approval ->
-                InstitutionReportMapper.mapToReportRows(document, approval.institutionId()));
+                InstitutionReportMapper.mapToReportRows(
+                    document, approval.institutionId(), contributorFilter));
   }
 
   private static byte[] generateReport(List<Row> rows, MediaType mediaType) {
@@ -118,16 +131,21 @@ public class ReportGenerator {
     }
   }
 
-  private List<Row> createRows(List<ReportDocument> documents, ReportAggregationQuery<?> query) {
+  private List<Row> createRows(
+      List<ReportDocument> documents,
+      ReportAggregationQuery<?> query,
+      Predicate<NviContributor> contributorFilter) {
     if (query instanceof InstitutionQuery institutionQuery) {
       return documents.stream()
           .flatMap(
               document ->
                   InstitutionReportMapper.mapToReportRows(
-                      document, institutionQuery.institutionId()))
+                      document, institutionQuery.institutionId(), contributorFilter))
           .toList();
     }
-    return documents.stream().flatMap(ReportGenerator::toReportRows).toList();
+    return documents.stream()
+        .flatMap(document -> toReportRows(document, contributorFilter))
+        .toList();
   }
 
   private ReportAggregationQuery<?> createQuery(GenerateReportMessage message, NviPeriod period) {

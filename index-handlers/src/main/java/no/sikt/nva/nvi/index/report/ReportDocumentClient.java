@@ -79,6 +79,7 @@ public class ReportDocumentClient {
             .source(REPORT_SOURCE_CONFIG)
             .scroll(builder -> builder.time(SCROLL_TIMEOUT))
             .build();
+
     var response = attempt(() -> client.search(request, ReportDocument.class)).orElseThrow();
     addHits(response.hits(), documents);
     return response.scrollId();
