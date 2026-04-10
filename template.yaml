@@ -44,6 +44,10 @@ Parameters:
     Type: "AWS::SSM::Parameter::Value<String>"
     Description: The Api domain
     Default: /NVA/ApiDomain
+  NvaApplicationDomain:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /NVA/ApplicationDomain
+    Description: Domain-name for the NVA frontend
   EventBusName:
     Type: AWS::SSM::Parameter::Value<String>
     Default: /NVA/Events/EventsBusName
@@ -1698,3 +1702,4 @@ Resources:
               - GET
             AllowedOrigins:
               - !Sub "https://${ApiDomain}"
+              - !Sub "https://${NvaApplicationDomain}"
