@@ -33,6 +33,7 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.params.provider.Arguments.argumentSet;
@@ -650,6 +651,23 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       assertThat(candidate.getTotalPoints()).isPositive();
       assertThat(candidate.isApplicable()).isTrue();
       assertThat(publicationDetails.publicationDate()).isEqualTo(publicationDate);
+    }
+
+    @Test
+    void shouldNotThrowErrorWhenEvaluatingExistingCandidateInClosedPeriod() {
+      setupOpenPeriod(scenario, publicationDate.year());
+      var publication = factory.withContributor(verifiedCreatorFrom(nviOrganization));
+      setupCandidateMatchingPublication(publication.getExpandedPublication());
+      setupClosedPeriod(scenario, publicationDate.year());
+      var updatedPublication = publication.withContributor(verifiedCreatorFrom(nviOrganization));
+
+      var candidateBeforeUpdate =
+          candidateService.getCandidateByPublicationId(publication.getPublicationId());
+      assertDoesNotThrow(() -> handleEvaluation(updatedPublication));
+
+      var candidateAfterUpdate =
+          candidateService.getCandidateByPublicationId(publication.getPublicationId());
+      assertThat(candidateBeforeUpdate.revision()).isEqualTo(candidateAfterUpdate.revision());
     }
 
     @Test
