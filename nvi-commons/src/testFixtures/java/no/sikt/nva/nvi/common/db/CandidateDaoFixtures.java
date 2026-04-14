@@ -13,6 +13,7 @@ import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizati
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 
 import java.net.URI;
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -109,6 +110,7 @@ public class CandidateDaoFixtures {
         randomCandidateWithYear(organizationId, year)
             .copy()
             .reportStatus(ReportStatus.REPORTED)
+            .reportedDate(Instant.now())
             .build();
     var candidateDao = createCandidateDao(dbCandidate);
     var approvals = List.of(randomApprovalDao(candidateDao.identifier(), organizationId));

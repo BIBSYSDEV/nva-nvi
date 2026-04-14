@@ -76,6 +76,7 @@ public final class SampleCandidateGenerator {
         null,
         null,
         null,
+        null,
         new Environment());
   }
 

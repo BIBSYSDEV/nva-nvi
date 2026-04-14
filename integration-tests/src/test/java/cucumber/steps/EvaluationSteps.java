@@ -240,7 +240,13 @@ public class EvaluationSteps {
 
   private void setCandidateToReported(Candidate candidate) {
     var candidateDao = candidate.toDao();
-    var dbCandidate = candidateDao.candidate().copy().reportStatus(ReportStatus.REPORTED).build();
+    var dbCandidate =
+        candidateDao
+            .candidate()
+            .copy()
+            .reportStatus(ReportStatus.REPORTED)
+            .reportedDate(Instant.now())
+            .build();
     var updatedCandidateDao = candidateDao.copy().candidate(dbCandidate).build();
 
     scenario

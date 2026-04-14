@@ -61,6 +61,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpResponse;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -632,6 +633,7 @@ class IndexDocumentHandlerTest {
         randomCandidateBuilder(true)
             .pointCalculation(pointCalculation)
             .reportStatus(ReportStatus.REPORTED)
+            .reportedDate(Instant.now())
             .build();
     var candidateDao = createCandidateDao(dbCandidate);
     candidateRepository.create(candidateDao, emptyList());
@@ -902,6 +904,7 @@ class IndexDocumentHandlerTest {
         .withNumberOfApprovals(candidate.approvals().size())
         .withCreatorShareCount(candidate.getCreatorShareCount())
         .withReported(candidate.isReported())
+        .withReportedDate(candidate.reportedDate())
         .withGlobalApprovalStatus(candidate.getGlobalApprovalStatus())
         .withPublicationTypeChannelLevelPoints(candidate.getBasePoints())
         .withInternationalCollaborationFactor(candidate.getCollaborationFactor())
