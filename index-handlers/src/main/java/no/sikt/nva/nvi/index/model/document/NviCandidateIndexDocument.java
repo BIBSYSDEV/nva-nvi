@@ -91,8 +91,13 @@ public record NviCandidateIndexDocument(
   private static final String UNKNOWN = "N/A";
 
   public static NviCandidateIndexDocument from(
-      JsonNode expandedResource, Candidate candidate, UriRetriever uriRetriever) {
-    return new NviCandidateIndexDocumentGenerator(uriRetriever, expandedResource, candidate)
+      JsonNode expandedResource,
+      Candidate candidate,
+      UriRetriever uriRetriever,
+      String apiHost,
+      String basePath) {
+    return new NviCandidateIndexDocumentGenerator(
+            uriRetriever, expandedResource, candidate, apiHost, basePath)
         .generateDocument();
   }
 

@@ -33,6 +33,7 @@ public class UpdateNviCandidateStatusHandler
   private final CandidateService candidateService;
   private final ApprovalService approvalService;
   private final ViewingScopeValidator viewingScopeValidator;
+  private final Environment environment;
 
   @JacocoGenerated
   public UpdateNviCandidateStatusHandler() {
@@ -52,6 +53,7 @@ public class UpdateNviCandidateStatusHandler
     this.candidateService = candidateService;
     this.approvalService = approvalService;
     this.viewingScopeValidator = viewingScopeValidator;
+    this.environment = environment;
   }
 
   @Override
@@ -72,7 +74,7 @@ public class UpdateNviCandidateStatusHandler
     return attempt(() -> candidateService.getCandidateByIdentifier(candidateIdentifier))
         .map(candidate -> validateViewingScope(viewingScopeValidator, username, candidate))
         .map(candidate -> updateAndRefetch(candidate, updateRequest, userInstance))
-        .map(candidate -> CandidateResponseFactory.create(candidate, userInstance))
+        .map(candidate -> CandidateResponseFactory.create(candidate, userInstance, environment))
         .orElseThrow(ExceptionMapper::map);
   }
 

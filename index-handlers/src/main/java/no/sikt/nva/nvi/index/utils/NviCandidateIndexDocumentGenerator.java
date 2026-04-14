@@ -56,6 +56,7 @@ import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.model.ChannelType;
 import no.sikt.nva.nvi.common.model.ScientificValue;
 import no.sikt.nva.nvi.common.model.Sector;
+import no.sikt.nva.nvi.common.service.CandidateUriUtil;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
@@ -92,13 +93,21 @@ public final class NviCandidateIndexDocumentGenerator {
   private final OrganizationRetriever organizationRetriever;
   private final JsonNode expandedResource;
   private final Candidate candidate;
+  private final String apiHost;
+  private final String basePath;
   private final Map<URI, String> temporaryCache = new HashMap<>();
 
   public NviCandidateIndexDocumentGenerator(
-      UriRetriever uriRetriever, JsonNode expandedResource, Candidate candidate) {
+      UriRetriever uriRetriever,
+      JsonNode expandedResource,
+      Candidate candidate,
+      String apiHost,
+      String basePath) {
     this.organizationRetriever = new OrganizationRetriever(uriRetriever);
     this.expandedResource = expandedResource;
     this.candidate = candidate;
+    this.apiHost = apiHost;
+    this.basePath = basePath;
   }
 
   public NviCandidateIndexDocument generateDocument() {
@@ -157,8 +166,8 @@ public final class NviCandidateIndexDocumentGenerator {
   private NviCandidateIndexDocument buildDocument(
       List<ApprovalView> approvals, PublicationDetails expandedPublicationDetails) {
     return NviCandidateIndexDocument.builder()
-        .withId(candidate.getId())
-        .withContext(candidate.getContextUri())
+        .withId(CandidateUriUtil.toCandidateUri(apiHost, basePath, candidate.identifier()))
+        .withContext(CandidateUriUtil.toContextUri(apiHost, basePath))
         .withIsApplicable(candidate.isApplicable())
         .withIdentifier(candidate.identifier())
         .withReportingPeriod(ReportingPeriod.fromCandidate(candidate))

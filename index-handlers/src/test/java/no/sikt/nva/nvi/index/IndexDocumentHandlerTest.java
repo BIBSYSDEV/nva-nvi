@@ -77,6 +77,7 @@ import no.sikt.nva.nvi.common.model.ChannelType;
 import no.sikt.nva.nvi.common.model.ScientificValue;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import no.sikt.nva.nvi.common.service.CandidateService;
+import no.sikt.nva.nvi.common.service.CandidateUriUtil;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.index.aws.S3StorageWriter;
@@ -891,8 +892,14 @@ class IndexDocumentHandlerTest {
       JsonNode expandedResource, Candidate candidate) {
     var expandedPublicationDetails = expandPublicationDetails(candidate, expandedResource);
     return NviCandidateIndexDocument.builder()
-        .withContext(candidate.getContextUri())
-        .withId(candidate.getId())
+        .withContext(
+            CandidateUriUtil.toContextUri(
+                ENVIRONMENT.readEnv("API_HOST"), ENVIRONMENT.readEnv("CUSTOM_DOMAIN_BASE_PATH")))
+        .withId(
+            CandidateUriUtil.toCandidateUri(
+                ENVIRONMENT.readEnv("API_HOST"),
+                ENVIRONMENT.readEnv("CUSTOM_DOMAIN_BASE_PATH"),
+                candidate.identifier()))
         .withIsApplicable(candidate.isApplicable())
         .withIdentifier(candidate.identifier())
         .withApprovals(

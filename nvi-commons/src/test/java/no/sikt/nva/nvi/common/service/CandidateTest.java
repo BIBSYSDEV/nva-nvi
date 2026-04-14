@@ -255,12 +255,17 @@ class CandidateTest extends CandidateTestSetup {
     var candidate = scenario.upsertCandidate(request);
     var userOrganizationId = getAnyOrganizationId(candidate);
 
+    var candidateUri =
+        CandidateUriUtil.toCandidateUri(
+            ENVIRONMENT.readEnv("API_HOST"),
+            ENVIRONMENT.readEnv("CUSTOM_DOMAIN_BASE_PATH"),
+            candidate.identifier());
     var expectedDto =
         CandidateDto.builder()
             .withApprovals(mapToApprovalDtos(candidate))
             .withAllowedOperations(CURATOR_CAN_FINALIZE_APPROVAL)
             .withProblems(emptySet())
-            .withId(candidate.getId())
+            .withId(candidateUri)
             .withPublicationId(candidate.getPublicationId())
             .withIdentifier(candidate.identifier())
             .withContext(CONTEXT_URI)
@@ -270,7 +275,7 @@ class CandidateTest extends CandidateTestSetup {
             .build();
 
     var userInstance = createCuratorUserInstance(userOrganizationId);
-    var actualDto = CandidateResponseFactory.create(candidate, userInstance);
+    var actualDto = CandidateResponseFactory.create(candidate, userInstance, ENVIRONMENT);
     assertEquals(expectedDto, actualDto);
   }
 
@@ -339,14 +344,6 @@ class CandidateTest extends CandidateTestSetup {
   void shouldReturnNviCandidateContextAsString() {
     var expectedContext = stringFromResources(Path.of("nviCandidateContext.json"));
     assertThat(Candidate.getJsonLdContext(), is(equalTo(expectedContext)));
-  }
-
-  @Test
-  void shouldReturnContextUri() {
-    var createRequest = randomUpsertRequestBuilder().build();
-    var candidate = scenario.upsertCandidate(createRequest);
-    var contextUri = candidate.getContextUri();
-    assertThat(contextUri, is(equalTo(CONTEXT_URI)));
   }
 
   @Test

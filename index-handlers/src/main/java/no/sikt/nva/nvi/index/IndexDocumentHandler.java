@@ -35,6 +35,8 @@ import org.slf4j.LoggerFactory;
 public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(IndexDocumentHandler.class);
+  private static final String API_HOST = "API_HOST";
+  private static final String CUSTOM_DOMAIN_BASE_PATH = "CUSTOM_DOMAIN_BASE_PATH";
   private static final String INDEX_DLQ = "INDEX_DLQ";
   private static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
   private static final String QUEUE_URL = "PERSISTED_INDEX_DOCUMENT_QUEUE_URL";
@@ -56,6 +58,8 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
   private final QueueClient sqsClient;
   private final String queueUrl;
   private final String dlqUrl;
+  private final String apiHost;
+  private final String basePath;
 
   @JacocoGenerated
   public IndexDocumentHandler() {
@@ -82,6 +86,8 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
     this.uriRetriever = uriRetriever;
     this.queueUrl = environment.readEnv(QUEUE_URL);
     this.dlqUrl = environment.readEnv(INDEX_DLQ);
+    this.apiHost = environment.readEnv(API_HOST);
+    this.basePath = environment.readEnv(CUSTOM_DOMAIN_BASE_PATH);
   }
 
   @Override
@@ -201,7 +207,8 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
   private IndexDocumentWithConsumptionAttributes generateIndexDocumentWithConsumptionAttributes(
       Candidate candidate) {
     var persistedResource = fetchPersistedResource(candidate);
-    return IndexDocumentWithConsumptionAttributes.from(candidate, persistedResource, uriRetriever);
+    return IndexDocumentWithConsumptionAttributes.from(
+        candidate, persistedResource, uriRetriever, apiHost, basePath);
   }
 
   private void validateErrorMessage(String message) {

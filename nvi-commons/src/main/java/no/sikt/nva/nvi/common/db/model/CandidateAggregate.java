@@ -12,7 +12,6 @@ import no.sikt.nva.nvi.common.db.Dao;
 import no.sikt.nva.nvi.common.db.NoteDao;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
-import nva.commons.core.Environment;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,10 +33,10 @@ public record CandidateAggregate(
     return Optional.of(new CandidateAggregate(candidate, approvals, notes));
   }
 
-  public Candidate toCandidate(Environment environment, Collection<NviPeriod> allPeriods) {
+  public Candidate toCandidate(Collection<NviPeriod> allPeriods) {
     var publicationYear = candidate.getPeriodYear();
     var period = findByPublishingYear(allPeriods, publicationYear).orElse(null);
-    return Candidate.fromDao(candidate, approvals, notes, period, environment);
+    return Candidate.fromDao(candidate, approvals, notes, period);
   }
 
   private static Optional<CandidateDao> findCandidate(Collection<Dao> items) {

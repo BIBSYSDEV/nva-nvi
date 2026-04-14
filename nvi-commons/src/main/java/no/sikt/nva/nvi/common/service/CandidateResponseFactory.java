@@ -2,6 +2,8 @@ package no.sikt.nva.nvi.common.service;
 
 import static java.util.function.Predicate.not;
 import static no.sikt.nva.nvi.common.model.NviCreator.isAffiliatedWithTopLevelOrganization;
+import static no.sikt.nva.nvi.common.service.CandidateUriUtil.toCandidateUri;
+import static no.sikt.nva.nvi.common.service.CandidateUriUtil.toContextUri;
 import static no.sikt.nva.nvi.common.service.model.NviPeriod.toPeriodStatusDto;
 
 import java.net.URI;
@@ -24,15 +26,22 @@ import no.sikt.nva.nvi.common.service.dto.problem.UnverifiedCreatorProblem;
 import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.Note;
+import nva.commons.core.Environment;
 
 public final class CandidateResponseFactory {
 
+  private static final String API_HOST = "API_HOST";
+  private static final String CUSTOM_DOMAIN_BASE_PATH = "CUSTOM_DOMAIN_BASE_PATH";
+
   private CandidateResponseFactory() {}
 
-  public static CandidateDto create(Candidate candidate, UserInstance userInstance) {
+  public static CandidateDto create(
+      Candidate candidate, UserInstance userInstance, Environment environment) {
+    var apiHost = environment.readEnv(API_HOST);
+    var basePath = environment.readEnv(CUSTOM_DOMAIN_BASE_PATH);
     return CandidateDto.builder()
-        .withId(candidate.getId())
-        .withContext(candidate.getContextUri())
+        .withId(toCandidateUri(apiHost, basePath, candidate.identifier()))
+        .withContext(toContextUri(apiHost, basePath))
         .withIdentifier(candidate.identifier())
         .withPublicationId(candidate.getPublicationId())
         .withApprovals(getApprovalsAsDto(candidate))

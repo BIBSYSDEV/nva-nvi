@@ -32,6 +32,7 @@ import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
+import no.sikt.nva.nvi.common.service.CandidateUriUtil;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.index.aws.CandidateSearchClient;
 import no.sikt.nva.nvi.index.model.PersistedIndexDocumentMessage;
@@ -206,7 +207,11 @@ class UpdateIndexHandlerTest {
     var expandedPublicationDetails = expandPublicationDetails(candidate, expandedResource);
     var indexDocument =
         NviCandidateIndexDocument.builder()
-            .withId(candidate.getId())
+            .withId(
+                CandidateUriUtil.toCandidateUri(
+                    ENVIRONMENT.readEnv("API_HOST"),
+                    ENVIRONMENT.readEnv("CUSTOM_DOMAIN_BASE_PATH"),
+                    candidate.identifier()))
             .withContext(NVI_CONTEXT)
             .withApprovals(expandApprovals(candidate, expandedPublicationDetails.contributors()))
             .withIdentifier(candidate.identifier())

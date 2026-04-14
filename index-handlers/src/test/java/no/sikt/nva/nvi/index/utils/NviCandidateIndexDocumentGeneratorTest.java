@@ -119,7 +119,11 @@ class NviCandidateIndexDocumentGeneratorTest {
 
   private static NviCandidateIndexDocument generateIndexDocument(Candidate candidate) {
     return new NviCandidateIndexDocumentGenerator(
-            mock(UriRetriever.class), expandedResourceFromCandidate(candidate), candidate)
+            mock(UriRetriever.class),
+            expandedResourceFromCandidate(candidate),
+            candidate,
+            "api.fake.nva.aws.unit.no",
+            "scientific-index")
         .generateDocument();
   }
 

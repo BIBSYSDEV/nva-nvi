@@ -33,6 +33,7 @@ import no.sikt.nva.nvi.common.model.CandidateFixtures;
 import no.sikt.nva.nvi.common.model.UserInstance;
 import no.sikt.nva.nvi.common.service.ApprovalService;
 import no.sikt.nva.nvi.common.service.CandidateService;
+import no.sikt.nva.nvi.common.service.CandidateUriUtil;
 import no.sikt.nva.nvi.common.service.NoteService;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
@@ -223,5 +224,12 @@ public abstract class BaseCandidateRestHandlerTest {
         .withAccessRights(organizationId, accessRight)
         .withTopLevelCristinOrgId(organizationId)
         .build();
+  }
+
+  protected URI expectedCandidateUri(Candidate candidate) {
+    return CandidateUriUtil.toCandidateUri(
+        environment.readEnv("API_HOST"),
+        environment.readEnv("CUSTOM_DOMAIN_BASE_PATH"),
+        candidate.identifier());
   }
 }

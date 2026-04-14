@@ -28,9 +28,14 @@ public record IndexDocumentWithConsumptionAttributes(
   }
 
   public static IndexDocumentWithConsumptionAttributes from(
-      Candidate candidate, PersistedResource persistedResource, UriRetriever uriRetriever) {
+      Candidate candidate,
+      PersistedResource persistedResource,
+      UriRetriever uriRetriever,
+      String apiHost,
+      String basePath) {
     var indexDocument =
-        generateIndexDocument(candidate, uriRetriever, persistedResource.getExpandedResource());
+        generateIndexDocument(
+            candidate, uriRetriever, persistedResource.getExpandedResource(), apiHost, basePath);
     var consumptionAttributes = ConsumptionAttributes.from(indexDocument.identifier());
     return new IndexDocumentWithConsumptionAttributes(indexDocument, consumptionAttributes);
   }
@@ -45,8 +50,15 @@ public record IndexDocumentWithConsumptionAttributes(
   }
 
   private static NviCandidateIndexDocument generateIndexDocument(
-      Candidate candidate, UriRetriever uriRetriever, JsonNode expandedResource) {
-    return attempt(() -> NviCandidateIndexDocument.from(expandedResource, candidate, uriRetriever))
+      Candidate candidate,
+      UriRetriever uriRetriever,
+      JsonNode expandedResource,
+      String apiHost,
+      String basePath) {
+    return attempt(
+            () ->
+                NviCandidateIndexDocument.from(
+                    expandedResource, candidate, uriRetriever, apiHost, basePath))
         .orElseThrow();
   }
 }
