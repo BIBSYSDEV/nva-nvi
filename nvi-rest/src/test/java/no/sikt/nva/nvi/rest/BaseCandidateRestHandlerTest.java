@@ -33,7 +33,7 @@ import no.sikt.nva.nvi.common.model.CandidateFixtures;
 import no.sikt.nva.nvi.common.model.UserInstance;
 import no.sikt.nva.nvi.common.service.ApprovalService;
 import no.sikt.nva.nvi.common.service.CandidateService;
-import no.sikt.nva.nvi.common.service.CandidateUriUtil;
+import no.sikt.nva.nvi.common.service.EnvironmentUriFactory;
 import no.sikt.nva.nvi.common.service.NoteService;
 import no.sikt.nva.nvi.common.service.dto.CandidateDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
@@ -227,6 +227,6 @@ public abstract class BaseCandidateRestHandlerTest {
   }
 
   protected URI expectedCandidateUri(Candidate candidate) {
-    return CandidateUriUtil.toCandidateUri(environment, candidate.identifier());
+    return EnvironmentUriFactory.candidateId(environment, candidate.identifier());
   }
 }

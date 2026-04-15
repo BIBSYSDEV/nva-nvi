@@ -56,7 +56,7 @@ import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.model.ChannelType;
 import no.sikt.nva.nvi.common.model.ScientificValue;
 import no.sikt.nva.nvi.common.model.Sector;
-import no.sikt.nva.nvi.common.service.CandidateUriUtil;
+import no.sikt.nva.nvi.common.service.EnvironmentUriFactory;
 import no.sikt.nva.nvi.common.service.dto.NviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
@@ -164,8 +164,8 @@ public final class NviCandidateIndexDocumentGenerator {
   private NviCandidateIndexDocument buildDocument(
       List<ApprovalView> approvals, PublicationDetails expandedPublicationDetails) {
     return NviCandidateIndexDocument.builder()
-        .withId(CandidateUriUtil.toCandidateUri(environment, candidate.identifier()))
-        .withContext(CandidateUriUtil.toContextUri(environment))
+        .withId(EnvironmentUriFactory.candidateId(environment, candidate.identifier()))
+        .withContext(EnvironmentUriFactory.contextUri(environment))
         .withIsApplicable(candidate.isApplicable())
         .withIdentifier(candidate.identifier())
         .withReportingPeriod(ReportingPeriod.fromCandidate(candidate))

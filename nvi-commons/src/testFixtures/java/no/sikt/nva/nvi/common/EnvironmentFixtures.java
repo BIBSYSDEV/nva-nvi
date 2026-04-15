@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.common;
 
 import java.net.URI;
-import no.sikt.nva.nvi.common.service.CandidateUriUtil;
+import no.sikt.nva.nvi.common.service.EnvironmentUriFactory;
 
 /**
  * Utility to set up fake environment variables for testing purposes. Keep this in sync with the
@@ -133,6 +133,6 @@ public enum EnvironmentFixtures {
   }
 
   public static URI getCandidateContextUri() {
-    return CandidateUriUtil.toContextUri(getGlobalEnvironment());
+    return EnvironmentUriFactory.contextUri(getGlobalEnvironment());
   }
 }
