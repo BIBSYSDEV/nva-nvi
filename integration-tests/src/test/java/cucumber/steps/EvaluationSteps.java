@@ -1,10 +1,8 @@
 package cucumber.steps;
 
-import static java.util.Collections.emptyList;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeriod;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupFuturePeriod;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
-import static no.sikt.nva.nvi.common.model.ContributorFixtures.unverifiedCreatorFrom;
 import static no.sikt.nva.nvi.common.model.ContributorFixtures.verifiedCreatorFrom;
 import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublicationDateInYear;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_NORWAY;
@@ -21,9 +19,9 @@ import java.net.URI;
 import java.time.Instant;
 import no.sikt.nva.nvi.common.SampleExpandedPublicationFactory;
 import no.sikt.nva.nvi.common.TestScenario;
-import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.model.PublicationDate;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
+import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 
 public class EvaluationSteps {
@@ -172,7 +170,7 @@ public class EvaluationSteps {
         publicationBuilder
             .withPublicationDate(publicationDate)
             .withContributor(verifiedCreatorFrom(nviOrganization))
-            .withContributor(unverifiedCreatorFrom(nviOrganization));
+            .withContributor(verifiedCreatorFrom(nviOrganization));
     evaluationContext.mockGetAllCustomersResponse(publicationBuilder.getCustomerOrganizations());
   }
 
@@ -239,18 +237,14 @@ public class EvaluationSteps {
   }
 
   private void setCandidateToReported(Candidate candidate) {
-    var candidateDao = candidate.toDao();
-    var dbCandidate =
-        candidateDao
-            .candidate()
-            .copy()
-            .reportStatus(ReportStatus.REPORTED)
-            .reportedDate(Instant.now())
-            .build();
-    var updatedCandidateDao = candidateDao.copy().candidate(dbCandidate).build();
-
-    scenario
-        .getCandidateRepository()
-        .updateCandidateAggregate(updatedCandidateDao, emptyList(), emptyList(), emptyList());
+    candidate
+        .approvals()
+        .keySet()
+        .forEach(
+            institutionId ->
+                scenario.updateApprovalStatus(
+                    candidate.identifier(), ApprovalStatus.APPROVED, institutionId));
+    var refreshedCandidate = scenario.getCandidateByIdentifier(candidate.identifier());
+    scenario.getCandidateService().reportCandidate(refreshedCandidate.identifier(), Instant.now());
   }
 }

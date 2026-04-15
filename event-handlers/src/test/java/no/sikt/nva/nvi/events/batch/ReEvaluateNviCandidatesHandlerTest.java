@@ -2,7 +2,6 @@ package no.sikt.nva.nvi.events.batch;
 
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.createNumberOfCandidatesForYear;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.getYearIndexStartMarker;
-import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.setupReportedCandidate;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.sortByIdentifier;
 import static no.sikt.nva.nvi.common.model.CandidateFixtures.setupNumberOfCandidatesForYear;
 import static no.sikt.nva.nvi.test.TestConstants.THIS_YEAR;
@@ -97,7 +96,7 @@ class ReEvaluateNviCandidatesHandlerTest {
   @Test
   void shouldNotSendMessagesForReportedCandidates() {
     var year = randomYear();
-    setupReportedCandidate(scenario.getCandidateRepository(), year);
+    scenario.setupReportedCandidate(year);
     handler.handleRequest(eventStream(createRequest(year)), outputStream, context);
     var sentBatches = sqsClient.getSentBatches();
     assertEquals(0, sentBatches.size());

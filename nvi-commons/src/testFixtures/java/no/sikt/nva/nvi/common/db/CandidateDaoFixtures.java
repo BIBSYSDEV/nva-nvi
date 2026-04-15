@@ -5,7 +5,6 @@ import static java.util.Objects.nonNull;
 import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.EXPANDED_RESOURCES_BUCKET;
 import static no.sikt.nva.nvi.common.SampleExpandedPublicationFactory.defaultExpandedPublicationFactory;
-import static no.sikt.nva.nvi.common.db.DbApprovalStatusFixtures.randomApprovalDao;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidate;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidateWithYear;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
@@ -13,7 +12,6 @@ import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizati
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
 
 import java.net.URI;
-import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -90,32 +88,6 @@ public class CandidateDaoFixtures {
 
   private static String getCharacterValues(UUID uuid) {
     return uuid.toString().replaceAll(UUID_SEPARATOR, "");
-  }
-
-  /*
-   * This method is used to set up a reported candidate, but should be removed once Candidate.report is implemented.
-   */
-  @Deprecated
-  public static CandidateDao setupReportedCandidate(CandidateRepository repository, String year) {
-    return setupReportedCandidate(repository, year, randomOrganizationId());
-  }
-
-  /*
-   * This method is used to set up a reported candidate, but should be removed once Candidate.report is implemented.
-   */
-  @Deprecated
-  public static CandidateDao setupReportedCandidate(
-      CandidateRepository repository, String year, URI organizationId) {
-    var dbCandidate =
-        randomCandidateWithYear(organizationId, year)
-            .copy()
-            .reportStatus(ReportStatus.REPORTED)
-            .reportedDate(Instant.now())
-            .build();
-    var candidateDao = createCandidateDao(dbCandidate);
-    var approvals = List.of(randomApprovalDao(candidateDao.identifier(), organizationId));
-    repository.create(candidateDao, approvals);
-    return repository.findCandidateById(candidateDao.identifier()).orElseThrow();
   }
 
   public static Map<String, String> getYearIndexStartMarker(CandidateDao dao) {

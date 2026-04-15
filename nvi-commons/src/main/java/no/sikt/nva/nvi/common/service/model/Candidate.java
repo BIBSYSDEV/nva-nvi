@@ -176,6 +176,20 @@ public record Candidate(
         .build();
   }
 
+  public Candidate updateToReportedCandidate(Instant reportedDate) {
+    if (isReported()) {
+      throw new IllegalCandidateUpdateException(CANDIDATE_IS_REPORTED);
+    }
+    if (getGlobalApprovalStatus() != GlobalApprovalStatus.APPROVED) {
+      throw new IllegalCandidateUpdateException("Cannot report non-approved candidate");
+    }
+    return copy()
+        .withReportStatus(REPORTED)
+        .withReportedDate(reportedDate)
+        .withModifiedDate(Instant.now())
+        .build();
+  }
+
   public CandidateDao toDao() {
     var dbPublication = publicationDetails.toDbPublication();
     var dbCandidate =

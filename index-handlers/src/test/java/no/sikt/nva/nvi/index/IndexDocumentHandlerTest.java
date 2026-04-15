@@ -11,7 +11,6 @@ import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidate
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequestWithSingleAffiliation;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertNonCandidateRequest;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.createCandidateDao;
-import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.setupReportedCandidate;
 import static no.sikt.nva.nvi.common.db.DbApprovalStatusFixtures.randomApprovalDao;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidateBuilder;
 import static no.sikt.nva.nvi.common.db.DbPointCalculationFixtures.randomPointCalculationBuilder;
@@ -292,11 +291,7 @@ class IndexDocumentHandlerTest {
 
   @Test
   void shouldBuildIndexDocumentWithReportedPeriodWhenCandidateIsReported() {
-    // Using repository to create reported candidate because setting Candidate as reported is not
-    // implemented yet
-    // TODO: Use Candidate.setReported when implemented
-    var dao = setupReportedCandidate(candidateRepository, String.valueOf(CURRENT_YEAR));
-    var candidate = candidateService.getCandidateByIdentifier(dao.identifier());
+    var candidate = scenario.setupReportedCandidate(String.valueOf(CURRENT_YEAR));
     var expectedIndexDocument =
         setupExistingResourceInS3AndGenerateExpectedDocument(candidate).indexDocument();
     var event = createEvent(candidate.identifier());

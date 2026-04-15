@@ -3,16 +3,21 @@ package no.sikt.nva.nvi.common;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.getGlobalEnvironment;
 import static no.sikt.nva.nvi.common.LocalDynamoTestSetup.initializeTestDatabase;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpdateStatusRequest;
+import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequestWithSingleAffiliation;
+import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationId;
 import static no.sikt.nva.nvi.common.model.UserInstanceFixtures.createCuratorUserInstance;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 
 import java.io.IOException;
 import java.net.URI;
+import java.time.Instant;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
+import no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures;
 import no.sikt.nva.nvi.common.db.model.CandidateAggregate;
+import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
@@ -23,6 +28,7 @@ import no.sikt.nva.nvi.common.service.NoteService;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.test.SampleExpandedPublication;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeS3Client;
@@ -107,6 +113,30 @@ public class TestScenario {
     return candidateService.getCandidateByPublicationId(publicationId);
   }
 
+  public Candidate setupReportedCandidate(String year) {
+    return setupReportedCandidate(year, randomOrganizationId());
+  }
+
+  public Candidate setupReportedCandidate(String year, URI organizationId) {
+    var previousPeriodWasClosed =
+        periodService.findByPublishingYear(year).map(NviPeriod::isClosed).orElse(false);
+    PeriodRepositoryFixtures.setupOpenPeriod(this, year);
+
+    var request = createUpsertCandidateRequestWithSingleAffiliation(organizationId, organizationId);
+    var requestWithYear =
+        UpsertRequestBuilder.fromRequest(request)
+            .withPublicationDate(new PublicationDateDto(year, null, null))
+            .build();
+    var candidate = upsertCandidate(requestWithYear);
+    updateApprovalStatus(candidate.identifier(), ApprovalStatus.APPROVED, organizationId);
+    var reportedCandidate = candidateService.reportCandidate(candidate.identifier(), Instant.now());
+
+    if (previousPeriodWasClosed) {
+      PeriodRepositoryFixtures.setupClosedPeriod(this, year);
+    }
+    return reportedCandidate;
+  }
+
   public Candidate upsertCandidate(UpsertNviCandidateRequest request) {
     candidateService.upsertCandidate(request);
     return getCandidateByPublicationId(request.publicationId());
@@ -123,8 +153,10 @@ public class TestScenario {
   public Candidate updateApprovalStatus(
       UUID candidateIdentifier, ApprovalStatus status, URI topLevelOrganizationId) {
     var candidate = getCandidateByIdentifier(candidateIdentifier);
-    var updateRequest = createUpdateStatusRequest(status, topLevelOrganizationId, randomString());
     var userInstance = createCuratorUserInstance(topLevelOrganizationId);
+    var updateRequest =
+        createUpdateStatusRequest(
+            status, topLevelOrganizationId, userInstance.userName().toString());
     var approvalService = new ApprovalService(candidateRepository);
     approvalService.updateApproval(candidate, updateRequest, userInstance);
     return getCandidateByIdentifier(candidate.identifier());

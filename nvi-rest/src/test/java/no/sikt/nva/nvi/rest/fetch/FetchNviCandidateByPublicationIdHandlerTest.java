@@ -1,6 +1,5 @@
 package no.sikt.nva.nvi.rest.fetch;
 
-import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.setupReportedCandidate;
 import static no.sikt.nva.nvi.common.dto.AllowedOperationFixtures.CURATOR_CAN_FINALIZE_APPROVAL;
 import static no.sikt.nva.nvi.rest.fetch.FetchNviCandidateByPublicationIdHandler.CANDIDATE_PUBLICATION_ID;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
@@ -115,10 +114,8 @@ class FetchNviCandidateByPublicationIdHandlerTest extends BaseCandidateRestHandl
 
   @Test
   void shouldReturnCandidateWithReportStatus() throws IOException {
-    var candidate =
-        setupReportedCandidate(
-            scenario.getCandidateRepository(), randomYear(), topLevelOrganizationId);
-    var publicationId = candidate.publicationId();
+    var candidate = scenario.setupReportedCandidate(randomYear(), topLevelOrganizationId);
+    var publicationId = candidate.getPublicationId();
     var request = createRequestWithCuratorAccess(publicationId.toString());
 
     handler.handleRequest(request, output, CONTEXT);
