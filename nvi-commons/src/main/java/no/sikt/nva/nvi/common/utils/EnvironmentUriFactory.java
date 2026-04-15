@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.common.service;
+package no.sikt.nva.nvi.common.utils;
 
 import java.net.URI;
 import java.util.UUID;
@@ -23,7 +23,7 @@ public final class EnvironmentUriFactory {
         .getUri();
   }
 
-  public static URI contextUri(Environment environment) {
+  public static URI context(Environment environment) {
     var apiHost = environment.readEnv(API_HOST);
     var basePath = environment.readEnv(CUSTOM_DOMAIN_BASE_PATH);
     return UriWrapper.fromHost(apiHost).addChild(basePath, CONTEXT_PATH).getUri();

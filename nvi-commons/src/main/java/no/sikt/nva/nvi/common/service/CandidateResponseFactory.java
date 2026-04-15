@@ -2,8 +2,8 @@ package no.sikt.nva.nvi.common.service;
 
 import static java.util.function.Predicate.not;
 import static no.sikt.nva.nvi.common.model.NviCreator.isAffiliatedWithTopLevelOrganization;
-import static no.sikt.nva.nvi.common.service.EnvironmentUriFactory.candidateId;
-import static no.sikt.nva.nvi.common.service.EnvironmentUriFactory.contextUri;
+import static no.sikt.nva.nvi.common.utils.EnvironmentUriFactory.candidateId;
+import static no.sikt.nva.nvi.common.utils.EnvironmentUriFactory.context;
 import static no.sikt.nva.nvi.common.service.model.NviPeriod.toPeriodStatusDto;
 
 import java.net.URI;
@@ -36,7 +36,7 @@ public final class CandidateResponseFactory {
       Candidate candidate, UserInstance userInstance, Environment environment) {
     return CandidateDto.builder()
         .withId(candidateId(environment, candidate.identifier()))
-        .withContext(contextUri(environment))
+        .withContext(context(environment))
         .withIdentifier(candidate.identifier())
         .withPublicationId(candidate.getPublicationId())
         .withApprovals(getApprovalsAsDto(candidate))
