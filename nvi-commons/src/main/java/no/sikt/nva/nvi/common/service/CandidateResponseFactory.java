@@ -30,18 +30,13 @@ import nva.commons.core.Environment;
 
 public final class CandidateResponseFactory {
 
-  private static final String API_HOST = "API_HOST";
-  private static final String CUSTOM_DOMAIN_BASE_PATH = "CUSTOM_DOMAIN_BASE_PATH";
-
   private CandidateResponseFactory() {}
 
   public static CandidateDto create(
       Candidate candidate, UserInstance userInstance, Environment environment) {
-    var apiHost = environment.readEnv(API_HOST);
-    var basePath = environment.readEnv(CUSTOM_DOMAIN_BASE_PATH);
     return CandidateDto.builder()
-        .withId(toCandidateUri(apiHost, basePath, candidate.identifier()))
-        .withContext(toContextUri(apiHost, basePath))
+        .withId(toCandidateUri(environment, candidate.identifier()))
+        .withContext(toContextUri(environment))
         .withIdentifier(candidate.identifier())
         .withPublicationId(candidate.getPublicationId())
         .withApprovals(getApprovalsAsDto(candidate))

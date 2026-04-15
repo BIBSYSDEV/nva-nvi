@@ -255,11 +255,7 @@ class CandidateTest extends CandidateTestSetup {
     var candidate = scenario.upsertCandidate(request);
     var userOrganizationId = getAnyOrganizationId(candidate);
 
-    var candidateUri =
-        CandidateUriUtil.toCandidateUri(
-            ENVIRONMENT.readEnv("API_HOST"),
-            ENVIRONMENT.readEnv("CUSTOM_DOMAIN_BASE_PATH"),
-            candidate.identifier());
+    var candidateUri = CandidateUriUtil.toCandidateUri(ENVIRONMENT, candidate.identifier());
     var expectedDto =
         CandidateDto.builder()
             .withApprovals(mapToApprovalDtos(candidate))

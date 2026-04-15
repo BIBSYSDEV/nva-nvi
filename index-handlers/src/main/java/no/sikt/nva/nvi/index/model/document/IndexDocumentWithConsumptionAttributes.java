@@ -13,6 +13,7 @@ import no.sikt.nva.nvi.common.StorageWriter;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.index.model.PersistedResource;
 import no.unit.nva.auth.uriretriever.UriRetriever;
+import nva.commons.core.Environment;
 
 @JsonSerialize
 public record IndexDocumentWithConsumptionAttributes(
@@ -31,11 +32,10 @@ public record IndexDocumentWithConsumptionAttributes(
       Candidate candidate,
       PersistedResource persistedResource,
       UriRetriever uriRetriever,
-      String apiHost,
-      String basePath) {
+      Environment environment) {
     var indexDocument =
         generateIndexDocument(
-            candidate, uriRetriever, persistedResource.getExpandedResource(), apiHost, basePath);
+            candidate, uriRetriever, persistedResource.getExpandedResource(), environment);
     var consumptionAttributes = ConsumptionAttributes.from(indexDocument.identifier());
     return new IndexDocumentWithConsumptionAttributes(indexDocument, consumptionAttributes);
   }
@@ -53,12 +53,11 @@ public record IndexDocumentWithConsumptionAttributes(
       Candidate candidate,
       UriRetriever uriRetriever,
       JsonNode expandedResource,
-      String apiHost,
-      String basePath) {
+      Environment environment) {
     return attempt(
             () ->
                 NviCandidateIndexDocument.from(
-                    expandedResource, candidate, uriRetriever, apiHost, basePath))
+                    expandedResource, candidate, uriRetriever, environment))
         .orElseThrow();
   }
 }

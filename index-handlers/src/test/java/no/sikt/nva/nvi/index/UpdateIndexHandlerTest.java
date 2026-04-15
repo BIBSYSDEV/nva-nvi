@@ -207,11 +207,7 @@ class UpdateIndexHandlerTest {
     var expandedPublicationDetails = expandPublicationDetails(candidate, expandedResource);
     var indexDocument =
         NviCandidateIndexDocument.builder()
-            .withId(
-                CandidateUriUtil.toCandidateUri(
-                    ENVIRONMENT.readEnv("API_HOST"),
-                    ENVIRONMENT.readEnv("CUSTOM_DOMAIN_BASE_PATH"),
-                    candidate.identifier()))
+            .withId(CandidateUriUtil.toCandidateUri(ENVIRONMENT, candidate.identifier()))
             .withContext(NVI_CONTEXT)
             .withApprovals(expandApprovals(candidate, expandedPublicationDetails.contributors()))
             .withIdentifier(candidate.identifier())

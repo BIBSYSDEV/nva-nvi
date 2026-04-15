@@ -52,6 +52,7 @@ import no.sikt.nva.nvi.index.utils.NviCandidateIndexDocumentGenerator;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import no.unit.nva.commons.json.JsonSerializable;
 import no.unit.nva.language.LanguageMapper;
+import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -94,10 +95,9 @@ public record NviCandidateIndexDocument(
       JsonNode expandedResource,
       Candidate candidate,
       UriRetriever uriRetriever,
-      String apiHost,
-      String basePath) {
+      Environment environment) {
     return new NviCandidateIndexDocumentGenerator(
-            uriRetriever, expandedResource, candidate, apiHost, basePath)
+            uriRetriever, expandedResource, candidate, environment)
         .generateDocument();
   }
 

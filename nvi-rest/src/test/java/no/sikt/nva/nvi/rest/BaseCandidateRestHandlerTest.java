@@ -227,9 +227,6 @@ public abstract class BaseCandidateRestHandlerTest {
   }
 
   protected URI expectedCandidateUri(Candidate candidate) {
-    return CandidateUriUtil.toCandidateUri(
-        environment.readEnv("API_HOST"),
-        environment.readEnv("CUSTOM_DOMAIN_BASE_PATH"),
-        candidate.identifier());
+    return CandidateUriUtil.toCandidateUri(environment, candidate.identifier());
   }
 }
