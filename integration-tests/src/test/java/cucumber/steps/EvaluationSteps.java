@@ -240,14 +240,6 @@ public class EvaluationSteps {
     for (var institutionId : candidate.approvals().keySet()) {
       scenario.updateApprovalStatus(candidate.identifier(), ApprovalStatus.APPROVED, institutionId);
     }
-    //    candidate
-    //        .approvals()
-    //        .keySet()
-    //        .forEach(
-    //            institutionId ->
-    //                scenario.updateApprovalStatus(
-    //                    candidate.identifier(), ApprovalStatus.APPROVED, institutionId));
-    //    var refreshedCandidate = scenario.getCandidateByIdentifier(candidate.identifier());
     scenario.getCandidateService().reportCandidate(candidate.identifier(), Instant.now());
   }
 }
