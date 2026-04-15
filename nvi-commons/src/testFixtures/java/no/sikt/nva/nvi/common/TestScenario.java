@@ -5,6 +5,7 @@ import static no.sikt.nva.nvi.common.LocalDynamoTestSetup.initializeTestDatabase
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpdateStatusRequest;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequestWithSingleAffiliation;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationId;
+import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublicationDateDtoInYear;
 import static no.sikt.nva.nvi.common.model.UserInstanceFixtures.createCuratorUserInstance;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 
@@ -17,7 +18,6 @@ import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures;
 import no.sikt.nva.nvi.common.db.model.CandidateAggregate;
-import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.model.CreateNoteRequest;
 import no.sikt.nva.nvi.common.model.UpdateStatusRequest;
@@ -125,7 +125,7 @@ public class TestScenario {
     var request = createUpsertCandidateRequestWithSingleAffiliation(organizationId, organizationId);
     var requestWithYear =
         UpsertRequestBuilder.fromRequest(request)
-            .withPublicationDate(new PublicationDateDto(year, null, null))
+            .withPublicationDate(randomPublicationDateDtoInYear(year))
             .build();
     var candidate = upsertCandidate(requestWithYear);
     updateApprovalStatus(candidate.identifier(), ApprovalStatus.APPROVED, organizationId);
