@@ -27,8 +27,6 @@ import static nva.commons.core.ioutils.IoUtils.stringFromResources;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -58,7 +56,6 @@ import no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
-import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
@@ -367,25 +364,23 @@ class CandidateTest extends CandidateTestSetup {
   @Test
   void shouldReturnCandidateWithPeriodStatusContainingPeriodId() {
     var year = randomYear();
-    var candidate = scenario.setupReportedCandidate(year);
+    var candidateIdentifier = scenario.setupReportedCandidate(year).identifier();
     var period = setupClosedPeriod(scenario, year);
 
-    var refetchedCandidate = candidateService.getCandidateByIdentifier(candidate.identifier());
+    var candidate = candidateService.getCandidateByIdentifier(candidateIdentifier);
 
-    assertEquals(period.id(), refetchedCandidate.period().id());
+    assertEquals(period.id(), candidate.period().id());
   }
 
   @Test
   void shouldReturnCandidateWithPeriodStatusContainingPeriodIdWhenFetchingByPublicationId() {
     var year = randomYear();
-    var candidate = scenario.setupReportedCandidate(year);
-    setupClosedPeriod(scenario, year);
+    var publicationId = scenario.setupReportedCandidate(year).getPublicationId();
+    var period = setupClosedPeriod(scenario, year);
 
-    var refetchedCandidate =
-        candidateService.getCandidateByPublicationId(candidate.getPublicationId());
-    var id = refetchedCandidate.getPeriod().map(NviPeriod::id).orElseThrow();
+    var candidate = candidateService.getCandidateByPublicationId(publicationId);
 
-    assertThat(id, is(not(nullValue())));
+    assertEquals(period.id(), candidate.period().id());
   }
 
   @Test
