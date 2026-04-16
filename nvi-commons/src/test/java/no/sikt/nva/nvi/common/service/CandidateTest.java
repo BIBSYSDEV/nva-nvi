@@ -368,12 +368,11 @@ class CandidateTest extends CandidateTestSetup {
   void shouldReturnCandidateWithPeriodStatusContainingPeriodId() {
     var year = randomYear();
     var candidate = scenario.setupReportedCandidate(year);
-    setupClosedPeriod(scenario, year);
+    var period = setupClosedPeriod(scenario, year);
 
     var refetchedCandidate = candidateService.getCandidateByIdentifier(candidate.identifier());
-    var id = refetchedCandidate.getPeriod().map(NviPeriod::id).orElseThrow();
 
-    assertThat(id, is(not(nullValue())));
+    assertEquals(period.id(), refetchedCandidate.period().id());
   }
 
   @Test
