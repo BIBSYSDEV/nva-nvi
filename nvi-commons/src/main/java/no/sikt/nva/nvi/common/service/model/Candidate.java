@@ -68,6 +68,7 @@ public record Candidate(
     Instant createdDate,
     Instant modifiedDate,
     ReportStatus reportStatus,
+    Instant reportedDate,
     Long revision,
     UUID version,
     // TODO: Remove environment from this record
@@ -107,6 +108,7 @@ public record Candidate(
         .withCreatedDate(dbCandidate.createdDate())
         .withModifiedDate(dbCandidate.modifiedDate())
         .withReportStatus(dbCandidate.reportStatus())
+        .withReportedDate(dbCandidate.reportedDate())
         .withRevision(candidateDao.revision())
         .withVersion(version)
         .withEnvironment(environment)
@@ -174,6 +176,23 @@ public record Candidate(
         .build();
   }
 
+  public Candidate updateToReportedCandidate(Instant reportedDate) {
+    if (isReported()) {
+      throw new IllegalCandidateUpdateException(CANDIDATE_IS_REPORTED);
+    }
+    if (getGlobalApprovalStatus() != GlobalApprovalStatus.APPROVED) {
+      throw new IllegalCandidateUpdateException("Cannot report non-approved candidate");
+    }
+    if (!period().isClosed()) {
+      throw new IllegalCandidateUpdateException("Cannot report candidate if period is not closed");
+    }
+    return copy()
+        .withReportStatus(REPORTED)
+        .withReportedDate(reportedDate)
+        .withModifiedDate(Instant.now())
+        .build();
+  }
+
   public CandidateDao toDao() {
     var dbPublication = publicationDetails.toDbPublication();
     var dbCandidate =
@@ -185,6 +204,7 @@ public record Candidate(
             .createdDate(createdDate)
             .modifiedDate(modifiedDate)
             .reportStatus(reportStatus)
+            .reportedDate(reportedDate)
             .build();
     var periodYear = getPeriod().map(NviPeriod::publishingYear).map(Object::toString).orElse(null);
     var daoVersion = getVersion().map(Object::toString).orElse(null);
@@ -516,6 +536,7 @@ public record Candidate(
         .withNotes(notes())
         .withPeriod(period())
         .withReportStatus(reportStatus())
+        .withReportedDate(reportedDate())
         .withModifiedDate(modifiedDate())
         .withCreatedDate(createdDate())
         .withPointCalculation(pointCalculation())
@@ -583,6 +604,7 @@ public record Candidate(
     private Instant createdDate;
     private Instant modifiedDate;
     private ReportStatus reportStatus;
+    private Instant reportedDate;
     private Long revision;
     private UUID version;
     private Environment environment;
@@ -639,6 +661,11 @@ public record Candidate(
       return this;
     }
 
+    public Builder withReportedDate(Instant reportedDate) {
+      this.reportedDate = reportedDate;
+      return this;
+    }
+
     public Builder withRevision(Long revision) {
       this.revision = revision;
       return this;
@@ -666,6 +693,7 @@ public record Candidate(
           createdDate,
           modifiedDate,
           reportStatus,
+          reportedDate,
           revision,
           version,
           environment);

@@ -8,7 +8,6 @@ import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidate
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequestWithSingleAffiliation;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertNonCandidateRequest;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.createCandidateInRepository;
-import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.setupReportedCandidate;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.getExpectedUpdatedDbCandidate;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidate;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeriod;
@@ -28,8 +27,6 @@ import static nva.commons.core.ioutils.IoUtils.stringFromResources;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -39,6 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.math.BigDecimal;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.List;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.UpsertRequestBuilder;
@@ -58,7 +56,6 @@ import no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
-import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
@@ -185,10 +182,10 @@ class CandidateTest extends CandidateTestSetup {
   @Test
   void shouldNotUpdateReportedCandidate() {
     var year = randomYear();
-    var candidate = setupReportedCandidate(candidateRepository, year);
+    var candidate = scenario.setupReportedCandidate(year);
 
     var updateRequest =
-        randomUpsertRequestBuilder().withPublicationId(candidate.publicationId()).build();
+        randomUpsertRequestBuilder().withPublicationId(candidate.getPublicationId()).build();
     assertThrows(
         IllegalCandidateUpdateException.class,
         () -> candidateService.upsertCandidate(updateRequest));
@@ -351,8 +348,7 @@ class CandidateTest extends CandidateTestSetup {
 
   @Test
   void shouldReturnCandidateWithReportStatus() {
-    var dao = setupReportedCandidate(candidateRepository, randomYear());
-    var candidate = candidateService.getCandidateByIdentifier(dao.identifier());
+    var candidate = scenario.setupReportedCandidate(randomYear());
 
     var actualStatus = candidate.reportStatus().getValue();
     var expectedStatus = ReportStatus.REPORTED.getValue();
@@ -361,33 +357,30 @@ class CandidateTest extends CandidateTestSetup {
 
   @Test
   void shouldReturnTrueIfReportStatusIsReported() {
-    var dao = setupReportedCandidate(candidateRepository, randomYear());
-    var candidate = candidateService.getCandidateByIdentifier(dao.identifier());
+    var candidate = scenario.setupReportedCandidate(randomYear());
     assertTrue(candidate.isReported());
   }
 
   @Test
   void shouldReturnCandidateWithPeriodStatusContainingPeriodId() {
     var year = randomYear();
-    setupClosedPeriod(scenario, year);
-    var dao = setupReportedCandidate(candidateRepository, year);
+    var candidateIdentifier = scenario.setupReportedCandidate(year).identifier();
+    var period = setupClosedPeriod(scenario, year);
 
-    var candidate = candidateService.getCandidateByIdentifier(dao.identifier());
-    var id = candidate.getPeriod().map(NviPeriod::id).orElseThrow();
+    var candidate = candidateService.getCandidateByIdentifier(candidateIdentifier);
 
-    assertThat(id, is(not(nullValue())));
+    assertEquals(period.id(), candidate.period().id());
   }
 
   @Test
   void shouldReturnCandidateWithPeriodStatusContainingPeriodIdWhenFetchingByPublicationId() {
     var year = randomYear();
-    setupClosedPeriod(scenario, year);
-    var dao = setupReportedCandidate(candidateRepository, year);
+    var publicationId = scenario.setupReportedCandidate(year).getPublicationId();
+    var period = setupClosedPeriod(scenario, year);
 
-    var candidate = candidateService.getCandidateByPublicationId(dao.publicationId());
-    var id = candidate.getPeriod().map(NviPeriod::id).orElseThrow();
+    var candidate = candidateService.getCandidateByPublicationId(publicationId);
 
-    assertThat(id, is(not(nullValue())));
+    assertEquals(period.id(), candidate.period().id());
   }
 
   @Test
@@ -482,10 +475,10 @@ class CandidateTest extends CandidateTestSetup {
 
   @Test
   void shouldReturnFalseWhenCandidateIsReportedInClosedPeriod() {
-    var dao = setupReportedCandidate(candidateRepository, String.valueOf(CURRENT_YEAR));
+    var candidate = scenario.setupReportedCandidate(String.valueOf(CURRENT_YEAR));
     setupClosedPeriod(scenario, CURRENT_YEAR);
-    var candidate = candidateService.getCandidateByIdentifier(dao.identifier());
-    assertFalse(candidate.isNotReportedInClosedPeriod());
+    var refetchedCandidate = candidateService.getCandidateByIdentifier(candidate.identifier());
+    assertFalse(refetchedCandidate.isNotReportedInClosedPeriod());
   }
 
   @Test
@@ -527,6 +520,49 @@ class CandidateTest extends CandidateTestSetup {
                     .withAssignee(approval.getAssigneeUsername())
                     .build())
         .toList();
+  }
+
+  @Test
+  void shouldReportCandidateWithGivenTimestamp() {
+    var institution = randomUri();
+    var request = createUpsertCandidateRequestWithSingleAffiliation(institution, institution);
+    var candidate = scenario.upsertCandidate(request);
+    scenario.updateApprovalStatus(candidate.identifier(), ApprovalStatus.APPROVED, institution);
+    setupClosedPeriod(scenario, CURRENT_YEAR);
+
+    var reportedDate = Instant.parse("2026-01-15T12:00:00Z");
+    candidateService.reportCandidate(candidate.identifier(), reportedDate);
+    var reportedCandidate = candidateService.getCandidateByIdentifier(candidate.identifier());
+
+    Assertions.assertThat(reportedCandidate.isReported()).isTrue();
+    Assertions.assertThat(reportedCandidate.reportedDate()).isEqualTo(reportedDate);
+  }
+
+  @Test
+  void shouldThrowWhenReportingAlreadyReportedCandidate() {
+    var institution = randomUri();
+    var request = createUpsertCandidateRequestWithSingleAffiliation(institution, institution);
+    var candidate = scenario.upsertCandidate(request);
+    scenario.updateApprovalStatus(candidate.identifier(), ApprovalStatus.APPROVED, institution);
+    setupClosedPeriod(scenario, CURRENT_YEAR);
+    candidateService.reportCandidate(candidate.identifier(), Instant.now());
+
+    var identifier = candidate.identifier();
+    var now = Instant.now();
+    Assertions.assertThatThrownBy(() -> candidateService.reportCandidate(identifier, now))
+        .isInstanceOf(IllegalCandidateUpdateException.class);
+  }
+
+  @Test
+  void shouldThrowWhenReportingNonApprovedCandidate() {
+    var request = randomUpsertRequestBuilder().build();
+    var candidate = scenario.upsertCandidate(request);
+    setupClosedPeriod(scenario, CURRENT_YEAR);
+
+    var identifier = candidate.identifier();
+    var now = Instant.now();
+    Assertions.assertThatThrownBy(() -> candidateService.reportCandidate(identifier, now))
+        .isInstanceOf(IllegalCandidateUpdateException.class);
   }
 
   private UpsertNviCandidateRequest getUpdateRequestForExistingCandidate() {

@@ -9,6 +9,7 @@ import static no.sikt.nva.nvi.common.service.model.Candidate.getUpdatedInstituti
 import static no.sikt.nva.nvi.common.service.model.Candidate.shouldResetCandidate;
 
 import java.net.URI;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
@@ -141,6 +142,17 @@ public class CandidateService {
           updatedCandidate.toDao(), emptyList(), approvalsToDelete, emptyList());
       LOGGER.info("Successfully updated publicationId={} to non-candidate", publicationId);
     }
+  }
+
+  /**
+   * Marks a Candidate as `reported`, which means it is included in the final report for the
+   * corresponding reporting period and is now immutable.
+   */
+  public void reportCandidate(UUID candidateIdentifier, Instant reportedDate) {
+    LOGGER.info("Updating candidate with identifier={} to reported", candidateIdentifier);
+    var candidate = getCandidateByIdentifier(candidateIdentifier);
+    var reportedCandidate = candidate.updateToReportedCandidate(reportedDate);
+    updateCandidate(reportedCandidate);
   }
 
   public Candidate getCandidateByIdentifier(UUID candidateIdentifier) {

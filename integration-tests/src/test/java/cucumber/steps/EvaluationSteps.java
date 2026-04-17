@@ -1,10 +1,8 @@
 package cucumber.steps;
 
-import static java.util.Collections.emptyList;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeriod;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupFuturePeriod;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
-import static no.sikt.nva.nvi.common.model.ContributorFixtures.unverifiedCreatorFrom;
 import static no.sikt.nva.nvi.common.model.ContributorFixtures.verifiedCreatorFrom;
 import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublicationDateInYear;
 import static no.sikt.nva.nvi.test.TestConstants.COUNTRY_CODE_NORWAY;
@@ -21,9 +19,9 @@ import java.net.URI;
 import java.time.Instant;
 import no.sikt.nva.nvi.common.SampleExpandedPublicationFactory;
 import no.sikt.nva.nvi.common.TestScenario;
-import no.sikt.nva.nvi.common.db.ReportStatus;
 import no.sikt.nva.nvi.common.model.PublicationDate;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
+import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 
 public class EvaluationSteps {
@@ -60,7 +58,13 @@ public class EvaluationSteps {
   public void aReportedCandidateForThePublicationExists() {
     setupCandidate(publicationBuilder);
     var candidate = assertPublicationIsCandidate();
-    setCandidateToReported(candidate);
+
+    for (var institutionId : candidate.approvals().keySet()) {
+      scenario.updateApprovalStatus(candidate.identifier(), ApprovalStatus.APPROVED, institutionId);
+    }
+
+    setupClosedPeriod(scenario, candidate.period().publishingYear());
+    scenario.getCandidateService().reportCandidate(candidate.identifier(), Instant.now());
 
     var updatedCandidate = assertPublicationIsCandidate();
     assertThat(updatedCandidate.isReported()).isTrue();
@@ -172,7 +176,7 @@ public class EvaluationSteps {
         publicationBuilder
             .withPublicationDate(publicationDate)
             .withContributor(verifiedCreatorFrom(nviOrganization))
-            .withContributor(unverifiedCreatorFrom(nviOrganization));
+            .withContributor(verifiedCreatorFrom(nviOrganization));
     evaluationContext.mockGetAllCustomersResponse(publicationBuilder.getCustomerOrganizations());
   }
 
@@ -236,15 +240,5 @@ public class EvaluationSteps {
       evaluationContext.evaluatePublicationAndPersistResult(publication);
       scenario.getPeriodRepository().update(period.toDao());
     }
-  }
-
-  private void setCandidateToReported(Candidate candidate) {
-    var candidateDao = candidate.toDao();
-    var dbCandidate = candidateDao.candidate().copy().reportStatus(ReportStatus.REPORTED).build();
-    var updatedCandidateDao = candidateDao.copy().candidate(dbCandidate).build();
-
-    scenario
-        .getCandidateRepository()
-        .updateCandidateAggregate(updatedCandidateDao, emptyList(), emptyList(), emptyList());
   }
 }
