@@ -2,9 +2,9 @@ package no.sikt.nva.nvi.common.service;
 
 import static java.util.function.Predicate.not;
 import static no.sikt.nva.nvi.common.model.NviCreator.isAffiliatedWithTopLevelOrganization;
+import static no.sikt.nva.nvi.common.service.model.NviPeriod.toPeriodStatusDto;
 import static no.sikt.nva.nvi.common.utils.EnvironmentUriFactory.candidateId;
 import static no.sikt.nva.nvi.common.utils.EnvironmentUriFactory.context;
-import static no.sikt.nva.nvi.common.service.model.NviPeriod.toPeriodStatusDto;
 
 import java.net.URI;
 import java.util.HashSet;
