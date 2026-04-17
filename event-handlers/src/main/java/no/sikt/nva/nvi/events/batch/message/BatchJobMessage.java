@@ -11,10 +11,14 @@ import no.unit.nva.commons.json.JsonSerializable;
 @JsonSubTypes({
   @JsonSubTypes.Type(value = RefreshCandidateMessage.class, name = "REFRESH_CANDIDATE"),
   @JsonSubTypes.Type(value = MigrateCandidateMessage.class, name = "MIGRATE_CANDIDATE"),
-  @JsonSubTypes.Type(value = RefreshPeriodMessage.class, name = "REFRESH_PERIOD")
+  @JsonSubTypes.Type(value = RefreshPeriodMessage.class, name = "REFRESH_PERIOD"),
+  @JsonSubTypes.Type(value = ReportCandidateMessage.class, name = "REPORT_CANDIDATE")
 })
 public sealed interface BatchJobMessage extends JsonSerializable
-    permits RefreshCandidateMessage, MigrateCandidateMessage, RefreshPeriodMessage {
+    permits RefreshCandidateMessage,
+        MigrateCandidateMessage,
+        RefreshPeriodMessage,
+        ReportCandidateMessage {
 
   static BatchJobMessage fromJson(String json) throws JsonProcessingException {
     return dtoObjectMapper.readValue(json, BatchJobMessage.class);
