@@ -183,6 +183,9 @@ public record Candidate(
     if (getGlobalApprovalStatus() != GlobalApprovalStatus.APPROVED) {
       throw new IllegalCandidateUpdateException("Cannot report non-approved candidate");
     }
+    if (!period().isClosed()) {
+      throw new IllegalCandidateUpdateException("Cannot report candidate if period is not closed");
+    }
     return copy()
         .withReportStatus(REPORTED)
         .withReportedDate(reportedDate)

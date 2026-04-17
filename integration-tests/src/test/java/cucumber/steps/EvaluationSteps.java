@@ -58,7 +58,13 @@ public class EvaluationSteps {
   public void aReportedCandidateForThePublicationExists() {
     setupCandidate(publicationBuilder);
     var candidate = assertPublicationIsCandidate();
-    setCandidateToReported(candidate);
+
+    for (var institutionId : candidate.approvals().keySet()) {
+      scenario.updateApprovalStatus(candidate.identifier(), ApprovalStatus.APPROVED, institutionId);
+    }
+
+    setupClosedPeriod(scenario, candidate.period().publishingYear());
+    scenario.getCandidateService().reportCandidate(candidate.identifier(), Instant.now());
 
     var updatedCandidate = assertPublicationIsCandidate();
     assertThat(updatedCandidate.isReported()).isTrue();
@@ -234,12 +240,5 @@ public class EvaluationSteps {
       evaluationContext.evaluatePublicationAndPersistResult(publication);
       scenario.getPeriodRepository().update(period.toDao());
     }
-  }
-
-  private void setCandidateToReported(Candidate candidate) {
-    for (var institutionId : candidate.approvals().keySet()) {
-      scenario.updateApprovalStatus(candidate.identifier(), ApprovalStatus.APPROVED, institutionId);
-    }
-    scenario.getCandidateService().reportCandidate(candidate.identifier(), Instant.now());
   }
 }

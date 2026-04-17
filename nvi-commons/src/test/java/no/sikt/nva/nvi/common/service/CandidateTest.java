@@ -528,6 +528,7 @@ class CandidateTest extends CandidateTestSetup {
     var request = createUpsertCandidateRequestWithSingleAffiliation(institution, institution);
     var candidate = scenario.upsertCandidate(request);
     scenario.updateApprovalStatus(candidate.identifier(), ApprovalStatus.APPROVED, institution);
+    setupClosedPeriod(scenario, CURRENT_YEAR);
 
     var reportedDate = Instant.parse("2026-01-15T12:00:00Z");
     candidateService.reportCandidate(candidate.identifier(), reportedDate);
@@ -543,6 +544,7 @@ class CandidateTest extends CandidateTestSetup {
     var request = createUpsertCandidateRequestWithSingleAffiliation(institution, institution);
     var candidate = scenario.upsertCandidate(request);
     scenario.updateApprovalStatus(candidate.identifier(), ApprovalStatus.APPROVED, institution);
+    setupClosedPeriod(scenario, CURRENT_YEAR);
     candidateService.reportCandidate(candidate.identifier(), Instant.now());
 
     var identifier = candidate.identifier();
@@ -555,6 +557,7 @@ class CandidateTest extends CandidateTestSetup {
   void shouldThrowWhenReportingNonApprovedCandidate() {
     var request = randomUpsertRequestBuilder().build();
     var candidate = scenario.upsertCandidate(request);
+    setupClosedPeriod(scenario, CURRENT_YEAR);
 
     var identifier = candidate.identifier();
     var now = Instant.now();
