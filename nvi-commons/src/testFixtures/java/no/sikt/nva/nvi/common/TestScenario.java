@@ -129,7 +129,8 @@ public class TestScenario {
             .build();
     var candidate = upsertCandidate(requestWithYear);
     updateApprovalStatus(candidate.identifier(), ApprovalStatus.APPROVED, organizationId);
-    var reportedCandidate = candidateService.reportCandidate(candidate.identifier(), Instant.now());
+    candidateService.reportCandidate(candidate.identifier(), Instant.now());
+    var reportedCandidate = candidateService.getCandidateByIdentifier(candidate.identifier());
 
     if (previousPeriodWasClosed) {
       PeriodRepositoryFixtures.setupClosedPeriod(this, year);

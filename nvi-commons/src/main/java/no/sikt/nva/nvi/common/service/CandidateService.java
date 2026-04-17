@@ -148,12 +148,11 @@ public class CandidateService {
    * Marks a Candidate as `reported`, which means it is included in the final report for the
    * corresponding reporting period and is now immutable.
    */
-  public Candidate reportCandidate(UUID candidateIdentifier, Instant reportedDate) {
+  public void reportCandidate(UUID candidateIdentifier, Instant reportedDate) {
     LOGGER.info("Updating candidate with identifier={} to reported", candidateIdentifier);
     var candidate = getCandidateByIdentifier(candidateIdentifier);
     var reportedCandidate = candidate.updateToReportedCandidate(reportedDate);
     updateCandidate(reportedCandidate);
-    return reportedCandidate;
   }
 
   public Candidate getCandidateByIdentifier(UUID candidateIdentifier) {

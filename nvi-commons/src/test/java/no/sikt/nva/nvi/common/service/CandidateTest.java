@@ -530,7 +530,8 @@ class CandidateTest extends CandidateTestSetup {
     scenario.updateApprovalStatus(candidate.identifier(), ApprovalStatus.APPROVED, institution);
 
     var reportedDate = Instant.parse("2026-01-15T12:00:00Z");
-    var reportedCandidate = candidateService.reportCandidate(candidate.identifier(), reportedDate);
+    candidateService.reportCandidate(candidate.identifier(), reportedDate);
+    var reportedCandidate = candidateService.getCandidateByIdentifier(candidate.identifier());
 
     Assertions.assertThat(reportedCandidate.isReported()).isTrue();
     Assertions.assertThat(reportedCandidate.reportedDate()).isEqualTo(reportedDate);
