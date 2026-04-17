@@ -15,17 +15,18 @@ public final class EnvironmentUriFactory {
   private EnvironmentUriFactory() {}
 
   public static URI candidateId(Environment environment, UUID candidateIdentifier) {
-    var apiHost = environment.readEnv(API_HOST);
-    var basePath = environment.readEnv(CUSTOM_DOMAIN_BASE_PATH);
-    return UriWrapper.fromHost(apiHost)
-        .addChild(basePath, CANDIDATE_PATH)
+    return baseUrl(environment)
+        .addChild(CANDIDATE_PATH)
         .addChild(candidateIdentifier.toString())
         .getUri();
   }
 
   public static URI context(Environment environment) {
-    var apiHost = environment.readEnv(API_HOST);
-    var basePath = environment.readEnv(CUSTOM_DOMAIN_BASE_PATH);
-    return UriWrapper.fromHost(apiHost).addChild(basePath, CONTEXT_PATH).getUri();
+    return baseUrl(environment).addChild(CONTEXT_PATH).getUri();
+  }
+
+  private static UriWrapper baseUrl(Environment environment) {
+    return UriWrapper.fromHost(environment.readEnv(API_HOST))
+        .addChild(environment.readEnv(CUSTOM_DOMAIN_BASE_PATH));
   }
 }

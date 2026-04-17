@@ -25,7 +25,6 @@ public class CandidateTestSetup {
   protected static final int EXPECTED_SCALE = 4;
   protected static final RoundingMode EXPECTED_ROUNDING_MODE = RoundingMode.HALF_UP;
   protected static final Environment ENVIRONMENT = getGlobalEnvironment();
-  public static final URI CONTEXT_URI = getCandidateContextUri();
   protected TestScenario scenario;
   protected CandidateService candidateService;
   protected ApprovalService approvalService;
