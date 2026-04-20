@@ -61,6 +61,17 @@ Reads periods from DB and writes them back.
 }
 ```
 
+### Report approved candidates
+
+Marks globally approved candidates for a given year as reported, setting `reportStatus=REPORTED` and `reportedDate=now()`. The reporting period for the given year must be closed. Candidates that are PENDING, REJECTED, or DISPUTE are skipped, as are already-reported candidates.
+
+```json
+{
+  "jobType": "REPORT_APPROVED_CANDIDATES",
+  "filter": { "reportingYears": ["2024"] }
+}
+```
+
 ## Filters and other optional parameters
 
 The only filter implemented for now is `ReportingYearFilter`, which limits the scan to a list of years. Using this
