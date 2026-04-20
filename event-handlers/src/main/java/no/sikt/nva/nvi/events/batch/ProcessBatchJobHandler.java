@@ -7,7 +7,7 @@ import com.amazonaws.services.lambda.runtime.events.SQSEvent;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.util.ArrayList;
 import no.sikt.nva.nvi.common.MigrationService;
-import no.sikt.nva.nvi.common.RboInstitutionMigrationService;
+import no.sikt.nva.nvi.common.ReportedDateMigrationService;
 import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
@@ -30,7 +30,7 @@ public class ProcessBatchJobHandler implements RequestHandler<SQSEvent, SQSBatch
   public ProcessBatchJobHandler() {
     this(
         CandidateService.defaultCandidateService(),
-        RboInstitutionMigrationService.defaultService(),
+        ReportedDateMigrationService.defaultService(),
         NviPeriodService.defaultNviPeriodService());
   }
 
