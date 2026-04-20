@@ -63,7 +63,9 @@ Reads periods from DB and writes them back.
 
 ### Report approved candidates
 
-Marks globally approved candidates for a given year as reported, setting `reportStatus=REPORTED` and `reportedDate=now()`. The reporting period for the given year must be closed. Candidates that are PENDING, REJECTED, or DISPUTE are skipped, as are already-reported candidates.
+Marks globally approved candidates for a given year as reported, setting `reportStatus=REPORTED` and `reportedDate=now()`.
+The reporting period for the given year must be closed. 
+Candidates that are PENDING, REJECTED, or DISPUTE are skipped, as are already-reported candidates.
 
 ```json
 {
