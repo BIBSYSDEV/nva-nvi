@@ -81,7 +81,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends BaseCandidateRestHandl
 
     Assertions.assertThat(responseDto)
         .extracting(CandidateDto::id, CandidateDto::publicationId)
-        .containsExactly(candidate.getId(), candidate.getPublicationId());
+        .containsExactly(expectedCandidateUri(candidate), candidate.getPublicationId());
   }
 
   @ParameterizedTest
@@ -109,7 +109,7 @@ class FetchNviCandidateByPublicationIdHandlerTest extends BaseCandidateRestHandl
 
     Assertions.assertThat(responseDto)
         .extracting(CandidateDto::id, CandidateDto::publicationId)
-        .containsExactly(candidate.getId(), candidate.getPublicationId());
+        .containsExactly(expectedCandidateUri(candidate), candidate.getPublicationId());
   }
 
   @Test

@@ -62,6 +62,7 @@ import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
+import no.sikt.nva.nvi.common.utils.EnvironmentUriFactory;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.ApprovalView;
 import no.sikt.nva.nvi.index.model.document.Contributor;
@@ -77,6 +78,7 @@ import no.sikt.nva.nvi.index.model.document.PublicationChannel;
 import no.sikt.nva.nvi.index.model.document.PublicationDetails;
 import no.sikt.nva.nvi.index.model.document.ReportingPeriod;
 import no.unit.nva.auth.uriretriever.UriRetriever;
+import nva.commons.core.Environment;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.NodeIterator;
 import org.slf4j.Logger;
@@ -92,13 +94,18 @@ public final class NviCandidateIndexDocumentGenerator {
   private final OrganizationRetriever organizationRetriever;
   private final JsonNode expandedResource;
   private final Candidate candidate;
+  private final Environment environment;
   private final Map<URI, String> temporaryCache = new HashMap<>();
 
   public NviCandidateIndexDocumentGenerator(
-      UriRetriever uriRetriever, JsonNode expandedResource, Candidate candidate) {
+      UriRetriever uriRetriever,
+      JsonNode expandedResource,
+      Candidate candidate,
+      Environment environment) {
     this.organizationRetriever = new OrganizationRetriever(uriRetriever);
     this.expandedResource = expandedResource;
     this.candidate = candidate;
+    this.environment = environment;
   }
 
   public NviCandidateIndexDocument generateDocument() {
@@ -157,8 +164,8 @@ public final class NviCandidateIndexDocumentGenerator {
   private NviCandidateIndexDocument buildDocument(
       List<ApprovalView> approvals, PublicationDetails expandedPublicationDetails) {
     return NviCandidateIndexDocument.builder()
-        .withId(candidate.getId())
-        .withContext(candidate.getContextUri())
+        .withId(EnvironmentUriFactory.candidateId(environment, candidate.identifier()))
+        .withContext(EnvironmentUriFactory.context(environment))
         .withIsApplicable(candidate.isApplicable())
         .withIdentifier(candidate.identifier())
         .withReportingPeriod(ReportingPeriod.fromCandidate(candidate))

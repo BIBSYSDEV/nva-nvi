@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.common.service;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptySet;
 import static java.util.UUID.randomUUID;
+import static no.sikt.nva.nvi.common.EnvironmentFixtures.getCandidateContextUri;
 import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequestWithSingleAffiliation;
@@ -19,6 +20,7 @@ import static no.sikt.nva.nvi.common.model.CandidateFixtures.setupRandomApplicab
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomTopLevelOrganization;
 import static no.sikt.nva.nvi.common.model.UserInstanceFixtures.createCuratorUserInstance;
 import static no.sikt.nva.nvi.common.service.model.NviPeriod.toPeriodStatusDto;
+import static no.sikt.nva.nvi.common.utils.EnvironmentUriFactory.candidateId;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
 import static no.sikt.nva.nvi.test.TestUtils.randomYear;
@@ -257,17 +259,17 @@ class CandidateTest extends CandidateTestSetup {
             .withApprovals(mapToApprovalDtos(candidate))
             .withAllowedOperations(CURATOR_CAN_FINALIZE_APPROVAL)
             .withProblems(emptySet())
-            .withId(candidate.getId())
+            .withId(candidateId(ENVIRONMENT, candidate.identifier()))
             .withPublicationId(candidate.getPublicationId())
             .withIdentifier(candidate.identifier())
-            .withContext(CONTEXT_URI)
+            .withContext(getCandidateContextUri())
             .withPeriod(toPeriodStatusDto(candidate.period()))
             .withTotalPoints(candidate.getTotalPoints())
             .withNotes(emptyList())
             .build();
 
     var userInstance = createCuratorUserInstance(userOrganizationId);
-    var actualDto = CandidateResponseFactory.create(candidate, userInstance);
+    var actualDto = CandidateResponseFactory.create(candidate, userInstance, ENVIRONMENT);
     assertEquals(expectedDto, actualDto);
   }
 
@@ -336,14 +338,6 @@ class CandidateTest extends CandidateTestSetup {
   void shouldReturnNviCandidateContextAsString() {
     var expectedContext = stringFromResources(Path.of("nviCandidateContext.json"));
     assertThat(Candidate.getJsonLdContext(), is(equalTo(expectedContext)));
-  }
-
-  @Test
-  void shouldReturnContextUri() {
-    var createRequest = randomUpsertRequestBuilder().build();
-    var candidate = scenario.upsertCandidate(createRequest);
-    var contextUri = candidate.getContextUri();
-    assertThat(contextUri, is(equalTo(CONTEXT_URI)));
   }
 
   @Test
