@@ -124,6 +124,7 @@ public final class CristinMapper {
         .pointCalculation(pointCalculation)
         .publicationDetails(publicationDetails)
         .reportStatus(ReportStatus.REPORTED)
+        .reportedDate(publicationDetails.modifiedDate())
         .applicable(true)
         .createdDate(publicationDetails.modifiedDate())
         .modifiedDate(publicationDetails.modifiedDate())

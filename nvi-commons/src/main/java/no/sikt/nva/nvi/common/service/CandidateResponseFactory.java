@@ -46,6 +46,7 @@ public final class CandidateResponseFactory {
         .withPeriod(toPeriodStatusDto(candidate.period()))
         .withTotalPoints(candidate.getTotalPoints())
         .withReportStatus(getReportStatus(candidate))
+        .withReportedDate(candidate.reportedDate())
         .build();
   }
 

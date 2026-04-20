@@ -76,6 +76,7 @@ public record NviCandidateIndexDocument(
     BigDecimal internationalCollaborationFactor,
     ReportingPeriod reportingPeriod,
     boolean reported,
+    String reportedDate,
     String createdDate,
     String modifiedDate,
     String indexDocumentCreatedAt)
@@ -266,6 +267,7 @@ public record NviCandidateIndexDocument(
     private BigDecimal internationalCollaborationFactor;
     private ReportingPeriod reportingPeriod;
     private boolean reported;
+    private String reportedDate;
     private String createdDate;
     private String modifiedDate;
 
@@ -343,6 +345,11 @@ public record NviCandidateIndexDocument(
       return this;
     }
 
+    public Builder withReportedDate(Instant reportedDate) {
+      this.reportedDate = Optional.ofNullable(reportedDate).map(Instant::toString).orElse(null);
+      return this;
+    }
+
     public Builder withCreatedDate(Instant createdDate) {
       this.createdDate = createdDate.toString();
       return this;
@@ -370,6 +377,7 @@ public record NviCandidateIndexDocument(
           internationalCollaborationFactor,
           reportingPeriod,
           reported,
+          reportedDate,
           createdDate,
           modifiedDate,
           Instant.now().toString());

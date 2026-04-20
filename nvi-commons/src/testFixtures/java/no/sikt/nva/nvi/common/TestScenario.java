@@ -3,11 +3,17 @@ package no.sikt.nva.nvi.common;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.getGlobalEnvironment;
 import static no.sikt.nva.nvi.common.LocalDynamoTestSetup.initializeTestDatabase;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpdateStatusRequest;
+import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequestWithSingleAffiliation;
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeriod;
+import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
+import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationId;
+import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublicationDateDtoInYear;
 import static no.sikt.nva.nvi.common.model.UserInstanceFixtures.createCuratorUserInstance;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 
 import java.io.IOException;
 import java.net.URI;
+import java.time.Instant;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
@@ -107,6 +113,25 @@ public class TestScenario {
     return candidateService.getCandidateByPublicationId(publicationId);
   }
 
+  public Candidate setupReportedCandidate(String year) {
+    return setupReportedCandidate(year, randomOrganizationId());
+  }
+
+  public Candidate setupReportedCandidate(String year, URI organizationId) {
+    setupOpenPeriod(this, year);
+    var request = createUpsertCandidateRequestWithSingleAffiliation(organizationId, organizationId);
+    var requestWithYear =
+        UpsertRequestBuilder.fromRequest(request)
+            .withPublicationDate(randomPublicationDateDtoInYear(year))
+            .build();
+    var candidate = upsertCandidate(requestWithYear);
+    updateApprovalStatus(candidate.identifier(), ApprovalStatus.APPROVED, organizationId);
+
+    setupClosedPeriod(this, year);
+    candidateService.reportCandidate(candidate.identifier(), Instant.now());
+    return candidateService.getCandidateByIdentifier(candidate.identifier());
+  }
+
   public Candidate upsertCandidate(UpsertNviCandidateRequest request) {
     candidateService.upsertCandidate(request);
     return getCandidateByPublicationId(request.publicationId());
@@ -123,8 +148,10 @@ public class TestScenario {
   public Candidate updateApprovalStatus(
       UUID candidateIdentifier, ApprovalStatus status, URI topLevelOrganizationId) {
     var candidate = getCandidateByIdentifier(candidateIdentifier);
-    var updateRequest = createUpdateStatusRequest(status, topLevelOrganizationId, randomString());
     var userInstance = createCuratorUserInstance(topLevelOrganizationId);
+    var updateRequest =
+        createUpdateStatusRequest(
+            status, topLevelOrganizationId, userInstance.userName().toString());
     var approvalService = new ApprovalService(candidateRepository);
     approvalService.updateApproval(candidate, updateRequest, userInstance);
     return getCandidateByIdentifier(candidate.identifier());

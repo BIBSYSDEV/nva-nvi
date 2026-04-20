@@ -11,7 +11,6 @@ import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidate
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequestWithSingleAffiliation;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertNonCandidateRequest;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.createCandidateDao;
-import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.setupReportedCandidate;
 import static no.sikt.nva.nvi.common.db.DbApprovalStatusFixtures.randomApprovalDao;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidateBuilder;
 import static no.sikt.nva.nvi.common.db.DbPointCalculationFixtures.randomPointCalculationBuilder;
@@ -61,6 +60,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpResponse;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -292,11 +292,7 @@ class IndexDocumentHandlerTest {
 
   @Test
   void shouldBuildIndexDocumentWithReportedPeriodWhenCandidateIsReported() {
-    // Using repository to create reported candidate because setting Candidate as reported is not
-    // implemented yet
-    // TODO: Use Candidate.setReported when implemented
-    var dao = setupReportedCandidate(candidateRepository, String.valueOf(CURRENT_YEAR));
-    var candidate = candidateService.getCandidateByIdentifier(dao.identifier());
+    var candidate = scenario.setupReportedCandidate(String.valueOf(CURRENT_YEAR));
     var expectedIndexDocument =
         setupExistingResourceInS3AndGenerateExpectedDocument(candidate).indexDocument();
     var event = createEvent(candidate.identifier());
@@ -633,6 +629,7 @@ class IndexDocumentHandlerTest {
         randomCandidateBuilder(true)
             .pointCalculation(pointCalculation)
             .reportStatus(ReportStatus.REPORTED)
+            .reportedDate(Instant.now())
             .build();
     var candidateDao = createCandidateDao(dbCandidate);
     candidateRepository.create(candidateDao, emptyList());
@@ -903,6 +900,7 @@ class IndexDocumentHandlerTest {
         .withNumberOfApprovals(candidate.approvals().size())
         .withCreatorShareCount(candidate.getCreatorShareCount())
         .withReported(candidate.isReported())
+        .withReportedDate(candidate.reportedDate())
         .withGlobalApprovalStatus(candidate.getGlobalApprovalStatus())
         .withPublicationTypeChannelLevelPoints(candidate.getBasePoints())
         .withInternationalCollaborationFactor(candidate.getCollaborationFactor())
