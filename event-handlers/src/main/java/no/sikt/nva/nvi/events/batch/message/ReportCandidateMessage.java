@@ -7,6 +7,9 @@ import no.sikt.nva.nvi.common.service.CandidateService;
 public record ReportCandidateMessage(UUID candidateIdentifier) implements BatchJobMessage {
 
   public void execute(CandidateService candidateService) {
-    candidateService.reportCandidate(candidateIdentifier, Instant.now());
+    var candidate = candidateService.getCandidateByIdentifier(candidateIdentifier);
+    if (candidate.isReportable()) {
+      candidateService.reportCandidate(candidateIdentifier, Instant.now());
+    }
   }
 }
