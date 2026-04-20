@@ -38,6 +38,7 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<UpsertAssigneeReque
   private final ApprovalService approvalService;
   private final IdentityServiceClient identityServiceClient;
   private final ViewingScopeValidator viewingScopeValidator;
+  private final Environment environment;
 
   @JacocoGenerated
   public UpsertAssigneeHandler() {
@@ -60,6 +61,7 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<UpsertAssigneeReque
     this.approvalService = approvalService;
     this.identityServiceClient = identityServiceClient;
     this.viewingScopeValidator = viewingScopeValidator;
+    this.environment = environment;
   }
 
   @Override
@@ -83,7 +85,7 @@ public class UpsertAssigneeHandler extends ApiGatewayHandler<UpsertAssigneeReque
     return attempt(() -> candidateService.getCandidateByIdentifier(candidateIdentifier))
         .map(candidate -> validateViewingScope(viewingScopeValidator, user.userName(), candidate))
         .map(candidate -> updateAndRefetch(candidate, updateRequest, user))
-        .map(candidate -> CandidateResponseFactory.create(candidate, user))
+        .map(candidate -> CandidateResponseFactory.create(candidate, user, environment))
         .orElseThrow(ExceptionMapper::map);
   }
 

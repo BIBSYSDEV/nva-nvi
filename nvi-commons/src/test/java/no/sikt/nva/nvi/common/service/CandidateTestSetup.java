@@ -17,18 +17,13 @@ import no.sikt.nva.nvi.common.db.PeriodRepository;
 import no.sikt.nva.nvi.common.dto.UpsertNviCandidateRequest;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import nva.commons.core.Environment;
-import nva.commons.core.paths.UriWrapper;
 import org.junit.jupiter.api.BeforeEach;
 
 public class CandidateTestSetup {
 
   protected static final int EXPECTED_SCALE = 4;
   protected static final RoundingMode EXPECTED_ROUNDING_MODE = RoundingMode.HALF_UP;
-  private static final Environment ENVIRONMENT = getGlobalEnvironment();
-  private static final String BASE_PATH = ENVIRONMENT.readEnv("CUSTOM_DOMAIN_BASE_PATH");
-  private static final String API_DOMAIN = ENVIRONMENT.readEnv("API_HOST");
-  public static final URI CONTEXT_URI =
-      UriWrapper.fromHost(API_DOMAIN).addChild(BASE_PATH, "context").getUri();
+  protected static final Environment ENVIRONMENT = getGlobalEnvironment();
   protected TestScenario scenario;
   protected CandidateService candidateService;
   protected ApprovalService approvalService;

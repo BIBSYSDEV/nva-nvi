@@ -3,6 +3,8 @@ package no.sikt.nva.nvi.common.service;
 import static java.util.function.Predicate.not;
 import static no.sikt.nva.nvi.common.model.NviCreator.isAffiliatedWithTopLevelOrganization;
 import static no.sikt.nva.nvi.common.service.model.NviPeriod.toPeriodStatusDto;
+import static no.sikt.nva.nvi.common.utils.EnvironmentUriFactory.candidateId;
+import static no.sikt.nva.nvi.common.utils.EnvironmentUriFactory.context;
 
 import java.net.URI;
 import java.util.HashSet;
@@ -24,15 +26,17 @@ import no.sikt.nva.nvi.common.service.dto.problem.UnverifiedCreatorProblem;
 import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.Note;
+import nva.commons.core.Environment;
 
 public final class CandidateResponseFactory {
 
   private CandidateResponseFactory() {}
 
-  public static CandidateDto create(Candidate candidate, UserInstance userInstance) {
+  public static CandidateDto create(
+      Candidate candidate, UserInstance userInstance, Environment environment) {
     return CandidateDto.builder()
-        .withId(candidate.getId())
-        .withContext(candidate.getContextUri())
+        .withId(candidateId(environment, candidate.identifier()))
+        .withContext(context(environment))
         .withIdentifier(candidate.identifier())
         .withPublicationId(candidate.getPublicationId())
         .withApprovals(getApprovalsAsDto(candidate))

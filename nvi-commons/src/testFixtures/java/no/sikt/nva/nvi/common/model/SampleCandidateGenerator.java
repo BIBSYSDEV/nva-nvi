@@ -25,7 +25,6 @@ import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.common.service.model.PublicationDetails;
 import no.sikt.nva.nvi.common.service.model.Username;
 import no.sikt.nva.nvi.test.TestUtils;
-import nva.commons.core.Environment;
 
 public final class SampleCandidateGenerator {
 
@@ -76,8 +75,7 @@ public final class SampleCandidateGenerator {
         null,
         null,
         null,
-        null,
-        new Environment());
+        null);
   }
 
   private static ChannelType randomChannelType() {
