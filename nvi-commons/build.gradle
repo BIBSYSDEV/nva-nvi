@@ -35,6 +35,7 @@ dependencies {
     testFixturesImplementation nvaLibs.auth
     testFixturesImplementation nvaLibs.core
     testFixturesImplementation nvaLibs.clients
+    testFixturesImplementation nvaLibs.eventhandlers
     testFixturesImplementation nvaLibs.identifiers
     testFixturesImplementation nvaLibs.json
     testFixturesImplementation nvaLibs.s3

@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.events.evaluator;
+package no.sikt.nva.nvi.common;
 
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
@@ -11,14 +11,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.util.List;
-import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
+import no.sikt.nva.nvi.common.model.events.PersistedResourceMessage;
 import no.unit.nva.events.models.AwsEventBridgeDetail;
 import no.unit.nva.events.models.AwsEventBridgeEvent;
 import no.unit.nva.events.models.EventReference;
 
-public final class TestUtils {
+public final class EventTestUtils {
 
-  private TestUtils() {}
+  private EventTestUtils() {}
 
   public static InputStream createS3Event(URI uri) throws IOException {
     return createEventInputStream(new EventReference("", uri));

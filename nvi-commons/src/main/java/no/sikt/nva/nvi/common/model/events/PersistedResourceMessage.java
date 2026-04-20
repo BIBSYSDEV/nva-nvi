@@ -1,4 +1,4 @@
-package no.sikt.nva.nvi.events.model;
+package no.sikt.nva.nvi.common.model.events;
 
 import java.net.URI;
 import no.unit.nva.commons.json.JsonSerializable;

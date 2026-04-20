@@ -1,6 +1,6 @@
 package no.sikt.nva.nvi.events;
 
-import static no.sikt.nva.nvi.events.evaluator.TestUtils.createS3Event;
+import static no.sikt.nva.nvi.common.EventTestUtils.createS3Event;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -11,8 +11,8 @@ import com.amazonaws.services.lambda.runtime.Context;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URI;
+import no.sikt.nva.nvi.common.model.events.PersistedResourceMessage;
 import no.sikt.nva.nvi.common.queue.FakeSqsClient;
-import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.unit.nva.stubs.FakeContext;
 import nva.commons.core.Environment;
 import nva.commons.logutils.LogUtils;

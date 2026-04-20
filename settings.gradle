@@ -53,3 +53,5 @@ include 'event-handlers'
 include 'nvi-test'
 include 'integration-tests'
 include 'nvi-report'
+include 'queue-persisted-resource'
+project(':queue-persisted-resource').projectDir = file('handlers/evaluation/queue-persisted-resource')
