@@ -26,11 +26,13 @@ import no.sikt.nva.nvi.common.QueueServiceTestUtils;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
+import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.events.batch.message.BatchJobMessage;
 import no.sikt.nva.nvi.events.batch.message.MigrateCandidateMessage;
 import no.sikt.nva.nvi.events.batch.message.RefreshCandidateMessage;
 import no.sikt.nva.nvi.events.batch.message.RefreshPeriodMessage;
+import no.sikt.nva.nvi.events.batch.message.ReportCandidateMessage;
 import no.unit.nva.commons.json.JsonSerializable;
 import no.unit.nva.stubs.FakeContext;
 import org.junit.jupiter.api.BeforeEach;
@@ -144,6 +146,36 @@ class ProcessBatchJobHandlerTest {
     var response = handleRequest(input);
 
     assertThat(response.getBatchItemFailures()).isEmpty();
+  }
+
+  @Test
+  void shouldHandleReportCandidateMessage() {
+    var candidate = candidates.getFirst();
+    var institution = candidate.approvals().keySet().iterator().next();
+    scenario.updateApprovalStatus(candidate.identifier(), ApprovalStatus.APPROVED, institution);
+    setupClosedPeriod(scenario, THIS_YEAR);
+
+    var reportMessage = new ReportCandidateMessage(candidate.identifier());
+    var input = QueueServiceTestUtils.createEvent(createMessage(reportMessage));
+    var response = handleRequest(input);
+
+    assertThat(response.getBatchItemFailures()).isEmpty();
+    var updatedCandidate = candidateService.getCandidateByIdentifier(candidate.identifier());
+    assertThat(updatedCandidate.isReported()).isTrue();
+  }
+
+  @Test
+  void shouldNotFailBatchWhenReportingNonApprovedCandidate() {
+    setupClosedPeriod(scenario, THIS_YEAR);
+    var candidate = candidates.getFirst();
+
+    var reportMessage = new ReportCandidateMessage(candidate.identifier());
+    var input = QueueServiceTestUtils.createEvent(createMessage(reportMessage));
+    var response = handleRequest(input);
+
+    assertThat(response.getBatchItemFailures()).hasSize(1);
+    var updatedCandidate = candidateService.getCandidateByIdentifier(candidate.identifier());
+    assertThat(updatedCandidate.isReported()).isFalse();
   }
 
   private SQSBatchResponse handleRequest(SQSEvent sqsEvent) {
