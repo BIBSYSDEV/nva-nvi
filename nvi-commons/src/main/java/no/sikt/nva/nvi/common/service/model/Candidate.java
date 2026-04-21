@@ -52,6 +52,8 @@ import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException;
 import no.sikt.nva.nvi.common.service.requests.CreateNoteRequest;
 import no.sikt.nva.nvi.common.service.requests.DeleteNoteRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 // Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
 @SuppressWarnings({"PMD.CouplingBetweenObjects"})
@@ -70,6 +72,7 @@ public record Candidate(
     Long revision,
     UUID version) {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(Candidate.class);
   private static final String CONTEXT = stringFromResources(Path.of("nviCandidateContext.json"));
   private static final String PERIOD_CLOSED_MESSAGE =
       "Period is closed, perform actions on candidate is forbidden!";
@@ -163,15 +166,32 @@ public record Candidate(
         .build();
   }
 
-  public Candidate updateToReportedCandidate(Instant reportedDate) {
+  public boolean isReportable() {
+    if (!applicable()) {
+      LOGGER.warn("Candidate {} is not reportable: not applicable", identifier);
+      return false;
+    }
     if (isReported()) {
-      throw new IllegalCandidateUpdateException(CANDIDATE_IS_REPORTED);
+      LOGGER.warn("Candidate {} is not reportable: already reported", identifier);
+      return false;
     }
     if (getGlobalApprovalStatus() != GlobalApprovalStatus.APPROVED) {
-      throw new IllegalCandidateUpdateException("Cannot report non-approved candidate");
+      LOGGER.warn(
+          "Candidate {} is not reportable: global approval status is {}",
+          identifier,
+          getGlobalApprovalStatus());
+      return false;
     }
-    if (!period().isClosed()) {
-      throw new IllegalCandidateUpdateException("Cannot report candidate if period is not closed");
+    if (isNull(period()) || !period().isClosed()) {
+      LOGGER.warn("Candidate {} is not reportable: period is not closed", identifier);
+      return false;
+    }
+    return true;
+  }
+
+  public Candidate updateToReportedCandidate(Instant reportedDate) {
+    if (!isReportable()) {
+      throw new IllegalCandidateUpdateException("Candidate is not reportable");
     }
     return copy()
         .withReportStatus(REPORTED)

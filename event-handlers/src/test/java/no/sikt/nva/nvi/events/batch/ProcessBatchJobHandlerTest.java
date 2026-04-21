@@ -165,7 +165,7 @@ class ProcessBatchJobHandlerTest {
   }
 
   @Test
-  void shouldNotFailBatchWhenReportingNonApprovedCandidate() {
+  void shouldSkipNonApprovedCandidateWithoutFailingBatch() {
     setupClosedPeriod(scenario, THIS_YEAR);
     var candidate = candidates.getFirst();
 
@@ -173,7 +173,7 @@ class ProcessBatchJobHandlerTest {
     var input = QueueServiceTestUtils.createEvent(createMessage(reportMessage));
     var response = handleRequest(input);
 
-    assertThat(response.getBatchItemFailures()).hasSize(1);
+    assertThat(response.getBatchItemFailures()).isEmpty();
     var updatedCandidate = candidateService.getCandidateByIdentifier(candidate.identifier());
     assertThat(updatedCandidate.isReported()).isFalse();
   }

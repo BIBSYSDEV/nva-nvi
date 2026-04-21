@@ -6,14 +6,12 @@ import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationId;
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.net.URI;
 import java.time.Instant;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.service.CandidateService;
-import no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -59,38 +57,59 @@ class ReportCandidateMessageTest {
   }
 
   @Test
-  void shouldThrowWhenCandidateIsNotApproved() {
+  void shouldSkipNonApprovedCandidate() {
     var institution = randomOrganizationId();
     var request = createUpsertCandidateRequestWithSingleAffiliation(institution, institution);
     var candidate = scenario.upsertCandidate(request);
     setupClosedPeriod(scenario, CURRENT_YEAR);
 
     var message = new ReportCandidateMessage(candidate.identifier());
-    assertThatThrownBy(() -> message.execute(candidateService))
-        .isInstanceOf(IllegalCandidateUpdateException.class);
+    message.execute(candidateService);
+
+    var unchanged = candidateService.getCandidateByIdentifier(candidate.identifier());
+    assertThat(unchanged.isReported()).isFalse();
   }
 
   @Test
-  void shouldThrowWhenPeriodIsNotClosed() {
+  void shouldSkipCandidateInOpenPeriod() {
     var institution = randomOrganizationId();
     var candidateId = createApprovedCandidate(institution);
 
     var message = new ReportCandidateMessage(candidateId);
-    assertThatThrownBy(() -> message.execute(candidateService))
-        .isInstanceOf(IllegalCandidateUpdateException.class);
+    message.execute(candidateService);
+
+    var candidate = candidateService.getCandidateByIdentifier(candidateId);
+    assertThat(candidate.isReported()).isFalse();
   }
 
   @Test
-  void shouldThrowWhenCandidateIsAlreadyReported() {
+  void shouldSkipNonApplicableCandidate() {
+    var institution = randomOrganizationId();
+    var candidateId = createApprovedCandidate(institution);
+    setupClosedPeriod(scenario, CURRENT_YEAR);
+    markCandidateAsNonApplicable(candidateId);
+
+    var message = new ReportCandidateMessage(candidateId);
+    message.execute(candidateService);
+
+    var candidate = candidateService.getCandidateByIdentifier(candidateId);
+    assertThat(candidate.isReported()).isFalse();
+  }
+
+  @Test
+  void shouldSkipAlreadyReportedCandidate() {
     var institution = randomOrganizationId();
     var candidateId = createApprovedCandidate(institution);
     setupClosedPeriod(scenario, CURRENT_YEAR);
 
     var message = new ReportCandidateMessage(candidateId);
     message.execute(candidateService);
+    var firstReportedDate = candidateService.getCandidateByIdentifier(candidateId).reportedDate();
 
-    assertThatThrownBy(() -> message.execute(candidateService))
-        .isInstanceOf(IllegalCandidateUpdateException.class);
+    message.execute(candidateService);
+    var secondReportedDate = candidateService.getCandidateByIdentifier(candidateId).reportedDate();
+
+    assertThat(secondReportedDate).isEqualTo(firstReportedDate);
   }
 
   private UUID createApprovedCandidate(URI institution) {
@@ -98,5 +117,11 @@ class ReportCandidateMessageTest {
     var candidate = scenario.upsertCandidate(request);
     scenario.updateApprovalStatus(candidate.identifier(), ApprovalStatus.APPROVED, institution);
     return candidate.identifier();
+  }
+
+  private void markCandidateAsNonApplicable(UUID candidateId) {
+    var candidate = candidateService.getCandidateByIdentifier(candidateId);
+    var nonApplicableCandidate = candidate.copy().withApplicable(false).build();
+    candidateService.updateCandidate(nonApplicableCandidate);
   }
 }
