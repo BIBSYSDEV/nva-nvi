@@ -11,7 +11,6 @@ import no.sikt.nva.nvi.common.ReportedDateMigrationService;
 import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.NviPeriodService;
 import no.sikt.nva.nvi.common.service.exception.CandidateNotFoundException;
-import no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException;
 import no.sikt.nva.nvi.events.batch.message.BatchJobMessage;
 import no.sikt.nva.nvi.events.batch.message.MigrateCandidateMessage;
 import no.sikt.nva.nvi.events.batch.message.RefreshCandidateMessage;
@@ -54,9 +53,7 @@ public class ProcessBatchJobHandler implements RequestHandler<SQSEvent, SQSBatch
       try {
         var batchJobMessage = BatchJobMessage.fromJson(message.getBody());
         processMessage(batchJobMessage);
-      } catch (JsonProcessingException
-          | CandidateNotFoundException
-          | IllegalCandidateUpdateException exception) {
+      } catch (JsonProcessingException | CandidateNotFoundException exception) {
         LOGGER.error("Failed to process message {}", message, exception);
         failedMessages.add(new SQSBatchResponse.BatchItemFailure(message.getMessageId()));
       }

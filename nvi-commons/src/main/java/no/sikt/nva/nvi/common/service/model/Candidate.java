@@ -52,8 +52,8 @@ import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.exception.IllegalCandidateUpdateException;
 import no.sikt.nva.nvi.common.service.requests.CreateNoteRequest;
 import no.sikt.nva.nvi.common.service.requests.DeleteNoteRequest;
-import nva.commons.core.Environment;
-import nva.commons.core.paths.UriWrapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 // Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
 @SuppressWarnings({"PMD.CouplingBetweenObjects"})
@@ -70,14 +70,10 @@ public record Candidate(
     ReportStatus reportStatus,
     Instant reportedDate,
     Long revision,
-    UUID version,
-    // TODO: Remove environment from this record
-    Environment environment) {
+    UUID version) {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(Candidate.class);
   private static final String CONTEXT = stringFromResources(Path.of("nviCandidateContext.json"));
-  private static final String API_HOST = "API_HOST";
-  private static final String CANDIDATE_PATH = "candidate";
-  private static final String CUSTOM_DOMAIN_BASE_PATH = "CUSTOM_DOMAIN_BASE_PATH";
   private static final String PERIOD_CLOSED_MESSAGE =
       "Period is closed, perform actions on candidate is forbidden!";
   private static final String PERIOD_NOT_OPENED_MESSAGE =
@@ -92,8 +88,7 @@ public record Candidate(
       CandidateDao candidateDao,
       Collection<ApprovalStatusDao> approvals,
       Collection<NoteDao> notes,
-      NviPeriod period,
-      Environment environment) {
+      NviPeriod period) {
     var dbCandidate = candidateDao.candidate();
     var version = Optional.ofNullable(candidateDao.version()).map(UUID::fromString).orElse(null);
 
@@ -111,15 +106,11 @@ public record Candidate(
         .withReportedDate(dbCandidate.reportedDate())
         .withRevision(candidateDao.revision())
         .withVersion(version)
-        .withEnvironment(environment)
         .build();
   }
 
   public static Candidate fromRequest(
-      UUID identifier,
-      UpsertNviCandidateRequest request,
-      NviPeriod targetPeriod,
-      Environment environment) {
+      UUID identifier, UpsertNviCandidateRequest request, NviPeriod targetPeriod) {
     if (targetPeriod.isClosed()) {
       throw new IllegalCandidateUpdateException(PERIOD_IS_CLOSED);
     }
@@ -139,7 +130,6 @@ public record Candidate(
         .withPublicationDetails(PublicationDetails.from(request))
         .withCreatedDate(createdAt)
         .withModifiedDate(createdAt)
-        .withEnvironment(environment)
         .build();
   }
 
@@ -176,15 +166,32 @@ public record Candidate(
         .build();
   }
 
-  public Candidate updateToReportedCandidate(Instant reportedDate) {
+  public boolean isReportable() {
+    if (!applicable()) {
+      LOGGER.warn("Candidate {} is not reportable: not applicable", identifier);
+      return false;
+    }
     if (isReported()) {
-      throw new IllegalCandidateUpdateException(CANDIDATE_IS_REPORTED);
+      LOGGER.warn("Candidate {} is not reportable: already reported", identifier);
+      return false;
     }
     if (getGlobalApprovalStatus() != GlobalApprovalStatus.APPROVED) {
-      throw new IllegalCandidateUpdateException("Cannot report non-approved candidate");
+      LOGGER.warn(
+          "Candidate {} is not reportable: global approval status is {}",
+          identifier,
+          getGlobalApprovalStatus());
+      return false;
     }
-    if (!period().isClosed()) {
-      throw new IllegalCandidateUpdateException("Cannot report candidate if period is not closed");
+    if (isNull(period()) || !period().isClosed()) {
+      LOGGER.warn("Candidate {} is not reportable: period is not closed", identifier);
+      return false;
+    }
+    return true;
+  }
+
+  public Candidate updateToReportedCandidate(Instant reportedDate) {
+    if (!isReportable()) {
+      throw new IllegalCandidateUpdateException("Candidate is not reportable");
     }
     return copy()
         .withReportStatus(REPORTED)
@@ -219,26 +226,6 @@ public record Candidate(
 
   public static String getJsonLdContext() {
     return CONTEXT;
-  }
-
-  public URI getContextUri() {
-    return buildApiUri("context");
-  }
-
-  public URI getId() {
-    return buildApiUri(CANDIDATE_PATH, identifier.toString());
-  }
-
-  private URI buildApiUri(String... pathSegments) {
-    var basePath = environment.readEnv(CUSTOM_DOMAIN_BASE_PATH);
-    var apiHost = environment.readEnv(API_HOST);
-    var uriWrapper = UriWrapper.fromHost(apiHost).addChild(basePath);
-
-    for (var segment : pathSegments) {
-      uriWrapper = uriWrapper.addChild(segment);
-    }
-
-    return uriWrapper.getUri();
   }
 
   /**
@@ -542,8 +529,7 @@ public record Candidate(
         .withPointCalculation(pointCalculation())
         .withPublicationDetails(publicationDetails())
         .withRevision(revision())
-        .withVersion(version())
-        .withEnvironment(environment());
+        .withVersion(version());
   }
 
   /**
@@ -607,7 +593,6 @@ public record Candidate(
     private Instant reportedDate;
     private Long revision;
     private UUID version;
-    private Environment environment;
 
     private Builder() {}
 
@@ -676,11 +661,6 @@ public record Candidate(
       return this;
     }
 
-    public Builder withEnvironment(Environment environment) {
-      this.environment = environment;
-      return this;
-    }
-
     public Candidate build() {
       return new Candidate(
           identifier,
@@ -695,8 +675,7 @@ public record Candidate(
           reportStatus,
           reportedDate,
           revision,
-          version,
-          environment);
+          version);
     }
   }
 }

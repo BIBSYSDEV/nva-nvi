@@ -13,6 +13,7 @@ import static org.mockito.Mockito.mock;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.net.URI;
 import java.util.Set;
+import no.sikt.nva.nvi.common.EnvironmentFixtures;
 import no.sikt.nva.nvi.common.model.PublicationDate;
 import no.sikt.nva.nvi.common.model.SampleCandidateGenerator;
 import no.sikt.nva.nvi.common.model.Sector;
@@ -119,7 +120,10 @@ class NviCandidateIndexDocumentGeneratorTest {
 
   private static NviCandidateIndexDocument generateIndexDocument(Candidate candidate) {
     return new NviCandidateIndexDocumentGenerator(
-            mock(UriRetriever.class), expandedResourceFromCandidate(candidate), candidate)
+            mock(UriRetriever.class),
+            expandedResourceFromCandidate(candidate),
+            candidate,
+            EnvironmentFixtures.getGlobalEnvironment())
         .generateDocument();
   }
 

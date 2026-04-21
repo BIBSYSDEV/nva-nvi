@@ -103,7 +103,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
 
     Assertions.assertThat(responseDto)
         .extracting(CandidateDto::id, CandidateDto::publicationId)
-        .containsExactly(candidate.getId(), candidate.getPublicationId());
+        .containsExactly(expectedCandidateUri(candidate), candidate.getPublicationId());
   }
 
   @ParameterizedTest
@@ -155,7 +155,7 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
 
     Assertions.assertThat(responseDto)
         .extracting(CandidateDto::id, CandidateDto::publicationId)
-        .containsExactly(candidate.getId(), candidate.getPublicationId());
+        .containsExactly(expectedCandidateUri(candidate), candidate.getPublicationId());
   }
 
   @Test
@@ -182,7 +182,8 @@ class FetchNviCandidateHandlerTest extends BaseCandidateRestHandlerTest {
         .extracting(
             CandidateDto::id, CandidateDto::publicationId,
             CandidateDto::allowedOperations, CandidateDto::problems)
-        .containsExactly(candidate.getId(), candidate.getPublicationId(), emptySet(), emptySet());
+        .containsExactly(
+            expectedCandidateUri(candidate), candidate.getPublicationId(), emptySet(), emptySet());
   }
 
   @Test
