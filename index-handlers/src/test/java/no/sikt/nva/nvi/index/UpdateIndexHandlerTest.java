@@ -35,6 +35,7 @@ import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.utils.EnvironmentUriFactory;
 import no.sikt.nva.nvi.index.aws.CandidateSearchClient;
+import no.sikt.nva.nvi.index.aws.MultiIndexWriter;
 import no.sikt.nva.nvi.index.model.PersistedIndexDocumentMessage;
 import no.sikt.nva.nvi.index.model.document.IndexDocumentWithConsumptionAttributes;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
@@ -72,7 +73,8 @@ class UpdateIndexHandlerTest {
     searchClient = mock(CandidateSearchClient.class);
     sqsClient = new FakeSqsClient();
     var storageReader = new S3StorageReader(s3Client, BUCKET_NAME);
-    handler = new UpdateIndexHandler(searchClient, storageReader, sqsClient);
+    var multiIndexWriter = new MultiIndexWriter(List.of(searchClient));
+    handler = new UpdateIndexHandler(multiIndexWriter, storageReader, sqsClient);
     setupOpenPeriod(scenario, CURRENT_YEAR);
   }
 
@@ -114,7 +116,8 @@ class UpdateIndexHandlerTest {
     var event = createUpdateIndexEvent(List.of(candidate));
     var mockedStorageReader = mock(S3StorageReader.class);
     when(mockedStorageReader.read(any())).thenThrow(new RuntimeException());
-    new UpdateIndexHandler(searchClient, mockedStorageReader, sqsClient)
+    new UpdateIndexHandler(
+            new MultiIndexWriter(List.of(searchClient)), mockedStorageReader, sqsClient)
         .handleRequest(event, CONTEXT);
     var dlqMessage = sqsClient.receiveMessage(INDEX_DLQ_URL, 1).messages().getFirst();
 
@@ -137,7 +140,9 @@ class UpdateIndexHandlerTest {
     var candidateToFail = setupRandomApplicableCandidate(scenario);
     var storageReader =
         setupStorageReaderFailingForOneCandidate(candidateToSucceed, candidateToFail);
-    handler = new UpdateIndexHandler(searchClient, storageReader, sqsClient);
+    handler =
+        new UpdateIndexHandler(
+            new MultiIndexWriter(List.of(searchClient)), storageReader, sqsClient);
     var event = createUpdateIndexEvent(List.of(candidateToSucceed, candidateToFail));
     handler.handleRequest(event, CONTEXT);
     verify(searchClient, times(0)).addDocumentToIndex(eq(null));

@@ -41,6 +41,7 @@ public final class SearchConstants {
   public static final String AFFILIATIONS = "affiliations";
   public static final String PART_OF = "partOf";
   public static final String NVI_CANDIDATES_INDEX = "nvi-candidates";
+  public static final String NVI_READ_INDEX_ALIAS = "nvi";
   public static final String SEARCH_INFRASTRUCTURE_CREDENTIALS = "SearchInfrastructureCredentials";
   public static final Environment ENVIRONMENT = new Environment();
   public static final String SEARCH_INFRASTRUCTURE_API_HOST = readSearchInfrastructureApiHost();

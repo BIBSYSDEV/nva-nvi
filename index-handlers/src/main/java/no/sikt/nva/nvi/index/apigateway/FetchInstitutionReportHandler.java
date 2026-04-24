@@ -4,6 +4,7 @@ import static java.lang.Integer.parseInt;
 import static no.sikt.nva.nvi.common.utils.RequestUtil.isNviAdmin;
 import static no.sikt.nva.nvi.common.utils.RequestUtil.isNviCurator;
 import static no.sikt.nva.nvi.index.apigateway.CristinOrgUriUtil.toCristinOrgUri;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.NVI_READ_INDEX_ALIAS;
 import static nva.commons.core.attempt.Try.attempt;
 
 import com.amazonaws.services.lambda.runtime.Context;
@@ -39,7 +40,7 @@ public class FetchInstitutionReportHandler extends ApiGatewayHandler<Void, Strin
 
   @JacocoGenerated
   public FetchInstitutionReportHandler() {
-    this(CandidateSearchClient.defaultOpenSearchClient(), new Environment());
+    this(CandidateSearchClient.forIndex(NVI_READ_INDEX_ALIAS), new Environment());
   }
 
   public FetchInstitutionReportHandler(
