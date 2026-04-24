@@ -1470,7 +1470,7 @@ Resources:
   NvaNviTable:
     Type: AWS::DynamoDB::Table
     UpdateReplacePolicy: Retain
-    DeletionPolicy: Delete
+    DeletionPolicy: Retain
     Properties:
       TableName: !Sub "nva-nvi-${AWS::StackName}"
       PointInTimeRecoverySpecification:
