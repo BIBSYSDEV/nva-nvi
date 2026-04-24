@@ -1,6 +1,7 @@
 package no.sikt.nva.nvi.index.report.request;
 
 import static java.util.Objects.isNull;
+import static no.sikt.nva.nvi.index.report.request.ReportType.AUTHOR_SHARES_CONTROL;
 import static no.sikt.nva.nvi.index.report.request.ReportType.PUBLICATION_POINTS;
 import static nva.commons.apigateway.MediaType.CSV_UTF_8;
 import static nva.commons.apigateway.MediaType.JSON_UTF_8;
@@ -64,6 +65,11 @@ public class ReportFormat implements JsonSerializable {
   @JsonIgnore
   public boolean isPublicationPointsReport() {
     return PUBLICATION_POINTS == reportType;
+  }
+
+  @JsonIgnore
+  public boolean isAuthorSharesControlReport() {
+    return AUTHOR_SHARES_CONTROL == reportType;
   }
 
   @JacocoGenerated

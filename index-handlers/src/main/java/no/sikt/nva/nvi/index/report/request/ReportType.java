@@ -7,6 +7,7 @@ import java.util.Arrays;
 
 public enum ReportType {
   AUTHOR_SHARES("author-shares"),
+  AUTHOR_SHARES_CONTROL("author-shares-control"),
   PUBLICATION_POINTS("publication-points"),
   DEFAULT_REPORT(null);
 
