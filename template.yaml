@@ -119,9 +119,14 @@ Parameters:
   ReportsBucketName:
     Type: String
     Default: "reports"
+  NviTableName:
+    Type: String
+    Default: ""
+    Description: Override the DynamoDB table name. Leave blank to use the default "nva-nvi-${AWS::StackName}". Set this when adopting a restored table via CloudFormation resource import.
 
 Conditions:
   WithSuffix: !Not [!Equals [!Ref Suffix, ""]]
+  UseDefaultNviTableName: !Equals [!Ref NviTableName, ""]
 
 Resources:
   ApiAccessLogGroup:
@@ -1472,7 +1477,10 @@ Resources:
     UpdateReplacePolicy: Retain
     DeletionPolicy: Retain
     Properties:
-      TableName: !Sub "nva-nvi-${AWS::StackName}"
+      TableName: !If
+        - UseDefaultNviTableName
+        - !Sub "nva-nvi-${AWS::StackName}"
+        - !Ref NviTableName
       PointInTimeRecoverySpecification:
         PointInTimeRecoveryEnabled: true
       BillingMode: PAY_PER_REQUEST
