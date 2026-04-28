@@ -122,7 +122,7 @@ Parameters:
   NviTableName:
     Type: String
     Default: ""
-    Description: Override the DynamoDB table name. Leave blank to use the default "nva-nvi-${AWS::StackName}". Set this when adopting a restored table via CloudFormation resource import.
+    Description: Override the DynamoDB table name. Leave blank to use the default "nva-nvi-<stack-name>". Set this when adopting a restored table via CloudFormation resource import.
 
 Conditions:
   WithSuffix: !Not [!Equals [!Ref Suffix, ""]]
