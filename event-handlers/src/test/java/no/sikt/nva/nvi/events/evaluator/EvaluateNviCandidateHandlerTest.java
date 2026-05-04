@@ -6,7 +6,6 @@ import static java.util.Collections.emptyList;
 import static java.util.UUID.randomUUID;
 import static no.sikt.nva.nvi.common.SampleExpandedPublicationFactory.mapOrganizationToAffiliation;
 import static no.sikt.nva.nvi.common.UpsertRequestBuilder.randomUpsertRequestBuilder;
-import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.setupReportedCandidate;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeriod;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.dto.CustomerDtoFixtures.getDefaultCustomers;
@@ -731,9 +730,8 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
       // Then the evaluation should be skipped
       // And the Candidate entry in the database should not be updated
       setupClosedPeriod(scenario, publicationDate.year());
-      var existingCandidateDao =
-          setupReportedCandidate(scenario.getCandidateRepository(), publicationDate.year());
-      var publicationId = existingCandidateDao.publicationId();
+      var existingCandidate = scenario.setupReportedCandidate(publicationDate.year());
+      var publicationId = existingCandidate.getPublicationId();
       var publication =
           factory
               .withContributor(verifiedCreatorFrom(nviOrganization))
@@ -747,8 +745,7 @@ class EvaluateNviCandidateHandlerTest extends EvaluationTest {
 
       var candidate = candidateService.getCandidateByPublicationId(publicationId);
       assertThat(candidate.isReported()).isTrue();
-      assertThat(candidate.modifiedDate())
-          .isEqualTo(existingCandidateDao.candidate().modifiedDate());
+      assertThat(candidate.modifiedDate()).isEqualTo(existingCandidate.modifiedDate());
     }
 
     @Test

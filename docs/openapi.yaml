@@ -1329,6 +1329,15 @@ components:
               type: string
             startDate:
               type: string
+        status:
+          type: string
+          description: The report status of the candidate
+          example: "Reported"
+        reportedDate:
+          type: string
+          format: date-time
+          description: Timestamp for when the candidate was marked as reported
+          example: "2026-01-15T12:00:00Z"
         allowedOperations:
           type: array
           description: >

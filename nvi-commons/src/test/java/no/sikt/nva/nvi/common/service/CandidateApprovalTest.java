@@ -503,7 +503,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var candidate = scenario.upsertCandidate(request);
 
     var userInstance = createCuratorUserInstance(topLevelOrganizationId);
-    var candidateDto = CandidateResponseFactory.create(candidate, userInstance);
+    var candidateDto = CandidateResponseFactory.create(candidate, userInstance, ENVIRONMENT);
 
     var actualAllowedOperations = candidateDto.allowedOperations();
     assertThat(actualAllowedOperations)
@@ -520,7 +520,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var candidate = scenario.upsertCandidate(request);
 
     var userInstance = createCuratorUserInstance(topLevelOrganizationId);
-    var candidateDto = CandidateResponseFactory.create(candidate, userInstance);
+    var candidateDto = CandidateResponseFactory.create(candidate, userInstance, ENVIRONMENT);
 
     var actualAllowedOperations = candidateDto.allowedOperations();
     assertThat(actualAllowedOperations)
@@ -555,7 +555,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var candidate = scenario.upsertCandidate(request);
 
     var userInstance = createCuratorUserInstance(topLevelOrganizationId);
-    var candidateDto = CandidateResponseFactory.create(candidate, userInstance);
+    var candidateDto = CandidateResponseFactory.create(candidate, userInstance, ENVIRONMENT);
 
     assertThat(candidateDto.problems()).isEmpty();
   }
@@ -570,7 +570,7 @@ class CandidateApprovalTest extends CandidateTestSetup {
     var candidate = scenario.upsertCandidate(request);
 
     var userInstance = createCuratorUserInstance(topLevelOrganizationId);
-    var candidateDto = CandidateResponseFactory.create(candidate, userInstance);
+    var candidateDto = CandidateResponseFactory.create(candidate, userInstance, ENVIRONMENT);
 
     var expectedProblems =
         Set.of(

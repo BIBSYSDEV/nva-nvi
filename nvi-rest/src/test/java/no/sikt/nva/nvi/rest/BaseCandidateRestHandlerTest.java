@@ -39,6 +39,7 @@ import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.utils.EnvironmentUriFactory;
 import no.sikt.nva.nvi.common.validator.FakeViewingScopeValidator;
 import no.sikt.nva.nvi.common.validator.ViewingScopeValidator;
 import no.unit.nva.stubs.FakeContext;
@@ -223,5 +224,9 @@ public abstract class BaseCandidateRestHandlerTest {
         .withAccessRights(organizationId, accessRight)
         .withTopLevelCristinOrgId(organizationId)
         .build();
+  }
+
+  protected URI expectedCandidateUri(Candidate candidate) {
+    return EnvironmentUriFactory.candidateId(environment, candidate.identifier());
   }
 }

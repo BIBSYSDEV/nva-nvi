@@ -52,6 +52,7 @@ import no.sikt.nva.nvi.index.utils.NviCandidateIndexDocumentGenerator;
 import no.unit.nva.auth.uriretriever.UriRetriever;
 import no.unit.nva.commons.json.JsonSerializable;
 import no.unit.nva.language.LanguageMapper;
+import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,6 +76,7 @@ public record NviCandidateIndexDocument(
     BigDecimal internationalCollaborationFactor,
     ReportingPeriod reportingPeriod,
     boolean reported,
+    String reportedDate,
     String createdDate,
     String modifiedDate,
     String indexDocumentCreatedAt)
@@ -91,8 +93,12 @@ public record NviCandidateIndexDocument(
   private static final String UNKNOWN = "N/A";
 
   public static NviCandidateIndexDocument from(
-      JsonNode expandedResource, Candidate candidate, UriRetriever uriRetriever) {
-    return new NviCandidateIndexDocumentGenerator(uriRetriever, expandedResource, candidate)
+      JsonNode expandedResource,
+      Candidate candidate,
+      UriRetriever uriRetriever,
+      Environment environment) {
+    return new NviCandidateIndexDocumentGenerator(
+            uriRetriever, expandedResource, candidate, environment)
         .generateDocument();
   }
 
@@ -261,6 +267,7 @@ public record NviCandidateIndexDocument(
     private BigDecimal internationalCollaborationFactor;
     private ReportingPeriod reportingPeriod;
     private boolean reported;
+    private String reportedDate;
     private String createdDate;
     private String modifiedDate;
 
@@ -338,6 +345,11 @@ public record NviCandidateIndexDocument(
       return this;
     }
 
+    public Builder withReportedDate(Instant reportedDate) {
+      this.reportedDate = Optional.ofNullable(reportedDate).map(Instant::toString).orElse(null);
+      return this;
+    }
+
     public Builder withCreatedDate(Instant createdDate) {
       this.createdDate = createdDate.toString();
       return this;
@@ -365,6 +377,7 @@ public record NviCandidateIndexDocument(
           internationalCollaborationFactor,
           reportingPeriod,
           reported,
+          reportedDate,
           createdDate,
           modifiedDate,
           Instant.now().toString());

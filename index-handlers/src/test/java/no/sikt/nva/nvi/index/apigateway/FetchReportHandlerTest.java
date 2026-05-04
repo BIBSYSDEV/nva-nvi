@@ -15,6 +15,7 @@ import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.apigateway.GatewayResponse.fromOutputStream;
+import static nva.commons.apigateway.RequestInfoConstants.BACKEND_SCOPE_AS_DEFINED_IN_IDENTITY_SERVICE;
 import static nva.commons.core.StringUtils.EMPTY_STRING;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
@@ -113,6 +114,15 @@ class FetchReportHandlerTest {
     var statusCode = fromOutputStream(output, Problem.class).getStatusCode();
 
     assertEquals(HttpURLConnection.HTTP_FORBIDDEN, statusCode);
+  }
+
+  @Test
+  void shouldReturnOkWhenClientIsInternalBackend() throws IOException {
+    handler.handleRequest(requestWithBackendScope(), output, CONTEXT);
+
+    var statusCode = fromOutputStream(output, ReportResponse.class).getStatusCode();
+
+    assertEquals(HTTP_OK, statusCode);
   }
 
   @Test
@@ -267,6 +277,17 @@ class FetchReportHandlerTest {
 
   private static InputStream requestWithoutAccessRights() {
     return createRequest(Map.of(PATH, REPORTS_PATH_SEGMENT), EMPTY_STRING, emptyMap());
+  }
+
+  private static InputStream requestWithBackendScope() {
+    try {
+      return new HandlerRequestBuilder<InputStream>(dtoObjectMapper)
+          .withOtherProperties(Map.of(PATH, REPORTS_PATH_SEGMENT))
+          .withScope(BACKEND_SCOPE_AS_DEFINED_IN_IDENTITY_SERVICE)
+          .build();
+    } catch (JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   private static InputStream createRequestWithHeader(

@@ -22,6 +22,10 @@ import nva.commons.core.JacocoGenerated;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * @deprecated Inactive migration code that should be removed.
+ */
+@Deprecated(forRemoval = true)
 public class RboInstitutionMigrationService implements MigrationService {
 
   private static final Logger LOGGER =

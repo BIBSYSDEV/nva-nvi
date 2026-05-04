@@ -37,6 +37,7 @@ public class CreateNoteHandler extends ApiGatewayHandler<NviNoteRequest, Candida
   private final CandidateService candidateService;
   private final NoteService noteService;
   private final ViewingScopeValidator viewingScopeValidator;
+  private final Environment environment;
 
   @JacocoGenerated
   public CreateNoteHandler() {
@@ -56,6 +57,7 @@ public class CreateNoteHandler extends ApiGatewayHandler<NviNoteRequest, Candida
     this.candidateService = candidateService;
     this.noteService = noteService;
     this.viewingScopeValidator = viewingScopeValidator;
+    this.environment = environment;
   }
 
   @Override
@@ -76,7 +78,7 @@ public class CreateNoteHandler extends ApiGatewayHandler<NviNoteRequest, Candida
         .map(this::checkIfApplicable)
         .map(candidate -> validateViewingScope(viewingScopeValidator, username, candidate))
         .map(candidate -> createNote(input, candidate, username, institutionId))
-        .map(candidate -> CandidateResponseFactory.create(candidate, userInstance))
+        .map(candidate -> CandidateResponseFactory.create(candidate, userInstance, environment))
         .orElseThrow(ExceptionMapper::map);
   }
 

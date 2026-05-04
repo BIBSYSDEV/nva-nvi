@@ -9,6 +9,7 @@ import static no.sikt.nva.nvi.common.service.model.Candidate.getUpdatedInstituti
 import static no.sikt.nva.nvi.common.service.model.Candidate.shouldResetCandidate;
 
 import java.net.URI;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
@@ -35,7 +36,6 @@ import org.slf4j.LoggerFactory;
 public class CandidateService {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CandidateService.class);
-  private final Environment environment;
   private final CandidateRepository candidateRepository;
   private final NviPeriodService periodService;
 
@@ -43,7 +43,6 @@ public class CandidateService {
       Environment environment,
       PeriodRepository periodRepository,
       CandidateRepository candidateRepository) {
-    this.environment = environment;
     this.candidateRepository = candidateRepository;
     this.periodService = new NviPeriodService(environment, periodRepository);
   }
@@ -76,7 +75,7 @@ public class CandidateService {
     LOGGER.info("Creating new candidate for publicationId={}", request.publicationId());
 
     var identifier = randomUUID();
-    var candidate = Candidate.fromRequest(identifier, request, period, environment);
+    var candidate = Candidate.fromRequest(identifier, request, period);
     var approvals = candidate.approvals().values().stream().map(Approval::toDao).toList();
 
     candidateRepository.create(candidate.toDao(), approvals);
@@ -143,6 +142,17 @@ public class CandidateService {
     }
   }
 
+  /**
+   * Marks a Candidate as `reported`, which means it is included in the final report for the
+   * corresponding reporting period and is now immutable.
+   */
+  public void reportCandidate(UUID candidateIdentifier, Instant reportedDate) {
+    LOGGER.info("Updating candidate with identifier={} to reported", candidateIdentifier);
+    var candidate = getCandidateByIdentifier(candidateIdentifier);
+    var reportedCandidate = candidate.updateToReportedCandidate(reportedDate);
+    updateCandidate(reportedCandidate);
+  }
+
   public Candidate getCandidateByIdentifier(UUID candidateIdentifier) {
     LOGGER.info("Fetching candidate by identifier {}", candidateIdentifier);
     var responseContext = findCandidateAndPeriodsByIdentifier(candidateIdentifier);
@@ -186,9 +196,7 @@ public class CandidateService {
       Collection<Dao> candidateItems, Collection<NviPeriod> periods) {
     var candidateAggregate = CandidateAggregate.fromQueryResponse(candidateItems);
     var candidate =
-        candidateAggregate
-            .map(aggregate -> aggregate.toCandidate(environment, periods))
-            .orElse(null);
+        candidateAggregate.map(aggregate -> aggregate.toCandidate(periods)).orElse(null);
 
     return new CandidateAndPeriods(candidate, periods);
   }

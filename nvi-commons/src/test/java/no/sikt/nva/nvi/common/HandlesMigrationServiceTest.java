@@ -10,6 +10,7 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.net.URI;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.db.CandidateRepository;
@@ -94,6 +95,7 @@ class HandlesMigrationServiceTest {
     var dbCandidate =
         randomCandidateBuilder(topLevelInstitution, dbDetails)
             .reportStatus(ReportStatus.REPORTED)
+            .reportedDate(Instant.now())
             .build();
     return createCandidateInRepository(candidateRepository, dbCandidate);
   }
