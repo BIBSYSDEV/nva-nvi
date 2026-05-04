@@ -17,7 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class OpenSearchContainerContext implements Startable {
-  private static final String OPEN_SEARCH_IMAGE = "opensearchproject/opensearch:2.11.1";
+  private static final String OPEN_SEARCH_IMAGE = "opensearchproject/opensearch:2.19.5";
   private static final OpenSearchContainer<?> container =
       new OpenSearchContainer<>(OPEN_SEARCH_IMAGE);
   private static CandidateSearchClient searchClient;
