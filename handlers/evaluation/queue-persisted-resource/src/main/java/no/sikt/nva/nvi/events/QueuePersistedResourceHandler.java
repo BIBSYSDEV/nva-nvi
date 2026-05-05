@@ -3,10 +3,10 @@ package no.sikt.nva.nvi.events;
 import static java.util.Objects.isNull;
 
 import com.amazonaws.services.lambda.runtime.Context;
+import no.sikt.nva.nvi.common.model.events.PersistedResourceMessage;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
 import no.sikt.nva.nvi.common.queue.QueueMessage;
-import no.sikt.nva.nvi.events.model.PersistedResourceMessage;
 import no.unit.nva.events.handlers.DestinationsEventBridgeEventHandler;
 import no.unit.nva.events.models.AwsEventBridgeDetail;
 import no.unit.nva.events.models.AwsEventBridgeEvent;
