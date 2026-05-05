@@ -1,8 +1,14 @@
 [versions]
-nvaLanguage = { strictly = '1.2.1' }
 fastExccel = { strictly = '0.20.0'}
+jakartaJsonApi = { strictly = '2.1.3'}
+parsson = { strictly = '1.1.7'}
+nvaLanguage = { strictly = '1.2.1' }
+titaniumJsonLd = { strictly = '1.7.0'}
 
 [libraries]
-nva-language = { group = 'com.github.bibsysdev', name = 'nva-language', version.ref = 'nvaLanguage' }
 fast-excel = { group = 'org.dhatim', name = 'fastexcel', version.ref = 'fastExccel' }
 fast-excel-reader = { group = 'org.dhatim', name = 'fastexcel-reader', version.ref = 'fastExccel' }
+jakarta-json-api = { group = 'jakarta.json', name = 'jakarta.json-api', version.ref = 'jakartaJsonApi' }
+parsson = { group = 'org.eclipse.parsson', name = 'parsson', version.ref = 'parsson' }
+nva-language = { group = 'com.github.bibsysdev', name = 'nva-language', version.ref = 'nvaLanguage' }
+titanium-json-ld = { group = 'com.apicatalog', name = 'titanium-json-ld', version.ref = 'titaniumJsonLd' }

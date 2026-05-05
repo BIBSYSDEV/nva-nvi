@@ -1,0 +1,32 @@
+plugins {
+    id 'nva.nvi.java-conventions'
+}
+
+dependencies {
+    api(nvaCatalog.jena.core)
+    api(nvaLibs.clients)
+    api(project(':nvi-commons'))
+    implementation(nvaCatalog.jackson.core)
+    implementation(nvaCatalog.jena.arq)
+    implementation(nvaCatalog.slf4j.api)
+    implementation(nvaLibs.core)
+    implementation(nvaLibs.json)
+    runtimeOnly(libs.jakarta.json.api)
+    runtimeOnly(libs.parsson)
+    runtimeOnly(nvaCatalog.aws.apache.client)
+    runtimeOnly(nvaCatalog.aws.sdk2.urlconnection)
+    runtimeOnly(nvaCatalog.jackson.databind)
+    testFixturesAnnotationProcessor(nvaCatalog.errorprone)
+    testImplementation(nvaCatalog.junit.jupiter.api)
+    testImplementation(nvaCatalog.mockito.core)
+    testImplementation(nvaLibs.apigateway)
+    testImplementation(nvaLibs.testutils)
+    testRuntimeOnly(nvaCatalog.datafaker)
+    testRuntimeOnly(nvaCatalog.junit.jupiter.engine)
+    testRuntimeOnly(nvaCatalog.junit.platform.launcher)
+}
+
+test {
+    environment("API_HOST", "example.org")
+    environment("BACKEND_CLIENT_AUTH_URL", "example.org/auth")
+}

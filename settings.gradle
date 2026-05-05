@@ -53,3 +53,10 @@ include 'event-handlers'
 include 'nvi-test'
 include 'integration-tests'
 include 'nvi-report'
+
+include 'migration-service'
+include 'publication-service'
+include 'viewing-scope'
+project(':migration-service').projectDir = file('libs/migration-service')
+project(':publication-service').projectDir = file('libs/publication-service')
+project(':viewing-scope').projectDir = file('libs/viewing-scope')

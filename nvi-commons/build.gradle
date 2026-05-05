@@ -11,8 +11,6 @@ dependencies {
     implementation nvaCatalog.aws.sdk2.dynamo
     implementation nvaCatalog.aws.sdk2.s3
     implementation nvaCatalog.aws.sdk2.urlconnection
-    implementation nvaCatalog.jena.shacl
-    implementation nvaCatalog.bundles.jena
     implementation nvaCatalog.jackson.databind
     implementation nvaLibs.apigateway
     implementation nvaLibs.auth
@@ -40,7 +38,6 @@ dependencies {
     testFixturesImplementation nvaLibs.s3
     testFixturesImplementation nvaLibs.testutils
     testFixturesImplementation project(':nvi-test')
-    testImplementation nvaCatalog.aws.sdk2.dynamodblocal
     testImplementation nvaCatalog.assertj.core
     testImplementation nvaCatalog.bundles.testing.cucumber
     testImplementation nvaCatalog.bundles.testing.junit

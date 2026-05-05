@@ -13,6 +13,7 @@ dependencies {
     implementation nvaLibs.core
     implementation nvaLibs.json
     implementation project(':nvi-commons')
+    implementation project(':viewing-scope')
     testFixturesAnnotationProcessor nvaCatalog.errorprone
     testFixturesImplementation(testFixtures(project(":nvi-commons")))
     testImplementation nvaCatalog.aws.sdk2.dynamodblocal
@@ -25,6 +26,7 @@ dependencies {
     testImplementation nvaLibs.testutils
     testImplementation project(':nvi-test')
     testImplementation(testFixtures(project(":nvi-commons")))
+    testImplementation(testFixtures(project(":viewing-scope")))
 }
 
 test {
