@@ -2,9 +2,9 @@ package no.sikt.nva.nvi.index.apigateway;
 
 import static no.sikt.nva.nvi.common.utils.RequestUtil.isNviAdmin;
 import static no.sikt.nva.nvi.index.apigateway.CristinOrgUriUtil.toCristinOrgUri;
-import static no.sikt.nva.nvi.index.aws.CandidateSearchClient.defaultOpenSearchClient;
 import static no.sikt.nva.nvi.index.model.search.SearchQueryParameters.QUERY_PARAM_AFFILIATIONS;
 import static no.sikt.nva.nvi.index.utils.PaginatedResultConverter.toPaginatedResult;
+import static no.sikt.nva.nvi.index.utils.SearchConstants.NVI_READ_INDEX_ALIAS;
 import static nva.commons.core.attempt.Try.attempt;
 
 import com.amazonaws.services.lambda.runtime.Context;
@@ -18,6 +18,7 @@ import no.sikt.nva.nvi.common.client.OrganizationRetriever;
 import no.sikt.nva.nvi.common.utils.RequestUtil;
 import no.sikt.nva.nvi.common.validator.ViewingScopeValidator;
 import no.sikt.nva.nvi.common.validator.ViewingScopeValidatorImpl;
+import no.sikt.nva.nvi.index.aws.CandidateSearchClient;
 import no.sikt.nva.nvi.index.aws.SearchClient;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
@@ -47,7 +48,7 @@ public class SearchNviCandidatesHandler
   @JacocoGenerated
   public SearchNviCandidatesHandler() {
     this(
-        defaultOpenSearchClient(),
+        CandidateSearchClient.forIndex(NVI_READ_INDEX_ALIAS),
         defaultViewingScopeValidator(),
         IdentityServiceClient.prepare(),
         new Environment());

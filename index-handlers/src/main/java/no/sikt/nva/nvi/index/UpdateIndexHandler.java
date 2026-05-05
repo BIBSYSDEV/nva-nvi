@@ -15,7 +15,7 @@ import no.sikt.nva.nvi.common.S3StorageReader;
 import no.sikt.nva.nvi.common.StorageReader;
 import no.sikt.nva.nvi.common.queue.NviQueueClient;
 import no.sikt.nva.nvi.common.queue.QueueClient;
-import no.sikt.nva.nvi.index.aws.CandidateSearchClient;
+import no.sikt.nva.nvi.index.aws.MultiIndexWriter;
 import no.sikt.nva.nvi.index.model.PersistedIndexDocumentMessage;
 import no.sikt.nva.nvi.index.model.document.IndexDocumentWithConsumptionAttributes;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
@@ -38,7 +38,7 @@ public class UpdateIndexHandler implements RequestHandler<SQSEvent, Void> {
   private static final String ERROR_MESSAGE = "Error message: {}";
   private static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
   public static final String EXCEPTION_FIELD = "exception";
-  private final CandidateSearchClient searchClient;
+  private final MultiIndexWriter multiIndexWriter;
   private final StorageReader<URI> storageReader;
   private final QueueClient queueClient;
   private final String dlqUrl;
@@ -46,16 +46,16 @@ public class UpdateIndexHandler implements RequestHandler<SQSEvent, Void> {
   @JacocoGenerated
   public UpdateIndexHandler() {
     this(
-        CandidateSearchClient.defaultOpenSearchClient(),
+        MultiIndexWriter.fromEnvironment(),
         new S3StorageReader(new Environment().readEnv(EXPANDED_RESOURCES_BUCKET)),
         new NviQueueClient());
   }
 
   public UpdateIndexHandler(
-      CandidateSearchClient searchClient,
+      MultiIndexWriter multiIndexWriter,
       StorageReader<URI> storageReader,
       QueueClient queueClient) {
-    this.searchClient = searchClient;
+    this.multiIndexWriter = multiIndexWriter;
     this.storageReader = storageReader;
     this.queueClient = queueClient;
     this.dlqUrl = new Environment().readEnv(INDEX_DLQ);
@@ -111,7 +111,7 @@ public class UpdateIndexHandler implements RequestHandler<SQSEvent, Void> {
   }
 
   private void addDocumentToIndex(NviCandidateIndexDocument document) {
-    attempt(() -> searchClient.addDocumentToIndex(document))
+    attempt(() -> multiIndexWriter.addDocumentToIndex(document))
         .orElse(
             failure -> {
               handleFailure(
