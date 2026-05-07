@@ -28,6 +28,11 @@
       "@id": "hasPart",
       "@container": "@set"
     },
+    "handles": {
+      "@id": "handle",
+      "@type": "@id",
+      "@container": "@set"
+    },
     "isbnList": {
       "@id": "isbn",
       "@container": "@set"
@@ -42,6 +47,10 @@
     "modifiedDate": {
       "@id": "modifiedDate",
       "@type": "xsd:dateTime"
+    },
+    "orcid": {
+      "@id": "orcid",
+      "@type": "@id"
     },
     "organization": {
       "@id": "organization",
@@ -63,8 +72,10 @@
     "parentPublicationType": {
       "@type": "@vocab"
     },
-    "role": {
-      "@type": "@vocab"
+    "roles": {
+      "@id": "role",
+      "@type": "@vocab",
+      "@container": "@set"
     },
     "status": {
       "@type": "@vocab"

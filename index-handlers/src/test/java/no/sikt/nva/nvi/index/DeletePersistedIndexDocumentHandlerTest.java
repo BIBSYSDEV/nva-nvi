@@ -32,7 +32,7 @@ import software.amazon.awssdk.services.s3.model.S3Exception;
 
 class DeletePersistedIndexDocumentHandlerTest {
 
-  public static final String PERSISTED_NVI_CANDIDATES_FOLDER = "nvi-candidates";
+  private static final String PERSISTED_NVI_CANDIDATES_FOLDER = "nvi-candidates";
   private static final Environment ENVIRONMENT = new Environment();
   private static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
   private static final String BUCKET_NAME = ENVIRONMENT.readEnv(EXPANDED_RESOURCES_BUCKET);

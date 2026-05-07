@@ -25,7 +25,8 @@ CONSTRUCT {
   :contributor ?personId ;
   :topLevelOrganization ?topLevelOrganization ;
   :modifiedDate ?modifiedDate ;
-  :isbn ?isbnList .
+  :isbn ?isbnList ;
+  :handle ?handle .
 
   # Include page count
   ?pageCount a :PageCount ;
@@ -61,7 +62,8 @@ CONSTRUCT {
   :affiliation ?affiliation ;
   :role ?roleType ;
   :verificationStatus ?verificationStatus ;
-  :name ?contributorName .
+  :name ?contributorName ;
+  :orcid ?orcid .
 }
 
 WHERE {
@@ -199,14 +201,13 @@ WHERE {
     }
     OPTIONAL { ?organization :country ?country }
   } UNION {
-    # Find all contributors with the role of Creator
+    # Find all contributors (all roles, not just Creator)
     ?publication :entityDescription ?entityDescription .
     ?entityDescription :contributor ?contributor .
 
     ?contributor :identity ?personId ;
     :role ?role .
     ?role a ?roleType .
-    FILTER (?roleType = :Creator)
 
     OPTIONAL {
       BIND(IF(EXISTS { ?personId :verificationStatus "Verified" }, "Verified", "NotVerified")
@@ -221,6 +222,7 @@ WHERE {
         FILTER(?otherName > ?contributorName)
       }
     }
+    OPTIONAL { ?personId :orcid ?orcid }
 
     # Find all valid affiliations for the contributor
     OPTIONAL {
@@ -247,5 +249,12 @@ WHERE {
       } AS ?isInternationalCollaboration
       )
     }
+  } UNION {
+    ?publication :handle ?handle .
+  } UNION {
+    ?publication :additionalIdentifier ?additionalId .
+    ?additionalId a :HandleIdentifier ;
+                  :value ?handleValue .
+    BIND(IRI(?handleValue) AS ?handle)
   }
 }

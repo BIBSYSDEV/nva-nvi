@@ -10,7 +10,6 @@ import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidate
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequestWithSingleAffiliation;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertNonCandidateRequest;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.createCandidateDao;
-import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.setupReportedCandidate;
 import static no.sikt.nva.nvi.common.db.DbApprovalStatusFixtures.randomApprovalDao;
 import static no.sikt.nva.nvi.common.db.DbCandidateFixtures.randomCandidateBuilder;
 import static no.sikt.nva.nvi.common.db.DbPointCalculationFixtures.randomPointCalculationBuilder;
@@ -52,6 +51,7 @@ import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import java.io.IOException;
 import java.net.URI;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -82,6 +82,7 @@ import no.sikt.nva.nvi.index.model.document.NviContributor;
 import no.sikt.nva.nvi.index.model.document.OrganizationType;
 import no.sikt.nva.nvi.index.utils.CandidateToIndexDocumentMapper;
 import no.unit.nva.s3.S3Driver;
+import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.stubs.FakeS3Client;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UnixPath;
@@ -105,7 +106,7 @@ class IndexDocumentHandlerTest {
   private static final String JSON_PTR_APPROVALS = "/approvals";
   private static final Environment ENVIRONMENT = getIndexDocumentHandlerEnvironment();
   private static final String EXPANDED_RESOURCES_BUCKET = "EXPANDED_RESOURCES_BUCKET";
-  private static final Context CONTEXT = mock(Context.class);
+  private static final Context CONTEXT = new FakeContext();
   private static final String BUCKET_NAME = ENVIRONMENT.readEnv(EXPANDED_RESOURCES_BUCKET);
   private static final String INDEX_DLQ = "INDEX_DLQ";
   private static final String INDEX_DLQ_URL = ENVIRONMENT.readEnv(INDEX_DLQ);
@@ -120,7 +121,7 @@ class IndexDocumentHandlerTest {
   private FakeSqsClient sqsClient;
   private TestScenario scenario;
 
-  public static Stream<Arguments> channelTypeIssnProvider() {
+  private static Stream<Arguments> channelTypeIssnProvider() {
     return Stream.of(
         Arguments.of(ChannelType.JOURNAL, true),
         Arguments.of(ChannelType.JOURNAL, false),
@@ -258,11 +259,7 @@ class IndexDocumentHandlerTest {
 
   @Test
   void shouldBuildIndexDocumentWithReportedPeriodWhenCandidateIsReported() {
-    // Using repository to create reported candidate because setting Candidate as reported is not
-    // implemented yet
-    // TODO: Use Candidate.setReported when implemented
-    var dao = setupReportedCandidate(candidateRepository, String.valueOf(CURRENT_YEAR));
-    var candidate = candidateService.getCandidateByIdentifier(dao.identifier());
+    var candidate = scenario.setupReportedCandidate(String.valueOf(CURRENT_YEAR));
     var expectedIndexDocument =
         setupPublicationLoaderMockAndGenerateExpectedDocument(candidate).indexDocument();
     var event = createEvent(candidate.identifier());
@@ -335,7 +332,8 @@ class IndexDocumentHandlerTest {
     var publicationDto =
         publicationDtoMatchingCandidate(candidate).withContributors(allContributors).build();
     mockPublicationLoaderService(candidate, publicationDto);
-    var expectedDocument = IndexDocumentWithConsumptionAttributes.from(candidate, publicationDto);
+    var expectedDocument =
+        IndexDocumentWithConsumptionAttributes.from(candidate, publicationDto, ENVIRONMENT);
     var event = createEvent(candidate.identifier());
     handler.handleRequest(event, CONTEXT);
     var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate)));
@@ -356,7 +354,8 @@ class IndexDocumentHandlerTest {
     var publicationDto = builder.build();
     mockPublicationLoaderService(candidate, publicationDto);
     var expectedIndexDocument =
-        new CandidateToIndexDocumentMapper(candidate, publicationDto).toIndexDocument();
+        new CandidateToIndexDocumentMapper(candidate, publicationDto, ENVIRONMENT)
+            .toIndexDocument();
     var event = createEvent(candidate.identifier());
     handler.handleRequest(event, CONTEXT);
     var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();
@@ -529,6 +528,7 @@ class IndexDocumentHandlerTest {
         randomCandidateBuilder(true)
             .pointCalculation(pointCalculation)
             .reportStatus(ReportStatus.REPORTED)
+            .reportedDate(Instant.now())
             .build();
     var candidateDao = createCandidateDao(dbCandidate);
     candidateRepository.create(candidateDao, emptyList());
@@ -611,7 +611,7 @@ class IndexDocumentHandlerTest {
       setupPublicationLoaderMockAndGenerateExpectedDocument(Candidate candidate) {
     var publicationDto = publicationDtoMatchingCandidate(candidate).build();
     mockPublicationLoaderService(candidate, publicationDto);
-    return IndexDocumentWithConsumptionAttributes.from(candidate, publicationDto);
+    return IndexDocumentWithConsumptionAttributes.from(candidate, publicationDto, ENVIRONMENT);
   }
 
   private void mockPublicationLoaderService(Candidate candidate, PublicationDto publicationDto) {

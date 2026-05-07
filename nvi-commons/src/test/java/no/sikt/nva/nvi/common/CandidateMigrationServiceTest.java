@@ -12,6 +12,7 @@ import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Function;
@@ -90,7 +91,8 @@ class CandidateMigrationServiceTest {
     var dbDetails = randomPublicationBuilder(publication.identifier(), topLevelInstitution);
     var builder =
         randomCandidateBuilder(topLevelInstitution, dbDetails.build())
-            .reportStatus(ReportStatus.REPORTED);
+            .reportStatus(ReportStatus.REPORTED)
+            .reportedDate(Instant.now());
     var dbCandidate = customizer.apply(builder).build();
     return createCandidateInRepository(candidateRepository, dbCandidate);
   }

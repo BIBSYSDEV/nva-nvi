@@ -1,16 +1,24 @@
 package no.sikt.nva.nvi.index.utils;
 
+import static java.util.Collections.emptyList;
 import static no.sikt.nva.nvi.test.TestUtils.randomBigDecimal;
+import static no.sikt.nva.nvi.test.TestUtils.randomYear;
+import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import java.net.URI;
+import java.util.Set;
+import no.sikt.nva.nvi.common.EnvironmentFixtures;
+import no.sikt.nva.nvi.common.model.PublicationDate;
 import no.sikt.nva.nvi.common.model.SampleCandidateGenerator;
 import no.sikt.nva.nvi.common.model.Sector;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.service.model.PublicationDetails;
 import no.sikt.nva.nvi.index.ExpandedResourceGenerator;
 import no.sikt.nva.nvi.index.model.document.ApprovalView;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
@@ -18,6 +26,7 @@ import no.unit.nva.auth.uriretriever.UriRetriever;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class NviCandidateIndexDocumentGeneratorTest {
 
@@ -61,15 +70,60 @@ class NviCandidateIndexDocumentGeneratorTest {
     assertNull(approval.sector());
   }
 
+  @Test
+  void shouldPopulateHandlesInIndexDocumentFromCandidatePublicationDetails() {
+    var expectedHandles = Set.of(randomUri(), randomUri());
+    var publicationDetails = publicationDetailsWithHandles(expectedHandles);
+    var candidate =
+        new SampleCandidateGenerator().withPublicationDetails(publicationDetails).build();
+
+    var indexDocument = generateIndexDocument(candidate);
+
+    assertThat(indexDocument.publicationDetails().handles())
+        .containsExactlyInAnyOrderElementsOf(expectedHandles);
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  void shouldPopulateRboInstitutionInIndexDocumentApprovalView(boolean rboInstitution) {
+    var institutionId = randomUri();
+    var candidate = candidateWithRboInstitution(institutionId, rboInstitution);
+
+    var indexDocument = generateIndexDocument(candidate);
+
+    var approval = getApprovalView(indexDocument, institutionId);
+
+    assertEquals(rboInstitution, approval.rboInstitution());
+  }
+
+  private static PublicationDetails publicationDetailsWithHandles(Set<URI> handles) {
+    return PublicationDetails.builder()
+        .withId(randomUri())
+        .withTitle(randomString())
+        .withPublicationDate(new PublicationDate(randomYear(), null, null))
+        .withNviCreators(emptyList())
+        .withHandles(handles)
+        .build();
+  }
+
   private static Candidate candidateWithInstitutionSector(URI institutionId, Sector sector) {
     return new SampleCandidateGenerator()
         .withInstitutionPoints(institutionId, sector, randomBigDecimal())
         .build();
   }
 
+  private static Candidate candidateWithRboInstitution(URI institutionId, boolean rboInstitution) {
+    return new SampleCandidateGenerator()
+        .withInstitutionPoints(institutionId, Sector.UHI, rboInstitution, randomBigDecimal())
+        .build();
+  }
+
   private static NviCandidateIndexDocument generateIndexDocument(Candidate candidate) {
     return new NviCandidateIndexDocumentGenerator(
-            mock(UriRetriever.class), expandedResourceFromCandidate(candidate), candidate)
+            mock(UriRetriever.class),
+            expandedResourceFromCandidate(candidate),
+            candidate,
+            EnvironmentFixtures.getGlobalEnvironment())
         .generateDocument();
   }
 

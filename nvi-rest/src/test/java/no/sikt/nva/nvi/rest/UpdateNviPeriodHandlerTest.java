@@ -9,7 +9,6 @@ import static no.sikt.nva.nvi.rest.EnvironmentFixtures.UPDATE_NVI_PERIOD_HANDLER
 import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -28,6 +27,7 @@ import no.sikt.nva.nvi.common.service.NviPeriodServiceThrowingTransactionExcepti
 import no.sikt.nva.nvi.common.service.model.NviPeriod;
 import no.sikt.nva.nvi.rest.model.UpsertNviPeriodRequest;
 import no.sikt.nva.nvi.rest.upsert.UpdateNviPeriodHandler;
+import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
@@ -37,7 +37,7 @@ import org.zalando.problem.Problem;
 
 class UpdateNviPeriodHandlerTest {
 
-  private static final Context CONTEXT = mock(Context.class);
+  private static final Context CONTEXT = new FakeContext();
   private static final URI ORGANIZATION = randomOrganizationId();
   private static final UserInstance ADMIN_USER = createAdminUserInstance(ORGANIZATION);
   private ByteArrayOutputStream output;

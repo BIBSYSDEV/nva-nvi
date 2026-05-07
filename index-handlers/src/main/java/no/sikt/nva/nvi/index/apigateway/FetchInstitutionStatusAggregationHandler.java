@@ -8,7 +8,7 @@ import static nva.commons.core.attempt.Try.attempt;
 import com.amazonaws.services.lambda.runtime.Context;
 import java.net.HttpURLConnection;
 import java.net.URI;
-import no.sikt.nva.nvi.index.aws.OpenSearchClient;
+import no.sikt.nva.nvi.index.aws.CandidateSearchClient;
 import no.sikt.nva.nvi.index.model.report.InstitutionStatusAggregationReport;
 import no.sikt.nva.nvi.index.model.report.InstitutionStatusAggregationReportMapper;
 import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
@@ -26,17 +26,17 @@ public class FetchInstitutionStatusAggregationHandler
   public static final String PATH_PARAM_YEAR = "year";
   public static final String AGGREGATION =
       ORGANIZATION_APPROVAL_STATUS_AGGREGATION.getAggregationName();
-  private final OpenSearchClient openSearchClient;
+  private final CandidateSearchClient searchClient;
 
   @JacocoGenerated
   public FetchInstitutionStatusAggregationHandler() {
-    this(OpenSearchClient.defaultOpenSearchClient(), new Environment());
+    this(CandidateSearchClient.defaultOpenSearchClient(), new Environment());
   }
 
   public FetchInstitutionStatusAggregationHandler(
-      OpenSearchClient openSearchClient, Environment environment) {
+      CandidateSearchClient searchClient, Environment environment) {
     super(Void.class, environment);
-    this.openSearchClient = openSearchClient;
+    this.searchClient = searchClient;
   }
 
   @Override
@@ -70,7 +70,7 @@ public class FetchInstitutionStatusAggregationHandler
             .withYear(year)
             .withTopLevelCristinOrg(requestedInstitution)
             .build();
-    var searchResponse = attempt(() -> openSearchClient.search(searchParameters)).orElseThrow();
+    var searchResponse = attempt(() -> searchClient.search(searchParameters)).orElseThrow();
     return searchResponse.aggregations().get(AGGREGATION);
   }
 }

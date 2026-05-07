@@ -6,7 +6,6 @@ dependencies {
     testFixturesAnnotationProcessor nvaCatalog.errorprone
     testImplementation nvaCatalog.aws.sdk2.sns
     testImplementation nvaCatalog.aws.sdk2.sqs
-    testImplementation nvaCatalog.junit.platform.suite
     testImplementation nvaCatalog.assertj.core
     testImplementation nvaCatalog.aws.java.sdk.core
     testImplementation nvaCatalog.aws.lambda.core
@@ -35,6 +34,8 @@ dependencies {
 }
 
 test {
+    testDefinitionDirs.from("src/test/resources/features")
+
     environment("API_HOST", "api.fake.nva.aws.unit.no")
     environment("BACKEND_CLIENT_AUTH_URL", "api.fake.nva.aws.unit.no/auth")
     environment("CANDIDATE_DLQ_URL", "http://localhost:3000/candidate-DLQ")

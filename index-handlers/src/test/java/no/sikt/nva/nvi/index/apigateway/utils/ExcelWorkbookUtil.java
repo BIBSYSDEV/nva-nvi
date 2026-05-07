@@ -1,14 +1,17 @@
 package no.sikt.nva.nvi.index.apigateway.utils;
 
+import static no.sikt.nva.nvi.common.utils.DecimalUtils.adjustScaleAndRoundingMode;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.INSTITUTION_ID;
 import static no.sikt.nva.nvi.index.model.report.InstitutionReportHeader.PUBLICATION_LANGUAGE;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import no.sikt.nva.nvi.index.model.report.InstitutionReportHeader;
 import no.sikt.nva.nvi.index.xlsx.ExcelWorkbookGenerator;
+import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.xssf.usermodel.XSSFRow;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -75,7 +78,14 @@ public class ExcelWorkbookUtil {
   private static List<String> extractRow(XSSFRow headerRow) {
     var headers = new ArrayList<String>();
     for (var cellCounter = 0; cellCounter < headerRow.getLastCellNum(); cellCounter++) {
-      headers.add(headerRow.getCell(cellCounter).getStringCellValue());
+      var cellValue = headerRow.getCell(cellCounter);
+      if (cellValue.getCellType() == CellType.NUMERIC) {
+        var bigValue = BigDecimal.valueOf(cellValue.getNumericCellValue());
+        var normalizedValue = adjustScaleAndRoundingMode(bigValue);
+        headers.add(normalizedValue.toString());
+      } else {
+        headers.add(cellValue.getStringCellValue());
+      }
     }
     return headers;
   }

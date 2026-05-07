@@ -31,7 +31,8 @@ public record ApprovalView(
     Set<URI> involvedOrganizations,
     String assignee,
     GlobalApprovalStatus globalApprovalStatus,
-    String sector) {
+    String sector,
+    boolean rboInstitution) {
 
   public ApprovalView {
     organizationSummaries = copyOfNullable(organizationSummaries);
@@ -47,7 +48,8 @@ public record ApprovalView(
       Set<URI> involvedOrganizations,
       String assignee,
       GlobalApprovalStatus globalApprovalStatus,
-      String sector) {
+      String sector,
+      boolean rboInstitution) {
     this(
         institutionId,
         deriveOrganizationSummaries(points, approvalStatus, globalApprovalStatus),
@@ -57,7 +59,8 @@ public record ApprovalView(
         involvedOrganizations,
         assignee,
         globalApprovalStatus,
-        sector);
+        sector,
+        rboInstitution);
   }
 
   private static List<OrganizationSummary> deriveOrganizationSummaries(
@@ -127,6 +130,7 @@ public record ApprovalView(
     private String assignee;
     private GlobalApprovalStatus globalApprovalStatus;
     private String sector;
+    private boolean rboInstitution;
 
     private Builder() {}
 
@@ -170,6 +174,11 @@ public record ApprovalView(
       return this;
     }
 
+    public Builder withRboInstitution(boolean rboInstitution) {
+      this.rboInstitution = rboInstitution;
+      return this;
+    }
+
     public ApprovalView build() {
       return new ApprovalView(
           institutionId,
@@ -179,7 +188,8 @@ public record ApprovalView(
           involvedOrganizations,
           assignee,
           globalApprovalStatus,
-          sector);
+          sector,
+          rboInstitution);
     }
   }
 }

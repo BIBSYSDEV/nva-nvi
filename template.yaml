@@ -25,7 +25,7 @@ Globals:
   Api:
     Cors:
       AllowMethods: "'PUT, GET,OPTIONS,DELETE,POST'"
-      AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,Location'"
+      AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,Location,Accept'"
       AllowOrigin: "'*'"
 
 Parameters:
@@ -44,6 +44,10 @@ Parameters:
     Type: "AWS::SSM::Parameter::Value<String>"
     Description: The Api domain
     Default: /NVA/ApiDomain
+  NvaApplicationDomain:
+    Type: AWS::SSM::Parameter::Value<String>
+    Default: /NVA/ApplicationDomain
+    Description: Domain-name for the NVA frontend
   EventBusName:
     Type: AWS::SSM::Parameter::Value<String>
     Default: /NVA/Events/EventsBusName
@@ -112,6 +116,9 @@ Parameters:
     Type: Number
     Description: Timeout in seconds for functions that parse JSON-LD documents. These need a high timeout in order to handle unusually large documents.
     Default: 300 # 5 minutes
+  ReportsBucketName:
+    Type: String
+    Default: "reports"
 
 Conditions:
   WithSuffix: !Not [!Equals [!Ref Suffix, ""]]
@@ -342,6 +349,19 @@ Resources:
     Type: AWS::SQS::Queue
     Properties:
       MessageRetentionPeriod: 1209600 #14 days
+  #=============================== For report generation ==========================================
+  ReportQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      VisibilityTimeout: 5400
+      MessageRetentionPeriod: 1209600 #14 days
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt ReportQueueDLQ.Arn
+        maxReceiveCount: 3
+  ReportQueueDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      MessageRetentionPeriod: 1209600 #14 days
 
   #============================= Permissions =======================================================
   BasicWriteLogRole:
@@ -437,6 +457,10 @@ Resources:
                   - s3:Get*
                   - s3:List*
                   - s3:PutObject
+                  - s3:CreateMultipartUpload
+                  - s3:UploadPart
+                  - s3:CompleteMultipartUpload
+                  - s3:AbortMultipartUpload
                   - secretsmanager:*
                 Resource: "*"
         - PolicyName: Events
@@ -490,6 +514,8 @@ Resources:
                   - !Ref CristinImportNviQueueArn
                   - !GetAtt BatchJobWorkQueue.Arn
                   - !GetAtt BatchJobDLQ.Arn
+                  - !GetAtt ReportQueue.Arn
+                  - !GetAtt ReportQueueDLQ.Arn
         - PolicyName: publishToSnsTopic
           PolicyDocument:
             Version: "2012-10-17"
@@ -732,7 +758,6 @@ Resources:
       Environment:
         Variables:
           EXPANDED_RESOURCES_BUCKET: !Ref ResourcesBucket
-          EVALUATION_DLQ_URL: !Ref EvaluationDLQ
       Events:
         SqsEvent:
           Type: SQS
@@ -920,6 +945,26 @@ Resources:
           Type: SQS
           Properties:
             Queue: !Ref CristinImportNviQueueArn
+
+  GenerateReportHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: index-handlers
+      Handler: no.sikt.nva.nvi.index.report.GenerateReportHandler::handleRequest
+      Role: !GetAtt NvaNviRole.Arn
+      Timeout: 900
+      MemorySize: 1536
+      Environment:
+        Variables:
+          NVI_REPORTS_BUCKET: !Ref ReportsBucket
+      Events:
+        SQSEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt ReportQueue.Arn
+            BatchSize: 1
+            FunctionResponseTypes:
+              - ReportBatchItemFailures
 
   #==========================Manually triggered functions=============================================
 
@@ -1225,9 +1270,9 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: index-handlers
-      Handler: no.sikt.nva.nvi.index.apigateway.FetchReportHandler::handleRequest
+      Handler: no.sikt.nva.nvi.index.report.FetchReportHandler::handleRequest
       Role: !GetAtt NvaNviRole.Arn
-      Timeout: 20
+      Timeout: 600
       MemorySize: 1536
       AutoPublishAlias: live
       SnapStart:
@@ -1235,6 +1280,8 @@ Resources:
       Environment:
         Variables:
           ALLOWED_ORIGIN: !Ref AllowedOrigins
+          NVI_REPORTS_BUCKET: !Ref ReportsBucket
+          REPORT_QUEUE: !Ref ReportQueue
       Events:
         AllPeriodsReport:
           Type: Api
@@ -1615,3 +1662,44 @@ Resources:
       ComparisonOperator: GreaterThanOrEqualToThreshold
       AlarmActions:
         - !Ref SlackSnsArn
+
+  ReportQueueDLQAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: NVI report generation failed
+      AlarmDescription: Report generation failed. Check messages on ReportQueueDLQ.
+      MetricName: ApproximateNumberOfMessagesVisible
+      Namespace: AWS/SQS
+      Statistic: Sum
+      Dimensions:
+        - Name: QueueName
+          Value: !GetAtt ReportQueueDLQ.QueueName
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      AlarmActions:
+        - !Ref SlackSnsArn
+
+  ReportsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "${ReportsBucketName}-${AWS::AccountId}"
+      LifecycleConfiguration:
+        Rules:
+          - Id: DeleteContentAfter3Days
+            Status: Enabled
+            ExpirationInDays: 3
+          - Id: AbortIncompleteMultipartUploads
+            Status: Enabled
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 1
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders:
+              - "*"
+            AllowedMethods:
+              - GET
+            AllowedOrigins:
+              - !Sub "https://${ApiDomain}"
+              - !Sub "https://${NvaApplicationDomain}"

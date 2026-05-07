@@ -55,7 +55,7 @@ class UpdateNviCandidateStatusHandlerTest extends BaseCandidateRestHandlerTest {
   private static final String STATUS_PENDING = "PENDING";
   private static final String STATUS_REJECTED = "REJECTED";
 
-  public static Stream<Arguments> approvalStatusProvider() {
+  private static Stream<Arguments> approvalStatusProvider() {
     return Stream.of(
         Arguments.of(ApprovalStatus.PENDING, ApprovalStatus.APPROVED),
         Arguments.of(ApprovalStatus.PENDING, ApprovalStatus.REJECTED),

@@ -15,6 +15,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.client.model.Organization;
 import no.sikt.nva.nvi.common.dto.ContributorDto;
+import no.sikt.nva.nvi.common.dto.ContributorRole;
 import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
 import no.sikt.nva.nvi.common.dto.PublicationDto;
 import no.sikt.nva.nvi.common.model.ScientificValue;
@@ -26,6 +27,7 @@ import no.sikt.nva.nvi.common.service.model.Approval;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.InstitutionPoints;
 import no.sikt.nva.nvi.common.service.model.PageCount;
+import no.sikt.nva.nvi.common.utils.EnvironmentUriFactory;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.ApprovalView;
 import no.sikt.nva.nvi.index.model.document.Contributor;
@@ -39,16 +41,20 @@ import no.sikt.nva.nvi.index.model.document.Pages;
 import no.sikt.nva.nvi.index.model.document.PublicationChannel;
 import no.sikt.nva.nvi.index.model.document.PublicationDetails;
 import no.sikt.nva.nvi.index.model.document.ReportingPeriod;
+import nva.commons.core.Environment;
 
 @SuppressWarnings({"PMD.CouplingBetweenObjects", "PMD.GodClass"})
 public class CandidateToIndexDocumentMapper {
 
   private final Candidate candidate;
   private final PublicationDto publicationDto;
+  private final Environment environment;
 
-  public CandidateToIndexDocumentMapper(Candidate candidate, PublicationDto publicationDto) {
+  public CandidateToIndexDocumentMapper(
+      Candidate candidate, PublicationDto publicationDto, Environment environment) {
     this.candidate = candidate;
     this.publicationDto = publicationDto;
+    this.environment = environment;
   }
 
   public NviCandidateIndexDocument toIndexDocument() {
@@ -123,7 +129,10 @@ public class CandidateToIndexDocumentMapper {
 
   // TODO: Remove when role is available from Candidate
   private static String getContributorRole(ContributorDto contributorDto) {
-    return nonNull(contributorDto.role()) ? contributorDto.role().getValue() : null;
+    return Optional.ofNullable(contributorDto.roles()).orElse(Collections.emptyList()).stream()
+        .findFirst()
+        .map(ContributorRole::value)
+        .orElse(null);
   }
 
   private List<OrganizationType> buildNviAffiliations(
@@ -261,8 +270,8 @@ public class CandidateToIndexDocumentMapper {
   private NviCandidateIndexDocument buildDocument(
       List<ApprovalView> approvals, PublicationDetails publicationDetails) {
     return NviCandidateIndexDocument.builder()
-        .withId(candidate.getId())
-        .withContext(candidate.getContextUri())
+        .withId(EnvironmentUriFactory.candidateId(environment, candidate.identifier()))
+        .withContext(EnvironmentUriFactory.context(environment))
         .withIsApplicable(candidate.isApplicable())
         .withIdentifier(candidate.identifier())
         .withReportingPeriod(ReportingPeriod.fromCandidate(candidate))

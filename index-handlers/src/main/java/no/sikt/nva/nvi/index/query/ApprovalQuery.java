@@ -1,11 +1,6 @@
 package no.sikt.nva.nvi.index.query;
 
-import static java.util.Collections.emptyList;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.jsonPathOf;
-import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.APPROVED;
-import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.NEW;
-import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.PENDING;
-import static no.sikt.nva.nvi.index.model.document.ApprovalStatus.REJECTED;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.existsQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.fieldValueQuery;
 import static no.sikt.nva.nvi.index.utils.QueryFunctions.matchAtLeastOne;
@@ -66,18 +61,8 @@ public record ApprovalQuery(
 
   private Optional<Query> statusQuery() {
     return allowedStatuses.stream()
-        .map(ApprovalQuery::toStatusQuery)
-        .flatMap(List::stream)
+        .map(ApprovalQuery::approvalStatusIs)
         .reduce(QueryFunctions::matchAtLeastOne);
-  }
-
-  private static List<Query> toStatusQuery(ApprovalStatus status) {
-    return switch (status) {
-      case PENDING -> List.of(approvalStatusIs(NEW), approvalStatusIs(PENDING));
-      case APPROVED -> List.of(approvalStatusIs(APPROVED));
-      case REJECTED -> List.of(approvalStatusIs(REJECTED));
-      default -> emptyList();
-    };
   }
 
   private Optional<Query> assigneeQuery() {

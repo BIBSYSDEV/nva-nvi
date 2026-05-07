@@ -6,20 +6,32 @@ import static no.sikt.nva.nvi.index.report.ReportConstants.INSTITUTIONS_PATH_SEG
 import static no.sikt.nva.nvi.index.report.ReportConstants.REPORTS_PATH_SEGMENT;
 
 import java.net.URI;
+import java.util.List;
+import nva.commons.apigateway.MediaType;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
 
-public record InstitutionReportRequest(URI queryId, String period, URI institutionId)
+public record InstitutionReportRequest(
+    URI queryId, String period, URI institutionId, ReportFormat reportType)
     implements ReportRequest {
 
   private static final String CRISTIN_PATH_SEGMENT = "cristin";
   private static final String ORGANIZATION_PATH_SEGMENT = "organization";
 
   public static InstitutionReportRequest from(
-      Environment environment, String period, String institutionIdentifier) {
+      Environment environment,
+      String period,
+      String institutionIdentifier,
+      ReportFormat reportType) {
     var queryId = getQueryId(environment, period, institutionIdentifier);
     var institutionId = getInstitutionId(environment, institutionIdentifier);
-    return new InstitutionReportRequest(queryId, period, institutionId);
+    return new InstitutionReportRequest(queryId, period, institutionId, reportType);
+  }
+
+  @Override
+  public boolean hasSupportedReportType() {
+    return List.of(MediaType.JSON_UTF_8, MediaType.OOXML_SHEET, MediaType.CSV_UTF_8)
+        .contains(reportType.getMediaType());
   }
 
   private static URI getQueryId(

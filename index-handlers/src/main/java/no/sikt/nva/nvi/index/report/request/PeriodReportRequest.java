@@ -5,14 +5,22 @@ import static no.sikt.nva.nvi.index.report.ReportConstants.BASE_PATH_KEY;
 import static no.sikt.nva.nvi.index.report.ReportConstants.REPORTS_PATH_SEGMENT;
 
 import java.net.URI;
+import nva.commons.apigateway.MediaType;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
 
-public record PeriodReportRequest(URI queryId, String period) implements ReportRequest {
+public record PeriodReportRequest(URI queryId, String period, ReportFormat reportType)
+    implements ReportRequest {
 
-  public static PeriodReportRequest from(Environment environment, String period) {
+  public static PeriodReportRequest from(
+      Environment environment, String period, ReportFormat reportType) {
     var queryId = getQueryId(environment, period);
-    return new PeriodReportRequest(queryId, period);
+    return new PeriodReportRequest(queryId, period, reportType);
+  }
+
+  @Override
+  public boolean hasSupportedReportType() {
+    return MediaType.JSON_UTF_8.equals(reportType.getMediaType());
   }
 
   private static URI getQueryId(Environment environment, String period) {

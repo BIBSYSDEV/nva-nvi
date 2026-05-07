@@ -11,6 +11,7 @@ import no.sikt.nva.nvi.common.StorageWriter;
 import no.sikt.nva.nvi.common.dto.PublicationDto;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.index.utils.CandidateToIndexDocumentMapper;
+import nva.commons.core.Environment;
 
 @JsonSerialize
 public record IndexDocumentWithConsumptionAttributes(
@@ -26,9 +27,10 @@ public record IndexDocumentWithConsumptionAttributes(
   }
 
   public static IndexDocumentWithConsumptionAttributes from(
-      Candidate candidate, PublicationDto publicationDto) {
+      Candidate candidate, PublicationDto publicationDto, Environment environment) {
     var indexDocument =
-        new CandidateToIndexDocumentMapper(candidate, publicationDto).toIndexDocument();
+        new CandidateToIndexDocumentMapper(candidate, publicationDto, environment)
+            .toIndexDocument();
     var consumptionAttributes = ConsumptionAttributes.from(indexDocument.identifier());
     return new IndexDocumentWithConsumptionAttributes(indexDocument, consumptionAttributes);
   }

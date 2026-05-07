@@ -2,24 +2,30 @@ package no.sikt.nva.nvi.common.service.model;
 
 import static java.util.Collections.emptyList;
 import static no.sikt.nva.nvi.common.model.PointCalculationFixtures.randomPointCalculation;
+import static no.unit.nva.testutils.RandomDataGenerator.randomBoolean;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import no.sikt.nva.nvi.common.db.CandidateDao;
+import no.sikt.nva.nvi.common.db.CandidateDao.DbInstitutionPoints;
 import no.sikt.nva.nvi.common.model.PointCalculationBuilder;
 import no.sikt.nva.nvi.common.model.Sector;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 class InstitutionPointsTest {
 
   @Test
   void shouldParseEntityWithMissingFields() {
     var institutionId = randomUri();
-    var dbPoints = new CandidateDao.DbInstitutionPoints(institutionId, BigDecimal.ZERO, null, null);
+    var rboInstitution = randomBoolean();
+    var dbPoints =
+        new DbInstitutionPoints(institutionId, BigDecimal.ZERO, null, rboInstitution, null);
     var expectedPoints =
-        new InstitutionPoints(institutionId, BigDecimal.ZERO, Sector.UNKNOWN, emptyList());
+        new InstitutionPoints(
+            institutionId, BigDecimal.ZERO, Sector.UNKNOWN, rboInstitution, emptyList());
     var actualPoints = InstitutionPoints.from(dbPoints);
     assertEquals(expectedPoints, actualPoints);
   }
@@ -27,10 +33,23 @@ class InstitutionPointsTest {
   @Test
   void shouldPersistInstitutionSector() {
     var originalPoints =
-        new InstitutionPoints(randomUri(), BigDecimal.ZERO, Sector.UHI, emptyList());
-    var dbPoints = CandidateDao.DbInstitutionPoints.from(originalPoints);
+        new InstitutionPoints(
+            randomUri(), BigDecimal.ZERO, Sector.UHI, randomBoolean(), emptyList());
+    var dbPoints = DbInstitutionPoints.from(originalPoints);
     var roundTrippedPoints = InstitutionPoints.from(dbPoints);
     assertEquals(originalPoints, roundTrippedPoints);
+  }
+
+  @ParameterizedTest
+  @ValueSource(booleans = {true, false})
+  void shouldPersistInstitutionRboStatus(boolean rboInstitution) {
+    var originalPoints =
+        new InstitutionPoints(
+            randomUri(), BigDecimal.ZERO, Sector.UHI, rboInstitution, emptyList());
+
+    var roundTrippedPoints = InstitutionPoints.from(DbInstitutionPoints.from(originalPoints));
+
+    assertEquals(rboInstitution, roundTrippedPoints.rboInstitution());
   }
 
   @Test

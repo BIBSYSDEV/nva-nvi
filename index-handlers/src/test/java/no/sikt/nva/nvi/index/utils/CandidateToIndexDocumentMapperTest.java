@@ -74,7 +74,9 @@ class CandidateToIndexDocumentMapperTest {
     var candidate = createDefaultCandidate();
     var publicationDto = createDefaultPublicationDto();
 
-    var document = new CandidateToIndexDocumentMapper(candidate, publicationDto).toIndexDocument();
+    var document =
+        new CandidateToIndexDocumentMapper(candidate, publicationDto, getGlobalEnvironment())
+            .toIndexDocument();
 
     assertThat(document).isNotNull();
     assertThat(document.identifier()).isNotNull();
@@ -95,7 +97,9 @@ class CandidateToIndexDocumentMapperTest {
     var candidate = createDefaultCandidate();
     var publicationDto = createDefaultPublicationDto();
 
-    var document = new CandidateToIndexDocumentMapper(candidate, publicationDto).toIndexDocument();
+    var document =
+        new CandidateToIndexDocumentMapper(candidate, publicationDto, getGlobalEnvironment())
+            .toIndexDocument();
 
     var nviContributors = document.publicationDetails().nviContributors();
     assertThat(nviContributors).isNotEmpty();
@@ -116,7 +120,9 @@ class CandidateToIndexDocumentMapperTest {
     var candidate = createDefaultCandidate();
     var publicationDto = createDefaultPublicationDto();
 
-    var document = new CandidateToIndexDocumentMapper(candidate, publicationDto).toIndexDocument();
+    var document =
+        new CandidateToIndexDocumentMapper(candidate, publicationDto, getGlobalEnvironment())
+            .toIndexDocument();
 
     var nviContributors = document.publicationDetails().nviContributors();
     var firstContributor = nviContributors.getFirst();
@@ -134,7 +140,9 @@ class CandidateToIndexDocumentMapperTest {
     var candidate = createDefaultCandidate();
     var publicationDto = createDefaultPublicationDto();
 
-    var document = new CandidateToIndexDocumentMapper(candidate, publicationDto).toIndexDocument();
+    var document =
+        new CandidateToIndexDocumentMapper(candidate, publicationDto, getGlobalEnvironment())
+            .toIndexDocument();
 
     var siktApproval =
         document.approvals().stream()
@@ -156,7 +164,9 @@ class CandidateToIndexDocumentMapperTest {
     var candidate = createDefaultCandidate();
     var publicationDto = createDefaultPublicationDto();
 
-    var document = new CandidateToIndexDocumentMapper(candidate, publicationDto).toIndexDocument();
+    var document =
+        new CandidateToIndexDocumentMapper(candidate, publicationDto, getGlobalEnvironment())
+            .toIndexDocument();
 
     assertThat(document.publicationDetails().publicationChannel().name())
         .isEqualTo(JOURNAL_OF_TESTING.name());
@@ -167,7 +177,9 @@ class CandidateToIndexDocumentMapperTest {
     var candidate = createDefaultCandidate();
     var publicationDto = createDefaultPublicationDto();
 
-    var document = new CandidateToIndexDocumentMapper(candidate, publicationDto).toIndexDocument();
+    var document =
+        new CandidateToIndexDocumentMapper(candidate, publicationDto, getGlobalEnvironment())
+            .toIndexDocument();
 
     assertThat(document.publicationDetails().publicationChannel().printIssn())
         .isEqualTo(JOURNAL_OF_TESTING.printIssn());
@@ -178,7 +190,9 @@ class CandidateToIndexDocumentMapperTest {
     var candidate = createDefaultCandidate();
     var publicationDto = createDefaultPublicationDto();
 
-    var document = new CandidateToIndexDocumentMapper(candidate, publicationDto).toIndexDocument();
+    var document =
+        new CandidateToIndexDocumentMapper(candidate, publicationDto, getGlobalEnvironment())
+            .toIndexDocument();
 
     var contributors = document.publicationDetails().contributors();
     assertThat(contributors).isNotEmpty();
@@ -201,7 +215,9 @@ class CandidateToIndexDocumentMapperTest {
             .withContributors(List.of(createVerifiedCreatorContributor(), nonNviContributor))
             .build();
 
-    var document = new CandidateToIndexDocumentMapper(candidate, publicationDto).toIndexDocument();
+    var document =
+        new CandidateToIndexDocumentMapper(candidate, publicationDto, getGlobalEnvironment())
+            .toIndexDocument();
 
     var contributors = document.publicationDetails().contributors();
     var nonNviContributors = contributors.stream().filter(Contributor.class::isInstance).toList();
@@ -215,7 +231,9 @@ class CandidateToIndexDocumentMapperTest {
     var candidate = createDefaultCandidate();
     var publicationDto = createDefaultPublicationDto();
 
-    var document = new CandidateToIndexDocumentMapper(candidate, publicationDto).toIndexDocument();
+    var document =
+        new CandidateToIndexDocumentMapper(candidate, publicationDto, getGlobalEnvironment())
+            .toIndexDocument();
 
     assertThat(document.publicationDetails().contributorsCount())
         .isEqualTo(candidate.publicationDetails().creatorCount());
@@ -226,7 +244,9 @@ class CandidateToIndexDocumentMapperTest {
     var candidate = createDefaultCandidate();
     var publicationDto = createDefaultPublicationDto();
 
-    var document = new CandidateToIndexDocumentMapper(candidate, publicationDto).toIndexDocument();
+    var document =
+        new CandidateToIndexDocumentMapper(candidate, publicationDto, getGlobalEnvironment())
+            .toIndexDocument();
 
     var siktApproval =
         document.approvals().stream()
@@ -245,7 +265,9 @@ class CandidateToIndexDocumentMapperTest {
     var candidate = createCandidateWithApprovals(candidateId, approvals);
     var publicationDto = createDefaultPublicationDto();
 
-    var document = new CandidateToIndexDocumentMapper(candidate, publicationDto).toIndexDocument();
+    var document =
+        new CandidateToIndexDocumentMapper(candidate, publicationDto, getGlobalEnvironment())
+            .toIndexDocument();
 
     var siktApproval =
         document.approvals().stream()
@@ -271,7 +293,9 @@ class CandidateToIndexDocumentMapperTest {
     var publicationDto =
         createPublicationDtoBuilder().withPublicationChannels(List.of(channelDto)).build();
 
-    var document = new CandidateToIndexDocumentMapper(candidate, publicationDto).toIndexDocument();
+    var document =
+        new CandidateToIndexDocumentMapper(candidate, publicationDto, getGlobalEnvironment())
+            .toIndexDocument();
 
     assertThat(document.publicationDetails().publicationChannel().name())
         .isEqualTo("Matched by type");
@@ -285,7 +309,9 @@ class CandidateToIndexDocumentMapperTest {
     var candidate = createCandidateWithChannel(channel);
     var publicationDto = createPublicationDtoBuilder().withPublicationChannels(List.of()).build();
 
-    var document = new CandidateToIndexDocumentMapper(candidate, publicationDto).toIndexDocument();
+    var document =
+        new CandidateToIndexDocumentMapper(candidate, publicationDto, getGlobalEnvironment())
+            .toIndexDocument();
 
     assertThat(document.publicationDetails().publicationChannel()).isNotNull();
     assertThat(document.publicationDetails().publicationChannel().type()).isNull();
@@ -298,7 +324,9 @@ class CandidateToIndexDocumentMapperTest {
     var candidate = createDefaultCandidate();
     var publicationDto = createDefaultPublicationDto();
 
-    var document = new CandidateToIndexDocumentMapper(candidate, publicationDto).toIndexDocument();
+    var document =
+        new CandidateToIndexDocumentMapper(candidate, publicationDto, getGlobalEnvironment())
+            .toIndexDocument();
 
     assertThat(document.approvals()).hasSize(2);
     assertThat(document.numberOfApprovals()).isEqualTo(2);
@@ -340,7 +368,9 @@ class CandidateToIndexDocumentMapperTest {
             .withContributors(List.of(createVerifiedCreatorContributor(), unverifiedContributor))
             .build();
 
-    var document = new CandidateToIndexDocumentMapper(candidate, publicationDto).toIndexDocument();
+    var document =
+        new CandidateToIndexDocumentMapper(candidate, publicationDto, getGlobalEnvironment())
+            .toIndexDocument();
 
     var nviContributors = document.publicationDetails().nviContributors();
     assertThat(nviContributors).hasSize(2);
@@ -359,7 +389,9 @@ class CandidateToIndexDocumentMapperTest {
     var candidate = createDefaultCandidate();
     var publicationDto = createDefaultPublicationDto();
 
-    var document = new CandidateToIndexDocumentMapper(candidate, publicationDto).toIndexDocument();
+    var document =
+        new CandidateToIndexDocumentMapper(candidate, publicationDto, getGlobalEnvironment())
+            .toIndexDocument();
 
     var pages = document.publicationDetails().pages();
     assertThat(pages).isNotNull();
@@ -373,7 +405,9 @@ class CandidateToIndexDocumentMapperTest {
     var candidate = createDefaultCandidate();
     var publicationDto = createDefaultPublicationDto();
 
-    var document = new CandidateToIndexDocumentMapper(candidate, publicationDto).toIndexDocument();
+    var document =
+        new CandidateToIndexDocumentMapper(candidate, publicationDto, getGlobalEnvironment())
+            .toIndexDocument();
 
     var publicationDate = document.publicationDetails().publicationDate();
     assertThat(publicationDate).isNotNull();
@@ -387,7 +421,9 @@ class CandidateToIndexDocumentMapperTest {
     var candidate = createDefaultCandidate();
     var publicationDto = createDefaultPublicationDto();
 
-    var document = new CandidateToIndexDocumentMapper(candidate, publicationDto).toIndexDocument();
+    var document =
+        new CandidateToIndexDocumentMapper(candidate, publicationDto, getGlobalEnvironment())
+            .toIndexDocument();
 
     assertThat(document.globalApprovalStatus()).isEqualTo(GlobalApprovalStatus.PENDING);
     document
@@ -403,7 +439,9 @@ class CandidateToIndexDocumentMapperTest {
     var candidate = createDefaultCandidate();
     var publicationDto = createDefaultPublicationDto();
 
-    var document = new CandidateToIndexDocumentMapper(candidate, publicationDto).toIndexDocument();
+    var document =
+        new CandidateToIndexDocumentMapper(candidate, publicationDto, getGlobalEnvironment())
+            .toIndexDocument();
 
     var nviContributors = document.publicationDetails().nviContributors();
     var firstContributor = nviContributors.getFirst();
@@ -491,9 +529,17 @@ class CandidateToIndexDocumentMapperTest {
     var institutionPoints =
         List.<InstitutionPoints>of(
             new InstitutionPoints(
-                SIKT_ID, BigDecimal.TEN, Sector.UHI, List.of(creatorAffiliationPoints.getFirst())),
+                SIKT_ID,
+                BigDecimal.TEN,
+                Sector.UHI,
+                false,
+                List.of(creatorAffiliationPoints.getFirst())),
             new InstitutionPoints(
-                NTNU_ID, BigDecimal.TEN, Sector.UHI, List.of(creatorAffiliationPoints.getLast())));
+                NTNU_ID,
+                BigDecimal.TEN,
+                Sector.UHI,
+                false,
+                List.of(creatorAffiliationPoints.getLast())));
     var pointCalculation =
         new PointCalculation(
             InstanceType.ACADEMIC_ARTICLE,
@@ -535,7 +581,7 @@ class CandidateToIndexDocumentMapperTest {
         null,
         null,
         null,
-        getGlobalEnvironment());
+        null);
   }
 
   private static NviPeriod createOpenPeriod() {

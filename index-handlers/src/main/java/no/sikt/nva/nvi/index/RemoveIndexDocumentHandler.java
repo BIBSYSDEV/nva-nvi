@@ -9,7 +9,7 @@ import com.amazonaws.services.lambda.runtime.events.SQSEvent.SQSMessage;
 import java.util.Objects;
 import java.util.UUID;
 import no.sikt.nva.nvi.common.queue.DynamoDbChangeMessage;
-import no.sikt.nva.nvi.index.aws.OpenSearchClient;
+import no.sikt.nva.nvi.index.aws.CandidateSearchClient;
 import nva.commons.core.JacocoGenerated;
 import nva.commons.core.attempt.Failure;
 import org.slf4j.Logger;
@@ -23,15 +23,15 @@ public class RemoveIndexDocumentHandler implements RequestHandler<SQSEvent, Void
   private static final String FAILED_TO_PARSE_EVENT_MESSAGE =
       "Failed to map body to DynamodbStreamRecord: {}";
   private static final String ERROR_MESSAGE = "Error message: {}";
-  private final OpenSearchClient openSearchClient;
+  private final CandidateSearchClient searchClient;
 
   @JacocoGenerated
   public RemoveIndexDocumentHandler() {
-    this(OpenSearchClient.defaultOpenSearchClient());
+    this(CandidateSearchClient.defaultOpenSearchClient());
   }
 
-  public RemoveIndexDocumentHandler(OpenSearchClient openSearchClient) {
-    this.openSearchClient = openSearchClient;
+  public RemoveIndexDocumentHandler(CandidateSearchClient searchClient) {
+    this.searchClient = searchClient;
   }
 
   @Override
@@ -53,7 +53,7 @@ public class RemoveIndexDocumentHandler implements RequestHandler<SQSEvent, Void
   }
 
   private void removeDocumentFromIndex(UUID identifier) {
-    attempt(() -> openSearchClient.removeDocumentFromIndex(identifier))
+    attempt(() -> searchClient.removeDocumentFromIndex(identifier))
         .orElse(
             failure -> {
               handleFailure(failure, FAILED_TO_REMOVE_DOCUMENT_MESSAGE, identifier.toString());

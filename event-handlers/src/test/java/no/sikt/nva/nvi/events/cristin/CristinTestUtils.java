@@ -67,7 +67,12 @@ public final class CristinTestUtils {
     var cristinId = CristinIdWrapper.from(person);
     var affiliation = cristinId.createLeafNodeOrganization();
 
-    return new ContributorDto(creatorId, null, STATUS_VERIFIED, ROLE_CREATOR, List.of(affiliation));
+    return ContributorDto.builder()
+        .withId(creatorId)
+        .withVerificationStatus(STATUS_VERIFIED)
+        .withRole(ROLE_CREATOR)
+        .withAffiliations(List.of(affiliation))
+        .build();
   }
 
   public static SampleExpandedPublicationFactory createPublicationFactory(

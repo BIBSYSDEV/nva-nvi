@@ -14,7 +14,6 @@ import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 import static no.unit.nva.testutils.RandomDataGenerator.randomUri;
 import static nva.commons.apigateway.AccessRight.MANAGE_NVI;
 import static nva.commons.apigateway.AccessRight.MANAGE_NVI_CANDIDATES;
-import static org.mockito.Mockito.mock;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -40,8 +39,10 @@ import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
+import no.sikt.nva.nvi.common.utils.EnvironmentUriFactory;
 import no.sikt.nva.nvi.common.validator.FakeViewingScopeValidator;
 import no.sikt.nva.nvi.common.validator.ViewingScopeValidator;
+import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.ApiGatewayHandler;
@@ -56,7 +57,7 @@ import org.zalando.problem.Problem;
 public abstract class BaseCandidateRestHandlerTest {
   protected static final ViewingScopeValidator mockViewingScopeValidator =
       new FakeViewingScopeValidator(true);
-  protected static final Context CONTEXT = mock(Context.class);
+  protected static final Context CONTEXT = new FakeContext();
   protected Environment environment;
   protected String resourcePathParameter;
   protected List<Organization> topLevelOrganizations;
@@ -223,5 +224,9 @@ public abstract class BaseCandidateRestHandlerTest {
         .withAccessRights(organizationId, accessRight)
         .withTopLevelCristinOrgId(organizationId)
         .build();
+  }
+
+  protected URI expectedCandidateUri(Candidate candidate) {
+    return EnvironmentUriFactory.candidateId(environment, candidate.identifier());
   }
 }

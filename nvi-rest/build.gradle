@@ -5,7 +5,6 @@ plugins {
 dependencies {
     implementation nvaCatalog.aws.sdk2.dynamodbenhanced
     implementation nvaCatalog.aws.sdk2.dynamo
-    implementation nvaCatalog.guava
     implementation nvaCatalog.httpclient5
     implementation nvaCatalog.jackson.databind
     implementation nvaLibs.apigateway

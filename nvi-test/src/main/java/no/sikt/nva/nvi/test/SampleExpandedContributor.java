@@ -14,7 +14,6 @@ import static no.sikt.nva.nvi.test.TestConstants.TYPE_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.VERIFICATION_STATUS_FIELD;
 import static no.sikt.nva.nvi.test.TestUtils.createNodeWithType;
 import static no.sikt.nva.nvi.test.TestUtils.putAsArrayIfMultipleValues;
-import static no.sikt.nva.nvi.test.TestUtils.putIfNotBlank;
 import static no.sikt.nva.nvi.test.TestUtils.putIfNotNull;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
@@ -32,7 +31,7 @@ public record SampleExpandedContributor(
     List<String> names,
     String role,
     List<SampleExpandedAffiliation> affiliations,
-    String orcId) {
+    URI orcId) {
 
   public static Builder builder() {
     return new Builder();
@@ -51,7 +50,7 @@ public record SampleExpandedContributor(
     identityNode.put(TYPE_FIELD, IDENTITY);
     putIfNotNull(identityNode, ID_FIELD, id);
     putAsArrayIfMultipleValues(identityNode, NAME_FIELD, names);
-    putIfNotBlank(identityNode, ORCID_FIELD, orcId);
+    putIfNotNull(identityNode, ORCID_FIELD, orcId);
     putAsArrayIfMultipleValues(identityNode, VERIFICATION_STATUS_FIELD, verificationStatus);
 
     contributorNode.set(IDENTITY_FIELD, identityNode);
@@ -73,7 +72,7 @@ public record SampleExpandedContributor(
     private List<String> names = List.of(randomString());
     private String role = CREATOR;
     private Collection<String> verificationStatus = List.of("NotVerified");
-    private String orcId;
+    private URI orcId;
     private List<SampleExpandedAffiliation> affiliations;
 
     private Builder() {}
@@ -108,7 +107,7 @@ public record SampleExpandedContributor(
       return this;
     }
 
-    public Builder withOrcId(String orcId) {
+    public Builder withOrcId(URI orcId) {
       this.orcId = orcId;
       return this;
     }

@@ -54,6 +54,7 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
   private final QueueClient sqsClient;
   private final String queueUrl;
   private final String dlqUrl;
+  private final Environment environment;
 
   @JacocoGenerated
   public IndexDocumentHandler() {
@@ -78,6 +79,7 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
     this.publicationLoaderService = publicationLoaderService;
     this.queueUrl = environment.readEnv(QUEUE_URL);
     this.dlqUrl = environment.readEnv(INDEX_DLQ);
+    this.environment = environment;
   }
 
   @Override
@@ -193,7 +195,7 @@ public class IndexDocumentHandler implements RequestHandler<SQSEvent, Void> {
       Candidate candidate) {
     var publicationBucketUri = candidate.publicationDetails().publicationBucketUri();
     var publicationDto = publicationLoaderService.extractAndTransform(publicationBucketUri);
-    return IndexDocumentWithConsumptionAttributes.from(candidate, publicationDto);
+    return IndexDocumentWithConsumptionAttributes.from(candidate, publicationDto, environment);
   }
 
   private void validateErrorMessage(String message) {

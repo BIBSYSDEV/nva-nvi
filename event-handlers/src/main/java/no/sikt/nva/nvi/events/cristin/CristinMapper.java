@@ -124,6 +124,7 @@ public final class CristinMapper {
         .pointCalculation(pointCalculation)
         .publicationDetails(publicationDetails)
         .reportStatus(ReportStatus.REPORTED)
+        .reportedDate(publicationDetails.modifiedDate())
         .applicable(true)
         .createdDate(publicationDetails.modifiedDate())
         .modifiedDate(publicationDetails.modifiedDate())
@@ -291,6 +292,7 @@ public final class CristinMapper {
         institutionPoints.institutionId(),
         institutionPoints.points(),
         Sector.UNKNOWN,
+        false,
         toCreatorPoints(institutionPoints));
   }
 

@@ -24,8 +24,13 @@ public final class PointCalculationFixtures {
   }
 
   public static PointCalculation randomPointCalculation(int scale, Sector sector) {
-    var firstPoint = randomInstitutionPoints(scale, sector);
-    var secondPoint = randomInstitutionPoints(scale, sector);
+    return randomPointCalculation(scale, sector, randomBoolean());
+  }
+
+  public static PointCalculation randomPointCalculation(
+      int scale, Sector sector, boolean rboInstitution) {
+    var firstPoint = randomInstitutionPoints(scale, sector, rboInstitution);
+    var secondPoint = randomInstitutionPoints(scale, sector, rboInstitution);
     var totalPoints = firstPoint.institutionPoints().add(secondPoint.institutionPoints());
     return new PointCalculation(
         InstanceType.ACADEMIC_ARTICLE,
@@ -39,12 +44,17 @@ public final class PointCalculationFixtures {
   }
 
   private static InstitutionPoints randomInstitutionPoints(int scale, Sector sector) {
+    return randomInstitutionPoints(scale, sector, randomBoolean());
+  }
+
+  private static InstitutionPoints randomInstitutionPoints(
+      int scale, Sector sector, boolean rboInstitution) {
     var institutionId = randomUri();
     var firstCreator = randomCreatorAffiliationPoints(institutionId, scale);
     var secondCreator = randomCreatorAffiliationPoints(institutionId, scale);
     var totalPoints = firstCreator.points().add(secondCreator.points());
     return new InstitutionPoints(
-        institutionId, totalPoints, sector, List.of(firstCreator, secondCreator));
+        institutionId, totalPoints, sector, rboInstitution, List.of(firstCreator, secondCreator));
   }
 
   private static InstitutionPoints.CreatorAffiliationPoints randomCreatorAffiliationPoints(

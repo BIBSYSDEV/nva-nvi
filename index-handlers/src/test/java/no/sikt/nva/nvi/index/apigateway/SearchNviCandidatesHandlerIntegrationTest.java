@@ -39,7 +39,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.index.OpenSearchContainerContext;
-import no.sikt.nva.nvi.index.aws.OpenSearchClient;
+import no.sikt.nva.nvi.index.aws.CandidateSearchClient;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.document.ReportingPeriod;
@@ -103,7 +103,7 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
     @Test
     @Disabled
     void shouldNotProduceExtremelyNestedQuery() {
-      var logAppender = LogUtils.getTestingAppender(OpenSearchClient.class);
+      var logAppender = LogUtils.getTestingAppender(CandidateSearchClient.class);
 
       handleRequest(emptyMap());
       var messages = logAppender.getMessages();
@@ -364,16 +364,23 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
       addDocumentsToIndex(docsForStatusCombinations);
     }
 
+    @Test
+    void shouldReturnAllApprovalStatusesWhenNoFilterIsApplied() {
+      var response = handleRequest(Map.of(QUERY_PARAM_SIZE, "50"));
+
+      assertThat(response.getHits())
+          .extracting(doc -> doc.getApprovalStatusForInstitution(OUR_ORGANIZATION))
+          .containsOnly(ApprovalStatus.values());
+    }
+
     @ParameterizedTest
     @MethodSource("statusQueryProvider")
-    void shouldFilterByApprovalStatus(
-        Collection<ApprovalStatus> statusTypesInQuery,
-        Collection<ApprovalStatus> expectedStatusTypesInResponse) {
+    void shouldFilterByApprovalStatus(Collection<ApprovalStatus> statusTypesInQuery) {
       var response = handleRequest(queryByStatus(statusTypesInQuery));
 
       assertThat(response.getHits())
           .extracting(doc -> doc.getApprovalStatusForInstitution(OUR_ORGANIZATION))
-          .hasSameElementsAs(expectedStatusTypesInResponse);
+          .hasSameElementsAs(statusTypesInQuery);
     }
 
     private static Map<String, String> queryByStatus(Collection<ApprovalStatus> statuses) {
@@ -525,28 +532,17 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
     }
 
     private static Stream<Arguments> statusQueryProvider() {
-      var allStatuses = Arrays.stream(ApprovalStatus.values()).toList();
       return Stream.of(
-          argumentSet("Query without filters", emptyList(), allStatuses),
-          argumentSet(
-              "status=pending,approved,rejected",
-              List.of(PENDING, APPROVED, REJECTED),
-              allStatuses),
-          argumentSet("status=pending", List.of(PENDING), List.of(NEW, PENDING)),
-          argumentSet("status=approved", List.of(APPROVED), List.of(APPROVED)),
-          argumentSet("status=rejected", List.of(REJECTED), List.of(REJECTED)),
-          argumentSet(
-              "status=pending,approved",
-              List.of(PENDING, APPROVED),
-              List.of(NEW, PENDING, APPROVED)),
-          argumentSet(
-              "status=pending,rejected",
-              List.of(PENDING, REJECTED),
-              List.of(NEW, PENDING, REJECTED)),
-          argumentSet(
-              "status=approved,rejected",
-              List.of(APPROVED, REJECTED),
-              List.of(APPROVED, REJECTED)));
+          argumentSet("status=new", List.of(NEW)),
+          argumentSet("status=pending", List.of(PENDING)),
+          argumentSet("status=approved", List.of(APPROVED)),
+          argumentSet("status=rejected", List.of(REJECTED)),
+          argumentSet("status=new,pending", List.of(NEW, PENDING)),
+          argumentSet("status=pending,approved", List.of(PENDING, APPROVED)),
+          argumentSet("status=pending,rejected", List.of(PENDING, REJECTED)),
+          argumentSet("status=approved,rejected", List.of(APPROVED, REJECTED)),
+          argumentSet("status=pending,approved,rejected", List.of(PENDING, APPROVED, REJECTED)),
+          argumentSet("status=new,pending,approved,rejected", List.of(ApprovalStatus.values())));
     }
 
     private static Stream<Arguments> globalStatusQueryProvider() {

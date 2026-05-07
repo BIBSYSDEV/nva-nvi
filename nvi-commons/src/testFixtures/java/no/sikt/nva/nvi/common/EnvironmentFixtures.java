@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.common;
 
 import java.net.URI;
-import nva.commons.core.paths.UriWrapper;
+import no.sikt.nva.nvi.common.utils.EnvironmentUriFactory;
 
 /**
  * Utility to set up fake environment variables for testing purposes. Keep this in sync with the
@@ -30,6 +30,7 @@ public enum EnvironmentFixtures {
 
   // Other handler-specific environment variables
   ALLOWED_ORIGIN("*"),
+  REPORT_QUEUE("report-queue"),
   BATCH_JOB_QUEUE_URL("http://localhost:3000/batch-job-queue"),
   COGNITO_HOST("not-actually-in-use-but-exists-in-template"),
   DB_EVENTS_QUEUE_URL("http://localhost:3000/db-events-queue"),
@@ -40,8 +41,7 @@ public enum EnvironmentFixtures {
   EVENT_BUS_NAME("bus-name"),
   BATCH_SCAN_RECOVERY_QUEUE("recover-queue"),
   PERSISTED_RESOURCE_QUEUE_URL("persisted-resource"),
-  PROCESSING_ENABLED("true"),
-  EVALUATION_DLQ_URL("evaluation-dlq");
+  PROCESSING_ENABLED("true");
 
   private final String value;
 
@@ -83,10 +83,7 @@ public enum EnvironmentFixtures {
   }
 
   public static FakeEnvironment getEvaluateNviCandidateHandlerEnvironment() {
-    return getDefaultEnvironmentBuilder()
-        .with(EXPANDED_RESOURCES_BUCKET)
-        .with(EVALUATION_DLQ_URL)
-        .build();
+    return getDefaultEnvironmentBuilder().with(EXPANDED_RESOURCES_BUCKET).build();
   }
 
   public static FakeEnvironment getStartBatchJobHandlerEnvironment() {
@@ -136,8 +133,6 @@ public enum EnvironmentFixtures {
   }
 
   public static URI getCandidateContextUri() {
-    return UriWrapper.fromHost(API_HOST.getValue())
-        .addChild(CUSTOM_DOMAIN_BASE_PATH.getValue(), "context")
-        .getUri();
+    return EnvironmentUriFactory.context(getGlobalEnvironment());
   }
 }

@@ -2,7 +2,6 @@ package no.sikt.nva.nvi.rest.fetch;
 
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertCandidateRequest;
 import static no.sikt.nva.nvi.common.UpsertRequestFixtures.createUpsertNonCandidateRequest;
-import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.setupReportedCandidate;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupClosedPeriod;
 import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod;
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomTopLevelOrganization;
@@ -21,13 +20,11 @@ import java.net.URI;
 import java.util.Map;
 import no.sikt.nva.nvi.common.TestScenario;
 import no.sikt.nva.nvi.common.UpsertRequestBuilder;
-import no.sikt.nva.nvi.common.db.CandidateRepository;
 import no.sikt.nva.nvi.common.dto.PublicationDateDto;
 import no.sikt.nva.nvi.common.service.CandidateService;
 import no.sikt.nva.nvi.common.service.model.ApprovalStatus;
 import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.rest.EnvironmentFixtures;
-import no.sikt.nva.nvi.rest.fetch.ReportStatusDto.StatusDto;
 import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.GatewayResponse;
@@ -41,7 +38,6 @@ class FetchReportStatusByPublicationIdHandlerTest {
   private static final String PATH_PARAM_PUBLICATION_ID = "publicationId";
   private Context context;
   private ByteArrayOutputStream output;
-  private CandidateRepository candidateRepository;
   private CandidateService candidateService;
   private TestScenario scenario;
   private FetchReportStatusByPublicationIdHandler handler;
@@ -50,7 +46,6 @@ class FetchReportStatusByPublicationIdHandlerTest {
   void setUp() {
     scenario = new TestScenario();
     setupOpenPeriod(scenario, CURRENT_YEAR);
-    candidateRepository = scenario.getCandidateRepository();
     candidateService = scenario.getCandidateService();
     output = new ByteArrayOutputStream();
     context = new FakeContext();
@@ -60,9 +55,8 @@ class FetchReportStatusByPublicationIdHandlerTest {
 
   @Test
   void shouldReturnReportedYearWhenPublicationIsReportedInClosedPeriod() throws IOException {
-    var dao = setupReportedCandidate(candidateRepository, String.valueOf(CURRENT_YEAR));
+    var reportedCandidate = scenario.setupReportedCandidate(String.valueOf(CURRENT_YEAR));
     setupClosedPeriod(scenario, CURRENT_YEAR);
-    var reportedCandidate = candidateService.getCandidateByIdentifier(dao.identifier());
 
     handler.handleRequest(createRequest(reportedCandidate.getPublicationId()), output, context);
 

@@ -24,7 +24,7 @@ public class NviCuratorGrantStrategy extends BaseStrategy implements GrantStrate
   @Override
   public boolean allowsAction(CandidateOperation operation) {
     if (isNotCuratorForCandidate()) {
-      LOGGER.warn("Access denied: User is not a curator for candidate {}", candidate.getId());
+      LOGGER.warn("Access denied: User is not a curator for candidate {}", candidate.identifier());
       return false;
     }
 

@@ -385,7 +385,8 @@ public final class CandidateDao extends Dao {
       @DynamoDbConvertedBy(DbCreatorTypeListConverter.class) List<DbCreatorType> creators,
       Instant createdDate,
       Instant modifiedDate,
-      ReportStatus reportStatus) {
+      ReportStatus reportStatus,
+      Instant reportedDate) {
 
     public static Builder builder() {
       return new Builder();
@@ -400,7 +401,8 @@ public final class CandidateDao extends Dao {
           .creators(creators.stream().map(DbCreatorType::copy).toList())
           .createdDate(createdDate)
           .modifiedDate(modifiedDate)
-          .reportStatus(reportStatus);
+          .reportStatus(reportStatus)
+          .reportedDate(reportedDate);
     }
 
     @DynamoDbIgnore
@@ -417,6 +419,7 @@ public final class CandidateDao extends Dao {
       private Instant builderCreatedDate;
       private Instant builderModifiedDate;
       private ReportStatus builderReportStatus;
+      private Instant builderReportedDate;
 
       private Builder() {}
 
@@ -455,6 +458,11 @@ public final class CandidateDao extends Dao {
         return this;
       }
 
+      public Builder reportedDate(Instant reportedDate) {
+        this.builderReportedDate = reportedDate;
+        return this;
+      }
+
       public DbCandidate build() {
         return new DbCandidate(
             builderPointCalculation,
@@ -463,7 +471,8 @@ public final class CandidateDao extends Dao {
             builderCreators,
             builderCreatedDate,
             builderModifiedDate,
-            builderReportStatus);
+            builderReportStatus,
+            builderReportedDate);
       }
     }
   }
@@ -591,6 +600,7 @@ public final class CandidateDao extends Dao {
       URI institutionId,
       BigDecimal points,
       Sector sector,
+      boolean rboInstitution,
       List<DbCreatorAffiliationPoints> creatorAffiliationPoints) {
 
     public static Builder builder() {
@@ -603,6 +613,7 @@ public final class CandidateDao extends Dao {
           institutionPoints.institutionId(),
           institutionPoints.institutionPoints(),
           institutionPoints.sector(),
+          institutionPoints.rboInstitution(),
           institutionPoints.creatorAffiliationPoints().stream()
               .map(DbCreatorAffiliationPoints::from)
               .toList());
@@ -669,6 +680,7 @@ public final class CandidateDao extends Dao {
       private URI builderInstitutionId;
       private BigDecimal builderPoints;
       private Sector builderSector;
+      private boolean builderRboInstitution;
       private List<DbCreatorAffiliationPoints> builderCreatorAffiliationPoints;
 
       private Builder() {}
@@ -694,9 +706,18 @@ public final class CandidateDao extends Dao {
         return this;
       }
 
+      public Builder rboInstitution(boolean rboInstitution) {
+        this.builderRboInstitution = rboInstitution;
+        return this;
+      }
+
       public DbInstitutionPoints build() {
         return new DbInstitutionPoints(
-            builderInstitutionId, builderPoints, builderSector, builderCreatorAffiliationPoints);
+            builderInstitutionId,
+            builderPoints,
+            builderSector,
+            builderRboInstitution,
+            builderCreatorAffiliationPoints);
       }
     }
   }

@@ -41,8 +41,8 @@ public class ContributorFixtures {
         .build();
   }
 
-  public static ContributorDtoBuilder randomContributorDtoBuilder(Organization... affiliations) {
-    return builder()
+  public static ContributorDto.Builder randomContributorDtoBuilder(Organization... affiliations) {
+    return ContributorDto.builder()
         .withId(randomUri())
         .withName(randomString())
         .withRole(ROLE_CREATOR)
@@ -51,14 +51,22 @@ public class ContributorFixtures {
   }
 
   public static ContributorDto verifiedCreatorFrom(Organization... affiliations) {
-    var creatorId = randomUriWithSuffix("creatorId");
-    return new ContributorDto(
-        creatorId, randomString(), STATUS_VERIFIED, ROLE_CREATOR, List.of(affiliations));
+    return ContributorDto.builder()
+        .withId(randomUriWithSuffix("creatorId"))
+        .withName(randomString())
+        .withVerificationStatus(STATUS_VERIFIED)
+        .withRole(ROLE_CREATOR)
+        .withAffiliations(List.of(affiliations))
+        .build();
   }
 
   public static ContributorDto unverifiedCreatorFrom(Organization... affiliations) {
-    return new ContributorDto(
-        null, randomString(), STATUS_UNVERIFIED, ROLE_CREATOR, List.of(affiliations));
+    return ContributorDto.builder()
+        .withName(randomString())
+        .withVerificationStatus(STATUS_UNVERIFIED)
+        .withRole(ROLE_CREATOR)
+        .withAffiliations(List.of(affiliations))
+        .build();
   }
 
   public static ContributorDto mapToContributorDto(NviCreator nviCreator) {
@@ -66,12 +74,13 @@ public class ContributorFixtures {
         nviCreator.nviAffiliations().stream()
             .map(OrganizationFixtures::getAsOrganizationLeafNode)
             .toList();
-    return new ContributorDto(
-        nviCreator.id(),
-        nviCreator.name(),
-        nviCreator.verificationStatus(),
-        ROLE_CREATOR,
-        affiliations);
+    return ContributorDto.builder()
+        .withId(nviCreator.id())
+        .withName(nviCreator.name())
+        .withVerificationStatus(nviCreator.verificationStatus())
+        .withRole(ROLE_CREATOR)
+        .withAffiliations(affiliations)
+        .build();
   }
 
   public static ContributorDto contributorFrom(VerifiedNviCreatorDto creator) {
@@ -104,47 +113,5 @@ public class ContributorFixtures {
 
   private static List<Organization> mapToOrganizationLeafNodes(List<URI> affiliationUris) {
     return affiliationUris.stream().map(uri -> Organization.builder().withId(uri).build()).toList();
-  }
-
-  public static ContributorDtoBuilder builder() {
-    return new ContributorDtoBuilder();
-  }
-
-  public static final class ContributorDtoBuilder {
-
-    private URI id;
-    private String name;
-    private VerificationStatus verificationStatus;
-    private ContributorRole role;
-    private List<Organization> affiliations;
-
-    public ContributorDtoBuilder withId(URI id) {
-      this.id = id;
-      return this;
-    }
-
-    public ContributorDtoBuilder withName(String name) {
-      this.name = name;
-      return this;
-    }
-
-    public ContributorDtoBuilder withVerificationStatus(VerificationStatus verificationStatus) {
-      this.verificationStatus = verificationStatus;
-      return this;
-    }
-
-    public ContributorDtoBuilder withRole(ContributorRole role) {
-      this.role = role;
-      return this;
-    }
-
-    public ContributorDtoBuilder withAffiliations(List<Organization> affiliations) {
-      this.affiliations = affiliations;
-      return this;
-    }
-
-    public ContributorDto build() {
-      return new ContributorDto(id, name, verificationStatus, role, affiliations);
-    }
   }
 }

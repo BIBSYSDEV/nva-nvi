@@ -13,7 +13,6 @@ import static no.sikt.nva.nvi.test.TestUtils.CURRENT_YEAR;
 import static no.unit.nva.testutils.RandomDataGenerator.FAKER;
 import static no.unit.nva.testutils.RandomDataGenerator.objectMapper;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -40,6 +39,7 @@ import no.sikt.nva.nvi.index.model.report.DirectAffiliationAggregation;
 import no.sikt.nva.nvi.index.model.report.InstitutionStatusAggregationReport;
 import no.sikt.nva.nvi.index.model.report.TopLevelAggregation;
 import no.unit.nva.commons.json.JsonUtils;
+import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.apigateway.GatewayResponse;
@@ -57,7 +57,7 @@ import org.zalando.problem.StatusType;
 class FetchInstitutionStatusAggregationHandlerTest {
 
   private static final OpenSearchContainerContext CONTAINER = new OpenSearchContainerContext();
-  private static final Context CONTEXT = mock(Context.class);
+  private static final Context CONTEXT = new FakeContext();
   private static final Environment ENVIRONMENT =
       getFetchInstitutionStatusAggregationHandlerEnvironment();
   private String username;
@@ -224,12 +224,7 @@ class FetchInstitutionStatusAggregationHandlerTest {
   class DirectAffiliationAggregationTests {
     @Test
     void shouldExcludeRejectedCandidatesFromPoints() {
-      var approval =
-          new ApprovalFactory(OUR_ORGANIZATION)
-              .withCreatorAffiliation(OUR_SUB_ORGANIZATION)
-              .withApprovalStatus(ApprovalStatus.REJECTED)
-              .build();
-      CONTAINER.addDocumentsToIndex(documentWithApprovals(approval, randomApproval()));
+      CONTAINER.addDocumentsToIndex(getRejectedCandidate());
 
       var response = handleRequest();
 
@@ -242,12 +237,7 @@ class FetchInstitutionStatusAggregationHandlerTest {
 
     @Test
     void shouldIncludeRejectedCandidatesInCount() {
-      var approval =
-          new ApprovalFactory(OUR_ORGANIZATION)
-              .withCreatorAffiliation(OUR_SUB_ORGANIZATION)
-              .withApprovalStatus(ApprovalStatus.REJECTED)
-              .build();
-      CONTAINER.addDocumentsToIndex(documentWithApprovals(approval, randomApproval()));
+      CONTAINER.addDocumentsToIndex(getRejectedCandidate());
 
       var response = handleRequest();
 
@@ -298,6 +288,50 @@ class FetchInstitutionStatusAggregationHandlerTest {
       var approval =
           new ApprovalFactory(OUR_ORGANIZATION).withCreatorAffiliations(affiliations).build();
       CONTAINER.addDocumentsToIndex(documentWithApprovals(approval, randomApproval()));
+    }
+
+    @Test
+    void shouldExcludeDisputedCandidates() {
+      CONTAINER.addDocumentsToIndex(getRejectedCandidate(), getDisputedCandidate());
+
+      var response = handleRequest();
+
+      var organizationAggregation = response.byOrganization().get(OUR_SUB_ORGANIZATION);
+      assertThat(organizationAggregation.points()).isZero();
+      assertThat(organizationAggregation.candidateCount()).isOne();
+      assertThat(organizationAggregation.approvalStatus())
+          .extractingByKey(ApprovalStatus.APPROVED)
+          .isEqualTo(0);
+    }
+
+    private NviCandidateIndexDocument getRejectedCandidate() {
+      var ourApproval =
+          new ApprovalFactory(OUR_ORGANIZATION)
+              .withCreatorAffiliation(OUR_SUB_ORGANIZATION)
+              .withApprovalStatus(ApprovalStatus.REJECTED)
+              .withGlobalApprovalStatus(GlobalApprovalStatus.REJECTED)
+              .build();
+      var otherApproval =
+          new ApprovalFactory(randomOrganizationId())
+              .withApprovalStatus(ApprovalStatus.REJECTED)
+              .withGlobalApprovalStatus(GlobalApprovalStatus.REJECTED)
+              .build();
+      return documentWithApprovals(ourApproval, otherApproval);
+    }
+
+    private NviCandidateIndexDocument getDisputedCandidate() {
+      var ourApproval =
+          new ApprovalFactory(OUR_ORGANIZATION)
+              .withCreatorAffiliation(OUR_SUB_ORGANIZATION)
+              .withApprovalStatus(ApprovalStatus.APPROVED)
+              .withGlobalApprovalStatus(GlobalApprovalStatus.DISPUTE)
+              .build();
+      var otherApproval =
+          new ApprovalFactory(randomOrganizationId())
+              .withApprovalStatus(ApprovalStatus.REJECTED)
+              .withGlobalApprovalStatus(GlobalApprovalStatus.DISPUTE)
+              .build();
+      return documentWithApprovals(ourApproval, otherApproval);
     }
   }
 

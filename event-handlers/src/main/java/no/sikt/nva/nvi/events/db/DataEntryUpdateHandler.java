@@ -25,7 +25,6 @@ public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
   private static final String PUBLISHED_MESSAGE = "Published message with id: {} to topic {}";
   private static final String SKIPPING_EVENT_MESSAGE =
       "Skipping event with operation type {} for dao type {}";
-  private static final String DLQ_MESSAGE = "Failed to process record %s. Exception: %s ";
   private static final String INDEX_DLQ = "INDEX_DLQ";
   private final NotificationClient<NviPublishMessageResponse> snsClient;
   private final Environment environment;
@@ -81,7 +80,9 @@ public class DataEntryUpdateHandler implements RequestHandler<SQSEvent, Void> {
   }
 
   private void sendToDlq(String body, Exception exception) {
-    var message = String.format(DLQ_MESSAGE, body, getStackTrace(exception));
+    var message =
+        String.format(
+            "Failed to process record %s. Exception: %s ", body, getStackTrace(exception));
     LOGGER.error(message, body);
     queueClient.sendMessage(message, dlqUrl);
   }

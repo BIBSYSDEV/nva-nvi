@@ -10,13 +10,17 @@ public enum ApprovalStatusDto {
   REJECTED("Rejected"),
   NONE("None");
 
-  @JsonValue private final String value;
+  private final String value;
 
   ApprovalStatusDto(String value) {
     this.value = value;
   }
 
-  // TODO: Remove "NEW" as a status, no longer relevant.
+  @JsonValue
+  public String getValue() {
+    return value;
+  }
+
   public static ApprovalStatusDto from(Approval approval) {
     return switch (approval.status()) {
       case PENDING -> approval.isAssigned() ? PENDING : NEW;

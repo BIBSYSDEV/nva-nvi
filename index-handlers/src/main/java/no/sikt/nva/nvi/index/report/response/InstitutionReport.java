@@ -1,16 +1,6 @@
 package no.sikt.nva.nvi.index.report.response;
 
-import java.net.URI;
-import java.util.List;
-import no.sikt.nva.nvi.common.client.model.Organization;
-import no.sikt.nva.nvi.common.model.Sector;
-import no.sikt.nva.nvi.common.service.dto.NviPeriodDto;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
 
-public record InstitutionReport(
-    URI id,
-    NviPeriodDto period,
-    Sector sector,
-    Organization institution,
-    InstitutionSummary institutionSummary,
-    List<UnitSummary> units)
-    implements ReportResponse {}
+@JsonSubTypes({@JsonSubTypes.Type(value = InstitutionJsonReport.class, name = "InstitutionReport")})
+public sealed interface InstitutionReport extends ReportResponse permits InstitutionJsonReport {}

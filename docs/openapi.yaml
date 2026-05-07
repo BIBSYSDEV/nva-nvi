@@ -338,7 +338,7 @@ paths:
             type: array
             items:
               type: string
-              enum: [pending, approved, rejected]
+              enum: [new, pending, approved, rejected]
           examples:
             single:
               summary: Single approval status
@@ -818,14 +818,20 @@ paths:
     get:
       tags:
         - Report
-      description: Get NVI report for a given year
-      summary: Get requesting users top level organizations NVI report for given year
+      description: Get NVI report for a given year. Admins and backend clients can specify an institutionId query parameter to get a report for a specific institution.
+      summary: Get NVI institution report with points per contributor for a given year
       operationId: getNviReportByYear
       parameters:
         - in: path
           name: year
           description: The year of the nvi period
           required: true
+          schema:
+            type: string
+        - in: query
+          name: institutionId
+          description: Top level Cristin organization identifier (e.g. 185.90.0.0). Only allowed for admins and backend clients.
+          required: false
           schema:
             type: string
       security: *authenticated
@@ -994,6 +1000,27 @@ paths:
             type: string
             pattern: '^\d{4}$'
           example: "2025"
+        - in: header
+          name: Accept
+          required: false
+          description: >
+            Specifies the desired response format and optional report profile.
+            Supported formats are `application/json`, `text/csv`, and `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` (XLSX).
+            For CSV and XLSX, an optional `profile` parameter determines the report type.
+            Available profiles are `publication-points` and `author-shares`.
+            If no profile is specified, CSV and XLSX responses default to `author-shares`.
+            JSON responses do not support profiles.
+          schema:
+            type: string
+            enum:
+              - application/json
+              - text/csv; charset=utf-8
+              - text/csv; charset=utf-8; profile=https://api.nva.unit.no/report/publication-points
+              - text/csv; charset=utf-8; profile=https://api.nva.unit.no/report/author-shares
+              - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+              - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet; profile=https://api.nva.unit.no/report/publication-points
+              - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet; profile=https://api.nva.unit.no/report/author-shares
+            default: application/json
       security: *authenticated
       x-amazon-apigateway-integration:
         uri:
@@ -1053,6 +1080,16 @@ paths:
           schema:
             type: boolean
             default: false
+        - in: header
+          name: Accept
+          required: false
+          schema:
+            type: string
+            enum:
+              - application/json
+              - text/csv; charset=utf-8
+              - application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+            default: application/json
       security: *authenticated
       x-amazon-apigateway-integration:
         uri:
@@ -1085,6 +1122,8 @@ paths:
                         type: InstitutionTotals
                         validPoints: 12.3456
                         disputedCount: 4
+                        globalApprovedCount: 3
+                        globalRejectedCount: 1
                         undisputedProcessedCount: 4
                         undisputedTotalCount: 6
                       byLocalApprovalStatus:
@@ -1123,6 +1162,11 @@ paths:
                               pending: 0
                               approved: 0
                               rejected: 1
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema:
+                type: string
+                format: binary
+                description: Base64-encoded Excel (.xlsx) file
         "400":
           description: "Bad Request - Invalid period or institution format"
           content:
@@ -1285,6 +1329,15 @@ components:
               type: string
             startDate:
               type: string
+        status:
+          type: string
+          description: The report status of the candidate
+          example: "Reported"
+        reportedDate:
+          type: string
+          format: date-time
+          description: Timestamp for when the candidate was marked as reported
+          example: "2026-01-15T12:00:00Z"
         allowedOperations:
           type: array
           description: >
@@ -1776,10 +1829,20 @@ components:
         - type: object
           required:
             - type
+            - globalApprovedCount
+            - globalRejectedCount
           properties:
             type:
               type: string
               enum: [InstitutionTotals]
+            globalApprovedCount:
+              type: integer
+              minimum: 0
+              description: Number of candidates with global approval status Approved
+            globalRejectedCount:
+              type: integer
+              minimum: 0
+              description: Number of candidates with global approval status Rejected
 
     UnitTotals:
       description: Aggregate totals for an organizational unit.

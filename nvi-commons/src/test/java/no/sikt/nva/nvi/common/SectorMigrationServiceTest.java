@@ -34,6 +34,8 @@ import no.unit.nva.clients.IdentityServiceClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+// TODO: Remove service
+@Deprecated(forRemoval = true)
 class SectorMigrationServiceTest {
 
   private CandidateService candidateService;
