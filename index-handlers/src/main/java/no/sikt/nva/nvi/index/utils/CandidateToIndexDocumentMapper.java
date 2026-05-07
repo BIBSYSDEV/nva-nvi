@@ -109,7 +109,7 @@ public class CandidateToIndexDocumentMapper {
     return NviContributor.builder()
         .withId(creatorId)
         .withName(nviCreator.name())
-        .withOrcid(null) // TODO: Populate ORCID from publication or candidate
+        .withOrcid(extractOrcid(contributorDto))
         .withRole(getContributorRole(contributorDto))
         .withAffiliations(buildNviAffiliations(contributorDto, nviCreator))
         .build();
@@ -121,10 +121,14 @@ public class CandidateToIndexDocumentMapper {
     return Contributor.builder()
         .withId(contributorId)
         .withName(contributorDto.name())
-        .withOrcid(null) // TODO: Populate ORCID from publication or candidate
+        .withOrcid(extractOrcid(contributorDto))
         .withRole(getContributorRole(contributorDto))
         .withAffiliations(buildSimpleAffiliations(contributorDto))
         .build();
+  }
+
+  private static String extractOrcid(ContributorDto contributorDto) {
+    return nonNull(contributorDto.orcid()) ? contributorDto.orcid().toString() : null;
   }
 
   // TODO: Remove when role is available from Candidate
@@ -221,7 +225,15 @@ public class CandidateToIndexDocumentMapper {
         .withAssignee(approval.getAssigneeUsername())
         .withGlobalApprovalStatus(candidate.getGlobalApprovalStatus())
         .withSector(extractSector(approval.institutionId(), candidate))
+        .withRboInstitution(extractRboInstitution(approval.institutionId(), candidate))
         .build();
+  }
+
+  private static boolean extractRboInstitution(URI institutionId, Candidate candidate) {
+    return candidate
+        .getInstitutionPoints(institutionId)
+        .map(InstitutionPoints::rboInstitution)
+        .orElse(false);
   }
 
   private Map<String, String> extractLabels(Approval approval) {
@@ -276,6 +288,7 @@ public class CandidateToIndexDocumentMapper {
         .withIdentifier(candidate.identifier())
         .withReportingPeriod(ReportingPeriod.fromCandidate(candidate))
         .withReported(candidate.isReported())
+        .withReportedDate(candidate.reportedDate())
         .withApprovals(approvals)
         .withPublicationDetails(publicationDetails)
         .withNumberOfApprovals(approvals.size())
@@ -305,6 +318,7 @@ public class CandidateToIndexDocumentMapper {
         .withPublicationChannel(buildPublicationChannel())
         .withPages(pages)
         .withLanguage(candidateDetails.language())
+        .withHandles(candidateDetails.handles())
         .build();
   }
 
