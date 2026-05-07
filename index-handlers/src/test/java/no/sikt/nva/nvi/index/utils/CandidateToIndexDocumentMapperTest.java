@@ -74,29 +74,6 @@ class CandidateToIndexDocumentMapperTest {
   private static final URI ORCID = URI.create("https://orcid.org/0000-0001-2345-6789");
 
   @Test
-  void shouldProduceValidIndexDocument() {
-    var candidate = createDefaultCandidate();
-    var publicationDto = createDefaultPublicationDto();
-
-    var document =
-        new CandidateToIndexDocumentMapper(candidate, publicationDto, getGlobalEnvironment())
-            .toIndexDocument();
-
-    assertThat(document).isNotNull();
-    assertThat(document.identifier()).isNotNull();
-    assertThat(document.isApplicable()).isTrue();
-    assertThat(document.publicationDetails()).isNotNull();
-    assertThat(document.publicationDetails().title()).isEqualTo(PUBLICATION_TITLE);
-    assertThat(document.publicationDetails().abstractText()).isEqualTo(ABSTRACT_TEXT);
-    assertThat(document.publicationDetails().language()).isEqualTo(LANGUAGE);
-    assertThat(document.publicationDetails().type())
-        .isEqualTo(InstanceType.ACADEMIC_ARTICLE.getValue());
-    assertThat(document.points()).isNotNull();
-    assertThat(document.creatorShareCount()).isEqualTo(2);
-    assertThat(document.reported()).isFalse();
-  }
-
-  @Test
   void shouldPopulateAllRelevantFieldsFromCandidateAndPublicationDto() {
     var candidate = createDefaultCandidate();
     var publicationDto = createDefaultPublicationDto();
@@ -274,19 +251,6 @@ class CandidateToIndexDocumentMapperTest {
     assertThat(nonNviContributors).hasSize(1);
     assertThat(nonNviContributors.getFirst().name()).isEqualTo("Non-NVI Person");
     assertThat(nonNviContributors.getFirst().role()).isEqualTo(ROLE_OTHER.getValue());
-  }
-
-  @Test
-  void shouldSetContributorsCountFromCandidate() {
-    var candidate = createDefaultCandidate();
-    var publicationDto = createDefaultPublicationDto();
-
-    var document =
-        new CandidateToIndexDocumentMapper(candidate, publicationDto, getGlobalEnvironment())
-            .toIndexDocument();
-
-    assertThat(document.publicationDetails().contributorsCount())
-        .isEqualTo(candidate.publicationDetails().creatorCount());
   }
 
   @Test
