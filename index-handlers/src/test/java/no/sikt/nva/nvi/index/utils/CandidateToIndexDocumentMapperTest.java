@@ -22,6 +22,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.client.model.Organization;
@@ -68,6 +69,9 @@ class CandidateToIndexDocumentMapperTest {
   private static final String PUBLICATION_TITLE = "Test Publication";
   private static final String ABSTRACT_TEXT = "Test abstract";
   private static final String LANGUAGE = "http://lexvo.org/id/iso639-3/nob";
+  private static final URI HANDLE = URI.create("https://hdl.handle.net/11250/12345");
+  private static final Instant REPORTED_DATE = Instant.parse("2025-04-01T00:00:00Z");
+  private static final URI ORCID = URI.create("https://orcid.org/0000-0001-2345-6789");
 
   @Test
   void shouldProduceValidIndexDocument() {
@@ -90,6 +94,52 @@ class CandidateToIndexDocumentMapperTest {
     assertThat(document.points()).isNotNull();
     assertThat(document.creatorShareCount()).isEqualTo(2);
     assertThat(document.reported()).isFalse();
+  }
+
+  @Test
+  void shouldPopulateAllRelevantFieldsFromCandidateAndPublicationDto() {
+    var candidate = createDefaultCandidate();
+    var publicationDto = createDefaultPublicationDto();
+
+    var document =
+        new CandidateToIndexDocumentMapper(candidate, publicationDto, getGlobalEnvironment())
+            .toIndexDocument();
+
+    assertThat(document.context()).isNotNull();
+    assertThat(document.id()).isNotNull();
+    assertThat(document.identifier()).isEqualTo(candidate.identifier());
+    assertThat(document.isApplicable()).isTrue();
+    assertThat(document.numberOfApprovals()).isEqualTo(candidate.approvals().size());
+    assertThat(document.points()).isEqualTo(candidate.getTotalPoints());
+    assertThat(document.publicationTypeChannelLevelPoints()).isEqualTo(candidate.getBasePoints());
+    assertThat(document.globalApprovalStatus()).isEqualTo(candidate.getGlobalApprovalStatus());
+    assertThat(document.creatorShareCount()).isEqualTo(candidate.getCreatorShareCount());
+    assertThat(document.internationalCollaborationFactor())
+        .isEqualTo(candidate.getCollaborationFactor());
+    assertThat(document.reportingPeriod()).isNotNull();
+    assertThat(document.reported()).isFalse();
+    assertThat(document.reportedDate()).isEqualTo(REPORTED_DATE.toString());
+    assertThat(document.createdDate()).isEqualTo(candidate.createdDate().toString());
+    assertThat(document.modifiedDate()).isEqualTo(candidate.modifiedDate().toString());
+
+    var publicationDetails = document.publicationDetails();
+    assertThat(publicationDetails.id()).isEqualTo(PUBLICATION_ID.toString());
+    assertThat(publicationDetails.title()).isEqualTo(PUBLICATION_TITLE);
+    assertThat(publicationDetails.abstractText()).isEqualTo(ABSTRACT_TEXT);
+    assertThat(publicationDetails.language()).isEqualTo(LANGUAGE);
+    assertThat(publicationDetails.type()).isEqualTo(InstanceType.ACADEMIC_ARTICLE.getValue());
+    assertThat(publicationDetails.publicationDate()).isNotNull();
+    assertThat(publicationDetails.pages()).isNotNull();
+    assertThat(publicationDetails.publicationChannel()).isNotNull();
+    assertThat(publicationDetails.contributors()).isNotEmpty();
+    assertThat(publicationDetails.contributorsCount()).isEqualTo(5);
+    assertThat(publicationDetails.handles()).containsExactly(HANDLE);
+    assertThat(publicationDetails.contributors().getFirst().orcid()).isEqualTo(ORCID.toString());
+
+    assertThat(document.approvals()).isNotEmpty();
+    var rboInstitutionFlags =
+        document.approvals().stream().map(ApprovalView::rboInstitution).toList();
+    assertThat(rboInstitutionFlags).contains(true, false);
   }
 
   @Test
@@ -532,7 +582,7 @@ class CandidateToIndexDocumentMapperTest {
                 SIKT_ID,
                 BigDecimal.TEN,
                 Sector.UHI,
-                false,
+                true,
                 List.of(creatorAffiliationPoints.getFirst())),
             new InstitutionPoints(
                 NTNU_ID,
@@ -565,6 +615,7 @@ class CandidateToIndexDocumentMapperTest {
             .withNviCreators(nviCreators)
             .withCreatorCount(5)
             .withTopLevelOrganizations(topLevelOrgs)
+            .withHandles(Set.of(HANDLE))
             .withModifiedDate(Instant.now())
             .build();
 
@@ -579,7 +630,7 @@ class CandidateToIndexDocumentMapperTest {
         Instant.now(),
         Instant.now(),
         null,
-        null,
+        REPORTED_DATE,
         null,
         null);
   }
@@ -634,6 +685,7 @@ class CandidateToIndexDocumentMapperTest {
     return ContributorDto.builder()
         .withId(CREATOR_ID)
         .withName(CREATOR_NAME)
+        .withOrcid(ORCID)
         .withRole(ROLE_CREATOR)
         .withVerificationStatus(STATUS_VERIFIED)
         .withAffiliations(
