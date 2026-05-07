@@ -682,16 +682,19 @@ class CandidateToIndexDocumentMapperTest {
   }
 
   private static ContributorDto createVerifiedCreatorContributor() {
+    var siktSubunitAffiliation =
+        Organization.builder()
+            .withId(SIKT_SUBUNIT_ID)
+            .withPartOf(List.of(Organization.builder().withId(SIKT_ID).build()))
+            .build();
+    var ntnuAffiliation = Organization.builder().withId(NTNU_ID).build();
     return ContributorDto.builder()
         .withId(CREATOR_ID)
         .withName(CREATOR_NAME)
         .withOrcid(ORCID)
         .withRole(ROLE_CREATOR)
         .withVerificationStatus(STATUS_VERIFIED)
-        .withAffiliations(
-            List.of(
-                Organization.builder().withId(SIKT_SUBUNIT_ID).build(),
-                Organization.builder().withId(NTNU_ID).build()))
+        .withAffiliations(List.of(siktSubunitAffiliation, ntnuAffiliation))
         .build();
   }
 }
