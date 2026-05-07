@@ -11,7 +11,6 @@ import no.sikt.nva.nvi.common.dto.ContributorDto;
 import no.sikt.nva.nvi.common.dto.ContributorDto.Builder;
 import no.sikt.nva.nvi.common.dto.ContributorRole;
 import no.sikt.nva.nvi.common.dto.VerificationStatus;
-import no.sikt.nva.nvi.common.service.dto.UnverifiedNviCreatorDto;
 import no.sikt.nva.nvi.common.service.dto.VerifiedNviCreatorDto;
 
 public class ContributorFixtures {
@@ -83,25 +82,6 @@ public class ContributorFixtures {
         .build();
   }
 
-  public static ContributorDto contributorFrom(VerifiedNviCreatorDto creator) {
-    var affiliations = mapToOrganizationLeafNodes(creator.affiliations());
-    return ContributorDto.builder()
-        .withId(creator.id())
-        .withName(creator.name())
-        .withRole(new ContributorRole(randomString()))
-        .withAffiliations(affiliations)
-        .build();
-  }
-
-  public static ContributorDto contributorFrom(UnverifiedNviCreatorDto creator) {
-    var affiliations = mapToOrganizationLeafNodes(creator.affiliations());
-    return ContributorDto.builder()
-        .withName(creator.name())
-        .withRole(new ContributorRole(randomString()))
-        .withAffiliations(affiliations)
-        .build();
-  }
-
   public static ContributorDto randomNonNviContributor(List<Organization> affiliations) {
     return ContributorDto.builder()
         .withId(randomUri())
@@ -109,9 +89,5 @@ public class ContributorFixtures {
         .withRole(new ContributorRole(randomString()))
         .withAffiliations(affiliations)
         .build();
-  }
-
-  private static List<Organization> mapToOrganizationLeafNodes(List<URI> affiliationUris) {
-    return affiliationUris.stream().map(uri -> Organization.builder().withId(uri).build()).toList();
   }
 }
