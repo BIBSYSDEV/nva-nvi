@@ -1,12 +1,12 @@
 package no.sikt.nva.nvi.index.utils;
 
 import static java.util.function.Predicate.not;
-import static java.util.stream.Collectors.toMap;
 
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -24,13 +24,9 @@ import no.sikt.nva.nvi.index.model.document.NviContributor;
 final class ApprovalMapper {
 
   private final Candidate candidate;
-  private final Map<URI, Organization> topLevelOrganizationsById;
 
   ApprovalMapper(Candidate candidate) {
     this.candidate = candidate;
-    this.topLevelOrganizationsById =
-        candidate.publicationDetails().topLevelOrganizations().stream()
-            .collect(toMap(Organization::id, org -> org, (existing, duplicate) -> existing));
   }
 
   List<ApprovalView> mapApprovals(List<ContributorType> contributors) {
@@ -56,8 +52,11 @@ final class ApprovalMapper {
   }
 
   private Map<String, String> extractLabels(URI institutionId) {
-    return Optional.ofNullable(topLevelOrganizationsById.get(institutionId))
+    return candidate.publicationDetails().topLevelOrganizations().stream()
+        .filter(org -> org.id().equals(institutionId))
+        .findFirst()
         .map(Organization::labels)
+        .filter(Objects::nonNull)
         .orElse(Collections.emptyMap());
   }
 
