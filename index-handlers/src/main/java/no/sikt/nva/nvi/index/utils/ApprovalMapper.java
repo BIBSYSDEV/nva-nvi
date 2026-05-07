@@ -1,12 +1,13 @@
 package no.sikt.nva.nvi.index.utils;
 
 import static java.util.function.Predicate.not;
+import static java.util.stream.Collectors.toMap;
 
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import no.sikt.nva.nvi.common.client.model.Organization;
@@ -23,9 +24,13 @@ import no.sikt.nva.nvi.index.model.document.NviContributor;
 final class ApprovalMapper {
 
   private final Candidate candidate;
+  private final Map<URI, Organization> topLevelOrganizationsById;
 
   ApprovalMapper(Candidate candidate) {
     this.candidate = candidate;
+    this.topLevelOrganizationsById =
+        candidate.publicationDetails().topLevelOrganizations().stream()
+            .collect(toMap(Organization::id, org -> org, (existing, duplicate) -> existing));
   }
 
   List<ApprovalView> mapApprovals(List<ContributorType> contributors) {
@@ -35,25 +40,24 @@ final class ApprovalMapper {
   }
 
   private ApprovalView buildApprovalView(Approval approval, List<ContributorType> contributors) {
+    var institutionId = approval.institutionId();
+    var institutionPoints = candidate.getInstitutionPoints(institutionId);
     return ApprovalView.builder()
-        .withInstitutionId(approval.institutionId())
-        .withLabels(extractLabels(approval))
+        .withInstitutionId(institutionId)
+        .withLabels(extractLabels(institutionId))
         .withApprovalStatus(extractApprovalStatus(approval))
-        .withPoints(extractInstitutionPoints(approval))
+        .withPoints(institutionPoints.map(InstitutionPointsView::from).orElse(null))
         .withInvolvedOrganizations(extractInvolvedOrganizations(approval, contributors))
         .withAssignee(approval.getAssigneeUsername())
         .withGlobalApprovalStatus(candidate.getGlobalApprovalStatus())
-        .withSector(extractSector(approval.institutionId()))
-        .withRboInstitution(extractRboInstitution(approval.institutionId()))
+        .withSector(extractSector(institutionPoints))
+        .withRboInstitution(extractRboInstitution(institutionPoints))
         .build();
   }
 
-  private Map<String, String> extractLabels(Approval approval) {
-    return candidate.publicationDetails().topLevelOrganizations().stream()
-        .filter(org -> org.id().equals(approval.institutionId()))
-        .findFirst()
+  private Map<String, String> extractLabels(URI institutionId) {
+    return Optional.ofNullable(topLevelOrganizationsById.get(institutionId))
         .map(Organization::labels)
-        .filter(Objects::nonNull)
         .orElse(Collections.emptyMap());
   }
 
@@ -61,13 +65,6 @@ final class ApprovalMapper {
     return approval.isPendingAndUnassigned()
         ? ApprovalStatus.NEW
         : ApprovalStatus.parse(approval.status().getValue());
-  }
-
-  private InstitutionPointsView extractInstitutionPoints(Approval approval) {
-    return candidate
-        .getInstitutionPoints(approval.institutionId())
-        .map(InstitutionPointsView::from)
-        .orElse(null);
   }
 
   private static Set<URI> extractInvolvedOrganizations(
@@ -80,19 +77,15 @@ final class ApprovalMapper {
         .collect(Collectors.toSet());
   }
 
-  private String extractSector(URI institutionId) {
-    return candidate
-        .getInstitutionPoints(institutionId)
+  private static String extractSector(Optional<InstitutionPoints> institutionPoints) {
+    return institutionPoints
         .map(InstitutionPoints::sector)
         .filter(not(Sector.UNKNOWN::equals))
         .map(Sector::toString)
         .orElse(null);
   }
 
-  private boolean extractRboInstitution(URI institutionId) {
-    return candidate
-        .getInstitutionPoints(institutionId)
-        .map(InstitutionPoints::rboInstitution)
-        .orElse(false);
+  private static boolean extractRboInstitution(Optional<InstitutionPoints> institutionPoints) {
+    return institutionPoints.map(InstitutionPoints::rboInstitution).orElse(false);
   }
 }

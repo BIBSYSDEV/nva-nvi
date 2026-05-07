@@ -3,6 +3,7 @@ package no.sikt.nva.nvi.index.utils;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 
+import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -113,26 +114,24 @@ final class ContributorMapper {
   }
 
   private static OrganizationType buildAffiliation(
-      Organization affiliation, List<java.net.URI> nviAffiliationUris) {
+      Organization affiliation, List<URI> nviAffiliationUris) {
     if (nviAffiliationUris.contains(affiliation.id())) {
       return NviOrganization.builder()
           .withId(affiliation.id())
           .withPartOf(affiliation.flattenPartOfChain())
           .build();
     }
-    return no.sikt.nva.nvi.index.model.document.Organization.builder()
-        .withId(affiliation.id())
-        .build();
+    return indexOrganizationWithId(affiliation.id());
   }
 
   private static List<OrganizationType> buildSimpleAffiliations(ContributorDto contributorDto) {
     return contributorDto.affiliations().stream()
         .filter(affiliation -> nonNull(affiliation.id()))
-        .<OrganizationType>map(
-            affiliation ->
-                no.sikt.nva.nvi.index.model.document.Organization.builder()
-                    .withId(affiliation.id())
-                    .build())
+        .map(affiliation -> indexOrganizationWithId(affiliation.id()))
         .toList();
+  }
+
+  private static OrganizationType indexOrganizationWithId(URI id) {
+    return no.sikt.nva.nvi.index.model.document.Organization.builder().withId(id).build();
   }
 }

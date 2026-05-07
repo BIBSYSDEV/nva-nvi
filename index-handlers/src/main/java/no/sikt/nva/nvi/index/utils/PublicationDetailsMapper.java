@@ -3,9 +3,9 @@ package no.sikt.nva.nvi.index.utils;
 import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 
-import java.net.URI;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Predicate;
 import no.sikt.nva.nvi.common.dto.PublicationChannelDto;
 import no.sikt.nva.nvi.common.dto.PublicationDto;
 import no.sikt.nva.nvi.common.model.ScientificValue;
@@ -67,7 +67,7 @@ final class PublicationDetailsMapper {
       builder.withType(channel.channelType().getValue());
     }
 
-    findMatchingPublicationChannelDto(channel.id(), channel.channelType())
+    findMatchingPublicationChannelDto(channel)
         .ifPresent(
             dto -> {
               builder.withName(dto.name());
@@ -78,17 +78,18 @@ final class PublicationDetailsMapper {
   }
 
   private Optional<PublicationChannelDto> findMatchingPublicationChannelDto(
-      URI channelId, no.sikt.nva.nvi.common.model.ChannelType channelType) {
-    if (nonNull(channelId)) {
-      return publicationDto.publicationChannels().stream()
-          .filter(dto -> channelId.equals(dto.id()))
-          .findFirst();
+      no.sikt.nva.nvi.common.model.PublicationChannel channel) {
+    if (nonNull(channel.id())) {
+      return findChannelDto(dto -> channel.id().equals(dto.id()));
     }
-    if (nonNull(channelType)) {
-      return publicationDto.publicationChannels().stream()
-          .filter(dto -> channelType == dto.channelType())
-          .findFirst();
+    if (nonNull(channel.channelType())) {
+      return findChannelDto(dto -> channel.channelType() == dto.channelType());
     }
     return Optional.empty();
+  }
+
+  private Optional<PublicationChannelDto> findChannelDto(
+      Predicate<PublicationChannelDto> predicate) {
+    return publicationDto.publicationChannels().stream().filter(predicate).findFirst();
   }
 }
