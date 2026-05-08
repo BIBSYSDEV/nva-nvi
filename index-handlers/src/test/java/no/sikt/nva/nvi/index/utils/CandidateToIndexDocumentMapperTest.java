@@ -53,8 +53,11 @@ import no.sikt.nva.nvi.common.service.model.Username;
 import no.sikt.nva.nvi.index.model.document.ApprovalStatus;
 import no.sikt.nva.nvi.index.model.document.ApprovalView;
 import no.sikt.nva.nvi.index.model.document.Contributor;
+import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.document.NviOrganization;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 class CandidateToIndexDocumentMapperTest {
 
@@ -448,6 +451,44 @@ class CandidateToIndexDocumentMapperTest {
                     .isEqualTo(GlobalApprovalStatus.PENDING));
   }
 
+  @ParameterizedTest
+  @EnumSource(value = Sector.class, names = "UNKNOWN", mode = EnumSource.Mode.EXCLUDE)
+  void shouldPopulateSectorOnApprovalWhenSectorIsKnown(Sector sector) {
+    var candidate = createCandidateWithSiktSector(sector);
+    var publicationDto = createDefaultPublicationDto();
+
+    var document =
+        new CandidateToIndexDocumentMapper(candidate, publicationDto, getGlobalEnvironment())
+            .toIndexDocument();
+
+    var siktApproval = approvalForInstitution(document, SIKT_ID);
+    assertThat(siktApproval.sector()).isEqualTo(sector.toString());
+  }
+
+  @Test
+  void shouldNotPopulateSectorOnApprovalWhenSectorIsUnknown() {
+    var candidate = createCandidateWithSiktSector(Sector.UNKNOWN);
+    var publicationDto = createDefaultPublicationDto();
+
+    var document =
+        new CandidateToIndexDocumentMapper(candidate, publicationDto, getGlobalEnvironment())
+            .toIndexDocument();
+
+    assertThat(approvalForInstitution(document, SIKT_ID).sector()).isNull();
+  }
+
+  @Test
+  void shouldNotPopulateSectorOnApprovalWhenSectorIsNull() {
+    var candidate = createCandidateWithSiktSector(null);
+    var publicationDto = createDefaultPublicationDto();
+
+    var document =
+        new CandidateToIndexDocumentMapper(candidate, publicationDto, getGlobalEnvironment())
+            .toIndexDocument();
+
+    assertThat(approvalForInstitution(document, SIKT_ID).sector()).isNull();
+  }
+
   @Test
   void shouldBuildNviOrganizationWithCorrectPartOfForNviAffiliations() {
     var candidate = createDefaultCandidate();
@@ -518,6 +559,34 @@ class CandidateToIndexDocumentMapperTest {
     return createCandidate(candidateId, approvals, nviCreators, topLevelOrgs, channel);
   }
 
+  private static Candidate createCandidateWithSiktSector(Sector siktSector) {
+    var candidateId = UUID.randomUUID();
+    var topLevelOrgs = List.of(TOP_LEVEL_ORGANIZATION_SIKT, TOP_LEVEL_ORGANIZATION_NTNU);
+    var verifiedCreator =
+        VerifiedNviCreatorDto.builder()
+            .withId(CREATOR_ID)
+            .withName(CREATOR_NAME)
+            .withAffiliations(List.of(SIKT_SUBUNIT_ID, NTNU_ID))
+            .build();
+    var nviCreators = List.of(NviCreator.from(verifiedCreator, topLevelOrgs));
+    var approvals =
+        Map.of(
+            SIKT_ID, Approval.createNewApproval(candidateId, SIKT_ID),
+            NTNU_ID, Approval.createNewApproval(candidateId, NTNU_ID));
+    var channel =
+        new PublicationChannel(
+            JOURNAL_OF_TESTING.id(), ChannelType.JOURNAL, ScientificValue.LEVEL_ONE);
+    return createCandidate(candidateId, approvals, nviCreators, topLevelOrgs, channel, siktSector);
+  }
+
+  private static ApprovalView approvalForInstitution(
+      NviCandidateIndexDocument document, URI institutionId) {
+    return document.approvals().stream()
+        .filter(approval -> approval.institutionId().equals(institutionId))
+        .findFirst()
+        .orElseThrow();
+  }
+
   private static Candidate buildCandidate(
       UUID candidateId,
       Map<URI, Approval> approvals,
@@ -536,6 +605,16 @@ class CandidateToIndexDocumentMapperTest {
       Collection<NviCreator> nviCreators,
       List<Organization> topLevelOrgs,
       PublicationChannel channel) {
+    return createCandidate(candidateId, approvals, nviCreators, topLevelOrgs, channel, Sector.UHI);
+  }
+
+  private static Candidate createCandidate(
+      UUID candidateId,
+      Map<URI, Approval> approvals,
+      Collection<NviCreator> nviCreators,
+      List<Organization> topLevelOrgs,
+      PublicationChannel channel,
+      Sector siktSector) {
     var creatorAffiliationPoints =
         List.of(
             new CreatorAffiliationPoints(CREATOR_ID, SIKT_SUBUNIT_ID, BigDecimal.ONE),
@@ -545,7 +624,7 @@ class CandidateToIndexDocumentMapperTest {
             new InstitutionPoints(
                 SIKT_ID,
                 BigDecimal.TEN,
-                Sector.UHI,
+                siktSector,
                 true,
                 List.of(creatorAffiliationPoints.getFirst())),
             new InstitutionPoints(

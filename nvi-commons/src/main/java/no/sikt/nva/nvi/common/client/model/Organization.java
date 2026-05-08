@@ -79,6 +79,11 @@ public record Organization(
     return false;
   }
 
+  /**
+   * Walks the {@code partOf} chain upwards and returns the ancestor IDs, nearest parent first.
+   * Assumes a single-parent hierarchy: only the first parent at each level is followed, so
+   * organizations with multiple parents will silently lose the alternate branches.
+   */
   @JsonIgnore
   public List<URI> flattenPartOfChain() {
     var result = new ArrayList<URI>();

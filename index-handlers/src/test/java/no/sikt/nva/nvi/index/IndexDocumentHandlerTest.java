@@ -80,7 +80,6 @@ import no.sikt.nva.nvi.index.model.document.IndexDocumentWithConsumptionAttribut
 import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.document.NviContributor;
 import no.sikt.nva.nvi.index.model.document.OrganizationType;
-import no.sikt.nva.nvi.index.utils.CandidateToIndexDocumentMapper;
 import no.unit.nva.s3.S3Driver;
 import no.unit.nva.stubs.FakeContext;
 import no.unit.nva.stubs.FakeS3Client;
@@ -96,6 +95,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.EnumSource.Mode;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentMatcher;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.sqs.model.SqsException;
 
 // Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
@@ -319,6 +319,8 @@ class IndexDocumentHandlerTest {
     var event = createEvent(candidate.identifier());
     handler.handleRequest(event, CONTEXT);
     Assertions.assertThat(sqsClient.getSentMessages()).isEmpty();
+    Assertions.assertThatThrownBy(() -> s3Writer.getFile(createPath(candidate)))
+        .isInstanceOf(NoSuchKeyException.class);
   }
 
   @Test
@@ -354,8 +356,8 @@ class IndexDocumentHandlerTest {
     var publicationDto = builder.build();
     mockPublicationLoaderService(candidate, publicationDto);
     var expectedIndexDocument =
-        new CandidateToIndexDocumentMapper(candidate, publicationDto, ENVIRONMENT)
-            .toIndexDocument();
+        IndexDocumentWithConsumptionAttributes.from(candidate, publicationDto, ENVIRONMENT)
+            .indexDocument();
     var event = createEvent(candidate.identifier());
     handler.handleRequest(event, CONTEXT);
     var actualIndexDocument = parseJson(s3Writer.getFile(createPath(candidate))).indexDocument();

@@ -30,6 +30,8 @@ import no.sikt.nva.nvi.common.service.model.Candidate;
 
 public class PublicationDetailsFixtures {
 
+  private static final int RANDOM_NON_NVI_CONTRIBUTORS = 10;
+
   public static PublicationDto.Builder publicationDtoMatchingCandidate(Candidate candidate) {
     var topLevelOrgs = candidate.publicationDetails().topLevelOrganizations();
     var contributors = buildContributorsFromCandidate(candidate, topLevelOrgs);
@@ -80,7 +82,7 @@ public class PublicationDetailsFixtures {
         .publicationDetails()
         .unverifiedCreators()
         .forEach(creator -> contributors.add(contributorFrom(creator, topLevelOrgs)));
-    for (var i = 0; i < 10; i++) {
+    for (var i = 0; i < RANDOM_NON_NVI_CONTRIBUTORS; i++) {
       contributors.add(randomNonNviContributor(Collections.emptyList()));
     }
     return contributors;
