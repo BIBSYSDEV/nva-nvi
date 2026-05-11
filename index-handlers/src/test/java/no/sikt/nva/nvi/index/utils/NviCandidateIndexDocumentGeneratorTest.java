@@ -124,7 +124,7 @@ class NviCandidateIndexDocumentGeneratorTest {
             expandedResourceFromCandidate(candidate),
             candidate,
             EnvironmentFixtures.getGlobalEnvironment())
-        .generateDocument();
+        .generate();
   }
 
   private static JsonNode expandedResourceFromCandidate(Candidate candidate) {

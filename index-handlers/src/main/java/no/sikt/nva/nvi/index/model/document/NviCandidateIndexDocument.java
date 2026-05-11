@@ -99,7 +99,7 @@ public record NviCandidateIndexDocument(
       Environment environment) {
     return new NviCandidateIndexDocumentGenerator(
             uriRetriever, expandedResource, candidate, environment)
-        .generateDocument();
+        .generate();
   }
 
   public static Builder builder() {
