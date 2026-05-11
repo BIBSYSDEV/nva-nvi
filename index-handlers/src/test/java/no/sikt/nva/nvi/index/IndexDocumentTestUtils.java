@@ -6,10 +6,12 @@ import static java.util.Objects.nonNull;
 import static no.sikt.nva.nvi.common.EnvironmentFixtures.getCandidateContextUri;
 import static no.sikt.nva.nvi.common.model.EnumFixtures.randomValidScientificValue;
 import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.getRandomDateInCurrentYearAsDto;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_ID;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_IDENTITY;
+import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_NAME;
 import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_PUBLICATION_CONTEXT;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.extractJsonNodeTextValue;
 import static no.sikt.nva.nvi.index.ExpandedResourceGenerator.extractAffiliations;
-import static no.sikt.nva.nvi.index.utils.NviCandidateIndexDocumentGenerator.getAnyNviCreatorIfPresent;
 import static no.sikt.nva.nvi.test.TestConstants.EN_FIELD;
 import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_ENGLISH_LABEL;
 import static no.sikt.nva.nvi.test.TestConstants.HARDCODED_NORWEGIAN_LABEL;
@@ -434,6 +436,23 @@ public final class IndexDocumentTestUtils {
     return creator
         .map(value -> generateNviContributor(contributorNode, value, affiliations))
         .orElseGet(() -> generateContributor(contributorNode, affiliations));
+  }
+
+  private static Optional<NviCreatorDto> getAnyNviCreatorIfPresent(
+      JsonNode contributor, Candidate candidate) {
+    var identity = contributor.at(JSON_PTR_IDENTITY);
+    var contributorId = extractJsonNodeTextValue(identity, JSON_PTR_ID);
+    var contributorName = extractJsonNodeTextValue(identity, JSON_PTR_NAME);
+    return candidate.publicationDetails().verifiedCreators().stream()
+        .filter(creator -> creator.id().toString().equals(contributorId))
+        .map(NviCreatorDto.class::cast)
+        .findFirst()
+        .or(
+            () ->
+                candidate.publicationDetails().unverifiedCreators().stream()
+                    .filter(creator -> creator.name().equals(contributorName))
+                    .map(NviCreatorDto.class::cast)
+                    .findFirst());
   }
 
   private static Contributor generateContributor(JsonNode contributorNode, List<URI> affiliations) {

@@ -34,8 +34,6 @@ import static nva.commons.core.StringUtils.EMPTY_STRING;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import java.math.BigDecimal;
 import java.net.URI;
 import java.time.Instant;
@@ -45,21 +43,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
-import no.sikt.nva.nvi.common.service.model.Candidate;
 import no.sikt.nva.nvi.common.service.model.GlobalApprovalStatus;
 import no.sikt.nva.nvi.index.model.report.InstitutionReportHeader;
-import no.sikt.nva.nvi.index.utils.NviCandidateIndexDocumentGenerator;
-import no.unit.nva.auth.uriretriever.UriRetriever;
 import no.unit.nva.commons.json.JsonSerializable;
 import no.unit.nva.language.LanguageMapper;
-import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@JsonSerialize
-// Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
-@SuppressWarnings("PMD.CouplingBetweenObjects")
 public record NviCandidateIndexDocument(
     @JsonProperty(CONTEXT) URI context,
     URI id,
@@ -91,16 +82,6 @@ public record NviCandidateIndexDocument(
   private static final String REPORT_APPROVED_VALUE = "J";
   private static final String REPORT_DISPUTED_VALUE = "T";
   private static final String UNKNOWN = "N/A";
-
-  public static NviCandidateIndexDocument from(
-      JsonNode expandedResource,
-      Candidate candidate,
-      UriRetriever uriRetriever,
-      Environment environment) {
-    return new NviCandidateIndexDocumentGenerator(
-            uriRetriever, expandedResource, candidate, environment)
-        .generateDocument();
-  }
 
   public static Builder builder() {
     return new Builder();

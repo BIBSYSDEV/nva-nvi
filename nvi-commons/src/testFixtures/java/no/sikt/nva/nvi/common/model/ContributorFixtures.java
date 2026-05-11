@@ -81,4 +81,13 @@ public class ContributorFixtures {
         .withAffiliations(affiliations)
         .build();
   }
+
+  public static ContributorDto randomNonNviContributor(List<Organization> affiliations) {
+    return ContributorDto.builder()
+        .withId(randomUri())
+        .withName(randomString())
+        .withRole(new ContributorRole(randomString()))
+        .withAffiliations(affiliations)
+        .build();
+  }
 }
