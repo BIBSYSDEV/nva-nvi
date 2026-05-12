@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.events.batch.message;
 
 import java.util.UUID;
-import no.sikt.nva.nvi.common.MigrationService;
+import no.sikt.nva.nvi.migration.MigrationService;
 
 public record MigrateCandidateMessage(UUID candidateIdentifier) implements BatchJobMessage {
 

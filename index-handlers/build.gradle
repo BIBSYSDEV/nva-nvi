@@ -31,6 +31,8 @@ dependencies {
     implementation nvaLibs.secrets
     implementation project(':nvi-commons')
     implementation project(':nvi-report')
+    implementation project(':rdf')
+    implementation project(':viewing-scope')
     testFixturesAnnotationProcessor nvaCatalog.errorprone
     testImplementation nvaCatalog.aws.sdk2.dynamodblocal
     testImplementation nvaCatalog.assertj.core
@@ -47,6 +49,7 @@ dependencies {
     testImplementation project(':nvi-test')
     testImplementation(testFixtures(project(":nvi-commons")))
     testImplementation(testFixtures(project(":nvi-report")))
+    testImplementation(testFixtures(project(":viewing-scope")))
 }
 
 test {

@@ -28,7 +28,9 @@ dependencies {
     implementation nvaLibs.json
     implementation nvaLibs.s3
     implementation nvaLibs.secrets
+    implementation project(':migration-service')
     implementation project(':nvi-commons')
+    implementation project(':publication-service')
     testFixturesAnnotationProcessor nvaCatalog.errorprone
     testFixturesImplementation nvaCatalog.aws.sdk2.sns
     testFixturesImplementation nvaCatalog.aws.lambda.core
