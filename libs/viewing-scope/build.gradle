@@ -3,16 +3,14 @@ plugins {
 }
 
 dependencies {
-    api(nvaCatalog.jackson.databind)
-    api(nvaCatalog.jena.core)
     api(nvaLibs.clients)
     api(project(':nvi-commons'))
-    api(project(':rdf'))
     implementation(nvaCatalog.jackson.core)
-    implementation(nvaCatalog.jena.arq)
-    implementation(nvaCatalog.slf4j.api)
+    implementation(nvaCatalog.jackson.databind)
+    implementation(nvaCatalog.jena.core)
     implementation(nvaLibs.core)
     implementation(nvaLibs.json)
+    implementation(project(':rdf'))
     runtimeOnly(libs.jakarta.json.api)
     runtimeOnly(libs.parsson)
     testFixturesAnnotationProcessor(nvaCatalog.errorprone)
