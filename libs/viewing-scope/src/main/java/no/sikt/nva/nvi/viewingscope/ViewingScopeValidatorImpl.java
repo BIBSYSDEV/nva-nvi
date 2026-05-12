@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.viewingscope;
 
-import static no.sikt.nva.nvi.viewingscope.utils.GraphUtils.HAS_PART_PROPERTY;
-import static no.sikt.nva.nvi.viewingscope.utils.GraphUtils.createModel;
+import static no.sikt.nva.nvi.rdf.JsonLdModels.createModel;
+import static no.sikt.nva.nvi.rdf.NvaOntology.HAS_PART;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 
@@ -51,7 +51,7 @@ public class ViewingScopeValidatorImpl implements ViewingScopeValidator {
   }
 
   private static NodeIterator getObjectsOfPropertyHasPart(Model model) {
-    return model.listObjectsOfProperty(model.createProperty(HAS_PART_PROPERTY));
+    return model.listObjectsOfProperty(model.createProperty(HAS_PART));
   }
 
   private static Stream<URI> toUris(Stream<String> stream) {

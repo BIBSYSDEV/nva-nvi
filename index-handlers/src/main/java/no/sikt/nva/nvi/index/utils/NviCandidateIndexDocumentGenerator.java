@@ -31,8 +31,8 @@ import static no.sikt.nva.nvi.common.utils.JsonPointers.JSON_PTR_YEAR;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.extractJsonNodeTextValue;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.extractOptJsonNodeTextValue;
 import static no.sikt.nva.nvi.common.utils.JsonUtils.streamNode;
-import static no.sikt.nva.nvi.viewingscope.utils.GraphUtils.PART_OF_PROPERTY;
-import static no.sikt.nva.nvi.viewingscope.utils.GraphUtils.createModel;
+import static no.sikt.nva.nvi.rdf.JsonLdModels.createModel;
+import static no.sikt.nva.nvi.rdf.NvaOntology.PART_OF;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
 import static nva.commons.core.attempt.Try.attempt;
 
@@ -145,7 +145,7 @@ public final class NviCandidateIndexDocumentGenerator {
 
   private static NodeIterator listNextPartOf(Model model, String resourceId) {
     return model.listObjectsOfProperty(
-        model.createResource(resourceId), model.createProperty(PART_OF_PROPERTY));
+        model.createResource(resourceId), model.createProperty(PART_OF));
   }
 
   private static Optional<Map<String, String>> extractLabels(

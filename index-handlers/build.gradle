@@ -31,6 +31,7 @@ dependencies {
     implementation nvaLibs.secrets
     implementation project(':nvi-commons')
     implementation project(':nvi-report')
+    implementation project(':rdf')
     implementation project(':viewing-scope')
     testFixturesAnnotationProcessor nvaCatalog.errorprone
     testImplementation nvaCatalog.aws.sdk2.dynamodblocal

@@ -1,26 +1,14 @@
 package no.sikt.nva.nvi.publication;
 
-import static nva.commons.core.ioutils.IoUtils.stringToStream;
+import static no.sikt.nva.nvi.rdf.JsonLdModels.createModel;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import java.io.InputStream;
-import nva.commons.core.JacocoGenerated;
 import org.apache.jena.rdf.model.Model;
-import org.apache.jena.rdf.model.ModelFactory;
-import org.apache.jena.riot.Lang;
-import org.apache.jena.riot.RDFDataMgr;
-import org.apache.jena.riot.RiotException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public record NvaGraph(Model model) implements GraphValidable {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(NvaGraph.class);
-
   public static NvaGraph fromJsonLd(JsonNode content) {
-    var model = ModelFactory.createDefaultModel();
-    loadDataIntoModel(model, stringToStream(content.toString()));
-    return new NvaGraph(model);
+    return new NvaGraph(createModel(content));
   }
 
   @Override
@@ -30,18 +18,5 @@ public record NvaGraph(Model model) implements GraphValidable {
 
   public NviGraph toNviGraph() {
     return NviGraph.fromNvaGraph(this);
-  }
-
-  private static void loadDataIntoModel(Model model, InputStream inputStream) {
-    try {
-      RDFDataMgr.read(model, inputStream, Lang.JSONLD);
-    } catch (RiotException e) {
-      logInvalidJsonLdInput(e);
-    }
-  }
-
-  @JacocoGenerated
-  private static void logInvalidJsonLdInput(Exception exception) {
-    LOGGER.warn("Invalid JSON LD input encountered: ", exception);
   }
 }

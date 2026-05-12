@@ -8,6 +8,7 @@ dependencies {
     api(nvaCatalog.jena.shacl)
     api(nvaCatalog.slf4j.api)
     api(project(':nvi-commons'))
+    api(project(':rdf'))
     implementation(libs.jakarta.json.api)
     implementation(libs.titanium.json.ld)
     implementation(nvaCatalog.jackson.core)

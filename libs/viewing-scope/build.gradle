@@ -7,6 +7,7 @@ dependencies {
     api(nvaCatalog.jena.core)
     api(nvaLibs.clients)
     api(project(':nvi-commons'))
+    api(project(':rdf'))
     implementation(nvaCatalog.jackson.core)
     implementation(nvaCatalog.jena.arq)
     implementation(nvaCatalog.slf4j.api)
