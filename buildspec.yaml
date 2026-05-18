@@ -36,8 +36,26 @@ phases:
       - nproc
       - du -sh /root/.gradle/caches 2>/dev/null || echo "no gradle cache"
       - docker info 2>&1 | head -20
-      - echo "=== sam build ==="
-      - time sam build --debug
+      - echo "=== Warm gradle cache with verbose download logging ==="
+      # Resolve all dependencies up front with live, timestamped output so we
+      # can see WHAT downloads (or stalls) during a cold-cache build.
+      - time ./gradlew dependencies --refresh-dependencies --info --console=plain 2>&1 | awk '{ print strftime("[%H:%M:%S]"), $0; fflush() }'
+      - echo "=== sam build (gradle cache should now be warm) ==="
+      # Background sampler so the silent 30+ min gradle invocation inside
+      # lambda-builders becomes observable. Logs CPU/network/cache state every 15s.
+      - |
+        (
+          while sleep 15; do
+            echo "----- STATS $(date '+%H:%M:%S') -----"
+            echo "load: $(cat /proc/loadavg)"
+            ps -eo pid,pcpu,pmem,etime,comm --sort=-pcpu | head -8
+            ss -tn state established 2>/dev/null | head -10 || true
+            du -sh /root/.gradle/caches 2>/dev/null || true
+          done
+        ) &
+        STATS_PID=$!
+        time sam build --debug
+        kill $STATS_PID 2>/dev/null || true
       - echo "=== Post-build environment ==="
       - df -h
       - du -sh .aws-sam 2>/dev/null || true
