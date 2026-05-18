@@ -30,7 +30,18 @@ phases:
 
   build:
     commands:
-      - sam build
+      - echo "=== Pre-build environment ==="
+      - df -h
+      - free -m
+      - nproc
+      - du -sh /root/.gradle/caches 2>/dev/null || echo "no gradle cache"
+      - docker info 2>&1 | head -20
+      - echo "=== sam build ==="
+      - time sam build --debug
+      - echo "=== Post-build environment ==="
+      - df -h
+      - du -sh .aws-sam 2>/dev/null || true
+      - du -sh /root/.gradle/caches 2>/dev/null || true
 
   post_build:
     commands:
