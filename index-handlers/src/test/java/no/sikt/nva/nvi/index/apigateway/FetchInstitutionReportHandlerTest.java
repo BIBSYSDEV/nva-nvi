@@ -286,7 +286,6 @@ class FetchInstitutionReportHandlerTest {
         CandidateSearchParameters.builder()
             .withYear(year)
             .withTopLevelCristinOrg(topLevelCristinOrg)
-            .withAffiliations(List.of(extractIdentifier(topLevelCristinOrg)))
             .withSearchResultParameters(defaultResultParameters())
             .withExcludeFields(List.of(NESTED_FIELD_CONTRIBUTORS))
             .build();
@@ -310,7 +309,6 @@ class FetchInstitutionReportHandlerTest {
         CandidateSearchParameters.builder()
             .withYear(year)
             .withTopLevelCristinOrg(topLevelCristinOrg)
-            .withAffiliations(List.of(extractIdentifier(topLevelCristinOrg)))
             .withSearchResultParameters(defaultResultParameters())
             .withExcludeFields(List.of("publicationDetails.contributors"))
             .build();
@@ -591,7 +589,6 @@ class FetchInstitutionReportHandlerTest {
     return CandidateSearchParameters.builder()
         .withYear(THIS_YEAR)
         .withTopLevelCristinOrg(topLevelCristinOrg)
-        .withAffiliations(List.of(extractIdentifier(topLevelCristinOrg)))
         .withSearchResultParameters(resultParameters)
         .withExcludeFields(List.of(NESTED_FIELD_CONTRIBUTORS));
   }

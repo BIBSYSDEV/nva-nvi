@@ -20,7 +20,6 @@ import no.sikt.nva.nvi.index.model.report.InstitutionReportHeader;
 import no.sikt.nva.nvi.index.model.search.CandidateSearchParameters;
 import no.sikt.nva.nvi.index.model.search.SearchResultParameters;
 import no.sikt.nva.nvi.index.xlsx.ExcelWorkbookGenerator;
-import nva.commons.core.paths.UriWrapper;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.aggregations.FilterAggregate;
@@ -188,12 +187,9 @@ public class InstitutionReportGenerator {
   }
 
   private CandidateSearchParameters.Builder buildSearchRequest(int offset, int pageSize) {
-    var topLevelOrganizationIdentifier =
-        UriWrapper.fromUri(topLevelOrganization).getLastPathElement();
     return CandidateSearchParameters.builder()
         .withYear(year)
         .withTopLevelCristinOrg(topLevelOrganization)
-        .withAffiliations(List.of(topLevelOrganizationIdentifier))
         .withSearchResultParameters(getSearchRequestParameters(offset, pageSize))
         .withExcludeFields(List.of(EXCLUDE_CONTRIBUTORS_FIELD));
   }
