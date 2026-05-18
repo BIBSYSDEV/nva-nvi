@@ -64,7 +64,7 @@ class SearchNviCandidatesHandlerTest extends SearchNviCandidatesHandlerTestBase 
   private static final String QUERY_ENCODED_COMMA = "%2C";
   private static final Environment ENVIRONMENT = getSearchNviCandidatesHandlerEnvironment();
   private static final String CANDIDATE_PATH = "candidate";
-  private static SearchClient<NviCandidateIndexDocument> searchClient;
+  private SearchClient<NviCandidateIndexDocument> searchClient;
 
   @BeforeEach
   void beforeEach() {
@@ -317,8 +317,8 @@ class SearchNviCandidatesHandlerTest extends SearchNviCandidatesHandlerTestBase 
     assertThat(actualId).contains(QUERY_PARAM_YEAR + "=" + reportedYear);
   }
 
-  private static void mockOpenSearchClientWithParameterMatchingViewingScope(
-      List<String> usersViewingScope) throws IOException {
+  private void mockOpenSearchClientWithParameterMatchingViewingScope(List<String> usersViewingScope)
+      throws IOException {
     var matcher =
         new CandidateSearchParamsAffiliationMatcher(
             CandidateSearchParameters.builder().withAffiliations(usersViewingScope).build());
@@ -336,7 +336,7 @@ class SearchNviCandidatesHandlerTest extends SearchNviCandidatesHandlerTestBase 
     return UriWrapper.fromUri(randomUri()).addChild(element).getUri();
   }
 
-  private static void mockOpenSearchClient() {
+  private void mockOpenSearchClient() {
     try {
       when(searchClient.search(any()))
           .thenReturn(createSearchResponse(singleNviCandidateIndexDocument()));

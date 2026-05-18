@@ -18,9 +18,11 @@ import nva.commons.core.Environment;
 import nva.commons.logutils.LogUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+@ResourceLock("log4j-config")
 class QueuePersistedResourceHandlerTest {
 
   private static final Environment environment = new Environment();

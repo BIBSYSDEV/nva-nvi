@@ -77,6 +77,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
+import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -89,6 +90,7 @@ import org.zalando.problem.StatusType;
  * setup is done once and state is shared between test cases.
  */
 @TestInstance(Lifecycle.PER_CLASS)
+@ResourceLock(OpenSearchContainerContext.INDEX_RESOURCE_LOCK)
 class FetchReportHandlerIntegrationTest {
 
   private static final Context CONTEXT = new FakeContext();
@@ -361,6 +363,7 @@ class FetchReportHandlerIntegrationTest {
   }
 
   @Nested
+  @ResourceLock(OpenSearchContainerContext.INDEX_RESOURCE_LOCK)
   class AllPeriodsReportTests {
 
     @Test
@@ -383,6 +386,7 @@ class FetchReportHandlerIntegrationTest {
   }
 
   @Nested
+  @ResourceLock(OpenSearchContainerContext.INDEX_RESOURCE_LOCK)
   class PeriodReportTests {
 
     @Target(METHOD)
@@ -539,6 +543,7 @@ class FetchReportHandlerIntegrationTest {
   }
 
   @Nested
+  @ResourceLock(OpenSearchContainerContext.INDEX_RESOURCE_LOCK)
   class AllInstitutionsReportTests {
 
     @Test
@@ -596,6 +601,7 @@ class FetchReportHandlerIntegrationTest {
   }
 
   @Nested
+  @ResourceLock(OpenSearchContainerContext.INDEX_RESOURCE_LOCK)
   class InstitutionReportTests {
 
     @Target(METHOD)

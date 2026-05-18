@@ -31,10 +31,12 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.ResourceLock;
 import software.amazon.awssdk.core.sync.ResponseTransformer;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
+@ResourceLock(OpenSearchContainerContext.INDEX_RESOURCE_LOCK)
 class ReportGeneratorTest {
 
   private static final OpenSearchContainerContext CONTAINER = new OpenSearchContainerContext();

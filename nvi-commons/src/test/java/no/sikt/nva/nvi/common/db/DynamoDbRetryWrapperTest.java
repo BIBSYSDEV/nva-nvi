@@ -21,6 +21,7 @@ import java.util.Map;
 import nva.commons.logutils.LogUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.ResourceLock;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.BatchWriteItemRequest;
@@ -30,6 +31,7 @@ import software.amazon.awssdk.services.dynamodb.model.PutRequest;
 import software.amazon.awssdk.services.dynamodb.model.WriteRequest;
 
 @SuppressWarnings("PMD.DoNotUseThreads")
+@ResourceLock("log4j-config")
 class DynamoDbRetryWrapperTest {
 
   private static final int WRITE_RETRIES_MAX_COUNT = 5;

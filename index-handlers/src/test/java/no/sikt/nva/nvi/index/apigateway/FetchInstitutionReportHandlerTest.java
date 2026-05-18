@@ -109,6 +109,7 @@ import nva.commons.logutils.LogUtils;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -121,6 +122,7 @@ import org.zalando.problem.Problem;
 
 // Should be refactored, technical debt task: https://sikt.atlassian.net/browse/NP-48093
 @SuppressWarnings({"PMD.GodClass", "PMD.CouplingBetweenObjects"})
+@ResourceLock("log4j-config")
 class FetchInstitutionReportHandlerTest {
 
   private static final String YEAR = "year";
@@ -130,7 +132,7 @@ class FetchInstitutionReportHandlerTest {
       Integer.parseInt(new Environment().readEnv("INSTITUTION_REPORT_SEARCH_PAGE_SIZE"));
   private static final String NESTED_FIELD_CONTRIBUTORS = "publicationDetails.contributors";
   private static final String EXPECTED_SORT_ORDER = SortOrder.Asc.jsonValue();
-  private static SearchClient<NviCandidateIndexDocument> searchClient;
+  private SearchClient<NviCandidateIndexDocument> searchClient;
   private ByteArrayOutputStream output;
   private FetchInstitutionReportHandler handler;
 
@@ -487,7 +489,7 @@ class FetchInstitutionReportHandlerTest {
         .build();
   }
 
-  private static void mockOpenSearchResponseThrowingOnSecondRequest(
+  private void mockOpenSearchResponseThrowingOnSecondRequest(
       List<NviCandidateIndexDocument> indexDocuments, URI topLevelCristinOrg) throws IOException {
     var aggregationRequest =
         buildRequest(topLevelCristinOrg, searchResultParams(0, 0))
@@ -531,8 +533,8 @@ class FetchInstitutionReportHandlerTest {
     return new OpenSearchException(errorResponse);
   }
 
-  private static List<NviCandidateIndexDocument> mockCandidateWithoutApprovals(
-      URI topLevelCristinOrg) throws IOException {
+  private List<NviCandidateIndexDocument> mockCandidateWithoutApprovals(URI topLevelCristinOrg)
+      throws IOException {
     var indexDocumentMissingApprovals =
         indexDocumentMissingApprovals(CURRENT_YEAR, topLevelCristinOrg);
     var candidatesInIndex =
@@ -564,7 +566,7 @@ class FetchInstitutionReportHandlerTest {
         Arguments.of("http://lexvo.org/id/iso639-3/deu"));
   }
 
-  private static void mockCandidatesWithLanguage(String languageUri, URI topLevelCristinOrg)
+  private void mockCandidatesWithLanguage(String languageUri, URI topLevelCristinOrg)
       throws IOException {
     var candidatesInIndex =
         List.of(indexDocumentWithLanguage(CURRENT_YEAR, topLevelCristinOrg, languageUri));
@@ -573,7 +575,7 @@ class FetchInstitutionReportHandlerTest {
         .thenReturn(createSearchResponse(candidatesInIndex));
   }
 
-  private static List<NviCandidateIndexDocument> mockTwoCandidatesInIndex(URI topLevelCristinOrg)
+  private List<NviCandidateIndexDocument> mockTwoCandidatesInIndex(URI topLevelCristinOrg)
       throws IOException {
     var firstDocument = randomIndexDocumentWith(CURRENT_YEAR, topLevelCristinOrg);
     var secondDocument = randomIndexDocumentWith(CURRENT_YEAR, topLevelCristinOrg);

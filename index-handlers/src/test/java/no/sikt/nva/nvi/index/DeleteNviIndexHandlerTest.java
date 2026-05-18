@@ -11,8 +11,10 @@ import no.sikt.nva.nvi.index.aws.CandidateSearchClient;
 import no.unit.nva.stubs.FakeContext;
 import nva.commons.logutils.LogUtils;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.ResourceLock;
 import org.mockito.Mockito;
 
+@ResourceLock("log4j-config")
 class DeleteNviIndexHandlerTest {
 
   @Test

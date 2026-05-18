@@ -35,8 +35,7 @@ public class SearchNviCandidatesHandlerTestBase {
 
   private static final Environment ENVIRONMENT = getSearchNviCandidatesHandlerEnvironment();
   private static final Context CONTEXT = new FakeContext();
-  protected static final IdentityServiceClient identityServiceClient =
-      mock(IdentityServiceClient.class);
+  protected final IdentityServiceClient identityServiceClient = mock(IdentityServiceClient.class);
   protected ByteArrayOutputStream output;
   protected SearchNviCandidatesHandler handler;
   protected String currentUsername;
@@ -95,7 +94,7 @@ public class SearchNviCandidatesHandlerTestBase {
     }
   }
 
-  protected static void mockIdentityService(String username, URI... organizations) {
+  protected void mockIdentityService(String username, URI... organizations) {
     try {
       when(identityServiceClient.getUser(username))
           .thenReturn(buildGetUserResponse(List.of(organizations)));

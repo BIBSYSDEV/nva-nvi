@@ -51,8 +51,7 @@ import org.zalando.problem.Problem;
 class UpsertAssigneeHandlerTest extends BaseCandidateRestHandlerTest {
   private UUID candidateIdentifier;
 
-  private static final IdentityServiceClient mockIdentityServiceClient =
-      mock(IdentityServiceClient.class);
+  private final IdentityServiceClient mockIdentityServiceClient = mock(IdentityServiceClient.class);
 
   @Override
   protected ApiGatewayHandler<UpsertAssigneeRequest, CandidateDto> createHandler() {

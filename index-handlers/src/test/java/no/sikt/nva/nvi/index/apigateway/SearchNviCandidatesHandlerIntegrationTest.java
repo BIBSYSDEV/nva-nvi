@@ -54,11 +54,14 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
+@ResourceLock(OpenSearchContainerContext.INDEX_RESOURCE_LOCK)
+@ResourceLock("log4j-config")
 class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandlerTestBase {
   private static final OpenSearchContainerContext CONTAINER = new OpenSearchContainerContext();
   private static final String OUR_USER = "Current user";
@@ -70,9 +73,6 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
   @BeforeAll
   static void beforeAll() {
     CONTAINER.start();
-    mockIdentityService(OUR_USER, OUR_ORGANIZATION);
-    mockIdentityService(OUR_OTHER_USER, OUR_ORGANIZATION);
-    mockIdentityService(THEIR_USER, THEIR_ORGANIZATION);
   }
 
   @AfterAll
@@ -86,6 +86,10 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
     currentOrganization = OUR_ORGANIZATION;
     currentAccessRight = AccessRight.MANAGE_NVI_CANDIDATES;
 
+    mockIdentityService(OUR_USER, OUR_ORGANIZATION);
+    mockIdentityService(OUR_OTHER_USER, OUR_ORGANIZATION);
+    mockIdentityService(THEIR_USER, THEIR_ORGANIZATION);
+
     CONTAINER.createIndex();
     createHandler(CONTAINER.getOpenSearchClient());
   }
@@ -97,6 +101,7 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
 
   @Nested
   @DisplayName("Query structure")
+  @ResourceLock(OpenSearchContainerContext.INDEX_RESOURCE_LOCK)
   class QueryStructureTests {
 
     // FIXME: Fix excessive nesting in query builder and enable this test
@@ -114,6 +119,7 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
 
   @Nested
   @DisplayName("Access control")
+  @ResourceLock(OpenSearchContainerContext.INDEX_RESOURCE_LOCK)
   class AccessControlTests {
 
     @Test
@@ -144,6 +150,7 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
 
   @Nested
   @DisplayName("Pagination and sorting")
+  @ResourceLock(OpenSearchContainerContext.INDEX_RESOURCE_LOCK)
   class PaginationTests {
     private static final int DEFAULT_SIZE = 10;
     private static final int DEFAULT_OFFSET = 0;
@@ -201,6 +208,7 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
 
   @Nested
   @DisplayName("Filter by year")
+  @ResourceLock(OpenSearchContainerContext.INDEX_RESOURCE_LOCK)
   class YearTests {
     private NviCandidateIndexDocument documentFromCurrentYear;
     private NviCandidateIndexDocument documentFromLastYear;
@@ -248,6 +256,7 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
 
   @Nested
   @DisplayName("Filter by assignee and excludeUnassigned")
+  @ResourceLock(OpenSearchContainerContext.INDEX_RESOURCE_LOCK)
   class AssigneeTests {
     private static final String ASSIGNED_TO_CURRENT = "assignedToCurrentUser";
     private static final String ASSIGNED_TO_OTHER = "assignedToOtherUser";
@@ -355,6 +364,7 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
 
   @Nested
   @DisplayName("Filter by approval status")
+  @ResourceLock(OpenSearchContainerContext.INDEX_RESOURCE_LOCK)
   class StatusTests {
     private static final Collection<NviCandidateIndexDocument> docsForStatusCombinations =
         createDocsForAllApprovalStatusCombinations();

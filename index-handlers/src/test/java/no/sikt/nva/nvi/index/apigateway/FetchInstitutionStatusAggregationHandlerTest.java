@@ -51,9 +51,11 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.ResourceLock;
 import org.zalando.problem.Problem;
 import org.zalando.problem.StatusType;
 
+@ResourceLock(OpenSearchContainerContext.INDEX_RESOURCE_LOCK)
 class FetchInstitutionStatusAggregationHandlerTest {
 
   private static final OpenSearchContainerContext CONTAINER = new OpenSearchContainerContext();
@@ -103,6 +105,7 @@ class FetchInstitutionStatusAggregationHandlerTest {
 
   @Nested
   @DisplayName("Access control")
+  @ResourceLock(OpenSearchContainerContext.INDEX_RESOURCE_LOCK)
   class AccessControlTests {
     @Test
     void shouldReturnUnauthorizedWhenUserDoesNotHaveRequiredAccessRight() {
@@ -130,6 +133,7 @@ class FetchInstitutionStatusAggregationHandlerTest {
 
   @Nested
   @DisplayName("Totals for top-level organization")
+  @ResourceLock(OpenSearchContainerContext.INDEX_RESOURCE_LOCK)
   class TotalAggregationTests {
     @Test
     void shouldIncludeYearAndTopLevelOrganizationInReport() {
@@ -221,6 +225,7 @@ class FetchInstitutionStatusAggregationHandlerTest {
 
   @Nested
   @DisplayName("Aggregated by direct affiliation")
+  @ResourceLock(OpenSearchContainerContext.INDEX_RESOURCE_LOCK)
   class DirectAffiliationAggregationTests {
     @Test
     void shouldExcludeRejectedCandidatesFromPoints() {

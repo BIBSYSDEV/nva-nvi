@@ -36,12 +36,14 @@ import nva.commons.core.paths.UnixPath;
 import nva.commons.logutils.LogUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.ResourceLock;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 @SuppressWarnings("PMD.GodClass")
+@ResourceLock("log4j-config")
 class PublicationLoaderServiceTest {
 
   private static final String BUCKET_NAME = "testBucket";
