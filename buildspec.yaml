@@ -36,11 +36,18 @@ phases:
       - nproc
       - du -sh /root/.gradle/caches 2>/dev/null || echo "no gradle cache"
       - docker info 2>&1 | head -20
-      - echo "=== Warm gradle cache with verbose download logging ==="
-      # Resolve all dependencies up front with live, timestamped output so we
-      # can see WHAT downloads (or stalls) during a cold-cache build.
-      - time ./gradlew dependencies --refresh-dependencies --info --console=plain 2>&1 | awk '{ print strftime("[%H:%M:%S]"), $0; fflush() }'
-      - echo "=== sam build (gradle cache should now be warm) ==="
+      # Step-by-step gradle timing on a cold cache. Each step adds the
+      # minimum-needed work to the cache, so the wall-clock time reported by
+      # `time` for each step is roughly the marginal cost of that phase.
+      - echo "=== STEP 1/5: gradle help (startup + plugin resolution only) ==="
+      - time ./gradlew help --console=plain
+      - echo "=== STEP 2/5: gradle dependencies (resolve + download every config) ==="
+      - time ./gradlew dependencies --refresh-dependencies --console=plain
+      - echo "=== STEP 3/5: gradle assemble (compile + package, no tests) ==="
+      - time ./gradlew assemble --console=plain
+      - echo "=== STEP 4/5: gradle test (run all tests) ==="
+      - time ./gradlew test --console=plain
+      - echo "=== STEP 5/5: sam build (cache fully warm; should be quick) ==="
       # Background sampler so the silent 30+ min gradle invocation inside
       # lambda-builders becomes observable. Logs CPU/network/cache state every 15s.
       - |
