@@ -21,12 +21,19 @@ phases:
     commands:
       - pip3 install --upgrade "aws-sam-cli==1.160.1"
       - sam --version
+      # Phase metric: gradle bootstrap. Wrapper downloads gradle 9.4.1 distribution
+      # and resolves all build-script plugins. No project-level work.
+      - time ./gradlew help --console=plain
 
   pre_build:
     commands:
       # We need to be logged in to Docker Hub to pull images for testcontainers
       - echo "Logging in to Docker Hub..."
       - echo -n "$DOCKER_HUB_SECRET" | docker login --username $DOCKER_HUB_USERNAME --password-stdin
+      # Phase metric: compile main + test sources across all subprojects.
+      # --refresh-dependencies forces fresh dep downloads, so all network cost
+      # for resolving the project is paid here, isolated from compile/test cost.
+      - time ./gradlew testClasses --refresh-dependencies --console=plain
 
   build:
     commands:
@@ -36,20 +43,12 @@ phases:
       - nproc
       - du -sh /root/.gradle/caches 2>/dev/null || echo "no gradle cache"
       - docker info 2>&1 | head -20
-      # Step-by-step gradle timing on a cold cache. Each step adds the
-      # minimum-needed work to the cache, so the wall-clock time reported by
-      # `time` for each step is roughly the marginal cost of that phase.
-      - echo "=== STEP 1/5: gradle help (startup + plugin resolution only) ==="
-      - time ./gradlew help --console=plain
-      - echo "=== STEP 2/5: gradle dependencies (resolve + download every config) ==="
-      - time ./gradlew dependencies --refresh-dependencies --console=plain
-      - echo "=== STEP 3/5: gradle assemble (compile + package, no tests) ==="
-      - time ./gradlew assemble --console=plain
-      - echo "=== STEP 4/5: gradle test (run all tests) ==="
+      # Phase metric: tests + lambda packaging (compile is already cached from PRE_BUILD).
+      - echo "=== Step: gradle test ==="
       - time ./gradlew test --console=plain
-      - echo "=== STEP 5/5: sam build (cache fully warm; should be quick) ==="
-      # Background sampler so the silent 30+ min gradle invocation inside
-      # lambda-builders becomes observable. Logs CPU/network/cache state every 15s.
+      - echo "=== Step: sam build ==="
+      # Background sampler so the silent gradle invocation inside lambda-builders
+      # stays observable. Logs CPU/network/cache state every 15s.
       - |
         (
           while sleep 15; do
