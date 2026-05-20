@@ -9,6 +9,7 @@ import static no.sikt.nva.nvi.common.db.PeriodRepositoryFixtures.setupOpenPeriod
 import static no.sikt.nva.nvi.common.model.OrganizationFixtures.randomOrganizationId;
 import static no.sikt.nva.nvi.common.model.PublicationDateFixtures.randomPublicationDateDtoInYear;
 import static no.sikt.nva.nvi.common.model.UserInstanceFixtures.createCuratorUserInstance;
+import static no.sikt.nva.nvi.common.utils.ApplicationConstants.NVI_TABLE_NAME;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
 
 import java.io.IOException;
@@ -47,7 +48,7 @@ public class TestScenario {
   private final CandidateService candidateService;
 
   public TestScenario() {
-    localDynamo = initializeTestDatabase();
+    localDynamo = initializeTestDatabase(NVI_TABLE_NAME);
     candidateRepository = new CandidateRepository(localDynamo);
     periodRepository = new PeriodRepository(localDynamo);
     periodService = new NviPeriodService(getGlobalEnvironment(), periodRepository);
