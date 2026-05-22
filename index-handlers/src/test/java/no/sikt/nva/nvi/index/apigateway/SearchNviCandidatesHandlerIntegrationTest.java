@@ -45,7 +45,7 @@ import no.sikt.nva.nvi.index.model.document.NviCandidateIndexDocument;
 import no.sikt.nva.nvi.index.model.document.ReportingPeriod;
 import no.unit.nva.commons.pagination.PaginatedSearchResult;
 import nva.commons.apigateway.AccessRight;
-import nva.commons.logutils.LogUtils;
+import nva.commons.logutils.LogRecorder;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -103,12 +103,11 @@ class SearchNviCandidatesHandlerIntegrationTest extends SearchNviCandidatesHandl
     @Test
     @Disabled
     void shouldNotProduceExtremelyNestedQuery() {
-      var logAppender = LogUtils.getTestingAppender(CandidateSearchClient.class);
+      var logRecorder = LogRecorder.forClass(CandidateSearchClient.class);
 
       handleRequest(emptyMap());
-      var messages = logAppender.getMessages();
 
-      assertThat(messages).isNotEmpty().doesNotContain("exceeds recommended limit");
+      assertThat(logRecorder.asString()).isNotEmpty().doesNotContain("exceeds recommended limit");
     }
   }
 

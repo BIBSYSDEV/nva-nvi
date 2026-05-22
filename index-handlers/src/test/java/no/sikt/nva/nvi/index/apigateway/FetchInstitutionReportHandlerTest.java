@@ -105,7 +105,7 @@ import no.unit.nva.testutils.HandlerRequestBuilder;
 import nva.commons.apigateway.AccessRight;
 import nva.commons.core.Environment;
 import nva.commons.core.paths.UriWrapper;
-import nva.commons.logutils.LogUtils;
+import nva.commons.logutils.LogRecorder;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -340,10 +340,10 @@ class FetchInstitutionReportHandlerTest {
     when(searchClient.search(any()))
         .thenReturn(aggregationResponse(1))
         .thenReturn(createSearchResponse(indexDocument));
-    var appender = LogUtils.getTestingAppender(NviCandidateIndexDocument.class);
+    var logRecorder = LogRecorder.forClass(NviCandidateIndexDocument.class);
     handler.handleRequest(
         requestWithMediaType(MICROSOFT_EXCEL.toString(), topLevelCristinOrg), output, CONTEXT);
-    assertTrue(appender.getMessages().contains(indexDocument.identifier().toString()));
+    assertTrue(logRecorder.asString().contains(indexDocument.identifier().toString()));
   }
 
   @Test

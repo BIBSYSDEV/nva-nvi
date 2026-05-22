@@ -4,7 +4,7 @@ plugins {
 dependencies {
     implementation nvaCatalog.aws.sdk2.regions
     implementation nvaCatalog.aws.sdk2.sqs
-    implementation libs.nva.language
+    implementation nvaCatalog.nva.language
     implementation nvaCatalog.aws.apache.client
     implementation nvaCatalog.aws.java.sdk.core
     implementation nvaCatalog.aws.lambda.core

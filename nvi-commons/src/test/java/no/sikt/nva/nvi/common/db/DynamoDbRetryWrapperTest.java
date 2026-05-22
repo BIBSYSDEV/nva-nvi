@@ -3,12 +3,8 @@ package no.sikt.nva.nvi.common.db;
 import static no.sikt.nva.nvi.common.db.CandidateDaoFixtures.randomApplicableCandidateDao;
 import static no.sikt.nva.nvi.common.utils.ApplicationConstants.NVI_TABLE_NAME;
 import static no.unit.nva.testutils.RandomDataGenerator.randomString;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -18,7 +14,7 @@ import static org.mockito.Mockito.when;
 
 import java.util.List;
 import java.util.Map;
-import nva.commons.logutils.LogUtils;
+import nva.commons.logutils.LogRecorder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
@@ -71,7 +67,7 @@ class DynamoDbRetryWrapperTest {
     var result = dynamoDbRetryClient.batchWriteItem(writeRequest);
 
     verify(dynamodb, times(2)).batchWriteItem(any(BatchWriteItemRequest.class));
-    assertThat(result, is(equalTo(1)));
+    assertThat(result).isEqualTo(1);
   }
 
   @Test
@@ -84,12 +80,12 @@ class DynamoDbRetryWrapperTest {
     var result = dynamoDbRetryClient.batchWriteItem(writeRequest);
 
     verify(dynamodb, times(1)).batchWriteItem(any(BatchWriteItemRequest.class));
-    assertThat(result, is(equalTo(1)));
+    assertThat(result).isEqualTo(1);
   }
 
   @Test
   void sleepShouldRespectInterruption() throws InterruptedException {
-    final var appender = LogUtils.getTestingAppender(DynamoDbRetryWrapper.class);
+    var logRecorder = LogRecorder.forClass(DynamoDbRetryWrapper.class);
     var veryLongInitialRetryWaitTimeMs = 10_000;
 
     dynamoDbRetryClient =
@@ -111,14 +107,14 @@ class DynamoDbRetryWrapperTest {
     thread.interrupt();
     thread.join();
 
-    assertThat(
-        appender.getMessages(),
-        containsString("java.lang.InterruptedException: sleep interrupted"));
+    assertThat(logRecorder.events())
+        .map(event -> event.getThrown().toString())
+        .contains("java.lang.InterruptedException: sleep interrupted");
   }
 
   @Test
   void shouldLogFailedBatchItemsWhenOpenSearchErrorOccurs() {
-    final var appender = LogUtils.getTestingAppender(DynamoDbRetryWrapper.class);
+    var logRecorder = LogRecorder.forClass(DynamoDbRetryWrapper.class);
     var mockedDatabaseClient = mock(DynamoDbClient.class);
     var dynamoDbRetryWrapper =
         DynamoDbRetryWrapper.builder().dynamoDbClient(mockedDatabaseClient).build();
@@ -128,7 +124,7 @@ class DynamoDbRetryWrapperTest {
         .thenThrow(DynamoDbException.class);
     assertThrows(
         DynamoDbException.class, () -> dynamoDbRetryWrapper.batchWriteItem(batchItemRequest));
-    assertTrue(appender.getMessages().contains(dao.identifier().toString()));
+    assertThat(logRecorder.asString()).contains(dao.identifier().toString());
   }
 
   private static BatchWriteItemRequest generateBatchItemRequest(CandidateDao dao) {
