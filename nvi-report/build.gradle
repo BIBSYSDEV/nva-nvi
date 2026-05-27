@@ -22,6 +22,7 @@ dependencies {
     testFixturesAnnotationProcessor nvaCatalog.errorprone
     testFixturesImplementation nvaCatalog.opencsv
     testFixturesImplementation libs.fast.excel.reader
+    testFixturesRuntimeOnly libs.aalto.xml
     testImplementation nvaLibs.testutils
     testImplementation libs.fast.excel.reader
     testImplementation nvaCatalog.assertj.core
@@ -31,6 +32,7 @@ dependencies {
     testImplementation nvaCatalog.junit.jupiter.params
     testImplementation nvaCatalog.junit.platform.launcher
     testImplementation nvaCatalog.mockito.core
+    testRuntimeOnly libs.aalto.xml
 }
 
 test {

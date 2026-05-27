@@ -20,6 +20,7 @@ dependencies {
     implementation nvaLibs.json
     implementation nvaLibs.s3
     testFixturesAnnotationProcessor nvaCatalog.errorprone
+    testFixturesApi libs.picocontainer
     testFixturesImplementation nvaCatalog.aws.sdk2.sqs
     testFixturesImplementation nvaCatalog.aws.sdk2.dynamodblocal
     testFixturesImplementation nvaCatalog.aws.lambda.events

@@ -13,4 +13,6 @@ dependencies {
     testImplementation(nvaCatalog.junit.jupiter.api)
     testImplementation(nvaLibs.json)
     testImplementation(nvaLibs.testutils)
+    testRuntimeOnly(libs.jackson.dataformat.cbor)
+    testRuntimeOnly(libs.third.party.jackson.core)
 }
