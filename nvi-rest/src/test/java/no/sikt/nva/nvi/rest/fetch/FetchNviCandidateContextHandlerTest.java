@@ -1,7 +1,7 @@
 package no.sikt.nva.nvi.rest.fetch;
 
-import static com.google.common.net.HttpHeaders.ACCEPT;
 import static no.unit.nva.commons.json.JsonUtils.dtoObjectMapper;
+import static org.apache.hc.core5.http.HttpHeaders.ACCEPT;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.amazonaws.services.lambda.runtime.Context;
