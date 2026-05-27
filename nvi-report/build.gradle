@@ -4,11 +4,15 @@ plugins {
 
 dependencies {
     implementation project(':nvi-commons')
-    implementation nvaCatalog.bundles.logging
-    implementation nvaCatalog.opencsv
     implementation nvaCatalog.aws.sdk2.s3
     implementation nvaCatalog.jackson.core
     implementation nvaCatalog.jackson.databind
+    implementation nvaCatalog.lambda.log4j
+    implementation nvaCatalog.log4j.api
+    implementation nvaCatalog.log4j.core
+    implementation nvaCatalog.log4j.slf4j.impl
+    implementation nvaCatalog.opencsv
+    implementation nvaCatalog.slf4j.api
 
     implementation nvaLibs.core
     implementation nvaLibs.apigateway
@@ -20,8 +24,12 @@ dependencies {
     testFixturesImplementation libs.fast.excel.reader
     testImplementation nvaLibs.testutils
     testImplementation libs.fast.excel.reader
-    testImplementation nvaCatalog.bundles.testing.junit
     testImplementation nvaCatalog.assertj.core
+    testImplementation nvaCatalog.junit.jupiter
+    testImplementation nvaCatalog.junit.jupiter.api
+    testImplementation nvaCatalog.junit.jupiter.engine
+    testImplementation nvaCatalog.junit.jupiter.params
+    testImplementation nvaCatalog.junit.platform.launcher
     testImplementation nvaCatalog.mockito.core
 }
 

@@ -3,9 +3,13 @@ plugins {
 }
 
 dependencies {
-    implementation nvaCatalog.bundles.testing.junit
     implementation nvaCatalog.datafaker
     implementation nvaCatalog.jackson.databind
+    implementation nvaCatalog.junit.jupiter
+    implementation nvaCatalog.junit.jupiter.api
+    implementation nvaCatalog.junit.jupiter.engine
+    implementation nvaCatalog.junit.jupiter.params
+    implementation nvaCatalog.junit.platform.launcher
     implementation nvaCatalog.mockito.core
     implementation nvaLibs.core
     implementation nvaLibs.identifiers

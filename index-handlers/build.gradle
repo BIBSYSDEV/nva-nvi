@@ -11,16 +11,22 @@ dependencies {
     implementation nvaCatalog.aws.lambda.events
     implementation nvaCatalog.aws.sdk2.dynamo
     implementation nvaCatalog.aws.sdk2.s3
-    implementation nvaCatalog.bundles.apache.poi
-    implementation nvaCatalog.bundles.jacksonjr
-    implementation nvaCatalog.bundles.logging
+    implementation nvaCatalog.apache.poi
+    implementation nvaCatalog.apache.poi.ooxml
     implementation nvaCatalog.com.auth0.jwt
+    implementation nvaCatalog.httpclient5
     implementation nvaCatalog.jackson.core
     implementation nvaCatalog.jackson.databind
-    implementation nvaCatalog.opencsv
+    implementation nvaCatalog.jackson.jr.annotations
+    implementation nvaCatalog.jackson.jr.objects
     implementation nvaCatalog.jena.core
+    implementation nvaCatalog.lambda.log4j
+    implementation nvaCatalog.log4j.api
+    implementation nvaCatalog.log4j.core
+    implementation nvaCatalog.log4j.slf4j.impl
+    implementation nvaCatalog.opencsv
     implementation nvaCatalog.opensearch.java
-    implementation nvaCatalog.httpclient5
+    implementation nvaCatalog.slf4j.api
     implementation nvaLibs.apigateway
     implementation nvaLibs.auth
     implementation nvaLibs.clients
@@ -36,12 +42,20 @@ dependencies {
     testFixturesAnnotationProcessor nvaCatalog.errorprone
     testImplementation nvaCatalog.aws.sdk2.dynamodblocal
     testImplementation nvaCatalog.assertj.core
-    testImplementation nvaCatalog.bundles.testing.cucumber
-    testImplementation nvaCatalog.bundles.testing.junit
-    testImplementation nvaCatalog.bundles.testing.testcontainers
+    testImplementation nvaCatalog.cucumber.java
+    testImplementation nvaCatalog.cucumber.junit.platform.engine
+    testImplementation nvaCatalog.cucumber.picocontainer
     testImplementation nvaCatalog.datafaker
     testImplementation nvaCatalog.hamcrest
+    testImplementation nvaCatalog.junit.jupiter
+    testImplementation nvaCatalog.junit.jupiter.api
+    testImplementation nvaCatalog.junit.jupiter.engine
+    testImplementation nvaCatalog.junit.jupiter.params
+    testImplementation nvaCatalog.junit.platform.launcher
     testImplementation nvaCatalog.mockito.core
+    testImplementation nvaCatalog.testcontainers
+    testImplementation nvaCatalog.testcontainers.junit
+    testImplementation nvaCatalog.testcontainers.opensearch
     testImplementation nvaCatalog.zalando
     testImplementation nvaLibs.identifiers
     testImplementation nvaLibs.logutils

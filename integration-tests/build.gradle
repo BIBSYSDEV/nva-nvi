@@ -13,9 +13,15 @@ dependencies {
     testImplementation nvaCatalog.aws.sdk2.core
     testImplementation nvaCatalog.aws.sdk2.dynamo
     testImplementation nvaCatalog.aws.sdk2.s3
-    testImplementation nvaCatalog.bundles.testing.cucumber
-    testImplementation nvaCatalog.bundles.testing.junit
     testImplementation nvaCatalog.com.auth0.jwt
+    testImplementation nvaCatalog.cucumber.java
+    testImplementation nvaCatalog.cucumber.junit.platform.engine
+    testImplementation nvaCatalog.cucumber.picocontainer
+    testImplementation nvaCatalog.junit.jupiter
+    testImplementation nvaCatalog.junit.jupiter.api
+    testImplementation nvaCatalog.junit.jupiter.engine
+    testImplementation nvaCatalog.junit.jupiter.params
+    testImplementation nvaCatalog.junit.platform.launcher
     testImplementation nvaCatalog.mockito.core
     testImplementation nvaLibs.apigateway
     testImplementation nvaLibs.auth

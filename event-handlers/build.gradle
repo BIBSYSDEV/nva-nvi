@@ -15,11 +15,16 @@ dependencies {
     implementation nvaCatalog.aws.sdk2.s3
     implementation nvaCatalog.aws.sdk2.secrets
     implementation nvaCatalog.aws.sdk2.urlconnection
-    implementation nvaCatalog.bundles.jena
-    implementation nvaCatalog.bundles.logging
     implementation nvaCatalog.com.auth0.jwt
     implementation nvaCatalog.jackson.core
     implementation nvaCatalog.jackson.databind
+    implementation nvaCatalog.jena.arq
+    implementation nvaCatalog.jena.core
+    implementation nvaCatalog.lambda.log4j
+    implementation nvaCatalog.log4j.api
+    implementation nvaCatalog.log4j.core
+    implementation nvaCatalog.log4j.slf4j.impl
+    implementation nvaCatalog.slf4j.api
     implementation nvaLibs.apigateway
     implementation nvaLibs.auth
     implementation nvaLibs.core
@@ -35,10 +40,16 @@ dependencies {
     testFixturesImplementation nvaCatalog.aws.sdk2.sns
     testFixturesImplementation nvaCatalog.aws.lambda.core
     testFixturesImplementation nvaCatalog.aws.lambda.events
-    testFixturesImplementation nvaCatalog.bundles.testing.cucumber
-    testFixturesImplementation nvaCatalog.bundles.testing.junit
     testFixturesImplementation nvaCatalog.com.auth0.jwt
+    testFixturesImplementation nvaCatalog.cucumber.java
+    testFixturesImplementation nvaCatalog.cucumber.junit.platform.engine
+    testFixturesImplementation nvaCatalog.cucumber.picocontainer
     testFixturesImplementation nvaCatalog.hamcrest
+    testFixturesImplementation nvaCatalog.junit.jupiter
+    testFixturesImplementation nvaCatalog.junit.jupiter.api
+    testFixturesImplementation nvaCatalog.junit.jupiter.engine
+    testFixturesImplementation nvaCatalog.junit.jupiter.params
+    testFixturesImplementation nvaCatalog.junit.platform.launcher
     testFixturesImplementation nvaCatalog.mockito.core
     testFixturesImplementation nvaLibs.core
     testFixturesImplementation nvaLibs.json
@@ -47,10 +58,16 @@ dependencies {
     testFixturesImplementation(testFixtures(project(":nvi-commons")))
     testImplementation nvaCatalog.aws.sdk2.dynamodblocal
     testImplementation nvaCatalog.assertj.core
-    testImplementation nvaCatalog.bundles.testing.cucumber
-    testImplementation nvaCatalog.bundles.testing.junit
+    testImplementation nvaCatalog.cucumber.java
+    testImplementation nvaCatalog.cucumber.junit.platform.engine
+    testImplementation nvaCatalog.cucumber.picocontainer
     testImplementation nvaCatalog.hamcrest
     testImplementation nvaCatalog.jackson.datatype.jsr310
+    testImplementation nvaCatalog.junit.jupiter
+    testImplementation nvaCatalog.junit.jupiter.api
+    testImplementation nvaCatalog.junit.jupiter.engine
+    testImplementation nvaCatalog.junit.jupiter.params
+    testImplementation nvaCatalog.junit.platform.launcher
     testImplementation nvaCatalog.mockito.core
     testImplementation nvaLibs.identifiers
     testImplementation nvaLibs.logutils

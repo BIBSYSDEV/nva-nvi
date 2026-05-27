@@ -18,9 +18,15 @@ dependencies {
     testFixturesImplementation(testFixtures(project(":nvi-commons")))
     testImplementation nvaCatalog.aws.sdk2.dynamodblocal
     testImplementation nvaCatalog.assertj.core
-    testImplementation nvaCatalog.bundles.testing.cucumber
-    testImplementation nvaCatalog.bundles.testing.junit
+    testImplementation nvaCatalog.cucumber.java
+    testImplementation nvaCatalog.cucumber.junit.platform.engine
+    testImplementation nvaCatalog.cucumber.picocontainer
     testImplementation nvaCatalog.hamcrest
+    testImplementation nvaCatalog.junit.jupiter
+    testImplementation nvaCatalog.junit.jupiter.api
+    testImplementation nvaCatalog.junit.jupiter.engine
+    testImplementation nvaCatalog.junit.jupiter.params
+    testImplementation nvaCatalog.junit.platform.launcher
     testImplementation nvaCatalog.mockito.core
     testImplementation nvaCatalog.zalando
     testImplementation nvaLibs.testutils

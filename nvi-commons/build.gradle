@@ -24,10 +24,16 @@ dependencies {
     testFixturesImplementation nvaCatalog.aws.sdk2.dynamodblocal
     testFixturesImplementation nvaCatalog.aws.lambda.events
     testFixturesImplementation nvaCatalog.aws.sdk2.s3
-    testFixturesImplementation nvaCatalog.bundles.testing.cucumber
-    testFixturesImplementation nvaCatalog.bundles.testing.junit
+    testFixturesImplementation nvaCatalog.cucumber.java
+    testFixturesImplementation nvaCatalog.cucumber.junit.platform.engine
+    testFixturesImplementation nvaCatalog.cucumber.picocontainer
     testFixturesImplementation nvaCatalog.datafaker
     testFixturesImplementation nvaCatalog.hamcrest
+    testFixturesImplementation nvaCatalog.junit.jupiter
+    testFixturesImplementation nvaCatalog.junit.jupiter.api
+    testFixturesImplementation nvaCatalog.junit.jupiter.engine
+    testFixturesImplementation nvaCatalog.junit.jupiter.params
+    testFixturesImplementation nvaCatalog.junit.platform.launcher
     testFixturesImplementation nvaCatalog.mockito.core
     testFixturesImplementation nvaLibs.apigateway
     testFixturesImplementation nvaLibs.auth
@@ -39,10 +45,16 @@ dependencies {
     testFixturesImplementation nvaLibs.testutils
     testFixturesImplementation project(':nvi-test')
     testImplementation nvaCatalog.assertj.core
-    testImplementation nvaCatalog.bundles.testing.cucumber
-    testImplementation nvaCatalog.bundles.testing.junit
+    testImplementation nvaCatalog.cucumber.java
+    testImplementation nvaCatalog.cucumber.junit.platform.engine
+    testImplementation nvaCatalog.cucumber.picocontainer
     testImplementation nvaCatalog.datafaker
     testImplementation nvaCatalog.hamcrest
+    testImplementation nvaCatalog.junit.jupiter
+    testImplementation nvaCatalog.junit.jupiter.api
+    testImplementation nvaCatalog.junit.jupiter.engine
+    testImplementation nvaCatalog.junit.jupiter.params
+    testImplementation nvaCatalog.junit.platform.launcher
     testImplementation nvaCatalog.mockito.core
     testImplementation nvaLibs.logutils
     testImplementation nvaLibs.testutils
