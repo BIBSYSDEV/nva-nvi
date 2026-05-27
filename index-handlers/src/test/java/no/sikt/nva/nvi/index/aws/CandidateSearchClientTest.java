@@ -59,7 +59,6 @@ import nva.commons.core.ioutils.IoUtils;
 import nva.commons.core.paths.UriWrapper;
 import org.apache.hc.core5.http.HttpHost;
 import org.assertj.core.api.Assertions;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -812,7 +811,6 @@ class CandidateSearchClientTest {
             ORGANIZATION, randomString(), randomString(), YEAR, randomString()));
   }
 
-  @NotNull
   private static SearchResultParameters getSearchResultParameters(int offset, int size) {
     return SearchResultParameters.builder().withOffset(offset).withSize(size).build();
   }
